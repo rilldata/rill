@@ -22,36 +22,11 @@ func newDialect() *dialect {
 
 func (d *dialect) String() string { return "druid" }
 
-func (d *dialect) EscapeIdentifier(ident string) string {
-	if ident == "" {
-		return ident
-	}
-	return fmt.Sprintf(`"%s"`, strings.ReplaceAll(ident, `"`, `""`)) // nolint:gocritic
-}
+func (d *dialect) SupportsILike() bool { return false }
 
-func (d *dialect) SupportsILike() bool           { return false }
-func (d *dialect) SupportsRegexMatch() bool      { return true }
+func (d *dialect) SupportsRegexMatch() bool { return true }
+
 func (d *dialect) GetRegexMatchFunction() string { return "REGEXP_LIKE" }
-
-func (d *dialect) MinDimensionExpression(expr string) string {
-	return fmt.Sprintf("EARLIEST(%s)", expr) // MIN on string columns is not supported in Druid
-}
-
-func (d *dialect) MaxDimensionExpression(expr string) string {
-	return fmt.Sprintf("LATEST(%s)", expr) // MAX on string columns is not supported in Druid
-}
-
-func (d *dialect) SafeDivideExpression(numExpr, denExpr string) string {
-	return fmt.Sprintf("SAFE_DIVIDE(%s, CAST(%s AS DOUBLE))", numExpr, denExpr)
-}
-
-func (d *dialect) LateralUnnest(_, _, _ string) (tbl string, tupleStyle, auto bool, err error) {
-	return "", false, true, nil
-}
-
-func (d *dialect) UnnestSQLSuffix(_ string) string {
-	panic("Druid auto unnests")
-}
 
 // DimensionSelect for Druid skips unnesting even when dim.Unnest is true.
 func (d *dialect) DimensionSelect(_, _, _ string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error) {
@@ -73,41 +48,24 @@ func (d *dialect) DimensionSelectPair(_, _, _ string, dim *runtimev1.MetricsView
 	return ex, colAlias, "", nil
 }
 
-func (d *dialect) GetNullExpr(typ runtimev1.Type_Code) (bool, string) {
-	switch typ {
-	case runtimev1.Type_CODE_STRING:
-		return true, "CAST(NULL AS VARCHAR)"
-	case runtimev1.Type_CODE_INT8, runtimev1.Type_CODE_INT16, runtimev1.Type_CODE_INT32, runtimev1.Type_CODE_INT64,
-		runtimev1.Type_CODE_INT128, runtimev1.Type_CODE_INT256,
-		runtimev1.Type_CODE_UINT8, runtimev1.Type_CODE_UINT16, runtimev1.Type_CODE_UINT32, runtimev1.Type_CODE_UINT64,
-		runtimev1.Type_CODE_UINT128, runtimev1.Type_CODE_UINT256:
-		return true, "CAST(NULL AS INTEGER)"
-	case runtimev1.Type_CODE_FLOAT32, runtimev1.Type_CODE_FLOAT64, runtimev1.Type_CODE_DECIMAL:
-		return true, "CAST(NULL AS DOUBLE)"
-	case runtimev1.Type_CODE_BOOL:
-		return true, "CAST(NULL AS BOOLEAN)"
-	case runtimev1.Type_CODE_TIME, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIMESTAMP:
-		return true, "CAST(NULL AS TIMESTAMP)"
-	default:
-		return false, ""
-	}
+func (d *dialect) LateralUnnest(_, _, _ string) (tbl string, tupleStyle, auto bool, err error) {
+	return "", false, true, nil
 }
 
-func (d *dialect) GetDateTimeExpr(t time.Time) (bool, string) {
-	return true, fmt.Sprintf("CAST('%s' AS TIMESTAMP)", t.Format(time.RFC3339Nano))
+func (d *dialect) UnnestSQLSuffix(_ string) string {
+	panic("Druid auto unnests")
 }
 
-func (d *dialect) GetDateExpr(t time.Time) (bool, string) {
-	return true, fmt.Sprintf("CAST('%s' AS DATE)", t.Format(time.DateOnly))
+func (d *dialect) MinDimensionExpression(expr string) string {
+	return fmt.Sprintf("EARLIEST(%s)", expr) // MIN on string columns is not supported in Druid
 }
 
-func (d *dialect) CastToDataType(typ runtimev1.Type_Code) (string, error) {
-	switch typ {
-	case runtimev1.Type_CODE_TIMESTAMP:
-		return "TIMESTAMP", nil
-	default:
-		return "", fmt.Errorf("unsupported cast type %q for dialect %q", typ.String(), d.String())
-	}
+func (d *dialect) MaxDimensionExpression(expr string) string {
+	return fmt.Sprintf("LATEST(%s)", expr) // MAX on string columns is not supported in Druid
+}
+
+func (d *dialect) SafeDivideExpression(numExpr, denExpr string) string {
+	return fmt.Sprintf("SAFE_DIVIDE(%s, CAST(%s AS DOUBLE))", numExpr, denExpr)
 }
 
 func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain runtimev1.TimeGrain, tz string, firstDayOfWeek, firstMonthOfYear int) (string, error) {
@@ -123,7 +81,7 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 
 	var specifier string
 	if tz != "" {
-		specifier = drivers.DruidTimeFloorSpecifier(grain)
+		specifier = druidTimeFloorSpecifier(grain)
 	} else {
 		specifier = d.ConvertToDateTruncSpecifier(grain)
 	}
@@ -170,6 +128,11 @@ func (d *dialect) IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.Time
 func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string, tz *time.Location, firstDay, firstMonth int) (string, []any, error) {
 	g := timeutil.TimeGrainFromAPI(grain)
 	start = timeutil.TruncateTime(start, g, tz, firstDay, firstMonth)
+	// generate select like - SELECT * FROM (
+	//  VALUES
+	//  (CAST('2006-01-02T15:04:05Z' AS TIMESTAMP)),
+	//  (CAST('2006-01-02T15:04:05Z' AS TIMESTAMP))
+	// ) t (time)
 	var sb strings.Builder
 	var args []any
 	sb.WriteString("SELECT * FROM (VALUES ")
@@ -248,4 +211,56 @@ func (d *dialect) SelectInlineResults(result *drivers.Result) (string, []any, []
 	}
 	prefix += ") "
 	return prefix + suffix, nil, dimVals, nil
+}
+
+func (d *dialect) GetNullExpr(typ runtimev1.Type_Code) (bool, string) {
+	switch typ {
+	case runtimev1.Type_CODE_STRING:
+		return true, "CAST(NULL AS VARCHAR)"
+	case runtimev1.Type_CODE_INT8, runtimev1.Type_CODE_INT16, runtimev1.Type_CODE_INT32, runtimev1.Type_CODE_INT64,
+		runtimev1.Type_CODE_INT128, runtimev1.Type_CODE_INT256,
+		runtimev1.Type_CODE_UINT8, runtimev1.Type_CODE_UINT16, runtimev1.Type_CODE_UINT32, runtimev1.Type_CODE_UINT64,
+		runtimev1.Type_CODE_UINT128, runtimev1.Type_CODE_UINT256:
+		return true, "CAST(NULL AS INTEGER)"
+	case runtimev1.Type_CODE_FLOAT32, runtimev1.Type_CODE_FLOAT64, runtimev1.Type_CODE_DECIMAL:
+		return true, "CAST(NULL AS DOUBLE)"
+	case runtimev1.Type_CODE_BOOL:
+		return true, "CAST(NULL AS BOOLEAN)"
+	case runtimev1.Type_CODE_TIME, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIMESTAMP:
+		return true, "CAST(NULL AS TIMESTAMP)"
+	default:
+		return false, ""
+	}
+}
+
+func (d *dialect) GetDateTimeExpr(t time.Time) (bool, string) {
+	return true, fmt.Sprintf("CAST('%s' AS TIMESTAMP)", t.Format(time.RFC3339Nano))
+}
+
+func (d *dialect) GetDateExpr(t time.Time) (bool, string) {
+	return true, fmt.Sprintf("CAST('%s' AS DATE)", t.Format(time.DateOnly))
+}
+
+func druidTimeFloorSpecifier(grain runtimev1.TimeGrain) string {
+	switch grain {
+	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
+		return "PT0.001S"
+	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
+		return "PT1S"
+	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
+		return "PT1M"
+	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
+		return "PT1H"
+	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
+		return "P1D"
+	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
+		return "P1W"
+	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
+		return "P1M"
+	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
+		return "P3M"
+	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
+		return "P1Y"
+	}
+	panic(fmt.Errorf("invalid time grain enum value %d", int(grain)))
 }

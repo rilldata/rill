@@ -533,7 +533,6 @@ func (b *BaseDialect) SelectInlineResults(result *Result) (string, []any, []any,
 	var dimVals []any
 	var args []any
 
-	rows := 0
 	prefix := ""
 	suffix := ""
 	// creating inline query for all dialects in one loop, accumulating field exprs first and then creating the query can be more cleaner
@@ -541,8 +540,8 @@ func (b *BaseDialect) SelectInlineResults(result *Result) (string, []any, []any,
 		if err := result.Scan(valuePtrs...); err != nil {
 			return "", nil, nil, fmt.Errorf("select inline: failed to scan value: %w", err)
 		}
-		// format - select 1 as a, 2 as b union all select 3 as a, 4 as b
-		if rows > 0 {
+		// format: SELECT ? AS a, ? AS b UNION ALL SELECT ...
+		if prefix != "" {
 			prefix += " UNION ALL "
 		}
 		prefix += "SELECT "
@@ -554,10 +553,8 @@ func (b *BaseDialect) SelectInlineResults(result *Result) (string, []any, []any,
 			prefix += fmt.Sprintf("%s AS %s", "?", b.self.EscapeIdentifier(result.Schema.Fields[i].Name))
 			args = append(args, v)
 		}
-		rows++
 	}
-	err := result.Err()
-	if err != nil {
+	if err := result.Err(); err != nil {
 		return "", nil, nil, err
 	}
 	return prefix + suffix, args, dimVals, nil
@@ -655,30 +652,6 @@ func CheckTypeCompatibility(f *runtimev1.StructType_Field) bool {
 	default:
 		return false
 	}
-}
-
-func DruidTimeFloorSpecifier(grain runtimev1.TimeGrain) string {
-	switch grain {
-	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
-		return "PT0.001S"
-	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
-		return "PT1S"
-	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
-		return "PT1M"
-	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
-		return "PT1H"
-	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
-		return "P1D"
-	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
-		return "P1W"
-	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
-		return "P1M"
-	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
-		return "P3M"
-	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
-		return "P1Y"
-	}
-	panic(fmt.Errorf("invalid time grain enum value %d", int(grain)))
 }
 
 func TempName(prefix string) string {

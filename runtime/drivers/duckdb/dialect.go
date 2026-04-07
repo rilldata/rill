@@ -2,7 +2,6 @@ package duckdb
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -24,14 +23,8 @@ func newDialect() *dialect {
 func NewDialect() drivers.Dialect { return newDialect() }
 
 func (d *dialect) String() string { return "duckdb" }
-func (d *dialect) CanPivot() bool { return true }
 
-func (d *dialect) EscapeIdentifier(ident string) string {
-	if ident == "" {
-		return ident
-	}
-	return fmt.Sprintf(`"%s"`, strings.ReplaceAll(ident, `"`, `""`)) // nolint:gocritic
-}
+func (d *dialect) CanPivot() bool { return true }
 
 // EscapeTable for DuckDB only uses the table name (no db/schema prefix).
 func (d *dialect) EscapeTable(_, _, table string) string {
@@ -39,7 +32,8 @@ func (d *dialect) EscapeTable(_, _, table string) string {
 }
 
 func (d *dialect) RequiresArrayContainsForInOperator() bool { return true }
-func (d *dialect) GetArrayContainsFunction() string         { return "list_has_any" }
+
+func (d *dialect) GetArrayContainsFunction() string { return "list_has_any" }
 
 func (d *dialect) OrderByExpression(name string, desc bool) string {
 	res := d.EscapeIdentifier(name)
@@ -57,23 +51,6 @@ func (d *dialect) OrderByAliasExpression(name string, desc bool) string {
 	}
 	res += " NULLS LAST"
 	return res
-}
-
-func (d *dialect) CastToDataType(typ runtimev1.Type_Code) (string, error) {
-	switch typ {
-	case runtimev1.Type_CODE_TIMESTAMP:
-		return "TIMESTAMP", nil
-	default:
-		return "", fmt.Errorf("unsupported cast type %q for dialect %q", typ.String(), d.String())
-	}
-}
-
-func (d *dialect) GetDateTimeExpr(t time.Time) (bool, string) {
-	return true, fmt.Sprintf("CAST('%s' AS TIMESTAMP)", t.Format(time.RFC3339Nano))
-}
-
-func (d *dialect) GetDateExpr(t time.Time) (bool, string) {
-	return true, fmt.Sprintf("CAST('%s' AS DATE)", t.Format(time.DateOnly))
 }
 
 func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain runtimev1.TimeGrain, tz string, firstDayOfWeek, firstMonthOfYear int) (string, error) {
@@ -139,7 +116,8 @@ func (d *dialect) IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.Time
 func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string, tz *time.Location, firstDay, firstMonth int) (string, []any, error) {
 	g := timeutil.TimeGrainFromAPI(grain)
 	start = timeutil.TruncateTime(start, g, tz, firstDay, firstMonth)
-	// First convert start and end to the target timezone, let DuckDB range over it, then convert back.
+	// first convert start and end to the target timezone as the application sends UTC representation of the time, so it will send `2024-03-12T18:30:00Z` for the 13th day of March in Asia/Kolkata timezone (`2024-03-13T00:00:00Z`)
+	// then let duckdb range over it and then convert back to the target timezone
 	return fmt.Sprintf("SELECT range AT TIME ZONE '%s' AS %s FROM range('%s'::TIMESTAMPTZ AT TIME ZONE '%s', '%s'::TIMESTAMPTZ AT TIME ZONE '%s', INTERVAL '1 %s')",
 		tz.String(), d.EscapeAlias(alias),
 		start.Format(time.RFC3339), tz.String(),
@@ -211,4 +189,12 @@ func (d *dialect) SelectInlineResults(result *drivers.Result) (string, []any, []
 	}
 	prefix += ") "
 	return prefix + suffix, args, dimVals, nil
+}
+
+func (d *dialect) GetDateTimeExpr(t time.Time) (bool, string) {
+	return true, fmt.Sprintf("CAST('%s' AS TIMESTAMP)", t.Format(time.RFC3339Nano))
+}
+
+func (d *dialect) GetDateExpr(t time.Time) (bool, string) {
+	return true, fmt.Sprintf("CAST('%s' AS DATE)", t.Format(time.DateOnly))
 }

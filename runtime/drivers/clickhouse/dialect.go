@@ -35,18 +35,10 @@ func (d *dialect) EscapeIdentifier(ident string) string {
 	return fmt.Sprintf(`"%s"`, strings.ReplaceAll(ident, `"`, `""`)) // nolint:gocritic
 }
 
-func (d *dialect) SupportsILike() bool        { return false }
 func (d *dialect) GetCastExprForLike() string { return "::Nullable(TEXT)" }
 
 func (d *dialect) ConvertToDateTruncSpecifier(grain runtimev1.TimeGrain) string {
 	return strings.ToLower(d.BaseDialect.ConvertToDateTruncSpecifier(grain))
-}
-
-func (d *dialect) RequiresArrayContainsForInOperator() bool { return true }
-func (d *dialect) GetArrayContainsFunction() string         { return "hasAny" }
-
-func (d *dialect) JoinOnExpression(lhs, rhs string) string {
-	return fmt.Sprintf("isNotDistinctFrom(%s, %s)", lhs, rhs)
 }
 
 func (d *dialect) DimensionSelect(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error) {
@@ -74,16 +66,9 @@ func (d *dialect) UnnestSQLSuffix(tbl string) string {
 	return fmt.Sprintf(" %s", tbl)
 }
 
-func (d *dialect) GetArgExpr(val any, typ runtimev1.Type_Code) (string, any, error) {
-	if typ == runtimev1.Type_CODE_DATE {
-		t, ok := val.(time.Time)
-		if !ok {
-			return "", nil, fmt.Errorf("could not cast value %v to time.Time for date type", val)
-		}
-		return "toDate(?)", t.Format(time.DateOnly), nil
-	}
-	return "?", val, nil
-}
+func (d *dialect) RequiresArrayContainsForInOperator() bool { return true }
+
+func (d *dialect) GetArrayContainsFunction() string { return "hasAny" }
 
 func (d *dialect) CastToDataType(typ runtimev1.Type_Code) (string, error) {
 	switch typ {
@@ -92,6 +77,10 @@ func (d *dialect) CastToDataType(typ runtimev1.Type_Code) (string, error) {
 	default:
 		return "", fmt.Errorf("unsupported cast type %q for dialect %q", typ.String(), d.String())
 	}
+}
+
+func (d *dialect) JoinOnExpression(lhs, rhs string) string {
+	return fmt.Sprintf("isNotDistinctFrom(%s, %s)", lhs, rhs)
 }
 
 func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain runtimev1.TimeGrain, tz string, firstDayOfWeek, firstMonthOfYear int) (string, error) {
@@ -223,6 +212,17 @@ func (d *dialect) SelectInlineResults(result *drivers.Result) (string, []any, []
 	}
 	suffix += ")"
 	return prefix + suffix, args, dimVals, nil
+}
+
+func (d *dialect) GetArgExpr(val any, typ runtimev1.Type_Code) (string, any, error) {
+	if typ == runtimev1.Type_CODE_DATE {
+		t, ok := val.(time.Time)
+		if !ok {
+			return "", nil, fmt.Errorf("could not cast value %v to time.Time for date type", val)
+		}
+		return "toDate(?)", t.Format(time.DateOnly), nil
+	}
+	return "?", val, nil
 }
 
 func (d *dialect) GetDateTimeExpr(t time.Time) (bool, string) {

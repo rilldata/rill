@@ -23,9 +23,7 @@ func (d *dialect) EscapeIdentifier(ident string) string {
 	if ident == "" {
 		return ident
 	}
+	// Bigquery uses backticks for quoting identifiers
+	// Replace any backticks inside the identifier with double backticks
 	return fmt.Sprintf("`%s`", strings.ReplaceAll(ident, "`", "``"))
-}
-
-func (d *dialect) SelectInlineResults(_ *drivers.Result) (string, []any, []any, error) {
-	return "", nil, nil, fmt.Errorf("SelectInlineResults not implemented for BigQuery")
 }

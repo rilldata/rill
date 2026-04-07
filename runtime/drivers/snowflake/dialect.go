@@ -12,7 +12,7 @@ import (
 )
 
 // snowflakeSpecialCharsRegex matches any character that requires quoting in Snowflake identifiers.
-// NOTE: it does not handle cases when identifier is a reserved keyword.
+// NOTE: it does not handle cases when identifier is a reserved keyword
 var snowflakeSpecialCharsRegex = regexp.MustCompile(`[^A-Za-z0-9_]|^\d`)
 
 type dialect struct {
@@ -31,51 +31,20 @@ func (d *dialect) EscapeIdentifier(ident string) string {
 	if ident == "" {
 		return ident
 	}
-	// Snowflake stores unquoted identifiers as uppercase; only quote if necessary.
+	// Snowflake stores unquoted identifiers as uppercase. They must always be queried using the exact same casing if quoting.
+	// If a user creates a table `CREATE TABLE test` then it can not be queried using `SELECT * FROM "test"`
+	// It must be queried as `SELECT * FROM "TEST"` or `SELECT * FROM test`.
+	// So only quote identifiers if necessary and not otherwise.
 	if snowflakeSpecialCharsRegex.MatchString(ident) {
 		return fmt.Sprintf(`"%s"`, strings.ReplaceAll(ident, `"`, `""`)) // nolint:gocritic
 	}
 	return ident
 }
 
-// EscapeAlias always quotes in Snowflake to prevent silent uppercasing.
 func (d *dialect) EscapeAlias(alias string) string {
+	// Snowflake converts non quoted aliases to uppercase while storing and querying.
+	// The query `SELECT count(*) AS cnt ...` then returns CNT as the column name breaking clients expecting cnt so we always quote aliases.
 	return fmt.Sprintf(`"%s"`, strings.ReplaceAll(alias, `"`, `""`)) // nolint:gocritic
-}
-
-func (d *dialect) OrderByExpression(name string, desc bool) string {
-	res := d.EscapeIdentifier(name)
-	if desc {
-		res += " DESC"
-	}
-	res += " NULLS LAST"
-	return res
-}
-
-func (d *dialect) OrderByAliasExpression(name string, desc bool) string {
-	res := d.EscapeAlias(name)
-	if desc {
-		res += " DESC"
-	}
-	res += " NULLS LAST"
-	return res
-}
-
-func (d *dialect) GetDateTimeExpr(_ time.Time) (bool, string) {
-	return false, ""
-}
-
-func (d *dialect) GetDateExpr(_ time.Time) (bool, string) {
-	return false, ""
-}
-
-func (d *dialect) CastToDataType(typ runtimev1.Type_Code) (string, error) {
-	switch typ {
-	case runtimev1.Type_CODE_TIMESTAMP:
-		return "TIMESTAMP", nil
-	default:
-		return "", fmt.Errorf("unsupported cast type %q for dialect %q", typ.String(), d.String())
-	}
 }
 
 func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain runtimev1.TimeGrain, tz string, firstDayOfWeek, firstMonthOfYear int) (string, error) {
@@ -133,7 +102,7 @@ func (d *dialect) IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.Time
 func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string, tz *time.Location, firstDay, firstMonth int) (string, []any, error) {
 	g := timeutil.TimeGrainFromAPI(grain)
 	start = timeutil.TruncateTime(start, g, tz, firstDay, firstMonth)
-	// Snowflake uses UNION ALL for generating time series.
+	// Snowflake uses UNION ALL for generating time series
 	var sb strings.Builder
 	first := true
 	for t := start; t.Before(end); t = timeutil.OffsetTime(t, g, 1, tz) {
@@ -144,46 +113,4 @@ func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.Time
 		first = false
 	}
 	return sb.String(), nil, nil
-}
-
-func (d *dialect) SelectInlineResults(result *drivers.Result) (string, []any, []any, error) {
-	for _, f := range result.Schema.Fields {
-		if !drivers.CheckTypeCompatibility(f) {
-			return "", nil, nil, fmt.Errorf("select inline: schema field type not supported %q: %w", f.Type.Code, drivers.ErrOptimizationFailure)
-		}
-	}
-
-	values := make([]any, len(result.Schema.Fields))
-	valuePtrs := make([]any, len(result.Schema.Fields))
-	for i := range values {
-		valuePtrs[i] = &values[i]
-	}
-
-	var dimVals []any
-	var args []any
-	prefix := ""
-
-	for result.Next() {
-		if err := result.Scan(valuePtrs...); err != nil {
-			return "", nil, nil, fmt.Errorf("select inline: failed to scan value: %w", err)
-		}
-		// format: SELECT ? AS a, ? AS b UNION ALL SELECT ...
-		if prefix != "" {
-			prefix += " UNION ALL "
-		}
-		prefix += "SELECT "
-
-		dimVals = append(dimVals, values[0])
-		for i, v := range values {
-			if i > 0 {
-				prefix += ", "
-			}
-			prefix += fmt.Sprintf("%s AS %s", "?", d.EscapeIdentifier(result.Schema.Fields[i].Name))
-			args = append(args, v)
-		}
-	}
-	if err := result.Err(); err != nil {
-		return "", nil, nil, err
-	}
-	return prefix, args, dimVals, nil
 }

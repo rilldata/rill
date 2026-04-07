@@ -26,11 +26,14 @@ func (d *dialect) EscapeIdentifier(ident string) string {
 	if ident == "" {
 		return ident
 	}
-	// StarRocks uses MySQL syntax with backticks.
+	// StarRocks uses backticks for quoting identifiers
+	// Replace any backticks inside the identifier with double backticks.
 	return fmt.Sprintf("`%s`", strings.ReplaceAll(ident, "`", "``"))
 }
 
-func (d *dialect) SupportsILike() bool { return false }
+func (d *dialect) SupportsILike() bool {
+	return false
+}
 
 func (d *dialect) OrderByExpression(name string, desc bool) string {
 	res := d.EscapeIdentifier(name)
@@ -61,15 +64,6 @@ func (d *dialect) GetDateTimeExpr(t time.Time) (bool, string) {
 
 func (d *dialect) GetDateExpr(t time.Time) (bool, string) {
 	return true, fmt.Sprintf("CAST('%s' AS DATE)", t.Format(time.DateOnly))
-}
-
-func (d *dialect) CastToDataType(typ runtimev1.Type_Code) (string, error) {
-	switch typ {
-	case runtimev1.Type_CODE_TIMESTAMP:
-		return "TIMESTAMP", nil
-	default:
-		return "", fmt.Errorf("unsupported cast type %q for dialect %q", typ.String(), d.String())
-	}
 }
 
 func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain runtimev1.TimeGrain, tz string, _, _ int) (string, error) {
@@ -122,46 +116,4 @@ func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.Time
 		first = false
 	}
 	return sb.String(), nil, nil
-}
-
-func (d *dialect) SelectInlineResults(result *drivers.Result) (string, []any, []any, error) {
-	for _, f := range result.Schema.Fields {
-		if !drivers.CheckTypeCompatibility(f) {
-			return "", nil, nil, fmt.Errorf("select inline: schema field type not supported %q: %w", f.Type.Code, drivers.ErrOptimizationFailure)
-		}
-	}
-
-	values := make([]any, len(result.Schema.Fields))
-	valuePtrs := make([]any, len(result.Schema.Fields))
-	for i := range values {
-		valuePtrs[i] = &values[i]
-	}
-
-	var dimVals []any
-	var args []any
-	prefix := ""
-
-	for result.Next() {
-		if err := result.Scan(valuePtrs...); err != nil {
-			return "", nil, nil, fmt.Errorf("select inline: failed to scan value: %w", err)
-		}
-		// format: SELECT ? AS a, ? AS b UNION ALL SELECT ...
-		if prefix != "" {
-			prefix += " UNION ALL "
-		}
-		prefix += "SELECT "
-
-		dimVals = append(dimVals, values[0])
-		for i, v := range values {
-			if i > 0 {
-				prefix += ", "
-			}
-			prefix += fmt.Sprintf("%s AS %s", "?", d.EscapeIdentifier(result.Schema.Fields[i].Name))
-			args = append(args, v)
-		}
-	}
-	if err := result.Err(); err != nil {
-		return "", nil, nil, err
-	}
-	return prefix, args, dimVals, nil
 }

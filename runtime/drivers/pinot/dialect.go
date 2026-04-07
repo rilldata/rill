@@ -22,15 +22,7 @@ func newDialect() *dialect {
 
 func (d *dialect) String() string { return "pinot" }
 
-func (d *dialect) EscapeIdentifier(ident string) string {
-	if ident == "" {
-		return ident
-	}
-	return fmt.Sprintf(`"%s"`, strings.ReplaceAll(ident, `"`, `""`)) // nolint:gocritic
-}
-
-func (d *dialect) SupportsILike() bool               { return false }
-func (d *dialect) GetTimeDimensionParameter() string { return "CAST(? AS TIMESTAMP)" }
+func (d *dialect) SupportsILike() bool { return false }
 
 func (d *dialect) LateralUnnest(_, _, _ string) (tbl string, tupleStyle, auto bool, err error) {
 	return "", false, true, nil
@@ -40,28 +32,20 @@ func (d *dialect) UnnestSQLSuffix(_ string) string {
 	panic("Pinot auto unnests")
 }
 
-func (d *dialect) GetDateTimeExpr(t time.Time) (bool, string) {
-	return true, fmt.Sprintf("CAST(%d AS TIMESTAMP)", t.UnixMilli())
-}
-
-func (d *dialect) GetDateExpr(t time.Time) (bool, string) {
-	return true, fmt.Sprintf("CAST(%d AS DATE)", t.UnixMilli())
-}
-
-func (d *dialect) CastToDataType(typ runtimev1.Type_Code) (string, error) {
-	switch typ {
-	case runtimev1.Type_CODE_TIMESTAMP:
-		return "TIMESTAMP", nil
-	default:
-		return "", fmt.Errorf("unsupported cast type %q for dialect %q", typ.String(), d.String())
-	}
-}
+func (d *dialect) GetTimeDimensionParameter() string { return "CAST(? AS TIMESTAMP)" }
 
 func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain runtimev1.TimeGrain, tz string, _, _ int) (string, error) {
 	// TODO: Handle tz instead of ignoring it.
 	// TODO: Handle firstDayOfWeek and firstMonthOfYear (currently errored in runtime/validate.go).
 	if tz == "UTC" || tz == "Etc/UTC" {
 		tz = ""
+	}
+
+	if tz != "" {
+		_, err := time.LoadLocation(tz)
+		if err != nil {
+			return "", fmt.Errorf("invalid time zone %q: %w", tz, err)
+		}
 	}
 
 	specifier := d.ConvertToDateTruncSpecifier(grain)
@@ -73,7 +57,9 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 		expr = d.EscapeIdentifier(dim.Column)
 	}
 
-	// Adding a cast to TIMESTAMP to ensure the output type is TIMESTAMP (not long).
+	/// TODO: Handle tz instead of ignoring it.
+	// TODO: Handle firstDayOfWeek and firstMonthOfYear. NOTE: We currently error when configuring these for Pinot in runtime/validate.go.
+	// adding a cast to timestamp to get the the output type as TIMESTAMP otherwise it returns a long
 	if tz == "" {
 		return fmt.Sprintf("CAST(date_trunc('%s', %s, 'MILLISECONDS') AS TIMESTAMP)", specifier, expr), nil
 	}
@@ -92,6 +78,11 @@ func (d *dialect) IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.Time
 func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string, tz *time.Location, firstDay, firstMonth int) (string, []any, error) {
 	g := timeutil.TimeGrainFromAPI(grain)
 	start = timeutil.TruncateTime(start, g, tz, firstDay, firstMonth)
+	// generate select like - SELECT * FROM (
+	//  VALUES
+	//  (CAST('2006-01-02T15:04:05Z' AS TIMESTAMP)),
+	//  (CAST('2006-01-02T15:04:05Z' AS TIMESTAMP))
+	// ) t (time)
 	var sb strings.Builder
 	var args []any
 	sb.WriteString("SELECT * FROM (VALUES ")
@@ -170,4 +161,12 @@ func (d *dialect) SelectInlineResults(result *drivers.Result) (string, []any, []
 	}
 	prefix += ") "
 	return prefix + suffix, nil, dimVals, nil
+}
+
+func (d *dialect) GetDateTimeExpr(t time.Time) (bool, string) {
+	return true, fmt.Sprintf("CAST(%d AS TIMESTAMP)", t.UnixMilli())
+}
+
+func (d *dialect) GetDateExpr(t time.Time) (bool, string) {
+	return true, fmt.Sprintf("CAST(%d AS DATE)", t.UnixMilli())
 }
