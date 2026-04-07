@@ -2,6 +2,7 @@ package executor_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -417,6 +418,287 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
+			_, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.False(t, ok)
+		})
+
+		t.Run("time_range_coverage_not_covered", func(t *testing.T) {
+			// Only rollup covers Feb+; query from Jan to Mar cannot be covered
+			files := map[string]string{
+				"rill.yaml": "",
+				"models/base_events.sql": rollupTestFiles()["models/base_events.sql"],
+				"models/rollup_day.sql": `
+SELECT date_trunc('day', timestamp) AS timestamp, publisher, domain,
+	SUM(impressions) AS impressions, SUM(clicks) AS clicks
+FROM base_events WHERE timestamp >= TIMESTAMP '2024-02-01' GROUP BY 1, 2, 3`,
+				"metrics_views/mv.yaml": `
+type: metrics_view
+version: 1
+model: base_events
+timeseries: timestamp
+dimensions:
+  - name: publisher
+    column: publisher
+  - name: domain
+    column: domain
+measures:
+  - name: total_impressions
+    expression: 'SUM("impressions")'
+rollups:
+  - model: rollup_day
+    time_grain: day
+    dimensions:
+      - publisher
+      - domain
+    measures:
+      - total_impressions
+explore:
+  skip: true`,
+			}
+			customRT, customID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{Files: files})
+			testruntime.RequireReconcileState(t, customRT, customID, 4, 0, 0)
+			e := newRollupTestExecutor(t, customRT, customID)
+			defer e.Close()
+
+			qry := &metricsview.Query{
+				Dimensions: []metricsview.Dimension{
+					{Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainDay}}},
+				},
+				Measures: []metricsview.Measure{
+					{Name: "total_impressions"},
+				},
+				TimeRange: &metricsview.TimeRange{
+					Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+					End:   time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC),
+				},
+			}
+			_, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.False(t, ok)
+		})
+
+		t.Run("query_wider_than_data", func(t *testing.T) {
+			// Query range much wider than base data; clamping makes rollup cover it
+			e := newRollupTestExecutor(t, rt, instanceID)
+			defer e.Close()
+
+			qry := &metricsview.Query{
+				Dimensions: []metricsview.Dimension{
+					{Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainDay}}},
+				},
+				Measures: []metricsview.Measure{
+					{Name: "total_impressions"},
+				},
+				TimeRange: &metricsview.TimeRange{
+					Start: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+					End:   time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+				},
+			}
+			table, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.True(t, ok)
+			// Query clamped to base data range; daily is the only eligible rollup for day grain
+			require.Equal(t, rollupTestDailyTable, table)
+		})
+
+		t.Run("prefer_smallest_data_range", func(t *testing.T) {
+			// Two monthly rollups: wide (Jan-Mar) and narrow (Feb-Mar); query Feb-Apr picks narrow
+			files := map[string]string{
+				"rill.yaml": "",
+				"models/base_events.sql": rollupTestFiles()["models/base_events.sql"],
+				"models/rollup_month_wide.sql": `
+SELECT date_trunc('month', timestamp) AS timestamp, publisher, domain,
+	SUM(impressions) AS impressions, SUM(clicks) AS clicks
+FROM base_events GROUP BY 1, 2, 3`,
+				"models/rollup_month_narrow.sql": `
+SELECT date_trunc('month', timestamp) AS timestamp, publisher, domain,
+	SUM(impressions) AS impressions, SUM(clicks) AS clicks
+FROM base_events WHERE timestamp >= TIMESTAMP '2024-02-01' GROUP BY 1, 2, 3`,
+				"metrics_views/mv.yaml": `
+type: metrics_view
+version: 1
+model: base_events
+timeseries: timestamp
+dimensions:
+  - name: publisher
+    column: publisher
+  - name: domain
+    column: domain
+measures:
+  - name: total_impressions
+    expression: 'SUM("impressions")'
+rollups:
+  - model: rollup_month_wide
+    time_grain: month
+    dimensions:
+      - publisher
+      - domain
+    measures:
+      - total_impressions
+  - model: rollup_month_narrow
+    time_grain: month
+    dimensions:
+      - publisher
+      - domain
+    measures:
+      - total_impressions
+explore:
+  skip: true`,
+			}
+			customRT, customID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{Files: files})
+			testruntime.RequireReconcileState(t, customRT, customID, 5, 0, 0)
+			e := newRollupTestExecutor(t, customRT, customID)
+			defer e.Close()
+
+			qry := &metricsview.Query{
+				Dimensions: []metricsview.Dimension{
+					{Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainMonth}}},
+				},
+				Measures: []metricsview.Measure{
+					{Name: "total_impressions"},
+				},
+				TimeRange: &metricsview.TimeRange{
+					Start: time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+					End:   time.Date(2024, 4, 1, 0, 0, 0, 0, time.UTC),
+				},
+			}
+			table, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.True(t, ok)
+			// Both monthly rollups cover the range; narrow has smaller data range
+			require.Equal(t, "rollup_month_narrow", table)
+		})
+	})
+
+	t.Run("no_time_range_checks_coverage", func(t *testing.T) {
+		t.Run("only_partial_rollup_returns_nil", func(t *testing.T) {
+			// Only rollup is partial (Jan+Feb); no time range requires full coverage
+			files := map[string]string{
+				"rill.yaml": "",
+				"models/base_events.sql": rollupTestFiles()["models/base_events.sql"],
+				"models/rollup_week.sql": `
+SELECT date_trunc('week', timestamp) AS timestamp, publisher, domain,
+	SUM(impressions) AS impressions, SUM(clicks) AS clicks
+FROM base_events WHERE timestamp < TIMESTAMP '2024-03-01' GROUP BY 1, 2, 3`,
+				"metrics_views/mv.yaml": `
+type: metrics_view
+version: 1
+model: base_events
+timeseries: timestamp
+dimensions:
+  - name: publisher
+    column: publisher
+  - name: domain
+    column: domain
+measures:
+  - name: total_impressions
+    expression: 'SUM("impressions")'
+rollups:
+  - model: rollup_week
+    time_grain: week
+    dimensions:
+      - publisher
+      - domain
+    measures:
+      - total_impressions
+explore:
+  skip: true`,
+			}
+			customRT, customID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{Files: files})
+			testruntime.RequireReconcileState(t, customRT, customID, 4, 0, 0)
+			e := newRollupTestExecutor(t, customRT, customID)
+			defer e.Close()
+
+			qry := &metricsview.Query{
+				Dimensions: []metricsview.Dimension{
+					{Name: "publisher"},
+				},
+				Measures: []metricsview.Measure{
+					{Name: "total_impressions"},
+				},
+			}
+			_, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.False(t, ok)
+		})
+	})
+
+	t.Run("first_day_of_week", func(t *testing.T) {
+		weeklyOnlyFiles := func(fdow int) map[string]string {
+			return map[string]string{
+				"rill.yaml": "",
+				"models/base_events.sql": rollupTestFiles()["models/base_events.sql"],
+				"models/rollup_week.sql": `
+SELECT date_trunc('week', timestamp) AS timestamp, publisher, domain,
+	SUM(impressions) AS impressions, SUM(clicks) AS clicks
+FROM base_events WHERE timestamp < TIMESTAMP '2024-03-01' GROUP BY 1, 2, 3`,
+				"metrics_views/mv.yaml": fmt.Sprintf(`
+type: metrics_view
+version: 1
+model: base_events
+timeseries: timestamp
+first_day_of_week: %d
+dimensions:
+  - name: publisher
+    column: publisher
+  - name: domain
+    column: domain
+measures:
+  - name: total_impressions
+    expression: 'SUM("impressions")'
+rollups:
+  - model: rollup_week
+    time_grain: week
+    dimensions:
+      - publisher
+      - domain
+    measures:
+      - total_impressions
+explore:
+  skip: true`, fdow),
+			}
+		}
+
+		t.Run("sunday_aligned_routes", func(t *testing.T) {
+			// first_day_of_week=7 (Sunday); Sunday-aligned boundaries should route
+			customRT, customID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{Files: weeklyOnlyFiles(7)})
+			testruntime.RequireReconcileState(t, customRT, customID, 4, 0, 0)
+			e := newRollupTestExecutor(t, customRT, customID)
+			defer e.Close()
+
+			// 2024-01-07 = Sunday, 2024-02-04 = Sunday
+			qry := &metricsview.Query{
+				Dimensions: []metricsview.Dimension{
+					{Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainWeek}}},
+				},
+				Measures: []metricsview.Measure{
+					{Name: "total_impressions"},
+				},
+				TimeRange: &metricsview.TimeRange{
+					Start: time.Date(2024, 1, 7, 0, 0, 0, 0, time.UTC),
+					End:   time.Date(2024, 2, 4, 0, 0, 0, 0, time.UTC),
+				},
+			}
+			table, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.True(t, ok)
+			require.Equal(t, "rollup_week", table)
+		})
+
+		t.Run("monday_rejects_sunday_boundaries", func(t *testing.T) {
+			// first_day_of_week=1 (Monday); same Sunday boundaries are not aligned
+			customRT, customID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{Files: weeklyOnlyFiles(1)})
+			testruntime.RequireReconcileState(t, customRT, customID, 4, 0, 0)
+			e := newRollupTestExecutor(t, customRT, customID)
+			defer e.Close()
+
+			qry := &metricsview.Query{
+				Dimensions: []metricsview.Dimension{
+					{Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainWeek}}},
+				},
+				Measures: []metricsview.Measure{
+					{Name: "total_impressions"},
+				},
+				TimeRange: &metricsview.TimeRange{
+					Start: time.Date(2024, 1, 7, 0, 0, 0, 0, time.UTC),
+					End:   time.Date(2024, 2, 4, 0, 0, 0, 0, time.UTC),
+				},
+			}
 			_, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
 			require.False(t, ok)
 		})
