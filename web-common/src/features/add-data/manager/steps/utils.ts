@@ -79,7 +79,9 @@ export function isExplorerType(connectorDriver: V1ConnectorDriver) {
 }
 
 export function isLiveConnectorType(connectorDriver: V1ConnectorDriver) {
-  return !!connectorDriver?.implementsOlap && !connectorDriver?.implementsWarehouse;
+  return (
+    !!connectorDriver?.implementsOlap && !connectorDriver?.implementsWarehouse
+  );
 }
 
 const NonModelSteps = [
