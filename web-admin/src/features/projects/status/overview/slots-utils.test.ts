@@ -4,7 +4,6 @@ import {
   POPULAR_SLOTS,
   ALL_SLOTS,
   DEFAULT_MANAGED_SLOTS,
-  DEFAULT_SELF_MANAGED_SLOTS,
 } from "./slots-utils";
 
 describe("slots-utils", () => {
@@ -16,15 +15,11 @@ describe("slots-utils", () => {
     expect(POPULAR_SLOTS).toHaveLength(6);
   });
 
-  it("managed default is 2 slots", () => {
+  it("default minimum is 2 slots", () => {
     expect(DEFAULT_MANAGED_SLOTS).toBe(2);
   });
 
-  it("self-managed default is 4 slots", () => {
-    expect(DEFAULT_SELF_MANAGED_SLOTS).toBe(4);
-  });
-
-  it("all slot values are at least managed minimum", () => {
+  it("all slot values are at least minimum", () => {
     for (const s of ALL_SLOTS) {
       expect(s).toBeGreaterThanOrEqual(DEFAULT_MANAGED_SLOTS);
     }

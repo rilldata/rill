@@ -4,10 +4,7 @@
     createAdminServiceGetBillingSubscription,
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
-  import {
-    isTrialPlan,
-    isEnterprisePlan,
-  } from "@rilldata/web-admin/features/billing/plans/utils";
+  import { isTrialPlan } from "@rilldata/web-admin/features/billing/plans/utils";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
@@ -86,7 +83,6 @@
   $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
   $: planName = $subscriptionQuery?.data?.subscription?.plan?.name ?? "";
   $: isFree = isTrialPlan(planName);
-  $: isEnterprise = planName !== "" && isEnterprisePlan(planName);
 </script>
 
 <OverviewCard title="Deployment">

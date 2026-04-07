@@ -1,9 +1,8 @@
 export const SLOT_RATE_PER_HR = 0.15;
 export const HOURS_PER_MONTH = 730;
 
-// Default slots by deployment type
-export const DEFAULT_MANAGED_SLOTS = 2; // Rill-managed (DuckDB)
-export const DEFAULT_SELF_MANAGED_SLOTS = 4; // Self-managed (MotherDuck, ClickHouse, Druid, Pinot, StarRocks)
+// Minimum slots for any deployment
+export const DEFAULT_MANAGED_SLOTS = 2;
 
 export interface SlotTier {
   slots: number;
