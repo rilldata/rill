@@ -2,99 +2,80 @@ package executor
 
 import (
 	"context"
-	"sync"
+	"errors"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 )
 
-const defaultWatermarkCacheTTL = 5 * time.Minute
-
-type watermarkEntry struct {
-	min       time.Time
-	max       time.Time
-	fetchedAt time.Time
+// fetchRollupWatermark returns the min/max time of the rollup table via the metrics_watermark resolver.
+func (e *Executor) fetchRollupWatermark(ctx context.Context, rollup *runtimev1.MetricsViewSpec_RollupTable) (time.Time, time.Time, error) {
+	return e.resolveWatermark(ctx, rollup.Table, rollup.Database, rollup.DatabaseSchema)
 }
 
-var watermarkCache = struct {
-	mu    sync.Mutex
-	items map[string]watermarkEntry
-}{items: make(map[string]watermarkEntry)}
-
-func watermarkCacheKey(instanceID, db, schema, table string) string {
-	return instanceID + ":" + db + ":" + schema + ":" + table
+// fetchBaseWatermark returns the min/max time of the base table via the metrics_watermark resolver.
+func (e *Executor) fetchBaseWatermark(ctx context.Context) (time.Time, time.Time, error) {
+	return e.resolveWatermark(ctx, "", "", "")
 }
 
-func getWatermark(key string, ttl time.Duration) (watermarkEntry, bool) {
-	watermarkCache.mu.Lock()
-	defer watermarkCache.mu.Unlock()
-	wm, ok := watermarkCache.items[key]
-	if !ok {
-		return watermarkEntry{}, false
+// resolveWatermark calls the metrics_watermark resolver to fetch min/max timestamps.
+func (e *Executor) resolveWatermark(ctx context.Context, table, database, databaseSchema string) (time.Time, time.Time, error) {
+	args := map[string]any{
+		"priority": e.priority,
 	}
-	if time.Since(wm.fetchedAt) > ttl {
-		delete(watermarkCache.items, key)
-		return watermarkEntry{}, false
+	if table != "" {
+		args["table"] = table
 	}
-	return wm, true
-}
-
-func setWatermark(key string, minTime, maxTime time.Time) {
-	watermarkCache.mu.Lock()
-	defer watermarkCache.mu.Unlock()
-	watermarkCache.items[key] = watermarkEntry{
-		min:       minTime,
-		max:       maxTime,
-		fetchedAt: time.Now(),
+	if database != "" {
+		args["database"] = database
 	}
-}
-
-// fetchRollupWatermark returns the min/max time of the rollup table, using a cache with TTL.
-// Returns ok=false on errors (caller should skip the rollup).
-// Prone to thundering herd issue but keeping it simple for now.
-func (e *Executor) fetchRollupWatermark(ctx context.Context, rollup *runtimev1.MetricsViewSpec_RollupTable) (minTime, maxTime time.Time, ok bool) {
-	ttl := defaultWatermarkCacheTTL
-	if rollup.WatermarkCacheTtlSeconds > 0 {
-		ttl = time.Duration(rollup.WatermarkCacheTtlSeconds) * time.Second
+	if databaseSchema != "" {
+		args["database_schema"] = databaseSchema
 	}
 
-	key := watermarkCacheKey(e.instanceID, rollup.Database, rollup.DatabaseSchema, rollup.Table)
-	if wm, hit := getWatermark(key, ttl); hit {
-		return wm.min, wm.max, true
-	}
-
-	mn, mx, err := e.fetchTimestamps(ctx, rollup.Database, rollup.DatabaseSchema, rollup.Table)
+	res, _, err := e.rt.Resolve(ctx, &runtime.ResolveOptions{
+		InstanceID: e.instanceID,
+		Resolver:   "metrics_watermark",
+		ResolverProperties: map[string]any{
+			"metrics_view": e.metricsViewName,
+		},
+		Args:   args,
+		Claims: &runtime.SecurityClaims{SkipChecks: true},
+	})
 	if err != nil {
-		return time.Time{}, time.Time{}, false
+		return time.Time{}, time.Time{}, err
 	}
-	setWatermark(key, mn, mx)
-	return mn, mx, true
+	defer res.Close()
+
+	row, err := res.Next()
+	if err != nil {
+		return time.Time{}, time.Time{}, err
+	}
+
+	mn, err := toTime(row["min"])
+	if err != nil {
+		return time.Time{}, time.Time{}, err
+	}
+	mx, err := toTime(row["max"])
+	if err != nil {
+		return time.Time{}, time.Time{}, err
+	}
+
+	return mn, mx, nil
 }
 
-// fetchBaseWatermark returns the min/max time of the base table, using the shared watermark cache.
-// Returns ok=false on errors (caller should proceed without base timestamps).
-// Uses fetchTimestamps (not e.Timestamps) to avoid applying security row filters;
-// watermark comparison is about physical data coverage, not per-user visibility.
-// Prone to thundering herd issue but keeping it simple for now.
-func (e *Executor) fetchBaseWatermark(ctx context.Context) (minTime, maxTime time.Time, ok bool) {
-	ttl := defaultWatermarkCacheTTL
-	if e.metricsView.WatermarkCacheTtlSeconds > 0 {
-		ttl = time.Duration(e.metricsView.WatermarkCacheTtlSeconds) * time.Second
+// toTime converts an any value to time.Time (handles nil, time.Time, and string).
+func toTime(v any) (time.Time, error) {
+	if v == nil {
+		return time.Time{}, nil
 	}
-
-	key := watermarkCacheKey(e.instanceID, e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table)
-	if wm, hit := getWatermark(key, ttl); hit {
-		return wm.min, wm.max, true
+	switch t := v.(type) {
+	case time.Time:
+		return t, nil
+	case string:
+		return time.Parse(time.RFC3339Nano, t)
+	default:
+		return time.Time{}, errors.New("unexpected type for time value")
 	}
-
-	if e.olap == nil {
-		return time.Time{}, time.Time{}, false
-	}
-
-	mn, mx, err := e.fetchTimestamps(ctx, e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table)
-	if err != nil {
-		return time.Time{}, time.Time{}, false
-	}
-	setWatermark(key, mn, mx)
-	return mn, mx, true
 }

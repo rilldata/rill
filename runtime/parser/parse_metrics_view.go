@@ -83,15 +83,14 @@ type MetricsViewYAML struct {
 		Measures       *FieldSelectorYAML `yaml:"measures"`
 	} `yaml:"annotations"`
 	Rollups []*struct {
-		Model             string             `yaml:"model"`
-		Connector         string             `yaml:"connector"`
-		Database          string             `yaml:"database"`
-		DatabaseSchema    string             `yaml:"database_schema"`
-		TimeGrain         string             `yaml:"time_grain"`
-		Timezone          string             `yaml:"timezone"`
-		WatermarkCacheTTL string             `yaml:"watermark_cache_ttl"`
-		Dimensions        *FieldSelectorYAML `yaml:"dimensions"`
-		Measures          *FieldSelectorYAML `yaml:"measures"`
+		Model          string             `yaml:"model"`
+		Connector      string             `yaml:"connector"`
+		Database       string             `yaml:"database"`
+		DatabaseSchema string             `yaml:"database_schema"`
+		TimeGrain      string             `yaml:"time_grain"`
+		Timezone       string             `yaml:"timezone"`
+		Dimensions     *FieldSelectorYAML `yaml:"dimensions"`
+		Measures       *FieldSelectorYAML `yaml:"measures"`
 	} `yaml:"rollups"`
 	WatermarkCacheTTL string `yaml:"watermark_cache_ttl"`
 	Security          *SecurityPolicyYAML
@@ -769,11 +768,6 @@ func (p *Parser) parseMetricsView(node *Node) error {
 				return fmt.Errorf(`rollup[%d]: invalid "timezone" %q: %w`, i, rollup.Timezone, err)
 			}
 		}
-		if rollup.WatermarkCacheTTL != "" {
-			if _, err := time.ParseDuration(rollup.WatermarkCacheTTL); err != nil {
-				return fmt.Errorf(`rollup[%d]: invalid "watermark_cache_ttl": %w`, i, err)
-			}
-		}
 		// Validate dimensions if they resolve to a static list
 		if resolved, ok := rollup.Dimensions.TryResolve(); ok {
 			for _, dimName := range resolved {
@@ -894,12 +888,6 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		if rollup.TimeGrain != "" {
 			tg, _ = parseTimeGrain(rollup.TimeGrain) // already validated above
 		}
-		var wmCacheTTLSeconds int64
-		if rollup.WatermarkCacheTTL != "" {
-			d, _ := time.ParseDuration(rollup.WatermarkCacheTTL) // already validated above
-			wmCacheTTLSeconds = int64(d.Seconds())
-		}
-
 		var dims []string
 		var dimsSelector *runtimev1.FieldSelector
 		if resolved, ok := rollup.Dimensions.TryResolve(); ok {
@@ -917,17 +905,16 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 
 		spec.Rollups = append(spec.Rollups, &runtimev1.MetricsViewSpec_RollupTable{
-			Connector:                rollup.Connector,
-			Database:                 rollup.Database,
-			DatabaseSchema:           rollup.DatabaseSchema,
-			Model:                    rollup.Model,
-			TimeGrain:                tg,
-			Timezone:                 rollup.Timezone,
-			Dimensions:               dims,
-			DimensionsSelector:       dimsSelector,
-			Measures:                 measures,
-			MeasuresSelector:         measSelector,
-			WatermarkCacheTtlSeconds: wmCacheTTLSeconds,
+			Connector:          rollup.Connector,
+			Database:           rollup.Database,
+			DatabaseSchema:     rollup.DatabaseSchema,
+			Model:              rollup.Model,
+			TimeGrain:          tg,
+			Timezone:           rollup.Timezone,
+			Dimensions:         dims,
+			DimensionsSelector: dimsSelector,
+			Measures:           measures,
+			MeasuresSelector:   measSelector,
 		})
 	}
 

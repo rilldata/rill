@@ -11,10 +11,10 @@ import (
 )
 
 func TestRewriteQueryForRollup_BasicMatch(t *testing.T) {
+	// No TimeDimension set: coverage check is skipped, so no watermarks needed
 	e := &Executor{
 		metricsView: &runtimev1.MetricsViewSpec{
-			Table:         "base_table",
-			TimeDimension: "timestamp",
+			Table: "base_table",
 			Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
 				{Name: "publisher", Column: "publisher"},
 				{Name: "domain", Column: "domain"},
@@ -34,21 +34,12 @@ func TestRewriteQueryForRollup_BasicMatch(t *testing.T) {
 		},
 	}
 
-	// Pre-populate watermark cache so no OLAP store is needed
-	key := watermarkCacheKey("", "", "", "daily_rollup")
-	setWatermark(key, time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC))
-
 	qry := &metricsview.Query{
 		Dimensions: []metricsview.Dimension{
 			{Name: "publisher"},
-			{Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainDay}}},
 		},
 		Measures: []metricsview.Measure{
 			{Name: "total_impressions"},
-		},
-		TimeRange: &metricsview.TimeRange{
-			Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
-			End:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
 		},
 	}
 
@@ -98,11 +89,11 @@ func TestRewriteQueryForRollup_RawRows(t *testing.T) {
 }
 
 func TestRewriteQueryForRollup_SpineAllowed(t *testing.T) {
-	// Spine queries (used by timeseries for null-filling) should still use rollups
+	// Spine queries (used by timeseries for null-filling) should still use rollups.
+	// No TimeDimension: coverage check is skipped.
 	e := &Executor{
 		metricsView: &runtimev1.MetricsViewSpec{
-			Table:         "base_table",
-			TimeDimension: "timestamp",
+			Table: "base_table",
 			Measures: []*runtimev1.MetricsViewSpec_Measure{
 				{Name: "total_impressions", Expression: `SUM("impressions")`},
 			},
@@ -116,17 +107,10 @@ func TestRewriteQueryForRollup_SpineAllowed(t *testing.T) {
 		},
 	}
 
-	setWatermark(watermarkCacheKey("", "", "", "daily_rollup"),
-		time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC))
-
 	qry := &metricsview.Query{
 		Spine: &metricsview.Spine{},
 		Measures: []metricsview.Measure{
 			{Name: "total_impressions"},
-		},
-		TimeRange: &metricsview.TimeRange{
-			Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
-			End:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
 		},
 	}
 	result := e.rewriteQueryForRollup(context.Background(), qry)
@@ -136,7 +120,6 @@ func TestRewriteQueryForRollup_SpineAllowed(t *testing.T) {
 
 func TestRewriteQueryForRollup_MissingDimension(t *testing.T) {
 	e := &Executor{
-		instanceID: "test-missing-dim",
 		metricsView: &runtimev1.MetricsViewSpec{
 			Table:         "base_table",
 			TimeDimension: "timestamp",
@@ -158,12 +141,6 @@ func TestRewriteQueryForRollup_MissingDimension(t *testing.T) {
 		},
 	}
 
-	// Provide watermarks so the coverage check doesn't short-circuit; the test should fail on dimension eligibility
-	setWatermark(watermarkCacheKey("test-missing-dim", "", "", "base_table"),
-		time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC))
-	setWatermark(watermarkCacheKey("test-missing-dim", "", "", "daily_rollup"),
-		time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC))
-
 	qry := &metricsview.Query{
 		Dimensions: []metricsview.Dimension{
 			{Name: "domain"}, // not in rollup
@@ -173,6 +150,7 @@ func TestRewriteQueryForRollup_MissingDimension(t *testing.T) {
 		},
 	}
 
+	// Rejected at eligibility (missing dimension); no watermark fetch needed
 	result := e.rewriteQueryForRollup(context.Background(), qry)
 	require.Nil(t, result)
 }
@@ -208,7 +186,6 @@ func TestRewriteQueryForRollup_MissingMeasure(t *testing.T) {
 
 func TestRewriteQueryForRollup_GrainNotDerivable(t *testing.T) {
 	e := &Executor{
-		instanceID: "test-grain-not-derivable",
 		metricsView: &runtimev1.MetricsViewSpec{
 			Table:         "base_table",
 			TimeDimension: "timestamp",
@@ -225,12 +202,6 @@ func TestRewriteQueryForRollup_GrainNotDerivable(t *testing.T) {
 		},
 	}
 
-	// Provide watermarks so the coverage check doesn't short-circuit; the test should fail on grain derivability
-	setWatermark(watermarkCacheKey("test-grain-not-derivable", "", "", "base_table"),
-		time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC))
-	setWatermark(watermarkCacheKey("test-grain-not-derivable", "", "", "weekly_rollup"),
-		time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC))
-
 	// Query for month grain; month is not derivable from week
 	qry := &metricsview.Query{
 		Dimensions: []metricsview.Dimension{
@@ -241,6 +212,7 @@ func TestRewriteQueryForRollup_GrainNotDerivable(t *testing.T) {
 		},
 	}
 
+	// Rejected at eligibility (grain not derivable); no watermark fetch needed
 	result := e.rewriteQueryForRollup(context.Background(), qry)
 	require.Nil(t, result)
 }
@@ -273,6 +245,7 @@ func TestRewriteQueryForRollup_TimeRangeNotAligned(t *testing.T) {
 		},
 	}
 
+	// Rejected at eligibility (time range not aligned); no watermark fetch needed
 	result := e.rewriteQueryForRollup(context.Background(), qry)
 	require.Nil(t, result)
 }
@@ -316,55 +289,6 @@ func TestRewriteQueryForRollup_WhereDimensionMissing(t *testing.T) {
 
 	result := e.rewriteQueryForRollup(context.Background(), qry)
 	require.Nil(t, result)
-}
-
-func TestRewriteQueryForRollup_PreferCoarsestGrain(t *testing.T) {
-	e := &Executor{
-		metricsView: &runtimev1.MetricsViewSpec{
-			Table:         "base_table",
-			TimeDimension: "timestamp",
-			Measures: []*runtimev1.MetricsViewSpec_Measure{
-				{Name: "total_impressions", Expression: `SUM("impressions")`},
-			},
-			Rollups: []*runtimev1.MetricsViewSpec_RollupTable{
-				{
-					Table:     "hourly_rollup",
-					TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_HOUR,
-					Measures:  []string{"total_impressions"},
-				},
-				{
-					Table:     "daily_rollup",
-					TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
-					Measures:  []string{"total_impressions"},
-				},
-			},
-		},
-	}
-
-	// Pre-populate watermark cache for both rollups
-	setWatermark(watermarkCacheKey("", "", "", "hourly_rollup"),
-		time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC))
-	setWatermark(watermarkCacheKey("", "", "", "daily_rollup"),
-		time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC))
-
-	// Query for month grain; both hourly and daily are eligible, but daily is coarser
-	qry := &metricsview.Query{
-		Dimensions: []metricsview.Dimension{
-			{Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainMonth}}},
-		},
-		Measures: []metricsview.Measure{
-			{Name: "total_impressions"},
-		},
-		TimeRange: &metricsview.TimeRange{
-			Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
-			End:   time.Date(2024, 4, 1, 0, 0, 0, 0, time.UTC),
-		},
-	}
-
-	result := e.rewriteQueryForRollup(context.Background(), qry)
-	require.NotNil(t, result)
-	require.NotNil(t, result.spec)
-	require.Equal(t, "daily_rollup", result.spec.Table)
 }
 
 func TestRewriteQueryForRollup_ComparisonTimeRange(t *testing.T) {
@@ -465,7 +389,8 @@ func TestRewriteQueryForRollup_ComputedMeasureRejected(t *testing.T) {
 }
 
 func TestRewriteQueryForRollup_NoTimeGrainQuery(t *testing.T) {
-	// Query without time grain (pure aggregation) should still match rollup
+	// Query without time grain (pure aggregation) should still match rollup.
+	// No TimeDimension: coverage check is skipped.
 	e := &Executor{
 		metricsView: &runtimev1.MetricsViewSpec{
 			Table: "base_table",
@@ -541,10 +466,11 @@ func TestCollectWhereDimensions_Nil(t *testing.T) {
 }
 
 func TestRewriteQueryForRollup_TimezoneMatching(t *testing.T) {
+	// Timezone matching is checked at eligibility; no watermarks needed.
+	// No TimeDimension: coverage check is skipped.
 	baseMV := func(rollupTZ string) *runtimev1.MetricsViewSpec {
 		return &runtimev1.MetricsViewSpec{
-			Table:         "base_table",
-			TimeDimension: "timestamp",
+			Table: "base_table",
 			Measures: []*runtimev1.MetricsViewSpec_Measure{
 				{Name: "total_impressions", Expression: `SUM("impressions")`},
 			},
@@ -571,10 +497,6 @@ func TestRewriteQueryForRollup_TimezoneMatching(t *testing.T) {
 			},
 		}
 	}
-
-	// Pre-populate watermark cache for all timezone test variants
-	setWatermark(watermarkCacheKey("", "", "", "daily_rollup"),
-		time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC))
 
 	t.Run("day rollup UTC, query tz New York: falls back", func(t *testing.T) {
 		e := &Executor{metricsView: baseMV("")}
@@ -636,349 +558,4 @@ func TestNormalizeTimezone(t *testing.T) {
 	require.Equal(t, "UTC", normalizeTimezone("Etc/UTC"))
 	require.Equal(t, "UTC", normalizeTimezone("utc"))
 	require.Equal(t, "America/New_York", normalizeTimezone("America/New_York"))
-}
-
-func TestRewriteQueryForRollup_TimeRangeCoverage_Covered(t *testing.T) {
-	e := &Executor{
-		metricsView: &runtimev1.MetricsViewSpec{
-			Table:         "base_table",
-			TimeDimension: "timestamp",
-			Measures: []*runtimev1.MetricsViewSpec_Measure{
-				{Name: "total_impressions", Expression: `SUM("impressions")`},
-			},
-			Rollups: []*runtimev1.MetricsViewSpec_RollupTable{
-				{
-					Table:     "monthly_rollup",
-					TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
-					Measures:  []string{"total_impressions"},
-				},
-			},
-		},
-	}
-
-	// Rollup has data from 2020-01-01 to 2024-12-01
-	setWatermark(watermarkCacheKey("", "", "", "monthly_rollup"),
-		time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2024, 12, 1, 0, 0, 0, 0, time.UTC))
-
-	qry := &metricsview.Query{
-		Measures: []metricsview.Measure{
-			{Name: "total_impressions"},
-		},
-		TimeRange: &metricsview.TimeRange{
-			Start: time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC),
-			End:   time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
-		},
-	}
-
-	result := e.rewriteQueryForRollup(context.Background(), qry)
-	require.NotNil(t, result)
-	require.Equal(t, "monthly_rollup", result.spec.Table)
-}
-
-func TestRewriteQueryForRollup_TimeRangeCoverage_NotCovered(t *testing.T) {
-	e := &Executor{
-		instanceID: "test-not-covered",
-		metricsView: &runtimev1.MetricsViewSpec{
-			Table:         "base_table",
-			TimeDimension: "timestamp",
-			Measures: []*runtimev1.MetricsViewSpec_Measure{
-				{Name: "total_impressions", Expression: `SUM("impressions")`},
-			},
-			Rollups: []*runtimev1.MetricsViewSpec_RollupTable{
-				{
-					Table:     "monthly_rollup",
-					TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
-					Measures:  []string{"total_impressions"},
-				},
-			},
-		},
-	}
-
-	// Base table has data from 2020-01-01 to 2024-12-01
-	setWatermark(watermarkCacheKey("test-not-covered", "", "", "base_table"),
-		time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2024, 12, 1, 0, 0, 0, 0, time.UTC))
-
-	// Rollup only has data from 2023-01-01 to 2024-06-01 (less than base table)
-	setWatermark(watermarkCacheKey("test-not-covered", "", "", "monthly_rollup"),
-		time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC))
-
-	// Query starts before rollup data; base table has data there too → rollup should be rejected
-	qry := &metricsview.Query{
-		Measures: []metricsview.Measure{
-			{Name: "total_impressions"},
-		},
-		TimeRange: &metricsview.TimeRange{
-			Start: time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC),
-			End:   time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
-		},
-	}
-
-	result := e.rewriteQueryForRollup(context.Background(), qry)
-	require.Nil(t, result)
-}
-
-func TestRewriteQueryForRollup_TimeRangeCoverage_EffectiveEnd(t *testing.T) {
-	e := &Executor{
-		metricsView: &runtimev1.MetricsViewSpec{
-			Table:         "base_table",
-			TimeDimension: "timestamp",
-			Measures: []*runtimev1.MetricsViewSpec_Measure{
-				{Name: "total_impressions", Expression: `SUM("impressions")`},
-			},
-			Rollups: []*runtimev1.MetricsViewSpec_RollupTable{
-				{
-					Table:     "monthly_rollup",
-					TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
-					Measures:  []string{"total_impressions"},
-				},
-			},
-		},
-	}
-
-	// Monthly rollup max is 2024-05-01; effective end = 2024-06-01 (max + 1 month)
-	setWatermark(watermarkCacheKey("", "", "", "monthly_rollup"),
-		time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2024, 5, 1, 0, 0, 0, 0, time.UTC))
-
-	// Query end is exactly 2024-06-01; should match via effective end
-	qry := &metricsview.Query{
-		Measures: []metricsview.Measure{
-			{Name: "total_impressions"},
-		},
-		TimeRange: &metricsview.TimeRange{
-			Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
-			End:   time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC),
-		},
-	}
-
-	result := e.rewriteQueryForRollup(context.Background(), qry)
-	require.NotNil(t, result)
-	require.Equal(t, "monthly_rollup", result.spec.Table)
-}
-
-func TestRewriteQueryForRollup_PreferSmallestDataRange(t *testing.T) {
-	e := &Executor{
-		metricsView: &runtimev1.MetricsViewSpec{
-			Table:         "base_table",
-			TimeDimension: "timestamp",
-			Measures: []*runtimev1.MetricsViewSpec_Measure{
-				{Name: "total_impressions", Expression: `SUM("impressions")`},
-			},
-			Rollups: []*runtimev1.MetricsViewSpec_RollupTable{
-				{
-					Table:     "monthly_rollup_wide",
-					TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
-					Measures:  []string{"total_impressions"},
-				},
-				{
-					Table:     "monthly_rollup_narrow",
-					TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
-					Measures:  []string{"total_impressions"},
-				},
-			},
-		},
-	}
-
-	// Wide rollup: 10 years of data
-	setWatermark(watermarkCacheKey("", "", "", "monthly_rollup_wide"),
-		time.Date(2014, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2024, 12, 1, 0, 0, 0, 0, time.UTC))
-	// Narrow rollup: 2 years of data
-	setWatermark(watermarkCacheKey("", "", "", "monthly_rollup_narrow"),
-		time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2024, 12, 1, 0, 0, 0, 0, time.UTC))
-
-	qry := &metricsview.Query{
-		Measures: []metricsview.Measure{
-			{Name: "total_impressions"},
-		},
-		TimeRange: &metricsview.TimeRange{
-			Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
-			End:   time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC),
-		},
-	}
-
-	result := e.rewriteQueryForRollup(context.Background(), qry)
-	require.NotNil(t, result)
-	require.Equal(t, "monthly_rollup_narrow", result.spec.Table)
-}
-
-func TestRewriteQueryForRollup_QueryWiderThanData(t *testing.T) {
-	// When the query range extends beyond both the base table and rollup,
-	// the rollup should still be eligible because it has the same data as the base table.
-	e := &Executor{
-		instanceID: "test-wider",
-		metricsView: &runtimev1.MetricsViewSpec{
-			Table:         "base_table",
-			TimeDimension: "timestamp",
-			Measures: []*runtimev1.MetricsViewSpec_Measure{
-				{Name: "total_impressions", Expression: `SUM("impressions")`},
-			},
-			Rollups: []*runtimev1.MetricsViewSpec_RollupTable{
-				{
-					Table:     "monthly_rollup",
-					TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
-					Measures:  []string{"total_impressions"},
-				},
-			},
-		},
-	}
-
-	// Base table has data from 2023-01-01 to 2024-06-01
-	setWatermark(watermarkCacheKey("test-wider", "", "", "base_table"),
-		time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC))
-
-	// Rollup also has data from 2023-01-01 to 2024-06-01 (same as base)
-	setWatermark(watermarkCacheKey("test-wider", "", "", "monthly_rollup"),
-		time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC))
-
-	// Query range is much wider than both base and rollup
-	qry := &metricsview.Query{
-		Measures: []metricsview.Measure{
-			{Name: "total_impressions"},
-		},
-		TimeRange: &metricsview.TimeRange{
-			Start: time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC),
-			End:   time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-		},
-	}
-
-	// query range is clamped to base table range, and rollup covers it.
-	result := e.rewriteQueryForRollup(context.Background(), qry)
-	require.NotNil(t, result)
-	require.Equal(t, "monthly_rollup", result.spec.Table)
-}
-
-func TestRewriteQueryForRollup_NoTimeRange_ChecksCoverage(t *testing.T) {
-	baseMV := func() *runtimev1.MetricsViewSpec {
-		return &runtimev1.MetricsViewSpec{
-			Table:         "base_table",
-			TimeDimension: "timestamp",
-			Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
-				{Name: "publisher", Column: "publisher"},
-			},
-			Measures: []*runtimev1.MetricsViewSpec_Measure{
-				{Name: "total_impressions", Expression: `SUM("impressions")`},
-			},
-			Rollups: []*runtimev1.MetricsViewSpec_RollupTable{
-				{
-					Table:      "daily_rollup",
-					TimeGrain:  runtimev1.TimeGrain_TIME_GRAIN_DAY,
-					Dimensions: []string{"publisher"},
-					Measures:   []string{"total_impressions"},
-				},
-			},
-		}
-	}
-
-	baseQuery := func() *metricsview.Query {
-		return &metricsview.Query{
-			Dimensions: []metricsview.Dimension{{Name: "publisher"}},
-			Measures:   []metricsview.Measure{{Name: "total_impressions"}},
-		}
-	}
-
-	t.Run("full_coverage_uses_rollup", func(t *testing.T) {
-		e := &Executor{instanceID: "no-tr-full", metricsView: baseMV()}
-
-		// Base and rollup cover the same range
-		setWatermark(watermarkCacheKey("no-tr-full", "", "", "base_table"),
-			time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC))
-		setWatermark(watermarkCacheKey("no-tr-full", "", "", "daily_rollup"),
-			time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC))
-
-		result := e.rewriteQueryForRollup(context.Background(), baseQuery())
-		require.NotNil(t, result)
-		require.Equal(t, "daily_rollup", result.spec.Table)
-	})
-
-	t.Run("partial_coverage_returns_nil", func(t *testing.T) {
-		e := &Executor{instanceID: "no-tr-partial", metricsView: baseMV()}
-
-		// Base covers Jan-Jun, rollup only covers Mar-Jun
-		setWatermark(watermarkCacheKey("no-tr-partial", "", "", "base_table"),
-			time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC))
-		setWatermark(watermarkCacheKey("no-tr-partial", "", "", "daily_rollup"),
-			time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC), time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC))
-
-		result := e.rewriteQueryForRollup(context.Background(), baseQuery())
-		require.Nil(t, result)
-	})
-
-	t.Run("no_base_watermark_returns_nil", func(t *testing.T) {
-		e := &Executor{instanceID: "no-tr-no-base", metricsView: baseMV()}
-
-		// No base watermark cached, no OLAP store => fetchBaseWatermark returns false
-		result := e.rewriteQueryForRollup(context.Background(), baseQuery())
-		require.Nil(t, result)
-	})
-
-	t.Run("no_time_dimension_skips_coverage", func(t *testing.T) {
-		mv := baseMV()
-		mv.TimeDimension = "" // no time dimension
-		e := &Executor{instanceID: "no-tr-no-td", metricsView: mv}
-
-		// No watermarks needed; coverage check is skipped entirely
-		result := e.rewriteQueryForRollup(context.Background(), baseQuery())
-		require.NotNil(t, result)
-		require.Equal(t, "daily_rollup", result.spec.Table)
-	})
-}
-
-func TestRewriteQueryForRollup_FirstDayOfWeek(t *testing.T) {
-	// Sunday-aligned query boundaries (2024-01-07 and 2024-01-14 are Sundays)
-	sundayStart := time.Date(2024, 1, 7, 0, 0, 0, 0, time.UTC)
-	sundayEnd := time.Date(2024, 1, 14, 0, 0, 0, 0, time.UTC)
-
-	baseMV := func(firstDayOfWeek uint32) *runtimev1.MetricsViewSpec {
-		return &runtimev1.MetricsViewSpec{
-			Table:          "base_table",
-			TimeDimension:  "timestamp",
-			FirstDayOfWeek: firstDayOfWeek,
-			Measures: []*runtimev1.MetricsViewSpec_Measure{
-				{Name: "total_impressions", Expression: `SUM("impressions")`},
-			},
-			Rollups: []*runtimev1.MetricsViewSpec_RollupTable{
-				{
-					Table:     "weekly_rollup",
-					TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_WEEK,
-					Measures:  []string{"total_impressions"},
-				},
-			},
-		}
-	}
-
-	t.Run("sunday_aligned_with_first_day_sunday_routes", func(t *testing.T) {
-		e := &Executor{instanceID: "fdow-sunday", metricsView: baseMV(7)}
-
-		setWatermark(watermarkCacheKey("fdow-sunday", "", "", "weekly_rollup"),
-			time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC))
-
-		qry := &metricsview.Query{
-			Measures: []metricsview.Measure{{Name: "total_impressions"}},
-			TimeRange: &metricsview.TimeRange{
-				Start: sundayStart,
-				End:   sundayEnd,
-			},
-		}
-
-		result := e.rewriteQueryForRollup(context.Background(), qry)
-		require.NotNil(t, result)
-		require.Equal(t, "weekly_rollup", result.spec.Table)
-	})
-
-	t.Run("sunday_aligned_with_first_day_monday_rejected", func(t *testing.T) {
-		e := &Executor{instanceID: "fdow-monday", metricsView: baseMV(1)}
-
-		setWatermark(watermarkCacheKey("fdow-monday", "", "", "weekly_rollup"),
-			time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC))
-
-		qry := &metricsview.Query{
-			Measures: []metricsview.Measure{{Name: "total_impressions"}},
-			TimeRange: &metricsview.TimeRange{
-				Start: sundayStart,
-				End:   sundayEnd,
-			},
-		}
-
-		result := e.rewriteQueryForRollup(context.Background(), qry)
-		require.Nil(t, result)
-	})
 }

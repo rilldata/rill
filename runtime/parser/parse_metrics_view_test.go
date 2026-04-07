@@ -547,48 +547,6 @@ rollups:
 	require.Nil(t, rollup.MeasuresSelector)
 }
 
-func TestMetricsViewRollupsWatermarkCacheTTL(t *testing.T) {
-	files := map[string]string{
-		`rill.yaml`:               ``,
-		`models/m1.sql`:           `SELECT 1 AS id, 'a' AS publisher`,
-		`models/rollup_daily.sql`: `SELECT 1 AS id`,
-		`metrics_views/mv1.yaml`: `
-type: metrics_view
-version: 1
-model: m1
-dimensions:
-- name: publisher
-  column: publisher
-measures:
-- name: count
-  expression: "COUNT(*)"
-rollups:
-  - model: rollup_daily
-    time_grain: day
-    watermark_cache_ttl: 15m
-    measures:
-      - count
-`,
-	}
-
-	ctx := context.Background()
-	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", "", "duckdb", true)
-	require.NoError(t, err)
-	require.Empty(t, p.Errors)
-
-	var mvSpec *runtimev1.MetricsViewSpec
-	for _, r := range p.Resources {
-		if r.Name.Kind == ResourceKindMetricsView && r.Name.Name == "mv1" {
-			mvSpec = r.MetricsViewSpec
-			break
-		}
-	}
-	require.NotNil(t, mvSpec)
-	require.Len(t, mvSpec.Rollups, 1)
-	require.Equal(t, int64(900), mvSpec.Rollups[0].WatermarkCacheTtlSeconds) // 15m = 900s
-}
-
 func TestMetricsViewRollupsStarSelector(t *testing.T) {
 	files := map[string]string{
 		`rill.yaml`:               ``,
@@ -836,27 +794,6 @@ rollups:
       - count
 `,
 			wantErr: `invalid "timezone"`,
-		},
-		{
-			name: "invalid watermark_cache_ttl",
-			yaml: `
-type: metrics_view
-version: 1
-model: m1
-dimensions:
-- name: publisher
-  column: publisher
-measures:
-- name: count
-  expression: "COUNT(*)"
-rollups:
-  - model: r1
-    time_grain: day
-    watermark_cache_ttl: not-a-duration
-    measures:
-      - count
-`,
-			wantErr: `invalid "watermark_cache_ttl"`,
 		},
 	}
 

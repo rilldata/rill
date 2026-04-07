@@ -2201,13 +2201,6 @@ export class MetricsViewSpec_RollupTable extends Message<MetricsViewSpec_RollupT
    */
   measuresSelector?: FieldSelector;
 
-  /**
-   * TTL in seconds for caching this rollup table's watermarks (min/max time). Defaults to 1800 (30 minutes) if unset.
-   *
-   * @generated from field: int64 watermark_cache_ttl_seconds = 12;
-   */
-  watermarkCacheTtlSeconds = protoInt64.zero;
-
   constructor(data?: PartialMessage<MetricsViewSpec_RollupTable>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2227,7 +2220,6 @@ export class MetricsViewSpec_RollupTable extends Message<MetricsViewSpec_RollupT
     { no: 9, name: "timezone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "dimensions_selector", kind: "message", T: FieldSelector },
     { no: 11, name: "measures_selector", kind: "message", T: FieldSelector },
-    { no: 12, name: "watermark_cache_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_RollupTable {

@@ -2274,9 +2274,6 @@ definitions:
                 timezone:
                   type: string
                   description: IANA timezone of the rollup table (e.g. America/New_York). For day+ grains, queries are only routed to the rollup if the query timezone matches.
-                watermark_cache_ttl:
-                  type: string
-                  description: 'Duration for caching the rollup table watermark (min/max timestamps). Defaults to 5 minutes. Example: 10m, 1h'
                 dimensions:
                   $ref: '#/definitions/field_selector_properties'
                   description: Optional field selectors for dimensions to include in the rollup from the base metrics view. If not specified, all dimensions are included.

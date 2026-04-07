@@ -82,7 +82,7 @@ func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Res
 		userAttrs = opts.Claims.UserAttributes
 	}
 
-	executor, err := executor.New(ctx, opts.Runtime, opts.InstanceID, mv, res.GetMetricsView().State.Streaming, security, args.Priority, userAttrs)
+	executor, err := executor.New(ctx, opts.Runtime, opts.InstanceID, qry.MetricsView, mv, res.GetMetricsView().State.Streaming, security, args.Priority, userAttrs)
 	if err != nil {
 		return nil, err
 	}

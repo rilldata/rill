@@ -13612,8 +13612,6 @@ func (m *MetricsViewSpec_RollupTable) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for WatermarkCacheTtlSeconds
-
 	if len(errors) > 0 {
 		return MetricsViewSpec_RollupTableMultiError(errors)
 	}

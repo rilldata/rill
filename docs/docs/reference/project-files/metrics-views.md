@@ -284,8 +284,6 @@ _[array of object]_ - Pre-aggregated rollup tables that can be used to accelerat
 
   - **`timezone`** - _[string]_ - IANA timezone of the rollup table (e.g. America/New_York). For day+ grains, queries are only routed to the rollup if the query timezone matches. 
 
-  - **`watermark_cache_ttl`** - _[string]_ - Duration for caching the rollup table watermark (min/max timestamps). Defaults to 5 minutes. Example: 10m, 1h 
-
   - **`dimensions`** - _[oneOf]_ - Optional field selectors for dimensions to include in the rollup from the base metrics view. If not specified, all dimensions are included. 
 
     - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection

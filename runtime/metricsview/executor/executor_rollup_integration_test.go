@@ -1,154 +1,138 @@
-package executor
+package executor_test
 
 import (
 	"context"
 	"testing"
 	"time"
 
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
-	"github.com/rilldata/rill/runtime/pkg/activity"
-	"github.com/rilldata/rill/runtime/storage"
+	"github.com/rilldata/rill/runtime/metricsview/executor"
+	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
-	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
+	_ "github.com/rilldata/rill/runtime/resolvers"
 )
 
 const (
 	rollupTestDailyTable  = "rollup_day"
 	rollupTestWeeklyTable = "rollup_week"
 	rollupTestMonthTable  = "rollup_month"
-	rollupTestBaseTable   = "base_events"
+	rollupTestMVName      = "mv"
 )
 
-// setupRollupOLAP creates a DuckDB OLAP store with base_events, rollup_day,
-// rollup_week (Jan+Feb only), and rollup_month tables.
-func setupRollupOLAP(t *testing.T) drivers.OLAPStore {
-	conn, err := drivers.Open("duckdb", "duckdb", "default",
-		map[string]any{"dsn": ":memory:?access_mode=read_write", "pool_size": "4"},
-		storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
-	require.NoError(t, err)
-	t.Cleanup(func() { conn.Close() })
-
-	olap, ok := conn.AsOLAP("")
-	require.True(t, ok)
-
-	ctx := context.Background()
-
-	// Base events: ~2184 rows (91 days * 24 hours/day), 3 publishers cycling, 2 domains alternating
-	execSQL(t, olap, ctx, `
-		CREATE TABLE base_events AS
-		SELECT
-			ts AS timestamp,
-			CASE (row_number() OVER ()) % 3
-				WHEN 0 THEN 'Google'
-				WHEN 1 THEN 'Facebook'
-				ELSE 'Microsoft'
-			END AS publisher,
-			CASE (row_number() OVER ()) % 2
-				WHEN 0 THEN 'news.com'
-				ELSE 'sports.com'
-			END AS domain,
-			'US' AS country,
-			10 AS impressions,
-			2 AS clicks
-		FROM generate_series(TIMESTAMP '2024-01-01 00:00:00', TIMESTAMP '2024-03-31 23:00:00', INTERVAL '1 HOUR') t(ts)
-	`)
-
-	// Daily rollup: full date range
-	execSQL(t, olap, ctx, `
-		CREATE TABLE rollup_day AS
-		SELECT date_trunc('day', timestamp) AS timestamp, publisher, domain,
-			SUM(impressions) AS impressions, SUM(clicks) AS clicks
-		FROM base_events GROUP BY 1, 2, 3
-	`)
-
-	// Weekly rollup: only Jan+Feb (not March), for coverage gap tests
-	execSQL(t, olap, ctx, `
-		CREATE TABLE rollup_week AS
-		SELECT date_trunc('week', timestamp) AS timestamp, publisher, domain,
-			SUM(impressions) AS impressions, SUM(clicks) AS clicks
-		FROM base_events WHERE timestamp < TIMESTAMP '2024-03-01' GROUP BY 1, 2, 3
-	`)
-
-	// Monthly rollup: full date range
-	execSQL(t, olap, ctx, `
-		CREATE TABLE rollup_month AS
-		SELECT date_trunc('month', timestamp) AS timestamp, publisher, domain,
-			SUM(impressions) AS impressions, SUM(clicks) AS clicks
-		FROM base_events GROUP BY 1, 2, 3
-	`)
-
-	return olap
-}
-
-func execSQL(t *testing.T, olap drivers.OLAPStore, ctx context.Context, sql string) {
-	t.Helper()
-	res, err := olap.Query(ctx, &drivers.Statement{Query: sql})
-	require.NoError(t, err)
-	res.Close()
-}
-
-// rollupTestSpec returns a MetricsViewSpec matching the test tables.
-func rollupTestSpec() *runtimev1.MetricsViewSpec {
-	return &runtimev1.MetricsViewSpec{
-		Table:         rollupTestBaseTable,
-		TimeDimension: "timestamp",
-		Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
-			{Name: "publisher", Column: "publisher"},
-			{Name: "domain", Column: "domain"},
-			{Name: "country", Column: "country"},
-		},
-		Measures: []*runtimev1.MetricsViewSpec_Measure{
-			{Name: "total_impressions", Expression: `SUM("impressions")`},
-			{Name: "total_clicks", Expression: `SUM("clicks")`},
-		},
-		Rollups: []*runtimev1.MetricsViewSpec_RollupTable{
-			{
-				Table:      rollupTestDailyTable,
-				TimeGrain:  runtimev1.TimeGrain_TIME_GRAIN_DAY,
-				Dimensions: []string{"publisher", "domain"},
-				Measures:   []string{"total_impressions", "total_clicks"},
-			},
-			{
-				Table:      rollupTestWeeklyTable,
-				TimeGrain:  runtimev1.TimeGrain_TIME_GRAIN_WEEK,
-				Dimensions: []string{"publisher", "domain"},
-				Measures:   []string{"total_impressions", "total_clicks"},
-			},
-			{
-				Table:      rollupTestMonthTable,
-				TimeGrain:  runtimev1.TimeGrain_TIME_GRAIN_MONTH,
-				Dimensions: []string{"publisher", "domain"},
-				Measures:   []string{"total_impressions", "total_clicks"},
-			},
-		},
+// rollupTestFiles returns the project files for the rollup integration tests.
+func rollupTestFiles() map[string]string {
+	return map[string]string{
+		"rill.yaml": "",
+		"models/base_events.sql": `
+SELECT
+	ts AS timestamp,
+	CASE (row_number() OVER ()) % 3
+		WHEN 0 THEN 'Google'
+		WHEN 1 THEN 'Facebook'
+		ELSE 'Microsoft'
+	END AS publisher,
+	CASE (row_number() OVER ()) % 2
+		WHEN 0 THEN 'news.com'
+		ELSE 'sports.com'
+	END AS domain,
+	'US' AS country,
+	10 AS impressions,
+	2 AS clicks
+FROM generate_series(TIMESTAMP '2024-01-01 00:00:00', TIMESTAMP '2024-03-31 23:00:00', INTERVAL '1 HOUR') t(ts)
+`,
+		"models/rollup_day.sql": `
+SELECT date_trunc('day', timestamp) AS timestamp, publisher, domain,
+	SUM(impressions) AS impressions, SUM(clicks) AS clicks
+FROM base_events GROUP BY 1, 2, 3
+`,
+		// Weekly rollup: only Jan+Feb (not March), for coverage gap tests
+		"models/rollup_week.sql": `
+SELECT date_trunc('week', timestamp) AS timestamp, publisher, domain,
+	SUM(impressions) AS impressions, SUM(clicks) AS clicks
+FROM base_events WHERE timestamp < TIMESTAMP '2024-03-01' GROUP BY 1, 2, 3
+`,
+		"models/rollup_month.sql": `
+SELECT date_trunc('month', timestamp) AS timestamp, publisher, domain,
+	SUM(impressions) AS impressions, SUM(clicks) AS clicks
+FROM base_events GROUP BY 1, 2, 3
+`,
+		"metrics_views/mv.yaml": `
+type: metrics_view
+version: 1
+model: base_events
+timeseries: timestamp
+dimensions:
+  - name: publisher
+    column: publisher
+  - name: domain
+    column: domain
+  - name: country
+    column: country
+measures:
+  - name: total_impressions
+    expression: 'SUM("impressions")'
+  - name: total_clicks
+    expression: 'SUM("clicks")'
+rollups:
+  - model: rollup_day
+    time_grain: day
+    dimensions:
+      - publisher
+      - domain
+    measures:
+      - total_impressions
+      - total_clicks
+  - model: rollup_week
+    time_grain: week
+    dimensions:
+      - publisher
+      - domain
+    measures:
+      - total_impressions
+      - total_clicks
+  - model: rollup_month
+    time_grain: month
+    dimensions:
+      - publisher
+      - domain
+    measures:
+      - total_impressions
+      - total_clicks
+explore:
+  skip: true
+`,
 	}
 }
 
-// newRollupTestExecutor creates an Executor backed by a real DuckDB OLAP store.
-// The caller should defer e.Close().
-func newRollupTestExecutor(t *testing.T, olap drivers.OLAPStore, mv *runtimev1.MetricsViewSpec) *Executor {
-	return &Executor{
-		instanceID:  t.Name(),
-		metricsView: mv,
-		security:    runtime.ResolvedSecurityOpen,
-		olap:        olap,
-		olapRelease: func() {},
-		timestamps:  make(map[string]metricsview.TimestampsResult),
-	}
+// newRollupTestRuntime creates a runtime with the rollup test project files.
+func newRollupTestRuntime(t *testing.T) (*runtime.Runtime, string) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: rollupTestFiles(),
+	})
+	// 1 project_parser + 4 models + 1 metrics_view = 6 resources; 0 errors
+	testruntime.RequireReconcileState(t, rt, instanceID, 6, 0, 0)
+	return rt, instanceID
+}
+
+// newRollupTestExecutor creates an Executor backed by a real runtime and OLAP store.
+func newRollupTestExecutor(t *testing.T, rt *runtime.Runtime, instanceID string) *executor.Executor {
+	r := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindMetricsView, rollupTestMVName)
+	mv := r.GetMetricsView().State.ValidSpec
+	require.NotNil(t, mv)
+
+	e, err := executor.New(context.Background(), rt, instanceID, rollupTestMVName, mv, false, runtime.ResolvedSecurityOpen, 0, nil)
+	require.NoError(t, err)
+	return e
 }
 
 func TestRollupIntegration(t *testing.T) {
-	olap := setupRollupOLAP(t)
-	mv := rollupTestSpec()
+	rt, instanceID := newRollupTestRuntime(t)
 
 	t.Run("routing", func(t *testing.T) {
 		t.Run("day_grain_selects_daily", func(t *testing.T) {
-			e := newRollupTestExecutor(t, olap, mv)
+			e := newRollupTestExecutor(t, rt, instanceID)
 			defer e.Close()
 
 			qry := &metricsview.Query{
@@ -164,13 +148,13 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			result := e.rewriteQueryForRollup(context.Background(), qry)
-			require.NotNil(t, result)
-			require.Equal(t, rollupTestDailyTable, result.spec.Table)
+			table, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.True(t, ok)
+			require.Equal(t, rollupTestDailyTable, table)
 		})
 
 		t.Run("month_grain_selects_monthly", func(t *testing.T) {
-			e := newRollupTestExecutor(t, olap, mv)
+			e := newRollupTestExecutor(t, rt, instanceID)
 			defer e.Close()
 
 			qry := &metricsview.Query{
@@ -186,14 +170,14 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			result := e.rewriteQueryForRollup(context.Background(), qry)
-			require.NotNil(t, result)
+			table, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.True(t, ok)
 			// Both daily and monthly are eligible; monthly is coarser
-			require.Equal(t, rollupTestMonthTable, result.spec.Table)
+			require.Equal(t, rollupTestMonthTable, table)
 		})
 
 		t.Run("year_grain_selects_monthly", func(t *testing.T) {
-			e := newRollupTestExecutor(t, olap, mv)
+			e := newRollupTestExecutor(t, rt, instanceID)
 			defer e.Close()
 
 			qry := &metricsview.Query{
@@ -209,14 +193,14 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			result := e.rewriteQueryForRollup(context.Background(), qry)
-			require.NotNil(t, result)
+			table, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.True(t, ok)
 			// Daily and monthly are eligible (year derivable from both); monthly is coarser
-			require.Equal(t, rollupTestMonthTable, result.spec.Table)
+			require.Equal(t, rollupTestMonthTable, table)
 		})
 
 		t.Run("no_grain_selects_coarsest", func(t *testing.T) {
-			e := newRollupTestExecutor(t, olap, mv)
+			e := newRollupTestExecutor(t, rt, instanceID)
 			defer e.Close()
 
 			qry := &metricsview.Query{
@@ -232,14 +216,14 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			result := e.rewriteQueryForRollup(context.Background(), qry)
-			require.NotNil(t, result)
+			table, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.True(t, ok)
 			// All 3 eligible (no grain check); monthly is coarsest
-			require.Equal(t, rollupTestMonthTable, result.spec.Table)
+			require.Equal(t, rollupTestMonthTable, table)
 		})
 
 		t.Run("week_in_coverage_selects_weekly", func(t *testing.T) {
-			e := newRollupTestExecutor(t, olap, mv)
+			e := newRollupTestExecutor(t, rt, instanceID)
 			defer e.Close()
 
 			// Both start and end must be Mondays for week alignment.
@@ -257,14 +241,14 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			result := e.rewriteQueryForRollup(context.Background(), qry)
-			require.NotNil(t, result)
+			table, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.True(t, ok)
 			// Daily and weekly eligible (week derivable from day); weekly is coarser
-			require.Equal(t, rollupTestWeeklyTable, result.spec.Table)
+			require.Equal(t, rollupTestWeeklyTable, table)
 		})
 
 		t.Run("week_beyond_coverage_falls_to_daily", func(t *testing.T) {
-			e := newRollupTestExecutor(t, olap, mv)
+			e := newRollupTestExecutor(t, rt, instanceID)
 			defer e.Close()
 
 			qry := &metricsview.Query{
@@ -280,14 +264,14 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			result := e.rewriteQueryForRollup(context.Background(), qry)
-			require.NotNil(t, result)
+			table, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.True(t, ok)
 			// Weekly lacks March data; monthly ineligible (week not derivable from month); daily covers all
-			require.Equal(t, rollupTestDailyTable, result.spec.Table)
+			require.Equal(t, rollupTestDailyTable, table)
 		})
 
 		t.Run("misaligned_start_returns_nil", func(t *testing.T) {
-			e := newRollupTestExecutor(t, olap, mv)
+			e := newRollupTestExecutor(t, rt, instanceID)
 			defer e.Close()
 
 			qry := &metricsview.Query{
@@ -300,12 +284,12 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			result := e.rewriteQueryForRollup(context.Background(), qry)
-			require.Nil(t, result)
+			_, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.False(t, ok)
 		})
 
 		t.Run("missing_dimension_returns_nil", func(t *testing.T) {
-			e := newRollupTestExecutor(t, olap, mv)
+			e := newRollupTestExecutor(t, rt, instanceID)
 			defer e.Close()
 
 			qry := &metricsview.Query{
@@ -321,12 +305,12 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			result := e.rewriteQueryForRollup(context.Background(), qry)
-			require.Nil(t, result)
+			_, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.False(t, ok)
 		})
 
 		t.Run("computed_measure_returns_nil", func(t *testing.T) {
-			e := newRollupTestExecutor(t, olap, mv)
+			e := newRollupTestExecutor(t, rt, instanceID)
 			defer e.Close()
 
 			qry := &metricsview.Query{
@@ -340,12 +324,12 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			result := e.rewriteQueryForRollup(context.Background(), qry)
-			require.Nil(t, result)
+			_, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.False(t, ok)
 		})
 
 		t.Run("spine_query_uses_rollup", func(t *testing.T) {
-			e := newRollupTestExecutor(t, olap, mv)
+			e := newRollupTestExecutor(t, rt, instanceID)
 			defer e.Close()
 
 			qry := &metricsview.Query{
@@ -359,14 +343,14 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			result := e.rewriteQueryForRollup(context.Background(), qry)
-			require.NotNil(t, result)
+			table, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.True(t, ok)
 			// Monthly is coarsest eligible
-			require.Equal(t, rollupTestMonthTable, result.spec.Table)
+			require.Equal(t, rollupTestMonthTable, table)
 		})
 
 		t.Run("no_time_range_skips_partial_rollup", func(t *testing.T) {
-			e := newRollupTestExecutor(t, olap, mv)
+			e := newRollupTestExecutor(t, rt, instanceID)
 			defer e.Close()
 
 			qry := &metricsview.Query{
@@ -379,15 +363,15 @@ func TestRollupIntegration(t *testing.T) {
 				// No TimeRange: means "all data"
 			}
 
-			result := e.rewriteQueryForRollup(context.Background(), qry)
-			require.NotNil(t, result)
+			table, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.True(t, ok)
 			// Weekly rollup is partial (Jan+Feb only); daily and monthly cover full range.
 			// Monthly is coarsest eligible.
-			require.Equal(t, rollupTestMonthTable, result.spec.Table)
+			require.Equal(t, rollupTestMonthTable, table)
 		})
 
 		t.Run("hour_grain_returns_nil", func(t *testing.T) {
-			e := newRollupTestExecutor(t, olap, mv)
+			e := newRollupTestExecutor(t, rt, instanceID)
 			defer e.Close()
 
 			qry := &metricsview.Query{
@@ -403,12 +387,12 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			result := e.rewriteQueryForRollup(context.Background(), qry)
-			require.Nil(t, result)
+			_, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.False(t, ok)
 		})
 
 		t.Run("where_filter_dimension_not_in_rollup", func(t *testing.T) {
-			e := newRollupTestExecutor(t, olap, mv)
+			e := newRollupTestExecutor(t, rt, instanceID)
 			defer e.Close()
 
 			qry := &metricsview.Query{
@@ -433,14 +417,14 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			result := e.rewriteQueryForRollup(context.Background(), qry)
-			require.Nil(t, result)
+			_, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.False(t, ok)
 		})
 	})
 
 	t.Run("correctness", func(t *testing.T) {
 		t.Run("daily_agg_correctness", func(t *testing.T) {
-			e := newRollupTestExecutor(t, olap, mv)
+			e := newRollupTestExecutor(t, rt, instanceID)
 			defer e.Close()
 			ctx := context.Background()
 
@@ -462,14 +446,7 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			// Build AST and execute directly (bypasses Query() which needs rt)
-			ast, err := metricsview.NewAST(mv, e.security, qry, olap.Dialect())
-			require.NoError(t, err)
-
-			sql, args, err := ast.SQL()
-			require.NoError(t, err)
-
-			res, err := olap.Query(ctx, &drivers.Statement{Query: sql, Args: args})
+			res, err := e.Query(ctx, qry, nil)
 			require.NoError(t, err)
 			defer res.Close()
 
@@ -496,7 +473,7 @@ func TestRollupIntegration(t *testing.T) {
 		})
 
 		t.Run("monthly_agg_correctness", func(t *testing.T) {
-			e := newRollupTestExecutor(t, olap, mv)
+			e := newRollupTestExecutor(t, rt, instanceID)
 			defer e.Close()
 			ctx := context.Background()
 
@@ -516,15 +493,7 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			// Use the monthly rollup spec for correctness verification
-			monthlySpec := buildSyntheticSpec(mv, mv.Rollups[2])
-			ast, err := metricsview.NewAST(monthlySpec, e.security, qry, olap.Dialect())
-			require.NoError(t, err)
-
-			sql, args, err := ast.SQL()
-			require.NoError(t, err)
-
-			res, err := olap.Query(ctx, &drivers.Statement{Query: sql, Args: args})
+			res, err := e.Query(ctx, qry, nil)
 			require.NoError(t, err)
 			defer res.Close()
 
@@ -552,7 +521,7 @@ func TestRollupIntegration(t *testing.T) {
 		})
 
 		t.Run("no_grain_with_filter_correctness", func(t *testing.T) {
-			e := newRollupTestExecutor(t, olap, mv)
+			e := newRollupTestExecutor(t, rt, instanceID)
 			defer e.Close()
 			ctx := context.Background()
 
@@ -578,15 +547,7 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			// Query base table directly for the filtered correctness test
-			// (WHERE on publisher is in the rollup, so rollup could be used too)
-			ast, err := metricsview.NewAST(mv, e.security, qry, olap.Dialect())
-			require.NoError(t, err)
-
-			sql, args, err := ast.SQL()
-			require.NoError(t, err)
-
-			res, err := olap.Query(ctx, &drivers.Statement{Query: sql, Args: args})
+			res, err := e.Query(ctx, qry, nil)
 			require.NoError(t, err)
 			defer res.Close()
 

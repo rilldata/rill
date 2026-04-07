@@ -27,12 +27,13 @@ const (
 
 // Executor is capable of executing queries and other operations against a metrics view.
 type Executor struct {
-	rt          *runtime.Runtime
-	instanceID  string
-	metricsView *runtimev1.MetricsViewSpec
-	streaming   bool
-	security    *runtime.ResolvedSecurity
-	priority    int
+	rt              *runtime.Runtime
+	instanceID      string
+	metricsViewName string
+	metricsView     *runtimev1.MetricsViewSpec
+	streaming       bool
+	security        *runtime.ResolvedSecurity
+	priority        int
 
 	olap            drivers.OLAPStore
 	olapRelease     func()
@@ -43,7 +44,12 @@ type Executor struct {
 }
 
 // New creates a new Executor for the provided metrics view.
-func New(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsViewSpec, streaming bool, sec *runtime.ResolvedSecurity, priority int, userAttrs map[string]any) (*Executor, error) {
+// mvName is the resource name of the metrics view (used for resolver-based caching); it may be empty when unavailable.
+func New(ctx context.Context, rt *runtime.Runtime, instanceID, mvName string, mv *runtimev1.MetricsViewSpec, streaming bool, sec *runtime.ResolvedSecurity, priority int, userAttrs map[string]any) (*Executor, error) {
+	if mvName == "" {
+		return nil, errors.New("metrics view name is required")
+	}
+
 	olap, release, err := rt.OLAP(ctx, instanceID, mv.Connector)
 	if err != nil {
 		return nil, fmt.Errorf("failed to acquire connector for metrics view: %w", err)
@@ -83,6 +89,7 @@ func New(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtim
 	return &Executor{
 		rt:              rt,
 		instanceID:      instanceID,
+		metricsViewName: mvName,
 		metricsView:     mv,
 		streaming:       streaming,
 		security:        sec,

@@ -360,8 +360,6 @@ message MetricsViewSpec {
     FieldSelector dimensions_selector = 10;
     // Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
     FieldSelector measures_selector = 11;
-    // TTL in seconds for caching this rollup table's watermarks (min/max time). Defaults to 1800 (30 minutes) if unset.
-    int64 watermark_cache_ttl_seconds = 12;
   }
   repeated RollupTable rollups = 34;
   // TTL in seconds for caching the base table's watermarks (min/max time) used for rollup routing. Defaults to 5 minutes if unset.

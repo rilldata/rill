@@ -87,24 +87,11 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 		runtimev1.TimeGrain_TIME_GRAIN_YEAR:        8,
 	}
 
-	// Fetch base table timestamps for clamping the query range.
-	// Uses the shared watermark cache (same cache as rollup watermarks).
-	// Also needed for no-time-range queries: we treat them as "all data" and
-	// verify the rollup covers the base table's full range.
-	var baseTS watermarkEntry
+	// Base table watermarks are fetched lazily: only when the first eligible rollup is found.
+	// This avoids wasted queries when no rollup passes eligibility.
+	var baseMin, baseMax time.Time
 	var hasBaseTS bool
-	if e.metricsView.TimeDimension != "" {
-		if baseMin, baseMax, ok := e.fetchBaseWatermark(ctx); ok {
-			baseTS = watermarkEntry{min: baseMin, max: baseMax}
-			hasBaseTS = true
-		}
-	}
-
-	// For no-time-range queries on time-dimensioned views, we need base watermarks
-	// to verify rollup coverage. If unavailable, fall back to the base table.
-	if !hasTimeRange && e.metricsView.TimeDimension != "" && !hasBaseTS {
-		return nil
-	}
+	baseTSFetched := false
 
 	var best *rollupCandidate
 	for _, rollup := range e.metricsView.Rollups {
@@ -115,10 +102,23 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 			continue
 		}
 
+		// Fetch base watermark once, when the first eligible rollup is found
+		if !baseTSFetched && e.metricsView.TimeDimension != "" {
+			baseTSFetched = true
+			if mn, mx, err := e.fetchBaseWatermark(ctx); err == nil {
+				baseMin, baseMax = mn, mx
+				hasBaseTS = true
+			}
+			// For no-time-range queries, we need base watermarks to verify rollup coverage
+			if !hasTimeRange && !hasBaseTS {
+				return nil
+			}
+		}
+
 		var dataRange time.Duration
 		if e.metricsView.TimeDimension != "" {
-			rollupMin, rollupMax, ok := e.fetchRollupWatermark(ctx, rollup)
-			if !ok {
+			rollupMin, rollupMax, err := e.fetchRollupWatermark(ctx, rollup)
+			if err != nil {
 				continue // could not fetch watermarks; skip this rollup
 			}
 
@@ -135,12 +135,12 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 				// Clamp query range to the base table's actual data range.
 				// This ensures a rollup isn't rejected when the query extends beyond both the base table and rollup.
 				effectiveStart := qry.TimeRange.Start
-				if hasBaseTS && !effectiveStart.IsZero() && !baseTS.min.IsZero() && baseTS.min.After(effectiveStart) {
-					effectiveStart = baseTS.min
+				if hasBaseTS && !effectiveStart.IsZero() && !baseMin.IsZero() && baseMin.After(effectiveStart) {
+					effectiveStart = baseMin
 				}
 				effectiveEnd := qry.TimeRange.End
-				if hasBaseTS && !effectiveEnd.IsZero() && !baseTS.max.IsZero() && baseTS.max.Before(effectiveEnd) {
-					effectiveEnd = baseTS.max
+				if hasBaseTS && !effectiveEnd.IsZero() && !baseMax.IsZero() && baseMax.Before(effectiveEnd) {
+					effectiveEnd = baseMax
 				}
 
 				// Check coverage: rollup must cover the effective (clamped) range
@@ -152,10 +152,10 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 				}
 			} else {
 				// No time range: rollup must cover the base table's full range
-				if !baseTS.min.IsZero() && rollupMin.After(baseTS.min) {
+				if !baseMin.IsZero() && rollupMin.After(baseMin) {
 					continue
 				}
-				if !baseTS.max.IsZero() && rollupEffEnd.Before(baseTS.max) {
+				if !baseMax.IsZero() && rollupEffEnd.Before(baseMax) {
 					continue
 				}
 			}
@@ -181,7 +181,7 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 		return nil
 	}
 
-	return &rollupRewrite{spec: buildSyntheticSpec(e.metricsView, best.rollup)}
+	return &rollupRewrite{spec: BuildSyntheticSpec(e.metricsView, best.rollup)}
 }
 
 // rollupEligible checks whether a rollup table can satisfy the given query.
@@ -297,9 +297,9 @@ func collectWhereDimensionsRec(expr *metricsview.Expression, dims map[string]boo
 	}
 }
 
-// buildSyntheticSpec creates a MetricsViewSpec that points to the rollup table.
+// BuildSyntheticSpec creates a MetricsViewSpec that points to the rollup table.
 // Since rollup tables have the same column names as the base table, the base measure expressions work directly against the rollup table.
-func buildSyntheticSpec(original *runtimev1.MetricsViewSpec, rollup *runtimev1.MetricsViewSpec_RollupTable) *runtimev1.MetricsViewSpec {
+func BuildSyntheticSpec(original *runtimev1.MetricsViewSpec, rollup *runtimev1.MetricsViewSpec_RollupTable) *runtimev1.MetricsViewSpec {
 	synth := proto.Clone(original).(*runtimev1.MetricsViewSpec)
 
 	// Point to rollup table
