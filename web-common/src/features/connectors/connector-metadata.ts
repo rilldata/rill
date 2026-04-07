@@ -69,3 +69,26 @@ export const connectorLabelMapping = {
   druid: "Druid",
   starrocks: "StarRocks",
 };
+
+export const connectorKeywordMapping = {
+  athena: ["aws", "amazon", "serverless", "presto"],
+  azure: ["object storage", "cloud storage"],
+  bigquery: ["google", "gcp", "data warehouse"],
+  clickhouse: ["olap", "columnar", "real-time analytics"],
+  deltalake: ["databricks", "lakehouse", "spark", "parquet"],
+  druid: ["apache", "olap", "time series"],
+  gcs: ["bucket", "object storage"],
+  iceberg: ["apache", "table format", "lakehouse", "parquet"],
+  motherduck: ["duckdb", "serverless"],
+  mysql: ["relational", "rdbms", "database"],
+  pinot: ["apache", "olap", "real-time analytics"],
+  postgres: ["relational", "rdbms", "database"],
+  redshift: ["aws", "amazon", "data warehouse"],
+  s3: ["aws", "amazon", "bucket", "object storage"],
+  snowflake: ["data warehouse", "cloud"],
+  sqlite: ["embedded", "lightweight", "local database"],
+  starrocks: ["olap", "columnar", "mpp"],
+  supabase: ["postgres", "baas", "firebase alternative"],
+  https: ["url", "api", "remote", "endpoint"],
+  local_file: ["upload", "csv", "parquet", "json", "import"],
+};
