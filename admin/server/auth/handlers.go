@@ -313,7 +313,7 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 	}
 
 	// Create (or update) user in our DB
-	user, _, err := a.admin.CreateOrUpdateUser(r.Context(), email, name, photoURL)
+	user, isNewUser, err := a.admin.CreateOrUpdateUser(r.Context(), email, name, photoURL)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to update user: %s", err), http.StatusInternalServerError)
 		return
@@ -370,9 +370,9 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 
 	// If the user is new, add a query parameter to indicate this.
 	// Used by UI to show onboarding steps.
-	//if newUser { // Temporary commenting out this line for easy testing.
-	redirect = urlutil.MustWithQuery(redirect, map[string]string{"new_user": "true"})
-	//}
+	if isNewUser {
+		redirect = urlutil.MustWithQuery(redirect, map[string]string{"new_user": "true"})
+	}
 
 	// Redirect to UI
 	http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)

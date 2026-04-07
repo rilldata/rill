@@ -36,7 +36,7 @@
     }),
   );
 
-  const { form, errors, enhance, submi } = superForm(
+  const { form, errors, enhance, submit } = superForm(
     defaults(initialValues, schema),
     {
       SPA: true,
@@ -45,7 +45,7 @@
         if (!form.valid) return;
         const values = form.data;
 
-        await createOrg(values.name, values.displayName);
+        await createOrg(values.name, values.displayName ?? "");
       },
       onError({ result }) {
         // Mapping for backend error to a more user friendly UI error message.
