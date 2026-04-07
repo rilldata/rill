@@ -4,7 +4,7 @@ export const snowflakeSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
   title: "Snowflake",
-  "x-category": "olap",
+  "x-category": "warehouse",
   "x-form-height": "tall",
   properties: {
     auth_method: {
