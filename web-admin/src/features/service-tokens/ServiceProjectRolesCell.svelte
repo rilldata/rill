@@ -34,7 +34,7 @@
   <Dropdown.Root bind:open={isDropdownOpen}>
     <Dropdown.Trigger
       class="flex flex-row gap-1 items-center rounded-sm {isDropdownOpen
-        ? 'bg-gray-200'
+        ? 'bg-surface-hover'
         : 'hover:bg-surface-hover'} px-2 py-1"
     >
       <span

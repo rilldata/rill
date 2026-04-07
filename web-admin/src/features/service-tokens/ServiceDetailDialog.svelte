@@ -18,6 +18,7 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import { isAxiosError } from "axios";
   import { CopyIcon, Trash2Icon } from "lucide-svelte";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import { capitalize, formatOrgRole, formatServiceDateTime } from "./utils";
@@ -82,10 +83,12 @@
       eventBus.emit("notification", {
         message: "Token issued",
       });
-    } catch (e: any) {
+    } catch (e) {
       console.error("Error issuing token", e);
       eventBus.emit("notification", {
-        message: e?.response?.data?.message ?? "Error issuing token",
+        message: isAxiosError(e)
+          ? (e.response?.data?.message ?? "Error issuing token")
+          : "Error issuing token",
         type: "error",
       });
     }
@@ -106,10 +109,12 @@
       eventBus.emit("notification", {
         message: "Token revoked",
       });
-    } catch (e: any) {
+    } catch (e) {
       console.error("Error revoking token", e);
       eventBus.emit("notification", {
-        message: e?.response?.data?.message ?? "Error revoking token",
+        message: isAxiosError(e)
+          ? (e.response?.data?.message ?? "Error revoking token")
+          : "Error revoking token",
         type: "error",
       });
     }

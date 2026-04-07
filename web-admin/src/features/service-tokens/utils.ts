@@ -4,7 +4,8 @@ export { capitalize };
 
 export const NONE_ROLE = "";
 export const ORG_ROLES = ["admin", "editor", "viewer", "guest", NONE_ROLE];
-export const PROJECT_ROLES = ["admin", "editor", "viewer"];
+export const DEFAULT_PROJECT_ROLE = "viewer";
+export const PROJECT_ROLES = ["admin", "editor", DEFAULT_PROJECT_ROLE];
 
 export function formatOrgRole(role: string | undefined): string {
   if (!role) return "None";

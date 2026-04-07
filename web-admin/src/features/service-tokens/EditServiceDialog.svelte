@@ -22,7 +22,8 @@
   } from "@rilldata/web-common/components/dialog";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { validateServiceName } from "./utils";
+  import { isAxiosError } from "axios";
+  import { DEFAULT_PROJECT_ROLE, validateServiceName } from "./utils";
   import ServiceForm from "./ServiceForm.svelte";
 
   let {
@@ -65,7 +66,7 @@
       orgRole = svc.roleName ?? "";
       projectAssignments = memberships.map((pm: V1ProjectMemberService) => ({
         project: pm.projectName ?? "",
-        role: pm.projectRoleName ?? "viewer",
+        role: pm.projectRoleName ?? DEFAULT_PROJECT_ROLE,
       }));
       initialProjectAssignments = projectAssignments.map((pa) => ({ ...pa }));
       const svcAttrs = (svc.attributes as Record<string, unknown>) ?? {};
@@ -80,14 +81,17 @@
   let nameError = $derived(newName ? validateServiceName(newName) : "");
 
   let projectAssignmentsChanged = $derived.by(() => {
-    if (projectAssignments.length !== initialProjectAssignments.length)
-      return true;
-    return projectAssignments.some((pa, i) => {
-      const initial = initialProjectAssignments[i];
-      return (
-        !initial || pa.project !== initial.project || pa.role !== initial.role
-      );
-    });
+    const currentMap = new Map(
+      projectAssignments.map((pa) => [pa.project, pa.role]),
+    );
+    const initialMap = new Map(
+      initialProjectAssignments.map((pa) => [pa.project, pa.role]),
+    );
+    if (currentMap.size !== initialMap.size) return true;
+    for (const [project, role] of currentMap) {
+      if (initialMap.get(project) !== role) return true;
+    }
+    return false;
   });
 
   let attributesChanged = $derived.by(() => {
@@ -209,10 +213,12 @@
 
       eventBus.emit("notification", { message: "Service updated" });
       open = false;
-    } catch (e: any) {
+    } catch (e) {
       console.error("Error updating service", e);
       eventBus.emit("notification", {
-        message: e?.response?.data?.message ?? "Error updating service",
+        message: isAxiosError(e)
+          ? (e.response?.data?.message ?? "Error updating service")
+          : "Error updating service",
         type: "error",
       });
     } finally {

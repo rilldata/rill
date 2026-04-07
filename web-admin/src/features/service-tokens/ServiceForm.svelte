@@ -5,7 +5,13 @@
   import * as Select from "@rilldata/web-common/components/select";
   import { Plus, Trash2Icon } from "lucide-svelte";
   import type { V1Project } from "@rilldata/web-admin/client";
-  import { ORG_ROLES, PROJECT_ROLES, capitalize, formatOrgRole } from "./utils";
+  import {
+    DEFAULT_PROJECT_ROLE,
+    ORG_ROLES,
+    PROJECT_ROLES,
+    capitalize,
+    formatOrgRole,
+  } from "./utils";
 
   let {
     name = $bindable(),
@@ -42,7 +48,7 @@
     if (availableProjects.length === 0) return;
     projectAssignments = [
       ...projectAssignments,
-      { project: availableProjects[0].name ?? "", role: "viewer" },
+      { project: availableProjects[0].name ?? "", role: DEFAULT_PROJECT_ROLE },
     ];
   }
 

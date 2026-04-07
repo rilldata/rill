@@ -21,6 +21,7 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import { isAxiosError } from "axios";
   import { CopyIcon } from "lucide-svelte";
   import { validateServiceName } from "./utils";
   import ServiceForm from "./ServiceForm.svelte";
@@ -111,10 +112,12 @@
       });
 
       step = "token";
-    } catch (e: any) {
+    } catch (e) {
       console.error("Error creating service", e);
       eventBus.emit("notification", {
-        message: e?.response?.data?.message ?? "Error creating service",
+        message: isAxiosError(e)
+          ? (e.response?.data?.message ?? "Error creating service")
+          : "Error creating service",
         type: "error",
       });
     }
