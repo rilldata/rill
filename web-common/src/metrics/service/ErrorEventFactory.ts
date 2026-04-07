@@ -86,22 +86,22 @@ export class ErrorEventFactory extends MetricsEventFactory {
     commonUserFields: CommonUserFields,
     space: MetricsEventSpace,
     screen_name: MetricsEventScreenName,
-    error_code: SourceErrorCodes,
     step: string,
     schema: string,
+    error_code: SourceErrorCodes,
   ) {
     const event = this.getBaseMetricsEvent(
       "error",
-      ErrorEventAction.SourceError,
+      ErrorEventAction.ConnectorError,
       commonFields,
       commonUserFields,
     ) as AddDataErrorEvent;
     event.action = ErrorEventAction.SourceError;
     event.space = space;
     event.screen_name = screen_name;
-    event.error_code = error_code;
     event.step = step;
     event.schema = schema;
+    event.error_code = error_code;
     return event;
   }
 

@@ -46,7 +46,17 @@
   const stateManager = new AddDataStateManager();
   $effect(() => stateManager.setCallbacks(onDone, onClose, onStepChange));
   $effect(() => stateManager.setConfig(config));
-  $effect(() => void init(initConnector, initSchema));
+  let prevInitConnector: string | undefined;
+  let prevInitSchema: string | undefined;
+  $effect(() => {
+    // This effect seems to be called even if data doesnt change. So add a safeguard for init.
+    if (initConnector === prevInitConnector && initSchema === prevInitSchema) {
+      return;
+    }
+    prevInitConnector = initConnector;
+    prevInitSchema = initSchema;
+    void init(prevInitConnector, prevInitSchema);
+  });
 
   const runtimeClient = useRuntimeClient();
 

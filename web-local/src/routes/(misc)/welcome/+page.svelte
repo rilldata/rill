@@ -14,8 +14,10 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes.ts";
+  import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
 
-  onMount(() => {
+  onMount(async () => {
+    await waitUntil(() => !!behaviourEvent);
     void behaviourEvent?.fireAddDataStepEvent(
       BehaviourEventAction.WelcomePageViewed,
       BehaviourEventMedium.Card,

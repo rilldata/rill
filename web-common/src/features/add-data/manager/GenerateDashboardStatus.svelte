@@ -83,8 +83,8 @@
       void errorEventHandler?.fireAddDataErrorEvent(
         config.space,
         config.screen,
-        importAddDataStep.config.connector,
         importStep,
+        importAddDataStep.config.connector,
         error!,
       );
     }

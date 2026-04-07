@@ -15,11 +15,7 @@
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry.ts";
   import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
-  import { behaviourEvent } from "../../../metrics/initMetrics.ts";
-  import {
-    BehaviourEventAction,
-    BehaviourEventMedium,
-  } from "../../../metrics/service/BehaviourEventTypes.ts";
+  import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes.ts";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,

@@ -61,8 +61,8 @@
         void errorEventHandler?.fireAddDataErrorEvent(
           config.space,
           config.screen,
-          step.schema,
           step.step,
+          step.schema,
           e.message,
         );
         setSubmitError(form, e);

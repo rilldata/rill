@@ -59,6 +59,8 @@ export class AddDataStateManager {
   private onStepChange: ((step: AddDataStep) => void) | undefined = undefined;
   private config: AddDataConfig | undefined = undefined;
 
+  private lastTransitionTime: number = 0;
+
   public setCallbacks(
     onDone: (() => void) | undefined,
     onClose: (() => void) | undefined,
@@ -98,7 +100,7 @@ export class AddDataStateManager {
       case AddDataStep.SelectConnector: {
         if (event.type === TransitionEventType.Back) {
           this.popState();
-          return;
+          break;
         }
         if (event.type !== TransitionEventType.SchemaSelected) return;
         const newState = getStepForSchema(event.schema, event.driver);
@@ -115,7 +117,7 @@ export class AddDataStateManager {
             { step: AddDataStep.CreateConnector, schema: this.state.schema },
           );
           this.popState();
-          return;
+          break;
         }
         if (event.type !== TransitionEventType.ConnectorSelected) return;
         const newState = getStepForConnector(
@@ -144,7 +146,7 @@ export class AddDataStateManager {
               },
             );
             this.popState();
-            return;
+            break;
 
           // CreateModel/ExploreConnector =={ImportConfigured event}=> Import
           case TransitionEventType.ImportConfigured:
@@ -190,7 +192,7 @@ export class AddDataStateManager {
           });
           // Can be back to Init/CreateModel/ExploreConnector
           this.popState();
-          return;
+          break;
         }
         if (event.type !== TransitionEventType.Imported) return;
         this.pushState({
@@ -199,44 +201,51 @@ export class AddDataStateManager {
         break;
     }
 
-    switch (this.state.step) {
-      case AddDataStep.CreateConnector:
-        this.fireBehaviourEvent(
-          BehaviourEventAction.ConnectorConfigurationStarted,
-          {
-            step: AddDataStep.CreateConnector,
+    if (event.type !== TransitionEventType.Back) {
+      switch (this.state.step) {
+        case AddDataStep.CreateConnector:
+          this.fireBehaviourEvent(
+            BehaviourEventAction.ConnectorConfigurationStarted,
+            {
+              step: AddDataStep.CreateConnector,
+              schema: this.state.schema,
+            },
+          );
+          break;
+
+        case AddDataStep.CreateModel:
+          this.fireBehaviourEvent(
+            BehaviourEventAction.ModelConfigurationStarted,
+            {
+              step: AddDataStep.CreateModel,
+              schema: this.state.schema,
+              connector: this.state.connector,
+            },
+          );
+          break;
+
+        case AddDataStep.ExploreConnector:
+          this.fireBehaviourEvent(
+            BehaviourEventAction.ConnectorExploreStarted,
+            {
+              step: AddDataStep.Import,
+              schema: this.state.schema,
+              connector: this.state.connector,
+            },
+          );
+          break;
+
+        case AddDataStep.Import:
+          this.fireBehaviourEvent(BehaviourEventAction.ImportStarted, {
+            step: AddDataStep.Import,
             schema: this.state.schema,
-          },
-        );
-        break;
-
-      case AddDataStep.CreateModel:
-        this.fireBehaviourEvent(
-          BehaviourEventAction.ModelConfigurationStarted,
-          {
-            step: AddDataStep.CreateModel,
-            schema: this.state.schema,
-            connector: this.state.connector,
-          },
-        );
-        break;
-
-      case AddDataStep.ExploreConnector:
-        this.fireBehaviourEvent(BehaviourEventAction.ConnectorExploreStarted, {
-          step: AddDataStep.Import,
-          schema: this.state.schema,
-          connector: this.state.connector,
-        });
-        break;
-
-      case AddDataStep.Import:
-        this.fireBehaviourEvent(BehaviourEventAction.ImportStarted, {
-          step: AddDataStep.Import,
-          schema: this.state.schema,
-          connector: this.state.config.connector,
-        });
-        break;
+            connector: this.state.config.connector,
+          });
+          break;
+      }
     }
+
+    this.lastTransitionTime = Date.now();
   }
 
   private pushState(state: AddDataState) {
@@ -252,6 +261,8 @@ export class AddDataStateManager {
     this.state = this.stateStack.pop() ?? { step: AddDataStep.Init };
     if (this.stateStack.length === 0) this.onClose?.();
     this.onStepChange?.(this.state.step);
+
+    this.lastTransitionTime = Date.now();
   }
 
   // For lateral state change, going back is not supported.
@@ -265,12 +276,15 @@ export class AddDataStateManager {
     fields: AddDataBehaviourEventFields,
   ) {
     if (!this.config) return;
+    const duration = this.lastTransitionTime
+      ? Date.now() - this.lastTransitionTime
+      : 0;
     void behaviourEvent?.fireAddDataStepEvent(
       action,
       this.config.medium,
       this.config.space,
       this.config.screen,
-      fields,
+      { ...fields, duration },
     );
   }
 }

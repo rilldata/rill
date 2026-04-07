@@ -64,6 +64,7 @@ export async function runImportSteps(
         break;
     }
   }
+  fireImportStepEvent(addDataConfig, addDataStep, ImportDataStep.Done);
   onProgress(ImportDataStep.Done, undefined);
 }
 

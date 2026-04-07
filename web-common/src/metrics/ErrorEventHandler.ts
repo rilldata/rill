@@ -126,9 +126,9 @@ export class ErrorEventHandler {
       this.commonUserMetrics,
       space,
       screen_name,
-      code,
       step,
       schema,
+      code,
     ]);
   }
 
