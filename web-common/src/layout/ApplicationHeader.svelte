@@ -37,6 +37,9 @@
     route,
   } = $page);
 
+  $: onVizRoute =
+    route.id?.includes("explore") || route.id?.includes("canvas");
+
   $: ({ unsavedFiles } = fileArtifacts);
   $: ({ size: unsavedFileCount } = $unsavedFiles);
   $: onDeployPage = isDeployPage($page);
@@ -102,7 +105,7 @@
 
     <Tag text={mode} color="gray"></Tag>
 
-    {#if mode === "Preview"}
+    {#if mode === "Preview" || onVizRoute}
       {#if $exploresQuery?.data}
         <Breadcrumbs {pathParts} {currentPath} />
       {/if}
