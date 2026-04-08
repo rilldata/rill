@@ -134,12 +134,12 @@ func (r *ReportReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	if !trigger {
 		err = r.updateNextRunOn(ctx, self, rep)
 		if err != nil {
-			return runtime.ReconcileResult{Err: err}
+			return runtime.ReconcileResult{Err: err, Warnings: latestReportWarnings(rep)}
 		}
 		if rep.State.NextRunOn != nil {
-			return runtime.ReconcileResult{Retrigger: rep.State.NextRunOn.AsTime()}
+			return runtime.ReconcileResult{Retrigger: rep.State.NextRunOn.AsTime(), Warnings: latestReportWarnings(rep)}
 		}
-		return runtime.ReconcileResult{}
+		return runtime.ReconcileResult{Warnings: latestReportWarnings(rep)}
 	}
 
 	// Determine time to evaluate the report relative to.
@@ -174,16 +174,10 @@ func (r *ReportReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	}
 
 	// Done
-	var warnings []string
-	if len(rep.State.ExecutionHistory) > 0 {
-		// warnings are added from resolver which is same for all executions
-		// so we can just take it from the most recent execution
-		warnings = rep.State.ExecutionHistory[len(rep.State.ExecutionHistory)-1].Warnings
-	}
 	if rep.State.NextRunOn != nil {
-		return runtime.ReconcileResult{Err: executeErr, Warnings: warnings, Retrigger: rep.State.NextRunOn.AsTime()}
+		return runtime.ReconcileResult{Err: executeErr, Warnings: latestReportWarnings(rep), Retrigger: rep.State.NextRunOn.AsTime()}
 	}
-	return runtime.ReconcileResult{Err: executeErr, Warnings: warnings}
+	return runtime.ReconcileResult{Err: executeErr, Warnings: latestReportWarnings(rep)}
 }
 
 func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
@@ -944,4 +938,11 @@ func calculateReportExecutionTimes(r *runtimev1.Report, watermark, previousWater
 	slices.Reverse(ts)
 
 	return ts, nil
+}
+
+func latestReportWarnings(r *runtimev1.Report) []string {
+	if r.State != nil && len(r.State.ExecutionHistory) > 0 {
+		return r.State.ExecutionHistory[len(r.State.ExecutionHistory)-1].Warnings
+	}
+	return nil
 }

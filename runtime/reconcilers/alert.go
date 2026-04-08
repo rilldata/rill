@@ -153,12 +153,12 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	if !trigger {
 		err = r.updateNextRunOn(ctx, self, a)
 		if err != nil {
-			return runtime.ReconcileResult{Err: err}
+			return runtime.ReconcileResult{Err: err, Warnings: latestAlertWarnings(a)}
 		}
 		if a.State.NextRunOn != nil {
-			return runtime.ReconcileResult{Retrigger: a.State.NextRunOn.AsTime()}
+			return runtime.ReconcileResult{Retrigger: a.State.NextRunOn.AsTime(), Warnings: latestAlertWarnings(a)}
 		}
-		return runtime.ReconcileResult{}
+		return runtime.ReconcileResult{Warnings: latestAlertWarnings(a)}
 	}
 
 	// If the spec hash changed, clear all alert state
@@ -217,14 +217,10 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	}
 
 	// Done
-	var warnings []string
-	if len(a.State.ExecutionHistory) > 0 {
-		warnings = a.State.ExecutionHistory[len(a.State.ExecutionHistory)-1].Result.Warnings
-	}
 	if a.State.NextRunOn != nil {
-		return runtime.ReconcileResult{Err: executeErr, Warnings: warnings, Retrigger: a.State.NextRunOn.AsTime()}
+		return runtime.ReconcileResult{Err: executeErr, Warnings: latestAlertWarnings(a), Retrigger: a.State.NextRunOn.AsTime()}
 	}
-	return runtime.ReconcileResult{Err: executeErr, Warnings: warnings}
+	return runtime.ReconcileResult{Err: executeErr, Warnings: latestAlertWarnings(a)}
 }
 
 func (r *AlertReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
@@ -1132,4 +1128,11 @@ type skipError struct {
 // Error implements the error interface.
 func (s skipError) Error() string {
 	return fmt.Sprintf("skipped: %s", s.reason)
+}
+
+func latestAlertWarnings(a *runtimev1.Alert) []string {
+	if a.State != nil && len(a.State.ExecutionHistory) > 0 {
+		return a.State.ExecutionHistory[len(a.State.ExecutionHistory)-1].Result.Warnings
+	}
+	return nil
 }

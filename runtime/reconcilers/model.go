@@ -296,13 +296,13 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		}
 		// Show if any partitions errored
 		if model.State.PartitionsHaveErrors && !cfg.ModelPartitionsWarnOnFailure {
-			return runtime.ReconcileResult{Err: errPartitionsHaveErrors, Warnings: reconcileWarnings(model, cfg.ModelPartitionsWarnOnFailure, cfg.ModelTestsWarnOnFailure), Retrigger: refreshOn}
+			return runtime.ReconcileResult{Err: errPartitionsHaveErrors, Warnings: reconcileWarnings(model, &cfg), Retrigger: refreshOn}
 		}
 		// Show if any model tests failed
 		if len(model.State.TestErrors) > 0 && !cfg.ModelTestsWarnOnFailure {
-			return runtime.ReconcileResult{Err: errors.New(newTestsErrorMsg(model.State.TestErrors)), Warnings: reconcileWarnings(model, cfg.ModelPartitionsWarnOnFailure, cfg.ModelTestsWarnOnFailure), Retrigger: refreshOn}
+			return runtime.ReconcileResult{Err: errors.New(newTestsErrorMsg(model.State.TestErrors)), Warnings: reconcileWarnings(model, &cfg), Retrigger: refreshOn}
 		}
-		return runtime.ReconcileResult{Warnings: reconcileWarnings(model, cfg.ModelPartitionsWarnOnFailure, cfg.ModelTestsWarnOnFailure), Retrigger: refreshOn}
+		return runtime.ReconcileResult{Warnings: reconcileWarnings(model, &cfg), Retrigger: refreshOn}
 	}
 	// Acquire the execution semaphore for the remainder of the function.
 	err = r.execSem.Acquire(ctx, 1)
@@ -453,15 +453,15 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 	// Show if any partitions errored
 	if model.State.PartitionsHaveErrors && !cfg.ModelPartitionsWarnOnFailure {
-		return runtime.ReconcileResult{Err: errPartitionsHaveErrors, Warnings: reconcileWarnings(model, false, cfg.ModelTestsWarnOnFailure), Retrigger: refreshOn}
+		return runtime.ReconcileResult{Err: errPartitionsHaveErrors, Warnings: reconcileWarnings(model, &cfg), Retrigger: refreshOn}
 	}
 
 	// Show if the model has tests that failed
 	if len(model.State.TestErrors) > 0 && !cfg.ModelTestsWarnOnFailure {
-		return runtime.ReconcileResult{Err: errors.New(newTestsErrorMsg(model.State.TestErrors)), Warnings: reconcileWarnings(model, cfg.ModelPartitionsWarnOnFailure, false), Retrigger: refreshOn}
+		return runtime.ReconcileResult{Err: errors.New(newTestsErrorMsg(model.State.TestErrors)), Warnings: reconcileWarnings(model, &cfg), Retrigger: refreshOn}
 	}
 
-	return runtime.ReconcileResult{Warnings: reconcileWarnings(model, cfg.ModelPartitionsWarnOnFailure, cfg.ModelTestsWarnOnFailure), Retrigger: refreshOn}
+	return runtime.ReconcileResult{Warnings: reconcileWarnings(model, &cfg), Retrigger: refreshOn}
 }
 
 func (r *ModelReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
@@ -2021,10 +2021,10 @@ func reconcileWarnings(model *runtimev1.Model, cfg *drivers.InstanceConfig) []st
 	warnings := make([]string, 0, len(model.State.Warnings)+len(model.State.TestWarnings))
 	warnings = append(warnings, model.State.Warnings...)
 	warnings = append(warnings, model.State.TestWarnings...)
-	if model.State.PartitionsHaveErrors && partitionWarnOnFailure {
+	if model.State.PartitionsHaveErrors && cfg.ModelPartitionsWarnOnFailure {
 		warnings = append(warnings, errPartitionsHaveErrors.Error())
 	}
-	if len(model.State.TestErrors) > 0 && testsWarnOnFailure {
+	if len(model.State.TestErrors) > 0 && cfg.ModelTestsWarnOnFailure {
 		warnings = append(warnings, newTestsErrorMsg(model.State.TestErrors))
 	}
 	return warnings
