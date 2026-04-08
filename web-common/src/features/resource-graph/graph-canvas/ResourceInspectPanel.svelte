@@ -1,7 +1,7 @@
 <script lang="ts">
   import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping";
+  import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-metadata";
   import type { ComponentType, SvelteComponent } from "svelte";
   import {
     AlertTriangleIcon,
