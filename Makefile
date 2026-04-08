@@ -47,8 +47,8 @@ docs.generate:
 	# Sets version to the latest tag to simulate a production build, where certain commands are hidden.
 	rm -rf docs/docs/reference/cli/*.md docs/docs/reference/project-files/*.md
 	if [ -f ~/.rill/config.yaml ]; then mv ~/.rill/config.yaml ~/.rill/config.yaml.tmp; fi;
-	go run -ldflags="-X main.Version=$(shell scripts/versiontag.sh)" ./cli docs generate-cli docs/docs/reference/cli/
-	go run -ldflags="-X main.Version=$(shell scripts/versiontag.sh)" ./cli docs generate-project docs/docs/reference/project-files/
+	RILL_DOCS_GENERATE=true go run -ldflags="-X main.Version=$(shell scripts/versiontag.sh)" ./cli docs generate-cli docs/docs/reference/cli/
+	RILL_DOCS_GENERATE=true go run -ldflags="-X main.Version=$(shell scripts/versiontag.sh)" ./cli docs generate-project docs/docs/reference/project-files/
 	if [ -f ~/.rill/config.yaml.tmp ]; then mv ~/.rill/config.yaml.tmp ~/.rill/config.yaml; fi;
 
 .PHONY: proto.generate
