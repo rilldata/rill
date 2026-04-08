@@ -82,8 +82,8 @@
 
   function enterCustomMode() {
     const baseSpec: V1ThemeSpec = fetchedSpec ?? {
-      light: { primary: "#6366f1", secondary: "#8b5cf6" },
-      dark: { primary: "#818cf8", secondary: "#a78bfa" },
+      light: { primary: "hsl(180, 100%, 50%)", secondary: "lightgreen" },
+      dark: { primary: "hsl(180, 100%, 50%)", secondary: "lightgreen" },
     };
     onInlineThemeChange(baseSpec);
     themeEditorStore.startCustom(baseSpec);
