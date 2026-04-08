@@ -429,12 +429,12 @@
     @apply flex flex-col gap-1 px-6;
   }
   .metric-value {
-    @apply font-sans text-lg font-bold text-fg-primary tabular-nums leading-none;
-    vertical-align: middle;
+    @apply font-sans text-3xl font-semibold text-fg-primary tabular-nums;
+    vertical-align: baseline;
   }
   .metric-unit {
     @apply font-sans text-lg font-bold text-fg-secondary leading-none;
-    vertical-align: middle;
+    vertical-align: baseline;
   }
   .metric-slash {
     @apply text-fg-tertiary mx-1;
