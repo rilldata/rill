@@ -184,7 +184,7 @@
   {#if $form["mode"] === "table"}
     {#if analyzedConnector}
       <div class="flex flex-row flex-1 min-h-0 w-full overflow-hidden border-t">
-        <div class="flex-grow min-h-0 border-r pr-6 py-2">
+        <div class="flex flex-col flex-grow min-h-0 border-r pr-6 py-2">
           <DatabaseExplorer
             connector={analyzedConnector}
             store={connectorExplorerStore}
