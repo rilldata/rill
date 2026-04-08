@@ -5,40 +5,52 @@
   import { parseDocument } from "yaml";
   import { themePreviewMode, updateThemeColor } from "./theme-preview-utils";
 
-  export let filePath: string;
+  interface Props {
+    filePath: string;
+  }
+
+  let { filePath }: Props = $props();
 
   function handleModeChange(_: number, value: string) {
     themePreviewMode.set(value.toLowerCase() as "light" | "dark");
   }
 
   // Get file content and parse YAML directly
-  $: fileArtifactFromStore = fileArtifacts.getFileArtifact(filePath);
-  $: ({ editorContent, updateEditorContent } = fileArtifactFromStore);
+  let fileArtifactFromStore = $derived(fileArtifacts.getFileArtifact(filePath));
+  let editorContent = $derived(fileArtifactFromStore.editorContent);
+  let updateEditorContent = $derived(fileArtifactFromStore.updateEditorContent);
 
   // Parse YAML document for editing
-  $: parsedDocument = $editorContent ? parseDocument($editorContent) : null;
-  $: themeData = parsedDocument?.toJSON() || {};
+  let parsedDocument = $derived(
+    $editorContent ? parseDocument($editorContent) : null,
+  );
+  let themeData = $derived(parsedDocument?.toJSON() || {});
 
-  $: lightTheme = themeData?.light || {};
-  $: darkTheme = themeData?.dark || {};
-  $: currentTheme = $themePreviewMode === "light" ? lightTheme : darkTheme;
+  let lightTheme = $derived(themeData?.light || {});
+  let darkTheme = $derived(themeData?.dark || {});
+  let currentTheme = $derived(
+    $themePreviewMode === "light" ? lightTheme : darkTheme,
+  );
 
   // Combine primary/secondary with other color variables
-  $: currentColors = {
-    primary: currentTheme?.primary || "",
-    secondary: currentTheme?.secondary || "",
-    ...Object.fromEntries(
-      Object.entries(currentTheme).filter(
-        ([key]) =>
-          key.startsWith("color-") || !["primary", "secondary"].includes(key),
+  let currentColors: Record<string, string> = $derived.by(() => {
+    return {
+      primary: currentTheme?.primary || "",
+      secondary: currentTheme?.secondary || "",
+      ...Object.fromEntries(
+        Object.entries(currentTheme).filter(
+          ([key]) =>
+            key.startsWith("color-") || !["primary", "secondary"].includes(key),
+        ),
       ),
-    ),
-  };
+    };
+  });
 
   // Check if the theme has any color values defined
-  $: hasAnyColors =
+  let hasAnyColors = $derived(
     Object.values(lightTheme).some((v) => !!v) ||
-    Object.values(darkTheme).some((v) => !!v);
+      Object.values(darkTheme).some((v) => !!v),
+  );
 
   function updateColor(colorKey: string, value: string) {
     if (!parsedDocument) return;
@@ -127,7 +139,7 @@
             {/if}
             <!-- Component cards with color dots -->
             <div class="mode-preview-cards">
-              {#each ["primary", "secondary"] as key}
+              {#each ["primary", "secondary"] as key (key)}
                 <div
                   class="mode-preview-card"
                   style:background-color={currentColors["surface-card"] ||
@@ -160,7 +172,7 @@
       <section class="section">
         <h3 class="section-title">Core Colors</h3>
         <div class="palette-colors">
-          {#each coreColors as { key, label }}
+          {#each coreColors as { key, label } (key)}
             <div class="theme-color-item">
               <span class="theme-color-label">{label}</span>
               <ColorInput
@@ -179,7 +191,7 @@
       <section class="section">
         <h3 class="section-title">Color Palettes</h3>
 
-        {#each paletteInfo as palette}
+        {#each paletteInfo as palette (palette.name)}
           <div class="palette-section">
             <div class="palette-header">
               <h4 class="palette-title">{palette.name}</h4>
@@ -187,7 +199,7 @@
             </div>
             <!-- Color strip preview -->
             <div class="palette-strip">
-              {#each palette.variables as variable}
+              {#each palette.variables as variable (variable)}
                 {@const color = currentColors[variable]}
                 <div
                   class="palette-strip-cell"
@@ -196,7 +208,7 @@
               {/each}
             </div>
             <div class="palette-colors">
-              {#each palette.variables as variable}
+              {#each palette.variables as variable (variable)}
                 {@const color = currentColors[variable]}
                 <div class="palette-color-item">
                   <ColorInput

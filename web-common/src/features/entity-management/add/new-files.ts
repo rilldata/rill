@@ -253,11 +253,9 @@ light:
   # Note: The theme system also auto-generates fg-secondary, fg-tertiary, fg-muted, and fg-disabled from fg-primary using opacity percentages if not explicitly set
   fg-primary: "#000000"          # Black text
 
-  # KPI delta colors (optional - controls comparison/change value colors)
-  # kpi-positive defaults to gray (same as fg-secondary) — uncomment and set to customize
-  # kpi-negative defaults to red — uncomment and set to customize
-  # kpi-positive: "#16a34a"      # Green for positive deltas
-  # kpi-negative: "#dc2626"      # Red for negative deltas
+  # KPI delta colors
+  kpi-positive: "#16a34a"      # Green for positive deltas
+  kpi-negative: "#dc2626"      # Red for negative deltas
 
   # Qualitative palette (for categorical data - all 24 colors)
   color-qualitative-1: "#6366f1"   # Indigo
@@ -323,9 +321,9 @@ dark:
   # Note: The theme system also auto-generates fg-secondary, fg-tertiary, fg-muted, and fg-disabled from fg-primary using opacity percentages if not explicitly set
   fg-primary: "#ffffff"   # White text
 
-  # KPI delta colors (optional - controls comparison/change value colors)
-  # kpi-positive: "#4ade80"      # Green for positive deltas (brighter for dark mode)
-  # kpi-negative: "#f87171"      # Red for negative deltas (brighter for dark mode)
+  # KPI delta colors
+  kpi-positive: "#4ade80"      # Green for positive deltas
+  kpi-negative: "#f87171"      # Red for negative deltas
 
   # Qualitative palette (adjusted for dark mode visibility - all 24 colors)
   color-qualitative-1: "#818cf8"   # Indigo
