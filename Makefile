@@ -59,12 +59,11 @@ proto.generate:
 	cd proto && buf generate --template buf.gen.runtime.yaml --path rill/runtime
 	cd proto && buf generate --template buf.gen.local.yaml --path rill/local
 	cd proto && buf generate --template buf.gen.ui.yaml
-	go run -ldflags="-X main.Version=$(shell scripts/versiontag.sh)" \
-		scripts/convert-openapi-v2-to-v3/convert.go --force \
+	go run scripts/convert-openapi-v2-to-v3/convert.go --force \
 		proto/gen/rill/admin/v1/admin.swagger.yaml proto/gen/rill/admin/v1/openapi.yaml
-	go run -ldflags="-X main.Version=$(shell scripts/versiontag.sh)" \
-		scripts/convert-openapi-v2-to-v3/convert.go --force --public-only \
+	go run scripts/convert-openapi-v2-to-v3/convert.go --force --public-only \
 		proto/gen/rill/admin/v1/admin.swagger.yaml proto/gen/rill/admin/v1/public.openapi.yaml
+	npm install
 	npm run generate:runtime-client -w web-common
 	npm run generate:client -w web-admin
 	

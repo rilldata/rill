@@ -2,7 +2,12 @@ name: Check .proto files
 on:
   pull_request:
     paths:
+      - ".github/workflows/proto-check.yml"
       - "proto/**"
+      - "scripts/convert-openapi-v2-to-v3/**"
+      - "web-common/src/proto/**"
+      - "web-common/src/runtime-client/**"
+      - "web-admin/src/client/**"
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -12,3 +17,32 @@ jobs:
       - uses: bufbuild/buf-lint-action@v1
         with:
           input: "proto"
+
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.25
+
+      - name: Set up buf
+        uses: bufbuild/buf-setup-action@v1
+
+      - name: Set up NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Generate proto
+        run: make proto.generate
+        env:
+          HUSKY: 0
+
+      - name: Check for uncommitted changes
+        run: |
+          git diff --exit-code || (echo "Generated proto files are out of date. Please run 'make proto.generate' locally and commit the changes." && exit 1)
