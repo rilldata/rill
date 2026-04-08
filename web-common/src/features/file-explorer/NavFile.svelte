@@ -114,6 +114,7 @@
       {:else if $error}
         <Alert size="14px" color="red" />
       {:else}
+        <!-- TODO: Use connector-aware icons (connectorIconMapping + deriveConnectorType) to show S3, Snowflake, etc. like the DAG does -->
         <svelte:component
           this={getIconComponent(resourceKind, filePath)}
           size="14px"
