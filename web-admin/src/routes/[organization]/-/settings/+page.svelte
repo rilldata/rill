@@ -3,6 +3,7 @@
   import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
   import DangerZone from "@rilldata/web-admin/components/danger-zone/DangerZone.svelte";
   import DeleteOrg from "@rilldata/web-admin/features/organizations/settings/DeleteOrg.svelte";
+  import { isBrandingRestricted } from "@rilldata/web-admin/features/billing/plans/utils";
   import FaviconSettings from "@rilldata/web-admin/features/organizations/settings/FaviconSettings.svelte";
   import LogoSettings from "@rilldata/web-admin/features/organizations/settings/LogoSettings.svelte";
   import OrgNameSettings from "@rilldata/web-admin/features/organizations/settings/OrgNameSettings.svelte";
@@ -20,11 +21,23 @@
   } = organizationObj ?? {});
 
   $: organization = $page.params.organization;
+  $: brandingDisabled = isBrandingRestricted(
+    organizationObj?.billingPlanName ?? "",
+  );
 </script>
 
 <OrgNameSettings {organization} />
-<LogoSettings {organization} {organizationLogoUrl} {organizationLogoDarkUrl} />
-<FaviconSettings {organization} {organizationFaviconUrl} />
+<LogoSettings
+  {organization}
+  {organizationLogoUrl}
+  {organizationLogoDarkUrl}
+  disabled={brandingDisabled}
+/>
+<FaviconSettings
+  {organization}
+  {organizationFaviconUrl}
+  disabled={brandingDisabled}
+/>
 <OrgDomainAllowListSettings {organization} />
 
 <DangerZone>

@@ -39,6 +39,20 @@ func UploadLogoCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("an organization name is required")
 			}
 
+			// Check plan restrictions (skip for --remove)
+			if !remove {
+				orgResp, err := client.GetOrganization(cmd.Context(), &adminv1.GetOrganizationRequest{
+					Org: ch.Org,
+				})
+				if err != nil {
+					return fmt.Errorf("failed to get organization: %w", err)
+				}
+				plan := strings.ToLower(orgResp.Organization.GetBillingPlanName())
+				if strings.Contains(plan, "free") || strings.Contains(plan, "growth") {
+					return fmt.Errorf("custom branding is not available on your current plan (%s); please upgrade at https://ui.rilldata.com/%s/-/settings/billing", orgResp.Organization.GetBillingPlanName(), ch.Org)
+				}
+			}
+
 			// Require a path unless removing
 			if !remove && path == "" {
 				return fmt.Errorf("a path to the image is required (pass as arg or --path)")

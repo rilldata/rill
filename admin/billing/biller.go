@@ -3,6 +3,7 @@ package billing
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
@@ -81,7 +82,16 @@ const (
 	TeamPlanType
 	ManagedPlanType
 	EnterprisePlanType
+	FreePlanType
+	GrowthPlanType
 )
+
+// IsPlanBrandingRestricted returns true if the given plan name does not allow
+// custom branding features (logo, favicon, themes).
+func IsPlanBrandingRestricted(planName string) bool {
+	lower := strings.ToLower(planName)
+	return strings.Contains(lower, "free") || strings.Contains(lower, "growth")
+}
 
 type Plan struct {
 	ID              string // ID of the plan in the external billing system

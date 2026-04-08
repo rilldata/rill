@@ -4,6 +4,7 @@ import {
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { derived, type Readable } from "svelte/store";
 import { Theme } from "./theme";
+import { customThemesDisabled } from "./theme-gating";
 import type { ConnectError } from "@connectrpc/connect";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
@@ -55,32 +56,41 @@ export function createResolvedThemeStore(
   });
 
   // Create a derived store that reactively fetches the theme based on the theme name
-  return derived(themeInput, ({ name, embedded }, set) => {
-    // Case 1: Embedded theme (inline theme definition)
-    if (embedded) {
-      set(new Theme(embedded));
-      return;
-    }
+  return derived(
+    [themeInput, customThemesDisabled],
+    ([{ name, embedded }, $disabled], set) => {
+      // When custom themes are disabled (e.g. restricted plan), fall back to default
+      if ($disabled) {
+        set(undefined);
+        return;
+      }
 
-    // Case 2: Named theme (reference to theme resource)
-    if (name) {
-      const themeQuery = useResource(
-        client,
-        name,
-        ResourceKind.Theme,
-        undefined,
-        queryClient,
-      );
-      return themeQuery.subscribe(($themeQuery) => {
-        if ($themeQuery.data?.theme?.spec) {
-          set(new Theme($themeQuery.data.theme.spec));
-        } else {
-          set(undefined);
-        }
-      });
-    }
+      // Case 1: Embedded theme (inline theme definition)
+      if (embedded) {
+        set(new Theme(embedded));
+        return;
+      }
 
-    // Case 3: No theme
-    set(undefined);
-  });
+      // Case 2: Named theme (reference to theme resource)
+      if (name) {
+        const themeQuery = useResource(
+          client,
+          name,
+          ResourceKind.Theme,
+          undefined,
+          queryClient,
+        );
+        return themeQuery.subscribe(($themeQuery) => {
+          if ($themeQuery.data?.theme?.spec) {
+            set(new Theme($themeQuery.data.theme.spec));
+          } else {
+            set(undefined);
+          }
+        });
+      }
+
+      // Case 3: No theme
+      set(undefined);
+    },
+  );
 }

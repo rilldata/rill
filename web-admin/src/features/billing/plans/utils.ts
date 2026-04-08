@@ -33,9 +33,25 @@ export function isManagedPlan(planName: string) {
   return planName === "managed";
 }
 
+export function isFreePlan(planName: string) {
+  return planName.toLowerCase().includes("free");
+}
+
+export function isGrowthPlan(planName: string) {
+  return planName.toLowerCase().includes("growth");
+}
+
+export function isBrandingRestricted(planName: string) {
+  return isFreePlan(planName) || isGrowthPlan(planName);
+}
+
 export function isEnterprisePlan(planName: string) {
   return (
-    !isTrialPlan(planName) && !isTeamPlan(planName) && !isManagedPlan(planName)
+    !isTrialPlan(planName) &&
+    !isTeamPlan(planName) &&
+    !isManagedPlan(planName) &&
+    !isFreePlan(planName) &&
+    !isGrowthPlan(planName)
   );
 }
 

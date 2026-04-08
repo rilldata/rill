@@ -30,6 +30,8 @@
   } from "@rilldata/web-common/lib/url-filter-sync";
   import { onMount } from "svelte";
 
+  export let brandingRestricted = false;
+
   const runtimeClient = useRuntimeClient();
   const queryClient = useQueryClient();
   const createTrigger =
@@ -277,7 +279,7 @@
       Error loading resources: {$resources.error?.message}
     </div>
   {:else if $resources.data}
-    <ProjectResourcesTable data={filteredResources} />
+    <ProjectResourcesTable data={filteredResources} {brandingRestricted} />
   {/if}
 
   <div class="parse-errors">
