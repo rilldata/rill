@@ -11,6 +11,7 @@
   import { getFileAccept } from "./file-encoding";
   import type { JSONSchemaField } from "./schemas/types";
   import FileInput from "@rilldata/web-common/components/forms/FileInput.svelte";
+  import FileUploader from "@rilldata/web-common/components/forms/FileUploader.svelte";
 
   export let id: string;
   export let prop: JSONSchemaField;
@@ -48,7 +49,7 @@
       accept={getFileAccept(prop)}
     />
   {:else}
-    <FileInput bind:files={value} accept={getFileAccept(prop)} />
+    <FileUploader bind:files={value} accept={getFileAccept(prop)} />
   {/if}
 {:else if prop["x-display"] === "toggle" && prop.type === "boolean"}
   <div class="flex items-center justify-between gap-3">

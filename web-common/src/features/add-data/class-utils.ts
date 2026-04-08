@@ -9,7 +9,7 @@ const AddDataClassByStepMap: Partial<Record<AddDataStep, string>> = {
   [AddDataStep.Import]: "h-fit w-[550px]",
 };
 const AddDataClassBySchemaMap: Partial<Record<string, string>> = {
-  local_file: "h-[300px] my-auto w-[550px]",
+  local_file: " h-fit my-auto w-[550px]",
 };
 const DefaultAddDataClass = "h-[630px] md:w-[900px] w-[550px]";
 
@@ -21,7 +21,7 @@ export function getAddDataClass(addDataState: AddDataState) {
 }
 
 const FormClassBySchemaMap: Partial<Record<string, string>> = {
-  local_file: "px-6 my-auto h-fit",
+  local_file: "pt-6 pb-1 px-6 h-fit",
 };
 const DefaultFormClass = "p-6 flex-grow overflow-auto";
 
