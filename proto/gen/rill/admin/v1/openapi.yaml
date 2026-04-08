@@ -723,6 +723,11 @@ components:
                     format: int64
                     type: integer
             type: object
+        v1GetEmbeddedAnalyticsResponse:
+            properties:
+                iframeUrl:
+                    type: string
+            type: object
         v1GetGithubRepoStatusResponse:
             properties:
                 defaultBranch:
@@ -799,6 +804,11 @@ components:
             properties:
                 project:
                     $ref: '#/components/schemas/v1Project'
+            type: object
+        v1GetProjectEmbeddedAnalyticsResponse:
+            properties:
+                iframeUrl:
+                    type: string
             type: object
         v1GetProjectMemberUserResponse:
             properties:
@@ -3193,6 +3203,29 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: CreateAsset returns a one time signed URL using which any asset can be uploaded.
+    /v1/orgs/{org}/embedded-analytics:
+        get:
+            operationId: AdminService_GetEmbeddedAnalytics
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetEmbeddedAnalyticsResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: GetEmbeddedAnalytics returns an iframe URL for the embedded analytics dashboard
     /v1/orgs/{org}/invites:
         get:
             operationId: AdminService_ListOrganizationInvites
@@ -4190,6 +4223,34 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: CreateDeployment creates a new deployment for a project.
+    /v1/orgs/{org}/projects/{project}/embedded-analytics:
+        get:
+            operationId: AdminService_GetProjectEmbeddedAnalytics
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetProjectEmbeddedAnalyticsResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: GetProjectEmbeddedAnalytics returns an iframe URL for the project-level embedded analytics dashboard
     /v1/orgs/{org}/projects/{project}/hibernate:
         post:
             operationId: AdminService_HibernateProject

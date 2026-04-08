@@ -7,13 +7,13 @@
 {#if data.iframeUrl}
   <iframe
     src={data.iframeUrl}
-    title="Usage"
+    title="Project Analytics"
     class="iframe"
     frameborder="0"
     allowfullscreen
   />
 {:else}
-  <p class="text-gray-500">Usage analytics are not available.</p>
+  <p class="text-gray-500">Project analytics are not available.</p>
 {/if}
 
 <style lang="postcss">

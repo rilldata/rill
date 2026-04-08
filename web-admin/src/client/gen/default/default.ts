@@ -150,6 +150,7 @@ import type {
   V1GetDeploymentConfigResponse,
   V1GetDeploymentCredentialsResponse,
   V1GetDeploymentResponse,
+  V1GetEmbeddedAnalyticsResponse,
   V1GetGithubRepoStatusResponse,
   V1GetGithubUserStatusResponse,
   V1GetIFrameResponse,
@@ -159,6 +160,7 @@ import type {
   V1GetPaymentsPortalURLResponse,
   V1GetProjectAccessRequestResponse,
   V1GetProjectByIDResponse,
+  V1GetProjectEmbeddedAnalyticsResponse,
   V1GetProjectMemberUserResponse,
   V1GetProjectResponse,
   V1GetProjectVariablesResponse,
@@ -2991,6 +2993,102 @@ export const createAdminServiceCreateAsset = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
+ * @summary GetEmbeddedAnalytics returns an iframe URL for the embedded analytics dashboard
+ */
+export const adminServiceGetEmbeddedAnalytics = (
+  org: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetEmbeddedAnalyticsResponse>({
+    url: `/v1/orgs/${org}/embedded-analytics`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getAdminServiceGetEmbeddedAnalyticsQueryKey = (org: string) => {
+  return [`/v1/orgs/${org}/embedded-analytics`] as const;
+};
+
+export const getAdminServiceGetEmbeddedAnalyticsQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceGetEmbeddedAnalytics>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetEmbeddedAnalytics>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminServiceGetEmbeddedAnalyticsQueryKey(org);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetEmbeddedAnalytics>>
+  > = ({ signal }) => adminServiceGetEmbeddedAnalytics(org, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!org,
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceGetEmbeddedAnalytics>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceGetEmbeddedAnalyticsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetEmbeddedAnalytics>>
+>;
+export type AdminServiceGetEmbeddedAnalyticsQueryError = RpcStatus;
+
+/**
+ * @summary GetEmbeddedAnalytics returns an iframe URL for the embedded analytics dashboard
+ */
+
+export function createAdminServiceGetEmbeddedAnalytics<
+  TData = Awaited<ReturnType<typeof adminServiceGetEmbeddedAnalytics>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetEmbeddedAnalytics>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceGetEmbeddedAnalyticsQueryOptions(
+    org,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
  * @summary ListOrganizationInvites lists all the org invites
  */
 export const adminServiceListOrganizationInvites = (
@@ -5768,6 +5866,111 @@ export const createAdminServiceCreateDeployment = <
 
   return createMutation(mutationOptions, queryClient);
 };
+/**
+ * @summary GetProjectEmbeddedAnalytics returns an iframe URL for the project-level embedded analytics dashboard
+ */
+export const adminServiceGetProjectEmbeddedAnalytics = (
+  org: string,
+  project: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetProjectEmbeddedAnalyticsResponse>({
+    url: `/v1/orgs/${org}/projects/${project}/embedded-analytics`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getAdminServiceGetProjectEmbeddedAnalyticsQueryKey = (
+  org: string,
+  project: string,
+) => {
+  return [`/v1/orgs/${org}/projects/${project}/embedded-analytics`] as const;
+};
+
+export const getAdminServiceGetProjectEmbeddedAnalyticsQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceGetProjectEmbeddedAnalytics>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  project: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetProjectEmbeddedAnalytics>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetProjectEmbeddedAnalyticsQueryKey(org, project);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetProjectEmbeddedAnalytics>>
+  > = ({ signal }) =>
+    adminServiceGetProjectEmbeddedAnalytics(org, project, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(org && project),
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceGetProjectEmbeddedAnalytics>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceGetProjectEmbeddedAnalyticsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetProjectEmbeddedAnalytics>>
+>;
+export type AdminServiceGetProjectEmbeddedAnalyticsQueryError = RpcStatus;
+
+/**
+ * @summary GetProjectEmbeddedAnalytics returns an iframe URL for the project-level embedded analytics dashboard
+ */
+
+export function createAdminServiceGetProjectEmbeddedAnalytics<
+  TData = Awaited<ReturnType<typeof adminServiceGetProjectEmbeddedAnalytics>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  project: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetProjectEmbeddedAnalytics>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceGetProjectEmbeddedAnalyticsQueryOptions(
+    org,
+    project,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 /**
  * @summary HibernateProject hibernates a project by tearing down its deployments.
  */

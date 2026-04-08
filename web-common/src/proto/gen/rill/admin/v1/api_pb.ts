@@ -18213,3 +18213,157 @@ export class BillingIssueMetadataNeverSubscribed extends Message<BillingIssueMet
   }
 }
 
+/**
+ * @generated from message rill.admin.v1.GetEmbeddedAnalyticsRequest
+ */
+export class GetEmbeddedAnalyticsRequest extends Message<GetEmbeddedAnalyticsRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  constructor(data?: PartialMessage<GetEmbeddedAnalyticsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetEmbeddedAnalyticsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetEmbeddedAnalyticsRequest {
+    return new GetEmbeddedAnalyticsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetEmbeddedAnalyticsRequest {
+    return new GetEmbeddedAnalyticsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetEmbeddedAnalyticsRequest {
+    return new GetEmbeddedAnalyticsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetEmbeddedAnalyticsRequest | PlainMessage<GetEmbeddedAnalyticsRequest> | undefined, b: GetEmbeddedAnalyticsRequest | PlainMessage<GetEmbeddedAnalyticsRequest> | undefined): boolean {
+    return proto3.util.equals(GetEmbeddedAnalyticsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetEmbeddedAnalyticsResponse
+ */
+export class GetEmbeddedAnalyticsResponse extends Message<GetEmbeddedAnalyticsResponse> {
+  /**
+   * @generated from field: string iframe_url = 1;
+   */
+  iframeUrl = "";
+
+  constructor(data?: PartialMessage<GetEmbeddedAnalyticsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetEmbeddedAnalyticsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "iframe_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetEmbeddedAnalyticsResponse {
+    return new GetEmbeddedAnalyticsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetEmbeddedAnalyticsResponse {
+    return new GetEmbeddedAnalyticsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetEmbeddedAnalyticsResponse {
+    return new GetEmbeddedAnalyticsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetEmbeddedAnalyticsResponse | PlainMessage<GetEmbeddedAnalyticsResponse> | undefined, b: GetEmbeddedAnalyticsResponse | PlainMessage<GetEmbeddedAnalyticsResponse> | undefined): boolean {
+    return proto3.util.equals(GetEmbeddedAnalyticsResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetProjectEmbeddedAnalyticsRequest
+ */
+export class GetProjectEmbeddedAnalyticsRequest extends Message<GetProjectEmbeddedAnalyticsRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  constructor(data?: PartialMessage<GetProjectEmbeddedAnalyticsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetProjectEmbeddedAnalyticsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetProjectEmbeddedAnalyticsRequest {
+    return new GetProjectEmbeddedAnalyticsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetProjectEmbeddedAnalyticsRequest {
+    return new GetProjectEmbeddedAnalyticsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetProjectEmbeddedAnalyticsRequest {
+    return new GetProjectEmbeddedAnalyticsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetProjectEmbeddedAnalyticsRequest | PlainMessage<GetProjectEmbeddedAnalyticsRequest> | undefined, b: GetProjectEmbeddedAnalyticsRequest | PlainMessage<GetProjectEmbeddedAnalyticsRequest> | undefined): boolean {
+    return proto3.util.equals(GetProjectEmbeddedAnalyticsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetProjectEmbeddedAnalyticsResponse
+ */
+export class GetProjectEmbeddedAnalyticsResponse extends Message<GetProjectEmbeddedAnalyticsResponse> {
+  /**
+   * @generated from field: string iframe_url = 1;
+   */
+  iframeUrl = "";
+
+  constructor(data?: PartialMessage<GetProjectEmbeddedAnalyticsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetProjectEmbeddedAnalyticsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "iframe_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetProjectEmbeddedAnalyticsResponse {
+    return new GetProjectEmbeddedAnalyticsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetProjectEmbeddedAnalyticsResponse {
+    return new GetProjectEmbeddedAnalyticsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetProjectEmbeddedAnalyticsResponse {
+    return new GetProjectEmbeddedAnalyticsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetProjectEmbeddedAnalyticsResponse | PlainMessage<GetProjectEmbeddedAnalyticsResponse> | undefined, b: GetProjectEmbeddedAnalyticsResponse | PlainMessage<GetProjectEmbeddedAnalyticsResponse> | undefined): boolean {
+    return proto3.util.equals(GetProjectEmbeddedAnalyticsResponse, a, b);
+  }
+}
+
