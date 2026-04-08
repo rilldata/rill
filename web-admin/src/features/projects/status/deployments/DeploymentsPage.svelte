@@ -127,7 +127,7 @@
 
       <div class="summary-panel">
         <span class="summary-label">EST. MONTHLY COST</span>
-        <span class="summary-value">${totalMonthlyCost}</span>
+        <span class="summary-value text-fg-secondary">${totalMonthlyCost}</span>
         <span class="summary-breakdown-plain">
           ${prodMonthlyCost} prod + ${devMonthlyCost} dev
         </span>
@@ -328,7 +328,7 @@
 
   /* Summary bar */
   .summary-bar {
-    @apply flex rounded-xl overflow-hidden bg-surface-subtle border border-border;
+    @apply flex rounded-xl overflow-hidden bg-surface-background border border-border;
   }
   .summary-panel {
     @apply flex-1 flex flex-col gap-2 p-5;
@@ -337,7 +337,7 @@
     @apply w-px bg-border my-4;
   }
   .summary-label {
-    @apply text-[11px] font-semibold tracking-widest text-fg-tertiary uppercase;
+    @apply font-sans text-xs font-semibold leading-none text-fg-tertiary uppercase;
   }
   .summary-value {
     @apply text-3xl font-bold text-fg-primary tabular-nums tracking-tight;
@@ -346,7 +346,9 @@
     @apply text-sm flex items-center gap-1.5;
   }
   .summary-breakdown-plain {
-    @apply text-sm text-fg-secondary;
+    @apply font-medium text-fg-muted;
+    font-size: 12px;
+    line-height: 18px;
   }
   .summary-cycle {
     @apply text-xs text-fg-tertiary;
@@ -381,7 +383,7 @@
     @apply mt-2;
   }
   .section-heading-text {
-    @apply text-[11px] font-semibold tracking-widest text-fg-tertiary uppercase;
+    @apply font-sans text-xs font-semibold leading-none text-fg-tertiary uppercase;
   }
 
   /* Breakdown cards */
@@ -390,7 +392,7 @@
     grid-template-columns: repeat(2, 1fr);
   }
   .breakdown-card {
-    @apply border border-border rounded-xl bg-surface-subtle flex flex-col;
+    @apply border border-border rounded-xl bg-surface-background flex flex-col;
     padding-top: 24px;
     padding-bottom: 24px;
     gap: 12px;
@@ -404,9 +406,7 @@
   }
 
   .breakdown-title {
-    @apply font-semibold;
-    font-size: 16px;
-    line-height: 16px;
+    @apply font-sans text-base font-semibold leading-none;
   }
   .breakdown-card-prod .breakdown-title {
     color: #8b5cf6;
@@ -429,12 +429,12 @@
     @apply flex flex-col gap-1 px-6;
   }
   .metric-value {
-    @apply text-2xl font-semibold text-fg-primary tabular-nums tracking-tight;
+    @apply font-sans text-lg font-bold text-fg-primary tabular-nums leading-none;
+    vertical-align: middle;
   }
   .metric-unit {
-    @apply text-sm font-medium text-fg-tertiary;
-    vertical-align: baseline;
-    margin-left: 2px;
+    @apply font-sans text-lg font-bold text-fg-secondary leading-none;
+    vertical-align: middle;
   }
   .metric-slash {
     @apply text-fg-tertiary mx-1;
@@ -460,7 +460,7 @@
     @apply border-b-0;
   }
   .detail-label {
-    @apply text-sm font-medium text-fg-tertiary;
+    @apply text-sm font-medium text-fg-primary;
   }
   .detail-value {
     @apply text-xl font-extrabold text-fg-primary tabular-nums text-right;
@@ -472,7 +472,7 @@
 
   /* Dev deployments table */
   .dev-table-container {
-    @apply border border-border rounded-xl overflow-hidden bg-surface-subtle;
+    @apply border border-border rounded-xl overflow-hidden bg-surface-background;
   }
   .dev-table {
     @apply w-full text-sm;
