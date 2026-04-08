@@ -107,7 +107,7 @@ export function isBillingUpgradePage(page: Page): boolean {
 }
 
 export function isWelcomePage(page: Page): boolean {
-  return page.route.id?.startsWith("/-/welcome");
+  return !!page.route.id?.startsWith("/-/welcome");
 }
 
 export function getScreenNameFromPage(page: Page): MetricsEventScreenName {

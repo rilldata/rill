@@ -7,7 +7,7 @@
   import { createAdminServiceCreateOrganization } from "@rilldata/web-admin/client";
 
   const createOrgMutation = createAdminServiceCreateOrganization();
-  $: ({ isLoading } = $createOrgMutation);
+  $: ({ isFetching } = $createOrgMutation);
 
   async function createOrg(name: string, displayName: string) {
     await $createOrgMutation.mutateAsync({
@@ -43,7 +43,7 @@
         type="primary"
         submitForm
         form={CreateNewOrgFormId}
-        loading={isLoading}
+        loading={isFetching}
       >
         Continue
       </Button>

@@ -6,9 +6,9 @@
     themeControl,
     type ThemeMode,
   } from "@rilldata/web-common/features/themes/theme-control.ts";
-  import LightModeIcon from "@rilldata/web-admin/features/welcome/theme/icons/LightModeIcon.svelte";
-  import DarkModeIcon from "@rilldata/web-admin/features/welcome/theme/icons/DarkModeIcon.svelte";
-  import SystemModeIcon from "@rilldata/web-admin/features/welcome/theme/icons/SystemModeIcon.svelte";
+  import LightModeIcon from "@rilldata/web-admin/features/welcome/icons/LightModeIcon.svelte";
+  import DarkModeIcon from "@rilldata/web-admin/features/welcome/icons/DarkModeIcon.svelte";
+  import SystemModeIcon from "@rilldata/web-admin/features/welcome/icons/SystemModeIcon.svelte";
 
   const { preference } = themeControl;
   $: selectedPreference = $preference;

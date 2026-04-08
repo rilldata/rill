@@ -22,9 +22,9 @@
         {@const logoUrl = getThemedLogoUrl(selectedTheme, org)}
         <a class="link" href="/{org.name}">
           {#if logoUrl}
-            <img src={logoUrl} alt="logo" class="h-7" />
+            <img src={logoUrl} alt="logo" class="h-8" />
           {:else}
-            <Rill />
+            <Rill height="32" />
           {/if}
           <span class="grow">{org.name}</span>
           <ChevronRightIcon class="h-4" strokeWidth={1} />
@@ -56,7 +56,7 @@
   }
 
   .link {
-    @apply flex flex-row w-full min-h-11 items-center gap-2 px-3 py-2 border rounded-sm;
+    @apply flex flex-row w-full min-h-14 items-center gap-2 px-3 py-2 border rounded-sm;
     @apply bg-surface-base hover:bg-surface-hover border rounded-sm;
     @apply text-fg-primary text-sm font-medium;
   }
