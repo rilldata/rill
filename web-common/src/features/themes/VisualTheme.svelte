@@ -71,7 +71,13 @@
     { key: "surface-background", label: "Surface Background" },
     { key: "surface-subtle", label: "Surface Header" },
     { key: "surface-card", label: "Component Background" },
-    { key: "fg-primary", label: "Text Primary" },
+  ];
+
+  const textColors = [{ key: "fg-primary", label: "Text Primary" }];
+
+  const kpiColors = [
+    { key: "kpi-positive", label: "Positive" },
+    { key: "kpi-negative", label: "Negative" },
   ];
 
   const paletteInfo = [
@@ -173,6 +179,44 @@
         <h3 class="section-title">Core Colors</h3>
         <div class="palette-colors">
           {#each coreColors as { key, label } (key)}
+            <div class="theme-color-item">
+              <span class="theme-color-label">{label}</span>
+              <ColorInput
+                label=""
+                stringColor={currentColors[key] || ""}
+                onChange={(color) => updateColor(key, color)}
+                allowLightnessControl={true}
+                small={true}
+              />
+            </div>
+          {/each}
+        </div>
+      </section>
+
+      <!-- Text Section -->
+      <section class="section">
+        <h3 class="section-title">Text</h3>
+        <div class="palette-colors">
+          {#each textColors as { key, label } (key)}
+            <div class="theme-color-item">
+              <span class="theme-color-label">{label}</span>
+              <ColorInput
+                label=""
+                stringColor={currentColors[key] || ""}
+                onChange={(color) => updateColor(key, color)}
+                allowLightnessControl={true}
+                small={true}
+              />
+            </div>
+          {/each}
+        </div>
+      </section>
+
+      <!-- KPI Section -->
+      <section class="section">
+        <h3 class="section-title">KPI</h3>
+        <div class="palette-colors">
+          {#each kpiColors as { key, label } (key)}
             <div class="theme-color-item">
               <span class="theme-color-label">{label}</span>
               <ColorInput
