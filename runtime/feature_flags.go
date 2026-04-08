@@ -59,8 +59,7 @@ var defaultFeatureFlags = map[string]string{
 	// Controls if the developer agent tool is available.
 	"developer_agent": "true",
 	// Controls visibility of the SQL query editor in Rill Cloud.
-	// Set to "true" in rill.yaml to enable.
-	"query_editor": "false",
+	"query_editor": "true",
 	// Controls if the dashboard state is persisted when navigating to a different dashboard.
 	"sticky_dashboard_state": "false",
 }

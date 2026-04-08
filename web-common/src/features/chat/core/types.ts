@@ -69,6 +69,10 @@ export type ChatConfig = {
   additionalContextStoreGetter: () => Readable<
     Partial<RuntimeServiceCompleteBody>
   >;
+  /** Optional transform applied to the user's prompt before sending (e.g. to prepend SQL context). */
+  promptTransformer?: (prompt: string) => string;
+  /** Optional store that returns a label to show above the input when context is attached (e.g. "SQL query attached"). */
+  contextIndicator?: () => Readable<string | null>;
   emptyChatLabel: string;
   placeholder: string;
   minChatHeight: string;

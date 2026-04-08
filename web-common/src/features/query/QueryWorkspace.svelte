@@ -17,10 +17,9 @@
     type NotebookStore,
     type NotebookState,
   } from "./query-store";
+  import { activeNotebook } from "./query-chat-config";
   import { onDestroy } from "svelte";
   import { get, readable } from "svelte/store";
-
-  const WORKSPACE_KEY = "__query_console__";
 
   let {
     projectId = "",
@@ -46,6 +45,12 @@
     if (olapConnector && !notebook) {
       notebook = createNotebook(olapConnector, projectId);
     }
+  });
+
+  // Share notebook with sidebar chat config
+  $effect(() => {
+    activeNotebook.set(notebook);
+    return () => activeNotebook.set(null);
   });
 
   onDestroy(() => notebook?.destroy());
@@ -84,11 +89,16 @@
         };
       },
       // "+" button inserts SELECT * FROM table at cursor in focused cell
-      onInsertTable: (driver, _connector, database, schema, table) => {
+      onInsertTable: (driver, connector, database, schema, table) => {
         if (!notebook) return;
         const state = get(notebook);
         const focusedId = state.focusedCellId ?? state.cells[0]?.id;
         if (!focusedId) return;
+
+        // Switch the cell's connector to match the inserted table
+        if (connector) {
+          notebook.setCellConnector(focusedId, connector);
+        }
 
         const tableRef = makeSufficientlyQualifiedTableName(
           driver,
@@ -98,7 +108,7 @@
         );
         const sql = `SELECT * FROM ${tableRef}`;
 
-        cellRefs[focusedId]?.insertAtCursor(sql);
+        cellRefs[focusedId]?.setEditorContent(sql);
       },
     },
   );
@@ -127,12 +137,14 @@
   });
 
   // Derived stores for the focused cell (forwarded to inspector)
-  let focusedSchemaStore = $derived(notebook?.focusedSchema ?? NULL_READABLE);
+  let focusedSchemaStore = $derived(
+    notebook ? notebook.focusedSchema : NULL_READABLE,
+  );
   let focusedRowCountStore = $derived(
-    notebook?.focusedRowCount ?? ZERO_READABLE,
+    notebook ? notebook.focusedRowCount : ZERO_READABLE,
   );
   let focusedTimeMsStore = $derived(
-    notebook?.focusedExecutionTimeMs ?? NULL_READABLE,
+    notebook ? notebook.focusedExecutionTimeMs : NULL_READABLE,
   );
 
   function handleAddCell() {
@@ -215,7 +227,6 @@
       <!-- Right Sidebar: Schema Inspector -->
       {#if showSchemaPanel}
         <QuerySchemaPanel
-          filePath={WORKSPACE_KEY}
           schema={$focusedSchemaStore}
           rowCount={$focusedRowCountStore}
           executionTimeMs={$focusedTimeMsStore}

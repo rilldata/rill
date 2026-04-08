@@ -15,6 +15,8 @@
   import QueryResultsTable from "./QueryResultsTable.svelte";
   import type { NotebookStore } from "./query-store";
   import { downloadResultsAsCSV, downloadResultsAsJSON } from "./query-export";
+  import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
+  import { Sparkles } from "lucide-svelte";
   import { formatExecutionTime } from "./query-utils";
 
   let {
@@ -185,6 +187,16 @@
             Run
           </Button>
         {/if}
+
+        <Button
+          type="secondary"
+          small
+          onClick={() => sidebarActions.prefillChat("")}
+          disabled={!hasSql}
+        >
+          <Sparkles size="13px" />
+          Ask AI
+        </Button>
 
         {#if hasResults}
           <DropdownMenu.Root>

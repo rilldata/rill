@@ -46,13 +46,11 @@
   );
   let showSchema = $derived($expandedStore);
 
-  const {
-    allowContextMenu,
-    allowNavigateToTable,
-    allowShowSchema,
-    onInsertTable,
-    selectedTableStore,
-  } = store;
+  let selectedTableStore = $derived(store.selectedTableStore);
+  let allowContextMenu = $derived(store.allowContextMenu);
+  let allowNavigateToTable = $derived(store.allowNavigateToTable);
+  let allowShowSchema = $derived(store.allowShowSchema);
+  let onInsertTable = $derived(store.onInsertTable);
   let selectedTableState = $derived($selectedTableStore);
   let selectedConnector = $derived(selectedTableState.connector);
   let selectedDatabase = $derived(selectedTableState.database);
