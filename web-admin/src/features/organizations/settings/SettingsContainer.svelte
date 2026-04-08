@@ -6,14 +6,12 @@
   let {
     title,
     titleIcon = "none",
-    body,
     children,
     contact,
     action,
   }: {
     title: string;
     titleIcon?: "none" | "info" | "error";
-    body?: Snippet;
     children?: Snippet;
     contact?: Snippet;
     action?: Snippet;
@@ -31,9 +29,6 @@
       {/if}
     </div>
     <div class="settings-body">
-      {#if body}
-        {@render body()}
-      {/if}
       {#if children}
         {@render children()}
       {/if}

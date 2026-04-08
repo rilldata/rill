@@ -23,7 +23,7 @@
 
   const logoUpdater = createAdminServiceUpdateOrganization({
     mutation: {
-      mutationKey: ["updateOrganization", "logo"],
+      mutationKey: ["updateOrganization", "logo", organization],
     },
   });
   let {
@@ -34,7 +34,7 @@
 
   const logoDarkUpdater = createAdminServiceUpdateOrganization({
     mutation: {
-      mutationKey: ["updateOrganization", "logoDark"],
+      mutationKey: ["updateOrganization", "logoDark", organization],
     },
   });
   let {
@@ -97,75 +97,73 @@
 </script>
 
 <SettingsContainer title="Logo">
-  {#snippet body()}
-    <div class="flex flex-col gap-y-4">
-      <div>
-        Click to upload your logo and customize Rill for your organization.
-      </div>
-      <div class="flex flex-row gap-x-6 items-start">
-        <!-- Light Logo -->
-        <div class="flex flex-col gap-y-2">
-          <div class="text-sm font-medium">Light Logo</div>
-          <UploadImagePopover
-            imageUrl={organizationLogoUrl}
-            accept="image/png, image/ico, image/x-ico, image/icon, image/x-icon"
-            label="logo"
-            {organization}
+  <div class="flex flex-col gap-y-4">
+    <div>
+      Click to upload your logo and customize Rill for your organization.
+    </div>
+    <div class="flex flex-row gap-x-6 items-start">
+      <!-- Light Logo -->
+      <div class="flex flex-col gap-y-2">
+        <div class="text-sm font-medium">Light Logo</div>
+        <UploadImagePopover
+          imageUrl={organizationLogoUrl}
+          accept="image/png, image/ico, image/x-ico, image/icon, image/x-icon"
+          label="logo"
+          {organization}
+          loading={isLogoLoading}
+          error={getRpcErrorMessage(logoError)}
+          onSave={onSaveLight}
+          onRemove={onRemoveLight}
+        >
+          <Rill width="64" height="40" mode="light" />
+        </UploadImagePopover>
+        {#if organizationLogoUrl}
+          <Button
+            type="secondary"
+            onClick={onRemoveLight}
             loading={isLogoLoading}
-            error={getRpcErrorMessage(logoError)}
-            onSave={onSaveLight}
-            onRemove={onRemoveLight}
+            disabled={isLogoLoading}
+            class="w-fit"
           >
-            <Rill width="64" height="40" mode="light" />
-          </UploadImagePopover>
-          {#if organizationLogoUrl}
-            <Button
-              type="secondary"
-              onClick={onRemoveLight}
-              loading={isLogoLoading}
-              disabled={isLogoLoading}
-              class="w-fit"
-            >
-              Remove
-            </Button>
-          {/if}
-        </div>
+            Remove
+          </Button>
+        {/if}
+      </div>
 
-        <!-- Dark Logo -->
-        <div class="flex flex-col gap-y-2">
-          <div class="text-sm font-medium">
-            {#if organizationLogoDarkUrl}
-              Dark Logo
-            {:else}
-              <span class="text-slate-500">Dark Logo</span>
-            {/if}
-          </div>
-          <UploadImagePopover
-            dark
-            imageUrl={organizationLogoDarkUrl}
-            accept="image/png, image/ico, image/x-ico, image/icon, image/x-icon"
-            label="dark logo"
-            {organization}
-            loading={isLogoDarkLoading}
-            error={getRpcErrorMessage(logoDarkError)}
-            onSave={onSaveDark}
-            onRemove={onRemoveDark}
-          >
-            <Rill width="64" height="40" mode="dark" />
-          </UploadImagePopover>
+      <!-- Dark Logo -->
+      <div class="flex flex-col gap-y-2">
+        <div class="text-sm font-medium">
           {#if organizationLogoDarkUrl}
-            <Button
-              type="secondary"
-              onClick={onRemoveDark}
-              loading={isLogoDarkLoading}
-              disabled={isLogoDarkLoading}
-              class="w-fit"
-            >
-              Remove
-            </Button>
+            Dark Logo
+          {:else}
+            <span class="text-slate-500">Dark Logo</span>
           {/if}
         </div>
+        <UploadImagePopover
+          dark
+          imageUrl={organizationLogoDarkUrl}
+          accept="image/png, image/ico, image/x-ico, image/icon, image/x-icon"
+          label="dark logo"
+          {organization}
+          loading={isLogoDarkLoading}
+          error={getRpcErrorMessage(logoDarkError)}
+          onSave={onSaveDark}
+          onRemove={onRemoveDark}
+        >
+          <Rill width="64" height="40" mode="dark" />
+        </UploadImagePopover>
+        {#if organizationLogoDarkUrl}
+          <Button
+            type="secondary"
+            onClick={onRemoveDark}
+            loading={isLogoDarkLoading}
+            disabled={isLogoDarkLoading}
+            class="w-fit"
+          >
+            Remove
+          </Button>
+        {/if}
       </div>
     </div>
-  {/snippet}
+  </div>
 </SettingsContainer>

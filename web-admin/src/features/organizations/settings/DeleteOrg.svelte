@@ -42,10 +42,8 @@
 </script>
 
 <SettingsContainer title="Delete Organization">
-  {#snippet body()}
-    Permanently delete this organization and all of its contents from the Rill
-    platform. This action is not reversible — please continue with caution.
-  {/snippet}
+  Permanently delete this organization and all of its contents from the Rill
+  platform. This action is not reversible — please continue with caution.
 
   {#snippet action()}
     <AlertDialogGuardedConfirmation
@@ -58,9 +56,7 @@
       error={deleteOrgResult.error?.message}
       onConfirm={deleteOrg}
     >
-      <svelte:fragment>
-        <Button type="destructive">Delete Organization</Button>
-      </svelte:fragment>
+      <Button type="destructive">Delete Organization</Button>
     </AlertDialogGuardedConfirmation>
   {/snippet}
 </SettingsContainer>

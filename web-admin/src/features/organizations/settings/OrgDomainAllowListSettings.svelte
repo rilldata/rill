@@ -53,57 +53,52 @@
 </script>
 
 <SettingsContainer title="Allow domain access">
-  {#snippet body()}
-    <div class="mt-1">
-      <div class="flex flex-row items-center gap-x-2">
-        {#if !$isPublicDomain.data}
-          <Label
-            for="allow-domain"
-            class="font-normal text-fg-secondary text-sm"
-          >
-            Allow existing and new Rill users with a <b>@{$userDomain.data}</b>
-            email address to join this org as a <b>Viewer</b>.
-            <a
-              target="_blank"
-              href="https://docs.rilldata.com/reference/cli/user/whitelist"
-            >
-              Learn more
-            </a>
-          </Label>
-          <div class="grow"></div>
-          <DelayedCircleOutlineSpinner
-            isLoading={$disallowDomainMutation.isPending ||
-              $allowDomainMutation.isPending}
-          >
-            <Switch
-              checked={domainAllowed}
-              id="allow-domain"
-              onclick={updateAllowedDomain}
-            />
-          </DelayedCircleOutlineSpinner>
-        {:else}
-          Domain allowlisting is not allowed with a public domain.
+  <div class="mt-1">
+    <div class="flex flex-row items-center gap-x-2">
+      {#if !$isPublicDomain.data}
+        <Label for="allow-domain" class="font-normal text-fg-secondary text-sm">
+          Allow existing and new Rill users with a <b>@{$userDomain.data}</b>
+          email address to join this org as a <b>Viewer</b>.
           <a
             target="_blank"
             href="https://docs.rilldata.com/reference/cli/user/whitelist"
           >
             Learn more
           </a>
-        {/if}
-      </div>
-
-      <div class="mt-2 font-medium text-sm">
-        <div>Domains added to allowlist by other admins</div>
-        {#if $allowedDomains.data?.domains?.length}
-          <div class="flex flex-col ml-2 mt-1 gap-y-1">
-            {#each $allowedDomains.data.domains as { domain } (domain)}
-              <div class="text-fg-secondary font-normal">@{domain}</div>
-            {/each}
-          </div>
-        {:else}
-          <div class="text-fg-secondary">none</div>
-        {/if}
-      </div>
+        </Label>
+        <div class="grow"></div>
+        <DelayedCircleOutlineSpinner
+          isLoading={$disallowDomainMutation.isPending ||
+            $allowDomainMutation.isPending}
+        >
+          <Switch
+            checked={domainAllowed}
+            id="allow-domain"
+            onclick={updateAllowedDomain}
+          />
+        </DelayedCircleOutlineSpinner>
+      {:else}
+        Domain allowlisting is not allowed with a public domain.
+        <a
+          target="_blank"
+          href="https://docs.rilldata.com/reference/cli/user/whitelist"
+        >
+          Learn more
+        </a>
+      {/if}
     </div>
-  {/snippet}
+
+    <div class="mt-2 font-medium text-sm">
+      <div>Domains added to allowlist by other admins</div>
+      {#if $allowedDomains.data?.domains?.length}
+        <div class="flex flex-col ml-2 mt-1 gap-y-1">
+          {#each $allowedDomains.data.domains as { domain } (domain)}
+            <div class="text-fg-secondary font-normal">@{domain}</div>
+          {/each}
+        </div>
+      {:else}
+        <div class="text-fg-secondary">none</div>
+      {/if}
+    </div>
+  </div>
 </SettingsContainer>

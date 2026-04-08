@@ -48,41 +48,41 @@
   }
 </script>
 
-<SettingsContainer title="Thumbnail">
-  {#snippet body()}
-    <div class="flex flex-col gap-y-2">
-      <div>
-        Click to upload your thumbnail. The thumbnail will be used when sharing
-        links to Rill in applications like Slack.
-      </div>
-      <UploadImagePopover
-        imageUrl={organizationThumbnailUrl}
-        accept="image/png, image/jpeg, image/gif, image/svg+xml"
-        label="thumbnail"
-        {organization}
-        loading={isLoading}
-        error={getRpcErrorMessage(error)}
-        {onSave}
-        {onRemove}
-      >
-        <img
-          src="https://cdn.rilldata.com/images/rill-admin.png"
-          alt="thumbnail"
-          class="h-10"
-        />
-      </UploadImagePopover>
+{#snippet removeAction()}
+  <Button
+    type="secondary"
+    onClick={onRemove}
+    loading={isLoading}
+    disabled={isLoading}
+  >
+    Remove
+  </Button>
+{/snippet}
+
+<SettingsContainer
+  title="Thumbnail"
+  action={organizationThumbnailUrl ? removeAction : undefined}
+>
+  <div class="flex flex-col gap-y-2">
+    <div>
+      Click to upload your thumbnail. The thumbnail will be used when sharing
+      links to Rill in applications like Slack.
     </div>
-  {/snippet}
-  {#snippet action()}
-    {#if organizationThumbnailUrl}
-      <Button
-        type="secondary"
-        onClick={onRemove}
-        loading={isLoading}
-        disabled={isLoading}
-      >
-        Remove
-      </Button>
-    {/if}
-  {/snippet}
+    <UploadImagePopover
+      imageUrl={organizationThumbnailUrl}
+      accept="image/png, image/jpeg, image/gif, image/svg+xml"
+      label="thumbnail"
+      {organization}
+      loading={isLoading}
+      error={getRpcErrorMessage(error)}
+      {onSave}
+      {onRemove}
+    >
+      <img
+        src="https://cdn.rilldata.com/images/rill-admin.png"
+        alt="thumbnail"
+        class="h-10"
+      />
+    </UploadImagePopover>
+  </div>
 </SettingsContainer>

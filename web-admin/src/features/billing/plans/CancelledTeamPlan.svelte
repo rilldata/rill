@@ -42,25 +42,21 @@
 </script>
 
 <SettingsContainer title={plan?.displayName || "Team plan"}>
-  {#snippet body()}
-    <div>
-      <div>
-        <div class="flex flex-row items-center gap-x-1 text-sm">
-          <InfoCircleFilled className="text-yellow-500" size="14px" />
-          Your plan is cancelled
-          {#if willEndOnText}
-            but you still have access until <b>{willEndOnText}.</b>
-          {:else}
-            and your subscription has ended.
-          {/if}
-        </div>
-        {#if plan}
-          <!-- if there is no plan then quotas will be set to 0. It doesnt make sense to show this then -->
-          <PlanQuotas {organization} />
-        {/if}
-      </div>
+  <div>
+    <div class="flex flex-row items-center gap-x-1 text-sm">
+      <InfoCircleFilled className="text-yellow-500" size="14px" />
+      Your plan is cancelled
+      {#if willEndOnText}
+        but you still have access until <b>{willEndOnText}.</b>
+      {:else}
+        and your subscription has ended.
+      {/if}
     </div>
-  {/snippet}
+    {#if plan}
+      <!-- if there is no plan then quotas will be set to 0. It doesnt make sense to show this then -->
+      <PlanQuotas {organization} />
+    {/if}
+  </div>
   {#snippet contact()}
     <span>For custom enterprise needs,</span>
     <ContactUs />

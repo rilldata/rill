@@ -52,17 +52,14 @@
 <!-- Presence of paymentCustomerId signifies that the org's payment is managed through stripe -->
 {#if !$categorisedIssues.isLoading && $org.data?.organization?.paymentCustomerId && !onTrial && !pendingSetup}
   <SettingsContainer title="Payment Method">
-    {#snippet body()}
-      <div class="flex flex-row items-center gap-x-1">
-        {#if paymentIssues?.length}
-          <CancelCircle className="text-red-600" size="14px" />
-          {getPaymentIssueErrorText(paymentIssues)} Please click Manage below to
-          correct.
-        {:else}
-          Your payment method is valid and good to go.
-        {/if}
-      </div>
-    {/snippet}
+    <div class="flex flex-row items-center gap-x-1">
+      {#if paymentIssues?.length}
+        <CancelCircle className="text-red-600" size="14px" />
+        {getPaymentIssueErrorText(paymentIssues)} Please click Manage below to correct.
+      {:else}
+        Your payment method is valid and good to go.
+      {/if}
+    </div>
     {#snippet action()}
       <Button type="secondary" onClick={handleManagePayment}>Manage</Button>
     {/snippet}

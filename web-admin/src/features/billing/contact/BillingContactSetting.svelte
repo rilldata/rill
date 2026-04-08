@@ -15,19 +15,17 @@
 </script>
 
 <SettingsContainer title="Billing Contact">
-  {#snippet body()}
-    <div class="flex flex-row items-center gap-x-1">
-      {#if $billingContactUser}
-        <AvatarListItem
-          name={$billingContactUser.displayName}
-          email={$billingContactUser.email}
-          photoUrl={$billingContactUser.photoUrl}
-        />
-      {:else}
-        This org has no billing contact.
-      {/if}
-    </div>
-  {/snippet}
+  <div class="flex flex-row items-center gap-x-1">
+    {#if $billingContactUser}
+      <AvatarListItem
+        name={$billingContactUser.displayName}
+        email={$billingContactUser.email}
+        photoUrl={$billingContactUser.photoUrl}
+      />
+    {:else}
+      This org has no billing contact.
+    {/if}
+  </div>
   {#snippet action()}
     <Button
       type="secondary"

@@ -29,11 +29,9 @@
   title="GitHub"
   action={isGithubConnected ? undefined : githubAction}
 >
-  {#snippet body()}
-    <div>
-      <ProjectGithubConnection {organization} {project} />
-    </div>
-  {/snippet}
+  <div>
+    <ProjectGithubConnection {organization} {project} />
+  </div>
 </SettingsContainer>
 
 <div class="danger-zone-section">

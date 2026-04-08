@@ -53,15 +53,13 @@
 </script>
 
 <SettingsContainer title="Project Visibility">
-  {#snippet body()}
-    {#if isPublic}
-      This project is currently <strong>Public</strong>. Anyone with the URL can
-      view this project.
-    {:else}
-      This project is currently <strong>Private</strong>. Only members of the
-      organization can access this project.
-    {/if}
-  {/snippet}
+  {#if isPublic}
+    This project is currently <strong>Public</strong>. Anyone with the URL can
+    view this project.
+  {:else}
+    This project is currently <strong>Private</strong>. Only members of the
+    organization can access this project.
+  {/if}
 
   {#snippet action()}
     <Button

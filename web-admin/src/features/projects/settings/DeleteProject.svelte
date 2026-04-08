@@ -42,10 +42,8 @@
 </script>
 
 <SettingsContainer title="Delete Project">
-  {#snippet body()}
-    Permanently delete this project and all of its contents from the Rill
-    platform. This action is not reversible — please continue with caution.
-  {/snippet}
+  Permanently delete this project and all of its contents from the Rill
+  platform. This action is not reversible — please continue with caution.
 
   {#snippet action()}
     <AlertDialogGuardedConfirmation
@@ -58,9 +56,7 @@
       error={deleteProjectResult.error?.message}
       onConfirm={deleteProject}
     >
-      <svelte:fragment>
-        <Button type="destructive">Delete Project</Button>
-      </svelte:fragment>
+      <Button type="destructive">Delete Project</Button>
     </AlertDialogGuardedConfirmation>
   {/snippet}
 </SettingsContainer>

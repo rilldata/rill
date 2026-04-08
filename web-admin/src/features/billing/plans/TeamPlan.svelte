@@ -60,18 +60,16 @@
 </script>
 
 <SettingsContainer title={plan?.displayName}>
-  {#snippet body()}
-    <div>
-      Next billing cycle will start on
-      <b>{getNextBillingCycleDate(subscription.currentBillingCycleEndDate)}</b>.
-      <a
-        href="https://www.rilldata.com/pricing"
-        target="_blank"
-        rel="noreferrer noopener">See pricing details -></a
-      >
-      <PlanQuotas {organization} />
-    </div>
-  {/snippet}
+  <div>
+    Next billing cycle will start on
+    <b>{getNextBillingCycleDate(subscription.currentBillingCycleEndDate)}</b>.
+    <a
+      href="https://www.rilldata.com/pricing"
+      target="_blank"
+      rel="noreferrer noopener">See pricing details -></a
+    >
+    <PlanQuotas {organization} />
+  </div>
   {#snippet contact()}
     <span>For any questions,</span>
     <ContactUs />

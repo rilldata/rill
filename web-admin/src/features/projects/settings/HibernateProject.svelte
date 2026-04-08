@@ -62,10 +62,8 @@
 </script>
 
 <SettingsContainer title="Hibernate Project">
-  {#snippet body()}
-    Put this project into hibernation mode. Hibernated projects are paused and
-    do not consume resources. The project can be woken up at any time.
-  {/snippet}
+  Put this project into hibernation mode. Hibernated projects are paused and do
+  not consume resources. The project can be woken up at any time.
 
   {#snippet action()}
     <AlertDialog bind:open={dialogOpen}>

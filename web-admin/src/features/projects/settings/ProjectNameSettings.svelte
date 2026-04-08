@@ -120,42 +120,40 @@
 </script>
 
 <SettingsContainer title="Project">
-  {#snippet body()}
-    <form
-      id="project-update-form"
-      onsubmit={(e) => {
-        e.preventDefault();
-        submit(e);
-      }}
-      class="update-project-form"
-      use:enhance
-    >
-      <Input
-        bind:value={$form.name}
-        errors={$errors?.name}
-        id="name"
-        label="Name"
-        description={`Your project will be available at https://ui.rilldata.com/${organization}/${sanitizeSlug($form.name)}.`}
-        textClass="text-sm"
-        alwaysShowError
-        additionalClass="max-w-[520px]"
-      />
-      <Input
-        bind:value={$form.description}
-        errors={$errors?.description}
-        id="description"
-        label="Description"
-        placeholder="Describe your project"
-        textClass="text-sm"
-        additionalClass="max-w-[520px]"
-      />
-    </form>
-    {#if error?.message}
-      <div class="text-red-500 text-sm py-px">
-        {error.message}
-      </div>
-    {/if}
-  {/snippet}
+  <form
+    id="project-update-form"
+    onsubmit={(e) => {
+      e.preventDefault();
+      submit(e);
+    }}
+    class="update-project-form"
+    use:enhance
+  >
+    <Input
+      bind:value={$form.name}
+      errors={$errors?.name}
+      id="name"
+      label="Name"
+      description={`Your project will be available at https://ui.rilldata.com/${organization}/${sanitizeSlug($form.name)}.`}
+      textClass="text-sm"
+      alwaysShowError
+      additionalClass="max-w-[520px]"
+    />
+    <Input
+      bind:value={$form.description}
+      errors={$errors?.description}
+      id="description"
+      label="Description"
+      placeholder="Describe your project"
+      textClass="text-sm"
+      additionalClass="max-w-[520px]"
+    />
+  </form>
+  {#if error?.message}
+    <div class="text-red-500 text-sm py-px">
+      {error.message}
+    </div>
+  {/if}
   {#snippet action()}
     <Button
       onClick={submit}

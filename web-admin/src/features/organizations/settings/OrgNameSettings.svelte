@@ -110,42 +110,40 @@
 </script>
 
 <SettingsContainer title="Organization">
-  {#snippet body()}
-    <form
-      id="org-update-form"
-      onsubmit={(e) => {
-        e.preventDefault();
-        submit(e);
-      }}
-      class="update-org-form"
-      use:enhance
-    >
-      <Input
-        bind:value={$form.name}
-        errors={$errors?.name}
-        id="name"
-        label="Name"
-        description={`Your org URL will be https://ui.rilldata.com/${sanitizeOrgName($form.name)}, to comply with our naming rules.`}
-        textClass="text-sm"
-        alwaysShowError
-        additionalClass="max-w-[520px]"
-      />
-      <Input
-        bind:value={$form.description}
-        errors={$errors?.description}
-        id="description"
-        label="Description"
-        placeholder="Describe your organization"
-        textClass="text-sm"
-        additionalClass="max-w-[520px]"
-      />
-    </form>
-    {#if error?.message}
-      <div class="text-red-500 text-sm py-px">
-        {error.message}
-      </div>
-    {/if}
-  {/snippet}
+  <form
+    id="org-update-form"
+    onsubmit={(e) => {
+      e.preventDefault();
+      submit(e);
+    }}
+    class="update-org-form"
+    use:enhance
+  >
+    <Input
+      bind:value={$form.name}
+      errors={$errors?.name}
+      id="name"
+      label="Name"
+      description={`Your org URL will be https://ui.rilldata.com/${sanitizeOrgName($form.name)}, to comply with our naming rules.`}
+      textClass="text-sm"
+      alwaysShowError
+      additionalClass="max-w-[520px]"
+    />
+    <Input
+      bind:value={$form.description}
+      errors={$errors?.description}
+      id="description"
+      label="Description"
+      placeholder="Describe your organization"
+      textClass="text-sm"
+      additionalClass="max-w-[520px]"
+    />
+  </form>
+  {#if error?.message}
+    <div class="text-red-500 text-sm py-px">
+      {error.message}
+    </div>
+  {/if}
   {#snippet action()}
     <Button
       onClick={submit}

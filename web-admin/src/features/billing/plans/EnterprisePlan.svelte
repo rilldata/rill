@@ -14,12 +14,10 @@
 </script>
 
 <SettingsContainer title={plan?.displayName}>
-  {#snippet body()}
-    <div>
-      <div>You're currently on a custom contract.</div>
-      <PlanQuotas {organization} />
-    </div>
-  {/snippet}
+  <div>
+    <div>You're currently on a custom contract.</div>
+    <PlanQuotas {organization} />
+  </div>
   {#snippet contact()}
     <span>To make changes to your contract,</span>
     <ContactUs variant="enterprise" />
