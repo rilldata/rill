@@ -213,7 +213,7 @@
   >
     <Dialog.Content
       class={cn(
-        "overflow-hidden",
+        "max-h-[90vh] overflow-y-auto",
         formWidthClass,
         step === 2 ? "p-0 gap-0" : "p-6 gap-4",
       )}
