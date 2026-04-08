@@ -227,7 +227,7 @@
     }}
     {filterGroups}
     onFilterChange={(key, value) => {
-      if (key === "type") typeFilter = value;
+      if (key === "type") typeFilter = value as typeof typeFilter;
     }}
     onClearAllFilters={() => {
       typeFilter = "all";
