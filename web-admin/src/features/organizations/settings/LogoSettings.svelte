@@ -21,22 +21,26 @@
     organizationLogoDarkUrl: string | undefined;
   } = $props();
 
-  const logoUpdater = createAdminServiceUpdateOrganization({
-    mutation: {
-      mutationKey: ["updateOrganization", "logo", organization],
-    },
-  });
+  let logoUpdater = $derived(
+    createAdminServiceUpdateOrganization({
+      mutation: {
+        mutationKey: ["updateOrganization", "logo", organization],
+      },
+    }),
+  );
   let {
     error: logoError,
     isPending: isLogoLoading,
     mutateAsync: mutateLogoAsync,
   } = $derived($logoUpdater);
 
-  const logoDarkUpdater = createAdminServiceUpdateOrganization({
-    mutation: {
-      mutationKey: ["updateOrganization", "logoDark", organization],
-    },
-  });
+  let logoDarkUpdater = $derived(
+    createAdminServiceUpdateOrganization({
+      mutation: {
+        mutationKey: ["updateOrganization", "logoDark", organization],
+      },
+    }),
+  );
   let {
     error: logoDarkError,
     isPending: isLogoDarkLoading,
