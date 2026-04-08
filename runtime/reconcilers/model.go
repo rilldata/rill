@@ -714,7 +714,7 @@ func (r *ModelReconciler) updateStateAfterExecution(
 		model.State.TotalExecutionDurationMs = model.State.LatestExecutionDurationMs
 	}
 	model.State.Warnings = warnings
-	model.State.TestWarnings = nil // will be repopulated by appendTestWarnings after tests run
+	model.State.TestWarnings = nil // Will be repopulated after tests run
 	if rowsTotal > 0 {
 		model.State.RowsTotal = rowsTotal
 	}
@@ -870,12 +870,12 @@ func (r *ModelReconciler) resolveIncrementalState(ctx context.Context, mdl *runt
 			// Not returning any rows will clear the state
 			return nil, nil, warnings, nil
 		}
-		return nil, nil, warnings, fmt.Errorf("failed to read state resolver output: %w", err)
+		return nil, nil, nil, fmt.Errorf("failed to read state resolver output: %w", err)
 	}
 
 	state, err := structpb.NewStruct(row)
 	if err != nil {
-		return nil, nil, warnings, fmt.Errorf("state resolver produced invalid output: %w", err)
+		return nil, nil, nil, fmt.Errorf("state resolver produced invalid output: %w", err)
 	}
 
 	return state, res.Schema(), warnings, nil
@@ -922,7 +922,7 @@ func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *ru
 			if errors.Is(err, io.EOF) {
 				break
 			}
-			return warnings, fmt.Errorf("failed to read partitions resolver output: %w", err)
+			return nil, fmt.Errorf("failed to read partitions resolver output: %w", err)
 		}
 		batch = append(batch, row)
 
@@ -931,7 +931,7 @@ func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *ru
 			// Sync the partitions
 			err = r.syncPartitions(ctx, mdl, batchStartIdx, batch)
 			if err != nil {
-				return warnings, err
+				return nil, err
 			}
 
 			// Advance the row index of the first row in the batch
@@ -1971,9 +1971,7 @@ func (r *ModelReconciler) runModelTests(ctx context.Context, self *runtimev1.Res
 		if msg != "" {
 			msgs = append(msgs, msg)
 		}
-		if len(testWarnings) > 0 {
-			warnings = append(warnings, testWarnings...)
-		}
+		warnings = append(warnings, testWarnings...)
 	}
 	return msgs, warnings, nil
 }
@@ -2019,7 +2017,7 @@ func (r *ModelReconciler) execModelTest(ctx context.Context, test *runtimev1.Mod
 }
 
 // reconcileWarnings combines execution and test warnings for a ReconcileResult.
-func reconcileWarnings(model *runtimev1.Model, partitionWarnOnFailure, testsWarnOnFailure bool) []string {
+func reconcileWarnings(model *runtimev1.Model, cfg *drivers.InstanceConfig) []string {
 	warnings := make([]string, 0, len(model.State.Warnings)+len(model.State.TestWarnings))
 	warnings = append(warnings, model.State.Warnings...)
 	warnings = append(warnings, model.State.TestWarnings...)
