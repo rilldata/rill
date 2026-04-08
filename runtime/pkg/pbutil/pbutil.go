@@ -1,7 +1,6 @@
 package pbutil
 
 import (
-	"database/sql/driver"
 	"fmt"
 	"math"
 	"math/big"
@@ -10,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/civil"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/chcol"
 	"github.com/duckdb/duckdb-go/v2"
 	"github.com/google/uuid"
@@ -201,18 +201,11 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 			return nil, err
 		}
 		return structpb.NewListValue(st), nil
+	case civil.Date:
+		return structpb.NewStringValue(v.String()), nil
+	case civil.DateTime:
+		return structpb.NewStringValue(v.String()), nil
 	default:
-	}
-	// if it implements driver.Valuer, use that
-	if v, ok := v.(driver.Valuer); ok {
-		val, err := v.Value()
-		if err != nil {
-			return nil, err
-		}
-		if val == nil {
-			return structpb.NewNullValue(), nil
-		}
-		return ToValue(val, t)
 	}
 	if t != nil && t.ArrayElementType != nil {
 		v2, err := ToListValueUnknown(v, t)

@@ -1,7 +1,6 @@
 package jsonval
 
 import (
-	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -11,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/civil"
 	"github.com/duckdb/duckdb-go/v2"
 	"github.com/google/uuid"
 	"github.com/paulmach/orb"
@@ -237,18 +237,12 @@ func ToValue(v any, t *runtimev1.Type) (any, error) {
 			return ToValue(*v, t)
 		}
 		return nil, nil
+	//bigquery specific types
+	case civil.Date:
+		return v.String(), nil
+	case civil.DateTime:
+		return v.String(), nil
 	default:
-	}
-	// if it implements driver.Valuer, use that
-	if v, ok := v.(driver.Valuer); ok {
-		val, err := v.Value()
-		if err != nil {
-			return nil, err
-		}
-		if val == nil {
-			return nil, nil
-		}
-		return ToValue(val, t)
 	}
 	if t != nil && t.ArrayElementType != nil {
 		return toSliceUnknown(v, t)
