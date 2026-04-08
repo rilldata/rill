@@ -27,12 +27,32 @@ test.describe("explores", () => {
     // Temporary timeout while the issue is looked into
     await page.waitForTimeout(1000);
     await assertAdBidsDashboard(page);
+
+    // Verify generated metrics view YAML contains connector
+    await gotoNavEntry(page, "/metrics/AdBids_metrics.yaml");
+    await page.getByRole("button", { name: "switch to code editor" }).click();
+    const metricsCodeEditor = page
+      .getByLabel("codemirror editor")
+      .getByRole("textbox");
+    await expect(metricsCodeEditor).toContainText("connector: duckdb");
   });
 
   test("Autogenerate explore from model", async ({ page }) => {
     await createAdBidsModel(page);
     await createExploreFromModel(page, true);
     await assertAdBidsDashboard(page);
+
+    // Verify generated metrics view YAML contains connector
+    await gotoNavEntry(page, AD_BIDS_METRICS_PATH);
+    await page.getByRole("button", { name: "switch to code editor" }).click();
+    const metricsCodeEditor = page
+      .getByLabel("codemirror editor")
+      .getByRole("textbox");
+    await expect(metricsCodeEditor).toContainText("connector: duckdb");
+
+    // Navigate back to the explore dashboard
+    await gotoNavEntry(page, AD_BIDS_EXPLORE_PATH);
+    await clickPreviewButton(page);
 
     // click on publisher=Facebook leaderboard value
     await page.getByRole("row", { name: "Facebook 19.3k" }).click();

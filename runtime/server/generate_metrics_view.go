@@ -120,7 +120,6 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 	if req.Connector == "" {
 		req.Connector = inst.ResolveOLAPConnector()
 	}
-	isDefaultConnector := req.Connector == inst.ResolveOLAPConnector()
 
 	// Connect to connector and check it's an OLAP db
 	olap, release, err := s.runtime.OLAP(ctx, req.InstanceId, req.Connector)
@@ -141,7 +140,7 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 	if req.UseAi {
 		// Generate
 		start := time.Now()
-		res, err := s.generateMetricsViewYAMLWithAI(ctx, req.InstanceId, olap.Dialect().String(), req.Connector, tbl, isDefaultConnector, modelFound, req.Prompt)
+		res, err := s.generateMetricsViewYAMLWithAI(ctx, req.InstanceId, olap.Dialect().String(), req.Connector, tbl, modelFound, req.Prompt)
 		if err != nil {
 			s.logger.Warn("failed to generate metrics view YAML using AI", zap.Error(err), observability.ZapCtx(ctx))
 		} else {
@@ -169,7 +168,7 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 
 	// If we didn't manage to generate the YAML using AI, we fall back to the simple generator
 	if data == "" {
-		data, err = generateMetricsViewYAMLSimple(req.Connector, tbl, isDefaultConnector, modelFound)
+		data, err = generateMetricsViewYAMLSimple(req.Connector, tbl, modelFound)
 		if err != nil {
 			return nil, err
 		}
@@ -198,7 +197,7 @@ type generateMetricsViewYAMLWithres struct {
 
 // generateMetricsViewYAMLWithAI attempts to generate a metrics view YAML definition from a table schema using AI.
 // It validates that the result is a valid metrics view. Due to the unpredictable nature of AI (and chance of downtime), this function may error non-deterministically.
-func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, dialect, connector string, tbl *drivers.OlapTable, isDefaultConnector, isModel bool, prompt string) (*generateMetricsViewYAMLWithres, error) {
+func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, dialect, connector string, tbl *drivers.OlapTable, isModel bool, prompt string) (*generateMetricsViewYAMLWithres, error) {
 	// Build messages
 	systemPrompt := metricsViewYAMLSystemPrompt()
 	userPrompt := metricsViewYAMLUserPrompt(dialect, tbl.Name, tbl.Schema, prompt)
@@ -279,12 +278,10 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 		// Apply the default format preset to measures (the AI doesn't set the format preset).
 		measure.FormatPreset = "humanize"
 	}
+	doc.Connector = connector
 	if isModel {
 		doc.Model = tbl.Name
 	} else {
-		if !isDefaultConnector {
-			doc.Connector = connector
-		}
 		doc.Model = tbl.Name // Note: We also reference externally managed tables with `model:`. This is supported in the metrics view YAML.
 		if tbl.Database != "" && !tbl.IsDefaultDatabase {
 			doc.Database = tbl.Database
@@ -420,7 +417,7 @@ Give me up to 10 suggested metrics using the %q SQL dialect based on the table n
 }
 
 // generateMetricsViewYAMLSimple generates a simple metrics view YAML definition from a table schema.
-func generateMetricsViewYAMLSimple(connector string, tbl *drivers.OlapTable, isDefaultConnector, isModel bool) (string, error) {
+func generateMetricsViewYAMLSimple(connector string, tbl *drivers.OlapTable, isModel bool) (string, error) {
 	doc := &metricsViewYAML{
 		Version:       1,
 		Type:          "metrics_view",
@@ -430,12 +427,10 @@ func generateMetricsViewYAMLSimple(connector string, tbl *drivers.OlapTable, isD
 		Measures:      generateMetricsViewYAMLSimpleMeasures(tbl),
 	}
 
+	doc.Connector = connector
 	if isModel {
 		doc.Model = tbl.Name
 	} else {
-		if !isDefaultConnector {
-			doc.Connector = connector
-		}
 		if tbl.Database != "" && !tbl.IsDefaultDatabase {
 			doc.Database = tbl.Database
 		}
