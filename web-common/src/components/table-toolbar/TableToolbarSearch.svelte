@@ -54,6 +54,7 @@
       onkeydown={handleKeyDown}
     />
     <button
+      type="button"
       class="text-fg-secondary hover:text-fg-primary shrink-0"
       onclick={close}
       aria-label="Close search"
@@ -63,6 +64,7 @@
   </div>
 {:else}
   <button
+    type="button"
     class="flex items-center justify-center h-9 w-4 text-fg-primary hover:text-fg-secondary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
     onclick={open}
     aria-label="Search"

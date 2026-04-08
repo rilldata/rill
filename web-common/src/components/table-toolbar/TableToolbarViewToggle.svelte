@@ -15,6 +15,7 @@
 
 <div class="flex flex-row border rounded-sm overflow-hidden">
   <button
+    type="button"
     class="flex items-center justify-center w-8 h-8 {viewMode === 'grid'
       ? 'bg-surface-hover'
       : 'bg-input hover:bg-surface-hover'}"
@@ -25,6 +26,7 @@
     <LayoutGrid size={16} />
   </button>
   <button
+    type="button"
     class="flex items-center justify-center w-8 h-8 border-l {viewMode ===
     'list'
       ? 'bg-surface-hover'

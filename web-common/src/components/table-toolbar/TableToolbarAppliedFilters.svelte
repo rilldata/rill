@@ -53,6 +53,7 @@
         >
           {filter.label}
           <button
+            type="button"
             class="text-fg-secondary hover:text-fg-primary shrink-0 cursor-pointer"
             onclick={() => onFilterChange?.(filter.key, filter.resetValue)}
             aria-label="Remove filter {filter.label}"
@@ -63,6 +64,7 @@
       {/each}
     </div>
     <button
+      type="button"
       class="text-sm text-fg-secondary hover:text-fg-primary whitespace-nowrap cursor-pointer"
       onclick={onClearAllFilters}
     >

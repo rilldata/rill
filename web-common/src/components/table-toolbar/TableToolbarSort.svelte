@@ -14,6 +14,7 @@
 </script>
 
 <button
+  type="button"
   class="flex flex-row items-center gap-x-1.5 h-9 px-2 text-sm font-medium text-fg-primary hover:text-fg-secondary cursor-pointer"
   onclick={() => onSortToggle?.()}
   aria-label="Sort order: {sortLabel}"
