@@ -142,11 +142,7 @@ export class BehaviourEventFactory extends MetricsEventFactory {
     event.medium = BehaviourEventMedium.Button;
     event.space = MetricsEventSpace.Workspace;
     event.screen_name = MetricsEventScreenName.Project;
-    if (githubFields) {
-      for (const key in githubFields) {
-        event[key] = githubFields[key];
-      }
-    }
+    Object.assign(event, addDataFields);
     return event;
   }
 
@@ -161,7 +157,7 @@ export class BehaviourEventFactory extends MetricsEventFactory {
   ) {
     const event = this.getBaseMetricsEvent(
       "behavioral",
-      BehaviourEventAction.DeployIntent,
+      BehaviourEventAction.AddDataIntent,
       commonFields,
       commonUserFields,
     ) as BehaviourEvent;
@@ -169,11 +165,7 @@ export class BehaviourEventFactory extends MetricsEventFactory {
     event.medium = medium;
     event.space = space;
     event.screen_name = screen_name;
-    if (addDataFields) {
-      for (const key in addDataFields) {
-        event[key] = addDataFields[key];
-      }
-    }
+    Object.assign(event, addDataFields);
     return event;
   }
 }

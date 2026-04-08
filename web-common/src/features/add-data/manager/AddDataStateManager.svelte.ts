@@ -143,7 +143,7 @@ export class AddDataStateManager {
                 ? BehaviourEventAction.ModelConfigurationCanceled
                 : BehaviourEventAction.ConnectorExploreCanceled,
               {
-                step: AddDataStep.CreateConnector,
+                step: this.state.step,
                 schema: this.state.schema,
                 connector: this.state.connector,
               },
@@ -189,7 +189,7 @@ export class AddDataStateManager {
       case AddDataStep.Import:
         if (event.type === TransitionEventType.Back) {
           this.fireBehaviourEvent(BehaviourEventAction.ImportCanceled, {
-            step: AddDataStep.CreateConnector,
+            step: AddDataStep.Import,
             schema: this.state.schema,
             connector: this.state.config.connector,
           });
@@ -231,7 +231,7 @@ export class AddDataStateManager {
           this.fireBehaviourEvent(
             BehaviourEventAction.ConnectorExploreStarted,
             {
-              step: AddDataStep.Import,
+              step: AddDataStep.ExploreConnector,
               schema: this.state.schema,
               connector: this.state.connector,
             },
@@ -310,7 +310,8 @@ export class AddDataStateManager {
     action: BehaviourEventAction,
     fields: AddDataBehaviourEventFields,
   ) {
-    if (!this.config) return;
+    if (!this.config?.medium || !this.config?.space || !this.config?.screen)
+      return;
     void behaviourEvent?.fireAddDataStepEvent(
       action,
       this.config.medium,

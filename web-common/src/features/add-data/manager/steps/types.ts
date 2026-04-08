@@ -21,9 +21,9 @@ export type AddDataConfig = {
   importOnly?: boolean;
 
   // Telemetry related config
-  medium: BehaviourEventMedium;
-  space: MetricsEventSpace;
-  screen: MetricsEventScreenName;
+  medium?: BehaviourEventMedium;
+  space?: MetricsEventSpace;
+  screen?: MetricsEventScreenName;
 };
 
 export enum ImportDataStep {

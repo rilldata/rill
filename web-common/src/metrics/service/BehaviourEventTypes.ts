@@ -33,6 +33,7 @@ export enum BehaviourEventAction {
   GithubDisconnect = "ghconnected-disconnect",
 
   // Welcome/Connector actions
+  AddDataIntent = "add-data-intent",
   WelcomePageViewed = "welcome-page-viewed",
   ConnectorConfigurationStarted = "connector-configuration-started",
   ConnectorConfigurationCanceled = "connector-configuration-canceled",

@@ -15,7 +15,7 @@ import type { AddDataBehaviourEventFields } from "@rilldata/web-common/metrics/s
 
 export enum ErrorEventAction {
   SourceError = "source-error",
-  ConnectorError = "connector-error",
+  AddDataError = "add-data-error",
   ErrorBoundary = "error-boundary",
 }
 
@@ -92,19 +92,15 @@ export class ErrorEventFactory extends MetricsEventFactory {
   ) {
     const event = this.getBaseMetricsEvent(
       "error",
-      ErrorEventAction.ConnectorError,
+      ErrorEventAction.AddDataError,
       commonFields,
       commonUserFields,
     ) as AddDataErrorEvent;
-    event.action = ErrorEventAction.SourceError;
+    event.action = ErrorEventAction.AddDataError;
     event.space = space;
     event.screen_name = screen_name;
     event.error_code = error_code;
-    if (addDataFields) {
-      for (const key in addDataFields) {
-        event[key] = addDataFields[key];
-      }
-    }
+    Object.assign(event, addDataFields);
     return event;
   }
 
