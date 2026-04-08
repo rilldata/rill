@@ -19,7 +19,7 @@ import (
 // TODO: The functions in this file are not truly fault tolerant. They should be refactored to run as idempotent, retryable background tasks.
 
 // CreateProject creates a new project and provisions and reconciles a prod deployment for it.
-func (s *Service) CreateProject(ctx context.Context, org *database.Organization, opts *database.InsertProjectOptions, deploy bool) (*database.Project, error) {
+func (s *Service) CreateProject(ctx context.Context, org *database.Organization, opts *database.InsertProjectOptions, deploy, editable bool) (*database.Project, error) {
 	// Get roles for initial setup
 	adminRole, err := s.DB.FindProjectRole(ctx, database.ProjectRoleNameAdmin)
 	if err != nil {
@@ -89,14 +89,19 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		return nil, fmt.Errorf("failed to deploy project: either an archive or git info must be provided")
 	}
 
+	env := "prod"
+	if editable {
+		env = "dev"
+	}
+
 	// Provision prod deployment.
 	// Start using original context again since transaction in txCtx is done.
 	depl, err := s.CreateDeployment(ctx, &CreateDeploymentOptions{
 		ProjectID:   proj.ID,
 		OwnerUserID: nil,
-		Environment: "prod",
+		Environment: env,
 		Branch:      proj.PrimaryBranch,
-		Editable:    false,
+		Editable:    editable,
 	})
 	if err != nil {
 		return nil, err

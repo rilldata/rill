@@ -24,6 +24,7 @@
     isPublicAlertPage,
     isPublicReportPage,
     isPublicURLPage,
+    isProjectWelcomePage,
   } from "@rilldata/web-admin/features/navigation/nav-utils";
   import ProjectBuilding from "@rilldata/web-admin/features/projects/ProjectBuilding.svelte";
   import ProjectHeader from "@rilldata/web-admin/features/projects/ProjectHeader.svelte";
@@ -61,6 +62,7 @@
 
   let onProjectPage = $derived(isProjectPage(page));
   let onPublicURLPage = $derived(isPublicURLPage(page));
+  let onWelcomePage = $derived(isProjectWelcomePage(page));
 
   // From root layout; passed through to header components
   let organizationPermissions = $derived(
@@ -235,23 +237,25 @@
         jwt={runtime.jwt}
         authContext={runtime.authContext}
       >
-        <ProjectHeader
-          {organization}
-          {project}
-          projectPermissions={runtime.projectPermissions}
-          manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
-          manageOrgMembers={organizationPermissions?.manageOrgMembers}
-          readProjects={organizationPermissions?.readProjects}
-          {planDisplayName}
-          {organizationLogoUrl}
-        />
-        {#if onProjectPage && deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
-          <ProjectTabs
-            projectPermissions={runtime.projectPermissions}
+        {#if !onWelcomePage}
+          <ProjectHeader
             {organization}
-            pathname={page.url.pathname}
             {project}
+            projectPermissions={runtime.projectPermissions}
+            manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
+            manageOrgMembers={organizationPermissions?.manageOrgMembers}
+            readProjects={organizationPermissions?.readProjects}
+            {planDisplayName}
+            {organizationLogoUrl}
           />
+          {#if onProjectPage && deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
+            <ProjectTabs
+              projectPermissions={runtime.projectPermissions}
+              {organization}
+              pathname={page.url.pathname}
+              {project}
+            />
+          {/if}
         {/if}
         {@render children()}
       </RuntimeProvider>

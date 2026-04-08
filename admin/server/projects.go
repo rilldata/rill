@@ -459,6 +459,13 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			runtime.EditTrigger,
 		)
 	}
+	if permissions.ManageDev { // TODO: add safeguard for editable deployments
+		instancePermissions = append(
+			instancePermissions,
+			runtime.ReadRepo,
+			runtime.EditRepo,
+		)
+	}
 
 	var systemPermissions []runtime.Permission
 	if req.IssueSuperuserToken {
@@ -721,7 +728,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	}
 
 	// Create the project
-	proj, err := s.admin.CreateProject(ctx, org, opts, !req.SkipDeploy)
+	proj, err := s.admin.CreateProject(ctx, org, opts, !req.SkipDeploy, req.GenerateManagedGit)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

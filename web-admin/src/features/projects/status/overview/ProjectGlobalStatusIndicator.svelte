@@ -52,7 +52,7 @@
     isLoading: projectParserLoading,
   } = $projectParserQuery);
   $: hasParseErrors =
-    projectParserData?.projectParser.state.parseErrors.length > 0;
+    projectParserData?.projectParser?.state?.parseErrors?.length > 0;
 </script>
 
 {#if hasResourceErrorsLoading || projectParserLoading}

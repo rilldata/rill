@@ -241,6 +241,7 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 	}
 	if depl.Environment == "dev" {
 		instancePermissions = append(instancePermissions,
+			runtime.ReadInstance,
 			runtime.ReadOLAP,
 			runtime.ReadProfiling,
 			runtime.ReadRepo,

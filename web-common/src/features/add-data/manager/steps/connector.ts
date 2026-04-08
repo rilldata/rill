@@ -27,7 +27,10 @@ import {
   getSchemaSecretKeys,
 } from "@rilldata/web-common/features/templates/schema-utils.ts";
 import type { MultiStepFormSchema } from "@rilldata/web-common/features/templates/schemas/types.ts";
-import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
+import {
+  addLeadingSlash,
+  getFileAPIPathFromNameAndType,
+} from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types.ts";
 import {
   maybeUnsetOlapConnectorInYaml,
@@ -72,9 +75,8 @@ export async function createConnector({
     : [];
 
   // Create connector file path outside try block for cleanup
-  const newConnectorFilePath = getFileAPIPathFromNameAndType(
-    connectorName,
-    EntityType.Connector,
+  const newConnectorFilePath = addLeadingSlash(
+    getFileAPIPathFromNameAndType(connectorName, EntityType.Connector),
   );
 
   try {

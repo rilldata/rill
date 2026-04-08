@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
   import OrganizationHibernating from "@rilldata/web-admin/features/organizations/hibernating/OrganizationHibernating.svelte";
@@ -36,8 +37,11 @@
         prodSlots: "4",
       },
     });
-    console.log(createProjectResp);
+    const frontendUrl = createProjectResp.project?.frontendUrl;
+    if (!frontendUrl) return;
+    await goto(`${frontendUrl}/-/welcome`);
   }
+  $: ({ isLoading } = $createProjectMutation);
 </script>
 
 <svelte:head>
@@ -55,7 +59,9 @@
           rel="noreferrer noopener">See docs</a
         >
       </span>
-      <Button type="primary" onClick={createProject}>Create new</Button>
+      <Button type="primary" onClick={createProject} loading={isLoading}>
+        Create new
+      </Button>
     {:else if $allProjectsHibernating.data}
       <OrganizationHibernating
         organization={orgName}

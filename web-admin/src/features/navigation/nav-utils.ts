@@ -106,6 +106,10 @@ export function isBillingUpgradePage(page: Page): boolean {
   return page.route.id === "/[organization]/-/upgrade-callback";
 }
 
+export function isProjectWelcomePage(page: Page): boolean {
+  return !!page.route.id?.startsWith("/[organization]/[project]/-/welcome");
+}
+
 export function getScreenNameFromPage(page: Page): MetricsEventScreenName {
   switch (true) {
     case isOrganizationPage(page):
