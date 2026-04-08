@@ -1,14 +1,14 @@
 <script lang="ts">
-  export let value: string | undefined;
+  let { value }: { value: string | undefined } = $props();
 
-  function formatDate(v: string | undefined) {
-    if (!v) return "—";
-    return new Date(v).toLocaleDateString(undefined, {
+  const formatted = $derived.by(() => {
+    if (!value) return "—";
+    return new Date(value).toLocaleDateString(undefined, {
       year: "numeric",
       month: "short",
       day: "numeric",
     });
-  }
+  });
 </script>
 
-<span class="whitespace-nowrap">{formatDate(value)}</span>
+<span class="whitespace-nowrap">{formatted}</span>

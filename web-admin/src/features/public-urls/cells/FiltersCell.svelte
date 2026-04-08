@@ -2,7 +2,11 @@
   import { Chip } from "@rilldata/web-common/components/chip";
   import type { V1Expression } from "@rilldata/web-admin/client";
 
-  export let metricsViewFilters: { [key: string]: V1Expression } | undefined;
+  let {
+    metricsViewFilters,
+  }: {
+    metricsViewFilters: { [key: string]: V1Expression } | undefined;
+  } = $props();
 
   interface FilterEntry {
     name: string;
@@ -28,11 +32,13 @@
     return [{ name, values, isInclude }];
   }
 
-  $: filters = metricsViewFilters
-    ? Object.values(metricsViewFilters).flatMap((expr) =>
-        extractDimensionFilters(expr),
-      )
-    : [];
+  const filters = $derived(
+    metricsViewFilters
+      ? Object.values(metricsViewFilters).flatMap((expr) =>
+          extractDimensionFilters(expr),
+        )
+      : [],
+  );
 </script>
 
 {#if filters.length > 0}

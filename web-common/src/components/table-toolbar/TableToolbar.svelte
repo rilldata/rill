@@ -63,11 +63,9 @@
     </div>
   </div>
 
-  {#if filterGroups.length > 0}
-    <TableToolbarAppliedFilters
-      {filterGroups}
-      {onFilterChange}
-      {onClearAllFilters}
-    />
-  {/if}
+  <TableToolbarAppliedFilters
+    {filterGroups}
+    {onFilterChange}
+    {onClearAllFilters}
+  />
 </section>

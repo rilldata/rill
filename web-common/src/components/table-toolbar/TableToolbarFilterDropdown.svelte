@@ -29,7 +29,11 @@
           >
           {#each group.options as option}
             <DropdownMenu.CheckboxItem
-              checked={group.selected === option.value}
+              closeOnSelect={!group.multiSelect}
+              checked={group.multiSelect
+                ? Array.isArray(group.selected) &&
+                  group.selected.includes(option.value)
+                : group.selected === option.value}
               onclick={() => onFilterChange?.(group.key, option.value)}
             >
               {option.label}

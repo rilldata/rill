@@ -55,9 +55,13 @@
     }
   }
 
-  // When external sort key changes, clear internal sorting (hides column arrows)
-  $: if (externalSortKey !== undefined) {
-    void externalSortKey;
+  // When external sort key changes, clear internal column sorting (hides arrows)
+  let prevExternalSortKey: string | undefined = externalSortKey;
+  $: if (
+    externalSortKey !== undefined &&
+    externalSortKey !== prevExternalSortKey
+  ) {
+    prevExternalSortKey = externalSortKey;
     sorting = [];
     options.update((old) => ({
       ...old,

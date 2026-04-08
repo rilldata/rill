@@ -1,3 +1,4 @@
+<!-- Used by dashboard list/grid view toggle -->
 <script lang="ts">
   import List from "@rilldata/web-common/components/icons/List.svelte";
   import { LayoutGrid } from "lucide-svelte";

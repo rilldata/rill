@@ -1,9 +1,15 @@
 <script lang="ts">
   import { ExternalLinkIcon } from "lucide-svelte";
 
-  export let displayName: string;
-  export let dashboardTitle: string;
-  export let url: string;
+  let {
+    displayName,
+    dashboardTitle,
+    url,
+  }: {
+    displayName: string;
+    dashboardTitle: string;
+    url: string;
+  } = $props();
 </script>
 
 <a
