@@ -11,6 +11,7 @@ import type {
   SourceErrorCodes,
   SourceFileType,
 } from "./SourceEventTypes";
+import type { AddDataBehaviourEventFields } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
 
 export enum ErrorEventAction {
   SourceError = "source-error",
@@ -45,13 +46,13 @@ export interface JavascriptErrorEvent extends MetricsEvent {
   page_url: string;
 }
 
-export interface AddDataErrorEvent extends MetricsEvent {
+export interface AddDataErrorEvent
+  extends MetricsEvent,
+    AddDataBehaviourEventFields {
   action: ErrorEventAction;
   error_code: SourceErrorCodes;
   space: MetricsEventSpace;
   screen_name: MetricsEventScreenName;
-  step: string;
-  schema: string;
 }
 
 export class ErrorEventFactory extends MetricsEventFactory {
@@ -86,9 +87,8 @@ export class ErrorEventFactory extends MetricsEventFactory {
     commonUserFields: CommonUserFields,
     space: MetricsEventSpace,
     screen_name: MetricsEventScreenName,
-    step: string,
-    schema: string,
     error_code: SourceErrorCodes,
+    addDataFields: AddDataBehaviourEventFields,
   ) {
     const event = this.getBaseMetricsEvent(
       "error",
@@ -99,9 +99,12 @@ export class ErrorEventFactory extends MetricsEventFactory {
     event.action = ErrorEventAction.SourceError;
     event.space = space;
     event.screen_name = screen_name;
-    event.step = step;
-    event.schema = schema;
     event.error_code = error_code;
+    if (addDataFields) {
+      for (const key in addDataFields) {
+        event[key] = addDataFields[key];
+      }
+    }
     return event;
   }
 

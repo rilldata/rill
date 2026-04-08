@@ -22,9 +22,10 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
   import { runImportSteps } from "@rilldata/web-common/features/add-data/manager/steps/import.ts";
-  import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics.ts";
+  import type { AddDataStateManager } from "@rilldata/web-common/features/add-data/manager/AddDataStateManager.svelte.ts";
 
   export let config: AddDataConfig;
+  export let stateManager: AddDataStateManager;
   export let importAddDataStep: ImportAddDataStep;
   export let onDone: () => void;
 
@@ -64,13 +65,7 @@
       );
     } catch (e) {
       error = e?.response?.data?.message ?? e?.message ?? "Unknown error";
-      void errorEventHandler?.fireAddDataErrorEvent(
-        config.space,
-        config.screen,
-        importAddDataStep.config.connector,
-        importStep,
-        error!,
-      );
+      stateManager.fireErrorEvent(error!, importStep);
     }
   }
 

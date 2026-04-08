@@ -11,7 +11,10 @@ import {
 } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import { connectorFormCache } from "@rilldata/web-common/features/add-data/manager/steps/connector.ts";
-import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics.ts";
+import {
+  behaviourEvent,
+  errorEventHandler,
+} from "@rilldata/web-common/metrics/initMetrics.ts";
 import {
   type AddDataBehaviourEventFields,
   BehaviourEventAction,
@@ -59,7 +62,7 @@ export class AddDataStateManager {
   private onStepChange: ((step: AddDataStep) => void) | undefined = undefined;
   private config: AddDataConfig | undefined = undefined;
 
-  private lastTransitionTime: number = 0;
+  private startTime = Date.now();
 
   public setCallbacks(
     onDone: (() => void) | undefined,
@@ -244,8 +247,42 @@ export class AddDataStateManager {
           break;
       }
     }
+  }
 
-    this.lastTransitionTime = Date.now();
+  public fireErrorEvent(
+    message: string,
+    step: AddDataStep | ImportDataStep = this.state.step,
+  ) {
+    if (!this.config) return;
+
+    const addDataFields: AddDataBehaviourEventFields = {
+      step,
+      duration: Date.now() - this.startTime,
+    };
+    if (
+      this.state.step === AddDataStep.CreateConnector ||
+      this.state.step === AddDataStep.CreateModel ||
+      this.state.step === AddDataStep.ExploreConnector ||
+      this.state.step === AddDataStep.Import
+    ) {
+      addDataFields.schema = this.state.schema;
+    }
+    if (
+      this.state.step === AddDataStep.CreateModel ||
+      this.state.step === AddDataStep.ExploreConnector
+    ) {
+      addDataFields.connector = this.state.connector;
+    }
+    if (this.state.step === AddDataStep.Import) {
+      addDataFields.connector = this.state.config.connector;
+    }
+
+    void errorEventHandler?.fireAddDataErrorEvent(
+      this.config.space,
+      this.config.screen,
+      message,
+      addDataFields,
+    );
   }
 
   private pushState(state: AddDataState) {
@@ -261,8 +298,6 @@ export class AddDataStateManager {
     this.state = this.stateStack.pop() ?? { step: AddDataStep.Init };
     if (this.stateStack.length === 0) this.onClose?.();
     this.onStepChange?.(this.state.step);
-
-    this.lastTransitionTime = Date.now();
   }
 
   // For lateral state change, going back is not supported.
@@ -276,15 +311,15 @@ export class AddDataStateManager {
     fields: AddDataBehaviourEventFields,
   ) {
     if (!this.config) return;
-    const duration = this.lastTransitionTime
-      ? Date.now() - this.lastTransitionTime
-      : 0;
     void behaviourEvent?.fireAddDataStepEvent(
       action,
       this.config.medium,
       this.config.space,
       this.config.screen,
-      { ...fields, duration },
+      {
+        ...fields,
+        duration: Date.now() - this.startTime,
+      },
     );
   }
 }

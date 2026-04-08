@@ -21,9 +21,10 @@
   import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import FeatherCheckCircle from "@rilldata/web-common/components/icons/FeatherCheckCircle.svelte";
-  import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics.ts";
+  import type { AddDataStateManager } from "@rilldata/web-common/features/add-data/manager/AddDataStateManager.svelte.ts";
 
   export let config: AddDataConfig;
+  export let stateManager: AddDataStateManager;
   export let importAddDataStep: ImportAddDataStep;
   export let onBack: () => void;
   export let onDone: () => void;
@@ -80,13 +81,7 @@
       return goto(currentFileRoute);
     } catch (e) {
       error = e?.response?.data?.message ?? e?.message ?? "Unknown error";
-      void errorEventHandler?.fireAddDataErrorEvent(
-        config.space,
-        config.screen,
-        importStep,
-        importAddDataStep.config.connector,
-        error!,
-      );
+      stateManager.fireErrorEvent(error!, importStep);
     }
   }
 

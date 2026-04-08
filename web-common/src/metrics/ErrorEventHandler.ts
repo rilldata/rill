@@ -17,6 +17,7 @@ import type {
   SourceFileType,
 } from "./service/SourceEventTypes";
 import { categorizeSourceError } from "@rilldata/web-common/features/sources/errors/errors.ts";
+import type { AddDataBehaviourEventFields } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
 
 export class ErrorEventHandler {
   public constructor(
@@ -117,18 +118,16 @@ export class ErrorEventHandler {
   public fireAddDataErrorEvent(
     space: MetricsEventSpace,
     screen_name: MetricsEventScreenName,
-    step: string,
-    schema: string,
     message: string,
+    addDataFields: AddDataBehaviourEventFields,
   ) {
     const code = categorizeSourceError(message);
     return this.metricsService.dispatch("addDataErrorEvent", [
       this.commonUserMetrics,
       space,
       screen_name,
-      step,
-      schema,
       code,
+      addDataFields,
     ]);
   }
 

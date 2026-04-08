@@ -1,16 +1,14 @@
 <script lang="ts">
-  import type {
-    AddDataConfig,
-    CreateConnectorStep,
-  } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
+  import type { CreateConnectorStep } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
   import { connectorFormCache } from "@rilldata/web-common/features/add-data/manager/steps/connector.ts";
   import { onMount } from "svelte";
   import ConnectorForm from "@rilldata/web-common/features/add-data/form/ConnectorForm.svelte";
+  import type { AddDataStateManager } from "@rilldata/web-common/features/add-data/manager/AddDataStateManager.svelte.ts";
 
   // Wrapper to initialize the ConnectorForm with cached data.
   // Has async logic to fetch the .env file. So to ensure we load the form on init, we use this wrapper.
 
-  export let config: AddDataConfig;
+  export let stateManager: AddDataStateManager;
   export let step: CreateConnectorStep;
   export let onSubmit: (
     connectorName: string,
@@ -33,7 +31,7 @@
 
 {#if connectorName != null && cachedEnvBlob != null && cachedFormValues != null}
   <ConnectorForm
-    {config}
+    {stateManager}
     {step}
     {onSubmit}
     {onBack}
