@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"math/big"
 	"reflect"
 	"strings"
@@ -114,28 +115,7 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	if err != nil {
 		return nil, wrapMaxBytesBilledError(err, c.config.MaxBytesBilled)
 	}
-
-	// We use query.Read which can also use fast path when results are small.
-	// In fast path schema is only available after fetching the first row.
-	var firstRow []bigquery.Value
-	for i := 0; i < len(it.Schema); i++ {
-		firstRow = append(firstRow, new(bigquery.Value))
-	}
-	rowErr := it.Next(&firstRow)
-	if rowErr != nil && !errors.Is(rowErr, iterator.Done) {
-		return nil, err
-	}
-	// schema is returned even if there are no rows
-	schema, err := fromBQSchema(it.Schema)
-	if err != nil {
-		return nil, err
-	}
-	row := newRows(it, firstRow, errors.Is(rowErr, iterator.Done))
-	res = &drivers.Result{
-		Rows:   row,
-		Schema: schema,
-	}
-	return res, nil
+	return toResult(it, math.MaxInt64)
 }
 
 // QuerySchema implements drivers.OLAPStore.
@@ -230,31 +210,57 @@ func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 		UnsupportedCols:   nil, // all columns are currently being mapped though may not be as specific as in BigQuery
 		PhysicalSizeBytes: 0,
 	}
-	if meta.TimePartitioning != nil {
-		if meta.TimePartitioning.Field != "" {
-			tbl.PartitionColumn = meta.TimePartitioning.Field
-		} else {
-			// Ingestion-time partitioned: use the pseudo-column.
-			tbl.PartitionColumn = "_PARTITIONTIME"
-		}
-	} else if meta.RangePartitioning != nil {
-		tbl.RangePartitionColumn = meta.RangePartitioning.Field
-	}
 	return tbl, nil
 }
 
+func (c *Connection) Head(ctx context.Context, db, schema, table string, limit int64) (*drivers.Result, error) {
+	client, err := c.getClient(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get BigQuery client: %w", err)
+	}
+	tbl := client.DatasetInProject(db, schema).Table(table)
+	it := tbl.Read(ctx)
+	return toResult(it, limit)
+}
+
+func toResult(it *bigquery.RowIterator, limit int64) (*drivers.Result, error) {
+	// We use query.Read which can also use fast path when results are small.
+	// In fast path schema is only available after fetching the first row.
+	var firstRow []bigquery.Value
+	for i := 0; i < len(it.Schema); i++ {
+		firstRow = append(firstRow, new(bigquery.Value))
+	}
+	err := it.Next(&firstRow)
+	if err != nil && !errors.Is(err, iterator.Done) {
+		return nil, err
+	}
+	// schema is returned even if there are no rows
+	schema, err := fromBQSchema(it.Schema)
+	if err != nil {
+		return nil, err
+	}
+	row := newRows(it, firstRow, errors.Is(err, iterator.Done), limit)
+	res := &drivers.Result{
+		Rows:   row,
+		Schema: schema,
+	}
+	return res, nil
+}
+
 type rows struct {
-	ri *bigquery.RowIterator
+	ri    *bigquery.RowIterator
+	limit int64
 
 	firstRow        []bigquery.Value
 	canScanFirstRow bool
 
+	scanned    int64
 	lastRow    []bigquery.Value // last scanned row from ri in Next
 	lastErr    error
 	canScanRow bool
 }
 
-func newRows(ri *bigquery.RowIterator, firstRow []bigquery.Value, noRows bool) *rows {
+func newRows(ri *bigquery.RowIterator, firstRow []bigquery.Value, noRows bool, limit int64) *rows {
 	if noRows {
 		return &rows{
 			lastErr: iterator.Done,
@@ -264,6 +270,7 @@ func newRows(ri *bigquery.RowIterator, firstRow []bigquery.Value, noRows bool) *
 		ri:              ri,
 		firstRow:        firstRow,
 		canScanFirstRow: true,
+		limit:           limit,
 	}
 	r.lastRow = make([]bigquery.Value, len(firstRow))
 	for i := range len(firstRow) {
@@ -299,7 +306,17 @@ func (r *rows) MapScan(dest map[string]any) error {
 		return err
 	}
 	for i, col := range r.ri.Schema {
-		dest[col.Name], err = convertValue(r.ri.Schema[i], row[i])
+		v, err := convertValue(r.ri.Schema[i], row[i])
+		if err != nil {
+			return err
+		}
+		if val, ok := v.(sqldriver.Valuer); ok {
+			v, err = val.Value()
+			if err != nil {
+				return err
+			}
+		}
+		dest[col.Name] = v
 		if err != nil {
 			return err
 		}
@@ -313,10 +330,15 @@ func (r *rows) Next() bool {
 		return false
 	}
 
+	if r.scanned >= r.limit {
+		return false
+	}
+
 	// first row was already fetched during query execution to get schema
 	if r.canScanFirstRow {
 		r.canScanRow = true
 		r.canScanFirstRow = false
+		r.scanned++
 		return true
 	}
 
@@ -329,6 +351,7 @@ func (r *rows) Next() bool {
 		return false
 	}
 	r.canScanRow = true
+	r.scanned++
 	return true
 }
 
@@ -441,6 +464,10 @@ func convertValue(field *bigquery.FieldSchema, value bigquery.Value) (any, error
 		return val, nil
 	}
 
+	if _, ok := value.(sqldriver.Valuer); ok {
+		return value, nil
+	}
+
 	// Marshal ARRAY and RECORD types to JSON, since arrays/maps aren't
 	// valid driver.Value types.
 	out, err := json.Marshal(val)
@@ -472,11 +499,11 @@ func convertUnitType(field *bigquery.FieldSchema, value bigquery.Value) (any, er
 	case bigquery.TimestampFieldType:
 		return convertBasicType[time.Time](field, value)
 	case bigquery.DateFieldType:
-		return convertCivilType(field, value)
+		return value, nil // no conversion for civil.Date type
 	case bigquery.TimeFieldType:
 		return convertStringerType[civil.Time](field, value)
 	case bigquery.DateTimeFieldType:
-		return convertCivilType(field, value)
+		return value, nil // no conversion for civil.DateTime type
 	case bigquery.NumericFieldType:
 		return convertRationalType(field, value, bigquery.NumericString)
 	case bigquery.BigNumericFieldType:
@@ -567,23 +594,6 @@ func convertStringerType[T fmt.Stringer](field *bigquery.FieldSchema, value bigq
 		return nil, &unexpectedTypeError{
 			FieldType: field.Type,
 			Expected:  reflect.TypeFor[T](),
-			Actual:    val,
-		}
-	}
-}
-
-func convertCivilType(field *bigquery.FieldSchema, value bigquery.Value) (any, error) {
-	switch val := value.(type) {
-	case nil:
-		return nil, nil
-	case civil.Date:
-		return val.In(time.UTC), nil
-	case civil.DateTime:
-		return val.In(time.UTC), nil
-	default:
-		return nil, &unexpectedTypeError{
-			FieldType: field.Type,
-			Expected:  reflect.TypeFor[civil.Date](),
 			Actual:    val,
 		}
 	}

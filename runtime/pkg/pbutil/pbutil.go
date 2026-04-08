@@ -1,6 +1,7 @@
 package pbutil
 
 import (
+	"database/sql/driver"
 	"fmt"
 	"math"
 	"math/big"
@@ -201,6 +202,17 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 		}
 		return structpb.NewListValue(st), nil
 	default:
+	}
+	// if it implements driver.Valuer, use that
+	if v, ok := v.(driver.Valuer); ok {
+		val, err := v.Value()
+		if err != nil {
+			return nil, err
+		}
+		if val == nil {
+			return structpb.NewNullValue(), nil
+		}
+		return ToValue(val, t)
 	}
 	if t != nil && t.ArrayElementType != nil {
 		v2, err := ToListValueUnknown(v, t)

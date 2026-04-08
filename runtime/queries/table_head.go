@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -83,16 +82,7 @@ func (q *TableHead) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	query, err := q.buildTableHeadSQL(ctx, olap)
-	if err != nil {
-		return err
-	}
-
-	rows, err := olap.Query(ctx, &drivers.Statement{
-		Query:            query,
-		Priority:         priority,
-		ExecutionTimeout: defaultExecutionTimeout,
-	})
+	rows, err := olap.Head(ctx, q.Database, q.DatabaseSchema, q.TableName, int64(q.Limit))
 	if err != nil {
 		return err
 	}
@@ -132,15 +122,7 @@ func (q *TableHead) Export(ctx context.Context, rt *runtime.Runtime, instanceID 
 				return err
 			}
 		}
-	case drivers.DialectDruid:
-		if err := q.generalExport(ctx, rt, instanceID, w, opts); err != nil {
-			return err
-		}
-	case drivers.DialectClickHouse:
-		if err := q.generalExport(ctx, rt, instanceID, w, opts); err != nil {
-			return err
-		}
-	case drivers.DialectStarRocks:
+	case drivers.DialectDruid, drivers.DialectClickHouse, drivers.DialectStarRocks, drivers.DialectSnowflake, drivers.DialectBigQuery:
 		if err := q.generalExport(ctx, rt, instanceID, w, opts); err != nil {
 			return err
 		}
@@ -181,6 +163,9 @@ func (q *TableHead) generalExport(ctx context.Context, rt *runtime.Runtime, inst
 }
 
 func (q *TableHead) buildTableHeadSQL(ctx context.Context, olap drivers.OLAPStore) (string, error) {
+	if olap.Dialect() != drivers.DialectDuckDB {
+		return "", fmt.Errorf("use head api instead of building sql for dialect '%s'", olap.Dialect())
+	}
 	tbl, err := olap.InformationSchema().Lookup(ctx, q.Database, q.DatabaseSchema, q.TableName)
 	if err != nil {
 		return "", err
@@ -191,147 +176,15 @@ func (q *TableHead) buildTableHeadSQL(ctx context.Context, olap drivers.OLAPStor
 		columns = append(columns, olap.Dialect().EscapeIdentifier(field.Name))
 	}
 
-	whereClause := ""
-	if olap.Dialect() == drivers.DialectBigQuery && tbl.PartitionColumn != "" {
-		latest, err := q.latestBigQueryPartition(ctx, olap)
-		if err == nil && !latest.IsZero() {
-			whereClause = fmt.Sprintf(
-				" WHERE %s >= TIMESTAMP_SUB(CAST('%s' AS TIMESTAMP), INTERVAL 3 DAY)",
-				olap.Dialect().EscapeIdentifier(tbl.PartitionColumn),
-				latest.UTC().Format(time.RFC3339),
-			)
-		}
-		// If fetching the latest partition fails or returns empty, proceed without a filter.
-		// For tables with require_partition_filter=true this will error at query time, which is acceptable.
-	} else if olap.Dialect() == drivers.DialectBigQuery && tbl.RangePartitionColumn != "" {
-		maxID, ok, err := q.latestBigQueryRangePartition(ctx, olap)
-		if err == nil && ok {
-			whereClause = fmt.Sprintf(
-				" WHERE %s >= %d",
-				olap.Dialect().EscapeIdentifier(tbl.RangePartitionColumn),
-				maxID,
-			)
-		}
-		// Same as the time-partition case: proceed without a filter if the lookup fails.
-	}
-
 	limitClause := ""
 	if q.Limit > 0 {
 		limitClause = fmt.Sprintf(" LIMIT %d", q.Limit)
 	}
 
 	return fmt.Sprintf(
-		"SELECT %s FROM %s%s%s",
+		"SELECT %s FROM %s%s",
 		strings.Join(columns, ", "),
 		olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
-		whereClause,
 		limitClause,
 	), nil
-}
-
-// latestBigQueryPartition queries INFORMATION_SCHEMA.PARTITIONS to find the most recent
-// partition time for a table without scanning its data. This is safe to run even on tables
-// with require_partition_filter=true because INFORMATION_SCHEMA is metadata-only.
-func (q *TableHead) latestBigQueryPartition(ctx context.Context, olap drivers.OLAPStore) (time.Time, error) {
-	var infoSchemaTable string
-	if q.Database != "" {
-		infoSchemaTable = fmt.Sprintf("`%s.%s.INFORMATION_SCHEMA.PARTITIONS`", q.Database, q.DatabaseSchema)
-	} else {
-		infoSchemaTable = fmt.Sprintf("`%s.INFORMATION_SCHEMA.PARTITIONS`", q.DatabaseSchema)
-	}
-
-	sql := fmt.Sprintf(
-		"SELECT MAX(partition_id) FROM %s WHERE table_name = ? AND partition_id NOT IN ('__NULL__', '__UNPARTITIONED__')",
-		infoSchemaTable,
-	)
-
-	rows, err := olap.Query(ctx, &drivers.Statement{
-		Query:            sql,
-		ExecutionTimeout: defaultExecutionTimeout,
-		Args:             []any{q.TableName},
-	})
-	if err != nil {
-		return time.Time{}, err
-	}
-	defer rows.Close()
-
-	var partitionID *string
-	if rows.Next() {
-		if err := rows.Scan(&partitionID); err != nil {
-			return time.Time{}, err
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return time.Time{}, err
-	}
-	if partitionID == nil || *partitionID == "" {
-		return time.Time{}, nil
-	}
-
-	return parseBigQueryPartitionID(*partitionID)
-}
-
-// latestBigQueryRangePartition queries INFORMATION_SCHEMA.PARTITIONS to find the lower bound of the
-// most recent integer-range partition for the table. This is safe to run even on tables with
-// require_partition_filter=true because INFORMATION_SCHEMA is metadata-only.
-func (q *TableHead) latestBigQueryRangePartition(ctx context.Context, olap drivers.OLAPStore) (int64, bool, error) {
-	var infoSchemaTable string
-	if q.Database != "" {
-		infoSchemaTable = fmt.Sprintf("`%s.%s.INFORMATION_SCHEMA.PARTITIONS`", q.Database, q.DatabaseSchema)
-	} else {
-		infoSchemaTable = fmt.Sprintf("`%s.INFORMATION_SCHEMA.PARTITIONS`", q.DatabaseSchema)
-	}
-
-	sql := fmt.Sprintf(
-		"SELECT MAX(SAFE_CAST(partition_id AS INT64)) FROM %s WHERE table_name = ? AND partition_id NOT IN ('__NULL__', '__UNPARTITIONED__')",
-		infoSchemaTable,
-	)
-
-	rows, err := olap.Query(ctx, &drivers.Statement{
-		Query:            sql,
-		ExecutionTimeout: defaultExecutionTimeout,
-		Args:             []any{q.TableName},
-	})
-	if err != nil {
-		return 0, false, err
-	}
-	defer rows.Close()
-
-	var maxID *int64
-	if rows.Next() {
-		if err := rows.Scan(&maxID); err != nil {
-			return 0, false, err
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return 0, false, err
-	}
-	if maxID == nil {
-		return 0, false, nil
-	}
-	return *maxID, true, nil
-}
-
-// parseBigQueryPartitionID converts a BigQuery partition_id string (e.g. "20240315") to a time.Time.
-// BigQuery partition IDs use a fixed-width date format with no separators.
-func parseBigQueryPartitionID(id string) (time.Time, error) {
-	var format string
-	switch len(id) {
-	case 10:
-		format = "2006010215"
-	case 8:
-		format = "20060102"
-	case 6:
-		format = "200601"
-	case 4:
-		format = "2006"
-	default:
-		return time.Time{}, fmt.Errorf("unrecognized partition_id format: %q", id)
-	}
-
-	t, err := time.Parse(format, id)
-	if err != nil {
-		return time.Time{}, fmt.Errorf("failed to parse partition_id %q with format %q: %w", id, format, err)
-	}
-	return t, nil
 }

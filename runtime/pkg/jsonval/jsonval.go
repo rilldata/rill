@@ -1,6 +1,7 @@
 package jsonval
 
 import (
+	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -237,6 +238,17 @@ func ToValue(v any, t *runtimev1.Type) (any, error) {
 		}
 		return nil, nil
 	default:
+	}
+	// if it implements driver.Valuer, use that
+	if v, ok := v.(driver.Valuer); ok {
+		val, err := v.Value()
+		if err != nil {
+			return nil, err
+		}
+		if val == nil {
+			return nil, nil
+		}
+		return ToValue(val, t)
 	}
 	if t != nil && t.ArrayElementType != nil {
 		return toSliceUnknown(v, t)

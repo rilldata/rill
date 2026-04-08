@@ -52,6 +52,10 @@ type OLAPStore interface {
 	// Query executes a query against the OLAP driver and returns an iterator for the resulting rows and schema.
 	// The result MUST be closed after use.
 	Query(ctx context.Context, stmt *Statement) (*Result, error)
+	// Head executes a query with a limit of N and returns the resulting rows and schema.
+	// It is separate from Query to allow drivers like BigQuery to optimize table previews and not incur huge costs of running a full query with limit.
+	// The result MUST be closed after use.
+	Head(ctx context.Context, db, schema, table string, limit int64) (*Result, error)
 	// QuerySchema returns the schema of the sql without trying not to run the actual query.
 	QuerySchema(ctx context.Context, query string, args []any) (*runtimev1.StructType, error)
 	// InformationSchema enables introspecting the tables and views available in the OLAP driver.
@@ -202,10 +206,6 @@ type OlapTable struct {
 	UnsupportedCols   map[string]string
 	PhysicalSizeBytes int64
 	DDL               string
-	// PartitionColumn is non-empty for time-partitioned tables (implemented for BigQuery only).
-	PartitionColumn string
-	// RangePartitionColumn is non-empty for integer-range-partitioned tables (implemented for BigQuery only).
-	RangePartitionColumn string
 }
 
 // Dialect enumerates OLAP query languages.
@@ -948,18 +948,7 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 			prefix += "SELECT "
 		}
 
-		dimVal := values[0]
-		if d == DialectBigQuery && len(result.Schema.Fields) > 0 {
-			// BigQuery converts time.Time type to TIMESTAMP which is not compatible with DATE type dimensions
-			// so we need to convert it back to civil.Date if the dimension type is DATE
-			// TODO: remove conversion of civil.Date in the rill driver and handle it wherever required and remove this conversion here
-			if result.Schema.Fields[0].Type.Code == runtimev1.Type_CODE_DATE {
-				if t, ok := dimVal.(time.Time); ok {
-					dimVal = civil.DateOf(t)
-				}
-			}
-		}
-		dimVals = append(dimVals, dimVal)
+		dimVals = append(dimVals, values[0])
 		for i, v := range values {
 			if d == DialectDruid || d == DialectDuckDB || d == DialectPinot {
 				if i == 0 {
@@ -1048,6 +1037,13 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 }
 
 func (d Dialect) GetArgExpr(val any, typ runtimev1.Type_Code) (string, any, error) {
+	// handle bigquery non-timestamp time types separately
+	switch v := val.(type) {
+	case civil.Date:
+		return "CAST(? AS DATE)", v.String(), nil
+	case civil.DateTime:
+		return "CAST(? AS DATETIME)", v.String(), nil
+	}
 	// handle date types especially otherwise they get sent as time.Time args which will be treated as datetime/timestamp types in olap
 	if typ == runtimev1.Type_CODE_DATE {
 		t, ok := val.(time.Time)

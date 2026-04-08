@@ -56,7 +56,7 @@ type configProperties struct {
 	SecretJSON string `mapstructure:"google_application_credentials"`
 	ProjectID  string `mapstructure:"project_id"`
 	// MaxBytesBilled is the maximum number of bytes billed for a query. This is a safety mechanism to prevent accidentally running large queries.
-	// Set this to -1 for project defaults.
+	// Set this to 0 for project defaults.
 	// Only applies to dashboard queries and does not apply when ingesting data from BigQuery into Rill.
 	MaxBytesBilled  int64 `mapstructure:"max_bytes_billed"`
 	AllowHostAccess bool  `mapstructure:"allow_host_access"`
@@ -70,7 +70,7 @@ func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Cl
 	}
 
 	conf := &configProperties{
-		MaxBytesBilled: 10 * 1024 * 1024 * 1024, // 10 GB default max bytes billed for queries
+		MaxBytesBilled: 0, // 0 defaults to project default set directly in BigQuery
 	}
 	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {

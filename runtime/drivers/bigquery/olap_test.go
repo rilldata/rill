@@ -1,6 +1,7 @@
 package bigquery_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -139,6 +140,12 @@ func TestExec(t *testing.T) {
 	testmode.Expensive(t)
 	_, olap := acquireTestBigQuery(t)
 
+	t.Cleanup(func() {
+		// drop table
+		err := olap.Exec(context.Background(), &drivers.Statement{Query: "DROP TABLE `rilldata.integration_test.exec_test`"})
+		require.NoError(t, err)
+	})
+
 	// create table with dry run
 	err := olap.Exec(t.Context(), &drivers.Statement{Query: "CREATE TABLE `rilldata.integration_test.exec_test` (id INT64, name STRING)", DryRun: true})
 	require.NoError(t, err)
@@ -147,9 +154,6 @@ func TestExec(t *testing.T) {
 	err = olap.Exec(t.Context(), &drivers.Statement{Query: "CREATE OR REPLACE TABLE `rilldata.integration_test.exec_test` (id INT64, name STRING)"})
 	require.NoError(t, err)
 
-	// drop table
-	err = olap.Exec(t.Context(), &drivers.Statement{Query: "DROP TABLE `rilldata.integration_test.exec_test`"})
-	require.NoError(t, err)
 }
 
 func TestLoadDDL(t *testing.T) {
@@ -356,6 +360,32 @@ func TestQuerySchema(t *testing.T) {
 		f := schema.Fields[i]
 		require.Equal(t, e.name, f.Name, "field %d name mismatch", i)
 		require.Equal(t, e.code, f.Type.Code, "field %d (%s) type mismatch", i, e.name)
+	}
+}
+
+func TestAllDatatypesRowCount(t *testing.T) {
+	testmode.Expensive(t)
+	_, olap := acquireTestBigQuery(t)
+
+	// all_datatypes has 3 rows
+	tests := []struct {
+		limit    int
+		expected int
+	}{
+		{3, 3},  // LIMIT equal to total rows
+		{10, 3}, // LIMIT greater than total rows
+		{2, 2},  // LIMIT less than total rows
+	}
+	for _, tc := range tests {
+		rows, err := olap.Head(t.Context(), "rilldata", "integration_test", "all_datatypes", int64(tc.limit))
+		require.NoError(t, err)
+		count := 0
+		for rows.Next() {
+			count++
+		}
+		require.NoError(t, rows.Err())
+		rows.Close()
+		require.Equal(t, tc.expected, count)
 	}
 }
 
