@@ -21,7 +21,7 @@
 </script>
 
 <AlertDialog.Root bind:open>
-  <AlertDialog.Content class="max-h-[90vh] overflow-y-auto">
+  <AlertDialog.Content>
     <AlertDialog.Title>
       Which metrics view should this dashboard reference?
     </AlertDialog.Title>

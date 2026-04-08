@@ -161,7 +161,7 @@
 </script>
 
 <AlertDialog.Root bind:open>
-  <AlertDialog.Content class="max-h-[90vh] overflow-y-auto">
+  <AlertDialog.Content>
     <AlertDialog.Title>Add AI connector</AlertDialog.Title>
 
     <div class="flex flex-col gap-y-3">
