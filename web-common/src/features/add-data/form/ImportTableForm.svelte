@@ -10,6 +10,7 @@
     getAnalyzedConnectorByName,
     getAnalyzedConnectors,
   } from "@rilldata/web-common/features/connectors/selectors.ts";
+
   import { Button } from "@rilldata/web-common/components/button";
   import {
     type AddDataConfig,
