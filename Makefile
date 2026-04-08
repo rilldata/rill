@@ -66,4 +66,3 @@ proto.generate:
 	npm install
 	npm run generate:runtime-client -w web-common
 	npm run generate:client -w web-admin
-	
