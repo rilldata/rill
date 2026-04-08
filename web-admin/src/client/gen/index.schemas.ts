@@ -569,6 +569,10 @@ export interface V1GetDeploymentResponse {
   ttlSeconds?: number;
 }
 
+export interface V1GetEmbeddedAnalyticsResponse {
+  iframeUrl?: string;
+}
+
 export interface V1GetGithubRepoStatusResponse {
   hasAccess?: boolean;
   grantAccessUrl?: string;
