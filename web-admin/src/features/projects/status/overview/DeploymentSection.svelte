@@ -12,6 +12,7 @@
     isTeamPlan,
   } from "@rilldata/web-admin/features/billing/plans/utils";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
+  import { createQueryServiceProjectStorage } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size";
   import { useProjectDeployment, useRuntimeVersion } from "../selectors";
@@ -59,7 +60,15 @@
     sensitive: true,
   });
   $: instance = $instanceQuery.data?.instance;
-  $: dataSizeBytes = $instanceQuery.data?.dataSizeBytes;
+
+  // Project storage (OLAP connector data size)
+  $: storageQuery = createQueryServiceProjectStorage(runtimeClient, {});
+  $: dataSizeBytes = (() => {
+    const val = $storageQuery.data?.defaultOlapSizeBytes;
+    if (val === undefined || val === null) return undefined;
+    const n = Number(val);
+    return n >= 0 ? n : undefined;
+  })();
 
   // Billing plan detection
   $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
@@ -75,11 +84,11 @@
 
   // Fill percentage for the usage pill (0–100)
   $: usagePercent = (() => {
-    const bytes = Number(dataSizeBytes ?? 0);
+    const bytes = dataSizeBytes ?? 0;
     if (!storageCap) return bytes > 0 ? 100 : 0;
     return Math.min(Math.round((bytes / storageCap) * 100), 100);
   })();
-  $: isOverCap = storageCap > 0 && Number(dataSizeBytes ?? 0) >= storageCap;
+  $: isOverCap = storageCap > 0 && (dataSizeBytes ?? 0) >= storageCap;
 
   // Repo — only shown when the user connected their own GitHub
   $: githubUrl = projectData?.gitRemote
@@ -185,47 +194,41 @@
       </span>
     </div>
 
-    {#if !olapConnector || olapConnector.provision}
+    {#if dataSizeBytes !== undefined}
       <div class="info-row">
         <span class="info-label">Data usage</span>
         <span class="info-value flex items-center gap-2">
-          {#if dataSizeBytes}
-            {#if storageCap}
-              <a
-                href="/{organization}/{project}/-/status/tables"
-                class="usage-pill-link"
-                aria-label="Data usage"
-              >
-                <span class="usage-pill">
-                  <span
-                    class="usage-pill-fill"
-                    class:over-cap={isOverCap}
-                    style:width="{usagePercent}%"
-                  ></span>
-                </span>
-              </a>
-              <span class="text-xs text-fg-secondary whitespace-nowrap">
-                {formatMemorySize(Number(dataSizeBytes))} / {formatMemorySize(
-                  storageCap,
-                )}
+          {#if storageCap}
+            <a
+              href="/{organization}/{project}/-/status/tables"
+              class="usage-pill-link"
+              aria-label="Data usage"
+            >
+              <span class="usage-pill">
+                <span
+                  class="usage-pill-fill"
+                  class:over-cap={isOverCap}
+                  style:width="{usagePercent}%"
+                ></span>
               </span>
-            {:else}
-              <span class="text-sm">
-                {formatMemorySize(Number(dataSizeBytes))}
-              </span>
-            {/if}
+            </a>
+            <span class="text-xs text-fg-secondary whitespace-nowrap">
+              {formatMemorySize(dataSizeBytes)} / {formatMemorySize(storageCap)}
+            </span>
           {:else}
-            —
+            <span class="text-sm">
+              {formatMemorySize(dataSizeBytes)}
+            </span>
           {/if}
         </span>
       </div>
+    {/if}
 
-      {#if !$subscriptionQuery?.isLoading && showSlots}
-        <div class="info-row">
-          <span class="info-label">Rill Slots</span>
-          <span class="slots-count">{currentSlots}</span>
-        </div>
-      {/if}
+    {#if !$subscriptionQuery?.isLoading && showSlots}
+      <div class="info-row">
+        <span class="info-label">Rill Slots</span>
+        <span class="slots-count">{currentSlots}</span>
+      </div>
     {/if}
   </div>
 </OverviewCard>

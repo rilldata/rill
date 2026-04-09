@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Message as Message$1, proto3, protoInt64, Struct, Timestamp } from "@bufbuild/protobuf";
+import { Message as Message$1, proto3, Struct, Timestamp } from "@bufbuild/protobuf";
 import { StructType } from "./schema_pb.js";
 import { RefreshModelTrigger, Resource, ResourceName } from "./resources_pb.js";
 import { ContentBlock, Tool } from "../../ai/v1/ai_pb.js";
@@ -792,14 +792,6 @@ export class GetInstanceResponse extends Message$1<GetInstanceResponse> {
    */
   instance?: Instance;
 
-  /**
-   * data_size_bytes is the total size of the instance's data directory in bytes.
-   * This is the same value reported to billing/Orb as "data_dir_size_bytes".
-   *
-   * @generated from field: int64 data_size_bytes = 2;
-   */
-  dataSizeBytes = protoInt64.zero;
-
   constructor(data?: PartialMessage<GetInstanceResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -809,7 +801,6 @@ export class GetInstanceResponse extends Message$1<GetInstanceResponse> {
   static readonly typeName = "rill.runtime.v1.GetInstanceResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance", kind: "message", T: Instance },
-    { no: 2, name: "data_size_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetInstanceResponse {

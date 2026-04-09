@@ -1092,9 +1092,6 @@ type GetInstanceResponse struct {
 	unknownFields protoimpl.UnknownFields
 
 	Instance *Instance `protobuf:"bytes,1,opt,name=instance,proto3" json:"instance,omitempty"`
-	// data_size_bytes is the total size of the instance's data directory in bytes.
-	// This is the same value reported to billing/Orb as "data_dir_size_bytes".
-	DataSizeBytes int64 `protobuf:"varint,2,opt,name=data_size_bytes,json=dataSizeBytes,proto3" json:"data_size_bytes,omitempty"`
 }
 
 func (x *GetInstanceResponse) Reset() {
@@ -1134,13 +1131,6 @@ func (x *GetInstanceResponse) GetInstance() *Instance {
 		return x.Instance
 	}
 	return nil
-}
-
-func (x *GetInstanceResponse) GetDataSizeBytes() int64 {
-	if x != nil {
-		return x.DataSizeBytes
-	}
-	return 0
 }
 
 // Request message for RuntimeService.CreateInstance.

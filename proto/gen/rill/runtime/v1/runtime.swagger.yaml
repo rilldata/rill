@@ -5386,12 +5386,6 @@ definitions:
     properties:
       instance:
         $ref: '#/definitions/v1Instance'
-      dataSizeBytes:
-        type: string
-        format: int64
-        description: |-
-          data_size_bytes is the total size of the instance's data directory in bytes.
-          This is the same value reported to billing/Orb as "data_dir_size_bytes".
     title: Response message for RuntimeService.GetInstance
   v1GetLogsResponse:
     type: object
