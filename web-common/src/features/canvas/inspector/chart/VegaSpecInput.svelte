@@ -3,14 +3,11 @@
   import { EditorState } from "@codemirror/state";
   import { EditorView, placeholder } from "@codemirror/view";
   import { base as baseExtensions } from "@rilldata/web-common/components/editor/presets/base";
-  import { onMount } from "svelte";
 
   export let value: string;
   export let onChange: (updatedSpec: string) => void;
 
   let error: string | null = null;
-  let specEditor: EditorView;
-  let editorContainer: HTMLElement;
 
   const placeholderSpec = `Your Vega-Lite spec should look like this:
 {
@@ -27,16 +24,23 @@ Data comes from your Metrics SQL queries. The first query is
 available as {"name": "query1"}, the second as {"name": "query2"},
 and so on.`;
 
-  onMount(() => {
-    specEditor = new EditorView({
+  function initEditor(node: HTMLElement, initialValue: string) {
+    // Guard against the feedback loop: when we dispatch a programmatic change
+    // into the editor, the updateListener fires and would call onChange, which
+    // would update the parent store, which would call update() again, ad infinitum.
+    let externalUpdate = false;
+
+    const editor = new EditorView({
       state: EditorState.create({
-        doc: value || "",
+        doc: initialValue || "",
         extensions: [
           baseExtensions(),
           json(),
           placeholder(placeholderSpec),
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
+              if (externalUpdate) return;
+
               const newValue = update.state.doc.toString();
 
               if (!newValue) {
@@ -56,6 +60,7 @@ and so on.`;
 
             // Reformat on blur only, to avoid cursor jumps during typing
             if (update.focusChanged && !update.view.hasFocus) {
+              if (externalUpdate) return;
               const newValue = update.state.doc.toString();
               if (!newValue) return;
               try {
@@ -81,17 +86,34 @@ and so on.`;
           }),
         ],
       }),
-      parent: editorContainer,
+      parent: node,
     });
 
-    return () => {
-      specEditor.destroy();
+    return {
+      // Called by Svelte whenever the `value` prop changes.
+      update(newValue: string) {
+        const current = editor.state.doc.toString();
+        if (current !== (newValue ?? "")) {
+          externalUpdate = true;
+          editor.dispatch({
+            changes: {
+              from: 0,
+              to: editor.state.doc.length,
+              insert: newValue ?? "",
+            },
+          });
+          externalUpdate = false;
+        }
+      },
+      destroy() {
+        editor.destroy();
+      },
     };
-  });
+  }
 </script>
 
 <div>
-  <div bind:this={editorContainer} class="spec-editor-container"></div>
+  <div class="spec-editor-container" use:initEditor={value}></div>
 
   {#if error}
     <div class="text-red-500 text-sm px-3">{error}</div>

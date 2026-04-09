@@ -24,7 +24,26 @@
 
   let entries: Entry[] = toEntries(!value || value.length === 0 ? [""] : value);
 
+  // When the value prop changes externally (e.g. AI agent writes to YAML), sync
+  // entries. The use:initEditor action's update() hook then syncs each editor's
+  // content when its entry changes, so no manual EditorView tracking is needed.
+  $: {
+    const incoming = !value || value.length === 0 ? [""] : value;
+    if (incoming.length !== entries.length) {
+      // Query count changed — rebuild entries so Svelte re-keys the #each block,
+      // destroying old editors and creating fresh ones with the new content.
+      entries = toEntries(incoming);
+    } else {
+      // Same count — update sql on each entry; Svelte passes the new entry to
+      // the action's update() which dispatches the change into the editor.
+      entries = entries.map((e, i) => ({ ...e, sql: incoming[i] }));
+    }
+  }
+
   function initEditor(node: HTMLElement, entry: Entry) {
+    // Prevent the feedback loop: programmatic dispatches must not trigger onChange.
+    let externalUpdate = false;
+
     const editor = new EditorView({
       state: EditorState.create({
         doc: entry.sql,
@@ -33,7 +52,7 @@
           sql({ dialect: DuckDBSQL }),
           placeholder("SELECT * FROM metrics"),
           EditorView.updateListener.of((update) => {
-            if (update.docChanged) {
+            if (update.docChanged && !externalUpdate) {
               updateSQL(entry.id, update.state.doc.toString());
             }
           }),
@@ -47,6 +66,23 @@
     });
 
     return {
+      // Called by Svelte whenever the entry prop passed to use:initEditor changes.
+      update(newEntry: Entry) {
+        const current = editor.state.doc.toString();
+        if (current !== newEntry.sql) {
+          externalUpdate = true;
+          editor.dispatch({
+            changes: {
+              from: 0,
+              to: editor.state.doc.length,
+              insert: newEntry.sql,
+            },
+          });
+          externalUpdate = false;
+        }
+        // Keep the closure's entry.id in sync so updateSQL references the right id.
+        entry = newEntry;
+      },
       destroy() {
         editor.destroy();
       },
