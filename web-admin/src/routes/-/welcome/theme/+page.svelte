@@ -24,7 +24,12 @@
   ];
 
   function handleThemeChange(theme: ThemeMode) {
+    document.documentElement.classList.add("theme-transitioning");
     themeControl.set[theme]();
+    setTimeout(
+      () => document.documentElement.classList.remove("theme-transitioning"),
+      300,
+    );
   }
 
   function handleContinue() {
@@ -45,7 +50,7 @@
         onclick={() => handleThemeChange(themeOption.value)}
       >
         <div
-          class="border rounded-md"
+          class="border rounded-md transition-transform duration-200 hover:scale-110"
           class:shadow-lg={isSelected}
           class:border-ring-focus={isSelected}
         >
@@ -61,3 +66,15 @@
     <Button type="primary" onClick={handleContinue} large>Continue</Button>
   </div>
 </div>
+
+<style>
+  /* We are intentionally not changing `color`. It slows down the transition quite a bit. */
+  :global(.theme-transitioning),
+  :global(.theme-transitioning *) {
+    transition:
+      background-color 300ms ease,
+      background-image 300ms ease,
+      border-color 300ms ease,
+      fill 300ms ease !important;
+  }
+</style>

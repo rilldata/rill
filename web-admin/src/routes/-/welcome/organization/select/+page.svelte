@@ -4,7 +4,7 @@
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control.ts";
   import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo.ts";
-  import { ChevronRightIcon } from "lucide-svelte";
+  import { ChevronRightIcon, PlusIcon } from "lucide-svelte";
 
   const orgListQuery = createAdminServiceListOrganizations();
   $: orgs = $orgListQuery.data?.organizations ?? [];
@@ -33,7 +33,8 @@
     </div>
 
     <a class="link" href="/-/welcome/organization/create">
-      Create a new organization
+      <PlusIcon class="h-4" />
+      <span>Create a new organization</span>
     </a>
   </div>
 </div>
