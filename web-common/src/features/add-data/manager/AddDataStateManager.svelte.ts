@@ -253,7 +253,7 @@ export class AddDataStateManager {
     message: string,
     step: AddDataStep | ImportDataStep = this.state.step,
   ) {
-    if (!this.config) return;
+    if (!this.config?.space || !this.config?.screen) return;
 
     const addDataFields: AddDataBehaviourEventFields = {
       step,

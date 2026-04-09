@@ -396,6 +396,9 @@ function fireImportStepEvent(
   addDataStep: ImportAddDataStep,
   step: ImportDataStep,
 ) {
+  if (!addDataConfig.medium || !addDataConfig.space || !addDataConfig.screen)
+    return;
+
   void behaviourEvent?.fireAddDataStepEvent(
     BehaviourEventAction.ImportStep,
     addDataConfig.medium,

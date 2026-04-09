@@ -142,7 +142,7 @@ export class BehaviourEventFactory extends MetricsEventFactory {
     event.medium = BehaviourEventMedium.Button;
     event.space = MetricsEventSpace.Workspace;
     event.screen_name = MetricsEventScreenName.Project;
-    Object.assign(event, addDataFields);
+    Object.assign(event, githubFields);
     return event;
   }
 
