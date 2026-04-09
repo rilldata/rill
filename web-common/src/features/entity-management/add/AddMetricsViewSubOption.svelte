@@ -7,7 +7,7 @@
   import {
     connectorClassMapping,
     connectorIconMapping,
-  } from "@rilldata/web-common/features/connectors/connector-icon-mapping.ts";
+  } from "@rilldata/web-common/features/connectors/connector-metadata.ts";
   import { createResourceAndNavigate } from "@rilldata/web-common/features/entity-management/add/new-files.ts";
   import File from "@rilldata/web-common/components/icons/File.svelte";
 

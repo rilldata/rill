@@ -22,7 +22,7 @@
 </script>
 
 <SettingsContainer title={plan?.displayName}>
-  <div slot="body">
+  <div>
     <div>You're currently on a custom contract.</div>
     {#if billingPortalUrl}
       <div>
@@ -36,17 +36,17 @@
     {/if}
     <PlanQuotas {organization} />
   </div>
-  <svelte:fragment slot="contact">
+  {#snippet contact()}
     <span>To make changes to your contract,</span>
     <ContactUs variant="enterprise" />
-  </svelte:fragment>
-  <svelte:fragment slot="action">
+  {/snippet}
+  {#snippet action()}
     {#if hasPayment}
       <Button type="primary" onClick={() => (open = true)}>
         Start Team plan
       </Button>
     {/if}
-  </svelte:fragment>
+  {/snippet}
 </SettingsContainer>
 
 <StartTeamPlanDialog bind:open {organization} type="base" />
