@@ -11559,6 +11559,8 @@ func (m *ResolveCanvasRequest) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for Unsafe
+
 	if len(errors) > 0 {
 		return ResolveCanvasRequestMultiError(errors)
 	}

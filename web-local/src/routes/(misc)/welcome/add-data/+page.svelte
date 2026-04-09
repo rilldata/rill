@@ -21,17 +21,19 @@
     <div class="text-3xl font-bold text-fg-accent">Connect your data</div>
   {/if}
   <div class="w-fit h-fit mt-4">
-    <AddDataManager
-      config={{
-        welcomeScreen: true,
-        medium: BehaviourEventMedium.Card,
-        space: MetricsEventSpace.Workspace,
-        screen: MetricsEventScreenName.Splash,
-      }}
-      initSchema={data.schema}
-      onStepChange={(step) => (addDataStep = step)}
-      onClose={() => window.history.back()}
-      onDone={() => WelcomeStatus.set(false)}
-    />
+    {#key data.schema}
+      <AddDataManager
+        config={{
+          welcomeScreen: true,
+          medium: BehaviourEventMedium.Card,
+          space: MetricsEventSpace.Workspace,
+          screen: MetricsEventScreenName.Splash,
+        }}
+        initSchema={data.schema}
+        onStepChange={(step) => (addDataStep = step)}
+        onClose={() => window.history.back()}
+        onDone={() => WelcomeStatus.set(false)}
+      />
+    {/key}
   </div>
 </div>

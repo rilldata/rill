@@ -20,6 +20,7 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
+  import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
   import FeatherCheckCircle from "@rilldata/web-common/components/icons/FeatherCheckCircle.svelte";
   import type { AddDataStateManager } from "@rilldata/web-common/features/add-data/manager/AddDataStateManager.svelte.ts";
 
@@ -57,7 +58,7 @@
   );
 
   let importStep = ImportDataStep.Init;
-  $: currentFileRoute = "/";
+  $: currentFileRoute = $previewModeStore ? "/dashboards" : "/";
   let error: string | null = null;
   $: hasErrored = !!error;
 
@@ -73,7 +74,22 @@
         (step, currentFilePath) => {
           importStep = step;
           if (currentFilePath) {
-            currentFileRoute = `/files${addLeadingSlash(currentFilePath)}`;
+            if ($previewModeStore) {
+              const { canvasName, exploreName } =
+                importAddDataStep.config.importTo;
+              if (step === ImportDataStep.CreateDashboard && canvasName) {
+                currentFileRoute = `/canvas/${canvasName}`;
+              } else if (
+                step === ImportDataStep.CreateDashboard &&
+                exploreName
+              ) {
+                currentFileRoute = `/explore/${exploreName}`;
+              } else {
+                currentFileRoute = "/dashboards";
+              }
+            } else {
+              currentFileRoute = `/files${addLeadingSlash(currentFilePath)}`;
+            }
           }
         },
       );
