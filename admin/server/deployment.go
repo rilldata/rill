@@ -227,7 +227,11 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 			}
 		case *adminv1.GetDeploymentRequest_Attributes:
 			attr = forVal.Attributes.AsMap()
-			subject, _ = attr["id"].(string)
+
+			// Use the "id" field as the subject if it exists and is a string.
+			if id, ok := attr["id"].(string); ok && id != "" {
+				subject = safeHash(id)
+			}
 		default:
 			return nil, status.Error(codes.InvalidArgument, "invalid 'for' type")
 		}
@@ -617,7 +621,11 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 			}
 		case *adminv1.GetDeploymentCredentialsRequest_Attributes:
 			attr = forVal.Attributes.AsMap()
-			subject, _ = attr["id"].(string)
+
+			// Use the "id" field as the subject if it exists and is a string.
+			if id, ok := attr["id"].(string); ok && id != "" {
+				subject = safeHash(id)
+			}
 		default:
 			return nil, status.Error(codes.InvalidArgument, "invalid 'for' type")
 		}
@@ -738,7 +746,11 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 			}
 		case *adminv1.GetIFrameRequest_Attributes:
 			attr = forVal.Attributes.AsMap()
-			subject, _ = attr["id"].(string)
+
+			// Use the "id" field as the subject if it exists and is a string.
+			if id, ok := attr["id"].(string); ok && id != "" {
+				subject = safeHash(id)
+			}
 		default:
 			return nil, status.Error(codes.InvalidArgument, "invalid 'for' type")
 		}
