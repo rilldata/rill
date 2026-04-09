@@ -1,10 +1,7 @@
 <script lang="ts">
   import { createAdminServiceGetBillingSubscription } from "@rilldata/web-admin/client";
-  import CancelledTeamPlan from "@rilldata/web-admin/features/billing/plans/CancelledTeamPlan.svelte";
-  import EnterprisePlan from "@rilldata/web-admin/features/billing/plans/EnterprisePlan.svelte";
-  import POCPlan from "@rilldata/web-admin/features/billing/plans/POCPlan.svelte";
-  import TeamPlan from "@rilldata/web-admin/features/billing/plans/TeamPlan.svelte";
-  import TrialPlan from "@rilldata/web-admin/features/billing/plans/TrialPlan.svelte";
+  import PlanCards from "@rilldata/web-admin/features/billing/plans/PlanCards.svelte";
+  import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types";
   import {
     isManagedPlan,
     isTeamPlan,
@@ -14,54 +11,56 @@
   let {
     organization,
     showUpgradeDialog,
-    billingPortalUrl,
   }: {
     organization: string;
     showUpgradeDialog: boolean;
-    billingPortalUrl: string | undefined;
   } = $props();
 
   let subscriptionQuery = $derived(
     createAdminServiceGetBillingSubscription(organization),
   );
   let subscription = $derived($subscriptionQuery?.data?.subscription);
-  let hasPayment = $derived(
-    !!$subscriptionQuery?.data?.organization?.paymentCustomerId,
-  );
   let plan = $derived(subscription?.plan);
 
   let categorisedIssues = $derived(
     useCategorisedOrganizationBillingIssues(organization),
   );
 
-  // fresh orgs will have a never subscribed issue associated with it
   let neverSubbed = $derived(!!$categorisedIssues.data?.neverSubscribed);
-  // trial plan will have a trial issue associated with it
   let isTrial = $derived(!!$categorisedIssues.data?.trial);
-  // ended subscription will have a cancelled issue associated with it
   let subHasEnded = $derived(!!$categorisedIssues.data?.cancelled);
   let subIsTeamPlan = $derived(plan && isTeamPlan(plan.name));
   let subIsManagedPlan = $derived(plan && isManagedPlan(plan.name));
-  let subIsEnterprisePlan = $derived(
-    plan && !isTrial && !subIsTeamPlan && !subIsManagedPlan,
+
+  type PlanTier = "trial" | "pro" | "enterprise";
+  let currentPlan: PlanTier = $derived.by(() => {
+    if (neverSubbed || isTrial || subHasEnded) return "trial";
+    if (subIsTeamPlan) return "pro";
+    if (subIsManagedPlan) return "enterprise";
+    return "enterprise";
+  });
+
+  let dialogType: TeamPlanDialogTypes = $derived.by(() => {
+    if (subHasEnded) return "renew";
+    if (isTrial) {
+      const trialIssue = $categorisedIssues.data?.trial;
+      if (trialIssue?.type === "BILLING_ISSUE_TYPE_TRIAL_ENDED")
+        return "trial-expired";
+      return "base";
+    }
+    return "base";
+  });
+
+  let renewEndDate = $derived(
+    $categorisedIssues.data?.cancelled?.metadata?.subscriptionCancelled
+      ?.endDate ?? "",
   );
 </script>
 
-{#if neverSubbed}
-  <!-- TODO: once mocks are in. Right now we just disable the routes. -->
-{:else if isTrial}
-  <TrialPlan {organization} {subscription} {showUpgradeDialog} {plan} />
-{:else if subHasEnded}
-  <CancelledTeamPlan
-    {organization}
-    {showUpgradeDialog}
-    {plan}
-    {billingPortalUrl}
-  />
-{:else if subIsTeamPlan}
-  <TeamPlan {organization} {subscription} {plan} {billingPortalUrl} />
-{:else if subIsManagedPlan}
-  <POCPlan {organization} {hasPayment} {plan} {billingPortalUrl} />
-{:else if subIsEnterprisePlan}
-  <EnterprisePlan {organization} {plan} />
-{/if}
+<PlanCards
+  {organization}
+  {currentPlan}
+  {showUpgradeDialog}
+  {dialogType}
+  {renewEndDate}
+/>

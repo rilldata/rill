@@ -15,18 +15,15 @@
     children: Snippet;
   } = $props();
 
-  let neverSubscribed = $derived(data.neverSubscribed);
-
   let organization = $derived($page.params.organization);
   let basePage = $derived(`/${organization}/-/settings`);
-  let hideBillingSettings = $derived(neverSubscribed);
 
   let navItems = $derived([
     { label: "General", route: "", hasPermission: true },
     {
       label: "Billing",
       route: "/billing",
-      hasPermission: !hideBillingSettings,
+      hasPermission: true,
     },
   ]);
 </script>

@@ -30,8 +30,22 @@
 {#if $allStatus.isLoading}
   <Spinner status={EntityStatus.Running} size="16px" />
 {:else}
-  <Plan {organization} {showUpgradeDialog} {billingPortalUrl} />
+  <div class="flex flex-col gap-8">
+    <Plan {organization} {showUpgradeDialog} />
 
-  <Payment {organization} />
-  <BillingContactSetting {organization} />
+    <!-- TODO: Usage & Slots section -->
+    <section>
+      <h2 class="text-lg font-medium text-fg-primary mb-3">Usage & Slots</h2>
+      <div class="text-sm text-fg-tertiary italic">Coming soon</div>
+    </section>
+
+    <Payment {organization} />
+    <BillingContactSetting {organization} />
+
+    <!-- TODO: Billing History section (needs ListInvoices API from Orb) -->
+    <section>
+      <h2 class="text-lg font-medium text-fg-primary mb-3">Billing History</h2>
+      <div class="text-sm text-fg-tertiary italic">Coming soon</div>
+    </section>
+  </div>
 {/if}
