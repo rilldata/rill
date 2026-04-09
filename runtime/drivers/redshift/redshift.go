@@ -107,7 +107,6 @@ func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Cl
 		config:   conf,
 		logger:   logger,
 		storage:  st,
-		dialect:  DialectRedshift,
 		clientMu: semaphore.NewWeighted(1),
 	}
 	return conn, nil
@@ -129,7 +128,6 @@ type Connection struct {
 	config  *configProperties
 	logger  *zap.Logger
 	storage *storage.Client
-	dialect drivers.Dialect
 
 	client    *redshiftdata.Client
 	clientErr error

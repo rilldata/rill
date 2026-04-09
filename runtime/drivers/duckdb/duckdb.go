@@ -192,7 +192,6 @@ func (d Driver) Open(connectorName, instanceID string, cfgMap map[string]any, st
 	c := &connection{
 		instanceID:     instanceID,
 		connectorName:  connectorName,
-		dialect:        DialectDuckDB,
 		config:         cfg,
 		logger:         logger,
 		activity:       ac,
@@ -291,7 +290,6 @@ func (d Driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 type connection struct {
 	instanceID    string
 	connectorName string
-	dialect       drivers.Dialect
 	// do not use directly it can also be nil or closed
 	// use acquireOLAPConn/acquireMetaConn for select and acquireDB for write queries
 	db rduckdb.DB

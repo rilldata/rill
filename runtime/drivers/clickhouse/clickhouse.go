@@ -378,7 +378,6 @@ func (d driver) Open(connectorName, instanceID string, config map[string]any, st
 		olapSem:         priorityqueue.NewSemaphore(olapSemSize),
 		opts:            opts,
 		embed:           embed,
-		dialect:         DialectClickhouse,
 	}
 
 	c.used()
@@ -408,7 +407,6 @@ type Connection struct {
 	instanceID      string
 	connectorName   string
 	supportSettings bool
-	dialect         drivers.Dialect
 
 	// context that is cancelled when the connection is closed
 	ctx    context.Context

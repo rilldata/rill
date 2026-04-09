@@ -74,7 +74,6 @@ func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Cl
 		config:   conf,
 		storage:  st,
 		logger:   logger,
-		dialect:  DialectBigquery,
 		clientMu: semaphore.NewWeighted(1),
 	}
 	return conn, nil
@@ -97,7 +96,6 @@ type Connection struct {
 	config  *configProperties
 	storage *storage.Client
 	logger  *zap.Logger
-	dialect drivers.Dialect
 
 	client    *bigquery.Client // lazily populated using getClient
 	clientErr error

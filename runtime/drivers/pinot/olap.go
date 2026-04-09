@@ -20,7 +20,7 @@ var tracer = otel.Tracer("github.com/rilldata/rill/runtime/drivers/pinot")
 var _ drivers.OLAPStore = &connection{}
 
 func (c *connection) Dialect() drivers.Dialect {
-	return c.dialect
+	return DialectPinot
 }
 
 func (c *connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
