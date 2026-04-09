@@ -65,7 +65,7 @@
     label: projectTitle,
     section: "project",
     depth: -1,
-    href: "/",
+    href: mode === "Preview" ? "/dashboards" : "/",
   };
 
   $: pathParts = [
@@ -98,7 +98,7 @@
 
 <Header borderBottom={!onDeployPage && mode !== "Preview"}>
   {#if !onDeployPage}
-    <HeaderLogo href="/" />
+    <HeaderLogo href={mode === "Preview" ? "/dashboards" : "/"} />
 
     <Tag text={mode} color="gray"></Tag>
 

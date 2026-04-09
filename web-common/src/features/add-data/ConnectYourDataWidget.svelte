@@ -3,7 +3,7 @@
   import {
     connectorIconMapping,
     connectorLabelMapping,
-  } from "@rilldata/web-common/features/connectors/connector-icon-mapping.ts";
+  } from "@rilldata/web-common/features/connectors/connector-metadata.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { getSupportedTopConnectors } from "@rilldata/web-common/features/add-data/manager/selectors.ts";
 

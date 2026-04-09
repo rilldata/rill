@@ -1580,6 +1580,12 @@ paths:
               args:
                 type: object
                 title: Optional args for resolving templating in the component properties
+              unsafe:
+                type: boolean
+                description: |-
+                  If true, fall back to the unvalidated spec when no valid spec is available.
+                  Only for use by the visual editor in Rill Developer. Must never be sent by
+                  Rill Cloud, read-only previews, shared token access, or embedded viewers.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/column-cardinality/tables/{tableName}:

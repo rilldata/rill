@@ -20,6 +20,7 @@
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
+  import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
   import { runImportSteps } from "@rilldata/web-common/features/add-data/manager/steps/import.ts";
 
   export let importAddDataStep: ImportAddDataStep;
@@ -30,7 +31,7 @@
   const runtimeClient = useRuntimeClient();
 
   let importStep = ImportDataStep.Init;
-  $: currentFileRoute = "/";
+  $: currentFileRoute = $previewModeStore ? "/dashboards" : "/";
   $: sourceName = importAddDataStep.config.importTo.modelName ?? "";
   $: isDone = importStep === ImportDataStep.Done;
   let error: string | null = null;
@@ -54,7 +55,11 @@
         (step, currentFilePath) => {
           importStep = step;
           if (currentFilePath) {
-            currentFileRoute = `/files${addLeadingSlash(currentFilePath)}`;
+            if ($previewModeStore) {
+              currentFileRoute = "/dashboards";
+            } else {
+              currentFileRoute = `/files${addLeadingSlash(currentFilePath)}`;
+            }
           }
         },
       );
