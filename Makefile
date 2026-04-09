@@ -44,11 +44,11 @@ coverage.go:
 .PHONY: docs.generate
 docs.generate:
 	# Temporarily replaces ~/.rill/config.yaml to avoid including user-defined defaults in generated docs.
-	# Sets version to the latest tag to simulate a production build, where certain commands are hidden.
+	# Sets main.Version to a fixed tag to simulate a production build, where certain commands are hidden (not using scripts/versiontag.sh since tags may not be available in CI).
 	rm -rf docs/docs/reference/cli/*.md docs/docs/reference/project-files/*.md
 	if [ -f ~/.rill/config.yaml ]; then mv ~/.rill/config.yaml ~/.rill/config.yaml.tmp; fi;
-	RILL_DOCS_GENERATE=true go run -ldflags="-X main.Version=$(shell scripts/versiontag.sh)" ./cli docs generate-cli docs/docs/reference/cli/
-	RILL_DOCS_GENERATE=true go run -ldflags="-X main.Version=$(shell scripts/versiontag.sh)" ./cli docs generate-project docs/docs/reference/project-files/
+	RILL_DOCS_GENERATE=true go run -ldflags="-X main.Version=0.0.1" ./cli docs generate-cli docs/docs/reference/cli/
+	RILL_DOCS_GENERATE=true go run -ldflags="-X main.Version=0.0.1" ./cli docs generate-project docs/docs/reference/project-files/
 	if [ -f ~/.rill/config.yaml.tmp ]; then mv ~/.rill/config.yaml.tmp ~/.rill/config.yaml; fi;
 
 .PHONY: proto.generate

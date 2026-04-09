@@ -4,8 +4,8 @@ on:
   pull_request:
     paths:
       - ".github/workflows/docs-check.yml"
-      - "docs/**"
       - "cli/**"
+      - "docs/**"
       - "runtime/parser/schema/**"
 env:
   NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
@@ -17,8 +17,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-tags: true
 
       - name: Set up Go
         uses: actions/setup-go@v5
