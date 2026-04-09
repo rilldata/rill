@@ -188,8 +188,8 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 	var restrictResources bool
 	var resources []database.ResourceName
 	if req.For == nil {
-		subject = claims.OwnerID()
 		if claims.OwnerType() == auth.OwnerTypeUser {
+			subject = claims.OwnerID()
 			attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
 			if err != nil {
 				return nil, err
@@ -200,6 +200,8 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 			}
 		} else if claims.OwnerType() == auth.OwnerTypeService {
 			attr = map[string]any{"admin": true}
+			// NOTE: Intentionally leaving the `subject` empty out of caution.
+			// Some users use service accounts for generating JWTs for end users without passing req.For, and we don't want to accidentally pass a shared subject ID across those users (which could leak e.g. AI chats).
 		}
 	} else {
 		if depl.Environment == "prod" && !permissions.ManageProd {
@@ -586,8 +588,8 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 	var restrictResources bool
 	var resources []database.ResourceName
 	if req.For == nil {
-		subject = claims.OwnerID()
 		if claims.OwnerType() == auth.OwnerTypeUser {
+			subject = claims.OwnerID()
 			attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
 			if err != nil {
 				return nil, err
@@ -597,6 +599,8 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 				return nil, err
 			}
 		}
+		// NOTE: Intentionally leaving the `subject` empty in other cases out of caution.
+		// Some users use service accounts for generating JWTs for end users without passing req.For, and we don't want to accidentally pass a shared subject ID across those users (which could leak e.g. AI chats).
 	} else {
 		switch forVal := req.For.(type) {
 		case *adminv1.GetDeploymentCredentialsRequest_UserId:
@@ -705,8 +709,8 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	var restrictResources bool
 	var resources []database.ResourceName
 	if req.For == nil {
-		subject = claims.OwnerID()
 		if claims.OwnerType() == auth.OwnerTypeUser {
+			subject = claims.OwnerID()
 			attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
 			if err != nil {
 				return nil, err
@@ -716,6 +720,8 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 				return nil, err
 			}
 		}
+		// NOTE: Intentionally leaving the `subject` empty in other cases out of caution.
+		// Some users use service accounts for generating JWTs for end users without passing req.For, and we don't want to accidentally pass a shared subject ID across those users (which could leak e.g. AI chats).
 	} else {
 		switch forVal := req.For.(type) {
 		case *adminv1.GetIFrameRequest_UserId:
