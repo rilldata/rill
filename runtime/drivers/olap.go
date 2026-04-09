@@ -660,8 +660,8 @@ func (b *BaseDialect) ColumnNullCount(db, dbSchema, table, column string) (strin
 	return fmt.Sprintf("SELECT count(*) AS count FROM %s WHERE %s IS NULL", b.self.EscapeTable(db, dbSchema, table), b.self.EscapeIdentifier(column)), nil
 }
 
-func (b *BaseDialect) ColumnNumericHistogram(db, dbSchema, table, column string) (string, error) {
-	return "", fmt.Errorf("ColumnNumericHistogram not implemented for %s dialect", b.self.String())
+func (b *BaseDialect) ColumnNumericHistogramBucket(db, dbSchema, table, column string) (string, error) {
+	return "", fmt.Errorf("ColumnNumericHistogramBucket not implemented for %s dialect", b.self.String())
 }
 
 func CheckTypeCompatibility(f *runtimev1.StructType_Field) bool {
