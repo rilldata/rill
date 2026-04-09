@@ -206,7 +206,7 @@ func (e *Executor) Timestamps(ctx context.Context, timeDim string) (metricsview.
 }
 
 // BindQuery allows to set min, max and watermark from a cache.
-func (e *Executor) BindQuery(ctx context.Context, qry *metricsview.Query, timestamps metricsview.TimestampsResult, executionTime *time.Time) error {
+func (e *Executor) BindQuery(qry *metricsview.Query, timestamps metricsview.TimestampsResult) error {
 	err := qry.Validate()
 	if err != nil {
 		return err
@@ -217,7 +217,7 @@ func (e *Executor) BindQuery(ctx context.Context, qry *metricsview.Query, timest
 	} else if e.metricsView.TimeDimension != "" {
 		e.timestamps[e.metricsView.TimeDimension] = timestamps
 	}
-	return e.rewriteQueryTimeRanges(ctx, qry, executionTime)
+	return nil
 }
 
 // Schema returns a schema for the metrics view's dimensions and measures.
