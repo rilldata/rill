@@ -11,51 +11,77 @@ import {
   handleBranchNavigation,
 } from "./branch-utils";
 
+// Shared test data: every entry exercises extract, inject, and remove together.
+const branchPaths: {
+  name: string;
+  branchPath: string;
+  basePath: string;
+  branch: string;
+}[] = [
+  {
+    name: "simple branch with trailing route",
+    branchPath: "/acme/analytics/@staging/explore/revenue-overview",
+    basePath: "/acme/analytics/explore/revenue-overview",
+    branch: "staging",
+  },
+  {
+    name: "branch as last segment (no trailing route)",
+    branchPath: "/acme/analytics/@q4-dashboard-refresh",
+    basePath: "/acme/analytics",
+    branch: "q4-dashboard-refresh",
+  },
+  {
+    name: "branch containing / (encoded as ~)",
+    branchPath:
+      "/acme/analytics/@eric~revenue-metrics/explore/revenue-overview",
+    basePath: "/acme/analytics/explore/revenue-overview",
+    branch: "eric/revenue-metrics",
+  },
+  {
+    name: "branch with multiple / segments",
+    branchPath: "/acme/analytics/@team~maya~funnel-rework/explore/conversion",
+    basePath: "/acme/analytics/explore/conversion",
+    branch: "team/maya/funnel-rework",
+  },
+  {
+    name: "percent-encoded characters in branch",
+    branchPath: "/acme/analytics/@WIP%20churn%20model/explore/churn",
+    basePath: "/acme/analytics/explore/churn",
+    branch: "WIP churn model",
+  },
+];
+
 describe("branch-utils", () => {
-  describe("extractBranchFromPath", () => {
+  describe("path manipulation (data-driven)", () => {
+    for (const { name, branchPath, basePath, branch } of branchPaths) {
+      describe(name, () => {
+        it("extractBranchFromPath returns the branch", () => {
+          expect(extractBranchFromPath(branchPath)).toBe(branch);
+        });
+
+        it("removeBranchFromPath returns the base path", () => {
+          expect(removeBranchFromPath(branchPath)).toBe(basePath);
+        });
+
+        it("injectBranchIntoPath → extractBranchFromPath round-trips", () => {
+          const injected = injectBranchIntoPath(basePath, branch);
+          expect(extractBranchFromPath(injected)).toBe(branch);
+        });
+
+        it("injectBranchIntoPath → removeBranchFromPath restores the stripped path", () => {
+          const injected = injectBranchIntoPath(basePath, branch);
+          expect(removeBranchFromPath(injected)).toBe(basePath);
+        });
+      });
+    }
+  });
+
+  describe("extractBranchFromPath edge cases", () => {
     it("returns undefined for production paths (no @branch)", () => {
       expect(extractBranchFromPath("/acme/analytics")).toBeUndefined();
       expect(
         extractBranchFromPath("/acme/analytics/explore/revenue-overview"),
       ).toBeUndefined();
-    });
-
-    it("extracts a simple branch name", () => {
-      expect(
-        extractBranchFromPath(
-          "/acme/analytics/@staging/explore/revenue-overview",
-        ),
-      ).toBe("staging");
-    });
-
-    it("extracts branch from path with no trailing segments", () => {
-      expect(
-        extractBranchFromPath("/acme/analytics/@q4-dashboard-refresh"),
-      ).toBe("q4-dashboard-refresh");
-    });
-
-    it("decodes branches containing / (encoded as ~)", () => {
-      expect(
-        extractBranchFromPath(
-          "/acme/analytics/@eric~revenue-metrics/explore/revenue-overview",
-        ),
-      ).toBe("eric/revenue-metrics");
-    });
-
-    it("decodes percent-encoded characters", () => {
-      expect(
-        extractBranchFromPath(
-          "/acme/analytics/@WIP%20churn%20model/explore/churn",
-        ),
-      ).toBe("WIP churn model");
-    });
-
-    it("handles branches with multiple / segments", () => {
-      expect(
-        extractBranchFromPath(
-          "/acme/analytics/@team~maya~funnel-rework/explore/conversion",
-        ),
-      ).toBe("team/maya/funnel-rework");
     });
 
     it("returns undefined for @ in wrong position", () => {
@@ -77,90 +103,18 @@ describe("branch-utils", () => {
     });
   });
 
-  describe("injectBranchIntoPath", () => {
-    it("injects branch after the project segment", () => {
-      expect(
-        injectBranchIntoPath(
-          "/acme/analytics/explore/revenue-overview",
-          "staging",
-        ),
-      ).toBe("/acme/analytics/@staging/explore/revenue-overview");
-    });
-
-    it("injects branch into a path with only org/project", () => {
-      expect(
-        injectBranchIntoPath("/acme/analytics", "q4-dashboard-refresh"),
-      ).toBe("/acme/analytics/@q4-dashboard-refresh");
-    });
-
-    it("encodes / in branch names as ~", () => {
-      expect(
-        injectBranchIntoPath(
-          "/acme/analytics/explore/conversion",
-          "eric/revenue-metrics",
-        ),
-      ).toBe("/acme/analytics/@eric~revenue-metrics/explore/conversion");
-    });
-
+  describe("injectBranchIntoPath edge cases", () => {
     it("returns original path if fewer than 3 segments", () => {
       expect(injectBranchIntoPath("/acme", "staging")).toBe("/acme");
       expect(injectBranchIntoPath("/", "staging")).toBe("/");
     });
   });
 
-  describe("removeBranchFromPath", () => {
-    it("removes @branch from the path", () => {
-      expect(
-        removeBranchFromPath(
-          "/acme/analytics/@staging/explore/revenue-overview",
-        ),
-      ).toBe("/acme/analytics/explore/revenue-overview");
-    });
-
-    it("removes @branch when it is the last segment", () => {
-      expect(removeBranchFromPath("/acme/analytics/@staging")).toBe(
-        "/acme/analytics",
-      );
-    });
-
+  describe("removeBranchFromPath edge cases", () => {
     it("returns the path unchanged if no @branch present", () => {
       expect(
         removeBranchFromPath("/acme/analytics/explore/revenue-overview"),
       ).toBe("/acme/analytics/explore/revenue-overview");
-    });
-
-    it("handles encoded branch names", () => {
-      expect(
-        removeBranchFromPath(
-          "/acme/analytics/@eric~revenue-metrics/explore/conversion",
-        ),
-      ).toBe("/acme/analytics/explore/conversion");
-    });
-  });
-
-  describe("round-trip: inject then extract", () => {
-    const branches = [
-      "main",
-      "staging",
-      "eric/revenue-metrics",
-      "team/maya/funnel-rework",
-      "q4-dashboard-refresh",
-    ];
-    const basePath = "/acme/analytics/explore/revenue-overview";
-
-    for (const branch of branches) {
-      it(`round-trips "${branch}"`, () => {
-        const injected = injectBranchIntoPath(basePath, branch);
-        expect(extractBranchFromPath(injected)).toBe(branch);
-      });
-    }
-  });
-
-  describe("round-trip: inject then remove", () => {
-    it("restores the original path", () => {
-      const original = "/acme/analytics/explore/revenue-overview";
-      const injected = injectBranchIntoPath(original, "eric/revenue-metrics");
-      expect(removeBranchFromPath(injected)).toBe(original);
     });
   });
 
