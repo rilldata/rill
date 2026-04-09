@@ -1005,6 +1005,10 @@ message ResolveCanvasRequest {
   string canvas = 2;
   // Optional args for resolving templating in the component properties
   google.protobuf.Struct args = 3;
+  // If true, fall back to the unvalidated spec when no valid spec is available.
+  // Only for use by the visual editor in Rill Developer. Must never be sent by
+  // Rill Cloud, read-only previews, shared token access, or embedded viewers.
+  bool unsafe = 4;
 }
 
 message ResolveCanvasResponse {
