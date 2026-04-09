@@ -257,7 +257,7 @@ func timeSeriesClickHouseSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *Column
 	}
 	timeSQL = `date_sub(` + unit + `, ?, date_trunc(?, date_add(` + unit + `, ?, toTimeZone(?::DATETIME64, ?))))`
 	// start and end are not null else we would have an empty time range but column can still have null values
-	colSQL = `date_sub(` + unit + `, ?, date_trunc(?, date_add(` + unit + `, ?, toTimeZone(` + safeName(q.TimestampColumnName) + `::Nullable(DATETIME64), ?))))`
+	colSQL = `date_sub(` + unit + `, ?, date_trunc(?, date_add(` + unit + `, ?, toTimeZone(` + dialect.EscapeIdentifier(q.TimestampColumnName) + `::Nullable(DATETIME64), ?))))`
 	// nolint
 	args = append(args, offset, dateTruncSpecifier, offset, timeRange.Start.AsTime(), timezone) // compute start
 	args = append(args, offset, dateTruncSpecifier, offset, timeRange.End.AsTime(), timezone)   // compute end
@@ -286,7 +286,7 @@ func timeSeriesClickHouseSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *Column
 			-- transform the original data, and optionally sample it.
 			series AS (
 				SELECT
-					` + colSQL + ` AS ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
+					` + colSQL + ` AS ` + tsAlias + `,` + getExpressionColumnsFromMeasures(dialect, measures) + `
 				FROM ` + dialect.EscapeTable(q.Database, q.DatabaseSchema, q.TableName) + ` ` + filter + `
 				GROUP BY ` + tsAlias + ` ORDER BY ` + tsAlias + `
 			)
@@ -296,7 +296,7 @@ func timeSeriesClickHouseSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *Column
 				-- coalescing the first value to get the 0-default when the rolled up data
 				-- does not have that value.
 				SELECT
-				` + getCoalesceStatementsMeasures(measures) + `,
+				` + getCoalesceStatementsMeasures(dialect, measures) + `,
 				toTimeZone(template.` + tsAlias + `::DATETIME64, ?) AS ` + tsAlias + ` FROM template
 				LEFT OUTER JOIN series ON template.` + tsAlias + ` = series.` + tsAlias + `
 				ORDER BY template.` + tsAlias + `
@@ -339,7 +339,7 @@ func timeSeriesDuckDBSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *ColumnTime
 			-- transform the original data, and optionally sample it.
 			series AS (
 			SELECT
-				date_trunc('` + dateTruncSpecifier + `', timezone(?, ` + safeName(q.TimestampColumnName) + `::TIMESTAMPTZ) ` + timeOffsetClause1 + `) ` + timeOffsetClause2 + ` as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
+				date_trunc('` + dateTruncSpecifier + `', timezone(?, ` + dialect.EscapeIdentifier(q.TimestampColumnName) + `::TIMESTAMPTZ) ` + timeOffsetClause1 + `) ` + timeOffsetClause2 + ` as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(dialect, measures) + `
 			FROM ` + dialect.EscapeTable(q.Database, q.DatabaseSchema, q.TableName) + ` ` + filter + `
 			GROUP BY ` + tsAlias + ` ORDER BY ` + tsAlias + `
 			)
@@ -349,7 +349,7 @@ func timeSeriesDuckDBSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *ColumnTime
 				-- coalescing the first value to get the 0-default when the rolled up data
 				-- does not have that value.
 				SELECT
-				` + getCoalesceStatementsMeasures(measures) + `,
+				` + getCoalesceStatementsMeasures(dialect, measures) + `,
 				timezone(?, template.` + tsAlias + `) as ` + tsAlias + ` from template
 				LEFT OUTER JOIN series ON template.` + tsAlias + ` = series.` + tsAlias + `
 				ORDER BY template.` + tsAlias + `
@@ -461,7 +461,7 @@ func (q *ColumnTimeseries) CreateTimestampRollupReduction(
 	timestampColumnName string,
 	valueColumn string,
 ) ([]*runtimev1.TimeSeriesValue, error) {
-	safeTimestampColumnName := safeName(timestampColumnName)
+	safeTimestampColumnName := olap.Dialect().EscapeIdentifier(timestampColumnName)
 
 	rowCount, err := q.resolveRowCount(ctx, olap, priority)
 	if err != nil {
@@ -635,10 +635,10 @@ func (q *ColumnTimeseries) resolveRowCount(ctx context.Context, olap drivers.OLA
 }
 
 // normaliseMeasures is called before this method so measure.SqlName will be non empty
-func getExpressionColumnsFromMeasures(measures []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure) string {
+func getExpressionColumnsFromMeasures(dialect drivers.Dialect, measures []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure) string {
 	var result string
 	for i, measure := range measures {
-		result += measure.Expression + " as " + safeName(measure.SqlName)
+		result += measure.Expression + " as " + dialect.EscapeIdentifier(measure.SqlName)
 		if i < len(measures)-1 {
 			result += ", "
 		}
@@ -647,10 +647,10 @@ func getExpressionColumnsFromMeasures(measures []*runtimev1.ColumnTimeSeriesRequ
 }
 
 // normaliseMeasures is called before this method so measure.SqlName will be non empty
-func getCoalesceStatementsMeasures(measures []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure) string {
+func getCoalesceStatementsMeasures(dialect drivers.Dialect, measures []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure) string {
 	var result string
 	for i, measure := range measures {
-		result += fmt.Sprintf(`series.%[1]s as %[1]s`, safeName(measure.SqlName))
+		result += fmt.Sprintf(`series.%[1]s as %[1]s`, dialect.EscapeIdentifier(measure.SqlName))
 		if i < len(measures)-1 {
 			result += ", "
 		}
@@ -665,9 +665,9 @@ func getCoalesceStatementsMeasuresLast(dialect drivers.Dialect, measures []*runt
 		case drivers.DialectNameDuckDB:
 			// "last" function of DuckDB returns non-deterministic results by default so requires an ORDER BY clause
 			// https://duckdb.org/docs/sql/functions/aggregates.html#order-by-clause-in-aggregate-functions
-			result += fmt.Sprintf(` `+lastValue(dialect)+`(%[1]s ORDER BY %[1]s NULLS FIRST) as %[1]s`, safeName(measure.SqlName))
+			result += fmt.Sprintf(` `+lastValue(dialect)+`(%[1]s ORDER BY %[1]s NULLS FIRST) as %[1]s`, dialect.EscapeIdentifier(measure.SqlName))
 		default:
-			result += fmt.Sprintf(` `+lastValue(dialect)+`(%[1]s) as %[1]s`, safeName(measure.SqlName))
+			result += fmt.Sprintf(` `+lastValue(dialect)+`(%[1]s) as %[1]s`, dialect.EscapeIdentifier(measure.SqlName))
 		}
 		if i < len(measures)-1 {
 			result += ", "
@@ -804,7 +804,7 @@ func (q *ColumnTimeseries) resolveStarRocks(ctx context.Context, olap drivers.OL
 			FROM TABLE(generate_series(0, TIMESTAMPDIFF(` + dateTruncSpecifier + `, '` + startTimeStr + `', '` + endTimeStr + `')))
 		),
 		series AS (
-			SELECT ` + colSQL + ` AS ` + tsAlias + `, ` + getExpressionColumnsFromMeasures(measures) + `
+			SELECT ` + colSQL + ` AS ` + tsAlias + `, ` + getExpressionColumnsFromMeasures(dialect, measures) + `
 			FROM ` + sourceTable + `
 			GROUP BY ` + tsAlias + `
 		)

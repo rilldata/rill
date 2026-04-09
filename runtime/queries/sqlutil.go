@@ -11,14 +11,6 @@ import (
 
 var ErrExportNotSupported = fmt.Errorf("exporting is not supported")
 
-func safeName(name string) string {
-	// Double-quote escaping for DuckDB/ANSI SQL identifiers.
-	if name == "" {
-		return name
-	}
-	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"` // nolint:gocritic
-}
-
 func tempName(prefix string) string {
 	return prefix + strings.ReplaceAll(uuid.New().String(), "-", "")
 }
