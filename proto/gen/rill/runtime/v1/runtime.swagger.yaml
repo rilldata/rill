@@ -2708,7 +2708,9 @@ paths:
         - QueryService
   /v1/instances/{instanceId}/queries/project-storage:
     get:
-      summary: ProjectStorage returns storage information for each relevant connector in the project.
+      summary: |-
+        ProjectStorage returns storage usage information for OLAP connectors in the project.
+        See the project_storage resolver for details.
       operationId: QueryService_ProjectStorage
       responses:
         "200":
@@ -7089,15 +7091,27 @@ definitions:
     properties:
       connector:
         type: string
+        description: Connector name.
       driver:
         type: string
+        description: Connector driver name.
       isDefaultOlap:
         type: boolean
+        description: True if the connector is the project's default OLAP.
       managed:
         type: boolean
+        description: 'True if the connector is managed by Rill (i.e. has `managed: true` in the connector definition).'
       sizeBytes:
         type: string
         format: int64
+        description: |-
+          Storage usage in bytes.
+          If it is -1, it means the value is unknown.
+      error:
+        type: string
+        description: |-
+          Error message if the connector was unavailable.
+          This is usually empty.
   v1ProjectStorageResponse:
     type: object
     properties:
@@ -7106,12 +7120,21 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1ProjectStorageEntry'
+        description: Storage usage per relevant connector in the project.
       managedSizeBytes:
         type: string
         format: int64
+        description: |-
+          Aggregated storage usage by managed connectors in the project.
+          If it is -1, it means the value is unknown.
+          This is a convenience field derived from the entries.
       defaultOlapSizeBytes:
         type: string
         format: int64
+        description: |-
+          Storage usage by the default OLAP connector in the project.
+          If it is -1, it means the value is unknown.
+          This is a convenience field derived from the entries.
   v1PutFileResponse:
     type: object
     properties:

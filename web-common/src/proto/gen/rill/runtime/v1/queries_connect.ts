@@ -57,7 +57,8 @@ export const QueryService = {
       kind: MethodKind.Unary,
     },
     /**
-     * ProjectStorage returns storage information for each relevant connector in the project.
+     * ProjectStorage returns storage usage information for OLAP connectors in the project.
+     * See the project_storage resolver for details.
      *
      * @generated from rpc rill.runtime.v1.QueryService.ProjectStorage
      */

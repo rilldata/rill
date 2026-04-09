@@ -37,6 +37,7 @@ func (c *Connection) InformationSchema() drivers.OLAPInformationSchema {
 	return c
 }
 
+// EstimateSize implements drivers.OLAPStore.
 func (c *Connection) EstimateSize(ctx context.Context) (int64, error) {
 	return -1, nil
 }

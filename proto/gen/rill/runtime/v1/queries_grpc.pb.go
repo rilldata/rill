@@ -66,7 +66,8 @@ type QueryServiceClient interface {
 	Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error)
 	// ExportReport builds a URL to download the results of a query as a file.
 	ExportReport(ctx context.Context, in *ExportReportRequest, opts ...grpc.CallOption) (*ExportReportResponse, error)
-	// ProjectStorage returns storage information for each relevant connector in the project.
+	// ProjectStorage returns storage usage information for OLAP connectors in the project.
+	// See the project_storage resolver for details.
 	ProjectStorage(ctx context.Context, in *ProjectStorageRequest, opts ...grpc.CallOption) (*ProjectStorageResponse, error)
 	// MetricsViewAggregation is a generic API for running group-by/pivot queries against a metrics view.
 	MetricsViewAggregation(ctx context.Context, in *MetricsViewAggregationRequest, opts ...grpc.CallOption) (*MetricsViewAggregationResponse, error)
@@ -519,7 +520,8 @@ type QueryServiceServer interface {
 	Export(context.Context, *ExportRequest) (*ExportResponse, error)
 	// ExportReport builds a URL to download the results of a query as a file.
 	ExportReport(context.Context, *ExportReportRequest) (*ExportReportResponse, error)
-	// ProjectStorage returns storage information for each relevant connector in the project.
+	// ProjectStorage returns storage usage information for OLAP connectors in the project.
+	// See the project_storage resolver for details.
 	ProjectStorage(context.Context, *ProjectStorageRequest) (*ProjectStorageResponse, error)
 	// MetricsViewAggregation is a generic API for running group-by/pivot queries against a metrics view.
 	MetricsViewAggregation(context.Context, *MetricsViewAggregationRequest) (*MetricsViewAggregationResponse, error)

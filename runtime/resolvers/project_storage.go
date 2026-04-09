@@ -11,6 +11,12 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/typepb"
 )
 
+// _projectStorageDefaultCacheTTL is the default TTL for caching project storage results.
+// Caching ensures we don't hit the drivers too frequently with heavy metadata queries.
+// A hard-coded TTL without invalidation should be sufficient for our current use cases (billing UI and storage usage alerts).
+// It is a best effort TTL that uses fixed-size buckets.
+const _projectStorageDefaultCacheTTL = 60 * time.Second
+
 func init() {
 	runtime.RegisterResolverInitializer("project_storage", newProjectStorage)
 }
@@ -32,7 +38,8 @@ func (r *projectStorageResolver) Close() error {
 }
 
 func (r *projectStorageResolver) CacheKey(ctx context.Context) ([]byte, bool, error) {
-	key := time.Now().Truncate(60 * time.Second).Format(time.RFC3339)
+	// Simple TTL. See _projectStorageDefaultCacheTTL for details.
+	key := time.Now().Truncate(_projectStorageDefaultCacheTTL).Format(time.RFC3339)
 	return []byte(key), true, nil
 }
 
@@ -52,89 +59,73 @@ func (r *projectStorageResolver) ResolveInteractive(ctx context.Context) (runtim
 	}
 	defaultOLAP := inst.ResolveOLAPConnector()
 
-	// Get the controller and list connector and metrics view resources separately.
+	// Build a map of connector specs
 	ctrl, err := r.runtime.Controller(ctx, r.instanceID)
 	if err != nil {
 		return nil, err
 	}
-
-	connectorResources, err := ctrl.List(ctx, runtime.ResourceKindConnector, "", false)
+	rs, err := ctrl.List(ctx, runtime.ResourceKindConnector, "", false)
 	if err != nil {
 		return nil, err
 	}
+	connectors := make(map[string]*runtimev1.ConnectorSpec, len(rs))
+	for _, res := range rs {
+		connectors[res.Meta.Name.Name] = res.GetConnector().Spec
+	}
 
-	mvResources, err := ctrl.List(ctx, runtime.ResourceKindMetricsView, "", false)
+	// Build a set of relevant connector names
+	relevant := make(map[string]bool)
+	// 1. The default OLAP
+	relevant[defaultOLAP] = true
+	// 2. Managed connectors
+	for name, spec := range connectors {
+		if spec.Provision {
+			relevant[name] = true
+		}
+	}
+	// 3. Connectors used by metrics views
+	rs, err = ctrl.List(ctx, runtime.ResourceKindMetricsView, "", false)
 	if err != nil {
 		return nil, err
 	}
-
-	// Build a map of connector name to spec (for Provision/driver info).
-	connectorSpecs := make(map[string]*runtimev1.ConnectorSpec, len(connectorResources))
-	for _, res := range connectorResources {
-		connectorSpecs[res.Meta.Name.Name] = res.GetConnector().Spec
-	}
-
-	// Collect connector names used by metrics views.
-	mvConnectors := make(map[string]bool, len(mvResources))
-	for _, res := range mvResources {
+	for _, res := range rs {
 		mv := res.GetMetricsView()
 		if mv == nil || mv.State == nil || mv.State.ValidSpec == nil {
 			continue
 		}
 		c := mv.State.ValidSpec.Connector
-		if c == "" {
-			c = defaultOLAP
+		if c != "" {
+			relevant[c] = true
 		}
-		mvConnectors[c] = true
-	}
-
-	// Build the set of relevant connectors: default OLAP, managed (Provision), or used by a metrics view.
-	relevant := make(map[string]bool)
-	relevant[defaultOLAP] = true
-	for name, spec := range connectorSpecs {
-		if spec.Provision {
-			relevant[name] = true
-		}
-	}
-	for name := range mvConnectors {
-		relevant[name] = true
 	}
 
 	// For each relevant connector, open a handle to get the driver name and estimate size.
 	rows := make([]map[string]any, 0, len(relevant))
 	for name := range relevant {
-		handle, release, err := r.runtime.AcquireHandle(ctx, r.instanceID, name)
+		isDefault := name == defaultOLAP
+		isManaged := false
+		if spec, ok := connectors[name]; ok {
+			isManaged = spec.Provision
+		} else if name == "duckdb" {
+			// Backwards compatibility: some projects don't have an explicit connector file for managed DuckDB.
+			isManaged = true
+		}
+
+		sizeBytes, driver, err := r.resolveForConnector(ctx, name)
+		errMsg := ""
 		if err != nil {
-			continue
+			if errors.Is(err, ctx.Err()) {
+				return nil, err
+			}
+			errMsg = err.Error()
 		}
-		driver := handle.Driver()
-
-		olap, ok := handle.AsOLAP(r.instanceID)
-		if !ok {
-			release()
-			continue
-		}
-
-		sizeBytes, err := olap.EstimateSize(ctx)
-		release()
-		if err != nil {
-			return nil, err
-		}
-
-		// Determine managed status from connector spec; default to true for default OLAP if no spec exists.
-		managed := false
-		if spec, ok := connectorSpecs[name]; ok {
-			managed = spec.Provision
-		} else if name == defaultOLAP {
-			managed = true
-		}
-
 		rows = append(rows, map[string]any{
 			"connector":       name,
 			"driver":          driver,
-			"is_default_olap": name == defaultOLAP,
-			"managed":         managed,
+			"is_default_olap": isDefault,
+			"managed":         isManaged,
 			"size_bytes":      sizeBytes,
+			"error":           errMsg,
 		})
 	}
 
@@ -154,4 +145,24 @@ func (r *projectStorageResolver) ResolveExport(ctx context.Context, w io.Writer,
 
 func (r *projectStorageResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
 	return nil, errors.New("security rule inference not implemented")
+}
+
+func (r *projectStorageResolver) resolveForConnector(ctx context.Context, name string) (size int64, driver string, err error) {
+	handle, release, err := r.runtime.AcquireHandle(ctx, r.instanceID, name)
+	if err != nil {
+		return -1, "unknown", err
+	}
+	defer release()
+
+	olap, ok := handle.AsOLAP(r.instanceID)
+	if !ok {
+		return -1, handle.Driver(), errors.New("not an OLAP connector")
+	}
+
+	sizeBytes, err := olap.EstimateSize(ctx)
+	if err != nil {
+		return -1, handle.Driver(), err
+	}
+
+	return sizeBytes, handle.Driver(), nil
 }

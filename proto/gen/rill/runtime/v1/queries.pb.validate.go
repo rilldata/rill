@@ -17894,6 +17894,8 @@ func (m *ProjectStorageEntry) validate(all bool) error {
 
 	// no validation rules for SizeBytes
 
+	// no validation rules for Error
+
 	if len(errors) > 0 {
 		return ProjectStorageEntryMultiError(errors)
 	}

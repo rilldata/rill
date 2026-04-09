@@ -7022,16 +7022,26 @@ export class ProjectStorageRequest extends Message<ProjectStorageRequest> {
  */
 export class ProjectStorageResponse extends Message<ProjectStorageResponse> {
   /**
+   * Storage usage per relevant connector in the project.
+   *
    * @generated from field: repeated rill.runtime.v1.ProjectStorageEntry entries = 1;
    */
   entries: ProjectStorageEntry[] = [];
 
   /**
+   * Aggregated storage usage by managed connectors in the project.
+   * If it is -1, it means the value is unknown.
+   * This is a convenience field derived from the entries.
+   *
    * @generated from field: int64 managed_size_bytes = 2;
    */
   managedSizeBytes = protoInt64.zero;
 
   /**
+   * Storage usage by the default OLAP connector in the project.
+   * If it is -1, it means the value is unknown.
+   * This is a convenience field derived from the entries.
+   *
    * @generated from field: int64 default_olap_size_bytes = 3;
    */
   defaultOlapSizeBytes = protoInt64.zero;
@@ -7071,29 +7081,48 @@ export class ProjectStorageResponse extends Message<ProjectStorageResponse> {
  */
 export class ProjectStorageEntry extends Message<ProjectStorageEntry> {
   /**
+   * Connector name.
+   *
    * @generated from field: string connector = 1;
    */
   connector = "";
 
   /**
+   * Connector driver name.
+   *
    * @generated from field: string driver = 2;
    */
   driver = "";
 
   /**
+   * True if the connector is the project's default OLAP.
+   *
    * @generated from field: bool is_default_olap = 3;
    */
   isDefaultOlap = false;
 
   /**
+   * True if the connector is managed by Rill (i.e. has `managed: true` in the connector definition).
+   *
    * @generated from field: bool managed = 4;
    */
   managed = false;
 
   /**
+   * Storage usage in bytes.
+   * If it is -1, it means the value is unknown.
+   *
    * @generated from field: int64 size_bytes = 5;
    */
   sizeBytes = protoInt64.zero;
+
+  /**
+   * Error message if the connector was unavailable.
+   * This is usually empty.
+   *
+   * @generated from field: string error = 6;
+   */
+  error = "";
 
   constructor(data?: PartialMessage<ProjectStorageEntry>) {
     super();
@@ -7108,6 +7137,7 @@ export class ProjectStorageEntry extends Message<ProjectStorageEntry> {
     { no: 3, name: "is_default_olap", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 4, name: "managed", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 5, name: "size_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 6, name: "error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProjectStorageEntry {
