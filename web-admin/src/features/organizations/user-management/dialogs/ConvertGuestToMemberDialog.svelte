@@ -9,7 +9,7 @@
   import {
     PROJECT_ROLES_DESCRIPTION_MAP,
     PROJECT_ROLES_OPTIONS,
-  } from "@rilldata/web-admin/features/projects/constants.ts";
+  } from "@rilldata/web-admin/features/projects/user-management/constants.ts";
   import { Button } from "@rilldata/web-common/components/button";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import * as Dialog from "@rilldata/web-common/components/dialog";

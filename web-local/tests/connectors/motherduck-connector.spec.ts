@@ -22,12 +22,8 @@ test.describe("MotherDuck welcome flow", () => {
       );
     }
 
-    // Welcome CTA opens the Add Data modal
-    await page.getByRole("button", { name: "Connect your data" }).click();
-
-    // Select MotherDuck connector and wait for the form to render
-    await page.locator("#motherduck").click();
-    await page.waitForSelector('form[id*="motherduck"]');
+    // Open the connect to motherduck modal
+    await page.getByLabel("Connect to motherduck").click();
 
     // Fill required fields
     await page.locator("#token").fill(token!);

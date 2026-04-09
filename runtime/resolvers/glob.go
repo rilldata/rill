@@ -189,7 +189,7 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 			last = paths[len(paths)-props.Last]
 		}
 	}
-	if last != "" && partitionStart > last {
+	if last != "" && partitionStart < last {
 		partitionStart = last
 	}
 

@@ -30,6 +30,7 @@ import { s3Schema } from "../../templates/schemas/s3";
 import { starrocksSchema } from "../../templates/schemas/starrocks";
 import { supabaseSchema } from "../../templates/schemas/supabase";
 import { SOURCES, OLAP_ENGINES, AI_CONNECTORS } from "./constants";
+import { connectorKeywordMapping } from "@rilldata/web-common/features/connectors/connector-metadata.ts";
 
 export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   athena: athenaSchema,
@@ -66,6 +67,7 @@ export interface ConnectorInfo {
   name: string;
   displayName: string;
   category: ConnectorCategory;
+  keywords: string[];
 }
 
 /**
@@ -83,14 +85,21 @@ export const connectors: ConnectorInfo[] = [
       name,
       displayName: schema.title ?? name,
       category: schema["x-category"] as ConnectorCategory,
+      keywords: connectorKeywordMapping[name] ?? [],
     };
   });
+/**
+ * Map of connector names to ConnectorInfo objects.
+ * We need connector info by name in a lot of places, so we have a map to optimize lookups.
+ */
+export const connectorInfoMap = new Map<string, ConnectorInfo>(
+  connectors.map((connector) => [connector.name, connector]),
+);
 
 export function getConnectorSchema(
   connectorName: string,
 ): MultiStepFormSchema | null {
-  const schema =
-    multiStepFormSchemas[connectorName as keyof typeof multiStepFormSchemas];
+  const schema = multiStepFormSchemas[connectorName];
   return schema?.properties ? schema : null;
 }
 

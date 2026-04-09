@@ -4341,6 +4341,15 @@ export class ResolveCanvasRequest extends Message<ResolveCanvasRequest> {
    */
   args?: Struct;
 
+  /**
+   * If true, fall back to the unvalidated spec when no valid spec is available.
+   * Only for use by the visual editor in Rill Developer. Must never be sent by
+   * Rill Cloud, read-only previews, shared token access, or embedded viewers.
+   *
+   * @generated from field: bool unsafe = 4;
+   */
+  unsafe = false;
+
   constructor(data?: PartialMessage<ResolveCanvasRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4352,6 +4361,7 @@ export class ResolveCanvasRequest extends Message<ResolveCanvasRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "canvas", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "args", kind: "message", T: Struct },
+    { no: 4, name: "unsafe", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveCanvasRequest {
