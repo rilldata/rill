@@ -4,7 +4,6 @@
   import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-metadata";
   import type { ComponentType, SvelteComponent } from "svelte";
   import {
-    AlertTriangleIcon,
     ExternalLink,
     X,
     RefreshCw,
