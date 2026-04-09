@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createQueueInterceptor, RequestQueue } from "./request-queue";
 
-/** Minimal mock of a ConnectRPC UnaryRequest for interceptor testing. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function makeRequest(
-  methodName: string,
-  message: Record<string, unknown>,
-): any {
+/**
+ * Builds a minimal ConnectRPC-shaped request object.
+ * Only the fields read by createQueueInterceptor are meaningful;
+ * the rest are stubs to satisfy the interface.
+ */
+function fakeRequest(methodName: string, message: Record<string, unknown>) {
   return {
     stream: false as const,
     service: {},
@@ -17,31 +17,31 @@ function makeRequest(
     header: new Headers(),
     contextValues: {},
     message,
-  };
+  } as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
 describe("createQueueInterceptor", () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let run: (req: any) => Promise<any>;
-  let next: ReturnType<typeof vi.fn>;
+  let sendRequest: (req: any) => Promise<any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+  let transport: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     const queue = new RequestQueue({ maxConcurrent: 10 });
     const interceptor = createQueueInterceptor(queue);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    next = vi.fn().mockResolvedValue({ stream: false, message: {} }) as any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    run = interceptor(next as any);
+
+    // `transport` simulates the ConnectRPC transport layer (the `next` fn).
+    // The interceptor wraps it, giving us `sendRequest`.
+    transport = vi.fn().mockResolvedValue({ stream: false, message: {} });
+    sendRequest = interceptor(transport as any); // eslint-disable-line @typescript-eslint/no-explicit-any
   });
 
   it("injects method-derived priority when message has no priority", async () => {
     const message: Record<string, unknown> = {
       metricsViewName: "test_view",
     };
-    await run(makeRequest("MetricsViewTimeRanges", message));
+    await sendRequest(fakeRequest("MetricsViewTimeRanges", message));
 
     expect(message.priority).toBe(100);
-    expect(next).toHaveBeenCalledOnce();
+    expect(transport).toHaveBeenCalledOnce();
   });
 
   it("injects method-derived priority when message has priority 0", async () => {
@@ -49,7 +49,7 @@ describe("createQueueInterceptor", () => {
       metricsViewName: "test_view",
       priority: 0,
     };
-    await run(makeRequest("MetricsViewAggregation", message));
+    await sendRequest(fakeRequest("MetricsViewAggregation", message));
 
     expect(message.priority).toBe(30);
   });
@@ -59,14 +59,14 @@ describe("createQueueInterceptor", () => {
       metricsViewName: "test_view",
       priority: 60,
     };
-    await run(makeRequest("MetricsViewAggregation", message));
+    await sendRequest(fakeRequest("MetricsViewAggregation", message));
 
     expect(message.priority).toBe(60);
   });
 
   it("falls back to DEFAULT_PRIORITY for unknown methods", async () => {
     const message: Record<string, unknown> = {};
-    await run(makeRequest("SomeUnknownMethod", message));
+    await sendRequest(fakeRequest("SomeUnknownMethod", message));
 
     expect(message.priority).toBe(10);
   });
