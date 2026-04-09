@@ -2706,6 +2706,26 @@ paths:
           format: int32
       tags:
         - QueryService
+  /v1/instances/{instanceId}/queries/project-storage:
+    get:
+      summary: ProjectStorage returns storage information for each relevant connector in the project.
+      operationId: QueryService_ProjectStorage
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ProjectStorageResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - QueryService
   /v1/instances/{instanceId}/queries/resolve-templated-string:
     post:
       summary: ResolveTemplatedString resolves a templated strings.
@@ -7064,6 +7084,34 @@ definitions:
         format: date-time
       watching:
         type: boolean
+  v1ProjectStorageEntry:
+    type: object
+    properties:
+      connector:
+        type: string
+      driver:
+        type: string
+      isDefaultOlap:
+        type: boolean
+      managed:
+        type: boolean
+      sizeBytes:
+        type: string
+        format: int64
+  v1ProjectStorageResponse:
+    type: object
+    properties:
+      entries:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ProjectStorageEntry'
+      managedSizeBytes:
+        type: string
+        format: int64
+      defaultOlapSizeBytes:
+        type: string
+        format: int64
   v1PutFileResponse:
     type: object
     properties:

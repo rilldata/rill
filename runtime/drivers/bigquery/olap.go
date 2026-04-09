@@ -44,6 +44,10 @@ func (c *Connection) InformationSchema() drivers.OLAPInformationSchema {
 	return c
 }
 
+func (c *Connection) EstimateSize(ctx context.Context) (int64, error) {
+	return -1, nil
+}
+
 // MayBeScaledToZero implements drivers.OLAPStore.
 func (c *Connection) MayBeScaledToZero(ctx context.Context) bool {
 	return true

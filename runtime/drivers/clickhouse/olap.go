@@ -328,6 +328,10 @@ func (c *Connection) InformationSchema() drivers.OLAPInformationSchema {
 	return c
 }
 
+func (c *Connection) EstimateSize(ctx context.Context) (int64, error) {
+	return c.estimateSize(ctx)
+}
+
 // acquireMetaConn gets a connection from the pool for "meta" queries like information schema (i.e. fast queries).
 // It returns a function that puts the connection back in the pool (if applicable).
 func (c *Connection) acquireMetaConn(ctx context.Context) (*SQLConn, func() error, error) {

@@ -44,6 +44,15 @@ service QueryService {
     };
   }
 
+  // Usage APIs
+
+  // ProjectStorage returns storage information for each relevant connector in the project.
+  rpc ProjectStorage(ProjectStorageRequest) returns (ProjectStorageResponse) {
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/queries/project-storage"
+    };
+  }
+
   // Explore APIs
 
   // MetricsViewAggregation is a generic API for running group-by/pivot queries against a metrics view.
@@ -1397,4 +1406,22 @@ message TableRowsRequest {
 
 message TableRowsResponse {
   repeated google.protobuf.Struct data = 1;
+}
+
+message ProjectStorageRequest {
+  string instance_id = 1;
+}
+
+message ProjectStorageResponse {
+  repeated ProjectStorageEntry entries = 1;
+  int64 managed_size_bytes = 2;
+  int64 default_olap_size_bytes = 3;
+}
+
+message ProjectStorageEntry {
+  string connector = 1;
+  string driver = 2;
+  bool is_default_olap = 3;
+  bool managed = 4;
+  int64 size_bytes = 5;
 }

@@ -6980,3 +6980,150 @@ export class TableRowsResponse extends Message<TableRowsResponse> {
   }
 }
 
+/**
+ * @generated from message rill.runtime.v1.ProjectStorageRequest
+ */
+export class ProjectStorageRequest extends Message<ProjectStorageRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  constructor(data?: PartialMessage<ProjectStorageRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ProjectStorageRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProjectStorageRequest {
+    return new ProjectStorageRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ProjectStorageRequest {
+    return new ProjectStorageRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ProjectStorageRequest {
+    return new ProjectStorageRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ProjectStorageRequest | PlainMessage<ProjectStorageRequest> | undefined, b: ProjectStorageRequest | PlainMessage<ProjectStorageRequest> | undefined): boolean {
+    return proto3.util.equals(ProjectStorageRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ProjectStorageResponse
+ */
+export class ProjectStorageResponse extends Message<ProjectStorageResponse> {
+  /**
+   * @generated from field: repeated rill.runtime.v1.ProjectStorageEntry entries = 1;
+   */
+  entries: ProjectStorageEntry[] = [];
+
+  /**
+   * @generated from field: int64 managed_size_bytes = 2;
+   */
+  managedSizeBytes = protoInt64.zero;
+
+  /**
+   * @generated from field: int64 default_olap_size_bytes = 3;
+   */
+  defaultOlapSizeBytes = protoInt64.zero;
+
+  constructor(data?: PartialMessage<ProjectStorageResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ProjectStorageResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "entries", kind: "message", T: ProjectStorageEntry, repeated: true },
+    { no: 2, name: "managed_size_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 3, name: "default_olap_size_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProjectStorageResponse {
+    return new ProjectStorageResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ProjectStorageResponse {
+    return new ProjectStorageResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ProjectStorageResponse {
+    return new ProjectStorageResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ProjectStorageResponse | PlainMessage<ProjectStorageResponse> | undefined, b: ProjectStorageResponse | PlainMessage<ProjectStorageResponse> | undefined): boolean {
+    return proto3.util.equals(ProjectStorageResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ProjectStorageEntry
+ */
+export class ProjectStorageEntry extends Message<ProjectStorageEntry> {
+  /**
+   * @generated from field: string connector = 1;
+   */
+  connector = "";
+
+  /**
+   * @generated from field: string driver = 2;
+   */
+  driver = "";
+
+  /**
+   * @generated from field: bool is_default_olap = 3;
+   */
+  isDefaultOlap = false;
+
+  /**
+   * @generated from field: bool managed = 4;
+   */
+  managed = false;
+
+  /**
+   * @generated from field: int64 size_bytes = 5;
+   */
+  sizeBytes = protoInt64.zero;
+
+  constructor(data?: PartialMessage<ProjectStorageEntry>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ProjectStorageEntry";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "is_default_olap", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "managed", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "size_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProjectStorageEntry {
+    return new ProjectStorageEntry().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ProjectStorageEntry {
+    return new ProjectStorageEntry().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ProjectStorageEntry {
+    return new ProjectStorageEntry().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ProjectStorageEntry | PlainMessage<ProjectStorageEntry> | undefined, b: ProjectStorageEntry | PlainMessage<ProjectStorageEntry> | undefined): boolean {
+    return proto3.util.equals(ProjectStorageEntry, a, b);
+  }
+}
+

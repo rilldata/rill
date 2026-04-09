@@ -41,6 +41,10 @@ func (c *connection) InformationSchema() drivers.OLAPInformationSchema {
 	return c
 }
 
+func (c *connection) EstimateSize(ctx context.Context) (int64, error) {
+	return -1, nil
+}
+
 // MayBeScaledToZero implements drivers.OLAPStore.
 func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
 	return false // MySQL instances are typically always running

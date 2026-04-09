@@ -23,6 +23,7 @@ const (
 	QueryService_QueryBatch_FullMethodName                    = "/rill.runtime.v1.QueryService/QueryBatch"
 	QueryService_Export_FullMethodName                        = "/rill.runtime.v1.QueryService/Export"
 	QueryService_ExportReport_FullMethodName                  = "/rill.runtime.v1.QueryService/ExportReport"
+	QueryService_ProjectStorage_FullMethodName                = "/rill.runtime.v1.QueryService/ProjectStorage"
 	QueryService_MetricsViewAggregation_FullMethodName        = "/rill.runtime.v1.QueryService/MetricsViewAggregation"
 	QueryService_MetricsViewToplist_FullMethodName            = "/rill.runtime.v1.QueryService/MetricsViewToplist"
 	QueryService_MetricsViewComparison_FullMethodName         = "/rill.runtime.v1.QueryService/MetricsViewComparison"
@@ -65,6 +66,8 @@ type QueryServiceClient interface {
 	Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error)
 	// ExportReport builds a URL to download the results of a query as a file.
 	ExportReport(ctx context.Context, in *ExportReportRequest, opts ...grpc.CallOption) (*ExportReportResponse, error)
+	// ProjectStorage returns storage information for each relevant connector in the project.
+	ProjectStorage(ctx context.Context, in *ProjectStorageRequest, opts ...grpc.CallOption) (*ProjectStorageResponse, error)
 	// MetricsViewAggregation is a generic API for running group-by/pivot queries against a metrics view.
 	MetricsViewAggregation(ctx context.Context, in *MetricsViewAggregationRequest, opts ...grpc.CallOption) (*MetricsViewAggregationResponse, error)
 	// Deprecated - use MetricsViewComparison instead.
@@ -208,6 +211,16 @@ func (c *queryServiceClient) ExportReport(ctx context.Context, in *ExportReportR
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ExportReportResponse)
 	err := c.cc.Invoke(ctx, QueryService_ExportReport_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryServiceClient) ProjectStorage(ctx context.Context, in *ProjectStorageRequest, opts ...grpc.CallOption) (*ProjectStorageResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ProjectStorageResponse)
+	err := c.cc.Invoke(ctx, QueryService_ProjectStorage_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -506,6 +519,8 @@ type QueryServiceServer interface {
 	Export(context.Context, *ExportRequest) (*ExportResponse, error)
 	// ExportReport builds a URL to download the results of a query as a file.
 	ExportReport(context.Context, *ExportReportRequest) (*ExportReportResponse, error)
+	// ProjectStorage returns storage information for each relevant connector in the project.
+	ProjectStorage(context.Context, *ProjectStorageRequest) (*ProjectStorageResponse, error)
 	// MetricsViewAggregation is a generic API for running group-by/pivot queries against a metrics view.
 	MetricsViewAggregation(context.Context, *MetricsViewAggregationRequest) (*MetricsViewAggregationResponse, error)
 	// Deprecated - use MetricsViewComparison instead.
@@ -617,6 +632,9 @@ func (UnimplementedQueryServiceServer) Export(context.Context, *ExportRequest) (
 }
 func (UnimplementedQueryServiceServer) ExportReport(context.Context, *ExportReportRequest) (*ExportReportResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ExportReport not implemented")
+}
+func (UnimplementedQueryServiceServer) ProjectStorage(context.Context, *ProjectStorageRequest) (*ProjectStorageResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ProjectStorage not implemented")
 }
 func (UnimplementedQueryServiceServer) MetricsViewAggregation(context.Context, *MetricsViewAggregationRequest) (*MetricsViewAggregationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MetricsViewAggregation not implemented")
@@ -784,6 +802,24 @@ func _QueryService_ExportReport_Handler(srv interface{}, ctx context.Context, de
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(QueryServiceServer).ExportReport(ctx, req.(*ExportReportRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _QueryService_ProjectStorage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProjectStorageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServiceServer).ProjectStorage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QueryService_ProjectStorage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServiceServer).ProjectStorage(ctx, req.(*ProjectStorageRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1310,6 +1346,10 @@ var QueryService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ExportReport",
 			Handler:    _QueryService_ExportReport_Handler,
+		},
+		{
+			MethodName: "ProjectStorage",
+			Handler:    _QueryService_ProjectStorage_Handler,
 		},
 		{
 			MethodName: "MetricsViewAggregation",
