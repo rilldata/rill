@@ -38,6 +38,7 @@ import {
   MetricsViewTimeSeriesRequest,
   MetricsViewToplistRequest,
   MetricsViewTotalsRequest,
+  ProjectStorageRequest,
   QueryRequest,
   ResolveCanvasRequest,
   ResolveComponentRequest,
@@ -100,6 +101,97 @@ import type {
 } from "../../gen/index.schemas";
 import type { RuntimeClient } from "../runtime-client";
 import { stripUndefined } from "../strip-undefined";
+
+/**
+ * Raw RPC call: QueryService.ProjectStorage
+ */
+export async function queryServiceProjectStorage(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<ProjectStorageRequest>, "instanceId">,
+  options?: { signal?: AbortSignal },
+): Promise<PartialMessage<ProjectStorageResponse>> {
+  const r = await client.queryService.projectStorage(
+    ProjectStorageRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as PartialMessage<ProjectStorageResponse>;
+}
+
+export function getQueryServiceProjectStorageQueryKey(
+  instanceId: string,
+  request?: Omit<PartialMessage<ProjectStorageRequest>, "instanceId">,
+): QueryKey {
+  return ["QueryService", "projectStorage", instanceId, request ?? {}] as const;
+}
+
+export function getQueryServiceProjectStorageQueryOptions<
+  TData = PartialMessage<ProjectStorageResponse>,
+>(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<ProjectStorageRequest>, "instanceId">,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        PartialMessage<ProjectStorageResponse>,
+        ConnectError,
+        TData
+      >
+    >;
+  },
+): CreateQueryOptions<
+  PartialMessage<ProjectStorageResponse>,
+  ConnectError,
+  TData
+> & { queryKey: QueryKey } {
+  const queryKey = getQueryServiceProjectStorageQueryKey(
+    client.instanceId,
+    request,
+  );
+  const queryFn: QueryFunction<PartialMessage<ProjectStorageResponse>> = ({
+    signal,
+  }) => queryServiceProjectStorage(client, request, { signal });
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!client.instanceId,
+    ...options?.query,
+  } as CreateQueryOptions<
+    PartialMessage<ProjectStorageResponse>,
+    ConnectError,
+    TData
+  > & { queryKey: QueryKey };
+}
+
+export function createQueryServiceProjectStorage<
+  TData = PartialMessage<ProjectStorageResponse>,
+>(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<ProjectStorageRequest>, "instanceId">,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        PartialMessage<ProjectStorageResponse>,
+        ConnectError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, ConnectError> {
+  const queryOptions = getQueryServiceProjectStorageQueryOptions(
+    client,
+    request,
+    options,
+  );
+  return createQuery(queryOptions, queryClient);
+}
 
 /**
  * Raw RPC call: QueryService.MetricsViewAggregation

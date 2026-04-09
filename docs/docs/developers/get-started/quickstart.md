@@ -119,6 +119,22 @@ Once your dashboard is created, you can:
 
 
 
+## Preview Mode
+
+Preview Mode gives you a dashboard-only view of your project — no file editor, no code. It's useful for sharing a local Rill instance with stakeholders who don't need to see the development environment.
+
+Start Rill in preview mode with:
+
+```bash
+rill start my-rill-project --preview
+```
+
+In this mode, only the dashboards, AI chat, and status pages are accessible. The file editor and developer workspace are hidden.
+
+:::tip
+You can also switch between Developer and Preview modes from within the app using the mode tag in the top-left header.
+:::
+
 ## What else can Rill do?
 
 This quick start covered the basics, but Rill offers much more:

@@ -30,6 +30,7 @@ import { s3Schema } from "../../templates/schemas/s3";
 import { starrocksSchema } from "../../templates/schemas/starrocks";
 import { supabaseSchema } from "../../templates/schemas/supabase";
 import { SOURCES, OLAP_ENGINES, AI_CONNECTORS } from "./constants";
+import { connectorKeywordMapping } from "@rilldata/web-common/features/connectors/connector-metadata.ts";
 
 export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   athena: athenaSchema,
@@ -61,13 +62,12 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
 
 /**
  * Connector information derived from JSON schemas.
- * TODO: Consolidate with V1ConnectorDriver since this is an intermediate representation.
- *       We use V1ConnectorDriver to show connector form and transitions.
  */
 export interface ConnectorInfo {
   name: string;
   displayName: string;
   category: ConnectorCategory;
+  keywords: string[];
 }
 
 /**
@@ -85,6 +85,7 @@ export const connectors: ConnectorInfo[] = [
       name,
       displayName: schema.title ?? name,
       category: schema["x-category"] as ConnectorCategory,
+      keywords: connectorKeywordMapping[name] ?? [],
     };
   });
 /**
