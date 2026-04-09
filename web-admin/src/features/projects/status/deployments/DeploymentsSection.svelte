@@ -18,7 +18,6 @@
     requestSkipBranchInjection,
   } from "@rilldata/web-admin/features/branches/branch-utils";
   import {
-    deduplicateDeployments,
     isActiveDeployment,
     isProdDeployment,
   } from "@rilldata/web-admin/features/branches/deployment-utils";
@@ -114,12 +113,11 @@
   );
 
   let visibleDeployments = $derived.by(() => {
-    const deduped = deduplicateDeployments(
-      $allDeployments.data?.deployments ?? [],
+    const active = ($allDeployments.data?.deployments ?? []).filter(
       (d: V1Deployment) =>
-        d.status === V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED,
+        d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED,
     );
-    return [...deduped].sort((a, b) => {
+    return [...active].sort((a, b) => {
       const aIsProd = isProdDeployment(a);
       const bIsProd = isProdDeployment(b);
       if (aIsProd && !bIsProd) return -1;

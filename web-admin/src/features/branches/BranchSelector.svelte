@@ -8,7 +8,7 @@
     removeBranchFromPath,
     requestSkipBranchInjection,
   } from "./branch-utils";
-  import { deduplicateDeployments, isProdDeployment } from "./deployment-utils";
+  import { isProdDeployment } from "./deployment-utils";
   import { getStatusDotClass } from "../projects/status/display-utils";
   import {
     V1DeploymentStatus,
@@ -39,8 +39,7 @@
     },
   );
 
-  $: rawDeployments = $deploymentsQuery.data?.deployments ?? [];
-  $: deployments = deduplicateDeployments(rawDeployments);
+  $: deployments = $deploymentsQuery.data?.deployments ?? [];
 
   $: hasBranchDeployments = deployments.some(
     (d) => d.branch && d.branch !== primaryBranch,

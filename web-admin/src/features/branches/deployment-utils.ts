@@ -28,25 +28,3 @@ export function isActiveDeployment(d: V1Deployment): boolean {
 export function isProdDeployment(d: V1Deployment): boolean {
   return d.environment === "prod";
 }
-
-/**
- * Deduplicate deployments by branch, keeping only the most recently
- * updated deployment per branch. Optionally filters out deployments
- * matching a predicate (e.g., deleted ones).
- */
-export function deduplicateDeployments(
-  deployments: V1Deployment[],
-  exclude?: (d: V1Deployment) => boolean,
-): V1Deployment[] {
-  const byBranch = new Map<string, V1Deployment>();
-  for (const d of deployments) {
-    if (exclude?.(d)) continue;
-    const key = d.branch ?? "";
-    const existing = byBranch.get(key);
-    // updatedOn is an ISO 8601 timestamp; lexicographic comparison is correct.
-    if (!existing || (d.updatedOn ?? "") > (existing.updatedOn ?? "")) {
-      byBranch.set(key, d);
-    }
-  }
-  return [...byBranch.values()];
-}
