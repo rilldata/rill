@@ -6,7 +6,8 @@
   } from "@rilldata/web-admin/client";
   import {
     isFreePlan,
-    isGrowthPlan,
+    isProPlan,
+    isTrialPlan,
   } from "@rilldata/web-admin/features/billing/plans/utils";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
@@ -81,7 +82,7 @@
   // Billing plan detection
   $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
   $: planName = $subscriptionQuery?.data?.subscription?.plan?.name ?? "";
-  $: showSlots = isFreePlan(planName) || isGrowthPlan(planName);
+  $: showSlots = isTrialPlan(planName) || isFreePlan(planName) || isProPlan(planName);
 </script>
 
 <OverviewCard title="Deployment">
