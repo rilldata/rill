@@ -7,13 +7,15 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { Button } from "@rilldata/web-common/components/button/index.ts";
+  import { completeInitialAddData } from "@rilldata/web-admin/features/welcome/add-data/complete-initial-add-data.ts";
 
   const { chat } = featureFlags;
 
   const runtimeClient = useRuntimeClient();
 
   $: ({
-    params: { project },
+    params: { project, organization },
   } = $page);
 
   // Query the instance to get the project display name
@@ -70,6 +72,12 @@
         </div>
       {/if}
     </div>
+
+    <Button
+      onClick={() =>
+        completeInitialAddData(runtimeClient, organization, project, true)}
+      >Merge</Button
+    >
 
     <!-- Dashboards Section -->
     <div class="flex flex-col gap-y-4">

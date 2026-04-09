@@ -7,6 +7,7 @@
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import {
+    type AddDataConfig,
     type ImportAddDataStep,
     ImportDataStep,
   } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
@@ -20,6 +21,7 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import FeatherCheckCircle from "@rilldata/web-common/components/icons/FeatherCheckCircle.svelte";
 
+  export let config: AddDataConfig;
   export let importAddDataStep: ImportAddDataStep;
   export let onBack: () => void;
   export let onDone: () => void;
@@ -72,7 +74,7 @@
         },
       );
       onDone();
-      return goto(currentFileRoute);
+      if (!config.skipNavigation) return goto(currentFileRoute);
     } catch (e) {
       error = e?.response?.data?.message ?? e?.message ?? null;
     }

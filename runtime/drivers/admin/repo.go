@@ -527,7 +527,7 @@ func (r *repo) RestoreCommit(ctx context.Context, commitSHA string) (string, err
 
 // MergeToBranch implements drivers.RepoStore.
 func (r *repo) MergeToBranch(ctx context.Context, branch string, force bool) error {
-	return drivers.ErrNotImplemented
+	return r.git.mergeToBranch(ctx, branch, force)
 }
 
 // CommitHash implements drivers.RepoStore.

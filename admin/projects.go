@@ -90,8 +90,10 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 	}
 
 	env := "prod"
+	deployBranch := proj.PrimaryBranch
 	if editable {
 		env = "dev"
+		deployBranch = "dev"
 	}
 
 	// Provision prod deployment.
@@ -100,7 +102,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		ProjectID:   proj.ID,
 		OwnerUserID: nil,
 		Environment: env,
-		Branch:      proj.PrimaryBranch,
+		Branch:      deployBranch,
 		Editable:    editable,
 	})
 	if err != nil {

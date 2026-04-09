@@ -156,6 +156,7 @@
     <SourceSelector {config} onSelect={schemaSelected} {onBack} />
   {:else if stepState.step === AddDataStep.CreateConnector}
     <ConnectorFormWrapper
+      {config}
       step={stepState}
       onSubmit={(connectorName, connectorFormValues) =>
         void connectorSelected(connectorName, connectorFormValues)}
@@ -189,6 +190,7 @@
       <ImportDataStatus importAddDataStep={stepState} {onDone} />
     {:else}
       <GenerateDashboardStatus
+        {config}
         importAddDataStep={stepState}
         {onBack}
         {onDone}

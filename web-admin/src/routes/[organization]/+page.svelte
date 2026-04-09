@@ -49,6 +49,9 @@
 </svelte:head>
 
 <ContentContainer showTitle={false} maxWidth={1300}>
+  <Button type="primary" onClick={createProject} loading={isLoading}>
+    Create new
+  </Button>
   {#if $org.data && $org.data.organization && $projs.data}
     {#if $projs.data.projects?.length === 0}
       <OrganizationHero {title} />
@@ -59,9 +62,6 @@
           rel="noreferrer noopener">See docs</a
         >
       </span>
-      <Button type="primary" onClick={createProject} loading={isLoading}>
-        Create new
-      </Button>
     {:else if $allProjectsHibernating.data}
       <OrganizationHibernating
         organization={orgName}

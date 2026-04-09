@@ -106,7 +106,7 @@ func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
 			refSpec := config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", branch, branch))
 			err = remote.Fetch(&git.FetchOptions{
 				RefSpecs: []config.RefSpec{refSpec},
-				Force:    true,
+				Force:    force,
 			})
 			if err != nil && !(errors.Is(err, git.NoErrAlreadyUpToDate) || git.NoMatchingRefSpecError{}.Is(err)) {
 				return fmt.Errorf("failed to fetch from remote: %w", err)
@@ -121,7 +121,7 @@ func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
 	}
 	err = worktree.Checkout(&git.CheckoutOptions{
 		Branch: plumbing.ReferenceName("refs/heads/" + r.defaultBranch),
-		Force:  true,
+		Force:  force,
 	})
 	if err != nil {
 		if !errors.Is(err, plumbing.ErrReferenceNotFound) {
@@ -152,22 +152,21 @@ func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
 			Hash:   remoteHash.Hash(),
 			Branch: plumbing.ReferenceName("refs/heads/" + r.defaultBranch),
 			Create: true,
-			Force:  true,
+			Force:  force,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to create and checkout default branch %q: %w", r.defaultBranch, err)
 		}
 	}
 
-	// Hard reset to remote branch
-	err = resetToRemoteTrackingBranch(repo, worktree, r.defaultBranch)
-	if err != nil {
-		if !(errors.Is(err, plumbing.ErrReferenceNotFound) && r.editable()) { // In editable mode, the default branch may not exist yet on remote.
-			return fmt.Errorf("failed to reset to remote tracking branch %q: %w", r.defaultBranch, err)
-		}
-	}
-
 	if !r.editable() {
+		// Hard reset to remote branch
+		err = resetToRemoteTrackingBranch(repo, worktree, r.defaultBranch)
+		if err != nil {
+			if !(errors.Is(err, plumbing.ErrReferenceNotFound) && r.editable()) { // In editable mode, the default branch may not exist yet on remote.
+				return fmt.Errorf("failed to reset to remote tracking branch %q: %w", r.defaultBranch, err)
+			}
+		}
 		return nil
 	}
 
@@ -318,6 +317,77 @@ func (r *gitRepo) commitAndPushToPrimaryBranch(ctx context.Context, message stri
 		RefSpecs: []config.RefSpec{
 			config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", r.defaultBranch, r.defaultBranch)),
 			config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", r.primaryBranch, r.primaryBranch)),
+		},
+	})
+	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
+		return fmt.Errorf("failed to push changes to remote default branch %q: %w", r.defaultBranch, err)
+	}
+
+	return nil
+}
+
+// mergeToBranch merges the defaultBranch to the specified branch. TODO: merge with commitAndPushToPrimaryBranch
+func (r *gitRepo) mergeToBranch(ctx context.Context, branch string, force bool) (resErr error) {
+	if !r.editable() {
+		return fmt.Errorf("cannot merge to another branch from this repository")
+	}
+
+	r.h.logger.Info("mergeToBranch", zap.String("branch", branch), zap.Bool("force", force), observability.ZapCtx(ctx))
+	repo, err := git.PlainOpen(r.repoDir)
+	if err != nil {
+		return fmt.Errorf("failed to open repository: %w", err)
+	}
+
+	// Fetch the branch to ensure we are up-to-date
+	err = repo.FetchContext(ctx, &git.FetchOptions{
+		RemoteURL: r.remoteURL,
+		RefSpecs:  []config.RefSpec{config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", branch, branch))},
+	})
+	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) && !errors.Is(err, git.ErrBranchExists) {
+		return fmt.Errorf("failed to fetch branch %q: %w", branch, err)
+	}
+
+	// Switch to the primary branch
+	worktree, err := repo.Worktree()
+	if err != nil {
+		return fmt.Errorf("failed to get worktree: %w", err)
+	}
+	defer func() {
+		// switch back to the default branch
+		err := worktree.Checkout(&git.CheckoutOptions{
+			Branch: plumbing.ReferenceName("refs/heads/" + r.defaultBranch),
+			Force:  true,
+		})
+		if err != nil {
+			resErr = errors.Join(resErr, fmt.Errorf("failed to checkout default branch %q: %w", r.defaultBranch, err))
+			return
+		}
+	}()
+
+	// Merge the default branch into the primary branch
+	merged := true
+	if force {
+		err = gitutil.MergeWithTheirsStrategy(r.repoDir, r.defaultBranch)
+	} else {
+		merged, err = gitutil.MergeWithBailOnConflict(r.repoDir, r.defaultBranch)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to merge default branch %q into branch %q: %w", r.defaultBranch, branch, err)
+	}
+
+	if !merged {
+		// If the merge was aborted no need to push the changes
+		r.h.logger.Warn("Merge aborted due to conflicts, not pushing changes", zap.String("branch", branch), zap.String("defaultBranch", r.defaultBranch))
+		return nil
+	}
+
+	// Push the changes to the remote default branch
+	err = repo.PushContext(ctx, &git.PushOptions{
+		RemoteName: "origin",
+		RemoteURL:  r.remoteURL,
+		RefSpecs: []config.RefSpec{
+			config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", r.defaultBranch, r.defaultBranch)),
+			config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", branch, branch)),
 		},
 	})
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {

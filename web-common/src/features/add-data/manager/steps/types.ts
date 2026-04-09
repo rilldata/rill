@@ -13,6 +13,7 @@ export enum AddDataStep {
 export type AddDataConfig = {
   welcomeScreen?: boolean;
   importOnly?: boolean;
+  skipNavigation?: boolean;
 };
 
 export enum ImportDataStep {
