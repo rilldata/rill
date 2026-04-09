@@ -305,7 +305,7 @@ func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionT
 		return nil, err
 	}
 
-	if err := e.rewriteQueryTimeRanges(ctx, qry, executionTime); err != nil {
+	if err := e.RewriteQueryTimeRanges(ctx, qry, executionTime); err != nil {
 		return nil, err
 	}
 
@@ -437,7 +437,7 @@ func (e *Executor) Export(ctx context.Context, qry *metricsview.Query, execution
 		return "", err
 	}
 
-	if err := e.rewriteQueryTimeRanges(ctx, qry, executionTime); err != nil {
+	if err := e.RewriteQueryTimeRanges(ctx, qry, executionTime); err != nil {
 		return "", err
 	}
 
@@ -539,7 +539,7 @@ func (e *Executor) Search(ctx context.Context, qry *metricsview.SearchQuery, exe
 		} //exhaustruct:enforce
 		q.Where = whereExprForSearch(qry.Where, d, qry.Search)
 
-		err := e.rewriteQueryTimeRanges(ctx, q, executionTime)
+		err := e.RewriteQueryTimeRanges(ctx, q, executionTime)
 		if err != nil {
 			return nil, err
 		}
@@ -684,7 +684,7 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *metricsview.Se
 		UnusedFields: nil,
 	} //exhaustruct:enforce
 
-	if err := e.rewriteQueryTimeRanges(ctx, q, executionTime); err != nil {
+	if err := e.RewriteQueryTimeRanges(ctx, q, executionTime); err != nil {
 		return nil, err
 	}
 
