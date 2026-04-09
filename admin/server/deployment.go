@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -182,10 +183,12 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 		}
 	}
 
+	var subject string
 	var attr map[string]any
 	var restrictResources bool
 	var resources []database.ResourceName
 	if req.For == nil {
+		subject = claims.OwnerID()
 		if claims.OwnerType() == auth.OwnerTypeUser {
 			attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
 			if err != nil {
@@ -209,17 +212,20 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 
 		switch forVal := req.For.(type) {
 		case *adminv1.GetDeploymentRequest_UserId:
+			subject = forVal.UserId
 			attr, restrictResources, resources, err = s.getAttributesAndResourceRestrictionsForUser(ctx, proj.OrganizationID, proj.ID, forVal.UserId, "")
 			if err != nil {
 				return nil, err
 			}
 		case *adminv1.GetDeploymentRequest_UserEmail:
+			subject = safeHash(forVal.UserEmail)
 			attr, restrictResources, resources, err = s.getAttributesAndResourceRestrictionsForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.UserEmail)
 			if err != nil {
 				return nil, err
 			}
 		case *adminv1.GetDeploymentRequest_Attributes:
 			attr = forVal.Attributes.AsMap()
+			subject, _ = attr["id"].(string)
 		default:
 			return nil, status.Error(codes.InvalidArgument, "invalid 'for' type")
 		}
@@ -262,7 +268,7 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 	// Generate JWT
 	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
 		AudienceURL: depl.RuntimeAudience,
-		Subject:     claims.OwnerID(),
+		Subject:     subject,
 		TTL:         ttlDuration,
 		InstancePermissions: map[string][]runtime.Permission{
 			depl.RuntimeInstanceID: instancePermissions,
@@ -575,10 +581,12 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage deployment")
 	}
 
+	var subject string
 	var attr map[string]any
 	var restrictResources bool
 	var resources []database.ResourceName
 	if req.For == nil {
+		subject = claims.OwnerID()
 		if claims.OwnerType() == auth.OwnerTypeUser {
 			attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
 			if err != nil {
@@ -592,18 +600,20 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 	} else {
 		switch forVal := req.For.(type) {
 		case *adminv1.GetDeploymentCredentialsRequest_UserId:
+			subject = forVal.UserId
 			attr, restrictResources, resources, err = s.getAttributesAndResourceRestrictionsForUser(ctx, proj.OrganizationID, proj.ID, forVal.UserId, "")
 			if err != nil {
 				return nil, err
 			}
-
 		case *adminv1.GetDeploymentCredentialsRequest_UserEmail:
+			subject = safeHash(forVal.UserEmail)
 			attr, restrictResources, resources, err = s.getAttributesAndResourceRestrictionsForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.UserEmail)
 			if err != nil {
 				return nil, err
 			}
 		case *adminv1.GetDeploymentCredentialsRequest_Attributes:
 			attr = forVal.Attributes.AsMap()
+			subject, _ = attr["id"].(string)
 		default:
 			return nil, status.Error(codes.InvalidArgument, "invalid 'for' type")
 		}
@@ -620,7 +630,7 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 	// Generate JWT
 	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
 		AudienceURL: prodDepl.RuntimeAudience,
-		Subject:     claims.OwnerID(),
+		Subject:     subject,
 		TTL:         ttlDuration,
 		InstancePermissions: map[string][]runtime.Permission{
 			prodDepl.RuntimeInstanceID: {
@@ -690,10 +700,12 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	}
 
 	// Get user attributes to pass in the JWT
+	var subject string
 	var attr map[string]any
 	var restrictResources bool
 	var resources []database.ResourceName
 	if req.For == nil {
+		subject = claims.OwnerID()
 		if claims.OwnerType() == auth.OwnerTypeUser {
 			attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
 			if err != nil {
@@ -707,17 +719,20 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	} else {
 		switch forVal := req.For.(type) {
 		case *adminv1.GetIFrameRequest_UserId:
+			subject = forVal.UserId
 			attr, restrictResources, resources, err = s.getAttributesAndResourceRestrictionsForUser(ctx, proj.OrganizationID, proj.ID, forVal.UserId, "")
 			if err != nil {
 				return nil, err
 			}
 		case *adminv1.GetIFrameRequest_UserEmail:
+			subject = safeHash(forVal.UserEmail)
 			attr, restrictResources, resources, err = s.getAttributesAndResourceRestrictionsForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.UserEmail)
 			if err != nil {
 				return nil, err
 			}
 		case *adminv1.GetIFrameRequest_Attributes:
 			attr = forVal.Attributes.AsMap()
+			subject, _ = attr["id"].(string)
 		default:
 			return nil, status.Error(codes.InvalidArgument, "invalid 'for' type")
 		}
@@ -768,7 +783,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	// Generate JWT
 	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
 		AudienceURL: prodDepl.RuntimeAudience,
-		Subject:     claims.OwnerID(),
+		Subject:     subject,
 		TTL:         ttlDuration,
 		InstancePermissions: map[string][]runtime.Permission{
 			prodDepl.RuntimeInstanceID: {
@@ -1030,4 +1045,12 @@ func (s *Server) getAttributesForUser(ctx context.Context, orgID, projID, userID
 	}
 
 	return attr, userID, forProjPerms.ReadProd, nil
+}
+
+// safeHash returns a deterministic, non-reversible identifier from an
+// arbitrary string (e.g. an email). Useful as a JWT subject for virtual
+// users that don't have a database ID.
+func safeHash(s string) string {
+	h := sha256.Sum256([]byte(s))
+	return hex.EncodeToString(h[:])
 }
