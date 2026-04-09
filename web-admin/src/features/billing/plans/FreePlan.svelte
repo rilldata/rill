@@ -17,10 +17,10 @@
   let open = $state(false);
 </script>
 
-<SettingsContainer title={plan?.displayName ?? "Free Plan"}>
+<SettingsContainer title={plan?.displayName ?? "Free Trial"}>
   <div slot="body">
     <div>
-      You're on the Free plan. Ready to get started with Rill?
+      You're on the Free Trial plan. Ready to get started with Rill?
       <a
         href="https://www.rilldata.com/pricing"
         target="_blank"
