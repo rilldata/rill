@@ -10,8 +10,6 @@ cli-only:
 cli: cli.prepare
 	go build -o rill cli/main.go 
 
-KEEP_DIRS := rill-openrtb-prog-ads rill-github-analytics rill-cost-monitoring
-
 .PHONY: cli.prepare
 cli.prepare: runtime.examples.embed
 	npm install
@@ -34,7 +32,9 @@ coverage.go:
 .PHONY: docs.generate
 docs.generate: runtime.examples.embed
 	# Temporarily replaces ~/.rill/config.yaml to avoid including user-defined defaults in generated docs.
-	# Sets main.Version to a fixed tag to simulate a production build, where certain commands are hidden (not using scripts/versiontag.sh since tags may not be available in CI).
+	#
+	# Sets main.Version to a fixed tag to simulate a production build, where certain commands are hidden.
+	# Not using scripts/versiontag.sh since the actual version should not be emitted to the generated files as it would go stale on the next release.
 	rm -rf docs/docs/reference/cli/*.md docs/docs/reference/project-files/*.md
 	if [ -f ~/.rill/config.yaml ]; then mv ~/.rill/config.yaml ~/.rill/config.yaml.tmp; fi;
 	RILL_DOCS_GENERATE=true go run -ldflags="-X main.Version=1.0.0" ./cli docs generate-cli docs/docs/reference/cli/
@@ -57,6 +57,8 @@ proto.generate:
 	npm run generate:runtime-client -w web-common
 	npm run generate:client -w web-admin
 
+KEEP_EXAMPLES := rill-openrtb-prog-ads rill-github-analytics rill-cost-monitoring
+
 .PHONY: runtime.examples.embed
 runtime.examples.embed:
 	@set -e; \
@@ -66,6 +68,6 @@ runtime.examples.embed:
 	TMP_CLONE_DIR=$$(mktemp -d 2>/dev/null || mktemp -d -t rill-examples); \
 	trap 'rm -rf "$$TMP_CLONE_DIR"' EXIT; \
 	git clone --quiet --depth=1 https://github.com/rilldata/rill-examples.git "$$TMP_CLONE_DIR"; \
-	for d in $(KEEP_DIRS); do \
+	for d in $(KEEP_EXAMPLES); do \
 		cp -R "$$TMP_CLONE_DIR/$$d" runtime/pkg/examples/embed/dist/; \
 	done
