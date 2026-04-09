@@ -152,7 +152,7 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 			return err
 		}
 
-		err = e.BindQuery(ctx, qry, tsRes)
+		err = e.BindQuery(ctx, qry, tsRes, q.ExecutionTime)
 		if err != nil {
 			return err
 		}

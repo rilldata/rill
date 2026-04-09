@@ -146,7 +146,7 @@ func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.Resol
 			return nil, err
 		}
 
-		err = r.executor.BindQuery(ctx, r.query, tsRes)
+		err = r.executor.BindQuery(ctx, r.query, tsRes, r.args.ExecutionTime)
 		if err != nil {
 			return nil, err
 		}
