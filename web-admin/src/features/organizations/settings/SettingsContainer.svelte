@@ -1,11 +1,21 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
   import InfoCircleFilled from "@rilldata/web-common/components/icons/InfoCircleFilled.svelte";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
-  export let title: string;
-  export let titleIcon: "none" | "info" | "error" = "none";
-  // Edge case with slots where conditional display breaks the logic.
-  // TODO: once we move out of slots we should get rid of this.
-  export let suppressFooter = false;
+
+  let {
+    title,
+    titleIcon = "none",
+    children,
+    contact,
+    action,
+  }: {
+    title: string;
+    titleIcon?: "none" | "info" | "error";
+    children?: Snippet;
+    contact?: Snippet;
+    action?: Snippet;
+  } = $props();
 </script>
 
 <div class="settings-container">
@@ -19,19 +29,20 @@
       {/if}
     </div>
     <div class="settings-body">
-      <slot name="body" />
-      {#if $$slots["default"]}
-        <slot />
+      {#if children}
+        {@render children()}
       {/if}
     </div>
   </div>
-  {#if ($$slots["contact"] || $$slots["action"]) && !suppressFooter}
+  {#if contact || action}
     <div class="settings-footer">
-      <slot name="contact" />
-      {#if $$slots["action"]}
-        <div class="grow"></div>
+      {#if contact}
+        {@render contact()}
       {/if}
-      <slot name="action" />
+      {#if action}
+        <div class="grow"></div>
+        {@render action()}
+      {/if}
     </div>
   {/if}
 </div>

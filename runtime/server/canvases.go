@@ -30,7 +30,7 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 		return nil, status.Errorf(codes.FailedPrecondition, "does not have access to canvas data")
 	}
 
-	res, err := s.runtime.ResolveCanvas(ctx, req.InstanceId, req.Canvas, claims)
+	res, err := s.runtime.ResolveCanvas(ctx, req.InstanceId, req.Canvas, claims, req.Unsafe)
 	if err != nil {
 		if errors.Is(err, drivers.ErrResourceNotFound) {
 			return nil, status.Errorf(codes.NotFound, "canvas with name %q not found", req.Canvas)
