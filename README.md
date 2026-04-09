@@ -53,7 +53,7 @@ Success! Run the following command to start the project:
 - **Build with agents** — BI-as-code (YAML + SQL) means coding agents like Claude Code and Cursor can author projects, dashboards, and security policies end-to-end
 - **Semantic layer** — Single source of truth for dimensions, measures, and time grains — defined in YAML, generating SQL at query time against your OLAP engine
 - **Explore with agents** — Conversational BI lets business users query metrics in natural language; the [MCP server](https://docs.rilldata.com/explore/mcp) connects AI agents directly to your semantic layer
-- **Real-time performance** — Sub-second queries on billions of rows via ClickHouse, DuckDB, and other OLAP engines
+- **Real-time performance** — Sub-second queries at any scale; ClickHouse for billions of rows, DuckDB for smaller datasets and fast iteration
 - **Embeddable** — Dashboards, APIs, and agent interfaces you can ship in your product
 
 ## Capabilities
@@ -71,7 +71,7 @@ Success! Run the following command to start the project:
 
 ### Rill Cloud
 
-- [**Deploy**](https://docs.rilldata.com/deploy/deploy-dashboard/) — Push to Rill Cloud with `rill deploy` or automate via Git-triggered CI/CD
+- [**Deploy**](https://docs.rilldata.com/deploy/deploy-dashboard/) — Git-backed, versioned deployments — push with `rill deploy` or connect a repo for automatic CI/CD
 - [**Explore & Canvas Dashboards**](https://docs.rilldata.com/build/dashboards) — Interactive dashboards, embeddable in your product
 - [**Conversational BI**](https://docs.rilldata.com/explore/ai-chat) — Ask questions in natural language
 - [**MCP Server**](https://docs.rilldata.com/explore/mcp) — Connect Claude, ChatGPT, or any AI agent to your metrics
@@ -135,7 +135,7 @@ rill deploy                      # push to Rill Cloud
 
 Your metrics view is immediately queryable on Rill Cloud — add YAML files to configure dashboards, alerts, and custom APIs.
 
-## Production Examples
+## Examples
 
 | Example              | Description                                         | Links                                                                                                                                            |
 | -------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
