@@ -1065,9 +1065,7 @@ func (s *Server) getAttributesForUser(ctx context.Context, orgID, projID, userID
 	return attr, userID, forProjPerms.ReadProd, nil
 }
 
-// safeHash returns a deterministic, non-reversible identifier from an
-// arbitrary string (e.g. an email). Useful as a JWT subject for virtual
-// users that don't have a database ID.
+// safeHash returns a hex hash of the input string.
 func safeHash(s string) string {
 	h := sha256.Sum256([]byte(s))
 	return hex.EncodeToString(h[:])
