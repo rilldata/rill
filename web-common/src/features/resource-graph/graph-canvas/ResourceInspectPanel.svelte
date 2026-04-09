@@ -244,11 +244,6 @@
       <div class="flex items-center gap-x-2">
         {#if kind}<ResourceTypeBadge {kind} />{/if}
         <span class="text-sm font-medium">{resourceName}</span>
-        {#if hasError}
-          <CancelCircle size="14px" className="text-red-500 flex-none" />
-        {:else if isTestOnlyError}
-          <AlertTriangleIcon size="14px" class="text-yellow-500 flex-none" />
-        {/if}
       </div>
       <div class="flex items-center gap-x-1">
         {#if canRefresh}
