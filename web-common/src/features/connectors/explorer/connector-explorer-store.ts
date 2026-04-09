@@ -28,6 +28,17 @@ export class ConnectorExplorerStore {
         table?: string,
       ) => void) = undefined;
 
+  /** Optional callback shown as a "+" button on table rows */
+  onInsertTable:
+    | undefined
+    | ((
+        driver: string,
+        connector: string,
+        database: string,
+        schema: string,
+        table: string,
+      ) => void) = undefined;
+
   // Used to show selection when clicking on items do not navigate to a route
   public selectedTableStore: Writable<ConnectorTableEntry>;
 
@@ -42,12 +53,21 @@ export class ConnectorExplorerStore {
       expandedItems = {},
       localStorage = true,
     } = {},
-    onToggleItem?: (
-      connector: string,
-      database?: string,
-      schema?: string,
-      table?: string,
-    ) => void,
+    callbacks?: {
+      onToggleItem?: (
+        connector: string,
+        database?: string,
+        schema?: string,
+        table?: string,
+      ) => void;
+      onInsertTable?: (
+        driver: string,
+        connector: string,
+        database: string,
+        schema: string,
+        table: string,
+      ) => void;
+    },
     selectedTableStore: Writable<ConnectorTableEntry> = writable({
       connector: "",
       database: "",
@@ -60,7 +80,8 @@ export class ConnectorExplorerStore {
     this.allowShowSchema = allowShowSchema;
     this.allowSelectTable = allowSelectTable;
 
-    if (onToggleItem) this.onToggleItem = onToggleItem;
+    if (callbacks?.onToggleItem) this.onToggleItem = callbacks.onToggleItem;
+    if (callbacks?.onInsertTable) this.onInsertTable = callbacks.onInsertTable;
 
     this.store = localStorage
       ? localStorageStore<ConnectorExplorerState>("connector-explorer-state", {
@@ -112,7 +133,7 @@ export class ConnectorExplorerStore {
         showConnectors: state.showConnectors,
         expandedItems: {},
       },
-      onToggleItem ?? this.onToggleItem,
+      { onToggleItem: onToggleItem ?? this.onToggleItem },
     );
   }
 

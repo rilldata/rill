@@ -9,7 +9,7 @@
   import type { ConversationManager } from "../conversation-manager";
   import type { ChatConfig } from "@rilldata/web-common/features/chat/core/types.ts";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import { ArrowUp } from "lucide-svelte";
+  import { ArrowUp, X } from "lucide-svelte";
 
   export let conversationManager: ConversationManager;
   export let onSend: (() => void) | undefined = undefined;
@@ -19,9 +19,18 @@
   export let inline = false;
 
   let value = "";
+  let contextDismissed = false;
 
-  $: ({ placeholder, additionalContextStoreGetter } = config);
+  $: ({
+    placeholder,
+    additionalContextStoreGetter,
+    promptTransformer,
+    contextIndicator,
+  } = config);
   $: additionalContextStore = additionalContextStoreGetter();
+  $: contextIndicatorStore = contextIndicator?.();
+  $: contextLabel =
+    !contextDismissed && contextIndicatorStore ? $contextIndicatorStore : null;
   // Since additionalContextStore is only used within sendMessage it will not be fetched unless used.
   // So use it immediately to get the correct value during sendMesssage.
   $: additionalContext = $additionalContextStore;
@@ -42,6 +51,11 @@
 
   async function sendMessage() {
     if (!canSend) return;
+
+    // Apply prompt transformer (e.g. prepend SQL context from query editor)
+    if (promptTransformer && !contextDismissed) {
+      currentConversation.draftMessage.set(promptTransformer(value));
+    }
 
     // Message handling with input focus
     try {
@@ -81,6 +95,12 @@
     tick().then(sendMessage).catch(console.error);
   }
 
+  function prefillChat(prompt: string) {
+    contextDismissed = false;
+    editor.commands.setContent(prompt);
+    editor.commands.focus("end");
+  }
+
   onMount(() => {
     editor = new Editor({
       element,
@@ -105,6 +125,7 @@
     });
 
     const unsubStartChatEvent = eventBus.on("start-chat", startChat);
+    const unsubPrefillChatEvent = eventBus.on("prefill-chat", prefillChat);
 
     chatMounted.set(true);
 
@@ -112,6 +133,7 @@
       chatMounted.set(false);
       editor.destroy();
       unsubStartChatEvent();
+      unsubPrefillChatEvent();
     };
   });
 </script>
@@ -125,6 +147,21 @@
     sendMessage();
   }}
 >
+  {#if contextLabel}
+    <div class="context-indicator">
+      <span class="truncate">{contextLabel}</span>
+      <button
+        type="button"
+        class="context-dismiss"
+        onclick={() => {
+          contextDismissed = true;
+        }}
+        aria-label="Remove SQL context"
+      >
+        <X size="12px" />
+      </button>
+    </div>
+  {/if}
   <div class="chat-input-container" bind:this={element}></div>
   <div class="chat-input-footer">
     <button
@@ -179,6 +216,18 @@
   :global(.tiptap) {
     @apply outline-none;
     @apply text-sm leading-relaxed;
+  }
+
+  .context-indicator {
+    @apply flex items-center gap-x-1 text-[11px] text-fg-secondary px-1 py-0.5 rounded bg-surface-subtle;
+  }
+
+  .context-dismiss {
+    @apply flex-none p-0.5 rounded;
+  }
+
+  .context-dismiss:hover {
+    @apply bg-gray-200;
   }
 
   .chat-input-container {

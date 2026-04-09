@@ -45,6 +45,10 @@ export function isCanvasDashboardPage(page: Page): boolean {
   );
 }
 
+export function isQueryPage(page: Page): boolean {
+  return page.route.id === "/[organization]/[project]/-/query";
+}
+
 /**
  * Returns true if the page is any kind of dashboard page (either a Metrics Explorer or a Custom Dashboard).
  */

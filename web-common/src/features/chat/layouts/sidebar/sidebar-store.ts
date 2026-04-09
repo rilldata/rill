@@ -51,6 +51,14 @@ export const sidebarActions = {
     );
   },
 
+  /** Open the chat sidebar and prefill the input without sending. */
+  prefillChat(prompt: string): void {
+    chatOpen.set(true);
+    void waitUntil(() => get(chatMounted)).then(() =>
+      eventBus.emit("prefill-chat", prompt),
+    );
+  },
+
   closeChat(): void {
     chatOpen.set(false);
   },

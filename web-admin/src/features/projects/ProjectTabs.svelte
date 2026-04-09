@@ -7,14 +7,21 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { type V1ProjectPermissions } from "../../client";
 
-  export let projectPermissions: V1ProjectPermissions;
-  export let organization: string;
-  export let project: string;
-  export let pathname: string;
+  let {
+    projectPermissions,
+    organization,
+    project,
+    pathname,
+  }: {
+    projectPermissions: V1ProjectPermissions;
+    organization: string;
+    project: string;
+    pathname: string;
+  } = $props();
 
-  const { chat, reports, alerts } = featureFlags;
+  const { chat, queryEditor, reports, alerts } = featureFlags;
 
-  $: tabs = [
+  let tabs = $derived([
     {
       route: `/${organization}/${project}`,
       label: "Home",
@@ -33,7 +40,7 @@
     {
       route: `/${organization}/${project}/-/query`,
       label: "Query",
-      hasPermission: false,
+      hasPermission: $queryEditor,
     },
     {
       route: `/${organization}/${project}/-/reports`,
@@ -55,9 +62,11 @@
       label: "Settings",
       hasPermission: projectPermissions.manageProject,
     },
-  ];
+  ]);
 
-  $: selectedIndex = tabs?.findLastIndex((t) => isSelected(t.route, pathname));
+  let selectedIndex = $derived(
+    tabs?.findLastIndex((t) => isSelected(t.route, pathname)),
+  );
 
   function isSelected(tabRoute: string, currentPathname: string) {
     if (tabRoute.endsWith(`/${organization}/${project}`)) {

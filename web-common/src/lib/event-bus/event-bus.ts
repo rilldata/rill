@@ -16,6 +16,7 @@ export interface Events {
   "shift-command-click": void;
   "page-content-resized": PageContentResized;
   "start-chat": string;
+  "prefill-chat": string;
   "rill-yaml-updated": void;
 }
 

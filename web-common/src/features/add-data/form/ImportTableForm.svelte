@@ -147,14 +147,16 @@
       allowSelectTable: false,
       allowShowSchema: false,
     },
-    (_, database, schema, table) => {
-      if (!database || !schema || !table) return;
-      form.update((f) => {
-        f.database = database;
-        f.schema = schema;
-        f.table = table;
-        return f;
-      });
+    {
+      onToggleItem: (_, database, schema, table) => {
+        if (!database || !schema || !table) return;
+        form.update((f) => {
+          f.database = database;
+          f.schema = schema;
+          f.table = table;
+          return f;
+        });
+      },
     },
   );
 </script>
