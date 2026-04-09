@@ -113,10 +113,12 @@ func (q *TableHead) Export(ctx context.Context, rt *runtime.Runtime, instanceID 
 				return err
 			}
 		}
-	default:
+	case drivers.DialectNameStarRocks, drivers.DialectNameDruid, drivers.DialectNameClickHouse:
 		if err := q.generalExport(ctx, rt, instanceID, w, opts); err != nil {
 			return err
 		}
+	default:
+		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
 	return nil

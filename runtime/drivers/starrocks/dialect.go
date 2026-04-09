@@ -143,7 +143,7 @@ func (d *dialect) IsNonNullFinite(floatColumn string) string {
 	return fmt.Sprintf("%s IS NOT NULL AND %s > -1e308 AND %s < 1e308", sanitizedFloatColumn, sanitizedFloatColumn, sanitizedFloatColumn)
 }
 
-func (d dialect) ColumnNumericHistogram(db, dbSchema, table, column string) (string, error) {
+func (d dialect) ColumnNumericHistogramBucket(db, dbSchema, table, column string) (string, error) {
 	sanitizedColumnName := d.EscapeIdentifier(column)
 	return fmt.Sprintf("SELECT (percentile_approx(%s, 0.75)-percentile_approx(%s, 0.25)) AS iqr, approx_count_distinct(%s) AS count, (max(%s) - min(%s)) AS `range` FROM %s",
 		sanitizedColumnName,

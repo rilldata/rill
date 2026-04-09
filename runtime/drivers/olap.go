@@ -257,7 +257,7 @@ type Dialect interface {
 	ColumnDescriptiveStatistics(db, dbSchema, table, column string) (string, error)
 	IsNonNullFinite(floatColumn string) string
 	ColumnNullCount(db, dbSchema, table, column string) (string, error)
-	ColumnNumericHistogram(db, dbSchema, table, column string) (string, error)
+	ColumnNumericHistogramBucket(db, dbSchema, table, column string) (string, error)
 }
 
 // BaseDialect provides default implementations for the Dialect interface.

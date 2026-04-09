@@ -78,7 +78,7 @@ func (q *ColumnNumericHistogram) Export(ctx context.Context, rt *runtime.Runtime
 }
 
 func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap drivers.OLAPStore, priority int) (float64, error) {
-	querySQL, err := olap.Dialect().ColumnNumericHistogram(q.Database, q.DatabaseSchema, q.TableName, q.ColumnName)
+	querySQL, err := olap.Dialect().ColumnNumericHistogramBucket(q.Database, q.DatabaseSchema, q.TableName, q.ColumnName)
 	if err != nil {
 		return 0, err
 	}
