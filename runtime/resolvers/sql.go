@@ -11,6 +11,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/duckdb"
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
@@ -278,7 +279,7 @@ func resolveTemplate(sqlTemplate string, args map[string]any, inst *drivers.Inst
 
 			// Return the escaped identifier
 			// TODO: As of now it is using `DialectDuckDB` in all cases since in certain cases like metrics_sql it is not possible to identify OLAP connector before template resolution.
-			return drivers.EscapeIdentifierDuckDB(ref.Name), nil
+			return duckdb.DialectDuckDB.EscapeIdentifier(ref.Name), nil
 		},
 	}, false)
 	if err != nil {

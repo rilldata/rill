@@ -169,7 +169,7 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 
 	// If we didn't manage to generate the YAML using AI, we fall back to the simple generator
 	if data == "" {
-		data, err = generateMetricsViewYAMLSimple(req.Connector, tbl, isDefaultConnector, modelFound)
+		data, err = generateMetricsViewYAMLSimple(req.Connector, tbl, isDefaultConnector, modelFound, olap.Dialect())
 		if err != nil {
 			return nil, err
 		}
@@ -420,14 +420,14 @@ Give me up to 10 suggested metrics using the %q SQL dialect based on the table n
 }
 
 // generateMetricsViewYAMLSimple generates a simple metrics view YAML definition from a table schema.
-func generateMetricsViewYAMLSimple(connector string, tbl *drivers.OlapTable, isDefaultConnector, isModel bool) (string, error) {
+func generateMetricsViewYAMLSimple(connector string, tbl *drivers.OlapTable, isDefaultConnector, isModel bool, dialect drivers.Dialect) (string, error) {
 	doc := &metricsViewYAML{
 		Version:       1,
 		Type:          "metrics_view",
 		DisplayName:   identifierToDisplayName(tbl.Name),
 		TimeDimension: generateMetricsViewYAMLSimpleTimeDimension(tbl.Schema),
 		Dimensions:    generateMetricsViewYAMLSimpleDimensions(tbl.Schema),
-		Measures:      generateMetricsViewYAMLSimpleMeasures(tbl),
+		Measures:      generateMetricsViewYAMLSimpleMeasures(tbl, dialect),
 	}
 
 	if isModel {
@@ -473,7 +473,7 @@ func generateMetricsViewYAMLSimpleDimensions(schema *runtimev1.StructType) []*me
 	return dims
 }
 
-func generateMetricsViewYAMLSimpleMeasures(tbl *drivers.OlapTable) []*metricsViewMeasureYAML {
+func generateMetricsViewYAMLSimpleMeasures(tbl *drivers.OlapTable, dialect drivers.Dialect) []*metricsViewMeasureYAML {
 	// Add a count measure
 	var measures []*metricsViewMeasureYAML
 	measures = append(measures, &metricsViewMeasureYAML{
@@ -491,7 +491,7 @@ func generateMetricsViewYAMLSimpleMeasures(tbl *drivers.OlapTable) []*metricsVie
 			measures = append(measures, &metricsViewMeasureYAML{
 				Name:         fmt.Sprintf("%s_sum", f.Name),
 				DisplayName:  fmt.Sprintf("Sum of %s", identifierToDisplayName(f.Name)),
-				Expression:   fmt.Sprintf("SUM(%s)", safeSQLName(f.Name)),
+				Expression:   fmt.Sprintf("SUM(%s)", safeSQLName(f.Name, dialect)),
 				Description:  "",
 				FormatPreset: "humanize",
 			})
@@ -615,12 +615,12 @@ var alphanumericUnderscoreRegexp = regexp.MustCompile("^[_a-zA-Z0-9]+$")
 // safeSQLName escapes a SQL column identifier.
 // If the name is simple (only contains alphanumeric characters and underscores), it does not escape the string.
 // This is because the output is user-facing, so we want to return as simple names as possible.
-func safeSQLName(name string) string {
+func safeSQLName(name string, dialect drivers.Dialect) string {
 	if name == "" {
 		return name
 	}
 	if alphanumericUnderscoreRegexp.MatchString(name) {
 		return name
 	}
-	return drivers.EscapeIdentifierDuckDB(name)
+	return dialect.EscapeIdentifier(name)
 }

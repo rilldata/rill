@@ -13,16 +13,13 @@ type dialect struct {
 	drivers.BaseDialect
 }
 
-func newDialect() *dialect {
+var DialectDuckDB drivers.Dialect = func() drivers.Dialect {
 	d := &dialect{}
 	d.InitBase(d)
 	return d
-}
+}()
 
-// NewDialect returns the DuckDB SQL dialect. Exported for use in tests outside this package.
-func NewDialect() drivers.Dialect { return newDialect() }
-
-func (d *dialect) String() string { return "duckdb" }
+func (d *dialect) String() string { return drivers.DialectNameDuckDB }
 
 func (d *dialect) CanPivot() bool { return true }
 
@@ -33,7 +30,7 @@ func (d *dialect) EscapeTable(_, _, table string) string {
 
 func (d *dialect) RequiresArrayContainsForInOperator() bool { return true }
 
-func (d *dialect) GetArrayContainsFunction() string { return "list_has_any" }
+func (d *dialect) GetArrayContainsFunction() (string, error) { return "list_has_any", nil }
 
 func (d *dialect) OrderByExpression(name string, desc bool) string {
 	res := d.EscapeIdentifier(name)
@@ -197,4 +194,38 @@ func (d *dialect) GetDateTimeExpr(t time.Time) (bool, string) {
 
 func (d *dialect) GetDateExpr(t time.Time) (bool, string) {
 	return true, fmt.Sprintf("CAST('%s' AS DATE)", t.Format(time.DateOnly))
+}
+
+func (d *dialect) ColumnCardinality(db, dbSchema, table, column string) (string, error) {
+	return fmt.Sprintf("SELECT approx_count_distinct(%s) AS count FROM %s", d.EscapeIdentifier(column), d.EscapeTable(db, dbSchema, table)), nil
+}
+
+func (d *dialect) ColumnDescriptiveStatistics(db, dbSchema, table, column string) (string, error) {
+	return fmt.Sprintf("SELECT "+
+		"min(%[1]s)::DOUBLE as min, "+
+		"approx_quantile(%[1]s, 0.25)::DOUBLE as q25, "+
+		"approx_quantile(%[1]s, 0.5)::DOUBLE as q50, "+
+		"approx_quantile(%[1]s, 0.75)::DOUBLE as q75, "+
+		"max(%[1]s)::DOUBLE as max, "+
+		"avg(%[1]s)::DOUBLE as mean, "+
+		"'NaN'::DOUBLE as sd "+
+		"FROM %[2]s WHERE NOT isinf(%[1]s) ",
+		d.EscapeIdentifier(column),
+		d.EscapeTable(db, dbSchema, table)), nil
+}
+
+func (d *dialect) IsNonNullFinite(floatColumn string) string {
+	sanitizedFloatColumn := d.EscapeIdentifier(floatColumn)
+	return fmt.Sprintf("%s IS NOT NULL AND NOT isinf(%s)", sanitizedFloatColumn, sanitizedFloatColumn)
+}
+
+func (d dialect) ColumnNumericHistogram(db, dbSchema, table, column string) (string, error) {
+	sanitizedColumnName := d.EscapeIdentifier(column)
+	return fmt.Sprintf("SELECT (approx_quantile(%s, 0.75)-approx_quantile(%s, 0.25))::DOUBLE AS iqr, approx_count_distinct(%s) AS count, (max(%s) - min(%s))::DOUBLE AS range FROM %s",
+		sanitizedColumnName,
+		sanitizedColumnName,
+		sanitizedColumnName,
+		sanitizedColumnName,
+		sanitizedColumnName,
+		d.EscapeTable(db, dbSchema, table)), nil
 }

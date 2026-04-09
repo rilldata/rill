@@ -24,20 +24,6 @@ type TableHead struct {
 
 var _ runtime.Query = &TableHead{}
 
-var supportedTableHeadDialects = map[string]bool{
-	drivers.DialectNameDuckDB:     true,
-	drivers.DialectNameClickHouse: true,
-	drivers.DialectNameDruid:      true,
-	drivers.DialectNamePinot:      true,
-	drivers.DialectNameBigQuery:   true,
-	drivers.DialectNameSnowflake:  true,
-	drivers.DialectNameAthena:     true,
-	drivers.DialectNameRedshift:   true,
-	drivers.DialectNameMySQL:      true,
-	drivers.DialectNamePostgres:   true,
-	drivers.DialectNameStarRocks:  true,
-}
-
 func (q *TableHead) Key() string {
 	return fmt.Sprintf("TableHead:%s:%d", q.TableName, q.Limit)
 }
@@ -77,10 +63,6 @@ func (q *TableHead) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID
 		return err
 	}
 	defer release()
-
-	if !supportedTableHeadDialects[olap.Dialect().String()] {
-		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
-	}
 
 	query, err := q.buildTableHeadSQL(ctx, olap)
 	if err != nil {
@@ -131,20 +113,10 @@ func (q *TableHead) Export(ctx context.Context, rt *runtime.Runtime, instanceID 
 				return err
 			}
 		}
-	case drivers.DialectNameDruid:
-		if err := q.generalExport(ctx, rt, instanceID, w, opts); err != nil {
-			return err
-		}
-	case drivers.DialectNameClickHouse:
-		if err := q.generalExport(ctx, rt, instanceID, w, opts); err != nil {
-			return err
-		}
-	case drivers.DialectNameStarRocks:
-		if err := q.generalExport(ctx, rt, instanceID, w, opts); err != nil {
-			return err
-		}
 	default:
-		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
+		if err := q.generalExport(ctx, rt, instanceID, w, opts); err != nil {
+			return err
+		}
 	}
 
 	return nil

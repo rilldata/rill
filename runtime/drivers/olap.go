@@ -195,17 +195,17 @@ type OlapTable struct {
 // DialectName constants identify SQL dialects by name.
 // Use Dialect.String() == DialectNameDuckDB for comparisons.
 const (
+	DialectNameAthena     = "athena"
+	DialectNameBigQuery   = "bigquery"
+	DialectNameClickHouse = "clickhouse"
 	DialectNameDuckDB     = "duckdb"
 	DialectNameDruid      = "druid"
-	DialectNameClickHouse = "clickhouse"
-	DialectNamePinot      = "pinot"
-	DialectNameStarRocks  = "starrocks"
-	DialectNameBigQuery   = "bigquery"
-	DialectNameSnowflake  = "snowflake"
-	DialectNameAthena     = "athena"
-	DialectNameRedshift   = "redshift"
 	DialectNameMySQL      = "mysql"
+	DialectNamePinot      = "pinot"
 	DialectNamePostgres   = "postgres"
+	DialectNameRedshift   = "redshift"
+	DialectNameSnowflake  = "snowflake"
+	DialectNameStarRocks  = "starrocks"
 )
 
 // Dialect is the SQL dialect used by an OLAP driver.
@@ -223,9 +223,9 @@ type Dialect interface {
 	SupportsILike() bool
 	GetCastExprForLike() string
 	SupportsRegexMatch() bool
-	GetRegexMatchFunction() string
+	GetRegexMatchFunction() (string, error)
 	RequiresArrayContainsForInOperator() bool
-	GetArrayContainsFunction() string
+	GetArrayContainsFunction() (string, error)
 	DimensionSelect(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error)
 	DimensionSelectPair(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_Dimension) (expr, alias, unnestClause string, err error)
 	LateralUnnest(expr, tableAlias, colName string) (tbl string, tupleStyle, auto bool, err error)
@@ -253,6 +253,11 @@ type Dialect interface {
 	LookupExpr(lookupTable, lookupValueColumn, lookupKeyExpr, lookupDefaultExpression string) (string, error)
 	LookupSelectExpr(lookupTable, lookupKeyColumn string) (string, error)
 	SanitizeQueryForLogging(sql string) string
+	ColumnCardinality(db, dbSchema, table, column string) (string, error)
+	ColumnDescriptiveStatistics(db, dbSchema, table, column string) (string, error)
+	IsNonNullFinite(floatColumn string) string
+	ColumnNullCount(db, dbSchema, table, column string) (string, error)
+	ColumnNumericHistogram(db, dbSchema, table, column string) (string, error)
 }
 
 // BaseDialect provides default implementations for the Dialect interface.
@@ -336,8 +341,8 @@ func (b *BaseDialect) SupportsRegexMatch() bool {
 	return false
 }
 
-func (b *BaseDialect) GetRegexMatchFunction() string {
-	panic("regex match not supported for this dialect")
+func (b *BaseDialect) GetRegexMatchFunction() (string, error) {
+	return "", fmt.Errorf("regex match not supported for %s dialect", b.self.String())
 }
 
 // EscapeTable returns an escaped table name with database, schema and table.
@@ -423,8 +428,8 @@ func (b *BaseDialect) RequiresArrayContainsForInOperator() bool {
 	return false
 }
 
-func (b *BaseDialect) GetArrayContainsFunction() string {
-	panic("array contains not supported for this dialect")
+func (b *BaseDialect) GetArrayContainsFunction() (string, error) {
+	return "", fmt.Errorf("array contains not supported for %s dialect", b.self.String())
 }
 
 func (b *BaseDialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_Dimension) (string, error) {
@@ -472,7 +477,7 @@ func (b *BaseDialect) CastToDataType(typ runtimev1.Type_Code) (string, error) {
 	case runtimev1.Type_CODE_TIMESTAMP:
 		return "TIMESTAMP", nil
 	default:
-		return "", fmt.Errorf("unsupported cast type %q for this dialect", typ.String())
+		return "", fmt.Errorf("unsupported cast type %q for %s dialect", b.self.String(), typ.String())
 	}
 }
 
@@ -501,19 +506,19 @@ func (b *BaseDialect) JoinOnExpression(lhs, rhs string) string {
 }
 
 func (b *BaseDialect) DateTruncExpr(_ *runtimev1.MetricsViewSpec_Dimension, _ runtimev1.TimeGrain, _ string, _, _ int) (string, error) {
-	return "", fmt.Errorf("DateTruncExpr not implemented for this dialect")
+	return "", fmt.Errorf("DateTruncExpr not implemented for %s dialect", b.self.String())
 }
 
 func (b *BaseDialect) DateDiff(_ runtimev1.TimeGrain, _, _ time.Time) (string, error) {
-	return "", fmt.Errorf("DateDiff not implemented for this dialect")
+	return "", fmt.Errorf("DateDiff not implemented for %s dialect", b.self.String())
 }
 
 func (b *BaseDialect) IntervalSubtract(_, _ string, _ runtimev1.TimeGrain) (string, error) {
-	return "", fmt.Errorf("IntervalSubtract not implemented for this dialect")
+	return "", fmt.Errorf("IntervalSubtract not implemented for %s dialect", b.self.String())
 }
 
 func (b *BaseDialect) SelectTimeRangeBins(_, _ time.Time, _ runtimev1.TimeGrain, _ string, _ *time.Location, _, _ int) (string, []any, error) {
-	return "", nil, fmt.Errorf("SelectTimeRangeBins not implemented for this dialect")
+	return "", nil, fmt.Errorf("SelectTimeRangeBins not implemented for %s dialect", b.self.String())
 }
 
 func (b *BaseDialect) SelectInlineResults(result *Result) (string, []any, []any, error) {
@@ -601,7 +606,7 @@ func (b *BaseDialect) GetValExpr(val any, typ runtimev1.Type_Code) (bool, string
 			if ok, expr := b.self.GetDateTimeExpr(t); ok {
 				return true, expr, nil
 			}
-			return false, "", fmt.Errorf("cannot get time expr for this dialect")
+			return false, "", fmt.Errorf("cannot get time expr for %s dialect", b.self.String())
 		}
 		return false, "", fmt.Errorf("unsupported time type %q", typ)
 	case runtimev1.Type_CODE_DATE:
@@ -609,7 +614,7 @@ func (b *BaseDialect) GetValExpr(val any, typ runtimev1.Type_Code) (bool, string
 			if ok, expr := b.self.GetDateExpr(t); ok {
 				return true, expr, nil
 			}
-			return false, "", fmt.Errorf("cannot get date expr for this dialect")
+			return false, "", fmt.Errorf("cannot get date expr for %s dialect", b.self.String())
 		}
 		return false, "", fmt.Errorf("unsupported date type %q", typ)
 	default:
@@ -630,14 +635,34 @@ func (b *BaseDialect) GetDateExpr(_ time.Time) (bool, string) {
 }
 
 func (b *BaseDialect) LookupExpr(_, _, _, _ string) (string, error) {
-	return "", fmt.Errorf("lookup tables are not supported for this dialect")
+	return "", fmt.Errorf("lookup tables are not supported for %s dialect", b.self.String())
 }
 
 func (b *BaseDialect) LookupSelectExpr(_, _ string) (string, error) {
-	return "", fmt.Errorf("lookup tables are not supported for this dialect")
+	return "", fmt.Errorf("lookup tables are not supported for %s dialect", b.self.String())
 }
 
 func (b *BaseDialect) SanitizeQueryForLogging(sql string) string { return sql }
+
+func (b *BaseDialect) ColumnCardinality(db, dbSchema, table, column string) (string, error) {
+	return "", fmt.Errorf("ColumnCardinality not implemented for %s dialect", b.self.String())
+}
+
+func (b *BaseDialect) ColumnDescriptiveStatistics(db, dbSchema, table, column string) (string, error) {
+	return "", fmt.Errorf("ColumnDescriptiveStatistics not implemented for %s dialect", b.self.String())
+}
+
+func (b *BaseDialect) IsNonNullFinite(_ string) string {
+	return "1=1"
+}
+
+func (b *BaseDialect) ColumnNullCount(db, dbSchema, table, column string) (string, error) {
+	return fmt.Sprintf("SELECT count(*) AS count FROM %s WHERE %s IS NULL", b.self.EscapeTable(db, dbSchema, table), b.self.EscapeIdentifier(column)), nil
+}
+
+func (b *BaseDialect) ColumnNumericHistogram(db, dbSchema, table, column string) (string, error) {
+	return "", fmt.Errorf("ColumnNumericHistogram not implemented for %s dialect", b.self.String())
+}
 
 func CheckTypeCompatibility(f *runtimev1.StructType_Field) bool {
 	switch f.Type.Code {
@@ -656,11 +681,4 @@ func CheckTypeCompatibility(f *runtimev1.StructType_Field) bool {
 
 func TempName(prefix string) string {
 	return prefix + strings.ReplaceAll(uuid.New().String(), "-", "")
-}
-
-func EscapeIdentifierDuckDB(ident string) string {
-	if ident == "" {
-		return ident
-	}
-	return fmt.Sprintf(`"%s"`, strings.ReplaceAll(ident, `"`, `""`)) // nolint:gocritic
 }

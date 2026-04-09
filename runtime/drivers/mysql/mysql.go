@@ -229,7 +229,7 @@ func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Cl
 		config:     config,
 		logger:     logger,
 		logQueries: conf.LogQueries,
-		dialect:    newDialect(),
+		dialect:    DialectMySQL,
 		dbMu:       semaphore.NewWeighted(1),
 	}, nil
 }
@@ -250,7 +250,7 @@ type connection struct {
 	config     map[string]any
 	logger     *zap.Logger
 	logQueries bool
-	dialect    *dialect
+	dialect    drivers.Dialect
 
 	db    *sqlx.DB // lazily populated using getDB
 	dbErr error

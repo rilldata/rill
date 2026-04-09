@@ -17,16 +17,13 @@ type dialect struct {
 	drivers.BaseDialect
 }
 
-func newDialect() *dialect {
+var DialectClickhouse drivers.Dialect = func() drivers.Dialect {
 	d := &dialect{}
 	d.InitBase(d)
 	return d
-}
+}()
 
-// NewDialect returns the ClickHouse SQL dialect. Exported for use in tests outside this package.
-func NewDialect() drivers.Dialect { return newDialect() }
-
-func (d *dialect) String() string { return "clickhouse" }
+func (d *dialect) String() string { return drivers.DialectNameClickHouse }
 
 func (d *dialect) EscapeIdentifier(ident string) string {
 	if ident == "" {
@@ -68,7 +65,7 @@ func (d *dialect) UnnestSQLSuffix(tbl string) string {
 
 func (d *dialect) RequiresArrayContainsForInOperator() bool { return true }
 
-func (d *dialect) GetArrayContainsFunction() string { return "hasAny" }
+func (d *dialect) GetArrayContainsFunction() (string, error) { return "hasAny", nil }
 
 func (d *dialect) CastToDataType(typ runtimev1.Type_Code) (string, error) {
 	switch typ {
@@ -247,4 +244,38 @@ func (d *dialect) LookupSelectExpr(lookupTable, lookupKeyColumn string) (string,
 func (d *dialect) SanitizeQueryForLogging(sql string) string {
 	// replace inline "PASSWORD 'pwd'" for dict source with "PASSWORD '***'"
 	return dictPwdRegex.ReplaceAllString(sql, "PASSWORD '***'")
+}
+
+func (d *dialect) ColumnCardinality(db, dbSchema, table, column string) (string, error) {
+	return fmt.Sprintf("SELECT uniq(%s) AS count FROM %s", d.EscapeIdentifier(column), d.EscapeTable(db, dbSchema, table)), nil
+}
+
+func (d *dialect) ColumnDescriptiveStatistics(db, dbSchema, table, column string) (string, error) {
+	return fmt.Sprintf(`SELECT
+			min(%[1]s)::DOUBLE as min,
+			quantileTDigest(0.25)(%[1]s)::DOUBLE as q25,
+			quantileTDigest(0.5)(%[1]s)::DOUBLE as q50,
+			quantileTDigest(0.75)(%[1]s)::DOUBLE as q75,
+			max(%[1]s)::DOUBLE as max,
+			avg(%[1]s)::DOUBLE as mean,
+			stddevSamp(%[1]s)::DOUBLE as sd
+			FROM %[2]s WHERE `+d.IsNonNullFinite(column)+``,
+		d.EscapeIdentifier(column),
+		d.EscapeTable(db, dbSchema, table)), nil
+}
+
+func (d *dialect) IsNonNullFinite(floatColumn string) string {
+	sanitizedFloatColumn := d.EscapeIdentifier(floatColumn)
+	return fmt.Sprintf("%s IS NOT NULL AND isFinite(%s)", sanitizedFloatColumn, sanitizedFloatColumn)
+}
+
+func (d dialect) ColumnNumericHistogram(db, dbSchema, table, column string) (string, error) {
+	sanitizedColumnName := d.EscapeIdentifier(column)
+	return fmt.Sprintf("SELECT (quantileTDigest(0.75)(%s)-quantileTDigest(0.25)(%s)) AS iqr, uniq(%s) AS count, (max(%s) - min(%s)) AS range FROM %s",
+		sanitizedColumnName,
+		sanitizedColumnName,
+		sanitizedColumnName,
+		sanitizedColumnName,
+		sanitizedColumnName,
+		d.EscapeTable(db, dbSchema, table)), nil
 }

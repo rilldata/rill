@@ -1,5 +1,5 @@
 package clickhouse
 
 func safeSQLName(name string) string {
-	return newDialect().EscapeIdentifier(name)
+	return DialectClickhouse.EscapeIdentifier(name)
 }

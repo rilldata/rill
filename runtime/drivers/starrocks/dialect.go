@@ -14,11 +14,11 @@ type dialect struct {
 	drivers.BaseDialect
 }
 
-func newDialect() *dialect {
+var DialectStarrocks drivers.Dialect = func() drivers.Dialect {
 	d := &dialect{}
 	d.InitBase(d)
 	return d
-}
+}()
 
 func (d *dialect) String() string { return "starrocks" }
 
@@ -116,4 +116,40 @@ func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.Time
 		first = false
 	}
 	return sb.String(), nil, nil
+}
+
+func (d *dialect) ColumnCardinalitySQL(db, dbSchema, table, column string) (string, error) {
+	return fmt.Sprintf("SELECT approx_count_distinct(%s) AS count FROM %s", d.EscapeIdentifier(column), d.EscapeTable(db, dbSchema, table)), nil
+}
+
+func (d *dialect) ColumnDescriptiveStatistics(db, dbSchema, table, column string) (string, error) {
+	return fmt.Sprintf("SELECT "+
+		"CAST(min(%[1]s) AS DOUBLE) as min, "+
+		"CAST(percentile_approx(%[1]s, 0.25) AS DOUBLE) as q25, "+
+		"CAST(percentile_approx(%[1]s, 0.5) AS DOUBLE) as q50, "+
+		"CAST(percentile_approx(%[1]s, 0.75) AS DOUBLE) as q75, "+
+		"CAST(max(%[1]s) AS DOUBLE) as max, "+
+		"CAST(avg(%[1]s) AS DOUBLE) as mean, "+
+		"CAST(stddev_samp(%[1]s) AS DOUBLE) as sd "+
+		"FROM %[2]s WHERE %[1]s IS NOT NULL",
+		d.EscapeIdentifier(column),
+		d.EscapeTable(db, dbSchema, table)), nil
+}
+
+func (d *dialect) IsNonNullFinite(floatColumn string) string {
+	sanitizedFloatColumn := d.EscapeIdentifier(floatColumn)
+	// StarRocks doesn't have isinf(), use range check to filter Infinity
+	// -1e308 to 1e308 covers all finite DOUBLE values
+	return fmt.Sprintf("%s IS NOT NULL AND %s > -1e308 AND %s < 1e308", sanitizedFloatColumn, sanitizedFloatColumn, sanitizedFloatColumn)
+}
+
+func (d dialect) ColumnNumericHistogram(db, dbSchema, table, column string) (string, error) {
+	sanitizedColumnName := d.EscapeIdentifier(column)
+	return fmt.Sprintf("SELECT (percentile_approx(%s, 0.75)-percentile_approx(%s, 0.25)) AS iqr, approx_count_distinct(%s) AS count, (max(%s) - min(%s)) AS `range` FROM %s",
+		sanitizedColumnName,
+		sanitizedColumnName,
+		sanitizedColumnName,
+		sanitizedColumnName,
+		sanitizedColumnName,
+		d.EscapeTable(db, dbSchema, table)), nil
 }

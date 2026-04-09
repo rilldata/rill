@@ -11,11 +11,11 @@ type dialect struct {
 	drivers.BaseDialect
 }
 
-func newDialect() *dialect {
+var DialectMySQL drivers.Dialect = func() drivers.Dialect {
 	d := &dialect{}
 	d.InitBase(d)
 	return d
-}
+}()
 
 func (d *dialect) String() string { return "mysql" }
 

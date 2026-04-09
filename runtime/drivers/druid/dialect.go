@@ -14,11 +14,11 @@ type dialect struct {
 	drivers.BaseDialect
 }
 
-func newDialect() *dialect {
+var DialectDruid drivers.Dialect = func() drivers.Dialect {
 	d := &dialect{}
 	d.InitBase(d)
 	return d
-}
+}()
 
 func (d *dialect) String() string { return "druid" }
 
@@ -26,7 +26,7 @@ func (d *dialect) SupportsILike() bool { return false }
 
 func (d *dialect) SupportsRegexMatch() bool { return true }
 
-func (d *dialect) GetRegexMatchFunction() string { return "REGEXP_LIKE" }
+func (d *dialect) GetRegexMatchFunction() (string, error) { return "REGEXP_LIKE", nil }
 
 // DimensionSelect for Druid skips unnesting even when dim.Unnest is true.
 func (d *dialect) DimensionSelect(_, _, _ string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error) {

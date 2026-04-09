@@ -253,7 +253,7 @@ func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Cl
 	return &connection{
 		config:  conf,
 		logger:  logger,
-		dialect: newDialect(),
+		dialect: DialectPostgres,
 		dbMu:    semaphore.NewWeighted(1),
 	}, nil
 }
@@ -276,7 +276,7 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 type connection struct {
 	config  *ConfigProperties
 	logger  *zap.Logger
-	dialect *dialect
+	dialect drivers.Dialect
 
 	db    *sqlx.DB // lazily populated using getDB
 	dbErr error

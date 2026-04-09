@@ -8,10 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/rilldata/rill/runtime/drivers"
-
 	// Import the DuckDB driver
 	_ "github.com/duckdb/duckdb-go/v2"
+	"github.com/rilldata/rill/runtime/drivers/duckdb"
 )
 
 // resolveDuckDBExpression implements Resolve for FieldSelector.duckdb_expression.
@@ -25,7 +24,7 @@ func resolveDuckDBExpression(expr string, all []string) ([]string, error) {
 				ddl.WriteString(", ")
 			}
 			ddl.WriteString("1 AS ")
-			ddl.WriteString(drivers.EscapeIdentifierDuckDB(f))
+			ddl.WriteString(duckdb.DialectDuckDB.EscapeIdentifier(f))
 		}
 
 		_, err := conn.ExecContext(ctx, ddl.String())

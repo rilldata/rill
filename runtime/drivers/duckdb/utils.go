@@ -87,5 +87,5 @@ func containsAny(s string, targets []string) bool {
 }
 
 func safeName(name string) string {
-	return newDialect().EscapeIdentifier(name)
+	return DialectDuckDB.EscapeIdentifier(name)
 }

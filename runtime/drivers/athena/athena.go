@@ -95,7 +95,7 @@ func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Cl
 		config:   conf,
 		logger:   logger,
 		storage:  st,
-		dialect:  newDialect(),
+		dialect:  DialectAthena,
 		clientMu: semaphore.NewWeighted(1),
 	}
 	return conn, nil
@@ -117,7 +117,7 @@ type Connection struct {
 	config  *configProperties
 	logger  *zap.Logger
 	storage *storage.Client
-	dialect *dialect
+	dialect drivers.Dialect
 
 	client    *athena.Client
 	clientErr error

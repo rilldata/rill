@@ -226,7 +226,7 @@ func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Cl
 		configProperties: conf,
 		storage:          st,
 		logger:           logger,
-		dialect:          newDialect(),
+		dialect:          DialectSnowflake,
 		dbMu:             semaphore.NewWeighted(1),
 	}, nil
 }
@@ -247,7 +247,7 @@ type connection struct {
 	configProperties *configProperties
 	storage          *storage.Client
 	logger           *zap.Logger
-	dialect          *dialect
+	dialect          drivers.Dialect
 
 	db    *sqlx.DB // lazily populated using getDB
 	dbErr error

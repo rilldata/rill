@@ -5,7 +5,7 @@ import (
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/duckdb"
 	"github.com/spf13/cobra"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -90,7 +90,7 @@ func TablesCmd(ch *cmdutil.Helper) *cobra.Command {
 
 				// Get row count using SQL query
 				var rowCount string
-				countQuery := fmt.Sprintf("SELECT COUNT(*) FROM %s", drivers.EscapeIdentifierDuckDB(table.Name))
+				countQuery := fmt.Sprintf("SELECT COUNT(*) FROM %s", duckdb.DialectDuckDB.EscapeIdentifier(table.Name))
 				queryRes, err := rt.RuntimeServiceClient.QueryResolver(cmd.Context(), &runtimev1.QueryResolverRequest{
 					InstanceId:         instanceID,
 					Resolver:           "sql",

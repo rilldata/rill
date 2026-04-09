@@ -8,10 +8,10 @@ type dialect struct {
 	drivers.BaseDialect
 }
 
-func newDialect() *dialect {
+var DialectAthena drivers.Dialect = func() drivers.Dialect {
 	d := &dialect{}
 	d.InitBase(d)
 	return d
-}
+}()
 
-func (d *dialect) String() string { return "athena" }
+func (d *dialect) String() string { return drivers.DialectNameAthena }

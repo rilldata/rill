@@ -5,8 +5,8 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
-	clickhousedrv "github.com/rilldata/rill/runtime/drivers/clickhouse"
-	duckdbdrv "github.com/rilldata/rill/runtime/drivers/duckdb"
+	"github.com/rilldata/rill/runtime/drivers/clickhouse"
+	"github.com/rilldata/rill/runtime/drivers/duckdb"
 	"github.com/stretchr/testify/require"
 )
 
@@ -36,7 +36,7 @@ func TestArrayContainsCondition(t *testing.T) {
 	}{
 		{
 			name:    "duckdb: in on unnest dim uses list_has_any",
-			dialect: duckdbdrv.NewDialect(),
+			dialect: duckdb.DialectDuckDB,
 			where: &Expression{Condition: &Condition{
 				Operator: OperatorIn,
 				Expressions: []*Expression{
@@ -49,7 +49,7 @@ func TestArrayContainsCondition(t *testing.T) {
 		},
 		{
 			name:    "duckdb: nin on unnest dim uses NOT list_has_any",
-			dialect: duckdbdrv.NewDialect(),
+			dialect: duckdb.DialectDuckDB,
 			where: &Expression{Condition: &Condition{
 				Operator: OperatorNin,
 				Expressions: []*Expression{
@@ -62,7 +62,7 @@ func TestArrayContainsCondition(t *testing.T) {
 		},
 		{
 			name:    "duckdb: in on unnest dim with empty list",
-			dialect: duckdbdrv.NewDialect(),
+			dialect: duckdb.DialectDuckDB,
 			where: &Expression{Condition: &Condition{
 				Operator: OperatorIn,
 				Expressions: []*Expression{
@@ -75,7 +75,7 @@ func TestArrayContainsCondition(t *testing.T) {
 		},
 		{
 			name:    "duckdb: nin on unnest dim with empty list",
-			dialect: duckdbdrv.NewDialect(),
+			dialect: duckdb.DialectDuckDB,
 			where: &Expression{Condition: &Condition{
 				Operator: OperatorNin,
 				Expressions: []*Expression{
@@ -88,7 +88,7 @@ func TestArrayContainsCondition(t *testing.T) {
 		},
 		{
 			name:    "duckdb: in on unnest dim with null value in list",
-			dialect: duckdbdrv.NewDialect(),
+			dialect: duckdb.DialectDuckDB,
 			where: &Expression{Condition: &Condition{
 				Operator: OperatorIn,
 				Expressions: []*Expression{
@@ -101,7 +101,7 @@ func TestArrayContainsCondition(t *testing.T) {
 		},
 		{
 			name:    "clickhouse: in on unnest dim uses hasAny",
-			dialect: clickhousedrv.NewDialect(),
+			dialect: clickhouse.DialectClickhouse,
 			where: &Expression{Condition: &Condition{
 				Operator: OperatorIn,
 				Expressions: []*Expression{
@@ -114,7 +114,7 @@ func TestArrayContainsCondition(t *testing.T) {
 		},
 		{
 			name:    "clickhouse: nin on unnest dim uses NOT hasAny",
-			dialect: clickhousedrv.NewDialect(),
+			dialect: clickhouse.DialectClickhouse,
 			where: &Expression{Condition: &Condition{
 				Operator: OperatorNin,
 				Expressions: []*Expression{
@@ -127,7 +127,7 @@ func TestArrayContainsCondition(t *testing.T) {
 		},
 		{
 			name:    "clickhouse: in on unnest dim with null values",
-			dialect: clickhousedrv.NewDialect(),
+			dialect: clickhouse.DialectClickhouse,
 			where: &Expression{Condition: &Condition{
 				Operator: OperatorIn,
 				Expressions: []*Expression{
@@ -140,7 +140,7 @@ func TestArrayContainsCondition(t *testing.T) {
 		},
 		{
 			name:    "duckdb: in on non-unnest dim uses normal IN",
-			dialect: duckdbdrv.NewDialect(),
+			dialect: duckdb.DialectDuckDB,
 			where: &Expression{Condition: &Condition{
 				Operator: OperatorIn,
 				Expressions: []*Expression{
@@ -153,7 +153,7 @@ func TestArrayContainsCondition(t *testing.T) {
 		},
 		{
 			name:    "duckdb: nin on non-unnest dim uses normal NOT IN",
-			dialect: duckdbdrv.NewDialect(),
+			dialect: duckdb.DialectDuckDB,
 			where: &Expression{Condition: &Condition{
 				Operator: OperatorNin,
 				Expressions: []*Expression{
@@ -166,7 +166,7 @@ func TestArrayContainsCondition(t *testing.T) {
 		},
 		{
 			name:    "duckdb: in on unnest dim nested in AND",
-			dialect: duckdbdrv.NewDialect(),
+			dialect: duckdb.DialectDuckDB,
 			where: &Expression{Condition: &Condition{
 				Operator: OperatorAnd,
 				Expressions: []*Expression{
@@ -191,7 +191,7 @@ func TestArrayContainsCondition(t *testing.T) {
 		},
 		{
 			name:    "duckdb: in on unnest dim already in select falls back to normal IN",
-			dialect: duckdbdrv.NewDialect(),
+			dialect: duckdb.DialectDuckDB,
 			dims:    []Dimension{{Name: "tags"}},
 			where: &Expression{Condition: &Condition{
 				Operator: OperatorIn,

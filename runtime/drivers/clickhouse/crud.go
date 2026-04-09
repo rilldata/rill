@@ -731,5 +731,5 @@ func tempTableForDictionary(name string) string {
 }
 
 func safeSQLString(name string) string {
-	return newDialect().EscapeStringValue(name)
+	return DialectClickhouse.EscapeStringValue(name)
 }
