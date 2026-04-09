@@ -6,11 +6,7 @@
   } from "@rilldata/web-admin/client";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
-  import {
-    isFreePlan,
-    isGrowthPlan,
-    isTeamPlan,
-  } from "@rilldata/web-admin/features/billing/plans/utils";
+  import { isTeamPlan } from "@rilldata/web-admin/features/billing/plans/utils";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { createQueryServiceProjectStorage } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -63,20 +59,23 @@
 
   // Project storage (OLAP connector data size)
   $: storageQuery = createQueryServiceProjectStorage(runtimeClient, {});
+  $: defaultOlapEntry = $storageQuery.data?.entries?.find(
+    (e) => e.isDefaultOlap,
+  );
+  $: isManaged =
+    defaultOlapEntry?.managed || defaultOlapEntry?.connector === "duckdb";
   $: dataSizeBytes = (() => {
     const val = $storageQuery.data?.defaultOlapSizeBytes;
     if (val === undefined || val === null) return undefined;
     const n = Number(val);
     return n >= 0 ? n : undefined;
   })();
+  $: dataLabel =
+    !defaultOlapEntry || isManaged ? "Data usage" : "Data accessible";
 
   // Billing plan detection
   $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
   $: planName = $subscriptionQuery?.data?.subscription?.plan?.name ?? "";
-  $: showSlots = isFreePlan(planName) || isGrowthPlan(planName);
-
-  // Slots
-  $: currentSlots = Number(projectData?.prodSlots) || 0;
 
   // Plan-based storage cap: only Team plan has a 10GB cap
   const TEAM_STORAGE_CAP = 10 * 1024 * 1024 * 1024; // 10GB
@@ -196,13 +195,13 @@
 
     {#if dataSizeBytes !== undefined}
       <div class="info-row">
-        <span class="info-label">Data usage</span>
+        <span class="info-label">{dataLabel}</span>
         <span class="info-value flex items-center gap-2">
           {#if storageCap}
             <a
               href="/{organization}/{project}/-/status/tables"
               class="usage-pill-link"
-              aria-label="Data usage"
+              aria-label={dataLabel}
             >
               <span class="usage-pill">
                 <span
@@ -221,13 +220,6 @@
             </span>
           {/if}
         </span>
-      </div>
-    {/if}
-
-    {#if !$subscriptionQuery?.isLoading && showSlots}
-      <div class="info-row">
-        <span class="info-label">Rill Slots</span>
-        <span class="slots-count">{currentSlots}</span>
       </div>
     {/if}
   </div>
@@ -260,9 +252,6 @@
   }
   .usage-pill-fill {
     @apply h-full rounded-full bg-primary-500 block transition-all;
-  }
-  .slots-count {
-    @apply text-sm text-fg-primary font-medium tabular-nums;
   }
   .repo-link {
     @apply text-primary-500 text-sm;
