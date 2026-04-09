@@ -108,6 +108,8 @@
         );
         const sql = `SELECT * FROM ${tableRef}`;
 
+        // Update both the store and the editor view
+        notebook.setCellSql(focusedId, sql);
         cellRefs[focusedId]?.setEditorContent(sql);
       },
     },

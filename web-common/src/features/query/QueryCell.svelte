@@ -17,6 +17,7 @@
   import { downloadResultsAsCSV, downloadResultsAsJSON } from "./query-export";
   import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
   import { Sparkles } from "lucide-svelte";
+  import { buildSQLPrompt } from "./query-chat-config";
   import { formatExecutionTime } from "./query-utils";
 
   let {
@@ -191,7 +192,7 @@
         <Button
           type="secondary"
           small
-          onClick={() => sidebarActions.prefillChat("")}
+          onClick={() => sidebarActions.prefillChat(buildSQLPrompt())}
           disabled={!hasSql}
         >
           <Sparkles size="13px" />

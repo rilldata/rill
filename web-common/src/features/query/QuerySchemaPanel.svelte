@@ -1,5 +1,4 @@
 <script lang="ts">
-  import DataTypeIcon from "@rilldata/web-common/components/data-types/DataTypeIcon.svelte";
   import TableSchema from "@rilldata/web-common/features/connectors/explorer/TableSchema.svelte";
   import ResizableSidebar from "@rilldata/web-common/layout/ResizableSidebar.svelte";
   import { formatInteger } from "@rilldata/web-common/lib/formatters";
@@ -82,14 +81,11 @@
     <div class="section-label">SCHEMA</div>
     <ul class="schema-list">
       {#each resultColumns as column (column.name)}
-        <li class="schema-entry">
-          <DataTypeIcon type={column.type} suppressTooltip />
-          <span class="truncate text-xs font-mono" title={column.name}>
+        <li class="schema-entry pl-4">
+          <span class="font-mono truncate" title={column.name}>
             {column.name}
           </span>
-          <span
-            class="text-fg-secondary text-[10px] ml-auto flex-none uppercase"
-          >
+          <span class="uppercase text-fg-primary">
             {column.type}
           </span>
         </li>
@@ -112,14 +108,11 @@
   }
 
   .schema-list {
-    @apply flex flex-col py-1;
+    @apply pr-4 py-1.5;
+    @apply flex flex-col gap-y-0.5;
   }
 
   .schema-entry {
-    @apply flex items-center gap-x-2 px-4 py-1;
-  }
-
-  .schema-entry:hover {
-    @apply bg-popover-accent;
+    @apply flex justify-between gap-x-2;
   }
 </style>
