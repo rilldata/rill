@@ -85,6 +85,14 @@ export class CustomChartComponent extends BaseCanvasComponent<CustomChart> {
     );
   }
 
+  hasContent(spec: CustomChart): boolean {
+    return (
+      (Array.isArray(spec.metrics_sql) &&
+        spec.metrics_sql.some((q) => q.trim().length > 0)) ||
+      spec.vega_spec.trim().length > 0
+    );
+  }
+
   inputParams(): InputParams<CustomChart> {
     return {
       options: {

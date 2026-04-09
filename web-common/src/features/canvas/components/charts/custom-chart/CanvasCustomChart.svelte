@@ -15,9 +15,10 @@
   $: ({ specStore, timeAndFilterStore } = component);
 
   $: hasValidSpec = component.isValid($specStore);
+  $: hasContent = component.hasContent($specStore);
 </script>
 
-{#if hasValidSpec}
+{#if hasValidSpec || hasContent}
   <CustomChartRenderer
     name={component.id}
     spec={$specStore.vega_spec}
