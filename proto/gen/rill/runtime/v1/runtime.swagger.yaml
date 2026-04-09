@@ -7112,6 +7112,11 @@ definitions:
         description: |-
           Error message if the connector was unavailable.
           This is usually empty.
+  v1ProjectStorageRequest:
+    type: object
+    properties:
+      instanceId:
+        type: string
   v1ProjectStorageResponse:
     type: object
     properties:
@@ -7145,6 +7150,8 @@ definitions:
   v1Query:
     type: object
     properties:
+      projectStorageRequest:
+        $ref: '#/definitions/v1ProjectStorageRequest'
       metricsViewAggregationRequest:
         $ref: '#/definitions/v1MetricsViewAggregationRequest'
       metricsViewToplistRequest:
@@ -7216,6 +7223,8 @@ definitions:
   v1QueryResult:
     type: object
     properties:
+      projectStorageResponse:
+        $ref: '#/definitions/v1ProjectStorageResponse'
       metricsViewAggregationResponse:
         $ref: '#/definitions/v1MetricsViewAggregationResponse'
       metricsViewToplistResponse:
