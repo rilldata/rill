@@ -68,9 +68,7 @@
   $: olapConnector = instance?.projectConnectors?.find(
     (c) => c.name === instance?.olapConnector,
   );
-  $: olapEngineLabel = olapConnector
-    ? getOlapEngineLabel(olapConnector)
-    : "Rill Managed";
+  $: olapEngineLabel = getOlapEngineLabel(olapConnector);
   $: aiConnector = instance?.projectConnectors?.find(
     (c) => c.name === instance?.aiConnector,
   );
@@ -82,14 +80,15 @@
   // Billing plan detection
   $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
   $: planName = $subscriptionQuery?.data?.subscription?.plan?.name ?? "";
-  $: showSlots = isTrialPlan(planName) || isFreePlan(planName) || isProPlan(planName);
+  $: showSlots =
+    isTrialPlan(planName) || isFreePlan(planName) || isProPlan(planName);
 </script>
 
 <OverviewCard title="Deployment">
   <div slot="header-right" class="flex items-center gap-3">
-    {#if canManage && isFreePlan(planName) && !$subscriptionQuery?.isLoading}
+    {#if canManage && (isTrialPlan(planName) || isFreePlan(planName)) && !$subscriptionQuery?.isLoading}
       <a class="upgrade-link" href="/{organization}/-/settings/billing">
-        Upgrade to Growth
+        Upgrade to Pro
       </a>
     {/if}
     <ProjectClone
