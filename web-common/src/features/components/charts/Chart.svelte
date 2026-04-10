@@ -54,7 +54,11 @@
 
   export let view: View;
 
-  let vegaSpec: VegaSpec | undefined = undefined;
+  // Bundled to avoid a race: if vegaSpec and temporalBrushSignal were separate
+  // reactive vars, Svelte could flush signalListeners between the two assignments,
+  // registering listeners with the wrong (stale) signal name.
+  let brushState: { spec: VegaSpec; temporalBrushSignal: string } | undefined =
+    undefined;
   let prevVlSpec: unknown = undefined;
   let compileGeneration = 0;
 
@@ -93,7 +97,11 @@
       const gen = ++compileGeneration;
       void compileToBrushedVegaSpec(spec, isThemeModeDark, theme).then(
         (compiled) => {
-          if (gen === compileGeneration) vegaSpec = compiled;
+          if (gen === compileGeneration) {
+            // Assign atomically so signalListeners always sees the matching
+            // temporalBrushSignal for the compiled spec (no partial-update race).
+            brushState = compiled;
+          }
         },
       );
     }
@@ -142,15 +150,17 @@
 
   // Signal listeners for brush and hover events
   $: signalListeners = buildSignalListeners(
-    useBrush && !!vegaSpec,
+    useBrush && !!brushState,
     !!onHover,
     temporalField,
+    brushState?.temporalBrushSignal,
   );
 
   function buildSignalListeners(
     brushEnabled: boolean,
     hoverEnabled: boolean,
     timeField?: string,
+    brushSignal?: string,
   ): SignalListeners {
     const listeners: SignalListeners = {};
 
@@ -163,20 +173,23 @@
     }
 
     if (brushEnabled) {
-      listeners.brush = (_name: string, value: unknown) => {
+      listeners[brushSignal ?? "brush_ts"] = (
+        _name: string,
+        value: unknown,
+      ) => {
         const interval = resolveSignalIntervalField(value);
-        // Trigger async rendering to prevent race condition
         void view?.runAsync();
-        if (interval) scrubHandler.update(interval);
+        if (interval) {
+          scrubHandler.update(interval);
+        } else {
+          onBrushClear?.();
+        }
       };
 
       listeners.brush_end = (_name: string, value: unknown) => {
         const interval = resolveSignalIntervalField(value);
         if (interval) {
           onBrushEnd?.(interval);
-        } else {
-          // Brush was cleared by clicking outside the selection
-          onBrushClear?.();
         }
       };
 
@@ -201,12 +214,12 @@
   >
     No Data to Display
   </div>
-{:else if useBrush && vegaSpec}
+{:else if useBrush && brushState}
   <VegaRenderer
     bind:view
     data={{ "metrics-view": data }}
     {isScrubbing}
-    spec={vegaSpec}
+    spec={brushState.spec}
     {colorMapping}
     theme={themeMode}
     {signalListeners}
