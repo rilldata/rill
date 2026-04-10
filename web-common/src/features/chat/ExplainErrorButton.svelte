@@ -27,13 +27,13 @@
   aria-label="Explain this error with AI"
   title="Explain this error"
 >
-  <SparklesIcon size="12px" />
+  <SparklesIcon size="14px" />
   <span>Explain this error</span>
 </button>
 
 <style lang="postcss">
   .explain-error-btn {
-    @apply inline-flex items-center gap-1 px-2 py-0.5;
+    @apply inline-flex items-center gap-1 px-2 py-1;
     @apply text-[11px] font-medium;
     @apply text-accent-primary-action hover:text-fg-accent;
     @apply bg-transparent hover:bg-surface-hover;
