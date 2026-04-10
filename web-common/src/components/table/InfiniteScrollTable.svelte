@@ -224,7 +224,7 @@
         {#if hasNextPage}
           <tr class="h-0">
             <td colspan={columns.length} class="p-0 border-0">
-              <div bind:this={sentinelEl} />
+              <div bind:this={sentinelEl}></div>
             </td>
           </tr>
         {/if}
