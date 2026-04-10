@@ -15,14 +15,14 @@ import {
 } from "../utils/exploreHelpers";
 import { assertLeaderboards } from "../utils/metricsViewHelpers";
 import { ResourceWatcher } from "../utils/ResourceWatcher";
-import { createSource } from "../utils/sourceHelpers";
+import { createSourceV2 } from "../utils/sourceHelpers";
 import { gotoNavEntry } from "../utils/waitHelpers";
 
 test.describe("explores", () => {
   test.use({ project: "Blank" });
 
-  test("Autogenerate explore from source", async ({ page }) => {
-    await createSource(page, "AdBids.csv", "/models/AdBids.yaml");
+  test("Autogenerate explore from source nav file", async ({ page }) => {
+    await createSourceV2(page, "AdBids.csv", "/models/AdBids.yaml");
     await createExploreFromSource(page);
     // Temporary timeout while the issue is looked into
     await page.waitForTimeout(1000);

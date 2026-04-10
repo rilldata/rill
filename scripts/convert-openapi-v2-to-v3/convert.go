@@ -14,8 +14,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var Version string
-
 func main() {
 	var force bool
 	var publicOnly bool
@@ -100,10 +98,8 @@ func convertOpenAPIDocs(input, output string, force, publicOnly bool) error {
 	// Prune to only keep public visibility
 	prunePublicOnly(convertedDocs, publicOnly)
 
-	// Inject version if set
-	if Version != "" {
-		convertedDocs.Info.Version = Version
-	}
+	// Use a fixed version for the OpenAPI spec to avoid patch releases causing changes to the generated document
+	convertedDocs.Info.Version = "1.0.0"
 
 	if err = os.MkdirAll(filepath.Dir(output), 0o755); err != nil {
 		return fmt.Errorf("unable to create output directory: %w", err)

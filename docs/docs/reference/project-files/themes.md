@@ -31,6 +31,10 @@ _[object]_ - Light theme color configuration
 
   - **`secondary`** - _[string]_ - Secondary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
 
+  - **`kpi-positive`** - _[string]_ - Color for positive KPI delta values in light theme. Defaults to fg-secondary (gray). 
+
+  - **`kpi-negative`** - _[string]_ - Color for negative KPI delta values in light theme. Defaults to red. 
+
   - **`variables`** - _[object]_ - Custom CSS variables for light theme 
 
 ### `dark`
@@ -40,6 +44,10 @@ _[object]_ - Dark theme color configuration
   - **`primary`** - _[string]_ - Primary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
 
   - **`secondary`** - _[string]_ - Secondary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+
+  - **`kpi-positive`** - _[string]_ - Color for positive KPI delta values in dark theme. Defaults to fg-secondary (gray). 
+
+  - **`kpi-negative`** - _[string]_ - Color for negative KPI delta values in dark theme. Defaults to red. 
 
   - **`variables`** - _[object]_ - Custom CSS variables for dark theme 
 
@@ -99,11 +107,11 @@ type: theme
 light:
     primary: "#6366f1"
     secondary: "#8b5cf6"
-    kpi-positive: "#16a34a"  # Green for positive deltas (default: gray)
-    kpi-negative: "#dc2626"  # Red for negative deltas (default: red)
+    kpi-positive: "#16a34a" # Green for positive deltas (default: gray)
+    kpi-negative: "#dc2626" # Red for negative deltas (default: red)
 dark:
     primary: "#818cf8"
     secondary: "#a78bfa"
-    kpi-positive: "#4ade80"  # Brighter green for dark mode
-    kpi-negative: "#f87171"  # Brighter red for dark mode
+    kpi-positive: "#4ade80" # Brighter green for dark mode
+    kpi-negative: "#f87171" # Brighter red for dark mode
 ```

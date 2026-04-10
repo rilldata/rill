@@ -66,8 +66,8 @@
     colorMapping?.map((m) => `${m.value}:${m.color}`)?.join("|") ?? "";
   $: componentKey = `${themeMode}-${configKey}-${colorMappingKey}`;
 
-  const onError = (e: CustomEvent<{ error: Error }>) => {
-    error = e.detail.error.message;
+  const onError = (e: Error) => {
+    error = e.message;
   };
 
   const handleMouseLeave = () => {
@@ -106,7 +106,7 @@
         {signalListeners}
         {options}
         bind:view={viewVL}
-        on:onError={onError}
+        {onError}
       />
     {/key}
   {/if}

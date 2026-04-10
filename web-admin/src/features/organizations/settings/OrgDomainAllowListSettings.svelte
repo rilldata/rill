@@ -16,14 +16,16 @@
   import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
-  export let organization: string;
+  let { organization }: { organization: string } = $props();
 
-  $: userDomain = getUserDomain();
-  $: isPublicDomain = userDomainIsPublic();
+  let userDomain = $derived(getUserDomain());
+  let isPublicDomain = $derived(userDomainIsPublic());
 
-  $: allowedDomains = createAdminServiceListWhitelistedDomains(organization);
-  $: domainAllowed = !!$allowedDomains.data?.domains?.find(
-    (d) => d.domain === $userDomain.data,
+  let allowedDomains = $derived(
+    createAdminServiceListWhitelistedDomains(organization),
+  );
+  let domainAllowed = $derived(
+    !!$allowedDomains.data?.domains?.find((d) => d.domain === $userDomain.data),
   );
 
   const allowDomainMutation = createAdminServiceCreateWhitelistedDomain();
@@ -51,7 +53,7 @@
 </script>
 
 <SettingsContainer title="Allow domain access">
-  <div slot="body" class="mt-1">
+  <div class="mt-1">
     <div class="flex flex-row items-center gap-x-2">
       {#if !$isPublicDomain.data}
         <Label for="allow-domain" class="font-normal text-fg-secondary text-sm">

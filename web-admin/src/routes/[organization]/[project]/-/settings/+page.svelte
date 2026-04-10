@@ -10,22 +10,27 @@
   import ProjectNameSettings from "@rilldata/web-admin/features/projects/settings/ProjectNameSettings.svelte";
   import ProjectVisibilitySettings from "@rilldata/web-admin/features/projects/settings/ProjectVisibilitySettings.svelte";
 
-  $: organization = $page.params.organization;
-  $: project = $page.params.project;
+  let organization = $derived($page.params.organization);
+  let project = $derived($page.params.project);
 
-  $: proj = createAdminServiceGetProject(organization, project);
-  $: isGithubConnected =
-    !!$proj.data?.project?.gitRemote && !$proj.data?.project?.managedGitId;
+  let proj = $derived(createAdminServiceGetProject(organization, project));
+  let isGithubConnected = $derived(
+    !!$proj.data?.project?.gitRemote && !$proj.data?.project?.managedGitId,
+  );
 </script>
 
 <ProjectNameSettings {organization} {project} />
 
-<SettingsContainer title="GitHub" suppressFooter={isGithubConnected}>
-  <div slot="body">
+{#snippet githubAction()}
+  <GithubConnectionDialog {organization} {project} />
+{/snippet}
+
+<SettingsContainer
+  title="GitHub"
+  action={isGithubConnected ? undefined : githubAction}
+>
+  <div>
     <ProjectGithubConnection {organization} {project} />
-  </div>
-  <div slot="action">
-    <GithubConnectionDialog {organization} {project} />
   </div>
 </SettingsContainer>
 
