@@ -88,18 +88,18 @@ export function composeErrorPrompt(input: ErrorPromptInput): string {
 }
 
 function inferResourceType(filePath: string): string {
-  if (filePath.endsWith(".sql")) return "SQL model";
+  // Check directory-based types first (more specific than extension)
   if (filePath.startsWith("/models/")) return "SQL model";
   if (filePath.startsWith("/sources/")) return "source";
   if (filePath.startsWith("/connectors/")) return "connector";
-
-  // For YAML, use directory to determine type
   if (filePath.startsWith("/metrics/")) return "metrics view";
   if (filePath.startsWith("/dashboards/")) return "canvas dashboard";
   if (filePath.startsWith("/explores/")) return "explore dashboard";
   if (filePath.startsWith("/apis/")) return "API";
   if (filePath.startsWith("/themes/")) return "theme";
 
+  // Fall back to extension-based detection
+  if (filePath.endsWith(".sql")) return "SQL model";
   if (filePath.endsWith(".yaml") || filePath.endsWith(".yml")) return "YAML";
   return "file";
 }
