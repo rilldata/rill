@@ -104,7 +104,7 @@ WHERE (publisher IS NOT NULL AND domain LIKE '%google%')
 
 ### Time range functions
 
-`time_range_start` and `time_range_end` resolve a [Rill time expression](/developers/build/metrics-view/time-series/rill-time) against the metrics view's watermark and time range. They must be compared against the time dimension:
+`time_range_start` and `time_range_end` resolve a Rill time expression against the metrics view's watermark and time range. They must be compared against the time dimension:
 
 ```sql
 SELECT publisher, total_records FROM ad_bids_metrics
