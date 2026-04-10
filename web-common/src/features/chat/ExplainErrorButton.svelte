@@ -8,6 +8,7 @@
   export let fileContent: string | null | undefined = undefined;
   export let lineNumber: number | undefined = undefined;
   export let additionalErrorCount: number | undefined = undefined;
+  export let large = false;
 
   function handleClick() {
     const prompt = composeErrorPrompt({
@@ -22,12 +23,12 @@
 </script>
 
 <button
-  class="explain-error-btn"
+  class={large ? "explain-error-btn-large" : "explain-error-btn"}
   on:click|stopPropagation={handleClick}
   aria-label="Explain this error with AI"
   title="Explain this error"
 >
-  <SparklesIcon size="14px" />
+  <SparklesIcon size={large ? "16px" : "14px"} />
   <span>Explain this error</span>
 </button>
 
@@ -44,6 +45,20 @@
   }
 
   .explain-error-btn:focus-visible {
+    @apply outline-none ring-1 ring-primary-600 ring-offset-1;
+  }
+
+  .explain-error-btn-large {
+    @apply inline-flex items-center gap-2 px-3;
+    @apply h-7 min-h-[28px] text-xs font-medium;
+    @apply text-primary-600 hover:text-primary-700;
+    @apply bg-transparent hover:bg-surface-hover;
+    @apply rounded-[2px] cursor-pointer;
+    @apply border border-primary-600 hover:border-primary-700;
+    @apply transition-colors duration-150;
+  }
+
+  .explain-error-btn-large:focus-visible {
     @apply outline-none ring-1 ring-primary-600 ring-offset-1;
   }
 </style>

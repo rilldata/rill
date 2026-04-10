@@ -149,6 +149,7 @@
                       {filePath}
                       fileContent={$remoteContent}
                       lineNumber={parseError?.startLocation?.line}
+                      large
                     />
                   </div>
                 {:else if exploreName && metricsViewName}

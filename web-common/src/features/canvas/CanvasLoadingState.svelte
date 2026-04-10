@@ -27,6 +27,7 @@
           errorMessage={errorMessage}
           {filePath}
           {fileContent}
+          large
         />
       {/if}
     </div>
