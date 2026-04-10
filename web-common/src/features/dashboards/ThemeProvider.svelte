@@ -26,20 +26,12 @@
 
   $: css = theme?.css;
 
-  let prevCss: string | undefined;
-
   // Update theme CSS, or clear it when theme is undefined
   $: if (themeBoundary && styleEl) {
-    const newCss = css || "";
-    if (newCss !== prevCss) {
-      // @ts-expect-error - textContent is writable but typed as readonly in some environments
-      styleEl.textContent = newCss;
-      // Clear cached CSS variable lookups so charts re-resolve against the new theme
-      if (prevCss !== undefined) {
-        themeManager.clearCSSVariableCache();
-      }
-      prevCss = newCss;
-    }
+    // @ts-expect-error - textContent is writable but typed as readonly in some environments
+    styleEl.textContent = css || "";
+    // Clear cached CSS variable lookups so charts re-resolve against the new theme
+    themeManager.clearCSSVariableCache();
   }
 </script>
 
