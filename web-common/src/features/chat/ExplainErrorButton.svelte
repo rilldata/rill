@@ -25,11 +25,11 @@
 <button
   class={large ? "explain-error-btn large" : "explain-error-btn"}
   on:click|stopPropagation={handleClick}
-  aria-label="Explain this error with AI"
-  title="Explain this error"
+  aria-label="Explain and fix this error with AI"
+  title="Explain and fix"
 >
   <SparklesIcon size={large ? "16px" : "14px"} />
-  <span>Explain this error</span>
+  <span>Explain and fix</span>
 </button>
 
 <style lang="postcss">
