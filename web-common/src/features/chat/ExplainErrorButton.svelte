@@ -36,10 +36,10 @@
   .explain-error-btn {
     @apply inline-flex items-center gap-1 px-2 py-1;
     @apply text-[11px] font-medium;
-    @apply text-fg-inverse;
-    @apply bg-gray-700 hover:bg-gray-800;
+    @apply text-fg-primary;
+    @apply bg-surface-muted hover:bg-gray-200 dark:hover:bg-gray-600;
     @apply rounded-[2px] cursor-pointer;
-    @apply border border-gray-700 hover:border-gray-800;
+    @apply border border-gray-300 dark:border-gray-500;
     @apply transition-colors duration-150;
     @apply flex-shrink-0;
   }
@@ -50,6 +50,6 @@
   }
 
   .explain-error-btn:focus-visible {
-    @apply outline-none ring-1 ring-gray-700 ring-offset-1;
+    @apply outline-none ring-1 ring-gray-400 ring-offset-1;
   }
 </style>
