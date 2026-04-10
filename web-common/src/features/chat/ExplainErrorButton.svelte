@@ -41,7 +41,7 @@
     @apply rounded-[2px] cursor-pointer;
     @apply border border-gray-300 dark:border-gray-500;
     @apply transition-colors duration-150;
-    @apply flex-shrink-0;
+    @apply flex-shrink-0 self-start;
   }
 
   .explain-error-btn.large {
