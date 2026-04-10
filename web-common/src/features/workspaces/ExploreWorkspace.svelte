@@ -17,6 +17,7 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import ExplainErrorButton from "@rilldata/web-common/features/chat/ExplainErrorButton.svelte";
   import ReconcileWarningPanel from "../entity-management/ReconcileWarningPanel.svelte";
   import Spinner from "../entity-management/Spinner.svelte";
   import PreviewButton from "../explores/PreviewButton.svelte";
@@ -136,12 +137,20 @@
                 />
               {:else if selectedView === "viz"}
                 {#if parseError || rootCauseReconcileError}
-                  <ErrorPage
-                    body={parseError?.message ?? rootCauseReconcileError ?? ""}
-                    fatal
-                    header="Unable to load dashboard preview"
-                    statusCode={404}
-                  />
+                  <div class="flex flex-col items-center gap-4">
+                    <ErrorPage
+                      body={parseError?.message ?? rootCauseReconcileError ?? ""}
+                      fatal
+                      header="Unable to load dashboard preview"
+                      statusCode={404}
+                    />
+                    <ExplainErrorButton
+                      errorMessage={parseError?.message ?? rootCauseReconcileError ?? ""}
+                      {filePath}
+                      fileContent={$remoteContent}
+                      lineNumber={parseError?.startLocation?.line}
+                    />
+                  </div>
                 {:else if exploreName && metricsViewName}
                   <DashboardStateManager {exploreName}>
                     <Dashboard {metricsViewName} {exploreName} />
