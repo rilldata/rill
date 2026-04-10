@@ -670,6 +670,8 @@ components:
             properties:
                 preferences:
                     $ref: '#/components/schemas/v1UserPreferences'
+                superuser:
+                    type: boolean
                 user:
                     $ref: '#/components/schemas/v1User'
             type: object
