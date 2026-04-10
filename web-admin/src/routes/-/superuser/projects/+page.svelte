@@ -170,7 +170,7 @@
   }
 </script>
 
-<h1 class="text-lg font-semibold text-fg-primary mb-1">Projects</h1>
+<h1 class="text-lg font-semibold text-fg-primary">Projects</h1>
 <p class="text-sm text-fg-secondary mb-4">
   Search projects across all organizations. Change prod slots, hibernate, or
   redeploy.

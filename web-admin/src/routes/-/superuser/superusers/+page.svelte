@@ -70,7 +70,7 @@
   }
 </script>
 
-<h1 class="text-lg font-semibold text-fg-primary mb-1">Superusers</h1>
+<h1 class="text-lg font-semibold text-fg-primary">Superusers</h1>
 <p class="text-sm text-fg-secondary mb-4">
   Manage who has superuser access across all of Rill Cloud.
 </p>

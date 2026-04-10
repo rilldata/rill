@@ -114,7 +114,7 @@
   }
 </script>
 
-<h1 class="text-lg font-semibold text-fg-primary mb-1">Organizations</h1>
+<h1 class="text-lg font-semibold text-fg-primary">Organizations</h1>
 <p class="text-sm text-fg-secondary mb-4">
   Search for any organization by name to view details, members, and projects.
 </p>

@@ -116,7 +116,7 @@
   }
 </script>
 
-<h1 class="text-lg font-semibold text-fg-primary mb-1">Billing</h1>
+<h1 class="text-lg font-semibold text-fg-primary">Billing</h1>
 <p class="text-sm text-fg-secondary mb-4">
   Generate billing setup links, extend trials, and manage billing issues.
 </p>
