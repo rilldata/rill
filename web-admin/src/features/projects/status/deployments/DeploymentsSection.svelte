@@ -31,17 +31,8 @@
     optimisticallyRemoveDeployment,
     optimisticallySetStatus,
   } from "./deployment-actions";
-  import {
-    AlertDialog,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-  } from "@rilldata/web-common/components/alert-dialog/index.js";
-  import { Button } from "@rilldata/web-common/components/button/index.js";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
+  import DeleteDeploymentConfirmDialog from "./DeleteDeploymentConfirmDialog.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CopyableCodeBlock from "@rilldata/web-common/components/calls-to-action/CopyableCodeBlock.svelte";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
@@ -122,7 +113,7 @@
       const bIsProd = isProdDeployment(b);
       if (aIsProd && !bIsProd) return -1;
       if (!aIsProd && bIsProd) return 1;
-      return (b.updatedOn ?? "").localeCompare(a.updatedOn ?? "");
+      return (a.branch ?? "").localeCompare(b.branch ?? "");
     });
   });
 
@@ -152,13 +143,14 @@
 
   let openDropdownId = $state("");
   let pendingId = $state("");
+  let deleteDialogOpen = $state(false);
   let pendingDelete = $state<{ id: string; branch: string } | null>(null);
 
   async function mutateDeployment(
     deploymentId: string,
     branch: string | undefined,
     optimisticStatus: V1DeploymentStatus,
-    mutateAsync: (args: {
+    mutateFn: (args: {
       deploymentId: string;
       data: object;
     }) => Promise<unknown>,
@@ -167,7 +159,7 @@
     openDropdownId = "";
     pendingId = deploymentId;
     try {
-      await mutateAsync({ deploymentId, data: {} });
+      await mutateFn({ deploymentId, data: {} });
       optimisticallySetStatus(
         organization,
         project,
@@ -187,6 +179,7 @@
 
   function confirmDelete(deploymentId: string, branch: string | undefined) {
     pendingDelete = { id: deploymentId, branch: branch ?? "" };
+    deleteDialogOpen = true;
   }
 
   async function handleDelete() {
@@ -384,37 +377,11 @@
   {/if}
 </section>
 
-<AlertDialog
-  open={!!pendingDelete}
-  onOpenChange={(open) => {
-    if (!open) pendingDelete = null;
-  }}
->
-  <AlertDialogTrigger class="hidden" />
-  <AlertDialogContent>
-    <AlertDialogHeader>
-      <AlertDialogTitle>Delete this deployment?</AlertDialogTitle>
-      <AlertDialogDescription>
-        <div class="mt-1">
-          The deployment on branch <span class="font-mono text-xs font-medium"
-            >{pendingDelete?.branch || primaryBranch || "main"}</span
-          > will be deleted. Any unpushed changes will be lost.
-        </div>
-      </AlertDialogDescription>
-    </AlertDialogHeader>
-    <AlertDialogFooter>
-      <Button
-        type="tertiary"
-        onClick={() => {
-          pendingDelete = null;
-        }}
-      >
-        Cancel
-      </Button>
-      <Button type="destructive" onClick={handleDelete}>Yes, delete</Button>
-    </AlertDialogFooter>
-  </AlertDialogContent>
-</AlertDialog>
+<DeleteDeploymentConfirmDialog
+  bind:open={deleteDialogOpen}
+  branch={pendingDelete?.branch || primaryBranch || "main"}
+  onConfirm={handleDelete}
+/>
 
 <style lang="postcss">
   .empty-container {
