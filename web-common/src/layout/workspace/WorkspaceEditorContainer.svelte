@@ -56,20 +56,19 @@
       transition:slide={{ duration: LIST_SLIDE_DURATION }}
       class="border border-destructive bg-destructive/15 dark:bg-destructive/30 text-fg-primary border-l-4 px-2 py-5 max-h-72 overflow-auto"
     >
-      <div class="flex flex-col gap-2">
-        <div class="flex gap-x-2 items-center">
-          <CancelCircle className="text-destructive flex-shrink-0" /><span class="break-words">{effectiveError}</span>
-        </div>
-        {#if filePath}
-          <div class="flex justify-start pl-6">
+      <div class="flex gap-x-2">
+        <CancelCircle className="text-destructive flex-shrink-0 mt-0.5" />
+        <div class="flex flex-col gap-2 min-w-0">
+          <span class="break-words">{effectiveError}</span>
+          {#if filePath}
             <ExplainErrorButton
               errorMessage={effectiveError ?? ""}
               {filePath}
               {fileContent}
               lineNumber={errorLineNumber}
             />
-          </div>
-        {/if}
+          {/if}
+        </div>
       </div>
     </div>
   {/if}
