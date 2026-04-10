@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
@@ -141,6 +142,30 @@ func nextRefreshTime(t time.Time, schedule *runtimev1.Schedule) (time.Time, erro
 		return t1, nil
 	}
 	return t2, nil
+}
+
+// exploreNameFromAnnotations extracts the explore name from resource annotations.
+// It checks the "explore" annotation first, then falls back to parsing the "web_open_path" annotation.
+// If neither is found, it returns fallback.
+func exploreNameFromAnnotations(annotations map[string]string, fallback string) string {
+	if e, ok := annotations["explore"]; ok {
+		return e
+	}
+	if path, ok := annotations["web_open_path"]; ok {
+		if strings.HasPrefix(path, "/explore/") {
+			explore := path[9:]
+			if len(explore) > 0 && explore[len(explore)-1] == '/' {
+				explore = explore[:len(explore)-1]
+			}
+			if decoded, err := url.PathUnescape(explore); err == nil {
+				explore = decoded
+			}
+			if explore != "" {
+				return explore
+			}
+		}
+	}
+	return fallback
 }
 
 // analyzeTemplatedVariables analyzes strings nested in the provided props for template tags that reference instance variables.
