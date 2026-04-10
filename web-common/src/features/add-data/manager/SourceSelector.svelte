@@ -2,7 +2,7 @@
   import {
     connectorClassMapping,
     connectorIconMapping,
-  } from "@rilldata/web-common/features/connectors/connector-icon-mapping.ts";
+  } from "@rilldata/web-common/features/connectors/connector-metadata.ts";
   import type { AddDataConfig } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
   import { Button } from "@rilldata/web-common/components/button";
   import { Search } from "@rilldata/web-common/components/search";
@@ -19,10 +19,15 @@
   const supportedConnectors = getSupportedConnectorInfos(runtimeClient, config);
 
   let searchText = "";
+  $: searchTextLowerCase = searchText.toLowerCase();
   $: filteredConnectors = $supportedConnectors.filter(
     (connector) =>
-      connector.name.toLowerCase().includes(searchText.toLowerCase()) ||
-      connector.displayName.toLowerCase().includes(searchText.toLowerCase()),
+      connector.name.toLowerCase().includes(searchTextLowerCase) ||
+      connector.displayName.toLowerCase().includes(searchTextLowerCase) ||
+      connector.category.toLowerCase().includes(searchTextLowerCase) ||
+      connector.keywords.some((keyword) =>
+        keyword.toLowerCase().includes(searchTextLowerCase),
+      ),
   );
 </script>
 
@@ -39,15 +44,18 @@
       {#each filteredConnectors as connector (connector.name)}
         {@const icon = connectorIconMapping[connector.name]}
         {@const className = connectorClassMapping[connector.name] ?? ""}
-        <button
+        <svelte:element
+          this={config.welcomeScreen ? "a" : "button"}
+          {...config.welcomeScreen
+            ? { href: `/welcome/add-data?schema=${connector.name}` }
+            : { onclick: () => onSelect(connector.name) }}
           class="source-selector-cell"
-          onclick={() => onSelect(connector.name)}
           aria-label={`Connect to ${connector.name}`}
         >
           <svelte:component this={icon} size="24px" class={className} />
           <span class="source-label">{connector.displayName}</span>
           <ChevronRightIcon size="16px" />
-        </button>
+        </svelte:element>
       {:else}
         <div class="source-selector-no-matches">No matches found</div>
       {/each}
@@ -79,7 +87,7 @@
   }
 
   .source-selector-grid {
-    @apply grid grid-cols-3 grid-rows-7 gap-2;
+    @apply grid md:grid-cols-3 grid-cols-2 grid-rows-7 gap-2;
   }
 
   .source-label {
@@ -88,7 +96,7 @@
 
   .source-selector-cell {
     @apply flex flex-row items-center gap-x-2 p-4;
-    @apply bg-surface-overlay border rounded-lg shadow-sm;
+    @apply text-fg-primary bg-surface-overlay border rounded-lg shadow-sm;
   }
 
   .source-selector-footer {

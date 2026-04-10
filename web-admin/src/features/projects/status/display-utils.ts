@@ -31,6 +31,18 @@ export function getStatusDotClass(status: V1DeploymentStatus): string {
 }
 
 /**
+ * Returns true for deployment statuses that represent in-progress transitions.
+ */
+export function isTransitoryStatus(status: V1DeploymentStatus): boolean {
+  return (
+    status === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING ||
+    status === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING ||
+    status === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING ||
+    status === V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING
+  );
+}
+
+/**
  * Returns a human-readable label for a deployment status.
  * @param status - The deployment status
  * @returns Human-readable status label (e.g., "Ready", "Pending", "Error")
@@ -76,17 +88,13 @@ export function getOlapEngineLabel(connector: V1Connector | undefined): string {
     isDuckDB &&
     (String(connector.config?.path ?? "").startsWith("md:") ||
       !!connector.config?.token);
-
   const name = formatConnectorName(
     isMotherDuck ? "motherduck" : connector.type,
   );
 
-  // Show management suffix for non-default-DuckDB connectors
-  const showSuffix = connector.provision || isMotherDuck || !isDuckDB;
-  if (!showSuffix) return name;
-
-  const suffix = connector.provision ? "Rill-managed" : "Self-managed";
-  return `${name} (${suffix})`;
+  // Show management suffix for Rill-managed connectors
+  if (connector.provision) return `${name} (Rill-managed)`;
+  return name;
 }
 
 /**
