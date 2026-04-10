@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/go-git/go-git/v5"
@@ -160,9 +162,9 @@ func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
 	}
 
 	// Hard reset to remote branch
-	err = resetToRemoteTrackingBranch(repo, worktree, r.defaultBranch)
+	err = resetToRemoteTrackingBranch(r.repoDir, r.defaultBranch)
 	if err != nil {
-		if !(errors.Is(err, plumbing.ErrReferenceNotFound) && r.editable()) { // In editable mode, the default branch may not exist yet on remote.
+		if !(errors.Is(err, errRefNotFound) && r.editable()) { // In editable mode, the default branch may not exist yet on remote.
 			return fmt.Errorf("failed to reset to remote tracking branch %q: %w", r.defaultBranch, err)
 		}
 	}
@@ -289,7 +291,7 @@ func (r *gitRepo) commitAndPushToPrimaryBranch(ctx context.Context, message stri
 	if err != nil {
 		return fmt.Errorf("failed to checkout primary branch %q: %w", r.primaryBranch, err)
 	}
-	err = resetToRemoteTrackingBranch(repo, worktree, r.primaryBranch)
+	err = resetToRemoteTrackingBranch(r.repoDir, r.primaryBranch)
 	if err != nil {
 		return fmt.Errorf("failed to reset to remote tracking branch %q: %w", r.primaryBranch, err)
 	}
@@ -411,20 +413,23 @@ func (r *gitRepo) fetchCurrentBranch(ctx context.Context) error {
 	return nil
 }
 
+var errRefNotFound = errors.New("reference not found")
+
 // resetToRemoteTrackingBranch resets to the commit pointed by the remote tracking branch.
 // This is used to reset the local branch to the state of the remote branch so it is expected that the latest changes have been fetched.
-func resetToRemoteTrackingBranch(repo *git.Repository, wt *git.Worktree, branch string) error {
-	trackingRef, err := repo.Reference(plumbing.ReferenceName(fmt.Sprintf("refs/remotes/origin/%s", branch)), true)
+// go-git wipes out git-ignored changes so must use the git command.
+func resetToRemoteTrackingBranch(repoDir, branch string) error {
+	cmd := exec.Command("git", "-C", repoDir, "reset", "--hard", "origin/"+branch)
+	_, err := cmd.Output()
 	if err != nil {
-		return err
-	}
-
-	err = wt.Reset(&git.ResetOptions{
-		Commit: trackingRef.Hash(),
-		Mode:   git.HardReset,
-	})
-	if err != nil {
-		return err
+		var execErr *exec.ExitError
+		if !errors.As(err, &execErr) {
+			return err
+		}
+		if strings.Contains(string(execErr.Stderr), "unknown revision") {
+			return errRefNotFound
+		}
+		return fmt.Errorf("git reset failed: %s", string(execErr.Stderr))
 	}
 	return nil
 }
