@@ -234,12 +234,12 @@ func toResult(it *bigquery.RowIterator, limit int64) (*drivers.Result, error) {
 	if err != nil && !errors.Is(err, iterator.Done) {
 		return nil, err
 	}
+	row := newRows(it, firstRow, errors.Is(err, iterator.Done), limit)
 	// schema is returned even if there are no rows
 	schema, err := fromBQSchema(it.Schema)
 	if err != nil {
 		return nil, err
 	}
-	row := newRows(it, firstRow, errors.Is(err, iterator.Done), limit)
 	res := &drivers.Result{
 		Rows:   row,
 		Schema: schema,
@@ -273,7 +273,7 @@ func newRows(ri *bigquery.RowIterator, firstRow []bigquery.Value, noRows bool, l
 		limit:           limit,
 	}
 	r.lastRow = make([]bigquery.Value, len(firstRow))
-	for i := range len(firstRow) {
+	for i := range firstRow {
 		r.lastRow[i] = new(bigquery.Value)
 	}
 	return r
@@ -317,9 +317,6 @@ func (r *rows) MapScan(dest map[string]any) error {
 			}
 		}
 		dest[col.Name] = v
-		if err != nil {
-			return err
-		}
 	}
 	return nil
 }

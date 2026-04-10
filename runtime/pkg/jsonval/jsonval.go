@@ -237,7 +237,7 @@ func ToValue(v any, t *runtimev1.Type) (any, error) {
 			return ToValue(*v, t)
 		}
 		return nil, nil
-	//bigquery specific types
+	// bigquery specific types
 	case civil.Date:
 		return v.String(), nil
 	case civil.DateTime:
