@@ -89,9 +89,11 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 		}
 	}
 	varsChanged := !maps.Equal(inst.Variables, allvars)
-	if varsChanged && !cfg.Editable { // for editable deployments we will write vars to `.env` which will also trigger controller restart
+	if varsChanged {
 		inst.Variables = allvars
-		restartController = true
+		if !cfg.Editable { // for editable deployments we will write vars to `.env` which will also trigger controller restart
+			restartController = true
+		}
 	}
 	inst.Annotations = cfg.Annotations
 

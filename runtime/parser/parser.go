@@ -1110,7 +1110,9 @@ func pathIsRillYAML(path string) bool {
 // It matches both the base .env file and named variants like .cloud.env or .local.env.
 func pathIsDotEnv(path string) bool {
 	ext := fileutil.FullExt(path)
-	return strings.HasSuffix(ext, ".env")
+	stem := fileutil.Stem(path)
+	stemEmpty := stem == "" || stem == "/"
+	return strings.HasSuffix(ext, ".env") && stemEmpty
 }
 
 // pathIsIgnored returns true if the path should be ignored by the parser.

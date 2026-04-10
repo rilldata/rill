@@ -59,13 +59,11 @@ func (s *Server) PullEnv(ctx context.Context, req *runtimev1.PullEnvRequest) (*r
 	localPerEnv := p.GetDotEnvPerEnvironment()
 
 	// Check if all environments are already up to date
-	equal := len(cloudPerEnv) == len(localPerEnv)
-	if equal {
-		for env, cloudVars := range cloudPerEnv {
-			if !maps.Equal(cloudVars, localPerEnv[env]) {
-				equal = false
-				break
-			}
+	equal := true
+	for env, cloudVars := range cloudPerEnv {
+		if !maps.Equal(cloudVars, localPerEnv[env]) {
+			equal = false
+			break
 		}
 	}
 
