@@ -11,7 +11,7 @@
   } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import { useRuntimeClient } from "../../../runtime-client/v2";
-  import { connectorIconMapping } from "../../connectors/connector-icon-mapping";
+  import { connectorIconMapping } from "../../connectors/connector-metadata.ts";
   import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../../connectors/selectors";
   import { duplicateSourceName } from "../sources-store";
   import AddDataForm from "./AddDataForm.svelte";

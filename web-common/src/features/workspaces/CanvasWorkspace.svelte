@@ -3,8 +3,8 @@
   import CanvasEditor from "@rilldata/web-common/features/canvas/CanvasEditor.svelte";
   import { workspaceRoute } from "@rilldata/web-common/features/workspaces/workspace-routing";
   import VisualCanvasEditing from "@rilldata/web-common/features/canvas/inspector/VisualCanvasEditing.svelte";
-  import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { createRootCauseErrorQuery } from "@rilldata/web-common/features/entity-management/error-utils";
+  import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import {
     resourceIsLoading,
@@ -19,6 +19,7 @@
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import ReconcileWarningPanel from "../entity-management/ReconcileWarningPanel.svelte";
   import PreviewButton from "../explores/PreviewButton.svelte";
   import CanvasBuilder from "../canvas/CanvasBuilder.svelte";
   import SaveDefaultsButton from "../canvas/components/SaveDefaultsButton.svelte";
@@ -58,7 +59,6 @@
   $: parseErrorQuery = fileArtifact.getParseError(queryClient);
   $: parseError = $parseErrorQuery;
 
-  // Reconcile error resolved to root cause for the banner
   $: reconcileError = data?.meta?.reconcileError;
   $: rootCauseQuery = createRootCauseErrorQuery(
     runtimeClient,
@@ -84,6 +84,7 @@
   <CanvasInitialization
     {canvasName}
     instanceId={runtimeClient.instanceId}
+    allowUnvalidatedSpec={true}
     let:ready
     let:isReconciling
     let:isLoading
@@ -116,33 +117,40 @@
         </div>
       </WorkspaceHeader>
 
-      <WorkspaceEditorContainer
-        slot="body"
-        error={parseError?.message ?? rootCauseReconcileError}
-        showError={!!$remoteContent && selectedView === "code"}
-      >
-        {#if selectedView === "code"}
-          <CanvasEditor
-            bind:autoSave={$autoSave}
-            {canvasName}
-            {fileArtifact}
-            {parseError}
-          />
-        {:else if selectedView === "viz"}
-          <CanvasLoadingState
-            {ready}
-            {isReconciling}
-            {isLoading}
-            errorMessage={rootCauseReconcileError}
-          >
-            <CanvasBuilder
-              {canvasName}
-              openSidebar={workspace.inspector.open}
-              {fileArtifact}
-            />
-          </CanvasLoadingState>
-        {/if}
-      </WorkspaceEditorContainer>
+      <svelte:fragment slot="body">
+        <div class="flex flex-col h-full">
+          <div class="flex-1 min-h-0">
+            <WorkspaceEditorContainer
+              resource={data}
+              {parseError}
+              remoteContent={$remoteContent}
+            >
+              {#if selectedView === "code"}
+                <CanvasEditor
+                  bind:autoSave={$autoSave}
+                  {canvasName}
+                  {fileArtifact}
+                  {parseError}
+                />
+              {:else if selectedView === "viz"}
+                <CanvasLoadingState
+                  {ready}
+                  {isReconciling}
+                  {isLoading}
+                  errorMessage={rootCauseReconcileError}
+                >
+                  <CanvasBuilder
+                    {canvasName}
+                    openSidebar={workspace.inspector.open}
+                    {fileArtifact}
+                  />
+                </CanvasLoadingState>
+              {/if}
+            </WorkspaceEditorContainer>
+          </div>
+          <ReconcileWarningPanel {fileArtifact} />
+        </div>
+      </svelte:fragment>
       <svelte:fragment slot="inspector">
         {#if ready}
           <VisualCanvasEditing

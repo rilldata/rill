@@ -88,17 +88,13 @@ export function getOlapEngineLabel(connector: V1Connector | undefined): string {
     isDuckDB &&
     (String(connector.config?.path ?? "").startsWith("md:") ||
       !!connector.config?.token);
-
   const name = formatConnectorName(
     isMotherDuck ? "motherduck" : connector.type,
   );
 
-  // Show management suffix for non-default-DuckDB connectors
-  const showSuffix = connector.provision || isMotherDuck || !isDuckDB;
-  if (!showSuffix) return name;
-
-  const suffix = connector.provision ? "Rill-managed" : "Self-managed";
-  return `${name} (${suffix})`;
+  // Show management suffix for Rill-managed connectors
+  if (connector.provision) return `${name} (Rill-managed)`;
+  return name;
 }
 
 /**

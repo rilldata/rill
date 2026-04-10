@@ -3,7 +3,7 @@ import type { MultiStepFormSchema } from "./types";
 export const s3Schema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
-  title: "Amazon S3",
+  title: "S3",
   "x-category": "objectStore",
   properties: {
     auth_method: {

@@ -1,10 +1,10 @@
-import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
 import { navigateToFile } from "@rilldata/web-common/features/workspaces/workspace-routing";
-import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
+import { getName } from "@rilldata/web-common/features/entity-management/name-utils.ts";
 import {
   ResourceKind,
   type UserFacingResourceKinds,
-} from "@rilldata/web-common/features/entity-management/resource-selectors";
+} from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import {
   runtimeServicePutFile,
   type V1Resource,

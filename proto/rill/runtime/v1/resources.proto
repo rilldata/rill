@@ -52,6 +52,7 @@ message ResourceMeta {
   optional google.protobuf.Timestamp deleted_on = 12;
   ReconcileStatus reconcile_status = 16;
   string reconcile_error = 8;
+  repeated string reconcile_warnings = 18;
   google.protobuf.Timestamp reconcile_on = 17;
   optional ResourceName renamed_from = 13;
 }
@@ -156,6 +157,8 @@ message ModelState {
   string test_hash = 27;
   // test_errors contains the results of the model's tests.
   repeated string test_errors = 28;
+  // test_warnings contains warnings from the most recent test run, stored separately from execution warnings.
+  repeated string test_warnings = 30;
   // refreshed_on is the time the model was last executed.
   google.protobuf.Timestamp refreshed_on = 4;
   // incremental_state contains the result of the most recent invocation of the model's incremental state resolver.
@@ -166,6 +169,8 @@ message ModelState {
   string partitions_model_id = 10;
   // partitions_have_errors is true if one or more partitions failed to execute.
   bool partitions_have_errors = 11;
+  // warnings contains any warnings generated during the model's execution.
+  repeated string warnings = 29;
   // total_execution_duration_ms is the time user queries took to execute while refreshing the model.
   // In case of incremental models it is the sum of all successful executions so far.
   // This is not the time it took to refresh the model which also includes other stuff like taking a write lock.
@@ -533,6 +538,10 @@ message ExplorePreset {
   optional bool pivot_sort_asc = 27;
   optional string pivot_table_mode = 28;
   optional int32 pivot_row_limit = 33;
+
+  // Chart display settings (frontend-only; persisted in URL state)
+  optional bool chart_dynamic_y_axis = 35;
+  optional bool chart_force_line = 36;
 }
 
 enum ExploreComparisonMode {
@@ -632,6 +641,7 @@ message ReportState {
 message ReportExecution {
   bool adhoc = 1;
   string error_message = 2;
+  repeated string warnings = 6;
   google.protobuf.Timestamp report_time = 3;
   google.protobuf.Timestamp started_on = 4;
   google.protobuf.Timestamp finished_on = 5;
@@ -699,6 +709,7 @@ message AssertionResult {
   AssertionStatus status = 1;
   google.protobuf.Struct fail_row = 2;
   string error_message = 3;
+  repeated string warnings = 4;
 }
 
 enum AssertionStatus {

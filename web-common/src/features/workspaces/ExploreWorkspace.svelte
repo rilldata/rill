@@ -2,8 +2,8 @@
   import { goto } from "$app/navigation";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { workspaceRoute } from "@rilldata/web-common/features/workspaces/workspace-routing";
-  import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { createRootCauseErrorQuery } from "@rilldata/web-common/features/entity-management/error-utils";
+  import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import {
     resourceIsLoading,
@@ -18,6 +18,7 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import ReconcileWarningPanel from "../entity-management/ReconcileWarningPanel.svelte";
   import Spinner from "../entity-management/Spinner.svelte";
   import PreviewButton from "../explores/PreviewButton.svelte";
   import VisualExploreEditing from "./VisualExploreEditing.svelte";
@@ -64,7 +65,6 @@
   $: parseErrorQuery = fileArtifact.getParseError(queryClient);
   $: parseError = $parseErrorQuery;
 
-  // Reconcile error resolved to root cause for the banner
   $: reconcileError = (exploreResource ?? metricsViewResource)?.meta
     ?.reconcileError;
   $: rootCauseQuery = createRootCauseErrorQuery(
@@ -118,35 +118,42 @@
         </div>
       </WorkspaceHeader>
 
-      <WorkspaceEditorContainer
-        slot="body"
-        error={parseError?.message ?? rootCauseReconcileError}
-        showError={!!$remoteContent && selectedView === "code"}
-      >
-        {#if selectedView === "code"}
-          <ExploreEditor
-            bind:autoSave={$autoSave}
-            {exploreName}
-            {fileArtifact}
-            {parseError}
-          />
-        {:else if selectedView === "viz"}
-          {#if parseError || rootCauseReconcileError}
-            <ErrorPage
-              body={parseError?.message ?? rootCauseReconcileError ?? ""}
-              fatal
-              header="Unable to load dashboard preview"
-              statusCode={404}
-            />
-          {:else if exploreName && metricsViewName}
-            <DashboardStateManager {exploreName}>
-              <Dashboard {metricsViewName} {exploreName} />
-            </DashboardStateManager>
-          {:else}
-            <Spinner status={1} size="48px" />
-          {/if}
-        {/if}
-      </WorkspaceEditorContainer>
+      <svelte:fragment slot="body">
+        <div class="flex flex-col h-full">
+          <div class="flex-1 min-h-0">
+            <WorkspaceEditorContainer
+              resource={exploreResource ?? metricsViewResource}
+              {parseError}
+              remoteContent={$remoteContent}
+            >
+              {#if selectedView === "code"}
+                <ExploreEditor
+                  bind:autoSave={$autoSave}
+                  {exploreName}
+                  {fileArtifact}
+                  {parseError}
+                />
+              {:else if selectedView === "viz"}
+                {#if parseError || rootCauseReconcileError}
+                  <ErrorPage
+                    body={parseError?.message ?? rootCauseReconcileError ?? ""}
+                    fatal
+                    header="Unable to load dashboard preview"
+                    statusCode={404}
+                  />
+                {:else if exploreName && metricsViewName}
+                  <DashboardStateManager {exploreName}>
+                    <Dashboard {metricsViewName} {exploreName} />
+                  </DashboardStateManager>
+                {:else}
+                  <Spinner status={1} size="48px" />
+                {/if}
+              {/if}
+            </WorkspaceEditorContainer>
+          </div>
+          <ReconcileWarningPanel {fileArtifact} />
+        </div>
+      </svelte:fragment>
 
       <svelte:fragment slot="inspector">
         {#if ready}

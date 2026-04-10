@@ -22,6 +22,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import {
   invalidateComponentData,
+  invalidateConnectorQueries,
   invalidateMetricsViewData,
   invalidateProfilingQueries,
 } from "@rilldata/web-common/runtime-client/invalidation";
@@ -144,7 +145,13 @@ export class FileAndResourceWatcher {
     });
 
     this.client.on("reconnect", () => {
-      void this.invalidateAll();
+      // Rerun fileArtifacts init after reconnecting, there can be some events missed.
+      // This is especially important when olap connector is changed.
+      void this.invalidateAll().then(() =>
+        this._runtimeClient
+          ? fileArtifacts.init(this._runtimeClient, queryClient)
+          : Promise.resolve(),
+      );
     });
   }
 
@@ -333,13 +340,12 @@ export class FileAndResourceWatcher {
               ),
             });
 
-            // Invalidate the connector's list of tables
-            void queryClient.invalidateQueries({
-              queryKey: getConnectorServiceOLAPListTablesQueryKey(
-                this.instanceId,
-                { connector: res.name.name },
-              ),
-            });
+            // Invalidate the connector's queries
+            void invalidateConnectorQueries(
+              queryClient,
+              this.instanceId,
+              res.name.name,
+            );
 
             // Done
             return;

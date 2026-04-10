@@ -381,6 +381,7 @@ func (r *gitRepo) commitAll(repo *git.Repository, message string) (string, error
 		Author: &object.Signature{
 			Name:  "Rill Runtime",
 			Email: "runtime@rilldata.com", // Use a generic author for the commit
+			When:  time.Now(),
 		},
 	})
 	if err != nil {
