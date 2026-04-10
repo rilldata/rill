@@ -36,7 +36,7 @@ export interface BridgeResult<T> {
   bridgedSegments: Segment[];
 }
 
-/** Default maximum gap width in pixels to bridge with linear interpolation */
+/** Default maximum gap width in pixels to bridge with zeros */
 export const MAX_BRIDGE_GAP_PX = 36;
 
 /**
@@ -64,7 +64,7 @@ export function computeSegments<T>(
 
 /**
  * Fill small pixel-width gaps with zeros, connecting adjacent segments
- * through zero rather than linearly interpolating between them.
+ * through zero
  * Returns a new array with gap values filled, plus segment metadata.
  *
  * When `connectNulls` is false, no bridging is performed; the result
