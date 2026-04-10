@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -232,28 +231,10 @@ func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 	}
 
 	// figure out explore or canvas for the report
-	var explore, canvas string
-	if e, ok := spec.Annotations["explore"]; ok {
-		explore = e
-	}
+	explore := exploreNameFromAnnotations(spec.Annotations, mvName)
+	var canvas string
 	if c, ok := spec.Annotations["canvas"]; ok {
 		canvas = c
-	}
-
-	if explore == "" { // backwards compatibility, try to find explore
-		if path, ok := spec.Annotations["web_open_path"]; ok {
-			// parse path, extract explore name, it will be like /explore/{explore}
-			if strings.HasPrefix(path, "/explore/") {
-				explore = path[9:]
-				if explore[len(explore)-1] == '/' {
-					explore = explore[:len(explore)-1]
-				}
-			}
-		}
-		// still not found, use mv name as explore name
-		if explore == "" {
-			explore = mvName
-		}
 	}
 
 	// add explore and canvas to access and field access rule's condition resources
