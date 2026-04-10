@@ -14,6 +14,11 @@
       hasPermission: true,
     },
     {
+      label: "Deployments",
+      route: "/deployments",
+      hasPermission: true,
+    },
+    {
       label: "Resources",
       route: "/resources",
       hasPermission: true,
@@ -37,7 +42,7 @@
 </script>
 
 <ContentContainer title="Project Status" maxWidth={1100}>
-  <div class="container flex-col md:flex-row">
+  <div class="container flex-col lg:flex-row">
     <LeftNav
       {basePage}
       baseRoute="/[organization]/[project]/-/status"
