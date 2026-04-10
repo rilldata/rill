@@ -37,10 +37,9 @@
     @apply inline-flex items-center gap-1 px-2 py-1;
     @apply text-[11px] font-medium;
     @apply text-fg-inverse;
-    @apply bg-primary-600 hover:bg-primary-700;
+    @apply bg-gray-700 hover:bg-gray-800;
     @apply rounded-[2px] cursor-pointer;
-    @apply border border-primary-600 hover:border-primary-700;
-    @apply shadow-sm;
+    @apply border border-gray-700 hover:border-gray-800;
     @apply transition-colors duration-150;
     @apply flex-shrink-0;
   }
@@ -51,6 +50,6 @@
   }
 
   .explain-error-btn:focus-visible {
-    @apply outline-none ring-1 ring-primary-600 ring-offset-1;
+    @apply outline-none ring-1 ring-gray-700 ring-offset-1;
   }
 </style>
