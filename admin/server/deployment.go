@@ -899,7 +899,7 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 	if err != nil {
 		return nil, err
 	}
-	resp.Variables = vars
+	resp.Variables = vars //nolint:staticcheck // still need to set for bwd compatibility
 
 	// parsing duckdb connector config
 	rCfg, err := provisioner.NewRuntimeConfig(pr.Config)
@@ -916,7 +916,6 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 	}
 	resp.DuckdbConnectorConfig = configStructPb
 
-	// annotations
 	annotations := s.admin.NewDeploymentAnnotations(org, proj)
 	resp.Annotations = annotations.ToMap()
 

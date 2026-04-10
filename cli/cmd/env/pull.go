@@ -119,7 +119,7 @@ func PullVars(ctx context.Context, ch *cmdutil.Helper, projectPath, projectName,
 		ch.Printf("Updated %q file with cloud credentials from project %q.\n", path, projectName)
 
 		// Add to gitignore if necessary
-		changed, err := gitutil.EnsureGitignoreHasDotenv(ctx, repo, path)
+		changed, err := gitutil.EnsureGitignoreHas(ctx, repo, path)
 		if err != nil {
 			return err
 		}

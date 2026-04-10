@@ -116,17 +116,8 @@ func (h *Handle) GetDeploymentConfig(ctx context.Context) (*drivers.DeploymentCo
 		return nil, err
 	}
 
-	vars := make(map[string]map[string]string, len(res.ProjectVariables))
-	for _, v := range res.ProjectVariables {
-		envVars, ok := vars[v.Environment]
-		if !ok {
-			envVars = make(map[string]string)
-			vars[v.Environment] = envVars
-		}
-		envVars[v.Name] = v.Value
-	}
 	return &drivers.DeploymentConfig{
-		Variables:             vars,
+		Variables:             groupVariablesByEnv(res.ProjectVariables),
 		Annotations:           res.Annotations,
 		FrontendURL:           res.FrontendUrl,
 		UpdatedOn:             res.UpdatedOn.AsTime(),
@@ -180,17 +171,7 @@ func (h *Handle) GetProjectVariables(ctx context.Context, environment string) (m
 		return nil, err
 	}
 
-	perEnv := make(map[string]map[string]string)
-	for _, v := range resp.Variables {
-		vars, ok := perEnv[v.Environment]
-		if !ok {
-			vars = make(map[string]string)
-			perEnv[v.Environment] = vars
-		}
-		vars[v.Name] = v.Value
-	}
-
-	return perEnv, nil
+	return groupVariablesByEnv(resp.Variables), nil
 }
 
 func (h *Handle) UpdateProjectVariables(ctx context.Context, environment string, variables map[string]string) error {
@@ -208,4 +189,17 @@ func (h *Handle) UpdateProjectVariables(ctx context.Context, environment string,
 		Variables:   variables,
 	})
 	return err
+}
+
+func groupVariablesByEnv(variables []*adminv1.ProjectVariable) map[string]map[string]string {
+	perEnv := make(map[string]map[string]string, len(variables))
+	for _, v := range variables {
+		vars, ok := perEnv[v.Environment]
+		if !ok {
+			vars = make(map[string]string)
+			perEnv[v.Environment] = vars
+		}
+		vars[v.Name] = v.Value
+	}
+	return perEnv
 }

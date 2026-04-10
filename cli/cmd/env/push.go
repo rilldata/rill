@@ -94,9 +94,7 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 					continue
 				}
 
-				if added > 0 || changed > 0 {
-					ch.Printf("Environment %q: %d new and %d changed variable(s) found in local file.\n", envForPrint(env), added, changed)
-				}
+				ch.Printf("Environment %q: %d new and %d changed variable(s) found in local file.\n", envForPrint(env), added, changed)
 				if ch.Interactive {
 					if err := cmdutil.ConfirmPrompt("Do you want to continue?", true); err != nil {
 						continue

@@ -59,16 +59,10 @@ func (s *Server) PullEnv(ctx context.Context, req *runtimev1.PullEnvRequest) (*r
 	localPerEnv := p.GetDotEnvPerEnvironment()
 
 	// Check if all environments are already up to date
-	equal := true
-	for env, cloudVars := range cloudPerEnv {
-		if !maps.Equal(cloudVars, localPerEnv[env]) {
-			equal = false
-			break
-		}
-	}
+	equal := len(cloudPerEnv) == len(localPerEnv)
 	if equal {
-		for env, localVars := range localPerEnv {
-			if !maps.Equal(localVars, cloudPerEnv[env]) {
+		for env, cloudVars := range cloudPerEnv {
+			if !maps.Equal(cloudVars, localPerEnv[env]) {
 				equal = false
 				break
 			}
@@ -110,7 +104,7 @@ func (s *Server) PullEnv(ctx context.Context, req *runtimev1.PullEnvRequest) (*r
 			return nil, fmt.Errorf("failed to write %q: %w", envFileName, err)
 		}
 
-		_, err = gitutil.EnsureGitignoreHasDotenv(ctx, repo, envFileName)
+		_, err = gitutil.EnsureGitignoreHas(ctx, repo, envFileName)
 		if err != nil {
 			return nil, fmt.Errorf("failed to update .gitignore for %q: %w", envFileName, err)
 		}
