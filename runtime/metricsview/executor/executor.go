@@ -248,7 +248,8 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 	}
 
 	// Setting both base and comparison time ranges in case there are time_comparison measures.
-	if e.metricsView.TimeDimension != "" {
+	// Do not set it for BigQuery because it requires datatype to be already discovered to set time parameter.
+	if e.olap.Dialect() != drivers.DialectBigQuery && e.metricsView.TimeDimension != "" {
 		now := time.Now()
 		qry.TimeRange = &metricsview.TimeRange{
 			Start: now.Add(-time.Second),

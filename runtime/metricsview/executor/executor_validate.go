@@ -624,9 +624,6 @@ func (e *Executor) validateTimeDimension(ctx context.Context, t *drivers.OlapTab
 		if typeCode != runtimev1.Type_CODE_TIMESTAMP && typeCode != runtimev1.Type_CODE_DATE && !(e.olap.Dialect() == drivers.DialectPinot && typeCode == runtimev1.Type_CODE_INT64) {
 			res.TimeDimensionErr = fmt.Errorf("time dimension %q is not a TIMESTAMP column, got %s", e.metricsView.TimeDimension, typeCode)
 		}
-
-		// Populate the dimension's DataType early so it's available for downstream queries (e.g. Schema validation)
-		d.DataType = schema.Fields[0].Type
 		return
 	}
 
@@ -639,13 +636,6 @@ func (e *Executor) validateTimeDimension(ctx context.Context, t *drivers.OlapTab
 		res.TimeDimensionErr = fmt.Errorf("time dimension %q is not a TIMESTAMP column, got %s", e.metricsView.TimeDimension, f.Type.Code)
 		return
 	}
-
-	// Store the time dimension's data type so it's available for downstream queries (e.g. Schema validation).
-	e.metricsView.Dimensions = append(e.metricsView.Dimensions, &runtimev1.MetricsViewSpec_Dimension{
-		Name:     e.metricsView.TimeDimension,
-		Column:   e.metricsView.TimeDimension,
-		DataType: f.Type,
-	})
 }
 
 // validateDimension validates a metrics view dimension.
