@@ -923,6 +923,10 @@ If not found in `time_ranges`, it should be added to the list. */
   pivotSortAsc?: boolean;
   pivotTableMode?: string;
   pivotRowLimit?: number;
+  /** When true, time-series charts use a dynamic Y-axis scale that fits the visible data range. */
+  chartDynamicYAxis?: boolean;
+  /** When true, time-series charts always render as line charts. */
+  chartForceLine?: boolean;
 }
 
 export type V1ExploreSortType =
@@ -2362,6 +2366,7 @@ export interface V1ResourceMeta {
   deletedOn?: string;
   reconcileStatus?: V1ReconcileStatus;
   reconcileError?: string;
+  reconcileWarnings?: string[];
   reconcileOn?: string;
   renamedFrom?: V1ResourceName;
 }

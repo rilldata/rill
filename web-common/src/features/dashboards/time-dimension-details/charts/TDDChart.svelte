@@ -7,13 +7,13 @@
     setExternalHover,
   } from "@rilldata/web-common/features/components/charts/highlight-controller";
   import type { ChartProvider } from "@rilldata/web-common/features/components/charts/types";
+  import { THEME_STORE_CONTEXT_KEY } from "@rilldata/web-common/features/dashboards/ThemeProvider.svelte";
   import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import type { DimensionSeriesData } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/types";
   import { MetricsViewSelectors } from "@rilldata/web-common/features/metrics-views/metrics-view-selectors";
-  import { THEME_STORE_CONTEXT_KEY } from "@rilldata/web-common/features/dashboards/ThemeProvider.svelte";
-  import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import type { Theme } from "@rilldata/web-common/features/themes/theme";
+  import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import type {
     MetricsViewSpecMeasure,
     V1Expression,
@@ -23,9 +23,9 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { Interval } from "luxon";
   import { getContext } from "svelte";
+  import type { View } from "svelte-vega";
   import type { Readable, Writable } from "svelte/store";
   import { readable } from "svelte/store";
-  import type { View } from "vega-typings";
   import type { TDDChart } from "../types";
   import {
     createTDDCartesianSpec,

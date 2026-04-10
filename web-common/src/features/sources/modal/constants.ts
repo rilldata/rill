@@ -91,7 +91,7 @@ export const SOURCES = [
   "postgres",
   "redshift",
   "s3",
-  "salesforce",
+  "snowflake",
   "sqlite",
   "supabase",
   "https",
@@ -100,7 +100,6 @@ export const SOURCES = [
 
 export const OLAP_ENGINES = [
   "clickhouse",
-  "snowflake",
   "motherduck",
   "duckdb",
   "druid",

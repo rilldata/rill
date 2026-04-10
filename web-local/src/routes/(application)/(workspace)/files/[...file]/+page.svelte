@@ -44,7 +44,7 @@
     inferredResourceKind,
     path,
     getResource,
-    getAllErrors,
+    remoteContent,
   } = fileArtifact);
 
   $: resourceKind = <ResourceKind | undefined>$resourceName?.kind;
@@ -62,9 +62,8 @@
       ? [customYAMLwithJSONandSQL]
       : getExtensionsForFile(path);
 
-  // Errors for the editor banner (parse + reconcile)
-  $: allErrorsStore = getAllErrors(queryClient);
-  $: allErrors = $allErrorsStore;
+  $: parseErrorStore = fileArtifact.getParseError(queryClient);
+  $: parseError = $parseErrorStore;
 
   onMount(() => {
     expandDirectory(path);
@@ -105,7 +104,12 @@
           filePath={path}
           hasUnsavedChanges={$hasUnsavedChanges}
         />
-        <WorkspaceEditorContainer slot="body" error={allErrors[0]?.message}>
+        <WorkspaceEditorContainer
+          slot="body"
+          {resource}
+          {parseError}
+          remoteContent={$remoteContent}
+        >
           <Editor
             {fileArtifact}
             {extensions}

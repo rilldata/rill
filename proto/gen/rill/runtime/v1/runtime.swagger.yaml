@@ -1213,74 +1213,6 @@ paths:
           type: boolean
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/generate/renderer:
-    post:
-      summary: GenerateRenderer generates a component renderer and renderer properties from a resolver and resolver properties
-      operationId: RuntimeService_GenerateRenderer
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GenerateRendererResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              prompt:
-                type: string
-              resolver:
-                type: string
-              resolverProperties:
-                type: object
-      tags:
-        - RuntimeService
-  /v1/instances/{instanceId}/generate/resolver:
-    post:
-      summary: GenerateResolver generates resolver and resolver properties from a table or a metrics view
-      operationId: RuntimeService_GenerateResolver
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GenerateResolverResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              prompt:
-                type: string
-              connector:
-                type: string
-                description: Both connector and table must be specified if metrics_view is not.
-              table:
-                type: string
-              metricsView:
-                type: string
-                description: table and connector should not be provided if metrics_view is provided.
-      tags:
-        - RuntimeService
   /v1/instances/{instanceId}/git/branches:
     get:
       operationId: RuntimeService_ListGitBranches
@@ -1698,6 +1630,12 @@ paths:
               args:
                 type: object
                 title: Optional args for resolving templating in the component properties
+              unsafe:
+                type: boolean
+                description: |-
+                  If true, fall back to the unvalidated spec when no valid spec is available.
+                  Only for use by the visual editor in Rill Developer. Must never be sent by
+                  Rill Cloud, read-only previews, shared token access, or embedded viewers.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/column-cardinality/tables/{tableName}:
@@ -4298,6 +4236,10 @@ definitions:
         type: object
       errorMessage:
         type: string
+      warnings:
+        type: array
+        items:
+          type: string
   v1AssertionStatus:
     type: string
     enum:
@@ -5212,6 +5154,11 @@ definitions:
       pivotRowLimit:
         type: integer
         format: int32
+      chartDynamicYAxis:
+        type: boolean
+        title: Chart display settings (frontend-only; persisted in URL state)
+      chartForceLine:
+        type: boolean
   v1ExploreSortType:
     type: string
     enum:
@@ -5430,20 +5377,6 @@ definitions:
         type: boolean
         description: Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
     title: Response message for RuntimeService.GenerateMetricsViewFile
-  v1GenerateRendererResponse:
-    type: object
-    properties:
-      renderer:
-        type: string
-      rendererProperties:
-        type: object
-  v1GenerateResolverResponse:
-    type: object
-    properties:
-      resolver:
-        type: string
-      resolverProperties:
-        type: object
   v1GetAIMessageResponse:
     type: object
     properties:
@@ -6944,6 +6877,11 @@ definitions:
         items:
           type: string
         description: test_errors contains the results of the model's tests.
+      testWarnings:
+        type: array
+        items:
+          type: string
+        description: test_warnings contains warnings from the most recent test run, stored separately from execution warnings.
       refreshedOn:
         type: string
         format: date-time
@@ -6960,6 +6898,11 @@ definitions:
       partitionsHaveErrors:
         type: boolean
         description: partitions_have_errors is true if one or more partitions failed to execute.
+      warnings:
+        type: array
+        items:
+          type: string
+        description: warnings contains any warnings generated during the model's execution.
       totalExecutionDurationMs:
         type: string
         format: int64
@@ -7398,6 +7341,10 @@ definitions:
         type: boolean
       errorMessage:
         type: string
+      warnings:
+        type: array
+        items:
+          type: string
       reportTime:
         type: string
         format: date-time
@@ -7608,6 +7555,10 @@ definitions:
         $ref: '#/definitions/v1ReconcileStatus'
       reconcileError:
         type: string
+      reconcileWarnings:
+        type: array
+        items:
+          type: string
       reconcileOn:
         type: string
         format: date-time

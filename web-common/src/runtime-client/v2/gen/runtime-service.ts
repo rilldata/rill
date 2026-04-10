@@ -27,8 +27,6 @@ import {
   ForkConversationRequest,
   GenerateCanvasFileRequest,
   GenerateMetricsViewFileRequest,
-  GenerateRendererRequest,
-  GenerateResolverRequest,
   GetAIMessageRequest,
   GetConversationRequest,
   GetExploreRequest,
@@ -78,8 +76,6 @@ import type {
   V1ForkConversationResponse,
   V1GenerateCanvasFileResponse,
   V1GenerateMetricsViewFileResponse,
-  V1GenerateRendererResponse,
-  V1GenerateResolverResponse,
   V1GetAIMessageResponse,
   V1GetConversationResponse,
   V1GetExploreResponse,
@@ -2888,134 +2884,6 @@ export function createRuntimeServiceGenerateCanvasFileMutation(
   Omit<PartialMessage<GenerateCanvasFileRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceGenerateCanvasFileMutationOptions(
-    client,
-    options,
-  );
-  return createMutation(mutationOptions, queryClient);
-}
-
-/**
- * Raw RPC call: RuntimeService.GenerateResolver
- */
-export async function runtimeServiceGenerateResolver(
-  client: RuntimeClient,
-  request: Omit<PartialMessage<GenerateResolverRequest>, "instanceId">,
-  options?: { signal?: AbortSignal },
-): Promise<V1GenerateResolverResponse> {
-  const r = await client.runtimeService.generateResolver(
-    GenerateResolverRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
-    { signal: options?.signal },
-  );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as V1GenerateResolverResponse;
-}
-
-export function getRuntimeServiceGenerateResolverMutationOptions(
-  client: RuntimeClient,
-  options?: Partial<
-    CreateMutationOptions<
-      V1GenerateResolverResponse,
-      unknown,
-      Omit<PartialMessage<GenerateResolverRequest>, "instanceId">
-    >
-  >,
-): CreateMutationOptions<
-  V1GenerateResolverResponse,
-  unknown,
-  Omit<PartialMessage<GenerateResolverRequest>, "instanceId">
-> {
-  return {
-    mutationFn: (request) => runtimeServiceGenerateResolver(client, request),
-    ...options,
-  };
-}
-
-export function createRuntimeServiceGenerateResolverMutation(
-  client: RuntimeClient,
-  options?: Partial<
-    CreateMutationOptions<
-      V1GenerateResolverResponse,
-      unknown,
-      Omit<PartialMessage<GenerateResolverRequest>, "instanceId">
-    >
-  >,
-  queryClient?: QueryClient,
-): CreateMutationResult<
-  V1GenerateResolverResponse,
-  unknown,
-  Omit<PartialMessage<GenerateResolverRequest>, "instanceId">
-> {
-  const mutationOptions = getRuntimeServiceGenerateResolverMutationOptions(
-    client,
-    options,
-  );
-  return createMutation(mutationOptions, queryClient);
-}
-
-/**
- * Raw RPC call: RuntimeService.GenerateRenderer
- */
-export async function runtimeServiceGenerateRenderer(
-  client: RuntimeClient,
-  request: Omit<PartialMessage<GenerateRendererRequest>, "instanceId">,
-  options?: { signal?: AbortSignal },
-): Promise<V1GenerateRendererResponse> {
-  const r = await client.runtimeService.generateRenderer(
-    GenerateRendererRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
-    { signal: options?.signal },
-  );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as V1GenerateRendererResponse;
-}
-
-export function getRuntimeServiceGenerateRendererMutationOptions(
-  client: RuntimeClient,
-  options?: Partial<
-    CreateMutationOptions<
-      V1GenerateRendererResponse,
-      unknown,
-      Omit<PartialMessage<GenerateRendererRequest>, "instanceId">
-    >
-  >,
-): CreateMutationOptions<
-  V1GenerateRendererResponse,
-  unknown,
-  Omit<PartialMessage<GenerateRendererRequest>, "instanceId">
-> {
-  return {
-    mutationFn: (request) => runtimeServiceGenerateRenderer(client, request),
-    ...options,
-  };
-}
-
-export function createRuntimeServiceGenerateRendererMutation(
-  client: RuntimeClient,
-  options?: Partial<
-    CreateMutationOptions<
-      V1GenerateRendererResponse,
-      unknown,
-      Omit<PartialMessage<GenerateRendererRequest>, "instanceId">
-    >
-  >,
-  queryClient?: QueryClient,
-): CreateMutationResult<
-  V1GenerateRendererResponse,
-  unknown,
-  Omit<PartialMessage<GenerateRendererRequest>, "instanceId">
-> {
-  const mutationOptions = getRuntimeServiceGenerateRendererMutationOptions(
     client,
     options,
   );
