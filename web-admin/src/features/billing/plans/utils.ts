@@ -21,6 +21,14 @@ export function formatUsageVsQuota(
 // Used in deciding banner message and to show different billing module in frontend.
 // Make sure to update admin/billing/orb.go::getPlanType if this is updated
 
+export function isFreePlan(planName: string) {
+  return planName === "free" || planName === "free_trial_2";
+}
+
+export function isProPlan(planName: string) {
+  return planName === "pro" || planName === "pro_plan";
+}
+
 export function isTrialPlan(planName: string) {
   return planName === "free_trial";
 }
