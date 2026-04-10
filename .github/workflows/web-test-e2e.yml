@@ -73,6 +73,8 @@ jobs:
       fail-fast: false
       matrix:
         name: ${{ fromJson(needs.setup.outputs.matrix) }}
+    env:
+      RILL_ADMIN_FRONTEND_URL: http://localhost:3000
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -81,9 +83,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
+          cache: 'npm'
 
       - name: NPM Install
-        run: npm install
+        run: npm ci
         # https://typicode.github.io/husky/how-to.html#ci-server-and-docker
         env:
           HUSKY: 0

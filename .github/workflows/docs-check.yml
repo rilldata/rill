@@ -4,13 +4,33 @@ on:
   pull_request:
     paths:
       - ".github/workflows/docs-check.yml"
-      - "docs/**"
       - "cli/**"
+      - "docs/**"
+      - "runtime/parser/schema/**"
 env:
   NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
   NETLIFY_SITE_ID: 23baf08e-2d3e-44db-8bd4-938e54467a29
 
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.25
+
+      - name: Generate docs
+        run: make docs.generate
+
+      - name: Check for uncommitted changes
+        run: |
+          git diff --exit-code || (echo "Generated docs are out of date. Please run 'make docs.generate' locally and commit the changes." && exit 1)
+          test -z "$(git status --porcelain)" || (echo "Generated docs are out of date. Please run 'make docs.generate' locally and commit the changes." && git status --porcelain && exit 1)
+
   build:
     runs-on: ubuntu-latest
     steps:
@@ -21,24 +41,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
-
-      # - name: Filter modified codepaths
-      #   uses: dorny/paths-filter@v3
-      #   id: filter
-      #   with:
-      #     filters: |
-      #       cli:
-      #         - "cli/**"
-
-      # - name: Check if new files were created
-      #   if: ${{ steps.filter.outputs.cli == 'true' }}
-      #   run: |
-      #     make docs.generate
-      #     git diff --exit-code || (echo "New files were created, please run 'make docs.generate' locally and commit the changes" && exit 0)
+          cache: 'npm'
 
       - name: Build docs
         run: |-
-          npm install -w docs
+          npm ci -w docs
           npm run build -w docs
         # https://typicode.github.io/husky/how-to.html#ci-server-and-docker
         env:

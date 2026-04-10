@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -146,6 +147,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 					Author: &object.Signature{
 						Name:  "Test User",
 						Email: "test@example.com",
+						When:  time.Now(),
 					},
 				})
 				require.NoError(t, err)
@@ -321,6 +323,53 @@ func TestGitRepo_pullInner(t *testing.T) {
 				content, err := os.ReadFile(renameFilePath)
 				require.NoError(t, err)
 				require.Equal(t, "rename content", string(content))
+			},
+		},
+		{
+			name: "pull preserves git-ignored files",
+			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
+				// Clone the repository
+				_, err := git.PlainClone(localDir, false, &git.CloneOptions{
+					URL:           remoteURL,
+					RemoteName:    "origin",
+					ReferenceName: plumbing.ReferenceName("refs/heads/main"),
+					SingleBranch:  true,
+				})
+				require.NoError(t, err)
+				setupGitConfig(t, localDir)
+
+				// Create a git-ignored file that should survive the pull
+				err = os.WriteFile(filepath.Join(localDir, "data.db"), []byte("database content"), 0644)
+				require.NoError(t, err)
+
+				return &gitRepo{
+					h:             &Handle{logger: zap.NewNop()},
+					repoDir:       localDir,
+					remoteURL:     remoteURL,
+					defaultBranch: "main",
+					primaryBranch: "main",
+					subpath:       "",
+					managedRepo:   true,
+				}
+			},
+			setupRemote: func(t *testing.T, remoteDir string) {
+				createRemoteCommit(t, remoteDir, ".gitignore", "*.db\n", "Add .gitignore")
+				createRemoteCommit(t, remoteDir, "new_file.txt", "new content", "Add new file")
+			},
+			force:       false,
+			expectError: false,
+			validate: func(t *testing.T, repo *gitRepo, localDir string) {
+				verifyCurrentBranch(t, localDir, "main")
+
+				// Verify git-ignored file is preserved
+				content, err := os.ReadFile(filepath.Join(localDir, "data.db"))
+				require.NoError(t, err, "git-ignored file data.db should be preserved")
+				require.Equal(t, "database content", string(content))
+
+				// Verify the new file from remote also exists
+				content, err = os.ReadFile(filepath.Join(localDir, "new_file.txt"))
+				require.NoError(t, err)
+				require.Equal(t, "new content", string(content))
 			},
 		},
 		{
@@ -654,6 +703,66 @@ func TestGitRepo_commitAndPushToDefaultBranch(t *testing.T) {
 				output, err := cmd.Output()
 				require.NoError(t, err)
 				require.Equal(t, "1\n", string(output)) // Only initial commit
+			},
+		},
+		{
+			name: "commit and push preserves git-ignored files",
+			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
+				// Clone repository
+				_, err := git.PlainClone(localDir, false, &git.CloneOptions{
+					URL:           remoteURL,
+					RemoteName:    "origin",
+					ReferenceName: plumbing.ReferenceName("refs/heads/main"),
+					SingleBranch:  false,
+				})
+				require.NoError(t, err)
+				setupGitConfig(t, localDir)
+
+				// Commit a .gitignore that ignores *.db
+				err = os.WriteFile(filepath.Join(localDir, ".gitignore"), []byte("*.db\n"), 0644)
+				require.NoError(t, err)
+				cmd := exec.Command("git", "-C", localDir, "add", ".gitignore")
+				require.NoError(t, cmd.Run())
+				cmd = exec.Command("git", "-C", localDir, "commit", "-m", "Add .gitignore")
+				require.NoError(t, cmd.Run())
+				cmd = exec.Command("git", "-C", localDir, "push", "origin", "main")
+				require.NoError(t, cmd.Run())
+
+				// Create and switch to edit branch
+				cmd = exec.Command("git", "-C", localDir, "checkout", "-b", "edit-branch")
+				require.NoError(t, cmd.Run())
+
+				// Create a git-ignored file
+				err = os.WriteFile(filepath.Join(localDir, "local.db"), []byte("local database"), 0644)
+				require.NoError(t, err)
+
+				return &gitRepo{
+					h:             &Handle{logger: zap.NewNop()},
+					repoDir:       localDir,
+					remoteURL:     remoteURL,
+					defaultBranch: "edit-branch",
+					editableDepl:  true,
+					primaryBranch: "main",
+					subpath:       "",
+					managedRepo:   true,
+				}
+			},
+			setupChanges: func(t *testing.T, localDir string) {
+				filePath := filepath.Join(localDir, "new_feature.txt")
+				err := os.WriteFile(filePath, []byte("new feature content"), 0644)
+				require.NoError(t, err)
+			},
+			setupRemote: func(t *testing.T, remoteDir string) {},
+			message:     "Add new feature",
+			force:       false,
+			expectError: false,
+			validate: func(t *testing.T, repo *gitRepo, localDir, remoteDir string) {
+				verifyCurrentBranch(t, localDir, "edit-branch")
+
+				// Verify git-ignored file is preserved after checkout to primary and back
+				content, err := os.ReadFile(filepath.Join(localDir, "local.db"))
+				require.NoError(t, err, "git-ignored file local.db should be preserved after commit and push")
+				require.Equal(t, "local database", string(content))
 			},
 		},
 		{

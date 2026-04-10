@@ -12,9 +12,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
+          cache: 'npm'
 
       - name: NPM Install
-        run: npm install
+        run: npm ci
         # https://typicode.github.io/husky/how-to.html#ci-server-and-docker
         env:
           HUSKY: 0

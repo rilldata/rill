@@ -97,12 +97,12 @@
   $: onDeployPage = isDeployPage($page);
   $: isPreviewMode = $previewModeStore;
 
-  // Preview mode from store OR (viz) route group
-  $: mode =
-    isPreviewMode || route.id?.includes("(viz)") ? "Preview" : "Developer";
+  $: mode = isPreviewMode ? "Preview" : "Developer";
 
   $: shouldShowPreviewNav =
     isPreviewMode && showPreviewNav($page.url.pathname) && !onDeployPage;
+
+  $: onWelcomePage = route.id?.startsWith("/(misc)/welcome");
 </script>
 
 <Tooltip.Provider>
@@ -112,7 +112,7 @@
         <div
           class="body h-screen w-screen overflow-hidden absolute flex flex-col"
         >
-          {#if data.initialized}
+          {#if data.initialized && !onWelcomePage}
             <BannerCenter />
             <RepresentingUserBanner />
             <ApplicationHeader {mode} />

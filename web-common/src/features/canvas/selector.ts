@@ -93,10 +93,11 @@ export function useCanvas(
     CreateQueryOptions<V1ResolveCanvasResponse, ConnectError, CanvasResponse>
   >,
   queryClient?: QueryClient,
+  allowUnvalidatedSpec = false,
 ): CreateQueryResult<CanvasResponse, ConnectError> {
   return createQueryServiceResolveCanvas(
     client,
-    { canvas: canvasName },
+    { canvas: canvasName, unsafe: allowUnvalidatedSpec },
     {
       query: {
         select: (data) => {
@@ -109,7 +110,9 @@ export function useCanvas(
           }
 
           return {
-            canvas: data.canvas?.canvas?.state?.validSpec,
+            canvas:
+              data.canvas?.canvas?.state?.validSpec ??
+              (allowUnvalidatedSpec ? data.canvas?.canvas?.spec : undefined),
             components: data.resolvedComponents,
             metricsViews,
             filePath: data.canvas?.meta?.filePaths?.[0],
