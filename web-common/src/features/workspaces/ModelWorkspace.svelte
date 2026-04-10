@@ -161,7 +161,7 @@
                   {getUserFriendlyError(error.message ?? "")}
                 </div>
               {/each}
-              <div class="flex justify-end pt-1">
+              <div class="flex justify-start pt-1">
                 <ExplainErrorButton
                   errorMessage={getUserFriendlyError(allErrors[0]?.message ?? "")}
                   {filePath}

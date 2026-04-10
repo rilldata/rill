@@ -35,15 +35,15 @@
   .explain-error-btn {
     @apply inline-flex items-center gap-1 px-2 py-1;
     @apply text-[11px] font-medium;
-    @apply text-accent-primary-action hover:text-fg-accent;
+    @apply text-primary-600 hover:text-primary-700;
     @apply bg-transparent hover:bg-surface-hover;
     @apply rounded-sm cursor-pointer;
-    @apply border border-transparent hover:border-accent-primary-action/30;
+    @apply border border-transparent hover:border-primary-600/30;
     @apply transition-colors duration-150;
     @apply flex-shrink-0;
   }
 
   .explain-error-btn:focus-visible {
-    @apply outline-none ring-1 ring-accent-primary-action ring-offset-1;
+    @apply outline-none ring-1 ring-primary-600 ring-offset-1;
   }
 </style>
