@@ -62,6 +62,7 @@
   }
 </script>
 
+<h1 class="text-lg font-semibold text-fg-primary mb-1">Users</h1>
 <p class="text-sm text-fg-secondary mb-4">
   Search for users by email across all organizations.
 </p>

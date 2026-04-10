@@ -1,5 +1,6 @@
 <script lang="ts">
   import {
+    createAdminServiceGetCurrentUser,
     createAdminServiceListSuperusers,
     createAdminServiceSetSuperuser,
     getAdminServiceListSuperusersQueryKey,
@@ -17,6 +18,8 @@
   let removeTarget = "";
 
   const queryClient = useQueryClient();
+  const currentUser = createAdminServiceGetCurrentUser();
+  $: currentEmail = $currentUser.data?.user?.email ?? "";
   const superusersQuery = createAdminServiceListSuperusers();
   const setSuperuser = createAdminServiceSetSuperuser();
 
@@ -67,6 +70,7 @@
   }
 </script>
 
+<h1 class="text-lg font-semibold text-fg-primary mb-1">Superusers</h1>
 <p class="text-sm text-fg-secondary mb-4">
   Manage who has superuser access across all of Rill Cloud.
 </p>
@@ -130,18 +134,22 @@
             >{user.displayName ?? "-"}</td
           >
           <td class="px-4 py-3 text-sm text-fg-primary border-b">
-            <Button
-              large
-              class="font-normal"
-              type="secondary-destructive"
-              disabled={!user.email}
-              onClick={() => {
-                removeTarget = user.email ?? "";
-                removeDialogOpen = true;
-              }}
-            >
-              Remove
-            </Button>
+            {#if user.email === currentEmail}
+              <span class="text-sm text-fg-muted italic">You</span>
+            {:else}
+              <Button
+                large
+                class="font-normal"
+                type="secondary-destructive"
+                disabled={!user.email}
+                onClick={() => {
+                  removeTarget = user.email ?? "";
+                  removeDialogOpen = true;
+                }}
+              >
+                Remove
+              </Button>
+            {/if}
           </td>
         </tr>
       {/each}

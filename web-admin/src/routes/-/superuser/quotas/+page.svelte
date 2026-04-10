@@ -81,6 +81,7 @@
   }
 </script>
 
+<h1 class="text-lg font-semibold text-fg-primary mb-1">Quotas</h1>
 <p class="text-sm text-fg-secondary mb-4">
   View and adjust resource quotas for organizations.
 </p>

@@ -114,6 +114,7 @@
   }
 </script>
 
+<h1 class="text-lg font-semibold text-fg-primary mb-1">Organizations</h1>
 <p class="text-sm text-fg-secondary mb-4">
   Search for any organization by name to view details, members, and projects.
 </p>
@@ -184,9 +185,9 @@
               <div
                 class="flex items-center justify-between px-3 py-2 rounded bg-surface-subtle"
               >
-                <button
-                  class="text-sm text-accent-primary-action hover:underline text-left"
-                  on:click={() => {
+                <Button
+                  type="text"
+                  onClick={() => {
                     const admin = $membersQuery.data?.members?.find(
                       (m) => m.roleName === "admin",
                     );
@@ -199,7 +200,7 @@
                   }}
                 >
                   {project.name}
-                </button>
+                </Button>
                 <div class="flex gap-2">
                   <Button
                     large
