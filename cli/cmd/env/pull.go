@@ -82,7 +82,7 @@ func PullVars(ctx context.Context, ch *cmdutil.Helper, projectPath, projectName,
 	}
 
 	// new vars from the cloud
-	newVars := GroupVariablesByEnv(res)
+	newVars := groupVariablesByEnv(res)
 
 	// existing vars from the .env files in the project
 	currentVars := p.GetDotEnvPerEnvironment()
@@ -130,7 +130,7 @@ func PullVars(ctx context.Context, ch *cmdutil.Helper, projectPath, projectName,
 	return nil
 }
 
-func GroupVariablesByEnv(res *adminv1.GetProjectVariablesResponse) map[string]map[string]string {
+func groupVariablesByEnv(res *adminv1.GetProjectVariablesResponse) map[string]map[string]string {
 	perEnvVars := make(map[string]map[string]string)
 	for _, v := range res.Variables {
 		vars, ok := perEnvVars[v.Environment]

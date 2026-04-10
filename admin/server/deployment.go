@@ -895,11 +895,29 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 		UpdatedOn:   timestamppb.New(depl.UpdatedOn),
 		UsesArchive: proj.ArchiveAssetID != nil,
 	}
-	vars, err := s.admin.ResolveVariables(ctx, depl)
+
+	// variables
+	vars, err := s.admin.DB.FindProjectVariables(ctx, depl.ProjectID, &depl.Environment)
 	if err != nil {
 		return nil, err
 	}
-	resp.Variables = vars //nolint:staticcheck // still need to set for bwd compatibility
+	resp.ProjectVariables = make([]*adminv1.ProjectVariable, 0, len(vars))
+	for _, v := range vars {
+		resp.ProjectVariables = append(resp.ProjectVariables, projectVariableToDTO(v))
+	}
+	resp.ProjectVariables = append(resp.ProjectVariables, &adminv1.ProjectVariable{
+		Name:        "rill.watch_repo",
+		Value:       strconv.FormatBool(depl.Editable),
+		Environment: depl.Environment,
+		CreatedOn:   timestamppb.Now(),
+		UpdatedOn:   timestamppb.Now(),
+	})
+
+	// remove in next release
+	resp.Variables = make(map[string]string, len(vars)) // nolint:staticcheck // Still need to populate for backward compatibility.
+	for _, v := range vars {
+		resp.Variables[v.Name] = v.Value // nolint:staticcheck // Still need to populate for backward compatibility.
+	}
 
 	// parsing duckdb connector config
 	rCfg, err := provisioner.NewRuntimeConfig(pr.Config)

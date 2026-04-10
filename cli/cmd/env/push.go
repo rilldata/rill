@@ -64,7 +64,7 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// new vars from the cloud
-			cloudVars := GroupVariablesByEnv(res)
+			cloudVars := groupVariablesByEnv(res)
 
 			// existing vars from the .env files in the project
 			current := p.GetDotEnvPerEnvironment()
