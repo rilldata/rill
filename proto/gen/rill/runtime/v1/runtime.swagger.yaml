@@ -1580,6 +1580,12 @@ paths:
               args:
                 type: object
                 title: Optional args for resolving templating in the component properties
+              unsafe:
+                type: boolean
+                description: |-
+                  If true, fall back to the unvalidated spec when no valid spec is available.
+                  Only for use by the visual editor in Rill Developer. Must never be sent by
+                  Rill Cloud, read-only previews, shared token access, or embedded viewers.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/column-cardinality/tables/{tableName}:
@@ -4180,6 +4186,10 @@ definitions:
         type: object
       errorMessage:
         type: string
+      warnings:
+        type: array
+        items:
+          type: string
   v1AssertionStatus:
     type: string
     enum:
@@ -6817,6 +6827,11 @@ definitions:
         items:
           type: string
         description: test_errors contains the results of the model's tests.
+      testWarnings:
+        type: array
+        items:
+          type: string
+        description: test_warnings contains warnings from the most recent test run, stored separately from execution warnings.
       refreshedOn:
         type: string
         format: date-time
@@ -6833,6 +6848,11 @@ definitions:
       partitionsHaveErrors:
         type: boolean
         description: partitions_have_errors is true if one or more partitions failed to execute.
+      warnings:
+        type: array
+        items:
+          type: string
+        description: warnings contains any warnings generated during the model's execution.
       totalExecutionDurationMs:
         type: string
         format: int64
@@ -7250,6 +7270,10 @@ definitions:
         type: boolean
       errorMessage:
         type: string
+      warnings:
+        type: array
+        items:
+          type: string
       reportTime:
         type: string
         format: date-time
@@ -7460,6 +7484,10 @@ definitions:
         $ref: '#/definitions/v1ReconcileStatus'
       reconcileError:
         type: string
+      reconcileWarnings:
+        type: array
+        items:
+          type: string
       reconcileOn:
         type: string
         format: date-time

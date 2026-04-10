@@ -29,36 +29,21 @@ Rill offers flexible connection strategies to fit different data architectures a
 
 ## OLAP Engines
 
-### DuckDB
 ### ClickHouse
-### MotherDuck
 ### Druid
+### DuckDB
+### MotherDuck
 ### Pinot
+### Snowflake
 ### StarRocks
 
 <div className="connector-icon-grid">
-  <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-DuckDB.svg" alt="DuckDB" />}
-    content="DuckDB is the default engine for Rill Developer."
-    link="/developers/build/connectors/olap/duckdb"
-    linkLabel="Learn more"
-    referenceLink="duckdb"
-  />
-
   <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-ClickHouse.svg" alt="ClickHouse" />}
     content="High-performance columnar database for real-time analytics and data warehousing."
     link="/developers/build/connectors/olap/clickhouse"
     linkLabel="Learn more"
     referenceLink="clickhouse"
-  />
-
-  <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-MotherDuck.svg" alt="MotherDuck" />}
-    content="Cloud-native DuckDB service for scalable analytics and data processing."
-    link="/developers/build/connectors/olap/motherduck"
-    linkLabel="Learn more"
-    referenceLink="motherduck"
   />
 
   <ConnectorIcon
@@ -70,13 +55,38 @@ Rill offers flexible connection strategies to fit different data architectures a
   />
 
   <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-DuckDB.svg" alt="DuckDB" />}
+    content="DuckDB is the default engine for Rill Developer."
+    link="/developers/build/connectors/olap/duckdb"
+    linkLabel="Learn more"
+    referenceLink="duckdb"
+  />
+
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-MotherDuck.svg" alt="MotherDuck" />}
+    content="Cloud-native DuckDB service for scalable analytics and data processing."
+    link="/developers/build/connectors/olap/motherduck"
+    linkLabel="Learn more"
+    referenceLink="motherduck"
+  />
+
+  <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-Pinot.svg" alt="Pinot" />}
     content="Distributed OLAP datastore for real-time analytics and business intelligence."
     link="/developers/build/connectors/olap/pinot"
     linkLabel="Learn more"
     referenceLink="pinot"
   />
-  
+
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-Snowflake.svg" alt="Snowflake" />}
+    header="Snowflake"
+    content="Cloud data warehouse with native support for metrics views as a live connector."
+    link="/developers/build/connectors/olap/snowflake"
+    linkLabel="Learn more"
+    referenceLink="snowflake"
+  />
+
   <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-StarRocks.svg" alt="StarRocks" className="starrocks-icon"/>}
     content="Distributed OLAP datastore for real-time analytics and business intelligence."

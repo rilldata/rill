@@ -37,6 +37,8 @@
     route,
   } = $page);
 
+  $: onVizRoute = route.id?.includes("explore") || route.id?.includes("canvas");
+
   $: ({ unsavedFiles } = fileArtifacts);
   $: ({ size: unsavedFileCount } = $unsavedFiles);
   $: onDeployPage = isDeployPage($page);
@@ -65,7 +67,7 @@
     label: projectTitle,
     section: "project",
     depth: -1,
-    href: "/",
+    href: mode === "Preview" ? "/dashboards" : "/",
   };
 
   $: pathParts = [
@@ -102,7 +104,7 @@
 
     <Tag text={mode} color="gray"></Tag>
 
-    {#if mode === "Preview"}
+    {#if mode === "Preview" || onVizRoute}
       {#if $exploresQuery?.data}
         <Breadcrumbs {pathParts} {currentPath} />
       {/if}
@@ -120,12 +122,10 @@
   {/if}
 
   <div class="flex gap-x-2 items-center ml-auto">
-    {#if mode === "Preview"}
-      {#if route.id?.includes("explore")}
-        <ExplorePreviewCTAs exploreName={dashboardName} />
-      {:else if route.id?.includes("canvas")}
-        <CanvasPreviewCTAs canvasName={dashboardName} />
-      {/if}
+    {#if route.id?.includes("explore")}
+      <ExplorePreviewCTAs exploreName={dashboardName} />
+    {:else if route.id?.includes("canvas")}
+      <CanvasPreviewCTAs canvasName={dashboardName} />
     {:else if showDeveloperChat}
       <ChatToggle />
     {/if}

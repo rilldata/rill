@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/go-git/go-git/v5"
@@ -115,17 +117,10 @@ func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
 		}
 	}
 
-	// Checkout the default branch
-	worktree, err := repo.Worktree()
+	// Checkout the default branch.
+	err = gitForceCheckout(r.repoDir, r.defaultBranch, false, "")
 	if err != nil {
-		return fmt.Errorf("failed to get worktree: %w", err)
-	}
-	err = worktree.Checkout(&git.CheckoutOptions{
-		Branch: plumbing.ReferenceName("refs/heads/" + r.defaultBranch),
-		Force:  force,
-	})
-	if err != nil {
-		if !errors.Is(err, plumbing.ErrReferenceNotFound) {
+		if !errors.Is(err, errRefNotFound) {
 			return fmt.Errorf("failed to checkout branch %q: %w", r.defaultBranch, err)
 		}
 
@@ -148,27 +143,22 @@ func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
 			}
 		}
 
-		// create the default branch
-		err = worktree.Checkout(&git.CheckoutOptions{
-			Hash:   remoteHash.Hash(),
-			Branch: plumbing.ReferenceName("refs/heads/" + r.defaultBranch),
-			Create: true,
-			Force:  force,
-		})
+		// Create the default branch at the resolved remote hash
+		err = gitForceCheckout(r.repoDir, r.defaultBranch, true, remoteHash.Hash().String())
 		if err != nil {
 			return fmt.Errorf("failed to create and checkout default branch %q: %w", r.defaultBranch, err)
 		}
 	}
 
-	fmt.Println("*************** admin repo pullInner: resetToRemoteTrackingBranch", force)
-	if !r.editable() {
-		// Hard reset to remote branch
-		err = resetToRemoteTrackingBranch(repo, worktree, r.defaultBranch)
-		if err != nil {
-			if !(errors.Is(err, plumbing.ErrReferenceNotFound) && r.editable()) { // In editable mode, the default branch may not exist yet on remote.
-				return fmt.Errorf("failed to reset to remote tracking branch %q: %w", r.defaultBranch, err)
-			}
+	// Hard reset to remote branch
+	err = resetToRemoteTrackingBranch(r.repoDir, r.defaultBranch)
+	if err != nil {
+		if !(errors.Is(err, errRefNotFound) && r.editable()) { // In editable mode, the default branch may not exist yet on remote.
+			return fmt.Errorf("failed to reset to remote tracking branch %q: %w", r.defaultBranch, err)
 		}
+	}
+
+	if !r.editable() {
 		return nil
 	}
 
@@ -266,31 +256,20 @@ func (r *gitRepo) commitAndPushToPrimaryBranch(ctx context.Context, message stri
 		return fmt.Errorf("failed to fetch primary branch %q: %w", r.primaryBranch, err)
 	}
 
-	// Switch to the primary branch
-	worktree, err := repo.Worktree()
-	if err != nil {
-		return fmt.Errorf("failed to get worktree: %w", err)
-	}
+	// Switch to the primary branch.
 	defer func() {
-		// switch back to the default branch
-		err := worktree.Checkout(&git.CheckoutOptions{
-			Branch: plumbing.ReferenceName("refs/heads/" + r.defaultBranch),
-			Force:  true,
-		})
+		err := gitForceCheckout(r.repoDir, r.defaultBranch, false, "")
 		if err != nil {
 			resErr = errors.Join(resErr, fmt.Errorf("failed to checkout default branch %q: %w", r.defaultBranch, err))
 			return
 		}
 	}()
 
-	err = worktree.Checkout(&git.CheckoutOptions{
-		Branch: plumbing.ReferenceName("refs/heads/" + r.primaryBranch),
-		Force:  true,
-	})
+	err = gitForceCheckout(r.repoDir, r.primaryBranch, false, "")
 	if err != nil {
 		return fmt.Errorf("failed to checkout primary branch %q: %w", r.primaryBranch, err)
 	}
-	err = resetToRemoteTrackingBranch(repo, worktree, r.primaryBranch)
+	err = resetToRemoteTrackingBranch(r.repoDir, r.primaryBranch)
 	if err != nil {
 		return fmt.Errorf("failed to reset to remote tracking branch %q: %w", r.primaryBranch, err)
 	}
@@ -456,6 +435,7 @@ func (r *gitRepo) commitAll(repo *git.Repository, message string) (string, error
 		Author: &object.Signature{
 			Name:  "Rill Runtime",
 			Email: "runtime@rilldata.com", // Use a generic author for the commit
+			When:  time.Now(),
 		},
 	})
 	if err != nil {
@@ -482,20 +462,52 @@ func (r *gitRepo) fetchCurrentBranch(ctx context.Context) error {
 	return nil
 }
 
+var errRefNotFound = errors.New("reference not found")
+
+// gitForceCheckout checks out a branch using the git command.
+// If create is true, it creates the branch (using -B) at the given startPoint.
+// go-git wipes out git-ignored changes during checkout so must use the git command.
+func gitForceCheckout(repoDir, branch string, create bool, startPoint string) error {
+	args := []string{"-C", repoDir, "checkout", "--force"}
+	if create {
+		args = append(args, "-B", branch)
+		if startPoint != "" {
+			args = append(args, startPoint)
+		}
+	} else {
+		args = append(args, branch)
+	}
+	cmd := exec.Command("git", args...)
+	_, err := cmd.Output()
+	if err != nil {
+		var execErr *exec.ExitError
+		if !errors.As(err, &execErr) {
+			return err
+		}
+		stderr := string(execErr.Stderr)
+		if strings.Contains(stderr, "did not match") {
+			return errRefNotFound
+		}
+		return fmt.Errorf("git checkout failed: %s", stderr)
+	}
+	return nil
+}
+
 // resetToRemoteTrackingBranch resets to the commit pointed by the remote tracking branch.
 // This is used to reset the local branch to the state of the remote branch so it is expected that the latest changes have been fetched.
-func resetToRemoteTrackingBranch(repo *git.Repository, wt *git.Worktree, branch string) error {
-	trackingRef, err := repo.Reference(plumbing.ReferenceName(fmt.Sprintf("refs/remotes/origin/%s", branch)), true)
+// go-git wipes out git-ignored changes so must use the git command.
+func resetToRemoteTrackingBranch(repoDir, branch string) error {
+	cmd := exec.Command("git", "-C", repoDir, "reset", "--hard", "origin/"+branch)
+	_, err := cmd.Output()
 	if err != nil {
-		return err
-	}
-
-	err = wt.Reset(&git.ResetOptions{
-		Commit: trackingRef.Hash(),
-		Mode:   git.HardReset,
-	})
-	if err != nil {
-		return err
+		var execErr *exec.ExitError
+		if !errors.As(err, &execErr) {
+			return err
+		}
+		if strings.Contains(string(execErr.Stderr), "unknown revision") {
+			return errRefNotFound
+		}
+		return fmt.Errorf("git reset failed: %s", string(execErr.Stderr))
 	}
 	return nil
 }

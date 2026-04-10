@@ -35,20 +35,21 @@
           </div>
         </button>
       {:else}
-        <Chip
-          {...props}
-          removable
-          slideDuration={0}
-          active={viewAsMenuOpen}
-          removeTooltipText="Clear view"
-          onRemove={() => {
-            updateDevJWT(queryClient, client, null);
-          }}
-        >
-          <div slot="body">
-            Viewing as <b>{$selectedMockUserStore.email}</b>
-          </div>
-        </Chip>
+        <button {...props} class="appearance-none border-0 bg-transparent p-0">
+          <Chip
+            removable
+            slideDuration={0}
+            active={viewAsMenuOpen}
+            removeTooltipText="Clear view"
+            onRemove={() => {
+              updateDevJWT(queryClient, client, null);
+            }}
+          >
+            <div slot="body">
+              Viewing as <b>{$selectedMockUserStore.email}</b>
+            </div>
+          </Chip>
+        </button>
       {/if}
     {/snippet}
   </DropdownMenu.Trigger>

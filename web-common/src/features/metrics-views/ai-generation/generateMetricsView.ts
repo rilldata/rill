@@ -1,4 +1,5 @@
 import { goto } from "$app/navigation";
+import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
 import { createCanvasDashboardWithoutNavigation } from "@rilldata/web-common/features/canvas/ai-generation/generateCanvas";
 import { pollForFileCreation } from "@rilldata/web-common/features/entity-management/actions";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
@@ -140,7 +141,10 @@ export function useCreateMetricsViewFromTableUIAction(
 
       // If we're not creating an Explore, navigate to the Metrics View file
       if (!createExplore) {
-        await goto(`/files${newMetricsViewFilePath}`);
+        const isPreview = get(previewModeStore);
+        await goto(
+          isPreview ? "/dashboards" : `/files${newMetricsViewFilePath}`,
+        );
         void behaviourEvent?.fireNavigationEvent(
           newMetricsViewName,
           behaviourEventMedium,
@@ -438,7 +442,8 @@ export async function createModelAndMetricsAndExplore(
     // If we're not creating an Explore, navigate to the Metrics View file
     if (!createExplore) {
       const previousScreenName = getScreenNameFromPage();
-      await goto(`/files${metricsViewFilePath}`);
+      const isPreview = get(previewModeStore);
+      await goto(isPreview ? "/dashboards" : `/files${metricsViewFilePath}`);
       void behaviourEvent?.fireNavigationEvent(
         metricsViewName,
         BehaviourEventMedium.Menu,
@@ -685,7 +690,13 @@ export function useCreateMetricsViewWithCanvasUIAction(
 
       // Step 4: Navigate to Canvas dashboard
       if (canvasFilePath) {
-        await goto(`/files${canvasFilePath}`);
+        const isPreview = get(previewModeStore);
+        const canvasName = canvasFilePath
+          .replace("/dashboards/", "")
+          .replace(".yaml", "");
+        await goto(
+          isPreview ? `/canvas/${canvasName}` : `/files${canvasFilePath}`,
+        );
         void behaviourEvent?.fireNavigationEvent(
           metricsViewName,
           behaviourEventMedium,
@@ -816,8 +827,14 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
       );
 
       // Step 5: Navigate to Canvas if successful, otherwise Explore
+      const isPreview = get(previewModeStore);
       if (canvasFilePath) {
-        await goto(`/files${canvasFilePath}`);
+        const canvasName = canvasFilePath
+          .replace("/dashboards/", "")
+          .replace(".yaml", "");
+        await goto(
+          isPreview ? `/canvas/${canvasName}` : `/files${canvasFilePath}`,
+        );
         void behaviourEvent?.fireNavigationEvent(
           metricsViewName,
           behaviourEventMedium,
@@ -826,7 +843,12 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
           MetricsEventScreenName.Canvas,
         );
       } else if (exploreFilePath) {
-        await goto(`/files${exploreFilePath}`);
+        const exploreName = exploreFilePath
+          .replace("/dashboards/", "")
+          .replace(".yaml", "");
+        await goto(
+          isPreview ? `/explore/${exploreName}` : `/files${exploreFilePath}`,
+        );
         void behaviourEvent?.fireNavigationEvent(
           metricsViewName,
           behaviourEventMedium,
@@ -846,7 +868,13 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
 
       // If we have an explore path but canvas failed, navigate to explore
       if (exploreFilePath && metricsViewName) {
-        await goto(`/files${exploreFilePath}`);
+        const isPreview = get(previewModeStore);
+        const exploreName = exploreFilePath
+          .replace("/dashboards/", "")
+          .replace(".yaml", "");
+        await goto(
+          isPreview ? `/explore/${exploreName}` : `/files${exploreFilePath}`,
+        );
         void behaviourEvent?.fireNavigationEvent(
           metricsViewName,
           behaviourEventMedium,

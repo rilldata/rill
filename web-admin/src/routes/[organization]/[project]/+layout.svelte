@@ -1,23 +1,31 @@
 <!--
   Project layout: connects to the project's runtime when the deployment is running,
-  or shows a status page (building, error, hibernating) when it isn't.
+  or shows a status page (building, error, stopped, hibernating) when it isn't.
 
-  Four dimensions converge here:
+  Five dimensions converge here:
     1. Auth mode: cookie (logged-in), bearer token (public URL), or mock (View As)
-    2. Deployment lifecycle: running, pending, errored, hibernating
-    3. Runtime connection: host, instanceId, JWT passed to RuntimeProvider
-    4. Navigation chrome: full header + tabs when running, slim header otherwise
+    2. Branch: production vs. feature branch (extracted from URL's @branch segment)
+    3. Deployment lifecycle: running, pending, errored, stopped, hibernating
+    4. Runtime connection: host, instanceId, JWT passed to RuntimeProvider
+    5. Navigation chrome: full header + tabs when running, slim header otherwise
 -->
 <script lang="ts">
+  import { beforeNavigate, goto } from "$app/navigation";
   import { page } from "$app/state";
   import { untrack } from "svelte";
   import type { Snippet } from "svelte";
+  import {
+    branchPathPrefix,
+    extractBranchFromPath,
+    handleBranchNavigation,
+  } from "@rilldata/web-admin/features/branches/branch-utils";
   import {
     V1DeploymentStatus,
     type V1Organization,
     createAdminServiceGetCurrentUser,
     createAdminServiceGetDeploymentCredentials,
     createAdminServiceGetProject,
+    getAdminServiceListDeploymentsQueryKey,
   } from "@rilldata/web-admin/client";
   import {
     isProjectPage,
@@ -26,6 +34,7 @@
     isPublicURLPage,
     isProjectWelcomePage,
   } from "@rilldata/web-admin/features/navigation/nav-utils";
+  import BranchDeploymentStopped from "@rilldata/web-admin/features/branches/BranchDeploymentStopped.svelte";
   import ProjectBuilding from "@rilldata/web-admin/features/projects/ProjectBuilding.svelte";
   import ProjectHeader from "@rilldata/web-admin/features/projects/ProjectHeader.svelte";
   import ProjectTabs from "@rilldata/web-admin/features/projects/ProjectTabs.svelte";
@@ -52,10 +61,18 @@
   let organization = $derived(page.params.organization);
   let project = $derived(page.params.project);
 
+  let activeBranch = $derived(extractBranchFromPath(page.url.pathname));
+  let branchPrefix = $derived(branchPathPrefix(activeBranch));
+
+  // Inject the active branch segment into intra-project navigations
+  beforeNavigate((nav) =>
+    handleBranchNavigation(nav, activeBranch, organization, project, goto),
+  );
+
   // Token: from route params, or from search params on report/alert pages
   let token = $derived.by(() => {
     if (isPublicReportPage(page) || isPublicAlertPage(page)) {
-      return page.url.searchParams.get("token");
+      return page.url.searchParams.get("token") ?? page.params.token;
     }
     return page.params.token;
   });
@@ -97,11 +114,16 @@
 
   /**
    * `GetProject` with default cookie-based auth.
+   * When `activeBranch` is set, the branch param is passed so the API
+   * returns the branch deployment instead of production.
    */
   let cookieProjectQuery = $derived(
-    createAdminServiceGetProject(organization, project, undefined, {
-      query: baseGetProjectQueryOptions,
-    }),
+    createAdminServiceGetProject(
+      organization,
+      project,
+      activeBranch ? { branch: activeBranch } : undefined,
+      { query: baseGetProjectQueryOptions },
+    ),
   );
 
   /**
@@ -129,7 +151,10 @@
     createAdminServiceGetDeploymentCredentials(
       organization,
       project,
-      { userId: mockedUserId },
+      {
+        userId: mockedUserId,
+        ...(activeBranch ? { branch: activeBranch } : {}),
+      },
       { query: { enabled: !!mockedUserId } },
     ),
   );
@@ -198,6 +223,11 @@
         ),
       });
     }
+
+    // Keep BranchSelector's ListDeployments query in sync
+    void queryClient.invalidateQueries({
+      queryKey: getAdminServiceListDeploymentsQueryKey(organization, project),
+    });
   });
 
   $effect(() => {
@@ -218,6 +248,8 @@
     {organization}
     {project}
     readProjects={organizationPermissions?.readProjects}
+    readDev={!!runtime.projectPermissions?.readDev}
+    primaryBranch={projectData?.project?.primaryBranch}
     {planDisplayName}
     {organizationLogoUrl}
   />
@@ -229,7 +261,7 @@
 {:else if projectData}
   {#if isProjectAvailable && runtime.host != null && runtime.instanceId}
     <!-- Re-key on host::instanceId to force RuntimeProvider to tear down and
-         reconnect when the deployment changes (e.g. View As). -->
+         reconnect when the deployment changes (e.g. branch switch, View As). -->
     {#key `${runtime.host}::${runtime.instanceId}`}
       <RuntimeProvider
         host={runtime.host}
@@ -245,6 +277,7 @@
             manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
             manageOrgMembers={organizationPermissions?.manageOrgMembers}
             readProjects={organizationPermissions?.readProjects}
+            primaryBranch={projectData?.project?.primaryBranch}
             {planDisplayName}
             {organizationLogoUrl}
           />
@@ -252,9 +285,17 @@
             <ProjectTabs
               projectPermissions={runtime.projectPermissions}
               {organization}
-              pathname={page.url.pathname}
               {project}
+              {branchPrefix}
             />
+            {#if onProjectPage && deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
+              <ProjectTabs
+                projectPermissions={runtime.projectPermissions}
+                {organization}
+                pathname={page.url.pathname}
+                {project}
+              />
+            {/if}
           {/if}
         {/if}
         {@render children()}
@@ -265,6 +306,8 @@
       {organization}
       {project}
       readProjects={organizationPermissions?.readProjects}
+      readDev={!!runtime.projectPermissions?.readDev}
+      primaryBranch={projectData?.project?.primaryBranch}
       {planDisplayName}
       {organizationLogoUrl}
     />
@@ -272,7 +315,7 @@
       <!-- No deployment = the project is "hibernating" -->
       <RedeployProjectCta {organization} {project} />
     {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING}
-      <ProjectBuilding />
+      <ProjectBuilding branch={activeBranch} />
     {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED}
       <ErrorPage
         statusCode={500}
@@ -281,8 +324,17 @@
           ? projectData.deployment.statusMessage
           : "There was an error deploying your project. Please contact support."}
       />
+    {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED || deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING}
+      <BranchDeploymentStopped
+        {organization}
+        {project}
+        deploymentId={projectData.deployment.id}
+        status={deploymentStatus}
+        canManage={!!runtime.projectPermissions?.manageDev}
+        branch={activeBranch}
+      />
     {:else}
-      <ProjectBuilding />
+      <ProjectBuilding branch={activeBranch} />
     {/if}
   {/if}
 {/if}
