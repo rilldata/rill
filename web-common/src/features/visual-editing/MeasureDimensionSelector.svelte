@@ -47,6 +47,12 @@
         onSelectAll();
         excludeProxy = excludeMode;
       } else if (field === "subset") {
+        console.log("selectedProxy", [...selectedProxy.values()]);
+        console.log(
+          "items",
+          items,
+          items.map(({ name }) => name).filter(isString),
+        );
         if (selectedProxy.size) {
           setItems(Array.from(selectedProxy), excludeProxy);
         } else {
