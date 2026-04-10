@@ -23,12 +23,7 @@
         body={errorMessage || "An unknown error occurred."}
       />
       {#if filePath}
-        <ExplainErrorButton
-          errorMessage={errorMessage}
-          {filePath}
-          {fileContent}
-          large
-        />
+        <ExplainErrorButton {errorMessage} {filePath} {fileContent} large />
       {/if}
     </div>
   {:else if isReconciling}

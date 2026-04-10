@@ -46,9 +46,7 @@ export function composeErrorPrompt(input: ErrorPromptInput): string {
   let codeBlockEnd = -1;
 
   if (fileContent) {
-    const sanitized = isConnector
-      ? stripCredentials(fileContent)
-      : fileContent;
+    const sanitized = isConnector ? stripCredentials(fileContent) : fileContent;
     const context = extractContext(sanitized, lineNumber);
     if (context) {
       codeBlockStart = parts.length;

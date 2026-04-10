@@ -139,13 +139,17 @@
                 {#if parseError || rootCauseReconcileError}
                   <div class="flex flex-col items-center gap-4">
                     <ErrorPage
-                      body={parseError?.message ?? rootCauseReconcileError ?? ""}
+                      body={parseError?.message ??
+                        rootCauseReconcileError ??
+                        ""}
                       fatal
                       header="Unable to load dashboard preview"
                       statusCode={404}
                     />
                     <ExplainErrorButton
-                      errorMessage={parseError?.message ?? rootCauseReconcileError ?? ""}
+                      errorMessage={parseError?.message ??
+                        rootCauseReconcileError ??
+                        ""}
                       {filePath}
                       fileContent={$remoteContent}
                       lineNumber={parseError?.startLocation?.line}

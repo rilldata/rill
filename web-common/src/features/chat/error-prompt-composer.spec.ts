@@ -6,13 +6,16 @@ describe("composeErrorPrompt", () => {
     const result = composeErrorPrompt({
       errorMessage: "unexpected token at line 5",
       filePath: "/models/my_model.sql",
-      fileContent: "SELECT *\nFROM table\nWHERE x = 1\nAND y = 2\nORDER BY z\nLIMIT 10",
+      fileContent:
+        "SELECT *\nFROM table\nWHERE x = 1\nAND y = 2\nORDER BY z\nLIMIT 10",
     });
 
     expect(result).toContain("unexpected token at line 5");
     expect(result).toContain("/models/my_model.sql");
     expect(result).toContain("SQL model");
-    expect(result).toContain("Please explain what's wrong and suggest how to fix it.");
+    expect(result).toContain(
+      "Please explain what's wrong and suggest how to fix it.",
+    );
   });
 
   it("includes line number and surrounding context when available", () => {
@@ -126,7 +129,10 @@ describe("composeErrorPrompt", () => {
     const result = composeErrorPrompt({
       errorMessage: "unexpected token near 'SELECT'",
       filePath: "/models/orders.sql",
-      fileContent: Array.from({ length: 30 }, (_, i) => `-- line ${i + 1}: some SQL code here`).join("\n"),
+      fileContent: Array.from(
+        { length: 30 },
+        (_, i) => `-- line ${i + 1}: some SQL code here`,
+      ).join("\n"),
       lineNumber: 15,
     });
 
