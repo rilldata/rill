@@ -139,6 +139,8 @@
                   {isReconciling}
                   {isLoading}
                   errorMessage={rootCauseReconcileError}
+                  {filePath}
+                  fileContent={$remoteContent}
                 >
                   <CanvasBuilder
                     {canvasName}
