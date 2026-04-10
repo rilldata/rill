@@ -154,7 +154,7 @@ func exploreNameFromAnnotations(annotations map[string]string, fallback string) 
 	if path, ok := annotations["web_open_path"]; ok {
 		if strings.HasPrefix(path, "/explore/") {
 			explore := path[9:]
-			if len(explore) > 0 && explore[len(explore)-1] == '/' {
+			if explore != "" && explore[len(explore)-1] == '/' {
 				explore = explore[:len(explore)-1]
 			}
 			if decoded, err := url.PathUnescape(explore); err == nil {
