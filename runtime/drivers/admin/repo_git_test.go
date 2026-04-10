@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -146,6 +147,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 					Author: &object.Signature{
 						Name:  "Test User",
 						Email: "test@example.com",
+						When:  time.Now(),
 					},
 				})
 				require.NoError(t, err)
