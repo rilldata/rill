@@ -181,7 +181,7 @@
   // Formatters
   $: measureFormatter = createMeasureValueFormatter(measure);
   $: valueFormatter = (value: number | null): string => {
-    if (value === null) return "\u2013";
+    if (value === null) return "no data";
     return measureFormatter(value);
   };
   $: axisFormatter = createMeasureValueFormatter(measure, "axis");
