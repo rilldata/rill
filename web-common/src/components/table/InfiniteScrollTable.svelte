@@ -1,4 +1,12 @@
 <script lang="ts">
+  /**
+   * A scrollable table with infinite-loading support for paginated data.
+   *
+   * This component renders all rows in the DOM (no virtualization). It is
+   * intended for datasets under ~1,000 rows (admin tables, settings lists,
+   * etc.). For large datasets that need virtualization, use VirtualizedTable.
+   */
+  import { onDestroy } from "svelte";
   import { writable } from "svelte/store";
   import type {
     ColumnDef,
@@ -12,7 +20,6 @@
     getCoreRowModel,
     getSortedRowModel,
   } from "tanstack-table-8-svelte-5";
-  import { createVirtualizer } from "@tanstack/svelte-virtual";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
 
   export let data: any[];
@@ -21,13 +28,12 @@
   export let isFetchingNextPage: boolean;
   export let onLoadMore: () => void;
   export let emptyStateMessage = "No items found";
-  export let rowHeight = 69;
-  export let overscan = 5;
   export let maxHeight = "auto";
   export let headerIcons: Record<string, { icon: any; href: string }> = {};
   export let scrollToTopTrigger: any = null;
 
-  let virtualListEl: HTMLDivElement;
+  let scrollContainerEl: HTMLDivElement;
+  let sentinelEl: HTMLDivElement;
   let sorting: SortingState = [];
 
   // Initialize sorting for sortDescFirst column
@@ -92,64 +98,34 @@
 
   $: rows = $table.getRowModel().rows;
 
-  const isSafari =
-    typeof window !== "undefined" &&
-    /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  // IntersectionObserver-based infinite loading
+  let observer: IntersectionObserver | null = null;
 
-  // Constants for table sizing
-  const EMPTY_TABLE_MIN_HEIGHT = 100;
-  const SAFARI_EXTRA_PADDING = 50;
+  function setupObserver() {
+    observer?.disconnect();
+    if (typeof IntersectionObserver === "undefined") return;
 
-  let totalSize: number;
+    observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          onLoadMore();
+        }
+      },
+      { root: scrollContainerEl, rootMargin: "200px" },
+    );
 
-  $: virtualizer = createVirtualizer<HTMLDivElement, HTMLDivElement>({
-    count: 0,
-    getScrollElement: () => virtualListEl,
-    estimateSize: () => rowHeight,
-    overscan,
-    measureElement: (el) => el?.getBoundingClientRect()?.height ?? rowHeight,
-  });
-
-  $: {
-    $virtualizer.setOptions({
-      count: hasNextPage ? safeData.length + 1 : safeData.length,
-    });
-
-    const [lastItem] = [...$virtualizer.getVirtualItems()].reverse();
-
-    if (
-      lastItem &&
-      lastItem.index > safeData.length - 1 &&
-      hasNextPage &&
-      !isFetchingNextPage
-    ) {
-      onLoadMore();
-    }
+    if (sentinelEl) observer.observe(sentinelEl);
   }
 
-  // Calculate total size, ensuring it updates when data changes
-  $: {
-    if (safeData.length === 0) {
-      totalSize = EMPTY_TABLE_MIN_HEIGHT;
-    } else {
-      const virtualizerSize = $virtualizer.getTotalSize();
-      const minContentSize = safeData.length * rowHeight;
-
-      if (isSafari) {
-        // Safari needs extra padding to prevent scrolling issues
-        totalSize = Math.max(
-          virtualizerSize + SAFARI_EXTRA_PADDING,
-          minContentSize,
-        );
-      } else {
-        totalSize = Math.max(virtualizerSize, minContentSize);
-      }
-    }
+  $: if (scrollContainerEl && sentinelEl) {
+    setupObserver();
   }
+
+  onDestroy(() => observer?.disconnect());
 
   // Auto scroll to top when scrollToTopTrigger changes
-  $: if (scrollToTopTrigger !== null && virtualListEl) {
-    virtualListEl.scrollTo({
+  $: if (scrollToTopTrigger !== null && scrollContainerEl) {
+    scrollContainerEl.scrollTo({
       top: 0,
       behavior: "smooth",
     });
@@ -157,108 +133,104 @@
 </script>
 
 <div
-  class={`list scroll-container`}
-  bind:this={virtualListEl}
+  class="list scroll-container"
+  bind:this={scrollContainerEl}
   style:max-height={maxHeight}
 >
-  <div
-    class="table-wrapper"
-    style="min-height: {safeData.length === 0
-      ? '100'
-      : totalSize}px; width: 100%; position: relative;"
-  >
-    <table>
-      <thead>
-        {#each $table.getHeaderGroups() as headerGroup}
-          <tr class="h-10">
-            {#each headerGroup.headers as header (header.id)}
-              {@const widthPercent = header.column.columnDef.meta?.widthPercent}
-              {@const marginLeft = header.column.columnDef.meta?.marginLeft}
-              <th
-                colSpan={header.colSpan}
-                style={`width: ${widthPercent}%;`}
-                class="px-4 py-2 text-left"
-                onclick={header.column.getToggleSortingHandler()}
-              >
-                {#if !header.isPlaceholder}
-                  <div
-                    style={`margin-left: ${marginLeft};`}
-                    class:cursor-pointer={header.column.getCanSort()}
-                    class:select-none={header.column.getCanSort()}
-                    class="font-semibold text-fg-secondary flex flex-row items-center gap-x-1 text-sm"
-                  >
-                    <svelte:component
-                      this={flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
-                    />
-                    {#if headerIcons[header.column.id]}
-                      <a
-                        href={headerIcons[header.column.id].href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="hover:text-fg-primary"
-                      >
-                        <svelte:component
-                          this={headerIcons[header.column.id].icon}
-                          class="text-fg-secondary"
-                          size="11px"
-                          strokeWidth={2}
-                        />
-                      </a>
-                    {/if}
-                    {#if header.column.getIsSorted()}
-                      <span>
-                        <ArrowDown
-                          flip={header.column.getIsSorted().toString() ===
-                            "asc"}
-                          size="12px"
-                        />
-                      </span>
-                    {/if}
-                  </div>
-                {/if}
-              </th>
-            {/each}
-          </tr>
-        {/each}
-      </thead>
-      <tbody>
-        {#if $table.getRowModel().rows.length === 0}
-          <tr>
-            <td
-              colspan={columns.length}
-              class="px-4 py-4 text-center text-fg-secondary"
+  <table>
+    <thead>
+      {#each $table.getHeaderGroups() as headerGroup}
+        <tr class="h-10">
+          {#each headerGroup.headers as header (header.id)}
+            {@const widthPercent = header.column.columnDef.meta?.widthPercent}
+            {@const marginLeft = header.column.columnDef.meta?.marginLeft}
+            <th
+              colSpan={header.colSpan}
+              style={`width: ${widthPercent}%;`}
+              class="px-4 py-2 text-left"
+              onclick={header.column.getToggleSortingHandler()}
             >
-              {emptyStateMessage}
-            </td>
-          </tr>
-        {:else}
-          {#each $virtualizer.getVirtualItems() as virtualRow, idx (virtualRow.index)}
-            <tr
-              style="height: {virtualRow.size}px; transform: translateY({virtualRow.start -
-                idx * virtualRow.size}px);"
-            >
-              {#each rows[virtualRow.index]?.getVisibleCells() ?? [] as cell (cell.id)}
-                <td
-                  class={`px-4 py-2 max-w-[200px] truncate ${cell.column.id === "actions" ? "w-1" : ""}`}
-                  data-label={cell.column.columnDef.header}
+              {#if !header.isPlaceholder}
+                <div
+                  style={`margin-left: ${marginLeft};`}
+                  class:cursor-pointer={header.column.getCanSort()}
+                  class:select-none={header.column.getCanSort()}
+                  class="font-semibold text-fg-secondary flex flex-row items-center gap-x-1 text-sm"
                 >
                   <svelte:component
                     this={flexRender(
-                      cell.column.columnDef.cell,
-                      cell.getContext(),
+                      header.column.columnDef.header,
+                      header.getContext(),
                     )}
                   />
-                </td>
-              {/each}
-            </tr>
+                  {#if headerIcons[header.column.id]}
+                    <a
+                      href={headerIcons[header.column.id].href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="hover:text-fg-primary"
+                    >
+                      <svelte:component
+                        this={headerIcons[header.column.id].icon}
+                        class="text-fg-secondary"
+                        size="11px"
+                        strokeWidth={2}
+                      />
+                    </a>
+                  {/if}
+                  {#if header.column.getIsSorted()}
+                    <span>
+                      <ArrowDown
+                        flip={header.column.getIsSorted().toString() === "asc"}
+                        size="12px"
+                      />
+                    </span>
+                  {/if}
+                </div>
+              {/if}
+            </th>
           {/each}
+        </tr>
+      {/each}
+    </thead>
+    <tbody>
+      {#if rows.length === 0}
+        <tr>
+          <td
+            colspan={columns.length}
+            class="px-4 py-4 text-center text-fg-secondary"
+          >
+            {emptyStateMessage}
+          </td>
+        </tr>
+      {:else}
+        {#each rows as row (row.id)}
+          <tr>
+            {#each row.getVisibleCells() as cell (cell.id)}
+              <td
+                class={`px-4 py-2 max-w-[200px] truncate ${cell.column.id === "actions" ? "w-1" : ""}`}
+                data-label={cell.column.columnDef.header}
+              >
+                <svelte:component
+                  this={flexRender(
+                    cell.column.columnDef.cell,
+                    cell.getContext(),
+                  )}
+                />
+              </td>
+            {/each}
+          </tr>
+        {/each}
+        {#if hasNextPage}
+          <tr class="h-0">
+            <td colspan={columns.length} class="p-0 border-0">
+              <div bind:this={sentinelEl} />
+            </td>
+          </tr>
         {/if}
-      </tbody>
-    </table>
-  </div>
+      {/if}
+    </tbody>
+  </table>
 </div>
 
 <style lang="postcss">

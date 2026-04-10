@@ -42,6 +42,8 @@
       },
     )}
   >
+    <!-- When src is provided, both the image and initials fallback are always in the DOM.
+         The image is absolute-positioned over the fallback; visibility toggles on error. -->
     {#if src}
       <img
         {src}
