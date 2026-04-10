@@ -124,6 +124,8 @@
               resource={exploreResource ?? metricsViewResource}
               {parseError}
               remoteContent={$remoteContent}
+              {filePath}
+              fileContent={$remoteContent}
             >
               {#if selectedView === "code"}
                 <ExploreEditor

@@ -8,6 +8,7 @@
     V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import ExplainErrorButton from "@rilldata/web-common/features/chat/ExplainErrorButton.svelte";
 
   // Direct error string (existing API, still supported)
   export let error: string | undefined = undefined;
@@ -17,6 +18,8 @@
   export let resource: V1Resource | undefined = undefined;
   export let parseError: V1ParseError | undefined = undefined;
   export let remoteContent: string | null | undefined = undefined;
+  export let filePath: string | undefined = undefined;
+  export let fileContent: string | null | undefined = undefined;
 
   const runtimeClient = useRuntimeClient();
 
@@ -32,6 +35,7 @@
 
   $: derivedError = parseError?.message ?? rootCauseReconcileError;
   $: effectiveError = error ?? derivedError;
+  $: errorLineNumber = parseError?.startLocation?.line;
   $: effectiveShowError =
     remoteContent !== undefined ? !!remoteContent : showError;
 </script>
@@ -52,8 +56,18 @@
       transition:slide={{ duration: LIST_SLIDE_DURATION }}
       class="border border-destructive bg-destructive/15 dark:bg-destructive/30 text-fg-primary border-l-4 px-2 py-5 max-h-72 overflow-auto"
     >
-      <div class="flex gap-x-2 items-center">
-        <CancelCircle className="text-destructive" />{effectiveError}
+      <div class="flex gap-x-2 items-center justify-between">
+        <div class="flex gap-x-2 items-center min-w-0">
+          <CancelCircle className="text-destructive flex-shrink-0" /><span class="break-words">{effectiveError}</span>
+        </div>
+        {#if filePath}
+          <ExplainErrorButton
+            errorMessage={effectiveError ?? ""}
+            {filePath}
+            {fileContent}
+            lineNumber={errorLineNumber}
+          />
+        {/if}
       </div>
     </div>
   {/if}
