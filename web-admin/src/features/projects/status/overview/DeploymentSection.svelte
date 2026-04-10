@@ -119,7 +119,10 @@
       <div class="info-row">
         <span class="info-label">Cluster Size</span>
         <span class="info-value"
-          >{currentSlots} vCPU, {currentSlots * 4} GiB RAM</span
+          >{currentSlots} vCPU, {currentSlots * 4} GiB RAM
+          <span class="text-fg-tertiary text-xs ml-1"
+            >({currentSlots} {currentSlots === 1 ? "slot" : "slots"})</span
+          ></span
         >
       </div>
     {/if}
