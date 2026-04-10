@@ -24,7 +24,10 @@
     if (!newOpen) showForm = false;
   }}
 >
-  <Dialog.Content class="p-0 w-fit max-w-fit h-fit" noClose>
+  <Dialog.Content
+    class="p-0 w-fit max-w-fit max-h-[90vh] overflow-y-auto"
+    noClose
+  >
     {#if showForm}
       <AddDataManager
         config={{ importOnly: true }}

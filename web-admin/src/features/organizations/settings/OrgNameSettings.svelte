@@ -19,7 +19,7 @@
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
 
-  export let organization: string;
+  let { organization }: { organization: string } = $props();
 
   const initialValues: {
     name: string;
@@ -87,25 +87,30 @@
     },
   );
 
-  $: orgResp = createAdminServiceGetOrganization(organization);
-  $: if ($orgResp.data?.organization) {
-    $form.name =
-      $orgResp.data.organization.displayName || $orgResp.data.organization.name;
-    $form.description = $orgResp.data.organization.description;
-  }
+  let orgResp = $derived(createAdminServiceGetOrganization(organization));
+  $effect(() => {
+    if ($orgResp.data?.organization) {
+      $form.name =
+        $orgResp.data.organization.displayName ||
+        $orgResp.data.organization.name;
+      $form.description = $orgResp.data.organization.description;
+    }
+  });
 
-  $: changed =
+  let changed = $derived(
     $orgResp.data?.organization?.name !== $form.name ||
-    $orgResp.data?.organization?.description !== $form.description;
+      $orgResp.data?.organization?.description !== $form.description,
+  );
 
-  $: error = parseUpdateOrgError(
-    $updateOrgMutation.error as unknown as AxiosError<RpcStatus>,
+  let error = $derived(
+    parseUpdateOrgError(
+      $updateOrgMutation.error as unknown as AxiosError<RpcStatus>,
+    ),
   );
 </script>
 
 <SettingsContainer title="Organization">
   <form
-    slot="body"
     id="org-update-form"
     onsubmit={(e) => {
       e.preventDefault();
@@ -139,15 +144,16 @@
       {error.message}
     </div>
   {/if}
-  <Button
-    onClick={submit}
-    type="primary"
-    loading={$updateOrgMutation.isPending}
-    disabled={!changed}
-    slot="action"
-  >
-    Save
-  </Button>
+  {#snippet action()}
+    <Button
+      onClick={submit}
+      type="primary"
+      loading={$updateOrgMutation.isPending}
+      disabled={!changed}
+    >
+      Save
+    </Button>
+  {/snippet}
 </SettingsContainer>
 
 <style lang="postcss">

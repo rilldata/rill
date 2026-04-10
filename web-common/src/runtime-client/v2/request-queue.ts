@@ -233,12 +233,9 @@ export class RequestQueue {
  * Extract the resource name from a ConnectRPC request message.
  * Looks for common field patterns in runtime API request messages.
  */
-function extractResourceName(req: { message: unknown }): string | undefined {
-  const msg = req.message as Record<string, unknown>;
-  // MetricsView queries use metricsViewName or metricsView
+function extractResourceName(msg: Record<string, unknown>): string | undefined {
   if (typeof msg.metricsViewName === "string") return msg.metricsViewName;
   if (typeof msg.metricsView === "string") return msg.metricsView;
-  // Column profiling queries use tableName
   if (typeof msg.tableName === "string") return msg.tableName;
   return undefined;
 }
@@ -249,11 +246,17 @@ function extractResourceName(req: { message: unknown }): string | undefined {
  */
 export function createQueueInterceptor(queue: RequestQueue): Interceptor {
   return (next) => async (req) => {
+    const msg = req.message as Record<string, unknown>;
     const priority = getPriorityForMethod(req.method.name);
-    const resourceName = extractResourceName(req);
-    const columnName = (req.message as Record<string, unknown>).columnName as
-      | string
-      | undefined;
+    const resourceName = extractResourceName(msg);
+    const columnName = msg.columnName as string | undefined;
+
+    // Inject priority into the proto message so the server can schedule
+    // accordingly (e.g. DuckDB/ClickHouse connection semaphore ordering).
+    // If the caller already set a non-zero priority, respect it.
+    if (!msg.priority) {
+      msg.priority = priority;
+    }
 
     return queue.enqueue({
       priority,
