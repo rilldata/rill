@@ -135,7 +135,7 @@
   >
     {#if showTopBar}
       <div
-        class="flex items-center w-full pr-4 py-1 min-h-[2.5rem]"
+        class="dashboard-theme-boundary flex items-center w-full pr-4 py-1 min-h-[2.5rem]"
         class:border-b={!onProjectPage}
       >
         <EmbedHeader {activeResource} {navigationEnabled} />
