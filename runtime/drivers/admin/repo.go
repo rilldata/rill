@@ -581,6 +581,7 @@ func (r *repo) close() error {
 		_ = os.RemoveAll(r.virtual.tmpDir)
 	}
 
+	fmt.Println("*************** admin repo close")
 	if r.git != nil && r.git.editable() {
 		_, err := r.git.commitToDefaultBranch(ctx, "Checkpoint commit")
 		if err != nil {

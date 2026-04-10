@@ -1,8 +1,9 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import AddDataManager from "@rilldata/web-common/features/add-data/manager/AddDataManager.svelte";
   import { AddDataStep } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
-  import { completeInitialAddData } from "@rilldata/web-admin/features/welcome/add-data/complete-initial-add-data.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { runtimeServiceGitPush } from "@rilldata/web-common/runtime-client";
 
   export let data;
 
@@ -12,12 +13,13 @@
 
   $: isImportStep = addDataStep === AddDataStep.Import;
 
-  function handleDone() {
-    void completeInitialAddData(
-      runtimeClient,
-      data.organization.name,
-      data.project.name,
-    );
+  async function handleDone() {
+    // Push the initial commit to the current branch.
+    await runtimeServiceGitPush(runtimeClient, {
+      commitMessage: "Initial dashboard commit",
+    });
+
+    return goto(`/${data.organization.name}/${data.project.name}`);
   }
 </script>
 

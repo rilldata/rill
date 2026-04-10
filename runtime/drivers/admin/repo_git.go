@@ -63,6 +63,7 @@ func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
 	if !r.editable() {
 		force = true
 	}
+	fmt.Println("*************** admin repo pullInner", force)
 
 	// Check if repoDir exists and is a valid Git repository
 	repo, err := git.PlainOpen(r.repoDir)
@@ -159,6 +160,7 @@ func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
 		}
 	}
 
+	fmt.Println("*************** admin repo pullInner: resetToRemoteTrackingBranch", force)
 	if !r.editable() {
 		// Hard reset to remote branch
 		err = resetToRemoteTrackingBranch(repo, worktree, r.defaultBranch)
