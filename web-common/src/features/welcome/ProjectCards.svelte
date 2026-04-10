@@ -15,6 +15,11 @@
   import { EXAMPLES } from "./constants";
   import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-metadata.ts";
   import ProjectCard from "@rilldata/web-common/features/welcome/ProjectCard.svelte";
+  import { splitFolderFileNameAndExtension } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
+
+  export let skipNavigation = false;
+  export let allowEmpty = true;
+  export let onSelect: (firstDashboard?: string) => void = () => {};
 
   const runtimeClient = useRuntimeClient();
 
@@ -49,6 +54,19 @@
         force: true,
       });
 
+      if (skipNavigation) {
+        if (example?.firstFile) {
+          const [, dashboardName] = splitFolderFileNameAndExtension(
+            example.firstFile,
+          );
+          onSelect(dashboardName);
+        } else {
+          onSelect();
+        }
+        return;
+      }
+
+      // TODO: improve navigation in rill dev to avoid this artificial 5 second delay
       setTimeout(() => {
         window.location.assign("/?redirect=true");
       }, 5000);
@@ -80,16 +98,18 @@
       </ProjectCard>
     {/each}
 
-    <ProjectCard
-      onclick={() => unpackProject()}
-      loading={selectedProjectName === EMPTY_PROJECT_TITLE}
-      disabled={!!selectedProjectName}
-      label="Start a blank project"
-    >
-      <svelte:fragment slot="icon">
-        <AddCircleOutline size="16px" />
-      </svelte:fragment>
-      <span>Start a blank project</span>
-    </ProjectCard>
+    {#if allowEmpty}
+      <ProjectCard
+        onclick={() => unpackProject()}
+        loading={selectedProjectName === EMPTY_PROJECT_TITLE}
+        disabled={!!selectedProjectName}
+        label="Start a blank project"
+      >
+        <svelte:fragment slot="icon">
+          <AddCircleOutline size="16px" />
+        </svelte:fragment>
+        <span>Start a blank project</span>
+      </ProjectCard>
+    {/if}
   </div>
 </section>

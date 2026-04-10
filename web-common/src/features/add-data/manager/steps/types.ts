@@ -14,6 +14,7 @@ export type AddDataConfig = {
   welcomeScreen?: boolean;
   importOnly?: boolean;
   skipNavigation?: boolean;
+  pathPrefix?: string;
 };
 
 export enum ImportDataStep {

@@ -25,7 +25,7 @@
   export let config: AddDataConfig;
   export let importAddDataStep: ImportAddDataStep;
   export let onBack: () => void;
-  export let onDone: () => void;
+  export let onDone: (generatedDashboard?: string) => void;
 
   const runtimeClient = useRuntimeClient();
   const initialAddDataStep = { ...importAddDataStep };
@@ -89,7 +89,10 @@
           }
         },
       );
-      onDone();
+      onDone(
+        importAddDataStep.config.importTo.canvasName ??
+          importAddDataStep.config.importTo.exploreName,
+      );
       if (!config.skipNavigation) return goto(currentFileRoute);
     } catch (e) {
       error = e?.response?.data?.message ?? e?.message ?? null;
@@ -170,15 +173,17 @@
       </Button>
       <div class="grow"></div>
     {/if}
-    <Button
-      disabled={!currentFileRoute}
-      type="tertiary"
-      href={currentFileRoute}
-      onClick={onDone}
-      large
-    >
-      Skip and view project
-    </Button>
+    {#if config.skipNavigation}
+      <Button
+        disabled={!currentFileRoute}
+        type="tertiary"
+        href={currentFileRoute}
+        onClick={() => onDone}
+        large
+      >
+        Skip and view project
+      </Button>
+    {/if}
     {#if hasErrored}
       <Button type="primary" onClick={rerunImport} large>Try again</Button>
     {/if}

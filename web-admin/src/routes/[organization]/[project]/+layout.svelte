@@ -285,17 +285,10 @@
             <ProjectTabs
               projectPermissions={runtime.projectPermissions}
               {organization}
+              pathname={page.url.pathname}
               {project}
               {branchPrefix}
             />
-            {#if onProjectPage && deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
-              <ProjectTabs
-                projectPermissions={runtime.projectPermissions}
-                {organization}
-                pathname={page.url.pathname}
-                {project}
-              />
-            {/if}
           {/if}
         {/if}
         {@render children()}

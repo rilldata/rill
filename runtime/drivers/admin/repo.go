@@ -527,7 +527,7 @@ func (r *repo) RestoreCommit(ctx context.Context, commitSHA string) (string, err
 
 // MergeToBranch implements drivers.RepoStore.
 func (r *repo) MergeToBranch(ctx context.Context, branch string, force bool) error {
-	return r.git.mergeToBranch(ctx, branch, force)
+	return drivers.ErrNotImplemented
 }
 
 // CommitHash implements drivers.RepoStore.
@@ -581,7 +581,6 @@ func (r *repo) close() error {
 		_ = os.RemoveAll(r.virtual.tmpDir)
 	}
 
-	fmt.Println("*************** admin repo close")
 	if r.git != nil && r.git.editable() {
 		_, err := r.git.commitToDefaultBranch(ctx, "Checkpoint commit")
 		if err != nil {

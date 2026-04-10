@@ -39,7 +39,7 @@
     config: AddDataConfig;
     initSchema?: string;
     initConnector?: string;
-    onDone?: () => void;
+    onDone?: (generatedDashboard?: string) => void;
     onClose?: () => void;
     onStepChange?: (step: AddDataStep) => void;
   } = $props();
