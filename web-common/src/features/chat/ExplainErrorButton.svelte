@@ -36,10 +36,11 @@
   .explain-error-btn {
     @apply inline-flex items-center gap-1 px-2 py-1;
     @apply text-[11px] font-medium;
-    @apply text-primary-600 hover:text-primary-700;
-    @apply bg-transparent hover:bg-surface-hover;
+    @apply text-fg-inverse;
+    @apply bg-primary-600 hover:bg-primary-700;
     @apply rounded-[2px] cursor-pointer;
     @apply border border-primary-600 hover:border-primary-700;
+    @apply shadow-sm;
     @apply transition-colors duration-150;
     @apply flex-shrink-0;
   }
