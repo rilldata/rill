@@ -102,7 +102,7 @@
             >
               {#snippet empty()}
                 <div class="px-2 py-2 text-xs text-fg-secondary">
-                  No sort item found
+                  No sort configured
                 </div>
               {/snippet}
               {#snippet item({ item })}

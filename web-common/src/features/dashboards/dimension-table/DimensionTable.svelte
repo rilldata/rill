@@ -277,7 +277,7 @@ TableCells – the cell contents.
           </div>
         {:else}
           <div class="flex text-fg-secondary justify-center mt-[30vh]">
-            No results to show
+            No dimension values match your current filters
           </div>
         {/if}
       </div>

@@ -16,7 +16,7 @@
   <Alert.Content class="min-w-[600px]">
     <Alert.Header>
       <Alert.Title>
-        Are you sure you want to overwrite this project?
+        Overwrite this project?
       </Alert.Title>
       <Alert.Description>
         {#if rillManagedProject}

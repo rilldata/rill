@@ -116,7 +116,7 @@
     </div>
   {:else if hasConversationLoadError}
     <Error
-      headline="Unable to load conversation"
+      headline="Couldn't load this conversation"
       error={$conversationQueryError}
     />
   {:else if isConversationEmpty}
@@ -151,7 +151,7 @@
     {/each}
   {/if}
   {#if hasStreamError}
-    <Error headline="Failed to generate response" error={$streamErrorStore} />
+    <Error headline="Couldn't generate a response" error={$streamErrorStore} />
   {/if}
 </div>
 

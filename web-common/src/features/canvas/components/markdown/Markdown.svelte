@@ -87,7 +87,7 @@
 
   $: errorMessage = (() => {
     const error = $resolveQuery?.error;
-    if (!error) return "Failed to resolve template.";
+    if (!error) return "Couldn't render this content.";
 
     return extractErrorMessage(error);
   })();

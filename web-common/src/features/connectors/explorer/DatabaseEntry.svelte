@@ -58,7 +58,7 @@
         <span class="message">Loading schemas...</span>
       {:else if data}
         {#if data.length === 0}
-          <span class="message">No schemas found</span>
+          <span class="message">No schemas found in this database</span>
         {:else}
           {#each data as schema (schema)}
             <DatabaseSchemaEntry

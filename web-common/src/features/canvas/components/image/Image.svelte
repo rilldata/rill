@@ -36,7 +36,7 @@
       errorMessage = null;
     } catch (error) {
       imageSrc = null;
-      errorMessage = error.message || "Failed to load image";
+      errorMessage = error.message || "Couldn't load image";
     }
   }
 

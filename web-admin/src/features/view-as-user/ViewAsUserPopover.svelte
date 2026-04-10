@@ -38,7 +38,7 @@
 <Command.Root>
   <Command.Input placeholder="Search for users" />
   <Command.List>
-    <Command.Empty>No results found.</Command.Empty>
+    <Command.Empty>No matching users</Command.Empty>
     <Command.Group>
       <Command.GroupHeading>Users</Command.GroupHeading>
       <Command.GroupItems>

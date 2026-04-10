@@ -132,7 +132,7 @@
       onscroll={maybeLoadMoreOnScroll}
     >
       {#if filteredItems.length === 0}
-        <div class="px-4 py-2 text-xs text-fg-secondary">No results found</div>
+        <div class="px-4 py-2 text-xs text-fg-secondary">No matches found</div>
       {:else}
         {#each filteredItems as item (item.value)}
           <Combobox.Item

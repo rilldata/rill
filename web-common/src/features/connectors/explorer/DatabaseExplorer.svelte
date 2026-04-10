@@ -40,7 +40,7 @@
     <span class="message pl-6">Error: {extractErrorMessage(error)}</span>
   {:else if data}
     {#if data.length === 0}
-      <span class="message pl-6">No tables found</span>
+      <span class="message pl-6">No tables found in this connection</span>
     {:else}
       <ol transition:slide={{ duration }}>
         {#each data as database (database)}

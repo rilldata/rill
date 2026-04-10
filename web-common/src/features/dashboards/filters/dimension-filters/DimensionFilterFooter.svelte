@@ -20,7 +20,7 @@
       id="include-exclude"
       small
       onclick={onToggleExcludeMode}
-      label="Include exclude toggle"
+      label="Toggle include/exclude"
     />
     <Label class="font-normal text-xs" for="include-exclude">Exclude</Label>
   </div>

@@ -20,7 +20,7 @@
   export let hasNextPage: boolean;
   export let isFetchingNextPage: boolean;
   export let onLoadMore: () => void;
-  export let emptyStateMessage = "No items found";
+  export let emptyStateMessage = "Nothing here yet";
   export let rowHeight = 69;
   export let overscan = 5;
   export let maxHeight = "auto";

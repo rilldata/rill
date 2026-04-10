@@ -64,7 +64,7 @@
       </li>
     {/each}
   {:else}
-    <div class="{leftPadding} py-1.5 text-fg-secondary">No columns found</div>
+    <div class="{leftPadding} py-1.5 text-fg-secondary">No columns found for this table</div>
   {/if}
 </ul>
 

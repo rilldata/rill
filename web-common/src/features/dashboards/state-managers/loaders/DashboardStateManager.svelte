@@ -112,7 +112,7 @@
 {:else if error}
   <ErrorPage
     statusCode={extractErrorStatusCode(error)}
-    header="Failed to load dashboard"
+    header="Couldn't load dashboard"
     detail={extractErrorMessage(error)}
   />
 {:else if $exploreStore}
