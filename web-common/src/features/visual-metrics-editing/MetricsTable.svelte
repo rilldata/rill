@@ -207,7 +207,7 @@
             colspan="100"
             class="absolute left-0 h-10 px-6 items-center flex w-full italic"
           >
-            No matches found
+            No items matching search
           </td>
         </tr>
       {/each}

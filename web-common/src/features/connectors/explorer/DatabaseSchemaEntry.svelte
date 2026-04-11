@@ -109,7 +109,7 @@
       </div>
     {:else if !typedData || typedData.length === 0}
       <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
-        No tables found in this schema
+        No tables found
       </div>
     {:else if typedData.length > 0}
       <ol>
@@ -139,7 +139,7 @@
           bind:this={loadMoreContainer}
         >
           {#if error}
-            <span class="error">Couldn't load more tables.</span>
+            <span class="error">Failed to load more tables.</span>
             <Button type="tertiary" small onClick={() => fetchNextPage()}>
               Retry
             </Button>

@@ -10,7 +10,7 @@
 </script>
 
 <IconButton
-  ariaLabel="Toggle breakdown for {dimensionName}"
+  ariaLabel="Toggle breakdown for {dimensionName} dimension"
   onclick={(e) => {
     e.stopPropagation();
     if (dimensionName) toggleComparisonDimension(dimensionName);

@@ -117,7 +117,7 @@
         {/each}
         {#if allColorMappings.length === 0}
           <div class="px-2 py-2 text-xs text-fg-secondary">
-            No colors configured
+            No color values found
           </div>
         {/if}
         <div class="p-1 flex items-center justify-between">

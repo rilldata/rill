@@ -137,7 +137,7 @@
                   <ErrorPage
                     body={parseError?.message ?? rootCauseReconcileError ?? ""}
                     fatal
-                    header="Couldn't load dashboard preview"
+                    header="Unable to load dashboard preview"
                     statusCode={404}
                   />
                 {:else if exploreName && metricsViewName}

@@ -104,7 +104,7 @@
 
 {#if navigationError && mode === "inline"}
   <div class="flex flex-col gap-y-2 text-red-600 mt-2">
-    <h3 class="text-sm font-semibold">Couldn't open the Explore dashboard</h3>
+    <h3 class="text-sm font-semibold">Unable to open Explore Dashboard</h3>
     <p class="text-xs">{getErrorMessage(navigationError)}</p>
   </div>
 {:else if isNavigating && mode === "inline"}

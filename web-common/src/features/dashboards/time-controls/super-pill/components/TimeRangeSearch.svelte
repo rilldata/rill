@@ -5,8 +5,7 @@
   import { parseRillTime } from "../../../url-state/time-ranges/parser";
   import { ALL_TIME_RANGE_ALIAS } from "../../new-time-controls";
 
-  const message =
-    "Couldn't understand that time range. Try a format like 'Last 7 days' or '2024-01-01'.";
+  const message = "Unable to parse time string";
 
   export let context: string;
   export let width: number;

@@ -206,7 +206,7 @@
               {/if}
             </Select.Item>
           {:else}
-            <div class="px-2.5 py-1.5 text-fg-secondary">No matches found</div>
+            <div class="px-2.5 py-1.5 text-fg-secondary">No results found</div>
           {/each}
           {#if onAddNew}
             <SelectSeparator />
