@@ -20,7 +20,7 @@
 >
   <AlertDialog.Content>
     <AlertDialog.Title>
-      Delete all files in this folder?
+      Delete this folder and all its contents?
     </AlertDialog.Title>
 
     <AlertDialog.Description>
