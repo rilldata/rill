@@ -31,6 +31,18 @@ export function getStatusDotClass(status: V1DeploymentStatus): string {
 }
 
 /**
+ * Returns true for deployment statuses that represent in-progress transitions.
+ */
+export function isTransitoryStatus(status: V1DeploymentStatus): boolean {
+  return (
+    status === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING ||
+    status === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING ||
+    status === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING ||
+    status === V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING
+  );
+}
+
+/**
  * Returns a human-readable label for a deployment status.
  * @param status - The deployment status
  * @returns Human-readable status label (e.g., "Ready", "Pending", "Error")

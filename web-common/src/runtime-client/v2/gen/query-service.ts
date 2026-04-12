@@ -39,6 +39,7 @@ import {
   MetricsViewToplistRequest,
   MetricsViewTotalsRequest,
   ProjectStorageRequest,
+  ProjectStorageResponse,
   QueryRequest,
   ResolveCanvasRequest,
   ResolveComponentRequest,

@@ -4208,6 +4208,10 @@ definitions:
         type: object
       errorMessage:
         type: string
+      warnings:
+        type: array
+        items:
+          type: string
   v1AssertionStatus:
     type: string
     enum:
@@ -6845,6 +6849,11 @@ definitions:
         items:
           type: string
         description: test_errors contains the results of the model's tests.
+      testWarnings:
+        type: array
+        items:
+          type: string
+        description: test_warnings contains warnings from the most recent test run, stored separately from execution warnings.
       refreshedOn:
         type: string
         format: date-time
@@ -6861,6 +6870,11 @@ definitions:
       partitionsHaveErrors:
         type: boolean
         description: partitions_have_errors is true if one or more partitions failed to execute.
+      warnings:
+        type: array
+        items:
+          type: string
+        description: warnings contains any warnings generated during the model's execution.
       totalExecutionDurationMs:
         type: string
         format: int64
@@ -7336,6 +7350,10 @@ definitions:
         type: boolean
       errorMessage:
         type: string
+      warnings:
+        type: array
+        items:
+          type: string
       reportTime:
         type: string
         format: date-time
@@ -7546,6 +7564,10 @@ definitions:
         $ref: '#/definitions/v1ReconcileStatus'
       reconcileError:
         type: string
+      reconcileWarnings:
+        type: array
+        items:
+          type: string
       reconcileOn:
         type: string
         format: date-time
