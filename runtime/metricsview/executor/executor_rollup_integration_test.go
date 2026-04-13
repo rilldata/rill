@@ -277,6 +277,52 @@ func TestRollupIntegration(t *testing.T) {
 			require.Equal(t, rollupTestDailyTable, table)
 		})
 
+		t.Run("end_misaligned_with_data_beyond_rejects_rollup", func(t *testing.T) {
+			// Query end is mid-day (not aligned to any rollup grain) and the base table
+			// has data beyond the query end. The last rollup bucket would straddle the end
+			// and include extra data, so all rollups must be rejected.
+			e := newRollupTestExecutor(t, rt, instanceID)
+			defer e.Close()
+
+			qry := &metricsview.Query{
+				Measures: []metricsview.Measure{
+					{Name: "total_impressions"},
+				},
+				TimeRange: &metricsview.TimeRange{
+					Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+					End:   time.Date(2024, 1, 15, 12, 0, 0, 0, time.UTC), // mid-day; base data goes through March
+				},
+			}
+
+			_, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.NoError(t, err)
+			require.False(t, ok)
+		})
+
+		t.Run("end_misaligned_watermark_accepts_rollup", func(t *testing.T) {
+			// Query end is mid-day (not aligned to any rollup grain) but extends beyond
+			// the base table's max timestamp. This is the "watermark" case (e.g. end = now):
+			// the last rollup bucket only contains data up to baseMax, so no extra data leaks in.
+			e := newRollupTestExecutor(t, rt, instanceID)
+			defer e.Close()
+
+			qry := &metricsview.Query{
+				Measures: []metricsview.Measure{
+					{Name: "total_impressions"},
+				},
+				TimeRange: &metricsview.TimeRange{
+					Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+					End:   time.Date(2024, 12, 1, 12, 0, 0, 0, time.UTC), // beyond base data (Mar 31)
+				},
+			}
+
+			table, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.NoError(t, err)
+			require.True(t, ok)
+			// Monthly is coarsest eligible
+			require.Equal(t, rollupTestMonthTable, table)
+		})
+
 		t.Run("misaligned_start_returns_nil", func(t *testing.T) {
 			e := newRollupTestExecutor(t, rt, instanceID)
 			defer e.Close()

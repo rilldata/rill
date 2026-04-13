@@ -66,138 +66,42 @@ func TestGrainDerivableFrom(t *testing.T) {
 	}
 }
 
-func TestTimeRangeAligned(t *testing.T) {
+func TestTimeAligned(t *testing.T) {
 	utc := time.UTC
 	eastern, _ := time.LoadLocation("America/New_York")
 
 	tests := []struct {
 		name           string
-		start          time.Time
-		end            time.Time
+		t              time.Time
 		grain          runtimev1.TimeGrain
 		tz             *time.Location
 		firstDayOfWeek uint32
 		expected       bool
 	}{
-		{
-			"day aligned UTC",
-			time.Date(2024, 1, 1, 0, 0, 0, 0, utc),
-			time.Date(2024, 1, 2, 0, 0, 0, 0, utc),
-			runtimev1.TimeGrain_TIME_GRAIN_DAY, utc, 1, true,
-		},
-		{
-			"day not aligned UTC",
-			time.Date(2024, 1, 1, 12, 0, 0, 0, utc),
-			time.Date(2024, 1, 2, 0, 0, 0, 0, utc),
-			runtimev1.TimeGrain_TIME_GRAIN_DAY, utc, 1, false,
-		},
-		{
-			"hour aligned",
-			time.Date(2024, 1, 1, 5, 0, 0, 0, utc),
-			time.Date(2024, 1, 1, 10, 0, 0, 0, utc),
-			runtimev1.TimeGrain_TIME_GRAIN_HOUR, utc, 1, true,
-		},
-		{
-			"hour not aligned",
-			time.Date(2024, 1, 1, 5, 30, 0, 0, utc),
-			time.Date(2024, 1, 1, 10, 0, 0, 0, utc),
-			runtimev1.TimeGrain_TIME_GRAIN_HOUR, utc, 1, false,
-		},
-		{
-			"month aligned",
-			time.Date(2024, 1, 1, 0, 0, 0, 0, utc),
-			time.Date(2024, 4, 1, 0, 0, 0, 0, utc),
-			runtimev1.TimeGrain_TIME_GRAIN_MONTH, utc, 1, true,
-		},
-		{
-			"month not aligned",
-			time.Date(2024, 1, 15, 0, 0, 0, 0, utc),
-			time.Date(2024, 4, 1, 0, 0, 0, 0, utc),
-			runtimev1.TimeGrain_TIME_GRAIN_MONTH, utc, 1, false,
-		},
-		{
-			"quarter aligned",
-			time.Date(2024, 1, 1, 0, 0, 0, 0, utc),
-			time.Date(2024, 7, 1, 0, 0, 0, 0, utc),
-			runtimev1.TimeGrain_TIME_GRAIN_QUARTER, utc, 1, true,
-		},
-		{
-			"quarter not aligned",
-			time.Date(2024, 2, 1, 0, 0, 0, 0, utc),
-			time.Date(2024, 7, 1, 0, 0, 0, 0, utc),
-			runtimev1.TimeGrain_TIME_GRAIN_QUARTER, utc, 1, false,
-		},
-		{
-			"year aligned",
-			time.Date(2024, 1, 1, 0, 0, 0, 0, utc),
-			time.Date(2025, 1, 1, 0, 0, 0, 0, utc),
-			runtimev1.TimeGrain_TIME_GRAIN_YEAR, utc, 1, true,
-		},
-		{
-			"week aligned Monday",
-			time.Date(2024, 1, 1, 0, 0, 0, 0, utc), // Monday
-			time.Date(2024, 1, 8, 0, 0, 0, 0, utc), // Monday
-			runtimev1.TimeGrain_TIME_GRAIN_WEEK, utc, 1, true,
-		},
-		{
-			"week not aligned Monday",
-			time.Date(2024, 1, 2, 0, 0, 0, 0, utc), // Tuesday
-			time.Date(2024, 1, 8, 0, 0, 0, 0, utc), // Monday
-			runtimev1.TimeGrain_TIME_GRAIN_WEEK, utc, 1, false,
-		},
-		{
-			"week aligned Sunday (fdow=7)",
-			time.Date(2023, 12, 31, 0, 0, 0, 0, utc), // Sunday
-			time.Date(2024, 1, 7, 0, 0, 0, 0, utc),   // Sunday
-			runtimev1.TimeGrain_TIME_GRAIN_WEEK, utc, 7, true,
-		},
-		{
-			"day aligned eastern timezone",
-			time.Date(2024, 1, 1, 5, 0, 0, 0, utc), // midnight EST
-			time.Date(2024, 1, 2, 5, 0, 0, 0, utc),
-			runtimev1.TimeGrain_TIME_GRAIN_DAY, eastern, 1, true,
-		},
-		{
-			"zero start time",
-			time.Time{},
-			time.Date(2024, 1, 1, 0, 0, 0, 0, utc),
-			runtimev1.TimeGrain_TIME_GRAIN_DAY, utc, 1, true,
-		},
-		{
-			"second aligned",
-			time.Date(2024, 1, 1, 0, 0, 5, 0, utc),
-			time.Date(2024, 1, 1, 0, 0, 10, 0, utc),
-			runtimev1.TimeGrain_TIME_GRAIN_SECOND, utc, 1, true,
-		},
-		{
-			"second not aligned",
-			time.Date(2024, 1, 1, 0, 0, 5, 500, utc),
-			time.Date(2024, 1, 1, 0, 0, 10, 0, utc),
-			runtimev1.TimeGrain_TIME_GRAIN_SECOND, utc, 1, false,
-		},
-		{
-			"minute aligned",
-			time.Date(2024, 1, 1, 0, 5, 0, 0, utc),
-			time.Date(2024, 1, 1, 0, 10, 0, 0, utc),
-			runtimev1.TimeGrain_TIME_GRAIN_MINUTE, utc, 1, true,
-		},
-		{
-			"millisecond aligned",
-			time.Date(2024, 1, 1, 0, 0, 0, 5_000_000, utc),
-			time.Date(2024, 1, 1, 0, 0, 0, 10_000_000, utc),
-			runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND, utc, 1, true,
-		},
-		{
-			"millisecond not aligned",
-			time.Date(2024, 1, 1, 0, 0, 0, 5_500, utc),
-			time.Date(2024, 1, 1, 0, 0, 0, 10_000_000, utc),
-			runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND, utc, 1, false,
-		},
+		{"day aligned UTC", time.Date(2024, 1, 1, 0, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_DAY, utc, 1, true},
+		{"day not aligned UTC", time.Date(2024, 1, 1, 12, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_DAY, utc, 1, false},
+		{"hour aligned", time.Date(2024, 1, 1, 5, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_HOUR, utc, 1, true},
+		{"hour not aligned", time.Date(2024, 1, 1, 5, 30, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_HOUR, utc, 1, false},
+		{"month aligned", time.Date(2024, 1, 1, 0, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_MONTH, utc, 1, true},
+		{"month not aligned", time.Date(2024, 1, 15, 0, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_MONTH, utc, 1, false},
+		{"quarter aligned", time.Date(2024, 1, 1, 0, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_QUARTER, utc, 1, true},
+		{"quarter not aligned", time.Date(2024, 2, 1, 0, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_QUARTER, utc, 1, false},
+		{"year aligned", time.Date(2024, 1, 1, 0, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_YEAR, utc, 1, true},
+		{"week aligned Monday", time.Date(2024, 1, 1, 0, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_WEEK, utc, 1, true},
+		{"week not aligned Monday", time.Date(2024, 1, 2, 0, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_WEEK, utc, 1, false},
+		{"week aligned Sunday (fdow=7)", time.Date(2023, 12, 31, 0, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_WEEK, utc, 7, true},
+		{"day aligned eastern timezone", time.Date(2024, 1, 1, 5, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_DAY, eastern, 1, true},
+		{"zero time", time.Time{}, runtimev1.TimeGrain_TIME_GRAIN_DAY, utc, 1, true},
+		{"second aligned", time.Date(2024, 1, 1, 0, 0, 5, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_SECOND, utc, 1, true},
+		{"second not aligned", time.Date(2024, 1, 1, 0, 0, 5, 500, utc), runtimev1.TimeGrain_TIME_GRAIN_SECOND, utc, 1, false},
+		{"minute aligned", time.Date(2024, 1, 1, 0, 5, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_MINUTE, utc, 1, true},
+		{"millisecond aligned", time.Date(2024, 1, 1, 0, 0, 0, 5_000_000, utc), runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND, utc, 1, true},
+		{"millisecond not aligned", time.Date(2024, 1, 1, 0, 0, 0, 5_500, utc), runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND, utc, 1, false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := TimeRangeAligned(tt.start, tt.end, tt.grain, tt.tz, tt.firstDayOfWeek)
+			got := TimeAligned(tt.t, tt.grain, tt.tz, tt.firstDayOfWeek)
 			require.Equal(t, tt.expected, got)
 		})
 	}

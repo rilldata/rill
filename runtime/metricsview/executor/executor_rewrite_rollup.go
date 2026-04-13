@@ -25,7 +25,7 @@ import (
 //  2. Eligibility (per rollup): a rollup is eligible only if all of these hold:
 //     a. Query time grain is derivable from the rollup grain (e.g. month from day).
 //     b. For day+ grains, the query timezone matches the rollup timezone.
-//     c. Query time range boundaries are aligned to the rollup grain.
+//     c. Query time range start is aligned to the rollup grain (end need not be).
 //     d. All queried dimensions (including WHERE filter dimensions) are present in the rollup.
 //     e. All queried measures are present; computed measures (count, count_distinct) are rejected.
 //
@@ -75,7 +75,6 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 	// Base table watermarks are fetched lazily: only when the first eligible rollup is found.
 	// This avoids wasted queries when no rollup passes eligibility.
 	var baseMin, baseMax time.Time
-	var hasBaseTS bool
 	baseTSFetched := false
 
 	var best *rollupCandidate
@@ -92,68 +91,70 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 		}
 
 		// Fetch base timestamps once, when the first eligible rollup is found
-		if !baseTSFetched && e.metricsView.TimeDimension != "" {
+		if !baseTSFetched {
 			baseTSFetched = true
-			if mn, mx, err := e.resolveBaseTimestamps(ctx); err == nil {
-				baseMin, baseMax = mn, mx
-				hasBaseTS = true
-			}
-			// For no-time-range queries, we need base timestamps to verify rollup coverage
-			if !hasTimeRange && !hasBaseTS {
-				return nil, nil
-			}
-		}
-
-		var dataRange time.Duration
-		if e.metricsView.TimeDimension != "" {
-			rollupMin, rollupMax, err := e.resolveRollupTimestamps(ctx, rollup)
+			mn, mx, err := e.resolveBaseTimestamps(ctx)
 			if err != nil {
-				return nil, fmt.Errorf("failed to fetch timestamps for rollup %q: %w", rollup.Table, err)
+				return nil, err
 			}
-
-			// Compute rollup effective end: max time + 1 grain period (the max bucket covers up to the next grain boundary)
-			rollupLoc := time.UTC
-			if rollup.TimeZone != "" {
-				loc, err := time.LoadLocation(rollup.TimeZone)
-				if err != nil {
-					return nil, fmt.Errorf("invalid timezone %q for rollup %q: %w", rollup.TimeZone, rollup.Table, err)
-				}
-				rollupLoc = loc
-			}
-			rollupEffEnd := timeutil.OffsetTime(rollupMax, timeutil.TimeGrainFromAPI(rollup.TimeGrain), 1, rollupLoc)
-
-			if hasTimeRange {
-				// Clamp query range to the base table's actual data range.
-				// This ensures a rollup isn't rejected when the query extends beyond both the base table and rollup.
-				effectiveStart := qry.TimeRange.Start
-				if hasBaseTS && !effectiveStart.IsZero() && !baseMin.IsZero() && baseMin.After(effectiveStart) {
-					effectiveStart = baseMin
-				}
-				effectiveEnd := qry.TimeRange.End
-				if hasBaseTS && !effectiveEnd.IsZero() && !baseMax.IsZero() && baseMax.Before(effectiveEnd) {
-					effectiveEnd = baseMax
-				}
-
-				// Check coverage: rollup must cover the effective (clamped) range
-				if !effectiveStart.IsZero() && rollupMin.After(effectiveStart) {
-					continue
-				}
-				if !effectiveEnd.IsZero() && rollupEffEnd.Before(effectiveEnd) {
-					continue
-				}
-			} else {
-				// No time range: rollup must cover the base table's full range
-				if !baseMin.IsZero() && rollupMin.After(baseMin) {
-					continue
-				}
-				if !baseMax.IsZero() && rollupEffEnd.Before(baseMax) {
-					continue
-				}
-			}
-
-			dataRange = rollupMax.Sub(rollupMin)
+			baseMin, baseMax = mn, mx
 		}
 
+		rollupMin, rollupMax, err := e.resolveRollupTimestamps(ctx, rollup)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch timestamps for rollup %q: %w", rollup.Table, err)
+		}
+
+		// Compute rollup effective end: max time + 1 grain period (the max bucket covers up to the next grain boundary)
+		rollupLoc := time.UTC
+		if rollup.TimeZone != "" {
+			loc, err := time.LoadLocation(rollup.TimeZone)
+			if err != nil {
+				return nil, fmt.Errorf("invalid timezone %q for rollup %q: %w", rollup.TimeZone, rollup.Table, err)
+			}
+			rollupLoc = loc
+		}
+		rollupEffEnd := timeutil.OffsetTime(rollupMax, timeutil.TimeGrainFromAPI(rollup.TimeGrain), 1, rollupLoc)
+
+		if hasTimeRange {
+			// Clamp query range to the base table's actual data range.
+			// This ensures a rollup isn't rejected when the query extends beyond both the base table and rollup.
+			effectiveStart := qry.TimeRange.Start
+			if !effectiveStart.IsZero() && baseMin.After(effectiveStart) {
+				effectiveStart = baseMin
+			}
+			effectiveEnd := qry.TimeRange.End
+			if !effectiveEnd.IsZero() && baseMax.Before(effectiveEnd) {
+				effectiveEnd = baseMax
+			}
+
+			// Check coverage: rollup must cover the effective (clamped) range
+			if !effectiveStart.IsZero() && rollupMin.After(effectiveStart) {
+				continue
+			}
+			if !effectiveEnd.IsZero() && rollupEffEnd.Before(effectiveEnd) {
+				continue
+			}
+		} else {
+			// No time range: rollup must cover the base table's full range
+			if rollupMin.After(baseMin) {
+				continue
+			}
+			if rollupEffEnd.Before(baseMax) {
+				continue
+			}
+		}
+
+		// End alignment: if data extends beyond the query end and the end is not aligned to the rollup grain,
+		// the last rollup bucket would include data beyond the requested range.
+		// Essentially it just check if base has data >= query end time, then makes sure the query end time is rollup grain aligned
+		if hasTimeRange && !qry.TimeRange.End.IsZero() &&
+			!baseMax.Before(qry.TimeRange.End) &&
+			!metricsview.TimeAligned(qry.TimeRange.End, rollup.TimeGrain, rollupLoc, e.metricsView.FirstDayOfWeek) {
+			continue
+		}
+
+		dataRange := rollupMax.Sub(rollupMin)
 		c := &rollupCandidate{
 			rollup:     rollup,
 			grainOrder: metricsview.GrainOrder[rollup.TimeGrain],
@@ -201,8 +202,10 @@ func rollupEligible(rollup *runtimev1.MetricsViewSpec_Rollup, qry *metricsview.Q
 		}
 	}
 
-	// 3. Time range aligned to rollup grain (use rollup timezone for alignment)
-	if qry.TimeRange != nil {
+	// 3. Start time aligned to rollup grain (use rollup timezone for alignment).
+	// End alignment is checked conditionally in the coverage phase: only when the base table
+	// has data beyond the query end (to prevent the last rollup bucket from pulling in extra data).
+	if qry.TimeRange != nil && !qry.TimeRange.Start.IsZero() {
 		rollupLoc := time.UTC
 		if rollup.TimeZone != "" {
 			loc, err := time.LoadLocation(rollup.TimeZone)
@@ -211,7 +214,7 @@ func rollupEligible(rollup *runtimev1.MetricsViewSpec_Rollup, qry *metricsview.Q
 			}
 			rollupLoc = loc
 		}
-		if !metricsview.TimeRangeAligned(qry.TimeRange.Start, qry.TimeRange.End, rollup.TimeGrain, rollupLoc, firstDayOfWeek) {
+		if !metricsview.TimeAligned(qry.TimeRange.Start, rollup.TimeGrain, rollupLoc, firstDayOfWeek) {
 			return false, nil
 		}
 	}

@@ -83,14 +83,14 @@ func GrainDerivableFrom(queryGrain, rollupGrain runtimev1.TimeGrain) bool {
 	return false
 }
 
-// TimeRangeAligned returns true if start and end are aligned to the boundaries of the given grain.
+// TimeAligned returns true if t is aligned to the boundary of the given grain.
 // For sub-day grains, alignment is checked in UTC. For day and coarser, alignment is checked in the given timezone.
 // For week grain, firstDayOfWeek (1=Monday, 7=Sunday) is used.
-func TimeRangeAligned(start, end time.Time, grain runtimev1.TimeGrain, tz *time.Location, firstDayOfWeek uint32) bool {
+func TimeAligned(t time.Time, grain runtimev1.TimeGrain, tz *time.Location, firstDayOfWeek uint32) bool {
 	if tz == nil {
 		tz = time.UTC
 	}
-	return isAligned(start, grain, tz, firstDayOfWeek) && isAligned(end, grain, tz, firstDayOfWeek)
+	return isAligned(t, grain, tz, firstDayOfWeek)
 }
 
 func isAligned(t time.Time, grain runtimev1.TimeGrain, tz *time.Location, firstDayOfWeek uint32) bool {

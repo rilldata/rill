@@ -750,6 +750,9 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	}
 
 	// Validate and add rollup tables as refs
+	if len(tmp.Rollups) > 0 && tmp.TimeDimension == "" {
+		return fmt.Errorf(`rollups require a "timeseries" to be defined`)
+	}
 	var rollups []*runtimev1.MetricsViewSpec_Rollup
 	for i, rollup := range tmp.Rollups {
 		if rollup == nil {

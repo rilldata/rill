@@ -499,6 +499,7 @@ func TestMetricsViewRollups(t *testing.T) {
 type: metrics_view
 version: 1
 model: m1
+timeseries: id
 dimensions:
 - name: publisher
   column: publisher
@@ -556,6 +557,7 @@ func TestMetricsViewRollupsStarSelector(t *testing.T) {
 type: metrics_view
 version: 1
 model: m1
+timeseries: id
 dimensions:
 - name: publisher
   column: publisher
@@ -603,6 +605,7 @@ func TestMetricsViewRollupsExcludeSelector(t *testing.T) {
 type: metrics_view
 version: 1
 model: m1
+timeseries: id
 dimensions:
 - name: publisher
   column: publisher
@@ -654,6 +657,7 @@ func TestMetricsViewRollupsRequiredTimeGrain(t *testing.T) {
 type: metrics_view
 version: 1
 model: m1
+timeseries: id
 dimensions:
 - name: publisher
   column: publisher
@@ -684,11 +688,32 @@ func TestMetricsViewRollupsValidation(t *testing.T) {
 		wantErr string
 	}{
 		{
+			name: "missing timeseries",
+			yaml: `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+rollups:
+  - model: r1
+    time_grain: day
+    measures:
+      - count
+`,
+			wantErr: `rollups require a "timeseries" to be defined`,
+		},
+		{
 			name: "missing model",
 			yaml: `
 type: metrics_view
 version: 1
 model: m1
+timeseries: id
 dimensions:
 - name: publisher
   column: publisher
@@ -708,6 +733,7 @@ rollups:
 type: metrics_view
 version: 1
 model: m1
+timeseries: id
 dimensions:
 - name: publisher
   column: publisher
@@ -728,6 +754,7 @@ rollups:
 type: metrics_view
 version: 1
 model: m1
+timeseries: id
 dimensions:
 - name: publisher
   column: publisher
@@ -750,6 +777,7 @@ rollups:
 type: metrics_view
 version: 1
 model: m1
+timeseries: id
 dimensions:
 - name: publisher
   column: publisher
@@ -770,6 +798,7 @@ rollups:
 type: metrics_view
 version: 1
 model: m1
+timeseries: id
 dimensions:
 - name: publisher
   column: publisher
