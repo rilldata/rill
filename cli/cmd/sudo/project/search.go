@@ -103,15 +103,16 @@ func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 }
 
 type projectStatusTableRow struct {
-	Org                  string `header:"org"`
-	Project              string `header:"project"`
-	DeploymentStatus     string `header:"deployment"`
-	IdleCount            int    `header:"idle"`
-	PendingCount         int    `header:"pending"`
-	RunningCount         int    `header:"running"`
-	ReconcileErrorsCount int    `header:"reconcile errors"`
-	ParseErrorsCount     int    `header:"parse errors"`
-	ParseWarningsCount   int    `header:"parse warnings"`
+	Org                    string `header:"org"`
+	Project                string `header:"project"`
+	DeploymentStatus       string `header:"deployment"`
+	IdleCount              int    `header:"idle"`
+	PendingCount           int    `header:"pending"`
+	RunningCount           int    `header:"running"`
+	ReconcileErrorsCount   int    `header:"reconcile errors"`
+	ReconcileWarningsCount int    `header:"reconcile warnings"`
+	ParseErrorsCount       int    `header:"parse errors"`
+	ParseWarningsCount     int    `header:"parse warnings"`
 }
 
 func newProjectStatusTableRow(ctx context.Context, c *client.Client, org, project string) (*projectStatusTableRow, error) {
@@ -179,7 +180,7 @@ func newProjectStatusTableRow(ctx context.Context, c *client.Client, org, projec
 	var parser *runtimev1.Resource
 	var parseErrorsCount, parseWarningsCount int
 	var idleCount int
-	var reconcileErrorsCount int
+	var reconcileErrorsCount, reconcileWarningsCount int
 	var pendingCount int
 	var runningCount int
 
@@ -196,6 +197,8 @@ func newProjectStatusTableRow(ctx context.Context, c *client.Client, org, projec
 			idleCount++
 			if r.Meta.GetReconcileError() != "" {
 				reconcileErrorsCount++
+			} else if len(r.Meta.ReconcileWarnings) > 0 {
+				reconcileWarningsCount++
 			}
 		case runtimev1.ReconcileStatus_RECONCILE_STATUS_PENDING:
 			pendingCount++
@@ -226,15 +229,16 @@ func newProjectStatusTableRow(ctx context.Context, c *client.Client, org, projec
 	}
 
 	return &projectStatusTableRow{
-		Org:                  org,
-		Project:              project,
-		DeploymentStatus:     "OK",
-		IdleCount:            idleCount,
-		PendingCount:         pendingCount,
-		RunningCount:         runningCount,
-		ReconcileErrorsCount: reconcileErrorsCount,
-		ParseErrorsCount:     parseErrorsCount,
-		ParseWarningsCount:   parseWarningsCount,
+		Org:                    org,
+		Project:                project,
+		DeploymentStatus:       "OK",
+		IdleCount:              idleCount,
+		PendingCount:           pendingCount,
+		RunningCount:           runningCount,
+		ReconcileErrorsCount:   reconcileErrorsCount,
+		ReconcileWarningsCount: reconcileWarningsCount,
+		ParseErrorsCount:       parseErrorsCount,
+		ParseWarningsCount:     parseWarningsCount,
 	}, nil
 }
 

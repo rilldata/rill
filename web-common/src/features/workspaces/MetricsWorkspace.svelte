@@ -18,6 +18,7 @@
   } from "../connectors/selectors";
   import PreviewButton from "../explores/PreviewButton.svelte";
   import GoToDashboardButton from "../metrics-views/GoToDashboardButton.svelte";
+  import ReconcileWarningPanel from "../entity-management/ReconcileWarningPanel.svelte";
   import VisualMetrics from "./VisualMetrics.svelte";
 
   export let fileArtifact: FileArtifact;
@@ -104,31 +105,37 @@
     </div>
   </WorkspaceHeader>
 
-  <WorkspaceEditorContainer
-    slot="body"
-    {resource}
-    {parseError}
-    remoteContent={$remoteContent}
-  >
-    {#if $selectedView === "code"}
-      <MetricsEditor
-        bind:autoSave={$autoSave}
-        {fileArtifact}
-        {filePath}
-        {parseError}
-        {metricsViewName}
-      />
-    {:else}
-      {#key fileArtifact}
-        <VisualMetrics
-          {fileArtifact}
-          switchView={() => {
-            $selectedView = "code";
-          }}
-        />
-      {/key}
-    {/if}
-  </WorkspaceEditorContainer>
+  <svelte:fragment slot="body">
+    <div class="flex flex-col h-full">
+      <div class="flex-1 overflow-hidden">
+        <WorkspaceEditorContainer
+          {resource}
+          {parseError}
+          remoteContent={$remoteContent}
+        >
+          {#if $selectedView === "code"}
+            <MetricsEditor
+              bind:autoSave={$autoSave}
+              {fileArtifact}
+              {filePath}
+              {parseError}
+              {metricsViewName}
+            />
+          {:else}
+            {#key fileArtifact}
+              <VisualMetrics
+                {fileArtifact}
+                switchView={() => {
+                  $selectedView = "code";
+                }}
+              />
+            {/key}
+          {/if}
+        </WorkspaceEditorContainer>
+      </div>
+      <ReconcileWarningPanel {fileArtifact} />
+    </div>
+  </svelte:fragment>
 
   <MetricsInspector
     {filePath}
