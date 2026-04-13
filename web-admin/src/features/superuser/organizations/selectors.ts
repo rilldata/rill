@@ -2,7 +2,6 @@
 import {
   createAdminServiceGetOrganization,
   createAdminServiceListOrganizationMemberUsers,
-  createAdminServiceListProjectsForOrganization,
   createAdminServiceSearchProjectNames,
   createAdminServiceDeleteOrganization,
 } from "@rilldata/web-admin/client";
@@ -24,10 +23,22 @@ export function getOrgMembers(org: string) {
 }
 
 export function getOrgProjects(org: string) {
-  return createAdminServiceListProjectsForOrganization(
-    org,
-    { superuserForceAccess: true },
-    { query: { enabled: org.length > 0 } },
+  return createAdminServiceSearchProjectNames(
+    { namePattern: `${org}/%`, pageSize: 100 },
+    {
+      query: {
+        enabled: org.length > 0,
+        select: (data) => {
+          // Extract project names from "org/project" paths
+          const projects =
+            data.names?.map((name) => {
+              const slash = name.indexOf("/");
+              return slash > 0 ? name.substring(slash + 1) : name;
+            }) ?? [];
+          return projects;
+        },
+      },
+    },
   );
 }
 

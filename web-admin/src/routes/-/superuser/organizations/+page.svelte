@@ -118,15 +118,15 @@
       <!-- Projects list (view-only; hibernate/redeploy are on the Projects page) -->
       <section class="p-5 rounded-lg border">
         <h2 class="text-sm font-semibold text-fg-primary mb-3">
-          Projects{$projectsQuery.data?.projects
-            ? ` (${$projectsQuery.data.projects.length})`
+          Projects{$projectsQuery.data?.length
+            ? ` (${$projectsQuery.data.length})`
             : ""}
         </h2>
         {#if $projectsQuery.isFetching}
           <p class="text-sm text-fg-secondary">Loading projects...</p>
-        {:else if $projectsQuery.data?.projects?.length}
+        {:else if $projectsQuery.data?.length}
           <div class="flex flex-col gap-1">
-            {#each $projectsQuery.data.projects as project}
+            {#each $projectsQuery.data as projectName}
               <div
                 class="flex items-center justify-between px-3 py-2 rounded bg-surface-subtle"
               >
@@ -139,12 +139,12 @@
                     const member = admin ?? $membersQuery.data?.members?.[0];
                     if (member?.userEmail) {
                       assumedUser.assume(member.userEmail, {
-                        redirect: `/${org.name}/${project.name}`,
+                        redirect: `/${org.name}/${projectName}`,
                       });
                     }
                   }}
                 >
-                  {project.name}
+                  {projectName}
                 </Button>
               </div>
             {/each}
