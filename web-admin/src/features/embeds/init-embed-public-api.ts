@@ -48,6 +48,7 @@ export default function initEmbedPublicAPI(): () => void {
     }
     const currentUrl = new URL(get(page).url);
     currentUrl.search = state;
+    console.log("setState", currentUrl.search);
     void goto(currentUrl, { replaceState: true });
     return true;
   });
@@ -179,5 +180,5 @@ export function removeEmbedParams(searchParams: URLSearchParams) {
   const cleanedParams = new URLSearchParams(searchParams);
   EmbedParams.forEach((param) => cleanedParams.delete(param));
   const search = cleanedParams.toString();
-  return decodeURIComponent(search);
+  return search;
 }
