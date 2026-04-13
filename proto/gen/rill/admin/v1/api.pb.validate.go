@@ -2505,6 +2505,8 @@ func (m *GetDeploymentRequest) validate(all bool) error {
 
 	// no validation rules for AccessTokenTtlSeconds
 
+	// no validation rules for ExternalUserId
+
 	switch v := m.For.(type) {
 	case *GetDeploymentRequest_UserId:
 		if v == nil {
@@ -6237,6 +6239,8 @@ func (m *GetDeploymentCredentialsRequest) validate(all bool) error {
 
 	// no validation rules for TtlSeconds
 
+	// no validation rules for ExternalUserId
+
 	switch v := m.For.(type) {
 	case *GetDeploymentCredentialsRequest_UserId:
 		if v == nil {
@@ -6592,6 +6596,8 @@ func (m *GetIFrameRequest) validate(all bool) error {
 	// no validation rules for Branch
 
 	// no validation rules for TtlSeconds
+
+	// no validation rules for ExternalUserId
 
 	// no validation rules for Type
 

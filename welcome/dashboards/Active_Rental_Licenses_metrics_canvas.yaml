@@ -1,0 +1,137 @@
+# Canvas Dashboard YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/canvas-dashboards
+# This file was generated using AI.
+
+type: canvas
+display_name: Active Rental Licenses Overview
+defaults:
+  time_range: P7D
+  comparison_mode: time
+
+rows:
+  - height: 180px
+    items:
+      - width: 12
+        markdown:
+          alignment:
+            horizontal: left
+            vertical: top
+          content: |
+            ## Active Rental Licenses — Dashboard
+
+            Track active rental license volume, licensed units, and short-term rental activity.
+
+            **Key questions**
+            - How many active licenses and units were issued in the selected period?
+            - Which neighborhoods and owners account for the most licensed units?
+            - How are licenses distributed by status, tier, and short-term rental flag?
+
+            ---
+  - height: 240px
+    items:
+      - width: 12
+        kpi_grid:
+          comparison:
+            - percent_change
+            - delta
+            - previous
+          measures:
+            - total_active_rental_license_records_measure
+            - total_licensed_units_measure
+            - distinct_owners_measure
+            - short_term_rental_flag_count_measure
+          metrics_view: Active_Rental_Licenses_metrics
+  - height: 400px
+    items:
+      - width: 6
+        leaderboard:
+          dimensions:
+            - neighborhoodDesc
+          measures:
+            - total_licensed_units_measure
+          metrics_view: Active_Rental_Licenses_metrics
+          num_rows: 10
+      - width: 6
+        line_chart:
+          color: primary
+          metrics_view: Active_Rental_Licenses_metrics
+          title: Licensed Units Issued Over Time
+          x:
+            field: issueDate
+            type: temporal
+          "y":
+            field: total_licensed_units_measure
+            type: quantitative
+            zeroBasedOrigin: true
+  - height: 400px
+    items:
+      - width: 4
+        bar_chart:
+          color: secondary
+          metrics_view: Active_Rental_Licenses_metrics
+          title: Top Neighborhoods by Active License Records
+          x:
+            field: neighborhoodDesc
+            limit: 10
+            showNull: true
+            sort: -y
+            type: nominal
+          "y":
+            field: total_active_rental_license_records_measure
+            type: quantitative
+            zeroBasedOrigin: true
+      - width: 4
+        donut_chart:
+          color:
+            field: status
+            limit: 8
+            type: nominal
+          innerRadius: 50
+          measure:
+            field: total_active_rental_license_records_measure
+            showTotal: true
+            type: quantitative
+          metrics_view: Active_Rental_Licenses_metrics
+          title: Active License Records by Status
+      - width: 4
+        area_chart:
+          color:
+            field: tier
+            limit: 3
+            type: nominal
+          metrics_view: Active_Rental_Licenses_metrics
+          title: Active License Records Over Time (Top Tiers)
+          x:
+            field: issueDate
+            limit: 20
+            type: temporal
+          "y":
+            field: total_active_rental_license_records_measure
+            type: quantitative
+            zeroBasedOrigin: true
+  - height: 400px
+    items:
+      - width: 6
+        leaderboard:
+          dimensions:
+            - ownerName
+          measures:
+            - total_licensed_units_measure
+            - distinct_license_numbers_measure
+          metrics_view: Active_Rental_Licenses_metrics
+          num_rows: 10
+      - width: 6
+        bar_chart:
+          color: primary
+          metrics_view: Active_Rental_Licenses_metrics
+          title: Short-Term Rental Flag — License Record Count
+          x:
+            field: shortTermRental
+            limit: 10
+            showNull: true
+            sort: -y
+            type: nominal
+          "y":
+            field: total_active_rental_license_records_measure
+            type: quantitative
+            zeroBasedOrigin: true

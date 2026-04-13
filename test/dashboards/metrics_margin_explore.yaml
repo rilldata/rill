@@ -1,0 +1,14 @@
+# Explore YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/explores
+
+type: explore
+
+display_name: "Customer Unit Economics Dashboard"
+metrics_view: metrics_margin_metrics
+
+dimensions: '*'
+measures: '*'
+
+defaults:
+  comparison_mode: time
+  time_range: P3W

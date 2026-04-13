@@ -1,0 +1,8 @@
+# API YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/apis
+# Test your API endpoint at http://localhost:9009/v1/instances/default/api/api
+
+type: api
+
+metrics_sql: |
+  select total_cost, gross_margin_percent, customer from metrics_margin_metrics limit 10

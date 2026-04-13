@@ -1,0 +1,22 @@
+# Alert YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/alerts
+
+type: alert
+display_name: Project Resource Status Check
+
+# Check the alert every hour.
+refresh:
+    cron: 0 * * * *
+
+data:
+  resource_status:
+    where_error: true
+
+# Send notifications in Slack.
+notify:
+  slack:
+      channels:
+          - '#rill-alerts'
+  email:
+    recipients:
+      - admin_team@domain.com

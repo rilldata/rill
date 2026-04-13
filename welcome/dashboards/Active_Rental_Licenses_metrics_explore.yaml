@@ -1,0 +1,10 @@
+# Explore YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/explore-dashboards
+
+type: explore
+
+display_name: "Active Rental Licenses dashboard"
+metrics_view: Active_Rental_Licenses_metrics
+
+dimensions: '*'
+measures: '*'

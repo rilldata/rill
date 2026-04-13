@@ -1,0 +1,6 @@
+# Connector YAML
+# Reference documentation: https://docs.rilldata.com/developers/build/connectors/olap/duckdb
+
+type: connector
+
+driver: duckdb

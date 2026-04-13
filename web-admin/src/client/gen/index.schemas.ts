@@ -239,6 +239,8 @@ export const V1BillingPlanType = {
   BILLING_PLAN_TYPE_TEAM: "BILLING_PLAN_TYPE_TEAM",
   BILLING_PLAN_TYPE_MANAGED: "BILLING_PLAN_TYPE_MANAGED",
   BILLING_PLAN_TYPE_ENTERPRISE: "BILLING_PLAN_TYPE_ENTERPRISE",
+  BILLING_PLAN_TYPE_FREE: "BILLING_PLAN_TYPE_FREE",
+  BILLING_PLAN_TYPE_PRO: "BILLING_PLAN_TYPE_PRO",
 } as const;
 
 export interface V1Bookmark {
@@ -1676,15 +1678,25 @@ export type AdminServiceCreateReportBodyBody = {
   options?: V1ReportOptions;
 };
 
+/**
+ * If set, will use the provided attributes outright.
+ */
 export type AdminServiceGetDeploymentBodyAttributes = {
   [key: string]: unknown;
 };
 
 export type AdminServiceGetDeploymentBody = {
+  /** Optional TTL for the returned access token in seconds. */
   accessTokenTtlSeconds?: number;
+  /** If set, will use the attributes of the Rill user with this ID. */
   userId?: string;
+  /** If set, will generate attributes corresponding to a user with this email. */
   userEmail?: string;
+  /** If set, will use the provided attributes outright. */
   attributes?: AdminServiceGetDeploymentBodyAttributes;
+  /** Optional ID for an external end user of the deployment. If set, the access token enables per-user state, such as AI chat history.
+Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state. */
+  externalUserId?: string;
 };
 
 /**
@@ -1882,16 +1894,27 @@ export type AdminServiceConnectProjectToGithubBody = {
   remote?: string;
 };
 
+/**
+ * If set, will use the provided attributes outright.
+ */
 export type AdminServiceGetDeploymentCredentialsBodyAttributes = {
   [key: string]: unknown;
 };
 
 export type AdminServiceGetDeploymentCredentialsBody = {
+  /** Optional branch for the deployment. If not set, defaults to the project's primary branch. */
   branch?: string;
+  /** Optional TTL for the returned access token in seconds. */
   ttlSeconds?: number;
+  /** If set, will use the attributes of the Rill user with this ID. */
   userId?: string;
+  /** If set, will generate attributes corresponding to a user with this email. */
   userEmail?: string;
+  /** If set, will use the provided attributes outright. */
   attributes?: AdminServiceGetDeploymentCredentialsBodyAttributes;
+  /** Optional ID for an external end user of the deployment. If set, the access token enables per-user state, such as AI chat history.
+Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state. */
+  externalUserId?: string;
 };
 
 export type AdminServiceListDeploymentsParams = {
@@ -1933,12 +1956,15 @@ export type AdminServiceGetIFrameBody = {
   branch?: string;
   /** TTL for the iframe's access token. If not set, defaults to 24 hours. */
   ttlSeconds?: number;
-  /** If set, will use the attributes of the user with this ID. */
+  /** If set, will use the attributes of the Rill user with this ID. */
   userId?: string;
   /** If set, will generate attributes corresponding to a user with this email. */
   userEmail?: string;
   /** If set, will use the provided attributes outright. */
   attributes?: AdminServiceGetIFrameBodyAttributes;
+  /** Optional ID for the external end user of the iframe. If set, the access token enables per-user state, such as AI chat history.
+Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state. */
+  externalUserId?: string;
   /** Type of resource to embed. If not set, defaults to "rill.runtime.v1.Explore". */
   type?: string;
   /** Deprecated: Alias for `type`. */
