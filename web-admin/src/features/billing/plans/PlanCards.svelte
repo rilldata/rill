@@ -26,13 +26,6 @@
   );
   let showEnterprise = $derived(currentPlan !== "enterprise");
 
-  let visibleCount = $derived(
-    (showTrial ? 1 : 0) +
-      (showTeam ? 1 : 0) +
-      (showPro ? 1 : 0) +
-      (showEnterprise ? 1 : 0),
-  );
-
   let upgradeDialogOpen = $state(false);
   $effect(() => {
     if (showUpgradeDialog) upgradeDialogOpen = true;

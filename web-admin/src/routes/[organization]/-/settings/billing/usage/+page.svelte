@@ -1,9 +1,3 @@
-<script lang="ts">
-  import { page } from "$app/stores";
-
-  let organization = $derived($page.params.organization);
-</script>
-
 <section class="usage-page">
   <h1 class="text-xl font-semibold text-fg-primary mb-2">Usage</h1>
   <p class="text-sm text-fg-secondary mb-6">

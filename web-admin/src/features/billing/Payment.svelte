@@ -27,14 +27,8 @@
   );
   let paymentIssues = $derived($categorisedIssues.data?.payment);
   let neverSubscribed = $derived(!!$categorisedIssues.data?.neverSubscribed);
-  let onTrial = $derived(!!$categorisedIssues.data?.trial);
   let onManagedPlan = $derived(plan && isManagedPlan(plan.name));
   let onEnterprisePlan = $derived(plan && isEnterprisePlan(plan.name));
-  let pendingSetup = $derived(
-    neverSubscribed ||
-      ((onManagedPlan || onEnterprisePlan) &&
-        needsPaymentSetup(paymentIssues ?? [])),
-  );
 
   async function handleManageCards() {
     const setup = paymentIssues?.length

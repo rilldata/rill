@@ -20,8 +20,6 @@
 
   let organization = $derived(data.organization);
   let showUpgradeDialog = $derived(data.showUpgradeDialog);
-  let billingPortalUrl = $derived(data.billingPortalUrl);
-
   let subscriptionQuery = $derived(
     createAdminServiceGetBillingSubscription(organization),
   );
