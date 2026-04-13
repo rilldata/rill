@@ -85,7 +85,7 @@
     </div>
     {#if hasPaymentCustomer}
       <button class="manage-btn" onclick={handleManageCards}>
-        Manage cards
+        Manage in Stripe
         <svg
           class="w-3.5 h-3.5"
           viewBox="0 0 12 12"
@@ -107,6 +107,9 @@
 
   .section-card {
     @apply flex items-center justify-between border rounded-lg p-4 bg-surface-background;
+    box-shadow:
+      0px 1px 2px 0px rgba(0, 0, 0, 0.06),
+      0px 1px 3px 0px rgba(0, 0, 0, 0.1);
   }
 
   .card-content {

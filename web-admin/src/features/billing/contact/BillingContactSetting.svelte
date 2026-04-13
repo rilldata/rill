@@ -50,6 +50,9 @@
 
   .section-card {
     @apply flex items-center justify-between border rounded-lg p-4 bg-surface-background;
+    box-shadow:
+      0px 1px 2px 0px rgba(0, 0, 0, 0.06),
+      0px 1px 3px 0px rgba(0, 0, 0, 0.1);
   }
 
   .card-content {
