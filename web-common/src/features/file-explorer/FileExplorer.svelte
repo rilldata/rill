@@ -179,6 +179,17 @@
       onMouseDown={(e, dragData) =>
         navEntryDragDropStore.onMouseDown(e, dragData)}
     />
+  {:else if $getFileTree.isLoading}
+    <div class="flex flex-col gap-y-1.5 w-full px-2 py-2">
+      {#each [0.7, 0.5, 0.8, 0.6, 0.55, 0.65] as width}
+        <div
+          class="h-5 bg-gray-200 animate-pulse rounded"
+          style:width="{width * 100}%"
+        ></div>
+      {/each}
+    </div>
+  {:else if $getFileTree.isError}
+    <div class="px-2 py-3 text-xs text-fg-muted">Failed to load files</div>
   {/if}
 </ul>
 
