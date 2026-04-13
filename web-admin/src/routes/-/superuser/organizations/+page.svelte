@@ -116,11 +116,15 @@
       </section>
 
       <!-- Projects list (view-only; hibernate/redeploy are on the Projects page) -->
-      {#if $projectsQuery.data?.projects?.length}
-        <section class="p-5 rounded-lg border">
-          <h2 class="text-sm font-semibold text-fg-primary mb-3">
-            Projects ({$projectsQuery.data.projects.length})
-          </h2>
+      <section class="p-5 rounded-lg border">
+        <h2 class="text-sm font-semibold text-fg-primary mb-3">
+          Projects{$projectsQuery.data?.projects
+            ? ` (${$projectsQuery.data.projects.length})`
+            : ""}
+        </h2>
+        {#if $projectsQuery.isFetching}
+          <p class="text-sm text-fg-secondary">Loading projects...</p>
+        {:else if $projectsQuery.data?.projects?.length}
           <div class="flex flex-col gap-1">
             {#each $projectsQuery.data.projects as project}
               <div
@@ -145,8 +149,10 @@
               </div>
             {/each}
           </div>
-        </section>
-      {/if}
+        {:else}
+          <p class="text-sm text-fg-secondary">No projects in this organization.</p>
+        {/if}
+      </section>
 
       <!-- Members list -->
       {#if $membersQuery.isFetching}
