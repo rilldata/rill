@@ -379,7 +379,6 @@ type ServeOptions struct {
 	GRPCPort    int
 	EnableUI    bool
 	OpenBrowser bool
-	Readonly    bool
 	PreviewMode bool
 	UserID      string
 	TLSCertPath string
@@ -405,7 +404,6 @@ func (a *App) Serve(opts ServeOptions) error {
 		BuildTime:        a.ch.Version.Timestamp,
 		IsDev:            a.ch.Version.IsDev(),
 		AnalyticsEnabled: enabled,
-		Readonly:         opts.Readonly,
 		PreviewMode:      opts.PreviewMode,
 	}
 

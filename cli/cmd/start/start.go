@@ -20,7 +20,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	var grpcPort int
 	var verbose bool
 	var debug bool
-	var readonly bool
 	var reset bool
 	var pullEnv bool
 	var noUI bool
@@ -152,7 +151,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				GRPCPort:    grpcPort,
 				EnableUI:    !noUI,
 				OpenBrowser: !noOpen,
-				Readonly:    readonly,
 				PreviewMode: previewMode,
 				UserID:      userID,
 				TLSCertPath: tlsCertPath,
@@ -173,7 +171,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	startCmd.Flags().BoolVar(&pullEnv, "pull-env", true, "Pull environment variables from Rill Cloud before starting the project")
 	startCmd.Flags().BoolVar(&noOpen, "no-open", false, "Do not open browser")
 	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
-	startCmd.Flags().BoolVar(&readonly, "readonly", false, "Deprecated: use --preview instead")
 	startCmd.Flags().BoolVar(&previewMode, "preview", false, "Start in dashboard-only view (no code editor)")
 	startCmd.Flags().IntVar(&httpPort, "port", 9009, "Port for HTTP")
 	startCmd.Flags().IntVar(&grpcPort, "port-grpc", 49009, "Port for gRPC (internal)")
@@ -187,11 +184,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	// Deprecated support for "--var": replaced by "--env".
 	startCmd.Flags().StringSliceVarP(&envVarsOld, "var", "v", []string{}, "Set environment variables")
 	if err := startCmd.Flags().MarkHidden("var"); err != nil {
-		panic(err)
-	}
-
-	// Deprecated support for "--readonly". Projects should be shared via Rill Cloud.
-	if err := startCmd.Flags().MarkHidden("readonly"); err != nil {
 		panic(err)
 	}
 

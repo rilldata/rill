@@ -106,7 +106,6 @@ func (s *Server) GetMetadata(ctx context.Context, r *connect.Request[localv1.Get
 		BuildTime:        s.metadata.BuildTime,
 		IsDev:            s.metadata.IsDev,
 		AnalyticsEnabled: s.metadata.AnalyticsEnabled,
-		Readonly:         s.metadata.Readonly,
 		GrpcPort:         int32(s.metadata.GRPCPort),
 		LoginUrl:         s.app.localURL + "/auth",
 		AdminUrl:         s.app.ch.AdminURL(),
@@ -959,7 +958,6 @@ type localMetadata struct {
 	BuildTime        string `json:"build_time"`
 	IsDev            bool   `json:"is_dev"`
 	AnalyticsEnabled bool   `json:"analytics_enabled"`
-	Readonly         bool   `json:"readonly"`
 	PreviewMode      bool   `json:"preview_mode"`
 	GRPCPort         int    `json:"grpc_port"`
 }

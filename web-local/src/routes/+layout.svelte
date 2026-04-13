@@ -79,7 +79,7 @@
     }
 
     featureFlags.set(false, "adminServer");
-    featureFlags.set(config.readonly || data.previewMode, "readOnly");
+    featureFlags.set(data.previewMode, "readOnly");
   });
 
   /**
