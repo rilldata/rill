@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import CanvasEditor from "@rilldata/web-common/features/canvas/CanvasEditor.svelte";
-  import { workspaceRoute } from "@rilldata/web-common/features/workspaces/workspace-routing";
+  import { editRoute } from "@rilldata/web-common/features/workspaces/edit-routing";
   import VisualCanvasEditing from "@rilldata/web-common/features/canvas/inspector/VisualCanvasEditing.svelte";
   import { createRootCauseErrorQuery } from "@rilldata/web-common/features/entity-management/error-utils";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
@@ -110,7 +110,7 @@
           {/if}
 
           <PreviewButton
-            href={workspaceRoute(`/canvas/${canvasName}`)}
+            href={editRoute(`/canvas/${canvasName}`)}
             disabled={!!parseError || !!reconcileError || resourceIsReconciling}
             reconciling={resourceIsReconciling}
           />

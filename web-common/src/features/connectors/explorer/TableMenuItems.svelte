@@ -1,6 +1,6 @@
 <script lang="ts">
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
-  import { navigateToFile } from "@rilldata/web-common/features/workspaces/workspace-routing";
+  import { navigateToFile } from "@rilldata/web-common/features/workspaces/edit-routing";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";

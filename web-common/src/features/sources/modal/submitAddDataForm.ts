@@ -1,4 +1,5 @@
-import { goto, invalidate } from "$app/navigation";
+import { invalidate } from "$app/navigation";
+import { navigateToFile } from "@rilldata/web-common/features/workspaces/edit-routing";
 import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
 import type { QueryClient } from "@tanstack/query-core";
 import { behaviourEvent } from "../../../metrics/initMetrics";
@@ -226,7 +227,7 @@ async function saveConnectorWithoutTest(
   }
 
   // Go to the new connector file
-  await goto(`/files/${newConnectorFilePath}`);
+  await navigateToFile(`/${newConnectorFilePath}`);
 }
 
 export async function submitAddConnectorForm(
@@ -399,7 +400,7 @@ export async function submitAddConnectorForm(
       }
 
       // Go to the new connector file
-      await goto(`/files/${newConnectorFilePath}`);
+      await navigateToFile(`/${newConnectorFilePath}`);
       return newConnectorName;
     } catch (error) {
       // If the operation was aborted, don't treat it as an error
@@ -548,5 +549,5 @@ export async function submitAddSourceForm(
     throw new Error(errorMessage);
   }
 
-  await goto(`/files/${newSourceFilePath}`);
+  await navigateToFile(`/${newSourceFilePath}`);
 }

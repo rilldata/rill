@@ -3,6 +3,7 @@
   import { Button } from "../../components/button";
   import { useRuntimeClient } from "../../runtime-client/v2";
   import { featureFlags } from "../feature-flags";
+  import { getFileHref } from "../workspaces/edit-routing";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
 
   const client = useRuntimeClient();
@@ -20,6 +21,6 @@
 {/if}
 {#if !$readOnly}
   <div class="flex gap-2 flex-shrink-0 ml-auto">
-    <Button type="secondary" href={`/files${canvasFilePath}`}>Edit</Button>
+    <Button type="secondary" href={getFileHref(canvasFilePath)}>Edit</Button>
   </div>
 {/if}

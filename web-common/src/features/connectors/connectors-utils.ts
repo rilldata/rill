@@ -1,4 +1,4 @@
-import { workspaceRoute } from "@rilldata/web-common/features/workspaces/workspace-routing";
+import { editRoute } from "@rilldata/web-common/features/workspaces/edit-routing";
 import type { V1AnalyzedConnector } from "../../runtime-client";
 
 export const OLAP_DRIVERS_WITHOUT_MODELING = ["clickhouse", "druid", "pinot"];
@@ -88,35 +88,35 @@ export function makeTablePreviewHref(
 ): string | null {
   switch (driver) {
     case "clickhouse":
-      return workspaceRoute(
+      return editRoute(
         `/connector/clickhouse/${connectorName}/${databaseSchema}/${table}`,
       );
     case "druid":
-      return workspaceRoute(
+      return editRoute(
         `/connector/druid/${connectorName}/${databaseSchema}/${table}`,
       );
     case "duckdb":
-      return workspaceRoute(
+      return editRoute(
         `/connector/duckdb/${connectorName}/${database}/${databaseSchema}/${table}`,
       );
     case "snowflake":
-      return workspaceRoute(
+      return editRoute(
         `/connector/snowflake/${connectorName}/${database}/${databaseSchema}/${table}`,
       );
     case "bigquery":
-      return workspaceRoute(
+      return editRoute(
         `/connector/bigquery/${connectorName}/${database}/${databaseSchema}/${table}`,
       );
     case "redshift":
-      return workspaceRoute(
+      return editRoute(
         `/connector/redshift/${connectorName}/${database}/${databaseSchema}/${table}`,
       );
     case "athena":
-      return workspaceRoute(
+      return editRoute(
         `/connector/athena/${connectorName}/${database}/${databaseSchema}/${table}`,
       );
     case "pinot":
-      return workspaceRoute(`/connector/pinot/${connectorName}/${table}`);
+      return editRoute(`/connector/pinot/${connectorName}/${table}`);
     default:
       return null;
   }

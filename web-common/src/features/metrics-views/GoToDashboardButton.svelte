@@ -4,6 +4,7 @@
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { getFileHref } from "@rilldata/web-common/features/workspaces/edit-routing";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
@@ -85,7 +86,9 @@
             resource?.meta?.name?.name}
           {@const filePath = resource?.meta?.filePaths?.[0]}
           {#if label && filePath}
-            <DropdownMenu.Item href={`/files/${removeLeadingSlash(filePath)}`}>
+            <DropdownMenu.Item
+              href={getFileHref(`/${removeLeadingSlash(filePath)}`)}
+            >
               <ExploreIcon />
               {label}
             </DropdownMenu.Item>

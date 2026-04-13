@@ -1,4 +1,3 @@
-import { goto } from "$app/navigation";
 import type { QueryClient } from "@tanstack/query-core";
 import { runtimeServicePutFile } from "../../../runtime-client";
 import type { RuntimeClient } from "../../../runtime-client/v2";
@@ -12,6 +11,7 @@ import { fileArtifacts } from "../../entity-management/file-artifacts";
 import { getName } from "../../entity-management/name-utils";
 import { ResourceKind } from "../../entity-management/resource-selectors";
 import { EntityType } from "../../entity-management/types";
+import { navigateToFile } from "../../workspaces/edit-routing";
 import { beforeSubmitForm } from "../../sources/modal/submitAddDataForm";
 import {
   getConnectorSchema,
@@ -111,5 +111,5 @@ export async function saveAiConnector(
   // Register as the project's AI connector
   await setAiConnectorInRillYAML(queryClient, client, newConnectorName);
 
-  await goto(`/files/${newConnectorFilePath}`);
+  await navigateToFile(`/${newConnectorFilePath}`);
 }

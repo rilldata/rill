@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { workspaceRoute } from "@rilldata/web-common/features/workspaces/workspace-routing";
+  import { editRoute } from "@rilldata/web-common/features/workspaces/edit-routing";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
@@ -96,7 +96,7 @@
       {#if !inPreviewMode}
         {#if isOldMetricsView}
           <PreviewButton
-            href={workspaceRoute(`/explore/${metricsViewName}`)}
+            href={editRoute(`/explore/${metricsViewName}`)}
             disabled={!!parseError || !!reconcileError}
           />
         {:else}

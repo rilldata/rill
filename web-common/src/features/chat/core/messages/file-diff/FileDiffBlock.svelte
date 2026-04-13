@@ -9,6 +9,7 @@
   import type { V1Tool } from "../../../../../runtime-client";
   import ToolCall from "../tools/ToolCall.svelte";
   import type { FileDiffBlock } from "./file-diff-block";
+  import { getFileHref } from "@rilldata/web-common/features/workspaces/edit-routing";
 
   export let block: FileDiffBlock;
   export let tools: V1Tool[] | undefined = undefined;
@@ -35,7 +36,7 @@
 
   <div class="diff-container">
     <div class="diff-header">
-      <a href="/files{block.filePath}" class="file-path-link">
+      <a href={getFileHref(block.filePath)} class="file-path-link">
         {block.filePath}
       </a>
       {#if block.isNewFile}

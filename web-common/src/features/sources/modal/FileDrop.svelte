@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { goto, invalidate } from "$app/navigation";
+  import { invalidate } from "$app/navigation";
+  import { navigateToFile } from "@rilldata/web-common/features/workspaces/edit-routing";
   import Overlay from "@rilldata/web-common/components/overlay/Overlay.svelte";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
@@ -50,7 +51,7 @@
           tableName,
           EntityType.Table,
         );
-        await goto(`/files${newFilePath}`);
+        await navigateToFile(newFilePath);
       } catch (err) {
         console.error(err);
       }

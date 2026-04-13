@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { createConnectorForm } from "@rilldata/web-common/features/sources/modal/FormValidation.ts";
   import { getConnectorSchema } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
   import { getConnectorYamlPreview } from "./yaml-preview.ts";
@@ -15,6 +14,7 @@
   import { setSubmitError } from "@rilldata/web-common/features/add-data/form/errors.ts";
   import type { CreateConnectorStep } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
   import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
+  import { navigateToFile } from "@rilldata/web-common/features/workspaces/edit-routing";
   import { getConnectorDriverForSchema } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
 
   export let step: CreateConnectorStep;
@@ -85,7 +85,7 @@
       existingEnvBlob: cachedEnvBlob,
     });
     onClose();
-    return goto(`/files${addLeadingSlash(connectorPath)}`);
+    return navigateToFile(addLeadingSlash(connectorPath));
   }
 
   async function cleanupAndBack() {
