@@ -1,15 +1,22 @@
 <script lang="ts">
-  import { createAdminServiceGetBillingSubscription } from "@rilldata/web-admin/client";
-  import PlanCards from "@rilldata/web-admin/features/billing/plans/PlanCards.svelte";
+  import {
+    createAdminServiceGetBillingSubscription,
+    createAdminServiceGetOrganization,
+    createAdminServiceListProjectsForOrganization,
+  } from "@rilldata/web-admin/client";
+  import { getOrganizationUsageMetrics } from "@rilldata/web-admin/features/billing/plans/selectors";
   import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types";
   import {
     isEnterprisePlan,
     isManagedPlan,
+    isProPlan,
     isTeamPlan,
-    isFreePlan,
-    isTrialPlan,
   } from "@rilldata/web-admin/features/billing/plans/utils";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
+  import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size";
+  import PlanCards from "@rilldata/web-admin/features/billing/plans/PlanCards.svelte";
+  import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
+  import { fetchPaymentsPortalURL } from "@rilldata/web-admin/features/billing/plans/selectors";
 
   let {
     organization,
@@ -29,9 +36,14 @@
     useCategorisedOrganizationBillingIssues(organization),
   );
 
-  let neverSubbed = $derived(!!$categorisedIssues.data?.neverSubscribed);
-  let isTrial = $derived(!!$categorisedIssues.data?.trial);
+  let orgQuery = $derived(createAdminServiceGetOrganization(organization));
+  let hasPaymentCustomer = $derived(
+    !!$orgQuery.data?.organization?.paymentCustomerId,
+  );
+
+  let hasBillingTrialIssue = $derived(!!$categorisedIssues.data?.trial);
   let subHasEnded = $derived(!!$categorisedIssues.data?.cancelled);
+  let subIsProPlan = $derived(plan && isProPlan(plan.name));
   let subIsTeamPlan = $derived(plan && isTeamPlan(plan.name));
   let subIsManagedPlan = $derived(plan && isManagedPlan(plan.name));
   let subIsEnterprisePlan = $derived(
@@ -40,15 +52,17 @@
 
   type PlanTier = "trial" | "pro" | "team" | "enterprise";
   let currentPlan: PlanTier = $derived.by(() => {
-    if (neverSubbed || isTrial || subHasEnded) return "trial";
     if (subIsTeamPlan) return "team";
     if (subIsManagedPlan || subIsEnterprisePlan) return "enterprise";
-    return "pro";
+    // Pro plan with payment = Pro; Pro plan without payment = Pro Trial
+    if (subIsProPlan && hasPaymentCustomer) return "pro";
+    // Everything else is Pro Trial: pro without payment, free_trial plan, no plan, cancelled
+    return "trial";
   });
 
   let dialogType: TeamPlanDialogTypes = $derived.by(() => {
     if (subHasEnded) return "renew";
-    if (isTrial) {
+    if (hasBillingTrialIssue) {
       const trialIssue = $categorisedIssues.data?.trial;
       if (trialIssue?.type === "BILLING_ISSUE_TYPE_TRIAL_ENDED")
         return "trial-expired";
@@ -62,112 +76,133 @@
       ?.endDate ?? "",
   );
 
-  let comparePlansOpen = $state(false);
+  // Slots + storage data
+  let projectsQuery = $derived(
+    createAdminServiceListProjectsForOrganization(organization),
+  );
+  let projects = $derived($projectsQuery.data?.projects ?? []);
 
-  // Enterprise doesn't show compare plans at all
+  let prodSlots = $derived(
+    projects.reduce((sum, p) => sum + Number(p.prodSlots ?? 0), 0),
+  );
+  let devSlots = $derived(
+    projects.reduce((sum, p) => sum + Number(p.devSlots ?? 0), 0),
+  );
+  let totalSlots = $derived(prodSlots + devSlots);
+
+  let usageMetrics = $derived(getOrganizationUsageMetrics(organization));
+  let totalStorage = $derived(
+    $usageMetrics?.data?.reduce((s, m) => s + m.size, 0) ?? 0,
+  );
+
+  // Compare plans
+  let comparePlansOpen = $state(false);
   let showComparePlans = $derived(currentPlan !== "enterprise");
+
+  // Upgrade dialog
+  let upgradeDialogOpen = $state(false);
+  $effect(() => {
+    if (showUpgradeDialog) upgradeDialogOpen = true;
+  });
+
+  async function handleSubscribe() {
+    window.open(
+      await fetchPaymentsPortalURL(organization, window.location.href),
+      "_self",
+    );
+  }
 </script>
 
 <section>
   <h2 class="section-header">Plan</h2>
 
-  <!-- Plan summary card -->
-  <div class="plan-summary-card">
-    {#if currentPlan === "enterprise"}
-      <!-- Enterprise summary -->
-      <div class="summary-top">
-        <div class="flex items-center gap-3">
+  <div class="plan-card">
+    <!-- Top row: badge + description + action -->
+    <div class="plan-top">
+      <div class="flex items-center gap-3">
+        {#if currentPlan === "enterprise"}
           <span class="plan-badge enterprise">Enterprise</span>
           <span class="text-sm text-fg-secondary"
             >Custom contract · Fully managed</span
           >
-        </div>
-        <button class="contact-btn" onclick={() => window.Pylon("show")}>
-          Contact us
-        </button>
-      </div>
-      <p class="text-sm text-fg-secondary mt-4">
-        Fully managed slots, dedicated CSM, white-label capabilities, and custom
-        SLAs. Contact your CSM for contract details or changes.
-      </p>
-    {:else if currentPlan === "trial"}
-      <!-- Trial summary -->
-      <div class="summary-top">
-        <div class="flex items-center gap-3">
+        {:else if currentPlan === "trial"}
           <span class="plan-badge trial">Pro Trial</span>
           <span class="text-sm text-fg-secondary"
             >$250 free credit · No time limit</span
           >
-        </div>
-        <button class="subscribe-btn" onclick={() => (comparePlansOpen = true)}>
-          Subscribe to Pro
-        </button>
-      </div>
-
-      <!-- TODO: Credit usage (needs API) -->
-      <div class="credit-section">
-        <div class="flex justify-between mb-1">
-          <div>
-            <span class="text-xs text-fg-tertiary">Used credit</span>
-            <p class="text-2xl font-light text-fg-secondary">—</p>
-          </div>
-          <div class="text-right">
-            <span class="text-xs text-fg-tertiary">Available credit</span>
-            <p class="text-2xl font-light text-green-600">—</p>
-          </div>
-        </div>
-        <div class="credit-bar-bg">
-          <div class="credit-bar-fill" style:width="0%"></div>
-        </div>
-        <div class="flex justify-between mt-1">
-          <span class="text-xs text-fg-tertiary">Credit usage coming soon</span>
-          <span class="text-xs text-fg-tertiary">$0.15/slot/hr</span>
-        </div>
-      </div>
-    {:else if currentPlan === "pro"}
-      <!-- Pro summary -->
-      <div class="summary-top">
-        <div class="flex items-center gap-3">
+        {:else if currentPlan === "pro"}
           <span class="plan-badge pro">Pro</span>
           <span class="text-sm text-fg-secondary"
             >Usage based pricing · $0.15/slot/hr</span
           >
-        </div>
-      </div>
-    {:else if currentPlan === "team"}
-      <!-- Team (Legacy) summary -->
-      <div class="summary-top">
-        <div class="flex items-center gap-3">
+        {:else if currentPlan === "team"}
           <span class="plan-badge team">Team</span>
           <span class="text-sm text-fg-secondary">Legacy plan</span>
-        </div>
+        {/if}
       </div>
+
+      {#if currentPlan === "enterprise"}
+        <button class="contact-btn" onclick={() => window.Pylon("show")}>
+          Contact us
+        </button>
+      {:else if currentPlan === "trial"}
+        <button class="subscribe-btn" onclick={handleSubscribe}>
+          Subscribe to Pro
+        </button>
+      {/if}
+    </div>
+
+    {#if currentPlan === "enterprise"}
+      <p class="text-sm text-fg-secondary mt-4">
+        Fully managed slots, dedicated CSM, white-label capabilities, and custom
+        SLAs. Contact your CSM for contract details or changes.
+      </p>
     {/if}
 
-    <!-- Slots bar (always shown) -->
-    <div class="slots-bar">
+    <!-- Divider -->
+    <div class="divider"></div>
+
+    <!-- Slots + storage row -->
+    <div class="stats-row">
       <div class="flex items-center gap-4">
-        <span class="slot-item"
-          ><strong>—</strong> <span class="slot-label">Total slots</span></span
-        >
-        <span class="slot-divider"></span>
-        <span class="slot-item"
-          ><strong>—</strong> <span class="slot-label">Prod slots</span></span
-        >
-        <span class="slot-divider"></span>
-        <span class="slot-item"
-          ><strong>—</strong> <span class="slot-label">Dev slots</span></span
-        >
-        <span class="slot-divider"></span>
-        <span class="slot-item"
-          ><strong>—</strong> <span class="slot-label">Storage</span></span
-        >
+        <div class="stat-item">
+          <span class="stat-value">{totalSlots}</span>
+          <span class="stat-label">Total slots</span>
+        </div>
+        <span class="stat-divider"></span>
+        <div class="stat-item">
+          <span class="stat-value">{prodSlots}</span>
+          <span class="stat-label">Prod slots</span>
+        </div>
+        <span class="stat-divider"></span>
+        <div class="stat-item">
+          <span class="stat-value">{devSlots}</span>
+          <span class="stat-label">Dev slots</span>
+        </div>
+        <span class="stat-divider"></span>
+        <div class="stat-item">
+          <span class="stat-value"
+            >{totalStorage > 0
+              ? formatMemorySize(totalStorage)
+              : "0 B"}</span
+          >
+          <span class="stat-label">Storage</span>
+        </div>
       </div>
       <a
         href="/{organization}/-/settings/billing/usage"
         class="view-usage-link"
       >
-        View usage →
+        View usage
+        <svg
+          class="w-3 h-3"
+          viewBox="0 0 12 12"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+        >
+          <path d="M4.5 2.5l4 3.5-4 3.5" />
+        </svg>
       </a>
     </div>
   </div>
@@ -203,92 +238,98 @@
   {/if}
 </section>
 
+<StartTeamPlanDialog
+  bind:open={upgradeDialogOpen}
+  {organization}
+  type={dialogType}
+  endDate={renewEndDate}
+/>
+
 <style lang="postcss">
   .section-header {
     @apply text-lg font-medium text-fg-primary mb-3;
   }
 
-  .plan-summary-card {
+  .plan-card {
     @apply border rounded-xl bg-surface-background p-6;
     box-shadow:
       0px 1px 2px 0px rgba(0, 0, 0, 0.06),
       0px 1px 3px 0px rgba(0, 0, 0, 0.1);
   }
 
-  .summary-top {
+  .plan-top {
     @apply flex items-center justify-between;
   }
 
   .plan-badge {
-    @apply inline-block text-xs font-semibold rounded-full px-3 py-1 border;
+    @apply inline-flex items-center justify-center text-xs font-semibold rounded-full border-none;
+    width: 76px;
+    height: 21px;
+    gap: 8px;
   }
 
   .plan-badge.trial {
-    @apply text-primary-600 bg-primary-50 border-primary-500;
+    @apply text-primary-600 bg-primary-50;
   }
 
   .plan-badge.pro {
-    @apply text-primary-600 bg-primary-50 border-primary-500;
+    @apply text-primary-600 bg-primary-50;
   }
 
   .plan-badge.team {
-    @apply text-fg-secondary bg-surface-subtle border-gray-300;
+    @apply text-fg-secondary bg-surface-subtle;
   }
 
   .plan-badge.enterprise {
-    @apply text-primary-600 bg-primary-50 border-primary-500;
+    @apply text-primary-600 bg-primary-50;
   }
 
   .subscribe-btn {
-    @apply text-sm font-medium text-white bg-green-600 rounded-full px-5 py-2 cursor-pointer border-none;
+    @apply text-sm font-medium text-white bg-primary-500 px-5 py-2 cursor-pointer border-none rounded-none;
   }
 
   .subscribe-btn:hover {
-    @apply bg-green-700;
+    @apply bg-primary-600;
   }
 
   .contact-btn {
-    @apply text-sm font-medium text-fg-primary border border-gray-300 rounded-full px-5 py-2 cursor-pointer bg-transparent;
+    @apply text-sm font-medium text-fg-primary border border-gray-300 px-5 py-2 cursor-pointer bg-transparent rounded-sm;
   }
 
   .contact-btn:hover {
     @apply bg-surface-subtle;
   }
 
-  .credit-section {
-    @apply mt-4 pt-4 border-t;
+  .divider {
+    @apply border-t mt-4;
   }
 
-  .credit-bar-bg {
-    @apply w-full h-2 bg-gray-200 rounded-full overflow-hidden;
-  }
-
-  .credit-bar-fill {
-    @apply h-full bg-primary-500 rounded-full transition-all;
-  }
-
-  .slots-bar {
-    @apply flex items-center justify-between mt-4 pt-4 border-t;
-  }
-
-  .slot-item {
-    @apply text-sm text-fg-primary;
-  }
-
-  .slot-label {
-    @apply text-fg-tertiary;
-  }
-
-  .slot-divider {
-    @apply w-px h-4 bg-gray-200;
+  .stats-row {
+    @apply flex items-center justify-between pt-4;
   }
 
   .view-usage-link {
-    @apply text-sm font-medium text-primary-600 no-underline;
+    @apply flex items-center gap-1 text-sm font-medium text-primary-600 no-underline;
   }
 
   .view-usage-link:hover {
     @apply underline;
+  }
+
+  .stat-item {
+    @apply flex items-center gap-1.5 text-sm text-fg-primary;
+  }
+
+  .stat-value {
+    @apply font-semibold;
+  }
+
+  .stat-label {
+    @apply text-fg-tertiary;
+  }
+
+  .stat-divider {
+    @apply w-px h-4 bg-gray-200;
   }
 
   .compare-toggle {

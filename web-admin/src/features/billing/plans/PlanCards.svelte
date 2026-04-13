@@ -19,12 +19,6 @@
     renewEndDate?: string;
   } = $props();
 
-  const planOrder: PlanTier[] = ["trial", "pro", "team", "enterprise"];
-
-  function isPastPlan(plan: PlanTier): boolean {
-    return planOrder.indexOf(plan) < planOrder.indexOf(currentPlan);
-  }
-
   // Hide plans smaller than current. Team (legacy) shows Pro + Enterprise.
   let showTrial = $derived(currentPlan === "trial");
   let showPro = $derived(
@@ -74,10 +68,9 @@
   ];
 </script>
 
-<div class="plan-cards-container" class:two-col={visibleCount === 2}>
+<div class="compare-container">
   {#if showTrial}
-    <!-- Pro Trial -->
-    <div class="plan-card" class:current={currentPlan === "trial"}>
+    <div class="plan-col">
       <h3 class="plan-name">Pro Trial</h3>
       <p class="plan-pricing-main">$250 free credit</p>
       <p class="plan-pricing-sub">No time limit</p>
@@ -96,13 +89,16 @@
         {/each}
       </ul>
 
-      <button class="card-btn current-plan-btn" disabled>Current plan</button>
+      <button class="col-btn current-btn" disabled>Current plan</button>
     </div>
   {/if}
 
+  {#if showTrial && showPro}
+    <span class="col-divider"></span>
+  {/if}
+
   {#if showPro}
-    <!-- Pro -->
-    <div class="plan-card" class:current={currentPlan === "pro"}>
+    <div class="plan-col">
       <h3 class="plan-name">Pro</h3>
       <p class="plan-pricing-main">Usage based pricing</p>
       <p class="plan-pricing-sub">$0.15/slot/hr · $1/GB storage/mo</p>
@@ -122,18 +118,21 @@
       </ul>
 
       {#if currentPlan === "pro"}
-        <button class="card-btn current-plan-btn" disabled>Current plan</button>
+        <button class="col-btn current-btn" disabled>Current plan</button>
       {:else}
-        <button class="card-btn action-btn" onclick={handleEstimateCost}>
+        <button class="col-btn action-btn" onclick={handleEstimateCost}>
           Estimate your cost
         </button>
       {/if}
     </div>
   {/if}
 
+  {#if showPro && showEnterprise}
+    <span class="col-divider"></span>
+  {/if}
+
   {#if showEnterprise}
-    <!-- Enterprise -->
-    <div class="plan-card">
+    <div class="plan-col">
       <h3 class="plan-name">Enterprise</h3>
       <p class="plan-pricing-main">Custom pricing</p>
       <p class="plan-pricing-sub">Annual contract</p>
@@ -152,7 +151,7 @@
         {/each}
       </ul>
 
-      <button class="card-btn action-btn" onclick={handleContactSales}>
+      <button class="col-btn action-btn" onclick={handleContactSales}>
         Contact sales
       </button>
     </div>
@@ -167,24 +166,20 @@
 />
 
 <style lang="postcss">
-  .plan-cards-container {
-    @apply grid grid-cols-3 gap-4 mt-4;
-  }
-
-  .plan-cards-container.two-col {
-    @apply grid-cols-2;
-  }
-
-  .plan-card {
-    @apply relative flex flex-col border rounded-xl bg-surface-background;
-    padding: 32px 26px;
+  .compare-container {
+    @apply flex border rounded-xl bg-surface-background mt-4;
     box-shadow:
       0px 1px 2px 0px rgba(0, 0, 0, 0.06),
       0px 1px 3px 0px rgba(0, 0, 0, 0.1);
   }
 
-  .plan-card.current {
-    @apply border-2 border-primary-500;
+  .plan-col {
+    @apply flex flex-col flex-1;
+    padding: 32px 26px;
+  }
+
+  .col-divider {
+    @apply w-px bg-gray-200 my-6 shrink-0;
   }
 
   .plan-name {
@@ -211,11 +206,11 @@
     @apply w-4 h-4 shrink-0 text-primary-500 mt-0.5;
   }
 
-  .card-btn {
+  .col-btn {
     @apply w-full py-2.5 px-4 text-sm font-medium rounded-md cursor-pointer mt-6;
   }
 
-  .current-plan-btn {
+  .current-btn {
     @apply text-fg-tertiary bg-surface-subtle border border-gray-200 cursor-default;
   }
 
