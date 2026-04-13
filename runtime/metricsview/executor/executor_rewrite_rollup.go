@@ -11,7 +11,36 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/protobuf/proto"
+)
+
+var tracer = otel.Tracer("github.com/rilldata/rill/runtime/metricsview/executor")
+
+// Rollup rejection reasons: eligibility phase
+const (
+	rejectGrainNotDerivable     = "grain_not_derivable"
+	rejectTimezoneMismatch      = "timezone_mismatch"
+	rejectStartNotAligned       = "start_not_aligned"
+	rejectDimensionMissing      = "dimension_missing"
+	rejectTimeDimensionMissing  = "time_dimension_missing"
+	rejectComputedMeasure       = "computed_measure"
+	rejectMeasureMissing        = "measure_missing"
+	rejectWhereDimensionMissing = "where_dimension_missing"
+)
+
+// Rollup rejection reasons: coverage phase
+const (
+	rejectStartNotCovered = "start_not_covered"
+	rejectEndNotCovered   = "end_not_covered"
+	rejectEndNotAligned   = "end_not_aligned"
+)
+
+// Rollup skip reasons: early disqualification
+const (
+	skipRawRows             = "raw_rows"
+	skipComparisonTimeRange = "comparison_time_range"
 )
 
 // Rollup routing decides whether a metrics query can be served from a
@@ -19,19 +48,22 @@ import (
 //
 // Routing decision:
 //
-//  1. Quick disqualification: raw-row queries are not routed to rollups for now, and comparison time ranges
-//     queries are also avoided for simplification.
+//  1. Quick disqualification: raw-row queries and comparison time range queries are skipped.
 //
 //  2. Eligibility (per rollup): a rollup is eligible only if all of these hold:
 //     a. Query time grain is derivable from the rollup grain (e.g. month from day).
 //     b. For day+ grains, the query timezone matches the rollup timezone.
-//     c. Query time range start is aligned to the rollup grain (end need not be).
-//     d. All queried dimensions (including WHERE filter dimensions) are present in the rollup.
-//     e. All queried measures are present; computed measures (count, count_distinct) are rejected.
+//     c. Query time range start is aligned to the rollup grain.
+//     d. All queried dimensions are present in the rollup.
+//     e. The time range's time dimension is available in the rollup.
+//     f. All queried measures are present; computed measures (count, count_distinct) are rejected.
+//     g. All WHERE filter dimensions are present in the rollup.
 //
 //  3. Time coverage: an eligible rollup must cover the requested time range.
 //     For explicit time ranges, the query range is clamped to the base table's actual data range first.
 //     For no-time-range queries ("all data"), the rollup must cover the base table's full min/max range.
+//     Additionally, if the base table has data beyond the query end, the query end must be aligned
+//     to the rollup grain (to prevent the last bucket from pulling in extra data).
 //
 //  4. Selection: among eligible rollups, prefer the coarsest grain (fewer rows to scan).
 //     On ties, prefer the rollup with the smallest data range (tighter coverage).
@@ -55,11 +87,25 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 
 	// Disqualify: raw rows queries
 	if qry.Rows {
+		_, span := tracer.Start(ctx, "rollup.selection")
+		span.SetAttributes(
+			attribute.Int("rollup.candidate_count", len(e.metricsView.Rollups)),
+			attribute.String("rollup.result", "skipped"),
+			attribute.String("rollup.skip_reason", skipRawRows),
+		)
+		span.End()
 		return nil, nil
 	}
 
-	// Disqualify: queries with comparison time ranges (future improvement)
+	// Disqualify: queries with comparison time ranges
 	if qry.ComparisonTimeRange != nil {
+		_, span := tracer.Start(ctx, "rollup.selection")
+		span.SetAttributes(
+			attribute.Int("rollup.candidate_count", len(e.metricsView.Rollups)),
+			attribute.String("rollup.result", "skipped"),
+			attribute.String("rollup.skip_reason", skipComparisonTimeRange),
+		)
+		span.End()
 		return nil, nil
 	}
 
@@ -72,6 +118,11 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 	// Determine whether the query has a non-zero time range
 	hasTimeRange := qry.TimeRange != nil && (!qry.TimeRange.Start.IsZero() || !qry.TimeRange.End.IsZero())
 
+	// Parent span for rollup selection
+	selectionCtx, selectionSpan := tracer.Start(ctx, "rollup.selection")
+	selectionSpan.SetAttributes(attribute.Int("rollup.candidate_count", len(e.metricsView.Rollups)))
+	defer selectionSpan.End()
+
 	// Base table watermarks are fetched lazily: only when the first eligible rollup is found.
 	// This avoids wasted queries when no rollup passes eligibility.
 	var baseMin, baseMax time.Time
@@ -82,11 +133,30 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 		if rollup.Table == "" {
 			return nil, fmt.Errorf("rollup for model %q has no resolved table", rollup.Model)
 		}
-		eligible, err := rollupEligible(rollup, qry, queryGrain, whereDims, e.metricsView.TimeDimension, e.metricsView.FirstDayOfWeek)
+
+		// Child span per candidate
+		_, candidateSpan := tracer.Start(selectionCtx, "rollup.candidate")
+		candidateSpan.SetAttributes(
+			attribute.String("rollup.table", rollup.Table),
+			attribute.String("rollup.grain", rollup.TimeGrain.String()),
+			attribute.String("rollup.timezone", rollup.TimeZone),
+		)
+
+		rejectCandidate := func(reason string) {
+			candidateSpan.SetAttributes(
+				attribute.String("rollup.eligible", "false"),
+				attribute.String("rollup.reject_reason", reason),
+			)
+			candidateSpan.End()
+		}
+
+		eligible, reason, err := rollupEligible(rollup, qry, queryGrain, whereDims, e.metricsView.TimeDimension, e.metricsView.FirstDayOfWeek)
 		if err != nil {
+			candidateSpan.End()
 			return nil, err
 		}
 		if !eligible {
+			rejectCandidate(reason)
 			continue
 		}
 
@@ -95,6 +165,7 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 			baseTSFetched = true
 			mn, mx, err := e.resolveBaseTimestamps(ctx)
 			if err != nil {
+				candidateSpan.End()
 				return nil, err
 			}
 			baseMin, baseMax = mn, mx
@@ -102,6 +173,7 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 
 		rollupMin, rollupMax, err := e.resolveRollupTimestamps(ctx, rollup)
 		if err != nil {
+			candidateSpan.End()
 			return nil, fmt.Errorf("failed to fetch timestamps for rollup %q: %w", rollup.Table, err)
 		}
 
@@ -110,6 +182,7 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 		if rollup.TimeZone != "" {
 			loc, err := time.LoadLocation(rollup.TimeZone)
 			if err != nil {
+				candidateSpan.End()
 				return nil, fmt.Errorf("invalid timezone %q for rollup %q: %w", rollup.TimeZone, rollup.Table, err)
 			}
 			rollupLoc = loc
@@ -130,17 +203,21 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 
 			// Check coverage: rollup must cover the effective (clamped) range
 			if !effectiveStart.IsZero() && rollupMin.After(effectiveStart) {
+				rejectCandidate(rejectStartNotCovered)
 				continue
 			}
 			if !effectiveEnd.IsZero() && rollupEffEnd.Before(effectiveEnd) {
+				rejectCandidate(rejectEndNotCovered)
 				continue
 			}
 		} else {
 			// No time range: rollup must cover the base table's full range
 			if rollupMin.After(baseMin) {
+				rejectCandidate(rejectStartNotCovered)
 				continue
 			}
 			if rollupEffEnd.Before(baseMax) {
+				rejectCandidate(rejectEndNotCovered)
 				continue
 			}
 		}
@@ -148,11 +225,14 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 		// End alignment: if data extends beyond the query end and the end is not aligned to the rollup grain,
 		// the last rollup bucket would include data beyond the requested range.
 		// Essentially it just check if base has data >= query end time, then makes sure the query end time is rollup grain aligned
-		if hasTimeRange && !qry.TimeRange.End.IsZero() &&
-			!baseMax.Before(qry.TimeRange.End) &&
+		if hasTimeRange && !qry.TimeRange.End.IsZero() && !baseMax.Before(qry.TimeRange.End) &&
 			!metricsview.TimeAligned(qry.TimeRange.End, rollup.TimeGrain, rollupLoc, e.metricsView.FirstDayOfWeek) {
+			rejectCandidate(rejectEndNotAligned)
 			continue
 		}
+
+		candidateSpan.SetAttributes(attribute.String("rollup.eligible", "true"))
+		candidateSpan.End()
 
 		dataRange := rollupMax.Sub(rollupMin)
 		c := &rollupCandidate{
@@ -170,19 +250,25 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 	}
 
 	if best == nil {
+		selectionSpan.SetAttributes(attribute.String("rollup.result", "none"))
 		return nil, nil
 	}
 
+	selectionSpan.SetAttributes(
+		attribute.String("rollup.result", "selected"),
+		attribute.String("rollup.selected_table", best.rollup.Table),
+	)
 	return BuildSyntheticSpec(e.metricsView, best.rollup), nil
 }
 
 // rollupEligible checks whether a rollup table can satisfy the given query.
+// It returns (eligible, reason, error) where reason is non-empty only when eligible is false.
 // primaryTimeDim is the metrics view's default time dimension name (used when query fields omit it).
-func rollupEligible(rollup *runtimev1.MetricsViewSpec_Rollup, qry *metricsview.Query, queryGrain runtimev1.TimeGrain, whereDims map[string]bool, primaryTimeDim string, firstDayOfWeek uint32) (bool, error) {
+func rollupEligible(rollup *runtimev1.MetricsViewSpec_Rollup, qry *metricsview.Query, queryGrain runtimev1.TimeGrain, whereDims map[string]bool, primaryTimeDim string, firstDayOfWeek uint32) (bool, string, error) {
 	// 1. Grain derivable: if query has a time grain, it must be derivable from rollup grain
 	if queryGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 		if !metricsview.GrainDerivableFrom(queryGrain, rollup.TimeGrain) {
-			return false, nil
+			return false, rejectGrainNotDerivable, nil
 		}
 	}
 
@@ -191,14 +277,14 @@ func rollupEligible(rollup *runtimev1.MetricsViewSpec_Rollup, qry *metricsview.Q
 	if rollup.TimeGrain >= runtimev1.TimeGrain_TIME_GRAIN_DAY {
 		rollupTZ, err := normalizeTimezone(rollup.TimeZone)
 		if err != nil {
-			return false, err
+			return false, "", err
 		}
 		queryTZ, err := normalizeTimezone(qry.TimeZone)
 		if err != nil {
-			return false, err
+			return false, "", err
 		}
 		if rollupTZ != queryTZ {
-			return false, nil
+			return false, rejectTimezoneMismatch, nil
 		}
 	}
 
@@ -210,12 +296,12 @@ func rollupEligible(rollup *runtimev1.MetricsViewSpec_Rollup, qry *metricsview.Q
 		if rollup.TimeZone != "" {
 			loc, err := time.LoadLocation(rollup.TimeZone)
 			if err != nil {
-				return false, fmt.Errorf("invalid timezone %q for rollup %q: %w", rollup.TimeZone, rollup.Table, err)
+				return false, "", fmt.Errorf("invalid timezone %q for rollup %q: %w", rollup.TimeZone, rollup.Table, err)
 			}
 			rollupLoc = loc
 		}
 		if !metricsview.TimeAligned(qry.TimeRange.Start, rollup.TimeGrain, rollupLoc, firstDayOfWeek) {
-			return false, nil
+			return false, rejectStartNotAligned, nil
 		}
 	}
 
@@ -237,12 +323,12 @@ func rollupEligible(rollup *runtimev1.MetricsViewSpec_Rollup, qry *metricsview.Q
 		if d.Compute != nil && d.Compute.TimeFloor != nil {
 			// TimeFloor references an underlying time dimension; it must be available in the rollup
 			if !dimInRollup(d.Compute.TimeFloor.Dimension) {
-				return false, nil
+				return false, rejectTimeDimensionMissing, nil
 			}
 			continue
 		}
 		if !rollupDims[strings.ToLower(d.Name)] {
-			return false, nil
+			return false, rejectDimensionMissing, nil
 		}
 	}
 
@@ -252,7 +338,7 @@ func rollupEligible(rollup *runtimev1.MetricsViewSpec_Rollup, qry *metricsview.Q
 		trTimeDim = qry.TimeRange.TimeDimension
 	}
 	if trTimeDim != "" && !dimInRollup(trTimeDim) {
-		return false, nil
+		return false, rejectTimeDimensionMissing, nil
 	}
 
 	// 6. All queried measures present in rollup; reject computed measures (count, count_distinct, etc.)
@@ -263,21 +349,21 @@ func rollupEligible(rollup *runtimev1.MetricsViewSpec_Rollup, qry *metricsview.Q
 	}
 	for _, m := range qry.Measures {
 		if m.Compute != nil {
-			return false, nil // computed measures are invalid on rollup tables
+			return false, rejectComputedMeasure, nil
 		}
 		if !rollupMeasures[strings.ToLower(m.Name)] {
-			return false, nil
+			return false, rejectMeasureMissing, nil
 		}
 	}
 
 	// 7. All WHERE dimensions present in rollup
 	for dim := range whereDims {
 		if !rollupDims[strings.ToLower(dim)] {
-			return false, nil
+			return false, rejectWhereDimensionMissing, nil
 		}
 	}
 
-	return true, nil
+	return true, "", nil
 }
 
 // BuildSyntheticSpec creates a MetricsViewSpec that points to the rollup table.
