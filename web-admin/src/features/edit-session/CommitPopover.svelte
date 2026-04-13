@@ -2,6 +2,8 @@
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
   import { Button } from "@rilldata/web-common/components/button";
   import * as Popover from "@rilldata/web-common/components/popover";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import {
     createRuntimeServiceGitPushMutation,
@@ -31,7 +33,7 @@
       });
       eventBus.emit("notification", {
         type: "success",
-        message: "Changes committed",
+        message: "Changes committed and pushed",
       });
       commitMessage = "";
       open = false;
@@ -39,7 +41,7 @@
       const message = getRpcErrorMessage(err as RpcStatus);
       eventBus.emit("notification", {
         type: "error",
-        message: message ?? "Failed to commit changes",
+        message: message ?? "Failed to commit and push changes",
       });
     } finally {
       isCommitting = false;
@@ -54,40 +56,51 @@
   }
 </script>
 
-<Popover.Root bind:open>
-  <Popover.Trigger>
-    {#snippet child({ props })}
-      <Button
-        {...props}
-        type="secondary"
-        disabled={!hasChanges || isCommitting}
-      >
-        Commit
-      </Button>
-    {/snippet}
-  </Popover.Trigger>
-  <Popover.Content align="end">
-    <div class="flex flex-col gap-y-2">
-      <textarea
-        class="commit-input"
-        bind:value={commitMessage}
-        onkeydown={handleKeydown}
-        placeholder="Describe your changes..."
-        rows="3"
-      ></textarea>
-      <Button
-        type="primary"
-        small
-        disabled={!commitMessage.trim() || isCommitting}
-        loading={isCommitting}
-        loadingCopy="Committing..."
-        onClick={handleCommit}
-      >
-        Commit
-      </Button>
-    </div>
-  </Popover.Content>
-</Popover.Root>
+<Tooltip distance={8} suppress={open}>
+  <Popover.Root bind:open>
+    <Popover.Trigger>
+      {#snippet child({ props })}
+        <Button
+          {...props}
+          type="secondary"
+          disabled={!hasChanges || isCommitting}
+        >
+          Commit
+        </Button>
+      {/snippet}
+    </Popover.Trigger>
+    <Popover.Content align="end">
+      <div class="flex flex-col gap-y-2">
+        <textarea
+          class="commit-input"
+          bind:value={commitMessage}
+          onkeydown={handleKeydown}
+          placeholder="Describe your changes..."
+          rows="3"
+        ></textarea>
+        <Button
+          type="primary"
+          small
+          disabled={!commitMessage.trim() || isCommitting}
+          loading={isCommitting}
+          loadingCopy="Pushing..."
+          onClick={handleCommit}
+        >
+          Commit & push
+        </Button>
+      </div>
+    </Popover.Content>
+  </Popover.Root>
+  <TooltipContent slot="tooltip-content">
+    <span class="text-xs">
+      {#if hasChanges}
+        Commit and push changes to this branch
+      {:else}
+        No uncommitted changes detected
+      {/if}
+    </span>
+  </TooltipContent>
+</Tooltip>
 
 <style lang="postcss">
   .commit-input {

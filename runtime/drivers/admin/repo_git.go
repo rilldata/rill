@@ -381,7 +381,7 @@ func (r *gitRepo) fetchCurrentBranch(ctx context.Context) error {
 	err = repo.FetchContext(ctx, &git.FetchOptions{
 		RefSpecs: []config.RefSpec{config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", head.Name().Short(), head.Name().Short()))},
 	})
-	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
+	if err != nil && !(errors.Is(err, git.NoErrAlreadyUpToDate) || git.NoMatchingRefSpecError{}.Is(err)) {
 		return err
 	}
 	return nil

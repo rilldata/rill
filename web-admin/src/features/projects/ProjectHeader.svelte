@@ -1,9 +1,11 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
   import CanvasBookmarks from "@rilldata/web-admin/features/bookmarks/CanvasBookmarks.svelte";
   import ExploreBookmarks from "@rilldata/web-admin/features/bookmarks/ExploreBookmarks.svelte";
+  import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
   import ShareDashboardPopover from "@rilldata/web-admin/features/dashboards/share/ShareDashboardPopover.svelte";
+  import EditActions from "@rilldata/web-admin/features/edit-session/EditActions.svelte";
+  import EditButton from "@rilldata/web-admin/features/edit-session/EditButton.svelte";
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
@@ -19,21 +21,19 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { V1ProjectPermissions } from "../../client";
   import { createAdminServiceGetCurrentUser } from "../../client";
+  import ViewAsUserChip from "../../features/view-as-user/ViewAsUserChip.svelte";
+  import { viewAsUserStore } from "../../features/view-as-user/viewAsUserStore";
+  import CreateAlert from "../alerts/CreateAlert.svelte";
+  import { useAlerts } from "../alerts/selectors";
+  import AvatarButton from "../authentication/AvatarButton.svelte";
+  import SignIn from "../authentication/SignIn.svelte";
+  import BranchSelector from "../branches/BranchSelector.svelte";
+  import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
+  import { useDashboards } from "../dashboards/listing/selectors";
   import {
     useBreadcrumbOrgPaths,
     useBreadcrumbProjectPaths,
   } from "../navigation/breadcrumb-selectors";
-  import ViewAsUserChip from "../../features/view-as-user/ViewAsUserChip.svelte";
-  import { viewAsUserStore } from "../../features/view-as-user/viewAsUserStore";
-  import EditActions from "@rilldata/web-admin/features/edit-session/EditActions.svelte";
-  import EditButton from "@rilldata/web-admin/features/edit-session/EditButton.svelte";
-  import CreateAlert from "../alerts/CreateAlert.svelte";
-  import { useAlerts } from "../alerts/selectors";
-  import AvatarButton from "../authentication/AvatarButton.svelte";
-  import BranchSelector from "../branches/BranchSelector.svelte";
-  import SignIn from "../authentication/SignIn.svelte";
-  import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
-  import { useDashboards } from "../dashboards/listing/selectors";
   import {
     isCanvasDashboardPage,
     isMetricsExplorerPage,

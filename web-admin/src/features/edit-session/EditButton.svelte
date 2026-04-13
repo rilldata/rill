@@ -74,13 +74,9 @@
     : undefined;
 
   function handleButtonClick(e: MouseEvent) {
-    if (directEditHref) {
-      e.preventDefault();
-      e.stopPropagation();
-      open = false;
-      requestSkipBranchInjection();
-      void goto(directEditHref);
-    }
+    e.preventDefault();
+    requestSkipBranchInjection();
+    void goto(directEditHref!);
   }
 
   function handleNavClick() {
@@ -118,47 +114,101 @@
   }
 </script>
 
-<DropdownMenu.Root bind:open>
-  <DropdownMenu.Trigger>
-    {#snippet child({ props })}
-      <Button
-        {...props}
-        type="secondary"
-        href={directEditHref}
-        disabled={isStarting || isLoading}
-        loading={isStarting}
-        loadingCopy="Starting..."
-        onClick={handleButtonClick}
-      >
-        Edit
-      </Button>
-    {/snippet}
-  </DropdownMenu.Trigger>
-
-  <DropdownMenu.Content align="end" class="min-w-[200px] max-w-[280px]">
-    {#if hasOwnSessions}
-      <DropdownMenu.Group>
-        <DropdownMenu.Label>Your branches</DropdownMenu.Label>
-      </DropdownMenu.Group>
-      {#each ownDeployments as deployment (deployment.id)}
-        <DropdownMenu.Item
-          href={editUrl(deployment.branch)}
-          onclick={handleNavClick}
+{#if directEditHref}
+  <!-- On a branch the user owns: navigate directly, no dropdown -->
+  <Button
+    type="secondary"
+    href={directEditHref}
+    disabled={isStarting || isLoading}
+    onClick={handleButtonClick}
+  >
+    Edit
+  </Button>
+{:else}
+  <DropdownMenu.Root bind:open>
+    <DropdownMenu.Trigger>
+      {#snippet child({ props })}
+        <Button
+          {...props}
+          type="secondary"
+          disabled={isStarting || isLoading}
+          loading={isStarting}
+          loadingCopy="Starting..."
         >
-          <span
-            class="inline-block size-1.5 rounded-full flex-none {statusDot(
-              deployment.status,
-            )}"
-          ></span>
-          <span class="font-mono truncate">
-            {deployment.branch || "main"}
-          </span>
-        </DropdownMenu.Item>
-      {/each}
+          Edit
+        </Button>
+      {/snippet}
+    </DropdownMenu.Trigger>
 
-      <DropdownMenu.Separator />
+    <DropdownMenu.Content align="end" class="min-w-[200px] max-w-[280px]">
+      {#if hasOwnSessions}
+        <DropdownMenu.Group>
+          <DropdownMenu.Label>Your branches</DropdownMenu.Label>
+        </DropdownMenu.Group>
+        {#each ownDeployments as deployment (deployment.id)}
+          <DropdownMenu.Item
+            href={editUrl(deployment.branch)}
+            onclick={handleNavClick}
+          >
+            <span
+              class="inline-block size-1.5 rounded-full flex-none {statusDot(
+                deployment.status,
+              )}"
+            ></span>
+            <span class="font-mono truncate">
+              {deployment.branch || "main"}
+            </span>
+          </DropdownMenu.Item>
+        {/each}
 
-      {#if showNewBranchInput}
+        <DropdownMenu.Separator />
+
+        {#if showNewBranchInput}
+          <!-- svelte-ignore a11y_click_events_have_key_events -->
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div
+            class="flex flex-col gap-y-1.5 px-2 pb-1.5 pt-0.5"
+            onclick={(e) => e.stopPropagation()}
+          >
+            <input
+              class="branch-input"
+              type="text"
+              bind:value={branchName}
+              onkeydown={(e) => {
+                e.stopPropagation();
+                handleKeydown(e);
+              }}
+              placeholder="branch-name"
+              autofocus
+            />
+            <Button
+              type="primary"
+              small
+              disabled={!branchName.trim() || isStarting}
+              loading={isStarting}
+              loadingCopy="Starting..."
+              onClick={handleCreate}
+            >
+              Start editing
+            </Button>
+          </div>
+        {:else}
+          <!-- Raw button (not DropdownMenu.Item) so clicking doesn't close the menu -->
+          <button
+            class="new-branch-btn"
+            onclick={(e) => {
+              e.stopPropagation();
+              showNewBranchInput = true;
+            }}
+          >
+            <PlusIcon size="12" />
+            <span>New branch...</span>
+          </button>
+        {/if}
+      {:else}
+        <DropdownMenu.Group>
+          <DropdownMenu.Label>Create a branch</DropdownMenu.Label>
+        </DropdownMenu.Group>
         <!-- svelte-ignore a11y_click_events_have_key_events -->
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
@@ -187,54 +237,10 @@
             Start editing
           </Button>
         </div>
-      {:else}
-        <!-- Raw button (not DropdownMenu.Item) so clicking doesn't close the menu -->
-        <button
-          class="new-branch-btn"
-          onclick={(e) => {
-            e.stopPropagation();
-            showNewBranchInput = true;
-          }}
-        >
-          <PlusIcon size="12" />
-          <span>New branch...</span>
-        </button>
       {/if}
-    {:else}
-      <DropdownMenu.Group>
-        <DropdownMenu.Label>Create a branch</DropdownMenu.Label>
-      </DropdownMenu.Group>
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div
-        class="flex flex-col gap-y-1.5 px-2 pb-1.5 pt-0.5"
-        onclick={(e) => e.stopPropagation()}
-      >
-        <input
-          class="branch-input"
-          type="text"
-          bind:value={branchName}
-          onkeydown={(e) => {
-            e.stopPropagation();
-            handleKeydown(e);
-          }}
-          placeholder="branch-name"
-          autofocus
-        />
-        <Button
-          type="primary"
-          small
-          disabled={!branchName.trim() || isStarting}
-          loading={isStarting}
-          loadingCopy="Starting..."
-          onClick={handleCreate}
-        >
-          Start editing
-        </Button>
-      </div>
-    {/if}
-  </DropdownMenu.Content>
-</DropdownMenu.Root>
+    </DropdownMenu.Content>
+  </DropdownMenu.Root>
+{/if}
 
 <style lang="postcss">
   .new-branch-btn {

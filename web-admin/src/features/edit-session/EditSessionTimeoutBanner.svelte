@@ -1,5 +1,9 @@
 <script lang="ts">
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { onDestroy, onMount } from "svelte";
+
+  const BANNER_ID = "edit-session-timeout";
+  const BANNER_PRIORITY = 0; // Highest priority; session loss is urgent
 
   /** Session timeout duration in milliseconds (1 hour) */
   export let timeoutMs = 60 * 60 * 1000;
@@ -8,8 +12,7 @@
   /** Session start time */
   export let sessionStartedAt: string | undefined;
 
-  let showWarning = false;
-  let minutesRemaining = 0;
+  let showing = false;
   let interval: ReturnType<typeof setInterval>;
 
   onMount(() => {
@@ -19,6 +22,7 @@
 
   onDestroy(() => {
     if (interval) clearInterval(interval);
+    if (showing) eventBus.emit("remove-banner", BANNER_ID);
   });
 
   function checkTimeout() {
@@ -28,27 +32,23 @@
     const elapsed = Date.now() - startTime;
     const remaining = timeoutMs - elapsed;
 
-    minutesRemaining = Math.max(0, Math.ceil(remaining / 60_000));
-    showWarning = remaining > 0 && remaining <= warningMs;
+    const minutesRemaining = Math.max(0, Math.ceil(remaining / 60_000));
+    const shouldShow = remaining > 0 && remaining <= warningMs;
+
+    if (shouldShow) {
+      showing = true;
+      eventBus.emit("add-banner", {
+        id: BANNER_ID,
+        priority: BANNER_PRIORITY,
+        message: {
+          type: "warning",
+          iconType: "alert",
+          message: `Your edit session will end in ${minutesRemaining} minute${minutesRemaining === 1 ? "" : "s"} due to inactivity. Push your changes to keep them.`,
+        },
+      });
+    } else if (showing) {
+      showing = false;
+      eventBus.emit("remove-banner", BANNER_ID);
+    }
   }
 </script>
-
-{#if showWarning}
-  <div class="banner" role="alert">
-    <span>
-      Your edit session will end in {minutesRemaining} minute{minutesRemaining ===
-      1
-        ? ""
-        : "s"} due to inactivity. Push your changes to keep them.
-    </span>
-  </div>
-{/if}
-
-<style lang="postcss">
-  .banner {
-    @apply px-4 py-2;
-    @apply bg-yellow-50 border-b border-yellow-200;
-    @apply text-sm text-yellow-800;
-    @apply flex items-center justify-center;
-  }
-</style>
