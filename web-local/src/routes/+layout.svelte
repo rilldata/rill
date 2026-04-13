@@ -97,9 +97,7 @@
   $: onDeployPage = isDeployPage($page);
   $: isPreviewMode = $previewModeStore;
 
-  // Preview mode from store OR (viz) route group
-  $: mode =
-    isPreviewMode || route.id?.includes("(viz)") ? "Preview" : "Developer";
+  $: mode = isPreviewMode ? "Preview" : "Developer";
 
   $: shouldShowPreviewNav =
     isPreviewMode && showPreviewNav($page.url.pathname) && !onDeployPage;
