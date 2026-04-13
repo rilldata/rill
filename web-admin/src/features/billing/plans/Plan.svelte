@@ -91,9 +91,7 @@
     return Math.max(0, Math.min(TRIAL_DAYS, elapsed));
   });
   let trialDaysRemaining = $derived(TRIAL_DAYS - trialDaysUsed);
-  let trialPercent = $derived(
-    Math.round((trialDaysUsed / TRIAL_DAYS) * 100),
-  );
+  let trialPercent = $derived(Math.round((trialDaysUsed / TRIAL_DAYS) * 100));
 
   // Slots + storage data
   let projectsQuery = $derived(
@@ -164,9 +162,7 @@
           >
         {:else if currentPlan === "team"}
           <span class="plan-badge team">Team (Legacy)</span>
-          <span class="text-sm text-fg-secondary"
-            >$250/mo flat + storage</span
-          >
+          <span class="text-sm text-fg-secondary">$250/mo flat + storage</span>
         {/if}
       </div>
 
@@ -204,7 +200,11 @@
           </div>
           <div class="text-right">
             <span class="text-xs text-fg-tertiary">Days remaining</span>
-            <p class="text-2xl font-light" class:text-green-600={trialDaysRemaining > 7} class:text-red-600={trialDaysRemaining <= 7}>
+            <p
+              class="text-2xl font-light"
+              class:text-green-600={trialDaysRemaining > 7}
+              class:text-red-600={trialDaysRemaining <= 7}
+            >
               {trialDaysRemaining}
             </p>
           </div>
@@ -214,7 +214,8 @@
         </div>
         <div class="flex justify-between mt-1">
           <span class="text-xs text-fg-tertiary">
-            {trialPercent}% of trial used, projects will hibernate when trial ends
+            {trialPercent}% of trial used, projects will hibernate when trial
+            ends
           </span>
           <span class="text-xs text-fg-tertiary">30 days</span>
         </div>
@@ -242,9 +243,7 @@
           <span class="stat-divider"></span>
           <div class="stat-item">
             <span class="stat-value"
-              >{totalStorage > 0
-                ? formatMemorySize(totalStorage)
-                : "0 B"}</span
+              >{totalStorage > 0 ? formatMemorySize(totalStorage) : "0 B"}</span
             >
             <span class="stat-label">Storage</span>
           </div>
