@@ -2,13 +2,12 @@
   import { page } from "$app/stores";
   import {
     createAdminServiceGetProject,
-    createAdminServiceGetBillingSubscription,
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
   import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
-  import { isTeamPlan } from "@rilldata/web-admin/features/billing/plans/utils";
+
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { createQueryServiceProjectStorage } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -90,23 +89,7 @@
     return n >= 0 ? n : undefined;
   })();
   $: dataLabel =
-    !defaultOlapEntry || isManaged ? "Data usage" : "Data accessible";
-
-  // Billing plan detection
-  $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
-  $: planName = $subscriptionQuery?.data?.subscription?.plan?.name ?? "";
-
-  // Plan-based storage cap: only Team plan has a 10GB cap
-  const TEAM_STORAGE_CAP = 10 * 1024 * 1024 * 1024; // 10GB
-  $: storageCap = isTeamPlan(planName) ? TEAM_STORAGE_CAP : 0;
-
-  // Fill percentage for the usage pill (0–100)
-  $: usagePercent = (() => {
-    const bytes = dataSizeBytes ?? 0;
-    if (!storageCap) return bytes > 0 ? 100 : 0;
-    return Math.min(Math.round((bytes / storageCap) * 100), 100);
-  })();
-  $: isOverCap = storageCap > 0 && (dataSizeBytes ?? 0) >= storageCap;
+    !defaultOlapEntry || isManaged ? "Data size" : "Data accessible";
 
   // Repo — only shown when the user connected their own GitHub
   $: githubUrl = projectData?.gitRemote
@@ -256,29 +239,13 @@
     {#if dataSizeBytes !== undefined}
       <div class="info-row">
         <span class="info-label">{dataLabel}</span>
-        <span class="info-value flex items-center gap-2">
-          {#if storageCap}
-            <a
-              href="/{organization}/{project}/-/status/tables"
-              class="usage-pill-link"
-              aria-label={dataLabel}
-            >
-              <span class="usage-pill">
-                <span
-                  class="usage-pill-fill"
-                  class:over-cap={isOverCap}
-                  style:width="{usagePercent}%"
-                ></span>
-              </span>
-            </a>
-            <span class="text-xs text-fg-secondary whitespace-nowrap">
-              {formatMemorySize(dataSizeBytes)} / {formatMemorySize(storageCap)}
-            </span>
-          {:else}
-            <span class="text-sm">
-              {formatMemorySize(dataSizeBytes)}
-            </span>
-          {/if}
+        <span class="info-value">
+          <a
+            href="/{organization}/{project}/-/status/tables"
+            class="repo-link"
+          >
+            {formatMemorySize(dataSizeBytes)}
+          </a>
         </span>
       </div>
     {/if}
@@ -303,15 +270,6 @@
   }
   .status-dot {
     @apply w-2 h-2 rounded-full inline-block;
-  }
-  .usage-pill-link {
-    @apply no-underline;
-  }
-  .usage-pill {
-    @apply w-24 h-2.5 rounded-full bg-surface-subtle overflow-hidden inline-block;
-  }
-  .usage-pill-fill {
-    @apply h-full rounded-full bg-primary-500 block transition-all;
   }
   .repo-link {
     @apply text-primary-500 text-sm;
