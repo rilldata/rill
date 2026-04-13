@@ -22,11 +22,11 @@ export function formatUsageVsQuota(
 // Make sure to update admin/billing/orb.go::getPlanType if this is updated
 
 export function isFreePlan(planName: string) {
-  return planName === "free" || planName === "free_trial_2";
+  return planName === "free_plan";
 }
 
 export function isProPlan(planName: string) {
-  return planName === "pro" || planName === "pro_plan";
+  return planName === "pro_plan";
 }
 
 export function isTrialPlan(planName: string) {
@@ -39,14 +39,6 @@ export function isTeamPlan(planName: string) {
 
 export function isManagedPlan(planName: string) {
   return planName === "managed";
-}
-
-export function isFreePlan(planName: string) {
-  return planName === "free_plan";
-}
-
-export function isProPlan(planName: string) {
-  return planName === "pro_plan";
 }
 
 export function isEnterprisePlan(planName: string) {
