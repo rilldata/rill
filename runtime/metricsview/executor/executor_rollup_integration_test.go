@@ -438,7 +438,7 @@ func TestRollupIntegration(t *testing.T) {
 		t.Run("time_range_coverage_not_covered", func(t *testing.T) {
 			// Only rollup covers Feb+; query from Jan to Mar cannot be covered
 			files := map[string]string{
-				"rill.yaml": "",
+				"rill.yaml":              "",
 				"models/base_events.sql": rollupTestFiles()["models/base_events.sql"],
 				"models/rollup_day.sql": `
 SELECT date_trunc('day', timestamp) AS timestamp, publisher, domain,
@@ -517,7 +517,7 @@ explore:
 		t.Run("prefer_smallest_data_range", func(t *testing.T) {
 			// Two monthly rollups: wide (Jan-Mar) and narrow (Feb-Mar); query Feb-Apr picks narrow
 			files := map[string]string{
-				"rill.yaml": "",
+				"rill.yaml":              "",
 				"models/base_events.sql": rollupTestFiles()["models/base_events.sql"],
 				"models/rollup_month_wide.sql": `
 SELECT date_trunc('month', timestamp) AS timestamp, publisher, domain,
@@ -587,7 +587,7 @@ explore:
 		t.Run("only_partial_rollup_returns_nil", func(t *testing.T) {
 			// Only rollup is partial (Jan+Feb); no time range requires full coverage
 			files := map[string]string{
-				"rill.yaml": "",
+				"rill.yaml":              "",
 				"models/base_events.sql": rollupTestFiles()["models/base_events.sql"],
 				"models/rollup_week.sql": `
 SELECT date_trunc('week', timestamp) AS timestamp, publisher, domain,
@@ -639,7 +639,7 @@ explore:
 	t.Run("first_day_of_week", func(t *testing.T) {
 		weeklyOnlyFiles := func(fdow int) map[string]string {
 			return map[string]string{
-				"rill.yaml": "",
+				"rill.yaml":              "",
 				"models/base_events.sql": rollupTestFiles()["models/base_events.sql"],
 				"models/rollup_week.sql": `
 SELECT date_trunc('week', timestamp) AS timestamp, publisher, domain,
