@@ -47,9 +47,6 @@ jobs:
         run: |-
           npm ci -w docs
           npm run build -w docs
-        # https://typicode.github.io/husky/how-to.html#ci-server-and-docker
-        env:
-          HUSKY: 0
 
       - name: Deploy Docs to Netlify docs.rilldata.com
         uses: nwtgck/actions-netlify@v3.0
