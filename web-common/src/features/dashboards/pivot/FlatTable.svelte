@@ -1,8 +1,3 @@
-<script lang="ts" context="module">
-  import { writable } from "svelte/store";
-  const columnLengths = writable(new Map<string, number>());
-</script>
-
 <script lang="ts">
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import type { MeasureColumnProps } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-definition";
@@ -21,7 +16,10 @@
   } from "tanstack-table-8-svelte-5";
   import { flexRender } from "tanstack-table-8-svelte-5";
   import { cellInspectorStore } from "../stores/cell-inspector-store";
+  import { writable } from "svelte/store";
   import type { PivotDataRow } from "./types";
+
+  const columnLengths = writable(new Map<string, number>());
 
   // State props
   export let assembled: boolean;
@@ -29,6 +27,7 @@
   export let dataRows: PivotDataRow[];
   export let hasMeasureContextColumns: boolean;
   export let canShowDataViewer = false;
+  export let fullWidth = false;
   export let activeCell: { rowId: string; columnId: string } | null | undefined;
 
   // Table props
@@ -94,6 +93,12 @@
   }
 
   function hasBorderRight(columnId: string): boolean {
+    // Last column should not have a right border
+    if (
+      headers.length > 0 &&
+      headers[headers.length - 1].column.id === columnId
+    )
+      return false;
     if (!hasMeasureContextColumns) return true;
     const measureIndex = measures.findIndex((m) => m.name === columnId);
     if (measureIndex === -1) return true;
@@ -102,38 +107,80 @@
   }
 </script>
 
-<div
-  class="w-full absolute top-0 z-50 flex pointer-events-none"
-  style:width="{totalLength}px"
-  style:height="{totalRowSize + HEADER_HEIGHT + headerGroups.length}px"
->
-  {#each headers as header, i (header.id)}
-    {@const length =
-      $columnLengths.get(header.column.id) ?? WIDTHS.INIT_MEASURE_WIDTH}
-    {@const last = i === headers.length - 1}
-    <div style:width="{length}px" class="h-full relative">
-      <Resizer
-        side="right"
-        direction="EW"
-        min={WIDTHS.MIN_MEASURE_WIDTH}
-        max={WIDTHS.MAX_MEASURE_WIDTH}
-        dimension={length}
-        justify={last ? "end" : "center"}
-        hang={!last}
-        onUpdate={(d) =>
-          columnLengths.update((lengths) => {
-            return lengths.set(header.column.id, d);
-          })}
-      >
-        <div class="resize-bar"></div>
-      </Resizer>
+{#if fullWidth}
+  <div
+    class="resizer-table absolute top-0 z-50 pointer-events-none"
+    style:width="100%"
+    style:min-width="{totalLength}px"
+    style:height="{totalRowSize + HEADER_HEIGHT + headerGroups.length}px"
+  >
+    <div class="resizer-colgroup">
+      {#each headers as header (header.id)}
+        {@const length =
+          $columnLengths.get(header.column.id) ?? WIDTHS.INIT_MEASURE_WIDTH}
+        <div class="resizer-col" style:width="{length}px"></div>
+      {/each}
     </div>
-  {/each}
-</div>
+    <div class="resizer-row">
+      {#each headers as header, i (header.id)}
+        {@const length =
+          $columnLengths.get(header.column.id) ?? WIDTHS.INIT_MEASURE_WIDTH}
+        {@const last = i === headers.length - 1}
+        <div class="resizer-cell relative">
+          <Resizer
+            side="right"
+            direction="EW"
+            min={WIDTHS.MIN_MEASURE_WIDTH}
+            max={WIDTHS.MAX_MEASURE_WIDTH}
+            dimension={length}
+            justify={last ? "end" : "center"}
+            hang={!last}
+            onUpdate={(d) =>
+              columnLengths.update((lengths) => {
+                return lengths.set(header.column.id, d);
+              })}
+          >
+            <div class="resize-bar"></div>
+          </Resizer>
+        </div>
+      {/each}
+    </div>
+  </div>
+{:else}
+  <div
+    class="absolute top-0 z-50 flex pointer-events-none"
+    style:width="{totalLength}px"
+    style:height="{totalRowSize + HEADER_HEIGHT + headerGroups.length}px"
+  >
+    {#each headers as header, i (header.id)}
+      {@const length =
+        $columnLengths.get(header.column.id) ?? WIDTHS.INIT_MEASURE_WIDTH}
+      {@const last = i === headers.length - 1}
+      <div style:width="{length}px" class="h-full relative">
+        <Resizer
+          side="right"
+          direction="EW"
+          min={WIDTHS.MIN_MEASURE_WIDTH}
+          max={WIDTHS.MAX_MEASURE_WIDTH}
+          dimension={length}
+          justify={last ? "end" : "center"}
+          hang={!last}
+          onUpdate={(d) =>
+            columnLengths.update((lengths) => {
+              return lengths.set(header.column.id, d);
+            })}
+        >
+          <div class="resize-bar"></div>
+        </Resizer>
+      </div>
+    {/each}
+  </div>
+{/if}
 
 <table
   role="presentation"
-  style:width="{totalLength}px"
+  style:width={fullWidth ? "100%" : "{totalLength}px"}
+  style:min-width={fullWidth ? "{totalLength}px" : undefined}
   class:with-measure={measures.length > 0}
   onclick={modified({ shift: onCellCopy, click: onCellClick })}
   onmousemove={onMouseMove}
@@ -143,7 +190,10 @@
     {#each headers as header (header.id)}
       {@const length =
         $columnLengths.get(header.column.id) ?? WIDTHS.INIT_MEASURE_WIDTH}
-      <col style:width="{length}px" style:max-width="{length}px" />
+      <col
+        style:width="{length}px"
+        style:max-width={fullWidth ? undefined : "{length}px"}
+      />
     {/each}
   </colgroup>
 
@@ -243,6 +293,30 @@
 
   .resize-bar {
     @apply bg-primary-500 w-1 h-full;
+  }
+
+  .resizer-table {
+    display: table;
+    table-layout: fixed;
+    border-spacing: 0;
+  }
+
+  .resizer-colgroup {
+    display: table-column-group;
+  }
+
+  .resizer-col {
+    display: table-column;
+  }
+
+  .resizer-row {
+    display: table-row;
+    height: 100%;
+  }
+
+  .resizer-cell {
+    display: table-cell;
+    height: inherit;
   }
 
   table {

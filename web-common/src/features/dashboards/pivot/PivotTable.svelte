@@ -48,6 +48,7 @@
   export let pivotState: Readable<PivotState>;
   export let canShowDataViewer = false;
   export let border = true;
+  export let fullWidth = false;
   export let overscan = 20;
   export let rounded = true;
   export let setPivotExpanded: (expanded: ExpandedState) => void;
@@ -302,6 +303,9 @@
 <div
   class:border
   class:rounded-sm={rounded}
+  class:w-full={fullWidth}
+  class:w-fit={!fullWidth}
+  class:auto-hide-scrollbar={fullWidth}
   class="table-wrapper relative"
   style:--row-height="{ROW_HEIGHT}px"
   style:--header-height="{HEADER_HEIGHT}px"
@@ -322,6 +326,7 @@
       {totalRowSize}
       {canShowDataViewer}
       {hasMeasureContextColumns}
+      {fullWidth}
       activeCell={$pivotState.activeCell}
       {assembled}
       {onMouseMove}
@@ -344,6 +349,7 @@
       {dataRows}
       {measures}
       {canShowDataViewer}
+      {fullWidth}
       activeCell={$pivotState.activeCell}
       {assembled}
       {scrollLeft}
@@ -368,7 +374,31 @@
 
 <style lang="postcss">
   .table-wrapper {
-    @apply overflow-auto h-fit max-h-full w-fit max-w-full;
+    @apply overflow-auto h-fit max-h-full max-w-full;
     @apply z-40 select-none;
+  }
+
+  .auto-hide-scrollbar {
+    scrollbar-gutter: stable;
+  }
+
+  .auto-hide-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+    background: transparent;
+  }
+
+  .auto-hide-scrollbar::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 3px;
+  }
+
+  .auto-hide-scrollbar:hover::-webkit-scrollbar-thumb,
+  .auto-hide-scrollbar:active::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  .auto-hide-scrollbar::-webkit-scrollbar-corner {
+    background: transparent;
   }
 </style>
