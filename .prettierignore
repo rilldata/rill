@@ -53,6 +53,7 @@ docs
 _redirects
 Makefile
 .nvmrc
+.npmrc
 *.mdc
 
 # Java SQL lib
