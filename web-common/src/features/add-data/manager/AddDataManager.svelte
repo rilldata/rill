@@ -26,6 +26,7 @@
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
   import ConnectorFormWrapper from "@rilldata/web-common/features/add-data/form/ConnectorFormWrapper.svelte";
   import { getAddDataClass } from "@rilldata/web-common/features/add-data/class-utils.ts";
+  import { inferSchemaForConnector } from "@rilldata/web-common/features/entity-management/add/selectors.ts";
 
   const {
     config,
@@ -93,7 +94,9 @@
         connector,
       );
       driver = analyzedConnector?.driver;
-      schema = driver?.name ?? schema;
+      schema = analyzedConnector
+        ? inferSchemaForConnector(analyzedConnector)
+        : schema;
     } else if (schema) {
       driver = getConnectorDriverForSchema(schema);
     }

@@ -14,68 +14,85 @@
   import { Button } from "@rilldata/web-common/components/button";
   import { DateTime } from "luxon";
 
-  export let organization: string;
-  export let subscription: V1Subscription;
-  export let plan: V1BillingPlan;
-  export let showUpgradeDialog: boolean;
+  let {
+    organization,
+    subscription,
+    plan,
+    showUpgradeDialog,
+  }: {
+    organization: string;
+    subscription: V1Subscription;
+    plan: V1BillingPlan;
+    showUpgradeDialog: boolean;
+  } = $props();
 
-  $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
-  $: trialIssue = $categorisedIssues.data?.trial;
+  let categorisedIssues = $derived(
+    useCategorisedOrganizationBillingIssues(organization),
+  );
+  let trialIssue = $derived($categorisedIssues.data?.trial);
   // prefer using end date from BillingIssues since we use that to hibernate projects and take other actions
-  $: subscriptionEndDate =
-    trialIssue?.metadata?.onTrial?.endDate ?? subscription?.trialEndDate;
+  let subscriptionEndDate = $derived(
+    trialIssue?.metadata?.onTrial?.endDate ?? subscription?.trialEndDate,
+  );
 
-  let trialEndMessage: string;
-  let trialEnded = false;
-  $: {
+  let trialInfo = $derived.by(() => {
+    let message = "";
+    let ended = false;
     if (trialIssue.type === V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_ENDED) {
-      trialEndMessage = "Your trial has expired.";
-      trialEnded = true;
+      message = "Your trial has expired.";
+      ended = true;
     } else {
       const today = DateTime.now();
       const endDate = DateTime.fromJSDate(new Date(subscriptionEndDate));
       if (endDate.isValid) {
         const diff = endDate.diff(today);
-        trialEndMessage = getTrialMessageForDays(endDate.diff(today));
-        trialEnded = diff.milliseconds < 0;
+        message = getTrialMessageForDays(endDate.diff(today));
+        ended = diff.milliseconds < 0;
       }
     }
-  }
+    return { message, ended };
+  });
 
-  $: title =
-    (plan?.displayName || "Trial plan") + (trialEnded ? " expired" : "");
+  let title = $derived(
+    (plan?.displayName || "Trial plan") + (trialInfo.ended ? " expired" : ""),
+  );
 
-  let open = showUpgradeDialog;
-  $: type = (trialEnded ? "trial-expired" : "base") as TeamPlanDialogTypes;
+  let open = $state(false);
+  $effect(() => {
+    if (showUpgradeDialog) open = true;
+  });
+  let type: TeamPlanDialogTypes = $derived(
+    trialInfo.ended ? "trial-expired" : "base",
+  );
 </script>
 
 <SettingsContainer {title}>
-  <div slot="body">
-    <div>
-      {trialEndMessage} Ready to get started with Rill?
-      <a
-        href="https://www.rilldata.com/pricing"
-        target="_blank"
-        rel="noreferrer noopener">See pricing details -></a
-      >
-      {#if plan}
-        <!-- if there is no plan then quotas will be set to 0. It doesnt make sense to show this then -->
-        <PlanQuotas {organization} />
-      {/if}
-    </div>
+  <div>
+    {trialInfo.message} Ready to get started with Rill?
+    <a
+      href="https://www.rilldata.com/pricing"
+      target="_blank"
+      rel="noreferrer noopener">See pricing details -></a
+    >
+    {#if plan}
+      <!-- if there is no plan then quotas will be set to 0. It doesnt make sense to show this then -->
+      <PlanQuotas {organization} />
+    {/if}
   </div>
-  <svelte:fragment slot="contact">
+  {#snippet contact()}
     <span>For custom enterprise needs,</span>
     <ContactUs />
-  </svelte:fragment>
+  {/snippet}
 
-  <Button type="primary" slot="action" onClick={() => (open = true)}>
-    {#if trialEnded}
-      Start Team plan
-    {:else}
-      End trial and start Team plan
-    {/if}
-  </Button>
+  {#snippet action()}
+    <Button type="primary" onClick={() => (open = true)}>
+      {#if trialInfo.ended}
+        Start Team plan
+      {:else}
+        End trial and start Team plan
+      {/if}
+    </Button>
+  {/snippet}
 </SettingsContainer>
 
 {#if !$categorisedIssues.isLoading}

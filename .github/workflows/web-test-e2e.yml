@@ -73,6 +73,8 @@ jobs:
       fail-fast: false
       matrix:
         name: ${{ fromJson(needs.setup.outputs.matrix) }}
+    env:
+      RILL_ADMIN_FRONTEND_URL: http://localhost:3000
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -85,9 +87,6 @@ jobs:
 
       - name: NPM Install
         run: npm ci
-        # https://typicode.github.io/husky/how-to.html#ci-server-and-docker
-        env:
-          HUSKY: 0
 
       - name: Set up go for E2E
         uses: actions/setup-go@v5
