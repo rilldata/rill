@@ -1,8 +1,8 @@
 <script lang="ts">
   import {
     createAdminServiceGetBillingSubscription,
-    createAdminServiceGetOrganization,
     createAdminServiceListProjectsForOrganization,
+    V1BillingPlanType,
   } from "@rilldata/web-admin/client";
   import { getOrganizationUsageMetrics } from "@rilldata/web-admin/features/billing/plans/selectors";
   import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types";
@@ -36,44 +36,63 @@
     useCategorisedOrganizationBillingIssues(organization),
   );
 
-  let orgQuery = $derived(createAdminServiceGetOrganization(organization));
-  let hasPaymentCustomer = $derived(
-    !!$orgQuery.data?.organization?.paymentCustomerId,
-  );
-
-  let hasBillingTrialIssue = $derived(!!$categorisedIssues.data?.trial);
   let subHasEnded = $derived(!!$categorisedIssues.data?.cancelled);
-  let subIsProPlan = $derived(plan && isProPlan(plan.name));
-  let subIsTeamPlan = $derived(plan && isTeamPlan(plan.name));
-  let subIsManagedPlan = $derived(plan && isManagedPlan(plan.name));
-  let subIsEnterprisePlan = $derived(
-    plan && (isEnterprisePlan(plan.name) || isManagedPlan(plan.name)),
-  );
+  let planType = $derived(plan?.planType);
+  let planName = $derived(plan?.name ?? "");
 
   type PlanTier = "trial" | "pro" | "team" | "enterprise";
   let currentPlan: PlanTier = $derived.by(() => {
-    if (subIsTeamPlan) return "team";
-    if (subIsManagedPlan || subIsEnterprisePlan) return "enterprise";
-    // Pro plan with payment = Pro; Pro plan without payment = Pro Trial
-    if (subIsProPlan && hasPaymentCustomer) return "pro";
-    // Everything else is Pro Trial: pro without payment, free_trial plan, no plan, cancelled
+    // Prefer planType enum when available; fall back to plan.name string matching
+    if (
+      planType === V1BillingPlanType.BILLING_PLAN_TYPE_TEAM ||
+      isTeamPlan(planName)
+    )
+      return "team";
+    if (
+      planType === V1BillingPlanType.BILLING_PLAN_TYPE_ENTERPRISE ||
+      planType === V1BillingPlanType.BILLING_PLAN_TYPE_MANAGED ||
+      isManagedPlan(planName) ||
+      isEnterprisePlan(planName)
+    )
+      return "enterprise";
+    if (
+      planType === V1BillingPlanType.BILLING_PLAN_TYPE_PRO ||
+      isProPlan(planName)
+    )
+      return "pro";
+    // free_trial, free, no plan, cancelled — all trial
     return "trial";
   });
 
+  let isTrialExpired = $derived(
+    $categorisedIssues.data?.trial?.type === "BILLING_ISSUE_TYPE_TRIAL_ENDED",
+  );
+
   let dialogType: TeamPlanDialogTypes = $derived.by(() => {
     if (subHasEnded) return "renew";
-    if (hasBillingTrialIssue) {
-      const trialIssue = $categorisedIssues.data?.trial;
-      if (trialIssue?.type === "BILLING_ISSUE_TYPE_TRIAL_ENDED")
-        return "trial-expired";
-      return "base";
-    }
+    if (isTrialExpired) return "trial-expired";
     return "base";
   });
 
   let renewEndDate = $derived(
     $categorisedIssues.data?.cancelled?.metadata?.subscriptionCancelled
       ?.endDate ?? "",
+  );
+
+  // Trial timer
+  const TRIAL_DAYS = 30;
+  let trialEndDate = $derived(subscription?.trialEndDate);
+  let trialDaysUsed = $derived.by(() => {
+    if (!trialEndDate) return 0;
+    const end = new Date(trialEndDate).getTime();
+    const start = end - TRIAL_DAYS * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    const elapsed = Math.floor((now - start) / (24 * 60 * 60 * 1000));
+    return Math.max(0, Math.min(TRIAL_DAYS, elapsed));
+  });
+  let trialDaysRemaining = $derived(TRIAL_DAYS - trialDaysUsed);
+  let trialPercent = $derived(
+    Math.round((trialDaysUsed / TRIAL_DAYS) * 100),
   );
 
   // Slots + storage data
@@ -111,6 +130,10 @@
       "_self",
     );
   }
+
+  function handleContactSales() {
+    window.Pylon("show");
+  }
 </script>
 
 <section>
@@ -126,30 +149,45 @@
             >Custom contract · Fully managed</span
           >
         {:else if currentPlan === "trial"}
-          <span class="plan-badge trial">Pro Trial</span>
-          <span class="text-sm text-fg-secondary"
-            >$250 free credit · No time limit</span
-          >
+          <span class="plan-badge trial">Free Trial</span>
+          {#if isTrialExpired}
+            <span class="text-sm text-fg-secondary"
+              >Trial expired · Projects hibernated</span
+            >
+          {:else}
+            <span class="text-sm text-fg-secondary">30 day free trial</span>
+          {/if}
         {:else if currentPlan === "pro"}
           <span class="plan-badge pro">Pro</span>
           <span class="text-sm text-fg-secondary"
             >Usage based pricing · $0.15/slot/hr</span
           >
         {:else if currentPlan === "team"}
-          <span class="plan-badge team">Team</span>
-          <span class="text-sm text-fg-secondary">Legacy plan</span>
+          <span class="plan-badge team">Team (Legacy)</span>
+          <span class="text-sm text-fg-secondary"
+            >$250/mo flat + storage</span
+          >
         {/if}
       </div>
 
-      {#if currentPlan === "enterprise"}
-        <button class="contact-btn" onclick={() => window.Pylon("show")}>
-          Contact us
-        </button>
-      {:else if currentPlan === "trial"}
-        <button class="subscribe-btn" onclick={handleSubscribe}>
-          Subscribe to Pro
-        </button>
-      {/if}
+      <div class="flex items-center gap-2">
+        {#if currentPlan === "enterprise"}
+          <button class="contact-btn" onclick={handleContactSales}>
+            Contact us
+          </button>
+        {:else if currentPlan === "trial"}
+          <button class="subscribe-btn" onclick={handleSubscribe}>
+            Subscribe to Pro
+          </button>
+        {:else if currentPlan === "team"}
+          <button class="subscribe-btn" onclick={handleSubscribe}>
+            Switch to Pro
+          </button>
+          <button class="contact-btn" onclick={handleContactSales}>
+            Upgrade to Enterprise
+          </button>
+        {/if}
+      </div>
     </div>
 
     {#if currentPlan === "enterprise"}
@@ -159,8 +197,33 @@
       </p>
     {/if}
 
-    <!-- Divider -->
-    <div class="divider"></div>
+    {#if currentPlan === "trial" && trialEndDate}
+      <div class="trial-section">
+        <div class="flex justify-between mb-1">
+          <div>
+            <span class="text-xs text-fg-tertiary">Days used</span>
+            <p class="text-2xl font-light text-fg-secondary">
+              {trialDaysUsed}
+            </p>
+          </div>
+          <div class="text-right">
+            <span class="text-xs text-fg-tertiary">Days remaining</span>
+            <p class="text-2xl font-light" class:text-green-600={trialDaysRemaining > 7} class:text-red-600={trialDaysRemaining <= 7}>
+              {trialDaysRemaining}
+            </p>
+          </div>
+        </div>
+        <div class="trial-bar-bg">
+          <div class="trial-bar-fill" style:width="{trialPercent}%"></div>
+        </div>
+        <div class="flex justify-between mt-1">
+          <span class="text-xs text-fg-tertiary">
+            {trialPercent}% of trial used, projects will hibernate when trial ends
+          </span>
+          <span class="text-xs text-fg-tertiary">30 days</span>
+        </div>
+      </div>
+    {/if}
 
     <!-- Slots + storage row -->
     <div class="stats-row">
@@ -205,37 +268,38 @@
         </svg>
       </a>
     </div>
-  </div>
 
-  <!-- Compare plans toggle -->
-  {#if showComparePlans}
-    <button
-      class="compare-toggle"
-      onclick={() => (comparePlansOpen = !comparePlansOpen)}
-    >
-      Compare plans
-      <svg
-        class="w-4 h-4 transition-transform"
-        class:rotate-180={!comparePlansOpen}
-        viewBox="0 0 16 16"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.5"
+    <!-- Compare plans toggle -->
+    {#if showComparePlans}
+      <button
+        class="compare-toggle"
+        class:open={comparePlansOpen}
+        onclick={() => (comparePlansOpen = !comparePlansOpen)}
       >
-        <path d="M4 10l4-4 4 4" />
-      </svg>
-    </button>
+        Compare plans
+        <svg
+          class="w-4 h-4 transition-transform"
+          class:rotate-180={!comparePlansOpen}
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+        >
+          <path d="M4 10l4-4 4 4" />
+        </svg>
+      </button>
 
-    {#if comparePlansOpen}
-      <PlanCards
-        {organization}
-        {currentPlan}
-        {showUpgradeDialog}
-        {dialogType}
-        {renewEndDate}
-      />
+      {#if comparePlansOpen}
+        <PlanCards
+          {organization}
+          {currentPlan}
+          {showUpgradeDialog}
+          {dialogType}
+          {renewEndDate}
+        />
+      {/if}
     {/if}
-  {/if}
+  </div>
 </section>
 
 <StartTeamPlanDialog
@@ -270,6 +334,8 @@
 
   .plan-badge.trial {
     @apply text-primary-600 bg-primary-50;
+    width: auto;
+    padding: 0 12px;
   }
 
   .plan-badge.pro {
@@ -278,6 +344,8 @@
 
   .plan-badge.team {
     @apply text-fg-secondary bg-surface-subtle;
+    width: auto;
+    padding: 0 12px;
   }
 
   .plan-badge.enterprise {
@@ -293,19 +361,29 @@
   }
 
   .contact-btn {
-    @apply text-sm font-medium text-fg-primary border border-gray-300 px-5 py-2 cursor-pointer bg-transparent rounded-sm;
+    @apply text-sm font-medium text-fg-primary border border-gray-300 px-5 py-2 cursor-pointer bg-transparent rounded-none;
   }
 
   .contact-btn:hover {
     @apply bg-surface-subtle;
   }
 
-  .divider {
-    @apply border-t mt-4;
+  .trial-section {
+    @apply mt-4 pt-4 border-t;
+  }
+
+  .trial-bar-bg {
+    @apply w-full h-2 bg-gray-200 rounded-full overflow-hidden;
+  }
+
+  .trial-bar-fill {
+    @apply h-full bg-primary-500 rounded-full transition-all;
   }
 
   .stats-row {
-    @apply flex items-center justify-between pt-4;
+    @apply flex items-center justify-between bg-surface-subtle border-t;
+    margin: 16px -24px 0;
+    padding: 12px 24px;
   }
 
   .view-usage-link {
@@ -333,7 +411,16 @@
   }
 
   .compare-toggle {
-    @apply flex items-center gap-1.5 mx-auto mt-4 text-sm font-medium text-fg-secondary cursor-pointer bg-transparent border-none;
+    @apply flex items-center justify-center gap-1.5 text-sm font-medium text-fg-secondary cursor-pointer bg-transparent border-t border-l-0 border-r-0 border-b-0;
+    margin: 0 -24px -24px;
+    width: calc(100% + 48px);
+    padding: 12px 0;
+    border-radius: 0 0 12px 12px;
+  }
+
+  .compare-toggle.open {
+    margin-bottom: 0;
+    border-radius: 0;
   }
 
   .compare-toggle:hover {

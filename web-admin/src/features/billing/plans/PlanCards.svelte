@@ -27,7 +27,10 @@
   let showEnterprise = $derived(currentPlan !== "enterprise");
 
   let visibleCount = $derived(
-    (showTrial ? 1 : 0) + (showPro ? 1 : 0) + (showEnterprise ? 1 : 0),
+    (showTrial ? 1 : 0) +
+      (showTeam ? 1 : 0) +
+      (showPro ? 1 : 0) +
+      (showEnterprise ? 1 : 0),
   );
 
   let upgradeDialogOpen = $state(false);
@@ -47,17 +50,24 @@
   }
 
   const trialFeatures = [
-    "Credit rolls over when you subscribe to Pro",
+    "30-day free trial period",
     "Self-serve slots (2 prod slot minimum)",
     "1 GB storage included · $1/GB above",
     '"Made with Rill" badge',
   ];
 
   const proFeatures = [
-    "Unused trial credit applied to first bill",
     "Cancel anytime, data preserved 30 days",
+    "Billed on prod slots + GB data overages",
     "1 GB storage included · $1/GB above",
     '"Made with Rill" badge',
+  ];
+
+  const teamFeatures = [
+    "$250/mo flat charge",
+    "1 GB storage included · $25/GB above",
+    "Email / Chat support",
+    "10 slot limit",
   ];
 
   const enterpriseFeatures = [
@@ -66,14 +76,16 @@
     "Custom storage limits",
     "Custom colors, logo, no badge",
   ];
+
+  let showTeam = $derived(currentPlan === "team");
 </script>
 
 <div class="compare-container">
   {#if showTrial}
     <div class="plan-col">
-      <h3 class="plan-name">Pro Trial</h3>
-      <p class="plan-pricing-main">$250 free credit</p>
-      <p class="plan-pricing-sub">No time limit</p>
+      <h3 class="plan-name">Free Trial</h3>
+      <p class="plan-pricing-main">30 day free trial</p>
+      <p class="plan-pricing-sub">No credit card required</p>
 
       <ul class="feature-list">
         {#each trialFeatures as feature}
@@ -93,7 +105,32 @@
     </div>
   {/if}
 
-  {#if showTrial && showPro}
+  {#if showTrial && (showTeam || showPro)}
+    <span class="col-divider"></span>
+  {/if}
+
+  {#if showTeam}
+    <div class="plan-col">
+      <h3 class="plan-name">Team plan (legacy)</h3>
+      <p class="plan-pricing-main">$250/mo</p>
+      <p class="plan-pricing-sub">Flat rate + storage</p>
+
+      <ul class="feature-list">
+        {#each teamFeatures as feature}
+          <li class="feature-item">
+            <svg class="check-icon" viewBox="0 0 16 16" fill="none">
+              <path
+                d="M13.3 4.7a.5.5 0 0 1 0 .7l-6.5 6.5a.5.5 0 0 1-.7 0L3.2 9a.5.5 0 1 1 .7-.7l2.6 2.6 6.1-6.1a.5.5 0 0 1 .7 0Z"
+                fill="currentColor"
+              />
+            </svg>
+            <span>{feature}</span>
+          </li>
+        {/each}
+      </ul>
+
+      <button class="col-btn current-btn" disabled>Current plan</button>
+    </div>
     <span class="col-divider"></span>
   {/if}
 
@@ -167,15 +204,15 @@
 
 <style lang="postcss">
   .compare-container {
-    @apply flex border rounded-xl bg-surface-background mt-4;
-    box-shadow:
-      0px 1px 2px 0px rgba(0, 0, 0, 0.06),
-      0px 1px 3px 0px rgba(0, 0, 0, 0.1);
+    @apply flex bg-surface-background;
+    gap: 24px;
+    margin: 0 -24px -24px;
+    padding: 24px 36px 36px;
+    border-radius: 0 0 12px 12px;
   }
 
   .plan-col {
     @apply flex flex-col flex-1;
-    padding: 32px 26px;
   }
 
   .col-divider {
