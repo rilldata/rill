@@ -35,6 +35,7 @@ export enum BehaviourEventAction {
   // Welcome/Connector actions
   AddDataIntent = "add-data-intent",
   WelcomePageViewed = "welcome-page-viewed",
+  ConnectorSelectionStarted = "connector-selection-started",
   ConnectorConfigurationStarted = "connector-configuration-started",
   ConnectorConfigurationCanceled = "connector-configuration-canceled",
   ModelConfigurationStarted = "model-configuration-started",

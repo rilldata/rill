@@ -115,10 +115,6 @@ export class AddDataStateManager {
       // CreateConnector =={ConnectorSelected event}=> CreateModel/ExploreConnector
       case AddDataStep.CreateConnector: {
         if (event.type === TransitionEventType.Back) {
-          this.fireBehaviourEvent(
-            BehaviourEventAction.ConnectorConfigurationCanceled,
-            { step: AddDataStep.CreateConnector, schema: this.state.schema },
-          );
           this.popState();
           break;
         }
@@ -138,16 +134,6 @@ export class AddDataStateManager {
         switch (event.type) {
           // CreateModel/ExploreConnector =={Back event}=> Init/SelectConnector/CreateConnector
           case TransitionEventType.Back:
-            this.fireBehaviourEvent(
-              this.state.step === AddDataStep.CreateModel
-                ? BehaviourEventAction.ModelConfigurationCanceled
-                : BehaviourEventAction.ConnectorExploreCanceled,
-              {
-                step: this.state.step,
-                schema: this.state.schema,
-                connector: this.state.connector,
-              },
-            );
             this.popState();
             break;
 
@@ -188,11 +174,6 @@ export class AddDataStateManager {
       // Import =={Imported event}=> Done
       case AddDataStep.Import:
         if (event.type === TransitionEventType.Back) {
-          this.fireBehaviourEvent(BehaviourEventAction.ImportCanceled, {
-            step: AddDataStep.Import,
-            schema: this.state.schema,
-            connector: this.state.config.connector,
-          });
           // Can be back to Init/CreateModel/ExploreConnector
           this.popState();
           break;
@@ -203,60 +184,16 @@ export class AddDataStateManager {
         });
         break;
     }
-
-    if (event.type !== TransitionEventType.Back) {
-      switch (this.state.step) {
-        case AddDataStep.CreateConnector:
-          this.fireBehaviourEvent(
-            BehaviourEventAction.ConnectorConfigurationStarted,
-            {
-              step: AddDataStep.CreateConnector,
-              schema: this.state.schema,
-            },
-          );
-          break;
-
-        case AddDataStep.CreateModel:
-          this.fireBehaviourEvent(
-            BehaviourEventAction.ModelConfigurationStarted,
-            {
-              step: AddDataStep.CreateModel,
-              schema: this.state.schema,
-              connector: this.state.connector,
-            },
-          );
-          break;
-
-        case AddDataStep.ExploreConnector:
-          this.fireBehaviourEvent(
-            BehaviourEventAction.ConnectorExploreStarted,
-            {
-              step: AddDataStep.ExploreConnector,
-              schema: this.state.schema,
-              connector: this.state.connector,
-            },
-          );
-          break;
-
-        case AddDataStep.Import:
-          this.fireBehaviourEvent(BehaviourEventAction.ImportStarted, {
-            step: AddDataStep.Import,
-            schema: this.state.schema,
-            connector: this.state.config.connector,
-          });
-          break;
-      }
-    }
   }
 
   public fireErrorEvent(
     message: string,
-    step: AddDataStep | ImportDataStep = this.state.step,
+    subStep: AddDataStep | ImportDataStep = this.state.step,
   ) {
     if (!this.config?.space || !this.config?.screen) return;
 
     const addDataFields: AddDataBehaviourEventFields = {
-      step,
+      step: subStep,
       duration: Date.now() - this.startTime,
     };
     if (
@@ -292,9 +229,15 @@ export class AddDataStateManager {
     if (this.state.step !== state.step) this.stateStack.push(this.state);
     this.state = state;
     this.onStepChange?.(state.step);
+
+    // Fire event based on the new step
+    this.fireEventAfterPushState();
   }
 
   private popState() {
+    // Fire event based on step before popState
+    this.fireEventBeforePopState();
+
     this.state = this.stateStack.pop() ?? { step: AddDataStep.Init };
     if (this.stateStack.length === 0) this.onClose?.();
     this.onStepChange?.(this.state.step);
@@ -304,6 +247,100 @@ export class AddDataStateManager {
   // So we need to clear the stack.
   private clearStack() {
     this.stateStack = [];
+  }
+
+  /**
+   * Fire event based on the new step.
+   * Fires XXStarted events.
+   */
+  private fireEventAfterPushState() {
+    switch (this.state.step) {
+      case AddDataStep.SelectConnector:
+        this.fireBehaviourEvent(
+          BehaviourEventAction.ConnectorSelectionStarted,
+          { step: AddDataStep.SelectConnector },
+        );
+        break;
+
+      case AddDataStep.CreateConnector:
+        this.fireBehaviourEvent(
+          BehaviourEventAction.ConnectorConfigurationStarted,
+          {
+            step: AddDataStep.CreateConnector,
+            schema: this.state.schema,
+          },
+        );
+        break;
+
+      case AddDataStep.CreateModel:
+        this.fireBehaviourEvent(
+          BehaviourEventAction.ModelConfigurationStarted,
+          {
+            step: AddDataStep.CreateModel,
+            schema: this.state.schema,
+            connector: this.state.connector,
+          },
+        );
+        break;
+
+      case AddDataStep.ExploreConnector:
+        this.fireBehaviourEvent(BehaviourEventAction.ConnectorExploreStarted, {
+          step: AddDataStep.ExploreConnector,
+          schema: this.state.schema,
+          connector: this.state.connector,
+        });
+        break;
+
+      case AddDataStep.Import:
+        this.fireBehaviourEvent(BehaviourEventAction.ImportStarted, {
+          step: AddDataStep.Import,
+          schema: this.state.schema,
+          connector: this.state.config.connector,
+        });
+        break;
+    }
+  }
+
+  /**
+   * Fire event based on the step before popState, usually when user clicks back button.
+   * Fires XXCanceled events.
+   */
+  private fireEventBeforePopState() {
+    switch (this.state.step) {
+      case AddDataStep.CreateConnector:
+        this.fireBehaviourEvent(
+          BehaviourEventAction.ConnectorConfigurationCanceled,
+          { step: AddDataStep.CreateConnector, schema: this.state.schema },
+        );
+        break;
+
+      case AddDataStep.CreateModel:
+        this.fireBehaviourEvent(
+          BehaviourEventAction.ModelConfigurationCanceled,
+          {
+            step: this.state.step,
+            schema: this.state.schema,
+            connector: this.state.connector,
+          },
+        );
+        break;
+
+      case AddDataStep.ExploreConnector:
+        this.fireBehaviourEvent(BehaviourEventAction.ConnectorExploreCanceled, {
+          step: this.state.step,
+          schema: this.state.schema,
+          connector: this.state.connector,
+        });
+        break;
+
+      case AddDataStep.Import:
+        this.fireBehaviourEvent(BehaviourEventAction.ImportCanceled, {
+          step: AddDataStep.Import,
+          schema: this.state.schema,
+          connector: this.state.config.connector,
+        });
+        break;
+    }
   }
 
   private fireBehaviourEvent(
