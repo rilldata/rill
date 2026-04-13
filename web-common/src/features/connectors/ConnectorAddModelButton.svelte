@@ -7,6 +7,11 @@
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { Plus } from "lucide-svelte";
   import AddDataModal from "@rilldata/web-common/features/add-data/AddDataModal.svelte";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "@rilldata/web-common/metrics/service/MetricsTypes.ts";
+  import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
 
   export let resource: V1Resource | undefined;
   export let hasUnsavedChanges = false;
@@ -45,6 +50,11 @@
 
 {#if schemaName && connectorName}
   <AddDataModal
+    config={{
+      medium: BehaviourEventMedium.Button,
+      space: MetricsEventSpace.Workspace,
+      screen: MetricsEventScreenName.Connector,
+    }}
     bind:open={addModelOpen}
     schema={schemaName}
     connector={connectorName}

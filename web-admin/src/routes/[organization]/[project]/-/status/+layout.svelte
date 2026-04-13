@@ -49,7 +49,7 @@
 </script>
 
 <ContentContainer title="Project Status" maxWidth={1100}>
-  <div class="container flex-col md:flex-row">
+  <div class="container flex-col lg:flex-row">
     <LeftNav
       {basePage}
       baseRoute="/[organization]/[project]/-/status"

@@ -69,6 +69,19 @@ function groupBySchema(connectors: V1AnalyzedConnector[]) {
 }
 
 export function inferSchemaForConnector(connector: V1AnalyzedConnector) {
+  if (!connector.driver?.name) return "";
   // TODO: some schema will share driver name, differentiate them.
-  return connector.driver?.name ?? "";
+  const driverName = connector.driver.name;
+  switch (driverName) {
+    case "duckdb":
+      if (
+        (
+          connector.config as Record<string, string> | undefined
+        )?.path?.startsWith("md:")
+      )
+        return "motherduck";
+      break;
+  }
+
+  return driverName;
 }

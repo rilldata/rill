@@ -65,7 +65,10 @@ export abstract class BaseChart<
     };
     super(resource, parent, path, baseSpec as TConfig);
 
-    this.type = resource.component?.state?.validSpec?.renderer as ChartType;
+    this.type = (resource.component?.state?.validSpec?.renderer ??
+      (parent.allowUnvalidatedSpec
+        ? resource.component?.spec?.renderer
+        : undefined)) as ChartType;
     this.chartType = writable(this.type);
   }
 
