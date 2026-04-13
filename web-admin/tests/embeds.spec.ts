@@ -9,7 +9,6 @@ function expectMessageContaining(
   messages: string[],
   expectedSubstring: string,
 ) {
-  console.log(messages);
   const found = messages.some((msg) => msg.includes(expectedSubstring));
   if (!found) {
     const formattedMessages =
@@ -381,7 +380,7 @@ test.describe("Embeds", () => {
 
       expectMessageContaining(
         logMessages,
-        "tr=PT24H&compare_tr=rill-PP&f.bids_metrics=advertiser_name+IN+('Instacart')",
+        "tr=PT24H&compare_tr=rill-PP&f.bids_metrics=advertiser_name+IN+%28%27Instacart%27%29",
       );
     });
 
@@ -408,7 +407,7 @@ test.describe("Embeds", () => {
 
       expectMessageContaining(
         logMessages,
-        `{"id":1337,"result":{"state":"tr=PT24H&compare_tr=rill-PP&f.bids_metrics=advertiser_name+IN+('Instacart')"}}`,
+        `{"id":1337,"result":{"state":"tr=PT24H&compare_tr=rill-PP&f.bids_metrics=advertiser_name+IN+%28%27Instacart%27%29"}}`,
       );
     });
 
@@ -510,7 +509,7 @@ test.describe("Embeds", () => {
 
         expectMessageContaining(
           logMessages,
-          "tr=PT6H&compare_tr=rill-PP&f=advertiser_name+IN+('Instacart')",
+          "tr=PT6H&compare_tr=rill-PP&f=advertiser_name+IN+%28%27Instacart%27%29",
         );
       });
     });
