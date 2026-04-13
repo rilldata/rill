@@ -10,7 +10,6 @@
   import { fetchPaymentsPortalURL } from "@rilldata/web-admin/features/billing/plans/selectors";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
-  import { isEnterprisePlan, isManagedPlan } from "./plans/utils";
 
   let { organization }: { organization: string } = $props();
 
@@ -18,7 +17,6 @@
   let subscriptionQuery = $derived(
     createAdminServiceGetBillingSubscription(organization),
   );
-  let plan = $derived($subscriptionQuery?.data?.subscription?.plan);
   let categorisedIssues = $derived(
     useCategorisedOrganizationBillingIssues(organization),
   );
@@ -26,10 +24,6 @@
     !!$org.data?.organization?.paymentCustomerId,
   );
   let paymentIssues = $derived($categorisedIssues.data?.payment);
-  let neverSubscribed = $derived(!!$categorisedIssues.data?.neverSubscribed);
-  let onManagedPlan = $derived(plan && isManagedPlan(plan.name));
-  let onEnterprisePlan = $derived(plan && isEnterprisePlan(plan.name));
-
   async function handleManageCards() {
     const setup = paymentIssues?.length
       ? needsPaymentSetup(paymentIssues)
