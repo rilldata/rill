@@ -198,12 +198,15 @@
 
   <div class="flex gap-x-2 items-center ml-auto">
     {#if editContext}
+      {#if $developerChat}
+        <ChatToggle />
+      {/if}
       <EditActions {organization} {project} branch={activeBranch ?? ""} />
     {:else}
       {#if $viewAsUserStore}
         <ViewAsUserChip />
       {/if}
-      {#if $cloudEditing && onProjectPage && projectPermissions.manageDev}
+      {#if true && onProjectPage && projectPermissions.manageDev}
         <EditButton {organization} {project} {activeBranch} />
       {/if}
       {#if onProjectPage && projectPermissions.manageProjectMembers}
@@ -226,7 +229,7 @@
             let:ready
           >
             <LastRefreshedDate {dashboard} />
-            {#if $cloudEditing && (onMetricsExplorerPage || onCanvasDashboardPage) && projectPermissions.manageDev}
+            {#if true && (onMetricsExplorerPage || onCanvasDashboardPage) && projectPermissions.manageDev}
               <EditButton {organization} {project} {activeBranch} />
             {/if}
             {#if $dimensionSearch && ready}
@@ -255,7 +258,7 @@
     {/if}
 
     {#if onCanvasDashboardPage}
-      {#if $cloudEditing && projectPermissions.manageDev}
+      {#if true && projectPermissions.manageDev}
         <EditButton {organization} {project} {activeBranch} />
       {/if}
       {#if $dashboardChat && !onPublicURLPage}
