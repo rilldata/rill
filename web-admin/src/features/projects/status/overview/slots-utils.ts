@@ -19,7 +19,7 @@ function tier(slots: number, rate = SLOT_RATE_PER_HR): SlotTier {
 }
 
 // Popular slot values shown by default
-export const POPULAR_SLOTS = [2, 3, 4, 8, 16, 30];
+export const POPULAR_SLOTS = [1, 2, 3, 4, 8, 16, 30];
 
 // All available slot values including intermediate sizes
 export const ALL_SLOTS = [

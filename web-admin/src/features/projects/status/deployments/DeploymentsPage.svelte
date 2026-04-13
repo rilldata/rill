@@ -304,6 +304,7 @@
     {organization}
     {project}
     currentSlots={devSlots}
+    minSlots={1}
   />
 {/if}
 

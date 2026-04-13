@@ -28,15 +28,15 @@
     project,
     currentSlots,
     title = "Manage Cluster Size",
+    minSlots = DEFAULT_MANAGED_SLOTS,
   }: {
     open?: boolean;
     organization: string;
     project: string;
     currentSlots: number;
     title?: string;
+    minSlots?: number;
   } = $props();
-
-  let minSlots = DEFAULT_MANAGED_SLOTS;
 
   let selectedSlots = $state(0);
   let showAllSizes = $state(false);
