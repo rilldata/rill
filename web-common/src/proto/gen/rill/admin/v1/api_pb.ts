@@ -1095,7 +1095,7 @@ export class GetDeploymentRequest extends Message<GetDeploymentRequest> {
    */
   for: {
     /**
-     * If set, will use the attributes of the user with this ID.
+     * If set, will use the attributes of the Rill user with this ID.
      *
      * @generated from field: string user_id = 3;
      */
@@ -2526,7 +2526,7 @@ export class GetDeploymentCredentialsRequest extends Message<GetDeploymentCreden
    */
   for: {
     /**
-     * If set, will use the attributes of the user with this ID.
+     * If set, will use the attributes of the Rill user with this ID.
      *
      * @generated from field: string user_id = 4;
      */
@@ -2689,7 +2689,7 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
    */
   for: {
     /**
-     * If set, will use the attributes of the user with this ID.
+     * If set, will use the attributes of the Rill user with this ID.
      *
      * @generated from field: string user_id = 9;
      */
@@ -2714,7 +2714,7 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   /**
-   * Optional ID for an external end user of the deployment. If set, the access token enables per-user state, such as AI chat history.
+   * Optional ID for the external end user of the iframe. If set, the access token enables per-user state, such as AI chat history.
    * Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state.
    *
    * @generated from field: string external_user_id = 16;

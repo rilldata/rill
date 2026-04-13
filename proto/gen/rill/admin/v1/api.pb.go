@@ -1408,7 +1408,6 @@ type GetDeploymentRequest struct {
 	// Optional TTL for the returned access token in seconds.
 	AccessTokenTtlSeconds uint32 `protobuf:"varint,2,opt,name=access_token_ttl_seconds,json=accessTokenTtlSeconds,proto3" json:"access_token_ttl_seconds,omitempty"`
 	// User attributes to use for security policy evaluation.
-	// If either of these options are provided, they take precedence over any attributes associated with the user_id.
 	//
 	// Types that are assignable to For:
 	//
@@ -1507,7 +1506,7 @@ type isGetDeploymentRequest_For interface {
 }
 
 type GetDeploymentRequest_UserId struct {
-	// If set, will generate attributes for the Rill Cloud user with this ID.
+	// If set, will use the attributes of the Rill user with this ID.
 	UserId string `protobuf:"bytes,3,opt,name=user_id,json=userId,proto3,oneof"`
 }
 
@@ -3319,7 +3318,7 @@ type isGetDeploymentCredentialsRequest_For interface {
 }
 
 type GetDeploymentCredentialsRequest_UserId struct {
-	// If set, will generate attributes for the Rill Cloud user with this ID.
+	// If set, will use the attributes of the Rill user with this ID.
 	UserId string `protobuf:"bytes,4,opt,name=user_id,json=userId,proto3,oneof"`
 }
 
@@ -3432,7 +3431,7 @@ type GetIFrameRequest struct {
 	//	*GetIFrameRequest_UserEmail
 	//	*GetIFrameRequest_Attributes
 	For isGetIFrameRequest_For `protobuf_oneof:"for"`
-	// Optional ID for an external end user of the deployment. If set, the access token enables per-user state, such as AI chat history.
+	// Optional ID for the external end user of the iframe. If set, the access token enables per-user state, such as AI chat history.
 	// Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state.
 	ExternalUserId string `protobuf:"bytes,16,opt,name=external_user_id,json=externalUserId,proto3" json:"external_user_id,omitempty"`
 	// Type of resource to embed. If not set, defaults to "rill.runtime.v1.Explore".
@@ -3609,7 +3608,7 @@ type isGetIFrameRequest_For interface {
 }
 
 type GetIFrameRequest_UserId struct {
-	// If set, will use the attributes of the user with this ID.
+	// If set, will use the attributes of the Rill user with this ID.
 	UserId string `protobuf:"bytes,9,opt,name=user_id,json=userId,proto3,oneof"`
 }
 
