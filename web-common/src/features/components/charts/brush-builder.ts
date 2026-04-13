@@ -1,7 +1,5 @@
-import { getRillTheme } from "@rilldata/web-common/components/vega/vega-config";
 import { ScrubBoxColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
-import type { VegaLiteSpec, VegaSpec, VisualizationSpec } from "svelte-vega";
-import { compile } from "vega-lite";
+import type { View } from "svelte-vega";
 import type { SelectionParameter } from "vega-lite/types_unstable/selection.js";
 
 /**
@@ -43,110 +41,28 @@ const KNOWN_NON_TEMPORAL_BRUSH_SIGNALS = new Set([
 ]);
 
 /**
- * Compiles a Vega-Lite spec (that includes a brush param) to a Vega spec.
+ * Discovers the temporal brush signal name from a live Vega view.
  *
- * This compilation is necessary because the expression interpreter (used for CSP
- * compliance) does not support Vega-Lite's selection functions (vlSelectionResolve,
- * vlSelectionTest, etc.). Compiling VL→Vega resolves these into primitive Vega
- * expressions that the interpreter can handle.
+ * Vega-Lite generates `brush_[timeunit_]<fieldname>` as the reactive temporal
+ * interval signal. We find it by enumerating the view's signals and looking for
+ * the brush_ signal that isn't one of the known structural signals.
  *
- * Unlike the previous approach, this does NOT inject custom signals (brush_end,
- * brush_clear). Those are handled via DOM event listeners in Chart.svelte.
+ * If `brushTemporalField` (from usermeta) is provided, we prefer the signal
+ * whose name ends with that field name for a precise match.
  */
-export async function compileToBrushedVegaSpec(
-  vlSpec: VisualizationSpec,
-  isThemeModeDark: boolean,
-  theme: Record<string, string> | undefined,
-): Promise<{ spec: VegaSpec; temporalBrushSignal: string }> {
-  const existingConfig =
-    (vlSpec as { config?: Record<string, unknown> }).config ?? {};
-  const rillThemeConfig = getRillTheme(isThemeModeDark, theme);
-  const specWithConfig = {
-    ...vlSpec,
-    config: {
-      ...rillThemeConfig,
-      ...existingConfig,
-      customFormatTypes: true,
-    },
-  };
-  const compiledSpec = compile(specWithConfig as VegaLiteSpec).spec;
-  const signals = compiledSpec.signals || [];
+export function discoverTemporalBrushSignal(
+  view: View,
+  brushTemporalField?: string,
+): string | undefined {
+  const signalNames = Object.keys(view.getState().signals);
+  const candidates = signalNames.filter(
+    (name) =>
+      name.startsWith("brush_") && !KNOWN_NON_TEMPORAL_BRUSH_SIGNALS.has(name),
+  );
 
-  // Resolve the temporal brush signal name.
-  // Prefer explicit metadata from usermeta.brushTemporalField (set by spec generators).
-  // Vega-Lite generates `brush_[timeunit_]<fieldname>` as the reactive signal
-  // (e.g. brush_yearmonthdatehours___time for field __time).
-  const usermetaField = (
-    compiledSpec.usermeta as { brushTemporalField?: string } | undefined
-  )?.brushTemporalField;
-
-  const temporalBrushSignal =
-    (usermetaField &&
-      signals.find(
-        (s) => s.name?.startsWith("brush_") && s.name.endsWith(usermetaField),
-      )?.name) ??
-    signals.find(
-      (s) =>
-        s.name?.startsWith("brush_") &&
-        !KNOWN_NON_TEMPORAL_BRUSH_SIGNALS.has(s.name),
-    )?.name ??
-    "brush_ts";
-
-  return { spec: compiledSpec, temporalBrushSignal };
-}
-
-/**
- * Creates an adaptive scrub handler that throttles brush updates based on
- * rendering performance. Adjusts between 30-120fps dynamically.
- *
- * @param onBrush - Called with the brush interval on each throttled update
- * @returns Object with `update` method and `destroy` cleanup method
- */
-export function createAdaptiveScrubHandler(
-  onBrush: (interval: { start: Date; end: Date }) => void,
-) {
-  let rafId: number | null = null;
-  let lastUpdateTime = 0;
-  let currentInterval = 1000 / 60; // Start at 60fps
-
-  const MIN_INTERVAL = 1000 / 120; // Max 120fps
-  const MAX_INTERVAL = 1000 / 30; // Min 30fps
-  const ADJUSTMENT_FACTOR = 1.2;
-
-  function update(interval: { start: Date; end: Date }) {
-    if (rafId) {
-      cancelAnimationFrame(rafId);
-    }
-
-    rafId = requestAnimationFrame((timestamp) => {
-      const elapsed = timestamp - lastUpdateTime;
-      if (elapsed >= currentInterval) {
-        onBrush(interval);
-        lastUpdateTime = timestamp;
-
-        // Adjust interval based on performance
-        if (elapsed > currentInterval * ADJUSTMENT_FACTOR) {
-          currentInterval = Math.min(
-            currentInterval * ADJUSTMENT_FACTOR,
-            MAX_INTERVAL,
-          );
-        } else {
-          currentInterval = Math.max(
-            currentInterval / ADJUSTMENT_FACTOR,
-            MIN_INTERVAL,
-          );
-        }
-      }
-      rafId = null;
-    });
+  if (brushTemporalField) {
+    return candidates.find((name) => name.endsWith(brushTemporalField));
   }
 
-  function destroy() {
-    if (rafId) {
-      cancelAnimationFrame(rafId);
-      rafId = null;
-    }
-  }
-
-  return { update, destroy };
+  return candidates[0];
 }

@@ -246,10 +246,6 @@
     }
   }
 
-  function handleTddBrush(_interval: { start: Date; end: Date }) {
-    // no-op during drag; scrub is finalized on brush end
-  }
-
   function handleTddBrushEnd(interval: { start: Date; end: Date }) {
     const { start, end } = adjustTimeInterval(interval, timeZone);
     let startDt = DateTime.fromJSDate(start, { zone: timeZone });
@@ -272,10 +268,6 @@
       end: endDt,
       isScrubbing: false,
     });
-  }
-
-  function handleTddBrushClear() {
-    onScrubClear?.();
   }
 </script>
 
@@ -311,9 +303,8 @@
         {dimensionData}
         {showComparison}
         onChartHover={handleTddHover}
-        onChartBrush={handleTddBrush}
         onChartBrushEnd={handleTddBrushEnd}
-        onChartBrushClear={handleTddBrushClear}
+        onChartBrushClear={() => onScrubClear?.()}
       />
     </div>
   {:else if data.length > 0}
