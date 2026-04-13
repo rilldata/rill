@@ -459,8 +459,13 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 	if req.Branch != "" && permissions.ManageDev {
 		instancePermissions = append(
 			instancePermissions,
+			runtime.ReadInstance,
+			runtime.ReadOLAP,
+			runtime.ReadProfiling,
 			runtime.ReadRepo,
 			runtime.EditRepo,
+			runtime.ReadResolvers,
+			runtime.EditTrigger,
 		)
 	}
 

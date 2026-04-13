@@ -58,6 +58,7 @@
   const runtimeClient = useRuntimeClient();
   const {
     alerts: alertsFlag,
+    cloudEditing,
     dimensionSearch,
     dashboardChat,
     stickyDashboardState,
@@ -202,7 +203,7 @@
       {#if $viewAsUserStore}
         <ViewAsUserChip />
       {/if}
-      {#if onProjectPage && projectPermissions.manageDev}
+      {#if $cloudEditing && onProjectPage && projectPermissions.manageDev}
         <EditButton {organization} {project} {activeBranch} />
       {/if}
       {#if onProjectPage && projectPermissions.manageProjectMembers}
@@ -225,7 +226,7 @@
             let:ready
           >
             <LastRefreshedDate {dashboard} />
-            {#if (onMetricsExplorerPage || onCanvasDashboardPage) && projectPermissions.manageDev}
+            {#if $cloudEditing && (onMetricsExplorerPage || onCanvasDashboardPage) && projectPermissions.manageDev}
               <EditButton {organization} {project} {activeBranch} />
             {/if}
             {#if $dimensionSearch && ready}
@@ -254,7 +255,7 @@
     {/if}
 
     {#if onCanvasDashboardPage}
-      {#if projectPermissions.manageDev}
+      {#if $cloudEditing && projectPermissions.manageDev}
         <EditButton {organization} {project} {activeBranch} />
       {/if}
       {#if $dashboardChat && !onPublicURLPage}

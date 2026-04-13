@@ -60,6 +60,8 @@ var defaultFeatureFlags = map[string]string{
 	"developer_agent": "true",
 	// Controls if the dashboard state is persisted when navigating to a different dashboard.
 	"sticky_dashboard_state": "false",
+	// Controls visibility of the cloud editing feature (Edit button and edit routes)
+	"cloud_editing": "false",
 }
 
 // ResolveFeatureFlags resolves feature flags for the given instance and the provided user attributes.
