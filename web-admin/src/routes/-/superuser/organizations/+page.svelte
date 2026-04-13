@@ -150,7 +150,9 @@
             {/each}
           </div>
         {:else}
-          <p class="text-sm text-fg-secondary">No projects in this organization.</p>
+          <p class="text-sm text-fg-secondary">
+            No projects in this organization.
+          </p>
         {/if}
       </section>
 
