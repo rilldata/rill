@@ -1501,6 +1501,13 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   cacheKeyTtlSeconds = protoInt64.zero;
 
   /**
+   * TTL in seconds for caching rollup/base table timestamps (min/max time) used for rollup routing. Defaults to 5 minutes if unset.
+   *
+   * @generated from field: int64 cache_timestamps_ttl_seconds = 35;
+   */
+  cacheTimestampsTtlSeconds = protoInt64.zero;
+
+  /**
    * Query attributes that can be templated with user context and used by drivers (e.g., appended to SETTINGS in ClickHouse).
    * Keys and values are stored as templates and will be resolved at query time.
    *
@@ -1512,13 +1519,6 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.Rollup rollups = 34;
    */
   rollups: MetricsViewSpec_Rollup[] = [];
-
-  /**
-   * TTL in seconds for caching the base table's watermarks (min/max time) used for rollup routing. Defaults to 5 minutes if unset.
-   *
-   * @generated from field: int64 watermark_cache_ttl_seconds = 35;
-   */
-  watermarkCacheTtlSeconds = protoInt64.zero;
 
   constructor(data?: PartialMessage<MetricsViewSpec>) {
     super();
@@ -1551,9 +1551,9 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 25, name: "cache_enabled", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 26, name: "cache_key_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 27, name: "cache_key_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 35, name: "cache_timestamps_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 33, name: "query_attributes", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 34, name: "rollups", kind: "message", T: MetricsViewSpec_Rollup, repeated: true },
-    { no: 35, name: "watermark_cache_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec {

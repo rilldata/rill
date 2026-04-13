@@ -3401,6 +3401,8 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	// no validation rules for CacheKeyTtlSeconds
 
+	// no validation rules for CacheTimestampsTtlSeconds
+
 	// no validation rules for QueryAttributes
 
 	for idx, item := range m.GetRollups() {
@@ -3436,8 +3438,6 @@ func (m *MetricsViewSpec) validate(all bool) error {
 		}
 
 	}
-
-	// no validation rules for WatermarkCacheTtlSeconds
 
 	if m.CacheEnabled != nil {
 		// no validation rules for CacheEnabled

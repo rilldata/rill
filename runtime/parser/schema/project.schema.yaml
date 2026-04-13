@@ -2247,9 +2247,6 @@ definitions:
                             required:
                               - name
                             additionalProperties: false
-          watermark_cache_ttl:
-            type: string
-            description: 'Duration for caching the base table watermark (min/max timestamps) used for rollup routing. Defaults to 5 minutes. Example: 10m, 1h'
           rollups:
             type: array
             description: Pre-aggregated rollup tables that can be used to accelerate queries. When a query's dimensions, measures, time grain, and time range match a rollup, the query is automatically routed to the rollup table instead of the base table.

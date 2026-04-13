@@ -91,13 +91,13 @@ type MetricsViewYAML struct {
 		Dimensions     *FieldSelectorYAML `yaml:"dimensions"`
 		Measures       *FieldSelectorYAML `yaml:"measures"`
 	} `yaml:"rollups"`
-	WatermarkCacheTTL string `yaml:"watermark_cache_ttl"`
-	Security          *SecurityPolicyYAML
-	QueryAttributes   map[string]string `yaml:"query_attributes"`
-	Cache             struct {
-		Enabled *bool  `yaml:"enabled"`
-		KeySQL  string `yaml:"key_sql"`
-		KeyTTL  string `yaml:"key_ttl"`
+	Security        *SecurityPolicyYAML
+	QueryAttributes map[string]string `yaml:"query_attributes"`
+	Cache           struct {
+		Enabled       *bool  `yaml:"enabled"`
+		KeySQL        string `yaml:"key_sql"`
+		KeyTTL        string `yaml:"key_ttl"`
+		TimestampsTTL string `yaml:"timestamps_ttl"`
 	} `yaml:"cache"`
 	Explore *struct {
 		Skip                 bool                   `yaml:"skip"`
@@ -644,9 +644,9 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		return fmt.Errorf("invalid first month of year %d, must be between 1 and 12", tmp.FirstMonthOfYear)
 	}
 
-	if tmp.WatermarkCacheTTL != "" {
-		if _, err := time.ParseDuration(tmp.WatermarkCacheTTL); err != nil {
-			return fmt.Errorf(`invalid "watermark_cache_ttl": %w`, err)
+	if tmp.Cache.TimestampsTTL != "" {
+		if _, err := time.ParseDuration(tmp.Cache.TimestampsTTL); err != nil {
+			return fmt.Errorf(`invalid "cache.timestamps_ttl": %w`, err)
 		}
 	}
 
@@ -864,9 +864,9 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	spec.SmallestTimeGrain = smallestTimeGrain
 	spec.FirstDayOfWeek = tmp.FirstDayOfWeek
 	spec.FirstMonthOfYear = tmp.FirstMonthOfYear
-	if tmp.WatermarkCacheTTL != "" {
-		d, _ := time.ParseDuration(tmp.WatermarkCacheTTL) // already validated above
-		spec.WatermarkCacheTtlSeconds = int64(d.Seconds())
+	if tmp.Cache.TimestampsTTL != "" {
+		d, _ := time.ParseDuration(tmp.Cache.TimestampsTTL) // already validated above
+		spec.CacheTimestampsTtlSeconds = int64(d.Seconds())
 	}
 
 	spec.Dimensions = dimensions

@@ -357,12 +357,12 @@ message MetricsViewSpec {
   optional bool cache_enabled = 25;
   string cache_key_sql = 26;
   int64 cache_key_ttl_seconds = 27;
+  // TTL in seconds for caching rollup/base table timestamps (min/max time) used for rollup routing. Defaults to 5 minutes if unset.
+  int64 cache_timestamps_ttl_seconds = 35;
   // Query attributes that can be templated with user context and used by drivers (e.g., appended to SETTINGS in ClickHouse).
   // Keys and values are stored as templates and will be resolved at query time.
   map<string, string> query_attributes = 33;
   repeated Rollup rollups = 34;
-  // TTL in seconds for caching the base table's watermarks (min/max time) used for rollup routing. Defaults to 5 minutes if unset.
-  int64 watermark_cache_ttl_seconds = 35;
 }
 
 message SecurityRule {

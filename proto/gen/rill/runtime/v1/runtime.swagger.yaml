@@ -6421,6 +6421,10 @@ definitions:
       cacheKeyTtlSeconds:
         type: string
         format: int64
+      cacheTimestampsTtlSeconds:
+        type: string
+        format: int64
+        description: TTL in seconds for caching rollup/base table timestamps (min/max time) used for rollup routing. Defaults to 5 minutes if unset.
       queryAttributes:
         type: object
         additionalProperties:
@@ -6433,10 +6437,6 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/MetricsViewSpecRollup'
-      watermarkCacheTtlSeconds:
-        type: string
-        format: int64
-        description: TTL in seconds for caching the base table's watermarks (min/max time) used for rollup routing. Defaults to 5 minutes if unset.
   v1MetricsViewSpecAnnotation:
     type: object
     properties:

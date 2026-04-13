@@ -91,14 +91,14 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 			continue
 		}
 
-		// Fetch base watermark once, when the first eligible rollup is found
+		// Fetch base timestamps once, when the first eligible rollup is found
 		if !baseTSFetched && e.metricsView.TimeDimension != "" {
 			baseTSFetched = true
 			if mn, mx, err := e.resolveBaseTimestamps(ctx); err == nil {
 				baseMin, baseMax = mn, mx
 				hasBaseTS = true
 			}
-			// For no-time-range queries, we need base watermarks to verify rollup coverage
+			// For no-time-range queries, we need base timestamps to verify rollup coverage
 			if !hasTimeRange && !hasBaseTS {
 				return nil, nil
 			}
@@ -108,7 +108,7 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 		if e.metricsView.TimeDimension != "" {
 			rollupMin, rollupMax, err := e.resolveRollupTimestamps(ctx, rollup)
 			if err != nil {
-				return nil, fmt.Errorf("failed to fetch watermark for rollup %q: %w", rollup.Table, err)
+				return nil, fmt.Errorf("failed to fetch timestamps for rollup %q: %w", rollup.Table, err)
 			}
 
 			// Compute rollup effective end: max time + 1 grain period (the max bucket covers up to the next grain boundary)

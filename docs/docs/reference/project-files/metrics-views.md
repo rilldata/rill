@@ -264,10 +264,6 @@ _[array of object]_ - Used to define annotations that can be displayed on charts
 
         - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
 
-### `watermark_cache_ttl`
-
-_[string]_ - Duration for caching the base table watermark (min/max timestamps) used for rollup routing. Defaults to 5 minutes. Example: 10m, 1h 
-
 ### `rollups`
 
 _[array of object]_ - Pre-aggregated rollup tables that can be used to accelerate queries. When a query's dimensions, measures, time grain, and time range match a rollup, the query is automatically routed to the rollup table instead of the base table. 
