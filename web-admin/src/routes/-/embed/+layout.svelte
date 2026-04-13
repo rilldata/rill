@@ -12,6 +12,8 @@
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import DashboardChat from "@rilldata/web-common/features/chat/DashboardChat.svelte";
+  import ThemeProvider from "@rilldata/web-common/features/dashboards/ThemeProvider.svelte";
+  import { activeDashboardTheme } from "@rilldata/web-common/features/themes/active-dashboard-theme";
   import {
     createIframeRPCHandler,
     emitNotification,
@@ -138,13 +140,15 @@
     authContext="embed"
   >
     {#if showTopBar}
-      <div
-        class="flex items-center w-full pr-4 py-1 min-h-[2.5rem]"
-        class:border-b={!onProjectPage}
-      >
-        <EmbedBranding {billingPlan} />
-        <EmbedHeader {activeResource} {navigationEnabled} />
-      </div>
+      <ThemeProvider theme={$activeDashboardTheme} applyLayout={false}>
+        <div
+          class="flex items-center w-full pr-4 py-1 min-h-[2.5rem] bg-surface-subtle"
+          class:border-b={!onProjectPage}
+        >
+          <EmbedBranding {billingPlan} />
+          <EmbedHeader {activeResource} {navigationEnabled} />
+        </div>
+      </ThemeProvider>
     {/if}
 
     <div class="flex h-full overflow-hidden">
