@@ -27,6 +27,11 @@
 
   $: mockUserHasNoAccess =
     $selectedMockUserStore && isNotFoundError($canvasQuery.error);
+
+  $: isCanvasNotFound =
+    !$canvasQuery.data &&
+    $canvasQuery.isError &&
+    isNotFoundError($canvasQuery.error);
 </script>
 
 {#key `${runtimeClient.instanceId}::${canvasName}`}
@@ -36,6 +41,8 @@
       header="This user can't access this dashboard"
       body="The security policy for this dashboard may make contents invisible to you. If you deploy this dashboard, {$selectedMockUserStore?.email} will see a 404."
     />
+  {:else if isCanvasNotFound}
+    <ErrorPage statusCode={404} header="Dashboard not found" />
   {:else}
     <div class="flex h-full overflow-hidden">
       <div class="flex-1 overflow-hidden">

@@ -9,10 +9,6 @@
     useDashboardPolicyCheck,
     useRillYamlPolicyCheck,
   } from "../dashboards/granular-access-policies/useSecurityPolicyCheck";
-  import {
-    ResourceKind,
-    useFilteredResources,
-  } from "../entity-management/resource-selectors";
 
   const client = useRuntimeClient();
 
@@ -24,36 +20,31 @@
   $: canvasPolicyCheck = useDashboardPolicyCheck(client, canvasFilePath);
   $: rillYamlPolicyCheck = useRillYamlPolicyCheck(client);
 
-  // Check if any metrics view in the project has security rules
-  $: metricsViewResources = useFilteredResources(
-    client,
-    ResourceKind.MetricsView,
-    (data) => {
-      return (
-        data?.resources?.some(
-          (res) =>
-            (res.metricsView?.state?.validSpec?.securityRules?.length ?? 0) > 0,
-        ) ?? false
-      );
-    },
-  );
+  // Check if any metrics view referenced by this canvas has security rules
+  $: referencedMetricsViewsHavePolicy = Object.values(
+    $canvasQuery.data?.metricsViews ?? {},
+  ).some((mv) => (mv?.state?.validSpec?.securityRules?.length ?? 0) > 0);
 
   $: hasSecurityPolicy =
     $canvasPolicyCheck.data ||
     $rillYamlPolicyCheck.data ||
-    $metricsViewResources.data;
+    referencedMetricsViewsHavePolicy;
 
   const { dashboardChat, readOnly } = featureFlags;
+
+  $: hasAnyContent = hasSecurityPolicy || $dashboardChat || !$readOnly;
 </script>
 
-<div class="flex gap-2 flex-shrink-0 ml-auto">
-  {#if hasSecurityPolicy}
-    <ViewAsButton />
-  {/if}
-  {#if $dashboardChat}
-    <ChatToggle />
-  {/if}
-  {#if !$readOnly}
-    <Button type="secondary" href={`/files${canvasFilePath}`}>Edit</Button>
-  {/if}
-</div>
+{#if hasAnyContent}
+  <div class="flex gap-2 flex-shrink-0 ml-auto">
+    {#if hasSecurityPolicy}
+      <ViewAsButton />
+    {/if}
+    {#if $dashboardChat}
+      <ChatToggle />
+    {/if}
+    {#if !$readOnly}
+      <Button type="secondary" href={`/files${canvasFilePath}`}>Edit</Button>
+    {/if}
+  </div>
+{/if}
