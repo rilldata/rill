@@ -203,7 +203,7 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 			// NOTE: Intentionally leaving the `subject` empty out of caution.
 			// Some users use service accounts for generating JWTs for end users without passing req.For, and we don't want to accidentally pass a shared subject ID across those users (which could leak e.g. AI chats).
 		}
-	} else {
+	} else if req.For != nil {
 		if depl.Environment == "prod" && !permissions.ManageProd {
 			return nil, status.Error(codes.PermissionDenied, "does not have permission to manage prod deployment")
 		}
@@ -607,7 +607,7 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 		}
 		// NOTE: Intentionally leaving the `subject` empty in other cases out of caution.
 		// Some users use service accounts for generating JWTs for end users without passing req.For, and we don't want to accidentally pass a shared subject ID across those users (which could leak e.g. AI chats).
-	} else {
+	} else if req.For != nil {
 		switch forVal := req.For.(type) {
 		case *adminv1.GetDeploymentCredentialsRequest_UserId:
 			if req.ExternalUserId != "" {
@@ -734,7 +734,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		}
 		// NOTE: Intentionally leaving the `subject` empty in other cases out of caution.
 		// Some users use service accounts for generating JWTs for end users without passing req.For, and we don't want to accidentally pass a shared subject ID across those users (which could leak e.g. AI chats).
-	} else {
+	} else if req.For != nil {
 		switch forVal := req.For.(type) {
 		case *adminv1.GetIFrameRequest_UserId:
 			if req.ExternalUserId != "" {
