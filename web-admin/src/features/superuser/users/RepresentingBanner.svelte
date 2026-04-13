@@ -9,7 +9,7 @@
   const BANNER_ID = "representing-user";
 
   function unassume() {
-    if (browser) sessionStorage.removeItem(STORAGE_KEY);
+    if (browser) localStorage.removeItem(STORAGE_KEY);
     eventBus.emit("remove-banner", BANNER_ID);
     // Redirect to login; the auth provider session is the real superuser,
     // so it auto-completes and issues a fresh superuser token.
@@ -37,9 +37,24 @@
   }
 
   onMount(() => {
-    const stored = sessionStorage.getItem(STORAGE_KEY);
+    const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       showBanner(stored);
     }
+
+    // Sync banner across tabs: localStorage fires "storage" events in
+    // other tabs when the value changes, so every tab shows/hides the
+    // banner when a superuser assumes or unassumes in any tab.
+    function onStorage(e: StorageEvent) {
+      if (e.key !== STORAGE_KEY) return;
+      if (e.newValue) {
+        showBanner(e.newValue);
+      } else {
+        eventBus.emit("remove-banner", BANNER_ID);
+      }
+    }
+
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   });
 </script>

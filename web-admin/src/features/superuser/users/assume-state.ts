@@ -1,6 +1,6 @@
 // Manages assume/unassume user state for the superuser console.
-// Uses sessionStorage to track the assumed user across navigations,
-// and server-side auth endpoints for cookie management.
+// Uses localStorage so the banner syncs across all browser tabs;
+// auth cookies are browser-wide, so every tab must show the warning.
 import { writable } from "svelte/store";
 import { browser } from "$app/environment";
 import { ADMIN_URL } from "@rilldata/web-admin/client/http-client";
@@ -8,7 +8,7 @@ import { ADMIN_URL } from "@rilldata/web-admin/client/http-client";
 export const STORAGE_KEY = "rill-representing-user";
 
 // Store tracks the currently assumed user email
-const initial = browser ? (sessionStorage.getItem(STORAGE_KEY) ?? "") : "";
+const initial = browser ? (localStorage.getItem(STORAGE_KEY) ?? "") : "";
 const { subscribe, set } = writable(initial);
 
 export const assumedUser = {
@@ -22,7 +22,7 @@ export const assumedUser = {
   assume(email: string, opts?: { ttlMinutes?: number; redirect?: string }) {
     const { ttlMinutes = 60, redirect } = opts ?? {};
     set(email);
-    if (browser) sessionStorage.setItem(STORAGE_KEY, email);
+    if (browser) localStorage.setItem(STORAGE_KEY, email);
 
     const u = new URL("auth/assume-open", ADMIN_URL);
     u.searchParams.set("representing_user", email);
@@ -39,7 +39,7 @@ export const assumedUser = {
    */
   unassume() {
     set("");
-    if (browser) sessionStorage.removeItem(STORAGE_KEY);
+    if (browser) localStorage.removeItem(STORAGE_KEY);
 
     // Redirect to login; the auth provider (Auth0) session is the real superuser,
     // so it auto-completes and issues a fresh superuser token.

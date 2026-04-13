@@ -26,7 +26,7 @@ export function getOrgMembers(org: string) {
 export function getOrgProjects(org: string) {
   return createAdminServiceListProjectsForOrganization(
     org,
-    {},
+    { superuserForceAccess: true },
     { query: { enabled: org.length > 0 } },
   );
 }

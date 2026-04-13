@@ -1,6 +1,7 @@
 <script lang="ts">
   import SearchInput from "@rilldata/web-admin/features/superuser/shared/SearchInput.svelte";
   import ConfirmActionDialog from "@rilldata/web-admin/features/superuser/dialogs/ConfirmActionDialog.svelte";
+  import GuardedDeleteDialog from "@rilldata/web-admin/features/superuser/dialogs/GuardedDeleteDialog.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import {
     AlertDialog,
@@ -274,11 +275,12 @@
   onConfirm={doHibernate}
 />
 
-<ConfirmActionDialog
+<GuardedDeleteDialog
   bind:open={redeployDialogOpen}
   title="Redeploy Project"
-  description={`This will completely redeploy ${redeployName}. This is a disruptive operation.`}
-  confirmLabel="Redeploy"
+  description={`This will completely redeploy ${redeployName}. This is disruptive to active users.`}
+  confirmText={redeployName}
+  confirmButtonText="Redeploy"
   onConfirm={doRedeploy}
 />
 

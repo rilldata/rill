@@ -10,14 +10,9 @@
     getOrgProjects,
     createDeleteOrgMutation,
   } from "@rilldata/web-admin/features/superuser/organizations/selectors";
-  import {
-    createRedeployProjectMutation,
-    createHibernateProjectMutation,
-  } from "@rilldata/web-admin/features/superuser/projects/selectors";
   import { assumedUser } from "@rilldata/web-admin/features/superuser/users/assume-state";
 
   let selectedOrg = "";
-  let actionInProgress = "";
 
   // Open as User dialog state
   let assumeDialogOpen = false;
@@ -30,18 +25,6 @@
   let deleteOrgLoading = false;
   let deleteOrgError: string | undefined = undefined;
 
-  // Hibernate dialog state
-  let hibernateDialogOpen = false;
-  let hibernateOrgName = "";
-  let hibernateProjectName = "";
-
-  // Redeploy dialog state
-  let redeployDialogOpen = false;
-  let redeployOrgName = "";
-  let redeployProjectName = "";
-
-  const redeployProject = createRedeployProjectMutation();
-  const hibernateProject = createHibernateProjectMutation();
   const deleteOrg = createDeleteOrgMutation();
 
   // Load details for the selected org
@@ -68,48 +51,6 @@
       throw err;
     } finally {
       deleteOrgLoading = false;
-    }
-  }
-
-  async function doHibernate() {
-    actionInProgress = `hibernate:${hibernateProjectName}`;
-    try {
-      await $hibernateProject.mutateAsync({
-        org: hibernateOrgName,
-        project: hibernateProjectName,
-      });
-      eventBus.emit("notification", {
-        type: "success",
-        message: `Project ${hibernateOrgName}/${hibernateProjectName} hibernated`,
-      });
-    } catch (err) {
-      eventBus.emit("notification", {
-        type: "error",
-        message: `Failed: ${err}`,
-      });
-    } finally {
-      actionInProgress = "";
-    }
-  }
-
-  async function doRedeploy() {
-    actionInProgress = `redeploy:${redeployProjectName}`;
-    try {
-      await $redeployProject.mutateAsync({
-        org: redeployOrgName,
-        project: redeployProjectName,
-      });
-      eventBus.emit("notification", {
-        type: "success",
-        message: `Project ${redeployOrgName}/${redeployProjectName} redeployed`,
-      });
-    } catch (err) {
-      eventBus.emit("notification", {
-        type: "error",
-        message: `Failed: ${err}`,
-      });
-    } finally {
-      actionInProgress = "";
     }
   }
 </script>
@@ -174,7 +115,7 @@
         </div>
       </section>
 
-      <!-- Projects list -->
+      <!-- Projects list (view-only; hibernate/redeploy are on the Projects page) -->
       {#if $projectsQuery.data?.projects?.length}
         <section class="p-5 rounded-lg border">
           <h2 class="text-sm font-semibold text-fg-primary mb-3">
@@ -201,40 +142,6 @@
                 >
                   {project.name}
                 </Button>
-                <div class="flex gap-2">
-                  <Button
-                    large
-                    class="font-normal"
-                    type="tertiary"
-                    disabled={!org.name ||
-                      !project.name ||
-                      actionInProgress === `hibernate:${project.name}`}
-                    loading={actionInProgress === `hibernate:${project.name}`}
-                    onClick={() => {
-                      hibernateOrgName = org.name ?? "";
-                      hibernateProjectName = project.name ?? "";
-                      hibernateDialogOpen = true;
-                    }}
-                  >
-                    Hibernate
-                  </Button>
-                  <Button
-                    large
-                    class="font-normal"
-                    type="secondary-destructive"
-                    disabled={!org.name ||
-                      !project.name ||
-                      actionInProgress === `redeploy:${project.name}`}
-                    loading={actionInProgress === `redeploy:${project.name}`}
-                    onClick={() => {
-                      redeployOrgName = org.name ?? "";
-                      redeployProjectName = project.name ?? "";
-                      redeployDialogOpen = true;
-                    }}
-                  >
-                    Redeploy
-                  </Button>
-                </div>
               </div>
             {/each}
           </div>
@@ -317,19 +224,4 @@
   loading={deleteOrgLoading}
   error={deleteOrgError}
   onConfirm={doDeleteOrg}
-/>
-
-<ConfirmActionDialog
-  bind:open={hibernateDialogOpen}
-  title="Hibernate Project"
-  description={`This will hibernate the deployment for ${hibernateOrgName}/${hibernateProjectName}. The project data will be preserved but the deployment will be stopped.`}
-  onConfirm={doHibernate}
-/>
-
-<ConfirmActionDialog
-  bind:open={redeployDialogOpen}
-  title="Redeploy Project"
-  description={`This will completely redeploy ${redeployOrgName}/${redeployProjectName}. This is a disruptive operation.`}
-  confirmLabel="Redeploy"
-  onConfirm={doRedeploy}
 />
