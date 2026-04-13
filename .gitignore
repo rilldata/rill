@@ -94,10 +94,24 @@ latest.txt
 .claude/CLAUDE.local.md
 .claude/settings.local.json
 .claude/**/*.local.md
+.claude/launch.json
 .claude/notes/
 .claude/plans/
 .claude/worktrees/
 .claude/projects/
+.claude/skills/google-stitch/
+.claude/skills/packaged/
+.claude/skills/rill-canvas/
+.claude/skills/rill-connector/
+.claude/skills/rill-explore/
+.claude/skills/rill-metrics-view/
+.claude/skills/rill-model/
+.claude/skills/rill-rillyaml/
+.claude/skills/rill-theme/
+.claude/skills/shadcn
+.claude/skills/svelte-core-bestpractices/
+.claude/skills/ui-ux-pro-max/
+docs/superpowers/
 
 # Vite temp files
 vite.config.ts.timestamp-*
