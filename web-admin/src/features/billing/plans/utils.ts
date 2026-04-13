@@ -34,22 +34,20 @@ export function isManagedPlan(planName: string) {
 }
 
 export function isFreePlan(planName: string) {
-  return (
-    planName === "free" || planName === "free_plan" || planName === "free-plan"
-  );
+  return planName === "free_plan";
 }
 
-export function isGrowthPlan(planName: string) {
-  return (
-    planName === "growth" ||
-    planName === "growth_plan" ||
-    planName === "growth-plan"
-  );
+export function isProPlan(planName: string) {
+  return planName === "pro_plan";
 }
 
 export function isEnterprisePlan(planName: string) {
   return (
-    !isTrialPlan(planName) && !isTeamPlan(planName) && !isManagedPlan(planName)
+    !isTrialPlan(planName) &&
+    !isTeamPlan(planName) &&
+    !isManagedPlan(planName) &&
+    !isFreePlan(planName) &&
+    !isProPlan(planName)
   );
 }
 
