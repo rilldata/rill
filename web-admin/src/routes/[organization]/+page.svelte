@@ -1,11 +1,9 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
   import OrganizationHibernating from "@rilldata/web-admin/features/organizations/hibernating/OrganizationHibernating.svelte";
   import { areAllProjectsHibernating } from "@rilldata/web-admin/features/organizations/selectors";
   import {
-    createAdminServiceCreateProject,
     createAdminServiceGetOrganization,
     createAdminServiceListProjectsForOrganization,
   } from "../../client";
@@ -26,22 +24,6 @@
   $: allProjectsHibernating = areAllProjectsHibernating(orgName);
 
   $: title = $org.data?.organization?.displayName || orgName;
-
-  const createProjectMutation = createAdminServiceCreateProject();
-  async function createProject() {
-    const createProjectResp = await $createProjectMutation.mutateAsync({
-      org: orgName,
-      data: {
-        project: `${orgName}_project`,
-        generateManagedGit: true,
-        prodSlots: "4",
-      },
-    });
-    const frontendUrl = createProjectResp.project?.frontendUrl;
-    if (!frontendUrl) return;
-    await goto(`${frontendUrl}/-/welcome`);
-  }
-  $: ({ isLoading } = $createProjectMutation);
 </script>
 
 <svelte:head>
@@ -49,9 +31,6 @@
 </svelte:head>
 
 <ContentContainer showTitle={false} maxWidth={1300}>
-  <Button type="primary" onClick={createProject} loading={isLoading}>
-    Create new
-  </Button>
   {#if $org.data && $org.data.organization && $projs.data}
     {#if $projs.data.projects?.length === 0}
       <OrganizationHero {title} />
@@ -62,6 +41,11 @@
           rel="noreferrer noopener">See docs</a
         >
       </span>
+      <div class="w-fit">
+        <Button type="primary" href="/{orgName}/-/create-project">
+          Create new
+        </Button>
+      </div>
     {:else if $allProjectsHibernating.data}
       <OrganizationHibernating
         organization={orgName}

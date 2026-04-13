@@ -13,6 +13,10 @@ export function withinOrganization(page: Page): boolean {
   return !!page.route?.id?.startsWith("/[organization]");
 }
 
+export function isProjectCreatePage(page: Page): boolean {
+  return page.route.id === "/[organization]/-/create-project";
+}
+
 export function isProjectPage(page: Page): boolean {
   const routeId = page.route?.id;
   if (!routeId) return false;

@@ -7,6 +7,7 @@
   import BillingBannerManager from "@rilldata/web-admin/features/billing/banner/BillingBannerManager.svelte";
   import {
     isBillingUpgradePage,
+    isProjectCreatePage,
     isProjectInvitePage,
     isPublicReportPage,
     withinOrganization,
@@ -149,7 +150,7 @@
       {#if !hideBillingManager}
         <BillingBannerManager {organization} {organizationPermissions} />
       {/if}
-      {#if !isEmbed && !hideTopBar && !withinProject($page)}
+      {#if !isEmbed && !hideTopBar && !withinProject($page) && !isProjectCreatePage($page)}
         <OrgHeader
           readProjects={organizationPermissions?.readProjects}
           {planDisplayName}
