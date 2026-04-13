@@ -6,9 +6,9 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
-// grainOrder defines the numeric ordering of grains for derivability checks.
+// GrainOrder defines the numeric ordering of grains for derivability checks and rollup selection.
 // Two branches diverge from day: day->week and day->month->quarter->year.
-var grainOrder = map[runtimev1.TimeGrain]int{
+var GrainOrder = map[runtimev1.TimeGrain]int{
 	runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND: 0,
 	runtimev1.TimeGrain_TIME_GRAIN_SECOND:      1,
 	runtimev1.TimeGrain_TIME_GRAIN_MINUTE:      2,
@@ -58,8 +58,8 @@ func GrainDerivableFrom(queryGrain, rollupGrain runtimev1.TimeGrain) bool {
 		return true
 	}
 
-	qOrder := grainOrder[queryGrain]
-	rOrder := grainOrder[rollupGrain]
+	qOrder := GrainOrder[queryGrain]
+	rOrder := GrainOrder[rollupGrain]
 
 	// Query grain must be coarser (higher order) than rollup grain
 	if qOrder <= rOrder {

@@ -278,9 +278,9 @@ _[array of object]_ - Pre-aggregated rollup tables that can be used to accelerat
 
   - **`database_schema`** - _[string]_ - Refers to the schema to use in the OLAP engine 
 
-  - **`time_grain`** - _[string]_ - The time grain of the rollup table. Valid values are: millisecond, second, minute, hour, day, week, month, quarter, year 
+  - **`time_grain`** - _[string]_ - The time grain of the rollup (required). Valid values are: millisecond, second, minute, hour, day, week, month, quarter, year _(required)_
 
-  - **`timezone`** - _[string]_ - IANA timezone of the rollup table (e.g. America/New_York). For day+ grains, queries are only routed to the rollup if the query timezone matches. 
+  - **`time_zone`** - _[string]_ - IANA timezone of the rollup table (e.g. America/New_York). For day+ grains, queries are only routed to the rollup if the query timezone matches. 
 
   - **`dimensions`** - _[oneOf]_ - Optional field selectors for dimensions to include in the rollup from the base metrics view. If not specified, all dimensions are included. 
 

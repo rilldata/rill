@@ -23,7 +23,7 @@ func TestRewriteQueryForRollup_BasicMatch(t *testing.T) {
 				{Name: "total_impressions", Expression: `SUM("impressions")`},
 				{Name: "total_clicks", Expression: `SUM("clicks")`},
 			},
-			Rollups: []*runtimev1.MetricsViewSpec_RollupTable{
+			Rollups: []*runtimev1.MetricsViewSpec_Rollup{
 				{
 					Table:      "daily_rollup",
 					TimeGrain:  runtimev1.TimeGrain_TIME_GRAIN_DAY,
@@ -43,15 +43,15 @@ func TestRewriteQueryForRollup_BasicMatch(t *testing.T) {
 		},
 	}
 
-	result := e.rewriteQueryForRollup(context.Background(), qry)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry)
+	require.NoError(t, err)
 	require.NotNil(t, result)
-	require.NotNil(t, result.spec)
-	require.Equal(t, "daily_rollup", result.spec.Table)
-	require.Empty(t, result.spec.Model)
-	require.Nil(t, result.spec.Rollups)
+	require.Equal(t, "daily_rollup", result.Table)
+	require.Empty(t, result.Model)
+	require.Nil(t, result.Rollups)
 
 	// Base expressions should be preserved (no rewriting needed)
-	for _, m := range result.spec.Measures {
+	for _, m := range result.Measures {
 		if m.Name == "total_impressions" {
 			require.Equal(t, `SUM("impressions")`, m.Expression)
 		}
@@ -69,7 +69,8 @@ func TestRewriteQueryForRollup_NoRollups(t *testing.T) {
 		Measures: []metricsview.Measure{{Name: "count"}},
 	}
 
-	result := e.rewriteQueryForRollup(context.Background(), qry)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry)
+	require.NoError(t, err)
 	require.Nil(t, result)
 }
 
@@ -77,14 +78,15 @@ func TestRewriteQueryForRollup_RawRows(t *testing.T) {
 	e := &Executor{
 		metricsView: &runtimev1.MetricsViewSpec{
 			Table: "base_table",
-			Rollups: []*runtimev1.MetricsViewSpec_RollupTable{
+			Rollups: []*runtimev1.MetricsViewSpec_Rollup{
 				{Table: "rollup", TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY},
 			},
 		},
 	}
 
 	qry := &metricsview.Query{Rows: true}
-	result := e.rewriteQueryForRollup(context.Background(), qry)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry)
+	require.NoError(t, err)
 	require.Nil(t, result)
 }
 
@@ -97,7 +99,7 @@ func TestRewriteQueryForRollup_SpineAllowed(t *testing.T) {
 			Measures: []*runtimev1.MetricsViewSpec_Measure{
 				{Name: "total_impressions", Expression: `SUM("impressions")`},
 			},
-			Rollups: []*runtimev1.MetricsViewSpec_RollupTable{
+			Rollups: []*runtimev1.MetricsViewSpec_Rollup{
 				{
 					Table:     "daily_rollup",
 					TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
@@ -113,9 +115,10 @@ func TestRewriteQueryForRollup_SpineAllowed(t *testing.T) {
 			{Name: "total_impressions"},
 		},
 	}
-	result := e.rewriteQueryForRollup(context.Background(), qry)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry)
+	require.NoError(t, err)
 	require.NotNil(t, result)
-	require.Equal(t, "daily_rollup", result.spec.Table)
+	require.Equal(t, "daily_rollup", result.Table)
 }
 
 func TestRewriteQueryForRollup_MissingDimension(t *testing.T) {
@@ -130,7 +133,7 @@ func TestRewriteQueryForRollup_MissingDimension(t *testing.T) {
 			Measures: []*runtimev1.MetricsViewSpec_Measure{
 				{Name: "total_impressions", Expression: `SUM("impressions")`},
 			},
-			Rollups: []*runtimev1.MetricsViewSpec_RollupTable{
+			Rollups: []*runtimev1.MetricsViewSpec_Rollup{
 				{
 					Table:      "daily_rollup",
 					TimeGrain:  runtimev1.TimeGrain_TIME_GRAIN_DAY,
@@ -151,7 +154,8 @@ func TestRewriteQueryForRollup_MissingDimension(t *testing.T) {
 	}
 
 	// Rejected at eligibility (missing dimension); no watermark fetch needed
-	result := e.rewriteQueryForRollup(context.Background(), qry)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry)
+	require.NoError(t, err)
 	require.Nil(t, result)
 }
 
@@ -163,7 +167,7 @@ func TestRewriteQueryForRollup_MissingMeasure(t *testing.T) {
 				{Name: "total_impressions", Expression: `SUM("impressions")`},
 				{Name: "total_clicks", Expression: `SUM("clicks")`},
 			},
-			Rollups: []*runtimev1.MetricsViewSpec_RollupTable{
+			Rollups: []*runtimev1.MetricsViewSpec_Rollup{
 				{
 					Table:     "daily_rollup",
 					TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
@@ -180,7 +184,8 @@ func TestRewriteQueryForRollup_MissingMeasure(t *testing.T) {
 		},
 	}
 
-	result := e.rewriteQueryForRollup(context.Background(), qry)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry)
+	require.NoError(t, err)
 	require.Nil(t, result)
 }
 
@@ -192,7 +197,7 @@ func TestRewriteQueryForRollup_GrainNotDerivable(t *testing.T) {
 			Measures: []*runtimev1.MetricsViewSpec_Measure{
 				{Name: "total_impressions", Expression: `SUM("impressions")`},
 			},
-			Rollups: []*runtimev1.MetricsViewSpec_RollupTable{
+			Rollups: []*runtimev1.MetricsViewSpec_Rollup{
 				{
 					Table:     "weekly_rollup",
 					TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_WEEK,
@@ -213,7 +218,8 @@ func TestRewriteQueryForRollup_GrainNotDerivable(t *testing.T) {
 	}
 
 	// Rejected at eligibility (grain not derivable); no watermark fetch needed
-	result := e.rewriteQueryForRollup(context.Background(), qry)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry)
+	require.NoError(t, err)
 	require.Nil(t, result)
 }
 
@@ -225,7 +231,7 @@ func TestRewriteQueryForRollup_TimeRangeNotAligned(t *testing.T) {
 			Measures: []*runtimev1.MetricsViewSpec_Measure{
 				{Name: "total_impressions", Expression: `SUM("impressions")`},
 			},
-			Rollups: []*runtimev1.MetricsViewSpec_RollupTable{
+			Rollups: []*runtimev1.MetricsViewSpec_Rollup{
 				{
 					Table:     "daily_rollup",
 					TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
@@ -246,7 +252,8 @@ func TestRewriteQueryForRollup_TimeRangeNotAligned(t *testing.T) {
 	}
 
 	// Rejected at eligibility (time range not aligned); no watermark fetch needed
-	result := e.rewriteQueryForRollup(context.Background(), qry)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry)
+	require.NoError(t, err)
 	require.Nil(t, result)
 }
 
@@ -261,7 +268,7 @@ func TestRewriteQueryForRollup_WhereDimensionMissing(t *testing.T) {
 			Measures: []*runtimev1.MetricsViewSpec_Measure{
 				{Name: "total_impressions", Expression: `SUM("impressions")`},
 			},
-			Rollups: []*runtimev1.MetricsViewSpec_RollupTable{
+			Rollups: []*runtimev1.MetricsViewSpec_Rollup{
 				{
 					Table:      "daily_rollup",
 					TimeGrain:  runtimev1.TimeGrain_TIME_GRAIN_DAY,
@@ -287,7 +294,8 @@ func TestRewriteQueryForRollup_WhereDimensionMissing(t *testing.T) {
 		},
 	}
 
-	result := e.rewriteQueryForRollup(context.Background(), qry)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry)
+	require.NoError(t, err)
 	require.Nil(t, result)
 }
 
@@ -298,7 +306,7 @@ func TestRewriteQueryForRollup_ComparisonTimeRange(t *testing.T) {
 			Measures: []*runtimev1.MetricsViewSpec_Measure{
 				{Name: "total_impressions", Expression: `SUM("impressions")`},
 			},
-			Rollups: []*runtimev1.MetricsViewSpec_RollupTable{
+			Rollups: []*runtimev1.MetricsViewSpec_Rollup{
 				{
 					Table:     "daily_rollup",
 					TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
@@ -318,7 +326,8 @@ func TestRewriteQueryForRollup_ComparisonTimeRange(t *testing.T) {
 		},
 	}
 
-	result := e.rewriteQueryForRollup(context.Background(), qry)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry)
+	require.NoError(t, err)
 	require.Nil(t, result)
 }
 
@@ -331,7 +340,7 @@ func TestRewriteQueryForRollup_DerivedMeasure(t *testing.T) {
 				{Name: "total_impressions", Expression: `SUM("impressions")`, Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 				{Name: "derived_measure", Expression: `total_impressions * 2`, Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED},
 			},
-			Rollups: []*runtimev1.MetricsViewSpec_RollupTable{
+			Rollups: []*runtimev1.MetricsViewSpec_Rollup{
 				{
 					Table:     "daily_rollup",
 					TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
@@ -347,7 +356,8 @@ func TestRewriteQueryForRollup_DerivedMeasure(t *testing.T) {
 		},
 	}
 
-	result := e.rewriteQueryForRollup(context.Background(), qry)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry)
+	require.NoError(t, err)
 	require.Nil(t, result)
 }
 
@@ -363,7 +373,7 @@ func TestRewriteQueryForRollup_ComputedMeasureRejected(t *testing.T) {
 			Measures: []*runtimev1.MetricsViewSpec_Measure{
 				{Name: "total_impressions", Expression: `SUM("impressions")`},
 			},
-			Rollups: []*runtimev1.MetricsViewSpec_RollupTable{
+			Rollups: []*runtimev1.MetricsViewSpec_Rollup{
 				{
 					Table:      "daily_rollup",
 					TimeGrain:  runtimev1.TimeGrain_TIME_GRAIN_DAY,
@@ -384,7 +394,8 @@ func TestRewriteQueryForRollup_ComputedMeasureRejected(t *testing.T) {
 		},
 	}
 
-	result := e.rewriteQueryForRollup(context.Background(), qry)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry)
+	require.NoError(t, err)
 	require.Nil(t, result)
 }
 
@@ -400,7 +411,7 @@ func TestRewriteQueryForRollup_NoTimeGrainQuery(t *testing.T) {
 			Measures: []*runtimev1.MetricsViewSpec_Measure{
 				{Name: "total_impressions", Expression: `SUM("impressions")`},
 			},
-			Rollups: []*runtimev1.MetricsViewSpec_RollupTable{
+			Rollups: []*runtimev1.MetricsViewSpec_Rollup{
 				{
 					Table:      "daily_rollup",
 					TimeGrain:  runtimev1.TimeGrain_TIME_GRAIN_DAY,
@@ -420,10 +431,10 @@ func TestRewriteQueryForRollup_NoTimeGrainQuery(t *testing.T) {
 		},
 	}
 
-	result := e.rewriteQueryForRollup(context.Background(), qry)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry)
+	require.NoError(t, err)
 	require.NotNil(t, result)
-	require.NotNil(t, result.spec)
-	require.Equal(t, "daily_rollup", result.spec.Table)
+	require.Equal(t, "daily_rollup", result.Table)
 }
 
 func TestCollectWhereDimensions(t *testing.T) {
@@ -466,7 +477,7 @@ func TestCollectWhereDimensions_Nil(t *testing.T) {
 }
 
 func TestRewriteQueryForRollup_TimezoneMatching(t *testing.T) {
-	// Timezone matching is checked at eligibility; no watermarks needed.
+	// TimeZone matching is checked at eligibility; no watermarks needed.
 	// No TimeDimension: coverage check is skipped.
 	baseMV := func(rollupTZ string) *runtimev1.MetricsViewSpec {
 		return &runtimev1.MetricsViewSpec{
@@ -474,11 +485,11 @@ func TestRewriteQueryForRollup_TimezoneMatching(t *testing.T) {
 			Measures: []*runtimev1.MetricsViewSpec_Measure{
 				{Name: "total_impressions", Expression: `SUM("impressions")`},
 			},
-			Rollups: []*runtimev1.MetricsViewSpec_RollupTable{
+			Rollups: []*runtimev1.MetricsViewSpec_Rollup{
 				{
 					Table:     "daily_rollup",
 					TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
-					Timezone:  rollupTZ,
+					TimeZone:  rollupTZ,
 					Measures:  []string{"total_impressions"},
 				},
 			},
@@ -500,7 +511,8 @@ func TestRewriteQueryForRollup_TimezoneMatching(t *testing.T) {
 
 	t.Run("day rollup UTC, query tz New York: falls back", func(t *testing.T) {
 		e := &Executor{metricsView: baseMV("")}
-		result := e.rewriteQueryForRollup(context.Background(), baseQuery("America/New_York"))
+		result, err := e.rewriteQueryForRollup(context.Background(), baseQuery("America/New_York"))
+		require.NoError(t, err)
 		require.Nil(t, result)
 	})
 
@@ -513,26 +525,26 @@ func TestRewriteQueryForRollup_TimezoneMatching(t *testing.T) {
 			Start: time.Date(2024, 1, 1, 0, 0, 0, 0, ny),
 			End:   time.Date(2024, 2, 1, 0, 0, 0, 0, ny),
 		}
-		result := e.rewriteQueryForRollup(context.Background(), qry)
+		result, err := e.rewriteQueryForRollup(context.Background(), qry)
+		require.NoError(t, err)
 		require.NotNil(t, result)
-		require.NotNil(t, result.spec)
-		require.Equal(t, "daily_rollup", result.spec.Table)
+		require.Equal(t, "daily_rollup", result.Table)
 	})
 
 	t.Run("day rollup unset, query tz UTC: routes", func(t *testing.T) {
 		e := &Executor{metricsView: baseMV("")}
-		result := e.rewriteQueryForRollup(context.Background(), baseQuery("UTC"))
+		result, err := e.rewriteQueryForRollup(context.Background(), baseQuery("UTC"))
+		require.NoError(t, err)
 		require.NotNil(t, result)
-		require.NotNil(t, result.spec)
-		require.Equal(t, "daily_rollup", result.spec.Table)
+		require.Equal(t, "daily_rollup", result.Table)
 	})
 
 	t.Run("day rollup unset, query tz empty: routes", func(t *testing.T) {
 		e := &Executor{metricsView: baseMV("")}
-		result := e.rewriteQueryForRollup(context.Background(), baseQuery(""))
+		result, err := e.rewriteQueryForRollup(context.Background(), baseQuery(""))
+		require.NoError(t, err)
 		require.NotNil(t, result)
-		require.NotNil(t, result.spec)
-		require.Equal(t, "daily_rollup", result.spec.Table)
+		require.Equal(t, "daily_rollup", result.Table)
 	})
 
 	t.Run("hour rollup, query tz New York: routes (sub-day safe)", func(t *testing.T) {
@@ -545,17 +557,25 @@ func TestRewriteQueryForRollup_TimezoneMatching(t *testing.T) {
 			Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 			End:   time.Date(2024, 1, 2, 0, 0, 0, 0, time.UTC),
 		}
-		result := e.rewriteQueryForRollup(context.Background(), qry)
+		result, err := e.rewriteQueryForRollup(context.Background(), qry)
+		require.NoError(t, err)
 		require.NotNil(t, result)
-		require.NotNil(t, result.spec)
-		require.Equal(t, "daily_rollup", result.spec.Table)
+		require.Equal(t, "daily_rollup", result.Table)
 	})
 }
 
 func TestNormalizeTimezone(t *testing.T) {
-	require.Equal(t, "UTC", normalizeTimezone(""))
-	require.Equal(t, "UTC", normalizeTimezone("UTC"))
-	require.Equal(t, "UTC", normalizeTimezone("Etc/UTC"))
-	require.Equal(t, "UTC", normalizeTimezone("utc"))
-	require.Equal(t, "America/New_York", normalizeTimezone("America/New_York"))
+	assertTZ := func(expected, input string) {
+		t.Helper()
+		got, err := normalizeTimezone(input)
+		require.NoError(t, err)
+		require.Equal(t, expected, got)
+	}
+	assertTZ("UTC", "")
+	assertTZ("UTC", "UTC")
+	assertTZ("UTC", "Etc/UTC")
+	assertTZ("UTC", "utc")
+	assertTZ("America/New_York", "America/New_York")
+	_, err := normalizeTimezone("Not/A_Timezone")
+	require.Error(t, err)
 }

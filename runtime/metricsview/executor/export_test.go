@@ -7,10 +7,13 @@ import (
 )
 
 // RewriteQueryForRollupTest exposes rewriteQueryForRollup for integration tests. This is to prevent cyclic dependency error.
-func (e *Executor) RewriteQueryForRollupTest(ctx context.Context, qry *metricsview.Query) (string, bool) {
-	rw := e.rewriteQueryForRollup(ctx, qry)
-	if rw == nil {
-		return "", false
+func (e *Executor) RewriteQueryForRollupTest(ctx context.Context, qry *metricsview.Query) (string, bool, error) {
+	spec, err := e.rewriteQueryForRollup(ctx, qry)
+	if err != nil {
+		return "", false, err
 	}
-	return rw.spec.Table, true
+	if spec == nil {
+		return "", false, nil
+	}
+	return spec.Table, true, nil
 }

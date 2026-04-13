@@ -3778,7 +3778,7 @@ definitions:
         type: string
         title: Raw SQL expression to use as the frame (starting with "ROWS ...")
     title: Window to apply to the measure calculation
-  MetricsViewSpecRollupTable:
+  MetricsViewSpecRollup:
     type: object
     properties:
       database:
@@ -3792,19 +3792,19 @@ definitions:
       timeGrain:
         $ref: '#/definitions/v1TimeGrain'
         description: Time grain of the rollup. If unspecified, defaults to the base metrics view's smallest_time_grain during validation.
+      timeZone:
+        type: string
+        title: IANA timezone the rollup was aggregated in; defaults to UTC
       dimensions:
         type: array
         items:
           type: string
-        description: Resolved list of dimensions present in the rollup table. If `dimensions_selector` is set, this will only be set in `state.valid_spec`.
+        description: Resolved list of dimensions present in the rollup. If `dimensions_selector` is set, this will only be set in `state.valid_spec`.
       measures:
         type: array
         items:
           type: string
-        description: Resolved list of measures present in the rollup table. If `measures_selector` is set, this will only be set in `state.valid_spec`.
-      timezone:
-        type: string
-        title: IANA timezone the rollup was aggregated in; defaults to UTC
+        description: Resolved list of measures present in the rollup. If `measures_selector` is set, this will only be set in `state.valid_spec`.
       dimensionsSelector:
         $ref: '#/definitions/v1FieldSelector'
         description: Dynamic selector for `dimensions`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
@@ -3812,8 +3812,8 @@ definitions:
         $ref: '#/definitions/v1FieldSelector'
         description: Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
     description: |-
-      Pre-aggregated rollup tables that can be used to accelerate queries.
-      The system automatically routes queries to a rollup table when the query can be satisfied from the pre-aggregated data.
+      Pre-aggregated rollup that can be used to accelerate queries.
+      The system automatically routes queries to a rollup when the query can be satisfied from the pre-aggregated data.
   NumericHistogramBinsBin:
     type: object
     properties:
@@ -6432,7 +6432,7 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/MetricsViewSpecRollupTable'
+          $ref: '#/definitions/MetricsViewSpecRollup'
       watermarkCacheTtlSeconds:
         type: string
         format: int64
@@ -7867,7 +7867,6 @@ definitions:
       - TIME_GRAIN_QUARTER
       - TIME_GRAIN_YEAR
     default: TIME_GRAIN_UNSPECIFIED
-    title: note - if adding new grain, also update it in executor_rewrite_rollup.go and rollup.go
   v1TimeRange:
     type: object
     properties:

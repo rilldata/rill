@@ -645,7 +645,7 @@ rollups:
 	require.NotNil(t, rollup.MeasuresSelector)
 }
 
-func TestMetricsViewRollupsOptionalTimeGrain(t *testing.T) {
+func TestMetricsViewRollupsRequiredTimeGrain(t *testing.T) {
 	files := map[string]string{
 		`rill.yaml`:               ``,
 		`models/m1.sql`:           `SELECT 1 AS id, 'a' AS publisher`,
@@ -673,18 +673,8 @@ rollups:
 	repo := makeRepo(t, files)
 	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
-	require.Empty(t, p.Errors)
-
-	var mvSpec *runtimev1.MetricsViewSpec
-	for _, r := range p.Resources {
-		if r.Name.Kind == ResourceKindMetricsView && r.Name.Name == "mv1" {
-			mvSpec = r.MetricsViewSpec
-			break
-		}
-	}
-	require.NotNil(t, mvSpec)
-	require.Len(t, mvSpec.Rollups, 1)
-	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, mvSpec.Rollups[0].TimeGrain)
+	require.NotEmpty(t, p.Errors)
+	require.Contains(t, p.Errors[0].Message, `"time_grain" is required`)
 }
 
 func TestMetricsViewRollupsValidation(t *testing.T) {
@@ -789,11 +779,11 @@ measures:
 rollups:
   - model: r1
     time_grain: day
-    timezone: Not/A_Timezone
+    time_zone: Not/A_Timezone
     measures:
       - count
 `,
-			wantErr: `invalid "timezone"`,
+			wantErr: `invalid "time_zone"`,
 		},
 	}
 

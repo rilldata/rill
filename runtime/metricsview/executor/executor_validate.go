@@ -176,7 +176,7 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 		}
 		allMeasureNames = append(allMeasureNames, m.Name)
 	}
-	e.validateRollupTables(ctx, mv, allDimNames, allMeasureNames, res)
+	e.validateAndNormalizeRollups(ctx, mv, allDimNames, allMeasureNames, res)
 
 	// Pinot does not have any native support for time shift using time grain specifiers
 	if e.olap.Dialect() == drivers.DialectPinot && (mv.FirstDayOfWeek > 1 || mv.FirstMonthOfYear > 1) {
@@ -268,8 +268,20 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 	return res, nil
 }
 
-// validateRollupTables validates that rollup tables exist and contain the expected columns.
-func (e *Executor) validateRollupTables(ctx context.Context, mv *runtimev1.MetricsViewSpec, allDimensions, allMeasures []string, res *ValidateMetricsViewResult) {
+// validateAndNormalizeRollups validates that rollup tables exist and contain the expected columns.
+// It reuses validateDimension/validateMeasure to check expressions against the rollup table,
+// handling expression-based dimensions correctly (not just column lookups).
+func (e *Executor) validateAndNormalizeRollups(ctx context.Context, mv *runtimev1.MetricsViewSpec, allDimensions, allMeasures []string, res *ValidateMetricsViewResult) {
+	// Build lookup from dimension/measure name to spec definition
+	dimsByName := make(map[string]*runtimev1.MetricsViewSpec_Dimension, len(mv.Dimensions))
+	for _, d := range mv.Dimensions {
+		dimsByName[strings.ToLower(d.Name)] = d
+	}
+	measuresByName := make(map[string]*runtimev1.MetricsViewSpec_Measure, len(mv.Measures))
+	for _, m := range mv.Measures {
+		measuresByName[strings.ToLower(m.Name)] = m
+	}
+
 	for i, rollup := range mv.Rollups {
 		// Resolve dimension selector
 		var err error
@@ -288,14 +300,10 @@ func (e *Executor) validateRollupTables(ctx context.Context, mv *runtimev1.Metri
 		}
 		rollup.MeasuresSelector = nil
 
-		// Default time_grain to smallest_time_grain
+		// time_grain is required
 		if rollup.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
-			if mv.SmallestTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
-				rollup.TimeGrain = mv.SmallestTimeGrain
-			} else {
-				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: time_grain is required (no smallest_time_grain set on the metrics view)", i))
-				continue
-			}
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: time_grain is required", i))
+			continue
 		}
 
 		t, err := e.olap.InformationSchema().Lookup(ctx, rollup.Database, rollup.DatabaseSchema, rollup.Table)
@@ -304,62 +312,35 @@ func (e *Executor) validateRollupTables(ctx context.Context, mv *runtimev1.Metri
 			continue
 		}
 
-		cols := make(map[string]bool, len(t.Schema.Fields))
+		cols := make(map[string]*runtimev1.StructType_Field, len(t.Schema.Fields))
 		for _, f := range t.Schema.Fields {
-			cols[strings.ToLower(f.Name)] = true
+			cols[strings.ToLower(f.Name)] = f
 		}
 
-		// Check time dimension column exists
-		if mv.TimeDimension != "" {
-			if !cols[strings.ToLower(mv.TimeDimension)] {
-				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: time dimension column %q not found in table %q", i, mv.TimeDimension, rollup.Table))
+		// Validate dimensions using the same logic as the base table validation.
+		// This handles expression-based dimensions correctly (not just column lookups).
+		for _, dimName := range rollup.Dimensions {
+			d := dimsByName[strings.ToLower(dimName)]
+			if d == nil {
+				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: dimension %q not found in metrics view", i, dimName))
+				continue
+			}
+			if err := e.validateDimension(ctx, t, d, cols); err != nil {
+				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: %w", i, err))
 			}
 		}
 
-		// Check dimension columns exist
-		for _, dim := range rollup.Dimensions {
-			colName := dim
-			for _, d := range mv.Dimensions {
-				if strings.EqualFold(d.Name, dim) {
-					if d.Column != "" {
-						colName = d.Column
-					}
-					break
-				}
-			}
-			if !cols[strings.ToLower(colName)] {
-				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: dimension column %q not found in table %q", i, colName, rollup.Table))
-			}
-		}
-
-		// Validate measure expressions with a dry-run query using base MV expressions
-		var measureExprs []string
+		// Validate measures using the same logic as the base table validation
 		for _, mName := range rollup.Measures {
-			for _, specM := range mv.Measures {
-				if strings.EqualFold(specM.Name, mName) {
-					if specM.Type != runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE || specM.Window != nil {
-						break // skip non-simple measures
-					}
-					if specM.Expression != "" {
-						measureExprs = append(measureExprs, "("+specM.Expression+")")
-					}
-					break
-				}
+			m := measuresByName[strings.ToLower(mName)]
+			if m == nil {
+				continue
 			}
-		}
-		if len(measureExprs) > 0 {
-			query := fmt.Sprintf(
-				"SELECT 1, %s FROM %s GROUP BY 1",
-				strings.Join(measureExprs, ", "),
-				e.olap.Dialect().EscapeTable(rollup.Database, rollup.DatabaseSchema, rollup.Table),
-			)
-			err := e.olap.Exec(ctx, &drivers.Statement{
-				Query:           query,
-				DryRun:          true,
-				QueryAttributes: e.queryAttributes,
-			})
-			if err != nil {
-				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: invalid measure expression(s): %w", i, err))
+			if m.Type != runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE || m.Window != nil {
+				continue
+			}
+			if err := e.validateMeasure(ctx, t, m); err != nil {
+				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: invalid expression for measure %q: %w", i, mName, err))
 			}
 		}
 	}

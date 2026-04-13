@@ -16,7 +16,7 @@ import (
 const defaultWatermarkCacheTTL = 5 * time.Minute
 
 func init() {
-	runtime.RegisterResolverInitializer("metrics_watermark", newMetricsWatermarkResolver)
+	runtime.RegisterResolverInitializer("metrics_timestamps", newMetricsWatermarkResolver)
 }
 
 type metricsWatermarkResolver struct {
@@ -79,7 +79,7 @@ func newMetricsWatermarkResolver(ctx context.Context, opts *runtime.ResolverOpti
 	// If a table override is provided and it differs from the base table, build a synthetic spec
 	spec := mv
 	if args.Table != "" && !sameTable(mv, args.Table, args.Database, args.DatabaseSchema) {
-		spec = executor.BuildSyntheticSpec(mv, &runtimev1.MetricsViewSpec_RollupTable{
+		spec = executor.BuildSyntheticSpec(mv, &runtimev1.MetricsViewSpec_Rollup{
 			Table:          args.Table,
 			Database:       args.Database,
 			DatabaseSchema: args.DatabaseSchema,

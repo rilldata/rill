@@ -1509,9 +1509,9 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   queryAttributes: { [key: string]: string } = {};
 
   /**
-   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.RollupTable rollups = 34;
+   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.Rollup rollups = 34;
    */
-  rollups: MetricsViewSpec_RollupTable[] = [];
+  rollups: MetricsViewSpec_Rollup[] = [];
 
   /**
    * TTL in seconds for caching the base table's watermarks (min/max time) used for rollup routing. Defaults to 5 minutes if unset.
@@ -1552,7 +1552,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 26, name: "cache_key_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 27, name: "cache_key_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 33, name: "query_attributes", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 34, name: "rollups", kind: "message", T: MetricsViewSpec_RollupTable, repeated: true },
+    { no: 34, name: "rollups", kind: "message", T: MetricsViewSpec_Rollup, repeated: true },
     { no: 35, name: "watermark_cache_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
 
@@ -2128,108 +2128,108 @@ export class MetricsViewSpec_Annotation extends Message<MetricsViewSpec_Annotati
 }
 
 /**
- * Pre-aggregated rollup tables that can be used to accelerate queries.
- * The system automatically routes queries to a rollup table when the query can be satisfied from the pre-aggregated data.
+ * Pre-aggregated rollup that can be used to accelerate queries.
+ * The system automatically routes queries to a rollup when the query can be satisfied from the pre-aggregated data.
  *
- * @generated from message rill.runtime.v1.MetricsViewSpec.RollupTable
+ * @generated from message rill.runtime.v1.MetricsViewSpec.Rollup
  */
-export class MetricsViewSpec_RollupTable extends Message<MetricsViewSpec_RollupTable> {
+export class MetricsViewSpec_Rollup extends Message<MetricsViewSpec_Rollup> {
   /**
-   * @generated from field: string database = 2;
+   * @generated from field: string database = 1;
    */
   database = "";
 
   /**
-   * @generated from field: string database_schema = 3;
+   * @generated from field: string database_schema = 2;
    */
   databaseSchema = "";
 
   /**
-   * @generated from field: string table = 4;
+   * @generated from field: string table = 3;
    */
   table = "";
 
   /**
-   * @generated from field: string model = 5;
+   * @generated from field: string model = 4;
    */
   model = "";
 
   /**
    * Time grain of the rollup. If unspecified, defaults to the base metrics view's smallest_time_grain during validation.
    *
-   * @generated from field: rill.runtime.v1.TimeGrain time_grain = 6;
+   * @generated from field: rill.runtime.v1.TimeGrain time_grain = 5;
    */
   timeGrain = TimeGrain.UNSPECIFIED;
 
   /**
-   * Resolved list of dimensions present in the rollup table. If `dimensions_selector` is set, this will only be set in `state.valid_spec`.
+   * IANA timezone the rollup was aggregated in; defaults to UTC
+   *
+   * @generated from field: string time_zone = 6;
+   */
+  timeZone = "";
+
+  /**
+   * Resolved list of dimensions present in the rollup. If `dimensions_selector` is set, this will only be set in `state.valid_spec`.
    *
    * @generated from field: repeated string dimensions = 7;
    */
   dimensions: string[] = [];
 
   /**
-   * Resolved list of measures present in the rollup table. If `measures_selector` is set, this will only be set in `state.valid_spec`.
+   * Resolved list of measures present in the rollup. If `measures_selector` is set, this will only be set in `state.valid_spec`.
    *
    * @generated from field: repeated string measures = 8;
    */
   measures: string[] = [];
 
   /**
-   * IANA timezone the rollup was aggregated in; defaults to UTC
-   *
-   * @generated from field: string timezone = 9;
-   */
-  timezone = "";
-
-  /**
    * Dynamic selector for `dimensions`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
    *
-   * @generated from field: rill.runtime.v1.FieldSelector dimensions_selector = 10;
+   * @generated from field: rill.runtime.v1.FieldSelector dimensions_selector = 9;
    */
   dimensionsSelector?: FieldSelector;
 
   /**
    * Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
    *
-   * @generated from field: rill.runtime.v1.FieldSelector measures_selector = 11;
+   * @generated from field: rill.runtime.v1.FieldSelector measures_selector = 10;
    */
   measuresSelector?: FieldSelector;
 
-  constructor(data?: PartialMessage<MetricsViewSpec_RollupTable>) {
+  constructor(data?: PartialMessage<MetricsViewSpec_Rollup>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.MetricsViewSpec.RollupTable";
+  static readonly typeName = "rill.runtime.v1.MetricsViewSpec.Rollup";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 2, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
+    { no: 1, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
+    { no: 6, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 8, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 9, name: "timezone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 10, name: "dimensions_selector", kind: "message", T: FieldSelector },
-    { no: 11, name: "measures_selector", kind: "message", T: FieldSelector },
+    { no: 9, name: "dimensions_selector", kind: "message", T: FieldSelector },
+    { no: 10, name: "measures_selector", kind: "message", T: FieldSelector },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_RollupTable {
-    return new MetricsViewSpec_RollupTable().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Rollup {
+    return new MetricsViewSpec_Rollup().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewSpec_RollupTable {
-    return new MetricsViewSpec_RollupTable().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewSpec_Rollup {
+    return new MetricsViewSpec_Rollup().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewSpec_RollupTable {
-    return new MetricsViewSpec_RollupTable().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewSpec_Rollup {
+    return new MetricsViewSpec_Rollup().fromJsonString(jsonString, options);
   }
 
-  static equals(a: MetricsViewSpec_RollupTable | PlainMessage<MetricsViewSpec_RollupTable> | undefined, b: MetricsViewSpec_RollupTable | PlainMessage<MetricsViewSpec_RollupTable> | undefined): boolean {
-    return proto3.util.equals(MetricsViewSpec_RollupTable, a, b);
+  static equals(a: MetricsViewSpec_Rollup | PlainMessage<MetricsViewSpec_Rollup> | undefined, b: MetricsViewSpec_Rollup | PlainMessage<MetricsViewSpec_Rollup> | undefined): boolean {
+    return proto3.util.equals(MetricsViewSpec_Rollup, a, b);
   }
 }
 

@@ -13518,22 +13518,22 @@ var _ interface {
 	ErrorName() string
 } = MetricsViewSpec_AnnotationValidationError{}
 
-// Validate checks the field values on MetricsViewSpec_RollupTable with the
-// rules defined in the proto definition for this message. If any rules are
+// Validate checks the field values on MetricsViewSpec_Rollup with the rules
+// defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *MetricsViewSpec_RollupTable) Validate() error {
+func (m *MetricsViewSpec_Rollup) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on MetricsViewSpec_RollupTable with the
-// rules defined in the proto definition for this message. If any rules are
+// ValidateAll checks the field values on MetricsViewSpec_Rollup with the rules
+// defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// MetricsViewSpec_RollupTableMultiError, or nil if none found.
-func (m *MetricsViewSpec_RollupTable) ValidateAll() error {
+// MetricsViewSpec_RollupMultiError, or nil if none found.
+func (m *MetricsViewSpec_Rollup) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *MetricsViewSpec_RollupTable) validate(all bool) error {
+func (m *MetricsViewSpec_Rollup) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -13550,13 +13550,13 @@ func (m *MetricsViewSpec_RollupTable) validate(all bool) error {
 
 	// no validation rules for TimeGrain
 
-	// no validation rules for Timezone
+	// no validation rules for TimeZone
 
 	if all {
 		switch v := interface{}(m.GetDimensionsSelector()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, MetricsViewSpec_RollupTableValidationError{
+				errors = append(errors, MetricsViewSpec_RollupValidationError{
 					field:  "DimensionsSelector",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -13564,7 +13564,7 @@ func (m *MetricsViewSpec_RollupTable) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, MetricsViewSpec_RollupTableValidationError{
+				errors = append(errors, MetricsViewSpec_RollupValidationError{
 					field:  "DimensionsSelector",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -13573,7 +13573,7 @@ func (m *MetricsViewSpec_RollupTable) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetDimensionsSelector()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return MetricsViewSpec_RollupTableValidationError{
+			return MetricsViewSpec_RollupValidationError{
 				field:  "DimensionsSelector",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -13585,7 +13585,7 @@ func (m *MetricsViewSpec_RollupTable) validate(all bool) error {
 		switch v := interface{}(m.GetMeasuresSelector()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, MetricsViewSpec_RollupTableValidationError{
+				errors = append(errors, MetricsViewSpec_RollupValidationError{
 					field:  "MeasuresSelector",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -13593,7 +13593,7 @@ func (m *MetricsViewSpec_RollupTable) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, MetricsViewSpec_RollupTableValidationError{
+				errors = append(errors, MetricsViewSpec_RollupValidationError{
 					field:  "MeasuresSelector",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -13602,7 +13602,7 @@ func (m *MetricsViewSpec_RollupTable) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetMeasuresSelector()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return MetricsViewSpec_RollupTableValidationError{
+			return MetricsViewSpec_RollupValidationError{
 				field:  "MeasuresSelector",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -13611,19 +13611,19 @@ func (m *MetricsViewSpec_RollupTable) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return MetricsViewSpec_RollupTableMultiError(errors)
+		return MetricsViewSpec_RollupMultiError(errors)
 	}
 
 	return nil
 }
 
-// MetricsViewSpec_RollupTableMultiError is an error wrapping multiple
-// validation errors returned by MetricsViewSpec_RollupTable.ValidateAll() if
-// the designated constraints aren't met.
-type MetricsViewSpec_RollupTableMultiError []error
+// MetricsViewSpec_RollupMultiError is an error wrapping multiple validation
+// errors returned by MetricsViewSpec_Rollup.ValidateAll() if the designated
+// constraints aren't met.
+type MetricsViewSpec_RollupMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m MetricsViewSpec_RollupTableMultiError) Error() string {
+func (m MetricsViewSpec_RollupMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -13632,12 +13632,11 @@ func (m MetricsViewSpec_RollupTableMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m MetricsViewSpec_RollupTableMultiError) AllErrors() []error { return m }
+func (m MetricsViewSpec_RollupMultiError) AllErrors() []error { return m }
 
-// MetricsViewSpec_RollupTableValidationError is the validation error returned
-// by MetricsViewSpec_RollupTable.Validate if the designated constraints
-// aren't met.
-type MetricsViewSpec_RollupTableValidationError struct {
+// MetricsViewSpec_RollupValidationError is the validation error returned by
+// MetricsViewSpec_Rollup.Validate if the designated constraints aren't met.
+type MetricsViewSpec_RollupValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -13645,24 +13644,24 @@ type MetricsViewSpec_RollupTableValidationError struct {
 }
 
 // Field function returns field value.
-func (e MetricsViewSpec_RollupTableValidationError) Field() string { return e.field }
+func (e MetricsViewSpec_RollupValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e MetricsViewSpec_RollupTableValidationError) Reason() string { return e.reason }
+func (e MetricsViewSpec_RollupValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e MetricsViewSpec_RollupTableValidationError) Cause() error { return e.cause }
+func (e MetricsViewSpec_RollupValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e MetricsViewSpec_RollupTableValidationError) Key() bool { return e.key }
+func (e MetricsViewSpec_RollupValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e MetricsViewSpec_RollupTableValidationError) ErrorName() string {
-	return "MetricsViewSpec_RollupTableValidationError"
+func (e MetricsViewSpec_RollupValidationError) ErrorName() string {
+	return "MetricsViewSpec_RollupValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e MetricsViewSpec_RollupTableValidationError) Error() string {
+func (e MetricsViewSpec_RollupValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -13674,14 +13673,14 @@ func (e MetricsViewSpec_RollupTableValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sMetricsViewSpec_RollupTable.%s: %s%s",
+		"invalid %sMetricsViewSpec_Rollup.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = MetricsViewSpec_RollupTableValidationError{}
+var _ error = MetricsViewSpec_RollupValidationError{}
 
 var _ interface {
 	Field() string
@@ -13689,4 +13688,4 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = MetricsViewSpec_RollupTableValidationError{}
+} = MetricsViewSpec_RollupValidationError{}

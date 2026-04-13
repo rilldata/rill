@@ -149,7 +149,8 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			table, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			table, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.NoError(t, err)
 			require.True(t, ok)
 			require.Equal(t, rollupTestDailyTable, table)
 		})
@@ -171,7 +172,8 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			table, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			table, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.NoError(t, err)
 			require.True(t, ok)
 			// Both daily and monthly are eligible; monthly is coarser
 			require.Equal(t, rollupTestMonthTable, table)
@@ -194,7 +196,8 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			table, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			table, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.NoError(t, err)
 			require.True(t, ok)
 			// Daily and monthly are eligible (year derivable from both); monthly is coarser
 			require.Equal(t, rollupTestMonthTable, table)
@@ -217,7 +220,8 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			table, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			table, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.NoError(t, err)
 			require.True(t, ok)
 			// All 3 eligible (no grain check); monthly is coarsest
 			require.Equal(t, rollupTestMonthTable, table)
@@ -242,7 +246,8 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			table, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			table, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.NoError(t, err)
 			require.True(t, ok)
 			// Daily and weekly eligible (week derivable from day); weekly is coarser
 			require.Equal(t, rollupTestWeeklyTable, table)
@@ -265,7 +270,8 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			table, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			table, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.NoError(t, err)
 			require.True(t, ok)
 			// Weekly lacks March data; monthly ineligible (week not derivable from month); daily covers all
 			require.Equal(t, rollupTestDailyTable, table)
@@ -285,7 +291,8 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			_, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			_, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.NoError(t, err)
 			require.False(t, ok)
 		})
 
@@ -306,7 +313,8 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			_, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			_, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.NoError(t, err)
 			require.False(t, ok)
 		})
 
@@ -325,7 +333,8 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			_, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			_, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.NoError(t, err)
 			require.False(t, ok)
 		})
 
@@ -344,7 +353,8 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			table, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			table, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.NoError(t, err)
 			require.True(t, ok)
 			// Monthly is coarsest eligible
 			require.Equal(t, rollupTestMonthTable, table)
@@ -364,7 +374,8 @@ func TestRollupIntegration(t *testing.T) {
 				// No TimeRange: means "all data"
 			}
 
-			table, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			table, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.NoError(t, err)
 			require.True(t, ok)
 			// Weekly rollup is partial (Jan+Feb only); daily and monthly cover full range.
 			// Monthly is coarsest eligible.
@@ -388,7 +399,8 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			_, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			_, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.NoError(t, err)
 			require.False(t, ok)
 		})
 
@@ -418,7 +430,8 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			_, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			_, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.NoError(t, err)
 			require.False(t, ok)
 		})
 
@@ -472,7 +485,8 @@ explore:
 					End:   time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC),
 				},
 			}
-			_, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			_, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.NoError(t, err)
 			require.False(t, ok)
 		})
 
@@ -493,7 +507,8 @@ explore:
 					End:   time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 				},
 			}
-			table, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			table, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.NoError(t, err)
 			require.True(t, ok)
 			// Query clamped to base data range; daily is the only eligible rollup for day grain
 			require.Equal(t, rollupTestDailyTable, table)
@@ -560,7 +575,8 @@ explore:
 					End:   time.Date(2024, 4, 1, 0, 0, 0, 0, time.UTC),
 				},
 			}
-			table, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			table, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.NoError(t, err)
 			require.True(t, ok)
 			// Both monthly rollups cover the range; narrow has smaller data range
 			require.Equal(t, "rollup_month_narrow", table)
@@ -614,7 +630,8 @@ explore:
 					{Name: "total_impressions"},
 				},
 			}
-			_, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			_, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.NoError(t, err)
 			require.False(t, ok)
 		})
 	})
@@ -675,7 +692,8 @@ explore:
 					End:   time.Date(2024, 2, 4, 0, 0, 0, 0, time.UTC),
 				},
 			}
-			table, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			table, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.NoError(t, err)
 			require.True(t, ok)
 			require.Equal(t, "rollup_week", table)
 		})
@@ -699,7 +717,8 @@ explore:
 					End:   time.Date(2024, 2, 4, 0, 0, 0, 0, time.UTC),
 				},
 			}
-			_, ok := e.RewriteQueryForRollupTest(context.Background(), qry)
+			_, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
+			require.NoError(t, err)
 			require.False(t, ok)
 		})
 	})

@@ -330,9 +330,12 @@ func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionT
 
 	// Check if a rollup table can satisfy the query; if so, use a synthetic spec pointing to it
 	mvForAST := e.metricsView
-	rw := e.rewriteQueryForRollup(ctx, qry)
-	if rw != nil && rw.spec != nil {
-		mvForAST = rw.spec
+	rollupSpec, err := e.rewriteQueryForRollup(ctx, qry)
+	if err != nil {
+		return nil, err
+	}
+	if rollupSpec != nil {
+		mvForAST = rollupSpec
 	}
 
 	ast, err := metricsview.NewAST(mvForAST, e.security, qry, e.olap.Dialect())
@@ -467,7 +470,17 @@ func (e *Executor) Export(ctx context.Context, qry *metricsview.Query, execution
 		return "", err
 	}
 
-	ast, err := metricsview.NewAST(e.metricsView, e.security, qry, e.olap.Dialect())
+	// Check if a rollup table can satisfy the query; if so, use a synthetic spec pointing to it
+	mvForAST := e.metricsView
+	rollupSpec, err := e.rewriteQueryForRollup(ctx, qry)
+	if err != nil {
+		return "", err
+	}
+	if rollupSpec != nil {
+		mvForAST = rollupSpec
+	}
+
+	ast, err := metricsview.NewAST(mvForAST, e.security, qry, e.olap.Dialect())
 	if err != nil {
 		return "", err
 	}

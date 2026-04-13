@@ -87,7 +87,7 @@ type MetricsViewYAML struct {
 		Database       string             `yaml:"database"`
 		DatabaseSchema string             `yaml:"database_schema"`
 		TimeGrain      string             `yaml:"time_grain"`
-		Timezone       string             `yaml:"timezone"`
+		TimeZone       string             `yaml:"time_zone"`
 		Dimensions     *FieldSelectorYAML `yaml:"dimensions"`
 		Measures       *FieldSelectorYAML `yaml:"measures"`
 	} `yaml:"rollups"`
@@ -750,6 +750,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	}
 
 	// Validate and add rollup tables as refs
+	var rollups []*runtimev1.MetricsViewSpec_Rollup
 	for i, rollup := range tmp.Rollups {
 		if rollup == nil {
 			return fmt.Errorf(`rollup[%d]: empty rollup configuration`, i)
@@ -757,17 +758,21 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		if rollup.Model == "" {
 			return fmt.Errorf(`rollup[%d]: "model" is required`, i)
 		}
-		if rollup.TimeGrain != "" {
-			if _, err := parseTimeGrain(rollup.TimeGrain); err != nil {
-				return fmt.Errorf(`rollup[%d]: invalid "time_grain": %w`, i, err)
+		if rollup.TimeGrain == "" {
+			return fmt.Errorf(`rollup[%d]: "time_grain" is required`, i)
+		}
+		tg, err := parseTimeGrain(rollup.TimeGrain)
+		if err != nil {
+			return fmt.Errorf(`rollup[%d]: invalid "time_grain": %w`, i, err)
+		}
+		if rollup.TimeZone != "" {
+			if _, err := time.LoadLocation(rollup.TimeZone); err != nil {
+				return fmt.Errorf(`rollup[%d]: invalid "time_zone" %q: %w`, i, rollup.TimeZone, err)
 			}
 		}
-		if rollup.Timezone != "" {
-			if _, err := time.LoadLocation(rollup.Timezone); err != nil {
-				return fmt.Errorf(`rollup[%d]: invalid "timezone" %q: %w`, i, rollup.Timezone, err)
-			}
-		}
-		// Validate dimensions if they resolve to a static list
+		// Validate and resolve dimensions
+		var dims []string
+		var dimsSelector *runtimev1.FieldSelector
 		if resolved, ok := rollup.Dimensions.TryResolve(); ok {
 			for _, dimName := range resolved {
 				nameType, ok := names[strings.ToLower(dimName)]
@@ -775,8 +780,13 @@ func (p *Parser) parseMetricsView(node *Node) error {
 					return fmt.Errorf(`rollup[%d]: dimension %q does not exist in the metrics view`, i, dimName)
 				}
 			}
+			dims = resolved
+		} else {
+			dimsSelector = rollup.Dimensions.Proto()
 		}
-		// Validate measures if they resolve to a static list
+		// Validate and resolve measures
+		var measures []string
+		var measSelector *runtimev1.FieldSelector
 		if resolved, ok := rollup.Measures.TryResolve(); ok {
 			for _, mName := range resolved {
 				nameType, ok := names[strings.ToLower(mName)]
@@ -784,8 +794,22 @@ func (p *Parser) parseMetricsView(node *Node) error {
 					return fmt.Errorf(`rollup[%d]: measure %q does not exist in the metrics view`, i, mName)
 				}
 			}
+			measures = resolved
+		} else {
+			measSelector = rollup.Measures.Proto()
 		}
 
+		rollups = append(rollups, &runtimev1.MetricsViewSpec_Rollup{
+			Database:           rollup.Database,
+			DatabaseSchema:     rollup.DatabaseSchema,
+			Model:              rollup.Model,
+			TimeGrain:          tg,
+			TimeZone:           rollup.TimeZone,
+			Dimensions:         dims,
+			DimensionsSelector: dimsSelector,
+			Measures:           measures,
+			MeasuresSelector:   measSelector,
+		})
 		node.Refs = append(node.Refs, ResourceName{Name: rollup.Model})
 	}
 
@@ -881,40 +905,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		})
 	}
 
-	// Convert rollups to proto
-	for _, rollup := range tmp.Rollups {
-		var tg runtimev1.TimeGrain
-		if rollup.TimeGrain != "" {
-			tg, _ = parseTimeGrain(rollup.TimeGrain) // already validated above
-		}
-		var dims []string
-		var dimsSelector *runtimev1.FieldSelector
-		if resolved, ok := rollup.Dimensions.TryResolve(); ok {
-			dims = resolved
-		} else {
-			dimsSelector = rollup.Dimensions.Proto()
-		}
-
-		var measures []string
-		var measSelector *runtimev1.FieldSelector
-		if resolved, ok := rollup.Measures.TryResolve(); ok {
-			measures = resolved
-		} else {
-			measSelector = rollup.Measures.Proto()
-		}
-
-		spec.Rollups = append(spec.Rollups, &runtimev1.MetricsViewSpec_RollupTable{
-			Database:           rollup.Database,
-			DatabaseSchema:     rollup.DatabaseSchema,
-			Model:              rollup.Model,
-			TimeGrain:          tg,
-			Timezone:           rollup.Timezone,
-			Dimensions:         dims,
-			DimensionsSelector: dimsSelector,
-			Measures:           measures,
-			MeasuresSelector:   measSelector,
-		})
-	}
+	spec.Rollups = rollups
 
 	// Parse the dimensions and measures selectors
 	if tmp.Parent != "" {

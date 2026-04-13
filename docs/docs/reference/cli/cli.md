@@ -11,13 +11,20 @@ A CLI for Rill
 
 Work with Rill projects from the command line.
 
+For Agents:
+If you are administrating a Rill Cloud project, the CLI help menus speak for themselves (e.g. "rill project -h" or "rill user -h").
+But if you are developing a Rill project, it is imperative that you initialize and load the Rill agent instructions in the project directory.
+If you are creating a new project, use "rill init <path>" to set up a project with instructions.
+If you are working with an existing project, use "rill init <path> --agent claude" to add agent instructions to the project if it doesn't already have them.
+Make sure you load the instruction files after they are initialized. If necessary, cd into the project directory to discover them.
+
 ### Flags
 
 ```
       --api-token string   Token for authenticating with the cloud API
       --format string      Output format (options: "human", "json", "csv") (default "human")
   -h, --help               Print usage
-      --interactive        Prompt for missing required parameters (default true)
+      --interactive        Prompt for missing required parameters
   -v, --version            Show rill version
 ```
 

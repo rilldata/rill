@@ -1,7 +1,6 @@
 syntax = "proto3";
 package rill.runtime.v1;
 
-// note - if adding new grain, also update it in executor_rewrite_rollup.go and rollup.go
 enum TimeGrain {
   TIME_GRAIN_UNSPECIFIED = 0;
   TIME_GRAIN_MILLISECOND = 1;

@@ -2,10 +2,13 @@ package executor
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 	"google.golang.org/protobuf/proto"
@@ -36,34 +39,28 @@ import (
 // The selected rollup is returned as a synthetic MetricsViewSpec that points to the rollup table.
 // The caller uses this spec to build the query AST, so the rest of the query pipeline remains same.
 
-// rollupRewrite holds the result of rewriting a query for a rollup.
-// spec is set to the synthetic MetricsViewSpec pointing to the rollup table.
-type rollupRewrite struct {
-	spec *runtimev1.MetricsViewSpec
-}
-
 // rollupCandidate tracks an eligible rollup along with selection metadata.
 type rollupCandidate struct {
-	rollup     *runtimev1.MetricsViewSpec_RollupTable
+	rollup     *runtimev1.MetricsViewSpec_Rollup
 	grainOrder int
 	dataRange  time.Duration // max - min; 0 if no time dimension
 }
 
 // rewriteQueryForRollup checks if a rollup table can satisfy the query.
-// It returns a rollupRewrite with a synthetic spec, or nil if no rollup matches.
-func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Query) *rollupRewrite {
+// It returns a synthetic MetricsViewSpec pointing to the rollup table, or nil if no rollup matches.
+func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Query) (*runtimev1.MetricsViewSpec, error) {
 	if len(e.metricsView.Rollups) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	// Disqualify: raw rows queries
 	if qry.Rows {
-		return nil
+		return nil, nil
 	}
 
 	// Disqualify: queries with comparison time ranges (future improvement)
 	if qry.ComparisonTimeRange != nil {
-		return nil
+		return nil, nil
 	}
 
 	// Extract the time grain from the query (from time floor dimensions)
@@ -75,18 +72,6 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 	// Determine whether the query has a non-zero time range
 	hasTimeRange := qry.TimeRange != nil && (!qry.TimeRange.Start.IsZero() || !qry.TimeRange.End.IsZero())
 
-	grainOrderMap := map[runtimev1.TimeGrain]int{
-		runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND: 0,
-		runtimev1.TimeGrain_TIME_GRAIN_SECOND:      1,
-		runtimev1.TimeGrain_TIME_GRAIN_MINUTE:      2,
-		runtimev1.TimeGrain_TIME_GRAIN_HOUR:        3,
-		runtimev1.TimeGrain_TIME_GRAIN_DAY:         4,
-		runtimev1.TimeGrain_TIME_GRAIN_WEEK:        5,
-		runtimev1.TimeGrain_TIME_GRAIN_MONTH:       6,
-		runtimev1.TimeGrain_TIME_GRAIN_QUARTER:     7,
-		runtimev1.TimeGrain_TIME_GRAIN_YEAR:        8,
-	}
-
 	// Base table watermarks are fetched lazily: only when the first eligible rollup is found.
 	// This avoids wasted queries when no rollup passes eligibility.
 	var baseMin, baseMax time.Time
@@ -96,38 +81,44 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 	var best *rollupCandidate
 	for _, rollup := range e.metricsView.Rollups {
 		if rollup.Table == "" {
-			continue // not yet resolved?
+			return nil, fmt.Errorf("rollup for model %q has no resolved table", rollup.Model)
 		}
-		if !rollupEligible(rollup, qry, queryGrain, whereDims, e.metricsView.FirstDayOfWeek) {
+		eligible, err := rollupEligible(rollup, qry, queryGrain, whereDims, e.metricsView.TimeDimension, e.metricsView.FirstDayOfWeek)
+		if err != nil {
+			return nil, err
+		}
+		if !eligible {
 			continue
 		}
 
 		// Fetch base watermark once, when the first eligible rollup is found
 		if !baseTSFetched && e.metricsView.TimeDimension != "" {
 			baseTSFetched = true
-			if mn, mx, err := e.fetchBaseWatermark(ctx); err == nil {
+			if mn, mx, err := e.resolveBaseTimestamps(ctx); err == nil {
 				baseMin, baseMax = mn, mx
 				hasBaseTS = true
 			}
 			// For no-time-range queries, we need base watermarks to verify rollup coverage
 			if !hasTimeRange && !hasBaseTS {
-				return nil
+				return nil, nil
 			}
 		}
 
 		var dataRange time.Duration
 		if e.metricsView.TimeDimension != "" {
-			rollupMin, rollupMax, err := e.fetchRollupWatermark(ctx, rollup)
+			rollupMin, rollupMax, err := e.resolveRollupTimestamps(ctx, rollup)
 			if err != nil {
-				continue // could not fetch watermarks; skip this rollup
+				return nil, fmt.Errorf("failed to fetch watermark for rollup %q: %w", rollup.Table, err)
 			}
 
 			// Compute rollup effective end: max time + 1 grain period (the max bucket covers up to the next grain boundary)
 			rollupLoc := time.UTC
-			if rollup.Timezone != "" {
-				if loc, err := time.LoadLocation(rollup.Timezone); err == nil {
-					rollupLoc = loc
+			if rollup.TimeZone != "" {
+				loc, err := time.LoadLocation(rollup.TimeZone)
+				if err != nil {
+					return nil, fmt.Errorf("invalid timezone %q for rollup %q: %w", rollup.TimeZone, rollup.Table, err)
 				}
+				rollupLoc = loc
 			}
 			rollupEffEnd := timeutil.OffsetTime(rollupMax, timeutil.TimeGrainFromAPI(rollup.TimeGrain), 1, rollupLoc)
 
@@ -165,7 +156,7 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 
 		c := &rollupCandidate{
 			rollup:     rollup,
-			grainOrder: grainOrderMap[rollup.TimeGrain],
+			grainOrder: metricsview.GrainOrder[rollup.TimeGrain],
 			dataRange:  dataRange,
 		}
 
@@ -178,41 +169,50 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 	}
 
 	if best == nil {
-		return nil
+		return nil, nil
 	}
 
-	return &rollupRewrite{spec: BuildSyntheticSpec(e.metricsView, best.rollup)}
+	return BuildSyntheticSpec(e.metricsView, best.rollup), nil
 }
 
 // rollupEligible checks whether a rollup table can satisfy the given query.
-func rollupEligible(rollup *runtimev1.MetricsViewSpec_RollupTable, qry *metricsview.Query, queryGrain runtimev1.TimeGrain, whereDims map[string]bool, firstDayOfWeek uint32) bool {
+// primaryTimeDim is the metrics view's default time dimension name (used when query fields omit it).
+func rollupEligible(rollup *runtimev1.MetricsViewSpec_Rollup, qry *metricsview.Query, queryGrain runtimev1.TimeGrain, whereDims map[string]bool, primaryTimeDim string, firstDayOfWeek uint32) (bool, error) {
 	// 1. Grain derivable: if query has a time grain, it must be derivable from rollup grain
 	if queryGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 		if !metricsview.GrainDerivableFrom(queryGrain, rollup.TimeGrain) {
-			return false
+			return false, nil
 		}
 	}
 
 	// 2. For day+ rollup grains, the query timezone must match the rollup's timezone.
 	// Sub-day grains are timezone-agnostic (hour boundaries are the same everywhere).
 	if rollup.TimeGrain >= runtimev1.TimeGrain_TIME_GRAIN_DAY {
-		rollupTZ := normalizeTimezone(rollup.Timezone)
-		queryTZ := normalizeTimezone(qry.TimeZone)
+		rollupTZ, err := normalizeTimezone(rollup.TimeZone)
+		if err != nil {
+			return false, err
+		}
+		queryTZ, err := normalizeTimezone(qry.TimeZone)
+		if err != nil {
+			return false, err
+		}
 		if rollupTZ != queryTZ {
-			return false
+			return false, nil
 		}
 	}
 
 	// 3. Time range aligned to rollup grain (use rollup timezone for alignment)
 	if qry.TimeRange != nil {
 		rollupLoc := time.UTC
-		if rollup.Timezone != "" {
-			if loc, err := time.LoadLocation(rollup.Timezone); err == nil {
-				rollupLoc = loc
+		if rollup.TimeZone != "" {
+			loc, err := time.LoadLocation(rollup.TimeZone)
+			if err != nil {
+				return false, fmt.Errorf("invalid timezone %q for rollup %q: %w", rollup.TimeZone, rollup.Table, err)
 			}
+			rollupLoc = loc
 		}
 		if !metricsview.TimeRangeAligned(qry.TimeRange.Start, qry.TimeRange.End, rollup.TimeGrain, rollupLoc, firstDayOfWeek) {
-			return false
+			return false, nil
 		}
 	}
 
@@ -221,19 +221,38 @@ func rollupEligible(rollup *runtimev1.MetricsViewSpec_RollupTable, qry *metricsv
 	for _, d := range rollup.Dimensions {
 		rollupDims[strings.ToLower(d)] = true
 	}
+	// dimInRollup checks if a dimension is available in the rollup: either it's the primary
+	// time dimension (always present as the rollup's time column) or it's in the dimensions list.
+	dimInRollup := func(dim string) bool {
+		if strings.EqualFold(dim, primaryTimeDim) {
+			return true
+		}
+		return rollupDims[strings.ToLower(dim)]
+	}
+
 	for _, d := range qry.Dimensions {
-		name := d.Name
 		if d.Compute != nil && d.Compute.TimeFloor != nil {
-			// Time floor dimensions reference the underlying time dimension; skip for dimension check
-			// (the time dimension column exists in the rollup table as the time column)
+			// TimeFloor references an underlying time dimension; it must be available in the rollup
+			if !dimInRollup(d.Compute.TimeFloor.Dimension) {
+				return false, nil
+			}
 			continue
 		}
-		if !rollupDims[strings.ToLower(name)] {
-			return false
+		if !rollupDims[strings.ToLower(d.Name)] {
+			return false, nil
 		}
 	}
 
-	// 5. All queried measures present in rollup; reject computed measures (count, count_distinct, etc.)
+	// 5. Time range's time dimension must be available in the rollup
+	trTimeDim := primaryTimeDim
+	if qry.TimeRange != nil && qry.TimeRange.TimeDimension != "" {
+		trTimeDim = qry.TimeRange.TimeDimension
+	}
+	if trTimeDim != "" && !dimInRollup(trTimeDim) {
+		return false, nil
+	}
+
+	// 6. All queried measures present in rollup; reject computed measures (count, count_distinct, etc.)
 	// since they produce incorrect results on pre-aggregated rollup tables.
 	rollupMeasures := make(map[string]bool, len(rollup.Measures))
 	for _, m := range rollup.Measures {
@@ -241,32 +260,62 @@ func rollupEligible(rollup *runtimev1.MetricsViewSpec_RollupTable, qry *metricsv
 	}
 	for _, m := range qry.Measures {
 		if m.Compute != nil {
-			return false // computed measures are invalid on rollup tables
+			return false, nil // computed measures are invalid on rollup tables
 		}
 		if !rollupMeasures[strings.ToLower(m.Name)] {
-			return false
+			return false, nil
 		}
 	}
 
-	// 6. All WHERE dimensions present in rollup
+	// 7. All WHERE dimensions present in rollup
 	for dim := range whereDims {
 		if !rollupDims[strings.ToLower(dim)] {
-			return false
+			return false, nil
 		}
 	}
 
-	return true
+	return true, nil
 }
 
-// extractQueryTimeGrain finds the time grain from the query's dimensions.
-// It returns the grain from the first time floor dimension found, or UNSPECIFIED.
+// BuildSyntheticSpec creates a MetricsViewSpec that points to the rollup table.
+// Since rollup tables have the same column names as the base table, the base measure expressions work directly against the rollup table.
+func BuildSyntheticSpec(original *runtimev1.MetricsViewSpec, rollup *runtimev1.MetricsViewSpec_Rollup) *runtimev1.MetricsViewSpec {
+	synth := proto.Clone(original).(*runtimev1.MetricsViewSpec)
+
+	// Point to rollup table (connector stays the same as base)
+	synth.Table = rollup.Table
+	synth.Model = ""
+	if rollup.Database != "" {
+		synth.Database = rollup.Database
+	}
+	if rollup.DatabaseSchema != "" {
+		synth.DatabaseSchema = rollup.DatabaseSchema
+	}
+
+	// Clear rollups to prevent recursion
+	synth.Rollups = nil
+
+	return synth
+}
+
+// extractQueryTimeGrain finds the smallest time grain across all time floor dimensions in the query.
+// When multiple TimeFloor dimensions exist (e.g. pivot tables with multiple time levels),
+// the smallest grain determines the rollup grain requirement.
 func extractQueryTimeGrain(qry *metricsview.Query) runtimev1.TimeGrain {
+	smallest := runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED
 	for _, d := range qry.Dimensions {
-		if d.Compute != nil && d.Compute.TimeFloor != nil {
-			return d.Compute.TimeFloor.Grain.ToProto()
+		if d.Compute == nil || d.Compute.TimeFloor == nil {
+			continue
+		}
+		g := d.Compute.TimeFloor.Grain.ToProto()
+		if g == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+			continue
+		}
+		if smallest == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED || metricsview.GrainOrder[g] < metricsview.GrainOrder[smallest] {
+			smallest = g
 		}
 	}
-	return runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED
+	return smallest
 }
 
 // collectWhereDimensions recursively collects dimension names referenced in a WHERE expression.
@@ -297,31 +346,93 @@ func collectWhereDimensionsRec(expr *metricsview.Expression, dims map[string]boo
 	}
 }
 
-// BuildSyntheticSpec creates a MetricsViewSpec that points to the rollup table.
-// Since rollup tables have the same column names as the base table, the base measure expressions work directly against the rollup table.
-func BuildSyntheticSpec(original *runtimev1.MetricsViewSpec, rollup *runtimev1.MetricsViewSpec_RollupTable) *runtimev1.MetricsViewSpec {
-	synth := proto.Clone(original).(*runtimev1.MetricsViewSpec)
-
-	// Point to rollup table (connector stays the same as base)
-	synth.Table = rollup.Table
-	synth.Model = ""
-	if rollup.Database != "" {
-		synth.Database = rollup.Database
+// normalizeTimezone validates and normalizes a timezone string for comparison.
+// It normalizes UTC variants (empty, "UTC", "Etc/UTC") to "UTC".
+// Note: Go's time.LoadLocation preserves the input name, so aliases like "US/Eastern"
+// are not resolved to "America/New_York". Users should use canonical IANA names.
+func normalizeTimezone(tz string) (string, error) {
+	if tz == "" || strings.EqualFold(tz, "UTC") {
+		return "UTC", nil
 	}
-	if rollup.DatabaseSchema != "" {
-		synth.DatabaseSchema = rollup.DatabaseSchema
+	loc, err := time.LoadLocation(tz)
+	if err != nil {
+		return "", fmt.Errorf("invalid timezone %q: %w", tz, err)
 	}
-
-	// Clear rollups to prevent recursion
-	synth.Rollups = nil
-
-	return synth
+	name := loc.String()
+	if name == "Etc/UTC" || name == "Etc/GMT" {
+		return "UTC", nil
+	}
+	return name, nil
 }
 
-// normalizeTimezone returns a canonical timezone string for comparison. Empty, "UTC", and "Etc/UTC" are all treated as equivalent.
-func normalizeTimezone(tz string) string {
-	if tz == "" || strings.EqualFold(tz, "UTC") || strings.EqualFold(tz, "Etc/UTC") {
-		return "UTC"
+// resolveRollupTimestamps returns the min/max timestamps of a rollup table.
+func (e *Executor) resolveRollupTimestamps(ctx context.Context, rollup *runtimev1.MetricsViewSpec_Rollup) (time.Time, time.Time, error) {
+	return e.resolveTableTimestamps(ctx, rollup.Table, rollup.Database, rollup.DatabaseSchema)
+}
+
+// resolveBaseTimestamps returns the min/max timestamps of the base table.
+func (e *Executor) resolveBaseTimestamps(ctx context.Context) (time.Time, time.Time, error) {
+	return e.resolveTableTimestamps(ctx, "", "", "")
+}
+
+// resolveTableTimestamps calls the metrics_timestamps resolver to fetch min/max timestamps for a table.
+// Pass empty strings for table/database/databaseSchema to query the base table.
+func (e *Executor) resolveTableTimestamps(ctx context.Context, table, database, databaseSchema string) (time.Time, time.Time, error) {
+	args := map[string]any{
+		"priority": e.priority,
 	}
-	return tz
+	if table != "" {
+		args["table"] = table
+	}
+	if database != "" {
+		args["database"] = database
+	}
+	if databaseSchema != "" {
+		args["database_schema"] = databaseSchema
+	}
+
+	res, _, err := e.rt.Resolve(ctx, &runtime.ResolveOptions{
+		InstanceID: e.instanceID,
+		Resolver:   "metrics_timestamps",
+		ResolverProperties: map[string]any{
+			"metrics_view": e.metricsViewName,
+		},
+		Args:   args,
+		Claims: &runtime.SecurityClaims{SkipChecks: true},
+	})
+	if err != nil {
+		return time.Time{}, time.Time{}, err
+	}
+	defer res.Close()
+
+	row, err := res.Next()
+	if err != nil {
+		return time.Time{}, time.Time{}, err
+	}
+
+	mn, err := toTime(row["min"])
+	if err != nil {
+		return time.Time{}, time.Time{}, err
+	}
+	mx, err := toTime(row["max"])
+	if err != nil {
+		return time.Time{}, time.Time{}, err
+	}
+
+	return mn, mx, nil
+}
+
+// toTime converts an any value to time.Time (handles nil, time.Time, and string).
+func toTime(v any) (time.Time, error) {
+	if v == nil {
+		return time.Time{}, nil
+	}
+	switch t := v.(type) {
+	case time.Time:
+		return t, nil
+	case string:
+		return time.Parse(time.RFC3339Nano, t)
+	default:
+		return time.Time{}, errors.New("unexpected type for time value")
+	}
 }

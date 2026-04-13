@@ -2267,8 +2267,8 @@ definitions:
                   description: Refers to the schema to use in the OLAP engine
                 time_grain:
                   type: string
-                  description: 'The time grain of the rollup table. Valid values are: millisecond, second, minute, hour, day, week, month, quarter, year'
-                timezone:
+                  description: 'The time grain of the rollup (required). Valid values are: millisecond, second, minute, hour, day, week, month, quarter, year'
+                time_zone:
                   type: string
                   description: IANA timezone of the rollup table (e.g. America/New_York). For day+ grains, queries are only routed to the rollup if the query timezone matches.
                 dimensions:
@@ -2279,6 +2279,7 @@ definitions:
                   description: Optional field selectors for measures to include in the rollup from the base metrics view. If not specified, all measures are included.
               required:
                 - model
+                - time_grain
           security:
               $ref: '#/definitions/security_policy_properties'
               description: Defines a security policy for the dashboard

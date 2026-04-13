@@ -20,7 +20,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// note - if adding new grain, also update it in executor_rewrite_rollup.go and rollup.go
 type TimeGrain int32
 
 const (
