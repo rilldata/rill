@@ -72,7 +72,7 @@ Here are examples of how to get an iframe URL using different languages:
   <TabItem value="curl" label="Curl" default>
 
 ```bash
-curl -X POST --location 'https://api.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/iframe' \
+curl -X POST --location 'https://api.rilldata.com/v1/orgs/<org-name>/projects/<project-name>/iframe' \
 --header 'Content-Type: application/json' \
 --header 'Authorization: Bearer <rill-svc-token>' \
 --data-raw '{
@@ -98,7 +98,7 @@ app.use(express.json());
 app.post('/api/rill/iframe', async (req, res) => {
   const dashboardName = req.body.resource;
   try {
-    const response = await fetch(`https://api.rilldata.com/v1/organizations/${rillOrg}/projects/${rillProject}/iframe`, {
+    const response = await fetch(`https://api.rilldata.com/v1/orgs/${rillOrg}/projects/${rillProject}/iframe`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -106,8 +106,9 @@ app.post('/api/rill/iframe', async (req, res) => {
       },
       body: JSON.stringify({
         resource: dashboardName,
-        // Optionally include the current user's email address for row-level security enforcement:
-        // user_email: '<CURRENT USER'S EMAIL ADDRES>',
+        type: 'explore',
+        // Optionally include the end user's email address for security policies and per-user features:
+        // user_email: '<end-user-email>',
         // Optionally set theme and theme mode:
         // theme: 'my-custom-theme',
         // theme_mode: 'dark', // Options: 'light', 'dark', 'system'
@@ -145,7 +146,7 @@ def get_rill_iframe():
     dashboard_name = request.json.get('resource')
     try:
         response = requests.post(
-            'https://api.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/iframe',
+            'https://api.rilldata.com/v1/orgs/<org-name>/projects/<project-name>/iframe',
             headers={
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer <rill-svc-token>',
@@ -153,7 +154,8 @@ def get_rill_iframe():
             json={
                 'resource': dashboard_name,
                 'type': 'explore',
-                'user_email': '<user-email>',
+                # Optionally include the end user's email address for security policies and per-user features:
+                # 'user_email': '<end-user-email>',
                 # Optionally set theme and theme mode:
                 # 'theme': 'my-custom-theme',
                 # 'theme_mode': 'dark',  # Options: 'light', 'dark', 'system'
@@ -192,7 +194,8 @@ func getRillIframe(w http.ResponseWriter, r *http.Request) {
 	requestBody, err := json.Marshal(map[string]string{
 		"resource": dashboardName,
 		"type": "explore",
-		"user_email": "<user-email>",
+    // Optionally include the end user's email address for security policies and per-user features:
+		// "user_email": "<end-user-email>",
 	})
 
 	if err != nil {
@@ -200,7 +203,7 @@ func getRillIframe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := http.Post("https://api.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/iframe", "application/json", bytes.NewBuffer(requestBody))
+	resp, err := http.Post("https://api.rilldata.com/v1/orgs/<org-name>/projects/<project-name>/iframe", "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -262,12 +265,12 @@ public class DashboardController {
         Map<String, Object> request = Map.of(
                 "resource", dashboardName,
                 "type", "explore",
-                "user_email", "<user-email>"
+                "user_email", "<end-user-email>"
         );
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
         RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<Map> response = restTemplate.postForEntity("https://api.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/iframe", entity, Map.class);
+        ResponseEntity<Map> response = restTemplate.postForEntity("https://api.rilldata.com/v1/orgs/<org-name>/projects/<project-name>/iframe", entity, Map.class);
 
         Map<String, Object> resp = (Map<String, Object>) response.getBody().get("resp");
         Map<String, String> responseBody = Map.of("iframeResp", (String) ((Map<String, Object>) resp.get("body")));
@@ -284,19 +287,43 @@ public class DashboardController {
 
 The API accepts the following parameters:
 
-| Parameter   | Description                                                                                                                                                                                                                                                                                              | Required                                                                      |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| resource    | The name of the dashboard to embed                                                                                                                                                                                                                                                                       | No (if not specified, `navigation` should be set to `true`)                   |
-| type        | The type of the dashboard identified by `resource` (options: `explore`, `canvas`)                                                                                                                                                                                                                        | No (defaults to `explore`)                                                    |
-| navigation  | Boolean whether to enable navigation and allow users to navigate to other dashboards (`false` will hard embed and allow access to a single dashboard; `true` allows navigation)                                                                                                                          | No (defaults to `false`)                                                      |
-| theme       | If [themes](/developers/build/dashboards/customization#changing-themes--colors) are being used, the specific theme to pass to the embedded dashboard                                                                                                                                                     | No (set to the name of the theme)                                             |
-| theme_mode  | The theme mode to use for the embedded dashboard. Valid values: `light`, `dark`, `system`. When set to `system`, the dashboard will follow the user's system preference.                                                                                                                                 | No (defaults to `light`)                                                      |
-| user_id     | The id of the user to embed the dashboard for                                                                                                                                                                                                                                                            | No (only one of `user_id`, `user_email`, or `attributes` should be passed in) |
-| user_email  | The email of the user to embed the dashboard for                                                                                                                                                                                                                                                         | No (only one of `user_id`, `user_email`, or `attributes` should be passed in) |
-| attributes  | Json payload to be put in the access token, used to pass attributes to the dashboard for enforcing policies. When using this make sure to pass all the attributes used in your security policy like `email`, `domain` and `admin` and any other custom attributes such as `tenantId`, `customerId`, etc. | No (It is also possible to add custom attributes here)                        |
-| ttl_seconds | The time to live for the iframe URL                                                                                                                                                                                                                                                                      | No (Default: 86400)                                                           |
+| Parameter        | Description                                                                                                                                                                     | Required                                                          |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| resource         | The name of the dashboard to embed                                                                                                                                              | No (if not specified, `navigation` should be set to `true`)       |
+| type             | The type of the dashboard identified by `resource` (options: `explore`, `canvas`)                                                                                               | No (defaults to `explore`)                                        |
+| navigation       | Boolean whether to enable navigation and allow users to navigate to other dashboards (`false` will hard embed and allow access to a single dashboard; `true` allows navigation) | No (defaults to `false`)                                          |
+| theme            | If [themes](/developers/build/dashboards/customization#changing-themes--colors) are being used, the specific theme to pass to the embedded dashboard                            | No (set to the name of the theme)                                 |
+| theme_mode       | The theme mode to use for the embedded dashboard. Valid values: `light`, `dark`, `system`. When set to `system`, the dashboard will follow the user's system preference.        | No (defaults to `light`)                                          |
+| user_email       | Email of the end user accessing the embed. Used to populate attributes for use in security policies.                                                                            | No (only one of `user_email` or `attributes` should be passed in) |
+| attributes       | Raw attributes about the end user. Used to populate attributes for use in security policies.                                                                                    | No (only one of `user_email` or `attributes` should be passed in) |
+| external_user_id | A stable identifier for an external end user. Enables per-user state.                                                                                                           | No                                                                |
+| ttl_seconds      | The time to live for the iframe URL                                                                                                                                             | No (Default: 86400)                                               |
 
-:::tip Embedding the project vs embedding an individual dashboard
+
+The response of the POST request will then contain an `iframeSrc` value that can be used to embed the dashboard or set of dashboards in your application. It will also contain a `ttlSeconds` value, which indicates how long the iframe URL will be valid for. _After the TTL has elapsed_, the iframe URL needs to be refreshed as the underlying access token being used will no longer be valid (for security purposes). Here's an example response:
+
+```json
+{
+  "iframeSrc": "https://ui.rilldata.com/-/embed?access_token=<token>&instance_id=<id>&kind=MetricsView&resource=<dashboard-name>&runtime_host=<runtime_host>&state=&theme=&theme_mode=dark",
+  "runtimeHost": "<runtime_host>",
+  "instanceId": "<id>",
+  "accessToken": "<token>",
+  "ttlSeconds": 86400
+}
+```
+
+### User identity in embeds
+
+The `user_email`, `attributes` and `external_user_id` parameters serve two purposes in the embeds:
+- **User attributes for security policies:** `user_email` and `attributes` determine which attributes (such as `email`, `domain`, and `admin`) are available for use in [security policies](/developers/build/metrics-view/security).
+- **Per-user state:** `external_user_id` establishes a stable user identity that isolates per-user features such as AI chat history. Without a user identity, these features are not available.
+
+Only one of `user_email` or `attributes` can be provided for a given iframe. The `external_user_id` parameter can optionally be combined with either of them. Here is how each parameter works:
+- `user_email`: Looks up the user in Rill Cloud by email and populates their standard attributes. If no matching user is found, it generates limited attributes with only the fields `email`, `domain` and `admin` (set to `false`). Does not enable per-user state on its own; combine with `external_user_id` to enable per-user state.
+- `attributes`: Passes the provided attributes through directly. Make sure to include all attributes referenced in your security policies (e.g. `email`, `domain`, `admin`, or custom attributes like `tenant_id`). Does not enable per-user state on its own; combine with `external_user_id` to enable per-user state.
+- `external_user_id`: Any stable identifier for the end user. This is usually the user's ID in your own database. Setting it enables per-user state such as AI chat history.
+
+### Embedding the project vs embedding an individual dashboard
 
 One of the most common differences between how developers may wish to iframe Rill is whether they wish to embed at the project level or individual dashboard level. This behavior can be controlled through the combination of the `resource` and `navigation` properties!
 
@@ -327,17 +354,6 @@ Finally, _if you wish to embed the project list view of dashboards instead (what
 
 :::
 
-The response of the above POST request will then contain an `iframeSrc` value that can be used to embed the dashboard or set of dashboards in your application. It will also contain a `ttlSeconds` value, which indicates how long the iframe URL will be valid for. _After the TTL has elapsed_, the iframe URL needs to be refreshed as the underlying access token being used will no longer be valid (for security purposes). Here's an example response:
-
-```json
-{
-  "iframeSrc": "https://ui.rilldata.com/-/embed?access_token=<token>&instance_id=<id>&kind=MetricsView&resource=<dashboard-name>&runtime_host=<runtime_host>&state=&theme=&theme_mode=dark",
-  "runtimeHost": "<runtime_host>",
-  "instanceId": "<id>",
-  "accessToken": "<token>",
-  "ttlSeconds": 86400
-}
-```
 
 ### Testing the dashboard
 

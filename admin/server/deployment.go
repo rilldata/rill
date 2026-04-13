@@ -187,7 +187,7 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 	var attr map[string]any
 	var restrictResources bool
 	var resources []database.ResourceName
-	if req.For == nil {
+	if req.For == nil && req.ExternalUserId == "" {
 		if claims.OwnerType() == auth.OwnerTypeUser {
 			subject = claims.OwnerID()
 			attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
@@ -214,26 +214,34 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 
 		switch forVal := req.For.(type) {
 		case *adminv1.GetDeploymentRequest_UserId:
+			if req.ExternalUserId != "" {
+				return nil, status.Error(codes.InvalidArgument, "external_user_id cannot be specified together with user_id")
+			}
 			subject = forVal.UserId
 			attr, restrictResources, resources, err = s.getAttributesAndResourceRestrictionsForUser(ctx, proj.OrganizationID, proj.ID, forVal.UserId, "")
 			if err != nil {
 				return nil, err
 			}
 		case *adminv1.GetDeploymentRequest_UserEmail:
-			subject = safeHash(forVal.UserEmail)
 			attr, restrictResources, resources, err = s.getAttributesAndResourceRestrictionsForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.UserEmail)
 			if err != nil {
 				return nil, err
 			}
 		case *adminv1.GetDeploymentRequest_Attributes:
 			attr = forVal.Attributes.AsMap()
-
-			// Use the "id" field as the subject if it exists and is a string.
-			if id, ok := attr["id"].(string); ok && id != "" {
-				subject = safeHash(id)
-			}
 		default:
 			return nil, status.Error(codes.InvalidArgument, "invalid 'for' type")
+		}
+	}
+
+	// Handle external user ID (see API docstring for details)
+	if req.ExternalUserId != "" {
+		subject = subjectForExternalUser(req.ExternalUserId, proj.ID)
+		if _, ok := attr["id"]; !ok {
+			if attr == nil {
+				attr = make(map[string]any)
+			}
+			attr["id"] = req.ExternalUserId
 		}
 	}
 
@@ -591,7 +599,7 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 	var attr map[string]any
 	var restrictResources bool
 	var resources []database.ResourceName
-	if req.For == nil {
+	if req.For == nil && req.ExternalUserId == "" {
 		if claims.OwnerType() == auth.OwnerTypeUser {
 			subject = claims.OwnerID()
 			attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
@@ -608,26 +616,34 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 	} else {
 		switch forVal := req.For.(type) {
 		case *adminv1.GetDeploymentCredentialsRequest_UserId:
+			if req.ExternalUserId != "" {
+				return nil, status.Error(codes.InvalidArgument, "external_user_id cannot be specified together with user_id")
+			}
 			subject = forVal.UserId
 			attr, restrictResources, resources, err = s.getAttributesAndResourceRestrictionsForUser(ctx, proj.OrganizationID, proj.ID, forVal.UserId, "")
 			if err != nil {
 				return nil, err
 			}
 		case *adminv1.GetDeploymentCredentialsRequest_UserEmail:
-			subject = safeHash(forVal.UserEmail)
 			attr, restrictResources, resources, err = s.getAttributesAndResourceRestrictionsForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.UserEmail)
 			if err != nil {
 				return nil, err
 			}
 		case *adminv1.GetDeploymentCredentialsRequest_Attributes:
 			attr = forVal.Attributes.AsMap()
-
-			// Use the "id" field as the subject if it exists and is a string.
-			if id, ok := attr["id"].(string); ok && id != "" {
-				subject = safeHash(id)
-			}
 		default:
 			return nil, status.Error(codes.InvalidArgument, "invalid 'for' type")
+		}
+	}
+
+	// Handle external user ID (see API docstring for details)
+	if req.ExternalUserId != "" {
+		subject = subjectForExternalUser(req.ExternalUserId, proj.ID)
+		if _, ok := attr["id"]; !ok {
+			if attr == nil {
+				attr = make(map[string]any)
+			}
+			attr["id"] = req.ExternalUserId
 		}
 	}
 
@@ -716,7 +732,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	var attr map[string]any
 	var restrictResources bool
 	var resources []database.ResourceName
-	if req.For == nil {
+	if req.For == nil && req.ExternalUserId == "" {
 		if claims.OwnerType() == auth.OwnerTypeUser {
 			subject = claims.OwnerID()
 			attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
@@ -733,26 +749,34 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	} else {
 		switch forVal := req.For.(type) {
 		case *adminv1.GetIFrameRequest_UserId:
+			if req.ExternalUserId != "" {
+				return nil, status.Error(codes.InvalidArgument, "external_user_id cannot be specified together with user_id")
+			}
 			subject = forVal.UserId
 			attr, restrictResources, resources, err = s.getAttributesAndResourceRestrictionsForUser(ctx, proj.OrganizationID, proj.ID, forVal.UserId, "")
 			if err != nil {
 				return nil, err
 			}
 		case *adminv1.GetIFrameRequest_UserEmail:
-			subject = safeHash(forVal.UserEmail)
 			attr, restrictResources, resources, err = s.getAttributesAndResourceRestrictionsForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.UserEmail)
 			if err != nil {
 				return nil, err
 			}
 		case *adminv1.GetIFrameRequest_Attributes:
 			attr = forVal.Attributes.AsMap()
-
-			// Use the "id" field as the subject if it exists and is a string.
-			if id, ok := attr["id"].(string); ok && id != "" {
-				subject = safeHash(id)
-			}
 		default:
 			return nil, status.Error(codes.InvalidArgument, "invalid 'for' type")
+		}
+	}
+
+	// Handle external user ID (see API docstring for details)
+	if req.ExternalUserId != "" {
+		subject = subjectForExternalUser(req.ExternalUserId, proj.ID)
+		if _, ok := attr["id"]; !ok {
+			if attr == nil {
+				attr = make(map[string]any)
+			}
+			attr["id"] = req.ExternalUserId
 		}
 	}
 
@@ -955,41 +979,6 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 	return resp, nil
 }
 
-// getResourceRestrictionsForUser returns resource restrictions for a given user and project.
-func (s *Server) getResourceRestrictionsForUser(ctx context.Context, projID, userID string) (bool, []database.ResourceName, error) {
-	mu, err := s.admin.DB.FindProjectMemberUser(ctx, projID, userID)
-	if err != nil && !errors.Is(err, database.ErrNotFound) {
-		return false, nil, err
-	}
-	mug, err := s.admin.DB.FindProjectMemberUsergroupsForUser(ctx, projID, userID)
-	if err != nil {
-		return false, nil, err
-	}
-	restrictResources := mu != nil || len(mug) > 0
-	var resources []database.ResourceName
-	if mu != nil {
-		restrictResources = restrictResources && mu.RestrictResources
-		resources = append(resources, mu.Resources...)
-	}
-	if len(mug) > 0 {
-		for _, g := range mug {
-			restrictResources = restrictResources && g.RestrictResources
-			resources = append(resources, g.Resources...)
-		}
-	}
-
-	var mergedResources []database.ResourceName
-	seen := make(map[database.ResourceName]struct{})
-	for _, r := range resources {
-		if _, ok := seen[r]; !ok {
-			seen[r] = struct{}{}
-			mergedResources = append(mergedResources, r)
-		}
-	}
-
-	return restrictResources, mergedResources, nil
-}
-
 // getAttributesAndResourceRestrictionsForUser returns a map of attributes and resource restrictions for a given user and project.
 // The caller should only provide one of userID or userEmail (if both or neither are set, an error will be returned).
 // NOTE: The value returned from this function must be valid for structpb.NewStruct (e.g. must use []any for slices, not a more specific slice type).
@@ -1065,8 +1054,44 @@ func (s *Server) getAttributesForUser(ctx context.Context, orgID, projID, userID
 	return attr, userID, forProjPerms.ReadProd, nil
 }
 
-// safeHash returns a hex hash of the input string.
-func safeHash(s string) string {
-	h := sha256.Sum256([]byte(s))
-	return hex.EncodeToString(h[:])
+// getResourceRestrictionsForUser returns resource restrictions for a given user and project.
+func (s *Server) getResourceRestrictionsForUser(ctx context.Context, projID, userID string) (bool, []database.ResourceName, error) {
+	mu, err := s.admin.DB.FindProjectMemberUser(ctx, projID, userID)
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
+		return false, nil, err
+	}
+	mug, err := s.admin.DB.FindProjectMemberUsergroupsForUser(ctx, projID, userID)
+	if err != nil {
+		return false, nil, err
+	}
+	restrictResources := mu != nil || len(mug) > 0
+	var resources []database.ResourceName
+	if mu != nil {
+		restrictResources = restrictResources && mu.RestrictResources
+		resources = append(resources, mu.Resources...)
+	}
+	if len(mug) > 0 {
+		for _, g := range mug {
+			restrictResources = restrictResources && g.RestrictResources
+			resources = append(resources, g.Resources...)
+		}
+	}
+
+	var mergedResources []database.ResourceName
+	seen := make(map[database.ResourceName]struct{})
+	for _, r := range resources {
+		if _, ok := seen[r]; !ok {
+			seen[r] = struct{}{}
+			mergedResources = append(mergedResources, r)
+		}
+	}
+
+	return restrictResources, mergedResources, nil
+}
+
+// subjectForExternalUser generates a safe subject from an external user ID accessing a deployment in the specified project.
+// The result is safe to use as a JWT subject and in telemetry (where we need to avoid collisions and PII).
+func subjectForExternalUser(externalUserID string, projectID string) string {
+	hash := sha256.Sum256([]byte(externalUserID + projectID))
+	return "ext_" + hex.EncodeToString(hash[:])
 }
