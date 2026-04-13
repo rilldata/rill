@@ -237,12 +237,6 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 	// Handle external user ID (see API docstring for details)
 	if req.ExternalUserId != "" {
 		subject = subjectForExternalUser(req.ExternalUserId, proj.ID)
-		if _, ok := attr["id"]; !ok {
-			if attr == nil {
-				attr = make(map[string]any)
-			}
-			attr["id"] = req.ExternalUserId
-		}
 	}
 
 	ttlDuration := runtimeAccessTokenEmbedTTL
@@ -639,12 +633,6 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 	// Handle external user ID (see API docstring for details)
 	if req.ExternalUserId != "" {
 		subject = subjectForExternalUser(req.ExternalUserId, proj.ID)
-		if _, ok := attr["id"]; !ok {
-			if attr == nil {
-				attr = make(map[string]any)
-			}
-			attr["id"] = req.ExternalUserId
-		}
 	}
 
 	ttlDuration := runtimeAccessTokenEmbedTTL
@@ -772,12 +760,6 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	// Handle external user ID (see API docstring for details)
 	if req.ExternalUserId != "" {
 		subject = subjectForExternalUser(req.ExternalUserId, proj.ID)
-		if _, ok := attr["id"]; !ok {
-			if attr == nil {
-				attr = make(map[string]any)
-			}
-			attr["id"] = req.ExternalUserId
-		}
 	}
 
 	// Add an `embed` attribute for use in security policies or feature flags (as `{{.user.embed}}`).
