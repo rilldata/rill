@@ -1,8 +1,5 @@
 <script lang="ts">
-  import {
-    createAdminServiceGetBillingSubscription,
-    createAdminServiceGetOrganization,
-  } from "@rilldata/web-admin/client";
+  import { createAdminServiceGetOrganization } from "@rilldata/web-admin/client";
   import {
     getPaymentIssueErrorText,
     needsPaymentSetup,
@@ -14,9 +11,6 @@
   let { organization }: { organization: string } = $props();
 
   let org = $derived(createAdminServiceGetOrganization(organization));
-  let subscriptionQuery = $derived(
-    createAdminServiceGetBillingSubscription(organization),
-  );
   let categorisedIssues = $derived(
     useCategorisedOrganizationBillingIssues(organization),
   );
