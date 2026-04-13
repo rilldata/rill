@@ -42,9 +42,7 @@ export function resolveSignalIntervalField(
     return undefined;
   };
 
-  // Handle raw [date1, date2] array emitted directly by the brush_ts signal.
-  // In Vega-Lite 6, brush_end/brush_clear reference brush_ts which yields the
-  // interval as a bare array rather than a keyed object.
+  // Handle raw [date1, date2] array (e.g. from view.signal() on a brush temporal signal)
   if (Array.isArray(value)) {
     return checkAndCreateTimeRange(value);
   }
