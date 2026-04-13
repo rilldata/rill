@@ -171,11 +171,7 @@
       </div>
 
       <div class="flex items-center gap-2">
-        {#if currentPlan === "enterprise"}
-          <button class="contact-btn" onclick={handleContactSales}>
-            Contact us
-          </button>
-        {:else if currentPlan === "trial"}
+        {#if currentPlan === "trial"}
           <button class="subscribe-btn" onclick={handleSubscribe}>
             Subscribe to Pro
           </button>
@@ -225,49 +221,51 @@
       </div>
     {/if}
 
-    <!-- Slots + storage row -->
-    <div class="stats-row">
-      <div class="flex items-center gap-4">
-        <div class="stat-item">
-          <span class="stat-value">{totalSlots}</span>
-          <span class="stat-label">Total slots</span>
+    {#if currentPlan !== "enterprise"}
+      <!-- Slots + storage row -->
+      <div class="stats-row">
+        <div class="flex items-center gap-4">
+          <div class="stat-item">
+            <span class="stat-value">{totalSlots}</span>
+            <span class="stat-label">Total slots</span>
+          </div>
+          <span class="stat-divider"></span>
+          <div class="stat-item">
+            <span class="stat-value">{prodSlots}</span>
+            <span class="stat-label">Prod slots</span>
+          </div>
+          <span class="stat-divider"></span>
+          <div class="stat-item">
+            <span class="stat-value">{devSlots}</span>
+            <span class="stat-label">Dev slots</span>
+          </div>
+          <span class="stat-divider"></span>
+          <div class="stat-item">
+            <span class="stat-value"
+              >{totalStorage > 0
+                ? formatMemorySize(totalStorage)
+                : "0 B"}</span
+            >
+            <span class="stat-label">Storage</span>
+          </div>
         </div>
-        <span class="stat-divider"></span>
-        <div class="stat-item">
-          <span class="stat-value">{prodSlots}</span>
-          <span class="stat-label">Prod slots</span>
-        </div>
-        <span class="stat-divider"></span>
-        <div class="stat-item">
-          <span class="stat-value">{devSlots}</span>
-          <span class="stat-label">Dev slots</span>
-        </div>
-        <span class="stat-divider"></span>
-        <div class="stat-item">
-          <span class="stat-value"
-            >{totalStorage > 0
-              ? formatMemorySize(totalStorage)
-              : "0 B"}</span
-          >
-          <span class="stat-label">Storage</span>
-        </div>
-      </div>
-      <a
-        href="/{organization}/-/settings/billing/usage"
-        class="view-usage-link"
-      >
-        View usage
-        <svg
-          class="w-3 h-3"
-          viewBox="0 0 12 12"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.5"
+        <a
+          href="/{organization}/-/settings/billing/usage"
+          class="view-usage-link"
         >
-          <path d="M4.5 2.5l4 3.5-4 3.5" />
-        </svg>
-      </a>
-    </div>
+          View usage
+          <svg
+            class="w-3 h-3"
+            viewBox="0 0 12 12"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
+            <path d="M4.5 2.5l4 3.5-4 3.5" />
+          </svg>
+        </a>
+      </div>
+    {/if}
 
     <!-- Compare plans toggle -->
     {#if showComparePlans}
