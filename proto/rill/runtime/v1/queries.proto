@@ -44,6 +44,16 @@ service QueryService {
     };
   }
 
+  // Usage APIs
+
+  // ProjectStorage returns storage usage information for OLAP connectors in the project.
+  // See the project_storage resolver for details.
+  rpc ProjectStorage(ProjectStorageRequest) returns (ProjectStorageResponse) {
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/queries/project-storage"
+    };
+  }
+
   // Explore APIs
 
   // MetricsViewAggregation is a generic API for running group-by/pivot queries against a metrics view.
@@ -363,6 +373,7 @@ message ExportReportResponse {
 
 message Query {
   oneof query {
+    ProjectStorageRequest project_storage_request = 21;
     MetricsViewAggregationRequest metrics_view_aggregation_request = 20;
     MetricsViewToplistRequest metrics_view_toplist_request = 2;
     MetricsViewComparisonRequest metrics_view_comparison_request = 3;
@@ -387,6 +398,7 @@ message Query {
 
 message QueryResult {
   oneof result {
+    ProjectStorageResponse project_storage_response = 22;
     MetricsViewAggregationResponse metrics_view_aggregation_response = 21;
     MetricsViewToplistResponse metrics_view_toplist_response = 3;
     MetricsViewComparisonResponse metrics_view_comparison_response = 4;
@@ -423,6 +435,45 @@ message Span {
 // Trace contains trace spans captured during request execution. Used both in successful responses and as gRPC error details when trace=true and the request fails.
 message Trace {
   repeated Span spans = 1;
+}
+
+// **********
+// ProjectStorage APIs
+// **********
+
+
+message ProjectStorageRequest {
+  string instance_id = 1;
+}
+
+message ProjectStorageResponse {
+  // Storage usage per relevant connector in the project.
+  repeated ProjectStorageEntry entries = 1;
+  // Aggregated storage usage by managed connectors in the project.
+  // If it is -1, it means the value is unknown.
+  // This is a convenience field derived from the entries.
+  int64 managed_size_bytes = 2;
+  // Storage usage by the default OLAP connector in the project.
+  // If it is -1, it means the value is unknown.
+  // This is a convenience field derived from the entries.
+  int64 default_olap_size_bytes = 3;
+}
+
+message ProjectStorageEntry {
+  // Connector name.
+  string connector = 1;
+  // Connector driver name.
+  string driver = 2;
+  // True if the connector is the project's default OLAP.
+  bool is_default_olap = 3;
+  // True if the connector is managed by Rill (i.e. has `managed: true` in the connector definition).
+  bool managed = 4;
+  // Storage usage in bytes.
+  // If it is -1, it means the value is unknown.
+  int64 size_bytes = 5;
+  // Error message if the connector was unavailable.
+  // This is usually empty.
+  string error = 6;
 }
 
 // **********

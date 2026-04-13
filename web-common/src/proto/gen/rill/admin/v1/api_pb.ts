@@ -1087,37 +1087,57 @@ export class CreateDeploymentResponse extends Message<CreateDeploymentResponse> 
  */
 export class GetDeploymentRequest extends Message<GetDeploymentRequest> {
   /**
+   * ID of the deployment to get credentials for.
+   *
    * @generated from field: string deployment_id = 1;
    */
   deploymentId = "";
 
   /**
+   * Optional TTL for the returned access token in seconds.
+   *
    * @generated from field: uint32 access_token_ttl_seconds = 2;
    */
   accessTokenTtlSeconds = 0;
 
   /**
+   * User attributes to use for security policy evaluation.
+   *
    * @generated from oneof rill.admin.v1.GetDeploymentRequest.for
    */
   for: {
     /**
+     * If set, will use the attributes of the Rill user with this ID.
+     *
      * @generated from field: string user_id = 3;
      */
     value: string;
     case: "userId";
   } | {
     /**
+     * If set, will generate attributes corresponding to a user with this email.
+     *
      * @generated from field: string user_email = 4;
      */
     value: string;
     case: "userEmail";
   } | {
     /**
+     * If set, will use the provided attributes outright.
+     *
      * @generated from field: google.protobuf.Struct attributes = 5;
      */
     value: Struct;
     case: "attributes";
   } | { case: undefined; value?: undefined } = { case: undefined };
+
+  /**
+   * Optional ID for an external end user of the deployment. If set, the access token enables per-user state, such as AI chat history.
+   * Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state.
+   *
+   * @generated from field: string external_user_id = 9;
+   */
+  externalUserId = "";
 
   constructor(data?: PartialMessage<GetDeploymentRequest>) {
     super();
@@ -1132,6 +1152,7 @@ export class GetDeploymentRequest extends Message<GetDeploymentRequest> {
     { no: 3, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "for" },
     { no: 4, name: "user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "for" },
     { no: 5, name: "attributes", kind: "message", T: Struct, oneof: "for" },
+    { no: 9, name: "external_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetDeploymentRequest {
@@ -2483,47 +2504,71 @@ export class SearchProjectUsersResponse extends Message<SearchProjectUsersRespon
  */
 export class GetDeploymentCredentialsRequest extends Message<GetDeploymentCredentialsRequest> {
   /**
+   * Org the deployment belongs to.
+   *
    * @generated from field: string org = 1;
    */
   org = "";
 
   /**
+   * Project the deployment belongs to.
+   *
    * @generated from field: string project = 2;
    */
   project = "";
 
   /**
+   * Optional branch for the deployment. If not set, defaults to the project's primary branch.
+   *
    * @generated from field: string branch = 3;
    */
   branch = "";
 
   /**
+   * Optional TTL for the returned access token in seconds.
+   *
    * @generated from field: uint32 ttl_seconds = 7;
    */
   ttlSeconds = 0;
 
   /**
+   * User attributes to use for security policy evaluation.
+   *
    * @generated from oneof rill.admin.v1.GetDeploymentCredentialsRequest.for
    */
   for: {
     /**
+     * If set, will use the attributes of the Rill user with this ID.
+     *
      * @generated from field: string user_id = 4;
      */
     value: string;
     case: "userId";
   } | {
     /**
+     * If set, will generate attributes corresponding to a user with this email.
+     *
      * @generated from field: string user_email = 6;
      */
     value: string;
     case: "userEmail";
   } | {
     /**
+     * If set, will use the provided attributes outright.
+     *
      * @generated from field: google.protobuf.Struct attributes = 5;
      */
     value: Struct;
     case: "attributes";
   } | { case: undefined; value?: undefined } = { case: undefined };
+
+  /**
+   * Optional ID for an external end user of the deployment. If set, the access token enables per-user state, such as AI chat history.
+   * Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state.
+   *
+   * @generated from field: string external_user_id = 9;
+   */
+  externalUserId = "";
 
   constructor(data?: PartialMessage<GetDeploymentCredentialsRequest>) {
     super();
@@ -2540,6 +2585,7 @@ export class GetDeploymentCredentialsRequest extends Message<GetDeploymentCreden
     { no: 4, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "for" },
     { no: 6, name: "user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "for" },
     { no: 5, name: "attributes", kind: "message", T: Struct, oneof: "for" },
+    { no: 9, name: "external_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetDeploymentCredentialsRequest {
@@ -2655,7 +2701,7 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
    */
   for: {
     /**
-     * If set, will use the attributes of the user with this ID.
+     * If set, will use the attributes of the Rill user with this ID.
      *
      * @generated from field: string user_id = 9;
      */
@@ -2678,6 +2724,14 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
     value: Struct;
     case: "attributes";
   } | { case: undefined; value?: undefined } = { case: undefined };
+
+  /**
+   * Optional ID for the external end user of the iframe. If set, the access token enables per-user state, such as AI chat history.
+   * Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state.
+   *
+   * @generated from field: string external_user_id = 16;
+   */
+  externalUserId = "";
 
   /**
    * Type of resource to embed. If not set, defaults to "rill.runtime.v1.Explore".
@@ -2750,6 +2804,7 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
     { no: 9, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "for" },
     { no: 10, name: "user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "for" },
     { no: 11, name: "attributes", kind: "message", T: Struct, oneof: "for" },
+    { no: 16, name: "external_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "resource", kind: "scalar", T: 9 /* ScalarType.STRING */ },

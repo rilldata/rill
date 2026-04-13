@@ -20,8 +20,10 @@ var _ drivers.ModelExecutor = &localFileToSelfExecutor{}
 
 type inputProps struct {
 	InvalidateOnChange bool           `mapstructure:"invalidate_on_change"`
+	Path               string         `mapstructure:"path"`
 	Format             string         `mapstructure:"format"`
 	DuckDB             map[string]any `mapstructure:"duckdb"`
+	LocalFilesHash     string         `mapstructure:"local_files_hash"` // set internally. Added here to not generate invalid fields warnings.
 }
 
 func (p *inputProps) Validate() error {

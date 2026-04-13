@@ -11,7 +11,6 @@
     "web-local"
   ],
   "scripts": {
-    "prepare": "husky || true",
     "build": "npm run build -w web-local",
     "dev": "sh -c 'npm run dev-runtime -- \"$@\" & npm run dev-web -- --port 3001 & wait' --",
     "dev-web": "npm run dev -w web-local -- ",
@@ -31,7 +30,6 @@
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-playwright": "^1.6.0",
     "eslint-plugin-svelte": "^2.37.0",
-    "husky": "^8.0.0",
     "lint-staged": "^15.2.7",
     "prettier": "~3.5.3",
     "prettier-plugin-svelte": "~3.3.3",
