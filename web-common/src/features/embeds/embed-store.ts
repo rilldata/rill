@@ -1,7 +1,7 @@
 import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
 import { guidGenerator } from "@rilldata/web-common/lib/guid.ts";
 
-const BRANDING_PLANS = ["free-plan", "growth-plan"];
+const BRANDING_PLANS = ["free-plan", "pro-plan"];
 
 export function requiresEmbedBranding(billingPlan: string | null): boolean {
   return billingPlan !== null && BRANDING_PLANS.includes(billingPlan);
