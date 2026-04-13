@@ -297,6 +297,8 @@ components:
                 - BILLING_PLAN_TYPE_TEAM
                 - BILLING_PLAN_TYPE_MANAGED
                 - BILLING_PLAN_TYPE_ENTERPRISE
+                - BILLING_PLAN_TYPE_FREE
+                - BILLING_PLAN_TYPE_PRO
             type: string
         v1Bookmark:
             properties:
