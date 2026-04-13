@@ -69,7 +69,6 @@
 
   let container: HTMLDivElement;
   let unobserve: (() => void) | undefined;
-  let tddIsScrubbing = false;
 
   onMount(() => {
     if (container) unobserve = observe(container);
@@ -248,11 +247,10 @@
   }
 
   function handleTddBrush(_interval: { start: Date; end: Date }) {
-    tddIsScrubbing = true;
+    // no-op during drag; scrub is finalized on brush end
   }
 
   function handleTddBrushEnd(interval: { start: Date; end: Date }) {
-    tddIsScrubbing = false;
     const { start, end } = adjustTimeInterval(interval, timeZone);
     let startDt = DateTime.fromJSDate(start, { zone: timeZone });
     let endDt = DateTime.fromJSDate(end, { zone: timeZone });
@@ -277,7 +275,6 @@
   }
 
   function handleTddBrushClear() {
-    tddIsScrubbing = false;
     onScrubClear?.();
   }
 </script>
@@ -313,7 +310,6 @@
         {dimensionValues}
         {dimensionData}
         {showComparison}
-        isScrubbing={tddIsScrubbing}
         onChartHover={handleTddHover}
         onChartBrush={handleTddBrush}
         onChartBrushEnd={handleTddBrushEnd}

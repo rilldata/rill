@@ -45,7 +45,6 @@
   export let dimensionData: DimensionSeriesData[] = [];
   export let showComparison: boolean = false;
   export let chartType: TDDChart;
-  export let isScrubbing: boolean;
   export let onChartHover: (
     dimension: undefined | string | null,
     ts: Date | undefined,
@@ -170,7 +169,6 @@
   {themeMode}
   isCanvas={false}
   temporalField={timeDimension}
-  {isScrubbing}
   onBrush={onChartBrush}
   onBrushEnd={onChartBrushEnd}
   onBrushClear={onChartBrushClear}
