@@ -1073,7 +1073,7 @@ func (s *Server) getResourceRestrictionsForUser(ctx context.Context, projID, use
 
 // subjectForExternalUser generates a safe subject from an external user ID accessing a deployment in the specified project.
 // The result is safe to use as a JWT subject and in telemetry (where we need to avoid collisions and PII).
-func subjectForExternalUser(externalUserID string, projectID string) string {
+func subjectForExternalUser(externalUserID, projectID string) string {
 	hash := sha256.Sum256([]byte(externalUserID + projectID))
 	return "ext_" + hex.EncodeToString(hash[:])
 }

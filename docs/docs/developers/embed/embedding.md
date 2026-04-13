@@ -107,7 +107,7 @@ app.post('/api/rill/iframe', async (req, res) => {
       body: JSON.stringify({
         resource: dashboardName,
         type: 'explore',
-        // Optionally include the end user's email address for security policies and per-user features:
+        // Optionally include the end user's email address for security policies:
         // user_email: '<end-user-email>',
         // Optionally set theme and theme mode:
         // theme: 'my-custom-theme',
@@ -154,7 +154,7 @@ def get_rill_iframe():
             json={
                 'resource': dashboard_name,
                 'type': 'explore',
-                # Optionally include the end user's email address for security policies and per-user features:
+                # Optionally include the end user's email address for security policies:
                 # 'user_email': '<end-user-email>',
                 # Optionally set theme and theme mode:
                 # 'theme': 'my-custom-theme',
@@ -194,7 +194,7 @@ func getRillIframe(w http.ResponseWriter, r *http.Request) {
 	requestBody, err := json.Marshal(map[string]string{
 		"resource": dashboardName,
 		"type": "explore",
-    // Optionally include the end user's email address for security policies and per-user features:
+    // Optionally include the end user's email address for security policies:
 		// "user_email": "<end-user-email>",
 	})
 
