@@ -46,7 +46,7 @@
     {#each ThemeOptions as themeOption (themeOption.value)}
       {@const isSelected = selectedPreference === themeOption.value}
       <button
-        class="flex flex-col gap-2"
+        class="flex flex-col gap-4"
         onclick={() => handleThemeChange(themeOption.value)}
       >
         <div

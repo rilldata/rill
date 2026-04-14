@@ -5,6 +5,7 @@
   import { CreateNewOrgFormId } from "@rilldata/web-common/features/organization/CreateNewOrgForm.svelte";
   import RillLogoSquareNegative from "@rilldata/web-common/components/icons/RillLogoSquareNegative.svelte";
   import { createAdminServiceCreateOrganization } from "@rilldata/web-admin/client";
+  import { UserWelcomeStatus } from "@rilldata/web-admin/features/welcome/welcom-store.ts";
 
   const createOrgMutation = createAdminServiceCreateOrganization();
   $: ({ isPending } = $createOrgMutation);
@@ -17,6 +18,7 @@
       },
     });
 
+    UserWelcomeStatus.set(false);
     // This navigation gets cancelled if we do not have `setTimeout` here.
     setTimeout(() => void goto(`/${name}`));
   }

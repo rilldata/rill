@@ -5,11 +5,16 @@
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control.ts";
   import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo.ts";
   import { ChevronRightIcon, PlusIcon } from "lucide-svelte";
+  import { UserWelcomeStatus } from "@rilldata/web-admin/features/welcome/welcom-store.ts";
 
   const orgListQuery = createAdminServiceListOrganizations();
   $: orgs = $orgListQuery.data?.organizations ?? [];
 
   $: selectedTheme = $themeControl;
+
+  function handleSelectOrg() {
+    UserWelcomeStatus.set(false);
+  }
 </script>
 
 <div class="container">
@@ -20,7 +25,7 @@
     <div class="orgs-list">
       {#each orgs as org (org.name)}
         {@const logoUrl = getThemedLogoUrl(selectedTheme, org)}
-        <a class="link" href="/{org.name}">
+        <a class="link" href="/{org.name}" onclick={handleSelectOrg}>
           {#if logoUrl}
             <img src={logoUrl} alt="logo" class="h-8" />
           {:else}
