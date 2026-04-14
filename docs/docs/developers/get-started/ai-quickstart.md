@@ -48,12 +48,12 @@ If you already have a Rill project, you can add agent instructions without affec
 rill init ./my-existing-project --agent claude
 ```
 
-## Step 2: Start Rill
+## Step 2: Start Rill in preview mode
 
-Launch Rill Developer to start the local runtime and open the browser UI:
+Launch Rill Developer in [preview mode](/developers/get-started/preview-mode) to get a clean, dashboard-only view while your AI agent handles the code:
 
 ```bash
-rill start my-project
+rill start my-project --preview
 ```
 
 This also starts a local MCP server at `http://localhost:9009/mcp`. If you generated agent instructions in Step 1, your AI agent will connect to this server automatically via the `.mcp.json` config — no additional setup required.
@@ -90,14 +90,6 @@ The agent has full context on Rill's resource types and YAML schemas. It can fix
 :::tip Check project status
 If something isn't working, ask your agent to check the project status. The MCP connection lets it see parse errors, reconciliation failures, and resource health directly.
 :::
-
-## Step 4: Preview your dashboards
-
-Once your dashboards are built, you can view them in the Rill UI that opened in Step 2. To share a clean, dashboard-only view with stakeholders (no code editor), use [preview mode](/developers/get-started/preview-mode):
-
-```bash
-rill start my-project --preview
-```
 
 ## Next steps
 
