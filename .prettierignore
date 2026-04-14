@@ -1,5 +1,6 @@
 .claude/
 .github/
+.husky/
 .ranger/
 .svelte-kit/
 .vscode/
@@ -15,8 +16,6 @@ admin/
 static/
 temp/
 dev-project/
-test/
-welcome/
 proto/
 playwright-report/
 web-common/tests/projects
@@ -55,7 +54,6 @@ docs
 _redirects
 Makefile
 .nvmrc
-.npmrc
 *.mdc
 
 # Java SQL lib

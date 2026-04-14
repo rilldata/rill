@@ -1,4 +1,0 @@
-type: connector
-
-driver: duckdb
-managed: true
