@@ -3,6 +3,7 @@
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
   import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import {
     createQueryServiceMetricsViewTimeSeries,
@@ -11,13 +12,11 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { keepPreviousData } from "@tanstack/svelte-query";
-  import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
   import { DateTime, Interval } from "luxon";
   import { onDestroy, onMount } from "svelte";
   import { createAnnotationsQuery } from "../annotations-selectors";
   import { adjustTimeInterval, localToTimeZoneOffset } from "../utils";
-  import { hoverIndex } from "./hover-index";
-  import { chartHoverStore } from "./hover-index";
+  import { chartHoverStore, hoverIndex } from "./hover-index";
   import { createVisibilityObserver } from "./interactions";
   import MeasureChartBody from "./MeasureChartBody.svelte";
   import { ScrubController } from "./ScrubController";
@@ -70,7 +69,6 @@
 
   let container: HTMLDivElement;
   let unobserve: (() => void) | undefined;
-  let tddIsScrubbing = false;
 
   onMount(() => {
     if (container) unobserve = observe(container);
@@ -251,12 +249,7 @@
     }
   }
 
-  function handleTddBrush(_interval: { start: Date; end: Date }) {
-    tddIsScrubbing = true;
-  }
-
   function handleTddBrushEnd(interval: { start: Date; end: Date }) {
-    tddIsScrubbing = false;
     const { start, end } = adjustTimeInterval(interval, timeZone);
     let startDt = DateTime.fromJSDate(start, { zone: timeZone });
     let endDt = DateTime.fromJSDate(end, { zone: timeZone });
@@ -278,11 +271,6 @@
       end: endDt,
       isScrubbing: false,
     });
-  }
-
-  function handleTddBrushClear() {
-    tddIsScrubbing = false;
-    onScrubClear?.();
   }
 </script>
 
@@ -318,11 +306,9 @@
         {dimensionData}
         {showComparison}
         {showTimeDimensionDetail}
-        isScrubbing={tddIsScrubbing}
         onChartHover={handleTddHover}
-        onChartBrush={handleTddBrush}
         onChartBrushEnd={handleTddBrushEnd}
-        onChartBrushClear={handleTddBrushClear}
+        onChartBrushClear={() => onScrubClear?.()}
       />
     </div>
   {:else if data.length > 0}
