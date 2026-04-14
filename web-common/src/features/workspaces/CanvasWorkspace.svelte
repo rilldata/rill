@@ -124,7 +124,6 @@
               {parseError}
               remoteContent={$remoteContent}
               {filePath}
-              fileContent={$remoteContent}
             >
               {#if selectedView === "code"}
                 <CanvasEditor
@@ -140,7 +139,6 @@
                   {isLoading}
                   errorMessage={rootCauseReconcileError}
                   {filePath}
-                  fileContent={$remoteContent}
                 >
                   <CanvasBuilder
                     {canvasName}

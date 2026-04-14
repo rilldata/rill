@@ -3,21 +3,11 @@
   import { sidebarActions } from "./layouts/sidebar/sidebar-store";
   import { composeErrorPrompt } from "./error-prompt-composer";
 
-  export let errorMessage: string;
   export let filePath: string;
-  export let fileContent: string | null | undefined = undefined;
-  export let lineNumber: number | undefined = undefined;
-  export let additionalErrorCount: number | undefined = undefined;
   export let large = false;
 
   function handleClick() {
-    const prompt = composeErrorPrompt({
-      errorMessage,
-      filePath,
-      fileContent,
-      lineNumber,
-      additionalErrorCount,
-    });
+    const prompt = composeErrorPrompt(filePath);
     sidebarActions.startChat(prompt);
   }
 </script>

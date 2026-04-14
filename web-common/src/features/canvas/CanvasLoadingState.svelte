@@ -9,7 +9,6 @@
   export let isReconciling: boolean | undefined;
   export let isLoading: boolean | undefined;
   export let filePath: string | undefined = undefined;
-  export let fileContent: string | null | undefined = undefined;
 </script>
 
 <div class="size-full justify-center items-center flex flex-col">
@@ -23,7 +22,7 @@
         body={errorMessage || "An unknown error occurred."}
       />
       {#if filePath}
-        <ExplainErrorButton {errorMessage} {filePath} {fileContent} large />
+        <ExplainErrorButton {filePath} large />
       {/if}
     </div>
   {:else if isReconciling}

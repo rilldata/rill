@@ -126,7 +126,6 @@
               {parseError}
               remoteContent={$remoteContent}
               {filePath}
-              fileContent={$remoteContent}
             >
               {#if selectedView === "code"}
                 <ExploreEditor
@@ -146,15 +145,7 @@
                       header="Unable to load dashboard preview"
                       statusCode={404}
                     />
-                    <ExplainErrorButton
-                      errorMessage={parseError?.message ??
-                        rootCauseReconcileError ??
-                        ""}
-                      {filePath}
-                      fileContent={$remoteContent}
-                      lineNumber={parseError?.startLocation?.line}
-                      large
-                    />
+                    <ExplainErrorButton {filePath} large />
                   </div>
                 {:else if exploreName && metricsViewName}
                   <DashboardStateManager {exploreName}>

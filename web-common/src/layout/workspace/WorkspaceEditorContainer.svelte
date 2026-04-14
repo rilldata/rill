@@ -19,7 +19,6 @@
   export let parseError: V1ParseError | undefined = undefined;
   export let remoteContent: string | null | undefined = undefined;
   export let filePath: string | undefined = undefined;
-  export let fileContent: string | null | undefined = undefined;
 
   const runtimeClient = useRuntimeClient();
 
@@ -35,7 +34,6 @@
 
   $: derivedError = parseError?.message ?? rootCauseReconcileError;
   $: effectiveError = error ?? derivedError;
-  $: errorLineNumber = parseError?.startLocation?.line;
   $: effectiveShowError =
     remoteContent !== undefined ? !!remoteContent : showError;
 </script>
@@ -61,12 +59,7 @@
         <div class="flex flex-col gap-2 min-w-0">
           <span class="break-words">{effectiveError}</span>
           {#if filePath}
-            <ExplainErrorButton
-              errorMessage={effectiveError ?? ""}
-              {filePath}
-              {fileContent}
-              lineNumber={errorLineNumber}
-            />
+            <ExplainErrorButton {filePath} />
           {/if}
         </div>
       </div>

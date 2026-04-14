@@ -64,7 +64,7 @@
       {/if}
       {#if filePath}
         <div class="mt-2">
-          <ExplainErrorButton errorMessage={message} {filePath} />
+          <ExplainErrorButton {filePath} />
         </div>
       {/if}
     </div>

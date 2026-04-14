@@ -113,7 +113,6 @@
           {parseError}
           remoteContent={$remoteContent}
           {filePath}
-          fileContent={$remoteContent}
         >
           {#if $selectedView === "code"}
             <MetricsEditor

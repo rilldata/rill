@@ -162,17 +162,7 @@
                 </div>
               {/each}
               <div class="flex justify-start pt-1">
-                <ExplainErrorButton
-                  errorMessage={getUserFriendlyError(
-                    allErrors[0]?.message ?? "",
-                  )}
-                  {filePath}
-                  fileContent={$remoteContent}
-                  lineNumber={allErrors[0]?.startLocation?.line}
-                  additionalErrorCount={allErrors.length > 1
-                    ? allErrors.length - 1
-                    : undefined}
-                />
+                <ExplainErrorButton {filePath} />
               </div>
             </div>
           {/if}
