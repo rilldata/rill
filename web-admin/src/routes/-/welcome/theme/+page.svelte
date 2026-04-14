@@ -48,6 +48,7 @@
       <button
         class="flex flex-col gap-4"
         onclick={() => handleThemeChange(themeOption.value)}
+        aria-label="Select {themeOption.label} theme"
       >
         <div
           class="border rounded-md transition-transform duration-200 hover:scale-110"
