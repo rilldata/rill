@@ -35,6 +35,43 @@ Connectors enable Rill to connect to various data sources and OLAP engines. You 
 ### `.gitignore`
 Specifies which files and directories should be ignored by Git version control. Rill automatically generates this file with appropriate rules to exclude sensitive files like `.env`, temporary files, and build artifacts from being committed to your repository.
 
+## Preview Mode
+
+Preview mode starts Rill Developer with a dashboard-only interface — no file editor, no code. It's designed for sharing a local Rill instance with stakeholders who don't need the development environment.
+
+```bash
+rill start my-project --preview
+```
+
+### What's available in preview mode
+
+| Available | Hidden |
+|---|---|
+| Explore dashboards | File editor |
+| Canvas dashboards | Connector configuration |
+| AI Chat | Resource graph |
+| Project status | |
+
+Preview mode also sets the application to **read-only**, so dashboards cannot be modified through the UI.
+
+### Switching modes
+
+You can switch between Developer and Preview modes from within the app using the mode toggle in the top-left header. You don't need to restart Rill to change modes.
+
+- Navigating to a developer route (like the file editor) automatically switches to Developer mode
+- Navigating to a dashboard route from preview keeps you in Preview mode
+
+### When to use preview mode
+
+- **Demos and presentations** — show dashboards without exposing project internals
+- **Stakeholder access** — let non-technical users explore dashboards locally without the development UI
+- **Pre-deploy review** — see how dashboards look in a production-like view before deploying to [Rill Cloud](/developers/deploy/deploy-dashboard)
+- **AI development** — pair with an AI coding agent that handles the code while you view dashboards (see [AI Quickstart](/developers/get-started/ai-quickstart))
+
+:::tip
+For a full team deployment with authentication and access controls, [deploy to Rill Cloud](/developers/deploy/deploy-dashboard).
+:::
+
 ## Next Steps
 
 Now that you understand the basics, you can:

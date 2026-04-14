@@ -121,7 +121,7 @@ Once your dashboard is created, you can:
 
 ## Preview Mode
 
-[Preview Mode](/developers/get-started/preview-mode) gives you a dashboard-only view of your project — no file editor, no code. Start it with `rill start my-rill-project --preview`.
+[Preview Mode](/developers/build/getting-started#preview-mode) gives you a dashboard-only view of your project — no file editor, no code. Start it with `rill start my-rill-project --preview`.
 
 ## Build with AI
 

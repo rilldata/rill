@@ -50,7 +50,7 @@ rill init ./my-existing-project --agent claude
 
 ## Step 2: Start Rill in preview mode
 
-Launch Rill Developer in [preview mode](/developers/get-started/preview-mode) to get a clean, dashboard-only view while your AI agent handles the code:
+Launch Rill Developer in [preview mode](/developers/build/getting-started#preview-mode) to get a clean, dashboard-only view while your AI agent handles the code:
 
 ```bash
 rill start my-project --preview
