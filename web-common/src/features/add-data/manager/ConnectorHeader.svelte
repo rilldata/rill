@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping.ts";
+  import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-metadata.ts";
   import { connectorInfoMap } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
   import { getAnalyzedConnectors } from "@rilldata/web-common/features/connectors/selectors.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
