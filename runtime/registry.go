@@ -584,6 +584,13 @@ func (r *registryCache) emitHeartbeatForInstance(inst *drivers.Instance) {
 			r.activity.RecordMetric(context.Background(), "prod_slots", float64(slots), attrs...)
 		}
 	}
+
+	// Emit dev_slots metric for billing
+	if v, ok := inst.Annotations["project_dev_slots"]; ok {
+		if slots, err := strconv.Atoi(v); err == nil {
+			r.activity.RecordMetric(context.Background(), "dev_slots", float64(slots), attrs...)
+		}
+	}
 }
 
 // updateProjectConfig updates the project config for the given instance.
