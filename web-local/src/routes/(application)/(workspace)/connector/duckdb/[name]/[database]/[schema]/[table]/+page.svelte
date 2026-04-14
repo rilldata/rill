@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import DeveloperChat from "@rilldata/web-common/features/chat/DeveloperChat.svelte";
   import TablePreviewWorkspace from "@rilldata/web-common/features/connectors/olap/TablePreviewWorkspace.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { error } from "@sveltejs/kit";
@@ -23,4 +24,14 @@
   <title>Rill Developer | {table}</title>
 </svelte:head>
 
-<TablePreviewWorkspace connector={name} {database} {databaseSchema} {table} />
+<div class="flex h-full overflow-hidden">
+  <div class="flex-1 overflow-hidden">
+    <TablePreviewWorkspace
+      connector={name}
+      {database}
+      {databaseSchema}
+      {table}
+    />
+  </div>
+  <DeveloperChat />
+</div>
