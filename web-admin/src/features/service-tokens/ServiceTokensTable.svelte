@@ -2,7 +2,7 @@
   import type { V1OrganizationMemberService } from "@rilldata/web-admin/client";
   import BasicTable from "@rilldata/web-common/components/table/BasicTable.svelte";
   import KeyIcon from "@rilldata/web-common/components/icons/KeyIcon.svelte";
-  import { flexRender, type ColumnDef } from "tanstack-table-8-svelte-5";
+  import { renderComponent, type ColumnDef } from "tanstack-table-8-svelte-5";
   import ServiceActionsCell from "./ServiceActionsCell.svelte";
   import ServiceProjectRolesCell from "./ServiceProjectRolesCell.svelte";
   import { formatServiceDate, formatOrgRole } from "./utils";
@@ -31,7 +31,7 @@
       header: "Project access",
       enableSorting: false,
       cell: ({ row }) =>
-        flexRender(ServiceProjectRolesCell, {
+        renderComponent(ServiceProjectRolesCell, {
           serviceName: row.original.name ?? "",
           hasProjectRoles: row.original.hasProjectRoles ?? false,
         }),
@@ -47,7 +47,7 @@
       header: "",
       enableSorting: false,
       cell: ({ row }) =>
-        flexRender(ServiceActionsCell, {
+        renderComponent(ServiceActionsCell, {
           name: row.original.name ?? "",
           onManageTokens: onSelectService,
         }),
