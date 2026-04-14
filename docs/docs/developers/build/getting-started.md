@@ -45,20 +45,6 @@ rill start my-project --preview
 
 Preview mode sets the application to **read-only**, so dashboards cannot be modified through the UI.
 
-### Switching modes
-
-You can switch between Developer and Preview modes from within the app using the mode toggle in the top-left header. You don't need to restart Rill to change modes.
-
-- Navigating to a developer route (like the file editor) automatically switches to Developer mode
-- Navigating to a dashboard route from preview keeps you in Preview mode
-
-### When to use preview mode
-
-- **Demos and presentations** — show dashboards without exposing project internals
-- **Stakeholder access** — let non-technical users explore dashboards locally without the development UI
-- **Pre-deploy review** — see how dashboards look in a production-like view before deploying to [Rill Cloud](/developers/deploy/deploy-dashboard)
-- **AI development** — pair with an AI coding agent that handles the code while you view dashboards (see [AI Quickstart](/developers/get-started/ai-quickstart))
-
 :::tip
 For a full team deployment with authentication and access controls, [deploy to Rill Cloud](/developers/deploy/deploy-dashboard).
 :::
