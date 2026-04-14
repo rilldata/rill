@@ -613,11 +613,6 @@ const metricsViewReducers = {
     });
   },
 
-  setForceLineChart(name: string, value: boolean) {
-    updateMetricsExplorerByName(name, (exploreState) => {
-      exploreState.forceLineChart = value;
-    });
-  },
 };
 
 export const metricsExplorerStore: Readable<MetricsExplorerStoreType> &

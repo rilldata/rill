@@ -126,7 +126,6 @@
   $: comparisonDimension = $exploreState?.selectedComparisonDimension;
   $: showComparison = Boolean(showTimeComparison);
   $: tddChartType = $exploreState?.tdd?.chartType;
-  $: forceLineChart = $exploreState?.forceLineChart ?? false;
   $: dynamicYAxisScale = $exploreState?.dynamicYAxisScale ?? false;
 
   $: activeTimeGrain = selectedTimeRange?.interval;
@@ -274,11 +273,8 @@
           />
           <ChartSettingsMenu
             bind:connectNulls
-            {forceLineChart}
             {dynamicYAxisScale}
-            showForceLineChart={false}
-            onForceLineChartChange={(v) =>
-              metricsExplorerStore.setForceLineChart(exploreName, v)}
+            showChartTypeSelector={false}
             onDynamicYAxisScaleChange={(v) =>
               metricsExplorerStore.setDynamicYAxisScale(exploreName, v)}
           />
@@ -334,17 +330,13 @@
 
       <ChartSettingsMenu
         bind:connectNulls
-        {forceLineChart}
         {dynamicYAxisScale}
-        onForceLineChartChange={(v) =>
-          metricsExplorerStore.setForceLineChart(exploreName, v)}
+        chartType={tddChartType}
+        hasComparison={Boolean(includedValuesForDimension.length)}
+        onChartTypeChange={(type) =>
+          metricsExplorerStore.setTDDChartType(exploreName, type)}
         onDynamicYAxisScaleChange={(v) =>
           metricsExplorerStore.setDynamicYAxisScale(exploreName, v)}
-      />
-      <ChartTypeSelector
-        hasComparison={Boolean(includedValuesForDimension.length)}
-        {exploreName}
-        chartType={tddChartType}
       />
 
       {#if !hideStartPivotButton}
@@ -426,7 +418,6 @@
             onPanRight={() => handlePan("right")}
             {showComparison}
             {showTimeDimensionDetail}
-            {forceLineChart}
             dynamicYAxis={dynamicYAxisScale}
             onScrub={handleScrub}
             onScrubClear={() => {

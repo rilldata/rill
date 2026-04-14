@@ -93,6 +93,9 @@
     ></div>
   {/if}
   {#each chartTypeTabs as { label, id, Icon }, i (id)}
+    {#if i > 0}
+      <div class="chart-type-divider"></div>
+    {/if}
     {@const active = chartType === id}
     {@const disabled = !hasComparison && comparisonCharts.includes(id)}
     <div bind:this={buttonEls[i]} class="chart-icon-wrapper" class:disabled>
@@ -148,5 +151,9 @@
 
   .chart-icon-wrapper.disabled {
     @apply opacity-80;
+  }
+
+  .chart-type-divider {
+    @apply w-px h-4 bg-slate-300 mx-0.5;
   }
 </style>

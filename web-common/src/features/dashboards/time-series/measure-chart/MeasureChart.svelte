@@ -61,7 +61,6 @@
   export let onPanRight: (() => void) | undefined = undefined;
   export let scrubController: ScrubController;
   export let connectNulls: boolean = true;
-  export let forceLineChart: boolean = false;
   export let dynamicYAxis: boolean = false;
 
   const client = useRuntimeClient();
@@ -333,7 +332,6 @@
       {scrubController}
       {metricsViewName}
       {connectNulls}
-      {forceLineChart}
       {dynamicYAxis}
     />
   {:else}

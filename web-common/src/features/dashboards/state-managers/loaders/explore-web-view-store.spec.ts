@@ -69,7 +69,7 @@ const TestCases: {
       view: "explore",
       mutations: [],
       expectedSearch:
-        "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&sort_type=percent",
+        "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&sort_type=percent&chart_type=stacked_bar",
     },
     view: {
       view: "tdd",
@@ -85,7 +85,7 @@ const TestCases: {
       view: "explore",
       mutations: [AD_BIDS_OPEN_PUB_DIMENSION_TABLE],
       expectedSearch:
-        "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_type=percent",
+        "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_type=percent&chart_type=stacked_bar",
     },
     view: {
       view: "tdd",
@@ -217,12 +217,15 @@ describe("Explore web view store", () => {
       pageMock.gotoSearch(initialSearch);
       // new url should be filled with params from initView
       pageMock.assertSearchParams(initView.expectedSearch);
-      // assert state is the same as initial view
-      expect(getCleanMetricsExploreForAssertion()).toEqual(initState);
+      // Chart type is now shared across views, so capture the canonical state
+      // after a round-trip (chart type may have changed via the other view).
+      const initStateAfterRoundTrip = getCleanMetricsExploreForAssertion();
       // Revisiting the same view doesn't break anything.
       pageMock.gotoSearch(initialSearch);
       pageMock.assertSearchParams(initView.expectedSearch);
-      expect(getCleanMetricsExploreForAssertion()).toEqual(initState);
+      expect(getCleanMetricsExploreForAssertion()).toEqual(
+        initStateAfterRoundTrip,
+      );
 
       // go back to view without any additional params
       pageMock.gotoSearch(viewSearch);

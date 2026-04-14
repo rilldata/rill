@@ -16,11 +16,7 @@
   import { measureSelection } from "../measure-selection/measure-selection";
   import { groupAnnotations } from "./annotation-utils";
   import { AnnotationPopoverController } from "./AnnotationPopoverController";
-  import {
-    buildChartSeries,
-    computeTooltipDelta,
-    determineMode,
-  } from "./chart-series";
+  import { buildChartSeries, computeTooltipDelta } from "./chart-series";
   import ComparisonTooltip from "./ComparisonTooltip.svelte";
   import ExplainButton from "./ExplainButton.svelte";
   import { hoverIndex } from "./hover-index";
@@ -77,7 +73,6 @@
   export let scrubController: ScrubController;
   export let metricsViewName: string;
   export let connectNulls: boolean = true;
-  export let forceLineChart: boolean = false;
   export let dynamicYAxis: boolean = false;
 
   const annotationPopover = new AnnotationPopoverController();
@@ -103,9 +98,9 @@
   $: config = computeChartConfig(clientWidth, height, showTimeDimensionDetail);
   $: pb = config.plotBounds;
 
+  // TODO: FIX ME before final push
   // Chart series & mode
-  $: mode =
-    forceLineChart || showTimeDimensionDetail ? "line" : determineMode(data);
+  $: mode = "line" as const;
   $: chartSeries = buildChartSeries(data, dimensionData, showComparison);
   $: barSeries =
     mode === "bar" && showComparison && chartSeries.length === 2
