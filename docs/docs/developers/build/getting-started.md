@@ -43,6 +43,8 @@ Preview mode starts Rill Developer with a dashboard-only interface — no file e
 rill start my-project --preview
 ```
 
+![Preview Mode](/img/get-started/preview-mode.png)
+
 Preview mode sets the application to **read-only**, so dashboards cannot be modified through the UI.
 
 :::tip
