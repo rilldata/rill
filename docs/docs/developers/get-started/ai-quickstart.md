@@ -1,6 +1,6 @@
 ---
 title: "Building Rill Projects with AI"
-sidebar_label: "AI Quickstart"
+sidebar_label: "Agentic Quickstart"
 sidebar_position: 15
 ---
 

@@ -125,7 +125,7 @@ Once your dashboard is created, you can:
 
 ## Build with AI
 
-Rill projects are YAML and SQL files, which makes them a natural fit for AI coding agents like Claude Code and Cursor. See the [AI Quickstart](/developers/get-started/ai-quickstart) to get started.
+Rill projects are YAML and SQL files, which makes them a natural fit for AI coding agents like Claude Code and Cursor. See the [Agentic Quickstart](/developers/get-started/ai-quickstart) to get started.
 
 ## What else can Rill do?
 
