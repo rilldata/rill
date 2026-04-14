@@ -1,7 +1,7 @@
 ---
 title: "Building Rill Projects with AI"
 sidebar_label: "Agentic Quickstart"
-sidebar_position: 15
+sidebar_position: 5
 ---
 
 Rill projects are defined as YAML and SQL files, which makes them a natural fit for AI coding agents. This guide walks through using an AI agent like Claude Code or Cursor to build a Rill project from scratch.
