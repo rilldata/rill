@@ -24,7 +24,7 @@ var _ drivers.OLAPStore = (*Connection)(nil)
 
 // Dialect implements drivers.OLAPStore.
 func (c *Connection) Dialect() drivers.Dialect {
-	return DialectBigquery
+	return DialectBigQuery
 }
 
 // Exec implements drivers.OLAPStore.

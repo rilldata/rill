@@ -21,31 +21,9 @@ type dialect struct {
 
 var DialectSnowflake drivers.Dialect = func() drivers.Dialect {
 	d := &dialect{}
-	d.InitBase(d)
+	d.BaseDialect = drivers.NewBaseDialect(drivers.DialectNameSnowflake, EscapeIdentifier, EscapeAlias)
 	return d
 }()
-
-func (d *dialect) String() string { return "snowflake" }
-
-func (d *dialect) EscapeIdentifier(ident string) string {
-	if ident == "" {
-		return ident
-	}
-	// Snowflake stores unquoted identifiers as uppercase. They must always be queried using the exact same casing if quoting.
-	// If a user creates a table `CREATE TABLE test` then it can not be queried using `SELECT * FROM "test"`
-	// It must be queried as `SELECT * FROM "TEST"` or `SELECT * FROM test`.
-	// So only quote identifiers if necessary and not otherwise.
-	if snowflakeSpecialCharsRegex.MatchString(ident) {
-		return fmt.Sprintf(`"%s"`, strings.ReplaceAll(ident, `"`, `""`)) // nolint:gocritic
-	}
-	return ident
-}
-
-func (d *dialect) EscapeAlias(alias string) string {
-	// Snowflake converts non quoted aliases to uppercase while storing and querying.
-	// The query `SELECT count(*) AS cnt ...` then returns CNT as the column name breaking clients expecting cnt so we always quote aliases.
-	return fmt.Sprintf(`"%s"`, strings.ReplaceAll(alias, `"`, `""`)) // nolint:gocritic
-}
 
 func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain runtimev1.TimeGrain, tz string, firstDayOfWeek, firstMonthOfYear int) (string, error) {
 	if tz == "UTC" || tz == "Etc/UTC" {
@@ -113,4 +91,24 @@ func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.Time
 		first = false
 	}
 	return sb.String(), nil, nil
+}
+
+func EscapeIdentifier(ident string) string {
+	if ident == "" {
+		return ident
+	}
+	// Snowflake stores unquoted identifiers as uppercase. They must always be queried using the exact same casing if quoting.
+	// If a user creates a table `CREATE TABLE test` then it can not be queried using `SELECT * FROM "test"`
+	// It must be queried as `SELECT * FROM "TEST"` or `SELECT * FROM test`.
+	// So only quote identifiers if necessary and not otherwise.
+	if snowflakeSpecialCharsRegex.MatchString(ident) {
+		return fmt.Sprintf(`"%s"`, strings.ReplaceAll(ident, `"`, `""`)) // nolint:gocritic
+	}
+	return ident
+}
+
+func EscapeAlias(alias string) string {
+	// Snowflake converts non quoted aliases to uppercase while storing and querying.
+	// The query `SELECT count(*) AS cnt ...` then returns CNT as the column name breaking clients expecting cnt so we always quote aliases.
+	return fmt.Sprintf(`"%s"`, strings.ReplaceAll(alias, `"`, `""`)) // nolint:gocritic
 }

@@ -19,18 +19,9 @@ type dialect struct {
 
 var DialectClickhouse drivers.Dialect = func() drivers.Dialect {
 	d := &dialect{}
-	d.InitBase(d)
+	d.BaseDialect = drivers.NewBaseDialect(drivers.DialectNameClickHouse, drivers.DoubleQuotesEscapeIdentifier, drivers.DoubleQuotesEscapeIdentifier)
 	return d
 }()
-
-func (d *dialect) String() string { return drivers.DialectNameClickHouse }
-
-func (d *dialect) EscapeIdentifier(ident string) string {
-	if ident == "" {
-		return ident
-	}
-	return fmt.Sprintf(`"%s"`, strings.ReplaceAll(ident, `"`, `""`)) // nolint:gocritic
-}
 
 func (d *dialect) GetCastExprForLike() string { return "::Nullable(TEXT)" }
 
@@ -38,7 +29,7 @@ func (d *dialect) ConvertToDateTruncSpecifier(grain runtimev1.TimeGrain) string 
 	return strings.ToLower(d.BaseDialect.ConvertToDateTruncSpecifier(grain))
 }
 
-func (d *dialect) DimensionSelect(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error) {
+func (d *dialect) DimensionSelect(escapeTable string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error) {
 	alias := d.EscapeAlias(dim.Name)
 	if !dim.Unnest {
 		expr, err := d.MetricsViewDimensionExpression(dim)
@@ -52,6 +43,29 @@ func (d *dialect) DimensionSelect(db, dbSchema, table string, dim *runtimev1.Met
 		return "", "", fmt.Errorf("failed to get dimension expression: %w", err)
 	}
 	return fmt.Sprintf(`arrayJoin(%s) AS %s`, expr, alias), "", nil
+}
+
+func (d *dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_Dimension) (string, error) {
+	if dimension.LookupTable != "" {
+		var keyExpr string
+		if dimension.Column != "" {
+			keyExpr = d.EscapeIdentifier(dimension.Column)
+		} else if dimension.Expression != "" {
+			keyExpr = dimension.Expression
+		} else {
+			return "", fmt.Errorf("dimension %q has a lookup table but no column or expression defined", dimension.Name)
+		}
+		return lookupExpr(dimension.LookupTable, dimension.LookupValueColumn, keyExpr, dimension.LookupDefaultExpression)
+	}
+	if dimension.Expression != "" {
+		return dimension.Expression, nil
+	}
+	if dimension.Column != "" {
+		return d.EscapeIdentifier(dimension.Column), nil
+	}
+	// Backwards compatibility for older projects that have not run reconcile on this metrics view.
+	// In that case `column` will not be present.
+	return d.EscapeIdentifier(dimension.Name), nil
 }
 
 func (d *dialect) LateralUnnest(expr, _, colName string) (tbl string, tupleStyle, auto bool, err error) {
@@ -194,7 +208,7 @@ func (d *dialect) SelectInlineResults(result *drivers.Result) (string, []any, []
 					prefix += ", "
 				}
 			}
-			argExpr, argVal, err := d.GetArgExpr(v, result.Schema.Fields[i].Type.Code)
+			argExpr, argVal, err := getArgExpr(v, result.Schema.Fields[i].Type.Code)
 			if err != nil {
 				return "", nil, nil, fmt.Errorf("select inline: failed to get argument expression: %w", err)
 			}
@@ -209,32 +223,6 @@ func (d *dialect) SelectInlineResults(result *drivers.Result) (string, []any, []
 	}
 	suffix += ")"
 	return prefix + suffix, args, dimVals, nil
-}
-
-func (d *dialect) GetArgExpr(val any, typ runtimev1.Type_Code) (string, any, error) {
-	if typ == runtimev1.Type_CODE_DATE {
-		t, ok := val.(time.Time)
-		if !ok {
-			return "", nil, fmt.Errorf("could not cast value %v to time.Time for date type", val)
-		}
-		return "toDate(?)", t.Format(time.DateOnly), nil
-	}
-	return "?", val, nil
-}
-
-func (d *dialect) GetDateTimeExpr(t time.Time) (bool, string) {
-	return true, fmt.Sprintf("parseDateTimeBestEffort('%s')", t.Format(time.RFC3339Nano))
-}
-
-func (d *dialect) GetDateExpr(t time.Time) (bool, string) {
-	return true, fmt.Sprintf("toDate('%s')", t.Format(time.DateOnly))
-}
-
-func (d *dialect) LookupExpr(lookupTable, lookupValueColumn, lookupKeyExpr, lookupDefaultExpression string) (string, error) {
-	if lookupDefaultExpression != "" {
-		return fmt.Sprintf("dictGetOrDefault('%s', '%s', %s, %s)", lookupTable, lookupValueColumn, lookupKeyExpr, lookupDefaultExpression), nil
-	}
-	return fmt.Sprintf("dictGet('%s', '%s', %s)", lookupTable, lookupValueColumn, lookupKeyExpr), nil
 }
 
 func (d *dialect) LookupSelectExpr(lookupTable, lookupKeyColumn string) (string, error) {
@@ -278,4 +266,22 @@ func (d dialect) ColumnNumericHistogramBucket(db, dbSchema, table, column string
 		sanitizedColumnName,
 		sanitizedColumnName,
 		d.EscapeTable(db, dbSchema, table)), nil
+}
+
+func getArgExpr(val any, typ runtimev1.Type_Code) (string, any, error) {
+	if typ == runtimev1.Type_CODE_DATE {
+		t, ok := val.(time.Time)
+		if !ok {
+			return "", nil, fmt.Errorf("could not cast value %v to time.Time for date type", val)
+		}
+		return "toDate(?)", t.Format(time.DateOnly), nil
+	}
+	return "?", val, nil
+}
+
+func lookupExpr(lookupTable, lookupValueColumn, lookupKeyExpr, lookupDefaultExpression string) (string, error) {
+	if lookupDefaultExpression != "" {
+		return fmt.Sprintf("dictGetOrDefault('%s', '%s', %s, %s)", lookupTable, lookupValueColumn, lookupKeyExpr, lookupDefaultExpression), nil
+	}
+	return fmt.Sprintf("dictGet('%s', '%s', %s)", lookupTable, lookupValueColumn, lookupKeyExpr), nil
 }

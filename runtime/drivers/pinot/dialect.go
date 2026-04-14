@@ -2,6 +2,7 @@ package pinot
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -16,11 +17,9 @@ type dialect struct {
 
 var DialectPinot drivers.Dialect = func() drivers.Dialect {
 	d := &dialect{}
-	d.InitBase(d)
+	d.BaseDialect = drivers.NewBaseDialect(drivers.DialectNamePinot, drivers.DoubleQuotesEscapeIdentifier, drivers.DoubleQuotesEscapeIdentifier)
 	return d
 }()
-
-func (d *dialect) String() string { return "pinot" }
 
 func (d *dialect) SupportsILike() bool { return false }
 
@@ -141,7 +140,7 @@ func (d *dialect) SelectInlineResults(result *drivers.Result) (string, []any, []
 					suffix += ", "
 				}
 			}
-			ok, expr, err := d.GetValExpr(v, result.Schema.Fields[i].Type.Code)
+			ok, expr, err := getValExpr(v, result.Schema.Fields[i].Type.Code)
 			if err != nil {
 				return "", nil, nil, fmt.Errorf("select inline: failed to get value expression: %w", err)
 			}
@@ -163,10 +162,59 @@ func (d *dialect) SelectInlineResults(result *drivers.Result) (string, []any, []
 	return prefix + suffix, nil, dimVals, nil
 }
 
-func (d *dialect) GetDateTimeExpr(t time.Time) (bool, string) {
+func getValExpr(val any, typ runtimev1.Type_Code) (bool, string, error) {
+	if val == nil {
+		ok, expr := getNullExpr(typ)
+		if ok {
+			return true, expr, nil
+		}
+		return false, "", fmt.Errorf("could not get null expr for type %q", typ)
+	}
+	switch typ {
+	case runtimev1.Type_CODE_STRING:
+		if s, ok := val.(string); ok {
+			return true, drivers.EscapeStringValue(s), nil
+		}
+		return false, "", fmt.Errorf("could not cast value %v to string type", val)
+	case runtimev1.Type_CODE_INT8, runtimev1.Type_CODE_INT16, runtimev1.Type_CODE_INT32, runtimev1.Type_CODE_INT64,
+		runtimev1.Type_CODE_UINT8, runtimev1.Type_CODE_UINT16, runtimev1.Type_CODE_UINT32, runtimev1.Type_CODE_UINT64,
+		runtimev1.Type_CODE_FLOAT32, runtimev1.Type_CODE_FLOAT64:
+		// check NaN and Inf
+		if f, ok := val.(float64); ok && (math.IsNaN(f) || math.IsInf(f, 0)) {
+			return true, "NULL", nil
+		}
+		return true, fmt.Sprintf("%v", val), nil
+	case runtimev1.Type_CODE_BOOL:
+		return true, fmt.Sprintf("%v", val), nil
+	case runtimev1.Type_CODE_TIME, runtimev1.Type_CODE_TIMESTAMP:
+		if t, ok := val.(time.Time); ok {
+			if ok, expr := getDateTimeExpr(t); ok {
+				return true, expr, nil
+			}
+			return false, "", fmt.Errorf("cannot get time expr for this dialect")
+		}
+		return false, "", fmt.Errorf("unsupported time type %q", typ)
+	case runtimev1.Type_CODE_DATE:
+		if t, ok := val.(time.Time); ok {
+			if ok, expr := getDateExpr(t); ok {
+				return true, expr, nil
+			}
+			return false, "", fmt.Errorf("cannot get date expr for this dialect")
+		}
+		return false, "", fmt.Errorf("unsupported date type %q", typ)
+	default:
+		return false, "", fmt.Errorf("unsupported type %q", typ)
+	}
+}
+
+func getNullExpr(_ runtimev1.Type_Code) (bool, string) {
+	return true, "NULL"
+}
+
+func getDateTimeExpr(t time.Time) (bool, string) {
 	return true, fmt.Sprintf("CAST(%d AS TIMESTAMP)", t.UnixMilli())
 }
 
-func (d *dialect) GetDateExpr(t time.Time) (bool, string) {
+func getDateExpr(t time.Time) (bool, string) {
 	return true, fmt.Sprintf("CAST(%d AS DATE)", t.UnixMilli())
 }

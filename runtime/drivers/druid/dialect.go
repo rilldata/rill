@@ -2,6 +2,7 @@ package druid
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -16,11 +17,9 @@ type dialect struct {
 
 var DialectDruid drivers.Dialect = func() drivers.Dialect {
 	d := &dialect{}
-	d.InitBase(d)
+	d.BaseDialect = drivers.NewBaseDialect(drivers.DialectNameDruid, drivers.DoubleQuotesEscapeIdentifier, drivers.DoubleQuotesEscapeIdentifier)
 	return d
 }()
-
-func (d *dialect) String() string { return "druid" }
 
 func (d *dialect) SupportsILike() bool { return false }
 
@@ -29,23 +28,13 @@ func (d *dialect) SupportsRegexMatch() bool { return true }
 func (d *dialect) GetRegexMatchFunction() (string, error) { return "REGEXP_LIKE", nil }
 
 // DimensionSelect for Druid skips unnesting even when dim.Unnest is true.
-func (d *dialect) DimensionSelect(_, _, _ string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error) {
+func (d *dialect) DimensionSelect(_ string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error) {
 	alias := d.EscapeAlias(dim.Name)
 	expr, err := d.MetricsViewDimensionExpression(dim)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to get dimension expression: %w", err)
 	}
 	return fmt.Sprintf(`(%s) AS %s`, expr, alias), "", nil
-}
-
-// DimensionSelectPair for Druid skips unnesting even when dim.Unnest is true.
-func (d *dialect) DimensionSelectPair(_, _, _ string, dim *runtimev1.MetricsViewSpec_Dimension) (expr, alias, unnestClause string, err error) {
-	colAlias := d.EscapeAlias(dim.Name)
-	ex, err := d.MetricsViewDimensionExpression(dim)
-	if err != nil {
-		return "", "", "", fmt.Errorf("failed to get dimension expression: %w", err)
-	}
-	return ex, colAlias, "", nil
 }
 
 func (d *dialect) LateralUnnest(_, _, _ string) (tbl string, tupleStyle, auto bool, err error) {
@@ -191,7 +180,7 @@ func (d *dialect) SelectInlineResults(result *drivers.Result) (string, []any, []
 					suffix += ", "
 				}
 			}
-			ok, expr, err := d.GetValExpr(v, result.Schema.Fields[i].Type.Code)
+			ok, expr, err := getValExpr(v, result.Schema.Fields[i].Type.Code)
 			if err != nil {
 				return "", nil, nil, fmt.Errorf("select inline: failed to get value expression: %w", err)
 			}
@@ -211,34 +200,6 @@ func (d *dialect) SelectInlineResults(result *drivers.Result) (string, []any, []
 	}
 	prefix += ") "
 	return prefix + suffix, nil, dimVals, nil
-}
-
-func (d *dialect) GetNullExpr(typ runtimev1.Type_Code) (bool, string) {
-	switch typ {
-	case runtimev1.Type_CODE_STRING:
-		return true, "CAST(NULL AS VARCHAR)"
-	case runtimev1.Type_CODE_INT8, runtimev1.Type_CODE_INT16, runtimev1.Type_CODE_INT32, runtimev1.Type_CODE_INT64,
-		runtimev1.Type_CODE_INT128, runtimev1.Type_CODE_INT256,
-		runtimev1.Type_CODE_UINT8, runtimev1.Type_CODE_UINT16, runtimev1.Type_CODE_UINT32, runtimev1.Type_CODE_UINT64,
-		runtimev1.Type_CODE_UINT128, runtimev1.Type_CODE_UINT256:
-		return true, "CAST(NULL AS INTEGER)"
-	case runtimev1.Type_CODE_FLOAT32, runtimev1.Type_CODE_FLOAT64, runtimev1.Type_CODE_DECIMAL:
-		return true, "CAST(NULL AS DOUBLE)"
-	case runtimev1.Type_CODE_BOOL:
-		return true, "CAST(NULL AS BOOLEAN)"
-	case runtimev1.Type_CODE_TIME, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIMESTAMP:
-		return true, "CAST(NULL AS TIMESTAMP)"
-	default:
-		return false, ""
-	}
-}
-
-func (d *dialect) GetDateTimeExpr(t time.Time) (bool, string) {
-	return true, fmt.Sprintf("CAST('%s' AS TIMESTAMP)", t.Format(time.RFC3339Nano))
-}
-
-func (d *dialect) GetDateExpr(t time.Time) (bool, string) {
-	return true, fmt.Sprintf("CAST('%s' AS DATE)", t.Format(time.DateOnly))
 }
 
 func druidTimeFloorSpecifier(grain runtimev1.TimeGrain) string {
@@ -263,4 +224,77 @@ func druidTimeFloorSpecifier(grain runtimev1.TimeGrain) string {
 		return "P1Y"
 	}
 	panic(fmt.Errorf("invalid time grain enum value %d", int(grain)))
+}
+
+func getValExpr(val any, typ runtimev1.Type_Code) (bool, string, error) {
+	if val == nil {
+		ok, expr := getNullExpr(typ)
+		if ok {
+			return true, expr, nil
+		}
+		return false, "", fmt.Errorf("could not get null expr for type %q", typ)
+	}
+	switch typ {
+	case runtimev1.Type_CODE_STRING:
+		if s, ok := val.(string); ok {
+			return true, drivers.EscapeStringValue(s), nil
+		}
+		return false, "", fmt.Errorf("could not cast value %v to string type", val)
+	case runtimev1.Type_CODE_INT8, runtimev1.Type_CODE_INT16, runtimev1.Type_CODE_INT32, runtimev1.Type_CODE_INT64,
+		runtimev1.Type_CODE_UINT8, runtimev1.Type_CODE_UINT16, runtimev1.Type_CODE_UINT32, runtimev1.Type_CODE_UINT64,
+		runtimev1.Type_CODE_FLOAT32, runtimev1.Type_CODE_FLOAT64:
+		// check NaN and Inf
+		if f, ok := val.(float64); ok && (math.IsNaN(f) || math.IsInf(f, 0)) {
+			return true, "NULL", nil
+		}
+		return true, fmt.Sprintf("%v", val), nil
+	case runtimev1.Type_CODE_BOOL:
+		return true, fmt.Sprintf("%v", val), nil
+	case runtimev1.Type_CODE_TIME, runtimev1.Type_CODE_TIMESTAMP:
+		if t, ok := val.(time.Time); ok {
+			if ok, expr := getDateTimeExpr(t); ok {
+				return true, expr, nil
+			}
+			return false, "", fmt.Errorf("cannot get time expr for this dialect")
+		}
+		return false, "", fmt.Errorf("unsupported time type %q", typ)
+	case runtimev1.Type_CODE_DATE:
+		if t, ok := val.(time.Time); ok {
+			if ok, expr := getDateExpr(t); ok {
+				return true, expr, nil
+			}
+			return false, "", fmt.Errorf("cannot get date expr for this dialect")
+		}
+		return false, "", fmt.Errorf("unsupported date type %q", typ)
+	default:
+		return false, "", fmt.Errorf("unsupported type %q", typ)
+	}
+}
+
+func getNullExpr(typ runtimev1.Type_Code) (bool, string) {
+	switch typ {
+	case runtimev1.Type_CODE_STRING:
+		return true, "CAST(NULL AS VARCHAR)"
+	case runtimev1.Type_CODE_INT8, runtimev1.Type_CODE_INT16, runtimev1.Type_CODE_INT32, runtimev1.Type_CODE_INT64,
+		runtimev1.Type_CODE_INT128, runtimev1.Type_CODE_INT256,
+		runtimev1.Type_CODE_UINT8, runtimev1.Type_CODE_UINT16, runtimev1.Type_CODE_UINT32, runtimev1.Type_CODE_UINT64,
+		runtimev1.Type_CODE_UINT128, runtimev1.Type_CODE_UINT256:
+		return true, "CAST(NULL AS INTEGER)"
+	case runtimev1.Type_CODE_FLOAT32, runtimev1.Type_CODE_FLOAT64, runtimev1.Type_CODE_DECIMAL:
+		return true, "CAST(NULL AS DOUBLE)"
+	case runtimev1.Type_CODE_BOOL:
+		return true, "CAST(NULL AS BOOLEAN)"
+	case runtimev1.Type_CODE_TIME, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIMESTAMP:
+		return true, "CAST(NULL AS TIMESTAMP)"
+	default:
+		return false, ""
+	}
+}
+
+func getDateTimeExpr(t time.Time) (bool, string) {
+	return true, fmt.Sprintf("CAST('%s' AS TIMESTAMP)", t.Format(time.RFC3339Nano))
+}
+
+func getDateExpr(t time.Time) (bool, string) {
+	return true, fmt.Sprintf("CAST('%s' AS DATE)", t.Format(time.DateOnly))
 }

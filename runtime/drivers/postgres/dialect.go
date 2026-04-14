@@ -10,8 +10,6 @@ type dialect struct {
 
 var DialectPostgres drivers.Dialect = func() drivers.Dialect {
 	d := &dialect{}
-	d.InitBase(d)
+	d.BaseDialect = drivers.NewBaseDialect(drivers.DialectNamePostgres, drivers.DoubleQuotesEscapeIdentifier, drivers.DoubleQuotesEscapeIdentifier)
 	return d
 }()
-
-func (d *dialect) String() string { return "postgres" }

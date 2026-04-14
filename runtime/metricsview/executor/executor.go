@@ -562,7 +562,7 @@ func (e *Executor) Search(ctx context.Context, qry *metricsview.SearchQuery, exe
 		if err != nil {
 			return nil, err
 		}
-		finalSQL.WriteString(fmt.Sprintf("SELECT %s AS dimension, %s AS value FROM (%s)", e.olap.Dialect().EscapeStringValue(d), e.olap.Dialect().EscapeIdentifier(d), sql))
+		finalSQL.WriteString(fmt.Sprintf("SELECT %s AS dimension, %s AS value FROM (%s)", drivers.EscapeStringValue(d), e.olap.Dialect().EscapeIdentifier(d), sql))
 		finalArgs = append(finalArgs, args...)
 	}
 

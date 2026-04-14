@@ -310,5 +310,5 @@ func safeSQLName(name string) string {
 }
 
 func safeSQLString(name string) string {
-	return DialectDuckDB.EscapeStringValue(name)
+	return drivers.EscapeStringValue(name)
 }

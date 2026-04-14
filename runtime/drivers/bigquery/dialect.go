@@ -11,15 +11,13 @@ type dialect struct {
 	drivers.BaseDialect
 }
 
-var DialectBigquery drivers.Dialect = func() drivers.Dialect {
+var DialectBigQuery drivers.Dialect = func() drivers.Dialect {
 	d := &dialect{}
-	d.InitBase(d)
+	d.BaseDialect = drivers.NewBaseDialect(drivers.DialectNameBigQuery, BigQueryEscapeIdentifier, BigQueryEscapeIdentifier)
 	return d
 }()
 
-func (d *dialect) String() string { return drivers.DialectNameBigQuery }
-
-func (d *dialect) EscapeIdentifier(ident string) string {
+func BigQueryEscapeIdentifier(ident string) string {
 	if ident == "" {
 		return ident
 	}

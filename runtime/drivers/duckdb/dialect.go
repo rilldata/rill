@@ -15,11 +15,9 @@ type dialect struct {
 
 var DialectDuckDB drivers.Dialect = func() drivers.Dialect {
 	d := &dialect{}
-	d.InitBase(d)
+	d.BaseDialect = drivers.NewBaseDialect(drivers.DialectNameDuckDB, drivers.DoubleQuotesEscapeIdentifier, drivers.DoubleQuotesEscapeIdentifier)
 	return d
 }()
-
-func (d *dialect) String() string { return drivers.DialectNameDuckDB }
 
 func (d *dialect) CanPivot() bool { return true }
 
@@ -168,7 +166,7 @@ func (d *dialect) SelectInlineResults(result *drivers.Result) (string, []any, []
 					suffix += ", "
 				}
 			}
-			argExpr, argVal, err := d.GetArgExpr(v, result.Schema.Fields[i].Type.Code)
+			argExpr, argVal, err := getArgExpr(v, result.Schema.Fields[i].Type.Code)
 			if err != nil {
 				return "", nil, nil, fmt.Errorf("select inline: failed to get argument expression: %w", err)
 			}
@@ -186,14 +184,6 @@ func (d *dialect) SelectInlineResults(result *drivers.Result) (string, []any, []
 	}
 	prefix += ") "
 	return prefix + suffix, args, dimVals, nil
-}
-
-func (d *dialect) GetDateTimeExpr(t time.Time) (bool, string) {
-	return true, fmt.Sprintf("CAST('%s' AS TIMESTAMP)", t.Format(time.RFC3339Nano))
-}
-
-func (d *dialect) GetDateExpr(t time.Time) (bool, string) {
-	return true, fmt.Sprintf("CAST('%s' AS DATE)", t.Format(time.DateOnly))
 }
 
 func (d *dialect) ColumnCardinality(db, dbSchema, table, column string) (string, error) {
@@ -228,4 +218,16 @@ func (d dialect) ColumnNumericHistogramBucket(db, dbSchema, table, column string
 		sanitizedColumnName,
 		sanitizedColumnName,
 		d.EscapeTable(db, dbSchema, table)), nil
+}
+
+func getArgExpr(val any, typ runtimev1.Type_Code) (string, any, error) {
+	// handle date types especially otherwise they get sent as time.Time args which will be treated as datetime/timestamp types in olap
+	if typ == runtimev1.Type_CODE_DATE {
+		t, ok := val.(time.Time)
+		if !ok {
+			return "", nil, fmt.Errorf("could not cast value %v to time.Time for date type", val)
+		}
+		return "CAST(? AS DATE)", t.Format(time.DateOnly), nil
+	}
+	return "?", val, nil
 }

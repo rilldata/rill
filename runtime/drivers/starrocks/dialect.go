@@ -14,22 +14,11 @@ type dialect struct {
 	drivers.BaseDialect
 }
 
-var DialectStarrocks drivers.Dialect = func() drivers.Dialect {
+var DialectStarRocks drivers.Dialect = func() drivers.Dialect {
 	d := &dialect{}
-	d.InitBase(d)
+	d.BaseDialect = drivers.NewBaseDialect(drivers.DialectNameStarRocks, EscapeIdentifier, EscapeIdentifier)
 	return d
 }()
-
-func (d *dialect) String() string { return "starrocks" }
-
-func (d *dialect) EscapeIdentifier(ident string) string {
-	if ident == "" {
-		return ident
-	}
-	// StarRocks uses backticks for quoting identifiers
-	// Replace any backticks inside the identifier with double backticks.
-	return fmt.Sprintf("`%s`", strings.ReplaceAll(ident, "`", "``"))
-}
 
 func (d *dialect) SupportsILike() bool {
 	return false
@@ -56,14 +45,6 @@ func (d *dialect) OrderByAliasExpression(name string, desc bool) string {
 func (d *dialect) JoinOnExpression(lhs, rhs string) string {
 	// StarRocks uses MySQL's NULL-safe equal operator.
 	return fmt.Sprintf("%s <=> %s", lhs, rhs)
-}
-
-func (d *dialect) GetDateTimeExpr(t time.Time) (bool, string) {
-	return true, fmt.Sprintf("CAST('%s' AS DATETIME)", t.Format(time.DateTime))
-}
-
-func (d *dialect) GetDateExpr(t time.Time) (bool, string) {
-	return true, fmt.Sprintf("CAST('%s' AS DATE)", t.Format(time.DateOnly))
 }
 
 func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain runtimev1.TimeGrain, tz string, _, _ int) (string, error) {
@@ -152,4 +133,13 @@ func (d dialect) ColumnNumericHistogramBucket(db, dbSchema, table, column string
 		sanitizedColumnName,
 		sanitizedColumnName,
 		d.EscapeTable(db, dbSchema, table)), nil
+}
+
+func EscapeIdentifier(ident string) string {
+	if ident == "" {
+		return ident
+	}
+	// StarRocks uses backticks for quoting identifiers
+	// Replace any backticks inside the identifier with double backticks.
+	return fmt.Sprintf("`%s`", strings.ReplaceAll(ident, "`", "``"))
 }

@@ -55,8 +55,8 @@ func (q *ColumnNullCount) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		return err
 	}
 	defer release()
-
-	nullCountSQL, err := olap.Dialect().ColumnNullCount(q.Database, q.DatabaseSchema, q.TableName, q.ColumnName)
+	dialect := olap.Dialect()
+	nullCountSQL, err := dialect.ColumnNullCount(dialect.EscapeTable(q.Database, q.DatabaseSchema, q.TableName), q.ColumnName)
 	if err != nil {
 		return err
 	}

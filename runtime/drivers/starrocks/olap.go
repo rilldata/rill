@@ -19,7 +19,7 @@ var _ drivers.OLAPStore = (*connection)(nil)
 
 // Dialect implements drivers.OLAPStore.
 func (c *connection) Dialect() drivers.Dialect {
-	return DialectStarrocks
+	return DialectStarRocks
 }
 
 // MayBeScaledToZero implements drivers.OLAPStore.

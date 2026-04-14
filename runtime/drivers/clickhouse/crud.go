@@ -575,12 +575,12 @@ func (c *Connection) createDictionary(ctx context.Context, name, sql string, out
 		return fmt.Errorf("clickhouse: no primary key specified for dictionary %q", name)
 	}
 
-	srcTbl := fmt.Sprintf("CLICKHOUSE(TABLE %s)", c.Dialect().EscapeStringValue(tempTable))
+	srcTbl := fmt.Sprintf("CLICKHOUSE(TABLE %s)", drivers.EscapeStringValue(tempTable))
 	if outputProps.DictionarySourceUser != "" {
 		if outputProps.DictionarySourcePassword == "" {
 			return fmt.Errorf("clickhouse: no password specified for dictionary user")
 		}
-		srcTbl = fmt.Sprintf("CLICKHOUSE(TABLE %s USER %s PASSWORD %s)", c.Dialect().EscapeStringValue(tempTable), safeSQLString(outputProps.DictionarySourceUser), safeSQLString(outputProps.DictionarySourcePassword))
+		srcTbl = fmt.Sprintf("CLICKHOUSE(TABLE %s USER %s PASSWORD %s)", drivers.EscapeStringValue(tempTable), safeSQLString(outputProps.DictionarySourceUser), safeSQLString(outputProps.DictionarySourcePassword))
 	}
 
 	// create dictionary
@@ -731,5 +731,5 @@ func tempTableForDictionary(name string) string {
 }
 
 func safeSQLString(name string) string {
-	return DialectClickhouse.EscapeStringValue(name)
+	return drivers.EscapeStringValue(name)
 }
