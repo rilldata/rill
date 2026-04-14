@@ -43,16 +43,7 @@ Preview mode starts Rill Developer with a dashboard-only interface — no file e
 rill start my-project --preview
 ```
 
-### What's available in preview mode
-
-| Available | Hidden |
-|---|---|
-| Explore dashboards | File editor |
-| Canvas dashboards | Connector configuration |
-| AI Chat | Resource graph |
-| Project status | |
-
-Preview mode also sets the application to **read-only**, so dashboards cannot be modified through the UI.
+Preview mode sets the application to **read-only**, so dashboards cannot be modified through the UI.
 
 ### Switching modes
 
