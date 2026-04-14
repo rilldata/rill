@@ -60,5 +60,4 @@ Add [`ai_instructions`](/developers/build/ai-configuration) to your project and 
 *   **Performance**: Rill achieves performance that end users love by serving dashboards from in-memory data models, often reducing the data footprint by 10–100x compared to raw events.
 *   **Developer Experience**: Define your entire analytics stack—from data models to dashboards—using code. This brings the benefits of version control, collaboration, and automation that software development teams rely on.
 *   **Cost Effective**: Build analytics directly on your storage. Rill lowers costs because data can be transformed in place without duplication in a heavy enterprise warehouse.
-*   **AI-Native**: Build projects with AI coding agents, chat with your data in natural language, and connect external AI tools — all governed by your predefined metrics. See [AI-Native Analytics](#ai-native-analytics) above.
-
+*   **AI-Native**: Build projects with AI coding agents, chat with your data in natural language, and connect external AI tools — all governed by your predefined metrics. 
