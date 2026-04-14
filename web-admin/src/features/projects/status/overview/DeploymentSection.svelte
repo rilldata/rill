@@ -8,6 +8,7 @@
   import {
     isFreePlan,
     isProPlan,
+    isTeamPlan,
     isTrialPlan,
   } from "@rilldata/web-admin/features/billing/plans/utils";
   import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
@@ -105,7 +106,7 @@
 
 <OverviewCard title="Deployment">
   <div slot="header-right" class="flex items-center gap-3">
-    {#if canManage && (isTrialPlan(planName) || isFreePlan(planName)) && !$subscriptionQuery?.isLoading}
+    {#if canManage && (isTrialPlan(planName) || isFreePlan(planName) || isTeamPlan(planName)) && !$subscriptionQuery?.isLoading}
       <a class="upgrade-link" href="/{organization}/-/settings/billing">
         Upgrade to Pro
       </a>
