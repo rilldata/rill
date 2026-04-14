@@ -13,6 +13,7 @@ import {
   type RpcStatus,
   type V1GetCurrentUserResponse,
   type V1GetOrganizationResponse,
+  type V1OrganizationPermissions,
   type V1ProjectPermissions,
   type V1User,
 } from "@rilldata/web-admin/client";
@@ -27,7 +28,9 @@ import { error, redirect, type Page } from "@sveltejs/kit";
 import { isAxiosError } from "axios";
 import { Settings } from "luxon";
 import { getSingleUseUrlParam } from "@rilldata/web-admin/features/navigation/getSingleUseUrlParam.ts";
-import { UserWelcomeStatus } from "@rilldata/web-admin/features/welcome/welcom-store.ts";
+import { InWelcomeFlowStore } from "@rilldata/web-admin/features/welcome/welcome-store.ts";
+import { get } from "svelte/store";
+import { isAuthPage } from "@rilldata/web-admin/features/navigation/nav-utils.ts";
 
 Settings.defaultLocale = "en";
 
@@ -78,9 +81,30 @@ export const load = async ({ params, url, route, depends }) => {
   }
 
   const isNewUser = getSingleUseUrlParam(url, "new_user", "rill:cloud:newUser");
-  if (isNewUser && !organization) {
-    UserWelcomeStatus.set(true);
+
+  const redirectToWelcomePage =
+    isNewUser &&
+    // Only show the welcome screen for new users directly coming to rill cloud.
+    // Organization exists for users accepting invite, we will land them directly to the org.
+    !organization &&
+    // Skip welcome screen for auth pages, user coming from cli shouldnt be shown the welcome screen.
+    !isAuthPage({ route }) &&
+    // Safeguard for redirect loop
+    !get(InWelcomeFlowStore);
+  if (redirectToWelcomePage) {
+    InWelcomeFlowStore.set(true);
     throw redirect(307, "/-/welcome/theme");
+  }
+
+  // If no organization or project, return empty permissions
+  if (!organization) {
+    return {
+      user,
+      organizationPermissions: <V1OrganizationPermissions>{},
+      projectPermissions: <V1ProjectPermissions>{},
+      token,
+      organization: undefined,
+    };
   }
 
   // Get organization
@@ -101,7 +125,7 @@ export const load = async ({ params, url, route, depends }) => {
     if (shouldRedirectToRequestAccess) {
       // The redirect is handled below after the call to `GetProject`
     } else {
-      // throw error(e.response.status, e.response.data.message);
+      throw error(e.response.status, e.response.data.message);
     }
   }
 

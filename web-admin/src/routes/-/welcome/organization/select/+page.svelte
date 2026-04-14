@@ -1,11 +1,11 @@
-<script>
+<script lang="ts">
   import RillLogoSquareNegative from "@rilldata/web-common/components/icons/RillLogoSquareNegative.svelte";
   import { createAdminServiceListOrganizations } from "@rilldata/web-admin/client/index.ts";
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control.ts";
   import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo.ts";
   import { ChevronRightIcon, PlusIcon } from "lucide-svelte";
-  import { UserWelcomeStatus } from "@rilldata/web-admin/features/welcome/welcom-store.ts";
+  import { InWelcomeFlowStore } from "@rilldata/web-admin/features/welcome/welcome-store.ts";
 
   const orgListQuery = createAdminServiceListOrganizations();
   $: orgs = $orgListQuery.data?.organizations ?? [];
@@ -13,7 +13,7 @@
   $: selectedTheme = $themeControl;
 
   function handleSelectOrg() {
-    UserWelcomeStatus.set(false);
+    InWelcomeFlowStore.set(false);
   }
 </script>
 
@@ -31,7 +31,7 @@
           {:else}
             <Rill height="32" />
           {/if}
-          <span class="grow">{org.name}</span>
+          <span class="grow">{org.displayName || org.name}</span>
           <ChevronRightIcon class="h-4" strokeWidth={1} />
         </a>
       {/each}

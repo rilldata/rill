@@ -48,9 +48,6 @@ function normalizeOrganization(
   ) {
     return organization.name;
   }
-  if (organization === undefined || organization === null) {
-    return "";
-  }
   throw new Error(
     `Invalid organization parameter: expected string or V1Organization object with name property, got ${typeof organization}`,
   );

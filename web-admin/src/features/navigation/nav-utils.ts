@@ -110,6 +110,11 @@ export function isWelcomePage(page: Page): boolean {
   return !!page.route.id?.startsWith("/-/welcome");
 }
 
+// isAuthPage is called in loader function. Since we only need route, this accepts partial page.
+export function isAuthPage({ route }: Pick<Page, "route">): boolean {
+  return !!route.id?.startsWith("/-/auth");
+}
+
 export function getScreenNameFromPage(page: Page): MetricsEventScreenName {
   switch (true) {
     case isOrganizationPage(page):
