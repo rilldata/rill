@@ -97,8 +97,10 @@ test.describe("Org management flow", () => {
         async () => {
           await anonPage.reload();
           try {
-            // Wait for "Access denied" to show up after a reload.
-            await expect(anonPage.getByText("Access denied")).toBeVisible();
+            // Wait for "Organization not found" to show up after a reload.
+            await expect(
+              anonPage.getByText("Organization not found"),
+            ).toBeVisible();
             return true;
           } catch {
             return false;
