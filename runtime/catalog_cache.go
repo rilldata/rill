@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -354,8 +355,8 @@ func (c *catalogCache) updateState(name *runtimev1.ResourceName, from *runtimev1
 	return nil
 }
 
-// updateError updates the reconcile_error field of a resource.
-func (c *catalogCache) updateError(name *runtimev1.ResourceName, reconcileErr error) error {
+// updateErrorAndWarning updates both reconcile_error and reconcile_warnings of a resource.
+func (c *catalogCache) updateErrorAndWarning(name *runtimev1.ResourceName, reconcileErr error, warnings []string) error {
 	r, err := c.get(name, true, true)
 	if err != nil {
 		return err
@@ -364,12 +365,13 @@ func (c *catalogCache) updateError(name *runtimev1.ResourceName, reconcileErr er
 	if reconcileErr != nil {
 		errStr = reconcileErr.Error()
 	}
-	if r.Meta.ReconcileError == errStr {
+	if r.Meta.ReconcileError == errStr && slices.Equal(r.Meta.ReconcileWarnings, warnings) {
 		// Since bumping the state version usually invalidates derived things, we don't want to do it redundantly.
 		return nil
 	}
 	c.unlink(r)
 	r.Meta.ReconcileError = errStr
+	r.Meta.ReconcileWarnings = warnings
 	r.Meta.Version++
 	r.Meta.StateVersion++
 	r.Meta.StateUpdatedOn = timestamppb.Now()
@@ -553,6 +555,7 @@ func resourceFromDriver(r drivers.Resource) *runtimev1.Resource {
 	// Reset ephemeral fields.
 	res.Meta.ReconcileStatus = runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE
 	res.Meta.ReconcileError = ""
+	res.Meta.ReconcileWarnings = nil
 	res.Meta.ReconcileOn = nil
 	res.Meta.RenamedFrom = nil
 

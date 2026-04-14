@@ -328,6 +328,22 @@ func (c *Connection) InformationSchema() drivers.OLAPInformationSchema {
 	return c
 }
 
+func (c *Connection) EstimateSize(ctx context.Context) (int64, error) {
+	val, err := c.estimateSize(ctx)
+	if err != nil {
+		if errors.Is(err, ctx.Err()) {
+			return 0, ctx.Err()
+		}
+		// For managed clickhouse, we should be able to estimate the size, so we return the error.
+		// For external clickhouse, we probably don't have the requisite permissions, so we return -1 to indicate that its unknown.
+		if c.config.Managed {
+			return 0, fmt.Errorf("failed to estimate size for managed clickhouse: %w", err)
+		}
+		return -1, nil
+	}
+	return val, nil
+}
+
 // acquireMetaConn gets a connection from the pool for "meta" queries like information schema (i.e. fast queries).
 // It returns a function that puts the connection back in the pool (if applicable).
 func (c *Connection) acquireMetaConn(ctx context.Context) (*SQLConn, func() error, error) {

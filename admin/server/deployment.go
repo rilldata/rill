@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -182,11 +183,13 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 		}
 	}
 
+	var subject string
 	var attr map[string]any
 	var restrictResources bool
 	var resources []database.ResourceName
-	if req.For == nil {
+	if req.For == nil && req.ExternalUserId == "" {
 		if claims.OwnerType() == auth.OwnerTypeUser {
+			subject = claims.OwnerID()
 			attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
 			if err != nil {
 				return nil, err
@@ -197,8 +200,10 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 			}
 		} else if claims.OwnerType() == auth.OwnerTypeService {
 			attr = map[string]any{"admin": true}
+			// NOTE: Intentionally leaving the `subject` empty out of caution.
+			// Some users use service accounts for generating JWTs for end users without passing req.For, and we don't want to accidentally pass a shared subject ID across those users (which could leak e.g. AI chats).
 		}
-	} else {
+	} else if req.For != nil {
 		if depl.Environment == "prod" && !permissions.ManageProd {
 			return nil, status.Error(codes.PermissionDenied, "does not have permission to manage prod deployment")
 		}
@@ -209,6 +214,10 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 
 		switch forVal := req.For.(type) {
 		case *adminv1.GetDeploymentRequest_UserId:
+			if req.ExternalUserId != "" {
+				return nil, status.Error(codes.InvalidArgument, "external_user_id cannot be specified together with user_id")
+			}
+			subject = forVal.UserId
 			attr, restrictResources, resources, err = s.getAttributesAndResourceRestrictionsForUser(ctx, proj.OrganizationID, proj.ID, forVal.UserId, "")
 			if err != nil {
 				return nil, err
@@ -223,6 +232,11 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 		default:
 			return nil, status.Error(codes.InvalidArgument, "invalid 'for' type")
 		}
+	}
+
+	// Handle external user ID (see API docstring for details)
+	if req.ExternalUserId != "" {
+		subject = subjectForExternalUser(req.ExternalUserId, proj.ID)
 	}
 
 	ttlDuration := runtimeAccessTokenEmbedTTL
@@ -262,7 +276,7 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 	// Generate JWT
 	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
 		AudienceURL: depl.RuntimeAudience,
-		Subject:     claims.OwnerID(),
+		Subject:     subject,
 		TTL:         ttlDuration,
 		InstancePermissions: map[string][]runtime.Permission{
 			depl.RuntimeInstanceID: instancePermissions,
@@ -575,11 +589,13 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage deployment")
 	}
 
+	var subject string
 	var attr map[string]any
 	var restrictResources bool
 	var resources []database.ResourceName
-	if req.For == nil {
+	if req.For == nil && req.ExternalUserId == "" {
 		if claims.OwnerType() == auth.OwnerTypeUser {
+			subject = claims.OwnerID()
 			attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
 			if err != nil {
 				return nil, err
@@ -589,14 +605,19 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 				return nil, err
 			}
 		}
-	} else {
+		// NOTE: Intentionally leaving the `subject` empty in other cases out of caution.
+		// Some users use service accounts for generating JWTs for end users without passing req.For, and we don't want to accidentally pass a shared subject ID across those users (which could leak e.g. AI chats).
+	} else if req.For != nil {
 		switch forVal := req.For.(type) {
 		case *adminv1.GetDeploymentCredentialsRequest_UserId:
+			if req.ExternalUserId != "" {
+				return nil, status.Error(codes.InvalidArgument, "external_user_id cannot be specified together with user_id")
+			}
+			subject = forVal.UserId
 			attr, restrictResources, resources, err = s.getAttributesAndResourceRestrictionsForUser(ctx, proj.OrganizationID, proj.ID, forVal.UserId, "")
 			if err != nil {
 				return nil, err
 			}
-
 		case *adminv1.GetDeploymentCredentialsRequest_UserEmail:
 			attr, restrictResources, resources, err = s.getAttributesAndResourceRestrictionsForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.UserEmail)
 			if err != nil {
@@ -607,6 +628,11 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 		default:
 			return nil, status.Error(codes.InvalidArgument, "invalid 'for' type")
 		}
+	}
+
+	// Handle external user ID (see API docstring for details)
+	if req.ExternalUserId != "" {
+		subject = subjectForExternalUser(req.ExternalUserId, proj.ID)
 	}
 
 	ttlDuration := runtimeAccessTokenEmbedTTL
@@ -620,7 +646,7 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 	// Generate JWT
 	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
 		AudienceURL: prodDepl.RuntimeAudience,
-		Subject:     claims.OwnerID(),
+		Subject:     subject,
 		TTL:         ttlDuration,
 		InstancePermissions: map[string][]runtime.Permission{
 			prodDepl.RuntimeInstanceID: {
@@ -690,11 +716,13 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	}
 
 	// Get user attributes to pass in the JWT
+	var subject string
 	var attr map[string]any
 	var restrictResources bool
 	var resources []database.ResourceName
-	if req.For == nil {
+	if req.For == nil && req.ExternalUserId == "" {
 		if claims.OwnerType() == auth.OwnerTypeUser {
+			subject = claims.OwnerID()
 			attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
 			if err != nil {
 				return nil, err
@@ -704,9 +732,15 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 				return nil, err
 			}
 		}
-	} else {
+		// NOTE: Intentionally leaving the `subject` empty in other cases out of caution.
+		// Some users use service accounts for generating JWTs for end users without passing req.For, and we don't want to accidentally pass a shared subject ID across those users (which could leak e.g. AI chats).
+	} else if req.For != nil {
 		switch forVal := req.For.(type) {
 		case *adminv1.GetIFrameRequest_UserId:
+			if req.ExternalUserId != "" {
+				return nil, status.Error(codes.InvalidArgument, "external_user_id cannot be specified together with user_id")
+			}
+			subject = forVal.UserId
 			attr, restrictResources, resources, err = s.getAttributesAndResourceRestrictionsForUser(ctx, proj.OrganizationID, proj.ID, forVal.UserId, "")
 			if err != nil {
 				return nil, err
@@ -721,6 +755,11 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		default:
 			return nil, status.Error(codes.InvalidArgument, "invalid 'for' type")
 		}
+	}
+
+	// Handle external user ID (see API docstring for details)
+	if req.ExternalUserId != "" {
+		subject = subjectForExternalUser(req.ExternalUserId, proj.ID)
 	}
 
 	// Add an `embed` attribute for use in security policies or feature flags (as `{{.user.embed}}`).
@@ -768,7 +807,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	// Generate JWT
 	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
 		AudienceURL: prodDepl.RuntimeAudience,
-		Subject:     claims.OwnerID(),
+		Subject:     subject,
 		TTL:         ttlDuration,
 		InstancePermissions: map[string][]runtime.Permission{
 			prodDepl.RuntimeInstanceID: {
@@ -922,41 +961,6 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 	return resp, nil
 }
 
-// getResourceRestrictionsForUser returns resource restrictions for a given user and project.
-func (s *Server) getResourceRestrictionsForUser(ctx context.Context, projID, userID string) (bool, []database.ResourceName, error) {
-	mu, err := s.admin.DB.FindProjectMemberUser(ctx, projID, userID)
-	if err != nil && !errors.Is(err, database.ErrNotFound) {
-		return false, nil, err
-	}
-	mug, err := s.admin.DB.FindProjectMemberUsergroupsForUser(ctx, projID, userID)
-	if err != nil {
-		return false, nil, err
-	}
-	restrictResources := mu != nil || len(mug) > 0
-	var resources []database.ResourceName
-	if mu != nil {
-		restrictResources = restrictResources && mu.RestrictResources
-		resources = append(resources, mu.Resources...)
-	}
-	if len(mug) > 0 {
-		for _, g := range mug {
-			restrictResources = restrictResources && g.RestrictResources
-			resources = append(resources, g.Resources...)
-		}
-	}
-
-	var mergedResources []database.ResourceName
-	seen := make(map[database.ResourceName]struct{})
-	for _, r := range resources {
-		if _, ok := seen[r]; !ok {
-			seen[r] = struct{}{}
-			mergedResources = append(mergedResources, r)
-		}
-	}
-
-	return restrictResources, mergedResources, nil
-}
-
 // getAttributesAndResourceRestrictionsForUser returns a map of attributes and resource restrictions for a given user and project.
 // The caller should only provide one of userID or userEmail (if both or neither are set, an error will be returned).
 // NOTE: The value returned from this function must be valid for structpb.NewStruct (e.g. must use []any for slices, not a more specific slice type).
@@ -1030,4 +1034,46 @@ func (s *Server) getAttributesForUser(ctx context.Context, orgID, projID, userID
 	}
 
 	return attr, userID, forProjPerms.ReadProd, nil
+}
+
+// getResourceRestrictionsForUser returns resource restrictions for a given user and project.
+func (s *Server) getResourceRestrictionsForUser(ctx context.Context, projID, userID string) (bool, []database.ResourceName, error) {
+	mu, err := s.admin.DB.FindProjectMemberUser(ctx, projID, userID)
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
+		return false, nil, err
+	}
+	mug, err := s.admin.DB.FindProjectMemberUsergroupsForUser(ctx, projID, userID)
+	if err != nil {
+		return false, nil, err
+	}
+	restrictResources := mu != nil || len(mug) > 0
+	var resources []database.ResourceName
+	if mu != nil {
+		restrictResources = restrictResources && mu.RestrictResources
+		resources = append(resources, mu.Resources...)
+	}
+	if len(mug) > 0 {
+		for _, g := range mug {
+			restrictResources = restrictResources && g.RestrictResources
+			resources = append(resources, g.Resources...)
+		}
+	}
+
+	var mergedResources []database.ResourceName
+	seen := make(map[database.ResourceName]struct{})
+	for _, r := range resources {
+		if _, ok := seen[r]; !ok {
+			seen[r] = struct{}{}
+			mergedResources = append(mergedResources, r)
+		}
+	}
+
+	return restrictResources, mergedResources, nil
+}
+
+// subjectForExternalUser generates a safe subject from an external user ID accessing a deployment in the specified project.
+// The result is safe to use as a JWT subject and in telemetry (where we need to avoid collisions and PII).
+func subjectForExternalUser(externalUserID, projectID string) string {
+	hash := sha256.Sum256([]byte(externalUserID + projectID))
+	return "ext_" + hex.EncodeToString(hash[:])
 }

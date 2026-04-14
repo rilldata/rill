@@ -1,5 +1,6 @@
 <script lang="ts">
   import {
+    type AddDataConfig,
     type ImportAddDataStep,
     ImportDataStep,
   } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
@@ -20,8 +21,12 @@
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
+  import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
   import { runImportSteps } from "@rilldata/web-common/features/add-data/manager/steps/import.ts";
+  import type { AddDataStateManager } from "@rilldata/web-common/features/add-data/manager/AddDataStateManager.svelte.ts";
 
+  export let config: AddDataConfig;
+  export let stateManager: AddDataStateManager;
   export let importAddDataStep: ImportAddDataStep;
   export let onDone: () => void;
 
@@ -30,7 +35,7 @@
   const runtimeClient = useRuntimeClient();
 
   let importStep = ImportDataStep.Init;
-  $: currentFileRoute = "/";
+  $: currentFileRoute = $previewModeStore ? "/dashboards" : "/";
   $: sourceName = importAddDataStep.config.importTo.modelName ?? "";
   $: isDone = importStep === ImportDataStep.Done;
   let error: string | null = null;
@@ -50,16 +55,22 @@
     try {
       await runImportSteps(
         runtimeClient,
-        importAddDataStep.config,
+        config,
+        importAddDataStep,
         (step, currentFilePath) => {
           importStep = step;
           if (currentFilePath) {
-            currentFileRoute = `/files${addLeadingSlash(currentFilePath)}`;
+            if ($previewModeStore) {
+              currentFileRoute = "/dashboards";
+            } else {
+              currentFileRoute = `/files${addLeadingSlash(currentFilePath)}`;
+            }
           }
         },
       );
     } catch (e) {
-      error = e?.response?.data?.message ?? e?.message ?? null;
+      error = e?.response?.data?.message ?? e?.message ?? "Unknown error";
+      stateManager.fireErrorEvent(error!, importStep);
     }
   }
 
