@@ -194,7 +194,7 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 	}
 
 	// Prepare deployment annotations
-	annotations := s.NewDeploymentAnnotations(org, proj)
+	annotations := s.NewDeploymentAnnotations(org, proj, depl.Environment)
 
 	// Resolve slots based on environment
 	var slots int
@@ -403,7 +403,7 @@ func (s *Service) UpdateDeploymentInner(ctx context.Context, d *database.Deploym
 	}
 
 	// Prepare deployment annotations
-	annotations := s.NewDeploymentAnnotations(org, proj)
+	annotations := s.NewDeploymentAnnotations(org, proj, d.Environment)
 
 	// Resolve slots based on environment
 	var slots int
@@ -538,23 +538,28 @@ func (s *Service) IssueRuntimeManagementToken(aud string) (string, error) {
 	return jwt, nil
 }
 
-func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *database.Project) DeploymentAnnotations {
+func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *database.Project, environment string) DeploymentAnnotations {
 	var orgBillingPlanName string
 	if org.BillingPlanName != nil {
 		orgBillingPlanName = *org.BillingPlanName
 	}
-	return DeploymentAnnotations{
+	da := DeploymentAnnotations{
 		orgID:              org.ID,
 		orgName:            org.Name,
 		orgBillingPlanName: orgBillingPlanName,
 		orgCustomDomain:    org.CustomDomain,
 		projID:             proj.ID,
 		projName:           proj.Name,
-		projProdSlots:      fmt.Sprint(proj.ProdSlots),
-		projDevSlots:       fmt.Sprint(proj.DevSlots),
 		projProvisioner:    proj.Provisioner,
 		projAnnotations:    proj.Annotations,
 	}
+	switch environment {
+	case "prod":
+		da.projProdSlots = fmt.Sprint(proj.ProdSlots)
+	case "dev":
+		da.projDevSlots = fmt.Sprint(proj.DevSlots)
+	}
+	return da
 }
 
 func (s *Service) FindProvisionedRuntimeResource(ctx context.Context, deploymentID string) (*database.ProvisionerResource, bool, error) {
@@ -591,8 +596,12 @@ func (da *DeploymentAnnotations) ToMap() map[string]string {
 	res["organization_plan"] = da.orgBillingPlanName
 	res["project_id"] = da.projID
 	res["project_name"] = da.projName
-	res["project_prod_slots"] = da.projProdSlots
-	res["project_dev_slots"] = da.projDevSlots
+	if da.projProdSlots != "" {
+		res["project_prod_slots"] = da.projProdSlots
+	}
+	if da.projDevSlots != "" {
+		res["project_dev_slots"] = da.projDevSlots
+	}
 	res["project_provisioner"] = da.projProvisioner
 	return res
 }
