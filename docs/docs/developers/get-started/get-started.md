@@ -20,7 +20,9 @@ curl https://rill.sh | sh
 rill start my-rill-project
 ```
 
-New to Rill? Follow the [Quickstart](/developers/get-started/quickstart) to build your first dashboard with a public dataset, or browse our [tutorials](/developers/tutorials/).
+New to Rill? Follow the [Quickstart](/developers/get-started/quickstart) to build your first dashboard with a public dataset, the [AI Quickstart](/developers/get-started/ai-quickstart) to build a project with an AI coding agent, or browse our [tutorials](/developers/tutorials/).
+
+Use [Preview Mode](/developers/get-started/preview-mode) (`rill start --preview`) for a dashboard-only view with no code editor — ideal for demos, stakeholder reviews, or pairing with an AI agent that handles the code for you.
 
 ## Start Developing
 
