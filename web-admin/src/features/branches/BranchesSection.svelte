@@ -38,10 +38,13 @@
     EyeIcon,
     GitBranchIcon,
     PlayIcon,
+    SlidersHorizontalIcon,
     StopCircleIcon,
     Trash2Icon,
   } from "lucide-svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import ManageSlotsModal from "@rilldata/web-admin/features/projects/status/overview/ManageSlotsModal.svelte";
+  import { devSlotsOverride } from "./dev-slots-store";
 
   let { organization, project }: { organization: string; project: string } =
     $props();
@@ -94,11 +97,12 @@
       ? parseInt($projectQuery.data.project.prodSlots, 10)
       : null,
   );
-  let devSlots = $derived(
+  let apiDevSlots = $derived(
     $projectQuery.data?.project?.devSlots != null
       ? parseInt($projectQuery.data.project.devSlots, 10)
       : null,
   );
+  let devSlots = $derived($devSlotsOverride ?? apiDevSlots);
 
   let visibleDeployments = $derived.by(() => {
     const active = ($allDeployments.data?.deployments ?? []).filter(
@@ -142,6 +146,7 @@
   let pendingId = $state("");
   let deleteDialogOpen = $state(false);
   let pendingDelete = $state<{ id: string; branch: string } | null>(null);
+  let devSlotsModalOpen = $state(false);
 
   async function mutateDeployment(
     deploymentId: string,
@@ -308,6 +313,20 @@
                     <span class="ml-2">{prod ? "View" : "Preview"}</span>
                   </div>
                 </DropdownMenu.Item>
+                {#if !prod && isActiveDeployment(deployment)}
+                  <DropdownMenu.Item
+                    class="font-normal flex items-center"
+                    onclick={() => {
+                      openDropdownId = "";
+                      devSlotsModalOpen = true;
+                    }}
+                  >
+                    <div class="flex items-center">
+                      <SlidersHorizontalIcon size="12px" />
+                      <span class="ml-2">Manage units</span>
+                    </div>
+                  </DropdownMenu.Item>
+                {/if}
                 {#if canStart}
                   <DropdownMenu.Item
                     class="font-normal flex items-center"
@@ -376,6 +395,19 @@
   bind:open={deleteDialogOpen}
   branch={pendingDelete?.branch || primaryBranch || "main"}
   onConfirm={handleDelete}
+/>
+
+<ManageSlotsModal
+  bind:open={devSlotsModalOpen}
+  {organization}
+  {project}
+  currentSlots={devSlots ?? 0}
+  title="Manage Dev Cluster Size"
+  minSlots={0}
+  slotType="dev"
+  onApply={(slots) => {
+    devSlotsOverride.set(slots);
+  }}
 />
 
 <style lang="postcss">

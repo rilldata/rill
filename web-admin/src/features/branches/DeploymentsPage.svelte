@@ -16,6 +16,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
+  import { devSlotsOverride } from "./dev-slots-store";
 
   let {
     organization,
@@ -68,7 +69,8 @@
 
   // Slot types
   let prodSlots = $derived(currentSlots);
-  let devSlots = $derived(0); // TODO: wire to project data when dev slots are available
+  let apiDevSlots = $derived(Number(projectData?.devSlots) || 0);
+  let devSlots = $derived($devSlotsOverride ?? apiDevSlots);
   let totalSlots = $derived(prodSlots + devSlots);
 
   // Cluster info (split into number + unit for display)
