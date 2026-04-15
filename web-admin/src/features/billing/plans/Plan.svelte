@@ -403,7 +403,6 @@
     @apply font-sans font-semibold text-lg leading-7 align-middle text-fg-tertiary;
   }
 
-
   .period-estimate {
     @apply flex flex-col items-center mt-4 pt-6 pb-4;
     gap: 8px;
@@ -491,7 +490,6 @@
     @apply font-sans font-medium text-xs text-fg-tertiary;
     line-height: 100%;
   }
-
 
   .compare-toggle {
     @apply flex items-center justify-center gap-1.5 text-sm font-medium text-fg-secondary cursor-pointer bg-transparent border-t border-l-0 border-r-0 border-b-0;

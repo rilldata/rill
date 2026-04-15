@@ -63,8 +63,12 @@
   const DAYS_PER_MONTH = 30;
 
   // Cost calculations
-  let prodCost = $derived(prodUnits * hoursPerDay * DAYS_PER_MONTH * RATE_PER_UNIT_HR);
-  let devCost = $derived(devUnits * hoursPerDay * DAYS_PER_MONTH * RATE_PER_UNIT_HR);
+  let prodCost = $derived(
+    prodUnits * hoursPerDay * DAYS_PER_MONTH * RATE_PER_UNIT_HR,
+  );
+  let devCost = $derived(
+    devUnits * hoursPerDay * DAYS_PER_MONTH * RATE_PER_UNIT_HR,
+  );
   let billableStorageGB = $derived(Math.max(storageGB - FREE_STORAGE_GB, 0));
   let storageCost = $derived(billableStorageGB * STORAGE_RATE_PER_GB);
   let monthlyCost = $derived(prodCost + devCost + storageCost);
@@ -102,20 +106,30 @@
     window.Pylon("show");
   }
 
-  function clampInput(e: Event, min: number, max: number, setter: (v: number) => void) {
+  function clampInput(
+    e: Event,
+    min: number,
+    max: number,
+    setter: (v: number) => void,
+  ) {
     const el = e.target as HTMLInputElement;
     const n = parseInt(el.value, 10);
     if (isNaN(n) || n < min) setter(min);
     else if (n > max) setter(max);
     else setter(n);
   }
-
 </script>
 
 <div class="estimate-page">
   <!-- Back link + title -->
   <a href="/{organization}/-/settings/billing" class="back-link">
-    <svg class="w-3.5 h-3.5" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5">
+    <svg
+      class="w-3.5 h-3.5"
+      viewBox="0 0 14 14"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.5"
+    >
       <path d="M9 2.5L4.5 7 9 11.5" />
     </svg>
     Billing
@@ -125,7 +139,13 @@
   <div class="page-header">
     <span class="prefill-note">Pre-filled from your current deployment</span>
     <button class="reset-btn" onclick={resetToUsage}>
-      <svg class="w-3.5 h-3.5" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5">
+      <svg
+        class="w-3.5 h-3.5"
+        viewBox="0 0 14 14"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+      >
         <path d="M1.5 2.5v3.5h3.5" />
         <path d="M2.1 8.5a5 5 0 1 0 .9-4.5L1.5 6" />
       </svg>
@@ -148,8 +168,18 @@
           <span class="input-desc">Minimum 2 units</span>
         </div>
         <div class="stepper">
-          <button class="stepper-btn" onclick={() => prodUnits--} disabled={prodUnits <= 2}>−</button>
-          <input class="stepper-input" type="number" bind:value={prodUnits} min="2" onblur={(e) => clampInput(e, 2, 9999, (v) => prodUnits = v)} />
+          <button
+            class="stepper-btn"
+            onclick={() => prodUnits--}
+            disabled={prodUnits <= 2}>−</button
+          >
+          <input
+            class="stepper-input"
+            type="number"
+            bind:value={prodUnits}
+            min="2"
+            onblur={(e) => clampInput(e, 2, 9999, (v) => (prodUnits = v))}
+          />
           <button class="stepper-btn" onclick={() => prodUnits++}>+</button>
         </div>
       </div>
@@ -163,8 +193,18 @@
           <span class="input-desc">Optional · Same rate as prod unit</span>
         </div>
         <div class="stepper">
-          <button class="stepper-btn" onclick={() => devUnits--} disabled={devUnits <= 0}>−</button>
-          <input class="stepper-input" type="number" bind:value={devUnits} min="0" onblur={(e) => clampInput(e, 0, 9999, (v) => devUnits = v)} />
+          <button
+            class="stepper-btn"
+            onclick={() => devUnits--}
+            disabled={devUnits <= 0}>−</button
+          >
+          <input
+            class="stepper-input"
+            type="number"
+            bind:value={devUnits}
+            min="0"
+            onblur={(e) => clampInput(e, 0, 9999, (v) => (devUnits = v))}
+          />
           <button class="stepper-btn" onclick={() => devUnits++}>+</button>
         </div>
       </div>
@@ -175,11 +215,23 @@
       <div class="input-row">
         <div class="input-info">
           <span class="input-label">Storage (GB)</span>
-          <span class="input-desc">1 GB included free · $1/GB/mo above that</span>
+          <span class="input-desc"
+            >1 GB included free · $1/GB/mo above that</span
+          >
         </div>
         <div class="stepper">
-          <button class="stepper-btn" onclick={() => storageGB--} disabled={storageGB <= 1}>−</button>
-          <input class="stepper-input" type="number" bind:value={storageGB} min="1" onblur={(e) => clampInput(e, 1, 9999, (v) => storageGB = v)} />
+          <button
+            class="stepper-btn"
+            onclick={() => storageGB--}
+            disabled={storageGB <= 1}>−</button
+          >
+          <input
+            class="stepper-input"
+            type="number"
+            bind:value={storageGB}
+            min="1"
+            onblur={(e) => clampInput(e, 1, 9999, (v) => (storageGB = v))}
+          />
           <button class="stepper-btn" onclick={() => storageGB++}>+</button>
         </div>
       </div>
@@ -190,12 +242,29 @@
       <div class="input-row">
         <div class="input-info">
           <span class="input-label">Hours per day</span>
-          <span class="input-desc">24 = always on · Lower if you pause units at night</span>
+          <span class="input-desc"
+            >24 = always on · Lower if you pause units at night</span
+          >
         </div>
         <div class="stepper">
-          <button class="stepper-btn" onclick={() => hoursPerDay--} disabled={hoursPerDay <= 1}>−</button>
-          <input class="stepper-input" type="number" bind:value={hoursPerDay} min="1" max="24" onblur={(e) => clampInput(e, 1, 24, (v) => hoursPerDay = v)} />
-          <button class="stepper-btn" onclick={() => hoursPerDay++} disabled={hoursPerDay >= 24}>+</button>
+          <button
+            class="stepper-btn"
+            onclick={() => hoursPerDay--}
+            disabled={hoursPerDay <= 1}>−</button
+          >
+          <input
+            class="stepper-input"
+            type="number"
+            bind:value={hoursPerDay}
+            min="1"
+            max="24"
+            onblur={(e) => clampInput(e, 1, 24, (v) => (hoursPerDay = v))}
+          />
+          <button
+            class="stepper-btn"
+            onclick={() => hoursPerDay++}
+            disabled={hoursPerDay >= 24}>+</button
+          >
         </div>
       </div>
     </div>
@@ -213,7 +282,9 @@
         <div class="cost-row-info">
           <span class="cost-row-label">Production</span>
           <span class="cost-row-desc">
-            {prodUnits} units × {hoursPerDay} hrs × {DAYS_PER_MONTH} days × ${RATE_PER_UNIT_HR.toFixed(2)}
+            {prodUnits} units × {hoursPerDay} hrs × {DAYS_PER_MONTH} days × ${RATE_PER_UNIT_HR.toFixed(
+              2,
+            )}
           </span>
         </div>
         <span class="cost-row-amount">{fmtUSD(prodCost)}</span>
@@ -224,7 +295,9 @@
         <div class="cost-row-info">
           <span class="cost-row-label">Development</span>
           <span class="cost-row-desc">
-            {devUnits} units × {hoursPerDay} hrs × {DAYS_PER_MONTH} days × ${RATE_PER_UNIT_HR.toFixed(2)}
+            {devUnits} units × {hoursPerDay} hrs × {DAYS_PER_MONTH} days × ${RATE_PER_UNIT_HR.toFixed(
+              2,
+            )}
           </span>
         </div>
         <span class="cost-row-amount">{fmtUSD(devCost)}</span>
@@ -235,7 +308,8 @@
         <div class="cost-row-info">
           <span class="cost-row-label">Storage (GB)</span>
           <span class="cost-row-desc">
-            {storageGB} GB − {FREE_STORAGE_GB} GB free = {billableStorageGB} GB × ${STORAGE_RATE_PER_GB}
+            {storageGB} GB − {FREE_STORAGE_GB} GB free = {billableStorageGB} GB ×
+            ${STORAGE_RATE_PER_GB}
           </span>
         </div>
         <span class="cost-row-amount">{fmtUSD(storageCost)}</span>
@@ -436,7 +510,7 @@
 
   .first-bill {
     @apply flex items-center justify-between rounded-lg px-4 py-3 mt-2;
-    background: var(--rill-colors-theme-primary-50, #ECF0FF);
+    background: var(--rill-colors-theme-primary-50, #ecf0ff);
   }
 
   .first-bill-label {
