@@ -91,7 +91,7 @@
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Are you sure you want to cancel?</AlertDialogTitle>
+          <AlertDialogTitle>Cancel your Team plan?</AlertDialogTitle>
 
           <AlertDialogDescription>
             If you cancel your plan, you'll still be able to access your account

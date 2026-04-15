@@ -150,7 +150,7 @@
     <Select
       bind:value={$form["dimension"]}
       id="dimension"
-      label="By Dimension"
+      label="By dimension"
       options={dimensionOptions}
       placeholder="Select dimension to split by"
     />
@@ -179,7 +179,7 @@
       id="value1"
       onEnter={submit}
       alwaysShowError
-      placeholder={isBetweenExpression ? "Lower Value" : "Enter a Number"}
+      placeholder={isBetweenExpression ? "Lower value" : "Enter a number"}
     />
 
     {#if isBetweenExpression}
@@ -187,7 +187,7 @@
         bind:value={$form["value2"]}
         errors={$errors["value2"]}
         id="value2"
-        placeholder="Higher Value"
+        placeholder="Higher value"
         alwaysShowError
         onEnter={submit}
       />
