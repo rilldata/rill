@@ -231,6 +231,11 @@ func testInformationSchemaListTables(t *testing.T, infoSchema drivers.Informatio
 
 	model := tables[5]
 	require.Equal(t, true, model.View)
+
+	for _, tbl := range tables {
+		require.True(t, tbl.IsDefaultDatabase)
+		require.True(t, tbl.IsDefaultDatabaseSchema)
+	}
 }
 
 func testInformationSchemaGetTable(t *testing.T, infoSchema drivers.InformationSchema, database, databaseSchema string) {

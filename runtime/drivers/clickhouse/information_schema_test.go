@@ -220,6 +220,11 @@ func testInformationSchemaListTables(t *testing.T, infoSchema drivers.Informatio
 	require.Equal(t, "model", tables[2].Name)
 	require.Equal(t, true, tables[2].View)
 
+	for _, tbl := range tables {
+		require.True(t, tbl.IsDefaultDatabase)
+		require.True(t, tbl.IsDefaultDatabaseSchema)
+	}
+
 	tables, _, err = infoSchema.ListTables(context.Background(), "", "other", 0, "")
 	require.NoError(t, err)
 	require.Equal(t, len(tables), 2)
@@ -228,6 +233,11 @@ func testInformationSchemaListTables(t *testing.T, infoSchema drivers.Informatio
 	require.Equal(t, false, tables[0].View)
 	require.Equal(t, "foo", tables[1].Name)
 	require.Equal(t, false, tables[1].View)
+
+	for _, tbl := range tables {
+		require.True(t, tbl.IsDefaultDatabase)
+		require.False(t, tbl.IsDefaultDatabaseSchema)
+	}
 }
 
 func testInformationSchemaGetTable(t *testing.T, infoSchema drivers.InformationSchema) {

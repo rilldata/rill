@@ -73,11 +73,12 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	q := `
 	SELECT
 		table_name,
-		CASE WHEN table_type = 'VIEW' THEN true ELSE false END AS view
+		CASE WHEN table_type = 'VIEW' THEN true ELSE false END AS view,
+		DATABASE() = ? AS is_default_database_schema
 	FROM information_schema.tables
 	WHERE table_schema = ?
 	`
-	args := []any{databaseSchema}
+	args := []any{databaseSchema, databaseSchema}
 	if pageToken != "" {
 		var startAfter string
 		if err := pagination.UnmarshalPageToken(pageToken, &startAfter); err != nil {
@@ -106,13 +107,15 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	var res []*drivers.TableInfo
 	for rows.Next() {
 		var name string
-		var typ bool
-		if err := rows.Scan(&name, &typ); err != nil {
+		var typ, isDefaultDatabaseSchema bool
+		if err := rows.Scan(&name, &typ, &isDefaultDatabaseSchema); err != nil {
 			return nil, "", err
 		}
 		res = append(res, &drivers.TableInfo{
-			Name: name,
-			View: typ,
+			Name:                    name,
+			View:                    typ,
+			IsDefaultDatabase:       true,
+			IsDefaultDatabaseSchema: isDefaultDatabaseSchema,
 		})
 	}
 

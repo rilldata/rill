@@ -73,8 +73,9 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	q := `
 	SELECT
 		table_name,
-		table_type = 'VIEW' AS is_view
-	FROM information_schema.tables 
+		table_type = 'VIEW' AS is_view,
+		current_schema() = $1 AS is_default_database_schema
+	FROM information_schema.tables
 	WHERE table_schema = $1
 	`
 	var args []any
@@ -110,14 +111,16 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 
 	var res []*drivers.TableInfo
 	var name string
-	var isView bool
+	var isView, isDefaultDatabaseSchema bool
 	for rows.Next() {
-		if err := rows.Scan(&name, &isView); err != nil {
+		if err := rows.Scan(&name, &isView, &isDefaultDatabaseSchema); err != nil {
 			return nil, "", err
 		}
 		res = append(res, &drivers.TableInfo{
-			Name: name,
-			View: isView,
+			Name:                    name,
+			View:                    isView,
+			IsDefaultDatabase:       true,
+			IsDefaultDatabaseSchema: isDefaultDatabaseSchema,
 		})
 	}
 	next := ""

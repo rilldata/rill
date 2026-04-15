@@ -54,7 +54,9 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 		q = `
         SELECT
             t.table_name AS table_name,
-            t.table_type = 'VIEW' AS view
+            t.table_type = 'VIEW' AS view,
+            t.table_catalog = current_database() AS is_default_database,
+            t.table_schema = current_schema() AS is_default_database_schema
         FROM information_schema.tables t
         WHERE t.table_catalog = ? AND t.table_schema = ?
         `
@@ -74,7 +76,9 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 			t.table_name,
 			CASE WHEN a.attached_table IS NOT NULL THEN FALSE
 				ELSE (t.table_type = 'VIEW')
-			END AS view
+			END AS view,
+			TRUE AS is_default_database,
+			TRUE AS is_default_database_schema
 		FROM information_schema.tables t
 		LEFT JOIN attached a
 			ON t.table_name = a.attached_table
@@ -111,12 +115,17 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 
 	var res []*drivers.TableInfo
 	var name string
-	var view bool
+	var view, isDefaultDatabase, isDefaultDatabaseSchema bool
 	for rows.Next() {
-		if err := rows.Scan(&name, &view); err != nil {
+		if err := rows.Scan(&name, &view, &isDefaultDatabase, &isDefaultDatabaseSchema); err != nil {
 			return nil, "", err
 		}
-		res = append(res, &drivers.TableInfo{Name: name, View: view})
+		res = append(res, &drivers.TableInfo{
+			Name:                    name,
+			View:                    view,
+			IsDefaultDatabase:       isDefaultDatabase,
+			IsDefaultDatabaseSchema: isDefaultDatabaseSchema,
+		})
 	}
 	if err := rows.Err(); err != nil {
 		return nil, "", err

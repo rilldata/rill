@@ -102,8 +102,10 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 			continue
 		}
 		res = append(res, &drivers.TableInfo{
-			Name: *row.Data[0].VarCharValue,
-			View: strings.EqualFold(*row.Data[1].VarCharValue, "VIEW"),
+			Name:                    *row.Data[0].VarCharValue,
+			View:                    strings.EqualFold(*row.Data[1].VarCharValue, "VIEW"),
+			IsDefaultDatabase:       false,
+			IsDefaultDatabaseSchema: false,
 		})
 	}
 	next := ""

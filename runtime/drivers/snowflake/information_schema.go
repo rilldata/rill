@@ -79,6 +79,15 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 func (c *connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
 	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 
+	db, err := c.getDB(ctx)
+	if err != nil {
+		return nil, "", err
+	}
+	curDB, curSchema, err := getCurrentDatabaseAndSchema(ctx, db.DB)
+	if err != nil {
+		return nil, "", err
+	}
+
 	q := fmt.Sprintf(`
 		SELECT
 			table_name,
@@ -105,10 +114,6 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 		args = append(args, limit+1)
 	}
 
-	db, err := c.getDB(ctx)
-	if err != nil {
-		return nil, "", err
-	}
 	rows, err := db.QueryxContext(ctx, q, args...)
 	if err != nil {
 		return nil, "", err
@@ -123,8 +128,10 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 			return nil, "", err
 		}
 		res = append(res, &drivers.TableInfo{
-			Name: name,
-			View: view,
+			Name:                    name,
+			View:                    view,
+			IsDefaultDatabase:       strings.EqualFold(database, curDB),
+			IsDefaultDatabaseSchema: strings.EqualFold(databaseSchema, curSchema),
 		})
 	}
 	if err := rows.Err(); err != nil {

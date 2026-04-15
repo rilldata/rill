@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -346,8 +347,10 @@ func (i *informationSchemaImpl) ListTables(ctx context.Context, database, databa
 		}
 
 		tables = append(tables, &drivers.TableInfo{
-			Name: tableName,
-			View: isView,
+			Name:                    tableName,
+			View:                    isView,
+			IsDefaultDatabase:       strings.EqualFold(database, i.c.configProp.Catalog),
+			IsDefaultDatabaseSchema: strings.EqualFold(databaseSchema, i.c.configProp.Database),
 		})
 	}
 

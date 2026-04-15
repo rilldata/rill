@@ -126,8 +126,9 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 			return nil, "", fmt.Errorf("unexpected type for view field")
 		}
 		res = append(res, &drivers.TableInfo{
-			Name: nameField.Value,
-			View: viewField.Value,
+			Name:              nameField.Value,
+			View:              viewField.Value,
+			IsDefaultDatabase: strings.EqualFold(database, c.config.Database),
 		})
 	}
 	next := ""

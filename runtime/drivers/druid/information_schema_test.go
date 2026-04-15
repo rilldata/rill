@@ -211,6 +211,8 @@ func testInformationSchemaListTables(t *testing.T, infoSchema drivers.Informatio
 	// Check tables against expected, preserving order
 	for i, tbl := range tables {
 		require.Equal(t, expected[i].Name, tbl.Name)
+		require.True(t, tbl.IsDefaultDatabase)
+		require.True(t, tbl.IsDefaultDatabaseSchema)
 	}
 }
 

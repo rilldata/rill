@@ -28,8 +28,15 @@ type DatabaseSchemaInfo struct {
 
 // TableInfo represents a table in an information schema.
 type TableInfo struct {
-	Name string
-	View bool
+	Name                    string
+	View                    bool
+	Database                string
+	DatabaseSchema          string
+	IsDefaultDatabase       bool
+	IsDefaultDatabaseSchema bool
+
+	PhysicalSizeBytes int64
+	DDL               string
 }
 
 type TableMetadata struct {
@@ -59,13 +66,15 @@ func AllFromInformationSchema(ctx context.Context, like string, pageSize uint32,
 		}
 		for _, t := range ts {
 			table := &OlapTable{
-				Database:          schema.Database,
-				DatabaseSchema:    schema.DatabaseSchema,
-				Name:              t.Name,
-				View:              t.View,
-				Schema:            nil,
-				UnsupportedCols:   nil,
-				PhysicalSizeBytes: 0,
+				Database:                schema.Database,
+				DatabaseSchema:          schema.DatabaseSchema,
+				IsDefaultDatabase:       t.IsDefaultDatabase,
+				IsDefaultDatabaseSchema: t.IsDefaultDatabaseSchema,
+				Name:                    t.Name,
+				View:                    t.View,
+				Schema:                  nil,
+				UnsupportedCols:         nil,
+				PhysicalSizeBytes:       0,
 			}
 			tables = append(tables, table)
 		}

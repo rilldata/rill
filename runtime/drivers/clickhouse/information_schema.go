@@ -94,7 +94,8 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	q := `
 	SELECT
 		name AS table_name,
-		CASE WHEN match(engine, 'View') THEN true ELSE false END AS view
+		CASE WHEN match(engine, 'View') THEN true ELSE false END AS view,
+		database = currentDatabase() AS is_default_database_schema
 	FROM system.tables
 	WHERE is_temporary = 0 AND database = ?
 	`
@@ -127,14 +128,16 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 
 	var res []*drivers.TableInfo
 	var name string
-	var view bool
+	var view, isDefaultDatabaseSchema bool
 	for rows.Next() {
-		if err := rows.Scan(&name, &view); err != nil {
+		if err := rows.Scan(&name, &view, &isDefaultDatabaseSchema); err != nil {
 			return nil, "", err
 		}
 		res = append(res, &drivers.TableInfo{
-			Name: name,
-			View: view,
+			Name:                    name,
+			View:                    view,
+			IsDefaultDatabase:       true,
+			IsDefaultDatabaseSchema: isDefaultDatabaseSchema,
 		})
 	}
 

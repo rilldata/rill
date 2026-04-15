@@ -183,6 +183,11 @@ func testInformationSchemaListTables(t *testing.T, infoSchema drivers.Informatio
 	require.Equal(t, "githubEvents", tables[7].Name)
 	require.Equal(t, "starbucksStores", tables[8].Name)
 	require.Equal(t, "testUnnest", tables[9].Name)
+
+	for _, tbl := range tables {
+		require.True(t, tbl.IsDefaultDatabase)
+		require.True(t, tbl.IsDefaultDatabaseSchema)
+	}
 }
 
 func testInformationSchemaGetTable(t *testing.T, infoSchema drivers.InformationSchema) {

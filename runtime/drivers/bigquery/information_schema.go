@@ -111,8 +111,9 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 			return nil, "", fmt.Errorf("failed to iterate over tables: %w", err)
 		}
 		res = append(res, &drivers.TableInfo{
-			Name: row.TableName,
-			View: row.TableType == "VIEW",
+			Name:              row.TableName,
+			View:              row.TableType == "VIEW",
+			IsDefaultDatabase: database == c.config.ProjectID,
 		})
 	}
 

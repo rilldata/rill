@@ -62,8 +62,10 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 			return nil, "", err
 		}
 		res = append(res, &drivers.TableInfo{
-			Name: name,
-			View: typ,
+			Name:                    name,
+			View:                    typ,
+			IsDefaultDatabase:       true,
+			IsDefaultDatabaseSchema: true,
 		})
 	}
 
