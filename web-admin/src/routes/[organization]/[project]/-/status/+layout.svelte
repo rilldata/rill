@@ -21,9 +21,9 @@
       hasPermission: true,
     },
     {
-      label: "Deployments",
-      route: "/deployments",
-      hasPermission: !isEnterprise,
+      label: "Branches",
+      route: "/branches",
+      hasPermission: true,
     },
     {
       label: "Resources",

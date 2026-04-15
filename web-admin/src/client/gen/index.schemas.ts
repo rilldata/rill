@@ -1696,6 +1696,8 @@ export type AdminServiceGetDeploymentBody = {
   /** Optional ID for an external end user of the deployment. If set, the access token enables per-user state, such as AI chat history.
 Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state. */
   externalUserId?: string;
+  /** If true, superusers can access the deployment even without org/project membership. */
+  superuserForceAccess?: boolean;
 };
 
 /**
@@ -1914,6 +1916,8 @@ export type AdminServiceGetDeploymentCredentialsBody = {
   /** Optional ID for an external end user of the deployment. If set, the access token enables per-user state, such as AI chat history.
 Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state. */
   externalUserId?: string;
+  /** If true, superusers can access the deployment even without org/project membership. */
+  superuserForceAccess?: boolean;
 };
 
 export type AdminServiceListDeploymentsParams = {
@@ -1980,6 +1984,8 @@ Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, th
   state?: string;
   /** DEPRECATED: Additional parameters to set outright in the generated URL query. */
   query?: AdminServiceGetIFrameBodyQuery;
+  /** If true, superusers can access the project even without org/project membership. */
+  superuserForceAccess?: boolean;
 };
 
 export type AdminServiceListProjectInvitesParams = {
