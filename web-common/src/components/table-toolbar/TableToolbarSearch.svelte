@@ -13,19 +13,20 @@
     disabled?: boolean;
   } = $props();
 
-  let expanded = $state(searchText.length > 0);
+  let manualExpanded = $state(false);
+  let expanded = $derived(manualExpanded || searchText.length > 0);
   let inputRef: HTMLInputElement | undefined = $state();
 
   async function open() {
     if (disabled) return;
-    expanded = true;
+    manualExpanded = true;
     await tick();
     inputRef?.focus();
   }
 
   function close() {
     onSearchChange?.("");
-    expanded = false;
+    manualExpanded = false;
   }
 
   function handleInput(e: Event) {
