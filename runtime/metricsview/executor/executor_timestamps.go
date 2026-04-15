@@ -450,8 +450,9 @@ func (e *Executor) resolveBigQuery(ctx context.Context, timeExpr string) (metric
 		watermarkExpr = fmt.Sprintf("max(%s)", timeExpr)
 	}
 
+	// cast to timestamp so that date and datetime types can be scanned to time.Time
 	rangeSQL := fmt.Sprintf(
-		"SELECT min(%[1]s) as `min`, max(%[1]s) as `max`, %[2]s as `watermark` FROM %[3]s %[4]s",
+		"SELECT CAST(min(%[1]s) as TIMESTAMP) as `min`, CAST(max(%[1]s) as TIMESTAMP) as `max`, CAST(%[2]s as TIMESTAMP) as `watermark` FROM %[3]s %[4]s",
 		timeExpr,
 		watermarkExpr,
 		escapedTableName,
