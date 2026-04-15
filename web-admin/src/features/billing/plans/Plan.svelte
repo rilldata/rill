@@ -403,12 +403,6 @@
     @apply font-sans font-semibold text-lg leading-7 align-middle text-fg-tertiary;
   }
 
-  .estimate-cost-link {
-    @apply font-sans font-semibold text-lg leading-7 align-middle text-primary-500 no-underline cursor-pointer;
-  }
-  .estimate-cost-link:hover {
-    @apply text-primary-600 underline;
-  }
 
   .period-estimate {
     @apply flex flex-col items-center mt-4 pt-6 pb-4;
@@ -498,9 +492,6 @@
     line-height: 100%;
   }
 
-  .stat-divider {
-    @apply w-px h-4 bg-gray-200;
-  }
 
   .compare-toggle {
     @apply flex items-center justify-center gap-1.5 text-sm font-medium text-fg-secondary cursor-pointer bg-transparent border-t border-l-0 border-r-0 border-b-0;

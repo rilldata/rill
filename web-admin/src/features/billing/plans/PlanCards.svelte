@@ -1,6 +1,6 @@
 <script lang="ts">
   import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
-  import { fetchPaymentsPortalURL } from "@rilldata/web-admin/features/billing/plans/selectors";
+  import { goto } from "$app/navigation";
   import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types";
 
   type PlanTier = "trial" | "pro" | "team" | "enterprise";
@@ -31,11 +31,8 @@
     if (showUpgradeDialog) upgradeDialogOpen = true;
   });
 
-  async function handleEstimateCost() {
-    window.open(
-      await fetchPaymentsPortalURL(organization, window.location.href),
-      "_self",
-    );
+  function handleEstimateCost() {
+    goto(`/${organization}/-/settings/billing/estimate`);
   }
 
   function handleContactSales() {
