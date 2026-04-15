@@ -239,11 +239,11 @@ export class FileAndResourceWatcher {
   private async handleResourceEvent(res: V1WatchResourcesResponse) {
     // Log resource status to the browser console during e2e tests. Currently, our e2e tests make assertions
     // based on these logs. However, the e2e tests really should make UI-based assertions.
-    if (import.meta.env.VITE_PLAYWRIGHT_TEST) {
-      console.log(
-        `[${res.resource?.meta?.reconcileStatus}] ${res.name?.kind}/${res.name?.name}`,
-      );
-    }
+    // if (import.meta.env.VITE_PLAYWRIGHT_TEST) {
+    console.log(
+      `[${res.resource?.meta?.reconcileStatus} (${res.resource?.meta?.stateVersion})] ${res.name?.kind}/${res.name?.name}`,
+    );
+    // }
 
     // Type guards
     if (!res?.event || !res?.name || !res?.name?.name || !res?.name?.kind) {
@@ -300,8 +300,18 @@ export class FileAndResourceWatcher {
         if (
           res.resource.meta.stateVersion ===
           previousResource?.meta?.stateVersion
-        )
+        ) {
+          console.log(
+            `[${res.resource?.meta?.reconcileStatus} (${res.resource?.meta?.stateVersion})] ${res.name?.kind}/${res.name?.name}` +
+              ` Skipping invalidation (${previousResource?.meta?.stateVersion})`,
+          );
           return;
+        } else {
+          console.log(
+            `[${res.resource?.meta?.reconcileStatus} (${res.resource?.meta?.stateVersion})] ${res.name?.kind}/${res.name?.name}` +
+              ` Invalidating`,
+          );
+        }
 
         // Refetch `ListResources` queries
         void queryClient.refetchQueries({
