@@ -170,6 +170,7 @@
             class="flex flex-col gap-y-1.5 px-2 pb-1.5 pt-0.5"
             onclick={(e) => e.stopPropagation()}
           >
+            <!-- svelte-ignore a11y_autofocus -->
             <input
               class="branch-input"
               type="text"
@@ -215,6 +216,7 @@
           class="flex flex-col gap-y-1.5 px-2 pb-1.5 pt-0.5"
           onclick={(e) => e.stopPropagation()}
         >
+          <!-- svelte-ignore a11y_autofocus -->
           <input
             class="branch-input"
             type="text"
