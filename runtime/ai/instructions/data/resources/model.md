@@ -416,7 +416,7 @@ refresh:
 connector: snowflake
 sql: |
   SELECT * FROM staging.sales
-  {{ if dev }} event_time >= '2025-01-01' AND event_time < '2025-02-01' {{ end }}
+  {{ if dev }} WHERE event_time >= '2025-01-01' AND event_time < '2025-02-01' {{ end }}
 ```
 
 ### MySQL to DuckDB
