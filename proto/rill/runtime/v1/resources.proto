@@ -306,7 +306,7 @@ message MetricsViewSpec {
     string database_schema = 2;
     string table = 3;
     string model = 4;
-    // Time grain of the rollup. If unspecified, defaults to the base metrics view's smallest_time_grain during validation.
+    // Time grain of the rollup.
     TimeGrain time_grain = 5;
     // IANA timezone the rollup was aggregated in; defaults to UTC
     string time_zone = 6;

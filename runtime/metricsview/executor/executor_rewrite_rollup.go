@@ -13,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -152,6 +153,7 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 
 		eligible, reason, err := rollupEligible(rollup, qry, queryGrain, whereDims, e.metricsView.TimeDimension, e.metricsView.FirstDayOfWeek)
 		if err != nil {
+			candidateSpan.SetStatus(codes.Error, err.Error())
 			candidateSpan.End()
 			return nil, err
 		}
@@ -165,6 +167,7 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 			baseTSFetched = true
 			mn, mx, err := e.resolveBaseTimestamps(ctx)
 			if err != nil {
+				candidateSpan.SetStatus(codes.Error, err.Error())
 				candidateSpan.End()
 				return nil, err
 			}
@@ -173,8 +176,10 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 
 		rollupMin, rollupMax, err := e.resolveRollupTimestamps(ctx, rollup)
 		if err != nil {
+			err = fmt.Errorf("failed to fetch timestamps for rollup %q: %w", rollup.Table, err)
+			candidateSpan.SetStatus(codes.Error, err.Error())
 			candidateSpan.End()
-			return nil, fmt.Errorf("failed to fetch timestamps for rollup %q: %w", rollup.Table, err)
+			return nil, err
 		}
 
 		// Compute rollup effective end: max time + 1 grain period (the max bucket covers up to the next grain boundary)
@@ -182,8 +187,10 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 		if rollup.TimeZone != "" {
 			loc, err := time.LoadLocation(rollup.TimeZone)
 			if err != nil {
+				err = fmt.Errorf("invalid timezone %q for rollup %q: %w", rollup.TimeZone, rollup.Table, err)
+				candidateSpan.SetStatus(codes.Error, err.Error())
 				candidateSpan.End()
-				return nil, fmt.Errorf("invalid timezone %q for rollup %q: %w", rollup.TimeZone, rollup.Table, err)
+				return nil, err
 			}
 			rollupLoc = loc
 		}
