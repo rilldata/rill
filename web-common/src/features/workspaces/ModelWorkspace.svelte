@@ -23,6 +23,7 @@
   import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matcher";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import ReconcilingSpinner from "../entity-management/ReconcilingSpinner.svelte";
+  import ReconcileWarningPanel from "../entity-management/ReconcileWarningPanel.svelte";
   import { getUserFriendlyError } from "../models/error-utils";
 
   export let fileArtifact: FileArtifact;
@@ -137,6 +138,8 @@
         <ModelEditor {fileArtifact} bind:autoSave={$autoSave} onSave={save} />
       {/key}
     </WorkspaceEditorContainer>
+
+    <ReconcileWarningPanel {fileArtifact} />
 
     {#if $tableVisible}
       <WorkspaceTableContainer {filePath}>

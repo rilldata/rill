@@ -166,7 +166,7 @@
     submit(e);
   }}
   id={FormId}
-  class="flex flex-col h-full overflow-y-auto"
+  class="flex flex-col flex-1 min-h-0"
   aria-label="Import Table Form"
 >
   <div class="flex flex-col gap-2 px-6 pt-4" class:pb-3={!supportsModeling}>
@@ -183,8 +183,8 @@
   </div>
   {#if $form["mode"] === "table"}
     {#if analyzedConnector}
-      <div class="flex flex-row size-full overflow-hidden border-t">
-        <div class="flex-grow border-r pr-6 py-2">
+      <div class="flex flex-row flex-1 min-h-0 w-full overflow-hidden border-t">
+        <div class="flex flex-col flex-grow min-h-0 border-r pr-6 py-2">
           <DatabaseExplorer
             connector={analyzedConnector}
             store={connectorExplorerStore}
