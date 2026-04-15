@@ -4,7 +4,10 @@
     createAdminServiceGetBillingSubscription,
   } from "@rilldata/web-admin/client";
   import { isEnterprisePlan } from "@rilldata/web-admin/features/billing/plans/utils";
-  import { SLOT_RATE_PER_HR, HOURS_PER_MONTH } from "@rilldata/web-admin/features/projects/status/overview/slots-utils";
+  import {
+    SLOT_RATE_PER_HR,
+    HOURS_PER_MONTH,
+  } from "@rilldata/web-admin/features/projects/status/overview/slots-utils";
   import ManageSlotsModal from "@rilldata/web-admin/features/projects/status/overview/ManageSlotsModal.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -49,7 +52,11 @@
   function formatCycleDate(dateStr: string | undefined): string {
     if (!dateStr) return "";
     const d = new Date(dateStr);
-    return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+    return d.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   }
 
   // Slot types
@@ -73,7 +80,6 @@
   let totalMonthlyCost = $derived(
     (totalSlots * SLOT_RATE_PER_HR * HOURS_PER_MONTH).toFixed(2),
   );
-
 </script>
 
 {#if !isEnterprise}
@@ -202,7 +208,6 @@
         </div>
       </div>
     </div>
-
   </div>
 
   <ManageSlotsModal
@@ -334,5 +339,4 @@
   .detail-value-sm {
     @apply text-sm font-semibold text-fg-primary tabular-nums text-right;
   }
-
 </style>
