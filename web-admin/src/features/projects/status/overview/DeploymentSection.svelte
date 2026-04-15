@@ -209,42 +209,17 @@
           {/if}
         </span>
       </div>
-    {/if}
 
-    {#if version}
-      <div class="info-row">
-        <span class="info-label">Runtime</span>
-        <span class="info-value">{version}</span>
-      </div>
-    {/if}
-
-    <div class="info-row">
-      <span class="info-label">OLAP Engine</span>
-      <span class="info-value">{olapEngineLabel}</span>
-    </div>
-
-    <div class="info-row">
-      <span class="info-label">AI Connector</span>
-      <span class="info-value">
-        {#if aiConnector && aiConnector.name !== "admin"}
-          {formatConnectorName(aiConnector.type)}
-          <span class="text-fg-tertiary text-xs ml-1">({aiConnector.name})</span
-          >
-        {:else}
-          Rill Managed
-        {/if}
-      </span>
-    </div>
-
-    {#if dataSizeBytes !== undefined}
-      <div class="info-row">
-        <span class="info-label">{dataLabel}</span>
-        <span class="info-value">
-          <a href="/{organization}/{project}/-/status/tables" class="repo-link">
-            {formatMemorySize(dataSizeBytes)}
-          </a>
-        </span>
-      </div>
+      {#if dataSizeBytes !== undefined}
+        <div class="info-row">
+          <span class="info-label">{dataLabel}</span>
+          <span class="info-value">
+            <a href="/{organization}/{project}/-/status/tables" class="repo-link">
+              {formatMemorySize(dataSizeBytes)}
+            </a>
+          </span>
+        </div>
+      {/if}
     {/if}
   </div>
 </OverviewCard>
