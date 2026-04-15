@@ -1,5 +1,6 @@
 import type { CartesianChartSpec } from "@rilldata/web-common/features/components/charts/cartesian/CartesianChartProvider";
 import type {
+  ChartSpec,
   ChartType,
   ColorMapping,
 } from "@rilldata/web-common/features/components/charts/types";
@@ -36,8 +37,8 @@ export function createTDDCartesianSpec(
   selectedValues?: (string | null)[],
   dimensionData?: DimensionSeriesData[],
   showTimeDimensionDetail = true,
-): CartesianChartSpec {
-  const spec: CartesianChartSpec = {
+): CartesianChartSpec & Pick<ChartSpec, "vl_config"> {
+  const spec: CartesianChartSpec & Pick<ChartSpec, "vl_config"> = {
     metrics_view: metricsViewName,
     x: {
       field: timeDimension,
@@ -50,6 +51,14 @@ export function createTDDCartesianSpec(
       axisOrient: "right",
     },
     isInteractive: true,
+    // Fix vertical alignment across stacked TDD charts: force a fixed axis
+    // width so every measure's plot area is identical regardless of label width.
+    vl_config: JSON.stringify({
+      axisRight: {
+        minExtent: 50,
+        maxExtent: 50,
+      },
+    }),
   };
 
   const colorMapping = dimensionData

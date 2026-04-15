@@ -7,7 +7,7 @@ import { resolveCSSVariable } from "./util";
  * Add this to a layer's `params` array to enable brush/scrub selection.
  */
 export function createBrushParam(): SelectionParameter {
-  const scrubColor = resolveCSSVariable("var(--color-theme-100)");
+  const scrubColor = resolveCSSVariable("var(--color-theme-200)");
   return {
     name: "brush",
     select: {
