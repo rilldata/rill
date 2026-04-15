@@ -60,6 +60,7 @@ mock_users:
 	if skipOLAP {
 		return nil
 	}
+
 	// Create the connector YAML
 	var connectorYAML string
 	switch olap {

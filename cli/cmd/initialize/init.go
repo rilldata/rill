@@ -186,7 +186,7 @@ func InitCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Initialize empty project
-			if err := parser.InitEmpty(cmd.Context(), repo, instanceID, projectName, olap); err != nil {
+			if err := parser.InitEmpty(cmd.Context(), repo, instanceID, projectName, olap, false); err != nil {
 				return fmt.Errorf("failed to create empty project: %w", err)
 			}
 			ch.Printf("Created a new Rill project at %s\n", projectPath)
