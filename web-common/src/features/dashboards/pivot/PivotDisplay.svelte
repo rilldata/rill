@@ -71,7 +71,9 @@
 
   function enrichDescriptions(chips: PivotChipData[]): PivotChipData[] {
     return chips.map((chip) =>
-      chip.description ? chip : { ...chip, description: descriptionMap.get(chip.id) },
+      chip.description
+        ? chip
+        : { ...chip, description: descriptionMap.get(chip.id) },
     );
   }
 
