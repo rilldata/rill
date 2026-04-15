@@ -92,13 +92,18 @@
   $: try {
     if (typeof spec === "string" && spec !== "") {
       parsedSpec = JSON.parse(spec) as VisualizationSpec;
+      error = null;
+    } else {
+      parsedSpec = null;
+      error = null;
     }
   } catch (e: unknown) {
     error = JSON.stringify(e);
   }
 
-  // Check for any query errors
   $: queryError = $combinedResults.find((r) => r.error)?.error;
+
+  $: isLoading = $combinedResults.some((r) => r.isLoading);
 
   // Table data for the selected query
   $: rows = $combinedResults[selectedTable]?.data;
@@ -133,6 +138,8 @@
           <ComponentError {error} />
         {:else if queryError}
           <ComponentError error={queryError.message || "Error loading data"} />
+        {:else if isLoading || !rows}
+          <ReconcilingSpinner />
         {:else if rows && parsedSpec}
           <VegaLiteRenderer
             {renderer}
