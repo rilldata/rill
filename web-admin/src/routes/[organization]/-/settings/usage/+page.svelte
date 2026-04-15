@@ -1,8 +1,5 @@
 <script lang="ts">
-  import {
-    createAdminServiceGetBillingSubscription,
-    createAdminServiceListProjectsForOrganization,
-  } from "@rilldata/web-admin/client";
+  import { createAdminServiceListProjectsForOrganization } from "@rilldata/web-admin/client";
   import { getOrganizationUsageMetrics } from "@rilldata/web-admin/features/billing/plans/selectors";
   import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -13,12 +10,6 @@
   export let data: PageData;
 
   $: organization = data.organization;
-
-  // Billing subscription for cycle dates
-  $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
-  $: subscription = $subscriptionQuery?.data?.subscription;
-  $: cycleStart = subscription?.currentBillingCycleStartDate;
-  $: cycleEnd = subscription?.currentBillingCycleEndDate;
 
   // Projects
   $: projectsQuery =
@@ -50,12 +41,14 @@
   const RATE_PER_UNIT_HR = 0.15;
   const FREE_STORAGE_GB = 1;
 
-  // Hours elapsed in current billing cycle (placeholder until Orb API)
+  // Hours elapsed in current month (placeholder until Orb API)
   $: hoursElapsed = (() => {
-    if (!cycleStart) return 0;
-    const start = new Date(cycleStart).getTime();
-    const now = Date.now();
-    return Math.max(0, Math.floor((now - start) / (1000 * 60 * 60)));
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    return Math.max(
+      0,
+      Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60)),
+    );
   })();
 
   // Current period costs
