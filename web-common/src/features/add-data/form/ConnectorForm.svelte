@@ -16,7 +16,9 @@
   import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
   import { navigateToFile } from "@rilldata/web-common/features/workspaces/edit-routing";
   import { getConnectorDriverForSchema } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
+  import type { AddDataStateManager } from "@rilldata/web-common/features/add-data/manager/AddDataStateManager.svelte.ts";
 
+  export let stateManager: AddDataStateManager;
   export let step: CreateConnectorStep;
   export let onSubmit: (
     connectorName: string,
@@ -53,6 +55,7 @@
 
         onSubmit(connectorName, form.data);
       } catch (e) {
+        stateManager.fireErrorEvent(e.message);
         setSubmitError(form, e);
       }
     },

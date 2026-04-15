@@ -32,7 +32,9 @@ func (c *jwtClaims) Claims(instanceID string) *runtime.SecurityClaims {
 	for k, v := range c.Attrs {
 		attrs[k] = v
 	}
-	attrs["id"] = c.RegisteredClaims.Subject
+	if _, ok := attrs["id"]; !ok {
+		attrs["id"] = c.RegisteredClaims.Subject
+	}
 
 	var permissions []runtime.Permission
 	permissions = append(permissions, c.System...)
