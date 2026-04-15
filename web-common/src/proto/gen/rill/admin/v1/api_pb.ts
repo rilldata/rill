@@ -4071,6 +4071,11 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
   prodVersion?: string;
 
   /**
+   * @generated from field: optional int64 dev_slots = 16;
+   */
+  devSlots?: bigint;
+
+  /**
    * @generated from field: bool superuser_force_access = 14;
    */
   superuserForceAccess = false;
@@ -4097,6 +4102,7 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
     { no: 9, name: "new_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 10, name: "prod_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
     { no: 11, name: "prod_version", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 16, name: "dev_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
     { no: 14, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 

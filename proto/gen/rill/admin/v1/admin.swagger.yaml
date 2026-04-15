@@ -1196,6 +1196,9 @@ paths:
                 format: int64
               prodVersion:
                 type: string
+              devSlots:
+                type: string
+                format: int64
               superuserForceAccess:
                 type: boolean
       x-visibility: public

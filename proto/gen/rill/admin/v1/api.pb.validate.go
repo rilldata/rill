@@ -10164,6 +10164,10 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 		// no validation rules for ProdVersion
 	}
 
+	if m.DevSlots != nil {
+		// no validation rules for DevSlots
+	}
+
 	if len(errors) > 0 {
 		return UpdateProjectRequestMultiError(errors)
 	}

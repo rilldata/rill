@@ -2849,6 +2849,9 @@ paths:
                                     type: string
                                 description:
                                     type: string
+                                devSlots:
+                                    format: int64
+                                    type: string
                                 directoryName:
                                     type: string
                                 gitRemote:

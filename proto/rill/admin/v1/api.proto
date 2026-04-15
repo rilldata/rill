@@ -1845,6 +1845,7 @@ message UpdateProjectRequest {
   optional string new_name = 9;
   optional int64 prod_ttl_seconds = 10;
   optional string prod_version = 11;
+  optional int64 dev_slots = 16;
   bool superuser_force_access = 14;
 }
 

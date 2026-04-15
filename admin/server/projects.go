@@ -788,6 +788,9 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	if req.ProdSlots != nil {
 		observability.AddRequestAttributes(ctx, attribute.Int64("args.prod_slots", *req.ProdSlots))
 	}
+	if req.DevSlots != nil {
+		observability.AddRequestAttributes(ctx, attribute.Int64("args.dev_slots", *req.DevSlots))
+	}
 	if req.ProdTtlSeconds != nil {
 		observability.AddRequestAttributes(ctx, attribute.Int64("args.prod_ttl_seconds", *req.ProdTtlSeconds))
 	}
@@ -812,14 +815,21 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage project")
 	}
 
-	// Enforce slot quotas when ProdSlots is being changed (superusers bypass)
-	if req.ProdSlots != nil && !forceAccess {
+	// Enforce slot quotas when ProdSlots or DevSlots is being changed (superusers bypass)
+	if (req.ProdSlots != nil || req.DevSlots != nil) && !forceAccess {
 		org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
-		if org.QuotaSlotsPerDeployment >= 0 && int(*req.ProdSlots) > org.QuotaSlotsPerDeployment {
-			return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org can't provision more than %d slots per deployment; contact support for larger deployments", org.QuotaSlotsPerDeployment)
+		if req.ProdSlots != nil {
+			if org.QuotaSlotsPerDeployment >= 0 && int(*req.ProdSlots) > org.QuotaSlotsPerDeployment {
+				return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org can't provision more than %d slots per deployment; contact support for larger deployments", org.QuotaSlotsPerDeployment)
+			}
+		}
+		if req.DevSlots != nil {
+			if org.QuotaSlotsPerDeployment >= 0 && int(*req.DevSlots) > org.QuotaSlotsPerDeployment {
+				return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org can't provision more than %d slots per deployment; contact support for larger deployments", org.QuotaSlotsPerDeployment)
+			}
 		}
 		if org.QuotaSlotsTotal >= 0 {
 			usage, err := s.admin.DB.CountProjectsQuotaUsage(ctx, org.ID)
@@ -827,7 +837,13 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 				return nil, err
 			}
 			// Calculate the delta: new slots minus current slots
-			delta := int(*req.ProdSlots) - proj.ProdSlots
+			delta := 0
+			if req.ProdSlots != nil {
+				delta += int(*req.ProdSlots) - proj.ProdSlots
+			}
+			if req.DevSlots != nil {
+				delta += int(*req.DevSlots) - proj.DevSlots
+			}
 			if delta > 0 && usage.Slots+delta > org.QuotaSlotsTotal {
 				return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q is limited to %d total slots; contact support for larger deployments", org.Name, org.QuotaSlotsTotal)
 			}
@@ -928,7 +944,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		PrimaryDeploymentID:  proj.PrimaryDeploymentID,
 		ProdSlots:            int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots))),
 		ProdTTLSeconds:       prodTTLSeconds,
-		DevSlots:             proj.DevSlots,
+		DevSlots:             int(valOrDefault(req.DevSlots, int64(proj.DevSlots))),
 		DevTTLSeconds:        proj.DevTTLSeconds,
 		Provisioner:          valOrDefault(req.Provisioner, proj.Provisioner),
 		Annotations:          proj.Annotations,

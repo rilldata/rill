@@ -1884,6 +1884,7 @@ export type AdminServiceUpdateProjectBody = {
   newName?: string;
   prodTtlSeconds?: string;
   prodVersion?: string;
+  devSlots?: string;
   superuserForceAccess?: boolean;
 };
 
