@@ -19,7 +19,6 @@
   export let emptyIcon: any | null = null;
   export let emptyText = "No data available";
   export let columnLayout = `repeat(${columns.length}, 1fr)`;
-  export let rowPadding = "py-3";
   /** Pass a changing value (e.g. sortDirection) to clear column arrows when external sort changes */
   export let externalSortKey: string | undefined = undefined;
 
@@ -144,7 +143,7 @@
   {/each}
 
   {#each rows as row (row.id)}
-    <div class="row {rowPadding}">
+    <div class="row py-3">
       {#each row.getVisibleCells() as cell (cell.id)}
         <div
           class="pl-{cell.column.columnDef.meta?.marginLeft ||
@@ -157,12 +156,16 @@
       {/each}
     </div>
   {:else}
-    <div class="flex flex-col items-center gap-y-1 py-10">
-      {#if emptyIcon}
-        <svelte:component this={emptyIcon} size={32} color="#CBD5E1" />
-      {/if}
-      <span class="text-fg-secondary font-semibold text-sm">{emptyText}</span>
-    </div>
+    {#if $$slots.empty}
+      <slot name="empty" />
+    {:else}
+      <div class="flex flex-col items-center gap-y-1 py-10">
+        {#if emptyIcon}
+          <svelte:component this={emptyIcon} size={32} color="#CBD5E1" />
+        {/if}
+        <span class="text-fg-secondary font-semibold text-sm">{emptyText}</span>
+      </div>
+    {/if}
   {/each}
 </div>
 

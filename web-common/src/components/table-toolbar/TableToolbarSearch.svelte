@@ -13,7 +13,7 @@
     disabled?: boolean;
   } = $props();
 
-  let expanded = $state(false);
+  let expanded = $state(searchText.length > 0);
   let inputRef: HTMLInputElement | undefined = $state();
 
   async function open() {

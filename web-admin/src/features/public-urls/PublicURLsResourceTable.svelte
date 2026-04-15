@@ -94,9 +94,13 @@
     showSort={false}
   />
 
-  {#if filteredData.length === 0 && data.length === 0}
-    <div class="border rounded-lg bg-surface-background">
-      <div class="text-center py-16">
+  <BasicTable
+    data={filteredData}
+    {columns}
+    columnLayout="minmax(150px, 1.5fr) minmax(120px, 1fr) minmax(120px, 1.5fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) 56px"
+  >
+    <div slot="empty" class="text-center py-16">
+      {#if data.length === 0}
         <ResourceListEmptyState
           icon={ExternalLinkIcon}
           message="You don't have any public URLs yet"
@@ -105,19 +109,11 @@
             To create a public URL, click the Share button in a dashboard.
           </span>
         </ResourceListEmptyState>
-      </div>
+      {:else}
+        <span class="text-fg-secondary text-sm font-semibold">
+          No public URLs match your search
+        </span>
+      {/if}
     </div>
-  {:else if filteredData.length === 0}
-    <div class="border rounded-lg bg-surface-background">
-      <div class="text-center py-16 text-fg-secondary text-sm font-semibold">
-        No public URLs match your search
-      </div>
-    </div>
-  {:else}
-    <BasicTable
-      data={filteredData}
-      {columns}
-      columnLayout="minmax(150px, 1.5fr) minmax(120px, 1fr) minmax(120px, 1.5fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) 56px"
-    />
-  {/if}
+  </BasicTable>
 </div>
