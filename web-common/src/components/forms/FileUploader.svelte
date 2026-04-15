@@ -1,12 +1,21 @@
 <script lang="ts">
-  import { AlertCircleIcon, FileText, Upload, X } from "lucide-svelte";
+  import {
+    AlertCircleIcon,
+    AlertTriangleIcon,
+    FileText,
+    Upload,
+    X,
+  } from "lucide-svelte";
+  import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size.ts";
 
   export let files: FileList | undefined;
   export let error: string | Record<string | number, string[]> | undefined =
     undefined;
   export let multiple: boolean = false;
   export let accept: string | undefined = undefined;
-  export let hint: string = "SVG, PNG, JPG or PDF (max. 10 MB)";
+  export let hint: string | undefined = undefined;
+  export let fileSizeLimit: number | undefined = undefined;
+  export let fileSizeSoftLimit: boolean = false;
 
   let fileInput: HTMLInputElement;
   let dragOver = false;
@@ -18,13 +27,22 @@
     .map((e, i) => (files?.[i] && e ? `${files[i].name}:${e}` : ""))
     .filter(Boolean);
 
+  $: fileSizeLimitMessages = fileSizeLimit
+    ? Array.from(files ?? [])
+        .filter((f) => f.size > fileSizeLimit!)
+        .map(
+          (f) =>
+            // Do not show the file name if it's a single file upload.
+            `${multiple ? f.name + ":" : "File"} exceeds the maximum size of ${formatMemorySize(fileSizeLimit!)}`,
+        )
+    : [];
+
+  // Only add the file size limit message to warnings. Errors should be tracked through superforms.
+  $: warningMessages = fileSizeSoftLimit ? fileSizeLimitMessages : [];
+
   $: selectedFile = files?.[0];
   $: hasError = errorMessages.length > 0;
-
-  function formatFileSize(bytes: number): string {
-    if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  }
+  $: hasWarning = warningMessages.length > 0;
 
   function clearFiles() {
     if (fileInput) fileInput.value = "";
@@ -40,8 +58,16 @@
 
 {#if selectedFile}
   <div class="file-wrapper">
-    <div class="file-row" class:has-error={hasError}>
-      <div class="file-icon" class:has-error={hasError}>
+    <div
+      class="file-row"
+      class:has-error={hasError}
+      class:has-warning={hasWarning && !hasError}
+    >
+      <div
+        class="file-icon"
+        class:has-error={hasError}
+        class:has-warning={hasWarning && !hasError}
+      >
         <FileText
           size={24}
           class={hasError ? "text-destructive" : "text-icon-default"}
@@ -50,8 +76,12 @@
       </div>
       <div class="file-info">
         <span class="file-name">{selectedFile.name}</span>
-        <span class="file-size" class:has-error={hasError}>
-          {formatFileSize(selectedFile.size)}
+        <span
+          class="file-size"
+          class:has-error={hasError}
+          class:has-warning={hasWarning && !hasError}
+        >
+          {formatMemorySize(selectedFile.size)}
         </span>
       </div>
       <button
@@ -64,9 +94,17 @@
       </button>
     </div>
     {#if hasError}
-      {#each errorMessages as message}
+      {#each errorMessages as message (message)}
         <div class="error-message">
           <AlertCircleIcon size={12} class="shrink-0" />
+          <span>{message}</span>
+        </div>
+      {/each}
+    {/if}
+    {#if hasWarning}
+      {#each warningMessages as message (message)}
+        <div class="warning-message">
+          <AlertTriangleIcon size={12} class="shrink-0" />
           <span>{message}</span>
         </div>
       {/each}
@@ -106,7 +144,7 @@
           <span class="upload-cta">Click to upload</span>
           <span class="upload-drag"> or drag and drop</span>
         </p>
-        <p class="upload-hint">{hint}</p>
+        {#if hint}<p class="upload-hint">{hint}</p>{/if}
       </div>
     </div>
   </button>
@@ -205,5 +243,21 @@
 
   .error-message {
     @apply flex items-center gap-1.5 text-xs text-destructive;
+  }
+
+  .file-row.has-warning {
+    @apply bg-yellow-50 border-yellow-400;
+  }
+
+  .file-icon.has-warning {
+    @apply bg-yellow-200;
+  }
+
+  .file-size.has-warning {
+    @apply text-amber-600;
+  }
+
+  .warning-message {
+    @apply flex items-center gap-1.5 text-xs text-amber-600;
   }
 </style>

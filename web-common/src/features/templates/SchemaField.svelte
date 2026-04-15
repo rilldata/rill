@@ -10,7 +10,6 @@
   import { normalizeErrors } from "./error-utils";
   import { getFileAccept } from "./file-encoding";
   import type { JSONSchemaField } from "./schemas/types";
-  import FileInput from "@rilldata/web-common/components/forms/FileInput.svelte";
   import FileUploader from "@rilldata/web-common/components/forms/FileUploader.svelte";
 
   export let id: string;
@@ -49,7 +48,14 @@
       accept={getFileAccept(prop)}
     />
   {:else}
-    <FileUploader bind:files={value} accept={getFileAccept(prop)} />
+    <FileUploader
+      bind:files={value}
+      error={errors}
+      accept={getFileAccept(prop)}
+      hint={prop["x-hint"]}
+      fileSizeLimit={prop["x-file-size-limit"]}
+      fileSizeSoftLimit={prop["x-file-size-soft-limit"]}
+    />
   {/if}
 {:else if prop["x-display"] === "toggle" && prop.type === "boolean"}
   <div class="flex items-center justify-between gap-3">

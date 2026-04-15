@@ -3,6 +3,10 @@ import {
   PossibleFileExtensions,
   PossibleZipExtensions,
 } from "@rilldata/web-common/features/sources/modal/possible-file-extensions.ts";
+import {
+  UploadFileSizeLimitInBytes,
+  UploadSizeExceededIsWarning,
+} from "@rilldata/web-common/features/sources/upload-utils.ts";
 
 export const localFileSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
@@ -19,6 +23,9 @@ export const localFileSchema: MultiStepFormSchema = {
         ...PossibleZipExtensions,
       ].join(","),
       "x-step": "source",
+      "x-hint": "CSV, TSV, Parquet, TXT or JSON",
+      "x-file-size-limit": UploadFileSizeLimitInBytes,
+      "x-file-size-soft-limit": UploadSizeExceededIsWarning,
     },
   },
   required: ["file"],
