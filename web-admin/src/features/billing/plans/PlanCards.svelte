@@ -131,7 +131,9 @@
     <div class="plan-col">
       <h3 class="plan-name">Pro</h3>
       <p class="plan-pricing-main">Usage based pricing</p>
-      <p class="plan-pricing-sub">$0.15/slot/hr · $1/GB storage/mo</p>
+      <button class="estimate-cost-link" onclick={handleEstimateCost}>
+        Estimate your cost →
+      </button>
 
       <ul class="feature-list">
         {#each proFeatures as feature}
@@ -150,8 +152,8 @@
       {#if currentPlan === "pro"}
         <button class="col-btn current-btn" disabled>Current plan</button>
       {:else}
-        <button class="col-btn action-btn" onclick={handleEstimateCost}>
-          Estimate your cost
+        <button class="col-btn primary-btn" onclick={handleEstimateCost}>
+          Subscribe to Pro
         </button>
       {/if}
     </div>
@@ -224,6 +226,13 @@
     @apply text-sm text-fg-tertiary mt-0.5 mb-4;
   }
 
+  .estimate-cost-link {
+    @apply font-sans font-medium text-xs leading-4 align-middle text-primary-500 cursor-pointer mt-0.5 mb-4 block bg-transparent border-none p-0 text-left;
+  }
+  .estimate-cost-link:hover {
+    @apply text-primary-600 underline;
+  }
+
   .feature-list {
     @apply flex flex-col gap-2.5 pt-4 border-t list-none p-0 m-0 flex-1;
   }
@@ -237,7 +246,7 @@
   }
 
   .col-btn {
-    @apply w-full py-2.5 px-4 text-sm font-medium rounded-md cursor-pointer mt-6;
+    @apply w-full py-2.5 px-4 text-sm font-medium rounded-none cursor-pointer mt-6;
   }
 
   .current-btn {
@@ -250,5 +259,13 @@
 
   .action-btn:hover {
     @apply bg-surface-subtle;
+  }
+
+  .primary-btn {
+    @apply text-white bg-primary-500 border-none;
+  }
+
+  .primary-btn:hover {
+    @apply bg-primary-600;
   }
 </style>

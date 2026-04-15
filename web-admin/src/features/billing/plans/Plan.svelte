@@ -14,6 +14,9 @@
   } from "@rilldata/web-admin/features/billing/plans/utils";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
   import PlanCards from "@rilldata/web-admin/features/billing/plans/PlanCards.svelte";
   import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
   import { fetchPaymentsPortalURL } from "@rilldata/web-admin/features/billing/plans/selectors";
@@ -112,6 +115,46 @@
     $usageMetrics?.data?.reduce((s, m) => s + m.size, 0) ?? 0,
   );
 
+  // Est. monthly cost: $0.15/slot/hr × 730 hrs/mo
+  const fmtCost = (slots: number) =>
+    (slots * 0.15 * 730).toLocaleString(undefined, {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+    });
+  let prodCost = $derived(fmtCost(prodSlots));
+  let devCost = $derived(fmtCost(devSlots));
+
+  // Storage cost: $1/GB/mo
+  let storageCost = $derived(
+    (totalStorage / 1e9).toLocaleString(undefined, {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+    }),
+  );
+
+  // Total period estimate
+  let totalEstimate = $derived(
+    (totalSlots * 0.15 * 730 + totalStorage / 1e9).toLocaleString(undefined, {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+    }),
+  );
+
+  // Billing cycle
+  let cycleStart = $derived(subscription?.currentBillingCycleStartDate);
+  let cycleEnd = $derived(subscription?.currentBillingCycleEndDate);
+  function formatCycleDate(dateStr: string | undefined): string {
+    if (!dateStr) return "";
+    return new Date(dateStr).toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  }
+
   // Compare plans
   let comparePlansOpen = $state(false);
   let showComparePlans = $derived(currentPlan !== "enterprise");
@@ -143,26 +186,24 @@
       <div class="flex items-center gap-3">
         {#if currentPlan === "enterprise"}
           <span class="plan-badge enterprise">Enterprise</span>
-          <span class="text-sm text-fg-secondary"
-            >Custom contract · Fully managed</span
-          >
+          <span class="plan-description">Custom contract · Fully managed</span>
         {:else if currentPlan === "trial"}
           <span class="plan-badge trial">Free Trial</span>
           {#if isTrialExpired}
-            <span class="text-sm text-fg-secondary"
+            <span class="plan-description"
               >Trial expired · Projects hibernated</span
             >
           {:else}
-            <span class="text-sm text-fg-secondary">30 day free trial</span>
+            <span class="plan-description">30 day free trial</span>
           {/if}
         {:else if currentPlan === "pro"}
           <span class="plan-badge pro">Pro</span>
-          <span class="text-sm text-fg-secondary"
-            >Usage based pricing · $0.15/slot/hr</span
+          <span class="plan-description"
+            >Usage based pricing. $0.15/unit/hr · $1/GB storage/mo</span
           >
         {:else if currentPlan === "team"}
           <span class="plan-badge team">Team (Legacy)</span>
-          <span class="text-sm text-fg-secondary">$250/mo flat + storage</span>
+          <span class="plan-description">$250/mo flat + storage</span>
         {/if}
       </div>
 
@@ -179,6 +220,14 @@
             Upgrade to Enterprise
           </button>
         {/if}
+        <Tooltip location="left" alignment="middle" distance={8}>
+          <span class="text-fg-muted flex">
+            <InfoCircle size="16px" />
+          </span>
+          <TooltipContent maxWidth="240px" slot="tooltip-content">
+            $0.15/unit/hr · $1/GB storage/mo. Cancel anytime.
+          </TooltipContent>
+        </Tooltip>
       </div>
     </div>
 
@@ -193,15 +242,15 @@
       <div class="trial-section">
         <div class="flex justify-between mb-1">
           <div>
-            <span class="text-xs text-fg-tertiary">Days used</span>
-            <p class="text-2xl font-light text-fg-secondary">
+            <span class="trial-label">Days used</span>
+            <p class="trial-number-used">
               {trialDaysUsed}
             </p>
           </div>
           <div class="text-right">
-            <span class="text-xs text-fg-tertiary">Days remaining</span>
+            <span class="trial-label">Days remaining</span>
             <p
-              class="text-2xl font-light"
+              class="trial-number"
               class:text-green-600={trialDaysRemaining > 7}
               class:text-red-600={trialDaysRemaining <= 7}
             >
@@ -222,30 +271,35 @@
       </div>
     {/if}
 
+    {#if currentPlan !== "enterprise" && currentPlan !== "trial"}
+      <div class="period-estimate">
+        <span class="period-label">Current period estimate</span>
+        <span class="period-value">{totalEstimate}</span>
+        {#if cycleStart || cycleEnd}
+          <span class="period-cycle"
+            >{formatCycleDate(cycleStart)} – {formatCycleDate(cycleEnd)}</span
+          >
+        {/if}
+      </div>
+    {/if}
+
     {#if currentPlan !== "enterprise"}
-      <!-- Slots + storage row -->
+      <!-- Cost + usage row -->
       <div class="stats-row">
         <div class="flex items-center gap-4">
-          <div class="stat-item">
-            <span class="stat-value">{totalSlots}</span>
-            <span class="stat-label">Total slots</span>
+          <div class="stat-column">
+            <span class="stat-value">{prodCost}</span>
+            <span class="stat-label">{prodSlots} Prod Compute Units</span>
           </div>
-          <span class="stat-divider"></span>
-          <div class="stat-item">
-            <span class="stat-value">{prodSlots}</span>
-            <span class="stat-label">Prod slots</span>
+          <div class="stat-column">
+            <span class="stat-value">{devCost}</span>
+            <span class="stat-label">{devSlots} Dev Compute Units</span>
           </div>
-          <span class="stat-divider"></span>
-          <div class="stat-item">
-            <span class="stat-value">{devSlots}</span>
-            <span class="stat-label">Dev slots</span>
-          </div>
-          <span class="stat-divider"></span>
-          <div class="stat-item">
-            <span class="stat-value"
-              >{totalStorage > 0 ? formatMemorySize(totalStorage) : "0 B"}</span
+          <div class="stat-column">
+            <span class="stat-value">{storageCost}</span>
+            <span class="stat-label"
+              >{totalStorage > 0 ? formatMemorySize(totalStorage) : "0 B"} Storage</span
             >
-            <span class="stat-label">Storage</span>
           </div>
         </div>
         <a
@@ -331,8 +385,6 @@
 
   .plan-badge.trial {
     @apply text-primary-600 bg-primary-50;
-    width: auto;
-    padding: 0 12px;
   }
 
   .plan-badge.pro {
@@ -341,12 +393,53 @@
 
   .plan-badge.team {
     @apply text-fg-secondary bg-surface-subtle;
-    width: auto;
-    padding: 0 12px;
   }
 
   .plan-badge.enterprise {
     @apply text-primary-600 bg-primary-50;
+  }
+
+  .plan-description {
+    @apply font-sans font-semibold text-lg leading-7 align-middle text-fg-tertiary;
+  }
+
+  .estimate-cost-link {
+    @apply font-sans font-semibold text-lg leading-7 align-middle text-primary-500 no-underline cursor-pointer;
+  }
+  .estimate-cost-link:hover {
+    @apply text-primary-600 underline;
+  }
+
+  .period-estimate {
+    @apply flex flex-col items-center mt-4 pt-6 pb-4;
+    gap: 8px;
+  }
+
+  .period-label {
+    @apply font-sans font-semibold text-xs text-fg-tertiary;
+    line-height: 100%;
+  }
+
+  .period-value {
+    @apply font-sans font-semibold text-4xl leading-10 text-fg-primary;
+  }
+
+  .period-cycle {
+    @apply font-sans font-medium text-xs text-fg-tertiary;
+    line-height: 100%;
+  }
+
+  .trial-label {
+    @apply font-sans font-semibold text-xs text-fg-tertiary;
+    line-height: 100%;
+  }
+
+  .trial-number-used {
+    @apply font-sans font-semibold text-2xl leading-8;
+  }
+
+  .trial-number {
+    @apply font-sans font-semibold text-4xl leading-10;
   }
 
   .subscribe-btn {
@@ -391,16 +484,18 @@
     @apply underline;
   }
 
-  .stat-item {
-    @apply flex items-center gap-1.5 text-sm text-fg-primary;
+  .stat-column {
+    @apply flex flex-col gap-1;
   }
 
   .stat-value {
-    @apply font-semibold;
+    @apply font-sans font-medium text-sm;
+    line-height: 100%;
   }
 
   .stat-label {
-    @apply text-fg-tertiary;
+    @apply font-sans font-medium text-xs text-fg-tertiary;
+    line-height: 100%;
   }
 
   .stat-divider {
