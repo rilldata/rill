@@ -2,13 +2,10 @@
   import {
     createAdminServiceGetProject,
     createAdminServiceGetBillingSubscription,
-    createAdminServiceListDeployments,
-    V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
   import { isEnterprisePlan } from "@rilldata/web-admin/features/billing/plans/utils";
-  import { getStatusDotClass, getStatusLabel } from "../display-utils";
-  import { SLOT_RATE_PER_HR, HOURS_PER_MONTH } from "../overview/slots-utils";
-  import ManageSlotsModal from "../overview/ManageSlotsModal.svelte";
+  import { SLOT_RATE_PER_HR, HOURS_PER_MONTH } from "@rilldata/web-admin/features/projects/status/overview/slots-utils";
+  import ManageSlotsModal from "@rilldata/web-admin/features/projects/status/overview/ManageSlotsModal.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
@@ -57,7 +54,7 @@
 
   // Slot types
   let prodSlots = $derived(currentSlots);
-  let devSlots = $derived(1); // TODO: wire to project data when dev slots are available
+  let devSlots = $derived(0); // TODO: wire to project data when dev slots are available
   let totalSlots = $derived(prodSlots + devSlots);
 
   // Cluster info (split into number + unit for display)
@@ -77,16 +74,6 @@
     (totalSlots * SLOT_RATE_PER_HR * HOURS_PER_MONTH).toFixed(2),
   );
 
-  // Dev deployments table
-  let deploymentsQuery = $derived(
-    createAdminServiceListDeployments(organization, project),
-  );
-  let primaryBranch = $derived(projectData?.primaryBranch ?? "main");
-  let devDeployments = $derived(
-    ($deploymentsQuery.data?.deployments ?? []).filter(
-      (d) => d.branch && d.branch !== primaryBranch,
-    ),
-  );
 </script>
 
 {#if !isEnterprise}
@@ -216,75 +203,6 @@
       </div>
     </div>
 
-    <!-- Development Details table -->
-    <div class="section-heading">
-      <h3 class="section-heading-text">Development details</h3>
-    </div>
-
-    <div class="dev-table-container">
-      <table class="dev-table">
-        <thead>
-          <tr>
-            <th>Branch</th>
-            <th>Author</th>
-            <th>Status</th>
-            <th>Units</th>
-            <th>Last updated</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {#if $deploymentsQuery.isLoading}
-            <tr>
-              <td colspan="6" class="table-empty">Loading...</td>
-            </tr>
-          {:else if devDeployments.length === 0}
-            <tr>
-              <td colspan="6" class="table-empty">No development deployments</td
-              >
-            </tr>
-          {:else}
-            {#each devDeployments as dep (dep.id)}
-              <tr>
-                <td class="branch-cell">
-                  <span class="branch-name">{dep.branch ?? "—"}</span>
-                </td>
-                <td class="text-fg-secondary">{dep.ownerUserId ?? "—"}</td>
-                <td>
-                  <span
-                    class="status-badge {getStatusDotClass(
-                      dep.status ??
-                        V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED,
-                    )}"
-                  >
-                    {getStatusLabel(
-                      dep.status ??
-                        V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED,
-                    )}
-                  </span>
-                </td>
-                <td class="tabular-nums">{devSlots}</td>
-                <td class="text-fg-secondary">
-                  {#if dep.updatedOn}
-                    {new Date(dep.updatedOn).toLocaleDateString(undefined, {
-                      month: "short",
-                      day: "numeric",
-                      hour: "numeric",
-                      minute: "numeric",
-                    })}
-                  {:else}
-                    —
-                  {/if}
-                </td>
-                <td>
-                  <button class="overflow-btn">···</button>
-                </td>
-              </tr>
-            {/each}
-          {/if}
-        </tbody>
-      </table>
-    </div>
   </div>
 
   <ManageSlotsModal
@@ -417,52 +335,4 @@
     @apply text-sm font-semibold text-fg-primary tabular-nums text-right;
   }
 
-  /* Dev deployments table */
-  .dev-table-container {
-    @apply border border-border rounded-xl overflow-hidden bg-surface-background;
-  }
-  .dev-table {
-    @apply w-full text-sm;
-  }
-  .dev-table thead {
-    @apply bg-surface-subtle;
-  }
-  .dev-table th {
-    @apply text-left text-xs font-semibold text-fg-secondary tracking-wide px-4 py-2.5;
-  }
-  .dev-table td {
-    @apply px-4 py-3 text-sm text-fg-primary border-t border-border;
-  }
-  .table-empty {
-    @apply text-center text-fg-tertiary py-8;
-  }
-  .branch-cell {
-    @apply font-medium;
-  }
-  .branch-name {
-    @apply font-mono text-xs;
-  }
-
-  /* Status badges */
-  .status-badge {
-    @apply text-xs px-2 py-0.5 rounded-full font-medium;
-  }
-  .status-badge.bg-green-500 {
-    @apply bg-green-100 text-green-700;
-  }
-  .status-badge.bg-yellow-500 {
-    @apply bg-yellow-100 text-yellow-700;
-  }
-  .status-badge.bg-red-500 {
-    @apply bg-red-100 text-red-700;
-  }
-  .status-badge.bg-gray-400 {
-    @apply bg-gray-100 text-gray-600;
-  }
-  .overflow-btn {
-    @apply bg-transparent border-none text-fg-tertiary cursor-pointer text-base px-1;
-  }
-  .overflow-btn:hover {
-    @apply text-fg-primary;
-  }
 </style>
