@@ -35,7 +35,8 @@ model: m1
 dimensions:
 - column: country
 measures:
-- expression: COUNT(*)
+- name: count
+  expression: COUNT(*)
 `,
 			// Metrics view
 			"mv2.yaml": `
@@ -45,7 +46,8 @@ model: m2
 dimensions:
 - column: state
 measures:
-- expression: COUNT(*)
+- name: count
+  expression: COUNT(*)
 `,
 			// Canvas
 			"c1.yaml": `
@@ -54,8 +56,10 @@ rows:
 - items:
   - kpi:
       metrics_view: mv1
+      measure: count
   - kpi:
       metrics_view: mv1
+      measure: count
       foo: "{{ .args.foo }}"
       bar: "{{ .env.bar }}"
   - kpi:
@@ -86,10 +90,11 @@ rows:
 
 	require.Len(t, res.ResolvedComponents, 3)
 	comp0Props := res.ResolvedComponents["c1--component-0-0"].GetComponent().State.ValidSpec.RendererProperties.AsMap()
-	require.Len(t, comp0Props, 1)
+	require.Len(t, comp0Props, 2)
 	require.Equal(t, "mv1", comp0Props["metrics_view"])
+	require.Equal(t, "count", comp0Props["measure"])
 	comp1Props := res.ResolvedComponents["c1--component-0-1"].GetComponent().State.ValidSpec.RendererProperties.AsMap()
-	require.Len(t, comp1Props, 3)
+	require.Len(t, comp1Props, 4)
 	require.Equal(t, "mv1", comp1Props["metrics_view"])
 	// Templates should NOT be resolved - canvas returns raw templates
 	require.Equal(t, "{{ .args.foo }}", comp1Props["foo"])
@@ -113,7 +118,8 @@ model: m1
 dimensions:
 - column: country
 measures:
-- expression: COUNT(*)
+- name: count
+  expression: COUNT(*)
 `,
 			"c_invalid.yaml": `
 type: canvas
@@ -121,6 +127,7 @@ rows:
 - items:
   - kpi:
       metrics_view: mv1
+      measure: count
   - kpi:
       metrics_sql: "INVALID SQL SYNTAX HERE"
   - kpi:
@@ -157,7 +164,8 @@ model: m1
 dimensions:
 - column: country
 measures:
-- expression: COUNT(*)
+- name: count
+  expression: COUNT(*)
 `,
 			"mv2.yaml": `
 type: metrics_view
@@ -166,7 +174,8 @@ model: m2
 dimensions:
 - column: country
 measures:
-- expression: COUNT(*)
+- name: count
+  expression: COUNT(*)
 `,
 			"c_templated.yaml": `
 type: canvas
@@ -247,7 +256,8 @@ model: m1
 dimensions:
 - column: country
 measures:
-- expression: COUNT(*)
+- name: count
+  expression: COUNT(*)
 `,
 			"c_duplicate.yaml": `
 type: canvas
@@ -255,8 +265,10 @@ rows:
 - items:
   - kpi:
       metrics_view: mv1
+      measure: count
   - kpi:
       metrics_view: mv1
+      measure: count
   - kpi:
       metrics_sql: "SELECT country FROM mv1"
 `,
@@ -410,6 +422,7 @@ rows:
 - items:
   - kpi:
       metrics_view: mv1
+      measure: count
 
 security:
   access: '{{ .user.admin }}'

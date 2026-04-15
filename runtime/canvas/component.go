@@ -223,9 +223,13 @@ func validateImage(props map[string]any) error {
 }
 
 // validateKPI validates properties for kpi.
+// kpi supports metrics_sql as an alternative to metrics_view; field validation is skipped in that case.
 func validateKPI(props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) error {
 	mvn, mv, err := requireMetricsView(props, metricsViews)
 	if err != nil {
+		if _, hasSQL := pathutil.GetPath(props, "metrics_sql"); hasSQL {
+			return nil
+		}
 		return err
 	}
 
