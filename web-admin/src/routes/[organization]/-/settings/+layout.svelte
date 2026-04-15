@@ -3,20 +3,24 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
-  import { isEnterprisePlan } from "@rilldata/web-admin/features/billing/plans/utils";
+  import {
+    isFreePlan,
+    isProPlan,
+    isTrialPlan,
+  } from "@rilldata/web-admin/features/billing/plans/utils";
   import type { PageData } from "./$types";
   import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
 
   export let data: PageData;
 
-  $: ({ subscription, neverSubscribed, billingPortalUrl } = data);
+  $: ({ subscription, neverSubscribed } = data);
 
   $: organization = $page.params.organization;
   $: basePage = `/${organization}/-/settings`;
-  $: onEnterprisePlan =
-    subscription?.plan?.name && isEnterprisePlan(subscription.plan.name);
+  $: planName = subscription?.plan?.name ?? "";
+  $: showUsage =
+    isFreePlan(planName) || isProPlan(planName) || isTrialPlan(planName);
   $: hideBillingSettings = neverSubscribed;
-  $: hideUsageSettings = onEnterprisePlan || !billingPortalUrl;
 
   $: navItems = [
     { label: "General", route: "", hasPermission: true },
@@ -28,7 +32,7 @@
     {
       label: "Usage",
       route: "/usage",
-      hasPermission: !hideBillingSettings && !hideUsageSettings,
+      hasPermission: showUsage,
     },
   ];
 </script>
