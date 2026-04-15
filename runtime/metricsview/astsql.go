@@ -62,7 +62,7 @@ func (b *sqlBuilder) writeSelectWithDisplayNames(n *SelectNode) error {
 		}
 		b.out.WriteString(b.ast.Dialect.EscapeIdentifier(f.Name))
 		b.out.WriteString(" AS ")
-		b.out.WriteString(b.ast.Dialect.EscapeIdentifier(displayName))
+		b.out.WriteString(b.ast.Dialect.EscapeAlias(displayName))
 	}
 
 	for i, f := range n.MeasureFields {
@@ -76,7 +76,7 @@ func (b *sqlBuilder) writeSelectWithDisplayNames(n *SelectNode) error {
 		}
 		b.out.WriteString(b.ast.Dialect.EscapeIdentifier(f.Name))
 		b.out.WriteString(" AS ")
-		b.out.WriteString(b.ast.Dialect.EscapeIdentifier(displayName))
+		b.out.WriteString(b.ast.Dialect.EscapeAlias(displayName))
 	}
 
 	b.out.WriteString(" FROM (")
@@ -111,7 +111,7 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 		b.out.WriteByte('(')
 		b.out.WriteString(f.Expr)
 		b.out.WriteString(") AS ")
-		b.out.WriteString(b.ast.Dialect.EscapeIdentifier(f.Name))
+		b.out.WriteString(b.ast.Dialect.EscapeAlias(f.Name))
 	}
 
 	for i, f := range n.MeasureFields {
@@ -130,7 +130,7 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 			b.out.WriteString(f.TreatNullAs)
 		}
 		b.out.WriteString(") AS ")
-		b.out.WriteString(b.ast.Dialect.EscapeIdentifier(f.Name))
+		b.out.WriteString(b.ast.Dialect.EscapeAlias(f.Name))
 	}
 
 	if n.FromTable == nil && n.FromSelect == nil {
@@ -229,7 +229,7 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 			if i > 0 {
 				b.out.WriteString(", ")
 			}
-			b.out.WriteString(b.ast.Dialect.OrderByExpression(f.Name, f.Desc))
+			b.out.WriteString(b.ast.Dialect.OrderByAliasExpression(f.Name, f.Desc))
 		}
 	}
 
@@ -275,8 +275,8 @@ func (b *sqlBuilder) writeJoin(joinType JoinType, baseSelect, joinSelect *Select
 		if i > 0 {
 			b.out.WriteString(" AND ")
 		}
-		lhs := b.ast.Dialect.EscapeMember(baseSelect.Alias, f.Name)
-		rhs := b.ast.Dialect.EscapeMember(joinSelect.Alias, f.Name)
+		lhs := b.ast.Dialect.EscapeMemberAlias(baseSelect.Alias, f.Name)
+		rhs := b.ast.Dialect.EscapeMemberAlias(joinSelect.Alias, f.Name)
 		b.out.WriteByte('(')
 		b.out.WriteString(b.ast.Dialect.JoinOnExpression(lhs, rhs))
 		b.out.WriteByte(')')

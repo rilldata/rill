@@ -11,9 +11,9 @@ import {
   createPositionEncoding,
 } from "@rilldata/web-common/features/components/charts/builder";
 import type { VisualizationSpec } from "svelte-vega";
-import type { Field } from "vega-lite/build/src/channeldef";
-import type { LayerSpec } from "vega-lite/build/src/spec/layer";
-import type { UnitSpec } from "vega-lite/build/src/spec/unit";
+import type { Field } from "vega-lite/types_unstable/channeldef.js";
+import type { LayerSpec } from "vega-lite/types_unstable/spec/layer.js";
+import type { UnitSpec } from "vega-lite/types_unstable/spec/unit.js";
 import type { CartesianChartSpec } from "../CartesianChartProvider";
 export function generateVLAreaChartSpec(
   config: CartesianChartSpec,
@@ -36,7 +36,9 @@ export function generateVLAreaChartSpec(
     data,
   );
 
-  spec.encoding = { x: createPositionEncoding(config.x, data) };
+  const xEncoding = createPositionEncoding(config.x, data);
+  xEncoding.scale = { ...(xEncoding.scale ?? {}), padding: 8 };
+  spec.encoding = { x: xEncoding };
 
   const inner: UnitSpec<Field>[] = [
     { mark: "area" },
@@ -60,6 +62,7 @@ export function generateVLAreaChartSpec(
       xSort: config.x?.sort,
       primaryColor: data.theme.primary,
       isDarkMode: data.isDarkMode,
+      isInteractive: config.isInteractive,
       pivot:
         xField && yField && colorField && multiValueTooltipChannel?.length
           ? { field: colorField, value: yField, groupby: [xField] }
@@ -72,5 +75,8 @@ export function generateVLAreaChartSpec(
   return {
     ...spec,
     ...(vegaConfig && { config: vegaConfig }),
+    ...(config.isInteractive && xField
+      ? { usermeta: { brushTemporalField: xField } }
+      : {}),
   };
 }

@@ -112,6 +112,9 @@
     --destructive: var(--color-red-600);
     --destructive-foreground: var(--color-red-50);
 
+    --kpi-positive: var(--fg-secondary);
+    --kpi-negative: var(--color-red-500);
+
     --popover: var(--white);
     --popover-accent: var(--surface-hover);
     --popover-foreground: var(--color-neutral-950);
@@ -350,6 +353,9 @@
       transparent
     );
     --destructive-foreground: var(--color-red-light-50);
+
+    --kpi-positive: var(--fg-secondary);
+    --kpi-negative: var(--color-red-500);
 
     --popover: var(--color-rill-gray-dark-400);
     --popover-accent: var(--surface-hover);

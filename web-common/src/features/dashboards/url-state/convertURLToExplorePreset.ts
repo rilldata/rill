@@ -213,6 +213,32 @@ export function convertURLToExplorePreset(
     }
   }
 
+  if (searchParams.has(ExploreStateURLParams.DynamicYAxisScale)) {
+    const raw = searchParams
+      .get(ExploreStateURLParams.DynamicYAxisScale)
+      ?.toLowerCase();
+    if (raw === "true" || raw === "1") {
+      preset.chartDynamicYAxis = true;
+    } else if (raw === "false" || raw === "0" || raw === "") {
+      preset.chartDynamicYAxis = false;
+    } else {
+      errors.push(getSingleFieldError("dynamic y-axis scale", raw ?? ""));
+    }
+  }
+
+  if (searchParams.has(ExploreStateURLParams.ForceLineChart)) {
+    const raw = searchParams
+      .get(ExploreStateURLParams.ForceLineChart)
+      ?.toLowerCase();
+    if (raw === "true" || raw === "1") {
+      preset.chartForceLine = true;
+    } else if (raw === "false" || raw === "0" || raw === "") {
+      preset.chartForceLine = false;
+    } else {
+      errors.push(getSingleFieldError("force line chart", raw ?? ""));
+    }
+  }
+
   return { preset, errors };
 }
 

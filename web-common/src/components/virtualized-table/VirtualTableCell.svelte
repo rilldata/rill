@@ -16,11 +16,11 @@
     | undefined;
 
   function handleMouseOver() {
-    cellInspectorStore.updateValue(value);
+    cellInspectorStore.updateValue(value, formattedValue);
   }
 
   function handleFocus() {
-    cellInspectorStore.updateValue(value);
+    cellInspectorStore.updateValue(value, formattedValue);
   }
 </script>
 

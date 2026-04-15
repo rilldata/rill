@@ -105,6 +105,15 @@
         : null,
     percent: comparisonPercChange,
   } as const;
+  $: isDeltaPositive =
+    computedValues.delta !== null && computedValues.delta > 0;
+  $: isDeltaNegative =
+    computedValues.delta !== null && computedValues.delta < 0;
+  $: comparisonDeltaColorClass = isDeltaPositive
+    ? "text-kpi-positive"
+    : isDeltaNegative
+      ? "text-kpi-negative"
+      : "text-fg-secondary";
 
   // Get value based on hover type
   function getValueForType(type: typeof hoveredValue) {
@@ -129,7 +138,13 @@
 
     const value = getValueForType(type);
     if (value !== undefined && value !== null) {
-      cellInspectorStore.updateValue(value.toString());
+      const formatted =
+        type === "percent" && computedValues.percent !== null
+          ? numberPartsToString(
+              formatMeasurePercentageDifference(computedValues.percent),
+            )
+          : (measureValueFormatterTooltip(value) ?? null);
+      cellInspectorStore.updateValue(value.toString(), formatted);
     }
   }
 
@@ -243,7 +258,7 @@
 
                 {#if comparisonOptions?.includes("delta")}
                   <span
-                    class="comparison-value"
+                    class="comparison-value {comparisonDeltaColorClass}"
                     class:ui-copy-disabled-faint={computedValues.delta === null}
                     class:italic={computedValues.delta === null}
                     class:text-sm={computedValues.delta === null}
@@ -255,7 +270,9 @@
                     onblur={handleLeaveOrBlur}
                   >
                     {#if computedValues.delta != null}
-                      {getFormattedDiff(computedValues.delta)}
+                      <span class={comparisonDeltaColorClass}
+                        >{getFormattedDiff(computedValues.delta)}</span
+                      >
                     {:else}
                       no change
                     {/if}
@@ -264,8 +281,7 @@
 
                 {#if comparisonOptions?.includes("percent_change") && computedValues.percent != null && !measureIsPercentage}
                   <span
-                    class="w-fit font-semibold text-fg-disabled"
-                    class:text-red-500={computedValues.percent < 0}
+                    class="w-fit font-semibold {comparisonDeltaColorClass}"
                     role="button"
                     tabindex="0"
                     onmouseover={() => handleHoverOrFocus("percent")}

@@ -11,7 +11,7 @@
   }
 </script>
 
-<div class="error-container">
+<div class="error-container" aria-label="Submission error">
   <div class="flex items-start gap-1 min-w-0">
     <div class="flex-shrink-0 flex items-start">
       <AlertCircleIcon size={22} class="text-red-600" />
