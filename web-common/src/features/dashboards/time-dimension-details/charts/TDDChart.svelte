@@ -9,7 +9,10 @@
   import type { ChartProvider } from "@rilldata/web-common/features/components/charts/types";
   import { THEME_STORE_CONTEXT_KEY } from "@rilldata/web-common/features/dashboards/ThemeProvider.svelte";
   import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import { chartHoverStore } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/hover-index";
+  import {
+    chartBrushStore,
+    chartHoverStore,
+  } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/hover-index";
   import type { DimensionSeriesData } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/types";
   import { MetricsViewSelectors } from "@rilldata/web-common/features/metrics-views/metrics-view-selectors";
   import type { Theme } from "@rilldata/web-common/features/themes/theme";
@@ -151,6 +154,10 @@
   $: hoveredTime = $chartHoverStore.time;
   $: hoveredDimensionValue = $chartHoverStore.dimensionValue;
 
+  // Brush sync: apply brush from sibling charts
+  $: externalBrushStartMs = $chartBrushStore.startMs;
+  $: externalBrushEndMs = $chartBrushStore.endMs;
+
   $: {
     if (chartView) {
       if (hoveredTime) {
@@ -170,6 +177,8 @@
   {themeMode}
   isCanvas={false}
   temporalField={timeDimension}
+  {externalBrushStartMs}
+  {externalBrushEndMs}
   onBrushEnd={onChartBrushEnd}
   onBrushClear={onChartBrushClear}
   onHover={onChartHover}

@@ -16,7 +16,7 @@
   import { onDestroy, onMount } from "svelte";
   import { createAnnotationsQuery } from "../annotations-selectors";
   import { adjustTimeInterval, localToTimeZoneOffset } from "../utils";
-  import { chartHoverStore, hoverIndex } from "./hover-index";
+  import { chartBrushStore, chartHoverStore, hoverIndex } from "./hover-index";
   import { createVisibilityObserver } from "./interactions";
   import MeasureChartBody from "./MeasureChartBody.svelte";
   import { ScrubController } from "./ScrubController";
@@ -79,6 +79,28 @@
 
   $: measureName = measure.name ?? "";
   $: height = showTimeDimensionDetail ? 245 : 145;
+
+  // Seed the shared brush store from the persisted scrub interval so TDD Vega
+  // charts can render the brush on mount, chart-type switch, or page refresh.
+  $: {
+    const isTdd = tddChartType !== TDDChart.DEFAULT;
+    const brushStoreEmpty = $chartBrushStore.startMs === undefined;
+    if (
+      isTdd &&
+      brushStoreEmpty &&
+      chartScrubInterval?.start &&
+      chartScrubInterval?.end
+    ) {
+      const systemTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const vegaStartMs = chartScrubInterval.start
+        .setZone(systemTimeZone, { keepLocalTime: true })
+        .toMillis();
+      const vegaEndMs = chartScrubInterval.end
+        .setZone(systemTimeZone, { keepLocalTime: true })
+        .toMillis();
+      chartBrushStore.set({ startMs: vegaStartMs, endMs: vegaEndMs });
+    }
+  }
 
   // Extract ISO strings for API calls (must be UTC for protobuf Timestamp parsing)
   $: timeStart = interval?.start?.toUTC().toISO() ?? undefined;
@@ -249,11 +271,18 @@
   }
 
   function handleTddBrushEnd(interval: { start: Date; end: Date }) {
+    // Write raw Vega epoch values to shared brush store for visual sync across
+    // sibling charts. These are unsnapped so drags don't progressively shrink.
+    chartBrushStore.set({
+      startMs: interval.start.getTime(),
+      endMs: interval.end.getTime(),
+    });
+
+    // Snap to grain boundaries for the dashboard store
     const { start, end } = adjustTimeInterval(interval, timeZone);
     let startDt = DateTime.fromJSDate(start, { zone: timeZone });
     let endDt = DateTime.fromJSDate(end, { zone: timeZone });
 
-    // Snap to grain boundaries: ceil start, floor end
     if (timeGranularity) {
       const unit = V1TimeGrainToDateTimeUnit[timeGranularity];
       const startFloor = startDt.startOf(unit);
@@ -270,6 +299,11 @@
       end: endDt,
       isScrubbing: false,
     });
+  }
+
+  function handleTddBrushClear() {
+    chartBrushStore.set({ startMs: undefined, endMs: undefined });
+    onScrubClear?.();
   }
 </script>
 
@@ -307,7 +341,7 @@
         {showTimeDimensionDetail}
         onChartHover={handleTddHover}
         onChartBrushEnd={handleTddBrushEnd}
-        onChartBrushClear={() => onScrubClear?.()}
+        onChartBrushClear={handleTddBrushClear}
       />
     </div>
   {:else if data.length > 0}
