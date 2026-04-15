@@ -355,6 +355,7 @@ function fromPivotProto(
       id: name,
       title: dim?.displayName || dim?.name || "Unknown",
       type: PivotChipType.Dimension,
+      description: dim?.description,
     };
   };
   const mapTimeDimension: (grain: TimeGrain) => PivotChipData = (
@@ -389,6 +390,7 @@ function fromPivotProto(
       id: name,
       title: mes?.displayName || mes?.name || "Unknown",
       type: PivotChipType.Measure,
+      description: mes?.description,
     };
   };
 
