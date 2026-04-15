@@ -2982,6 +2982,12 @@ definitions:
               secondary:
                 type: string
                 description: Secondary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+              kpi-positive:
+                type: string
+                description: Color for positive KPI delta values in light theme. Defaults to fg-secondary (gray).
+              kpi-negative:
+                type: string
+                description: Color for negative KPI delta values in light theme. Defaults to red.
               variables:
                 type: object
                 description: Custom CSS variables for light theme
@@ -2997,6 +3003,12 @@ definitions:
               secondary:
                 type: string
                 description: Secondary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+              kpi-positive:
+                type: string
+                description: Color for positive KPI delta values in dark theme. Defaults to fg-secondary (gray).
+              kpi-negative:
+                type: string
+                description: Color for negative KPI delta values in dark theme. Defaults to red.
               variables:
                 type: object
                 description: Custom CSS variables for dark theme
@@ -3303,6 +3315,12 @@ definitions:
           secondary:
             type: string
             description: Secondary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+          kpi-positive:
+            type: string
+            description: Color for positive KPI delta values in light theme. Defaults to fg-secondary (gray).
+          kpi-negative:
+            type: string
+            description: Color for negative KPI delta values in light theme. Defaults to red.
           variables:
             type: object
             description: Custom CSS variables for light theme
@@ -3318,6 +3336,12 @@ definitions:
           secondary:
             type: string
             description: Secondary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+          kpi-positive:
+            type: string
+            description: Color for positive KPI delta values in dark theme. Defaults to fg-secondary (gray).
+          kpi-negative:
+            type: string
+            description: Color for negative KPI delta values in dark theme. Defaults to red.
           variables:
             type: object
             description: Custom CSS variables for dark theme
