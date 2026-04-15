@@ -59,6 +59,7 @@
   const {
     alerts: alertsFlag,
     cloudEditing,
+    developerChat,
     dimensionSearch,
     dashboardChat,
     stickyDashboardState,
