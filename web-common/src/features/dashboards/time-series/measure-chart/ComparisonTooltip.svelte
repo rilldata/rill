@@ -10,10 +10,16 @@
 </script>
 
 <text class="text-outline text-[12px]" {x} {y}>
-  <tspan class="fill-theme-700 font-semibold">
+  <tspan
+    class="fill-theme-700 font-semibold"
+    style:font-style={tooltipCurrentValue === null ? "italic" : "normal"}
+  >
     {valueFormatter(tooltipCurrentValue)}
   </tspan>
-  <tspan class="fill-fg-muted">
+  <tspan
+    class="fill-fg-muted"
+    style:font-style={tooltipComparisonValue === null ? "italic" : "normal"}
+  >
     vs {valueFormatter(tooltipComparisonValue)}
   </tspan>
   {#if showDelta}

@@ -2505,6 +2505,10 @@ func (m *GetDeploymentRequest) validate(all bool) error {
 
 	// no validation rules for AccessTokenTtlSeconds
 
+	// no validation rules for ExternalUserId
+
+	// no validation rules for SuperuserForceAccess
+
 	switch v := m.For.(type) {
 	case *GetDeploymentRequest_UserId:
 		if v == nil {
@@ -6237,6 +6241,10 @@ func (m *GetDeploymentCredentialsRequest) validate(all bool) error {
 
 	// no validation rules for TtlSeconds
 
+	// no validation rules for ExternalUserId
+
+	// no validation rules for SuperuserForceAccess
+
 	switch v := m.For.(type) {
 	case *GetDeploymentCredentialsRequest_UserId:
 		if v == nil {
@@ -6593,6 +6601,8 @@ func (m *GetIFrameRequest) validate(all bool) error {
 
 	// no validation rules for TtlSeconds
 
+	// no validation rules for ExternalUserId
+
 	// no validation rules for Type
 
 	// no validation rules for Kind
@@ -6621,6 +6631,8 @@ func (m *GetIFrameRequest) validate(all bool) error {
 	// no validation rules for State
 
 	// no validation rules for Query
+
+	// no validation rules for SuperuserForceAccess
 
 	switch v := m.For.(type) {
 	case *GetIFrameRequest_UserId:

@@ -112,6 +112,7 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: deploymentId
+          description: ID of the deployment to get credentials for.
           in: path
           required: true
           type: string
@@ -124,12 +125,24 @@ paths:
               accessTokenTtlSeconds:
                 type: integer
                 format: int64
+                description: Optional TTL for the returned access token in seconds.
               userId:
                 type: string
+                description: If set, will use the attributes of the Rill user with this ID.
               userEmail:
                 type: string
+                description: If set, will generate attributes corresponding to a user with this email.
               attributes:
                 type: object
+                description: If set, will use the provided attributes outright.
+              externalUserId:
+                type: string
+                description: |-
+                  Optional ID for an external end user of the deployment. If set, the access token enables per-user state, such as AI chat history.
+                  Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state.
+              superuserForceAccess:
+                type: boolean
+                description: If true, superusers can access the deployment even without org/project membership.
   /v1/deployments/{deploymentId}/provision:
     post:
       summary: |-
@@ -1445,10 +1458,12 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: org
+          description: Org the deployment belongs to.
           in: path
           required: true
           type: string
         - name: project
+          description: Project the deployment belongs to.
           in: path
           required: true
           type: string
@@ -1460,15 +1475,28 @@ paths:
             properties:
               branch:
                 type: string
+                description: Optional branch for the deployment. If not set, defaults to the project's primary branch.
               ttlSeconds:
                 type: integer
                 format: int64
+                description: Optional TTL for the returned access token in seconds.
               userId:
                 type: string
+                description: If set, will use the attributes of the Rill user with this ID.
               userEmail:
                 type: string
+                description: If set, will generate attributes corresponding to a user with this email.
               attributes:
                 type: object
+                description: If set, will use the provided attributes outright.
+              externalUserId:
+                type: string
+                description: |-
+                  Optional ID for an external end user of the deployment. If set, the access token enables per-user state, such as AI chat history.
+                  Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state.
+              superuserForceAccess:
+                type: boolean
+                description: If true, superusers can access the deployment even without org/project membership.
   /v1/orgs/{org}/projects/{project}/deployments:
     get:
       summary: ListDeployments lists deployments for a project.
@@ -1605,13 +1633,18 @@ paths:
                 description: TTL for the iframe's access token. If not set, defaults to 24 hours.
               userId:
                 type: string
-                description: If set, will use the attributes of the user with this ID.
+                description: If set, will use the attributes of the Rill user with this ID.
               userEmail:
                 type: string
                 description: If set, will generate attributes corresponding to a user with this email.
               attributes:
                 type: object
                 description: If set, will use the provided attributes outright.
+              externalUserId:
+                type: string
+                description: |-
+                  Optional ID for the external end user of the iframe. If set, the access token enables per-user state, such as AI chat history.
+                  Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state.
               type:
                 type: string
                 description: Type of resource to embed. If not set, defaults to "rill.runtime.v1.Explore".
@@ -1638,6 +1671,9 @@ paths:
                 additionalProperties:
                   type: string
                 description: 'DEPRECATED: Additional parameters to set outright in the generated URL query.'
+              superuserForceAccess:
+                type: boolean
+                description: If true, superusers can access the project even without org/project membership.
             description: GetIFrameRequest is the request payload for AdminService.GetIFrame.
   /v1/orgs/{org}/projects/{project}/invites:
     get:
@@ -4709,6 +4745,8 @@ definitions:
       - BILLING_PLAN_TYPE_TEAM
       - BILLING_PLAN_TYPE_MANAGED
       - BILLING_PLAN_TYPE_ENTERPRISE
+      - BILLING_PLAN_TYPE_FREE
+      - BILLING_PLAN_TYPE_PRO
     default: BILLING_PLAN_TYPE_UNSPECIFIED
   v1Bookmark:
     type: object

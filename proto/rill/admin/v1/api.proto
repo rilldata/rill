@@ -1415,13 +1415,24 @@ message CreateDeploymentResponse {
 }
 
 message GetDeploymentRequest {
+  // ID of the deployment to get credentials for.
   string deployment_id = 1;
+  // Optional TTL for the returned access token in seconds.
   uint32 access_token_ttl_seconds = 2;
+  // User attributes to use for security policy evaluation.
   oneof for {
+    // If set, will use the attributes of the Rill user with this ID.
     string user_id = 3 [(validate.rules).string.min_len = 1];
+    // If set, will generate attributes corresponding to a user with this email.
     string user_email = 4 [(validate.rules).string.email = true];
+    // If set, will use the provided attributes outright.
     google.protobuf.Struct attributes = 5;
   }
+  // Optional ID for an external end user of the deployment. If set, the access token enables per-user state, such as AI chat history.
+  // Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state.
+  string external_user_id = 9;
+  // If true, superusers can access the deployment even without org/project membership.
+  bool superuser_force_access = 10;
 }
 
 message GetDeploymentResponse {
@@ -1609,15 +1620,28 @@ message SearchProjectUsersResponse {
 }
 
 message GetDeploymentCredentialsRequest {
+  // Org the deployment belongs to.
   string org = 1;
+  // Project the deployment belongs to.
   string project = 2;
+  // Optional branch for the deployment. If not set, defaults to the project's primary branch.
   string branch = 3;
+  // Optional TTL for the returned access token in seconds.
   uint32 ttl_seconds = 7;
+  // User attributes to use for security policy evaluation.
   oneof for {
+    // If set, will use the attributes of the Rill user with this ID.
     string user_id = 4;
+    // If set, will generate attributes corresponding to a user with this email.
     string user_email = 6 [(validate.rules).string.email = true];
+    // If set, will use the provided attributes outright.
     google.protobuf.Struct attributes = 5;
   }
+  // Optional ID for an external end user of the deployment. If set, the access token enables per-user state, such as AI chat history.
+  // Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state.
+  string external_user_id = 9;
+  // If true, superusers can access the deployment even without org/project membership.
+  bool superuser_force_access = 10;
 }
 
 message GetDeploymentCredentialsResponse {
@@ -1639,13 +1663,16 @@ message GetIFrameRequest {
   uint32 ttl_seconds = 6;
   // User attributes to use for security policy evaluation.
   oneof for {
-    // If set, will use the attributes of the user with this ID.
+    // If set, will use the attributes of the Rill user with this ID.
     string user_id = 9;
     // If set, will generate attributes corresponding to a user with this email.
     string user_email = 10 [(validate.rules).string.email = true];
     // If set, will use the provided attributes outright.
     google.protobuf.Struct attributes = 11;
   }
+  // Optional ID for the external end user of the iframe. If set, the access token enables per-user state, such as AI chat history.
+  // Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state.
+  string external_user_id = 16;
   // Type of resource to embed. If not set, defaults to "rill.runtime.v1.Explore".
   string type = 14;
   // Deprecated: Alias for `type`.
@@ -1662,6 +1689,8 @@ message GetIFrameRequest {
   string state = 7;
   // DEPRECATED: Additional parameters to set outright in the generated URL query.
   map<string, string> query = 8;
+  // If true, superusers can access the project even without org/project membership.
+  bool superuser_force_access = 17;
 }
 
 message GetIFrameResponse {
@@ -3504,6 +3533,8 @@ enum BillingPlanType {
   BILLING_PLAN_TYPE_TEAM = 2;
   BILLING_PLAN_TYPE_MANAGED = 3;
   BILLING_PLAN_TYPE_ENTERPRISE = 4;
+  BILLING_PLAN_TYPE_FREE = 5;
+  BILLING_PLAN_TYPE_PRO = 6;
 }
 
 message BillingPlan {

@@ -124,5 +124,8 @@ export function generateVLBarChartSpec(
   return {
     ...spec,
     ...(vegaConfig && { config: vegaConfig }),
+    ...(config.isInteractive && xField
+      ? { usermeta: { brushTemporalField: xField } }
+      : {}),
   };
 }
