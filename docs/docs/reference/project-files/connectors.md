@@ -323,7 +323,7 @@ _[string]_ - Refers to the driver type and must be driver `druid` _(required)_
 
 ### `dsn`
 
-_[string]_ - Data Source Name (DSN) for connecting to Druid _(required)_
+_[string]_ - Data Source Name (DSN) for connecting to Druid 
 
 ### `username`
 
@@ -776,7 +776,7 @@ _[string]_ - Refers to the driver type and must be driver `pinot` _(required)_
 
 ### `dsn`
 
-_[string]_ - DSN(Data Source Name) for the Pinot connection _(required)_
+_[string]_ - DSN(Data Source Name) for the Pinot connection 
 
 ### `username`
 
@@ -788,7 +788,7 @@ _[string]_ - Password for authenticating with Pinot
 
 ### `broker_host`
 
-_[string]_ - Hostname of the Pinot broker _(required)_
+_[string]_ - Hostname of the Pinot broker 
 
 ### `broker_port`
 
@@ -796,7 +796,7 @@ _[integer]_ - Port number for the Pinot broker
 
 ### `controller_host`
 
-_[string]_ - Hostname of the Pinot controller _(required)_
+_[string]_ - Hostname of the Pinot controller 
 
 ### `controller_port`
 
