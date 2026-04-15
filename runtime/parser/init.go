@@ -15,7 +15,7 @@ func IsInit(ctx context.Context, repo drivers.RepoStore, instanceID string) bool
 }
 
 // InitEmpty initializes an empty project
-func InitEmpty(ctx context.Context, repo drivers.RepoStore, instanceID, displayName, olap string) error {
+func InitEmpty(ctx context.Context, repo drivers.RepoStore, instanceID, displayName, olap string, skipOLAP bool) error {
 	// If display name doesn't start with a letter, quote it
 	if !isAlphabetic(displayName[0]) {
 		displayName = fmt.Sprintf("%q", displayName)
@@ -46,6 +46,20 @@ mock_users:
 		return err
 	}
 
+	gitignore, _ := repo.Get(ctx, ".gitignore")
+	if gitignore != "" {
+		gitignore += "\n"
+	}
+	gitignore += ".DS_Store\n\n# Rill\n.env\ntmp\n"
+
+	err = repo.Put(ctx, ".gitignore", strings.NewReader(gitignore))
+	if err != nil {
+		return err
+	}
+
+	if skipOLAP {
+		return nil
+	}
 	// Create the connector YAML
 	var connectorYAML string
 	switch olap {
@@ -73,18 +87,6 @@ driver: %s
 	if err != nil {
 		return err
 	}
-
-	gitignore, _ := repo.Get(ctx, ".gitignore")
-	if gitignore != "" {
-		gitignore += "\n"
-	}
-	gitignore += ".DS_Store\n\n# Rill\n.env\ntmp\n"
-
-	err = repo.Put(ctx, ".gitignore", strings.NewReader(gitignore))
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 

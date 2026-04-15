@@ -2113,6 +2113,11 @@ export class UnpackEmptyRequest extends Message$1<UnpackEmptyRequest> {
    */
   force = false;
 
+  /**
+   * @generated from field: bool skip_olap_connector = 5;
+   */
+  skipOlapConnector = false;
+
   constructor(data?: PartialMessage<UnpackEmptyRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2125,6 +2130,7 @@ export class UnpackEmptyRequest extends Message$1<UnpackEmptyRequest> {
     { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "olap", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "force", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "skip_olap_connector", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UnpackEmptyRequest {

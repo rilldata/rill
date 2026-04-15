@@ -666,6 +666,7 @@ message UnpackEmptyRequest {
   string display_name = 2;
   string olap = 4;
   bool force = 3;
+  bool skip_olap_connector = 5;
 }
 
 // Response message for RuntimeService.UnpackEmpty

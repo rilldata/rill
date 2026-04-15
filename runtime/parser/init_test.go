@@ -10,7 +10,7 @@ func TestInitDefaultOLAP(t *testing.T) {
 	require := require.New(t)
 
 	repo := makeRepo(t, map[string]string{})
-	err := InitEmpty(t.Context(), repo, "test-instance", "Test Project", "")
+	err := InitEmpty(t.Context(), repo, "test-instance", "Test Project", "", false)
 	require.NoError(err)
 
 	// Verify the contents of the rill.yaml file
@@ -38,7 +38,7 @@ func TestInitWithDuckDB(t *testing.T) {
 	require := require.New(t)
 
 	repo := makeRepo(t, map[string]string{})
-	err := InitEmpty(t.Context(), repo, "test-instance", "Test Project", "duckdb")
+	err := InitEmpty(t.Context(), repo, "test-instance", "Test Project", "duckdb", false)
 	require.NoError(err)
 
 	// Verify the contents of the rill.yaml file
@@ -68,7 +68,7 @@ func TestInitWithClickHouse(t *testing.T) {
 	require := require.New(t)
 
 	repo := makeRepo(t, map[string]string{})
-	err := InitEmpty(t.Context(), repo, "test-instance", "Test Project", "clickhouse")
+	err := InitEmpty(t.Context(), repo, "test-instance", "Test Project", "clickhouse", false)
 	require.NoError(err)
 
 	// Verify the contents of the rill.yaml file

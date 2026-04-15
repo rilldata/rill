@@ -118,6 +118,7 @@ func (s *Server) UnpackEmpty(ctx context.Context, req *runtimev1.UnpackEmptyRequ
 		attribute.String("args.display_name", req.DisplayName),
 		attribute.String("args.olap", req.Olap),
 		attribute.Bool("args.force", req.Force),
+		attribute.Bool("args.skip_olap_connector", req.SkipOlapConnector),
 	)
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
@@ -137,7 +138,7 @@ func (s *Server) UnpackEmpty(ctx context.Context, req *runtimev1.UnpackEmptyRequ
 	}
 
 	// Init empty project
-	err = parser.InitEmpty(ctx, repo, req.InstanceId, req.DisplayName, req.Olap)
+	err = parser.InitEmpty(ctx, repo, req.InstanceId, req.DisplayName, req.Olap, req.SkipOlapConnector)
 	if err != nil {
 		return nil, err
 	}
