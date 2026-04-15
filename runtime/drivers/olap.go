@@ -160,10 +160,7 @@ func (r *Result) Err() error {
 // Close wraps rows.Close and calls the Result's cleanup function (if it is set).
 // Close should be idempotent.
 func (r *Result) Close() error {
-	var firstErr error
-	if r.Rows != nil {
-		firstErr = r.Rows.Close()
-	}
+	firstErr := r.Rows.Close()
 	if r.cleanupFn != nil {
 		err := r.cleanupFn()
 		if firstErr == nil {

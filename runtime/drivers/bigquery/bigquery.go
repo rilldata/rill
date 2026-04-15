@@ -69,9 +69,7 @@ func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Cl
 		return nil, errors.New("bigquery driver can't be shared")
 	}
 
-	conf := &configProperties{
-		MaxBytesBilled: 0, // 0 defaults to project default set directly in BigQuery
-	}
+	conf := &configProperties{}
 	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
 		return nil, err

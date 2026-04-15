@@ -70,8 +70,8 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	}
 
 	wrapMaxBytesBilledError := func(err error, maxBytesBilled int64) error {
-		if err != nil && maxBytesBilled >= 0 && strings.Contains(strings.ToLower(err.Error()), "query exceeded limit for bytes billed") {
-			return fmt.Errorf("bigquery query exceeds configured max_bytes_billed limit (%d bytes). Increase `max_bytes_billed` in connector config or set it to -1 to disable the limit: %w", maxBytesBilled, err)
+		if err != nil && maxBytesBilled > 0 && strings.Contains(strings.ToLower(err.Error()), "query exceeded limit for bytes billed") {
+			return fmt.Errorf("bigquery query exceeds configured max_bytes_billed limit (%d bytes). Increase `max_bytes_billed` in connector config or set it to 0 to disable the limit: %w", maxBytesBilled, err)
 		}
 		return err
 	}
@@ -107,6 +107,7 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 			return nil, err
 		}
 		res := &drivers.Result{
+			Rows:   newRows(nil, nil, true, 0),
 			Schema: schema,
 		}
 		return res, wrapMaxBytesBilledError(status.Err(), c.config.MaxBytesBilled)
