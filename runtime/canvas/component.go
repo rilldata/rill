@@ -83,11 +83,7 @@ func validateCartesianChart(props map[string]any, metricsViews map[string]*runti
 	}
 
 	// Validate optional color field: can be a plain string (skip) or a map with a "field" key (validate as dimension)
-	if err := validateOptionalColorDimensionField(mv, mvn, props); err != nil {
-		return err
-	}
-
-	return nil
+	return validateOptionalColorDimensionField(mv, mvn, props)
 }
 
 // validateCircularChart validates properties for donut_chart and pie_chart.
@@ -105,11 +101,7 @@ func validateCircularChart(props map[string]any, metricsViews map[string]*runtim
 		return fmt.Errorf("referenced measure.field %q is not a measure in metrics view %q", measureField, mvn)
 	}
 
-	if err := validateOptionalDimensionField(mv, mvn, props, "color.field"); err != nil {
-		return err
-	}
-
-	return nil
+	return validateOptionalDimensionField(mv, mvn, props, "color.field")
 }
 
 // validateScatterPlot validates properties for scatter_plot.
@@ -144,11 +136,7 @@ func validateScatterPlot(props map[string]any, metricsViews map[string]*runtimev
 	}
 
 	// Color can be a plain string or a map with a "field" key
-	if err := validateOptionalColorDimensionField(mv, mvn, props); err != nil {
-		return err
-	}
-
-	return nil
+	return validateOptionalColorDimensionField(mv, mvn, props)
 }
 
 // validateFunnelChart validates properties for funnel_chart.
@@ -171,11 +159,7 @@ func validateFunnelChart(props map[string]any, metricsViews map[string]*runtimev
 		}
 	}
 
-	if err := validateOptionalDimensionField(mv, mvn, props, "stage.field"); err != nil {
-		return err
-	}
-
-	return nil
+	return validateOptionalDimensionField(mv, mvn, props, "stage.field")
 }
 
 // validateHeatmap validates properties for heatmap.
@@ -194,11 +178,7 @@ func validateHeatmap(props map[string]any, metricsViews map[string]*runtimev1.Me
 	}
 
 	// Note: for heatmap, color is a measure (not a dimension like other charts)
-	if err := validateOptionalMeasureField(mv, mvn, props, "color.field"); err != nil {
-		return err
-	}
-
-	return nil
+	return validateOptionalMeasureField(mv, mvn, props, "color.field")
 }
 
 // validateComboChart validates properties for combo_chart.
@@ -221,11 +201,7 @@ func validateComboChart(props map[string]any, metricsViews map[string]*runtimev1
 	}
 
 	// Combo chart color is typically {field: "measures", type: "value"} for dual-axis mode
-	if err := validateOptionalColorDimensionField(mv, mvn, props); err != nil {
-		return err
-	}
-
-	return nil
+	return validateOptionalColorDimensionField(mv, mvn, props)
 }
 
 // validateMarkdown validates properties for markdown.
