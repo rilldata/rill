@@ -236,7 +236,7 @@
           Status
         </div>
         <div class="pl-4 py-2 font-semibold text-fg-secondary text-sm">
-          Slots
+          Units
         </div>
         <div class="pl-4 py-2 font-semibold text-fg-secondary text-sm">
           Last updated

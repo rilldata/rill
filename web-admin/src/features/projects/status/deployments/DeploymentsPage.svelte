@@ -9,6 +9,9 @@
   import { getStatusDotClass, getStatusLabel } from "../display-utils";
   import { SLOT_RATE_PER_HR, HOURS_PER_MONTH } from "../overview/slots-utils";
   import ManageSlotsModal from "../overview/ManageSlotsModal.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
 
   let {
     organization,
@@ -28,7 +31,6 @@
     $proj.data?.projectPermissions?.manageProject ?? false,
   );
   let prodModalOpen = $state(false);
-  let devModalOpen = $state(false);
 
   // Billing
   let subscriptionQuery = $derived(
@@ -50,7 +52,7 @@
   function formatCycleDate(dateStr: string | undefined): string {
     if (!dateStr) return "";
     const d = new Date(dateStr);
-    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
   }
 
   // Slot types
@@ -90,12 +92,22 @@
 {#if !isEnterprise}
   <div class="page">
     <!-- Page header -->
-    <h2 class="page-title">Usage & Slots</h2>
+    <h2 class="page-title">Usage & Compute</h2>
 
     <!-- Summary bar -->
     <div class="summary-bar">
       <div class="summary-panel">
-        <span class="summary-label">Total slots</span>
+        <span class="summary-label inline-flex items-center gap-1">
+          Total Compute Units
+          <Tooltip location="right" alignment="middle" distance={8}>
+            <span class="text-fg-muted flex">
+              <InfoCircle size="13px" />
+            </span>
+            <TooltipContent maxWidth="200px" slot="tooltip-content">
+              1 unit = 4 GiB RAM / 1 vCPU
+            </TooltipContent>
+          </Tooltip>
+        </span>
         <span class="summary-value">{totalSlots}</span>
         <span class="summary-breakdown">
           {prodSlots} production
@@ -122,9 +134,9 @@
       </div>
     </div>
 
-    <!-- Slots Breakdown -->
+    <!-- Unit Breakdown -->
     <div class="section-heading">
-      <h3 class="section-heading-text">Slots breakdown</h3>
+      <h3 class="section-heading-text">Unit breakdown</h3>
     </div>
 
     <div class="section-grid">
@@ -146,7 +158,7 @@
                   class="manage-btn"
                   onclick={() => (prodModalOpen = true)}
                 >
-                  Manage slots
+                  Manage units
                 </button>
               {/if}
             </div>
@@ -154,16 +166,12 @@
           </div>
           <div class="breakdown-details">
             <div class="detail-row">
-              <span class="detail-label">Slots</span>
+              <span class="detail-label">Units</span>
               <span class="detail-value">{prodSlots}</span>
             </div>
             <div class="detail-row">
               <span class="detail-label">Est. cost</span>
               <span class="detail-value-sm">~${prodMonthlyCost}/mo</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">Rate</span>
-              <span class="detail-value-sm">${SLOT_RATE_PER_HR}/slot/hr</span>
             </div>
           </div>
         </div>
@@ -189,20 +197,12 @@
                   —
                 {/if}
               </span>
-              {#if canManage && !$subscriptionQuery?.isLoading}
-                <button
-                  class="manage-btn"
-                  onclick={() => (devModalOpen = true)}
-                >
-                  Manage slots
-                </button>
-              {/if}
             </div>
             <span class="metric-label">Cluster size</span>
           </div>
           <div class="breakdown-details">
             <div class="detail-row">
-              <span class="detail-label">Slots</span>
+              <span class="detail-label">Units</span>
               <span class="detail-value">{devSlots}</span>
             </div>
             <div class="detail-row">
@@ -210,10 +210,6 @@
               <span class="detail-value-sm">
                 {devSlots > 0 ? `~$${devMonthlyCost}/mo` : "—"}
               </span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">Rate</span>
-              <span class="detail-value-sm">${SLOT_RATE_PER_HR}/slot/hr</span>
             </div>
           </div>
         </div>
@@ -232,7 +228,7 @@
             <th>Branch</th>
             <th>Author</th>
             <th>Status</th>
-            <th>Slots</th>
+            <th>Units</th>
             <th>Last updated</th>
             <th></th>
           </tr>
@@ -297,14 +293,6 @@
     {organization}
     {project}
     {currentSlots}
-  />
-  <ManageSlotsModal
-    bind:open={devModalOpen}
-    title="Manage Dev Cluster Size"
-    {organization}
-    {project}
-    currentSlots={devSlots}
-    minSlots={1}
   />
 {/if}
 
