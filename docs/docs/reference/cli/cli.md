@@ -34,7 +34,7 @@ Work with Rill projects from the command line.
 * [rill org](org/org.md)	 - Manage organisations
 * [rill project](project/project.md)	 - Manage projects
 * [rill public-url](public-url/public-url.md)	 - Manage public URLs
-* [rill query](query.md)	 - Query a resolver within a project
+* [rill query](query.md)	 - Query data in a project
 * [rill service](service/service.md)	 - Manage service accounts
 * [rill start](start.md)	 - Build project and start web app
 * [rill token](token/token.md)	 - Manage personal access tokens

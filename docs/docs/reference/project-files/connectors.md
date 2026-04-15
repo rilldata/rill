@@ -197,6 +197,10 @@ _[boolean]_ - Enable the BigQuery client to use credentials from the host enviro
 
 _[boolean]_ - Controls whether to log raw SQL queries 
 
+### `max_bytes_billed`
+
+_[integer]_ - Maximum number of bytes billed for a query. Queries that exceed this limit will fail with an error. This can help prevent unexpectedly high costs from large queries. It is highly recommended to set this when running on `on-demand pricing` model. The default value is 0 i.e. no limits are enforced in Rill. 
+
 ```yaml
 # Example: BigQuery connector configuration
 type: connector # Must be `connector` (required)
