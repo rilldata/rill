@@ -1139,6 +1139,13 @@ export class GetDeploymentRequest extends Message<GetDeploymentRequest> {
    */
   externalUserId = "";
 
+  /**
+   * If true, superusers can access the deployment even without org/project membership.
+   *
+   * @generated from field: bool superuser_force_access = 10;
+   */
+  superuserForceAccess = false;
+
   constructor(data?: PartialMessage<GetDeploymentRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1153,6 +1160,7 @@ export class GetDeploymentRequest extends Message<GetDeploymentRequest> {
     { no: 4, name: "user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "for" },
     { no: 5, name: "attributes", kind: "message", T: Struct, oneof: "for" },
     { no: 9, name: "external_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetDeploymentRequest {
@@ -2570,6 +2578,13 @@ export class GetDeploymentCredentialsRequest extends Message<GetDeploymentCreden
    */
   externalUserId = "";
 
+  /**
+   * If true, superusers can access the deployment even without org/project membership.
+   *
+   * @generated from field: bool superuser_force_access = 10;
+   */
+  superuserForceAccess = false;
+
   constructor(data?: PartialMessage<GetDeploymentCredentialsRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2586,6 +2601,7 @@ export class GetDeploymentCredentialsRequest extends Message<GetDeploymentCreden
     { no: 6, name: "user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "for" },
     { no: 5, name: "attributes", kind: "message", T: Struct, oneof: "for" },
     { no: 9, name: "external_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetDeploymentCredentialsRequest {
@@ -2789,6 +2805,13 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
    */
   query: { [key: string]: string } = {};
 
+  /**
+   * If true, superusers can access the project even without org/project membership.
+   *
+   * @generated from field: bool superuser_force_access = 17;
+   */
+  superuserForceAccess = false;
+
   constructor(data?: PartialMessage<GetIFrameRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2813,6 +2836,7 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
     { no: 13, name: "navigation", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "query", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 17, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetIFrameRequest {

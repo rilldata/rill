@@ -17,11 +17,8 @@
     branchPathPrefix,
     extractBranchFromPath,
     requestSkipBranchInjection,
-  } from "@rilldata/web-admin/features/branches/branch-utils";
-  import {
-    isActiveDeployment,
-    isProdDeployment,
-  } from "@rilldata/web-admin/features/branches/deployment-utils";
+  } from "./branch-utils";
+  import { isActiveDeployment, isProdDeployment } from "./deployment-utils";
   import {
     getStatusDotClass,
     getStatusLabel,
@@ -31,9 +28,9 @@
   import {
     optimisticallyRemoveDeployment,
     optimisticallySetStatus,
-  } from "./deployment-actions";
+  } from "./branch-actions";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
-  import DeleteDeploymentConfirmDialog from "./DeleteDeploymentConfirmDialog.svelte";
+  import DeleteBranchConfirmDialog from "./DeleteBranchConfirmDialog.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CopyableCodeBlock from "@rilldata/web-common/components/calls-to-action/CopyableCodeBlock.svelte";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
@@ -178,7 +175,7 @@
     } catch (err) {
       eventBus.emit("notification", {
         type: "error",
-        message: `Failed to ${actionName} deployment: ${getRpcErrorMessage(err as any)}`,
+        message: `Failed to ${actionName} branch: ${getRpcErrorMessage(err as any)}`,
       });
     } finally {
       pendingId = "";
@@ -200,12 +197,12 @@
       optimisticallyRemoveDeployment(organization, project, deploymentId);
       if (branch && branch === activeBranch) {
         requestSkipBranchInjection();
-        void goto(`/${organization}/${project}/-/status/deployments`);
+        void goto(`/${organization}/${project}/-/status/branches`);
       }
     } catch (err) {
       eventBus.emit("notification", {
         type: "error",
-        message: `Failed to delete deployment: ${getRpcErrorMessage(err as any)}`,
+        message: `Failed to delete branch: ${getRpcErrorMessage(err as any)}`,
       });
     } finally {
       pendingId = "";
@@ -214,22 +211,20 @@
 </script>
 
 <section class="flex flex-col gap-y-5">
-  <h2 class="text-lg font-medium">Deployments</h2>
+  <h2 class="text-lg font-medium">Branches</h2>
 
   {#if $allDeployments.isLoading}
     <div class="empty-container">
       <DelayedSpinner isLoading={true} size="20px" />
-      <span class="text-sm text-fg-secondary">Loading deployments</span>
+      <span class="text-sm text-fg-secondary">Loading branches</span>
     </div>
   {:else if $allDeployments.isError}
     <div class="text-red-500 text-sm">
-      Error loading deployments: {$allDeployments.error?.message}
+      Error loading branches: {$allDeployments.error?.message}
     </div>
   {:else if visibleDeployments.length === 0}
     <div class="empty-container">
-      <span class="text-fg-secondary font-semibold text-sm">
-        No deployments
-      </span>
+      <span class="text-fg-secondary font-semibold text-sm"> No branches </span>
     </div>
   {:else}
     <div class="table-wrapper">
@@ -342,12 +337,12 @@
                         deployment.branch,
                         V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING,
                         $startMutation.mutateAsync,
-                        "start",
+                        "resume",
                       )}
                   >
                     <div class="flex items-center">
                       <PlayIcon size="12px" />
-                      <span class="ml-2">Start</span>
+                      <span class="ml-2">Resume</span>
                     </div>
                   </DropdownMenu.Item>
                 {/if}
@@ -360,12 +355,12 @@
                         deployment.branch,
                         V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING,
                         $stopMutation.mutateAsync,
-                        "stop",
+                        "hibernate",
                       )}
                   >
                     <div class="flex items-center">
                       <StopCircleIcon size="12px" />
-                      <span class="ml-2">Stop</span>
+                      <span class="ml-2">Hibernate</span>
                     </div>
                   </DropdownMenu.Item>
                 {/if}
@@ -389,7 +384,7 @@
       <div class="branch-hint">
         <GitBranchIcon size="14" class="shrink-0 text-fg-muted" />
         <span class="text-xs text-fg-secondary">
-          Deploy a branch from the CLI:
+          Add a branch from the CLI:
         </span>
         <CopyableCodeBlock code="rill project deployment create <branch>" />
       </div>
@@ -397,7 +392,7 @@
   {/if}
 </section>
 
-<DeleteDeploymentConfirmDialog
+<DeleteBranchConfirmDialog
   bind:open={deleteDialogOpen}
   branch={pendingDelete?.branch || primaryBranch || "main"}
   onConfirm={handleDelete}
