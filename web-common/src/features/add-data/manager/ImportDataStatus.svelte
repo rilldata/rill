@@ -1,5 +1,6 @@
 <script lang="ts">
   import {
+    type AddDataConfig,
     type ImportAddDataStep,
     ImportDataStep,
   } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
@@ -22,7 +23,10 @@
   import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
   import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
   import { runImportSteps } from "@rilldata/web-common/features/add-data/manager/steps/import.ts";
+  import type { AddDataStateManager } from "@rilldata/web-common/features/add-data/manager/AddDataStateManager.svelte.ts";
 
+  export let config: AddDataConfig;
+  export let stateManager: AddDataStateManager;
   export let importAddDataStep: ImportAddDataStep;
   export let onDone: () => void;
 
@@ -51,7 +55,8 @@
     try {
       await runImportSteps(
         runtimeClient,
-        importAddDataStep.config,
+        config,
+        importAddDataStep,
         (step, currentFilePath) => {
           importStep = step;
           if (currentFilePath) {
@@ -64,7 +69,8 @@
         },
       );
     } catch (e) {
-      error = e?.response?.data?.message ?? e?.message ?? null;
+      error = e?.response?.data?.message ?? e?.message ?? "Unknown error";
+      stateManager.fireErrorEvent(error!, importStep);
     }
   }
 
