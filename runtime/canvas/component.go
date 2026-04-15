@@ -56,9 +56,6 @@ func validateCartesianChart(props map[string]any, metricsViews map[string]*runti
 	if err != nil {
 		return err
 	}
-	if mv == nil {
-		return nil // metrics_sql mode: skip field validation
-	}
 
 	xField, ok := pathutil.GetPathString(props, "x.field")
 	if !ok {
@@ -99,9 +96,6 @@ func validateCircularChart(props map[string]any, metricsViews map[string]*runtim
 	if err != nil {
 		return err
 	}
-	if mv == nil {
-		return nil // metrics_sql mode: skip field validation
-	}
 
 	measureField, ok := pathutil.GetPathString(props, "measure.field")
 	if !ok {
@@ -123,9 +117,6 @@ func validateScatterPlot(props map[string]any, metricsViews map[string]*runtimev
 	mvn, mv, err := requireMetricsView(props, metricsViews)
 	if err != nil {
 		return err
-	}
-	if mv == nil {
-		return nil // metrics_sql mode: skip field validation
 	}
 
 	xField, ok := pathutil.GetPathString(props, "x.field")
@@ -166,9 +157,6 @@ func validateFunnelChart(props map[string]any, metricsViews map[string]*runtimev
 	if err != nil {
 		return err
 	}
-	if mv == nil {
-		return nil // metrics_sql mode: skip field validation
-	}
 
 	if err := validateOptionalMeasureField(mv, mvn, props, "measure.field"); err != nil {
 		return err
@@ -196,9 +184,6 @@ func validateHeatmap(props map[string]any, metricsViews map[string]*runtimev1.Me
 	if err != nil {
 		return err
 	}
-	if mv == nil {
-		return nil // metrics_sql mode: skip field validation
-	}
 
 	if err := validateOptionalDimensionField(mv, mvn, props, "x.field"); err != nil {
 		return err
@@ -221,9 +206,6 @@ func validateComboChart(props map[string]any, metricsViews map[string]*runtimev1
 	mvn, mv, err := requireMetricsView(props, metricsViews)
 	if err != nil {
 		return err
-	}
-	if mv == nil {
-		return nil // metrics_sql mode: skip field validation
 	}
 
 	if err := validateOptionalDimensionField(mv, mvn, props, "x.field"); err != nil {
@@ -270,9 +252,6 @@ func validateKPI(props map[string]any, metricsViews map[string]*runtimev1.Metric
 	if err != nil {
 		return err
 	}
-	if mv == nil {
-		return nil // metrics_sql mode: skip field validation
-	}
 
 	// KPI uses a top-level "measure" string, not "measure.field"
 	measure, ok := pathutil.GetPathString(props, "measure")
@@ -287,13 +266,15 @@ func validateKPI(props map[string]any, metricsViews map[string]*runtimev1.Metric
 }
 
 // validateKPIGrid validates properties for kpi_grid.
+// kpi_grid supports metrics_sql as an alternative to metrics_view; field validation is skipped in that case.
 func validateKPIGrid(props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) error {
 	mvn, mv, err := requireMetricsView(props, metricsViews)
 	if err != nil {
+		// kpi_grid supports metrics_sql as an alternative data source
+		if _, hasSQL := pathutil.GetPath(props, "metrics_sql"); hasSQL {
+			return nil
+		}
 		return err
-	}
-	if mv == nil {
-		return nil // metrics_sql mode: skip field validation
 	}
 
 	measures, ok := getPathStringSlice(props, "measures")
@@ -315,9 +296,6 @@ func validateTable(props map[string]any, metricsViews map[string]*runtimev1.Metr
 	if err != nil {
 		return err
 	}
-	if mv == nil {
-		return nil // metrics_sql mode: skip field validation
-	}
 
 	columns, ok := getPathStringSlice(props, "columns")
 	if !ok || len(columns) == 0 {
@@ -337,9 +315,6 @@ func validatePivot(props map[string]any, metricsViews map[string]*runtimev1.Metr
 	mvn, mv, err := requireMetricsView(props, metricsViews)
 	if err != nil {
 		return err
-	}
-	if mv == nil {
-		return nil // metrics_sql mode: skip field validation
 	}
 
 	measures, _ := getPathStringSlice(props, "measures")
@@ -375,9 +350,6 @@ func validateLeaderboard(props map[string]any, metricsViews map[string]*runtimev
 	if err != nil {
 		return err
 	}
-	if mv == nil {
-		return nil // metrics_sql mode: skip field validation
-	}
 
 	measures, _ := getPathStringSlice(props, "measures")
 	dimensions, _ := getPathStringSlice(props, "dimensions")
@@ -402,15 +374,9 @@ func validateLeaderboard(props map[string]any, metricsViews map[string]*runtimev
 
 // requireMetricsView extracts and validates the "metrics_view" property from renderer props.
 // It returns the metrics view name, spec, and nil error on success.
-// If the component uses "metrics_sql" instead of "metrics_view", it returns empty name, nil spec, and nil error
-// to signal that field-level validation should be skipped (we can't validate fields without a metrics view spec).
 func requireMetricsView(props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) (string, *runtimev1.MetricsViewSpec, error) {
 	mvn, ok := pathutil.GetPathString(props, "metrics_view")
 	if !ok {
-		// Components can use metrics_sql as an alternative data source; skip field validation in that case
-		if _, hasSQL := pathutil.GetPath(props, "metrics_sql"); hasSQL {
-			return "", nil, nil
-		}
 		return "", nil, errors.New("renderer properties must include a string 'metrics_view' property")
 	}
 	mv := metricsViews[mvn]
