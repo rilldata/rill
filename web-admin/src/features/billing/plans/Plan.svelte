@@ -306,7 +306,7 @@
           href="/{organization}/-/settings/billing/usage"
           class="view-usage-link"
         >
-          View usage
+          View Usage
           <svg
             class="w-3 h-3"
             viewBox="0 0 12 12"
@@ -314,7 +314,7 @@
             stroke="currentColor"
             stroke-width="1.5"
           >
-            <path d="M4.5 2.5l4 3.5-4 3.5" />
+            <path d="M1 6h9M7.5 3l3 3-3 3" />
           </svg>
         </a>
       </div>
