@@ -1,4 +1,5 @@
 import {
+  type AddDataConfig,
   type AddDataState,
   AddDataStep,
   ImportDataStep,
@@ -10,6 +11,14 @@ import {
 } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import { connectorFormCache } from "@rilldata/web-common/features/add-data/manager/steps/connector.ts";
+import {
+  behaviourEvent,
+  errorEventHandler,
+} from "@rilldata/web-common/metrics/initMetrics.ts";
+import {
+  type AddDataBehaviourEventFields,
+  BehaviourEventAction,
+} from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
 
 export enum TransitionEventType {
   Init,
@@ -51,6 +60,9 @@ export class AddDataStateManager {
   private onDone: (() => void) | undefined = undefined;
   private onClose: (() => void) | undefined = undefined;
   private onStepChange: ((step: AddDataStep) => void) | undefined = undefined;
+  private config: AddDataConfig | undefined = undefined;
+
+  private startTime = Date.now();
 
   public setCallbacks(
     onDone: (() => void) | undefined,
@@ -60,6 +72,10 @@ export class AddDataStateManager {
     this.onDone = onDone;
     this.onClose = onClose;
     this.onStepChange = onStepChange;
+  }
+
+  public setConfig(config: AddDataConfig) {
+    this.config = config;
   }
 
   public transition(event: TransitionEvent) {
@@ -87,7 +103,7 @@ export class AddDataStateManager {
       case AddDataStep.SelectConnector: {
         if (event.type === TransitionEventType.Back) {
           this.popState();
-          return;
+          break;
         }
         if (event.type !== TransitionEventType.SchemaSelected) return;
         const newState = getStepForSchema(event.schema, event.driver);
@@ -100,7 +116,7 @@ export class AddDataStateManager {
       case AddDataStep.CreateConnector: {
         if (event.type === TransitionEventType.Back) {
           this.popState();
-          return;
+          break;
         }
         if (event.type !== TransitionEventType.ConnectorSelected) return;
         const newState = getStepForConnector(
@@ -119,12 +135,13 @@ export class AddDataStateManager {
           // CreateModel/ExploreConnector =={Back event}=> Init/SelectConnector/CreateConnector
           case TransitionEventType.Back:
             this.popState();
-            return;
+            break;
 
           // CreateModel/ExploreConnector =={ImportConfigured event}=> Import
           case TransitionEventType.ImportConfigured:
             this.pushState({
               step: AddDataStep.Import,
+              schema: this.state.schema,
               importStep: ImportDataStep.Init,
               config: event.config,
             });
@@ -159,7 +176,7 @@ export class AddDataStateManager {
         if (event.type === TransitionEventType.Back) {
           // Can be back to Init/CreateModel/ExploreConnector
           this.popState();
-          return;
+          break;
         }
         if (event.type !== TransitionEventType.Imported) return;
         this.pushState({
@@ -169,6 +186,42 @@ export class AddDataStateManager {
     }
   }
 
+  public fireErrorEvent(
+    message: string,
+    subStep: AddDataStep | ImportDataStep = this.state.step,
+  ) {
+    if (!this.config?.space || !this.config?.screen) return;
+
+    const addDataFields: AddDataBehaviourEventFields = {
+      step: subStep,
+      duration: Date.now() - this.startTime,
+    };
+    if (
+      this.state.step === AddDataStep.CreateConnector ||
+      this.state.step === AddDataStep.CreateModel ||
+      this.state.step === AddDataStep.ExploreConnector ||
+      this.state.step === AddDataStep.Import
+    ) {
+      addDataFields.schema = this.state.schema;
+    }
+    if (
+      this.state.step === AddDataStep.CreateModel ||
+      this.state.step === AddDataStep.ExploreConnector
+    ) {
+      addDataFields.connector = this.state.connector;
+    }
+    if (this.state.step === AddDataStep.Import) {
+      addDataFields.connector = this.state.config.connector;
+    }
+
+    void errorEventHandler?.fireAddDataErrorEvent(
+      this.config.space,
+      this.config.screen,
+      message,
+      addDataFields,
+    );
+  }
+
   private pushState(state: AddDataState) {
     if (state.step === AddDataStep.Done) this.onDone?.();
     // Only add to the stack if the step changed.
@@ -176,9 +229,15 @@ export class AddDataStateManager {
     if (this.state.step !== state.step) this.stateStack.push(this.state);
     this.state = state;
     this.onStepChange?.(state.step);
+
+    // Fire event based on the new step
+    this.fireEventAfterPushState();
   }
 
   private popState() {
+    // Fire event based on step before popState
+    this.fireEventBeforePopState();
+
     this.state = this.stateStack.pop() ?? { step: AddDataStep.Init };
     if (this.stateStack.length === 0) this.onClose?.();
     this.onStepChange?.(this.state.step);
@@ -188,6 +247,118 @@ export class AddDataStateManager {
   // So we need to clear the stack.
   private clearStack() {
     this.stateStack = [];
+  }
+
+  /**
+   * Fire event based on the new step.
+   * Fires XXStarted events.
+   */
+  private fireEventAfterPushState() {
+    switch (this.state.step) {
+      case AddDataStep.SelectConnector:
+        this.fireBehaviourEvent(
+          BehaviourEventAction.ConnectorSelectionStarted,
+          { step: AddDataStep.SelectConnector },
+        );
+        break;
+
+      case AddDataStep.CreateConnector:
+        this.fireBehaviourEvent(
+          BehaviourEventAction.ConnectorConfigurationStarted,
+          {
+            step: AddDataStep.CreateConnector,
+            schema: this.state.schema,
+          },
+        );
+        break;
+
+      case AddDataStep.CreateModel:
+        this.fireBehaviourEvent(
+          BehaviourEventAction.ModelConfigurationStarted,
+          {
+            step: AddDataStep.CreateModel,
+            schema: this.state.schema,
+            connector: this.state.connector,
+          },
+        );
+        break;
+
+      case AddDataStep.ExploreConnector:
+        this.fireBehaviourEvent(BehaviourEventAction.ConnectorExploreStarted, {
+          step: AddDataStep.ExploreConnector,
+          schema: this.state.schema,
+          connector: this.state.connector,
+        });
+        break;
+
+      case AddDataStep.Import:
+        this.fireBehaviourEvent(BehaviourEventAction.ImportStarted, {
+          step: AddDataStep.Import,
+          schema: this.state.schema,
+          connector: this.state.config.connector,
+        });
+        break;
+    }
+  }
+
+  /**
+   * Fire event based on the step before popState, usually when user clicks back button.
+   * Fires XXCanceled events.
+   */
+  private fireEventBeforePopState() {
+    switch (this.state.step) {
+      case AddDataStep.CreateConnector:
+        this.fireBehaviourEvent(
+          BehaviourEventAction.ConnectorConfigurationCanceled,
+          { step: AddDataStep.CreateConnector, schema: this.state.schema },
+        );
+        break;
+
+      case AddDataStep.CreateModel:
+        this.fireBehaviourEvent(
+          BehaviourEventAction.ModelConfigurationCanceled,
+          {
+            step: this.state.step,
+            schema: this.state.schema,
+            connector: this.state.connector,
+          },
+        );
+        break;
+
+      case AddDataStep.ExploreConnector:
+        this.fireBehaviourEvent(BehaviourEventAction.ConnectorExploreCanceled, {
+          step: this.state.step,
+          schema: this.state.schema,
+          connector: this.state.connector,
+        });
+        break;
+
+      case AddDataStep.Import:
+        this.fireBehaviourEvent(BehaviourEventAction.ImportCanceled, {
+          step: AddDataStep.Import,
+          schema: this.state.schema,
+          connector: this.state.config.connector,
+        });
+        break;
+    }
+  }
+
+  private fireBehaviourEvent(
+    action: BehaviourEventAction,
+    fields: AddDataBehaviourEventFields,
+  ) {
+    if (!this.config?.medium || !this.config?.space || !this.config?.screen)
+      return;
+    void behaviourEvent?.fireAddDataStepEvent(
+      action,
+      this.config.medium,
+      this.config.space,
+      this.config.screen,
+      {
+        ...fields,
+        duration: Date.now() - this.startTime,
+      },
+    );
   }
 }
 

@@ -127,6 +127,7 @@ func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
 		// a. when branch is created remotely after the last pull
 		// b. primary branch was edited
 		// c. in editable mode when the default branch may not exist at all.
+		push := false
 		remoteHash, err := repo.Reference(plumbing.ReferenceName("refs/remotes/origin/"+r.defaultBranch), true)
 		if err != nil {
 			if errors.Is(err, plumbing.ErrReferenceNotFound) && r.editable() {
@@ -136,6 +137,7 @@ func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
 				if err != nil {
 					return fmt.Errorf("failed to get reference for primary branch %q: %w", r.primaryBranch, err)
 				}
+				push = true
 			} else {
 				// In non-editable mode, the default branch must exist on remote, if not found, return error.
 				return fmt.Errorf("failed to get remote tracking branch %q: %w", r.defaultBranch, err)
@@ -146,6 +148,20 @@ func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
 		err = gitForceCheckout(r.repoDir, r.defaultBranch, true, remoteHash.Hash().String())
 		if err != nil {
 			return fmt.Errorf("failed to create and checkout default branch %q: %w", r.defaultBranch, err)
+		}
+
+		if push {
+			// Also push the newly created branch to remote so other operations like git status pass without error.
+			err = repo.PushContext(ctx, &git.PushOptions{
+				RemoteName: "origin",
+				RemoteURL:  r.remoteURL,
+				RefSpecs: []config.RefSpec{
+					config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", r.defaultBranch, r.defaultBranch)),
+				},
+			})
+			if err != nil {
+				return fmt.Errorf("failed to push changes to remote default branch: %w", err)
+			}
 		}
 	}
 
@@ -382,7 +398,8 @@ func (r *gitRepo) fetchCurrentBranch(ctx context.Context) error {
 		return err
 	}
 	err = repo.FetchContext(ctx, &git.FetchOptions{
-		RefSpecs: []config.RefSpec{config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", head.Name().Short(), head.Name().Short()))},
+		RemoteURL: r.remoteURL,
+		RefSpecs:  []config.RefSpec{config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", head.Name().Short(), head.Name().Short()))},
 	})
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
 		return err
