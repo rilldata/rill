@@ -15,6 +15,7 @@ import {
   getRuntimeServiceListFilesQueryKey,
   getRuntimeServiceListResourcesQueryKey,
   V1FileEvent,
+  V1ReconcileStatus,
   type V1Resource,
   V1ResourceEvent,
   type V1WatchFilesResponse,
@@ -239,11 +240,11 @@ export class FileAndResourceWatcher {
   private async handleResourceEvent(res: V1WatchResourcesResponse) {
     // Log resource status to the browser console during e2e tests. Currently, our e2e tests make assertions
     // based on these logs. However, the e2e tests really should make UI-based assertions.
-    // if (import.meta.env.VITE_PLAYWRIGHT_TEST) {
-    console.log(
-      `[${res.resource?.meta?.reconcileStatus} (${res.resource?.meta?.stateVersion})] ${res.name?.kind}/${res.name?.name}`,
-    );
-    // }
+    if (import.meta.env.VITE_PLAYWRIGHT_TEST) {
+      console.log(
+        `[${res.resource?.meta?.reconcileStatus}] ${res.name?.kind}/${res.name?.name}`,
+      );
+    }
 
     // Type guards
     if (!res?.event || !res?.name || !res?.name?.name || !res?.name?.kind) {
@@ -296,21 +297,17 @@ export class FileAndResourceWatcher {
           return;
         }
 
-        // Proceed to query invalidations only when the resource state has changed
-        if (
+        const resourceVersionChanged =
           res.resource.meta.stateVersion ===
-          previousResource?.meta?.stateVersion
-        ) {
-          console.log(
-            `[${res.resource?.meta?.reconcileStatus} (${res.resource?.meta?.stateVersion})] ${res.name?.kind}/${res.name?.name}` +
-              ` Skipping invalidation (${previousResource?.meta?.stateVersion})`,
-          );
+          previousResource?.meta?.stateVersion;
+        const resourceFinishedReconciling =
+          previousResource?.meta?.reconcileStatus !==
+            V1ReconcileStatus.RECONCILE_STATUS_IDLE &&
+          res.resource.meta.reconcileStatus ===
+            V1ReconcileStatus.RECONCILE_STATUS_IDLE;
+        // Proceed to query invalidations only when the resource state has changed
+        if (!resourceVersionChanged && !resourceFinishedReconciling) {
           return;
-        } else {
-          console.log(
-            `[${res.resource?.meta?.reconcileStatus} (${res.resource?.meta?.stateVersion})] ${res.name?.kind}/${res.name?.name}` +
-              ` Invalidating`,
-          );
         }
 
         // Refetch `ListResources` queries
