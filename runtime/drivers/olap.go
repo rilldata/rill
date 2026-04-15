@@ -221,6 +221,7 @@ const (
 	DialectRedshift
 	DialectMySQL
 	DialectPostgres
+	DialectDatabricks
 )
 
 func (d Dialect) String() string {
@@ -249,6 +250,8 @@ func (d Dialect) String() string {
 		return "mysql"
 	case DialectPostgres:
 		return "postgres"
+	case DialectDatabricks:
+		return "databricks"
 	default:
 		panic("not implemented")
 	}
@@ -265,7 +268,7 @@ func (d Dialect) EscapeIdentifier(ident string) string {
 	}
 
 	switch d {
-	case DialectMySQL, DialectBigQuery, DialectStarRocks:
+	case DialectMySQL, DialectBigQuery, DialectStarRocks, DialectDatabricks:
 		// MySQL and StarRocks use backticks for quoting identifiers
 		// Replace any backticks inside the identifier with double backticks.
 		return fmt.Sprintf("`%s`", strings.ReplaceAll(ident, "`", "``"))
