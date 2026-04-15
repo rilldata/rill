@@ -84,7 +84,7 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 			table_name,
 			CASE WHEN table_type = 'VIEW' THEN true ELSE false END AS view
 		FROM %s.INFORMATION_SCHEMA.TABLES
-		WHERE table_schema = ?`, sqlSafeName(database))
+		WHERE table_schema = ?`, drivers.DialectSnowflake.EscapeIdentifier(database))
 	var args []any
 	args = append(args, databaseSchema)
 	if pageToken != "" {
@@ -150,7 +150,7 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 		ON t.table_schema = c.table_schema AND t.table_name = c.table_name 
 		WHERE t.table_schema = ? AND t.table_name = ?
 		ORDER BY c.ordinal_position
-	`, sqlSafeName(database), sqlSafeName(database))
+	`, drivers.DialectSnowflake.EscapeIdentifier(database), drivers.DialectSnowflake.EscapeIdentifier(database))
 
 	db, err := c.getDB(ctx)
 	if err != nil {
@@ -201,9 +201,4 @@ func getCurrentDatabaseAndSchema(ctx context.Context, db *sql.DB) (string, strin
 		schemaName = currentSchema.String
 	}
 	return dbName, schemaName, nil
-}
-
-func sqlSafeName(name string) string {
-	escaped := strings.ReplaceAll(name, `"`, `""`)
-	return fmt.Sprintf("%q", escaped)
 }

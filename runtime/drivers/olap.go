@@ -570,7 +570,7 @@ func (d Dialect) OrderByExpression(name string, desc bool) string {
 	if desc {
 		res += " DESC"
 	}
-	if d == DialectDuckDB || d == DialectStarRocks || d == DialectBigQuery {
+	if d == DialectDuckDB || d == DialectStarRocks || d == DialectBigQuery || d == DialectSnowflake {
 		res += " NULLS LAST"
 	}
 	return res
@@ -582,7 +582,7 @@ func (d Dialect) OrderByAliasExpression(name string, desc bool) string {
 	if desc {
 		res += " DESC"
 	}
-	if d == DialectDuckDB || d == DialectStarRocks || d == DialectBigQuery {
+	if d == DialectDuckDB || d == DialectStarRocks || d == DialectBigQuery || d == DialectSnowflake {
 		res += " NULLS LAST"
 	}
 	return res
@@ -1006,7 +1006,7 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 				if err != nil {
 					return "", nil, nil, fmt.Errorf("select inline: failed to get argument expression: %w", err)
 				}
-				prefix += fmt.Sprintf("%s AS %s", argExpr, d.EscapeIdentifier(result.Schema.Fields[i].Name))
+				prefix += fmt.Sprintf("%s AS %s", argExpr, d.EscapeAlias(result.Schema.Fields[i].Name))
 				args = append(args, argVal)
 			}
 		}

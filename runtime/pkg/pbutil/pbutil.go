@@ -163,6 +163,14 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 					f, _ := v2.Float64()
 					return structpb.NewNumberValue(f), nil
 				}
+			case runtimev1.Type_CODE_INT8, runtimev1.Type_CODE_INT16, runtimev1.Type_CODE_INT32, runtimev1.Type_CODE_INT64, runtimev1.Type_CODE_INT128, runtimev1.Type_CODE_INT256:
+				// Snowflake returns integers as strings when scanned into interface{}.
+				// Evil cast to float until frontend can deal with bigs.
+				v2, ok := new(big.Float).SetString(v)
+				if ok {
+					f, _ := v2.Float64()
+					return structpb.NewNumberValue(f), nil
+				}
 			case runtimev1.Type_CODE_INTERVAL:
 				// ClickHouse currently returns INTERVALs as strings.
 				// Our current policy is to convert INTERVALs to milliseconds, treating one month as 30 days.

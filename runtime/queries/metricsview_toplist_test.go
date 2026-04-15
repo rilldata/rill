@@ -28,6 +28,14 @@ func TestMetricsViewsToplistAgainstBigQuery(t *testing.T) {
 	})
 }
 
+func TestMetricsViewsToplistAgainstSnowflake(t *testing.T) {
+	testmode.Expensive(t)
+	rt, instanceID := newSnowflakeInstance(t)
+	t.Run("testSnowflakeMetricsViewsToplist_measure_filters", func(t *testing.T) {
+		testSnowflakeMetricsViewsToplist_measure_filters(t, rt, instanceID)
+	})
+}
+
 func TestMetricsViewsToplistAgainstDuckdb(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 	t.Run("testMetricsViewsToplist_measure_filters", func(t *testing.T) { testMetricsViewsToplist_measure_filters(t, rt, instanceID) })
@@ -98,6 +106,65 @@ func testBigQueryMetricsViewsToplist_measure_filters(t *testing.T, rt *runtime.R
 	require.NoError(t, err)
 	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
 	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
+
+	lmt := int64(250)
+	q := &queries.MetricsViewToplist{
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "dom",
+		MeasureNames:    []string{"measure_1"},
+		TimeStart:       ctr.Result.Min,
+		TimeEnd:         timestamppb.New(maxTime),
+		Having: &runtimev1.Expression{
+			Expression: &runtimev1.Expression_Cond{
+				Cond: &runtimev1.Condition{
+					Op: runtimev1.Operation_OPERATION_GT,
+					Exprs: []*runtimev1.Expression{
+						{
+							Expression: &runtimev1.Expression_Ident{
+								Ident: "measure_1",
+							},
+						},
+						{
+							Expression: &runtimev1.Expression_Val{
+								Val: structpb.NewNumberValue(3.25),
+							},
+						},
+					},
+				},
+			},
+		},
+		Sort: []*runtimev1.MetricsViewSort{
+			{
+				Name:      "dom",
+				Ascending: false,
+			},
+		},
+		Limit:          &lmt,
+		SecurityClaims: testClaims(),
+	}
+
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	require.Len(t, q.Result.Data, 3)
+	require.Equal(t, "sports.yahoo.com", q.Result.Data[0].AsMap()["dom"])
+	require.Equal(t, "news.google.com", q.Result.Data[1].AsMap()["dom"])
+	require.Equal(t, "instagram.com", q.Result.Data[2].AsMap()["dom"])
+}
+
+func testSnowflakeMetricsViewsToplist_measure_filters(t *testing.T, rt *runtime.Runtime, instanceID string) {
+	ctr := &queries.ColumnTimeRange{
+		Database:       "integration_test",
+		DatabaseSchema: "public",
+		TableName:      "ad_bids",
+		ColumnName:     "timestamp",
+	}
+	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
+	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
+
+	t.Logf("min time %v, max time %v\n", ctr.Result.Min.AsTime(), ctr.Result.Max.AsTime())
 
 	lmt := int64(250)
 	q := &queries.MetricsViewToplist{
