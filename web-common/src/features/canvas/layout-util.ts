@@ -22,6 +22,7 @@ export const initialHeights: Record<CanvasComponentType, number> = {
   donut_chart: 320,
   pie_chart: 320,
   heatmap: 320,
+  custom_chart: 320,
   funnel_chart: 320,
   combo_chart: 320,
   scatter_plot: 320,
