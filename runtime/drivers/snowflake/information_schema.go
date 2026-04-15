@@ -83,15 +83,13 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	if err != nil {
 		return nil, "", err
 	}
-	curDB, curSchema, err := getCurrentDatabaseAndSchema(ctx, db.DB)
-	if err != nil {
-		return nil, "", err
-	}
 
 	q := fmt.Sprintf(`
 		SELECT
 			table_name,
-			CASE WHEN table_type = 'VIEW' THEN true ELSE false END AS view
+			CASE WHEN table_type = 'VIEW' THEN true ELSE false END AS view,
+			CURRENT_DATABASE() = table_catalog AS is_default_database,
+			CURRENT_SCHEMA() = table_schema AS is_default_database_schema
 		FROM %s.INFORMATION_SCHEMA.TABLES
 		WHERE table_schema = ?`, sqlSafeName(database))
 	var args []any
@@ -122,16 +120,16 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 
 	var res []*drivers.TableInfo
 	var name string
-	var view bool
+	var view, isDefaultDatabase, isDefaultDatabaseSchema bool
 	for rows.Next() {
-		if err := rows.Scan(&name, &view); err != nil {
+		if err := rows.Scan(&name, &view, &isDefaultDatabase, &isDefaultDatabaseSchema); err != nil {
 			return nil, "", err
 		}
 		res = append(res, &drivers.TableInfo{
 			Name:                    name,
 			View:                    view,
-			IsDefaultDatabase:       strings.EqualFold(database, curDB),
-			IsDefaultDatabaseSchema: strings.EqualFold(databaseSchema, curSchema),
+			IsDefaultDatabase:       isDefaultDatabase,
+			IsDefaultDatabaseSchema: isDefaultDatabaseSchema,
 		})
 	}
 	if err := rows.Err(); err != nil {

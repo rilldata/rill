@@ -73,12 +73,14 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	q := fmt.Sprintf(`
 	SELECT
 		table_name,
-		table_type
+		table_type,
+		current_catalog = %s AS is_default_database,
+		current_schema = %s AS is_default_database_schema
 	FROM %s.information_schema.tables
-	WHERE table_schema = %s %s 
+	WHERE table_schema = %s %s
 	ORDER BY table_name
-	LIMIT %d 
-	`, sqlSafeName(database), escapeStringValue(databaseSchema), condFilter, limit+1)
+	LIMIT %d
+	`, escapeStringValue(database), escapeStringValue(databaseSchema), sqlSafeName(database), escapeStringValue(databaseSchema), condFilter, limit+1)
 
 	client, err := c.getClient(ctx)
 	if err != nil {
@@ -95,17 +97,24 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to get query results: %w", err)
 	}
-	// first row is header of skipping it
+	// first row is header, skip it
 	res := make([]*drivers.TableInfo, 0, len(results.ResultSet.Rows)-1)
 	for _, row := range results.ResultSet.Rows[1:] {
-		if len(row.Data) < 2 || row.Data[0].VarCharValue == nil || row.Data[1].VarCharValue == nil {
+		if len(row.Data) < 4 || row.Data[0].VarCharValue == nil || row.Data[1].VarCharValue == nil {
 			continue
+		}
+		var isDefaultDatabase, isDefaultDatabaseSchema bool
+		if row.Data[2].VarCharValue != nil {
+			isDefaultDatabase = strings.EqualFold(*row.Data[2].VarCharValue, "true")
+		}
+		if row.Data[3].VarCharValue != nil {
+			isDefaultDatabaseSchema = strings.EqualFold(*row.Data[3].VarCharValue, "true")
 		}
 		res = append(res, &drivers.TableInfo{
 			Name:                    *row.Data[0].VarCharValue,
 			View:                    strings.EqualFold(*row.Data[1].VarCharValue, "VIEW"),
-			IsDefaultDatabase:       false,
-			IsDefaultDatabaseSchema: false,
+			IsDefaultDatabase:       isDefaultDatabase,
+			IsDefaultDatabaseSchema: isDefaultDatabaseSchema,
 		})
 	}
 	next := ""

@@ -30,13 +30,10 @@ type DatabaseSchemaInfo struct {
 type TableInfo struct {
 	Name                    string
 	View                    bool
-	Database                string
-	DatabaseSchema          string
 	IsDefaultDatabase       bool
 	IsDefaultDatabaseSchema bool
-
-	PhysicalSizeBytes int64
-	DDL               string
+	PhysicalSizeBytes       int64
+	DDL                     string
 }
 
 type TableMetadata struct {

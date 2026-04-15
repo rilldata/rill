@@ -90,11 +90,13 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	q := fmt.Sprintf(`
 	SELECT
 		table_name,
-		CASE WHEN table_type = 'VIEW' THEN true ELSE false END AS view
+		CASE WHEN table_type = 'VIEW' THEN true ELSE false END AS view,
+		CASE WHEN database_name = current_database() THEN true ELSE false END AS is_default_database,
+		CASE WHEN schema_name = current_schema() THEN true ELSE false END AS is_default_database_schema
 	FROM svv_all_tables
-	WHERE database_name = %s AND schema_name = %s %s 
+	WHERE database_name = %s AND schema_name = %s %s
 	ORDER BY table_name
-	LIMIT %d 
+	LIMIT %d
 	`, escapeStringValue(database), escapeStringValue(databaseSchema), condFilter, limit+1)
 
 	client, err := c.getClient(ctx)
@@ -125,10 +127,19 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 		if !ok {
 			return nil, "", fmt.Errorf("unexpected type for view field")
 		}
+		isDefaultDatabaseField, ok := record[2].(*types.FieldMemberBooleanValue)
+		if !ok {
+			return nil, "", fmt.Errorf("unexpected type for is_default_database field")
+		}
+		isDefaultDatabaseSchemaField, ok := record[3].(*types.FieldMemberBooleanValue)
+		if !ok {
+			return nil, "", fmt.Errorf("unexpected type for is_default_database_schema field")
+		}
 		res = append(res, &drivers.TableInfo{
-			Name:              nameField.Value,
-			View:              viewField.Value,
-			IsDefaultDatabase: strings.EqualFold(database, c.config.Database),
+			Name:                    nameField.Value,
+			View:                    viewField.Value,
+			IsDefaultDatabase:       isDefaultDatabaseField.Value,
+			IsDefaultDatabaseSchema: isDefaultDatabaseSchemaField.Value,
 		})
 	}
 	next := ""

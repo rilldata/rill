@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -314,12 +313,14 @@ func (i *informationSchemaImpl) ListTables(ctx context.Context, database, databa
 				WHEN table_type = 'VIEW' THEN true
 				WHEN table_type = 'MATERIALIZED VIEW' THEN true
 				ELSE false
-			END AS is_view
+			END AS is_view,
+			current_catalog() = ? AS is_default_database,
+			DATABASE() = ? AS is_default_database_schema
 		FROM %s.information_schema.tables
 		WHERE table_schema = ?
 	`, safeSQLName(catalog))
 
-	args := []any{dbSchema}
+	args := []any{catalog, dbSchema, dbSchema}
 
 	if pageToken != "" {
 		q += " AND table_name > ?"
@@ -341,16 +342,16 @@ func (i *informationSchemaImpl) ListTables(ctx context.Context, database, databa
 	var tables []*drivers.TableInfo
 	for rows.Next() {
 		var tableName string
-		var isView bool
-		if err := rows.Scan(&tableName, &isView); err != nil {
+		var isView, isDefaultDatabase, isDefaultDatabaseSchema bool
+		if err := rows.Scan(&tableName, &isView, &isDefaultDatabase, &isDefaultDatabaseSchema); err != nil {
 			return nil, "", err
 		}
 
 		tables = append(tables, &drivers.TableInfo{
 			Name:                    tableName,
 			View:                    isView,
-			IsDefaultDatabase:       strings.EqualFold(database, i.c.configProp.Catalog),
-			IsDefaultDatabaseSchema: strings.EqualFold(databaseSchema, i.c.configProp.Database),
+			IsDefaultDatabase:       isDefaultDatabase,
+			IsDefaultDatabaseSchema: isDefaultDatabaseSchema,
 		})
 	}
 
