@@ -3,7 +3,11 @@
     createAdminServiceGetProject,
     createAdminServiceGetBillingSubscription,
   } from "@rilldata/web-admin/client";
-  import { isEnterprisePlan } from "@rilldata/web-admin/features/billing/plans/utils";
+  import {
+    isTrialPlan,
+    isFreePlan,
+    isProPlan,
+  } from "@rilldata/web-admin/features/billing/plans/utils";
   import {
     SLOT_RATE_PER_HR,
     HOURS_PER_MONTH,
@@ -39,7 +43,10 @@
   let planName = $derived(
     $subscriptionQuery?.data?.subscription?.plan?.name ?? "",
   );
-  let isEnterprise = $derived(planName !== "" && isEnterprisePlan(planName));
+  let showDeploymentSection = $derived(
+    planName !== "" &&
+      (isTrialPlan(planName) || isFreePlan(planName) || isProPlan(planName)),
+  );
 
   // Billing cycle dates
   let cycleStart = $derived(
@@ -82,7 +89,7 @@
   );
 </script>
 
-{#if !isEnterprise}
+{#if showDeploymentSection}
   <div class="page">
     <!-- Page header -->
     <h2 class="page-title">Usage & Compute</h2>
