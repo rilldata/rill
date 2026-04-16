@@ -719,6 +719,9 @@ export async function createYamlModelFromTable(
     queryKey: runtimeInstanceQueryKey,
     queryFn: runtimeInstanceQueryFn,
   });
+  if (!runtimeInstance) {
+    throw new Error(`Could not find runtime instance ${client.instanceId}`);
+  }
   const defaultOLAP = runtimeInstance?.instance?.olapConnector ?? "duckdb";
 
   // NOTE: Redshift does not support LIMIT clauses in its UNLOAD data exports.
