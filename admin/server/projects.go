@@ -456,17 +456,23 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			runtime.EditTrigger,
 		)
 	}
-	if req.Branch != "" && permissions.ManageDev {
+	// Grant permissions for branch deployments: viewers get dashboard access, editors get full dev access
+	if req.Branch != "" {
 		instancePermissions = append(
 			instancePermissions,
 			runtime.ReadInstance,
 			runtime.ReadOLAP,
-			runtime.ReadProfiling,
-			runtime.ReadRepo,
-			runtime.EditRepo,
 			runtime.ReadResolvers,
-			runtime.EditTrigger,
 		)
+		if permissions.ManageDev {
+			instancePermissions = append(
+				instancePermissions,
+				runtime.ReadProfiling,
+				runtime.ReadRepo,
+				runtime.EditRepo,
+				runtime.EditTrigger,
+			)
+		}
 	}
 
 	var systemPermissions []runtime.Permission

@@ -83,12 +83,8 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 
 			// Initialize the deployment (by provisioning a runtime and creating an instance on it)
 			if err := w.admin.StartDeploymentInner(ctx, depl); err != nil {
-				// Check if this is a non-retryable error (fail fast instead of waiting for all retries)
-				if isNonRetryable(err) || job.Attempt >= job.MaxAttempts {
-					if _, dbErr := w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusErrored, err.Error()); dbErr != nil {
-						w.admin.Logger.Error("reconcile deployment: failed to set errored status", observability.ZapCtx(ctx), zap.Error(dbErr))
-					}
-					return river.JobCancel(err)
+				if w.isNonRetryable(err) || job.Attempt >= job.MaxAttempts {
+					return w.cancelAsErrored(ctx, depl.ID, err)
 				}
 				return err
 			}
@@ -130,10 +126,7 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 		err := w.admin.StopDeploymentInner(ctx, depl)
 		if err != nil {
 			if job.Attempt >= job.MaxAttempts {
-				if _, dbErr := w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusErrored, err.Error()); dbErr != nil {
-					w.admin.Logger.Error("reconcile deployment: failed to set errored status during deletion", observability.ZapCtx(ctx), zap.Error(dbErr))
-				}
-				return river.JobCancel(err)
+				return w.cancelAsErrored(ctx, depl.ID, err)
 			}
 			return err
 		}
@@ -142,10 +135,7 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 		err = w.admin.DB.DeleteDeployment(ctx, depl.ID)
 		if err != nil {
 			if job.Attempt >= job.MaxAttempts {
-				if _, dbErr := w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusErrored, err.Error()); dbErr != nil {
-					w.admin.Logger.Error("reconcile deployment: failed to set errored status during deletion", observability.ZapCtx(ctx), zap.Error(dbErr))
-				}
-				return river.JobCancel(err)
+				return w.cancelAsErrored(ctx, depl.ID, err)
 			}
 			return err
 		}
@@ -182,9 +172,17 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 
 // isNonRetryable returns true for errors that won't resolve with retries,
 // such as capacity limits or configuration errors.
-func isNonRetryable(err error) bool {
+func (w *ReconcileDeploymentWorker) isNonRetryable(err error) bool {
 	msg := err.Error()
 	return strings.Contains(msg, "no runtimes found with sufficient available slots") ||
 		strings.Contains(msg, "Invalid environment") ||
 		strings.Contains(msg, "not a valid version")
+}
+
+// cancelAsErrored marks the deployment as errored and cancels the river job.
+func (w *ReconcileDeploymentWorker) cancelAsErrored(ctx context.Context, deplID string, err error) error {
+	if _, dbErr := w.admin.DB.UpdateDeploymentStatus(ctx, deplID, database.DeploymentStatusErrored, err.Error()); dbErr != nil {
+		w.admin.Logger.Error("reconcile deployment: failed to set errored status", observability.ZapCtx(ctx), zap.Error(dbErr))
+	}
+	return river.JobCancel(err)
 }
