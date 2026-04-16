@@ -3,6 +3,7 @@ package sudo
 import (
 	"github.com/rilldata/rill/cli/cmd/sudo/annotations"
 	"github.com/rilldata/rill/cli/cmd/sudo/billing"
+	"github.com/rilldata/rill/cli/cmd/sudo/embed"
 	"github.com/rilldata/rill/cli/cmd/sudo/org"
 	"github.com/rilldata/rill/cli/cmd/sudo/project"
 	"github.com/rilldata/rill/cli/cmd/sudo/quota"
@@ -24,6 +25,7 @@ func SudoCmd(ch *cmdutil.Helper) *cobra.Command {
 		GroupID: internalGroupID,
 	}
 	sudoCmd.AddCommand(lookupCmd(ch))
+	sudoCmd.AddCommand(embed.EmbedCmd(ch))
 	sudoCmd.AddCommand(org.OrgCmd(ch))
 	sudoCmd.AddCommand(project.ProjectCmd(ch))
 	sudoCmd.AddCommand(user.UserCmd(ch))

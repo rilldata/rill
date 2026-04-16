@@ -5,7 +5,7 @@ import {
   type V1GetProjectResponse,
   type V1ListDeploymentsResponse,
 } from "@rilldata/web-admin/client";
-import { invalidateDeployments } from "@rilldata/web-admin/features/branches/deployment-utils";
+import { invalidateDeployments } from "./deployment-utils";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
 /**

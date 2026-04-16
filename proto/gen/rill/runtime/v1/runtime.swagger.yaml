@@ -2706,6 +2706,28 @@ paths:
           format: int32
       tags:
         - QueryService
+  /v1/instances/{instanceId}/queries/project-storage:
+    get:
+      summary: |-
+        ProjectStorage returns storage usage information for OLAP connectors in the project.
+        See the project_storage resolver for details.
+      operationId: QueryService_ProjectStorage
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ProjectStorageResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - QueryService
   /v1/instances/{instanceId}/queries/resolve-templated-string:
     post:
       summary: ResolveTemplatedString resolves a templated strings.
@@ -7078,6 +7100,60 @@ definitions:
         format: date-time
       watching:
         type: boolean
+  v1ProjectStorageEntry:
+    type: object
+    properties:
+      connector:
+        type: string
+        description: Connector name.
+      driver:
+        type: string
+        description: Connector driver name.
+      isDefaultOlap:
+        type: boolean
+        description: True if the connector is the project's default OLAP.
+      managed:
+        type: boolean
+        description: 'True if the connector is managed by Rill (i.e. has `managed: true` in the connector definition).'
+      sizeBytes:
+        type: string
+        format: int64
+        description: |-
+          Storage usage in bytes.
+          If it is -1, it means the value is unknown.
+      error:
+        type: string
+        description: |-
+          Error message if the connector was unavailable.
+          This is usually empty.
+  v1ProjectStorageRequest:
+    type: object
+    properties:
+      instanceId:
+        type: string
+  v1ProjectStorageResponse:
+    type: object
+    properties:
+      entries:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ProjectStorageEntry'
+        description: Storage usage per relevant connector in the project.
+      managedSizeBytes:
+        type: string
+        format: int64
+        description: |-
+          Aggregated storage usage by managed connectors in the project.
+          If it is -1, it means the value is unknown.
+          This is a convenience field derived from the entries.
+      defaultOlapSizeBytes:
+        type: string
+        format: int64
+        description: |-
+          Storage usage by the default OLAP connector in the project.
+          If it is -1, it means the value is unknown.
+          This is a convenience field derived from the entries.
   v1PutFileResponse:
     type: object
     properties:
@@ -7088,6 +7164,8 @@ definitions:
   v1Query:
     type: object
     properties:
+      projectStorageRequest:
+        $ref: '#/definitions/v1ProjectStorageRequest'
       metricsViewAggregationRequest:
         $ref: '#/definitions/v1MetricsViewAggregationRequest'
       metricsViewToplistRequest:
@@ -7159,6 +7237,8 @@ definitions:
   v1QueryResult:
     type: object
     properties:
+      projectStorageResponse:
+        $ref: '#/definitions/v1ProjectStorageResponse'
       metricsViewAggregationResponse:
         $ref: '#/definitions/v1MetricsViewAggregationResponse'
       metricsViewToplistResponse:
