@@ -287,9 +287,8 @@
     tables.find(
       (table) =>
         table.name === modelOrSourceOrTableName &&
-        table.database === database &&
-        (table.databaseSchema === databaseSchema ||
-          (!databaseSchema && table.databaseSchema === "default")),
+        (!database || table.database === database) &&
+        (!databaseSchema || table.databaseSchema === databaseSchema),
     );
 
   $: tableMode = Boolean(hasValidOLAPTableSelected);
