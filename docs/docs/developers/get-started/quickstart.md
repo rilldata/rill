@@ -4,12 +4,9 @@ sidebar_label: Quickstart
 sidebar_position: 10
 ---
 import Video from '@site/src/components/Video';
+import OLAPToggle from '@site/src/components/OLAPToggle';
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
-
-:::tip Rill's Default Engine
-This guide assumes you'll be using Rill's default embedded engine, DuckDB. If you're looking to set up Rill with ClickHouse, check out our [ClickHouse Guide](/developers/tutorials/rill-clickhouse)!
-:::
 
 ## What is Rill Developer?
 
@@ -134,7 +131,6 @@ In this mode, only the dashboards, AI chat, and status pages are accessible. The
 :::tip
 You can also switch between Developer and Preview modes from within the app using the mode tag in the top-left header.
 :::
-
 ## What else can Rill do?
 
 This quick start covered the basics, but Rill offers much more:

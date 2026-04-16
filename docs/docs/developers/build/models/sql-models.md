@@ -34,7 +34,7 @@ select * from orders
 
 ### Specifying the Data Source Connector
 
-The `@connector` annotation explicitly defines which data source connector to use when executing the SQL query. This parameter is essential when working with multiple connectors of the same type, as it determines which connection credentials and source path to utilize. By default, query results are written to the project's default [OLAP engine](/developers/build/connectors/olap#olap-engines).
+The `@connector` annotation explicitly defines which data source connector to use when executing the SQL query. This parameter is essential when working with multiple connectors of the same type, as it determines which connection credentials and source path to utilize. By default, query results are written to the project's default [OLAP engine](/developers/build/connectors/olap#rill-managed-olap-engines).
 
 ```sql
 -- @connector: bigquery

@@ -1,0 +1,83 @@
+---
+title: HTTPS
+description: Connect ClickHouse to remote data via HTTP/HTTPS
+sidebar_label: HTTPS
+sidebar_position: 70
+---
+
+import WrongOLAP from '@site/src/components/WrongOLAP';
+import ClickHousePrereq from '@site/src/components/ClickHousePrereq';
+
+<WrongOLAP engine="clickhouse" />
+
+## Overview
+
+ClickHouse can read data from any HTTP/HTTPS endpoint using its [`url()` table function](https://clickhouse.com/docs/en/sql-reference/table-functions/url). This is useful for ingesting data from public APIs, hosted CSV files, or any service that exposes data over HTTP.
+
+<ClickHousePrereq />
+
+## Credentials
+
+If your endpoint requires authentication, add credentials to your project's `.env` file:
+
+```bash
+HTTPS_TOKEN=your_bearer_token
+```
+
+For details on managing credentials, see [Configure Local Credentials](/developers/build/connectors/credentials).
+
+## Model Configuration
+
+### Public Endpoint
+
+```yaml
+type: model
+connector: my_clickhouse
+
+sql: |
+  SELECT *
+  FROM url(
+    'https://example.com/path/to/data.csv',
+    'CSVWithNames'
+  )
+```
+
+### With Authentication Headers
+
+```yaml
+type: model
+connector: my_clickhouse
+
+sql: |
+  SELECT *
+  FROM url(
+    'https://api.example.com/v1/data/export.parquet',
+    'Parquet',
+    headers('Authorization' = 'Bearer {{ .env.HTTPS_TOKEN }}')
+  )
+```
+
+### With Explicit Schema
+
+If the file format doesn't include column names, you can define them explicitly:
+
+```yaml
+type: model
+connector: my_clickhouse
+
+sql: |
+  SELECT *
+  FROM url(
+    'https://example.com/data.csv',
+    'CSV',
+    'id UInt64, name String, value Float64'
+  )
+```
+
+## Supported Formats
+
+ClickHouse's `url()` function supports a wide range of formats including `CSVWithNames`, `JSONEachRow`, `Parquet`, `TSVWithNames`, `JSONCompactEachRow`, and more. See the [ClickHouse formats documentation](https://clickhouse.com/docs/en/interfaces/formats) for the full list.
+
+## Reference
+
+For general HTTPS authentication setup, see the [DuckDB HTTPS connector guide](/developers/build/connectors/data-source/duckdb/https). See also the [ClickHouse URL documentation](https://clickhouse.com/docs/en/sql-reference/table-functions/url) for full syntax details.

@@ -12,8 +12,11 @@ import LoomVideo from '@site/src/components/LoomVideo'; // Adjust the path as ne
 
 <LoomVideo loomId='b96143c386104576bcfe6cabe1038c38' /> <br />
 
-Rill supports connecting to an existing ClickHouse cluster via a "live connector" and using it as an OLAP engine  built against [external tables](/developers/build/connectors/olap#external-olap-tables) to power Rill dashboards. This is particularly useful when working with extremely large datasets (hundreds of GBs or even TB+ in size).
+Rill supports ClickHouse in three ways:
 
+- **ClickHouse Cloud** — Connect to a managed [ClickHouse Cloud](https://clickhouse.com/cloud) instance.
+- **Rill Managed ClickHouse** — Rill provisions and manages a ClickHouse instance for you. No infrastructure to set up.
+- **Self-Managed ClickHouse** — Connect to your own self-hosted ClickHouse instance. Rill queries your cluster directly via a live connector with no data ingestion.
 
 :::note Supported Versions
 
@@ -21,9 +24,11 @@ Rill supports connecting to ClickHouse v22.7 or newer versions.
 
 :::
 
-## Connect to ClickHouse
+## ClickHouse Cloud
 
-When using ClickHouse for local development, you can connect via connection parameters or by using the DSN. Both local instances of ClickHouse and ClickHouse Cloud are supported.
+Connect to an existing [ClickHouse Cloud](https://clickhouse.com/cloud) instance. You can retrieve connection details by clicking the `Connect` tab from within the admin settings navigation page. This will provide the hostname, port, and username for your instance.
+
+![ClickHouse Cloud](/img/build/connectors/olap-engines/clickhouse/clickhouse-cloud.png)
 
 After selecting "Add Data", select ClickHouse and fill in your connection parameters. This will automatically create the `clickhouse.yaml` file in your `connectors` directory and populate the `.env` file with `CLICKHOUSE_PASSWORD` or `CLICKHOUSE_DSN` depending on which you select in the UI.
 
@@ -37,7 +42,61 @@ host: <HOSTNAME>
 port: <PORT>
 username: <USERNAME>
 password: "{{ .env.CLICKHOUSE_PASSWORD }}"
-ssl: true # required for ClickHouse Cloud
+ssl: true
+```
+
+### Connection String (DSN)
+
+Because ClickHouse Cloud requires a secure connection over [https](https://github.com/ClickHouse/clickhouse-go?tab=readme-ov-file#http-support-experimental), you will need to pass in `secure=true` and `skip_verify=true` as additional URL parameters as part of your https URL (for your DSN).
+
+```yaml
+https://<hostname>:<port>?username=<username>&password=<password>&secure=true&skip_verify=true
+```
+
+:::info Need help connecting to ClickHouse?
+
+If you would like to connect Rill to an existing ClickHouse instance, please don't hesitate to [contact us](/contact). We'd love to help!
+
+:::
+
+## Rill Managed ClickHouse
+
+By setting `managed: true` in your ClickHouse connector, Rill will spin up an embedded ClickHouse server. This allows you to import data directly without managing an external database.
+
+```yaml
+type: connector
+
+driver: clickhouse
+managed: true
+```
+
+:::warning Managed ClickHouse is in Testing
+
+Rill Managed ClickHouse is currently in testing. If you encounter any issues, please [contact us](/contact).
+
+:::
+
+:::tip Ingesting Data
+For a full list of supported data sources and configuration examples, see the [ClickHouse data sources](/developers/build/connectors/data-source) documentation.
+:::
+
+## Self-Managed ClickHouse
+
+Connect to your own self-hosted ClickHouse instance using connection parameters or a DSN. Rill uses ClickHouse as an OLAP engine built against [external tables](/developers/build/connectors/olap#external-olap-tables) to power dashboards. This is particularly useful when working with extremely large datasets (hundreds of GBs or even TB+ in size).
+
+After selecting "Add Data", select ClickHouse and fill in your connection parameters. This will automatically create the `clickhouse.yaml` file in your `connectors` directory and populate the `.env` file with `CLICKHOUSE_PASSWORD` or `CLICKHOUSE_DSN` depending on which you select in the UI.
+
+For more information on supported parameters, see our [ClickHouse connector YAML reference docs](/reference/project-files/connectors#clickhouse).
+
+```yaml
+type: connector
+driver: clickhouse
+
+host: <HOSTNAME>
+port: <PORT>
+username: <USERNAME>
+password: "{{ .env.CLICKHOUSE_PASSWORD }}"
+ssl: false
 ```
 
 After creating the connector, you can edit the `.env` file manually in the project directory, or the connectors/clickhouse.yaml file.
@@ -77,49 +136,19 @@ For more information about available DSN properties and setting an appropriate c
 
 :::
 
-## Connect to ClickHouse Cloud
+## Connector Mode
 
-If you are connecting to an existing [ClickHouse Cloud](https://clickhouse.com/cloud) instance, you can retrieve connection details about your instance by clicking on the `Connect` tab from within the admin settings navigation page. This will provide relevant information, such as the hostname, port, and username being used for your instance that you can then use to construct your DSN.
-
-![ClickHouse Cloud](/img/build/connectors/olap-engines/clickhouse/clickhouse-cloud.png)
-
-Using the information in the ClickHouse UI, populate the parameters of your connection. 
-
-### Connection String (DSN)
-
-Because ClickHouse Cloud requires a secure connection over [https](https://github.com/ClickHouse/clickhouse-go?tab=readme-ov-file#http-support-experimental), you will need to pass in `secure=true` and `skip_verify=true` as additional URL parameters as part of your https URL (for your DSN).
+By default, ClickHouse connectors operate in read-only mode. You can explicitly set the mode using the `mode` parameter:
 
 ```yaml
-https://<hostname>:<port>?username=<username>&password=<password>&secure=true&skip_verify=true
+mode: read
 ```
 
-:::info Need help connecting to ClickHouse?
+:::note Read-Write Mode in Development
 
-If you would like to connect Rill to an existing ClickHouse instance, please don't hesitate to [contact us](/contact). We'd love to help!
+Read-write mode (`mode: readwrite`) for self-managed ClickHouse is currently in development. For now, data ingestion is supported through Rill Managed ClickHouse.
 
 :::
-
-## Rill Managed ClickHouse
-
-By setting `managed: true` in your ClickHouse connector, you will enable an embedded ClickHouse server to spin up with Rill. This will allow you to import data directly into this ClickHouse server without having to worry about managing an external database.
-
-```yaml
-type: connector
-
-driver: clickhouse
-managed: true
-```
-
-Data ingestion features are not yet available in the UI, please refer to our [model documentation](/reference/project-files/models) on how to ingest data into ClickHouse. For a guide, see [ingesting data directly into ClickHouse](/developers/tutorials/rill-clickhouse/r_ch_ingest).
-
-
-## Read Only Connector
-
-You can configure your ClickHouse connector to operate in read-only mode by adding a mode parameter. This provides an additional security layer by ensuring your connector can only read data and cannot perform write operations.
-
-```yaml
-mode: read # readwrite
-```
 
 ## Advanced Configuration Options
 
@@ -130,6 +159,10 @@ When using incremental models with partition overwrite strategies, you can enabl
 ```yaml
 optimize_temporary_tables_before_partition_replace: true # default: false
 ```
+
+## Ingesting Data into ClickHouse
+
+For a full list of supported data sources and configuration examples, see the [ClickHouse data sources](/developers/build/connectors/data-source) documentation.
 
 ## Configuring Rill Cloud
 
@@ -146,7 +179,7 @@ If you are developing on a locally running ClickHouse server, this will not be d
 
 ## Setting the Default OLAP Connection
 
-Creating a connection to an OLAP engine will automatically add the `olap_connector` property in your project's [rill.yaml](/reference/project-files/rill-yaml) and change the default OLAP engine to ClickHouse. Once this is changed, you'll notice that some of the UI features are removed as we currently do not support modeling and direct source ingestion in ClickHouse. However, this is behind a feature flag, [contact us](/contact) for more information!
+Creating a connection to ClickHouse will automatically add the `olap_connector` property in your project's [rill.yaml](/reference/project-files/rill-yaml) and change the default OLAP engine to ClickHouse.
 
 ```yaml
 olap_connector: clickhouse
@@ -164,6 +197,6 @@ Rill supports reading from multiple schemas in ClickHouse from within the same p
 
 ## Additional Notes
 
-- At the moment, we do not officially support modeling with ClickHouse; however, this is available via a feature flag. If this is something you're interested in, please [contact us](/contact).
 - For dashboards powered by ClickHouse, [measure definitions](/developers/build/metrics-view/#measures) are required to follow standard [ClickHouse SQL](https://clickhouse.com/docs/en/sql-reference) syntax.
 - Because string columns in ClickHouse can theoretically contain [arbitrary binary data](https://github.com/ClickHouse/ClickHouse/issues/2976#issuecomment-416694860), if your column contains invalid UTF-8 characters, you may want to first cast the column by applying the `toValidUTF8` function ([see ClickHouse documentation](https://clickhouse.com/docs/en/sql-reference/functions/string-functions#tovalidutf8)) before reading the table into Rill to avoid any downstream issues.
+- Data ingestion into ClickHouse is configured through model YAML files — see the [ClickHouse data sources](/developers/build/connectors/data-source) documentation for supported sources and examples.

@@ -8,6 +8,11 @@ className: connect-connect
 ---
 
 import ConnectorIcon from '@site/src/components/ConnectorIcon';
+import ClickHouseLogo from '@site/static/img/build/connectors/icons/Logo-ClickHouse.svg';
+import DuckDBLogo from '@site/static/img/build/connectors/icons/Logo-DuckDB.svg';
+import MotherDuckLogo from '@site/static/img/build/connectors/icons/Logo-MotherDuck.svg';
+import DruidLogo from '@site/static/img/build/connectors/icons/Logo-Druid.svg';
+import StarRocksLogo from '@site/static/img/build/connectors/icons/Logo-StarRocks.svg';
 
 Rill supports connecting directly to your own OLAP engine via a "live connector". In this mode, no data is ingested into Rill, and all compute is pushed down to the OLAP engine. Use this mode if you've already handled all of your modeling upstream and want to use Rill as your visual application layer.
 
@@ -32,13 +37,35 @@ When setting the OLAP Engine via the UI, the `olap_connector` key will automatic
 :::
 
 
-## OLAP Engines
+## Rill Managed OLAP Engines
+### ClickHouse
+### DuckDB
 
-Rill supports the use of several different OLAP engines to power your dashboards, including:
+Rill provisions and manages these engines for you — no infrastructure to set up.
+
+<div className="connector-icon-grid">
+  <ConnectorIcon
+    icon={<ClickHouseLogo />}
+    content="Rill's recommended engine for production. Managed ClickHouse handles large-scale datasets with high concurrency."
+    link="/developers/build/connectors/olap/clickhouse"
+    linkLabel="Learn more"
+    referenceLink="clickhouse"
+  />
+  <ConnectorIcon
+    icon={<DuckDBLogo />}
+    content="The default engine for Rill Developer. Embedded and zero-config for local development."
+    link="/developers/build/connectors/olap/duckdb"
+    linkLabel="Learn more"
+    referenceLink="duckdb"
+  />
+</div>
+
+## Bring Your Own OLAP
+
+Connect Rill to an existing OLAP engine you manage. Rill pushes queries down to your engine with no data ingestion.
 
 ### ClickHouse
 ### Druid
-### DuckDB
 ### MotherDuck
 ### Pinot
 ### Snowflake
@@ -46,37 +73,26 @@ Rill supports the use of several different OLAP engines to power your dashboards
 
 <div className="connector-icon-grid">
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-ClickHouse.svg" alt="ClickHouse" />}
-    content="High-performance columnar database for real-time analytics and data warehousing."
+    icon={<ClickHouseLogo />}
+    content="Connect to your own self-managed ClickHouse or ClickHouse Cloud instance."
     link="/developers/build/connectors/olap/clickhouse"
     linkLabel="Learn more"
     referenceLink="clickhouse"
   />
-
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-Druid.svg" alt="Druid" />}
+    icon={<DruidLogo />}
     content="Real-time analytics database designed for high-performance OLAP queries."
     link="/developers/build/connectors/olap/druid"
     linkLabel="Learn more"
     referenceLink="druid"
   />
-
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-DuckDB.svg" alt="DuckDB" />}
-    content="Add extra parameters to Rill's embedded DuckDB or connect your own."
-    link="/developers/build/connectors/olap/duckdb"
-    linkLabel="Learn more"
-    referenceLink="duckdb"
-  />
-
-  <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-MotherDuck.svg" alt="MotherDuck" />}
+    icon={<MotherDuckLogo />}
     content="Cloud-native DuckDB service for scalable analytics and data processing."
     link="/developers/build/connectors/olap/motherduck"
     linkLabel="Learn more"
     referenceLink="motherduck"
   />
-
   <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-Pinot.svg" alt="Pinot" />}
     content="Distributed OLAP datastore for real-time analytics and business intelligence."
@@ -84,7 +100,6 @@ Rill supports the use of several different OLAP engines to power your dashboards
     linkLabel="Learn more"
     referenceLink="pinot"
   />
-
   <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-Snowflake.svg" alt="Snowflake" />}
     content="Cloud data warehouse with native support for metrics views as a live connector."
@@ -92,9 +107,8 @@ Rill supports the use of several different OLAP engines to power your dashboards
     linkLabel="Learn more"
     referenceLink="snowflake"
   />
-
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-StarRocks.svg" alt="StarRocks" className="starrocks-icon" />}
+    icon={<StarRocksLogo />}
     content="Distributed OLAP datastore for real-time analytics and business intelligence."
     link="/developers/build/connectors/olap/starrocks"
     linkLabel="Learn more"
@@ -102,9 +116,8 @@ Rill supports the use of several different OLAP engines to power your dashboards
   />
 </div>
 
-
 :::note Additional OLAP Engines
-Rill is continually evaluating additional OLAP engines that can be added. For a full list of OLAP engines that we support, refer to our [OLAP Engines](/developers/build/connectors/olap) page. If you don't see an OLAP engine that you'd like to use, please don't hesitate to [reach out](/contact)!
+Rill is continually evaluating additional OLAP engines that can be added. If you don't see an OLAP engine that you'd like to use, please don't hesitate to [reach out](/contact)!
 :::
 
 ## Multiple OLAP Engines in a Single Project

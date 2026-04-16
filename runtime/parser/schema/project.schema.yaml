@@ -311,7 +311,7 @@ definitions:
           required:
             - driver
         # Note: Delta is not a standalone connector. It uses DuckDB's delta_scan() function.
-        # See /developers/build/connectors/data-source/delta for configuration details.
+        # See /developers/build/connectors/data-source/duckdb/delta for configuration details.
         - type: object
           title: Druid
           properties:
@@ -1666,7 +1666,7 @@ definitions:
             then:
               $ref: '#/definitions/models/definitions/gcs'
           - if:
-              title: Additional properties when `connector` is `local_file` or [named connector](/developers/build/connectors/data-source/local-file) of local_file
+              title: Additional properties when `connector` is `local_file` or [named connector](/developers/build/connectors/data-source/duckdb/local-file) of local_file
               properties:
                 connector:
                   const: local_file
