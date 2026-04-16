@@ -47,6 +47,7 @@ func ValidateRendererProperties(renderer string, props map[string]any, metricsVi
 		return validateLeaderboard(props, metricsViews)
 	case "custom_chart":
 		// TODO: Implement
+		return nil
 	default:
 		return fmt.Errorf("unsupported renderer %q", renderer)
 	}
