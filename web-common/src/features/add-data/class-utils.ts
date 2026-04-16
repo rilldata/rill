@@ -9,7 +9,7 @@ const AddDataClassByStepMap: Partial<Record<AddDataStep, string>> = {
   [AddDataStep.Import]: "h-fit w-[550px]",
 };
 const AddDataClassBySchemaMap: Partial<Record<string, string>> = {
-  local_file: " h-fit my-auto w-[550px]",
+  local_file: "h-fit my-auto w-[550px]",
 };
 const DefaultAddDataClass = "h-[630px] md:w-[900px] w-[550px]";
 

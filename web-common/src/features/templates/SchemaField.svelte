@@ -55,6 +55,7 @@
       hint={prop["x-hint"]}
       fileSizeLimit={prop["x-file-size-limit"]}
       fileSizeSoftLimit={prop["x-file-size-soft-limit"]}
+      fileSizeSoftLimitMessage={prop["x-file-size-limit-warning-message"]}
     />
   {/if}
 {:else if prop["x-display"] === "toggle" && prop.type === "boolean"}

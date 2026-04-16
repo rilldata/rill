@@ -26,7 +26,7 @@ export const localFileSchema: MultiStepFormSchema = {
       "x-hint": "CSV, TSV, Parquet, TXT or JSON",
       "x-file-size-limit": UploadFileSizeLimitInBytes,
       "x-file-size-soft-limit": UploadSizeExceededIsWarning,
-      "x-file-size-limit-message":
+      "x-file-size-limit-warning-message":
         "Files over 100MB can be used locally but development to Rill Cloud is not allowed. Consider storing the data externally (e.g. S3) if you plan to deploy this project",
     },
   },

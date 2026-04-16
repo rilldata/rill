@@ -38,7 +38,6 @@
         .filter((f) => f.size > fileSizeLimit!)
         .map(
           (f) =>
-            // Do not show the file name if it's a single file upload.
             `${f.name}: exceeds the maximum size of ${formatMemorySize(fileSizeLimit!)}`,
         )
     : [];
