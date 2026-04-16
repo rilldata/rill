@@ -13,7 +13,10 @@
     BehaviourEventAction,
     BehaviourEventMedium,
   } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
-  import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes.ts";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "@rilldata/web-common/metrics/service/MetricsTypes.ts";
   import { LightbulbIcon, PresentationIcon } from "lucide-svelte";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
@@ -125,6 +128,11 @@
 </div>
 
 <AddDataModal
+  config={{
+    medium: BehaviourEventMedium.Card,
+    space: MetricsEventSpace.Workspace,
+    screen: MetricsEventScreenName.Home,
+  }}
   bind:open={openAddDataDialog}
   schema={selectedAddDataSchema ?? undefined}
 />

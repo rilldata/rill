@@ -102,5 +102,8 @@ export function generateVLStackedBarChartSpec(
   return {
     ...spec,
     ...(vegaConfig && { config: vegaConfig }),
+    ...(config.isInteractive && xField
+      ? { usermeta: { brushTemporalField: xField } }
+      : {}),
   };
 }
