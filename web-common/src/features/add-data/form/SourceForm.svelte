@@ -92,7 +92,7 @@
       throw new Error("Connector driver not found for: " + step.connector);
     }
 
-    await maybeInitProject(runtimeClient, connectorDriver);
+    await maybeInitProject(runtimeClient);
 
     const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
       connectorDriver,

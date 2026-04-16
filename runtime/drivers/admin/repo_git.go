@@ -65,7 +65,6 @@ func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
 	if !r.editable() {
 		force = true
 	}
-	fmt.Println("*************** admin repo pullInner", force)
 
 	// Check if repoDir exists and is a valid Git repository
 	repo, err := git.PlainOpen(r.repoDir)
@@ -109,7 +108,7 @@ func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
 			refSpec := config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", branch, branch))
 			err = remote.Fetch(&git.FetchOptions{
 				RefSpecs: []config.RefSpec{refSpec},
-				Force:    force,
+				Force:    true,
 			})
 			if err != nil && !(errors.Is(err, git.NoErrAlreadyUpToDate) || git.NoMatchingRefSpecError{}.Is(err)) {
 				return fmt.Errorf("failed to fetch from remote: %w", err)

@@ -61,7 +61,7 @@ export async function createConnector({
   validate: boolean;
   existingEnvBlob: string | null;
 }) {
-  await maybeInitProject(runtimeClient, connectorDriver);
+  await maybeInitProject(runtimeClient);
 
   const schema = getConnectorSchema(connectorDriver.name ?? "");
 
@@ -200,24 +200,13 @@ export async function maybeDeleteConnector(
   await unsetOlapConnectorInRillYAML(runtimeClient, queryClient, connectorName);
 }
 
-export async function maybeInitProject(
-  client: RuntimeClient,
-  connector: V1ConnectorDriver,
-) {
+export async function maybeInitProject(client: RuntimeClient) {
   // If project is uninitialized, initialize an empty project
   const projectInitialized = await isProjectInitialized(client);
   if (projectInitialized) return;
-  // Determine the OLAP engine based on the connector being added
-  let olapEngine = "duckdb"; // Default for data sources
-
-  if (connector && OLAP_ENGINES.includes(connector.name as string)) {
-    // For OLAP engines, use the connector name as the OLAP engine
-    olapEngine = connector.name as string;
-  }
 
   await runtimeServiceUnpackEmpty(client, {
     displayName: EMPTY_PROJECT_TITLE,
-    olap: olapEngine, // Explicitly set OLAP based on connector type
   });
   await waitForProjectParser(client.instanceId);
 

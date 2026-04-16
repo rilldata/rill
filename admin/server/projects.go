@@ -459,7 +459,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			runtime.EditTrigger,
 		)
 	}
-	if permissions.ManageDev { // TODO: add safeguard for editable deployments
+	if permissions.ManageDev {
 		instancePermissions = append(
 			instancePermissions,
 			runtime.ReadRepo,
@@ -697,10 +697,15 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		opts.ArchiveAssetID = &req.ArchiveAssetId
 	} else if req.GenerateManagedGit {
 		var remote string
-		opts.GithubRepoID, opts.GithubInstallationID, opts.ManagedGitRepoID, remote, opts.PrimaryBranch, err = s.createEmptyManagedRepo(ctx, org, req.Project, *userID)
+		opts.GithubRepoID, opts.ManagedGitRepoID, remote, opts.PrimaryBranch, err = s.createEmptyManagedRepo(ctx, org, req.Project, *userID)
 		if err != nil {
 			return nil, err
 		}
+		githubInstallationID, err := s.admin.Github.ManagedOrgInstallationID()
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get managed org installation id: %s", err.Error())
+		}
+		opts.GithubInstallationID = &githubInstallationID
 		opts.GitRemote = &remote
 	}
 
@@ -2328,34 +2333,34 @@ func (s *Server) githubRepoIDForProject(ctx context.Context, p *database.Project
 	return id, nil
 }
 
-func (s *Server) createEmptyManagedRepo(ctx context.Context, org *database.Organization, project, ownerID string) (githubRepoID, instID *int64, mgdGitRepoID *string, remote, primaryBranch string, resErr error) {
+func (s *Server) createEmptyManagedRepo(ctx context.Context, org *database.Organization, project, ownerID string) (githubRepoID *int64, mgdGitRepoID *string, remote, primaryBranch string, resErr error) {
 	remoteRepo, err := s.admin.CreateManagedGitRepo(ctx, org, project, ownerID)
 	if err != nil {
-		return nil, nil, nil, "", "", err
+		return nil, nil, "", "", err
 	}
-	cloneUrl := remoteRepo.GetCloneURL()
+	cloneURL := remoteRepo.GetCloneURL()
 
 	gitPath, err := os.MkdirTemp(os.TempDir(), "repos")
 	if err != nil {
-		return nil, nil, nil, "", "", fmt.Errorf("failed to create temp dir: %w", err)
+		return nil, nil, "", "", fmt.Errorf("failed to create temp dir: %w", err)
 	}
 	defer os.RemoveAll(gitPath)
 
-	installationID, err := s.admin.GetGithubInstallation(ctx, cloneUrl)
+	installationID, err := s.admin.GetGithubInstallation(ctx, cloneURL)
 	if err != nil {
-		return nil, nil, nil, "", "", fmt.Errorf("failed to get github installation: %w", err)
+		return nil, nil, "", "", fmt.Errorf("failed to get github installation: %w", err)
 	}
 
 	token, _, err := s.admin.Github.InstallationToken(ctx, installationID, *remoteRepo.ID)
 	if err != nil {
-		return nil, nil, nil, "", "", fmt.Errorf("failed to get installation token: %w", err)
+		return nil, nil, "", "", fmt.Errorf("failed to get installation token: %w", err)
 	}
 
 	branch := remoteRepo.GetDefaultBranch()
 
 	// Create a new blank branch
 	err = gitutil2.CommitAndPush(ctx, gitPath, &gitutil2.Config{
-		Remote:        cloneUrl,
+		Remote:        cloneURL,
 		Username:      "x-access-token",
 		Password:      token,
 		DefaultBranch: branch,
@@ -2365,20 +2370,15 @@ func (s *Server) createEmptyManagedRepo(ctx context.Context, org *database.Organ
 		When:  time.Now(),
 	}, true)
 	if err != nil {
-		return nil, nil, nil, "", "", fmt.Errorf("failed to push: %w", err)
+		return nil, nil, "", "", fmt.Errorf("failed to push: %w", err)
 	}
 
-	mgdGitRepo, err := s.admin.DB.FindManagedGitRepo(ctx, cloneUrl)
+	mgdGitRepo, err := s.admin.DB.FindManagedGitRepo(ctx, cloneURL)
 	if err != nil {
-		return nil, nil, nil, "", "", fmt.Errorf("failed to find managed git repo: %w", err)
+		return nil, nil, "", "", fmt.Errorf("failed to find managed git repo: %w", err)
 	}
 
-	managedGitRepoId, err := s.admin.Github.ManagedOrgInstallationID()
-	if err != nil {
-		return nil, nil, nil, "", "", status.Errorf(codes.Internal, "failed to get managed org installation id: %s", err.Error())
-	}
-
-	return remoteRepo.ID, &managedGitRepoId, &mgdGitRepo.ID, cloneUrl, branch, nil
+	return remoteRepo.ID, &mgdGitRepo.ID, cloneURL, branch, nil
 }
 
 func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {
