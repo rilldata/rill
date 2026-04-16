@@ -12,7 +12,7 @@ Rill supports Snowflake in two distinct modes:
 
 - **OLAP (Live Connector)** — Rill queries Snowflake directly at dashboard load time. No data is ingested into Rill. Use this when your data is already modeled and optimized in Snowflake and you want Rill as a visual layer on top. Set `olap_connector: snowflake` in `rill.yaml`.
 
-- **Data Source Connector** — Rill extracts data from Snowflake and ingests it into its embedded engine (DuckDB or ClickHouse). Use this when you want Rill to manage the data pipeline, apply transformations via SQL models, or combine Snowflake data with other sources. See the [Snowflake data source docs](/developers/build/connectors/data-source/snowflake).
+- **Data Source Connector** — Rill extracts data from Snowflake and ingests it into its embedded engine (DuckDB or ClickHouse). Use this when you want Rill to manage the data pipeline, apply transformations via SQL models, or combine Snowflake data with other sources. See the [Snowflake data source docs](/developers/build/connectors/data-source/duckdb/snowflake).
 
 In general, use the live connector if your Snowflake tables are already production-ready and large. Use data source ingestion if you need to transform, join, or enrich the data before building dashboards.
 :::

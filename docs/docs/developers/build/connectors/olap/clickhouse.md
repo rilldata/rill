@@ -77,7 +77,7 @@ Rill Managed ClickHouse is currently in testing. If you encounter any issues, pl
 :::
 
 :::tip Ingesting Data
-For a full list of supported data sources and configuration examples, see the [ClickHouse data sources](/developers/build/connectors/data-source#clickhouse) documentation.
+For a full list of supported data sources and configuration examples, see the [ClickHouse data sources](/developers/build/connectors/data-source) documentation.
 :::
 
 ## Self-Managed ClickHouse
@@ -162,7 +162,7 @@ optimize_temporary_tables_before_partition_replace: true # default: false
 
 ## Ingesting Data into ClickHouse
 
-For a full list of supported data sources and configuration examples, see the [ClickHouse data sources](/developers/build/connectors/data-source#clickhouse) documentation.
+For a full list of supported data sources and configuration examples, see the [ClickHouse data sources](/developers/build/connectors/data-source) documentation.
 
 ## Configuring Rill Cloud
 
@@ -199,4 +199,4 @@ Rill supports reading from multiple schemas in ClickHouse from within the same p
 
 - For dashboards powered by ClickHouse, [measure definitions](/developers/build/metrics-view/#measures) are required to follow standard [ClickHouse SQL](https://clickhouse.com/docs/en/sql-reference) syntax.
 - Because string columns in ClickHouse can theoretically contain [arbitrary binary data](https://github.com/ClickHouse/ClickHouse/issues/2976#issuecomment-416694860), if your column contains invalid UTF-8 characters, you may want to first cast the column by applying the `toValidUTF8` function ([see ClickHouse documentation](https://clickhouse.com/docs/en/sql-reference/functions/string-functions#tovalidutf8)) before reading the table into Rill to avoid any downstream issues.
-- Data ingestion into ClickHouse is configured through model YAML files — see the [ClickHouse data sources](/developers/build/connectors/data-source#clickhouse) documentation for supported sources and examples.
+- Data ingestion into ClickHouse is configured through model YAML files — see the [ClickHouse data sources](/developers/build/connectors/data-source) documentation for supported sources and examples.
