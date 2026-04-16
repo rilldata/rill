@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 
-test.describe("Org management flow", () => {
+test.describe.serial("Org management flow", () => {
   const welcomeUserOrg = "e2e-welcome-user-org";
 
   // Load environment variables from our root `.env` file
@@ -33,7 +33,11 @@ test.describe("Org management flow", () => {
       process.env.RILL_DEVTOOL_E2E_VIEWER_ACCOUNT_PASSWORD,
     );
 
-    await anonPage.waitForURL("http://localhost:3000/-/welcome/theme");
+    await expect(anonPage.getByText("Pick your color mode")).toBeVisible();
+
+    // Visiting the root redirects back to welcome
+    await anonPage.goto("/");
+    await expect(anonPage.getByText("Pick your color mode")).toBeVisible();
 
     // Select dark theme
     await anonPage.getByLabel("Select dark theme").click();
@@ -48,6 +52,11 @@ test.describe("Org management flow", () => {
 
     // Org creation page is opened.
     await expect(anonPage.getByText("Create an organization")).toBeVisible();
+
+    // Visiting the root redirects back to welcome
+    await anonPage.goto("/");
+    await expect(anonPage.getByText("Create an organization")).toBeVisible();
+
     // Update the org name
     await anonPage.getByLabel("URL").fill(welcomeUserOrg);
     // Click the continue button to deploy

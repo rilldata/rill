@@ -77,9 +77,8 @@ export const load = async ({ params, url, route, depends }) => {
     }
   }
 
-  // Redirect users through the welcome flow when they have no organizations.
-  // Skip for org-specific routes (invite accepts), auth pages, and welcome pages themselves.
-  await maybeRedirectToWelcomePage(route);
+  // Maybe redirect user to welcome flow. More details in maybeRedirectToWelcomePage
+  if (user) await maybeRedirectToWelcomePage(route);
 
   // If no organization or project, return empty permissions
   if (!organization) {

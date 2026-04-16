@@ -1,6 +1,8 @@
 import { MetricsEventScreenName } from "@rilldata/web-common/metrics/service/MetricsTypes";
 import type { Page } from "@sveltejs/kit";
 
+// TODO: update all methods to use partial Page based on what is needed, so that it can be called in loader functions.
+
 export function isOrganizationPage(page: Page): boolean {
   return (
     page.route.id === "/[organization]" ||
