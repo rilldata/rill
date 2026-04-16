@@ -42,6 +42,9 @@ const config = {
           "https://*.app-us1.com/",
           "https://*.usepylon.com",
           "https://*.pusher.com",
+          // Hash of the inline script injected by the Pylon chat widget at runtime.
+          // If Pylon updates their widget, this hash may need to be refreshed.
+          "sha256-q7DzCTpmdcQlqCarsIE22KTL5subp7TPBUdWqrL6HJw=",
         ],
         // style-src keeps 'unsafe-inline': runtime style injection from
         // CodeMirror and other libraries cannot be hash-attributed.
