@@ -1,5 +1,5 @@
 import { expect, type Page } from "@playwright/test";
-import { test } from "@rilldata/web-integration/tests/setup/base.ts";
+import { test } from "./setup/base";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";

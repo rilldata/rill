@@ -9,8 +9,8 @@ export function isOrganizationPage(page: Page): boolean {
   );
 }
 
-export function withinOrganization(page: Page): boolean {
-  return !!page.route?.id?.startsWith("/[organization]");
+export function withinOrganization({ route }: Pick<Page, "route">): boolean {
+  return !!route?.id?.startsWith("/[organization]");
 }
 
 export function isProjectPage(page: Page): boolean {
@@ -106,11 +106,10 @@ export function isBillingUpgradePage(page: Page): boolean {
   return page.route.id === "/[organization]/-/upgrade-callback";
 }
 
-export function isWelcomePage(page: Page): boolean {
-  return !!page.route.id?.startsWith("/-/welcome");
+export function isWelcomePage({ route }: Pick<Page, "route">): boolean {
+  return !!route.id?.startsWith("/-/welcome");
 }
 
-// isAuthPage is called in loader function. Since we only need route, this accepts partial page.
 export function isAuthPage({ route }: Pick<Page, "route">): boolean {
   return !!route.id?.startsWith("/-/auth");
 }

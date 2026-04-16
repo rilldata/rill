@@ -4,11 +4,18 @@
   import CreateNewOrgForm from "@rilldata/web-common/features/organization/CreateNewOrgForm.svelte";
   import { CreateNewOrgFormId } from "@rilldata/web-common/features/organization/CreateNewOrgForm.svelte";
   import RillLogoSquareNegative from "@rilldata/web-common/components/icons/RillLogoSquareNegative.svelte";
-  import { createAdminServiceCreateOrganization } from "@rilldata/web-admin/client";
-  import { InWelcomeFlowStore } from "@rilldata/web-admin/features/welcome/welcome-store.ts";
+  import {
+    createAdminServiceCreateOrganization,
+    type RpcStatus,
+  } from "@rilldata/web-admin/client";
+  import type { AxiosError } from "axios";
 
   const createOrgMutation = createAdminServiceCreateOrganization();
-  $: ({ isPending } = $createOrgMutation);
+  $: ({ isPending, error } = $createOrgMutation);
+  $: errorMessage = error
+    ? ((error as unknown as AxiosError<RpcStatus>)?.response?.data?.message ??
+      error.message)
+    : undefined;
 
   async function createOrg(name: string, displayName: string) {
     await $createOrgMutation.mutateAsync({
@@ -18,7 +25,6 @@
       },
     });
 
-    InWelcomeFlowStore.set(false);
     // This navigation gets cancelled if we do not have `setTimeout` here.
     setTimeout(() => void goto(`/${name}`));
   }
@@ -40,6 +46,9 @@
       </div>
     </div>
     <CreateNewOrgForm {createOrg} size="xl" />
+    {#if errorMessage}
+      <div class="text-sm text-destructive">{errorMessage}</div>
+    {/if}
     <div class="w-full flex justify-end">
       <Button
         type="primary"

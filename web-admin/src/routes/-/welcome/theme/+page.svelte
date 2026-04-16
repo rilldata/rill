@@ -6,9 +6,6 @@
     themeControl,
     type ThemeMode,
   } from "@rilldata/web-common/features/themes/theme-control.ts";
-  import LightModeIcon from "@rilldata/web-admin/features/welcome/icons/LightModeIcon.svelte";
-  import DarkModeIcon from "@rilldata/web-admin/features/welcome/icons/DarkModeIcon.svelte";
-  import SystemModeIcon from "@rilldata/web-admin/features/welcome/icons/SystemModeIcon.svelte";
 
   const { preference } = themeControl;
   $: selectedPreference = $preference;
@@ -16,11 +13,15 @@
   const ThemeOptions: {
     label: string;
     value: ThemeMode;
-    icon: typeof LightModeIcon | typeof DarkModeIcon | typeof SystemModeIcon;
+    image: string;
   }[] = [
-    { label: "Light", value: "light", icon: LightModeIcon },
-    { label: "Dark", value: "dark", icon: DarkModeIcon },
-    { label: "System", value: "system", icon: SystemModeIcon },
+    { label: "Light", value: "light", image: "/img/theme/light-mode.svg" },
+    { label: "Dark", value: "dark", image: "/img/theme/dark-mode.svg" },
+    {
+      label: "System",
+      value: "system",
+      image: "/img/theme/system-mode.svg",
+    },
   ];
 
   function handleThemeChange(theme: ThemeMode) {
@@ -33,6 +34,7 @@
   }
 
   function handleContinue() {
+    themeControl.set[selectedPreference](); // Force selection so that localStorage is updated.
     return goto("/-/welcome/organization");
   }
 </script>
@@ -55,7 +57,7 @@
           class:shadow-lg={isSelected}
           class:border-ring-focus={isSelected}
         >
-          <svelte:component this={themeOption.icon} />
+          <img src={themeOption.image} alt="{themeOption.value} image" />
         </div>
         <div class="text-sm font-semibold text-fg-primary">
           {themeOption.label}

@@ -250,7 +250,7 @@ func (f *Fixture) NewUserWithEmail(t *testing.T, emailAddr string) (*database.Us
 	ctx := t.Context()
 	name := fmt.Sprintf("Test %s", strings.Split(emailAddr, "@")[0])
 
-	u, _, err := f.Admin.CreateOrUpdateUser(ctx, emailAddr, name, "")
+	u, err := f.Admin.CreateOrUpdateUser(ctx, emailAddr, name, "")
 	require.NoError(t, err)
 
 	tkn, err := f.Admin.IssueUserAuthToken(ctx, u.ID, database.AuthClientIDRillWeb, "Test session", nil, nil, false)

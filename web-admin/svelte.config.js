@@ -42,11 +42,12 @@ const config = {
           "https://*.app-us1.com/",
           "https://*.usepylon.com",
           "https://*.pusher.com",
+          ...(dev ? ["http:"] : []),
         ],
         // style-src keeps 'unsafe-inline': runtime style injection from
         // CodeMirror and other libraries cannot be hash-attributed.
         "style-src": ["self", "unsafe-inline", "https://*.usepylon.com"],
-        "img-src": ["https:", "data:", "blob:"],
+        "img-src": [...(dev ? ["http:"] : []), "https:", "data:", "blob:"],
         "frame-src": [
           "self",
           "https://www.youtube.com/",

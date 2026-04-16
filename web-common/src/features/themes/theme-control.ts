@@ -80,3 +80,17 @@ class ThemeControl {
 }
 
 export const themeControl = new ThemeControl();
+
+/**
+ * Returns true if the user needs to select a theme — i.e. no theme has been
+ * persisted to localStorage yet. Always returns false in the embed context,
+ * which manages its own ephemeral theme preference.
+ */
+export function isThemeSelectionNeeded(): boolean {
+  if (isEmbedEnvironment()) return false;
+  try {
+    return localStorage.getItem("rill:theme") === null;
+  } catch {
+    return false;
+  }
+}

@@ -27,10 +27,7 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import { error, redirect, type Page } from "@sveltejs/kit";
 import { isAxiosError } from "axios";
 import { Settings } from "luxon";
-import { getSingleUseUrlParam } from "@rilldata/web-admin/features/navigation/getSingleUseUrlParam.ts";
-import { InWelcomeFlowStore } from "@rilldata/web-admin/features/welcome/welcome-store.ts";
-import { get } from "svelte/store";
-import { isAuthPage } from "@rilldata/web-admin/features/navigation/nav-utils.ts";
+import { maybeRedirectToWelcomePage } from "@rilldata/web-admin/features/welcome/utils.ts";
 
 Settings.defaultLocale = "en";
 
@@ -80,21 +77,9 @@ export const load = async ({ params, url, route, depends }) => {
     }
   }
 
-  const isNewUser = getSingleUseUrlParam(url, "new_user", "rill:cloud:newUser");
-
-  const redirectToWelcomePage =
-    isNewUser &&
-    // Only show the welcome screen for new users directly coming to rill cloud.
-    // Organization exists for users accepting invite, we will land them directly to the org.
-    !organization &&
-    // Skip welcome screen for auth pages, user coming from cli shouldnt be shown the welcome screen.
-    !isAuthPage({ route }) &&
-    // Safeguard for redirect loop
-    !get(InWelcomeFlowStore);
-  if (redirectToWelcomePage) {
-    InWelcomeFlowStore.set(true);
-    throw redirect(307, "/-/welcome/theme");
-  }
+  // Redirect users through the welcome flow when they have no organizations.
+  // Skip for org-specific routes (invite accepts), auth pages, and welcome pages themselves.
+  await maybeRedirectToWelcomePage(route);
 
   // If no organization or project, return empty permissions
   if (!organization) {
