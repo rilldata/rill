@@ -70,11 +70,11 @@
   ]);
 
   function enrichDescriptions(chips: PivotChipData[]): PivotChipData[] {
-    return chips.map((chip) =>
-      chip.description
-        ? chip
-        : { ...chip, description: descriptionMap.get(chip.id) },
-    );
+    return chips.map((chip) => {
+      if (chip.description) return chip;
+      const desc = descriptionMap.get(chip.id);
+      return desc ? { ...chip, description: desc } : chip;
+    });
   }
 
   $: enrichedPivotState = {
@@ -124,7 +124,7 @@
       }}
     >
       <PivotToolbar
-        pivotState={$dashboardStore.pivot}
+        pivotState={enrichedPivotState}
         setTableMode={(tableMode, rows, columns) =>
           metricsExplorerStore.setPivotTableMode(
             $exploreName,
