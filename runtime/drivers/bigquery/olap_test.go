@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -140,18 +141,19 @@ func TestExec(t *testing.T) {
 	testmode.Expensive(t)
 	_, olap := acquireTestBigQuery(t)
 
+	name := "test_exec" + uuid.New().String()[:8]
 	t.Cleanup(func() {
 		// drop table
-		err := olap.Exec(context.Background(), &drivers.Statement{Query: "DROP TABLE `rilldata.integration_test.exec_test`"})
+		err := olap.Exec(context.Background(), &drivers.Statement{Query: "DROP TABLE IF EXISTS `rilldata.integration_test." + name + "`"})
 		require.NoError(t, err)
 	})
 
 	// create table with dry run
-	err := olap.Exec(t.Context(), &drivers.Statement{Query: "CREATE TABLE `rilldata.integration_test.exec_test` (id INT64, name STRING)", DryRun: true})
+	err := olap.Exec(t.Context(), &drivers.Statement{Query: "CREATE TABLE `rilldata.integration_test." + name + "` (id INT64, name STRING)", DryRun: true})
 	require.NoError(t, err)
 
 	// create table actually
-	err = olap.Exec(t.Context(), &drivers.Statement{Query: "CREATE OR REPLACE TABLE `rilldata.integration_test.exec_test` (id INT64, name STRING)"})
+	err = olap.Exec(t.Context(), &drivers.Statement{Query: "CREATE OR REPLACE TABLE `rilldata.integration_test." + name + "` (id INT64, name STRING)"})
 	require.NoError(t, err)
 
 }
