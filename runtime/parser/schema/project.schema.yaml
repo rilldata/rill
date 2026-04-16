@@ -1666,7 +1666,7 @@ definitions:
             then:
               $ref: '#/definitions/models/definitions/gcs'
           - if:
-              title: Additional properties when `connector` is `local_file` or [named connector](/developers/build/connectors/data-source/local-file) of local_file
+              title: Additional properties when `connector` is `local_file` or [named connector](/developers/build/connectors/data-source/duckdb/local-file) of local_file
               properties:
                 connector:
                   const: local_file
