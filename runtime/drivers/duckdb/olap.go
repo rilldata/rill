@@ -249,6 +249,10 @@ func (c *connection) InformationSchema() drivers.OLAPInformationSchema {
 	return c
 }
 
+func (c *connection) EstimateSize(ctx context.Context) (int64, error) {
+	return c.estimateSize(), nil
+}
+
 func (c *connection) estimateSize() int64 {
 	db, release, err := c.acquireDB()
 	if err != nil {

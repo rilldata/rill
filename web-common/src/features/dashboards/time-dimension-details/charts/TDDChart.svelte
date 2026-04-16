@@ -7,13 +7,13 @@
     setExternalHover,
   } from "@rilldata/web-common/features/components/charts/highlight-controller";
   import type { ChartProvider } from "@rilldata/web-common/features/components/charts/types";
+  import { THEME_STORE_CONTEXT_KEY } from "@rilldata/web-common/features/dashboards/ThemeProvider.svelte";
   import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import type { DimensionSeriesData } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/types";
   import { MetricsViewSelectors } from "@rilldata/web-common/features/metrics-views/metrics-view-selectors";
-  import { THEME_STORE_CONTEXT_KEY } from "@rilldata/web-common/features/dashboards/ThemeProvider.svelte";
-  import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import type { Theme } from "@rilldata/web-common/features/themes/theme";
+  import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import type {
     MetricsViewSpecMeasure,
     V1Expression,
@@ -23,9 +23,9 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { Interval } from "luxon";
   import { getContext } from "svelte";
+  import type { View } from "svelte-vega";
   import type { Readable, Writable } from "svelte/store";
   import { readable } from "svelte/store";
-  import type { View } from "vega-typings";
   import type { TDDChart } from "../types";
   import {
     createTDDCartesianSpec,
@@ -45,12 +45,10 @@
   export let dimensionData: DimensionSeriesData[] = [];
   export let showComparison: boolean = false;
   export let chartType: TDDChart;
-  export let isScrubbing: boolean;
   export let onChartHover: (
     dimension: undefined | string | null,
     ts: Date | undefined,
   ) => void;
-  export let onChartBrush: (interval: { start: Date; end: Date }) => void;
   export let onChartBrushEnd: (interval: { start: Date; end: Date }) => void;
   export let onChartBrushClear: () => void;
 
@@ -170,8 +168,6 @@
   {themeMode}
   isCanvas={false}
   temporalField={timeDimension}
-  {isScrubbing}
-  onBrush={onChartBrush}
   onBrushEnd={onChartBrushEnd}
   onBrushClear={onChartBrushClear}
   onHover={onChartHover}

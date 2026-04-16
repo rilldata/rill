@@ -20,7 +20,6 @@
   export let filePath: string;
   export let metricsViewName: string;
   export let parseError: V1ParseError | undefined = undefined;
-  export let rootCauseReconcileError: string | undefined = undefined;
   export let fileArtifact: FileArtifact;
   export let autoSave: boolean;
 
@@ -40,9 +39,7 @@
   $: if (editor) setLineStatuses(lineStatus ? [lineStatus] : [], editor);
 </script>
 
-<WorkspaceEditorContainer
-  error={parseError?.message ?? rootCauseReconcileError}
->
+<WorkspaceEditorContainer>
   <Editor
     bind:autoSave
     bind:editor

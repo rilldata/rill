@@ -197,6 +197,10 @@ func (c *connection) InformationSchema() drivers.OLAPInformationSchema {
 	return c
 }
 
+func (c *connection) EstimateSize(ctx context.Context) (int64, error) {
+	return -1, nil
+}
+
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	if r == nil {
 		return nil, nil

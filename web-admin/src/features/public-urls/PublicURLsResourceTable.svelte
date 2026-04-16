@@ -136,7 +136,7 @@
               <td class="table-cell">
                 {#if filters.length > 0}
                   <div class="flex gap-1 flex-wrap">
-                    {#each filters as filter (filter.name)}
+                    {#each filters as filter, i (filter.name + i)}
                       <Chip
                         type="dimension"
                         readOnly

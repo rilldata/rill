@@ -30,8 +30,6 @@
 
   $: sourceName = extractFileName(sourcePath ?? "");
 
-  $: ({ instanceId } = runtimeClient);
-
   $: if (sourcePath) {
     fileArtifact = fileArtifacts.getFileArtifact(sourcePath);
     sourceQuery = fileArtifact.getResource(queryClient);
@@ -42,7 +40,6 @@
     sourcePath !== null
       ? useCreateMetricsViewWithCanvasAndExploreUIAction(
           runtimeClient,
-          instanceId,
           sinkConnector as string,
           "",
           "",

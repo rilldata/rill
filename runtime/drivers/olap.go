@@ -60,6 +60,9 @@ type OLAPStore interface {
 	QuerySchema(ctx context.Context, query string, args []any) (*runtimev1.StructType, error)
 	// InformationSchema enables introspecting the tables and views available in the OLAP driver.
 	InformationSchema() OLAPInformationSchema
+	// EstimateSize returns an estimate of the total data size in bytes.
+	// Returns -1 if size estimation is not supported by the driver.
+	EstimateSize(ctx context.Context) (int64, error)
 }
 
 // Statement wraps a query to execute against an OLAP driver.

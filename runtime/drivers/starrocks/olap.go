@@ -147,6 +147,11 @@ func (c *connection) InformationSchema() drivers.OLAPInformationSchema {
 	return &informationSchema{c: c}
 }
 
+// EstimateSize implements drivers.OLAPStore.
+func (c *connection) EstimateSize(ctx context.Context) (int64, error) {
+	return -1, nil
+}
+
 // rowsToSchema converts SQL rows to StructType schema.
 func (c *connection) rowsToSchema(rows *sqlx.Rows) (*runtimev1.StructType, error) {
 	colTypes, err := rows.ColumnTypes()

@@ -18,18 +18,19 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { V1ProjectPermissions } from "../../client";
   import { createAdminServiceGetCurrentUser } from "../../client";
+  import {
+    useBreadcrumbOrgPaths,
+    useBreadcrumbProjectPaths,
+  } from "../navigation/breadcrumb-selectors";
   import ViewAsUserChip from "../../features/view-as-user/ViewAsUserChip.svelte";
   import { viewAsUserStore } from "../../features/view-as-user/viewAsUserStore";
   import CreateAlert from "../alerts/CreateAlert.svelte";
   import { useAlerts } from "../alerts/selectors";
   import AvatarButton from "../authentication/AvatarButton.svelte";
+  import BranchSelector from "../branches/BranchSelector.svelte";
   import SignIn from "../authentication/SignIn.svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
   import { useDashboards } from "../dashboards/listing/selectors";
-  import {
-    useBreadcrumbOrgPaths,
-    useBreadcrumbProjectPaths,
-  } from "../navigation/breadcrumb-selectors";
   import {
     isCanvasDashboardPage,
     isMetricsExplorerPage,
@@ -45,6 +46,7 @@
   export let manageOrgAdmins: boolean;
   export let manageOrgMembers: boolean;
   export let readProjects: boolean;
+  export let primaryBranch: string | undefined = undefined;
   export let planDisplayName: string | undefined;
   export let organizationLogoUrl: string | undefined;
 
@@ -168,7 +170,13 @@
   {#if onPublicURLPage}
     <PageTitle title={publicURLDashboardTitle} />
   {:else if organization}
-    <Breadcrumbs {pathParts} {currentPath} />
+    <Breadcrumbs {pathParts} {currentPath}>
+      <svelte:fragment slot="after-project">
+        {#if !onPublicURLPage && projectPermissions?.readDev}
+          <BranchSelector {organization} {project} {primaryBranch} />
+        {/if}
+      </svelte:fragment>
+    </Breadcrumbs>
   {/if}
 
   <div class="flex gap-x-2 items-center ml-auto">
@@ -219,19 +227,21 @@
       {/if}
     {/if}
 
-    {#if onCanvasDashboardPage && hasUserAccess}
+    {#if onCanvasDashboardPage}
       {#if $dashboardChat && !onPublicURLPage}
         <ChatToggle />
       {/if}
-      <CanvasBookmarks {organization} {project} canvasName={dashboard} />
-      <ShareDashboardPopover
-        createMagicAuthTokens={projectPermissions.createMagicAuthTokens}
-      />
+      {#if hasUserAccess}
+        <CanvasBookmarks {organization} {project} canvasName={dashboard} />
+        <ShareDashboardPopover
+          createMagicAuthTokens={projectPermissions.createMagicAuthTokens}
+        />
+      {/if}
     {/if}
 
     {#if $user.isSuccess}
       {#if $user.data?.user}
-        <AvatarButton />
+        <AvatarButton {projectPermissions} />
       {:else}
         <SignIn />
       {/if}

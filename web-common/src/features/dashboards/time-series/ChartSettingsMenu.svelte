@@ -12,6 +12,10 @@
   export let forceLineChart: boolean;
   export let dynamicYAxisScale: boolean;
   export let showForceLineChart = true;
+  export let onForceLineChartChange: ((value: boolean) => void) | undefined =
+    undefined;
+  export let onDynamicYAxisScaleChange: ((value: boolean) => void) | undefined =
+    undefined;
 
   let open = false;
 </script>
@@ -41,7 +45,10 @@
         <Switch
           small
           checked={forceLineChart}
-          onCheckedChange={() => (forceLineChart = !forceLineChart)}
+          onCheckedChange={() => {
+            forceLineChart = !forceLineChart;
+            onForceLineChartChange?.(forceLineChart);
+          }}
         />
       </div>
     {/if}
@@ -50,7 +57,10 @@
       <Switch
         small
         checked={dynamicYAxisScale}
-        onCheckedChange={() => (dynamicYAxisScale = !dynamicYAxisScale)}
+        onCheckedChange={() => {
+          dynamicYAxisScale = !dynamicYAxisScale;
+          onDynamicYAxisScaleChange?.(dynamicYAxisScale);
+        }}
       />
     </div>
   </PopoverContent>
