@@ -294,6 +294,12 @@
 
   $: tableMode = Boolean(hasValidOLAPTableSelected);
 
+  $: showConnectorExplorer =
+    !!yamlConnector ||
+    tableMode ||
+    !isModelingSupported ||
+    modelAndSourceOptions.length === 0;
+
   function createDimensions(
     rawDimensions: YAMLSeq<YAMLMap<string, string>>,
     metricsViewDimensions: MetricsViewSpecDimension[],
@@ -543,7 +549,7 @@
 <div class="wrapper">
   <div class="main-area">
     <div class="flex gap-x-4 border-b pb-4">
-      {#if tableMode || !isModelingSupported}
+      {#if showConnectorExplorer}
         <div class="flex flex-col gap-y-1 w-full">
           <InputLabel label="Table" id="table">
             <svelte:fragment slot="mode-switch">
@@ -586,7 +592,11 @@
               class="!min-w-64  overflow-hidden p-1"
             >
               <div class="size-full overflow-y-auto max-h-72">
-                <ConnectorExplorer {store} olapOnly />
+                <ConnectorExplorer
+                  {store}
+                  olapOnly
+                  filterConnector={yamlConnector}
+                />
               </div>
             </DropdownMenu.Content>
           </DropdownMenu.Root>

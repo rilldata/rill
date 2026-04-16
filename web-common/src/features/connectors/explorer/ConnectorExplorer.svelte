@@ -8,11 +8,15 @@
 
   export let store: ConnectorExplorerStore;
   export let olapOnly: boolean = false;
+  export let filterConnector: string = "";
 
   const client = useRuntimeClient();
 
   $: connectors = getAnalyzedConnectors(client, olapOnly);
   $: ({ data, error } = $connectors);
+  $: filteredConnectors = filterConnector
+    ? (data?.connectors?.filter((c) => c.name === filterConnector) ?? [])
+    : (data?.connectors ?? []);
 </script>
 
 <div class="wrapper">
@@ -21,11 +25,11 @@
       {error.message}
     </span>
   {:else if data?.connectors}
-    {#if data.connectors.length === 0}
+    {#if filteredConnectors.length === 0}
       <span class="message"> No data found. Add data to get started! </span>
     {:else}
       <ol transition:slide={{ duration }}>
-        {#each data.connectors as connector (connector.name)}
+        {#each filteredConnectors as connector (connector.name)}
           <ConnectorEntry {connector} {store} />
         {/each}
       </ol>
