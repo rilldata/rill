@@ -221,6 +221,36 @@ func TestGitRepo_pullInner(t *testing.T) {
 			},
 		},
 		{
+			name: "editable mode - pushes newly created default branch to remote when it doesn't exist",
+			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
+				require.NoError(t, os.RemoveAll(localDir))
+				return &gitRepo{
+					h:             &Handle{logger: zap.NewNop()},
+					repoDir:       localDir,
+					remoteURL:     remoteURL,
+					defaultBranch: "edit-branch",
+					editableDepl:  true,
+					primaryBranch: "main",
+					subpath:       "",
+					managedRepo:   true,
+				}
+			},
+			setupRemote: func(t *testing.T, remoteDir string) {
+				// Remote only has main; edit-branch does not exist yet.
+			},
+			force:       false,
+			expectError: false,
+			validate: func(t *testing.T, repo *gitRepo, localDir string) {
+				verifyCurrentBranch(t, localDir, "edit-branch")
+
+				// Verify edit-branch was pushed to remote.
+				cmd := exec.Command("git", "ls-remote", "--heads", repo.remoteURL, "edit-branch")
+				output, err := cmd.Output()
+				require.NoError(t, err)
+				require.NotEmpty(t, output, "edit-branch should have been pushed to remote")
+			},
+		},
+		{
 			name: "switch primary branch from main to rename (remote only has main initially)",
 			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
 				// Remove the local directory to simulate no existing repo

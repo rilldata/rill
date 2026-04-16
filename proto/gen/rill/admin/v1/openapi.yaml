@@ -2466,6 +2466,9 @@ paths:
                                         Optional ID for an external end user of the deployment. If set, the access token enables per-user state, such as AI chat history.
                                         Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state.
                                     type: string
+                                superuserForceAccess:
+                                    description: If true, superusers can access the deployment even without org/project membership.
+                                    type: boolean
                                 userEmail:
                                     description: If set, will generate attributes corresponding to a user with this email.
                                     type: string
@@ -4100,6 +4103,9 @@ paths:
                                         Optional ID for an external end user of the deployment. If set, the access token enables per-user state, such as AI chat history.
                                         Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state.
                                     type: string
+                                superuserForceAccess:
+                                    description: If true, superusers can access the deployment even without org/project membership.
+                                    type: boolean
                                 ttlSeconds:
                                     description: Optional TTL for the returned access token in seconds.
                                     format: int64
@@ -4296,6 +4302,9 @@ paths:
                                 state:
                                     description: Blob containing UI state for rendering the initial embed. Not currently supported.
                                     type: string
+                                superuserForceAccess:
+                                    description: If true, superusers can access the project even without org/project membership.
+                                    type: boolean
                                 theme:
                                     description: Theme to use for the embedded resource.
                                     type: string
