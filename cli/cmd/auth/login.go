@@ -157,8 +157,6 @@ func SelectOrgFlow(ctx context.Context, ch *cmdutil.Helper, forceNoninteractive 
 	}
 	ch.Org = defaultOrg
 
-	if interactive {
-		ch.Printf("Set default org to %q (hint: to change, run `rill org switch`).\n", defaultOrg)
-	}
+	ch.Printf("Set default org to %q (hint: to change, run `rill org switch`).\n", defaultOrg)
 	return nil
 }
