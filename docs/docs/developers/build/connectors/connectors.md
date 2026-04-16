@@ -84,6 +84,7 @@ Rill provisions and manages these engines for you — no infrastructure to set u
 
 Connect Rill to an existing OLAP engine you manage. Rill pushes queries down to your engine with no data ingestion.
 
+### ClickHouse
 ### Druid
 ### MotherDuck
 ### Pinot
@@ -91,6 +92,13 @@ Connect Rill to an existing OLAP engine you manage. Rill pushes queries down to 
 ### StarRocks
 
 <div className="connector-icon-grid">
+  <ConnectorIcon
+    icon={<ClickHouseLogo />}
+    content="Connect to your own self-managed ClickHouse or ClickHouse Cloud instance."
+    link="/developers/build/connectors/olap/clickhouse"
+    linkLabel="Learn more"
+    referenceLink="clickhouse"
+  />
   <ConnectorIcon
     icon={<DruidLogo />}
     content="Real-time analytics database designed for high-performance OLAP queries."

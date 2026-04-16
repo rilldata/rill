@@ -12,8 +12,11 @@ import LoomVideo from '@site/src/components/LoomVideo'; // Adjust the path as ne
 
 <LoomVideo loomId='b96143c386104576bcfe6cabe1038c38' /> <br />
 
-Rill supports connecting to an existing ClickHouse cluster via a "live connector" and using it as an OLAP engine  built against [external tables](/developers/build/connectors/olap#external-olap-tables) to power Rill dashboards. This is particularly useful when working with extremely large datasets (hundreds of GBs or even TB+ in size).
+Rill supports ClickHouse in three ways:
 
+- **ClickHouse Cloud** — Connect to a managed [ClickHouse Cloud](https://clickhouse.com/cloud) instance.
+- **Rill Managed ClickHouse** — Rill provisions and manages a ClickHouse instance for you. No infrastructure to set up.
+- **Self-Managed ClickHouse** — Connect to your own self-hosted ClickHouse instance. Rill queries your cluster directly via a live connector with no data ingestion.
 
 :::note Supported Versions
 
@@ -21,9 +24,11 @@ Rill supports connecting to ClickHouse v22.7 or newer versions.
 
 :::
 
-## Connect to ClickHouse
+## ClickHouse Cloud
 
-When using ClickHouse for local development, you can connect via connection parameters or by using the DSN. Both local instances of ClickHouse and ClickHouse Cloud are supported.
+Connect to an existing [ClickHouse Cloud](https://clickhouse.com/cloud) instance. You can retrieve connection details by clicking the `Connect` tab from within the admin settings navigation page. This will provide the hostname, port, and username for your instance.
+
+![ClickHouse Cloud](/img/build/connectors/olap-engines/clickhouse/clickhouse-cloud.png)
 
 After selecting "Add Data", select ClickHouse and fill in your connection parameters. This will automatically create the `clickhouse.yaml` file in your `connectors` directory and populate the `.env` file with `CLICKHOUSE_PASSWORD` or `CLICKHOUSE_DSN` depending on which you select in the UI.
 
@@ -37,7 +42,61 @@ host: <HOSTNAME>
 port: <PORT>
 username: <USERNAME>
 password: "{{ .env.CLICKHOUSE_PASSWORD }}"
-ssl: true # required for ClickHouse Cloud
+ssl: true
+```
+
+### Connection String (DSN)
+
+Because ClickHouse Cloud requires a secure connection over [https](https://github.com/ClickHouse/clickhouse-go?tab=readme-ov-file#http-support-experimental), you will need to pass in `secure=true` and `skip_verify=true` as additional URL parameters as part of your https URL (for your DSN).
+
+```yaml
+https://<hostname>:<port>?username=<username>&password=<password>&secure=true&skip_verify=true
+```
+
+:::info Need help connecting to ClickHouse?
+
+If you would like to connect Rill to an existing ClickHouse instance, please don't hesitate to [contact us](/contact). We'd love to help!
+
+:::
+
+## Rill Managed ClickHouse
+
+By setting `managed: true` in your ClickHouse connector, Rill will spin up an embedded ClickHouse server. This allows you to import data directly without managing an external database.
+
+```yaml
+type: connector
+
+driver: clickhouse
+managed: true
+```
+
+:::warning Managed ClickHouse is in Testing
+
+Rill Managed ClickHouse is currently in testing. If you encounter any issues, please [contact us](/contact).
+
+:::
+
+:::tip Ingesting Data
+For a full list of supported data sources and configuration examples, see the [ClickHouse data sources](/developers/build/connectors/data-source#clickhouse) documentation.
+:::
+
+## Self-Managed ClickHouse
+
+Connect to your own self-hosted ClickHouse instance using connection parameters or a DSN. Rill uses ClickHouse as an OLAP engine built against [external tables](/developers/build/connectors/olap#external-olap-tables) to power dashboards. This is particularly useful when working with extremely large datasets (hundreds of GBs or even TB+ in size).
+
+After selecting "Add Data", select ClickHouse and fill in your connection parameters. This will automatically create the `clickhouse.yaml` file in your `connectors` directory and populate the `.env` file with `CLICKHOUSE_PASSWORD` or `CLICKHOUSE_DSN` depending on which you select in the UI.
+
+For more information on supported parameters, see our [ClickHouse connector YAML reference docs](/reference/project-files/connectors#clickhouse).
+
+```yaml
+type: connector
+driver: clickhouse
+
+host: <HOSTNAME>
+port: <PORT>
+username: <USERNAME>
+password: "{{ .env.CLICKHOUSE_PASSWORD }}"
+ssl: false
 ```
 
 After creating the connector, you can edit the `.env` file manually in the project directory, or the connectors/clickhouse.yaml file.
@@ -77,49 +136,6 @@ For more information about available DSN properties and setting an appropriate c
 
 :::
 
-## Connect to ClickHouse Cloud
-
-If you are connecting to an existing [ClickHouse Cloud](https://clickhouse.com/cloud) instance, you can retrieve connection details about your instance by clicking on the `Connect` tab from within the admin settings navigation page. This will provide relevant information, such as the hostname, port, and username being used for your instance that you can then use to construct your DSN.
-
-![ClickHouse Cloud](/img/build/connectors/olap-engines/clickhouse/clickhouse-cloud.png)
-
-Using the information in the ClickHouse UI, populate the parameters of your connection. 
-
-### Connection String (DSN)
-
-Because ClickHouse Cloud requires a secure connection over [https](https://github.com/ClickHouse/clickhouse-go?tab=readme-ov-file#http-support-experimental), you will need to pass in `secure=true` and `skip_verify=true` as additional URL parameters as part of your https URL (for your DSN).
-
-```yaml
-https://<hostname>:<port>?username=<username>&password=<password>&secure=true&skip_verify=true
-```
-
-:::info Need help connecting to ClickHouse?
-
-If you would like to connect Rill to an existing ClickHouse instance, please don't hesitate to [contact us](/contact). We'd love to help!
-
-:::
-
-## Rill Managed ClickHouse
-
-By setting `managed: true` in your ClickHouse connector, you will enable an embedded ClickHouse server to spin up with Rill. This will allow you to import data directly into this ClickHouse server without having to worry about managing an external database.
-
-```yaml
-type: connector
-
-driver: clickhouse
-managed: true
-```
-
-:::warning Managed ClickHouse is in Testing
-
-Rill Managed ClickHouse is currently in testing. If you encounter any issues, please [contact us](/contact).
-
-:::
-
-Data ingestion is configured through [model YAML files](/reference/project-files/models) — there is no UI support for ingesting data into ClickHouse at this time. You write SQL that uses ClickHouse [table functions](https://clickhouse.com/docs/en/sql-reference/table-functions) to read from external sources, and Rill materializes the results into your ClickHouse instance.
-
-For a list of supported data sources, see [Ingesting Data into ClickHouse](#ingesting-data-into-clickhouse) below.
-
 ## Connector Mode
 
 By default, ClickHouse connectors operate in read-only mode. You can explicitly set the mode using the `mode` parameter:
@@ -146,52 +162,7 @@ optimize_temporary_tables_before_partition_replace: true # default: false
 
 ## Ingesting Data into ClickHouse
 
-When using ClickHouse as your OLAP engine, you can ingest data from external sources by writing models that use ClickHouse's built-in [table functions](https://clickhouse.com/docs/en/sql-reference/table-functions). Each model is a YAML file with a SQL query that Rill executes against your ClickHouse connector.
-
-There is no UI support for configuring ClickHouse data sources at this time — all configuration is done through model YAML files. Credentials are stored in your project's `.env` file and referenced using `{{ .env.VARIABLE_NAME }}` [template syntax](/developers/build/connectors/templating).
-
-### Supported Data Sources
-
-**Object Storage**
-- [Amazon S3](/developers/build/connectors/data-source/clickhouse/s3) — `s3()` table function
-- [Google Cloud Storage](/developers/build/connectors/data-source/clickhouse/gcs) — `s3()` with GCS HMAC keys
-- [Azure Blob Storage](/developers/build/connectors/data-source/clickhouse/azure) — `azureBlobStorage()` table function
-- [HTTPS](/developers/build/connectors/data-source/clickhouse/https) — `url()` table function
-
-**Databases**
-- [PostgreSQL](/developers/build/connectors/data-source/clickhouse/postgres) — `postgresql()` table function
-- [MySQL](/developers/build/connectors/data-source/clickhouse/mysql) — `mysql()` table function
-- [MongoDB](/developers/build/connectors/data-source/clickhouse/mongodb) — `mongodb()` table function
-- [Supabase](/developers/build/connectors/data-source/clickhouse/supabase) — `postgresql()` table function
-- [Remote ClickHouse](/developers/build/connectors/data-source/clickhouse/remote-clickhouse) — `remoteSecure()` / `remote()` table functions
-
-**Table Formats**
-- [Apache Iceberg](/developers/build/connectors/data-source/clickhouse/iceberg) — `icebergS3()` / `icebergAzure()` table functions
-- [Delta Lake](/developers/build/connectors/data-source/clickhouse/delta-lake) — `deltaLake()` table function
-- [Apache Hudi](/developers/build/connectors/data-source/clickhouse/hudi) — `hudi()` table function
-
-**Other**
-- [HDFS](/developers/build/connectors/data-source/clickhouse/hdfs) — `hdfs()` table function
-
-### Example
-
-Create `models/s3_events.yaml`:
-
-```yaml
-type: model
-connector: my_clickhouse
-
-sql: |
-  SELECT *
-  FROM s3(
-    'https://my-bucket.s3.amazonaws.com/events/*.parquet',
-    '{{ .env.AWS_ACCESS_KEY_ID }}',
-    '{{ .env.AWS_SECRET_ACCESS_KEY }}',
-    'Parquet'
-  )
-```
-
-For dev/prod environment handling, see [Model Environment Templating](/developers/build/models/templating).
+For a full list of supported data sources and configuration examples, see the [ClickHouse data sources](/developers/build/connectors/data-source#clickhouse) documentation.
 
 ## Configuring Rill Cloud
 
@@ -228,4 +199,4 @@ Rill supports reading from multiple schemas in ClickHouse from within the same p
 
 - For dashboards powered by ClickHouse, [measure definitions](/developers/build/metrics-view/#measures) are required to follow standard [ClickHouse SQL](https://clickhouse.com/docs/en/sql-reference) syntax.
 - Because string columns in ClickHouse can theoretically contain [arbitrary binary data](https://github.com/ClickHouse/ClickHouse/issues/2976#issuecomment-416694860), if your column contains invalid UTF-8 characters, you may want to first cast the column by applying the `toValidUTF8` function ([see ClickHouse documentation](https://clickhouse.com/docs/en/sql-reference/functions/string-functions#tovalidutf8)) before reading the table into Rill to avoid any downstream issues.
-- Data ingestion into ClickHouse is configured through model YAML files — see [Ingesting Data into ClickHouse](#ingesting-data-into-clickhouse) for supported sources and examples.
+- Data ingestion into ClickHouse is configured through model YAML files — see the [ClickHouse data sources](/developers/build/connectors/data-source#clickhouse) documentation for supported sources and examples.
