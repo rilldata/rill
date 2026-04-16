@@ -128,7 +128,8 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 	// Extract dimension names from the WHERE clause
 	whereDims := collectWhereDimensions(qry.Where)
 
-	// Determine whether the query has a non-zero time range
+	// Determine whether the query has a non-zero time range using start and end to make sure they are resolved. At this point
+	// e.RewriteQueryTimeRanges is called earlier, and thus other fields would be unset, and only start and end will be set.
 	hasTimeRange := qry.TimeRange != nil && (!qry.TimeRange.Start.IsZero() || !qry.TimeRange.End.IsZero())
 
 	// Parent span for rollup selection
@@ -268,7 +269,7 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 		attribute.String("rollup.result", "selected"),
 		attribute.String("rollup.selected_table", best.rollup.Table),
 	)
-	return BuildSyntheticSpec(e.metricsView, best.rollup), nil
+	return buildSyntheticSpec(e.metricsView, best.rollup), nil
 }
 
 // rollupEligible checks whether a rollup table can satisfy the given query.
@@ -376,9 +377,12 @@ func rollupEligible(rollup *runtimev1.MetricsViewSpec_Rollup, qry *metricsview.Q
 	return true, "", nil
 }
 
-// BuildSyntheticSpec creates a MetricsViewSpec that points to the rollup table.
+// buildSyntheticSpec creates a MetricsViewSpec that points to the rollup table.
 // Since rollup tables have the same column names as the base table, the base measure expressions work directly against the rollup table.
-func BuildSyntheticSpec(original *runtimev1.MetricsViewSpec, rollup *runtimev1.MetricsViewSpec_Rollup) *runtimev1.MetricsViewSpec {
+// Note - This function does not rewrite dimensions/measures in the spec even though Rollups can have less dimensions/measures than the base
+// i.e. because rollupEligible check before this will skip rollup if the query references dims/measure not in rollup so keeping it simple here.
+// Also, this is an internal function, if we ever export it then it would make sense to do full rewrite.
+func buildSyntheticSpec(original *runtimev1.MetricsViewSpec, rollup *runtimev1.MetricsViewSpec_Rollup) *runtimev1.MetricsViewSpec {
 	synth := proto.Clone(original).(*runtimev1.MetricsViewSpec)
 
 	// Point to rollup table (connector stays the same as base)
