@@ -62,6 +62,8 @@ export type JSONSchemaField = {
   "x-file-size-limit"?: number;
   /** If true, the file size limit is only a soft limit and does not prevent file upload. */
   "x-file-size-soft-limit"?: boolean;
+  /** Warning message to display when file size exceeds soft limit. */
+  "x-file-size-limit-warning-message"?: string;
   /** Extract values from parsed file content into other form fields. Maps form field key to JSON property name. */
   "x-file-extract"?: Record<string, string>;
   /** Field is read-only and shown for informational purposes only. */

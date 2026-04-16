@@ -113,7 +113,7 @@ function checkFileSizeLimits(
   const issues: Array<{ path: string[]; message: string }> = [];
   for (const [key, prop] of Object.entries(schema.properties ?? {})) {
     if (prop["x-file-size-soft-limit"] === true) continue;
-    const limit = prop["x-file-size-limit"] as number | undefined;
+    const limit = prop["x-file-size-limit"];
     if (!limit) continue;
     const files = data[key];
     if (!(files instanceof FileList)) continue;
@@ -121,7 +121,7 @@ function checkFileSizeLimits(
       if (file.size > limit) {
         issues.push({
           path: [key],
-          message: `File exceeds the maximum size of ${formatMemorySize(limit)}`,
+          message: `File exceeds the maximum size of ${formatMemorySize(limit)}. Please choose a smaller file to continue.`,
         });
         break; // one error per field is enough
       }

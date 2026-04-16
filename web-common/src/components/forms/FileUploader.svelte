@@ -16,6 +16,7 @@
   export let hint: string | undefined = undefined;
   export let fileSizeLimit: number | undefined = undefined;
   export let fileSizeSoftLimit: boolean = false;
+  export let fileSizeSoftLimitMessage: string | undefined = undefined;
 
   let fileInput: HTMLInputElement;
   let dragOver = false;
@@ -24,7 +25,12 @@
   $: errorMessages = Object.values({
     ...(errors as Record<string, any>),
   })
-    .map((e, i) => (files?.[i] && e ? `${files[i].name}:${e}` : ""))
+    .map((e, i) => {
+      if (!e) return "";
+      // Prepend file name if multiple=true
+      if (multiple && files?.[i]) return `${files[i].name}: ${e}`;
+      return e as string;
+    })
     .filter(Boolean);
 
   $: fileSizeLimitMessages = fileSizeLimit
@@ -33,12 +39,17 @@
         .map(
           (f) =>
             // Do not show the file name if it's a single file upload.
-            `${multiple ? f.name + ":" : "File"} exceeds the maximum size of ${formatMemorySize(fileSizeLimit!)}`,
+            `${f.name}: exceeds the maximum size of ${formatMemorySize(fileSizeLimit!)}`,
         )
     : [];
+  // Show a single warning message if multiple=false, else prepend the file name.
+  $: normalizedErrorMessages =
+    !multiple && fileSizeSoftLimitMessage
+      ? [fileSizeSoftLimitMessage]
+      : fileSizeLimitMessages;
 
   // Only add the file size limit message to warnings. Errors should be tracked through superforms.
-  $: warningMessages = fileSizeSoftLimit ? fileSizeLimitMessages : [];
+  $: warningMessages = fileSizeSoftLimit ? normalizedErrorMessages : [];
 
   $: selectedFile = files?.[0];
   $: hasError = errorMessages.length > 0;
