@@ -1,0 +1,231 @@
+<script lang="ts">
+  import { defaults, superForm } from "sveltekit-superforms";
+  import { yup } from "sveltekit-superforms/adapters";
+  import { object, string } from "yup";
+  import Tabs from "@rilldata/web-common/components/forms/Tabs.svelte";
+  import { TabsContent } from "@rilldata/web-common/components/tabs";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import TableSchema from "@rilldata/web-common/features/connectors/explorer/TableSchema.svelte";
+  import {
+    getAnalyzedConnectorByName,
+    getAnalyzedConnectors,
+  } from "@rilldata/web-common/features/connectors/selectors.ts";
+
+  import { Button } from "@rilldata/web-common/components/button";
+  import {
+    type AddDataConfig,
+    type ExploreConnectorStep,
+    type ImportStepConfig,
+    ImportDataStep,
+    type ImportFromConfig,
+  } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { getLabelsForSource } from "@rilldata/web-common/features/add-data/form/form-labels.ts";
+  import ResizableSidebar from "@rilldata/web-common/layout/ResizableSidebar.svelte";
+  import { generateImportToConfig } from "@rilldata/web-common/features/add-data/manager/steps/import.ts";
+  import {
+    getConnectorDriverForSchema,
+    getImportStepsForConnector,
+  } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
+  import DatabaseExplorer from "@rilldata/web-common/features/connectors/explorer/DatabaseExplorer.svelte";
+  import { ConnectorExplorerStore } from "@rilldata/web-common/features/connectors/explorer/connector-explorer-store.ts";
+
+  export let config: AddDataConfig;
+  export let step: ExploreConnectorStep;
+  export let onSubmit: (importConfig: ImportStepConfig) => void;
+  export let onBack: () => void;
+
+  const FormId = "import-table-form";
+
+  const runtimeClient = useRuntimeClient();
+
+  $: connectorDriverQuery = getAnalyzedConnectorByName(
+    runtimeClient,
+    step.connector,
+  );
+  $: connectorDriver =
+    $connectorDriverQuery.data?.driver ??
+    getConnectorDriverForSchema(step.schema);
+
+  $: importSteps = connectorDriver
+    ? getImportStepsForConnector(config, connectorDriver)
+    : [];
+  $: supportsModeling = importSteps[0] === ImportDataStep.CreateModel;
+
+  const modeOptions = [
+    {
+      label: "Table",
+      value: "table",
+    },
+    {
+      label: "SQL",
+      value: "sql",
+    },
+  ];
+
+  const initialValues: {
+    mode: string;
+    table: string;
+    database: string;
+    schema: string;
+    sql: string;
+  } = {
+    mode: modeOptions[0].value,
+    table: "",
+    database: "",
+    schema: "",
+    sql: "",
+  };
+  const schema = yup(
+    object({
+      mode: string().required(),
+      table: string().when("mode", {
+        is: "table",
+        then: (schema) => schema.required(),
+        otherwise: (schema) => schema.notRequired(),
+      }),
+      database: string(),
+      schema: string(),
+      sql: string().when("mode", {
+        is: "sql",
+        then: (schema) => schema.required(),
+        otherwise: (schema) => schema.notRequired(),
+      }),
+    }),
+  );
+
+  const { form, enhance, submit, submitting } = superForm(
+    defaults(initialValues, schema),
+    {
+      SPA: true,
+      validators: schema,
+      resetForm: false,
+      onUpdate({ form }) {
+        if (!form.valid) return;
+        const values = form.data;
+
+        const importFrom: ImportFromConfig =
+          values.mode === "table"
+            ? {
+                from: "table",
+                table: values.table!,
+                schema: values.schema!,
+                database: values.database!,
+              }
+            : { from: "sql", sql: values.sql! };
+        onSubmit({
+          importSteps,
+          connector: step.connector,
+          importFrom,
+          importTo: generateImportToConfig(importFrom),
+          envBlob: null,
+        } satisfies ImportStepConfig);
+      },
+      validationMethod: "onsubmit",
+    },
+  );
+  $: isSubmitDisabled = (() => {
+    if ($form.mode === "table") {
+      return !$form.table;
+    } else if ($form.mode === "sql") {
+      return !$form.sql;
+    }
+    return false;
+  })();
+
+  $: connectors = getAnalyzedConnectors(runtimeClient, false);
+  $: analyzedConnector = $connectors.data?.connectors?.find(
+    (c) => c.name === step.connector,
+  );
+
+  $: sourceFormLabels = getLabelsForSource(importSteps);
+
+  const connectorExplorerStore = new ConnectorExplorerStore(
+    {
+      allowContextMenu: false,
+      allowNavigateToTable: false,
+      allowSelectTable: false,
+      allowShowSchema: false,
+    },
+    (_, database, schema, table) => {
+      if (!database || !schema || !table) return;
+      form.update((f) => {
+        f.database = database;
+        f.schema = schema;
+        f.table = table;
+        return f;
+      });
+    },
+  );
+</script>
+
+<form
+  use:enhance
+  onsubmit={(e) => {
+    e.preventDefault();
+    submit(e);
+  }}
+  id={FormId}
+  class="flex flex-col flex-1 min-h-0"
+  aria-label="Import Table Form"
+>
+  <div class="flex flex-col gap-2 px-6 pt-4" class:pb-3={!supportsModeling}>
+    {#if supportsModeling}
+      <div>Pick a table or input your SQL to power your first dashboard</div>
+      <Tabs bind:value={$form["mode"]} options={modeOptions} disableMarginTop>
+        {#each modeOptions as option (option.value)}
+          <TabsContent value={option.value} />
+        {/each}
+      </Tabs>
+    {:else}
+      <div>Pick a table to power your first dashboard</div>
+    {/if}
+  </div>
+  {#if $form["mode"] === "table"}
+    {#if analyzedConnector}
+      <div class="flex flex-row flex-1 min-h-0 w-full overflow-hidden border-t">
+        <div class="flex flex-col flex-grow min-h-0 border-r pr-6 py-2">
+          <DatabaseExplorer
+            connector={analyzedConnector}
+            store={connectorExplorerStore}
+          />
+        </div>
+        <ResizableSidebar
+          id="table-schema-sidebar"
+          minWidth={100}
+          maxWidth={500}
+          defaultWidth={288}
+          additionalClass="overflow-auto bg-surface-subtle"
+        >
+          {#if $form["table"]}
+            <div class="text-base px-4 py-2">SCHEMA</div>
+            <TableSchema
+              connector={step.connector}
+              database={$form["database"]}
+              databaseSchema={$form["schema"]}
+              table={$form["table"]}
+              forcedLeftPadding="pl-4"
+            />
+          {/if}
+        </ResizableSidebar>
+      </div>
+    {/if}
+  {:else if $form["mode"] === "sql"}
+    <div class="flex-grow px-6">
+      <Input id="sql" label="SQL" bind:value={$form["sql"]} />
+    </div>
+  {/if}
+
+  <div class="flex flex-row px-6 py-4 gap-2 border-t">
+    <Button onClick={onBack} type="tertiary">Back</Button>
+    <div class="grow"></div>
+    <Button
+      disabled={$submitting || isSubmitDisabled}
+      loading={$submitting}
+      onClick={submit}
+      type="primary"
+    >
+      {sourceFormLabels.primaryButtonLabel}
+    </Button>
+  </div>
+</form>

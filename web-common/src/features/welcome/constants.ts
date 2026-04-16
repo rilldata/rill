@@ -19,7 +19,7 @@ export const EXAMPLES = [
   },
   {
     name: "rill-github-analytics",
-    title: "Github Analytics",
+    title: "GitHub Analytics",
     description: "A Git project's commit activity",
     image: "/img/welcome-bg-github-analytics.png",
     firstFile: "/dashboards/clickhouse_commits_explore.yaml",

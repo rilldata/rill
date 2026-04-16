@@ -1,5 +1,15 @@
 import adapter from "@sveltejs/adapter-static";
 import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
+import { config as dotenv } from "dotenv";
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
+
+// svelte.config.js runs before Vite loads .env files, so we load manually.
+// envDir in vite.config.ts points to the repo root ("../").
+const __dirname = dirname(fileURLToPath(import.meta.url));
+dotenv({ path: resolve(__dirname, "../.env"), override: false });
+
+const dev = process.env.RILL_ADMIN_FRONTEND_URL?.includes("localhost");
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -17,6 +27,61 @@ const config = {
   },
 
   kit: {
+    // CSP hash mode: SvelteKit computes SHA-256 hashes of inline scripts at
+    // build time and injects them into a <meta http-equiv="Content-Security-Policy">
+    // tag in each HTML page. This removes the need for 'unsafe-inline' in
+    // script-src. frame-ancestors is not supported in <meta> and is therefore
+    // kept in the Netlify HTTP headers (netlify.toml).
+    csp: {
+      mode: "hash",
+      directives: {
+        "default-src": ["self"],
+        "script-src": [
+          "self",
+          "unsafe-eval",
+          "https://*.app-us1.com/",
+          "https://*.usepylon.com",
+          "https://*.pusher.com",
+          // Hash of the inline script injected by the Pylon chat widget at runtime.
+          // If Pylon updates their widget, this hash may need to be refreshed.
+          "sha256-q7DzCTpmdcQlqCarsIE22KTL5subp7TPBUdWqrL6HJw=",
+        ],
+        // style-src keeps 'unsafe-inline': runtime style injection from
+        // CodeMirror and other libraries cannot be hash-attributed.
+        "style-src": ["self", "unsafe-inline", "https://*.usepylon.com"],
+        "img-src": ["https:", "data:", "blob:"],
+        "frame-src": [
+          "self",
+          "https://www.youtube.com/",
+          "https://www.loom.com/",
+          "https://www.vimeo.com",
+          "https://portal.withorb.com",
+          "blob:",
+          "data:",
+        ],
+        "form-action": ["self"],
+        "object-src": ["none"],
+        "base-uri": ["self"],
+        "connect-src": [
+          "self",
+          "https://*.rilldata.com",
+          "https://*.rilldata.io",
+          "https://*.rilldata.in",
+          "https://*.usepylon.com",
+          "https://docs.google.com",
+          "https://storage.googleapis.com",
+          "https://cdn.prod.website-files.com",
+          "https://*.stripe.com",
+          "wss://*.pusher.com",
+          ...(dev ? ["http://localhost:*", "ws://localhost:*"] : []),
+        ],
+        "font-src": [
+          "self",
+          "https://fonts.gstatic.com",
+          "https://*.usepylon.com",
+        ],
+      },
+    },
     adapter: adapter({
       fallback: "index.html",
     }),

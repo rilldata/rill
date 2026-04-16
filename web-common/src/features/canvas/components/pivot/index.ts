@@ -59,8 +59,10 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
   selfFilteredDimensions: Writable<Set<string>>;
 
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
-    const type = resource.component?.state?.validSpec
-      ?.renderer as CanvasComponentType;
+    const type = (resource.component?.state?.validSpec?.renderer ??
+      (parent.allowUnvalidatedSpec
+        ? resource.component?.spec?.renderer
+        : undefined)) as CanvasComponentType;
 
     if (type !== "table" && type !== "pivot") {
       throw new Error(

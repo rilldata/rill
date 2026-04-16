@@ -11,31 +11,41 @@
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
-  export let organization: string;
-  export let organizationLogoUrl: string | undefined;
-  export let organizationLogoDarkUrl: string | undefined;
+  let {
+    organization,
+    organizationLogoUrl,
+    organizationLogoDarkUrl,
+  }: {
+    organization: string;
+    organizationLogoUrl: string | undefined;
+    organizationLogoDarkUrl: string | undefined;
+  } = $props();
 
-  const logoUpdater = createAdminServiceUpdateOrganization({
-    mutation: {
-      mutationKey: ["updateOrganization", "logo", organization],
-    },
-  });
-  $: ({
+  let logoUpdater = $derived(
+    createAdminServiceUpdateOrganization({
+      mutation: {
+        mutationKey: ["updateOrganization", "logo", organization],
+      },
+    }),
+  );
+  let {
     error: logoError,
     isPending: isLogoLoading,
     mutateAsync: mutateLogoAsync,
-  } = $logoUpdater);
+  } = $derived($logoUpdater);
 
-  const logoDarkUpdater = createAdminServiceUpdateOrganization({
-    mutation: {
-      mutationKey: ["updateOrganization", "logoDark", organization],
-    },
-  });
-  $: ({
+  let logoDarkUpdater = $derived(
+    createAdminServiceUpdateOrganization({
+      mutation: {
+        mutationKey: ["updateOrganization", "logoDark", organization],
+      },
+    }),
+  );
+  let {
     error: logoDarkError,
     isPending: isLogoDarkLoading,
     mutateAsync: mutateLogoDarkAsync,
-  } = $logoDarkUpdater);
+  } = $derived($logoDarkUpdater);
 
   async function onSaveLight(assetId: string) {
     await mutateLogoAsync({
@@ -88,12 +98,10 @@
     });
     void invalidate("app:root");
   }
-
-  $: hasAnyLogo = organizationLogoUrl || organizationLogoDarkUrl;
 </script>
 
-<SettingsContainer title="Logo" suppressFooter={!hasAnyLogo}>
-  <div slot="body" class="flex flex-col gap-y-4">
+<SettingsContainer title="Logo">
+  <div class="flex flex-col gap-y-4">
     <div>
       Click to upload your logo and customize Rill for your organization.
     </div>

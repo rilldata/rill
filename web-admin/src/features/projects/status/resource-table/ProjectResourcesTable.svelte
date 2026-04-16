@@ -171,6 +171,7 @@
         renderComponent(ResourceErrorMessage, {
           message: row.original.meta.reconcileError,
           status: row.original.meta.reconcileStatus,
+          testErrors: row.original.meta.reconcileWarnings ?? [],
         }),
       meta: {
         marginLeft: "1",

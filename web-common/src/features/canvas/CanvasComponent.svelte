@@ -9,23 +9,24 @@
 <script lang="ts">
   import { get } from "svelte/store";
 
-  const observer = new IntersectionObserver(
-    ([entry]) => {
-      if (entry.isIntersecting) {
-        component.visible.set(true);
-        observer.unobserve(container);
-      }
-    },
-    {
-      root: document.querySelector(".dashboard-theme-boundary"),
-      rootMargin: "120px",
-      threshold: 0,
-    },
-  );
+  let observer: IntersectionObserver;
 
   let mounted = false;
 
   onMount(() => {
+    observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          component.visible.set(true);
+          observer.unobserve(container);
+        }
+      },
+      {
+        root: container.closest(".dashboard-theme-boundary"),
+        rootMargin: "120px",
+        threshold: 0,
+      },
+    );
     mounted = true;
     observer.observe(container);
   });
@@ -89,7 +90,7 @@
     onmousedown={onMouseDown}
   >
     {#if component}
-      <svelte:component this={component.component} {component} />
+      <svelte:component this={component.component} {component} {editable} />
     {:else}
       <div class="size-full grid place-content-center">
         <LoadingSpinner size="36px" />
