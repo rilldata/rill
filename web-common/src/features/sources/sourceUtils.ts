@@ -63,6 +63,8 @@ export function compileSourceYAML(
       if (value === undefined) return false;
       // Filter out empty strings for optional fields
       if (typeof value === "string" && value.trim() === "") return false;
+      // Filter out file types. These should be uploaded and converted to paths.
+      if (value instanceof File || value instanceof FileList) return false;
       return true;
     })
     .map((key) => {
@@ -228,15 +230,12 @@ export function maybeRewriteToDuckDb(
     case "gcs":
     case "azure":
       // Ensure DuckDB creates a temporary secret for the original connector.
-      if (secretConnectorName) {
-        if (connectorInstanceName) {
-          if (!formValues.create_secrets_from_connectors) {
-            formValues.create_secrets_from_connectors = secretConnectorName;
-          }
-        } else {
-          // When skipping connector creation, force the default driver name.
-          formValues.create_secrets_from_connectors = secretConnectorName;
-        }
+      if (
+        connectorInstanceName &&
+        secretConnectorName &&
+        !formValues.create_secrets_from_connectors
+      ) {
+        formValues.create_secrets_from_connectors = secretConnectorName;
       }
     // falls through to rewrite as DuckDB
     case "local_file":
@@ -249,10 +248,12 @@ export function maybeRewriteToDuckDb(
     case "https": {
       // HTTP sources are typically public; avoid surfacing secret wiring unless
       // the user is explicitly targeting a configured connector instance.
-      if (connectorInstanceName && secretConnectorName) {
-        if (!formValues.create_secrets_from_connectors) {
-          formValues.create_secrets_from_connectors = secretConnectorName;
-        }
+      if (
+        connectorInstanceName &&
+        secretConnectorName &&
+        !formValues.create_secrets_from_connectors
+      ) {
+        formValues.create_secrets_from_connectors = secretConnectorName;
       }
 
       connectorCopy.name = "duckdb";

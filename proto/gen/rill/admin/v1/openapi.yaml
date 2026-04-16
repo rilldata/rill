@@ -297,6 +297,8 @@ components:
                 - BILLING_PLAN_TYPE_TEAM
                 - BILLING_PLAN_TYPE_MANAGED
                 - BILLING_PLAN_TYPE_ENTERPRISE
+                - BILLING_PLAN_TYPE_FREE
+                - BILLING_PLAN_TYPE_PRO
             type: string
         v1Bookmark:
             properties:
@@ -2321,7 +2323,7 @@ externalDocs:
 info:
     description: Rill Admin API enables programmatic management of Rill Cloud resources, including organizations, projects, and user access. It provides endpoints for creating, updating, and deleting these resources, as well as managing authentication and permissions.
     title: Rill Admin API
-    version: v0.83.6
+    version: 1.0.0
 openapi: 3.0.3
 paths:
     /v1/ai/complete:
@@ -2441,7 +2443,8 @@ paths:
         post:
             operationId: AdminService_GetDeployment
             parameters:
-                - in: path
+                - description: ID of the deployment to get credentials for.
+                  in: path
                   name: deploymentId
                   required: true
                   schema:
@@ -2452,13 +2455,25 @@ paths:
                         schema:
                             properties:
                                 accessTokenTtlSeconds:
+                                    description: Optional TTL for the returned access token in seconds.
                                     format: int64
                                     type: integer
                                 attributes:
+                                    description: If set, will use the provided attributes outright.
                                     type: object
+                                externalUserId:
+                                    description: |-
+                                        Optional ID for an external end user of the deployment. If set, the access token enables per-user state, such as AI chat history.
+                                        Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state.
+                                    type: string
+                                superuserForceAccess:
+                                    description: If true, superusers can access the deployment even without org/project membership.
+                                    type: boolean
                                 userEmail:
+                                    description: If set, will generate attributes corresponding to a user with this email.
                                     type: string
                                 userId:
+                                    description: If set, will use the attributes of the Rill user with this ID.
                                     type: string
                             type: object
                 required: true
@@ -4060,12 +4075,14 @@ paths:
         post:
             operationId: AdminService_GetDeploymentCredentials
             parameters:
-                - in: path
+                - description: Org the deployment belongs to.
+                  in: path
                   name: org
                   required: true
                   schema:
                     type: string
-                - in: path
+                - description: Project the deployment belongs to.
+                  in: path
                   name: project
                   required: true
                   schema:
@@ -4076,15 +4093,28 @@ paths:
                         schema:
                             properties:
                                 attributes:
+                                    description: If set, will use the provided attributes outright.
                                     type: object
                                 branch:
+                                    description: Optional branch for the deployment. If not set, defaults to the project's primary branch.
                                     type: string
+                                externalUserId:
+                                    description: |-
+                                        Optional ID for an external end user of the deployment. If set, the access token enables per-user state, such as AI chat history.
+                                        Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state.
+                                    type: string
+                                superuserForceAccess:
+                                    description: If true, superusers can access the deployment even without org/project membership.
+                                    type: boolean
                                 ttlSeconds:
+                                    description: Optional TTL for the returned access token in seconds.
                                     format: int64
                                     type: integer
                                 userEmail:
+                                    description: If set, will generate attributes corresponding to a user with this email.
                                     type: string
                                 userId:
+                                    description: If set, will use the attributes of the Rill user with this ID.
                                     type: string
                             type: object
                 required: true
@@ -4250,6 +4280,11 @@ paths:
                                 branch:
                                     description: Branch to embed. If not set, the production branch is used.
                                     type: string
+                                externalUserId:
+                                    description: |-
+                                        Optional ID for the external end user of the iframe. If set, the access token enables per-user state, such as AI chat history.
+                                        Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state.
+                                    type: string
                                 kind:
                                     description: 'Deprecated: Alias for `type`.'
                                     type: string
@@ -4267,6 +4302,9 @@ paths:
                                 state:
                                     description: Blob containing UI state for rendering the initial embed. Not currently supported.
                                     type: string
+                                superuserForceAccess:
+                                    description: If true, superusers can access the project even without org/project membership.
+                                    type: boolean
                                 theme:
                                     description: Theme to use for the embedded resource.
                                     type: string
@@ -4284,7 +4322,7 @@ paths:
                                     description: If set, will generate attributes corresponding to a user with this email.
                                     type: string
                                 userId:
-                                    description: If set, will use the attributes of the user with this ID.
+                                    description: If set, will use the attributes of the Rill user with this ID.
                                     type: string
                             type: object
                 required: true

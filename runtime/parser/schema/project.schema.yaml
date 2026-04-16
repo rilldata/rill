@@ -2940,6 +2940,19 @@ definitions:
           color-sequential-1: "hsl(180deg 40% 30%)"
           color-sequential-5: "hsl(180deg 50% 50%)"
           color-sequential-9: "hsl(180deg 60% 70%)"
+
+      - # Example: Theme with KPI delta colors (green for positive, red for negative)
+        type: theme
+        light:
+            primary: "#6366f1"
+            secondary: "#8b5cf6"
+            kpi-positive: "#16a34a"  # Green for positive deltas (default: gray)
+            kpi-negative: "#dc2626"  # Red for negative deltas (default: red)
+        dark:
+            primary: "#818cf8"
+            secondary: "#a78bfa"
+            kpi-positive: "#4ade80"  # Brighter green for dark mode
+            kpi-negative: "#f87171"  # Brighter red for dark mode
     allOf:
       - title: Properties
         type: object
@@ -2969,6 +2982,12 @@ definitions:
               secondary:
                 type: string
                 description: Secondary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+              kpi-positive:
+                type: string
+                description: Color for positive KPI delta values in light theme. Defaults to fg-secondary (gray).
+              kpi-negative:
+                type: string
+                description: Color for negative KPI delta values in light theme. Defaults to red.
               variables:
                 type: object
                 description: Custom CSS variables for light theme
@@ -2984,6 +3003,12 @@ definitions:
               secondary:
                 type: string
                 description: Secondary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+              kpi-positive:
+                type: string
+                description: Color for positive KPI delta values in dark theme. Defaults to fg-secondary (gray).
+              kpi-negative:
+                type: string
+                description: Color for negative KPI delta values in dark theme. Defaults to red.
               variables:
                 type: object
                 description: Custom CSS variables for dark theme
@@ -3029,15 +3054,6 @@ definitions:
             $ref: '#/definitions/chart_properties'
           stacked_bar_chart:
             $ref: '#/definitions/chart_properties'
-          vega_lite:
-            type: object
-            properties:
-              spec:
-                type: string
-                description: Vega-Lite specification as a string
-            required:
-              - spec
-            additionalProperties: false
           kpi:
             $ref: '#/definitions/kpi_properties'
           table:
@@ -3299,6 +3315,12 @@ definitions:
           secondary:
             type: string
             description: Secondary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+          kpi-positive:
+            type: string
+            description: Color for positive KPI delta values in light theme. Defaults to fg-secondary (gray).
+          kpi-negative:
+            type: string
+            description: Color for negative KPI delta values in light theme. Defaults to red.
           variables:
             type: object
             description: Custom CSS variables for light theme
@@ -3314,6 +3336,12 @@ definitions:
           secondary:
             type: string
             description: Secondary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+          kpi-positive:
+            type: string
+            description: Color for positive KPI delta values in dark theme. Defaults to fg-secondary (gray).
+          kpi-negative:
+            type: string
+            description: Color for negative KPI delta values in dark theme. Defaults to red.
           variables:
             type: object
             description: Custom CSS variables for dark theme
@@ -3376,16 +3404,45 @@ definitions:
         description: Uses a file-matching pattern (glob) to query data from a connector.
         properties:
           glob:
-            description: Defines the file path or pattern to query from the specified connector.
-            anyOf:
+            description: Simple path/glob pattern or path/glob patternwith advanced options .
+            oneOf:
               - type: string
-                description: A simple file path/glob pattern as a string.
+                description: Glob pattern used to match files or directories in the object store.
               - type: object
-                description: An object-based configuration for specifying a file path/glob pattern with advanced options.
-                additionalProperties: true
-          connector:
-            type: string
-            description: Specifies the connector to use with the glob input.
+                description: Configuration for specifying a file path/glob pattern with advanced options.
+                additionalProperties: false
+                properties:
+                  connector:
+                    type: string
+                    description: Specifies the object store connector to use (e.g. "s3", "gcs"). If not provided, it is inferred from the scheme of the path.
+                  path:
+                    type: string
+                    description: Glob pattern used to match files or directories in the object store.
+                  start:
+                    type: string
+                    description: Defines the lower bound (inclusive) for partition filtering. Only partitions with paths greater than or equal to this value are considered.
+                  end:
+                    type: string
+                    description: Defines the upper bound (exclusive) for partition filtering. Only partitions with paths less than this value are considered.
+                  last:
+                    type: integer
+                    description: Sets a lower bound based on the Nth partition from the end of the lexicographically sorted, successfully processed partitions. Only partitions after this point are included.
+                  partition:
+                    type: string
+                    enum: [ "file", "directory", "hive"]
+                    description: >
+                      Controls how matched files are grouped:
+                      - "file" (default) : Each matched path is returned as a row. Use the glob pattern to match files or directories at the level you want (for example, file-level or directory-level).
+                      - "directory": This mode is deprecated. Instead, use "file" with a glob that directly matches the directory level you want.
+                      - "hive": groups files by directory and extracts Hive-style partition values from the path as columns.
+                  rollup_files:
+                    type: boolean
+                    description: If true, includes a "files" array listing all files in each partition. Only applicable when using "directory" or "hive" partitioning.
+                  transform_sql:
+                    type: string
+                    description: Optional DuckDB SQL query used to transform the results. The resolved data is available as a table referenced using `{{ .table }}`.
+                required:
+                  - path
         required:
           - glob
         examples: 
@@ -3426,13 +3483,13 @@ definitions:
         required:
           - union
         examples:
-          - type: api
+          - # Exampe for union resolvers
+            type: api
             union:
               - connector: duckdb
                 sql: SELECT 1
               - connector: clickhouse
                 sql: SELECT 2
-
   data_properties:
     oneOf:
       - title: SQL Query
@@ -3474,16 +3531,45 @@ definitions:
         description: Uses a file-matching pattern (glob) to query data from a connector.
         properties:
           glob:
-            description: Defines the file path or pattern to query from the specified connector.
-            anyOf:
+            description: Simple path/glob pattern or path/glob patternwith advanced options .
+            oneOf:
               - type: string
-                description: A simple file path/glob pattern as a string.
+                description: Glob pattern used to match files or directories in the object store.
               - type: object
-                description: An object-based configuration for specifying a file path/glob pattern with advanced options.
-                additionalProperties: true
-          connector:
-            type: string
-            description: Specifies the connector to use with the glob input.
+                description: Configuration for specifying a file path/glob pattern with advanced options.
+                additionalProperties: false
+                properties:
+                  connector:
+                    type: string
+                    description: Specifies the object store connector to use (e.g. "s3", "gcs"). If not provided, it is inferred from the scheme of the path.
+                  path:
+                    type: string
+                    description: Glob pattern used to match files or directories in the object store.
+                  start:
+                    type: string
+                    description: Defines the lower bound (inclusive) for partition filtering. Only partitions with paths greater than or equal to this value are considered.
+                  end:
+                    type: string
+                    description: Defines the upper bound (exclusive) for partition filtering. Only partitions with paths less than this value are considered.
+                  last:
+                    type: integer
+                    description: Sets a lower bound based on the Nth partition from the end of the lexicographically sorted, successfully processed partitions. Only partitions after this point are included.
+                  partition:
+                    type: string
+                    enum: [ "file", "directory", "hive"]
+                    description: >
+                      Controls how matched files are grouped:
+                      - "file" (default) : Each matched path is returned as a row. Use the glob pattern to match files or directories at the level you want (for example, file-level or directory-level).
+                      - "directory": This mode is deprecated. Instead, use "file" with a glob that directly matches the directory level you want.
+                      - "hive": groups files by directory and extracts Hive-style partition values from the path as columns.
+                  rollup_files:
+                    type: boolean
+                    description: If true, includes a "files" array listing all files in each partition. Only applicable when using "directory" or "hive" partitioning.
+                  transform_sql:
+                    type: string
+                    description: Optional DuckDB SQL query used to transform the results. The resolved data is available as a table referenced using `{{ .table }}`.
+                required:
+                  - path
         required:
           - glob
       - title: Resource Status Check
@@ -3520,10 +3606,11 @@ definitions:
         examples:
           - union:
               - glob:
-                  path: s3://bucket/year=*/month=*
+                  path: s3://bucket/dir/year=*/month=*
+                  end: dir/year=2025/month=03
               - glob:
                   path: s3://bucket/year=*/month=*/day=*
-                  last: 30
+                  start: dir/year=2025/month=03/day=01
       - title: AI Resolver
         type: object
         description: Uses AI to generate insights and analysis from metrics data. Only available for reports.

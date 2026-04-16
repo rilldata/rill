@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
@@ -589,8 +590,14 @@ func (h *Helper) HandleRepoTransfer(path, remote string) error {
 //
 // If h.Interactive is true and there are remote commits, the user will be prompted to choose how to proceed.
 func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *gitutil.Config, commitMsg string, author *object.Signature, defaultPushChoice string) error {
+	// Set remote if not set (go-git complains if we try to fetch without setting remote)
+	err := gitutil.SetRemote(root, config)
+	if err != nil {
+		return fmt.Errorf("failed to set git remote: %w", err)
+	}
+
 	// 1. Fetch latest from remote
-	err := gitutil.GitFetch(ctx, root, config)
+	err = gitutil.GitFetch(ctx, root, config)
 	if err != nil {
 		return fmt.Errorf("failed to fetch from remote: %w", err)
 	}
@@ -649,6 +656,19 @@ func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *git
 	}
 }
 
+// IsLocalRillRunning checks whether rill start is listening on the default HTTP port (9009).
+// This is a best-effort check that assumes the default port.
+func IsLocalRillRunning(ctx context.Context) bool {
+	d := net.Dialer{Timeout: time.Second}
+	conn, err := d.DialContext(ctx, "tcp", "localhost:9009")
+	if err != nil {
+		// This could be another error than unix.ECONNREFUSED, but not checking that as it's a best-efforts check.
+		return false
+	}
+	conn.Close()
+	return true
+}
+
 func removeRemote(path, remoteName string) error {
 	repo, err := git.PlainOpen(path)
 	if err != nil {
@@ -674,6 +694,12 @@ func hashStr(ss ...string) string {
 }
 
 // isTerminal reports whether both stdin and stdout are connected to an interactive terminal.
+// It can be overridden by setting RILL_DOCS_GENERATE=true (used in CI for docs generation).
 func isTerminal() bool {
+	if os.Getenv("RILL_DOCS_GENERATE") == "true" {
+		// Used for generating docs with `make docs.generate`.
+		// This ensures --interactive defaults to "true", which makes the generated docs appear the way the CLI help menus appear to a real user (e.g. strips agent instructions).
+		return true
+	}
 	return term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd()))
 }

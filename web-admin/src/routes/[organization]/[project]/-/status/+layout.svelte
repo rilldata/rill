@@ -2,7 +2,7 @@
 
 <script lang="ts">
   import { page } from "$app/stores";
-  import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
+  import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
 
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
@@ -11,6 +11,11 @@
     {
       label: "Overview",
       route: "",
+      hasPermission: true,
+    },
+    {
+      label: "Branches",
+      route: "/branches",
       hasPermission: true,
     },
     {
@@ -37,7 +42,7 @@
 </script>
 
 <ContentContainer title="Project Status" maxWidth={1100}>
-  <div class="container flex-col md:flex-row">
+  <div class="container flex-col lg:flex-row">
     <LeftNav
       {basePage}
       baseRoute="/[organization]/[project]/-/status"

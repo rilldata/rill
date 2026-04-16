@@ -10,6 +10,7 @@
   import { normalizeErrors } from "./error-utils";
   import { getFileAccept } from "./file-encoding";
   import type { JSONSchemaField } from "./schemas/types";
+  import FileInput from "@rilldata/web-common/components/forms/FileInput.svelte";
 
   export let id: string;
   export let prop: JSONSchemaField;
@@ -36,15 +37,19 @@
     href={prop["x-docs-url"]}
   />
 {:else if prop["x-display"] === "file" || prop.format === "file"}
-  <CredentialsInput
-    {id}
-    label={prop.title ?? id}
-    hint={prop.description ?? prop["x-hint"]}
-    {optional}
-    bind:value
-    uploadFile={(file) => handleFileUpload(file, id)}
-    accept={getFileAccept(prop)}
-  />
+  {#if prop["x-secret"]}
+    <CredentialsInput
+      {id}
+      label={prop.title ?? id}
+      hint={prop.description ?? prop["x-hint"]}
+      {optional}
+      bind:value
+      uploadFile={(file) => handleFileUpload(file, id)}
+      accept={getFileAccept(prop)}
+    />
+  {:else}
+    <FileInput bind:files={value} accept={getFileAccept(prop)} />
+  {/if}
 {:else if prop["x-display"] === "toggle" && prop.type === "boolean"}
   <div class="flex items-center justify-between gap-3">
     <div class="flex flex-col gap-0.5">

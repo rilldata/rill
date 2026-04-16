@@ -38,10 +38,10 @@
             olap: "duckdb", // Explicitly set DuckDB as OLAP for local file uploads
           });
 
-          // Race condition: invalidate("init") must be called before we navigate to
-          // `/files/${newFilePath}`. invalidate("init") is also called in the
+          // Race condition: invalidate("app:init") must be called before we navigate to
+          // `/files/${newFilePath}`. invalidate("app:init") is also called in the
           // `WatchFilesClient`, but there it's not guaranteed to get invoked before we need it.
-          await invalidate("init");
+          await invalidate("app:init");
         }
 
         const yaml = compileLocalFileSourceYAML(filePath);

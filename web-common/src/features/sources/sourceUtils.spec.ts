@@ -203,7 +203,7 @@ describe("maybeRewriteToDuckDb", () => {
     expect(values.create_secrets_from_connectors).toBe("my_s3");
   });
 
-  it("should rewrite s3 without connector name — uses driver name for secrets", () => {
+  it("should not rewrite s3 without connector name — considered as public source", () => {
     const connector: V1ConnectorDriver = { name: "s3" };
     const formValues: Record<string, unknown> = {
       path: "s3://bucket/data.csv",
@@ -211,7 +211,7 @@ describe("maybeRewriteToDuckDb", () => {
     const [result, values] = maybeRewriteToDuckDb(connector, formValues);
     expect(result.name).toBe("duckdb");
     expect(values.sql).toContain("read_csv");
-    expect(values.create_secrets_from_connectors).toBe("s3");
+    expect(values.create_secrets_from_connectors).toBeUndefined();
   });
 
   it("should rewrite gcs", () => {

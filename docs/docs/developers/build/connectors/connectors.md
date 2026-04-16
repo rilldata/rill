@@ -113,8 +113,8 @@ Connect Rill to an existing OLAP engine you manage. Rill pushes queries down to 
     referenceLink="pinot"
   />
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-Snowflake.svg" alt="Snowflake" />}
-    content="Cloud data platform for warehousing and analytics. Beta support as an OLAP engine."
+    icon={<SnowflakeLogo />}
+    content="Cloud data warehouse with native support for metrics views as a live connector."
     link="/developers/build/connectors/olap/snowflake"
     linkLabel="Learn more"
     referenceLink="snowflake"

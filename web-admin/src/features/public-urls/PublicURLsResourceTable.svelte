@@ -5,7 +5,7 @@
   import type { V1MagicAuthToken } from "@rilldata/web-admin/client";
   import type { V1Expression } from "@rilldata/web-admin/client";
   import PublicURLsActionsRow from "./PublicURLsActionsRow.svelte";
-  import ResourceListEmptyState from "@rilldata/web-admin/features/resources/ResourceListEmptyState.svelte";
+  import ResourceListEmptyState from "@rilldata/web-common/features/resources/ResourceListEmptyState.svelte";
 
   interface PublicURLRow extends V1MagicAuthToken {
     dashboardTitle: string;
@@ -136,7 +136,7 @@
               <td class="table-cell">
                 {#if filters.length > 0}
                   <div class="flex gap-1 flex-wrap">
-                    {#each filters as filter (filter.name)}
+                    {#each filters as filter, i (filter.name + i)}
                       <Chip
                         type="dimension"
                         readOnly

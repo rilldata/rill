@@ -3,7 +3,7 @@ import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges.ts";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import { DateTime, Duration } from "luxon";
-import type { DateObjectUnits } from "luxon/src/datetime";
+import type { DateObjectUnits } from "luxon";
 import {
   getLowerOrderGrain,
   getMinGrain,
@@ -246,7 +246,7 @@ export class RillPeriodToGrainInterval implements RillTimeInterval {
   }
 
   public getGrain() {
-    return GrainAliasToV1TimeGrain[this.grain];
+    return getLowerOrderGrain(GrainAliasToV1TimeGrain[this.grain]);
   }
 
   public toString() {

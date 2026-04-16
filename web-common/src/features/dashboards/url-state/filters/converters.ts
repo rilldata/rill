@@ -6,7 +6,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import nearley from "nearley";
 import { isNonStandardIdentifier } from "../../../entity-management/name-utils";
-import grammar from "./expression.cjs";
+import grammar from "./expression.js";
 
 const compiledGrammar = nearley.Grammar.fromCompiled(grammar);
 export function convertFilterParamToExpression(filter: string): {

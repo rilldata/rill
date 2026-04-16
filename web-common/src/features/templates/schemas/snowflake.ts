@@ -1,5 +1,8 @@
 import type { MultiStepFormSchema } from "./types";
 
+// TODO: Add a "Use as OLAP engine" toggle to the Snowflake form.
+// When enabled, set olap_connector: snowflake in rill.yaml so
+// isLiveConnectorType resolves true and skips DuckDB ingestion.
 export const snowflakeSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",

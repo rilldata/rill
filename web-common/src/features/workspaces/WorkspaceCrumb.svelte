@@ -3,17 +3,21 @@
   import { type V1Resource } from "@rilldata/web-common/runtime-client";
   import { resourceIconMapping } from "../entity-management/resource-icon-mapping";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { ResourceKindMap } from "../file-explorer/new-files";
+  import { ResourceKindMap } from "../entity-management/add/new-files.ts";
   import CrumbTrigger from "./CrumbTrigger.svelte";
   import {
     ResourceKind,
     type UserFacingResourceKinds,
   } from "../entity-management/resource-selectors";
   import { GitBranch } from "lucide-svelte";
+  import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   const downstreamMapping = new Map([
     [ResourceKind.MetricsView, new Set([ResourceKind.Explore])],
+    [ResourceKind.Explore, new Set([ResourceKind.MetricsView])],
     [ResourceKind.Source, new Set([ResourceKind.Model])],
     [
       ResourceKind.Model,
@@ -45,6 +49,18 @@
   $: withoutComponents = resources?.filter((r) => !r?.component);
 
   $: componentsOnly = !withoutComponents.length && resources.length;
+
+  // Whether this crumb is disabled in preview mode (models and upstream non-dashboard resources)
+  $: isDisabledInPreview =
+    $previewModeStore &&
+    (resourceKind === ResourceKind.Model ||
+      (upstream &&
+        resourceKind !== ResourceKind.MetricsView &&
+        resourceKind !== ResourceKind.Explore));
+
+  function getFileHref(filePaths: string[] | undefined): string {
+    return `/files${filePaths?.[0] ?? filePath}`;
+  }
 
   $: allRefs = resources?.map((r) => r?.meta?.refs).flat();
 
@@ -108,7 +124,43 @@
 {#if !componentsOnly}
   <div class="crumb">
     <div class="crumb__trigger">
-      {#if dropdown}
+      {#if isDisabledInPreview}
+        <Tooltip distance={8}>
+          <div>
+            {#if dropdown}
+              <DropdownMenu.Root bind:open>
+                <DropdownMenu.Trigger
+                  class="text-fg-muted px-[5px] py-1 w-full max-w-fit line-clamp-1 disabled {open
+                    ? 'bg-surface-active rounded-[2px] text-fg-primary'
+                    : ''} {current ? 'selected' : ''}"
+                >
+                  <CrumbTrigger
+                    {filePath}
+                    kind={resourceKind}
+                    label={!selectedResource && dropdown
+                      ? generateLabel(resources)
+                      : resourceName}
+                  />
+                </DropdownMenu.Trigger>
+              </DropdownMenu.Root>
+            {:else}
+              <span
+                class="text-fg-muted px-[5px] py-1 w-full max-w-fit line-clamp-1 disabled"
+                class:selected={current}
+              >
+                <CrumbTrigger
+                  {filePath}
+                  kind={resourceKind}
+                  label={resourceName}
+                />
+              </span>
+            {/if}
+          </div>
+          <TooltipContent slot="tooltip-content">
+            Available in Developer mode
+          </TooltipContent>
+        </Tooltip>
+      {:else if dropdown}
         <DropdownMenu.Root bind:open>
           <DropdownMenu.Trigger
             class="text-fg-muted hover:text-fg-primary px-[5px] py-1 w-full max-w-fit line-clamp-1 {open
@@ -127,9 +179,7 @@
           <DropdownMenu.Content align="start">
             {#each resources as resource (resource?.meta?.name?.name)}
               {@const kind = resource?.meta?.name?.kind}
-              <DropdownMenu.Item
-                href="/files{resource?.meta?.filePaths?.[0] ?? '/'}"
-              >
+              <DropdownMenu.Item href={getFileHref(resource?.meta?.filePaths)}>
                 {#if kind}
                   <svelte:component
                     this={resourceIconMapping[kind]}
@@ -146,7 +196,7 @@
           class="text-fg-muted px-[5px] py-1 w-full max-w-fit line-clamp-1"
           class:selected={current}
           href={exampleResource
-            ? `/files${exampleResource?.meta?.filePaths?.[0]}`
+            ? getFileHref(exampleResource?.meta?.filePaths)
             : "#"}
         >
           <CrumbTrigger {filePath} kind={resourceKind} label={resourceName} />
@@ -184,6 +234,14 @@
 
   a:hover {
     @apply text-fg-primary;
+  }
+
+  .disabled {
+    @apply text-fg-disabled;
+  }
+
+  .disabled:hover {
+    @apply text-fg-disabled;
   }
 
   .selected {

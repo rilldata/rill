@@ -34,7 +34,6 @@ import {
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   type MetricsViewSpecDimension,
-  MetricsViewSpecDimensionType,
   type MetricsViewSpecMeasure,
   V1ExploreComparisonMode,
   type V1ExplorePreset,
@@ -102,9 +101,12 @@ export function convertPresetToExploreState(
   errors.push(...tddErrors);
 
   const { partialExploreState: pivotPartialState, errors: pivotErrors } =
-    fromPivotUrlParams(measures, dimensions, preset);
+    fromPivotUrlParams(measures, dimensions, preset, metricsView.timeDimension);
   Object.assign(partialExploreState, pivotPartialState);
   errors.push(...pivotErrors);
+
+  partialExploreState.dynamicYAxisScale = preset.chartDynamicYAxis ?? false;
+  partialExploreState.forceLineChart = preset.chartForceLine ?? false;
 
   return { partialExploreState, errors };
 }
@@ -386,6 +388,7 @@ function fromPivotUrlParams(
   measures: Map<string, MetricsViewSpecMeasure>,
   dimensions: Map<string, MetricsViewSpecDimension>,
   preset: V1ExplorePreset,
+  timeDimension?: string,
 ): {
   partialExploreState: Partial<ExploreState>;
   errors: Error[];
@@ -471,20 +474,21 @@ function fromPivotUrlParams(
   const sorting: SortingState = [];
   if (preset.pivotSortBy) {
     const isTimeDim = preset.pivotSortBy in FromURLParamTimeDimensionMap;
-    const sortById = isTimeDim
-      ? FromURLParamTimeDimensionMap[preset.pivotSortBy]
-      : preset.pivotSortBy;
-    const isValidMeasure = !isTimeDim && measures.has(sortById);
-    const isValidDimension =
-      !isTimeDim &&
-      dimensions.get(sortById)?.type ===
-        MetricsViewSpecDimensionType.DIMENSION_TYPE_CATEGORICAL;
-    if (isTimeDim || isValidMeasure || isValidDimension) {
-      sorting.push({
-        id: sortById,
-        desc: !preset.pivotSortAsc,
-      });
+    let sortById: string;
+    if (isTimeDim) {
+      // Reconstruct TanStack Table format: {timeDimension}_rill_{grain}
+      const grain = FromURLParamTimeDimensionMap[preset.pivotSortBy];
+      sortById = timeDimension ? `${timeDimension}_rill_${grain}` : grain;
+    } else {
+      sortById = preset.pivotSortBy;
     }
+    // Allow all sort IDs through: measures, dimensions, time dimensions,
+    // and unrecognized IDs (e.g. minimized accessors like "c0v2m0") which
+    // TanStack Table will simply ignore if they don't match any column
+    sorting.push({
+      id: sortById,
+      desc: !preset.pivotSortAsc,
+    });
   }
 
   let tableMode: PivotTableMode = "nest";

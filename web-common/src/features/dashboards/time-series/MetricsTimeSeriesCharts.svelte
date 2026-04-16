@@ -72,8 +72,6 @@
 
   let grainDropdownOpen = false;
   let connectNulls = true;
-  let forceLineChart = false;
-  let dynamicYAxisScale = false;
 
   const client = useRuntimeClient();
 
@@ -128,6 +126,8 @@
   $: comparisonDimension = $exploreState?.selectedComparisonDimension;
   $: showComparison = Boolean(showTimeComparison);
   $: tddChartType = $exploreState?.tdd?.chartType;
+  $: forceLineChart = $exploreState?.forceLineChart ?? false;
+  $: dynamicYAxisScale = $exploreState?.dynamicYAxisScale ?? false;
 
   $: activeTimeGrain = selectedTimeRange?.interval;
 
@@ -276,9 +276,13 @@
           />
           <ChartSettingsMenu
             bind:connectNulls
-            bind:forceLineChart
-            bind:dynamicYAxisScale
+            {forceLineChart}
+            {dynamicYAxisScale}
             showForceLineChart={false}
+            onForceLineChartChange={(v) =>
+              metricsExplorerStore.setForceLineChart(exploreName, v)}
+            onDynamicYAxisScaleChange={(v) =>
+              metricsExplorerStore.setDynamicYAxisScale(exploreName, v)}
           />
         </div>
       </div>
@@ -332,8 +336,12 @@
 
       <ChartSettingsMenu
         bind:connectNulls
-        bind:forceLineChart
-        bind:dynamicYAxisScale
+        {forceLineChart}
+        {dynamicYAxisScale}
+        onForceLineChartChange={(v) =>
+          metricsExplorerStore.setForceLineChart(exploreName, v)}
+        onDynamicYAxisScaleChange={(v) =>
+          metricsExplorerStore.setDynamicYAxisScale(exploreName, v)}
       />
 
       {#if !hideStartPivotButton}

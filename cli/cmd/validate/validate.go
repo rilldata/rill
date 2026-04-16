@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net"
 	"os"
 	"strings"
 	"time"
@@ -27,10 +26,11 @@ type ValidationResult struct {
 }
 
 type ValidationSummary struct {
-	TotalResources  int `json:"total_resources"`
-	ParseErrors     int `json:"parse_errors"`
-	ParseWarnings   int `json:"parse_warnings"`
-	ReconcileErrors int `json:"reconcile_errors"`
+	TotalResources    int `json:"total_resources"`
+	ParseErrors       int `json:"parse_errors"`
+	ParseWarnings     int `json:"parse_warnings"`
+	ReconcileErrors   int `json:"reconcile_errors"`
+	ReconcileWarnings int `json:"reconcile_warnings"`
 }
 
 // ParseError represents a parse error (serializable version of runtimev1.ParseError)
@@ -46,6 +46,7 @@ type ResourceStatus struct {
 	Name     string `json:"name" header:"name"`
 	Status   string `json:"status" header:"status"`
 	Error    string `json:"error" header:"error"`
+	Warning  string `json:"warning" header:"warning"`
 	FilePath string `json:"file_path" header:"file_path"`
 	Timeout  bool   `json:"timeout" header:"timeout"`
 }
@@ -80,8 +81,8 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("only human and json output format is supported for validate command")
 			}
 
-			if err := checkRillStartNotRunning(cmd.Context()); err != nil {
-				return err
+			if cmdutil.IsLocalRillRunning(cmd.Context()) {
+				return fmt.Errorf("`rill start` appears to be running on http://localhost:9009; stop it and rerun validate")
 			}
 
 			var projectPath string
@@ -221,6 +222,10 @@ func buildValidationResult(resources []*runtimev1.Resource) *ValidationResult {
 				resourceStatus.Timeout = true
 			}
 		}
+		if len(r.Meta.ReconcileWarnings) > 0 {
+			result.Summary.ReconcileWarnings++
+			resourceStatus.Warning = strings.Join(r.Meta.ReconcileWarnings, "; ")
+		}
 
 		result.Resources = append(result.Resources, resourceStatus)
 	}
@@ -308,16 +313,4 @@ func outputResult(ch *cmdutil.Helper, result *ValidationResult, outputFormat pri
 
 	ch.PrintfSuccess("Validation completed successfully\n")
 	return nil
-}
-
-// checkRillStartNotRunning checks if rill start is running on the default port. this is best efforts check and assumes default port 9009.
-func checkRillStartNotRunning(ctx context.Context) error {
-	d := net.Dialer{Timeout: time.Second}
-	conn, err := d.DialContext(ctx, "tcp", "localhost:9009")
-	if err != nil {
-		// this could be another error than unix.ECONNREFUSED but ignore as best-efforts check
-		return nil
-	}
-	conn.Close()
-	return fmt.Errorf("rill start appears to be running on http://localhost:9009; stop it and rerun validate")
 }

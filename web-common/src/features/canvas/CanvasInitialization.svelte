@@ -25,6 +25,7 @@
   export let instanceId: string;
   export let showBanner = false;
   export let projectId: string | undefined = undefined;
+  export let allowUnvalidatedSpec = false;
 
   const client = useRuntimeClient();
 
@@ -37,7 +38,7 @@
   $: fetchedCanvasQuery = !existingStore
     ? createQueryServiceResolveCanvas(
         client,
-        { canvas: canvasName },
+        { canvas: canvasName, unsafe: allowUnvalidatedSpec },
         {
           query: {
             retry: 5,
@@ -144,17 +145,27 @@
         });
       }
 
-      const validSpec = fetchedCanvas?.canvas?.canvas?.state?.validSpec;
+      const canvasSpec =
+        fetchedCanvas?.canvas?.canvas?.state?.validSpec ??
+        (allowUnvalidatedSpec
+          ? fetchedCanvas?.canvas?.canvas?.spec
+          : undefined);
 
-      if (validSpec) {
+      if (canvasSpec) {
         const processed = {
-          canvas: fetchedCanvas?.canvas?.canvas?.state?.validSpec,
+          canvas: canvasSpec,
           components: fetchedCanvas?.resolvedComponents,
           metricsViews,
           filePath: fetchedCanvas?.canvas?.meta?.filePaths?.[0],
         };
 
-        return setCanvasStore(canvasName, instanceId, processed, client);
+        return setCanvasStore(
+          canvasName,
+          instanceId,
+          processed,
+          client,
+          allowUnvalidatedSpec,
+        );
       }
     }
 
