@@ -137,14 +137,13 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 	selectionSpan.SetAttributes(attribute.Int("rollup.candidate_count", len(e.metricsView.Rollups)))
 	defer selectionSpan.End()
 
-	// Fetch base + rollup timestamps. Typically already cached via BindQuery upstream in resolvers or query Resolve methods.
-	// Falls back to querying OLAP directly if not pre-bound.
-	ts, err := e.Timestamps(ctx, "")
-	if err != nil {
-		selectionSpan.SetAttributes(attribute.String("rollup.result", "skipped"), attribute.String("rollup.skip_reason", "timestamps_error"))
-		return nil, nil
-	}
-	baseMin, baseMax := ts.Min, ts.Max
+	// Timestamps are fetched lazily on the first eligible rollup. Typically already cached
+	// via BindQuery (called by resolvers/metrics.go and queries/metricsview_aggregation.go
+	// after resolving through the metrics_time_range resolver). Falls back to querying
+	// OLAP directly if not pre-bound.
+	var ts metricsview.TimestampsResult
+	var baseMin, baseMax time.Time
+	tsFetched := false
 
 	var best *rollupCandidate
 	for _, rollup := range e.metricsView.Rollups {
@@ -177,6 +176,18 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 		if !eligible {
 			rejectCandidate(reason)
 			continue
+		}
+
+		// Fetch timestamps once, when the first eligible rollup is found
+		if !tsFetched {
+			tsFetched = true
+			ts, err = e.Timestamps(ctx, "")
+			if err != nil {
+				candidateSpan.SetStatus(codes.Error, err.Error())
+				candidateSpan.End()
+				return nil, err
+			}
+			baseMin, baseMax = ts.Min, ts.Max
 		}
 
 		rts, ok := ts.Rollups[rollup.Table]
