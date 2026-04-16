@@ -830,7 +830,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage project")
 	}
 
-	// Enforce slot quota when ProdSlots is being changed (superusers bypass)
+	// Enforce slot quotas when ProdSlots is being changed (superusers bypass)
 	if req.ProdSlots != nil && !forceAccess {
 		org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
 		if err != nil {
@@ -838,6 +838,17 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		}
 		if org.QuotaSlotsPerDeployment >= 0 && int(*req.ProdSlots) > org.QuotaSlotsPerDeployment {
 			return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org can't provision more than %d slots per deployment; contact support for larger deployments", org.QuotaSlotsPerDeployment)
+		}
+		if org.QuotaSlotsTotal >= 0 {
+			usage, err := s.admin.DB.CountProjectsQuotaUsage(ctx, org.ID)
+			if err != nil {
+				return nil, err
+			}
+			// Calculate the delta: new slots minus current slots
+			delta := int(*req.ProdSlots) - proj.ProdSlots
+			if delta > 0 && usage.Slots+delta > org.QuotaSlotsTotal {
+				return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q is limited to %d total slots; contact support for larger deployments", org.Name, org.QuotaSlotsTotal)
+			}
 		}
 	}
 

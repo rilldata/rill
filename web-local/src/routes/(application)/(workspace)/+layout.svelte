@@ -1,4 +1,5 @@
 <script lang="ts">
+  import DeveloperChat from "@rilldata/web-common/features/chat/DeveloperChat.svelte";
   import Navigation from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import { editRoutePrefix } from "@rilldata/web-common/features/workspaces/edit-routing";
   import type { LayoutData } from "../$types";
@@ -14,7 +15,10 @@
     <Navigation />
   {/if}
 
-  <section class="size-full overflow-hidden">
-    <slot />
+  <section class="flex size-full overflow-hidden">
+    <div class="flex-1 overflow-hidden">
+      <slot />
+    </div>
+    <DeveloperChat />
   </section>
 </div>

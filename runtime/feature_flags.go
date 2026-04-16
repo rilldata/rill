@@ -62,6 +62,8 @@ var defaultFeatureFlags = map[string]string{
 	"sticky_dashboard_state": "false",
 	// Controls visibility of the cloud editing feature (Edit button and edit routes)
 	"cloud_editing": "false",
+	// Controls visibility of the custom chart option in canvas dashboards
+	"custom_charts": "false",
 }
 
 // ResolveFeatureFlags resolves feature flags for the given instance and the provided user attributes.
