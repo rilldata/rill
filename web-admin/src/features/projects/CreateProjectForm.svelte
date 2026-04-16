@@ -89,7 +89,6 @@
     bind:value={$form.name}
     errors={$errors?.name}
     id="name"
-    label="Project name"
     textClass="text-sm"
     alwaysShowError
     claimFocusOnMount

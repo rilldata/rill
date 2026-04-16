@@ -13,7 +13,7 @@
   const runtimeClient = useRuntimeClient();
 
   $: ({
-    params: { project, organization },
+    params: { project },
   } = $page);
 
   // Query the instance to get the project display name
