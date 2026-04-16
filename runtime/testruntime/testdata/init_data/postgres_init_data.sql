@@ -36,3 +36,18 @@ VALUES
 	('ddb115ff-8da4-4b36-b1b5-1f58123c1552', 'Bob Brown', 40, NULL, '1982-01-22', '14:45:00', '2023-07-15 15:45:20', '{"hobbies": "Cycling, Management"}', '{"job": "Project Manager"}', NULL, b'11001100', 'M', 'Male', 'mnop', 3, 'Bob is a project manager with 15 years of experience.', '2023-07-15 15:45:20+05:30', 85.2, 175.0, 3, 710, 6543210, NULL, Array[timestamp '2023-07-15 15:45:20+05:30'], NULL, 'NZ'),
 	('5cf3d245-3d9b-4baf-b0f3-9c2f29150c57', 'Sophia Davis', 35, true, '1987-11-30', '09:30:00', '2023-06-20 20:10:05', '{"hobbies": "Design, Art"}', '{"job": "Designer"}', b'1', NULL, 'F', 'Female', 'qrst', 1, 'Sophia is a designer who enjoys creating user-friendly experiences.', '2023-06-20 20:10:05+05:30', 58.9, 160.0, 4, 750, 9876543, Array[9999, 8888], NULL, 6500000.65, 'SA'),
 	('c13da985-454a-48f1-9c35-e4281f918a77', 'Emma White', 28, false, '1995-02-14', '10:05:00', '2023-05-25 09:55:10', '{"hobbies": "Research, Science"}', '{"job": "Researcher"}', b'0', b'10101010', 'F', 'Female', 'uvwx', 0, 'Emma is a researcher focused on environmental science.', '2023-05-25 09:55:10+05:30', 65.0, 170.8, 5, 690, 7890123, Array[7890123, 2109876], Array[timestamp '2023-05-25 09:55:10+05:30'], 4800000.98, 'IND');
+
+-- Simple test tables for information schema tests
+CREATE TABLE foo (bar VARCHAR(255), baz INT);
+INSERT INTO foo VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4);
+
+CREATE TABLE bar (bar VARCHAR(255), baz INT);
+INSERT INTO bar VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4);
+
+CREATE TABLE foz (bar VARCHAR(255), baz INT);
+INSERT INTO foz VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4);
+
+CREATE TABLE baz (bar VARCHAR(255), baz INT);
+INSERT INTO baz VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4);
+
+CREATE VIEW model AS SELECT 1 AS col1, 2 AS col2, 3 AS col3;

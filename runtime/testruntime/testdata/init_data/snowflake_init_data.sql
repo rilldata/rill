@@ -67,9 +67,23 @@ SELECT
     NULL, 
     NULL, 
     NULL, 
-    NULL, 
-    NULL, 
+    NULL,
+    NULL,
     NULL;
 
 
 
+-- Simple test tables for information schema tests
+CREATE OR REPLACE TABLE integration_test.public.foo (bar VARCHAR, baz INT);
+INSERT INTO integration_test.public.foo VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4);
+
+CREATE OR REPLACE TABLE integration_test.public.bar (bar VARCHAR, baz INT);
+INSERT INTO integration_test.public.bar VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4);
+
+CREATE OR REPLACE TABLE integration_test.public.foz (bar VARCHAR, baz INT);
+INSERT INTO integration_test.public.foz VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4);
+
+CREATE OR REPLACE TABLE integration_test.public.baz (bar VARCHAR, baz INT);
+INSERT INTO integration_test.public.baz VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4);
+
+CREATE OR REPLACE VIEW integration_test.public.model AS SELECT 1 AS col1, 2 AS col2, 3 AS col3;

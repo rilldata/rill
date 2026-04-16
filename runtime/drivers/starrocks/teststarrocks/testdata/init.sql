@@ -210,3 +210,18 @@ DISTRIBUTED BY HASH(id) BUCKETS 1
 PROPERTIES ("replication_num" = "1");
 
 -- Ad bids data is loaded from AdBids.csv.gz via LOAD DATA LOCAL INFILE in teststarrocks.go
+
+-- Simple test tables for information schema tests
+CREATE TABLE IF NOT EXISTS test_db.foo (bar VARCHAR(255), baz INT);
+INSERT INTO test_db.foo VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4);
+
+CREATE TABLE IF NOT EXISTS test_db.bar (bar VARCHAR(255), baz INT);
+INSERT INTO test_db.bar VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4);
+
+CREATE TABLE IF NOT EXISTS test_db.foz (bar VARCHAR(255), baz INT);
+INSERT INTO test_db.foz VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4);
+
+CREATE TABLE IF NOT EXISTS test_db.baz (bar VARCHAR(255), baz INT);
+INSERT INTO test_db.baz VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4);
+
+CREATE VIEW IF NOT EXISTS test_db.model AS SELECT 1 AS col1, 2 AS col2, 3 AS col3;
