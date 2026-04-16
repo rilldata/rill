@@ -7,6 +7,29 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestInformationSchemaListTables(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode")
+	}
+
+	conn, _ := acquireTestAthena(t)
+	ctx := t.Context()
+
+	infoSchema, ok := conn.AsInformationSchema()
+	require.True(t, ok)
+
+	// awsdatacatalog is the default Athena catalog; integration_test is the test schema.
+	// current_schema in Athena sessions defaults to "default", so IsDefaultDatabaseSchema is false.
+	tables, _, err := infoSchema.ListTables(ctx, "awsdatacatalog", "integration_test", 0, "")
+	require.NoError(t, err)
+	require.NotEmpty(t, tables)
+
+	for _, tbl := range tables {
+		require.True(t, tbl.IsDefaultDatabase, "table %s: expected IsDefaultDatabase=true", tbl.Name)
+		require.False(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=false (current_schema=default)", tbl.Name)
+	}
+}
+
 func TestGetTable(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping test in short mode")
