@@ -2177,7 +2177,7 @@ export class MetricsViewSpec_Rollup extends Message<MetricsViewSpec_Rollup> {
   model = "";
 
   /**
-   * Time grain of the rollup. If unspecified, defaults to the base metrics view's smallest_time_grain during validation.
+   * Time grain of the rollup.
    *
    * @generated from field: rill.runtime.v1.TimeGrain time_grain = 5;
    */

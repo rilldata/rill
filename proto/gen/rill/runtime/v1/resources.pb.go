@@ -7477,7 +7477,7 @@ type MetricsViewSpec_Rollup struct {
 	DatabaseSchema string `protobuf:"bytes,2,opt,name=database_schema,json=databaseSchema,proto3" json:"database_schema,omitempty"`
 	Table          string `protobuf:"bytes,3,opt,name=table,proto3" json:"table,omitempty"`
 	Model          string `protobuf:"bytes,4,opt,name=model,proto3" json:"model,omitempty"`
-	// Time grain of the rollup. If unspecified, defaults to the base metrics view's smallest_time_grain during validation.
+	// Time grain of the rollup.
 	TimeGrain TimeGrain `protobuf:"varint,5,opt,name=time_grain,json=timeGrain,proto3,enum=rill.runtime.v1.TimeGrain" json:"time_grain,omitempty"`
 	// IANA timezone the rollup was aggregated in; defaults to UTC
 	TimeZone string `protobuf:"bytes,6,opt,name=time_zone,json=timeZone,proto3" json:"time_zone,omitempty"`

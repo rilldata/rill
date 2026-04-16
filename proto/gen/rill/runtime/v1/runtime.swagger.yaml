@@ -3819,7 +3819,7 @@ definitions:
         type: string
       timeGrain:
         $ref: '#/definitions/v1TimeGrain'
-        description: Time grain of the rollup. If unspecified, defaults to the base metrics view's smallest_time_grain during validation.
+        description: Time grain of the rollup.
       timeZone:
         type: string
         title: IANA timezone the rollup was aggregated in; defaults to UTC
