@@ -93,11 +93,26 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 		userAttrs = q.SecurityClaims.UserAttributes
 	}
 
-	e, err := executor.New(ctx, rt, instanceID, q.MetricsViewName, mv.ValidSpec, mv.Streaming, security, priority, userAttrs)
+	e, err := executor.New(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority, userAttrs)
 	if err != nil {
 		return err
 	}
 	defer e.Close()
+
+	if len(mv.ValidSpec.Rollups) > 0 && mv.ValidSpec.TimeDimension != "" {
+		var timeDim string
+		if q.TimeRange != nil {
+			timeDim = q.TimeRange.TimeDimension
+		}
+		tsRes, err := ResolveTimestampResult(ctx, rt, instanceID, q.MetricsViewName, timeDim, q.SecurityClaims, priority)
+		if err != nil {
+			return err
+		}
+		err = e.BindQuery(qry, tsRes)
+		if err != nil {
+			return err
+		}
+	}
 
 	res, err := e.Query(ctx, qry, q.ExecutionTime)
 	if err != nil {
@@ -140,7 +155,7 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 		userAttrs = q.SecurityClaims.UserAttributes
 	}
 
-	e, err := executor.New(ctx, rt, instanceID, q.MetricsViewName, mv.ValidSpec, mv.Streaming, security, opts.Priority, userAttrs)
+	e, err := executor.New(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, opts.Priority, userAttrs)
 	if err != nil {
 		return err
 	}
@@ -209,7 +224,8 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 }
 
 // ResolveTimestampResult resolves the time range for a metrics view and returns the min, max, and watermark timestamps.
-// timeDimension is optional and can be used to specify which time dimension to use for the time range query otherwise it will use the default time dimension of the metrics view.
+// timeDimension is optional; if empty, the default time dimension of the metrics view is used.
+// When the metrics view has rollups, the result also includes rollup table timestamps in the Rollups field.
 func ResolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName, timeDimension string, security *runtime.SecurityClaims, priority int) (metricsview.TimestampsResult, error) {
 	res, _, err := rt.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID: instanceID,
@@ -228,27 +244,39 @@ func ResolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID
 	}
 	defer res.Close()
 
-	row, err := res.Next()
-	if err != nil {
-		if errors.Is(err, io.EOF) {
-			return metricsview.TimestampsResult{}, errors.New("time range query returned no results")
+	var tsRes metricsview.TimestampsResult
+	for {
+		row, err := res.Next()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return metricsview.TimestampsResult{}, err
 		}
-		return metricsview.TimestampsResult{}, err
-	}
 
-	tsRes := metricsview.TimestampsResult{}
+		table, _ := row["table"].(string)
+		mn, err := anyToTime(row["min"])
+		if err != nil {
+			return metricsview.TimestampsResult{}, err
+		}
+		mx, err := anyToTime(row["max"])
+		if err != nil {
+			return metricsview.TimestampsResult{}, err
+		}
 
-	tsRes.Min, err = anyToTime(row["min"])
-	if err != nil {
-		return tsRes, err
-	}
-	tsRes.Max, err = anyToTime(row["max"])
-	if err != nil {
-		return tsRes, err
-	}
-	tsRes.Watermark, err = anyToTime(row["watermark"])
-	if err != nil {
-		return tsRes, err
+		if table == "" {
+			tsRes.Min = mn
+			tsRes.Max = mx
+			tsRes.Watermark, err = anyToTime(row["watermark"])
+			if err != nil {
+				return metricsview.TimestampsResult{}, err
+			}
+		} else {
+			if tsRes.Rollups == nil {
+				tsRes.Rollups = make(map[string]metricsview.TimestampsResult)
+			}
+			tsRes.Rollups[table] = metricsview.TimestampsResult{Min: mn, Max: mx}
+		}
 	}
 
 	return tsRes, nil

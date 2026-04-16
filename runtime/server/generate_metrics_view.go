@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
@@ -142,8 +141,7 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 	if req.UseAi {
 		// Generate
 		start := time.Now()
-		mvName := filePathStem(req.Path)
-		res, err := s.generateMetricsViewYAMLWithAI(ctx, req.InstanceId, mvName, olap.Dialect().String(), req.Connector, tbl, isDefaultConnector, modelFound, req.Prompt)
+		res, err := s.generateMetricsViewYAMLWithAI(ctx, req.InstanceId, olap.Dialect().String(), req.Connector, tbl, isDefaultConnector, modelFound, req.Prompt)
 		if err != nil {
 			s.logger.Warn("failed to generate metrics view YAML using AI", zap.Error(err), observability.ZapCtx(ctx))
 		} else {
@@ -200,7 +198,7 @@ type generateMetricsViewYAMLWithres struct {
 
 // generateMetricsViewYAMLWithAI attempts to generate a metrics view YAML definition from a table schema using AI.
 // It validates that the result is a valid metrics view. Due to the unpredictable nature of AI (and chance of downtime), this function may error non-deterministically.
-func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, mvName, dialect, connector string, tbl *drivers.OlapTable, isDefaultConnector, isModel bool, prompt string) (*generateMetricsViewYAMLWithres, error) {
+func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, dialect, connector string, tbl *drivers.OlapTable, isDefaultConnector, isModel bool, prompt string) (*generateMetricsViewYAMLWithres, error) {
 	// Build messages
 	systemPrompt := metricsViewYAMLSystemPrompt()
 	userPrompt := metricsViewYAMLUserPrompt(dialect, tbl.Name, tbl.Schema, prompt)
@@ -327,7 +325,7 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 			})
 		}
 
-		e, err := executor.New(ctx, s.runtime, instanceID, mvName, spec, !isModel, runtime.ResolvedSecurityOpen, 0, nil)
+		e, err := executor.New(ctx, s.runtime, instanceID, spec, !isModel, runtime.ResolvedSecurityOpen, 0, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -625,12 +623,4 @@ func safeSQLName(name string) string {
 		return name
 	}
 	return drivers.DialectDuckDB.EscapeIdentifier(name)
-}
-
-// filePathStem extracts the resource name from a file path (base name without extension).
-// For example, "metrics_views/my_mv.yaml" returns "my_mv".
-func filePathStem(path string) string {
-	base := filepath.Base(path)
-	ext := filepath.Ext(base)
-	return strings.TrimSuffix(base, ext)
 }

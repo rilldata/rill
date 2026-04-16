@@ -118,12 +118,13 @@ func newRollupTestRuntime(t *testing.T) (*runtime.Runtime, string) {
 }
 
 // newRollupTestExecutor creates an Executor backed by a real runtime and OLAP store.
+// Timestamps (including rollups) are resolved automatically by Timestamps() on first call.
 func newRollupTestExecutor(t *testing.T, rt *runtime.Runtime, instanceID string) *executor.Executor {
 	r := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindMetricsView, rollupTestMVName)
 	mv := r.GetMetricsView().State.ValidSpec
 	require.NotNil(t, mv)
 
-	e, err := executor.New(context.Background(), rt, instanceID, rollupTestMVName, mv, false, runtime.ResolvedSecurityOpen, 0, nil)
+	e, err := executor.New(context.Background(), rt, instanceID, mv, false, runtime.ResolvedSecurityOpen, 0, nil)
 	require.NoError(t, err)
 	return e
 }

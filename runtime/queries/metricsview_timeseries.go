@@ -119,11 +119,22 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 		userAttrs = q.SecurityClaims.UserAttributes
 	}
 
-	e, err := executor.New(ctx, rt, instanceID, q.MetricsViewName, mv.ValidSpec, mv.Streaming, security, priority, userAttrs)
+	e, err := executor.New(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority, userAttrs)
 	if err != nil {
 		return err
 	}
 	defer e.Close()
+
+	if len(mv.ValidSpec.Rollups) > 0 && mv.ValidSpec.TimeDimension != "" {
+		tsRes, err := ResolveTimestampResult(ctx, rt, instanceID, q.MetricsViewName, q.TimeDimension, q.SecurityClaims, priority)
+		if err != nil {
+			return err
+		}
+		err = e.BindQuery(qry, tsRes)
+		if err != nil {
+			return err
+		}
+	}
 
 	res, err := e.Query(ctx, qry, nil)
 	if err != nil {

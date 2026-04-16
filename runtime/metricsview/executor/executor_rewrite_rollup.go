@@ -2,13 +2,11 @@ package executor
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 	"go.opentelemetry.io/otel"
@@ -29,6 +27,7 @@ const (
 	rejectComputedMeasure       = "computed_measure"
 	rejectMeasureMissing        = "measure_missing"
 	rejectWhereDimensionMissing = "where_dimension_missing"
+	rejectTimestampsUnavailable = "timestamps_unavailable"
 )
 
 // Rollup rejection reasons: coverage phase
@@ -40,8 +39,9 @@ const (
 
 // Rollup skip reasons: early disqualification
 const (
-	skipRawRows             = "raw_rows"
-	skipComparisonTimeRange = "comparison_time_range"
+	skipRawRows                 = "raw_rows"
+	skipComparisonTimeRange     = "comparison_time_range"
+	skipNonPrimaryTimeDimension = "non_primary_time_dimension"
 )
 
 // Rollup routing decides whether a metrics query can be served from a
@@ -110,6 +110,18 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 		return nil, nil
 	}
 
+	// Disqualify: queries using a non-primary time dimension (rollups are built on the primary)
+	if qry.TimeRange != nil && qry.TimeRange.TimeDimension != "" && qry.TimeRange.TimeDimension != e.metricsView.TimeDimension {
+		_, span := tracer.Start(ctx, "rollup.selection")
+		span.SetAttributes(
+			attribute.Int("rollup.candidate_count", len(e.metricsView.Rollups)),
+			attribute.String("rollup.result", "skipped"),
+			attribute.String("rollup.skip_reason", skipNonPrimaryTimeDimension),
+		)
+		span.End()
+		return nil, nil
+	}
+
 	// Extract the time grain from the query (from time floor dimensions)
 	queryGrain := extractQueryTimeGrain(qry)
 
@@ -124,10 +136,14 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 	selectionSpan.SetAttributes(attribute.Int("rollup.candidate_count", len(e.metricsView.Rollups)))
 	defer selectionSpan.End()
 
-	// Base table watermarks are fetched lazily: only when the first eligible rollup is found.
-	// This avoids wasted queries when no rollup passes eligibility.
-	var baseMin, baseMax time.Time
-	baseTSFetched := false
+	// Fetch base + rollup timestamps. Typically already cached via BindQuery upstream in resolvers or query Resolve methods.
+	// Falls back to querying OLAP directly if not pre-bound.
+	ts, err := e.Timestamps(ctx, "")
+	if err != nil {
+		selectionSpan.SetAttributes(attribute.String("rollup.result", "skipped"), attribute.String("rollup.skip_reason", "timestamps_error"))
+		return nil, nil
+	}
+	baseMin, baseMax := ts.Min, ts.Max
 
 	var best *rollupCandidate
 	for _, rollup := range e.metricsView.Rollups {
@@ -162,25 +178,12 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 			continue
 		}
 
-		// Fetch base timestamps once, when the first eligible rollup is found
-		if !baseTSFetched {
-			baseTSFetched = true
-			mn, mx, err := e.resolveBaseTimestamps(ctx)
-			if err != nil {
-				candidateSpan.SetStatus(codes.Error, err.Error())
-				candidateSpan.End()
-				return nil, err
-			}
-			baseMin, baseMax = mn, mx
+		rts, ok := ts.Rollups[rollup.Table]
+		if !ok {
+			rejectCandidate(rejectTimestampsUnavailable)
+			continue
 		}
-
-		rollupMin, rollupMax, err := e.resolveRollupTimestamps(ctx, rollup)
-		if err != nil {
-			err = fmt.Errorf("failed to fetch timestamps for rollup %q: %w", rollup.Table, err)
-			candidateSpan.SetStatus(codes.Error, err.Error())
-			candidateSpan.End()
-			return nil, err
-		}
+		rollupMin, rollupMax := rts.Min, rts.Max
 
 		// Compute rollup effective end: max time + 1 grain period (the max bucket covers up to the next grain boundary)
 		rollupLoc := time.UTC
@@ -459,76 +462,4 @@ func normalizeTimezone(tz string) (string, error) {
 		return "UTC", nil
 	}
 	return name, nil
-}
-
-// resolveRollupTimestamps returns the min/max timestamps of a rollup table.
-func (e *Executor) resolveRollupTimestamps(ctx context.Context, rollup *runtimev1.MetricsViewSpec_Rollup) (time.Time, time.Time, error) {
-	return e.resolveTableTimestamps(ctx, rollup.Table, rollup.Database, rollup.DatabaseSchema)
-}
-
-// resolveBaseTimestamps returns the min/max timestamps of the base table.
-func (e *Executor) resolveBaseTimestamps(ctx context.Context) (time.Time, time.Time, error) {
-	return e.resolveTableTimestamps(ctx, "", "", "")
-}
-
-// resolveTableTimestamps calls the metrics_timestamps resolver to fetch min/max timestamps for a table.
-// Pass empty strings for table/database/databaseSchema to query the base table.
-func (e *Executor) resolveTableTimestamps(ctx context.Context, table, database, databaseSchema string) (time.Time, time.Time, error) {
-	args := map[string]any{
-		"priority": e.priority,
-	}
-	if table != "" {
-		args["table"] = table
-	}
-	if database != "" {
-		args["database"] = database
-	}
-	if databaseSchema != "" {
-		args["database_schema"] = databaseSchema
-	}
-
-	res, _, err := e.rt.Resolve(ctx, &runtime.ResolveOptions{
-		InstanceID: e.instanceID,
-		Resolver:   "metrics_timestamps",
-		ResolverProperties: map[string]any{
-			"metrics_view": e.metricsViewName,
-		},
-		Args:   args,
-		Claims: &runtime.SecurityClaims{SkipChecks: true},
-	})
-	if err != nil {
-		return time.Time{}, time.Time{}, err
-	}
-	defer res.Close()
-
-	row, err := res.Next()
-	if err != nil {
-		return time.Time{}, time.Time{}, err
-	}
-
-	mn, err := toTime(row["min"])
-	if err != nil {
-		return time.Time{}, time.Time{}, err
-	}
-	mx, err := toTime(row["max"])
-	if err != nil {
-		return time.Time{}, time.Time{}, err
-	}
-
-	return mn, mx, nil
-}
-
-// toTime converts an any value to time.Time (handles nil, time.Time, and string).
-func toTime(v any) (time.Time, error) {
-	if v == nil {
-		return time.Time{}, nil
-	}
-	switch t := v.(type) {
-	case time.Time:
-		return t, nil
-	case string:
-		return time.Parse(time.RFC3339Nano, t)
-	default:
-		return time.Time{}, errors.New("unexpected type for time value")
-	}
 }

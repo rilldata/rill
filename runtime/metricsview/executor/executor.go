@@ -27,13 +27,12 @@ const (
 
 // Executor is capable of executing queries and other operations against a metrics view.
 type Executor struct {
-	rt              *runtime.Runtime
-	instanceID      string
-	metricsViewName string
-	metricsView     *runtimev1.MetricsViewSpec
-	streaming       bool
-	security        *runtime.ResolvedSecurity
-	priority        int
+	rt          *runtime.Runtime
+	instanceID  string
+	metricsView *runtimev1.MetricsViewSpec
+	streaming   bool
+	security    *runtime.ResolvedSecurity
+	priority    int
 
 	olap            drivers.OLAPStore
 	olapRelease     func()
@@ -44,12 +43,7 @@ type Executor struct {
 }
 
 // New creates a new Executor for the provided metrics view.
-// mvName is the resource name of the metrics view (used for resolver-based caching and rollup watermark resolution).
-func New(ctx context.Context, rt *runtime.Runtime, instanceID, mvName string, mv *runtimev1.MetricsViewSpec, streaming bool, sec *runtime.ResolvedSecurity, priority int, userAttrs map[string]any) (*Executor, error) {
-	if mvName == "" {
-		return nil, errors.New("metrics view name is required")
-	}
-
+func New(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsViewSpec, streaming bool, sec *runtime.ResolvedSecurity, priority int, userAttrs map[string]any) (*Executor, error) {
 	olap, release, err := rt.OLAP(ctx, instanceID, mv.Connector)
 	if err != nil {
 		return nil, fmt.Errorf("failed to acquire connector for metrics view: %w", err)
@@ -89,7 +83,6 @@ func New(ctx context.Context, rt *runtime.Runtime, instanceID, mvName string, mv
 	return &Executor{
 		rt:              rt,
 		instanceID:      instanceID,
-		metricsViewName: mvName,
 		metricsView:     mv,
 		streaming:       streaming,
 		security:        sec,
@@ -168,6 +161,7 @@ func (e *Executor) ValidateQuery(qry *metricsview.Query) error {
 }
 
 // Timestamps queries min, max and watermark for the metrics view.
+// For the primary time dimension it also resolves rollup table timestamps if rollups are present.
 func (e *Executor) Timestamps(ctx context.Context, timeDim string) (metricsview.TimestampsResult, error) {
 	if timeDim == "" {
 		timeDim = e.metricsView.TimeDimension
@@ -185,28 +179,26 @@ func (e *Executor) Timestamps(ctx context.Context, timeDim string) (metricsview.
 		return metricsview.TimestampsResult{}, fmt.Errorf("no time dimension found in metrics view '%s'", timeDim)
 	}
 
-	var res metricsview.TimestampsResult
-	switch e.olap.Dialect() {
-	case drivers.DialectDuckDB:
-		res, err = e.resolveDuckDB(ctx, timeExpr)
-	case drivers.DialectClickHouse:
-		res, err = e.resolveClickHouse(ctx, timeExpr)
-	case drivers.DialectPinot:
-		res, err = e.resolvePinot(ctx, timeExpr)
-	case drivers.DialectDruid:
-		res, err = e.resolveDruid(ctx, timeExpr)
-	case drivers.DialectStarRocks:
-		res, err = e.resolveStarRocks(ctx, timeExpr)
-	case drivers.DialectSnowflake:
-		res, err = e.resolveSnowflake(ctx, timeExpr)
-	default:
-		return metricsview.TimestampsResult{}, fmt.Errorf("not available for dialect '%s'", e.olap.Dialect())
-	}
+	mv := e.metricsView
+	res, err := e.resolveTimestampsForTable(ctx, mv.Database, mv.DatabaseSchema, mv.Table, timeExpr, mv.WatermarkExpression)
 	if err != nil {
 		return metricsview.TimestampsResult{}, err
 	}
 
 	res.Now = time.Now()
+
+	// For the primary time dimension, also resolve rollup table timestamps
+	if timeDim == mv.TimeDimension && len(mv.Rollups) > 0 {
+		res.Rollups = make(map[string]metricsview.TimestampsResult, len(mv.Rollups))
+		for _, rollup := range mv.Rollups {
+			rts, err := e.resolveTimestampsForTable(ctx, rollup.Database, rollup.DatabaseSchema, rollup.Table, timeExpr, "")
+			if err != nil {
+				return metricsview.TimestampsResult{}, fmt.Errorf("failed to resolve timestamps for rollup %q: %w", rollup.Table, err)
+			}
+			res.Rollups[rollup.Table] = rts
+		}
+	}
+
 	e.timestamps[timeDim] = res
 
 	return res, nil
