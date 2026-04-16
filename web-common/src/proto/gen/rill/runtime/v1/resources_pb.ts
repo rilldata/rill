@@ -1506,24 +1506,30 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   firstMonthOfYear = 0;
 
   /**
-   * Cache controls for the metrics view.
+   * Cache controls for the metrics view. By default, enabled for Rill managed models and disabled for streaming (externally managed) data sources.
    *
    * @generated from field: optional bool cache_enabled = 25;
    */
   cacheEnabled?: boolean;
 
   /**
+   * Defaults to use watermark if cache is enabled.
+   *
    * @generated from field: string cache_key_sql = 26;
    */
   cacheKeySql = "";
 
   /**
+   * Defaults to 60 seconds if cache is enabled.
+   *
    * @generated from field: int64 cache_key_ttl_seconds = 27;
    */
   cacheKeyTtlSeconds = protoInt64.zero;
 
   /**
-   * TTL in seconds for caching rollup/base table timestamps (min/max time) used for rollup routing. Defaults to 5 minutes if unset.
+   * TTL for caching timestamp boundaries (min/max) of base and rollup tables. Defaults to 5 minutes if unset.
+   * Takes effect only when mv level caching is disabled otherwise the timestamp boundaries are cached with the same TTL
+   * as the rest of the query results set via `cache.timestamps_ttl` in the metrics view YAML.
    *
    * @generated from field: int64 cache_timestamps_ttl_seconds = 35;
    */

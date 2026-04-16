@@ -358,11 +358,15 @@ message MetricsViewSpec {
   uint32 first_day_of_week = 12;
   // Month number to use as the base for time aggregations by year. Defaults to 1 (January).
   uint32 first_month_of_year = 13;
-  // Cache controls for the metrics view.
+  // Cache controls for the metrics view. By default, enabled for Rill managed models and disabled for streaming (externally managed) data sources.
   optional bool cache_enabled = 25;
+  // Defaults to use watermark if cache is enabled.
   string cache_key_sql = 26;
+  // Defaults to 60 seconds if cache is enabled.
   int64 cache_key_ttl_seconds = 27;
-  // TTL in seconds for caching rollup/base table timestamps (min/max time) used for rollup routing. Defaults to 5 minutes if unset.
+  // TTL for caching timestamp boundaries (min/max) of base and rollup tables. Defaults to 5 minutes if unset.
+  // Takes effect only when mv level caching is disabled otherwise the timestamp boundaries are cached with the same TTL
+  // as the rest of the query results set via `cache.timestamps_ttl` in the metrics view YAML.
   int64 cache_timestamps_ttl_seconds = 35;
   // Query attributes that can be templated with user context and used by drivers (e.g., appended to SETTINGS in ClickHouse).
   // Keys and values are stored as templates and will be resolved at query time.

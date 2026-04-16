@@ -6447,16 +6447,21 @@ definitions:
         description: Month number to use as the base for time aggregations by year. Defaults to 1 (January).
       cacheEnabled:
         type: boolean
-        description: Cache controls for the metrics view.
+        description: Cache controls for the metrics view. By default, enabled for Rill managed models and disabled for streaming (externally managed) data sources.
       cacheKeySql:
         type: string
+        description: Defaults to use watermark if cache is enabled.
       cacheKeyTtlSeconds:
         type: string
         format: int64
+        description: Defaults to 60 seconds if cache is enabled.
       cacheTimestampsTtlSeconds:
         type: string
         format: int64
-        description: TTL in seconds for caching rollup/base table timestamps (min/max time) used for rollup routing. Defaults to 5 minutes if unset.
+        description: |-
+          TTL for caching timestamp boundaries (min/max) of base and rollup tables. Defaults to 5 minutes if unset.
+          Takes effect only when mv level caching is disabled otherwise the timestamp boundaries are cached with the same TTL
+          as the rest of the query results set via `cache.timestamps_ttl` in the metrics view YAML.
       queryAttributes:
         type: object
         additionalProperties:

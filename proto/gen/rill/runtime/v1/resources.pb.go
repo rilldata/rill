@@ -2006,11 +2006,15 @@ type MetricsViewSpec struct {
 	FirstDayOfWeek uint32 `protobuf:"varint,12,opt,name=first_day_of_week,json=firstDayOfWeek,proto3" json:"first_day_of_week,omitempty"`
 	// Month number to use as the base for time aggregations by year. Defaults to 1 (January).
 	FirstMonthOfYear uint32 `protobuf:"varint,13,opt,name=first_month_of_year,json=firstMonthOfYear,proto3" json:"first_month_of_year,omitempty"`
-	// Cache controls for the metrics view.
-	CacheEnabled       *bool  `protobuf:"varint,25,opt,name=cache_enabled,json=cacheEnabled,proto3,oneof" json:"cache_enabled,omitempty"`
-	CacheKeySql        string `protobuf:"bytes,26,opt,name=cache_key_sql,json=cacheKeySql,proto3" json:"cache_key_sql,omitempty"`
-	CacheKeyTtlSeconds int64  `protobuf:"varint,27,opt,name=cache_key_ttl_seconds,json=cacheKeyTtlSeconds,proto3" json:"cache_key_ttl_seconds,omitempty"`
-	// TTL in seconds for caching rollup/base table timestamps (min/max time) used for rollup routing. Defaults to 5 minutes if unset.
+	// Cache controls for the metrics view. By default, enabled for Rill managed models and disabled for streaming (externally managed) data sources.
+	CacheEnabled *bool `protobuf:"varint,25,opt,name=cache_enabled,json=cacheEnabled,proto3,oneof" json:"cache_enabled,omitempty"`
+	// Defaults to use watermark if cache is enabled.
+	CacheKeySql string `protobuf:"bytes,26,opt,name=cache_key_sql,json=cacheKeySql,proto3" json:"cache_key_sql,omitempty"`
+	// Defaults to 60 seconds if cache is enabled.
+	CacheKeyTtlSeconds int64 `protobuf:"varint,27,opt,name=cache_key_ttl_seconds,json=cacheKeyTtlSeconds,proto3" json:"cache_key_ttl_seconds,omitempty"`
+	// TTL for caching timestamp boundaries (min/max) of base and rollup tables. Defaults to 5 minutes if unset.
+	// Takes effect only when mv level caching is disabled otherwise the timestamp boundaries are cached with the same TTL
+	// as the rest of the query results set via `cache.timestamps_ttl` in the metrics view YAML.
 	CacheTimestampsTtlSeconds int64 `protobuf:"varint,35,opt,name=cache_timestamps_ttl_seconds,json=cacheTimestampsTtlSeconds,proto3" json:"cache_timestamps_ttl_seconds,omitempty"`
 	// Query attributes that can be templated with user context and used by drivers (e.g., appended to SETTINGS in ClickHouse).
 	// Keys and values are stored as templates and will be resolved at query time.

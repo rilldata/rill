@@ -97,7 +97,7 @@ type MetricsViewYAML struct {
 		Enabled       *bool  `yaml:"enabled"`
 		KeySQL        string `yaml:"key_sql"`
 		KeyTTL        string `yaml:"key_ttl"`
-		TimestampsTTL string `yaml:"timestamps_ttl"`
+		TimestampsTTL string `yaml:"timestamps_ttl"` // fallback TTL for timestamp caching when MV-level cache is disabled; defaults to 5m
 	} `yaml:"cache"`
 	Explore *struct {
 		Skip                 bool                   `yaml:"skip"`
