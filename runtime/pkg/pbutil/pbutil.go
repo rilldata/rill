@@ -121,6 +121,12 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 		return structpb.NewNumberValue(v2), nil
 	case duckdb.Map:
 		return ToValue(map[any]any(v), t)
+	case duckdb.OrderedMap:
+		m := make(map[any]any, len(v.Keys()))
+		for i, k := range v.Keys() {
+			m[k] = v.Values()[i]
+		}
+		return ToValue(m, t)
 	case *chcol.JSON:
 		return ToValue(v.NestedMap(), t)
 	case chcol.JSON:

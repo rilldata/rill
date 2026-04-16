@@ -146,6 +146,12 @@ func ToValue(v any, t *runtimev1.Type) (any, error) {
 		return toMapCoerceKeys(v, t2)
 	case duckdb.Map:
 		return ToValue(map[any]any(v), t)
+	case duckdb.OrderedMap:
+		m := make(map[any]any, len(v.Keys()))
+		for i, k := range v.Keys() {
+			m[k] = v.Values()[i]
+		}
+		return ToValue(m, t)
 	case duckdb.Interval:
 		// Our current policy is to convert INTERVALs to milliseconds, treating one month as 30 days.
 		ms := v.Micros / 1000

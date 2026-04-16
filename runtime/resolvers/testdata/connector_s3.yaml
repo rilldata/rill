@@ -55,7 +55,7 @@ project_files:
     type: model
     connector: duckdb
     materialize: true
-    pre_exec: "SET default_null_order = 'nulls_last';CREATE SECRET secret1 (TYPE s3, KEY_ID '{{.env.connector.s3.aws_access_key_id}}', SECRET '{{.env.connector.s3.aws_secret_access_key}}', REGION 'us-east-1')"
+    pre_exec: "SET default_null_order = 'nulls_last';CREATE SECRET secret1 (TYPE s3, KEY_ID '{{.env.connector.s3.aws_access_key_id}}', SECRET '{{.env.connector.s3.aws_secret_access_key}}', REGION 'us-east-1', URL_STYLE path)"
     sql: "select *,current_setting('default_null_order') as setting_order from read_parquet('s3://integration-test.rilldata.com/parquet_test/all_datatypes.parquet')"
   duckdb_pre_exec_without_secret.yaml:
     type: model
