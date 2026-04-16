@@ -7,9 +7,11 @@
   import RillLogoSquareNegative from "@rilldata/web-common/components/icons/RillLogoSquareNegative.svelte";
   import {
     createAdminServiceCreateOrganization,
+    getAdminServiceListOrganizationsQueryKey,
     type RpcStatus,
   } from "@rilldata/web-admin/client";
   import type { AxiosError } from "axios";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 
   const createOrgMutation = createAdminServiceCreateOrganization();
   $: ({ isPending, error } = $createOrgMutation);
@@ -24,6 +26,10 @@
         name,
         displayName,
       },
+    });
+
+    await queryClient.invalidateQueries({
+      queryKey: getAdminServiceListOrganizationsQueryKey(),
     });
 
     // This navigation gets cancelled if we do not have `setTimeout` here.
@@ -43,7 +49,7 @@
     <div>
       <div class="text-base font-semibold">Name your organization</div>
       <div class="text-sm text-fg-muted">
-        You can change the name in organization setting.
+        You can change the name in organization settings.
       </div>
     </div>
     <CreateNewOrgForm {createOrg} size="xl" />

@@ -1,6 +1,6 @@
 import { get, writable } from "svelte/store";
-import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
 import { sessionStorageStore } from "@rilldata/web-common/lib/store-utils/session-storage";
+import { explicitLocalStorageStore } from "@rilldata/web-common/lib/store-utils/local-storage.ts";
 
 export type ThemeMode = "light" | "dark" | "system";
 
@@ -14,9 +14,6 @@ function isEmbedEnvironment(): boolean {
 }
 
 const THEME_LOCAL_STORAGE_KEY = "rill:theme";
-// localStorageStore sets the default and stores it in localStorage.
-// So we need explicit value to identify if user explicitly set the theme.
-const THEME_SET_LOCAL_STORAGE_KEY = "rill:theme:set";
 const THEME_SESSION_STORAGE_KEY = "rill:embed:theme-mode";
 
 class ThemeControl {
@@ -24,7 +21,7 @@ class ThemeControl {
   private darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
   private preferenceStore = isEmbedEnvironment()
     ? sessionStorageStore<ThemeMode>(THEME_SESSION_STORAGE_KEY, "light")
-    : localStorageStore<ThemeMode>(THEME_LOCAL_STORAGE_KEY, "light");
+    : explicitLocalStorageStore<ThemeMode>(THEME_LOCAL_STORAGE_KEY, "light");
 
   public subscribe = this.current.subscribe;
   public preference = { subscribe: this.preferenceStore.subscribe };
@@ -56,17 +53,14 @@ class ThemeControl {
 
   public set: Record<ThemeMode, () => void> = {
     light: () => {
-      this.themeSelected();
       this.preferenceStore.set("light");
       this.removeDark();
     },
     dark: () => {
-      this.themeSelected();
       this.preferenceStore.set("dark");
       this.setDark();
     },
     system: () => {
-      this.themeSelected();
       this.preferenceStore.set("system");
 
       if (this.darkQuery.matches) {
@@ -86,15 +80,6 @@ class ThemeControl {
     this.current.set("light");
     document.documentElement.classList.remove("dark");
   }
-
-  private themeSelected() {
-    if (isEmbedEnvironment()) return false;
-    try {
-      localStorage.setItem(THEME_SET_LOCAL_STORAGE_KEY, "true");
-    } catch {
-      // no-op
-    }
-  }
 }
 
 export const themeControl = new ThemeControl();
@@ -107,7 +92,7 @@ export const themeControl = new ThemeControl();
 export function isThemeSelectionNeeded(): boolean {
   if (isEmbedEnvironment()) return false;
   try {
-    return !localStorage.getItem(THEME_SET_LOCAL_STORAGE_KEY);
+    return !localStorage.getItem(THEME_LOCAL_STORAGE_KEY);
   } catch {
     return false;
   }
