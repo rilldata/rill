@@ -144,6 +144,7 @@
       e.preventDefault();
       handleDrop(e);
     }}
+    aria-label="Upload file"
   >
     <div class="inner">
       <div class="icon-wrapper">
