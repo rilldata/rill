@@ -13,10 +13,13 @@ Rill projects are defined as YAML and SQL files, which makes them a natural fit 
 
 ## Step 1: Initialize a project with agent instructions
 
-Run `rill init` to create a new project. By default, Rill generates Claude Code instruction files that teach your AI agent how Rill projects work:
+Run `rill init` to create a new project. The interactive setup will prompt you for a project name, OLAP engine, and agent instructions:
 
 ```bash
-rill init my-project
+rill init
+? Project name my-rill-project
+? OLAP engine clickhouse
+? Agent instructions claude
 ```
 
 This creates a project directory with:
@@ -26,7 +29,7 @@ This creates a project directory with:
 - `.mcp.json` — connects Claude Code to Rill's local [MCP server](/guide/ai/mcp)
 
 :::tip Using a different AI agent?
-Use the `--agent` flag to generate instructions for your tool of choice:
+Select a different option in the "Agent instructions" prompt, or use the `--agent` flag:
 
 ```bash
 # Cursor rules
