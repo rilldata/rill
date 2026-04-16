@@ -2,10 +2,10 @@ package project
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/drivers/duckdb"
 	"github.com/spf13/cobra"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -90,7 +90,7 @@ func TablesCmd(ch *cmdutil.Helper) *cobra.Command {
 
 				// Get row count using SQL query
 				var rowCount string
-				countQuery := fmt.Sprintf("SELECT COUNT(*) FROM %s", duckdb.DialectDuckDB.EscapeIdentifier(table.Name))
+				countQuery := fmt.Sprintf("SELECT COUNT(*) FROM %s", escapeIdentifier(table.Name))
 				queryRes, err := rt.RuntimeServiceClient.QueryResolver(cmd.Context(), &runtimev1.QueryResolverRequest{
 					InstanceId:         instanceID,
 					Resolver:           "sql",
@@ -139,4 +139,13 @@ func must[T any](v T, err error) T {
 		panic(err)
 	}
 	return v
+}
+
+func escapeIdentifier(ident string) string {
+	if ident == "" {
+		return ident
+	}
+	// Most other dialects follow ANSI SQL: use double quotes.
+	// Replace any internal double quotes with escaped double quotes.
+	return fmt.Sprintf(`"%s"`, strings.ReplaceAll(ident, `"`, `""`)) // nolint:gocritic
 }
