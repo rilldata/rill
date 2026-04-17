@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -29,6 +30,14 @@ var spec = drivers.Spec{
 	Description: "Connect to Databricks.",
 	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/data-source/databricks",
 	ConfigProperties: []*drivers.PropertySpec{
+		{
+			Key:         "dsn",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Databricks Connection String",
+			Placeholder: "token:<token>@<host>:443/<http_path>?catalog=<catalog>&schema=<schema>",
+			Hint:        "Can be configured here or by setting the 'connector.databricks.dsn' environment variable (using '.env' or '--env').",
+			Secret:      true,
+		},
 		{
 			Key:         "host",
 			Type:        drivers.StringPropertyType,
@@ -75,6 +84,7 @@ var spec = drivers.Spec{
 type driver struct{}
 
 type configProperties struct {
+	DSN        string `mapstructure:"dsn"`
 	Host       string `mapstructure:"host"`
 	HTTPPath   string `mapstructure:"http_path"`
 	Token      string `mapstructure:"token"`
@@ -84,19 +94,35 @@ type configProperties struct {
 }
 
 func (c *configProperties) validate() error {
-	if c.Host == "" {
-		return errors.New("databricks: host is required")
+	var set []string
+	if c.Host != "" {
+		set = append(set, "host")
 	}
-	if c.HTTPPath == "" {
-		return errors.New("databricks: http_path is required")
+	if c.HTTPPath != "" {
+		set = append(set, "http_path")
 	}
-	if c.Token == "" {
-		return errors.New("databricks: token is required")
+	if c.Token != "" {
+		set = append(set, "token")
+	}
+	if c.Catalog != "" {
+		set = append(set, "catalog")
+	}
+	if c.Schema != "" {
+		set = append(set, "schema")
+	}
+	if c.DSN != "" && len(set) > 0 {
+		return fmt.Errorf("databricks: only one of 'dsn' or [%s] can be set", strings.Join(set, ", "))
+	}
+	if c.DSN == "" && (c.Host == "" || c.HTTPPath == "" || c.Token == "") {
+		return errors.New("databricks: either 'dsn' or 'host', 'http_path', and 'token' are required")
 	}
 	return nil
 }
 
 func (c *configProperties) resolveDSN() string {
+	if c.DSN != "" {
+		return c.DSN
+	}
 	params := url.Values{}
 	if c.Catalog != "" {
 		params.Set("catalog", c.Catalog)

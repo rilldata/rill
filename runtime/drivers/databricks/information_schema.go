@@ -78,9 +78,9 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	SELECT
 		table_name,
 		CASE WHEN table_type = 'VIEW' THEN true ELSE false END AS is_view
-	FROM %s.information_schema.tables
+	FROM %sinformation_schema.tables
 	WHERE table_schema = ?
-	`, drivers.DialectDatabricks.EscapeIdentifier(database))
+	`, catalogPrefix(database))
 	var args []any
 	args = append(args, databaseSchema)
 	if pageToken != "" {
@@ -137,17 +137,18 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 }
 
 func (c *connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
+	prefix := catalogPrefix(database)
 	q := fmt.Sprintf(`
 	SELECT
 		CASE WHEN t.table_type = 'VIEW' THEN true ELSE false END AS is_view,
 		c.column_name,
 		c.data_type
-	FROM %s.information_schema.tables t
-	JOIN %s.information_schema.columns c
+	FROM %sinformation_schema.tables t
+	JOIN %sinformation_schema.columns c
 	ON t.table_schema = c.table_schema AND t.table_name = c.table_name
 	WHERE t.table_schema = ? AND t.table_name = ?
 	ORDER BY c.ordinal_position
-	`, drivers.DialectDatabricks.EscapeIdentifier(database), drivers.DialectDatabricks.EscapeIdentifier(database))
+	`, prefix, prefix)
 
 	db, err := c.getDB(ctx)
 	if err != nil {
@@ -177,4 +178,12 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 	}
 
 	return t, nil
+}
+
+// catalogPrefix returns "<catalog>." if catalog is non-empty, or "" otherwise.
+func catalogPrefix(catalog string) string {
+	if catalog == "" {
+		return ""
+	}
+	return drivers.DialectDatabricks.EscapeIdentifier(catalog) + "."
 }
