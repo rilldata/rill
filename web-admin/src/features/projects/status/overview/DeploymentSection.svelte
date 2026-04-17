@@ -94,7 +94,6 @@
 
   // Slots
   $: currentSlots = Number(projectData?.prodSlots) || 0;
-  $: canManage = $proj.data?.projectPermissions?.manageProject ?? false;
 
   // Billing plan detection
   $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
@@ -250,11 +249,5 @@
   }
   .repo-link:hover {
     @apply underline;
-  }
-  .upgrade-link {
-    @apply text-xs text-primary-500 no-underline;
-  }
-  .upgrade-link:hover {
-    @apply text-primary-600;
   }
 </style>
