@@ -113,7 +113,7 @@ export class SSEConnectionManager {
 
       this.retryAttempts.update((n) => n + 1);
 
-      void this.start(this.url, this.options);
+      this.openConnection();
     } finally {
       this.isReconnecting = false;
     }
@@ -235,13 +235,27 @@ export class SSEConnectionManager {
     this.openedAt = Date.now();
     this.status.set(ConnectionStatus.OPEN);
 
+    // Once the connection has been stable for MIN_STABLE_DURATION, reset
+    // retries so a future failure starts with a fresh budget. Mirrors the
+    // wasStable check in handleCloseEvent for the case where the
+    // connection errors out instead of closing cleanly. Especially
+    // important for keep-alive consumers (e.g. cloud editor) that don't
+    // cycle through pause(), which is the other place retries reset.
+    setTimeout(() => {
+      if (get(this.status) === ConnectionStatus.OPEN) {
+        this.retryAttempts.set(0);
+      }
+    }, MIN_STABLE_DURATION);
+
     if (this.connectionCount > 1) {
       this.events.emit("reconnect");
     }
   };
 
   /**
-   * Start streaming from the given URL
+   * Start streaming from the given URL. Begins a new logical session, so
+   * retry state is cleared — previous failures shouldn't prevent a new
+   * endpoint from connecting.
    *
    * @param url - The SSE endpoint URL
    * @param options - Optional configuration
@@ -257,13 +271,20 @@ export class SSEConnectionManager {
   ): void {
     this.url = url;
     this.options = options;
-
-    // Reset retries for fresh connections; previous failures shouldn't
-    // prevent a new endpoint from connecting.
     this.retryAttempts.set(0);
+    this.openConnection();
+  }
+
+  /**
+   * Issue the underlying fetch and arm auto-close. Called by both start()
+   * (new session) and reconnect() (retry of the current session); only
+   * start() resets retry state, so reconnect() can call this without
+   * clobbering its own retry counter.
+   */
+  private openConnection(): void {
     this.status.set(ConnectionStatus.CONNECTING);
 
-    void this.client.start(url, options);
+    void this.client.start(this.url, this.options);
 
     if (this.params?.autoCloseTimeouts) {
       this.scheduleAutoClose();
