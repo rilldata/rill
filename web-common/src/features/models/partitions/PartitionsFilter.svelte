@@ -32,17 +32,15 @@
     {/if}
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="end" class="w-48">
-    <DropdownMenu.RadioGroup
-      value={selectedFilter}
-      onValueChange={(v) => {
-        if (v) onChange(v);
-      }}
-    >
-      {#each options as option (option.value)}
-        <DropdownMenu.RadioItem value={option.value}>
-          {option.label}
-        </DropdownMenu.RadioItem>
-      {/each}
-    </DropdownMenu.RadioGroup>
+    {#each options as option (option.value)}
+      <DropdownMenu.CheckboxItem
+        checked={selectedFilter === option.value}
+        onCheckedChange={(checked) => {
+          if (checked) onChange(option.value);
+        }}
+      >
+        {option.label}
+      </DropdownMenu.CheckboxItem>
+    {/each}
   </DropdownMenu.Content>
 </DropdownMenu.Root>
