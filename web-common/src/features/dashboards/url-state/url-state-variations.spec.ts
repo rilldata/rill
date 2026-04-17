@@ -3,11 +3,9 @@ import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/s
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   AD_BIDS_DIMENSION_TABLE_PRESET,
-  AD_BIDS_EXPLORE_INIT,
+  AD_BIDS_EXPLORE,
   AD_BIDS_EXPLORE_NAME,
-  AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-  AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
-  AD_BIDS_METRICS_INIT,
+  AD_BIDS_METRICS_VIEW,
   AD_BIDS_PIVOT_PRESET,
   AD_BIDS_PRESET,
   AD_BIDS_PUBLISHER_DIMENSION,
@@ -256,33 +254,35 @@ const TestCases: {
     title:
       "Measures/dimensions visibility with no preset and partially visible measures/dimensions in state",
     mutations: [
-      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY,
-      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
+      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY(AD_BIDS_EXPLORE),
+      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY(AD_BIDS_EXPLORE),
     ],
-    expectedSearch: "measures=impressions&dims=publisher",
+    expectedSearch:
+      "measures=impressions%2Cpublisher_count&dims=publisher%2Ccountry",
   },
   {
     title:
       "Measures/dimensions visibility with no preset and all measures/dimensions visible in state",
     mutations: [
-      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY,
-      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
+      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY(AD_BIDS_EXPLORE),
+      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY(AD_BIDS_EXPLORE),
       // re-toggle to show
-      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY,
-      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
+      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY(AD_BIDS_EXPLORE),
+      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY(AD_BIDS_EXPLORE),
     ],
-    expectedSearch: "",
+    expectedSearch:
+      "measures=impressions%2Cpublisher_count%2Cbid_price&dims=publisher%2Ccountry%2Cdomain",
   },
   {
     title:
       "Measures/dimensions visibility with preset and partially visible measures/dimensions in state matching preset",
     mutations: [
       // initially hidden due to preset, show them now.
-      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY,
-      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
+      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY(AD_BIDS_EXPLORE),
+      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY(AD_BIDS_EXPLORE),
       // hide them back.
-      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY,
-      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
+      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY(AD_BIDS_EXPLORE),
+      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY(AD_BIDS_EXPLORE),
     ],
     preset: AD_BIDS_PRESET,
     expectedSearch:
@@ -293,20 +293,20 @@ const TestCases: {
       "Measures/dimensions visibility with preset and all measures/dimensions visible in state not matching preset",
     mutations: [
       // initially hidden due to preset, show them now.
-      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY,
-      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
+      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY(AD_BIDS_EXPLORE),
+      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY(AD_BIDS_EXPLORE),
     ],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=day&sort_type=percent&sort_dir=ASC",
+      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=day&measures=impressions%2Cbid_price&dims=publisher%2Cdomain&sort_type=percent&sort_dir=ASC",
   },
   {
     title: "Show and hide measures/dimensions",
     mutations: [
-      AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY,
-      AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY,
-      AD_BIDS_TOGGLE_BID_PUBLISHER_DIMENSION_VISIBILITY,
-      AD_BIDS_TOGGLE_BID_PUBLISHER_DIMENSION_VISIBILITY,
+      AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY(AD_BIDS_EXPLORE),
+      AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY(AD_BIDS_EXPLORE),
+      AD_BIDS_TOGGLE_BID_PUBLISHER_DIMENSION_VISIBILITY(AD_BIDS_EXPLORE),
+      AD_BIDS_TOGGLE_BID_PUBLISHER_DIMENSION_VISIBILITY(AD_BIDS_EXPLORE),
     ],
     expectedSearch:
       "measures=bid_price%2Cimpressions&dims=domain%2Cpublisher&sort_by=bid_price",
@@ -553,42 +553,49 @@ describe("Human readable URL state variations", () => {
   });
 
   describe("Should update url state and restore default state on empty params", () => {
-    for (const { title, mutations, preset, expectedSearch } of TestCases) {
+    for (const {
+      title,
+      mutations,
+      preset,
+      expectedSearch,
+      extraExploreState,
+    } of TestCases) {
       it(title, async () => {
         const explore: V1ExploreSpec = {
-          ...AD_BIDS_EXPLORE_INIT,
+          ...AD_BIDS_EXPLORE,
           ...(preset ? { defaultPreset: preset } : {}),
           timeZones: ["UTC", "Asia/Kathmandu"],
         };
         metricsExplorerStore.init(
           AD_BIDS_EXPLORE_NAME,
           getInitExploreStateForTest(
-            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+            AD_BIDS_METRICS_VIEW,
             explore,
             AD_BIDS_TIME_RANGE_SUMMARY,
           ),
         );
         const initState = getCleanMetricsExploreForAssertion();
         const defaultExploreUrlSearch = getRillDefaultExploreUrlParams(
-          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+          AD_BIDS_METRICS_VIEW,
           explore,
           AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
         );
         const defaultExplorePreset = getDefaultExplorePreset(
           explore,
-          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+          AD_BIDS_METRICS_VIEW,
           AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
         );
 
         await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
+        const stateAfterMutations = getCleanMetricsExploreForAssertion();
 
         // load url params with updated metrics state
         const updateUrlParams = getCleanedUrlParamsForGoto(
           explore,
-          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+          AD_BIDS_METRICS_VIEW,
           get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
           getTimeControlState(
-            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+            AD_BIDS_METRICS_VIEW,
             explore,
             AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
             get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
@@ -608,6 +615,22 @@ describe("Human readable URL state variations", () => {
         const currentState = getCleanMetricsExploreForAssertion();
         // current state should match the initial state
         expect(currentState).toEqual(initState);
+
+        const url = new URL("http://localhost");
+        // load url with the expected search
+        url.search = expectedSearch;
+        // get back the state from url params
+        const { partialExploreState: exploreStateFromUrl } =
+          convertURLSearchParamsToExploreState(
+            url.searchParams,
+            AD_BIDS_METRICS_VIEW,
+            explore,
+            defaultExplorePreset,
+          );
+        expect(exploreStateFromUrl).toEqual({
+          ...stateAfterMutations,
+          ...(extraExploreState ?? {}),
+        });
       });
     }
   });
@@ -623,20 +646,20 @@ describe("Human readable URL state variations", () => {
       if (legacyNotSupported) continue;
       it(title, async () => {
         const explore: V1ExploreSpec = {
-          ...AD_BIDS_EXPLORE_INIT,
+          ...AD_BIDS_EXPLORE,
           ...(preset ? { defaultPreset: preset } : {}),
         };
         metricsExplorerStore.init(
           AD_BIDS_EXPLORE_NAME,
           getInitExploreStateForTest(
-            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+            AD_BIDS_METRICS_VIEW,
             explore,
             AD_BIDS_TIME_RANGE_SUMMARY,
           ),
         );
         const defaultExplorePreset = getDefaultExplorePreset(
           explore,
-          AD_BIDS_METRICS_INIT,
+          AD_BIDS_METRICS_VIEW,
           AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
         );
 
@@ -654,7 +677,7 @@ describe("Human readable URL state variations", () => {
         const { partialExploreState: entityFromUrl } =
           convertURLSearchParamsToExploreState(
             url.searchParams,
-            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+            AD_BIDS_METRICS_VIEW,
             explore,
             defaultExplorePreset,
           );
@@ -668,7 +691,7 @@ describe("Human readable URL state variations", () => {
         const { partialExploreState: entityFromDefaultUrl } =
           convertURLSearchParamsToExploreState(
             defaultUrl.searchParams,
-            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+            AD_BIDS_METRICS_VIEW,
             explore,
             defaultExplorePreset,
           );
@@ -683,19 +706,19 @@ describe("Human readable URL state variations", () => {
     metricsExplorerStore.init(
       AD_BIDS_EXPLORE_NAME,
       getInitExploreStateForTest(
-        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-        AD_BIDS_EXPLORE_INIT,
+        AD_BIDS_METRICS_VIEW,
+        AD_BIDS_EXPLORE,
         AD_BIDS_TIME_RANGE_SUMMARY,
       ),
     );
     const defaultExploreUrlSearch = getRillDefaultExploreUrlParams(
-      AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
-      AD_BIDS_EXPLORE_INIT,
+      AD_BIDS_METRICS_VIEW,
+      AD_BIDS_EXPLORE,
       AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
     );
     const defaultExplorePreset = getDefaultExplorePreset(
-      AD_BIDS_EXPLORE_INIT,
-      AD_BIDS_METRICS_INIT,
+      AD_BIDS_EXPLORE,
+      AD_BIDS_METRICS_VIEW,
       AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
     );
 
@@ -709,12 +732,12 @@ describe("Human readable URL state variations", () => {
     // load url params with updated metrics state
     const url = new URL("http://localhost");
     url.search = getCleanedUrlParamsForGoto(
-      AD_BIDS_EXPLORE_INIT,
-      AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+      AD_BIDS_EXPLORE,
+      AD_BIDS_METRICS_VIEW,
       get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
       getTimeControlState(
-        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-        AD_BIDS_EXPLORE_INIT,
+        AD_BIDS_METRICS_VIEW,
+        AD_BIDS_EXPLORE,
         AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
         get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
       ),
@@ -725,11 +748,11 @@ describe("Human readable URL state variations", () => {
     // reset the explore state
     applyURLToExploreState(
       new URL("http://localhost"),
-      AD_BIDS_EXPLORE_INIT,
+      AD_BIDS_EXPLORE,
       defaultExplorePreset,
     );
     // reapply the compressed url
-    applyURLToExploreState(url, AD_BIDS_EXPLORE_INIT, defaultExplorePreset);
+    applyURLToExploreState(url, AD_BIDS_EXPLORE, defaultExplorePreset);
 
     const currentState = getCleanMetricsExploreForAssertion();
     expect(currentState.selectedTimeRange?.name).toEqual(
@@ -856,7 +879,7 @@ export function applyURLToExploreState(
   const { partialExploreState: partialExploreStateDefaultUrl, errors } =
     convertURLSearchParamsToExploreState(
       url.searchParams,
-      AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+      AD_BIDS_METRICS_VIEW,
       exploreSpec,
       defaultExplorePreset,
     );

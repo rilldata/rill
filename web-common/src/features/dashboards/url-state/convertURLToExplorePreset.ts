@@ -66,10 +66,8 @@ export function convertURLToExplorePreset(
     (m) => m.name!,
   );
   const dimensions = getMapFromArray(
-    metricsView.dimensions?.filter(
-      (d) =>
-        explore.dimensions?.includes(d.name!) &&
-        d.type !== "DIMENSION_TYPE_TIME",
+    metricsView.dimensions?.filter((d) =>
+      explore.dimensions?.includes(d.name!),
     ) ?? [],
     (d) => d.name!,
   );
