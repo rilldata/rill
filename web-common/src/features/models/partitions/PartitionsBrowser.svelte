@@ -46,7 +46,7 @@
             View partitions
           </Dialog.Trigger>
           <Dialog.Content
-            class="max-w-screen-xl h-[80vh] flex flex-col gap-y-4"
+            class="max-w-screen-xl h-[40vh] flex flex-col gap-y-4"
           >
             <Dialog.Header>
               <Dialog.Title>Model partitions</Dialog.Title>

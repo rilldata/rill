@@ -36,7 +36,7 @@
     }
   }}
 >
-  <Dialog.Content class="max-w-screen-xl h-[80vh] flex flex-col gap-y-4">
+  <Dialog.Content class="max-w-screen-xl h-[40vh] flex flex-col gap-y-4">
     <Dialog.Header>
       <Dialog.Title>Model Partitions: {modelName}</Dialog.Title>
     </Dialog.Header>
