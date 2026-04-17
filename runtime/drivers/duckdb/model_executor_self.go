@@ -593,6 +593,7 @@ func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, c
 			}
 			sb.WriteString(", ENDPOINT ")
 			sb.WriteString(safeSQLString(s3Config.Endpoint))
+			sb.WriteString(", URL_STYLE path")
 		}
 		if s3Config.Region != "" {
 			sb.WriteString(", REGION ")

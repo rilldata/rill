@@ -137,26 +137,53 @@ func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) erro
 }
 
 // Lookup implements drivers.OLAPInformationSchema.
-func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
-	meta, err := c.GetTable(ctx, db, schema, name)
+func (c *connection) Lookup(ctx context.Context, database, schema, name string) (*drivers.OlapTable, error) {
+	prefix := catalogPrefix(database)
+	q := fmt.Sprintf(`
+	SELECT
+		CASE WHEN t.table_type = 'VIEW' THEN true ELSE false END AS is_view,
+		c.column_name,
+		c.data_type
+	FROM %sinformation_schema.tables t
+	JOIN %sinformation_schema.columns c
+	ON t.table_schema = c.table_schema AND t.table_name = c.table_name
+	WHERE t.table_schema = ? AND t.table_name = ?
+	ORDER BY c.ordinal_position
+	`, prefix, prefix)
+
+	conn, err := c.getDB(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	rtSchema := &runtimev1.StructType{}
-	for colName, colType := range meta.Schema {
-		t := databaseTypeToPB(colType)
-		rtSchema.Fields = append(rtSchema.Fields, &runtimev1.StructType_Field{
+	rows, err := conn.QueryContext(ctx, q, schema, name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var isView bool
+	var fields []*runtimev1.StructType_Field
+	var colName, colType string
+	for rows.Next() {
+		if err := rows.Scan(&isView, &colName, &colType); err != nil {
+			return nil, err
+		}
+		fields = append(fields, &runtimev1.StructType_Field{
 			Name: colName,
-			Type: t,
+			Type: databaseTypeToPB(colType),
 		})
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return &drivers.OlapTable{
-		Database:       db,
+		Database:       database,
 		DatabaseSchema: schema,
 		Name:           name,
-		View:           meta.View,
-		Schema:         rtSchema,
+		View:           isView,
+		Schema:         &runtimev1.StructType{Fields: fields},
 	}, nil
 }
 
