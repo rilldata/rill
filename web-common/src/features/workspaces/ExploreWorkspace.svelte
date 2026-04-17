@@ -17,7 +17,7 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import ExplainErrorButton from "@rilldata/web-common/features/chat/ExplainErrorButton.svelte";
+  import ExplainAndFixErrorButton from "@rilldata/web-common/features/chat/ExplainAndFixErrorButton.svelte";
   import ReconcileWarningPanel from "../entity-management/ReconcileWarningPanel.svelte";
   import Spinner from "../entity-management/Spinner.svelte";
   import PreviewButton from "../explores/PreviewButton.svelte";
@@ -145,7 +145,7 @@
                       header="Unable to load dashboard preview"
                       statusCode={404}
                     />
-                    <ExplainErrorButton {filePath} large />
+                    <ExplainAndFixErrorButton {filePath} large />
                   </div>
                 {:else if exploreName && metricsViewName}
                   <DashboardStateManager {exploreName}>

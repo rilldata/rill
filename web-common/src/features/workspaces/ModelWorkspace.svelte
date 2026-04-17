@@ -25,7 +25,7 @@
   import ReconcilingSpinner from "../entity-management/ReconcilingSpinner.svelte";
   import ReconcileWarningPanel from "../entity-management/ReconcileWarningPanel.svelte";
   import { getUserFriendlyError } from "../models/error-utils";
-  import ExplainErrorButton from "@rilldata/web-common/features/chat/ExplainErrorButton.svelte";
+  import ExplainAndFixErrorButton from "@rilldata/web-common/features/chat/ExplainAndFixErrorButton.svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -162,7 +162,7 @@
                 </div>
               {/each}
               <div class="flex justify-start pt-1">
-                <ExplainErrorButton {filePath} />
+                <ExplainAndFixErrorButton {filePath} />
               </div>
             </div>
           {/if}

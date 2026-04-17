@@ -1,6 +1,6 @@
 <script lang="ts">
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
-  import ExplainErrorButton from "@rilldata/web-common/features/chat/ExplainErrorButton.svelte";
+  import ExplainAndFixErrorButton from "@rilldata/web-common/features/chat/ExplainAndFixErrorButton.svelte";
   import DashboardBuilding from "../dashboards/DashboardBuilding.svelte";
   import DelayedSpinner from "../entity-management/DelayedSpinner.svelte";
 
@@ -22,7 +22,7 @@
         body={errorMessage || "An unknown error occurred."}
       />
       {#if filePath}
-        <ExplainErrorButton {filePath} large />
+        <ExplainAndFixErrorButton {filePath} large />
       {/if}
     </div>
   {:else if isReconciling}

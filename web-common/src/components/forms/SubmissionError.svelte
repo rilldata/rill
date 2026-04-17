@@ -1,6 +1,6 @@
 <script lang="ts">
   import { AlertCircleIcon } from "lucide-svelte";
-  import ExplainErrorButton from "@rilldata/web-common/features/chat/ExplainErrorButton.svelte";
+  import ExplainAndFixErrorButton from "@rilldata/web-common/features/chat/ExplainAndFixErrorButton.svelte";
 
   export let message: string;
   export let details: string | undefined = undefined;
@@ -64,7 +64,7 @@
       {/if}
       {#if filePath}
         <div class="mt-2">
-          <ExplainErrorButton {filePath} />
+          <ExplainAndFixErrorButton {filePath} />
         </div>
       {/if}
     </div>

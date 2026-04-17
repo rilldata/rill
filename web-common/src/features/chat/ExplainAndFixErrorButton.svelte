@@ -1,14 +1,12 @@
 <script lang="ts">
   import { SparklesIcon } from "lucide-svelte";
   import { sidebarActions } from "./layouts/sidebar/sidebar-store";
-  import { composeErrorPrompt } from "./error-prompt-composer";
 
   export let filePath: string;
   export let large = false;
 
   function handleClick() {
-    const prompt = composeErrorPrompt(filePath);
-    sidebarActions.startChat(prompt);
+    sidebarActions.startChat(`Fix the errors in \`${filePath}\``);
   }
 </script>
 

@@ -8,7 +8,7 @@
     V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import ExplainErrorButton from "@rilldata/web-common/features/chat/ExplainErrorButton.svelte";
+  import ExplainAndFixErrorButton from "@rilldata/web-common/features/chat/ExplainAndFixErrorButton.svelte";
 
   // Direct error string (existing API, still supported)
   export let error: string | undefined = undefined;
@@ -59,7 +59,7 @@
         <div class="flex flex-col gap-2 min-w-0">
           <span class="break-words">{effectiveError}</span>
           {#if filePath}
-            <ExplainErrorButton {filePath} />
+            <ExplainAndFixErrorButton {filePath} />
           {/if}
         </div>
       </div>
