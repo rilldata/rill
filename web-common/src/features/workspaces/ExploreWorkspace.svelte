@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
-  import { editRoute } from "@rilldata/web-common/features/workspaces/edit-routing";
+  import { editRoute } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { createRootCauseErrorQuery } from "@rilldata/web-common/features/entity-management/error-utils";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";

@@ -6,7 +6,7 @@
   } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { goto } from "$app/navigation";
-  import { editRoute } from "@rilldata/web-common/features/workspaces/edit-routing";
+  import { editRoute } from "@rilldata/web-common/layout/navigation/editor-routing";
 
   export let id: string;
   export let type: string;

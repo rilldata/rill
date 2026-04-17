@@ -19,7 +19,7 @@
   import FileAndResourceWatcher from "@rilldata/web-common/features/entity-management/FileAndResourceWatcher.svelte";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import Navigation from "@rilldata/web-common/layout/navigation/Navigation.svelte";
-  import { editRoutePrefix } from "@rilldata/web-common/features/workspaces/edit-routing";
+  import { editRoutePrefix } from "@rilldata/web-common/layout/navigation/editor-routing";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import { onDestroy } from "svelte";
   import { get } from "svelte/store";

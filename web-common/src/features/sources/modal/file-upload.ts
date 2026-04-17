@@ -1,4 +1,4 @@
-import { navigateToFile } from "@rilldata/web-common/features/workspaces/edit-routing";
+import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
 import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils";

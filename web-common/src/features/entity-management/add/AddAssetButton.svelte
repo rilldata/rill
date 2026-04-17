@@ -8,7 +8,7 @@
     PlusCircleIcon,
     Wand,
   } from "lucide-svelte";
-  import { navigateToFile } from "@rilldata/web-common/features/workspaces/edit-routing";
+  import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
   import Button from "../../../components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";

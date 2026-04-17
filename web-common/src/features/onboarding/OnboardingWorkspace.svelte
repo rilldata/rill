@@ -7,7 +7,7 @@
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { createResourceAndNavigate } from "@rilldata/web-common/features/entity-management/add/new-files.ts";
   import { EXAMPLES } from "@rilldata/web-common/features/welcome/constants.ts";
-  import { navigateToFile } from "@rilldata/web-common/features/workspaces/edit-routing";
+  import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics.ts";
   import {
     BehaviourEventAction,

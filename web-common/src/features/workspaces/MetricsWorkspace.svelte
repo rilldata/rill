@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { editRoute } from "@rilldata/web-common/features/workspaces/edit-routing";
+  import { editRoute } from "@rilldata/web-common/layout/navigation/editor-routing";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";

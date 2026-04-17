@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import CanvasEditor from "@rilldata/web-common/features/canvas/CanvasEditor.svelte";
-  import { editRoute } from "@rilldata/web-common/features/workspaces/edit-routing";
+  import { editRoute } from "@rilldata/web-common/layout/navigation/editor-routing";
   import VisualCanvasEditing from "@rilldata/web-common/features/canvas/inspector/VisualCanvasEditing.svelte";
   import { createRootCauseErrorQuery } from "@rilldata/web-common/features/entity-management/error-utils";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";

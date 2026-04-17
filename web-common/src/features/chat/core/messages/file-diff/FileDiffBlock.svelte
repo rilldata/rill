@@ -9,7 +9,7 @@
   import type { V1Tool } from "../../../../../runtime-client";
   import ToolCall from "../tools/ToolCall.svelte";
   import type { FileDiffBlock } from "./file-diff-block";
-  import { getFileHref } from "@rilldata/web-common/features/workspaces/edit-routing";
+  import { getFileHref } from "@rilldata/web-common/layout/navigation/editor-routing";
 
   export let block: FileDiffBlock;
   export let tools: V1Tool[] | undefined = undefined;

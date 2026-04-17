@@ -6,7 +6,7 @@ import {
   isDuplicateName,
   VALID_NAME_PATTERN,
 } from "@rilldata/web-common/features/entity-management/name-utils";
-import { getFileHref } from "@rilldata/web-common/features/workspaces/edit-routing";
+import { getFileHref } from "@rilldata/web-common/layout/navigation/editor-routing";
 import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";

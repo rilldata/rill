@@ -12,7 +12,7 @@
   import { selectedMockUserStore } from "./stores";
   import { useMockUsers } from "./useMockUsers";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import { getFileHref } from "@rilldata/web-common/features/workspaces/edit-routing";
+  import { getFileHref } from "@rilldata/web-common/layout/navigation/editor-routing";
 
   let viewAsMenuOpen = false;
   let open = false;

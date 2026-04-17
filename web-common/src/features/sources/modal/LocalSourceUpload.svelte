@@ -1,6 +1,6 @@
 <script lang="ts">
   import { invalidate } from "$app/navigation";
-  import { navigateToFile } from "@rilldata/web-common/features/workspaces/edit-routing";
+  import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { Button } from "@rilldata/web-common/components/button";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";

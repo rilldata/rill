@@ -4,7 +4,7 @@
   import {
     navigateToFile,
     navigateToHome,
-  } from "@rilldata/web-common/features/workspaces/edit-routing";
+  } from "@rilldata/web-common/layout/navigation/editor-routing";
   import {
     deleteFileArtifact,
     duplicateFileArtifact,

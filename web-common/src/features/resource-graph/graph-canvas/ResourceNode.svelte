@@ -12,7 +12,7 @@
   import {
     getFileHref,
     navigateToFile,
-  } from "@rilldata/web-common/features/workspaces/edit-routing";
+  } from "@rilldata/web-common/layout/navigation/editor-routing";
   import ExternalLink from "@rilldata/web-common/components/icons/ExternalLink.svelte";
 
   export let id: string;

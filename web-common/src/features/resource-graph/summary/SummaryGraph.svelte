@@ -14,7 +14,7 @@
   import { themeControl } from "../../themes/theme-control";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { goto } from "$app/navigation";
-  import { editRoute } from "@rilldata/web-common/features/workspaces/edit-routing";
+  import { editRoute } from "@rilldata/web-common/layout/navigation/editor-routing";
 
   export let connectors = 0;
   export let sources = 0;

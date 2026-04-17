@@ -4,7 +4,7 @@
   import {
     getFileHref,
     navigateToFile,
-  } from "@rilldata/web-common/features/workspaces/edit-routing";
+  } from "@rilldata/web-common/layout/navigation/editor-routing";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";

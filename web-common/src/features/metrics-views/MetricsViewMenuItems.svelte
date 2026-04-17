@@ -5,7 +5,7 @@
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { navigateToFile } from "@rilldata/web-common/features/workspaces/edit-routing";
+  import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import { openResourceGraphQuickView } from "@rilldata/web-common/features/resource-graph/quick-view/quick-view-store";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";

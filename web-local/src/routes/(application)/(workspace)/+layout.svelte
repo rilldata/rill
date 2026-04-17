@@ -1,7 +1,7 @@
 <script lang="ts">
   import DeveloperChat from "@rilldata/web-common/features/chat/DeveloperChat.svelte";
   import Navigation from "@rilldata/web-common/layout/navigation/Navigation.svelte";
-  import { editRoutePrefix } from "@rilldata/web-common/features/workspaces/edit-routing";
+  import { editRoutePrefix } from "@rilldata/web-common/layout/navigation/editor-routing";
   import type { LayoutData } from "../$types";
 
   export let data: LayoutData;

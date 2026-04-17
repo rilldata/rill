@@ -14,7 +14,7 @@
   import { setSubmitError } from "@rilldata/web-common/features/add-data/form/errors.ts";
   import type { CreateConnectorStep } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
   import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
-  import { navigateToFile } from "@rilldata/web-common/features/workspaces/edit-routing";
+  import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { getConnectorDriverForSchema } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
   import type { AddDataStateManager } from "@rilldata/web-common/features/add-data/manager/AddDataStateManager.svelte.ts";
 

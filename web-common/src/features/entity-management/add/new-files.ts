@@ -1,5 +1,5 @@
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
-import { navigateToFile } from "@rilldata/web-common/features/workspaces/edit-routing";
+import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils.ts";
 import {
   ResourceKind,

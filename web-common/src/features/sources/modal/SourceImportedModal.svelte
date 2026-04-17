@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { navigateToFile } from "@rilldata/web-common/features/workspaces/edit-routing";
+  import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
   import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";

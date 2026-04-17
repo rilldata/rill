@@ -1,5 +1,5 @@
 import { invalidate } from "$app/navigation";
-import { navigateToFile } from "@rilldata/web-common/features/workspaces/edit-routing";
+import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
 import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
 import type { QueryClient } from "@tanstack/query-core";
 import { behaviourEvent } from "../../../metrics/initMetrics";

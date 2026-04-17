@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import ContextButton from "@rilldata/web-common/components/button/ContextButton.svelte";
-  import { editRoutePrefix } from "@rilldata/web-common/features/workspaces/edit-routing";
+  import { editRoutePrefix } from "@rilldata/web-common/layout/navigation/editor-routing";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import Alert from "@rilldata/web-common/components/icons/Alert.svelte";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";

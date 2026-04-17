@@ -4,7 +4,7 @@ import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sideb
 import { pollForFileCreation } from "@rilldata/web-common/features/entity-management/actions";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { navigateToFile } from "@rilldata/web-common/features/workspaces/edit-routing";
+import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
 import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
