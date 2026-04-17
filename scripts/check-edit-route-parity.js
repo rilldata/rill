@@ -26,20 +26,18 @@ const ADMIN_ROOT = "web-admin/src/routes/[organization]/[project]/-/edit";
 // comment on each entry so a future contributor can judge whether it's still
 // load-bearing.
 const LOCAL_ONLY_ALLOWLIST = [
-  // AI chat routes — not ported to cloud editing yet (PR #8912 known gap).
+  // Citation URL routes
+  // TODO: ensure citations within the edit session get routed to the developer
+  // preview dashboards _within_ the edit session, not to the branch preview 
+  // dashboards _outside_ the edit session.
   "/-/ai/[conversationId]/message/[messageId]/+layout.ts",
   "/-/ai/[conversationId]/message/[messageId]/-/open/+page.ts",
-  // open-query deep link — cloud has its own at /[org]/[project]/-/open-query.
   "/-/open-query/+page.ts",
-  // Legacy dashboard redirect — local-only.
+
+  // Backcompat redirect /dashboard/foo → /explore/foo. Cloud never exposed
+  // /dashboard/[name] URLs, so there's nothing to redirect from. Permanent
+  // local-only.
   "/dashboard/[name]/+page.ts",
-  // Chat sidebar layout for explore — TODO: port to cloud editing.
-  "/explore/[name]/+layout.svelte",
-  // Connector redirect shims — no cloud equivalent today; revisit if needed.
-  "/connector/clickhouse/+page.ts",
-  "/connector/druid/+page.ts",
-  "/connector/duckdb/+page.ts",
-  "/connector/pinot/+page.ts",
 ];
 
 const ADMIN_ONLY_ALLOWLIST = [
