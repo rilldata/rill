@@ -46,7 +46,7 @@
     HoverState,
     TimeSeriesPoint,
   } from "./types";
-  import { dateToIndex, snapIndex } from "./utils";
+  import { dateToIndex, formatUniqueTickLabels, snapIndex } from "./utils";
 
   const chartId = Math.random().toString(36).slice(2, 11);
   const CLICK_THRESHOLD_PX = 4;
@@ -185,6 +185,12 @@
     return measureFormatter(value);
   };
   $: axisFormatter = createMeasureValueFormatter(measure, "axis");
+  $: defaultFormatter = createMeasureValueFormatter(measure, "table");
+  $: yTickLabels = formatUniqueTickLabels(
+    yTicks,
+    axisFormatter,
+    defaultFormatter,
+  );
 
   // Annotations
   $: annotationGroups = groupAnnotations(
@@ -440,7 +446,7 @@
       plotWidth={pb.width}
       plotTop={pb.top}
       plotHeight={pb.height}
-      {axisFormatter}
+      {yTickLabels}
     />
 
     <!-- Chart body -->

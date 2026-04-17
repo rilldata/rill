@@ -1,6 +1,8 @@
 import { MetricsEventScreenName } from "@rilldata/web-common/metrics/service/MetricsTypes";
 import type { Page } from "@sveltejs/kit";
 
+// TODO: update all methods to use partial Page based on what is needed, so that it can be called in loader functions.
+
 export function isOrganizationPage(page: Page): boolean {
   return (
     page.route.id === "/[organization]" ||
@@ -9,8 +11,8 @@ export function isOrganizationPage(page: Page): boolean {
   );
 }
 
-export function withinOrganization(page: Page): boolean {
-  return !!page.route?.id?.startsWith("/[organization]");
+export function withinOrganization({ route }: Pick<Page, "route">): boolean {
+  return !!route?.id?.startsWith("/[organization]");
 }
 
 export function isProjectCreatePage(page: Page): boolean {
@@ -110,8 +112,16 @@ export function isBillingUpgradePage(page: Page): boolean {
   return page.route.id === "/[organization]/-/upgrade-callback";
 }
 
+export function isWelcomePage({ route }: Pick<Page, "route">): boolean {
+  return !!route.id?.startsWith("/-/welcome");
+}
+
 export function isProjectWelcomePage(page: Page): boolean {
   return !!page.route.id?.startsWith("/[organization]/[project]/-/welcome");
+}
+
+export function isAuthPage({ route }: Pick<Page, "route">): boolean {
+  return !!route.id?.startsWith("/-/auth");
 }
 
 export function getScreenNameFromPage(page: Page): MetricsEventScreenName {
