@@ -9,6 +9,7 @@
   import type { PageData } from "./$types";
   import { DeployingDashboardUrlParam } from "@rilldata/web-common/features/project/deploy/utils.ts";
   import { fetchAnalyzeConnectors } from "@rilldata/web-common/features/connectors/selectors.ts";
+  import { projectWelcomeStatusStores } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
 
   let { data }: { data: PageData } = $props();
 
@@ -27,6 +28,7 @@
       commitMessage: "Initial dashboard commit",
     });
 
+    projectWelcomeStatusStores.setProjectWelcomeStatus(project, false);
     setTimeout(
       () =>
         void goto(

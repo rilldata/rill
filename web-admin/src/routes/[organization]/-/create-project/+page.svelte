@@ -16,6 +16,7 @@
   import CTAHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
   import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types.ts";
+  import { projectWelcomeStatusStores } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
 
   let organization = $derived(page.params.organization);
 
@@ -34,9 +35,9 @@
   let deployError: DeployError | undefined = $state(undefined);
   let showStartTeamPlanDialog = $state(false);
   let startTeamPlanType: TeamPlanDialogTypes = $state("base");
-  $effect(() => console.log(deployError));
 
-  function handleCreate(frontendUrl: string) {
+  function handleCreate(projectName: string, frontendUrl: string) {
+    projectWelcomeStatusStores.setProjectWelcomeStatus(projectName, true);
     setTimeout(() => void goto(`${frontendUrl}/-/welcome`));
   }
 </script>

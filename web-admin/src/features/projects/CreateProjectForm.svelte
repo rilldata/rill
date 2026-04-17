@@ -29,7 +29,7 @@
   }: {
     organization: string;
     defaultName?: string;
-    onCreate: (frontendUrl: string) => void;
+    onCreate: (projectName: string, frontendUrl: string) => void;
     onDeployError?: (deployError: DeployError) => void;
   } = $props();
 
@@ -68,7 +68,7 @@
           form.data.displayName,
         );
         if (frontendUrl) {
-          onCreate(frontendUrl);
+          onCreate(form.data.name, frontendUrl);
         }
       },
       onError({ result }) {
