@@ -7,7 +7,10 @@ import type { RuntimeClient } from "../../runtime-client/v2";
 import { fileArtifacts } from "../entity-management/file-artifacts";
 import { ResourceKind } from "../entity-management/resource-selectors";
 import { createResourceFile } from "../entity-management/add/new-files.ts";
-import { navigateToExplore, navigateToFile } from "../workspaces/edit-routing";
+import {
+  navigateToExplore,
+  navigateToFile,
+} from "../../layout/navigation/editor-routing";
 
 export async function createAndPreviewExplore(
   client: RuntimeClient,

@@ -11,7 +11,7 @@ import { fileArtifacts } from "../../entity-management/file-artifacts";
 import { getName } from "../../entity-management/name-utils";
 import { ResourceKind } from "../../entity-management/resource-selectors";
 import { EntityType } from "../../entity-management/types";
-import { navigateToFile } from "../../workspaces/edit-routing";
+import { navigateToFile } from "../../../layout/navigation/editor-routing";
 import { beforeSubmitForm } from "../../sources/modal/submitAddDataForm";
 import {
   getConnectorSchema,

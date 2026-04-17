@@ -13,7 +13,7 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { derived } from "svelte/store";
   import { removeLeadingSlash } from "../../entity-management/entity-mappers";
-  import { getFileHref } from "../../workspaces/edit-routing";
+  import { getFileHref } from "../../../layout/navigation/editor-routing";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
 
   export let refs: V1ResourceName[];

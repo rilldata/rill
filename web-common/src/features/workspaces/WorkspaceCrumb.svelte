@@ -11,7 +11,7 @@
   } from "../entity-management/resource-selectors";
   import { GitBranch } from "lucide-svelte";
   import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
-  import { getFileHref as getWorkspaceFileHref } from "./edit-routing";
+  import { getFileHref as getWorkspaceFileHref } from "../../layout/navigation/editor-routing";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";

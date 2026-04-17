@@ -15,7 +15,7 @@
   } from "../dashboards/granular-access-policies/useSecurityPolicyCheck";
   import StateManagersProvider from "../dashboards/state-managers/StateManagersProvider.svelte";
   import { featureFlags } from "../feature-flags";
-  import { getFileHref } from "../workspaces/edit-routing";
+  import { getFileHref } from "../../layout/navigation/editor-routing";
 
   export let exploreName: string;
 

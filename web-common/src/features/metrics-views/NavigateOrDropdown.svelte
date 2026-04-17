@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { removeLeadingSlash } from "../entity-management/entity-mappers";
-  import { getFileHref } from "../workspaces/edit-routing";
+  import { getFileHref } from "../../layout/navigation/editor-routing";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import {
