@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net/url"
 	"strings"
 
@@ -25,9 +24,7 @@ func init() {
 	drivers.Register("databricks", driver{})
 	drivers.RegisterAsConnector("databricks", driver{})
 
-	if err := dbsqllog.SetLogLevel("disabled"); err != nil {
-		log.Fatal(err)
-	}
+	_ = dbsqllog.SetLogLevel("disabled")
 }
 
 var spec = drivers.Spec{
