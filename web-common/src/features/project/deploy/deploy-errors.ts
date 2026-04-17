@@ -1,4 +1,6 @@
 // rpc error: code = PermissionDenied desc = does not have permission to create assets
+import { duckdbSchema } from "@rilldata/web-common/features/templates/schemas/duckdb.ts";
+
 const RPCErrorExtractor = /rpc error: code = (.*) desc = (.*)/;
 const ProjectQuotaErrorMatcher =
   /quota exceeded: org .* is limited to (\d+) projects/;
@@ -52,7 +54,7 @@ export function getPrettyDeployError(
       message: "",
     };
   }
-  let title = "Oops! An error occurred";
+  const title = "Oops! An error occurred";
 
   if (error.message === GithubRepoNoAccessError) {
     return {
@@ -64,32 +66,43 @@ export function getPrettyDeployError(
 
   const match = RPCErrorExtractor.exec(error.message);
   if (!match) {
-    if (error.message.includes("EntityTooLarge")) {
-      return {
-        type: DeployErrorType.LargeProject,
-        title,
-        message:
-          "It looks like you have more than 10GB. Contact us to finish deployment.",
-      };
-    }
-    return {
-      type: DeployErrorType.Unknown,
-      title,
-      message: error.message,
-    };
+    return parseDeployErrorMessage(error.message, orgOnTrial);
   }
   const [, code, desc] = match;
-  let message = desc;
 
   if (code === "PermissionDenied") {
     return {
       type: DeployErrorType.PermissionDenied,
       title,
-      message,
+      message: desc,
     };
   }
 
-  const projectQuotaMatch = ProjectQuotaErrorMatcher.exec(desc);
+  return parseDeployErrorMessage(desc, orgOnTrial);
+}
+
+export function isQuotaDeployError(deployError: DeployError) {
+  return (
+    deployError.type === DeployErrorType.ProjectLimitHit ||
+    deployError.type === DeployErrorType.OrgLimitHit ||
+    deployError.type === DeployErrorType.TrialEnded ||
+    deployError.type === DeployErrorType.SubscriptionEnded
+  );
+}
+
+function parseDeployErrorMessage(message: string, orgOnTrial: boolean) {
+  let title = "Oops! An error occurred";
+
+  if (message.includes("EntityTooLarge")) {
+    return {
+      type: DeployErrorType.LargeProject,
+      title,
+      message:
+        "It looks like you have more than 10GB. Contact us to finish deployment.",
+    };
+  }
+
+  const projectQuotaMatch = ProjectQuotaErrorMatcher.exec(message);
   if (projectQuotaMatch?.length) {
     const projectQuota = Number(projectQuotaMatch[1]);
     const planLabel = orgOnTrial ? "current plan" : "trial plan";
@@ -104,15 +117,15 @@ export function getPrettyDeployError(
   let type = DeployErrorType.Unknown;
 
   switch (true) {
-    case OrgQuotaErrorMatcher.test(desc):
+    case OrgQuotaErrorMatcher.test(message):
       type = DeployErrorType.OrgLimitHit;
       break;
 
-    case TrialEndedMatcher.test(desc):
+    case TrialEndedMatcher.test(message):
       type = DeployErrorType.TrialEnded;
       break;
 
-    case SubEndedMatcher.test(desc):
+    case SubEndedMatcher.test(message):
       type = DeployErrorType.SubscriptionEnded;
       break;
   }

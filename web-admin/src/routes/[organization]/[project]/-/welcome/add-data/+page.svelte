@@ -1,12 +1,14 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
+  import { onMount } from "svelte";
   import AddDataManager from "@rilldata/web-common/features/add-data/manager/AddDataManager.svelte";
   import { AddDataStep } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { runtimeServiceGitPush } from "@rilldata/web-common/runtime-client";
   import type { PageData } from "./$types";
   import { DeployingDashboardUrlParam } from "@rilldata/web-common/features/project/deploy/utils.ts";
+  import { fetchAnalyzeConnectors } from "@rilldata/web-common/features/connectors/selectors.ts";
 
   let { data }: { data: PageData } = $props();
 
@@ -33,6 +35,11 @@
       50,
     );
   }
+
+  onMount(async () => {
+    // Prefetch connectors and load into cache.
+    await fetchAnalyzeConnectors(runtimeClient);
+  });
 </script>
 
 <div class="my-auto">
