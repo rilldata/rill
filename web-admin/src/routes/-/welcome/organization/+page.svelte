@@ -33,7 +33,7 @@
     });
 
     // This navigation gets cancelled if we do not have `setTimeout` here.
-    setTimeout(() => void goto(`/${name}`));
+    setTimeout(() => void goto(`/${name}/-/create-project`));
   }
 </script>
 
