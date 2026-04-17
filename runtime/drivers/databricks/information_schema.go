@@ -15,27 +15,24 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	SELECT
 		catalog_name,
 		schema_name
-	FROM information_schema.schemata
-	WHERE schema_name != 'information_schema'
+	FROM system.information_schema.schemata
+	WHERE (catalog_name NOT IN ('samples', 'system') OR catalog_name = ?)
+		AND (schema_name != 'information_schema' OR schema_name = ?)
 	`
-	var args []any
+	args := []any{c.config.Catalog, c.config.Schema}
 	if pageToken != "" {
-		var startAfter string
-		if err := pagination.UnmarshalPageToken(pageToken, &startAfter); err != nil {
+		var afterCatalog, afterSchema string
+		if err := pagination.UnmarshalPageToken(pageToken, &afterCatalog, &afterSchema); err != nil {
 			return nil, "", fmt.Errorf("invalid page token: %w", err)
 		}
-		q += `	AND schema_name > ?
-		ORDER BY catalog_name, schema_name
-		LIMIT CAST(? AS INT)
-		`
-		args = append(args, startAfter, limit+1)
-	} else {
-		q += `
-		ORDER BY catalog_name, schema_name
-		LIMIT CAST(? AS INT)
-		`
-		args = append(args, limit+1)
+		q += "	AND (catalog_name > ? OR (catalog_name = ? AND schema_name > ?))"
+		args = append(args, afterCatalog, afterCatalog, afterSchema)
 	}
+	q += `
+	ORDER BY catalog_name, schema_name
+	LIMIT CAST(? AS INT)
+	`
+	args = append(args, limit+1)
 
 	db, err := c.getDB(ctx)
 	if err != nil {
@@ -66,7 +63,8 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	next := ""
 	if len(res) > limit {
 		res = res[:limit]
-		next = pagination.MarshalPageToken(res[len(res)-1].DatabaseSchema)
+		last := res[len(res)-1]
+		next = pagination.MarshalPageToken(last.Database, last.DatabaseSchema)
 	}
 	return res, next, nil
 }
