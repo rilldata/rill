@@ -211,6 +211,9 @@ definitions:
             log_queries:
               type: boolean
               description: Controls whether to log raw SQL queries
+            max_bytes_billed:
+              type: integer
+              description: Maximum number of bytes billed for a query. Queries that exceed this limit will fail with an error. This can help prevent unexpectedly high costs from large queries. It is highly recommended to set this when running on `on-demand pricing` model. The default value is 0 i.e. no limits are enforced in Rill.
           examples:
             - # Example: BigQuery connector configuration
               type: connector                                  # Must be `connector` (required)
@@ -359,7 +362,6 @@ definitions:
 
           required:
             - driver
-            - dsn
         - type: object
           title: DuckDB
           properties:
@@ -464,7 +466,6 @@ definitions:
               mode: "read"                                     # Set the mode for the DuckDB connection. 
           required:
             - driver
-            - db
         - type: object
           title: GCS
           properties:
@@ -499,7 +500,6 @@ definitions:
               google_application_credentials: "{{ .env.GOOGLE_APPLICATION_CREDENTIALS }}"  # Google Cloud credentials JSON string
           required:
             - driver
-            - bucket
         - type: object
           title: HTTPS
           properties:
@@ -528,7 +528,6 @@ definitions:
                 "Authorization": 'Bearer {{ .env.HTTPS_TOKEN }}'  # HTTP headers to include in the request
           required:
             - driver
-            - path
         # Note: Iceberg is not a standalone connector. It uses DuckDB's iceberg_scan() function.
         # See /developers/build/connectors/data-source/iceberg for configuration details.
         - type: object
@@ -796,9 +795,6 @@ definitions:
               timeout_ms: 30000                               # Query timeout in milliseconds
           required:
             - driver
-            - dsn
-            - broker_host
-            - controller_host
         - type: object
           title: StarRocks
           properties:
@@ -1079,7 +1075,6 @@ definitions:
 
           required:
             - driver
-            - bucket
         - type: object
           title: Slack
           properties:
@@ -2172,8 +2167,6 @@ definitions:
                 
               required:
                 - name
-                - display_name
-                - expression
 
           parent_dimensions:
             description: Optional field selectors for dimensions to inherit from the parent metrics view.
@@ -2207,46 +2200,7 @@ definitions:
                   description: Refers to the connector to use for the annotation
                 measures:
                   description: Specifies which measures to apply the annotation to. Applies to all measures if not specified
-                  anyOf:
-                    - type: string
-                      description: Simple field name as a string.
-                    - type: array
-                      description: List of field selectors, each can be a string or an object with detailed configuration.
-                      items:
-                        anyOf:
-                          - type: string
-                            description: Shorthand field selector, interpreted as the name.
-                          - type: object
-                            description: Detailed field selector configuration with name and optional time grain.
-                            properties:
-                              name:
-                                type: string
-                                description: Name of the field to select.
-                              time_grain:
-                                type: string
-                                description: Time grain for time-based dimensions.
-                                enum:
-                                  - ''
-                                  - ms
-                                  - millisecond
-                                  - s
-                                  - second
-                                  - min
-                                  - minute
-                                  - hadditionalProperties: fal
-                                  - hour
-                                  - d
-                                  - day
-                                  - w
-                                  - week
-                                  - month
-                                  - q
-                                  - quarter
-                                  - 'y'
-                                  - year
-                            required:
-                              - name
-                            additionalProperties: false
+                  $ref: '#/definitions/field_selector_properties'
           security:
               $ref: '#/definitions/security_policy_properties'
               description: Defines a security policy for the dashboard
@@ -2418,7 +2372,6 @@ definitions:
               $ref: '#/definitions/component_variable_properties'
         required:
           - type
-          - display_name
       - $ref: '#/definitions/common_properties'
 
   # Explore dashboards
@@ -2567,7 +2520,6 @@ definitions:
             $ref: '#/definitions/dashboard_security_policy_properties'
         required:
           - type
-          - display_name
           - metrics_view
       - $ref: '#/definitions/common_properties'
 
@@ -3017,7 +2969,6 @@ definitions:
 
         required:
           - type
-          - display_name
       - $ref: '#/definitions/common_properties'
 
   # Components

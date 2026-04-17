@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/civil"
 	"github.com/duckdb/duckdb-go/v2"
 	"github.com/google/uuid"
 	"github.com/paulmach/orb"
@@ -236,6 +237,11 @@ func ToValue(v any, t *runtimev1.Type) (any, error) {
 			return ToValue(*v, t)
 		}
 		return nil, nil
+	// bigquery specific types
+	case civil.Date:
+		return v.String(), nil
+	case civil.DateTime:
+		return v.String(), nil
 	default:
 	}
 	if t != nil && t.ArrayElementType != nil {

@@ -47,14 +47,19 @@ var spec = drivers.Spec{
 		},
 	},
 	ImplementsWarehouse: true,
+	ImplementsOLAP:      true,
 }
 
 type driver struct{}
 
 type configProperties struct {
-	SecretJSON      string `mapstructure:"google_application_credentials"`
-	ProjectID       string `mapstructure:"project_id"`
-	AllowHostAccess bool   `mapstructure:"allow_host_access"`
+	SecretJSON string `mapstructure:"google_application_credentials"`
+	ProjectID  string `mapstructure:"project_id"`
+	// MaxBytesBilled is the maximum number of bytes billed for a query. This is a safety mechanism to prevent accidentally running large queries.
+	// Set this to 0 for project defaults.
+	// Only applies to dashboard queries and does not apply when ingesting data from BigQuery into Rill.
+	MaxBytesBilled  int64 `mapstructure:"max_bytes_billed"`
+	AllowHostAccess bool  `mapstructure:"allow_host_access"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.
 	LogQueries bool `mapstructure:"log_queries"`
 }
