@@ -82,16 +82,7 @@ func (q *TableHead) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	query, err := q.buildTableHeadSQL(ctx, olap)
-	if err != nil {
-		return err
-	}
-
-	rows, err := olap.Query(ctx, &drivers.Statement{
-		Query:            query,
-		Priority:         priority,
-		ExecutionTimeout: defaultExecutionTimeout,
-	})
+	rows, err := olap.Head(ctx, q.Database, q.DatabaseSchema, q.TableName, int64(q.Limit))
 	if err != nil {
 		return err
 	}
@@ -131,15 +122,7 @@ func (q *TableHead) Export(ctx context.Context, rt *runtime.Runtime, instanceID 
 				return err
 			}
 		}
-	case drivers.DialectDruid:
-		if err := q.generalExport(ctx, rt, instanceID, w, opts); err != nil {
-			return err
-		}
-	case drivers.DialectClickHouse:
-		if err := q.generalExport(ctx, rt, instanceID, w, opts); err != nil {
-			return err
-		}
-	case drivers.DialectStarRocks:
+	case drivers.DialectDruid, drivers.DialectClickHouse, drivers.DialectStarRocks, drivers.DialectSnowflake, drivers.DialectBigQuery:
 		if err := q.generalExport(ctx, rt, instanceID, w, opts); err != nil {
 			return err
 		}
@@ -180,9 +163,17 @@ func (q *TableHead) generalExport(ctx context.Context, rt *runtime.Runtime, inst
 }
 
 func (q *TableHead) buildTableHeadSQL(ctx context.Context, olap drivers.OLAPStore) (string, error) {
-	columns, err := supportedColumns(ctx, olap, q.Database, q.DatabaseSchema, q.TableName)
+	if olap.Dialect() != drivers.DialectDuckDB {
+		return "", fmt.Errorf("use head api instead of building sql for dialect '%s'", olap.Dialect())
+	}
+	tbl, err := olap.InformationSchema().Lookup(ctx, q.Database, q.DatabaseSchema, q.TableName)
 	if err != nil {
 		return "", err
+	}
+
+	var columns []string
+	for _, field := range tbl.Schema.Fields {
+		columns = append(columns, olap.Dialect().EscapeIdentifier(field.Name))
 	}
 
 	limitClause := ""
@@ -190,23 +181,10 @@ func (q *TableHead) buildTableHeadSQL(ctx context.Context, olap drivers.OLAPStor
 		limitClause = fmt.Sprintf(" LIMIT %d", q.Limit)
 	}
 
-	sql := fmt.Sprintf(
-		`SELECT %s FROM %s%s`,
-		strings.Join(columns, ","),
+	return fmt.Sprintf(
+		"SELECT %s FROM %s%s",
+		strings.Join(columns, ", "),
 		olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 		limitClause,
-	)
-	return sql, nil
-}
-
-func supportedColumns(ctx context.Context, olap drivers.OLAPStore, db, schema, tblName string) ([]string, error) {
-	tbl, err := olap.InformationSchema().Lookup(ctx, db, schema, tblName)
-	if err != nil {
-		return nil, err
-	}
-	var columns []string
-	for _, field := range tbl.Schema.Fields {
-		columns = append(columns, olap.Dialect().EscapeIdentifier(field.Name))
-	}
-	return columns, nil
+	), nil
 }

@@ -46,7 +46,24 @@
 
   const stateManager = new AddDataStateManager();
   $effect(() => stateManager.setCallbacks(onDone, onClose, onStepChange));
-  $effect(() => void init(initConnector, initSchema));
+  $effect(() => stateManager.setConfig(config));
+  let prevInitConnector: string | undefined;
+  let prevInitSchema: string | undefined;
+  let didInit = false;
+  $effect(() => {
+    // This effect seems to be called even if data doesnt change. So add a safeguard for init.
+    if (
+      initConnector === prevInitConnector &&
+      initSchema === prevInitSchema &&
+      didInit
+    ) {
+      return;
+    }
+    prevInitConnector = initConnector;
+    prevInitSchema = initSchema;
+    didInit = true;
+    void init(prevInitConnector, prevInitSchema);
+  });
 
   const runtimeClient = useRuntimeClient();
 
@@ -159,6 +176,7 @@
     <SourceSelector {config} onSelect={schemaSelected} {onBack} />
   {:else if stepState.step === AddDataStep.CreateConnector}
     <ConnectorFormWrapper
+      {stateManager}
       step={stepState}
       onSubmit={(connectorName, connectorFormValues) =>
         void connectorSelected(connectorName, connectorFormValues)}
@@ -189,9 +207,16 @@
       stepState.config.importSteps[0] === ImportDataStep.CreateModel}
     {#if isImportOnlyStep}
       <!-- Special case for import only, we show additional options to handle success and failures. -->
-      <ImportDataStatus importAddDataStep={stepState} {onDone} />
+      <ImportDataStatus
+        {config}
+        {stateManager}
+        importAddDataStep={stepState}
+        {onDone}
+      />
     {:else}
       <GenerateDashboardStatus
+        {config}
+        {stateManager}
         importAddDataStep={stepState}
         {onBack}
         {onDone}

@@ -42,6 +42,7 @@ export enum MetricsEventScreenName {
   MetricsDefinition = "metrics-definition",
   Chart = "chart",
   Canvas = "canvas",
+  Connector = "connector",
   CLI = "cli",
   Splash = "splash",
   Home = "home",
@@ -72,6 +73,7 @@ export const ResourceKindToScreenMap: Partial<
   [ResourceKind.MetricsView]: MetricsEventScreenName.Dashboard,
   [ResourceKind.Component]: MetricsEventScreenName.Chart,
   [ResourceKind.Canvas]: MetricsEventScreenName.Canvas,
+  [ResourceKind.Connector]: MetricsEventScreenName.Connector,
 };
 
 export interface ActiveEvent extends MetricsEvent {

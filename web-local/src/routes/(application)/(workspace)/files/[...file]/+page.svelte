@@ -4,7 +4,6 @@
   import { customYAMLwithJSONandSQL } from "@rilldata/web-common/components/editor/presets/yamlWithJsonAndSql";
   import { GeneratingMessage } from "@rilldata/web-common/components/generating-message";
   import { generatingCanvas } from "@rilldata/web-common/features/canvas/ai-generation/generateCanvas";
-  import DeveloperChat from "@rilldata/web-common/features/chat/DeveloperChat.svelte";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import FileWorkspaceHeader from "@rilldata/web-common/features/editor/FileWorkspaceHeader.svelte";
   import { getExtensionsForFile } from "@rilldata/web-common/features/editor/getExtensionsForFile";
@@ -84,37 +83,32 @@
   <title>Rill Developer | {fileName}</title>
 </svelte:head>
 
-<div class="flex h-full overflow-hidden">
-  <div class="flex-1 overflow-hidden">
-    {#if $generatingCanvas}
-      <GeneratingMessage title="Generating your Canvas dashboard..." />
-    {:else if workspace}
-      <svelte:component this={workspace} {fileArtifact} />
-    {:else}
-      <WorkspaceContainer inspector={false}>
-        <FileWorkspaceHeader
-          slot="header"
-          {resource}
-          resourceKind={resourceKind ?? $inferredResourceKind ?? undefined}
-          filePath={path}
-          hasUnsavedChanges={$hasUnsavedChanges}
-        />
-        <WorkspaceEditorContainer
-          slot="body"
-          {resource}
-          {parseError}
-          remoteContent={$remoteContent}
-          filePath={path}
-        >
-          <Editor
-            {fileArtifact}
-            {extensions}
-            bind:editor
-            bind:autoSave={$autoSave}
-          />
-        </WorkspaceEditorContainer>
-      </WorkspaceContainer>
-    {/if}
-  </div>
-  <DeveloperChat />
-</div>
+{#if $generatingCanvas}
+  <GeneratingMessage title="Generating your Canvas dashboard..." />
+{:else if workspace}
+  <svelte:component this={workspace} {fileArtifact} />
+{:else}
+  <WorkspaceContainer inspector={false}>
+    <FileWorkspaceHeader
+      slot="header"
+      {resource}
+      resourceKind={resourceKind ?? $inferredResourceKind ?? undefined}
+      filePath={path}
+      hasUnsavedChanges={$hasUnsavedChanges}
+    />
+    <WorkspaceEditorContainer
+      slot="body"
+      {resource}
+      {parseError}
+      remoteContent={$remoteContent}
+      filePath={path}
+    >
+      <Editor
+        {fileArtifact}
+        {extensions}
+        bind:editor
+        bind:autoSave={$autoSave}
+      />
+    </WorkspaceEditorContainer>
+  </WorkspaceContainer>
+{/if}

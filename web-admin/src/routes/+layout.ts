@@ -3,6 +3,7 @@ In svelte.config.js, the "adapter-static" option makes the application a single-
 app in production. Here, we are setting server-side rendering (SSR) to false to 
 ensure the same single-page app behavior in development.
 */
+
 export const ssr = false;
 
 import { dev } from "$app/environment";
@@ -26,6 +27,7 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import { error, redirect, type Page } from "@sveltejs/kit";
 import { isAxiosError } from "axios";
 import { Settings } from "luxon";
+import { maybeRedirectToWelcomePage } from "@rilldata/web-admin/features/welcome/utils.ts";
 
 Settings.defaultLocale = "en";
 
@@ -74,6 +76,9 @@ export const load = async ({ params, url, route, depends }) => {
       redirectToLogin();
     }
   }
+
+  // Maybe redirect user to welcome flow. More details in maybeRedirectToWelcomePage
+  if (user) await maybeRedirectToWelcomePage(route);
 
   // If no organization or project, return empty permissions
   if (!organization) {

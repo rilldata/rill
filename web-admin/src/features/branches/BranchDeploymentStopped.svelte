@@ -75,12 +75,10 @@
       <div class="h-16">
         <Spinner status={EntityStatus.Running} size="3rem" duration={725} />
       </div>
-      <CtaHeader variant="bold">Deployment is stopping...</CtaHeader>
+      <CtaHeader variant="bold">Hibernating...</CtaHeader>
     {:else}
-      <CtaHeader variant="bold">Deployment stopped</CtaHeader>
-      <p class="text-sm text-fg-secondary">
-        This branch deployment is not running.
-      </p>
+      <CtaHeader variant="bold">Branch hibernated</CtaHeader>
+      <p class="text-sm text-fg-secondary">This branch is hibernated.</p>
       {#if canManage}
         <Button
           type="primary"
@@ -88,7 +86,7 @@
           loadingCopy="Starting..."
           onClick={handleStart}
         >
-          Start deployment
+          Resume branch
         </Button>
       {/if}
     {/if}

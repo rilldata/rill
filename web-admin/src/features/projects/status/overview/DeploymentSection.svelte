@@ -7,8 +7,11 @@
   import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
+
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
+  import { createQueryServiceProjectStorage } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size";
   import {
     useParserReconcileError,
     useProjectDeployment,
@@ -71,6 +74,23 @@
     sensitive: true,
   });
   $: instance = $instanceQuery.data?.instance;
+
+  // Project storage (OLAP connector data size)
+  $: storageQuery = createQueryServiceProjectStorage(runtimeClient, {});
+  $: defaultOlapEntry = $storageQuery.data?.entries?.find(
+    (e) => e.isDefaultOlap,
+  );
+  $: isManaged =
+    defaultOlapEntry?.managed || defaultOlapEntry?.connector === "duckdb";
+  $: dataSizeBytes = (() => {
+    const val = $storageQuery.data?.defaultOlapSizeBytes;
+    if (val === undefined || val === null) return undefined;
+    const n = Number(val);
+    return n >= 0 ? n : undefined;
+  })();
+  $: dataLabel =
+    !defaultOlapEntry || isManaged ? "Data size" : "Data accessible";
+
   // Repo — only shown when the user connected their own GitHub
   $: githubUrl = projectData?.gitRemote
     ? getGitUrlFromRemote(projectData.gitRemote)
@@ -187,6 +207,42 @@
           {:else}
             Rill Managed
           {/if}
+        </span>
+      </div>
+    {/if}
+
+    {#if version}
+      <div class="info-row">
+        <span class="info-label">Runtime</span>
+        <span class="info-value">{version}</span>
+      </div>
+    {/if}
+
+    <div class="info-row">
+      <span class="info-label">OLAP Engine</span>
+      <span class="info-value">{olapEngineLabel}</span>
+    </div>
+
+    <div class="info-row">
+      <span class="info-label">AI Connector</span>
+      <span class="info-value">
+        {#if aiConnector && aiConnector.name !== "admin"}
+          {formatConnectorName(aiConnector.type)}
+          <span class="text-fg-tertiary text-xs ml-1">({aiConnector.name})</span
+          >
+        {:else}
+          Rill Managed
+        {/if}
+      </span>
+    </div>
+
+    {#if dataSizeBytes !== undefined}
+      <div class="info-row">
+        <span class="info-label">{dataLabel}</span>
+        <span class="info-value">
+          <a href="/{organization}/{project}/-/status/tables" class="repo-link">
+            {formatMemorySize(dataSizeBytes)}
+          </a>
         </span>
       </div>
     {/if}
