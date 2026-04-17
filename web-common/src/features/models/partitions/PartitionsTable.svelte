@@ -55,7 +55,7 @@
     });
   })();
 
-  function formatTimestamp(ts: string | undefined, withMs = false) {
+  function formatTimestamp(ts: string | undefined) {
     return ts
       ? new Date(ts).toLocaleString(undefined, {
           month: "short",
@@ -63,7 +63,6 @@
           hour: "numeric",
           minute: "numeric",
           second: "numeric",
-          ...(withMs ? { fractionalSecondDigits: 3 } : {}),
         })
       : "-";
   }
@@ -90,7 +89,7 @@
     {
       accessorKey: "watermark",
       header: "Watermark",
-      cell: ({ row }) => formatTimestamp(row.original.watermark, true),
+      cell: ({ row }) => formatTimestamp(row.original.watermark),
     },
     {
       accessorKey: "error",
