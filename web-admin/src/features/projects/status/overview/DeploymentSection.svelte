@@ -105,12 +105,8 @@
 
 <OverviewCard title="Deployment">
   <div slot="header-right" class="flex items-center gap-3">
-    <!-- TODO: uncomment when ready
-    {#if canManage && (isTrialPlan(planName) || isFreePlan(planName) || isTeamPlan(planName)) && !$subscriptionQuery?.isLoading}
-      <a class="upgrade-link" href="/{organization}/-/settings/billing">
-        Upgrade to Pro
-      </a>
-    {/if}
+    <!-- TODO: re-add "Upgrade to Pro" link when ready.
+         Gate on: canManage && (isTrialPlan || isFreePlan || isTeamPlan) && !subscriptionQuery.isLoading
     -->
     <ProjectClone
       {organization}
