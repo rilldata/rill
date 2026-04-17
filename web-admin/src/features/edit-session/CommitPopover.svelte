@@ -5,9 +5,11 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import {
     createRuntimeServiceGitPushMutation,
     createRuntimeServiceGitStatus,
+    getRuntimeServiceGitStatusQueryKey,
     type RpcStatus,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -30,6 +32,9 @@
       await $gitPushMutation.mutateAsync({
         commitMessage: commitMessage.trim(),
         force: false,
+      });
+      void queryClient.invalidateQueries({
+        queryKey: getRuntimeServiceGitStatusQueryKey(client.instanceId, {}),
       });
       eventBus.emit("notification", {
         type: "success",
