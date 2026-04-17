@@ -25,7 +25,7 @@
   } = component);
 
   $: metricsViewName =
-    "metrics_view" in $specStore ? $specStore.metrics_view : null;
+    "metrics_view" in $specStore ? ($specStore.metrics_view ?? null) : null;
 
   $: if (metricsViewName) {
     measures = getMeasuresForMetricView(metricsViewName);
@@ -93,7 +93,9 @@
     <Filter size="16px" className="text-fg-secondary" />
 
     <FilterChipsReadOnly
-      metricsViewNames={[$specStore.metrics_view]}
+      metricsViewNames={$specStore.metrics_view
+        ? [$specStore.metrics_view]
+        : []}
       dimensions={$dimensions}
       measures={$measures}
       {dimensionThresholdFilters}
