@@ -3,11 +3,12 @@ package databricks_test
 import (
 	"testing"
 
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 )
 
 func TestListDatabaseSchemas(t *testing.T) {
-	// testmode.Expensive(t)
+	testmode.Expensive(t)
 
 	conn, _ := acquireTestDatabricks(t)
 	is, ok := conn.AsInformationSchema()
@@ -28,7 +29,7 @@ func TestListDatabaseSchemas(t *testing.T) {
 }
 
 func TestListTables(t *testing.T) {
-	// testmode.Expensive(t)
+	testmode.Expensive(t)
 
 	conn, _ := acquireTestDatabricks(t)
 	is, ok := conn.AsInformationSchema()
@@ -49,7 +50,7 @@ func TestListTables(t *testing.T) {
 }
 
 func TestGetTable(t *testing.T) {
-	// testmode.Expensive(t)
+	testmode.Expensive(t)
 
 	conn, _ := acquireTestDatabricks(t)
 	is, ok := conn.AsInformationSchema()

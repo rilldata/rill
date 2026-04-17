@@ -269,7 +269,6 @@ func (d Dialect) EscapeIdentifier(ident string) string {
 
 	switch d {
 	case DialectMySQL, DialectBigQuery, DialectStarRocks, DialectDatabricks:
-		// MySQL and StarRocks use backticks for quoting identifiers
 		// Replace any backticks inside the identifier with double backticks.
 		return fmt.Sprintf("`%s`", strings.ReplaceAll(ident, "`", "``"))
 	case DialectSnowflake:
