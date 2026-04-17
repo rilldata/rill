@@ -8,7 +8,6 @@
   import {
     isFreePlan,
     isProPlan,
-    // isTeamPlan, // TODO: uncomment when "Upgrade to Pro" link is re-enabled
     isTrialPlan,
   } from "@rilldata/web-admin/features/billing/plans/utils";
   import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
