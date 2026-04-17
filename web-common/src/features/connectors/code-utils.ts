@@ -709,20 +709,14 @@ export async function createYamlModelFromTable(
   const selectStatement = `select * from ${sufficientlyQualifiedTableName}`;
 
   // Get default OLAP connector for the output
-  const runtimeInstanceQueryKey = getRuntimeServiceGetInstanceQueryKey(
-    client.instanceId,
-    {},
-  );
-  const runtimeInstanceQueryFn = async () =>
-    runtimeServiceGetInstance(client, { sensitive: true });
   const runtimeInstance = await queryClient.fetchQuery({
-    queryKey: runtimeInstanceQueryKey,
-    queryFn: runtimeInstanceQueryFn,
+    queryKey: getRuntimeServiceGetInstanceQueryKey(client.instanceId, {}),
+    queryFn: () => runtimeServiceGetInstance(client, { sensitive: true }),
   });
   if (!runtimeInstance) {
     throw new Error(`Could not find runtime instance ${client.instanceId}`);
   }
-  const defaultOLAP = runtimeInstance?.instance?.olapConnector ?? "duckdb";
+  const defaultOLAP = runtimeInstance?.instance?.olapConnector || "duckdb";
 
   // NOTE: Redshift does not support LIMIT clauses in its UNLOAD data exports.
   const shouldIncludeDevSection = driverName !== "redshift";
@@ -779,23 +773,6 @@ export async function createSqlModelFromTable(
   }
   const driverName = analyzedConnector.driver?.name as string;
 
-  // Determine whether the connector is the default OLAP connector
-  const runtimeInstanceQueryKey = getRuntimeServiceGetInstanceQueryKey(
-    client.instanceId,
-    {},
-  );
-  const runtimeInstanceQueryFn = async () =>
-    runtimeServiceGetInstance(client, { sensitive: true });
-  const runtimeInstance = await queryClient.fetchQuery({
-    queryKey: runtimeInstanceQueryKey,
-    queryFn: runtimeInstanceQueryFn,
-  });
-  if (!runtimeInstance) {
-    throw new Error(`Could not find runtime instance ${client.instanceId}`);
-  }
-  const defaultOLAP = runtimeInstance?.instance?.olapConnector ?? "duckdb";
-  const isDefaultOLAPConnector = defaultOLAP === connector;
-
   // Get new model name
   const allNames = [
     ...fileArtifacts.getNamesForKind(ResourceKind.Source),
@@ -812,10 +789,10 @@ export async function createSqlModelFromTable(
     table,
   );
 
-  // Create model
+  // Create model — OLAP models use the same connector for both source and output
   const topComments = `-- Model SQL\n-- Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/${driverName}`;
   const connectorLine = `-- @connector: ${connector}`;
-  const outputConnectorLine = `-- @output.connector: ${defaultOLAP}`;
+  const outputConnectorLine = `-- @output.connector: ${connector}`;
   const selectStatement = isNonStandardIdentifier(
     sufficientlyQualifiedTableName,
   )
@@ -824,11 +801,7 @@ export async function createSqlModelFromTable(
   const devLimit = "{{ if dev }} limit 100000 {{ end}}";
 
   let modelSQL = `${topComments}\n`;
-
-  if (!isDefaultOLAPConnector) {
-    modelSQL += `${connectorLine}\n`;
-  }
-
+  modelSQL += `${connectorLine}\n`;
   modelSQL += `${outputConnectorLine}\n`;
 
   modelSQL += `\n${selectStatement}`;
