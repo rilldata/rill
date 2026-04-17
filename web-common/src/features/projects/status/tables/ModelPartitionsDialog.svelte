@@ -36,23 +36,24 @@
     }
   }}
 >
-  <Dialog.Content class="max-w-screen-xl max-h-[90vh] flex flex-col">
+  <Dialog.Content class="max-w-screen-xl h-[80vh] flex flex-col gap-y-4">
     <Dialog.Header>
       <Dialog.Title>Model Partitions: {modelName}</Dialog.Title>
     </Dialog.Header>
 
     {#if resource}
-      <div class="flex items-center gap-x-3 mb-4">
-        <div class="w-64">
+      <div class="flex flex-row items-center gap-x-4 min-h-9">
+        <div class="flex-1 min-w-0 min-h-9">
           <Search
             bind:value={searchText}
-            placeholder="Search partitions"
+            placeholder="Search"
+            large
             autofocus={false}
+            showBorderOnFocus={false}
+            retainValueOnMount
           />
         </div>
-        <div class="ml-auto">
-          <PartitionsFilter {selectedFilter} onChange={onFilterChange} />
-        </div>
+        <PartitionsFilter {selectedFilter} onChange={onFilterChange} />
       </div>
       <div class="flex-1 min-h-0 overflow-auto">
         <PartitionsTable

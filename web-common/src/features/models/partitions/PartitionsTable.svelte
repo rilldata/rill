@@ -72,7 +72,8 @@
     {
       id: "data",
       header: "Data",
-      accessorFn: (row) => ((row.data?.uri as string) ?? "").toLowerCase(),
+      accessorFn: (row) =>
+        ((row.data?.uri as string) ?? row.key ?? "").toLowerCase(),
       cell: ({ row }) => renderComponent(DataCell, { data: row.original.data }),
     },
     {
