@@ -147,9 +147,8 @@
         <span class="info-value"
           >{currentSlots * 4} GiB RAM, {currentSlots} vCPU
           <span class="text-fg-tertiary text-xs ml-1"
-            >({currentSlots} {currentSlots === 1
-              ? "Compute unit"
-              : "Compute units"})</span
+            >({currentSlots}
+            {currentSlots === 1 ? "Compute unit" : "Compute units"})</span
           ></span
         >
       </div>
