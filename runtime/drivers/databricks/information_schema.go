@@ -26,13 +26,13 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 		}
 		q += `	AND schema_name > ?
 		ORDER BY catalog_name, schema_name
-		LIMIT ?
+		LIMIT CAST(? AS INT)
 		`
 		args = append(args, startAfter, limit+1)
 	} else {
 		q += `
 		ORDER BY catalog_name, schema_name
-		LIMIT ?
+		LIMIT CAST(? AS INT)
 		`
 		args = append(args, limit+1)
 	}
@@ -90,13 +90,13 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 		}
 		q += `	AND table_name > ?
 		ORDER BY table_name
-		LIMIT ?
+		LIMIT CAST(? AS INT)
 		`
 		args = append(args, startAfter, limit+1)
 	} else {
 		q += `
 		ORDER BY table_name
-		LIMIT ?
+		LIMIT CAST(? AS INT)
 		`
 		args = append(args, limit+1)
 	}

@@ -70,6 +70,51 @@ func TestOLAP(t *testing.T) {
 	}
 }
 
+func TestComplexTypes(t *testing.T) {
+	testmode.Expensive(t)
+
+	_, olap := acquireTestDatabricks(t)
+
+	// Test non-null complex types (id=1)
+	rows, err := olap.Query(t.Context(), &drivers.Statement{
+		Query: "SELECT array_col, map_col, struct_col FROM integration_test.all_datatypes WHERE id = 1",
+	})
+	require.NoError(t, err)
+	defer rows.Close()
+
+	require.True(t, rows.Next())
+	res := make(map[string]any)
+	err = rows.MapScan(res)
+	require.NoError(t, err)
+
+	require.Equal(t, "[1,2,3]", res["array_col"])
+	require.Equal(t, `{"city":"New York"}`, res["map_col"])
+	require.Equal(t, `{"city":"New York","zip":10001}`, res["struct_col"])
+
+	require.False(t, rows.Next())
+	require.NoError(t, rows.Err())
+
+	// Test null complex types (id=3)
+	rows2, err := olap.Query(t.Context(), &drivers.Statement{
+		Query: "SELECT array_col, map_col, struct_col FROM integration_test.all_datatypes WHERE id = 3",
+	})
+	require.NoError(t, err)
+	defer rows2.Close()
+
+	require.True(t, rows2.Next())
+	res2 := make(map[string]any)
+	err = rows2.MapScan(res2)
+	require.NoError(t, err)
+
+	require.Nil(t, res2["array_col"])
+	require.Nil(t, res2["map_col"])
+	// Databricks expands NULL structs into their fields with null values
+	require.Equal(t, `{"city":null,"zip":null}`, res2["struct_col"])
+
+	require.False(t, rows2.Next())
+	require.NoError(t, rows2.Err())
+}
+
 func TestEmptyRows(t *testing.T) {
 	testmode.Expensive(t)
 
@@ -90,7 +135,6 @@ func TestLoadDDL(t *testing.T) {
 	testmode.Expensive(t)
 
 	_, olap := acquireTestDatabricks(t)
-
 	table, err := olap.InformationSchema().Lookup(t.Context(), "", "integration_test", "all_datatypes")
 	require.NoError(t, err)
 	err = olap.InformationSchema().LoadDDL(t.Context(), table)

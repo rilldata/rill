@@ -49,15 +49,7 @@ func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
 // Query implements drivers.OLAPStore.
 func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
 	if c.config.LogQueries {
-		fields := []zap.Field{
-			zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)),
-			zap.Any("args", stmt.Args),
-			observability.ZapCtx(ctx),
-		}
-		if len(stmt.QueryAttributes) > 0 {
-			fields = append(fields, zap.Any("query_attributes", stmt.QueryAttributes))
-		}
-		c.logger.Info("databricks query", fields...)
+		c.logger.Info("databricks query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
 	}
 	db, err := c.getDB(ctx)
 	if err != nil {
@@ -191,13 +183,24 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 
 func databaseTypeToPB(dbt string) *runtimev1.Type {
 	t := &runtimev1.Type{Nullable: true}
-	switch strings.ToUpper(dbt) {
+	// Strip type parameters: e.g. "DECIMAL(18,6)" → "DECIMAL", "ARRAY<INT>" → "ARRAY"
+	upper := strings.ToUpper(dbt)
+	if i := strings.IndexAny(upper, "(<"); i != -1 {
+		upper = upper[:i]
+	}
+	switch upper {
 	case "BOOLEAN":
 		t.Code = runtimev1.Type_CODE_BOOL
-	case "TINYINT", "SMALLINT", "INT", "BIGINT":
+	case "TINYINT", "BYTE":
+		t.Code = runtimev1.Type_CODE_INT8
+	case "SMALLINT", "SHORT":
+		t.Code = runtimev1.Type_CODE_INT16
+	case "INT":
+		t.Code = runtimev1.Type_CODE_INT32
+	case "BIGINT", "LONG":
 		t.Code = runtimev1.Type_CODE_INT64
 	case "FLOAT":
-		t.Code = runtimev1.Type_CODE_FLOAT64
+		t.Code = runtimev1.Type_CODE_FLOAT32
 	case "DOUBLE":
 		t.Code = runtimev1.Type_CODE_FLOAT64
 	case "DECIMAL", "DEC", "NUMERIC":
