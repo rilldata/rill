@@ -179,6 +179,49 @@ export function createIndexMap<T>(arr: T[]): Map<T, number> {
   return indexMap;
 }
 
+function isNumericAxisValue(value: unknown): boolean {
+  if (value === null || value === undefined) return false;
+  if (typeof value === "string" && value.trim() === "") return false;
+
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue);
+}
+
+/**
+ * Sort axis values when all non-null values are numeric-like.
+ * This keeps dimensions such as month offsets in natural numeric order.
+ */
+export function sortNumericDimensionAxisValues<T>(values: T[]): T[] {
+  const definedValues = values.filter(
+    (value): value is T => value !== null && value !== undefined,
+  );
+
+  if (!definedValues.length) return values;
+  if (!definedValues.every((value) => isNumericAxisValue(value))) return values;
+
+  return [...values].sort((a, b) => {
+    const aIsNumeric = isNumericAxisValue(a);
+    const bIsNumeric = isNumericAxisValue(b);
+
+    if (!aIsNumeric && !bIsNumeric) return 0;
+    if (!aIsNumeric) return 1;
+    if (!bIsNumeric) return -1;
+
+    return Number(a) - Number(b);
+  });
+}
+
+export function sortNumericDimensionAxes(
+  axes: Record<string, string[]> = {},
+): Record<string, string[]> {
+  return Object.fromEntries(
+    Object.entries(axes).map(([dimension, values]) => [
+      dimension,
+      sortNumericDimensionAxisValues(values),
+    ]),
+  );
+}
+
 /**
  * Returns total number of columns for the table
  * excluding row and group totals columns
