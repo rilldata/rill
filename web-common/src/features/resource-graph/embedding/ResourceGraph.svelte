@@ -228,6 +228,18 @@
       if (!name || !rKind) continue;
       anchorSeeds.push({ kind: rKind, name });
     }
+    // Fall back to MetricsView anchors when no dashboards exist yet
+    if (!anchorSeeds.length && sprawlSeed === "dashboards") {
+      for (const r of normalizedResources) {
+        const kind = coerceResourceKind(r);
+        if (kind !== ResourceKind.MetricsView) continue;
+        if (r.meta?.hidden) continue;
+        const name = r.meta?.name?.name;
+        const rKind = r.meta?.name?.kind;
+        if (!name || !rKind) continue;
+        anchorSeeds.push({ kind: rKind, name });
+      }
+    }
     if (!anchorSeeds.length) return [];
     return partitionResourcesBySeeds(normalizedResources, anchorSeeds);
   })();
