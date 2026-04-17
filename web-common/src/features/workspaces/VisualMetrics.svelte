@@ -594,7 +594,7 @@
                 <ConnectorExplorer
                   {store}
                   olapOnly
-                  filterConnector={yamlConnector}
+                  defaultExpanded={yamlConnector}
                 />
               </div>
             </DropdownMenu.Content>

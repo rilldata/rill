@@ -8,15 +8,35 @@
 
   export let store: ConnectorExplorerStore;
   export let olapOnly: boolean = false;
-  export let filterConnector: string = "";
+  /** Auto-expand this connector when the list first renders */
+  export let defaultExpanded: string = "";
 
   const client = useRuntimeClient();
 
   $: connectors = getAnalyzedConnectors(client, olapOnly);
   $: ({ data, error } = $connectors);
-  $: filteredConnectors = filterConnector
-    ? (data?.connectors?.filter((c) => c.name === filterConnector) ?? [])
-    : (data?.connectors ?? []);
+
+  // When defaultExpanded is set, pre-seed the store so only that connector
+  // starts expanded and others start collapsed.
+  let hasAutoExpanded = false;
+  $: if (defaultExpanded && data?.connectors && !hasAutoExpanded) {
+    for (const c of data.connectors) {
+      if (!c.name) continue;
+      // Pre-seed each connector before ConnectorEntry renders.
+      // This prevents getDefaultState from expanding all connectors.
+      store.store.update((state) => {
+        if (c.name! in state.expandedItems) return state;
+        return {
+          ...state,
+          expandedItems: {
+            ...state.expandedItems,
+            [c.name!]: c.name === defaultExpanded,
+          },
+        };
+      });
+    }
+    hasAutoExpanded = true;
+  }
 </script>
 
 <div class="wrapper">
@@ -25,11 +45,11 @@
       {error.message}
     </span>
   {:else if data?.connectors}
-    {#if filteredConnectors.length === 0}
+    {#if data.connectors.length === 0}
       <span class="message"> No data found. Add data to get started! </span>
     {:else}
       <ol transition:slide={{ duration }}>
-        {#each filteredConnectors as connector (connector.name)}
+        {#each data.connectors as connector (connector.name)}
           <ConnectorEntry {connector} {store} />
         {/each}
       </ol>
