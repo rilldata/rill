@@ -8,7 +8,7 @@
   import {
     isFreePlan,
     isProPlan,
-    isTeamPlan,
+    // isTeamPlan, // TODO: uncomment when "Upgrade to Pro" link is re-enabled
     isTrialPlan,
   } from "@rilldata/web-admin/features/billing/plans/utils";
   import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
@@ -106,11 +106,13 @@
 
 <OverviewCard title="Deployment">
   <div slot="header-right" class="flex items-center gap-3">
+    <!-- TODO: uncomment when ready
     {#if canManage && (isTrialPlan(planName) || isFreePlan(planName) || isTeamPlan(planName)) && !$subscriptionQuery?.isLoading}
       <a class="upgrade-link" href="/{organization}/-/settings/billing">
         Upgrade to Pro
       </a>
     {/if}
+    -->
     <ProjectClone
       {organization}
       {project}
@@ -144,9 +146,11 @@
       <div class="info-row">
         <span class="info-label">Cluster Size</span>
         <span class="info-value"
-          >{currentSlots} vCPU, {currentSlots * 4} GiB RAM
+          >{currentSlots * 4} GiB RAM, {currentSlots} vCPU
           <span class="text-fg-tertiary text-xs ml-1"
-            >({currentSlots} {currentSlots === 1 ? "slot" : "slots"})</span
+            >({currentSlots} {currentSlots === 1
+              ? "Compute unit"
+              : "Compute units"})</span
           ></span
         >
       </div>
