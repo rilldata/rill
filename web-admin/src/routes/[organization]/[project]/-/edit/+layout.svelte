@@ -16,6 +16,7 @@
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
+  import DeveloperChat from "@rilldata/web-common/features/chat/DeveloperChat.svelte";
   import FileAndResourceWatcher from "@rilldata/web-common/features/entity-management/FileAndResourceWatcher.svelte";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import Navigation from "@rilldata/web-common/layout/navigation/Navigation.svelte";
@@ -176,8 +177,11 @@
         >
           <div class="flex flex-1 overflow-hidden">
             <Navigation showFooterLinks={false} />
-            <section class="flex-1 overflow-hidden">
-              <slot />
+            <section class="flex flex-1 overflow-hidden">
+              <div class="flex-1 overflow-hidden">
+                <slot />
+              </div>
+              <DeveloperChat />
             </section>
           </div>
         </FileAndResourceWatcher>
