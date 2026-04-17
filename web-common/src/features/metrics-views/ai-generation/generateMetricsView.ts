@@ -3,7 +3,7 @@ import {
   navigateToCanvas,
   navigateToExplore,
   navigateToFile,
-  editRoute,
+  withEditorPrefix,
 } from "@rilldata/web-common/layout/navigation/editor-routing";
 import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
 import { createCanvasDashboardWithoutNavigation } from "@rilldata/web-common/features/canvas/ai-generation/generateCanvas";
@@ -149,7 +149,7 @@ export function useCreateMetricsViewFromTableUIAction(
       if (!createExplore) {
         const isPreview = get(previewModeStore);
         await (isPreview
-          ? goto(editRoute("/dashboards"))
+          ? goto(withEditorPrefix("/dashboards"))
           : navigateToFile(newMetricsViewFilePath));
         void behaviourEvent?.fireNavigationEvent(
           newMetricsViewName,
@@ -450,7 +450,7 @@ export async function createModelAndMetricsAndExplore(
       const previousScreenName = getScreenNameFromPage();
       const isPreview = get(previewModeStore);
       await (isPreview
-        ? goto(editRoute("/dashboards"))
+        ? goto(withEditorPrefix("/dashboards"))
         : navigateToFile(metricsViewFilePath));
       void behaviourEvent?.fireNavigationEvent(
         metricsViewName,

@@ -5,41 +5,41 @@ import { writable, get } from "svelte/store";
  * Route prefix for the editing context.
  * Empty string for web-local (default), "/<org>/<project>/@<branch>/-/edit" for web-admin.
  */
-export const editRoutePrefix = writable("");
+export const editorRoutePrefix = writable("");
 
 /**
  * Build a route path with the current edit prefix.
- * Example: editRoute("/files/models/foo.sql") → "/<org>/<project>/@<branch>/-/edit/files/models/foo.sql"
+ * Example: withEditorPrefix("/files/models/foo.sql") → "/<org>/<project>/@<branch>/-/edit/files/models/foo.sql"
  */
-export function editRoute(path: string): string {
-  return `${get(editRoutePrefix)}${path}`;
+export function withEditorPrefix(path: string): string {
+  return `${get(editorRoutePrefix)}${path}`;
 }
 
 export function navigateToFile(
   filePath: string,
   options?: Parameters<typeof goto>[1],
 ) {
-  return goto(editRoute(`/files${filePath}`), options);
+  return goto(withEditorPrefix(`/files${filePath}`), options);
 }
 
 export function getFileHref(filePath: string): string {
-  return editRoute(`/files${filePath}`);
+  return withEditorPrefix(`/files${filePath}`);
 }
 
 export function navigateToHome(options?: Parameters<typeof goto>[1]) {
-  return goto(editRoute("/"), options);
+  return goto(withEditorPrefix("/"), options);
 }
 
 export function navigateToExplore(
   name: string,
   options?: Parameters<typeof goto>[1],
 ) {
-  return goto(editRoute(`/explore/${name}`), options);
+  return goto(withEditorPrefix(`/explore/${name}`), options);
 }
 
 export function navigateToCanvas(
   name: string,
   options?: Parameters<typeof goto>[1],
 ) {
-  return goto(editRoute(`/canvas/${name}`), options);
+  return goto(withEditorPrefix(`/canvas/${name}`), options);
 }

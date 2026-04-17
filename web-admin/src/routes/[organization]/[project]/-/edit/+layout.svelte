@@ -19,7 +19,7 @@
   import FileAndResourceWatcher from "@rilldata/web-common/features/entity-management/FileAndResourceWatcher.svelte";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import Navigation from "@rilldata/web-common/layout/navigation/Navigation.svelte";
-  import { editRoutePrefix } from "@rilldata/web-common/layout/navigation/editor-routing";
+  import { editorRoutePrefix } from "@rilldata/web-common/layout/navigation/editor-routing";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import { onDestroy } from "svelte";
   import { get } from "svelte/store";
@@ -37,7 +37,7 @@
   const branch = extractBranchFromPath(get(page).url.pathname);
 
   // Set the workspace route prefix for cloud editing
-  $editRoutePrefix = `/${organization}/${project}${branchPathPrefix(branch)}/-/edit`;
+  $editorRoutePrefix = `/${organization}/${project}${branchPathPrefix(branch)}/-/edit`;
 
   // Root layout data: org permissions, plan display name, organization object
   $: pageData = $page.data;
@@ -121,7 +121,7 @@
   $: branchUrl = `/${organization}/${project}${branchPathPrefix(branch)}`;
 
   onDestroy(() => {
-    $editRoutePrefix = "";
+    $editorRoutePrefix = "";
   });
 </script>
 

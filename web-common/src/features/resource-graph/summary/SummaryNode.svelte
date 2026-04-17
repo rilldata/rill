@@ -6,7 +6,7 @@
   } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { goto } from "$app/navigation";
-  import { editRoute } from "@rilldata/web-common/layout/navigation/editor-routing";
+  import { withEditorPrefix } from "@rilldata/web-common/layout/navigation/editor-routing";
 
   export let id: string;
   export let type: string;
@@ -76,7 +76,7 @@
     else if (kind === ResourceKind.MetricsView) token = "metrics";
     else if (kind === ResourceKind.Model) token = "models";
     else if (kind === ResourceKind.Explore) token = "dashboards";
-    if (token) goto(editRoute(`/graph?kind=${token}`));
+    if (token) goto(withEditorPrefix(`/graph?kind=${token}`));
   }
 </script>
 
