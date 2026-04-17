@@ -70,10 +70,10 @@
 
   const columns: ColumnDef<V1ModelPartition, any>[] = [
     {
-      accessorKey: "data",
+      id: "data",
       header: "Data",
+      accessorFn: (row) => ((row.data?.uri as string) ?? "").toLowerCase(),
       cell: ({ row }) => renderComponent(DataCell, { data: row.original.data }),
-      enableSorting: false,
     },
     {
       accessorKey: "executedOn",
@@ -115,7 +115,7 @@
   ];
 
   const columnLayout = isIncremental
-    ? "minmax(0, 3fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2.5fr) minmax(0, 1fr)"
+    ? "minmax(0, 3fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2.5fr) minmax(180px, auto)"
     : "minmax(0, 3fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2.5fr)";
 
   $: emptyText = $query.isLoading
