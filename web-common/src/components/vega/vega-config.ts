@@ -28,7 +28,8 @@ const colors = {
 export const getRillTheme: (
   isDarkMode?: boolean,
   theme?: Record<string, string>,
-) => Config = (isDarkMode = false, theme) => {
+  isCanvasDashboard?: boolean,
+) => Config = (isDarkMode = false, theme, isCanvasDashboard = false) => {
   const gridColor = isDarkMode ? colors.dark.grid : colors.light.grid;
   const axisLabelColor = isDarkMode
     ? colors.dark.axisLabel
@@ -75,6 +76,9 @@ export const getRillTheme: (
     autosize: {
       type: "fit-x",
     },
+    ...(isCanvasDashboard && {
+      padding: 0,
+    }),
     background: "transparent",
     arc: { fill: lineColor },
     area: {

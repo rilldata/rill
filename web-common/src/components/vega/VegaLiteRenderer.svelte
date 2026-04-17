@@ -22,7 +22,6 @@
   export let signalListeners: SignalListeners = {};
   export let expressionFunctions: ExpressionFunction = {};
   export let error: string | null = null;
-  export let canvasDashboard = false;
   export let renderer: "canvas" | "svg" = "canvas";
   export let themeMode: "light" | "dark" = "light";
   export let config: Config | undefined = undefined;
@@ -98,7 +97,6 @@
 <div
   bind:contentRect
   role="presentation"
-  class:px-2={canvasDashboard}
   class="rill-vega-container overflow-y-auto overflow-x-hidden size-full flex flex-col items-center"
   onmouseleave={handleMouseLeave}
 >

@@ -85,6 +85,7 @@
   <div
     role="presentation"
     class="size-full grow flex flex-col"
+    class:p-4={allowBorder}
     onmousedown={onMouseDown}
   >
     {#if component}

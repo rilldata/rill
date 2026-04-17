@@ -154,94 +154,92 @@
   $: ({ parsed } = mvFilters);
 </script>
 
-{#if schema.isValid}
-  <ComponentHeader
-    {component}
-    {title}
-    {description}
-    showDescriptionAsTooltip={show_description_as_tooltip}
-    {filters}
-  />
+<div class="size-full flex flex-col overflow-hidden gap-y-4">
+  {#if schema.isValid}
+    <ComponentHeader
+      {component}
+      {title}
+      {description}
+      showDescriptionAsTooltip={show_description_as_tooltip}
+      {filters}
+    />
 
-  <div
-    class="h-fit p-0 grow relative"
-    class:!p-0={visibleDimensions.length === 1}
-  >
-    <span class="border-overlay"></span>
-    <div
-      class="grid-wrapper gap-px overflow-x-auto"
-      style:grid-template-columns="repeat(auto-fit, minmax({estimatedTableWidth +
-        LEADERBOARD_WRAPPER_PADDING}px, 1fr))"
-    >
-      {#each visibleDimensions as dimension (dimension.name)}
-        {#if dimension.name}
-          <div
-            class="leaderboard-wrapper"
-            bind:clientWidth={leaderboardWrapperWidth}
-          >
-            <Leaderboard
-              leaderboardShowContextForAllMeasures
-              timeControlsReady
-              slice={numRows}
-              visible={$visible}
-              {isValidPercentOfTotal}
-              {metricsViewName}
-              leaderboardSortByMeasureName={leaderboardSortByMeasureName ??
-                leaderboardMeasureNames?.[0]}
-              leaderboardMeasures={visibleMeasures}
-              {whereFilter}
-              {dimensionThresholdFilters}
-              tableWidth={dimensionColumnWidth + totalContextWidth}
-              {dimensionColumnWidth}
-              sortedAscending={sortDirection === SortDirection.ASCENDING}
-              {sortType}
-              filterExcludeMode={$parsed?.dimensionFilters.get(dimension.name)
-                ?.isInclude === false}
-              {timeRange}
-              comparisonTimeRange={showTimeComparison
-                ? comparisonTimeRange
-                : undefined}
-              {dimension}
-              allowExpandTable={false}
-              allowDimensionComparison={false}
-              selectedValues={selectedDimensionValues(
-                runtimeClient,
-                [metricsViewName],
-                whereFilter,
-                dimension.name,
-                timeRange.start,
-                timeRange.end,
-              )}
-              isBeingCompared={false}
-              formatters={measureFormatters}
-              tooltipFormatters={measureTooltipFormatters}
-              {toggleSort}
-              toggleDimensionValueSelection={async (
-                name,
-                value,
-                keepPillVisible,
-                isExclusiveFilter,
-              ) => {
-                await toggleDimensionValueSelections(
-                  name,
-                  [value],
+    <div class="p-0 grow relative">
+      <div
+        class="grid-wrapper gap-px overflow-x-auto"
+        style:grid-template-columns="repeat(auto-fit, minmax({estimatedTableWidth +
+          LEADERBOARD_WRAPPER_PADDING}px, 1fr))"
+      >
+        {#each visibleDimensions as dimension (dimension.name)}
+          {#if dimension.name}
+            <div
+              class="leaderboard-wrapper"
+              bind:clientWidth={leaderboardWrapperWidth}
+            >
+              <Leaderboard
+                leaderboardShowContextForAllMeasures
+                timeControlsReady
+                slice={numRows}
+                visible={$visible}
+                {isValidPercentOfTotal}
+                {metricsViewName}
+                leaderboardSortByMeasureName={leaderboardSortByMeasureName ??
+                  leaderboardMeasureNames?.[0]}
+                leaderboardMeasures={visibleMeasures}
+                {whereFilter}
+                {dimensionThresholdFilters}
+                tableWidth={dimensionColumnWidth + totalContextWidth}
+                {dimensionColumnWidth}
+                sortedAscending={sortDirection === SortDirection.ASCENDING}
+                {sortType}
+                filterExcludeMode={$parsed?.dimensionFilters.get(dimension.name)
+                  ?.isInclude === false}
+                {timeRange}
+                comparisonTimeRange={showTimeComparison
+                  ? comparisonTimeRange
+                  : undefined}
+                {dimension}
+                allowExpandTable={false}
+                allowDimensionComparison={false}
+                selectedValues={selectedDimensionValues(
+                  runtimeClient,
                   [metricsViewName],
+                  whereFilter,
+                  dimension.name,
+                  timeRange.start,
+                  timeRange.end,
+                )}
+                isBeingCompared={false}
+                formatters={measureFormatters}
+                tooltipFormatters={measureTooltipFormatters}
+                {toggleSort}
+                toggleDimensionValueSelection={async (
+                  name,
+                  value,
                   keepPillVisible,
                   isExclusiveFilter,
-                );
-              }}
-              measureLabel={(measureName) =>
-                visibleMeasures.find((m) => m.name === measureName)
-                  ?.displayName || measureName}
-            />
-          </div>
-        {/if}
-      {/each}
+                ) => {
+                  await toggleDimensionValueSelections(
+                    name,
+                    [value],
+                    [metricsViewName],
+                    keepPillVisible,
+                    isExclusiveFilter,
+                  );
+                }}
+                measureLabel={(measureName) =>
+                  visibleMeasures.find((m) => m.name === measureName)
+                    ?.displayName || measureName}
+              />
+            </div>
+          {/if}
+        {/each}
+      </div>
     </div>
-  </div>
-{:else}
-  <ComponentError error={schema.error} />
-{/if}
+  {:else}
+    <ComponentError error={schema.error} />
+  {/if}
+</div>
 
 <style lang="postcss">
   .grid-wrapper {
@@ -250,12 +248,7 @@
   }
 
   .leaderboard-wrapper {
-    @apply relative p-4 pr-6 grid outline outline-1 outline-gray-200;
-  }
-
-  .border-overlay {
-    @apply absolute border-[12.5px] pointer-events-none border-surface-card size-full;
-    z-index: 20;
+    @apply relative grid outline outline-1 outline-border;
   }
 
   @container component-container (inline-size < 440px) {
