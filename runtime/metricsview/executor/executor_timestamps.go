@@ -436,6 +436,59 @@ func (e *Executor) resolveSnowflake(ctx context.Context, timeExpr string) (metri
 	}, nil
 }
 
+func (e *Executor) resolveBigQuery(ctx context.Context, timeExpr string) (metricsview.TimestampsResult, error) {
+	filter := e.security.RowFilter()
+	if filter != "" {
+		filter = fmt.Sprintf(" WHERE %s", filter)
+	}
+	escapedTableName := e.olap.Dialect().EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table)
+
+	var watermarkExpr string
+	if e.metricsView.WatermarkExpression != "" {
+		watermarkExpr = e.metricsView.WatermarkExpression
+	} else {
+		watermarkExpr = fmt.Sprintf("max(%s)", timeExpr)
+	}
+
+	// cast to timestamp so that date and datetime types can be scanned to time.Time
+	rangeSQL := fmt.Sprintf(
+		"SELECT CAST(min(%[1]s) as TIMESTAMP) as `min`, CAST(max(%[1]s) as TIMESTAMP) as `max`, CAST(%[2]s as TIMESTAMP) as `watermark` FROM %[3]s %[4]s",
+		timeExpr,
+		watermarkExpr,
+		escapedTableName,
+		filter,
+	)
+
+	rows, err := e.olap.Query(ctx, &drivers.Statement{
+		Query:            rangeSQL,
+		Priority:         e.priority,
+		ExecutionTimeout: defaultExecutionTimeout,
+		QueryAttributes:  e.queryAttributes,
+	})
+	if err != nil {
+		return metricsview.TimestampsResult{}, err
+	}
+	defer rows.Close()
+
+	var minTime, maxTime, watermark *time.Time
+	for rows.Next() {
+		err = rows.Scan(&minTime, &maxTime, &watermark)
+		if err != nil {
+			return metricsview.TimestampsResult{}, err
+		}
+	}
+	err = rows.Err()
+	if err != nil {
+		return metricsview.TimestampsResult{}, err
+	}
+
+	return metricsview.TimestampsResult{
+		Min:       safeTime(minTime),
+		Max:       safeTime(maxTime),
+		Watermark: safeTime(watermark),
+	}, nil
+}
+
 func safeTime(tm *time.Time) time.Time {
 	if tm == nil {
 		return time.Time{}
