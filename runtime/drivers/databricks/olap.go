@@ -160,6 +160,25 @@ func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 	}, nil
 }
 
+// Head implements drivers.OLAPStore.
+func (c *connection) Head(ctx context.Context, db, schema, table string, limit int64) (*drivers.Result, error) {
+	tbl, err := c.InformationSchema().Lookup(ctx, db, schema, table)
+	if err != nil {
+		return nil, err
+	}
+
+	var columns []string
+	for _, field := range tbl.Schema.Fields {
+		columns = append(columns, c.Dialect().EscapeIdentifier(field.Name))
+	}
+
+	q := fmt.Sprintf("SELECT %s FROM %s", strings.Join(columns, ", "), c.Dialect().EscapeTable(db, schema, table))
+	if limit > 0 {
+		q += fmt.Sprintf(" LIMIT %d", limit)
+	}
+	return c.Query(ctx, &drivers.Statement{Query: q})
+}
+
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	if r == nil {
 		return nil, nil
