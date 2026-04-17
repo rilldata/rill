@@ -197,15 +197,9 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 	annotations := s.NewDeploymentAnnotations(org, proj, depl.Environment)
 
 	// Resolve slots based on environment
-	var slots int
-	switch depl.Environment {
-	case "prod":
-		slots = proj.ProdSlots
-	case "dev":
-		slots = proj.DevSlots
-	default:
-		// Invalid environment
-		return errors.New("Invalid environment, must be either 'prod' or 'dev'")
+	slots, err := resolveSlots(proj, depl.Environment)
+	if err != nil {
+		return err
 	}
 
 	// Provision the runtime
@@ -406,15 +400,9 @@ func (s *Service) UpdateDeploymentInner(ctx context.Context, d *database.Deploym
 	annotations := s.NewDeploymentAnnotations(org, proj, d.Environment)
 
 	// Resolve slots based on environment
-	var slots int
-	switch d.Environment {
-	case "prod":
-		slots = proj.ProdSlots
-	case "dev":
-		slots = proj.DevSlots
-	default:
-		// Invalid environment
-		return errors.New("Invalid environment, must be either 'prod' or 'dev'")
+	slots, err := resolveSlots(proj, d.Environment)
+	if err != nil {
+		return err
 	}
 
 	// Provision the runtime. This is idempotent and will (partially) update the existing provisioned runtime if the config has changed.
@@ -553,12 +541,9 @@ func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *dat
 		projProvisioner:    proj.Provisioner,
 		projAnnotations:    proj.Annotations,
 	}
-	switch environment {
-	case "prod":
-		da.projProdSlots = fmt.Sprint(proj.ProdSlots)
-	case "dev":
-		da.projDevSlots = fmt.Sprint(proj.DevSlots)
-	}
+	slots, _ := resolveSlots(proj, environment)
+	da.projSlots = fmt.Sprint(slots)
+	da.environment = environment
 	return da
 }
 
@@ -580,8 +565,8 @@ type DeploymentAnnotations struct {
 	orgCustomDomain    string
 	projID             string
 	projName           string
-	projProdSlots      string
-	projDevSlots       string
+	projSlots          string
+	environment        string
 	projProvisioner    string
 	projAnnotations    map[string]string
 }
@@ -596,14 +581,22 @@ func (da *DeploymentAnnotations) ToMap() map[string]string {
 	res["organization_plan"] = da.orgBillingPlanName
 	res["project_id"] = da.projID
 	res["project_name"] = da.projName
-	if da.projProdSlots != "" {
-		res["project_prod_slots"] = da.projProdSlots
-	}
-	if da.projDevSlots != "" {
-		res["project_dev_slots"] = da.projDevSlots
-	}
+	res["project_slots"] = da.projSlots
+	res["environment"] = da.environment
 	res["project_provisioner"] = da.projProvisioner
 	return res
+}
+
+// resolveSlots returns the appropriate slot count for the given environment.
+func resolveSlots(proj *database.Project, environment string) (int, error) {
+	switch environment {
+	case "prod":
+		return proj.ProdSlots, nil
+	case "dev":
+		return proj.DevSlots, nil
+	default:
+		return 0, fmt.Errorf("invalid environment %q; must be 'prod' or 'dev'", environment)
+	}
 }
 
 type provisionRuntimeOptions struct {
