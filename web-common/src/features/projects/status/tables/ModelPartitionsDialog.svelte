@@ -1,5 +1,6 @@
 <script lang="ts">
   import * as Dialog from "@rilldata/web-common/components/dialog";
+  import { Search } from "@rilldata/web-common/components/search";
   import PartitionsTable from "@rilldata/web-common/features/models/partitions/PartitionsTable.svelte";
   import PartitionsFilter from "@rilldata/web-common/features/models/partitions/PartitionsFilter.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
@@ -14,6 +15,7 @@
   export let onClose: () => void = () => {};
 
   let selectedFilter: PartitionFilterType = "all";
+  let searchText = "";
 
   function onFilterChange(value: string) {
     selectedFilter = value as PartitionFilterType;
@@ -29,6 +31,7 @@
   onOpenChange={(o) => {
     if (!o) {
       selectedFilter = "all";
+      searchText = "";
       onClose();
     }
   }}
@@ -39,11 +42,25 @@
     </Dialog.Header>
 
     {#if resource}
-      <div class="flex justify-end mb-4">
-        <PartitionsFilter {selectedFilter} onChange={onFilterChange} />
+      <div class="flex items-center gap-x-3 mb-4">
+        <div class="w-64">
+          <Search
+            bind:value={searchText}
+            placeholder="Search partitions"
+            autofocus={false}
+          />
+        </div>
+        <div class="ml-auto">
+          <PartitionsFilter {selectedFilter} onChange={onFilterChange} />
+        </div>
       </div>
-      <div class="flex-1 overflow-hidden">
-        <PartitionsTable {resource} {whereErrored} {wherePending} />
+      <div class="flex-1 min-h-0 overflow-auto">
+        <PartitionsTable
+          {resource}
+          {whereErrored}
+          {wherePending}
+          {searchText}
+        />
       </div>
     {/if}
   </Dialog.Content>

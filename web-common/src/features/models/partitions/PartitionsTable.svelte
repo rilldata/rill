@@ -1,22 +1,12 @@
 <script lang="ts">
-  import {
-    type ColumnDef,
-    type Row,
-    type TableOptions,
-    createSvelteTable,
-    flexRender,
-    getCoreRowModel,
-    getSortedRowModel,
-    renderComponent,
-  } from "tanstack-table-8-svelte-5";
-  import { createVirtualizer } from "@tanstack/svelte-virtual";
-  import { writable } from "svelte/store";
+  import BasicTable from "@rilldata/web-common/components/table/BasicTable.svelte";
+  import { type ColumnDef, renderComponent } from "tanstack-table-8-svelte-5";
   import {
     type V1ModelPartition,
     type V1Resource,
   } from "../../../runtime-client";
-  import { useRuntimeClient } from "../../../runtime-client/v2";
   import { createRuntimeServiceGetModelPartitionsInfinite } from "../../../runtime-client";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
   import DataCell from "./DataCell.svelte";
   import ErrorCell from "./ErrorCell.svelte";
   import TriggerPartition from "./TriggerPartition.svelte";
@@ -24,14 +14,13 @@
   export let resource: V1Resource;
   export let whereErrored: boolean;
   export let wherePending: boolean;
+  export let searchText = "";
 
   const runtimeClient = useRuntimeClient();
+  const isIncremental = !!resource.model?.spec?.incremental;
 
   $: modelName = resource?.meta?.name?.name as string;
 
-  // ==========================
-  // Infinite Query
-  // ==========================
   $: baseParams = {
     ...(whereErrored ? { errored: true } : {}),
     ...(wherePending ? { pending: true } : {}),
@@ -46,289 +35,107 @@
       },
     },
   );
-  $: ({ error } = $query);
 
-  // ==========================
-  // Table Options
-  // ==========================
-  const isIncremental = resource.model?.spec?.incremental;
+  // Auto-fetch remaining pages so client-side search and sort cover the full set.
+  $: if ($query.hasNextPage && !$query.isFetchingNextPage) {
+    void $query.fetchNextPage();
+  }
 
-  const columns: ColumnDef<V1ModelPartition>[] = [
+  $: allRows =
+    $query.data?.pages.flatMap((p) => p.partitions as V1ModelPartition[]) ?? [];
+
+  $: filteredRows = (() => {
+    if (!searchText) return allRows;
+    const q = searchText.toLowerCase();
+    return allRows.filter((row) => {
+      const key = (row.key ?? "").toLowerCase();
+      const data = JSON.stringify(row.data ?? {}).toLowerCase();
+      const error = (row.error ?? "").toLowerCase();
+      return key.includes(q) || data.includes(q) || error.includes(q);
+    });
+  })();
+
+  function formatTimestamp(ts: string | undefined) {
+    return ts
+      ? new Date(ts).toLocaleString(undefined, {
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "numeric",
+          second: "numeric",
+          fractionalSecondDigits: 3,
+        })
+      : "-";
+  }
+
+  const columns: ColumnDef<V1ModelPartition, any>[] = [
     {
       accessorKey: "data",
       header: "Data",
       cell: ({ row }) => renderComponent(DataCell, { data: row.original.data }),
-      meta: {
-        widthPercent: 30,
-      },
+      enableSorting: false,
     },
     {
       accessorKey: "executedOn",
       header: "Executed on",
-      cell: ({ row }) =>
-        row.original.executedOn
-          ? new Date(row.original.executedOn).toLocaleString(undefined, {
-              month: "short",
-              day: "numeric",
-              hour: "numeric",
-              minute: "numeric",
-              second: "numeric",
-              fractionalSecondDigits: 3,
-            })
-          : "-",
-      meta: {
-        widthPercent: 10,
-      },
+      cell: ({ row }) => formatTimestamp(row.original.executedOn),
+      sortDescFirst: true,
     },
     {
       accessorKey: "elapsedMs",
       header: "Elapsed time",
-      cell: ({ row }) => row.original.elapsedMs + "ms",
-      meta: {
-        widthPercent: 10,
-      },
+      cell: ({ row }) => (row.original.elapsedMs ?? 0) + "ms",
     },
     {
       accessorKey: "watermark",
       header: "Watermark",
-      cell: ({ row }) =>
-        row.original.watermark
-          ? new Date(row.original.watermark).toLocaleString(undefined, {
-              month: "short",
-              day: "numeric",
-              hour: "numeric",
-              minute: "numeric",
-              second: "numeric",
-              fractionalSecondDigits: 3,
-            })
-          : "-",
-      meta: {
-        widthPercent: 10,
-      },
+      cell: ({ row }) => formatTimestamp(row.original.watermark),
     },
     {
       accessorKey: "error",
       header: "Error",
       cell: ({ row }) =>
         renderComponent(ErrorCell, { error: row.original.error }),
-      meta: {
-        widthPercent: 25,
-      },
+      enableSorting: false,
     },
     ...(isIncremental
       ? [
           {
-            accessorKey: "key",
-            header: "",
             id: "actions",
-            meta: {
-              widthPercent: 10,
-            },
+            header: "",
+            enableSorting: false,
             cell: ({ row }) =>
               renderComponent(TriggerPartition, {
-                partitionKey: (row as Row<V1ModelPartition>).original
-                  .key as string,
+                partitionKey: row.original.key as string,
                 resource,
               }),
-          },
+          } satisfies ColumnDef<V1ModelPartition, any>,
         ]
       : []),
   ];
 
-  const options = writable<TableOptions<V1ModelPartition>>({
-    data: [],
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-  });
-  const table = createSvelteTable(options);
-  $: ({ getHeaderGroups } = $table);
+  const columnLayout = isIncremental
+    ? "minmax(0, 3fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2.5fr) minmax(0, 1fr)"
+    : "minmax(0, 3fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2.5fr)";
 
-  // Sync table data with query data
-  let allRows: V1ModelPartition[] = [];
-  $: {
-    allRows =
-      ($query.data &&
-        $query.data.pages.flatMap(
-          (page) => page.partitions as V1ModelPartition[],
-        )) ||
-      [];
-
-    options.update((old) => ({
-      ...old,
-      data: allRows,
-    }));
-  }
-  $: rows = $table.getRowModel().rows;
-
-  // ==========================
-  // Virtualizer
-  // ==========================
-  const ROW_HEIGHT = 71;
-  const OVERSCAN = 10;
-
-  let virtualListEl: HTMLDivElement;
-
-  $: virtualizer = createVirtualizer<HTMLDivElement, HTMLDivElement>({
-    count: 0,
-    getScrollElement: () => virtualListEl,
-    estimateSize: () => ROW_HEIGHT,
-    overscan: OVERSCAN,
-  });
-  $: ({
-    getVirtualItems,
-    getTotalSize,
-    setOptions,
-    options: virtualizerOptions,
-  } = $virtualizer);
-  $: virtualRows = getVirtualItems();
-
-  // Logic for infinite scroll
-  $: {
-    setOptions({
-      count: $query.hasNextPage ? allRows.length + 1 : allRows.length,
-    });
-    const lastItem = virtualRows[virtualRows.length - 1];
-    if (
-      lastItem &&
-      lastItem.index > allRows.length - 1 &&
-      $query.hasNextPage &&
-      !$query.isFetchingNextPage
-    ) {
-      void $query.fetchNextPage();
-    }
-  }
-
-  // Positioning strategy from https://github.com/TanStack/virtual/issues/585#issuecomment-1716173260
-  // (Required for sticky header)
-  $: [paddingTop, paddingBottom] =
-    virtualRows.length > 0
-      ? [
-          Math.max(0, virtualRows[0].start - virtualizerOptions.scrollMargin),
-          Math.max(0, getTotalSize() - virtualRows[virtualRows.length - 1].end),
-        ]
-      : [0, 0];
-
-  // Scroll to top when filter changes
-  $: {
-    if (virtualListEl && baseParams) {
-      virtualListEl.scrollTo({ top: 0 });
-    }
-  }
+  $: emptyText = $query.isLoading
+    ? "Loading partitions…"
+    : searchText
+      ? "No partitions match your search"
+      : "No partitions";
 </script>
 
-<div class="scroll-container" bind:this={virtualListEl}>
-  <div class="table-wrapper">
-    <table>
-      <thead>
-        {#each getHeaderGroups() as headerGroup (headerGroup.id)}
-          <tr>
-            {#each headerGroup.headers as header (header.id)}
-              {@const widthPercent = header.column.columnDef.meta?.widthPercent}
-              <th colSpan={header.colSpan} style={`width: ${widthPercent}%;`}>
-                <svelte:component
-                  this={flexRender(
-                    header.column.columnDef.header,
-                    header.getContext(),
-                  )}
-                />
-              </th>
-            {/each}
-          </tr>
-        {/each}
-      </thead>
-      <tbody>
-        {#if error}
-          <tr>
-            <td class="text-center h-16" colspan={columns.length}>
-              <span class="text-red-500 font-semibold"
-                >Error: {error.message}</span
-              >
-            </td>
-          </tr>
-        {:else if allRows.length === 0}
-          <tr>
-            <td class="text-center h-16" colspan={columns.length}>
-              <span class="text-fg-secondary">None</span>
-            </td>
-          </tr>
-        {:else}
-          <tr style:height="{paddingTop}px"></tr>
-          {#each virtualRows as virtualRow (virtualRow.index)}
-            <tr>
-              {#each rows[virtualRow.index]?.getVisibleCells() ?? [] as cell (cell.id)}
-                <td data-label={cell.column.columnDef.header}>
-                  <svelte:component
-                    this={flexRender(
-                      cell.column.columnDef.cell,
-                      cell.getContext(),
-                    )}
-                  />
-                </td>
-              {/each}
-            </tr>
-          {/each}
-          <tr style:height="{paddingBottom}px"></tr>
-        {/if}
-      </tbody>
-    </table>
+{#if $query.error}
+  <div class="flex items-center justify-center h-16">
+    <span class="text-red-500 font-semibold">
+      Error: {$query.error.message}
+    </span>
   </div>
-</div>
-
-<style lang="postcss">
-  .scroll-container {
-    @apply h-[600px];
-    @apply min-w-full;
-    @apply overflow-auto;
-  }
-
-  .table-wrapper {
-    @apply relative;
-    @apply min-w-full;
-  }
-
-  table {
-    @apply table-fixed min-w-full;
-    @apply border-separate border-spacing-0;
-  }
-  table th,
-  table td {
-    @apply px-4 py-2;
-    @apply border-b;
-  }
-  thead tr th {
-    @apply border-t;
-    @apply text-left font-semibold text-fg-secondary;
-    @apply sticky top-0 z-10 bg-surface-subtle;
-  }
-  thead tr th:first-child {
-    @apply border-l rounded-tl-sm;
-  }
-  thead tr th:last-child {
-    @apply border-r rounded-tr-sm;
-  }
-  thead tr:last-child th {
-    @apply border-b;
-  }
-  tbody tr {
-    @apply border-t;
-  }
-  tbody tr:first-child {
-    @apply border-t-0;
-  }
-  tbody td {
-    @apply border-b;
-  }
-  tbody td:first-child {
-    @apply border-l;
-  }
-  tbody td:last-child {
-    @apply border-r;
-  }
-  tbody tr:last-child td:first-child {
-    @apply rounded-bl-sm;
-  }
-  tbody tr:last-child td:last-child {
-    @apply rounded-br-sm;
-  }
-</style>
+{:else}
+  <BasicTable data={filteredRows} {columns} {columnLayout} {emptyText} />
+  {#if $query.isFetchingNextPage}
+    <div class="flex items-center justify-center py-2">
+      <span class="text-fg-secondary text-sm">Loading more…</span>
+    </div>
+  {/if}
+{/if}
