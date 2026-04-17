@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/civil"
 	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
@@ -51,6 +52,10 @@ type OLAPStore interface {
 	// Query executes a query against the OLAP driver and returns an iterator for the resulting rows and schema.
 	// The result MUST be closed after use.
 	Query(ctx context.Context, stmt *Statement) (*Result, error)
+	// Head executes a query with a limit of N and returns the resulting rows and schema.
+	// It is separate from Query to allow drivers like BigQuery to optimize table previews and not incur huge costs of running a full query with limit.
+	// The result MUST be closed after use.
+	Head(ctx context.Context, db, schema, table string, limit int64) (*Result, error)
 	// QuerySchema returns the schema of the sql without trying not to run the actual query.
 	QuerySchema(ctx context.Context, query string, args []any) (*runtimev1.StructType, error)
 	// InformationSchema enables introspecting the tables and views available in the OLAP driver.
@@ -342,8 +347,7 @@ func (d Dialect) ConvertToDateTruncSpecifier(grain runtimev1.TimeGrain) string {
 }
 
 func (d Dialect) SupportsILike() bool {
-	// StarRocks uses MySQL syntax which doesn't support ILIKE
-	return d != DialectDruid && d != DialectPinot && d != DialectStarRocks
+	return d != DialectDruid && d != DialectPinot && d != DialectStarRocks && d != DialectBigQuery
 }
 
 // GetCastExprForLike returns the cast expression for use in a LIKE or ILIKE condition, or an empty string if no cast is necessary.
@@ -528,9 +532,12 @@ func (d Dialect) MaxDimensionExpression(expr string) string {
 	return fmt.Sprintf("MAX(%s)", expr)
 }
 
-func (d Dialect) GetTimeDimensionParameter() string {
+func (d Dialect) GetTimeDimensionParameter(typeCode runtimev1.Type_Code) string {
 	if d == DialectPinot {
 		return "CAST(? AS TIMESTAMP)"
+	}
+	if d == DialectBigQuery && typeCode == runtimev1.Type_CODE_DATE {
+		return "DATE(?)"
 	}
 	return "?"
 }
@@ -551,6 +558,8 @@ func (d Dialect) SafeDivideExpression(numExpr, denExpr string) string {
 	switch d {
 	case DialectDruid:
 		return fmt.Sprintf("SAFE_DIVIDE(%s, CAST(%s AS DOUBLE))", numExpr, denExpr)
+	case DialectBigQuery:
+		return fmt.Sprintf("SAFE_DIVIDE(%s, CAST(%s AS FLOAT64))", numExpr, denExpr)
 	default:
 		return fmt.Sprintf("(%s)/CAST(%s AS DOUBLE)", numExpr, denExpr)
 	}
@@ -561,7 +570,7 @@ func (d Dialect) OrderByExpression(name string, desc bool) string {
 	if desc {
 		res += " DESC"
 	}
-	if d == DialectDuckDB || d == DialectStarRocks {
+	if d == DialectDuckDB || d == DialectStarRocks || d == DialectBigQuery {
 		res += " NULLS LAST"
 	}
 	return res
@@ -573,7 +582,7 @@ func (d Dialect) OrderByAliasExpression(name string, desc bool) string {
 	if desc {
 		res += " DESC"
 	}
-	if d == DialectDuckDB || d == DialectStarRocks {
+	if d == DialectDuckDB || d == DialectStarRocks || d == DialectBigQuery {
 		res += " NULLS LAST"
 	}
 	return res
@@ -586,6 +595,10 @@ func (d Dialect) JoinOnExpression(lhs, rhs string) string {
 	// StarRocks uses MySQL's NULL-safe equal operator
 	if d == DialectStarRocks {
 		return fmt.Sprintf("%s <=> %s", lhs, rhs)
+	}
+	if d == DialectBigQuery {
+		// BigQuery requires plain equality for FULL joins
+		return fmt.Sprintf("coalesce(CAST(%s AS STRING), '__rill_sentinel__') = coalesce(CAST(%s AS STRING), '__rill_sentinel__')", lhs, rhs)
 	}
 	return fmt.Sprintf("%s IS NOT DISTINCT FROM %s", lhs, rhs)
 }
@@ -727,6 +740,35 @@ func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain r
 			return fmt.Sprintf("CONVERT_TIMEZONE('%s', 'UTC', date_trunc('%s', CONVERT_TIMEZONE('UTC', '%s', %s::TIMESTAMP)))", tz, specifier, tz, expr), nil
 		}
 		return fmt.Sprintf("CONVERT_TIMEZONE('%s', 'UTC', date_trunc('%s', CONVERT_TIMEZONE('UTC', '%s', %s::TIMESTAMP) + INTERVAL '%s') - INTERVAL '%s')", tz, specifier, tz, expr, shift, shift), nil
+	case DialectBigQuery:
+		// BigQuery: TIMESTAMP_TRUNC(expr, SPECIFIER [, 'timezone'])
+		// For DATE columns, explicitly cast to TIMESTAMP first to ensure the result is TIMESTAMP (not DATETIME).
+		if dim.DataType != nil && dim.DataType.Code == runtimev1.Type_CODE_DATE {
+			expr = fmt.Sprintf("TIMESTAMP(%s)", expr)
+		}
+		if tz == "" {
+			if grain == runtimev1.TimeGrain_TIME_GRAIN_WEEK && firstDayOfWeek > 1 {
+				offset := 8 - firstDayOfWeek
+				return fmt.Sprintf("TIMESTAMP_SUB(TIMESTAMP_TRUNC(TIMESTAMP_ADD(%s, INTERVAL %d DAY), %s), INTERVAL %d DAY)", expr, offset, specifier, offset), nil
+			}
+			if grain == runtimev1.TimeGrain_TIME_GRAIN_YEAR && firstMonthOfYear > 1 {
+				offset := 13 - firstMonthOfYear
+				// TIMESTAMP_ADD/TIMESTAMP_SUB don't support MONTH; wrap TIMESTAMP_TRUNC result in DATETIME() before DATETIME_SUB.
+				return fmt.Sprintf("TIMESTAMP(DATETIME_SUB(DATETIME(TIMESTAMP_TRUNC(TIMESTAMP(DATETIME_ADD(DATETIME(%s, 'UTC'), INTERVAL %d MONTH), 'UTC'), %s), 'UTC'), INTERVAL %d MONTH), 'UTC')", expr, offset, specifier, offset), nil
+			}
+			return fmt.Sprintf("TIMESTAMP_TRUNC(%s, %s)", expr, specifier), nil
+		}
+		// TIMESTAMP_TRUNC natively accepts a timezone argument.
+		if grain == runtimev1.TimeGrain_TIME_GRAIN_WEEK && firstDayOfWeek > 1 {
+			offset := 8 - firstDayOfWeek
+			return fmt.Sprintf("TIMESTAMP_SUB(TIMESTAMP_TRUNC(TIMESTAMP_ADD(%s, INTERVAL %d DAY), %s, '%s'), INTERVAL %d DAY)", expr, offset, specifier, tz, offset), nil
+		}
+		if grain == runtimev1.TimeGrain_TIME_GRAIN_YEAR && firstMonthOfYear > 1 {
+			offset := 13 - firstMonthOfYear
+			// TIMESTAMP_ADD/TIMESTAMP_SUB don't support MONTH; wrap TIMESTAMP_TRUNC result in DATETIME() before DATETIME_SUB.
+			return fmt.Sprintf("TIMESTAMP(DATETIME_SUB(DATETIME(TIMESTAMP_TRUNC(TIMESTAMP(DATETIME_ADD(DATETIME(%s, 'UTC'), INTERVAL %d MONTH), 'UTC'), %s, '%s'), 'UTC'), INTERVAL %d MONTH), 'UTC')", expr, offset, specifier, tz, offset), nil
+		}
+		return fmt.Sprintf("TIMESTAMP_TRUNC(%s, %s, '%s')", expr, specifier, tz), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
 	}
@@ -745,6 +787,8 @@ func (d Dialect) DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string, 
 		return fmt.Sprintf("DATEDIFF('%s', %d, %d)", unit, t1.UnixMilli(), t2.UnixMilli()), nil
 	case DialectSnowflake:
 		return fmt.Sprintf("DATEDIFF('%s', CAST('%s' AS TIMESTAMP), CAST('%s' AS TIMESTAMP))", unit, t1.Format(time.RFC3339), t2.Format(time.RFC3339)), nil
+	case DialectBigQuery:
+		return fmt.Sprintf("DATETIME_DIFF(DATETIME(CAST('%s' AS TIMESTAMP), 'UTC'), DATETIME(CAST('%s' AS TIMESTAMP), 'UTC'), %s)", t2.Format(time.RFC3339), t1.Format(time.RFC3339), unit), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
 	}
@@ -758,6 +802,8 @@ func (d Dialect) IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.TimeG
 		return fmt.Sprintf("CAST((dateAdd('%s', -1 * %s, %s)) AS TIMESTAMP)", d.ConvertToDateTruncSpecifier(grain), unitExpr, tsExpr), nil
 	case DialectSnowflake:
 		return fmt.Sprintf("DATEADD('%s', -1 * (%s), %s::TIMESTAMP)", d.ConvertToDateTruncSpecifier(grain), unitExpr, tsExpr), nil
+	case DialectBigQuery:
+		return fmt.Sprintf("TIMESTAMP(DATETIME_SUB(DATETIME(%s, 'UTC'), INTERVAL (%s) %s), 'UTC')", tsExpr, unitExpr, d.ConvertToDateTruncSpecifier(grain)), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
 	}
@@ -826,6 +872,25 @@ func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeG
 			first = false
 		}
 		return sb.String(), nil, nil
+	case DialectBigQuery:
+		startStr := start.Format(time.RFC3339)
+		endStr := end.Format(time.RFC3339)
+		tzStr := tz.String()
+		switch grain {
+		case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND,
+			runtimev1.TimeGrain_TIME_GRAIN_SECOND,
+			runtimev1.TimeGrain_TIME_GRAIN_MINUTE,
+			runtimev1.TimeGrain_TIME_GRAIN_HOUR:
+			return fmt.Sprintf(
+				"SELECT ts AS %s FROM UNNEST(GENERATE_TIMESTAMP_ARRAY(TIMESTAMP '%s', TIMESTAMP '%s', INTERVAL 1 %s)) AS ts WHERE ts < TIMESTAMP '%s'",
+				d.EscapeAlias(alias), startStr, endStr, d.ConvertToDateTruncSpecifier(grain), endStr,
+			), nil, nil
+		default:
+			return fmt.Sprintf(
+				"SELECT TIMESTAMP(d, '%s') AS %s FROM UNNEST(GENERATE_DATE_ARRAY(DATE(TIMESTAMP '%s', '%s'), DATE(TIMESTAMP '%s', '%s'), INTERVAL 1 %s)) AS d WHERE TIMESTAMP(d, '%s') < TIMESTAMP '%s'",
+				tzStr, d.EscapeAlias(alias), startStr, tzStr, endStr, tzStr, d.ConvertToDateTruncSpecifier(grain), tzStr, endStr,
+			), nil, nil
+		}
 	default:
 		return "", nil, fmt.Errorf("unsupported dialect %q", d)
 	}
@@ -937,8 +1002,12 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 				}
 				prefix += expr
 			} else {
-				prefix += fmt.Sprintf("%s AS %s", "?", d.EscapeIdentifier(result.Schema.Fields[i].Name))
-				args = append(args, v)
+				argExpr, argVal, err := d.GetArgExpr(v, result.Schema.Fields[i].Type.Code)
+				if err != nil {
+					return "", nil, nil, fmt.Errorf("select inline: failed to get argument expression: %w", err)
+				}
+				prefix += fmt.Sprintf("%s AS %s", argExpr, d.EscapeIdentifier(result.Schema.Fields[i].Name))
+				args = append(args, argVal)
 			}
 		}
 
@@ -968,6 +1037,13 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 }
 
 func (d Dialect) GetArgExpr(val any, typ runtimev1.Type_Code) (string, any, error) {
+	// handle bigquery non-timestamp time types separately
+	switch v := val.(type) {
+	case civil.Date:
+		return "CAST(? AS DATE)", v.String(), nil
+	case civil.DateTime:
+		return "CAST(? AS DATETIME)", v.String(), nil
+	}
 	// handle date types especially otherwise they get sent as time.Time args which will be treated as datetime/timestamp types in olap
 	if typ == runtimev1.Type_CODE_DATE {
 		t, ok := val.(time.Time)
@@ -1055,6 +1131,8 @@ func (d Dialect) GetDateTimeExpr(t time.Time) (bool, string) {
 		return true, fmt.Sprintf("CAST(%d AS TIMESTAMP)", t.UnixMilli())
 	case DialectStarRocks:
 		return true, fmt.Sprintf("CAST('%s' AS DATETIME)", t.Format(time.DateTime))
+	case DialectBigQuery:
+		return true, fmt.Sprintf("CAST('%s' AS TIMESTAMP)", t.Format(time.RFC3339Nano))
 	default:
 		return false, ""
 	}
@@ -1068,6 +1146,8 @@ func (d Dialect) GetDateExpr(t time.Time) (bool, string) {
 		return true, fmt.Sprintf("CAST('%s' AS DATE)", t.Format(time.DateOnly))
 	case DialectPinot:
 		return true, fmt.Sprintf("CAST(%d AS DATE)", t.UnixMilli())
+	case DialectBigQuery:
+		return true, fmt.Sprintf("CAST('%s' AS DATE)", t.Format(time.DateOnly))
 	default:
 		return false, ""
 	}

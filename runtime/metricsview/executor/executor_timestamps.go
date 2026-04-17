@@ -30,6 +30,8 @@ func (e *Executor) resolveTimestampsForTable(ctx context.Context, database, data
 		return e.resolveStarRocks(ctx, database, databaseSchema, table, timeExpr, watermarkExpr)
 	case drivers.DialectSnowflake:
 		return e.resolveSnowflake(ctx, database, databaseSchema, table, timeExpr, watermarkExpr)
+	case drivers.DialectBigQuery:
+		return e.resolveBigQuery(ctx, database, databaseSchema, table, timeExpr, watermarkExpr)
 	default:
 		return metricsview.TimestampsResult{}, fmt.Errorf("not available for dialect '%s'", e.olap.Dialect())
 	}
@@ -369,6 +371,50 @@ func (e *Executor) resolveSnowflake(ctx context.Context, database, databaseSchem
 
 	rangeSQL := fmt.Sprintf(
 		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\", %[2]s as \"watermark\" FROM %[3]s",
+		timeExpr,
+		watermarkExpr,
+		escapedTableName,
+	)
+
+	rows, err := e.olap.Query(ctx, &drivers.Statement{
+		Query:            rangeSQL,
+		Priority:         e.priority,
+		ExecutionTimeout: defaultExecutionTimeout,
+		QueryAttributes:  e.queryAttributes,
+	})
+	if err != nil {
+		return metricsview.TimestampsResult{}, err
+	}
+	defer rows.Close()
+
+	var minTime, maxTime, watermark *time.Time
+	for rows.Next() {
+		err = rows.Scan(&minTime, &maxTime, &watermark)
+		if err != nil {
+			return metricsview.TimestampsResult{}, err
+		}
+	}
+	err = rows.Err()
+	if err != nil {
+		return metricsview.TimestampsResult{}, err
+	}
+
+	return metricsview.TimestampsResult{
+		Min:       safeTime(minTime),
+		Max:       safeTime(maxTime),
+		Watermark: safeTime(watermark),
+	}, nil
+}
+
+func (e *Executor) resolveBigQuery(ctx context.Context, database, databaseSchema, table, timeExpr, watermarkExpr string) (metricsview.TimestampsResult, error) {
+	escapedTableName := e.olap.Dialect().EscapeTable(database, databaseSchema, table)
+	if watermarkExpr == "" {
+		watermarkExpr = fmt.Sprintf("max(%s)", timeExpr)
+	}
+
+	// cast to timestamp so that date and datetime types can be scanned to time.Time
+	rangeSQL := fmt.Sprintf(
+		"SELECT CAST(min(%[1]s) as TIMESTAMP) as `min`, CAST(max(%[1]s) as TIMESTAMP) as `max`, CAST(%[2]s as TIMESTAMP) as `watermark` FROM %[3]s",
 		timeExpr,
 		watermarkExpr,
 		escapedTableName,

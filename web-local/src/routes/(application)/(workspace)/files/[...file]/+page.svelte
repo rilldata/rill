@@ -101,6 +101,7 @@
       {resource}
       {parseError}
       remoteContent={$remoteContent}
+      filePath={path}
     >
       <Editor
         {fileArtifact}
