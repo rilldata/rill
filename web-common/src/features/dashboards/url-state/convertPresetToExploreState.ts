@@ -411,7 +411,6 @@ function fromPivotUrlParams(
         id: entry,
         title: m.displayName || m.name || "Unknown",
         type: PivotChipType.Measure,
-        description: m.description || undefined,
       };
     }
 
@@ -421,7 +420,6 @@ function fromPivotUrlParams(
         id: entry,
         title: d.displayName || d.name || "Unknown",
         type: PivotChipType.Dimension,
-        description: d.description || undefined,
       };
     }
 
