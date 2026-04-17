@@ -159,11 +159,14 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 			attribute.String("rollup.timezone", rollup.TimeZone),
 		)
 
-		rejectCandidate := func(reason string) {
+		rejectCandidate := func(reason string, attrs ...attribute.KeyValue) {
 			candidateSpan.SetAttributes(
 				attribute.String("rollup.eligible", "false"),
 				attribute.String("rollup.reject_reason", reason),
 			)
+			if len(attrs) > 0 {
+				candidateSpan.SetAttributes(attrs...)
+			}
 			candidateSpan.End()
 		}
 
@@ -225,31 +228,47 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 
 			// Check coverage: rollup must cover the effective (clamped) range
 			if !effectiveStart.IsZero() && rollupMin.After(effectiveStart) {
-				rejectCandidate(rejectStartNotCovered)
+				rejectCandidate(rejectStartNotCovered,
+					attribute.String("rollup.effective_start", effectiveStart.Format(time.RFC3339)),
+					attribute.String("rollup.rollup_min", rollupMin.Format(time.RFC3339)),
+				)
 				continue
 			}
 			if !effectiveEnd.IsZero() && rollupEffEnd.Before(effectiveEnd) {
-				rejectCandidate(rejectEndNotCovered)
+				rejectCandidate(rejectEndNotCovered,
+					attribute.String("rollup.effective_end", effectiveEnd.Format(time.RFC3339)),
+					attribute.String("rollup.rollup_eff_end", rollupEffEnd.Format(time.RFC3339)),
+				)
 				continue
 			}
 		} else {
 			// No time range: rollup must cover the base table's full range
 			if rollupMin.After(baseMin) {
-				rejectCandidate(rejectStartNotCovered)
+				rejectCandidate(rejectStartNotCovered,
+					attribute.String("rollup.base_min", baseMin.Format(time.RFC3339)),
+					attribute.String("rollup.rollup_min", rollupMin.Format(time.RFC3339)),
+				)
 				continue
 			}
 			if rollupEffEnd.Before(baseMax) {
-				rejectCandidate(rejectEndNotCovered)
+				rejectCandidate(rejectEndNotCovered,
+					attribute.String("rollup.base_max", baseMax.Format(time.RFC3339)),
+					attribute.String("rollup.rollup_eff_end", rollupEffEnd.Format(time.RFC3339)),
+				)
 				continue
 			}
 		}
 
-		// End alignment: if data extends beyond the query end and the end is not aligned to the rollup grain,
-		// the last rollup bucket would include data beyond the requested range.
+		// Check end alignment now: if data extends beyond the query end and the end is not aligned to the rollup grain,
+		// the last rollup bucket would include data beyond the requested range. rollupEligible only checks start alignment.
 		// Essentially it just check if base has data >= query end time, then makes sure the query end time is rollup grain aligned
 		if hasTimeRange && !qry.TimeRange.End.IsZero() && !baseMax.Before(qry.TimeRange.End) &&
 			!metricsview.TimeAligned(qry.TimeRange.End, rollup.TimeGrain, rollupLoc, e.metricsView.FirstDayOfWeek) {
-			rejectCandidate(rejectEndNotAligned)
+			rejectCandidate(rejectEndNotAligned,
+				attribute.String("rollup.query_end", qry.TimeRange.End.Format(time.RFC3339)),
+				attribute.String("rollup.base_max", baseMax.Format(time.RFC3339)),
+				attribute.String("rollup.rollup_grain", rollup.TimeGrain.String()),
+			)
 			continue
 		}
 
