@@ -41,11 +41,13 @@
             `${f.name}: exceeds the maximum size of ${formatMemorySize(fileSizeLimit!)}`,
         )
     : [];
-  // Show a single warning message if multiple=false, else prepend the file name.
-  $: normalizedErrorMessages =
-    !multiple && fileSizeSoftLimitMessage
+  $: hasFileSizeErrors = fileSizeLimitMessages.length > 0;
+  // Show a single warning message if multiple=false, else use the errors with prepended file name.
+  $: normalizedErrorMessages = hasFileSizeErrors
+    ? !multiple
       ? [fileSizeSoftLimitMessage]
-      : fileSizeLimitMessages;
+      : fileSizeLimitMessages
+    : [];
 
   // Only add the file size limit message to warnings. Errors should be tracked through superforms.
   $: warningMessages = fileSizeSoftLimit ? normalizedErrorMessages : [];
