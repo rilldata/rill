@@ -171,7 +171,7 @@
     <div class="summary-divider"></div>
     <div class="summary-cell">
       <span class="summary-label inline-flex items-center gap-1">
-        Total unit
+        Total compute units
         <Tooltip location="right" alignment="middle" distance={8}>
           <span class="text-fg-muted flex">
             <InfoCircle size="13px" />
@@ -186,13 +186,13 @@
     </div>
     <div class="summary-divider"></div>
     <div class="summary-cell">
-      <span class="summary-label">Prod unit</span>
+      <span class="summary-label">Prod compute units</span>
       <span class="summary-value-lg">{totalProdSlots}</span>
       <span class="summary-desc">{fmtUSD(prodDailyRate)}/day</span>
     </div>
     <div class="summary-divider"></div>
     <div class="summary-cell">
-      <span class="summary-label">Dev unit</span>
+      <span class="summary-label">Dev compute units</span>
       <span class="summary-value-lg">{totalDevSlots}</span>
       <span class="summary-desc">{fmtUSD(devDailyRate)}/day</span>
     </div>
@@ -212,8 +212,8 @@
         <tr>
           <th>Project</th>
           <th>Type</th>
-          <th>Prod slots</th>
-          <th>Dev slots</th>
+          <th>Prod compute units</th>
+          <th>Dev compute units</th>
           <th>Storage</th>
           <th>Est. cost</th>
           <th>Action</th>
