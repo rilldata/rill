@@ -578,11 +578,10 @@ func (r *registryCache) emitHeartbeatForInstance(inst *drivers.Instance) {
 	attrs := instanceAnnotationsToAttribs(inst)
 	r.activity.RecordMetric(context.Background(), "data_dir_size_bytes", float64(sizeOfDir(dataDir)), attrs...)
 
-	// Emit slots metric for billing
+	// Emit slots metric for billing; environment is already included via instance annotations
 	if v, ok := inst.Annotations["project_slots"]; ok {
 		if slots, err := strconv.Atoi(v); err == nil {
-			env := inst.Annotations["environment"]
-			r.activity.RecordMetric(context.Background(), env+"_slots", float64(slots), attrs...)
+			r.activity.RecordMetric(context.Background(), "slots", float64(slots), attrs...)
 		}
 	}
 }
