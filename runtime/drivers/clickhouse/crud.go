@@ -271,14 +271,14 @@ func (c *Connection) dropTable(ctx context.Context, name string) error {
 		})
 		// then drop the temp table
 		_ = c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(tempTableForDictionary(name)), onClusterClause),
+			Query:    dropTableQuery(tempTableForDictionary(name), onClusterClause, c.config.DropSync),
 			Priority: 100,
 		})
 		return err
 	case "TABLE":
 		// drop the main table
 		err := c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(name), onClusterClause),
+			Query:    dropTableQuery(name, onClusterClause, c.config.DropSync),
 			Priority: 100,
 		})
 		if err != nil {
@@ -287,7 +287,7 @@ func (c *Connection) dropTable(ctx context.Context, name string) error {
 		// then drop the local table in case of cluster
 		if onCluster && !strings.HasSuffix(name, "_local") {
 			return c.Exec(ctx, &drivers.Statement{
-				Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(localTableName(name)), onClusterClause),
+				Query:    dropTableQuery(localTableName(name), onClusterClause, c.config.DropSync),
 				Priority: 100,
 			})
 		}
@@ -367,12 +367,26 @@ func (c *Connection) renameEntity(ctx context.Context, oldName, newName string) 
 
 		// drop the old table
 		return c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(oldName), onClusterClause),
+			Query:    dropTableQuery(oldName, onClusterClause, c.config.DropSync),
 			Priority: 100,
 		})
 	default:
 		return fmt.Errorf("clickhouse: unknown entity type %q", typ)
 	}
+}
+
+func dropTableQuery(name, onClusterClause string, dropSync bool) string {
+	var query strings.Builder
+	query.WriteString("DROP TABLE ")
+	query.WriteString(safeSQLName(name))
+	if onClusterClause != "" {
+		query.WriteRune(' ')
+		query.WriteString(onClusterClause)
+	}
+	if dropSync {
+		query.WriteString(" SYNC")
+	}
+	return query.String()
 }
 
 func (c *Connection) renameView(ctx context.Context, oldName, newName, onCluster string) error {
