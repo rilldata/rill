@@ -93,11 +93,23 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 
 	q := `
 	SELECT
-		name AS table_name,
-		CASE WHEN match(engine, 'View') THEN true ELSE false END AS view
-	FROM system.tables
-	WHERE is_temporary = 0 AND database = ?
+		t1.name AS table_name,
+		match(t1.engine, 'View') AS view
+	FROM system.tables t1
 	`
+	if c.config.Cluster != "" {
+		q += `
+		LEFT JOIN system.tables t2
+			ON t2.database = t1.database
+			AND t2.name = replaceRegexpOne(t1.name, '_local$', '')
+			AND t1.name != t2.name
+		`
+	}
+	q += " WHERE t1.is_temporary = 0 AND t1.database = ?"
+	if c.config.Cluster != "" {
+		q += " AND NOT (endsWith(t1.name, '_local') AND t2.name IS NOT NULL)"
+	}
+
 	args := []any{databaseSchema}
 	if pageToken != "" {
 		var startAfter string
@@ -363,7 +375,11 @@ func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Ola
 
 	for _, table := range tables {
 		placeholders = append(placeholders, "(?, ?)")
-		args = append(args, table.DatabaseSchema, table.Name)
+		tableName := table.Name
+		if c.config.Cluster != "" {
+			tableName = localTableName(table.Name)
+		}
+		args = append(args, table.DatabaseSchema, tableName)
 	}
 
 	queryBuilder.WriteString(strings.Join(placeholders, ", "))
@@ -383,6 +399,9 @@ func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Ola
 	for rows.Next() {
 		if err := rows.Scan(&schema, &name, &size); err != nil {
 			return err
+		}
+		if c.config.Cluster != "" {
+			name = localToActualTableName(name)
 		}
 		schemaTables, ok := res[schema]
 		if !ok {

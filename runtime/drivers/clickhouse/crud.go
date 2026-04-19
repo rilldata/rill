@@ -722,10 +722,6 @@ func (c *Connection) optimizeTable(ctx context.Context, tableName string) error 
 	})
 }
 
-func localTableName(name string) string {
-	return name + "_local"
-}
-
 func tempTableForDictionary(name string) string {
 	return name + "_dict_temp_"
 }
