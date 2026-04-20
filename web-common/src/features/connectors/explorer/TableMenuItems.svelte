@@ -125,50 +125,54 @@
 {#if showGenerateMetricsAndDashboard}
   {#if metricsMode === "both"}
     <DropdownMenu.Separator />
-    <DropdownMenu.Label>Import to DuckDB</DropdownMenu.Label>
-    <NavigationMenuItem onclick={() => handleGenerateMetrics(false)}>
-      <MetricsViewIcon slot="icon" />
-      <div class="flex gap-x-2 items-center">
-        Generate metrics
-        {#if $ai}
-          with AI
-          <WandIcon class="w-3 h-3" />
-        {/if}
-      </div>
-    </NavigationMenuItem>
-    <NavigationMenuItem onclick={() => handleGenerateDashboard(false)}>
-      <ExploreIcon slot="icon" />
-      <div class="flex gap-x-2 items-center">
-        Generate dashboard
-        {#if $ai}
-          with AI
-          <WandIcon class="w-3 h-3" />
-        {/if}
-      </div>
-    </NavigationMenuItem>
+    <DropdownMenu.Group>
+      <DropdownMenu.Label>Import to DuckDB</DropdownMenu.Label>
+      <NavigationMenuItem onclick={() => handleGenerateMetrics(false)}>
+        <MetricsViewIcon slot="icon" />
+        <div class="flex gap-x-2 items-center">
+          Generate metrics
+          {#if $ai}
+            with AI
+            <WandIcon class="w-3 h-3" />
+          {/if}
+        </div>
+      </NavigationMenuItem>
+      <NavigationMenuItem onclick={() => handleGenerateDashboard(false)}>
+        <ExploreIcon slot="icon" />
+        <div class="flex gap-x-2 items-center">
+          Generate dashboard
+          {#if $ai}
+            with AI
+            <WandIcon class="w-3 h-3" />
+          {/if}
+        </div>
+      </NavigationMenuItem>
+    </DropdownMenu.Group>
 
     <DropdownMenu.Separator />
-    <DropdownMenu.Label>Live on {liveDriverLabel}</DropdownMenu.Label>
-    <NavigationMenuItem onclick={() => handleGenerateMetrics(true)}>
-      <MetricsViewIcon slot="icon" />
-      <div class="flex gap-x-2 items-center">
-        Generate metrics
-        {#if $ai}
-          with AI
-          <WandIcon class="w-3 h-3" />
-        {/if}
-      </div>
-    </NavigationMenuItem>
-    <NavigationMenuItem onclick={() => handleGenerateDashboard(true)}>
-      <ExploreIcon slot="icon" />
-      <div class="flex gap-x-2 items-center">
-        Generate dashboard
-        {#if $ai}
-          with AI
-          <WandIcon class="w-3 h-3" />
-        {/if}
-      </div>
-    </NavigationMenuItem>
+    <DropdownMenu.Group>
+      <DropdownMenu.Label>Live on {liveDriverLabel}</DropdownMenu.Label>
+      <NavigationMenuItem onclick={() => handleGenerateMetrics(true)}>
+        <MetricsViewIcon slot="icon" />
+        <div class="flex gap-x-2 items-center">
+          Generate metrics
+          {#if $ai}
+            with AI
+            <WandIcon class="w-3 h-3" />
+          {/if}
+        </div>
+      </NavigationMenuItem>
+      <NavigationMenuItem onclick={() => handleGenerateDashboard(true)}>
+        <ExploreIcon slot="icon" />
+        <div class="flex gap-x-2 items-center">
+          Generate dashboard
+          {#if $ai}
+            with AI
+            <WandIcon class="w-3 h-3" />
+          {/if}
+        </div>
+      </NavigationMenuItem>
+    </DropdownMenu.Group>
   {:else}
     {@const isLive = metricsMode === "live"}
     <NavigationMenuItem onclick={() => handleGenerateMetrics(isLive)}>
