@@ -176,7 +176,8 @@
     <div class="input-panel">
       <div class="panel-header">
         <span class="panel-title">Select compute unit</span>
-        <span class="unit-hint">1 unit = 4 GiB RAM, 1 vCPU · $0.15/unit/hr</span>
+        <span class="unit-hint">1 unit = 4 GiB RAM, 1 vCPU · $0.15/unit/hr</span
+        >
       </div>
 
       <!-- Production units -->
@@ -230,8 +231,7 @@
             bind:value={prodHoursPerDay}
             min="1"
             max="24"
-            onblur={(e) =>
-              clampInput(e, 1, 24, (v) => (prodHoursPerDay = v))}
+            onblur={(e) => clampInput(e, 1, 24, (v) => (prodHoursPerDay = v))}
           />
           <button
             class="stepper-btn"
