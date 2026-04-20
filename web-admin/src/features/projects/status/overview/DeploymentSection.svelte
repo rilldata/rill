@@ -213,8 +213,7 @@
       <span class="info-value">
         {#if aiConnector && aiConnector.name !== "admin"}
           {formatConnectorName(aiConnector.type)}
-          <span class="text-fg-tertiary text-xs ml-1"
-            >({aiConnector.name})</span
+          <span class="text-fg-tertiary text-xs ml-1">({aiConnector.name})</span
           >
         {:else}
           Rill Managed
@@ -226,10 +225,7 @@
       <div class="info-row">
         <span class="info-label">{dataLabel}</span>
         <span class="info-value">
-          <a
-            href="/{organization}/{project}/-/status/tables"
-            class="repo-link"
-          >
+          <a href="/{organization}/{project}/-/status/tables" class="repo-link">
             {formatMemorySize(dataSizeBytes)}
           </a>
         </span>
@@ -273,5 +269,4 @@
   .repo-link:hover {
     @apply underline;
   }
-
 </style>
