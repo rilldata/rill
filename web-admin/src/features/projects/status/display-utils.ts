@@ -90,10 +90,15 @@ export function getOlapEngineLabel(connector: V1Connector | undefined): string {
     isDuckDB &&
     (String(connector.config?.path ?? "").startsWith("md:") ||
       !!connector.config?.token);
+  // DuckLake detection also falls back to the connector name, since the
+  // runtime may redact merged config before returning `projectConnectors`.
+  const connectorName = connector.name ?? "";
   const isDuckLake =
     isDuckDB &&
     !isMotherDuck &&
-    String(connector.config?.attach ?? "").includes("ducklake:");
+    (String(connector.config?.attach ?? "").includes("ducklake:") ||
+      connectorName === "ducklake" ||
+      connectorName.startsWith("ducklake_"));
   const resolvedType = isMotherDuck
     ? "motherduck"
     : isDuckLake

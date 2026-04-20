@@ -259,6 +259,15 @@ describe("display-utils", () => {
       ).toBe("DuckLake (ducklake_analytics)");
     });
 
+    it("detects DuckLake via connector name when config is redacted", () => {
+      expect(
+        getOlapEngineLabel({
+          type: "duckdb",
+          name: "ducklake_1",
+        }),
+      ).toBe("DuckLake (ducklake_1)");
+    });
+
     it("shows Rill-managed for provisioned ClickHouse", () => {
       expect(
         getOlapEngineLabel({
