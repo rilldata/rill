@@ -101,6 +101,10 @@ export function getOlapEngineLabel(connector: V1Connector | undefined): string {
       : connector.type;
   const name = formatConnectorName(resolvedType);
 
+  // For DuckLake, include the connector instance name so users can tell
+  // multiple DuckLake catalogs apart (e.g. "DuckLake (ducklake_analytics)").
+  if (isDuckLake) return `${name} (${connector.name ?? ""})`;
+
   // Show management suffix for Rill-managed connectors
   if (connector.provision) return `${name} (Rill-managed)`;
   return name;
