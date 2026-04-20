@@ -30,6 +30,7 @@ export function compileSourceYAML(
     connectorInstanceName?: string;
     originalDriverName?: string;
     existingEnvBlob?: string;
+    outputConnector?: string;
   },
 ) {
   const schema = getConnectorSchema(connector.name ?? "");
@@ -107,15 +108,25 @@ export function compileSourceYAML(
   const connectorName = opts?.connectorInstanceName || connector.name;
 
   const driverName = opts?.originalDriverName || connector.name || "duckdb";
+  const outputBlock = opts?.outputConnector
+    ? `\n\noutput:\n  connector: ${opts.outputConnector}`
+    : "";
   return (
     `${sourceModelFileTop(driverName)}\n\nconnector: ${connectorName}\n\n` +
     compiledKeyValues +
-    devSection
+    devSection +
+    outputBlock
   );
 }
 
-export function compileLocalFileSourceYAML(path: string) {
-  return `${sourceModelFileTop("local_file")}\n\nconnector: duckdb\nsql: "${buildDuckDbQuery(path)}"`;
+export function compileLocalFileSourceYAML(
+  path: string,
+  outputConnector?: string,
+) {
+  const outputBlock = outputConnector
+    ? `\n\noutput:\n  connector: ${outputConnector}`
+    : "";
+  return `${sourceModelFileTop("local_file")}\n\nconnector: duckdb\nsql: "${buildDuckDbQuery(path)}"${outputBlock}`;
 }
 
 export function buildDuckDbQuery(
