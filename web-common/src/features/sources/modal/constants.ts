@@ -107,6 +107,10 @@ export const OLAP_ENGINES = [
   "starrocks",
 ];
 
+// Warehouses that also implement OLAP (can be queried live without import).
+// Shown as source options even when the project's OLAP doesn't support modeling.
+export const LIVE_OLAP_WAREHOUSES = ["snowflake", "bigquery"];
+
 export const AI_CONNECTORS = ["claude", "openai", "gemini"];
 
 export const ALL_CONNECTORS = [...SOURCES, ...OLAP_ENGINES, ...AI_CONNECTORS];

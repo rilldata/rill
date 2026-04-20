@@ -26,6 +26,7 @@
     toConnectorDriver as toConnectorDriverFromSchema,
     type ConnectorInfo,
   } from "./connector-schemas";
+  import { LIVE_OLAP_WAREHOUSES } from "./constants";
   import { ICONS } from "./icons";
   import { resetConnectorStep } from "./connectorStepStore";
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
@@ -43,6 +44,13 @@
     (c) => c.category !== "olap" && c.category !== "ai",
   );
   $: olapConnectors = connectors.filter((c) => c.category === "olap");
+
+  // When the project's OLAP doesn't support modeling (e.g. ClickHouse, Pinot),
+  // most sources can't be imported. Only surface warehouses that can also be
+  // queried live as OLAP connectors (Snowflake, BigQuery).
+  $: visibleSourceConnectors = isModelingSupported
+    ? sourceConnectors
+    : sourceConnectors.filter((c) => LIVE_OLAP_WAREHOUSES.includes(c.name));
 
   // Get the form width class for the selected connector
   $: selectedSchema = selectedSchemaName
@@ -221,27 +229,25 @@
       escapeKeydownBehavior={isSubmittingForm ? "ignore" : "close"}
       interactOutsideBehavior={isSubmittingForm ? "ignore" : "close"}
     >
-      {#if step === 1}
-        {#if isModelingSupported}
-          <Dialog.Title>Add a source</Dialog.Title>
-          <section class="mb-1">
-            <div
-              class="connector-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-2"
-            >
-              {#each sourceConnectors as connector (connector.name)}
-                <button
-                  id={connector.name}
-                  onclick={() => goToConnectorForm(connector)}
-                  class="connector-tile-button size-full"
-                >
-                  <div class="connector-wrapper px-6 py-4">
-                    <svelte:component this={ICONS[connector.name]} />
-                  </div>
-                </button>
-              {/each}
-            </div>
-          </section>
-        {/if}
+      {#if step === 1 && visibleSourceConnectors.length > 0}
+        <Dialog.Title>Add a source</Dialog.Title>
+        <section class="mb-1">
+          <div
+            class="connector-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-2"
+          >
+            {#each visibleSourceConnectors as connector (connector.name)}
+              <button
+                id={connector.name}
+                onclick={() => goToConnectorForm(connector)}
+                class="connector-tile-button size-full"
+              >
+                <div class="connector-wrapper px-6 py-4">
+                  <svelte:component this={ICONS[connector.name]} />
+                </div>
+              </button>
+            {/each}
+          </div>
+        </section>
       {/if}
 
       {#if step === 1}
