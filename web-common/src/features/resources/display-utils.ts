@@ -46,12 +46,17 @@ export function getOlapEngineLabel(connector: V1Connector | undefined): string {
     isDuckDB &&
     (String(connector.config?.path ?? "").startsWith("md:") ||
       !!connector.config?.token);
+  // Only treat a name-based match as DuckLake when the connector is known to
+  // be (or could be, when `type` is missing) a duckdb connector. This avoids
+  // mislabelling unrelated connectors that happen to include "ducklake" in
+  // their name.
+  const isDuckDBLike = isDuckDB || !type;
   const isDuckLake =
     !isMotherDuck &&
     ((isDuckDB &&
       String(connector.config?.attach ?? "").includes("ducklake:")) ||
-      lowerName === "ducklake" ||
-      lowerName.startsWith("ducklake_"));
+      (isDuckDBLike &&
+        (lowerName === "ducklake" || lowerName.startsWith("ducklake_"))));
 
   // When `type` is missing (e.g. web-local only has the olap connector name),
   // fall back to the name so "duckdb"/"clickhouse" still format correctly.

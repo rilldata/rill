@@ -233,7 +233,7 @@ describe("display-utils", () => {
           name: "my_olap",
           config: { path: "md:my_database" },
         }),
-      ).toBe("MotherDuck (Self-managed)");
+      ).toBe("MotherDuck");
     });
 
     it("detects MotherDuck via token", () => {
@@ -243,7 +243,7 @@ describe("display-utils", () => {
           name: "custom_name",
           config: { token: "abc123" },
         }),
-      ).toBe("MotherDuck (Self-managed)");
+      ).toBe("MotherDuck");
     });
 
     it("detects DuckLake via attach config", () => {
@@ -287,10 +287,19 @@ describe("display-utils", () => {
       ).toBe("ClickHouse (Rill-managed)");
     });
 
-    it("shows Self-managed for non-provisioned ClickHouse", () => {
+    it("returns bare label for non-provisioned ClickHouse", () => {
       expect(
         getOlapEngineLabel({ type: "clickhouse", name: "clickhouse" }),
-      ).toBe("ClickHouse (Self-managed)");
+      ).toBe("ClickHouse");
+    });
+
+    it("does not mislabel a non-duckdb connector named 'ducklake_x' as DuckLake", () => {
+      expect(
+        getOlapEngineLabel({
+          type: "postgres",
+          name: "ducklake_meta",
+        }),
+      ).toBe("Postgres");
     });
   });
 

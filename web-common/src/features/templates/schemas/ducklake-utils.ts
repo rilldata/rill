@@ -1,3 +1,4 @@
+import { ducklakeSchema } from "./ducklake";
 import type { MultiStepFormSchema } from "./types";
 
 /**
@@ -71,7 +72,7 @@ export function applyDuckLakeFormTransform(
   schema: MultiStepFormSchema | null | undefined,
   values: Record<string, unknown>,
 ): Record<string, unknown> {
-  if (!schema || schema.title !== "DuckLake") return values;
+  if (schema !== ducklakeSchema) return values;
   if (values.connection_mode !== "parameters") return values;
   const attach = composeDuckLakeAttach(values);
   return { ...values, attach };
@@ -88,7 +89,7 @@ export function injectDuckLakeAttach(
   filteredValues: Record<string, unknown>,
   sourceValues: Record<string, unknown>,
 ): Record<string, unknown> {
-  if (!schema || schema.title !== "DuckLake") return filteredValues;
+  if (schema !== ducklakeSchema) return filteredValues;
   if (sourceValues.connection_mode !== "parameters") return filteredValues;
   const attach = sourceValues.attach;
   if (typeof attach !== "string" || !attach) return filteredValues;

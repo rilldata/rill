@@ -136,7 +136,7 @@ describe("applyDuckLakeFormTransform", () => {
     expect(applyDuckLakeFormTransform(null, values)).toBe(values);
     expect(
       applyDuckLakeFormTransform(
-        { type: "object", title: "Other", properties: {} },
+        { type: "object", title: "DuckLake", properties: {} },
         values,
       ),
     ).toBe(values);
