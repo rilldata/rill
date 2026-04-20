@@ -45,13 +45,6 @@
   );
   $: olapConnectors = connectors.filter((c) => c.category === "olap");
 
-  // When the project's OLAP doesn't support modeling (e.g. ClickHouse, Pinot),
-  // most sources can't be imported. Only surface warehouses that can also be
-  // queried live as OLAP connectors (Snowflake, BigQuery).
-  $: visibleSourceConnectors = isModelingSupported
-    ? sourceConnectors
-    : sourceConnectors.filter((c) => LIVE_OLAP_WAREHOUSES.includes(c.name));
-
   // Get the form width class for the selected connector
   $: selectedSchema = selectedSchemaName
     ? getConnectorSchema(selectedSchemaName)
@@ -196,7 +189,14 @@
 
   $: isModelingSupportedForDefaultOlapDriver =
     useIsModelingSupportedForDefaultOlapDriver(runtimeClient);
-  $: isModelingSupported = $isModelingSupportedForDefaultOlapDriver.data;
+  $: isModelingSupported = $isModelingSupportedForDefaultOlapDriver?.data;
+
+  // When the project's OLAP doesn't support modeling (e.g. ClickHouse, Pinot),
+  // most sources can't be imported. Only surface warehouses that can also be
+  // queried live as OLAP connectors (Snowflake, BigQuery).
+  $: visibleSourceConnectors = isModelingSupported
+    ? sourceConnectors
+    : sourceConnectors.filter((c) => LIVE_OLAP_WAREHOUSES.includes(c.name));
 
   // FIXME: excluding salesforce until we implement the table discovery APIs
   $: isConnectorType =
