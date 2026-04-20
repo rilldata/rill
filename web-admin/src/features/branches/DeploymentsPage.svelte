@@ -8,10 +8,7 @@
     isFreePlan,
     isProPlan,
   } from "@rilldata/web-admin/features/billing/plans/utils";
-  import {
-    SLOT_RATE_PER_HR,
-    HOURS_PER_MONTH,
-  } from "@rilldata/web-admin/features/projects/status/overview/slots-utils";
+  import { SLOT_RATE_PER_HR } from "@rilldata/web-admin/features/projects/status/overview/slots-utils";
   import ManageSlotsModal from "@rilldata/web-admin/features/projects/status/overview/ManageSlotsModal.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -79,16 +76,10 @@
   let devMemory = $derived(devSlots * 4);
   let devCpu = $derived(devSlots);
 
-  // Cost calculations (with decimals)
-  let prodMonthlyCost = $derived(
-    (prodSlots * SLOT_RATE_PER_HR * HOURS_PER_MONTH).toFixed(2),
-  );
-  let devMonthlyCost = $derived(
-    (devSlots * SLOT_RATE_PER_HR * HOURS_PER_MONTH).toFixed(2),
-  );
-  let totalMonthlyCost = $derived(
-    (totalSlots * SLOT_RATE_PER_HR * HOURS_PER_MONTH).toFixed(2),
-  );
+  // Cost calculations
+  let prodHourlyCost = $derived((prodSlots * SLOT_RATE_PER_HR).toFixed(2));
+  let devHourlyCost = $derived((devSlots * SLOT_RATE_PER_HR).toFixed(2));
+  let totalHourlyCost = $derived((totalSlots * SLOT_RATE_PER_HR).toFixed(2));
 </script>
 
 {#if showDeploymentSection}
@@ -121,10 +112,10 @@
       <div class="summary-divider"></div>
 
       <div class="summary-panel">
-        <span class="summary-label">Est. monthly project cost</span>
-        <span class="summary-value text-fg-secondary">${totalMonthlyCost}</span>
+        <span class="summary-label">Est. hourly project cost</span>
+        <span class="summary-value text-fg-secondary">${totalHourlyCost}/hr</span>
         <span class="summary-breakdown-plain">
-          ${prodMonthlyCost} prod + ${devMonthlyCost} dev
+          ${prodHourlyCost} prod + ${devHourlyCost} dev
         </span>
         {#if cycleStart || cycleEnd}
           <span class="summary-cycle">
@@ -173,7 +164,7 @@
             </div>
             <div class="detail-row">
               <span class="detail-label">Est. cost</span>
-              <span class="detail-value-sm">~${prodMonthlyCost}/mo</span>
+              <span class="detail-value-sm">~${prodHourlyCost}/hr</span>
             </div>
           </div>
         </div>
@@ -210,7 +201,7 @@
             <div class="detail-row">
               <span class="detail-label">Est. cost</span>
               <span class="detail-value-sm">
-                {devSlots > 0 ? `~$${devMonthlyCost}/mo` : "—"}
+                {devSlots > 0 ? `~$${devHourlyCost}/hr` : "—"}
               </span>
             </div>
           </div>
