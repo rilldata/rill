@@ -18,7 +18,7 @@ import (
 
 // TODO: The functions in this file are not truly fault tolerant. They should be refactored to run as idempotent, retryable background tasks.
 
-// CreateProject creates a new project and provisions and reconciles a prod deployment for it.
+// CreateProject creates a new project and provisions and reconciles a dev/prod deployment for it.
 func (s *Service) CreateProject(ctx context.Context, org *database.Organization, opts *database.InsertProjectOptions, deploy, editable bool) (*database.Project, error) {
 	// Get roles for initial setup
 	adminRole, err := s.DB.FindProjectRole(ctx, database.ProjectRoleNameAdmin)

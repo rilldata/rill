@@ -7,6 +7,7 @@
   import { runtimeServiceGitPush } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { DeployingDashboardUrlParam } from "@rilldata/web-common/features/project/deploy/utils.ts";
+  import { projectWelcomeStatusStores } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
 
   const runtimeClient = useRuntimeClient();
 
@@ -19,13 +20,10 @@
       commitMessage: "Initial dashboard commit",
     });
 
+    projectWelcomeStatusStores.setProjectWelcomeStatus(project, false);
     // TODO: land user to edit screen when that is available
-    setTimeout(
-      () =>
-        void goto(
-          `/${organization}/${project}/-/deploying?${DeployingDashboardUrlParam}=${dashboardName}`,
-        ),
-      50,
+    return goto(
+      `/${organization}/${project}/-/deploying?${DeployingDashboardUrlParam}=${dashboardName}`,
     );
   }
 </script>

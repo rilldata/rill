@@ -1,3 +1,9 @@
+/**
+ * Returns the default project files for a new project.
+ * After a bit of debate on using runtime methods like InitEmpty directly or running `rill init`
+ * or waiting for deployment is finished in UI and calling UnpackEmpty API, this is the best option right now.
+ * We might revisit this in the future.
+ */
 export function getProjectInitFiles(
   displayName: string,
 ): Record<string, string> {

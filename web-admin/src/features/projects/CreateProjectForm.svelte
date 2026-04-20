@@ -56,10 +56,13 @@
   );
   let isOrgOnTrial = $derived(!!$billingIssueMessage.data?.trial);
 
+  let createdGitRepo = $state("");
+  let createdGitRepoForDisplayName = $state("");
+
   const { form, tainted, errors, enhance, submit, submitting } = superForm(
     defaults(
       // eslint-disable-next-line svelte/valid-compile
-      { name: defaultName, displayName: defaultName.replace(/_-/g, " ") },
+      { name: defaultName, displayName: defaultName.replace(/[_-]/g, " ") },
       schema,
     ),
     {
@@ -67,20 +70,31 @@
       validators: schema,
       async onUpdate({ form }) {
         if (!form.valid) return;
-        const createManagedGitRepoResult =
-          await $createManagedGitRepo.mutateAsync({
-            org: organization,
-            data: {
-              name: form.data.name,
-              seedChanges: getProjectInitFiles(form.data.displayName),
-            },
-          });
+        // As an optimization, we only create the git repo once.
+        // Note that this is not really persisted across page reloads.
+        // We dont really need it since there orphaned repos are deleted eventually.
+        if (
+          !createdGitRepo ||
+          createdGitRepoForDisplayName !== form.data.displayName
+        ) {
+          const createManagedGitRepoResult =
+            await $createManagedGitRepo.mutateAsync({
+              org: organization,
+              data: {
+                name: form.data.name,
+                seedChanges: getProjectInitFiles(form.data.displayName),
+              },
+            });
+          createdGitRepo = createManagedGitRepoResult.remote ?? "";
+          // TODO: maybe we improve this by pushing the new displayName?
+          createdGitRepoForDisplayName = form.data.displayName;
+        }
 
         const resp = await $createProjectMutation.mutateAsync({
           org: organization,
           data: {
             project: form.data.name,
-            gitRemote: createManagedGitRepoResult.remote ?? "",
+            gitRemote: createdGitRepo,
             prodSlots: "4",
             editable: true,
           },

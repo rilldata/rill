@@ -30,12 +30,8 @@
 
     projectWelcomeStatusStores.setProjectWelcomeStatus(project, false);
     // TODO: land user to edit screen when that is available
-    setTimeout(
-      () =>
-        void goto(
-          `/${organization}/${project}/-/deploying?${DeployingDashboardUrlParam}=${generatedDashboard}`,
-        ),
-      50,
+    return goto(
+      `/${organization}/${project}/-/deploying?${DeployingDashboardUrlParam}=${generatedDashboard}`,
     );
   }
 
