@@ -9,7 +9,10 @@
   import { getErrorForMutation } from "@rilldata/web-admin/client/utils";
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
   import { getOrganizationUsageMetrics } from "@rilldata/web-admin/features/billing/plans/selectors";
-  import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types";
+  import type {
+    PlanTier,
+    TeamPlanDialogTypes,
+  } from "@rilldata/web-admin/features/billing/plans/types";
   import {
     isEnterprisePlan,
     isFreePlan,
@@ -60,7 +63,6 @@
   let planType = $derived(plan?.planType);
   let planName = $derived(plan?.name ?? "");
 
-  type PlanTier = "trial" | "free" | "pro" | "team" | "managed" | "enterprise";
   let currentPlan: PlanTier = $derived.by(() => {
     // Prefer planType enum when available; fall back to plan.name string matching
     if (

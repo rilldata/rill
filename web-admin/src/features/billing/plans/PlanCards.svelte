@@ -1,9 +1,10 @@
 <script lang="ts">
   import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
   import { fetchPaymentsPortalURL } from "@rilldata/web-admin/features/billing/plans/selectors";
-  import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types";
-
-  type PlanTier = "trial" | "free" | "pro" | "team" | "enterprise";
+  import type {
+    PlanTier,
+    TeamPlanDialogTypes,
+  } from "@rilldata/web-admin/features/billing/plans/types";
 
   let {
     organization,
