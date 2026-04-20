@@ -201,9 +201,6 @@ async function runCreateModelStep(
     // Generated using a form directly into yaml.
     case "yaml":
       yaml = importFromConfig.yaml;
-      if (!yaml.includes("output:") && defaultOLAP) {
-        yaml += `\n\noutput:\n  connector: ${defaultOLAP}`;
-      }
       break;
 
     // User provided a SQL query to generate the model.
