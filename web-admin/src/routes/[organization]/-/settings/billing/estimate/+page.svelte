@@ -5,8 +5,13 @@
   } from "@rilldata/web-admin/client";
   import {
     fetchPaymentsPortalURL,
+    getBillingUpgradeUrl,
     getOrganizationUsageMetrics,
   } from "@rilldata/web-admin/features/billing/plans/selectors";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
+  import { page } from "$app/stores";
   import type { PageData } from "./$types";
 
   let { data }: { data: PageData } = $props();
@@ -33,9 +38,10 @@
 
   // Editable inputs
   let prodUnits = $state(2);
+  let prodHoursPerDay = $state(24);
   let devUnits = $state(0);
+  let devHoursPerDay = $state(24);
   let storageGB = $state(1);
-  let hoursPerDay = $state(24);
 
   // Pre-fill from current deployment once data loads
   let prefilled = $state(false);
@@ -44,16 +50,16 @@
       prodUnits = Math.max(currentProdSlots, 2);
       devUnits = currentDevSlots;
       storageGB = Math.max(currentStorageGB, 1);
-      hoursPerDay = 24;
       prefilled = true;
     }
   });
 
   function resetToUsage() {
     prodUnits = Math.max(currentProdSlots, 2);
+    prodHoursPerDay = 24;
     devUnits = currentDevSlots;
+    devHoursPerDay = 24;
     storageGB = Math.max(currentStorageGB, 1);
-    hoursPerDay = 24;
   }
 
   // Pricing constants
@@ -64,10 +70,10 @@
 
   // Cost calculations
   let prodCost = $derived(
-    prodUnits * hoursPerDay * DAYS_PER_MONTH * RATE_PER_UNIT_HR,
+    prodUnits * prodHoursPerDay * DAYS_PER_MONTH * RATE_PER_UNIT_HR,
   );
   let devCost = $derived(
-    devUnits * hoursPerDay * DAYS_PER_MONTH * RATE_PER_UNIT_HR,
+    devUnits * devHoursPerDay * DAYS_PER_MONTH * RATE_PER_UNIT_HR,
   );
   let billableStorageGB = $derived(Math.max(storageGB - FREE_STORAGE_GB, 0));
   let storageCost = $derived(billableStorageGB * STORAGE_RATE_PER_GB);
@@ -95,9 +101,21 @@
     });
   }
 
+  let isCurrentConfig = $derived(
+    prodUnits === Math.max(currentProdSlots, 2) &&
+      prodHoursPerDay === 24 &&
+      devUnits === currentDevSlots &&
+      devHoursPerDay === 24 &&
+      storageGB === Math.max(currentStorageGB, 1),
+  );
+
   async function handleSubscribe() {
     window.open(
-      await fetchPaymentsPortalURL(organization, window.location.href),
+      await fetchPaymentsPortalURL(
+        organization,
+        getBillingUpgradeUrl($page, organization),
+        true,
+      ),
       "_self",
     );
   }
@@ -138,7 +156,7 @@
 
   <div class="page-header">
     <span class="prefill-note">Pre-filled from your current deployment</span>
-    <button class="reset-btn" onclick={resetToUsage}>
+    <button class="reset-btn" onclick={resetToUsage} disabled={isCurrentConfig}>
       <svg
         class="w-3.5 h-3.5"
         viewBox="0 0 14 14"
@@ -149,7 +167,7 @@
         <path d="M1.5 2.5v3.5h3.5" />
         <path d="M2.1 8.5a5 5 0 1 0 .9-4.5L1.5 6" />
       </svg>
-      Reset to my usage
+      Reset to current configuration
     </button>
   </div>
 
@@ -158,14 +176,14 @@
     <div class="input-panel">
       <div class="panel-header">
         <span class="panel-title">Select compute unit</span>
-        <span class="unit-hint">1 unit = 4 GiB RAM, 1 vCPU</span>
+        <span class="unit-hint">1 unit = 4 GiB RAM, 1 vCPU · $0.15/unit/hr</span>
       </div>
 
-      <!-- Production -->
+      <!-- Production units -->
       <div class="input-row">
         <div class="input-info">
           <span class="input-label">Production</span>
-          <span class="input-desc">Minimum 2 units</span>
+          <span class="input-desc">Minimum 2 units · $0.15/unit/hr</span>
         </div>
         <div class="stepper">
           <button
@@ -184,13 +202,52 @@
         </div>
       </div>
 
+      <!-- Production active hours -->
+      <div class="input-row input-row-sub">
+        <div class="input-info">
+          <span class="input-label-sub inline-flex items-center gap-1">
+            Active hours per day
+            <Tooltip location="right" alignment="middle" distance={8}>
+              <span class="text-fg-muted flex">
+                <InfoCircle size="13px" />
+              </span>
+              <TooltipContent maxWidth="220px" slot="tooltip-content">
+                We hibernate your deployment when it's inactive, saving you on
+                cost.
+              </TooltipContent>
+            </Tooltip>
+          </span>
+        </div>
+        <div class="stepper">
+          <button
+            class="stepper-btn"
+            onclick={() => prodHoursPerDay--}
+            disabled={prodHoursPerDay <= 1}>−</button
+          >
+          <input
+            class="stepper-input"
+            type="number"
+            bind:value={prodHoursPerDay}
+            min="1"
+            max="24"
+            onblur={(e) =>
+              clampInput(e, 1, 24, (v) => (prodHoursPerDay = v))}
+          />
+          <button
+            class="stepper-btn"
+            onclick={() => prodHoursPerDay++}
+            disabled={prodHoursPerDay >= 24}>+</button
+          >
+        </div>
+      </div>
+
       <div class="input-divider"></div>
 
-      <!-- Development -->
+      <!-- Development units -->
       <div class="input-row">
         <div class="input-info">
           <span class="input-label">Development</span>
-          <span class="input-desc">Optional · Same rate as prod unit</span>
+          <span class="input-desc">Same rate as prod unit</span>
         </div>
         <div class="stepper">
           <button
@@ -206,6 +263,44 @@
             onblur={(e) => clampInput(e, 0, 9999, (v) => (devUnits = v))}
           />
           <button class="stepper-btn" onclick={() => devUnits++}>+</button>
+        </div>
+      </div>
+
+      <!-- Development active hours -->
+      <div class="input-row input-row-sub">
+        <div class="input-info">
+          <span class="input-label-sub inline-flex items-center gap-1">
+            Active hours per day
+            <Tooltip location="right" alignment="middle" distance={8}>
+              <span class="text-fg-muted flex">
+                <InfoCircle size="13px" />
+              </span>
+              <TooltipContent maxWidth="220px" slot="tooltip-content">
+                We hibernate your deployment when it's inactive, saving you on
+                cost.
+              </TooltipContent>
+            </Tooltip>
+          </span>
+        </div>
+        <div class="stepper">
+          <button
+            class="stepper-btn"
+            onclick={() => devHoursPerDay--}
+            disabled={devHoursPerDay <= 1}>−</button
+          >
+          <input
+            class="stepper-input"
+            type="number"
+            bind:value={devHoursPerDay}
+            min="1"
+            max="24"
+            onblur={(e) => clampInput(e, 1, 24, (v) => (devHoursPerDay = v))}
+          />
+          <button
+            class="stepper-btn"
+            onclick={() => devHoursPerDay++}
+            disabled={devHoursPerDay >= 24}>+</button
+          >
         </div>
       </div>
 
@@ -235,38 +330,6 @@
           <button class="stepper-btn" onclick={() => storageGB++}>+</button>
         </div>
       </div>
-
-      <div class="input-divider"></div>
-
-      <!-- Hours per day -->
-      <div class="input-row">
-        <div class="input-info">
-          <span class="input-label">Hours per day</span>
-          <span class="input-desc"
-            >24 = always on · Lower if you pause units at night</span
-          >
-        </div>
-        <div class="stepper">
-          <button
-            class="stepper-btn"
-            onclick={() => hoursPerDay--}
-            disabled={hoursPerDay <= 1}>−</button
-          >
-          <input
-            class="stepper-input"
-            type="number"
-            bind:value={hoursPerDay}
-            min="1"
-            max="24"
-            onblur={(e) => clampInput(e, 1, 24, (v) => (hoursPerDay = v))}
-          />
-          <button
-            class="stepper-btn"
-            onclick={() => hoursPerDay++}
-            disabled={hoursPerDay >= 24}>+</button
-          >
-        </div>
-      </div>
     </div>
 
     <!-- RIGHT: Cost summary -->
@@ -282,7 +345,7 @@
         <div class="cost-row-info">
           <span class="cost-row-label">Production</span>
           <span class="cost-row-desc">
-            {prodUnits} units × {hoursPerDay} hrs × {DAYS_PER_MONTH} days × ${RATE_PER_UNIT_HR.toFixed(
+            {prodUnits} units × {prodHoursPerDay} hrs × {DAYS_PER_MONTH} days × ${RATE_PER_UNIT_HR.toFixed(
               2,
             )}
           </span>
@@ -295,7 +358,7 @@
         <div class="cost-row-info">
           <span class="cost-row-label">Development</span>
           <span class="cost-row-desc">
-            {devUnits} units × {hoursPerDay} hrs × {DAYS_PER_MONTH} days × ${RATE_PER_UNIT_HR.toFixed(
+            {devUnits} units × {devHoursPerDay} hrs × {DAYS_PER_MONTH} days × ${RATE_PER_UNIT_HR.toFixed(
               2,
             )}
           </span>
@@ -323,8 +386,8 @@
         <span class="cost-row-amount font-semibold">{fmtUSD(monthlyCost)}</span>
       </div>
 
-      <!-- Available credit -->
-      {#if availableCredit > 0}
+      <!-- Available credit (trial/team plans only) -->
+      {#if !isPro && availableCredit > 0}
         <div class="cost-row">
           <div class="cost-row-info">
             <span class="credit-label">Available credit</span>
@@ -333,9 +396,8 @@
           <span class="credit-amount">-{fmtUSD(availableCredit)}</span>
         </div>
 
-        <!-- First bill highlight -->
         <div class="first-bill">
-          <span class="first-bill-label">First bill</span>
+          <span class="first-bill-label">Estimated first bill</span>
           <span class="first-bill-amount">{fmtUSD(firstBill)}</span>
         </div>
 
@@ -385,8 +447,11 @@
   .reset-btn {
     @apply flex items-center gap-1.5 text-sm font-medium text-primary-500 bg-transparent border-none cursor-pointer p-0;
   }
-  .reset-btn:hover {
+  .reset-btn:hover:not(:disabled) {
     @apply text-primary-600;
+  }
+  .reset-btn:disabled {
+    @apply text-fg-disabled cursor-default;
   }
 
   .estimate-grid {
@@ -430,6 +495,14 @@
 
   .input-divider {
     @apply border-t border-border;
+  }
+
+  .input-row-sub {
+    @apply py-2;
+  }
+
+  .input-label-sub {
+    @apply text-xs text-fg-secondary;
   }
 
   /* Stepper */
