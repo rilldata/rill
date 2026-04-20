@@ -26,7 +26,6 @@
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-    AlertDialogTrigger,
   } from "@rilldata/web-common/components/alert-dialog";
   import { Button } from "@rilldata/web-common/components/button";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -156,17 +155,8 @@
   // are misleading next to real billed amounts, so the UI renders TODO
   // placeholders until the backend data is available.
 
-  // Billing cycle — fall back to calendar month when subscription dates are absent
-  let cycleStart = $derived(subscription?.currentBillingCycleStartDate);
+  // Billing cycle
   let cycleEnd = $derived(subscription?.currentBillingCycleEndDate);
-  function formatCycleDate(dateStr: string | undefined): string {
-    if (!dateStr) return "";
-    return new Date(dateStr).toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  }
   // TODO: replace with subscription billing cycle dates once accrued cost API is available
   let periodStart = $derived.by(() => {
     const d = new Date();
@@ -597,13 +587,6 @@
     @apply font-sans font-semibold text-lg leading-7 align-middle text-fg-tertiary;
   }
 
-  .estimate-cost-link {
-    @apply font-sans font-semibold text-lg leading-7 align-middle text-primary-500 no-underline cursor-pointer;
-  }
-  .estimate-cost-link:hover {
-    @apply text-primary-600 underline;
-  }
-
   .period-estimate {
     @apply flex flex-col items-center mt-4 pt-6 pb-4;
     gap: 8px;
@@ -642,14 +625,6 @@
 
   .subscribe-btn:hover {
     @apply bg-primary-600;
-  }
-
-  .contact-btn {
-    @apply text-sm font-medium text-fg-primary border border-gray-300 px-5 py-2 cursor-pointer bg-transparent rounded-none;
-  }
-
-  .contact-btn:hover {
-    @apply bg-surface-subtle;
   }
 
   .contact-us-btn {
@@ -751,10 +726,6 @@
   .stat-label {
     @apply font-sans font-medium text-xs text-fg-tertiary;
     line-height: 100%;
-  }
-
-  .stat-divider {
-    @apply w-px h-4 bg-gray-200;
   }
 
   .compare-toggle {
