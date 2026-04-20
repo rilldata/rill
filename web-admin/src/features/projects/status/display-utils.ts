@@ -1,11 +1,10 @@
 import { V1DeploymentStatus } from "@rilldata/web-admin/client";
-import type { V1Connector } from "@rilldata/web-common/runtime-client";
-import { formatConnectorName } from "@rilldata/web-common/features/resources/display-utils";
 
 // Re-export shared utilities from web-common
 export {
   formatConnectorName,
   formatEnvironmentName,
+  getOlapEngineLabel,
 } from "@rilldata/web-common/features/resources/display-utils";
 
 /**
@@ -68,48 +67,6 @@ export function getStatusLabel(status: V1DeploymentStatus): string {
     default:
       return "Not deployed";
   }
-}
-
-/**
- * Returns the display label for the OLAP engine, including MotherDuck and
- * DuckLake detection and a management suffix (Rill-managed / Self-managed)
- * where applicable.
- *
- * MotherDuck is detected by checking whether the connector's path starts with
- * "md:" or a token is configured. DuckLake is detected by an `attach` config
- * referencing a DuckLake catalog. The connector type for both is "duckdb".
- *
- * @param connector - The OLAP connector from projectConnectors, or undefined
- * @returns Display label, e.g. "DuckDB", "DuckLake", "MotherDuck (Self-managed)", "ClickHouse (Rill-managed)"
- */
-export function getOlapEngineLabel(connector: V1Connector | undefined): string {
-  if (!connector) return "DuckDB";
-
-  const isDuckDB = connector.type === "duckdb";
-  const isMotherDuck =
-    isDuckDB &&
-    (String(connector.config?.path ?? "").startsWith("md:") ||
-      !!connector.config?.token);
-  // DuckLake detection also falls back to the connector name, since the
-  // runtime may redact merged config before returning `projectConnectors`.
-  // Match case-insensitively to cover e.g. "Ducklake_1".
-  const connectorName = (connector.name ?? "").toLowerCase();
-  const isDuckLake =
-    isDuckDB &&
-    !isMotherDuck &&
-    (String(connector.config?.attach ?? "").includes("ducklake:") ||
-      connectorName === "ducklake" ||
-      connectorName.startsWith("ducklake_"));
-  const resolvedType = isMotherDuck
-    ? "motherduck"
-    : isDuckLake
-      ? "ducklake"
-      : connector.type;
-  const name = formatConnectorName(resolvedType);
-
-  // Show management suffix for Rill-managed connectors
-  if (connector.provision) return `${name} (Rill-managed)`;
-  return name;
 }
 
 /**
