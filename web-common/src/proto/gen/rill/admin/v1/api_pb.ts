@@ -3830,13 +3830,6 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
   archiveAssetId = "";
 
   /**
-   * When generate_managed_git is set a new managed git repo is create and set for the project.
-   *
-   * @generated from field: bool generate_managed_git = 17;
-   */
-  generateManagedGit = false;
-
-  /**
    * @generated from field: string prod_version = 13;
    */
   prodVersion = "";
@@ -3845,6 +3838,13 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
    * @generated from field: bool skip_deploy = 15;
    */
   skipDeploy = false;
+
+  /**
+   * When editable is set the default deployment is a dev deployment capable of edit.
+   *
+   * @generated from field: bool editable = 17;
+   */
+  editable = false;
 
   constructor(data?: PartialMessage<CreateProjectRequest>) {
     super();
@@ -3865,9 +3865,9 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
     { no: 9, name: "primary_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "git_remote", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "archive_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 17, name: "generate_managed_git", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 13, name: "prod_version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "skip_deploy", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 17, name: "editable", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateProjectRequest {
@@ -11358,6 +11358,13 @@ export class CreateManagedGitRepoRequest extends Message<CreateManagedGitRepoReq
    */
   name = "";
 
+  /**
+   * Optional set of changes to seed the repo with.
+   *
+   * @generated from field: map<string, string> seed_changes = 3;
+   */
+  seedChanges: { [key: string]: string } = {};
+
   constructor(data?: PartialMessage<CreateManagedGitRepoRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -11368,6 +11375,7 @@ export class CreateManagedGitRepoRequest extends Message<CreateManagedGitRepoReq
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "seed_changes", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateManagedGitRepoRequest {

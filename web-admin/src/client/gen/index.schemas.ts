@@ -1765,10 +1765,19 @@ export type AdminServiceCancelBillingSubscriptionParams = {
   superuserForceAccess?: boolean;
 };
 
+/**
+ * Optional set of changes to seed the repo with.
+ */
+export type AdminServiceCreateManagedGitRepoBodySeedChanges = {
+  [key: string]: string;
+};
+
 export type AdminServiceCreateManagedGitRepoBody = {
   /** name of the repo to create. 
 Note: The final name will be suffixed with a random string to ensure uniqueness. */
   name?: string;
+  /** Optional set of changes to seed the repo with. */
+  seedChanges?: AdminServiceCreateManagedGitRepoBodySeedChanges;
 };
 
 export type AdminServiceCreateAssetBody = {
@@ -1843,10 +1852,10 @@ Either git_remote or archive_asset_id should be set. */
   gitRemote?: string;
   /** archive_asset_id is set for projects whose project files are not stored in github but are managed by rill. */
   archiveAssetId?: string;
-  /** When generate_managed_git is set a new managed git repo is create and set for the project. */
-  generateManagedGit?: boolean;
   prodVersion?: string;
   skipDeploy?: boolean;
+  /** When editable is set the default deployment is a dev deployment capable of edit. */
+  editable?: boolean;
 };
 
 export type AdminServiceListProjectsForOrganizationAndUserParams = {

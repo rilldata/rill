@@ -4,6 +4,7 @@
 
 <script lang="ts">
   import {
+    createAdminServiceCreateManagedGitRepo,
     createAdminServiceCreateProject,
     type RpcStatus,
   } from "@rilldata/web-admin/client";
@@ -14,12 +15,12 @@
   import { object, string } from "yup";
   import type { AxiosError } from "axios";
   import { sanitizeSlug } from "@rilldata/web-common/lib/string-utils.ts";
-  import { createProjectAndInitEmpty } from "@rilldata/web-admin/features/projects/create-project-and-init-empty.ts";
   import {
     type DeployError,
     getPrettyDeployError,
   } from "@rilldata/web-common/features/project/deploy/deploy-errors.ts";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors.ts";
+  import { getProjectInitFiles } from "@rilldata/web-admin/features/projects/get-project-init-files.ts";
 
   const {
     organization,
@@ -47,6 +48,7 @@
     }),
   );
 
+  const createManagedGitRepo = createAdminServiceCreateManagedGitRepo();
   const createProjectMutation = createAdminServiceCreateProject();
 
   let billingIssueMessage = $derived(
@@ -55,20 +57,36 @@
   let isOrgOnTrial = $derived(!!$billingIssueMessage.data?.trial);
 
   const { form, tainted, errors, enhance, submit, submitting } = superForm(
-    defaults({ name: defaultName, displayName: defaultName }, schema),
+    defaults(
+      // eslint-disable-next-line svelte/valid-compile
+      { name: defaultName, displayName: defaultName.replace(/_-/g, " ") },
+      schema,
+    ),
     {
       SPA: true,
       validators: schema,
       async onUpdate({ form }) {
         if (!form.valid) return;
-        const frontendUrl = await createProjectAndInitEmpty(
-          $createProjectMutation,
-          organization,
-          form.data.name,
-          form.data.displayName,
-        );
-        if (frontendUrl) {
-          onCreate(form.data.name, frontendUrl);
+        const createManagedGitRepoResult =
+          await $createManagedGitRepo.mutateAsync({
+            org: organization,
+            data: {
+              name: form.data.name,
+              seedChanges: getProjectInitFiles(form.data.displayName),
+            },
+          });
+
+        const resp = await $createProjectMutation.mutateAsync({
+          org: organization,
+          data: {
+            project: form.data.name,
+            gitRemote: createManagedGitRepoResult.remote ?? "",
+            prodSlots: "4",
+            editable: true,
+          },
+        });
+        if (resp.project?.frontendUrl) {
+          onCreate(form.data.name, resp.project?.frontendUrl);
         }
       },
       onError({ result }) {
@@ -127,7 +145,7 @@
     textClass="text-sm"
     alwaysShowError
     claimFocusOnMount
-    width="400px"
+    width="500px"
     size="xl"
     capitalizeLabel={false}
   />
@@ -138,7 +156,8 @@
     label="URL"
     textClass="text-sm"
     alwaysShowError
-    width="400px"
+    width="500px"
+    size="xl"
     textInputPrefix="https://ui.rilldata.com/{organization}/"
   />
   <div class="w-full flex justify-end">

@@ -692,18 +692,6 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 			return nil, status.Error(codes.PermissionDenied, "archive_asset_id is not accessible to this org")
 		}
 		opts.ArchiveAssetID = &req.ArchiveAssetId
-	} else if req.GenerateManagedGit {
-		var remote string
-		opts.GithubRepoID, opts.ManagedGitRepoID, remote, opts.PrimaryBranch, err = s.createEmptyManagedRepo(ctx, org, req.Project, *userID)
-		if err != nil {
-			return nil, err
-		}
-		githubInstallationID, err := s.admin.Github.ManagedOrgInstallationID()
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get managed org installation id: %s", err.Error())
-		}
-		opts.GithubInstallationID = &githubInstallationID
-		opts.GitRemote = &remote
 	}
 
 	// if there is no subscription for the org, submit a job to start a trial
@@ -730,7 +718,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	}
 
 	// Create the project
-	proj, err := s.admin.CreateProject(ctx, org, opts, !req.SkipDeploy, req.GenerateManagedGit)
+	proj, err := s.admin.CreateProject(ctx, org, opts, !req.SkipDeploy, req.Editable)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -2339,23 +2327,6 @@ func (s *Server) githubRepoIDForProject(ctx context.Context, p *database.Project
 		return 0, status.Error(codes.Internal, "failed to update project with github repo id")
 	}
 	return id, nil
-}
-
-func (s *Server) createEmptyManagedRepo(ctx context.Context, org *database.Organization, project, ownerID string) (githubRepoID *int64, mgdGitRepoID *string, remote, primaryBranch string, resErr error) {
-	remoteRepo, err := s.admin.CreateManagedGitRepo(ctx, org, project, ownerID)
-	if err != nil {
-		return nil, nil, "", "", err
-	}
-	cloneURL := remoteRepo.GetCloneURL()
-
-	branch := remoteRepo.GetDefaultBranch()
-
-	mgdGitRepo, err := s.admin.DB.FindManagedGitRepo(ctx, cloneURL)
-	if err != nil {
-		return nil, nil, "", "", fmt.Errorf("failed to find managed git repo: %w", err)
-	}
-
-	return remoteRepo.ID, &mgdGitRepo.ID, cloneURL, branch, nil
 }
 
 func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {

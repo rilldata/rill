@@ -1811,10 +1811,10 @@ message CreateProjectRequest {
   string git_remote = 10;
   // archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
   string archive_asset_id = 14;
-  // When generate_managed_git is set a new managed git repo is create and set for the project.
-  bool generate_managed_git = 17;
   string prod_version = 13;
   bool skip_deploy = 15;
+  // When editable is set the default deployment is a dev deployment capable of edit.
+  bool editable = 17;
   // Reserved for backwards compatibility (prod_olap_driver and prod_olap_dsn)
   reserved 6, 7;
 }
@@ -2697,6 +2697,8 @@ message CreateManagedGitRepoRequest {
   // name of the repo to create. 
   // Note: The final name will be suffixed with a random string to ensure uniqueness.
   string name = 2;
+  // Optional set of changes to seed the repo with.
+  map<string, string> seed_changes = 3;
 }
 
 message CreateManagedGitRepoResponse {

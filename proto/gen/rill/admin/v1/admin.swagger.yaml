@@ -687,6 +687,11 @@ paths:
               name:
                 type: string
                 description: "name of the repo to create. \nNote: The final name will be suffixed with a random string to ensure uniqueness."
+              seedChanges:
+                type: object
+                additionalProperties:
+                  type: string
+                description: Optional set of changes to seed the repo with.
   /v1/orgs/{org}/create_asset:
     post:
       summary: CreateAsset returns a one time signed URL using which any asset can be uploaded.
@@ -1032,13 +1037,13 @@ paths:
               archiveAssetId:
                 type: string
                 description: archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
-              generateManagedGit:
-                type: boolean
-                description: When generate_managed_git is set a new managed git repo is create and set for the project.
               prodVersion:
                 type: string
               skipDeploy:
                 type: boolean
+              editable:
+                type: boolean
+                description: When editable is set the default deployment is a dev deployment capable of edit.
       x-visibility: public
   /v1/orgs/{org}/projects-for-user:
     get:

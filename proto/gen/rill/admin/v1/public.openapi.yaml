@@ -2710,8 +2710,8 @@ paths:
                                         directory_name should be the most recently observed local directory name for the project.
                                         See ListProjectsForFingerprint for more context.
                                     type: string
-                                generateManagedGit:
-                                    description: When generate_managed_git is set a new managed git repo is create and set for the project.
+                                editable:
+                                    description: When editable is set the default deployment is a dev deployment capable of edit.
                                     type: boolean
                                 gitRemote:
                                     description: |-
