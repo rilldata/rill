@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import {
@@ -96,7 +97,6 @@
           const oldHref = getFileHref(`/${removeLeadingSlash(filePath)}`);
           if ($page.url.pathname.startsWith(oldHref)) {
             const newHref = getFileHref(`/${removeLeadingSlash(newPath)}`);
-            const { goto } = await import("$app/navigation");
             await goto($page.url.pathname.replace(oldHref, newHref));
           }
         } else {

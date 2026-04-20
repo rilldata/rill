@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import ContextButton from "@rilldata/web-common/components/button/ContextButton.svelte";
-  import { editorRoutePrefix } from "@rilldata/web-common/layout/navigation/editor-routing";
+  import { getFileHref } from "@rilldata/web-common/layout/navigation/editor-routing";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import Alert from "@rilldata/web-common/components/icons/Alert.svelte";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
@@ -102,7 +102,7 @@
     isDotFile
       ? 'hover:text-fg-secondary text-fg-muted '
       : 'text-fg-primary hover:text-fg-primary'}"
-    href="{$editorRoutePrefix}/files{filePath}"
+    href={getFileHref(filePath)}
     {id}
     class:italic={$hasUnsavedChanges || $saving}
     onclick={fireTelemetry}

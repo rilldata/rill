@@ -7,9 +7,14 @@
     type V1Organization,
   } from "@rilldata/web-admin/client";
   import {
-    extractBranchFromPath,
     branchPathPrefix,
+    extractBranchFromPath,
   } from "@rilldata/web-admin/features/branches/branch-utils";
+  import BranchDeploymentStopped from "@rilldata/web-admin/features/branches/BranchDeploymentStopped.svelte";
+  import EditSessionLoading from "@rilldata/web-admin/features/edit-session/EditSessionLoading.svelte";
+  import EditSessionTimeoutBanner from "@rilldata/web-admin/features/edit-session/EditSessionTimeoutBanner.svelte";
+  import ProjectHeader from "@rilldata/web-admin/features/projects/ProjectHeader.svelte";
+  import SlimProjectHeader from "@rilldata/web-admin/features/projects/SlimProjectHeader.svelte";
   import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
@@ -19,26 +24,21 @@
   import DeveloperChat from "@rilldata/web-common/features/chat/DeveloperChat.svelte";
   import FileAndResourceWatcher from "@rilldata/web-common/features/entity-management/FileAndResourceWatcher.svelte";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
-  import Navigation from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import { editorRoutePrefix } from "@rilldata/web-common/layout/navigation/editor-routing";
+  import Navigation from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import { onDestroy } from "svelte";
-  import { get } from "svelte/store";
-  import ProjectHeader from "@rilldata/web-admin/features/projects/ProjectHeader.svelte";
-  import EditSessionLoading from "@rilldata/web-admin/features/edit-session/EditSessionLoading.svelte";
-  import EditSessionTimeoutBanner from "@rilldata/web-admin/features/edit-session/EditSessionTimeoutBanner.svelte";
-  import BranchDeploymentStopped from "@rilldata/web-admin/features/branches/BranchDeploymentStopped.svelte";
-  import SlimProjectHeader from "@rilldata/web-admin/features/projects/SlimProjectHeader.svelte";
 
-  // Read params synchronously at initialization; they're stable for the
-  // lifetime of this layout (navigating away from /-/edit/ destroys it).
-  const { organization, project } = get(page).params;
+  $: organization = $page.params.organization;
+  $: project = $page.params.project;
 
-  // Extract branch from the original URL (before reroute strips it)
-  const branch = extractBranchFromPath(get(page).url.pathname);
+  // Extract branch from the current URL (before reroute strips it).
+  $: branch = extractBranchFromPath($page.url.pathname);
 
-  // Set the workspace route prefix for cloud editing
-  $editorRoutePrefix = `/${organization}/${project}${branchPathPrefix(branch)}/-/edit`;
+  // Keep the workspace route prefix in sync for cloud editing.
+  $: editorRoutePrefix.set(
+    `/${organization}/${project}${branchPathPrefix(branch)}/-/edit`,
+  );
 
   // Root layout data: org permissions, plan display name, organization object
   $: pageData = $page.data;
@@ -54,7 +54,7 @@
   // deployment is provisioning or updating; stops once it reaches a terminal
   // state (RUNNING, ERRORED, etc.). The parent layout skips its own polling
   // on the edit page to avoid duplicate requests.
-  const projectQuery = createAdminServiceGetProject(
+  $: projectQuery = createAdminServiceGetProject(
     organization,
     project,
     branch ? { branch } : undefined,

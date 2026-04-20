@@ -1,5 +1,5 @@
 import { goto } from "$app/navigation";
-import { writable, get } from "svelte/store";
+import { get, writable } from "svelte/store";
 
 /**
  * Route prefix for the editing context.
