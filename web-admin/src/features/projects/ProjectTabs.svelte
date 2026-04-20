@@ -48,6 +48,11 @@
       hasPermission: $alerts,
     },
     {
+      route: `/${organization}/${project}/-/apis`,
+      label: "APIs",
+      hasPermission: true,
+    },
+    {
       route: `/${organization}/${project}${branchPrefix}/-/status`,
       label: "Status",
       hasPermission: projectPermissions.manageProject,

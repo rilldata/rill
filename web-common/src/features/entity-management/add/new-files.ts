@@ -218,6 +218,7 @@ measures: '*'
 # Test your API endpoint at http://localhost:9009/v1/instances/default/api/<filename>
 
 type: api
+display_name: "My API"
 
 metrics_sql: |
   select measure, dimension from metrics_view

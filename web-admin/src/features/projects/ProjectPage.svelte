@@ -5,7 +5,7 @@
   import type { V1ListResourcesResponse } from "@rilldata/web-common/runtime-client";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
 
-  export let kind: "report" | "dashboard" | "alert";
+  export let kind: "report" | "dashboard" | "alert" | "API";
   export let query: CreateQueryResult<V1ListResourcesResponse, Error>;
 
   $: ({ isLoading, isError, isSuccess, error } = $query);

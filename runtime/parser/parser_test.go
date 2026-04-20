@@ -1936,6 +1936,7 @@ select 3
 			Paths: []string{"/apis/a1.yaml"},
 			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "s1"}, {Kind: ResourceKindModel, Name: "s2"}},
 			APISpec: &runtimev1.APISpec{
+				DisplayName:        "A1",
 				Resolver:           "sql",
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"connector": "duckdb", "sql": "select 1"})),
 			},
