@@ -26,6 +26,7 @@ import {
   findRadioEnumKey,
   getSchemaSecretKeys,
 } from "@rilldata/web-common/features/templates/schema-utils.ts";
+import { applyDuckLakeFormTransform } from "@rilldata/web-common/features/templates/schemas/ducklake-utils.ts";
 import type { MultiStepFormSchema } from "@rilldata/web-common/features/templates/schemas/types.ts";
 import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types.ts";
@@ -66,6 +67,11 @@ export async function createConnector({
   // backend driver (e.g. DuckLake uses the duckdb driver) still resolve
   // their own schema fields.
   const schema = getConnectorSchema(schemaName ?? connectorDriver.name ?? "");
+
+  // DuckLake "parameters" tab composes individual param fields into a single
+  // `attach` string; apply here so the same shape flows through yaml preview,
+  // .env secret handling, and file write.
+  formValues = applyDuckLakeFormTransform(schema, formValues);
 
   // Fast-path: public auth skips validation/test and advances directly
   if (isMultiStepConnector(schema) && isPublicAuth(schema, formValues)) {

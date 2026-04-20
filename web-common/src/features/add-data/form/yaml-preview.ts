@@ -5,6 +5,7 @@ import {
   getSchemaStringKeys,
 } from "@rilldata/web-common/features/templates/schema-utils.ts";
 import type { MultiStepFormSchema } from "@rilldata/web-common/features/templates/schemas/types.ts";
+import { applyDuckLakeFormTransform } from "@rilldata/web-common/features/templates/schemas/ducklake-utils.ts";
 import { compileConnectorYAML } from "@rilldata/web-common/features/connectors/code-utils.ts";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import {
@@ -33,9 +34,14 @@ export function getConnectorYamlPreview({
   const schemaStringKeys = schema
     ? getSchemaStringKeys(schema, { step: "connector" })
     : [];
+  // DuckLake "parameters" tab: compose individual param fields into the
+  // single `attach` YAML key before the normal filter pipeline.
+  const transformedValues = applyDuckLakeFormTransform(schema, formValues);
   const filteredValues = schema
-    ? filterSchemaValuesForSubmit(schema, formValues, { step: "connector" })
-    : formValues;
+    ? filterSchemaValuesForSubmit(schema, transformedValues, {
+        step: "connector",
+      })
+    : transformedValues;
   const yamlPreview = compileConnectorYAML(connector, filteredValues, {
     fieldFilter: (property) => {
       if ("internal" in property && property.internal) return false;

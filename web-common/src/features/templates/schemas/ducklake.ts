@@ -8,6 +8,35 @@ export const ducklakeSchema: MultiStepFormSchema = {
   "x-driver": "duckdb",
   "x-form-width": "wide",
   properties: {
+    connection_mode: {
+      type: "string",
+      enum: ["sql", "parameters"],
+      default: "sql",
+      "x-display": "tabs",
+      "x-enum-labels": ["ATTACH SQL", "Parameters"],
+      "x-ui-only": true,
+      "x-tab-group": {
+        sql: ["attach", "mode"],
+        parameters: [
+          "catalog",
+          "alias",
+          "data_path",
+          "override_data_path",
+          "create_if_not_exists",
+          "data_inlining_row_limit",
+          "encrypted",
+          "meta_parameter_name",
+          "metadata_catalog",
+          "metadata_parameters",
+          "metadata_path",
+          "metadata_schema",
+          "automatic_migration",
+          "snapshot_time",
+          "snapshot_version",
+        ],
+      },
+      "x-step": "connector",
+    },
     attach: {
       type: "string",
       title: "Attach clause",
@@ -20,6 +49,7 @@ export const ducklakeSchema: MultiStepFormSchema = {
         "Supported metadata backends: DuckDB file, SQLite, Postgres, MySQL. Data path can be local or object storage (s3://, gs://, azure://).",
       "x-docs-url":
         "https://ducklake.select/docs/stable/duckdb/usage/connecting",
+      "x-visible-if": { connection_mode: "sql" },
       "x-step": "connector",
     },
     mode: {
@@ -30,8 +60,55 @@ export const ducklakeSchema: MultiStepFormSchema = {
       default: false,
       "x-display": "toggle",
       "x-yaml-value": "readwrite",
+      "x-visible-if": { connection_mode: "sql" },
       "x-step": "connector",
       "x-advanced": true,
+    },
+
+    // ── Parameters tab ──────────────────────────────────────────────
+    // These fields compose into the `attach` string at submission time
+    // (see composeDuckLakeAttach). They are UI-only and never written
+    // to the generated YAML as standalone keys.
+    catalog: {
+      type: "string",
+      title: "Metadata catalog",
+      description:
+        "The metadata identifier that follows `ducklake:`. For a DuckDB file, this is the file path (e.g. `duckdb_database.ducklake`). For an external catalog, use a connection string (e.g. `postgres:dbname=... host=...`).",
+      "x-placeholder": "duckdb_database.ducklake",
+      "x-monospace": true,
+      "x-visible-if": { connection_mode: "parameters" },
+      "x-ui-only": true,
+      "x-step": "connector",
+    },
+    alias: {
+      type: "string",
+      title: "Alias",
+      description:
+        "Optional database alias used in queries. Inserted as `AS <alias>` in the generated `ATTACH` clause.",
+      "x-placeholder": "my_ducklake",
+      "x-visible-if": { connection_mode: "parameters" },
+      "x-ui-only": true,
+      "x-step": "connector",
+    },
+    data_path: {
+      type: "string",
+      title: "DATA_PATH",
+      description: "The storage location of the data files.",
+      "x-placeholder": "other_data_path/",
+      "x-visible-if": { connection_mode: "parameters" },
+      "x-ui-only": true,
+      "x-step": "connector",
+    },
+    override_data_path: {
+      type: "boolean",
+      title: "OVERRIDE_DATA_PATH",
+      description:
+        "If the path provided in `DATA_PATH` differs from the stored path and this option is set to true, the path is overridden.",
+      default: true,
+      "x-display": "toggle",
+      "x-visible-if": { connection_mode: "parameters" },
+      "x-ui-only": true,
+      "x-step": "connector",
     },
     create_if_not_exists: {
       type: "boolean",
@@ -40,22 +117,18 @@ export const ducklakeSchema: MultiStepFormSchema = {
         "Creates a new DuckLake if the specified one does not already exist.",
       default: true,
       "x-display": "toggle",
+      "x-visible-if": { connection_mode: "parameters" },
+      "x-ui-only": true,
       "x-step": "connector",
       "x-advanced": true,
     },
     data_inlining_row_limit: {
-      type: "integer",
+      type: "number",
       title: "DATA_INLINING_ROW_LIMIT",
       description: "The number of rows for which data inlining is used.",
       default: 0,
-      "x-step": "connector",
-      "x-advanced": true,
-    },
-    data_path: {
-      type: "string",
-      title: "DATA_PATH",
-      description:
-        "The storage location of the data files. Defaults to `metadata_file.files` for DuckDB files; required otherwise.",
+      "x-visible-if": { connection_mode: "parameters" },
+      "x-ui-only": true,
       "x-step": "connector",
       "x-advanced": true,
     },
@@ -65,6 +138,8 @@ export const ducklakeSchema: MultiStepFormSchema = {
       description: "Whether or not data is stored encrypted.",
       default: false,
       "x-display": "toggle",
+      "x-visible-if": { connection_mode: "parameters" },
+      "x-ui-only": true,
       "x-step": "connector",
       "x-advanced": true,
     },
@@ -72,6 +147,8 @@ export const ducklakeSchema: MultiStepFormSchema = {
       type: "string",
       title: "META_PARAMETER_NAME",
       description: "Pass `PARAMETER_NAME` to the catalog server.",
+      "x-visible-if": { connection_mode: "parameters" },
+      "x-ui-only": true,
       "x-step": "connector",
       "x-advanced": true,
     },
@@ -80,6 +157,8 @@ export const ducklakeSchema: MultiStepFormSchema = {
       title: "METADATA_CATALOG",
       description: "The name of the attached catalog database.",
       "x-placeholder": "__ducklake_metadata_ducklake_name",
+      "x-visible-if": { connection_mode: "parameters" },
+      "x-ui-only": true,
       "x-step": "connector",
       "x-advanced": true,
     },
@@ -89,6 +168,8 @@ export const ducklakeSchema: MultiStepFormSchema = {
       description: "Map of parameters to pass to the catalog server.",
       "x-placeholder": "{}",
       "x-monospace": true,
+      "x-visible-if": { connection_mode: "parameters" },
+      "x-ui-only": true,
       "x-step": "connector",
       "x-advanced": true,
     },
@@ -97,6 +178,8 @@ export const ducklakeSchema: MultiStepFormSchema = {
       title: "METADATA_PATH",
       description:
         "The connection string for connecting to the metadata catalog.",
+      "x-visible-if": { connection_mode: "parameters" },
+      "x-ui-only": true,
       "x-step": "connector",
       "x-advanced": true,
     },
@@ -106,6 +189,8 @@ export const ducklakeSchema: MultiStepFormSchema = {
       description:
         "The schema in the catalog server in which to store the DuckLake tables.",
       default: "main",
+      "x-visible-if": { connection_mode: "parameters" },
+      "x-ui-only": true,
       "x-step": "connector",
       "x-advanced": true,
     },
@@ -116,16 +201,8 @@ export const ducklakeSchema: MultiStepFormSchema = {
         "Automatically migrates the DuckLake catalog schema if the version does not match.",
       default: false,
       "x-display": "toggle",
-      "x-step": "connector",
-      "x-advanced": true,
-    },
-    override_data_path: {
-      type: "boolean",
-      title: "OVERRIDE_DATA_PATH",
-      description:
-        "If the path provided in `data_path` differs from the stored path and this option is set to true, the path is overridden.",
-      default: true,
-      "x-display": "toggle",
+      "x-visible-if": { connection_mode: "parameters" },
+      "x-ui-only": true,
       "x-step": "connector",
       "x-advanced": true,
     },
@@ -134,6 +211,8 @@ export const ducklakeSchema: MultiStepFormSchema = {
       title: "SNAPSHOT_TIME",
       description:
         "If provided, connect to DuckLake at a snapshot at a specified point in time.",
+      "x-visible-if": { connection_mode: "parameters" },
+      "x-ui-only": true,
       "x-step": "connector",
       "x-advanced": true,
     },
@@ -142,9 +221,20 @@ export const ducklakeSchema: MultiStepFormSchema = {
       title: "SNAPSHOT_VERSION",
       description:
         "If provided, connect to DuckLake at a specified snapshot id.",
+      "x-visible-if": { connection_mode: "parameters" },
+      "x-ui-only": true,
       "x-step": "connector",
       "x-advanced": true,
     },
   },
-  required: ["attach"],
+  allOf: [
+    {
+      if: { properties: { connection_mode: { const: "sql" } } },
+      then: { required: ["attach"] },
+    },
+    {
+      if: { properties: { connection_mode: { const: "parameters" } } },
+      then: { required: ["catalog"] },
+    },
+  ],
 };
