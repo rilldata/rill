@@ -92,7 +92,8 @@ export function getOlapEngineLabel(connector: V1Connector | undefined): string {
       !!connector.config?.token);
   // DuckLake detection also falls back to the connector name, since the
   // runtime may redact merged config before returning `projectConnectors`.
-  const connectorName = connector.name ?? "";
+  // Match case-insensitively to cover e.g. "Ducklake_1".
+  const connectorName = (connector.name ?? "").toLowerCase();
   const isDuckLake =
     isDuckDB &&
     !isMotherDuck &&
@@ -105,10 +106,6 @@ export function getOlapEngineLabel(connector: V1Connector | undefined): string {
       ? "ducklake"
       : connector.type;
   const name = formatConnectorName(resolvedType);
-
-  // For DuckLake, include the connector instance name so users can tell
-  // multiple DuckLake catalogs apart (e.g. "DuckLake (ducklake_analytics)").
-  if (isDuckLake) return `${name} (${connector.name ?? ""})`;
 
   // Show management suffix for Rill-managed connectors
   if (connector.provision) return `${name} (Rill-managed)`;

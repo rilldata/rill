@@ -246,7 +246,7 @@ describe("display-utils", () => {
       ).toBe("MotherDuck (Self-managed)");
     });
 
-    it("detects DuckLake via attach config and includes the connector name", () => {
+    it("detects DuckLake via attach config", () => {
       expect(
         getOlapEngineLabel({
           type: "duckdb",
@@ -256,7 +256,7 @@ describe("display-utils", () => {
               "'ducklake:metadata.ducklake' AS my_ducklake (DATA_PATH 'datafiles')",
           },
         }),
-      ).toBe("DuckLake (ducklake_analytics)");
+      ).toBe("DuckLake");
     });
 
     it("detects DuckLake via connector name when config is redacted", () => {
@@ -265,7 +265,16 @@ describe("display-utils", () => {
           type: "duckdb",
           name: "ducklake_1",
         }),
-      ).toBe("DuckLake (ducklake_1)");
+      ).toBe("DuckLake");
+    });
+
+    it("detects DuckLake case-insensitively", () => {
+      expect(
+        getOlapEngineLabel({
+          type: "duckdb",
+          name: "Ducklake_1",
+        }),
+      ).toBe("DuckLake");
     });
 
     it("shows Rill-managed for provisioned ClickHouse", () => {

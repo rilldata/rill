@@ -111,6 +111,7 @@ export const ducklakeSchema: MultiStepFormSchema = {
       title: "DATA_INLINING_ROW_LIMIT",
       description: "The number of rows for which data inlining is used.",
       default: 0,
+      "x-placeholder": "0",
       "x-visible-if": { connection_mode: "parameters" },
       "x-ui-only": true,
       "x-step": "connector",
