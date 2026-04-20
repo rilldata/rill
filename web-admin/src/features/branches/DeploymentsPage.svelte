@@ -9,7 +9,6 @@
     isProPlan,
   } from "@rilldata/web-admin/features/billing/plans/utils";
   import { SLOT_RATE_PER_HR } from "@rilldata/web-admin/features/projects/status/overview/slots-utils";
-  import ManageSlotsModal from "@rilldata/web-admin/features/projects/status/overview/ManageSlotsModal.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
@@ -29,10 +28,6 @@
 
   // Slots
   let currentSlots = $derived(Number(projectData?.prodSlots) || 0);
-  let canManage = $derived(
-    $proj.data?.projectPermissions?.manageProject ?? false,
-  );
-  let prodModalOpen = $state(false);
 
   // Billing
   let subscriptionQuery = $derived(
@@ -85,7 +80,7 @@
 {#if showDeploymentSection}
   <div class="page">
     <!-- Page header -->
-    <h2 class="page-title">Usage & Compute</h2>
+    <h2 class="page-title">Deployments</h2>
 
     <!-- Summary bar -->
     <div class="summary-bar">
@@ -129,11 +124,6 @@
       </div>
     </div>
 
-    <!-- Unit Breakdown -->
-    <div class="section-heading">
-      <h3 class="section-heading-text">Unit breakdown</h3>
-    </div>
-
     <div class="section-grid">
       <!-- Production card -->
       <div class="breakdown-card breakdown-card-prod">
@@ -148,14 +138,6 @@
                 <span class="metric-slash">/</span>
                 {prodCpu}<span class="metric-unit">vCPU</span>
               </span>
-              {#if canManage && !$subscriptionQuery?.isLoading}
-                <button
-                  class="manage-btn"
-                  onclick={() => (prodModalOpen = true)}
-                >
-                  Manage units
-                </button>
-              {/if}
             </div>
             <span class="metric-label">Cluster size</span>
           </div>
@@ -211,14 +193,6 @@
       </div>
     </div>
   </div>
-
-  <ManageSlotsModal
-    bind:open={prodModalOpen}
-    title="Manage Prod Cluster Size"
-    {organization}
-    {project}
-    {currentSlots}
-  />
 {/if}
 
 <style lang="postcss">
@@ -283,13 +257,6 @@
   .breakdown-title {
     @apply font-sans text-base font-semibold leading-none;
   }
-  .manage-btn {
-    @apply text-xs font-medium text-primary-500 bg-transparent border border-primary-300 rounded-none px-3 py-1 cursor-pointer;
-  }
-  .manage-btn:hover {
-    @apply bg-primary-50 text-primary-600 border-primary-400;
-  }
-
   /* Breakdown body */
   .breakdown-body {
     @apply flex flex-col gap-4;

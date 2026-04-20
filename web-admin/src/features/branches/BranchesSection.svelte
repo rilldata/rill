@@ -92,6 +92,9 @@
     ),
   );
 
+  let canManage = $derived(
+    $projectQuery.data?.projectPermissions?.manageProject ?? false,
+  );
   let prodSlots = $derived(
     $projectQuery.data?.project?.prodSlots != null
       ? parseInt($projectQuery.data.project.prodSlots, 10)
@@ -146,6 +149,7 @@
   let pendingId = $state("");
   let deleteDialogOpen = $state(false);
   let pendingDelete = $state<{ id: string; branch: string } | null>(null);
+  let prodSlotsModalOpen = $state(false);
   let devSlotsModalOpen = $state(false);
 
   async function mutateDeployment(
@@ -207,9 +211,7 @@
   }
 </script>
 
-<section class="flex flex-col gap-y-5">
-  <h2 class="text-lg font-medium">Branches</h2>
-
+<section class="flex flex-col gap-y-3">
   {#if $allDeployments.isLoading}
     <div class="empty-container">
       <DelayedSpinner isLoading={true} size="20px" />
@@ -226,22 +228,12 @@
   {:else}
     <div class="table-wrapper">
       <div class="header-row">
-        <div class="pl-4 py-2 font-semibold text-fg-secondary text-sm">
-          Branch
-        </div>
-        <div class="pl-4 py-2 font-semibold text-fg-secondary text-sm">
-          Author
-        </div>
-        <div class="pl-4 py-2 font-semibold text-fg-secondary text-sm">
-          Status
-        </div>
-        <div class="pl-4 py-2 font-semibold text-fg-secondary text-sm">
-          Units
-        </div>
-        <div class="pl-4 py-2 font-semibold text-fg-secondary text-sm">
-          Last updated
-        </div>
-        <div class="pl-4 py-2 font-semibold text-fg-secondary text-sm"></div>
+        <div class="pl-4 py-2">Branch</div>
+        <div class="pl-4 py-2">Author</div>
+        <div class="pl-4 py-2">Status</div>
+        <div class="pl-4 py-2">Units</div>
+        <div class="pl-4 py-2">Last updated</div>
+        <div class="pl-4 py-2"></div>
       </div>
       {#each visibleDeployments as deployment, i (deployment.id ?? i)}
         {@const prod = isProdDeployment(deployment)}
@@ -313,6 +305,20 @@
                     <span class="ml-2">{prod ? "View" : "Preview"}</span>
                   </div>
                 </DropdownMenu.Item>
+                {#if prod && canManage && isActiveDeployment(deployment)}
+                  <DropdownMenu.Item
+                    class="font-normal flex items-center"
+                    onclick={() => {
+                      openDropdownId = "";
+                      prodSlotsModalOpen = true;
+                    }}
+                  >
+                    <div class="flex items-center">
+                      <SlidersHorizontalIcon size="12px" />
+                      <span class="ml-2">Manage units</span>
+                    </div>
+                  </DropdownMenu.Item>
+                {/if}
                 {#if !prod && isActiveDeployment(deployment)}
                   <DropdownMenu.Item
                     class="font-normal flex items-center"
@@ -398,6 +404,14 @@
 />
 
 <ManageSlotsModal
+  bind:open={prodSlotsModalOpen}
+  {organization}
+  {project}
+  currentSlots={prodSlots ?? 0}
+  title="Manage Prod Cluster Size"
+/>
+
+<ManageSlotsModal
   bind:open={devSlotsModalOpen}
   {organization}
   {project}
@@ -411,12 +425,20 @@
 />
 
 <style lang="postcss">
+  .section-heading {
+    @apply mt-2;
+  }
+
+  .section-heading-text {
+    @apply font-sans text-xs font-semibold leading-none text-fg-tertiary;
+  }
+
   .empty-container {
-    @apply border border-border rounded-sm py-10 flex flex-col items-center gap-y-2;
+    @apply border border-border rounded-xl py-10 flex flex-col items-center gap-y-2;
   }
 
   .table-wrapper {
-    @apply flex flex-col border rounded-sm overflow-x-auto;
+    @apply flex flex-col border border-border rounded-xl bg-surface-background overflow-x-auto;
   }
 
   .header-row,
@@ -429,7 +451,7 @@
   }
 
   .header-row {
-    @apply w-full bg-surface-subtle;
+    @apply w-full bg-surface-subtle text-xs font-semibold text-fg-secondary uppercase tracking-wide;
   }
 
   .data-row {

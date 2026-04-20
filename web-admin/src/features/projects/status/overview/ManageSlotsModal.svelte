@@ -88,7 +88,7 @@
       eventBus.emit("notification", {
         message: newTier
           ? `Dev cluster size updated to ${newTier.instance}`
-          : `Dev cluster size updated to ${selectedSlots} slots`,
+          : `Dev cluster size updated to ${selectedSlots} units`,
       });
       open = false;
       return;
@@ -107,13 +107,13 @@
       eventBus.emit("notification", {
         message: newTier
           ? `Cluster size updated to ${newTier.instance}`
-          : `Cluster size updated to ${selectedSlots} slots`,
+          : `Cluster size updated to ${selectedSlots} units`,
       });
       open = false;
     } catch (err) {
       const axiosError = err as AxiosError<RpcStatus>;
       eventBus.emit("notification", {
-        message: axiosError.response?.data?.message ?? "Failed to update slots",
+        message: axiosError.response?.data?.message ?? "Failed to update units",
         type: "error",
       });
     }
@@ -131,8 +131,8 @@
       <Dialog.Title>{title}</Dialog.Title>
       <Dialog.Description>
         Choose the vCPU and memory allocation for your deployment. Monthly
-        estimates assume ~{HOURS_PER_MONTH} hours at ${SLOT_RATE_PER_HR}/slot/hr.
-        Minimum {DEFAULT_MANAGED_SLOTS * 4}GiB / {DEFAULT_MANAGED_SLOTS}vCPU.
+        estimates assume ~{HOURS_PER_MONTH} hours at ${SLOT_RATE_PER_HR}/unit/hr.{#if minSlots > 0}
+        Minimum {minSlots * 4}GiB / {minSlots}vCPU.{/if}
       </Dialog.Description>
     </Dialog.Header>
 
@@ -156,7 +156,7 @@
             <span class="tier-cell tier-cell-wide">
               {tier.instance}
               <span class="slot-label"
-                >({tier.slots} {tier.slots === 1 ? "slot" : "slots"})</span
+                >({tier.slots} {tier.slots === 1 ? "unit" : "units"})</span
               >
               {#if tier.slots === currentSlots}
                 <span class="current-badge">current</span>
