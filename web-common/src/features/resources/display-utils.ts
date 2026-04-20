@@ -6,6 +6,8 @@ export function formatConnectorName(connector: string | undefined): string {
   if (!connector) return "\u2014";
   const lower = connector.toLowerCase();
   if (lower === "duckdb") return "DuckDB";
+  if (lower === "ducklake") return "DuckLake";
+  if (lower === "motherduck") return "MotherDuck";
   if (lower === "clickhouse") return "ClickHouse";
   if (lower === "mysql") return "MySQL";
   if (lower === "bigquery") return "BigQuery";

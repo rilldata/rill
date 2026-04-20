@@ -71,14 +71,16 @@ export function getStatusLabel(status: V1DeploymentStatus): string {
 }
 
 /**
- * Returns the display label for the OLAP engine, including MotherDuck detection
- * and a management suffix (Rill-managed / Self-managed) where applicable.
+ * Returns the display label for the OLAP engine, including MotherDuck and
+ * DuckLake detection and a management suffix (Rill-managed / Self-managed)
+ * where applicable.
  *
- * MotherDuck is detected by checking whether the connector's path starts with "md:"
- * or a token is configured — the connector name itself may be anything.
+ * MotherDuck is detected by checking whether the connector's path starts with
+ * "md:" or a token is configured. DuckLake is detected by an `attach` config
+ * referencing a DuckLake catalog. The connector type for both is "duckdb".
  *
  * @param connector - The OLAP connector from projectConnectors, or undefined
- * @returns Display label, e.g. "DuckDB", "MotherDuck (Self-managed)", "ClickHouse (Rill-managed)"
+ * @returns Display label, e.g. "DuckDB", "DuckLake", "MotherDuck (Self-managed)", "ClickHouse (Rill-managed)"
  */
 export function getOlapEngineLabel(connector: V1Connector | undefined): string {
   if (!connector) return "DuckDB";
@@ -88,9 +90,16 @@ export function getOlapEngineLabel(connector: V1Connector | undefined): string {
     isDuckDB &&
     (String(connector.config?.path ?? "").startsWith("md:") ||
       !!connector.config?.token);
-  const name = formatConnectorName(
-    isMotherDuck ? "motherduck" : connector.type,
-  );
+  const isDuckLake =
+    isDuckDB &&
+    !isMotherDuck &&
+    String(connector.config?.attach ?? "").includes("ducklake:");
+  const resolvedType = isMotherDuck
+    ? "motherduck"
+    : isDuckLake
+      ? "ducklake"
+      : connector.type;
+  const name = formatConnectorName(resolvedType);
 
   // Show management suffix for Rill-managed connectors
   if (connector.provision) return `${name} (Rill-managed)`;

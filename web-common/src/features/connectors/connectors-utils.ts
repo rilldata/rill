@@ -111,6 +111,7 @@ export function makeTablePreviewHref(
  * Determines the correct icon key for a connector based on its configuration.
  * Special cases:
  * - MotherDuck connectors use "motherduck" icon even though they have driver: duckdb
+ * - DuckLake connectors use "ducklake" icon even though they have driver: duckdb
  * - ClickHouse Cloud connectors use "clickhousecloud" icon even though they have driver: clickhouse
  * - Supabase connectors use "supabase" icon even though they have driver: postgres
  */
@@ -119,6 +120,15 @@ export function getConnectorIconKey(connector: V1AnalyzedConnector): string {
   const path = connector.config?.path;
   if (typeof path === "string" && path.startsWith("md:")) {
     return "motherduck";
+  }
+
+  // Special case: DuckLake connectors use an `attach` clause pointing at a
+  // DuckLake catalog (e.g. `'ducklake:metadata.ducklake' AS ...`).
+  if (connector.driver?.name === "duckdb") {
+    const attach = connector.config?.attach;
+    if (typeof attach === "string" && attach.includes("ducklake:")) {
+      return "ducklake";
+    }
   }
 
   // Special case: ClickHouse Cloud connectors have "clickhouse.cloud" in host or dsn

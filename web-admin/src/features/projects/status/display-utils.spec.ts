@@ -246,6 +246,19 @@ describe("display-utils", () => {
       ).toBe("MotherDuck (Self-managed)");
     });
 
+    it("detects DuckLake via attach config", () => {
+      expect(
+        getOlapEngineLabel({
+          type: "duckdb",
+          name: "ducklake",
+          config: {
+            attach:
+              "'ducklake:metadata.ducklake' AS my_ducklake (DATA_PATH 'datafiles')",
+          },
+        }),
+      ).toBe("DuckLake");
+    });
+
     it("shows Rill-managed for provisioned ClickHouse", () => {
       expect(
         getOlapEngineLabel({

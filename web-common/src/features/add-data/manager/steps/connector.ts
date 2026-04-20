@@ -46,6 +46,7 @@ export async function createConnector({
   queryClient,
   connectorName,
   connectorDriver,
+  schemaName,
   formValues,
   validate,
   existingEnvBlob,
@@ -54,13 +55,17 @@ export async function createConnector({
   queryClient: QueryClient;
   connectorName: string;
   connectorDriver: V1ConnectorDriver;
+  schemaName?: string;
   formValues: Record<string, unknown>;
   validate: boolean;
   existingEnvBlob: string | null;
 }) {
   await maybeInitProject(runtimeClient, connectorDriver);
 
-  const schema = getConnectorSchema(connectorDriver.name ?? "");
+  // Prefer schemaName for schema lookup so connectors that override the
+  // backend driver (e.g. DuckLake uses the duckdb driver) still resolve
+  // their own schema fields.
+  const schema = getConnectorSchema(schemaName ?? connectorDriver.name ?? "");
 
   // Fast-path: public auth skips validation/test and advances directly
   if (isMultiStepConnector(schema) && isPublicAuth(schema, formValues)) {
