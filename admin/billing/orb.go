@@ -669,9 +669,9 @@ func getPlanDisplayName(externalID string) string {
 	case "managed":
 		return "Managed"
 	case "free_plan":
-		return "Free Plan"
+		return "Free"
 	case "pro_plan":
-		return "Pro Plan"
+		return "Pro"
 	default:
 		return "Enterprise"
 	}
