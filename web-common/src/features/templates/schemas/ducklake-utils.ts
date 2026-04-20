@@ -77,6 +77,24 @@ export function applyDuckLakeFormTransform(
   return { ...values, attach };
 }
 
+/**
+ * Re-inject the composed `attach` key into an already filtered value map.
+ * The normal tab-group filter drops `attach` when the "parameters" tab is
+ * active (since `attach` belongs to the "sql" tab group); callers use this
+ * helper to restore it from the pre-filter source values.
+ */
+export function injectDuckLakeAttach(
+  schema: MultiStepFormSchema | null | undefined,
+  filteredValues: Record<string, unknown>,
+  sourceValues: Record<string, unknown>,
+): Record<string, unknown> {
+  if (!schema || schema.title !== "DuckLake") return filteredValues;
+  if (sourceValues.connection_mode !== "parameters") return filteredValues;
+  const attach = sourceValues.attach;
+  if (typeof attach !== "string" || !attach) return filteredValues;
+  return { ...filteredValues, attach };
+}
+
 function stringValue(v: unknown): string {
   if (typeof v !== "string") return "";
   return v.trim();
