@@ -33,6 +33,7 @@
   import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
   import ProjectClone from "./ProjectClone.svelte";
   import OverviewCard from "@rilldata/web-common/features/projects/status/overview/OverviewCard.svelte";
+  import ClusterSize from "./ClusterSize.svelte";
 
   export let organization: string;
   export let project: string;
@@ -139,13 +140,9 @@
     {#if !$subscriptionQuery?.isLoading && showSlots}
       <div class="info-row">
         <span class="info-label">Cluster Size</span>
-        <span class="info-value"
-          >{currentSlots * 4} GiB RAM, {currentSlots} vCPU
-          <span class="text-fg-tertiary text-xs ml-1"
-            >({currentSlots}
-            {currentSlots === 1 ? "Compute unit" : "Compute units"})</span
-          ></span
-        >
+        <span class="info-value">
+          <ClusterSize slots={currentSlots} />
+        </span>
       </div>
     {/if}
 
