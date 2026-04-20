@@ -5,10 +5,7 @@
   import { page } from "$app/stores";
   import { V1BillingPlanType } from "@rilldata/web-admin/client";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
-  import {
-    isEnterprisePlan,
-    isManagedPlan,
-  } from "@rilldata/web-admin/features/billing/plans/utils";
+  import { isEnterprisePlan } from "@rilldata/web-admin/features/billing/plans/utils";
   import type { PageData } from "./$types";
   import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
 
@@ -27,8 +24,6 @@
   let planName = $derived(data.subscription?.plan?.name ?? "");
   let isEnterprise = $derived(
     planType === V1BillingPlanType.BILLING_PLAN_TYPE_ENTERPRISE ||
-      planType === V1BillingPlanType.BILLING_PLAN_TYPE_MANAGED ||
-      isManagedPlan(planName) ||
       isEnterprisePlan(planName),
   );
 

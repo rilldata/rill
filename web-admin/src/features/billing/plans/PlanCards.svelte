@@ -3,7 +3,7 @@
   import { fetchPaymentsPortalURL } from "@rilldata/web-admin/features/billing/plans/selectors";
   import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types";
 
-  type PlanTier = "trial" | "pro" | "team" | "enterprise";
+  type PlanTier = "trial" | "free" | "pro" | "team" | "enterprise";
 
   let {
     organization,
@@ -20,9 +20,12 @@
   } = $props();
 
   // Hide plans smaller than current. Team (legacy) shows Pro + Enterprise.
-  let showTrial = $derived(currentPlan === "trial");
+  let showTrial = $derived(currentPlan === "trial" || currentPlan === "free");
   let showPro = $derived(
-    currentPlan === "trial" || currentPlan === "pro" || currentPlan === "team",
+    currentPlan === "trial" ||
+      currentPlan === "free" ||
+      currentPlan === "pro" ||
+      currentPlan === "team",
   );
   let showEnterprise = $derived(currentPlan !== "enterprise");
 
@@ -49,6 +52,20 @@
     '"Made with Rill" badge',
   ];
 
+  const proTrialFeatures = [
+    "Credit rolls over when you subscribe to Pro",
+    "Self-serve compute units (2 prod unit minimum)",
+    "1 GB storage included · $1/GB above",
+    '"Made with Rill" badge',
+  ];
+
+  const proTrialProFeatures = [
+    "Unused trial credit applied to first bill",
+    "Cancel anytime, data preserved 30 days",
+    "1 GB storage included · $1/GB above",
+    '"Made with Rill" badge',
+  ];
+
   const proFeatures = [
     "Cancel anytime, data preserved 30 days",
     "Billed on prod slots + GB data overages",
@@ -58,9 +75,9 @@
 
   const teamFeatures = [
     "$250/mo flat charge",
-    "1 GB storage included · $25/GB above",
-    "Email / Chat support",
-    "10 slot limit",
+    "10 GB storage included · $25/GB over",
+    "Email support",
+    '"Made with Rill" badge',
   ];
 
   const enterpriseFeatures = [
@@ -76,12 +93,18 @@
 <div class="compare-container">
   {#if showTrial}
     <div class="plan-col">
-      <h3 class="plan-name">Free Trial</h3>
-      <p class="plan-pricing-main">30 day free trial</p>
-      <p class="plan-pricing-sub">No credit card required</p>
+      {#if currentPlan === "free"}
+        <h3 class="plan-name">Pro Trial</h3>
+        <p class="plan-pricing-main">$250 free credit</p>
+        <p class="plan-pricing-sub">No time limit</p>
+      {:else}
+        <h3 class="plan-name">Free Trial</h3>
+        <p class="plan-pricing-main">30 day free trial</p>
+        <p class="plan-pricing-sub">No credit card required</p>
+      {/if}
 
       <ul class="feature-list">
-        {#each trialFeatures as feature}
+        {#each currentPlan === "free" ? proTrialFeatures : trialFeatures as feature}
           <li class="feature-item">
             <svg class="check-icon" viewBox="0 0 16 16" fill="none">
               <path
@@ -136,7 +159,7 @@
       </button>
 
       <ul class="feature-list">
-        {#each proFeatures as feature}
+        {#each currentPlan === "free" ? proTrialProFeatures : proFeatures as feature}
           <li class="feature-item">
             <svg class="check-icon" viewBox="0 0 16 16" fill="none">
               <path

@@ -11,6 +11,8 @@
   import {
     isEnterprisePlan,
     isManagedPlan,
+    isProPlan,
+    isTeamPlan,
   } from "@rilldata/web-admin/features/billing/plans/utils";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -35,6 +37,14 @@
       isManagedPlan(planName) ||
       isEnterprisePlan(planName),
   );
+  let showCancel = $derived(
+    planType === V1BillingPlanType.BILLING_PLAN_TYPE_PRO ||
+      planType === V1BillingPlanType.BILLING_PLAN_TYPE_TEAM ||
+      isProPlan(planName) ||
+      isTeamPlan(planName),
+  );
+
+  let cancelOpen = $state(false);
 
   let allStatus = $derived(
     mergedQueryStatus([
@@ -50,10 +60,26 @@
   <Spinner status={EntityStatus.Running} size="16px" />
 {:else}
   <div class="flex flex-col gap-8">
-    <Plan {organization} {showUpgradeDialog} />
+    <Plan {organization} {showUpgradeDialog} bind:cancelOpen />
     {#if !isEnterprise}
       <Payment {organization} />
     {/if}
     <BillingContactSetting {organization} />
+    {#if showCancel}
+      <button class="cancel-link" onclick={() => (cancelOpen = true)}>
+        Cancel subscription
+      </button>
+    {/if}
   </div>
 {/if}
+
+<style lang="postcss">
+  .cancel-link {
+    @apply text-sm font-medium text-fg-tertiary bg-transparent border-none cursor-pointer p-0;
+    display: inline-block;
+  }
+
+  .cancel-link:hover {
+    @apply text-fg-secondary underline;
+  }
+</style>

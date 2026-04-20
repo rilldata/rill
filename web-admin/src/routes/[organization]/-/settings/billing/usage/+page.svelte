@@ -1,3 +1,33 @@
+<script lang="ts">
+  import { goto } from "$app/navigation";
+  import { page } from "$app/stores";
+  import {
+    createAdminServiceGetBillingSubscription,
+    V1BillingPlanType,
+  } from "@rilldata/web-admin/client";
+  import { isEnterprisePlan } from "@rilldata/web-admin/features/billing/plans/utils";
+
+  let organization = $derived($page.params.organization);
+  let subscriptionQuery = $derived(
+    createAdminServiceGetBillingSubscription(organization),
+  );
+  let planType = $derived(
+    $subscriptionQuery?.data?.subscription?.plan?.planType,
+  );
+  let planName = $derived(
+    $subscriptionQuery?.data?.subscription?.plan?.name ?? "",
+  );
+
+  $effect(() => {
+    if (
+      planType === V1BillingPlanType.BILLING_PLAN_TYPE_ENTERPRISE ||
+      isEnterprisePlan(planName)
+    ) {
+      goto(`/${organization}/-/settings/billing`);
+    }
+  });
+</script>
+
 <section class="usage-page">
   <h1 class="text-xl font-semibold text-fg-primary mb-2">Usage</h1>
   <p class="text-sm text-fg-secondary mb-6">
