@@ -115,7 +115,7 @@
   }
 </script>
 
-{#if isModelingSupported || showGenerateModel}
+{#if metricsMode !== "both" && (isModelingSupported || showGenerateModel)}
   <NavigationMenuItem onclick={handleCreateModelFromTable}>
     <Model slot="icon" />
     Create model
@@ -124,9 +124,14 @@
 
 {#if showGenerateMetricsAndDashboard}
   {#if metricsMode === "both"}
-    <DropdownMenu.Separator />
     <DropdownMenu.Group>
       <DropdownMenu.Label>Import to DuckDB</DropdownMenu.Label>
+      {#if isModelingSupported || showGenerateModel}
+        <NavigationMenuItem onclick={handleCreateModelFromTable}>
+          <Model slot="icon" />
+          Create model
+        </NavigationMenuItem>
+      {/if}
       <NavigationMenuItem onclick={() => handleGenerateMetrics(false)}>
         <MetricsViewIcon slot="icon" />
         <div class="flex gap-x-2 items-center">
