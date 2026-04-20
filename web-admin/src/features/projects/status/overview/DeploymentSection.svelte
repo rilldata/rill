@@ -243,7 +243,10 @@
         <div class="info-row">
           <span class="info-label">{dataLabel}</span>
           <span class="info-value">
-            <a href="/{organization}/{project}/-/status/tables" class="repo-link">
+            <a
+              href="/{organization}/{project}/-/status/tables"
+              class="repo-link"
+            >
               {formatMemorySize(dataSizeBytes)}
             </a>
           </span>
