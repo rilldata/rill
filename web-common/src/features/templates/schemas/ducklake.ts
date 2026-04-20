@@ -131,6 +131,7 @@ export const ducklakeSchema: MultiStepFormSchema = {
       type: "string",
       title: "META_PARAMETER_NAME",
       description: "Pass `PARAMETER_NAME` to the catalog server.",
+      "x-placeholder": "parameter_value",
       "x-visible-if": { connection_mode: "parameters" },
       "x-ui-only": true,
       "x-step": "connector",
@@ -162,6 +163,7 @@ export const ducklakeSchema: MultiStepFormSchema = {
       title: "METADATA_PATH",
       description:
         "The connection string for connecting to the metadata catalog.",
+      "x-placeholder": "postgres:dbname=mydb host=localhost",
       "x-visible-if": { connection_mode: "parameters" },
       "x-ui-only": true,
       "x-step": "connector",
@@ -173,6 +175,7 @@ export const ducklakeSchema: MultiStepFormSchema = {
       description:
         "The schema in the catalog server in which to store the DuckLake tables.",
       default: "main",
+      "x-placeholder": "main",
       "x-visible-if": { connection_mode: "parameters" },
       "x-ui-only": true,
       "x-step": "connector",
@@ -195,6 +198,7 @@ export const ducklakeSchema: MultiStepFormSchema = {
       title: "SNAPSHOT_TIME",
       description:
         "If provided, connect to DuckLake at a snapshot at a specified point in time.",
+      "x-placeholder": "2024-01-01 00:00:00",
       "x-visible-if": { connection_mode: "parameters" },
       "x-ui-only": true,
       "x-step": "connector",
@@ -205,6 +209,7 @@ export const ducklakeSchema: MultiStepFormSchema = {
       title: "SNAPSHOT_VERSION",
       description:
         "If provided, connect to DuckLake at a specified snapshot id.",
+      "x-placeholder": "1",
       "x-visible-if": { connection_mode: "parameters" },
       "x-ui-only": true,
       "x-step": "connector",
