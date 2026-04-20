@@ -3,12 +3,12 @@ package river
 import (
 	"context"
 	"errors"
-	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/provisioner"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/riverqueue/river"
 	"go.opentelemetry.io/otel/attribute"
@@ -173,10 +173,9 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 // isNonRetryable returns true for errors that won't resolve with retries,
 // such as capacity limits or configuration errors.
 func (w *ReconcileDeploymentWorker) isNonRetryable(err error) bool {
-	msg := err.Error()
-	return strings.Contains(msg, "no runtimes found with sufficient available slots") ||
-		strings.Contains(msg, "Invalid environment") ||
-		strings.Contains(msg, "not a valid version")
+	return errors.Is(err, provisioner.ErrNoCapacity) ||
+		errors.Is(err, admin.ErrInvalidEnvironment) ||
+		errors.Is(err, admin.ErrInvalidRuntimeVersion)
 }
 
 // cancelAsErrored marks the deployment as errored and cancels the river job.
