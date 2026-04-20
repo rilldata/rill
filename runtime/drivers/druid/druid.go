@@ -163,7 +163,6 @@ func (d driver) Open(connectorName, instanceID string, config map[string]any, st
 		config:        conf,
 		connectorName: connectorName,
 		logger:        logger,
-		dialect:       DialectDruid,
 	}
 	return conn, nil
 }

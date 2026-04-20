@@ -73,7 +73,6 @@ type Dialect interface {
 }
 
 // BaseDialect provides default implementations for the Dialect interface.
-// Embed it in a concrete dialect struct and call InitBase to wire up virtual dispatch.
 type BaseDialect struct {
 	name             string
 	escapeIdentifier func(string) string
@@ -93,7 +92,7 @@ func (b *BaseDialect) String() string {
 }
 
 func (b *BaseDialect) EscapeIdentifier(ident string) string {
-	return b.escapeAlias(ident)
+	return b.escapeIdentifier(ident)
 }
 
 func (b *BaseDialect) EscapeAlias(alias string) string {
