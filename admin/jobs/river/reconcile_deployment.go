@@ -3,7 +3,6 @@ package river
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/rilldata/rill/admin"
@@ -24,12 +23,6 @@ func (ReconcileDeploymentArgs) Kind() string { return "reconcile_deployment" }
 type ReconcileDeploymentWorker struct {
 	river.WorkerDefaults[ReconcileDeploymentArgs]
 	admin *admin.Service
-}
-
-// NextRetryAt uses exponential backoff starting at 15s: ~15s, ~30s, ~60s, ~120s.
-// This keeps total retry duration under ~4 minutes so users aren't stuck waiting.
-func (w *ReconcileDeploymentWorker) NextRetryAt(job *river.Job[ReconcileDeploymentArgs]) time.Time {
-	return time.Now().Add(15 * time.Second * time.Duration(1<<(job.Attempt-1)))
 }
 
 // NewReconcileDeploymentWorker creates a new ReconcileDeploymentWorker. Only to be used in tests to trigger the worker directly.
