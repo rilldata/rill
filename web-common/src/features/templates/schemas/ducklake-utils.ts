@@ -37,21 +37,21 @@ export function composeDuckLakeAttach(values: Record<string, unknown>): string {
   }
 
   const rowLimit = numberValue(values.data_inlining_row_limit);
-  if (rowLimit !== undefined && rowLimit > 0) {
+  if (rowLimit !== undefined) {
     options.push(`DATA_INLINING_ROW_LIMIT ${rowLimit}`);
   }
 
-  // Only emit boolean options when they differ from the DuckLake default —
-  // otherwise they add clutter without changing behaviour.
-  const boolParams: Array<[string, string, boolean]> = [
-    ["OVERRIDE_DATA_PATH", "override_data_path", true],
-    ["CREATE_IF_NOT_EXISTS", "create_if_not_exists", true],
-    ["ENCRYPTED", "encrypted", false],
-    ["AUTOMATIC_MIGRATION", "automatic_migration", false],
+  // Always emit boolean options so the user can see each configured advanced
+  // setting reflected in the generated ATTACH clause.
+  const boolParams: Array<[string, string]> = [
+    ["OVERRIDE_DATA_PATH", "override_data_path"],
+    ["CREATE_IF_NOT_EXISTS", "create_if_not_exists"],
+    ["ENCRYPTED", "encrypted"],
+    ["AUTOMATIC_MIGRATION", "automatic_migration"],
   ];
-  for (const [sqlKey, formKey, defaultVal] of boolParams) {
+  for (const [sqlKey, formKey] of boolParams) {
     const v = values[formKey];
-    if (typeof v === "boolean" && v !== defaultVal) {
+    if (typeof v === "boolean") {
       options.push(`${sqlKey} ${v ? "true" : "false"}`);
     }
   }

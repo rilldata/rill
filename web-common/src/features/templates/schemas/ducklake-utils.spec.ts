@@ -37,18 +37,19 @@ describe("composeDuckLakeAttach", () => {
     );
   });
 
-  it("omits boolean options equal to their DuckLake default", () => {
-    // OVERRIDE_DATA_PATH default is true, CREATE_IF_NOT_EXISTS default is true
+  it("emits boolean options regardless of value", () => {
     expect(
       composeDuckLakeAttach({
         catalog: "c.ducklake",
         override_data_path: true,
         create_if_not_exists: true,
       }),
-    ).toBe("'ducklake:c.ducklake'");
+    ).toBe(
+      "'ducklake:c.ducklake' (OVERRIDE_DATA_PATH true, CREATE_IF_NOT_EXISTS true)",
+    );
   });
 
-  it("includes boolean options that differ from the default", () => {
+  it("emits false and true boolean options", () => {
     expect(
       composeDuckLakeAttach({
         catalog: "c.ducklake",
@@ -81,10 +82,50 @@ describe("composeDuckLakeAttach", () => {
       composeDuckLakeAttach({
         catalog: "duckdb_database.ducklake",
         data_path: "other_data_path/",
-        override_data_path: true, // default, should still be implicit
+        override_data_path: true,
       }),
     ).toBe(
-      "'ducklake:duckdb_database.ducklake' (DATA_PATH 'other_data_path/')",
+      "'ducklake:duckdb_database.ducklake' (DATA_PATH 'other_data_path/', OVERRIDE_DATA_PATH true)",
+    );
+  });
+
+  it("emits every advanced parameter when set", () => {
+    expect(
+      composeDuckLakeAttach({
+        catalog: "c.ducklake",
+        alias: "my_ducklake",
+        data_path: "s3://bucket/",
+        override_data_path: false,
+        create_if_not_exists: false,
+        data_inlining_row_limit: 100,
+        encrypted: true,
+        // mode is a separate YAML key, not part of ATTACH
+
+        meta_parameter_name: "foo",
+        metadata_catalog: "meta_cat",
+        metadata_parameters: "{a: 1}",
+        metadata_path: "postgres:dbname=x",
+        metadata_schema: "my_schema",
+        automatic_migration: true,
+        snapshot_time: "2024-01-01",
+        snapshot_version: "v1",
+      }),
+    ).toBe(
+      "'ducklake:c.ducklake' AS my_ducklake (" +
+        "DATA_PATH 's3://bucket/', " +
+        "META_PARAMETER_NAME 'foo', " +
+        "METADATA_CATALOG 'meta_cat', " +
+        "METADATA_PATH 'postgres:dbname=x', " +
+        "METADATA_SCHEMA 'my_schema', " +
+        "SNAPSHOT_TIME '2024-01-01', " +
+        "SNAPSHOT_VERSION 'v1', " +
+        "METADATA_PARAMETERS {a: 1}, " +
+        "DATA_INLINING_ROW_LIMIT 100, " +
+        "OVERRIDE_DATA_PATH false, " +
+        "CREATE_IF_NOT_EXISTS false, " +
+        "ENCRYPTED true, " +
+        "AUTOMATIC_MIGRATION true" +
+        ")",
     );
   });
 });
