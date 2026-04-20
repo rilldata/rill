@@ -132,7 +132,7 @@
       <Dialog.Description>
         Choose the vCPU and memory allocation for your deployment. Monthly
         estimates assume ~{HOURS_PER_MONTH} hours at ${SLOT_RATE_PER_HR}/unit/hr.{#if minSlots > 0}
-        Minimum {minSlots * 4}GiB / {minSlots}vCPU.{/if}
+          Minimum {minSlots * 4}GiB / {minSlots}vCPU.{/if}
       </Dialog.Description>
     </Dialog.Header>
 
