@@ -1,7 +1,7 @@
-import { get, writable } from "svelte/store";
-import { Throttler } from "@rilldata/web-common/lib/throttler";
-import { asyncWait } from "@rilldata/web-common/lib/waitUtils";
 import { createEventBinding } from "@rilldata/web-common/lib/event-emitter.ts";
+import { asyncWait } from "@rilldata/web-common/lib/waitUtils";
+import { get, writable } from "svelte/store";
+import { SSEConnectionLifecycle } from "./sse-connection-lifecycle";
 import { SSEFetchClient, type SSEMessage } from "./sse-fetch-client";
 
 const BACKOFF_DELAY = 1000;
@@ -9,9 +9,9 @@ const BACKOFF_DELAY = 1000;
 // enough that a subsequent failure should start with a fresh retry budget.
 const MIN_STABLE_DURATION = 5000;
 
-type Params = {
+export type SSEConnectionOptions = {
   /**
-   * @deprecated Pass an SSELifecycle alongside the connection instead.
+   * @deprecated Pass an SSEConnectionLifecycle alongside the connection instead.
    * Retained so existing consumers compile unchanged; removed in the
    * consumer-migration PR.
    */
@@ -59,7 +59,7 @@ type SSEConnectionEvents = {
  *   - Optional onBeforeReconnect hook for auth refresh.
  *
  * Does not own lifecycle policy (visibility, idle pausing). Attach an
- * SSELifecycle if you want that.
+ * SSEConnectionLifecycle if you want that.
  */
 export class SSEConnection {
   public status = writable<ConnectionStatus>(ConnectionStatus.CLOSED);
@@ -78,8 +78,11 @@ export class SSEConnection {
 
   private client = new SSEFetchClient();
 
-  /** @deprecated Auto-close shim; PR 2 removes these in favor of SSELifecycle. */
-  private autoCloseThrottler: Throttler | undefined;
+  /**
+   * @deprecated Legacy auto-close compatibility shim. PR 2 removes these
+   * forwarding paths in favor of attaching SSEConnectionLifecycle directly.
+   */
+  private autoCloseLifecycle: SSEConnectionLifecycle | undefined;
   private autoCloseDisabled = false;
 
   private retryAttempts = writable(0);
@@ -87,11 +90,11 @@ export class SSEConnection {
   private connectionCount = 0;
   private openedAt: number | null = null;
 
-  constructor(public params?: Params) {
+  constructor(public params?: SSEConnectionOptions) {
     if (params?.autoCloseTimeouts) {
-      this.autoCloseThrottler = new Throttler(
-        params.autoCloseTimeouts.normal,
-        params.autoCloseTimeouts.short,
+      this.autoCloseLifecycle = new SSEConnectionLifecycle(
+        this,
+        params.autoCloseTimeouts,
       );
     }
 
@@ -122,21 +125,29 @@ export class SSEConnection {
   }
 
   /**
-   * Resume from PAUSED if necessary, and re-arm auto-close (legacy shim).
+   * Resume from PAUSED if necessary, and re-arm auto-close for legacy
+   * compatibility paths that still call scheduleAutoClose/heartbeat.
    */
-  public heartbeat = async () => {
+  public resumeIfPaused = async () => {
     const status = get(this.status);
     if (status === ConnectionStatus.PAUSED) {
       await this.reconnect();
     }
 
-    if (this.params?.autoCloseTimeouts) {
+    if (this.autoCloseLifecycle) {
       this.scheduleAutoClose();
     }
   };
 
   /**
-   * Pause the transport. Preserves reconnect ability via heartbeat(),
+   * @deprecated Use resumeIfPaused() instead.
+   */
+  public heartbeat = async () => {
+    await this.resumeIfPaused();
+  };
+
+  /**
+   * Pause the transport. Preserves reconnect ability via resumeIfPaused(),
    * unlike close() which terminates the session.
    */
   public pause(): void {
@@ -160,6 +171,9 @@ export class SSEConnection {
     this.client.stop();
   }
 
+  /**
+   * Transition to CLOSED. Pass cleanup=true to also clear listeners.
+   */
   public close = (cleanup = false) => {
     this.pause();
 
@@ -170,25 +184,36 @@ export class SSEConnection {
     }
   };
 
+  /**
+   * Stop streaming and clear all connection listeners.
+   */
   public cleanup(): void {
     this.pause();
     this.events.clearListeners();
   }
 
-  /** @deprecated Move to SSELifecycle; removed in the consumer-migration PR. */
+  /**
+   * @deprecated Move to SSEConnectionLifecycle; removed in the
+   * consumer-migration PR.
+   */
   public scheduleAutoClose(prioritize: boolean = false) {
     if (this.autoCloseDisabled) return;
-    this.autoCloseThrottler?.cancel();
-    this.autoCloseThrottler?.throttle(() => this.pause(), prioritize);
+    this.autoCloseLifecycle?.schedulePause(prioritize);
   }
 
-  /** @deprecated Move to SSELifecycle; removed in the consumer-migration PR. */
+  /**
+   * @deprecated Move to SSEConnectionLifecycle; removed in the
+   * consumer-migration PR.
+   */
   public disableAutoClose() {
     this.autoCloseDisabled = true;
-    this.autoCloseThrottler?.cancel();
+    this.autoCloseLifecycle?.cancelScheduledPause();
   }
 
-  /** @deprecated Move to SSELifecycle; removed in the consumer-migration PR. */
+  /**
+   * @deprecated Move to SSEConnectionLifecycle; removed in the
+   * consumer-migration PR.
+   */
   public enableAutoClose() {
     this.autoCloseDisabled = false;
   }
@@ -204,7 +229,7 @@ export class SSEConnection {
 
     void this.client.start(this.url, this.options);
 
-    if (this.params?.autoCloseTimeouts) {
+    if (this.autoCloseLifecycle) {
       this.scheduleAutoClose();
     }
   }
@@ -214,45 +239,42 @@ export class SSEConnection {
     this.isReconnecting = true;
 
     try {
-      if (this.autoCloseThrottler?.isThrottling()) {
-        this.autoCloseThrottler.cancel();
-      }
+      // Keep retries in a single guarded task. Avoid self-recursion so
+      // isReconnecting stays true for the entire retry cycle.
+      while (true) {
+        this.autoCloseLifecycle?.cancelScheduledPause();
 
-      if (get(this.status) === ConnectionStatus.OPEN) return;
+        if (get(this.status) === ConnectionStatus.OPEN) return;
 
-      const currentAttempts = get(this.retryAttempts);
+        const currentAttempts = get(this.retryAttempts);
 
-      if (currentAttempts >= (this.params?.maxRetryAttempts ?? 0)) {
-        this.status.set(ConnectionStatus.CLOSED);
-        return;
-      }
-
-      if (currentAttempts > 0) {
-        const delay = BACKOFF_DELAY * 2 ** currentAttempts;
-        await asyncWait(delay);
-      }
-
-      this.retryAttempts.update((n) => n + 1);
-
-      if (this.params?.onBeforeReconnect) {
-        try {
-          await this.params.onBeforeReconnect();
-        } catch (err) {
-          const errorArg =
-            err instanceof Error ? err : new Error(String(err));
-          this.events.emit("error", errorArg);
-
-          // Treat hook failures like transport failures: release the guard
-          // and re-enter the reconnect cycle. The attempt already counted
-          // (retryAttempts was incremented above), so repeated hook failures
-          // walk retryAttempts up to maxRetryAttempts and eventually CLOSE.
-          this.isReconnecting = false;
-          void this.reconnect();
+        if (currentAttempts >= (this.params?.maxRetryAttempts ?? 0)) {
+          this.status.set(ConnectionStatus.CLOSED);
           return;
         }
-      }
 
-      this.openConnection();
+        if (currentAttempts > 0) {
+          const delay = BACKOFF_DELAY * 2 ** currentAttempts;
+          await asyncWait(delay);
+        }
+
+        this.retryAttempts.update((n) => n + 1);
+
+        if (this.params?.onBeforeReconnect) {
+          try {
+            await this.params.onBeforeReconnect();
+          } catch (err) {
+            const errorArg = err instanceof Error ? err : new Error(String(err));
+            this.events.emit("error", errorArg);
+            // Treat hook failures like transport failures. The attempt already
+            // counted, so continue in-loop and retry under the same guard.
+            continue;
+          }
+        }
+
+        this.openConnection();
+        return;
+      }
     } finally {
       this.isReconnecting = false;
     }

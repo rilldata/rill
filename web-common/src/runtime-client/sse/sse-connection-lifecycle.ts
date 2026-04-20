@@ -1,24 +1,13 @@
 import { Throttler } from "@rilldata/web-common/lib/throttler";
-import type { SSEConnection } from "./sse-connection";
 
 /**
- * Idle-timeout presets for SSELifecycle.
- *
- * - `aggressive`: pause the stream quickly when the tab idles. Used by Rill
- *   Developer where the browser's 6-connection per-host limit bites because
- *   SSE, queries, and dev assets all share `localhost:<port>`.
- * - `none`: don't attach a lifecycle at all. Used by the cloud editor and
- *   other consumers that need a persistent connection.
+ * Narrow connection contract needed by SSEConnectionLifecycle.
+ * Keeps lifecycle policy decoupled from concrete connection implementations.
  */
-export const LIFECYCLE_PRESETS = {
-  aggressive: { short: 20_000, normal: 120_000 },
-  none: undefined,
-} as const satisfies Record<
-  string,
-  { short: number; normal: number } | undefined
->;
-
-export type LifecyclePreset = keyof typeof LIFECYCLE_PRESETS;
+export interface LifecycleControl {
+  pause(): void;
+  resumeIfPaused(): Promise<void>;
+}
 
 /**
  * Abstracts the DOM-level signals that drive lifecycle decisions. Exists so
@@ -35,8 +24,7 @@ export interface LifecycleSignalSource {
  */
 export const domSignalSource: LifecycleSignalSource = {
   onVisibilityChange(listener) {
-    const handler = () =>
-      listener(document.visibilityState === "visible");
+    const handler = () => listener(document.visibilityState === "visible");
     document.addEventListener("visibilitychange", handler);
     return () => document.removeEventListener("visibilitychange", handler);
   },
@@ -58,7 +46,7 @@ export const domSignalSource: LifecycleSignalSource = {
   },
 };
 
-export interface SSELifecycleOptions {
+export interface SSEConnectionLifecycleOptions {
   /**
    * Override the signal source. Defaults to DOM events. Tests pass an
    * injected source to fire signals deterministically.
@@ -67,22 +55,22 @@ export interface SSELifecycleOptions {
 }
 
 /**
- * Manages idle pausing for an SSEConnection based on tab visibility and
- * focus. Arms an idle throttler on blur/hide; cancels it and heartbeats
- * the connection on focus/show/activity.
+ * Manages idle pausing for an SSE stream connection based on tab visibility
+ * and focus. Schedules a delayed pause on blur/hide, and cancels that pending
+ * pause while resuming on focus/show/activity.
  *
  * Optional by design. A consumer that wants a persistent connection simply
  * doesn't attach this layer.
  */
-export class SSELifecycle {
+export class SSEConnectionLifecycle {
   private readonly throttler: Throttler;
   private readonly unsubscribes: Array<() => void> = [];
   private started = false;
 
   constructor(
-    private readonly connection: SSEConnection,
-    private readonly idleTimeouts: { short: number; normal: number },
-    private readonly options: SSELifecycleOptions = {},
+    private readonly connection: LifecycleControl,
+    idleTimeouts: { short: number; normal: number },
+    private readonly options: SSEConnectionLifecycleOptions = {},
   ) {
     this.throttler = new Throttler(idleTimeouts.normal, idleTimeouts.short);
   }
@@ -100,13 +88,13 @@ export class SSELifecycle {
     this.unsubscribes.push(
       signals.onVisibilityChange((visible) => {
         if (visible) {
-          void this.connection.heartbeat();
+          this.resumeAndCancelPendingPause();
         } else {
-          this.scheduleIdlePause(true);
+          this.schedulePauseWithTimeout(true);
         }
       }),
-      signals.onBlur(() => this.scheduleIdlePause(false)),
-      signals.onActivity(() => void this.connection.heartbeat()),
+      signals.onBlur(() => this.schedulePauseWithTimeout(false)),
+      signals.onActivity(() => this.resumeAndCancelPendingPause()),
     );
   }
 
@@ -115,7 +103,7 @@ export class SSELifecycle {
    * multiple times.
    */
   public stop(): void {
-    this.throttler.cancel();
+    this.cancelScheduledPause();
     while (this.unsubscribes.length) {
       const off = this.unsubscribes.pop();
       off?.();
@@ -123,8 +111,29 @@ export class SSELifecycle {
     this.started = false;
   }
 
-  private scheduleIdlePause(useShortTimeout: boolean): void {
+  /**
+   * Schedule a pause with either the short (prioritized) or normal timeout.
+   * Public for backwards-compatible callers that still drive auto-close
+   * manually through deprecated SSEConnection methods.
+   */
+  public schedulePause(prioritize: boolean): void {
+    this.schedulePauseWithTimeout(prioritize);
+  }
+
+  /**
+   * Cancel any pending pause.
+   */
+  public cancelScheduledPause(): void {
+    this.throttler.cancel();
+  }
+
+  private schedulePauseWithTimeout(useShortTimeout: boolean): void {
     this.throttler.cancel();
     this.throttler.throttle(() => this.connection.pause(), useShortTimeout);
+  }
+
+  private resumeAndCancelPendingPause(): void {
+    this.cancelScheduledPause();
+    void this.connection.resumeIfPaused();
   }
 }

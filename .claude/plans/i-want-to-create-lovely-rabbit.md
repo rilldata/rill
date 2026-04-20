@@ -16,7 +16,7 @@ Goal: introduce clean, testable layers; migrate all three consumers onto them (t
 In scope:
 - Extract SSE into a layered stack under `web-common/src/runtime-client/sse/`.
 - Drop the `fileAndResourceWatcher` singleton. Each mount owns its own watcher; status is exposed via Svelte context.
-- Move auto-close/lifecycle policy out of `SSEConnection` into an optional `SSELifecycle` layer.
+- Move auto-close/lifecycle policy out of `SSEConnection` into an optional `SSEConnectionLifecycle` layer.
 - Migrate `FileAndResourceWatcher`, `Conversation`, and `ProjectLogsPage` onto the new layers.
 - Extract per-resource-kind invalidation logic out of the watcher into pure helpers.
 - Rename `SSEConnectionManager` → `SSEConnection`.
@@ -52,7 +52,7 @@ Branch: `ericgreen/sse-client-cleanup` off `ericgreen/cloud-editing-mvp`.
 │    correctly through the "message" decoder.                      │
 └──────────────────────────────────────────────────────────────────┘
 ┌──────────────────────────────────────────────────────────────────┐
-│ 4. SSELifecycle (new, optional)                                  │
+│ 4. SSEConnectionLifecycle (new, optional)                        │
 │    Idle auto-close + visibility/focus heartbeat policy           │
 │    Injectable; consumers that want a persistent connection       │
 │    simply don't attach this layer.                               │
@@ -135,14 +135,14 @@ Logs event map:
 
 ## Lifecycle Strategies
 
-`SSELifecycle` is **optional**. Omit it entirely and the connection stays open until the consumer calls `close()`. Attach it and the connection participates in the browser's connection budget via visibility/idle-based pausing.
+`SSEConnectionLifecycle` is **optional**. Omit it entirely and the connection stays open until the consumer calls `close()`. Attach it and the connection participates in the browser's connection budget via visibility/idle-based pausing.
 
-Two presets, exported from `sse/sse-lifecycle.ts` as `LIFECYCLE_PRESETS`:
+Two lifecycle strategies are used by current consumers:
 
 | Preset       | short | normal | When to use                                                                                                          |
 | ------------ | ----- | ------ | -------------------------------------------------------------------------------------------------------------------- |
 | `aggressive` | 20 s  | 2 min  | Rill Developer (local). Browser 6-connection limit bites: SSE, queries, and dev assets all share `localhost:<port>`. |
-| `none`       | —     | —      | Rill Cloud editor + `Conversation` + `ProjectLogsPage`. Don't attach `SSELifecycle` at all.                          |
+| `none`       | —     | —      | Rill Cloud editor + `Conversation` + `ProjectLogsPage`. Don't attach `SSEConnectionLifecycle` at all.                |
 
 Only these two actual call sites exist today — `FileAndResourceWatcher` is mounted in `web-local/src/routes/+layout.svelte` (aggressive) and `web-admin/src/routes/[organization]/[project]/-/edit/+layout.svelte` (none). If a future surface (e.g. cloud explorer watcher) needs an intermediate strategy, add a preset then — don't pre-build it.
 
@@ -196,8 +196,8 @@ The existing SSE modules move into a dedicated `sse/` directory alongside the ne
 
 - `sse/sse-protocol.ts` — extract `parseSSELine`, `isEventComplete`, `isValidEvent` from `sse-fetch-client.ts:41-78`. Add `readSSEStream(stream): AsyncIterable<SSEMessage>` as the pure parser. Zero dependencies.
 - `sse/sse-fetch-client.ts` — moved + simplified. Consumes `readSSEStream`. Retain `SSEHttpError`.
-- `sse/sse-connection.ts` — renamed from `sse-connection-manager.ts`. Remove auto-close API (`scheduleAutoClose`, `disableAutoClose`, `enableAutoClose`, `autoCloseThrottler`, `autoCloseDisabled` — moved to `SSELifecycle`). Keep `ConnectionStatus`, backoff, stable-threshold, `heartbeat()`, `pause()`, `close()`, `cleanup()`. Add `onBeforeReconnect` constructor option.
-- `sse/sse-lifecycle.ts` — new. Class that takes an `SSEConnection` + `{idleTimeouts, onHeartbeat}` and listens to `document.visibilitychange` / `window.blur` / `window.focus` (or accepts an injected signal source for testing). Arms/cancels an idle throttler that calls `connection.pause()`. Exposes `start()`, `stop()`, and does nothing if `idleTimeouts` is not provided.
+- `sse/sse-connection.ts` — renamed from `sse-connection-manager.ts`. Remove auto-close API (`scheduleAutoClose`, `disableAutoClose`, `enableAutoClose`, `autoCloseThrottler`, `autoCloseDisabled` — moved to `SSEConnectionLifecycle`). Keep `ConnectionStatus`, backoff, stable-threshold, `resumeIfPaused()`, `pause()`, `close()`, `cleanup()`. Keep `heartbeat()` as a deprecated compatibility alias. Add `onBeforeReconnect` constructor option.
+- `sse/sse-connection-lifecycle.ts` — new. Class that takes an `SSEConnectionLifecycleConnection` + `idleTimeouts` and listens to `document.visibilitychange` / `window.blur` / activity signals (or accepts an injected signal source for testing). Arms/cancels an idle throttler that calls `connection.pause()`. Exposes `start()` and `stop()`.
 - `sse/sse-subscriber.ts` — new. Generic `SSESubscriber<TMap>` per the API sketch above. Normalizes undefined event type to `"message"`.
 - `sse/index.ts` — barrel re-export.
 
@@ -211,22 +211,22 @@ The existing SSE modules move into a dedicated `sse/` directory alongside the ne
 - `web-common/src/lib/event-emitter.ts` — unify. Both `SSEFetchClient` and `SSEConnection` currently instantiate `EventEmitter` and manually bind `on`/`once`. Add a small `withEventEmitter` mixin helper (or an exported binding convention) so both classes use one pattern.
 - `web-common/src/features/entity-management/file-and-resource-watcher.ts`:
   - Invalidator branches extracted (see above).
-  - `FileAndResourceWatcher` becomes a thin class: constructor takes `{host, instanceId, runtimeClient, queryClient, lifecycle, onBeforeReconnect, deps}`. Builds an `SSEConnection` + `SSESubscriber` + optional `SSELifecycle`; routes typed events to the invalidator helpers.
+  - `FileAndResourceWatcher` becomes a thin class: constructor takes `{host, instanceId, runtimeClient, queryClient, lifecycle, onBeforeReconnect, deps}`. Builds an `SSEConnection` + `SSESubscriber` + optional `SSEConnectionLifecycle`; routes typed events to the invalidator helpers.
   - **Remove** `export const fileAndResourceWatcher = new FileAndResourceWatcher()`. Instantiate per-mount in the Svelte component.
 - `web-common/src/features/entity-management/FileAndResourceWatcher.svelte`:
   - Construct the `FileAndResourceWatcher` **synchronously at the top of `<script>`**, not in `onMount`. `setContext` must run during component initialization — descendants calling `getContext` during their own init would see `undefined` otherwise. The props (`host`, `instanceId`) and the runtime client (via `useRuntimeClient()` getContext) are all available synchronously.
   - Call `setContext(WATCHER_CONTEXT_KEY, { status, watcher })` at init time so `RuntimeTrafficLights.svelte` can subscribe.
   - In `onMount`, do only the side-effectful parts: `watcher.start(url)` and any lifecycle attachment.
   - In `onDestroy`, call `watcher.close(true)`.
-  - Remove all window-level event handlers — they're now inside `SSELifecycle`.
+  - Remove all window-level event handlers — they're now inside `SSEConnectionLifecycle`.
   - Keep the `{#if $status === CLOSED}` error gate.
   - Replace the `keepAlive` boolean prop with `lifecycle: "aggressive" | "none"`.
   - Accept an optional `onBeforeReconnect: () => Promise<void>` prop.
 - `web-common/src/features/entity-management/RuntimeTrafficLights.svelte`:
   - Read the watcher context via `getContext(WATCHER_CONTEXT_KEY)`.
   - Fallback: if the context is absent (component rendered outside a watcher provider), default to a static `writable(ConnectionStatus.CLOSED)` store and render the component in its closed state. Don't throw. A unit test covers this.
-- `web-common/src/features/chat/core/conversation.ts` — replace raw `SSEFetchClient` usage (`conversation.ts:370-414`) with `SSESubscriber`. Define the event map above. Drop the ad-hoc `JSON.parse` + try/catch in the message handler; drop the `handleServerError(message.data)` branch in favor of the typed `error` decoder. Keep the existing transport-error handler for `SSEHttpError`. No `SSELifecycle`.
-- `web-admin/src/features/projects/status/logs/ProjectLogsPage.svelte` — replace the local `SSEConnectionManager` construction + inline `handleMessage` (`ProjectLogsPage.svelte:60-147`) with `SSEConnection` + `SSESubscriber<{ log: V1WatchLogsResponse; error: V1WatchErrorPayload }>`. The subscriber owns the `JSON.parse` and the `message.type !== "log"` filter. Keep the page's UI concerns (status badge, scroll-to-bottom, retry button). `retryConnection()` still calls `connection.start(url, opts)`. No `SSELifecycle`.
+- `web-common/src/features/chat/core/conversation.ts` — replace raw `SSEFetchClient` usage (`conversation.ts:370-414`) with `SSESubscriber`. Define the event map above. Drop the ad-hoc `JSON.parse` + try/catch in the message handler; drop the `handleServerError(message.data)` branch in favor of the typed `error` decoder. Keep the existing transport-error handler for `SSEHttpError`. No `SSEConnectionLifecycle`.
+- `web-admin/src/features/projects/status/logs/ProjectLogsPage.svelte` — replace the local `SSEConnectionManager` construction + inline `handleMessage` (`ProjectLogsPage.svelte:60-147`) with `SSEConnection` + `SSESubscriber<{ log: V1WatchLogsResponse; error: V1WatchErrorPayload }>`. The subscriber owns the `JSON.parse` and the `message.type !== "log"` filter. Keep the page's UI concerns (status badge, scroll-to-bottom, retry button). `retryConnection()` still calls `connection.start(url, opts)`. No `SSEConnectionLifecycle`.
 - `web-admin/src/features/projects/status/logs/log-store.ts` — **new, pure.** Extract the log state machine out of the component: a class (or plain module) exposing `addLog(log: V1Log)`, `getAll()`, `getFiltered({levels, search})`, and a ring-buffer cap of `MAX_LOGS`. The Svelte component becomes a thin view over this store. Keeps the spec below at pure-helper level so web-admin doesn't need jsdom configured.
 
 ### Call-site updates
@@ -277,10 +277,10 @@ All tests use vitest. Mock `fetch` with a helper that returns a custom `Readable
 - `onBeforeReconnect` is awaited before each retry.
 - `onBeforeReconnect` rejection: skips the transport call entirely, emits `error` with the rejection reason, **increments `retryAttempts`** like any other failed attempt, and lands on `CLOSED` after `maxRetryAttempts` consecutive hook failures.
 
-**`web-common/src/runtime-client/sse/sse-lifecycle.spec.ts`**
+**`web-common/src/runtime-client/sse/sse-connection-lifecycle.spec.ts`**
 
 - Simulated `document.visibilitychange` to hidden → arms idle throttler → `connection.pause()` fires after configured timeout.
-- Visibilitychange to visible → calls `connection.heartbeat()`.
+- Visibilitychange to visible → calls `connection.resumeIfPaused()`.
 - Lifecycle `stop()` removes window/document listeners (no leak on unmount).
 - Not attaching (omitting the layer) is a no-op.
 
@@ -337,7 +337,7 @@ If web-admin's vitest config ever needs a DOM environment for other specs, it's 
 **Create**
 
 - `web-common/src/runtime-client/sse/sse-protocol.ts`
-- `web-common/src/runtime-client/sse/sse-lifecycle.ts`
+- `web-common/src/runtime-client/sse/sse-connection-lifecycle.ts`
 - `web-common/src/runtime-client/sse/sse-subscriber.ts`
 - `web-common/src/runtime-client/sse/index.ts`
 - `web-common/src/runtime-client/invalidation/file-invalidators.ts`
@@ -365,7 +365,7 @@ If web-admin's vitest config ever needs a DOM environment for other specs, it's 
 
 **Reuse (don't rewrite)**
 
-- `web-common/src/lib/throttler.ts` — `SSELifecycle` uses it.
+- `web-common/src/lib/throttler.ts` — `SSEConnectionLifecycle` uses it.
 - `web-common/src/lib/event-bus/event-bus.ts` — `file-invalidators` emits `rill-yaml-updated` through it.
 - `web-common/src/runtime-client/invalidation.ts` — existing `invalidateConnectorQueries` / `invalidateMetricsViewData` / `invalidateComponentData` / `invalidateProfilingQueries` helpers stay; `resource-invalidators` call them.
 
@@ -377,9 +377,9 @@ The total blast radius (move + rename + new layers + singleton removal + invalid
 
 **PR 1 — Core SSE layers + tests.**
 
-- New files: `sse/sse-protocol.ts`, `sse/sse-lifecycle.ts`, `sse/sse-subscriber.ts`, `sse/index.ts`; all their `*.spec.ts`.
+- New files: `sse/sse-protocol.ts`, `sse/sse-connection-lifecycle.ts`, `sse/sse-subscriber.ts`, `sse/index.ts`; all their `*.spec.ts`.
 - Move + rename: `sse-fetch-client.ts`, `sse-connection-manager.ts` → `sse/sse-connection.ts`. Class rename `SSEConnectionManager` → `SSEConnection`. Re-export the old name from the old path as a deprecated alias so consumers compile unchanged.
-- Keep auto-close methods on `SSEConnection` as thin forwarders to a new lazily-attached `SSELifecycle` — deprecation shim, removed in PR 2.
+- Keep auto-close methods on `SSEConnection` as thin forwarders to a new lazily-attached `SSEConnectionLifecycle` — deprecation shim, removed in PR 2.
 - Add `onBeforeReconnect` constructor option (wired, no caller uses it yet).
 - Unify `EventEmitter` usage.
 - No consumer-side changes. Safe to land in isolation.

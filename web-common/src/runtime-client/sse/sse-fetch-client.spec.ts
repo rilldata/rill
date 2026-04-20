@@ -25,6 +25,72 @@ describe("SSEFetchClient", () => {
     vi.unstubAllGlobals();
   });
 
+  it("emits open, messages, then close on a successful stream", async () => {
+    fetchSpy.mockResolvedValueOnce(
+      new Response(
+        encodedStream(["data: first\n\n", "event: update\ndata: second\n\n"]),
+        { status: 200 },
+      ),
+    );
+
+    const client = new SSEFetchClient();
+    const seen: string[] = [];
+    const errorHandler = vi.fn();
+
+    client.on("open", () => seen.push("open"));
+    client.on("message", (message) => {
+      seen.push(`message:${message.data}`);
+    });
+    client.on("close", () => seen.push("close"));
+    client.on("error", errorHandler);
+
+    await client.start("http://x/sse");
+
+    expect(errorHandler).not.toHaveBeenCalled();
+    expect(seen).toEqual([
+      "open",
+      "message:first",
+      "message:second",
+      "close",
+    ]);
+  });
+
+  it("sends the JWT from getJwt as a Bearer Authorization header", async () => {
+    fetchSpy.mockResolvedValueOnce(
+      new Response(encodedStream(["data: ok\n\n"]), { status: 200 }),
+    );
+
+    const client = new SSEFetchClient();
+    await client.start("http://x/sse", { getJwt: () => "abc.def.ghi" });
+
+    const [, init] = fetchSpy.mock.calls[0];
+    expect((init as RequestInit).headers).toMatchObject({
+      Authorization: "Bearer abc.def.ghi",
+    });
+  });
+
+  it("emits error and close if getJwt throws", async () => {
+    const client = new SSEFetchClient();
+    const errorHandler = vi.fn();
+    const closeHandler = vi.fn();
+
+    client.on("error", errorHandler);
+    client.on("close", closeHandler);
+
+    await client.start("http://x/sse", {
+      getJwt: () => {
+        throw new Error("jwt failed");
+      },
+    });
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(errorHandler).toHaveBeenCalledTimes(1);
+    expect((errorHandler.mock.calls[0]?.[0] as Error).message).toBe(
+      "jwt failed",
+    );
+    expect(closeHandler).toHaveBeenCalledTimes(1);
+  });
+
   it("emits SSEHttpError with status and statusText on non-2xx", async () => {
     fetchSpy.mockResolvedValueOnce(
       new Response("nope", { status: 503, statusText: "Service Unavailable" }),
@@ -89,22 +155,6 @@ describe("SSEFetchClient", () => {
     expect(errorHandler).not.toHaveBeenCalled();
   });
 
-  it("sends the JWT from getJwt as a Bearer Authorization header", async () => {
-    fetchSpy.mockResolvedValueOnce(
-      new Response(encodedStream(["data: ok\n\n"]), { status: 200 }),
-    );
-
-    const client = new SSEFetchClient();
-    const closed = new Promise<void>((resolve) => client.on("close", resolve));
-    void client.start("http://x/sse", { getJwt: () => "abc.def.ghi" });
-    await closed;
-
-    const [, init] = fetchSpy.mock.calls[0];
-    expect((init as RequestInit).headers).toMatchObject({
-      Authorization: "Bearer abc.def.ghi",
-    });
-  });
-
   it("stop() during streaming aborts the request and fires close", async () => {
     let abortSignal: AbortSignal | undefined;
     fetchSpy.mockImplementationOnce((_url, init) => {
@@ -127,6 +177,33 @@ describe("SSEFetchClient", () => {
     await closed;
 
     expect(abortSignal?.aborted).toBe(true);
+  });
+
+  it("ignores close from an aborted previous start when a new start replaces it", async () => {
+    fetchSpy.mockImplementationOnce((_url, init) => {
+      return new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => {
+          const err = new Error("aborted");
+          err.name = "AbortError";
+          reject(err);
+        });
+      });
+    });
+    fetchSpy.mockResolvedValueOnce(
+      new Response(encodedStream(["data: current\n\n"]), { status: 200 }),
+    );
+
+    const client = new SSEFetchClient();
+    const closeHandler = vi.fn();
+    client.on("close", closeHandler);
+
+    const firstStart = client.start("http://x/sse?first");
+    await Promise.resolve();
+    const secondStart = client.start("http://x/sse?second");
+
+    await Promise.all([firstStart, secondStart]);
+
+    expect(closeHandler).toHaveBeenCalledTimes(1);
   });
 
   it("cleanup() clears listeners so later emits are no-ops", async () => {

@@ -1,23 +1,26 @@
 export {
   parseSSELine,
-  isEventComplete,
-  isValidEvent,
+  isEventBoundary,
+  hasDispatchableData,
   readSSEStream,
   type SSEMessage,
 } from "./sse-protocol";
 
 export { SSEFetchClient, SSEHttpError } from "./sse-fetch-client";
 
-export { SSEConnection, ConnectionStatus } from "./sse-connection";
+export {
+  SSEConnection,
+  ConnectionStatus,
+  type SSEConnectionOptions,
+} from "./sse-connection";
 
 export {
-  SSELifecycle,
-  LIFECYCLE_PRESETS,
+  SSEConnectionLifecycle,
   domSignalSource,
-  type LifecyclePreset,
+  type LifecycleControl,
   type LifecycleSignalSource,
-  type SSELifecycleOptions,
-} from "./sse-lifecycle";
+  type SSEConnectionLifecycleOptions,
+} from "./sse-connection-lifecycle";
 
 export {
   SSESubscriber,

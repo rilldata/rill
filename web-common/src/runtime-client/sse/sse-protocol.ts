@@ -18,46 +18,6 @@ export interface SSEMessage {
 }
 
 /**
- * Parse a single SSE line and accumulate it into `event`. Mutates `event`
- * for efficiency while streaming. Unknown fields (id:, retry:) are ignored.
- */
-export function parseSSELine(line: string, event: Partial<SSEMessage>): void {
-  const trimmedLine = line.trim();
-
-  if (!trimmedLine) return;
-
-  if (trimmedLine.startsWith(":")) return;
-
-  if (trimmedLine.startsWith("event:")) {
-    event.type = trimmedLine.slice(6).trim();
-    return;
-  }
-
-  if (trimmedLine.startsWith("data:")) {
-    const data = trimmedLine.slice(5).trim();
-    event.data = event.data ? event.data + "\n" + data : data;
-    return;
-  }
-}
-
-/**
- * An empty line signals the end of an event in the SSE wire format.
- */
-export function isEventComplete(line: string): boolean {
-  return line.trim() === "";
-}
-
-/**
- * An event is emittable once it has a non-empty `data` field. The SSE spec
- * treats data-less events as protocol noise (e.g. keepalive comments).
- */
-export function isValidEvent(
-  event: Partial<SSEMessage>,
-): event is SSEMessage {
-  return event.data !== undefined && event.data !== "";
-}
-
-/**
  * Parse an SSE byte stream into an async iterable of decoded events.
  *
  * The parser:
@@ -66,7 +26,8 @@ export function isValidEvent(
  *   - Handles events split across chunk boundaries and both LF and CRLF
  *     line endings.
  *   - Yields events only when a complete blank-line boundary is seen, plus
- *     a final event if the stream ends mid-buffer with valid data.
+ *     a final event when EOF arrives with valid buffered data (including
+ *     streams that end without a trailing newline).
  */
 export async function* readSSEStream(
   body: ReadableStream<Uint8Array>,
@@ -90,8 +51,8 @@ export async function* readSSEStream(
       buffer = lines.pop() ?? "";
 
       for (const line of lines) {
-        if (isEventComplete(line)) {
-          if (isValidEvent(currentEvent)) {
+        if (isEventBoundary(line)) {
+          if (hasDispatchableData(currentEvent)) {
             yield currentEvent;
           }
           currentEvent = {};
@@ -101,11 +62,64 @@ export async function* readSSEStream(
       }
     }
 
-    // Flush any remaining event held in the final buffer.
-    if (isValidEvent(currentEvent)) {
+    // Flush any trailing decoder bytes and parse the final buffered line
+    // (if the stream ended without a terminating newline).
+    buffer += decoder.decode();
+    if (buffer !== "") {
+      parseSSELine(buffer, currentEvent);
+    }
+
+    // Emit any remaining event assembled from parsed lines.
+    if (hasDispatchableData(currentEvent)) {
       yield currentEvent;
     }
   } finally {
     reader.releaseLock();
   }
+}
+
+/**
+ * Parse a single SSE line and accumulate it into `event`. Mutates `event`
+ * for efficiency while streaming. Unknown fields (id:, retry:) are ignored.
+ */
+export function parseSSELine(line: string, event: Partial<SSEMessage>): void {
+  // SSE comments start with ":" and are ignored by consumers.
+  if (line.startsWith(":")) return;
+
+  const separatorIndex = line.indexOf(":");
+  const field = separatorIndex === -1 ? line : line.slice(0, separatorIndex);
+
+  // Per SSE field parsing, remove exactly one leading space after ":".
+  let value = separatorIndex === -1 ? "" : line.slice(separatorIndex + 1);
+  if (value.startsWith(" ")) {
+    value = value.slice(1);
+  }
+
+  switch (field) {
+    case "event":
+      event.type = value === "" ? undefined : value;
+      return;
+    case "data":
+      event.data = event.data === undefined ? value : `${event.data}\n${value}`;
+      return;
+    default:
+      return;
+  }
+}
+
+/**
+ * An empty line signals the end of an event in the SSE wire format.
+ */
+export function isEventBoundary(line: string): boolean {
+  return line === "";
+}
+
+/**
+ * An event is emittable once it has a non-empty `data` field. The SSE spec
+ * treats data-less events as protocol noise (e.g. keepalive comments).
+ */
+export function hasDispatchableData(
+  event: Partial<SSEMessage>,
+): event is SSEMessage {
+  return event.data !== undefined && event.data !== "";
 }

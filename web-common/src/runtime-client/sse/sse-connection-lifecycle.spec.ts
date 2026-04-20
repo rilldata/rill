@@ -1,14 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { SSELifecycle, type LifecycleSignalSource } from "./sse-lifecycle";
-import type { SSEConnection } from "./sse-connection";
+import {
+  SSEConnectionLifecycle,
+  type LifecycleSignalSource,
+  type LifecycleControl,
+} from "./sse-connection-lifecycle";
 
 function fakeConnection() {
   return {
     pause: vi.fn(),
-    heartbeat: vi.fn().mockResolvedValue(undefined),
-  } as unknown as SSEConnection & {
+    resumeIfPaused: vi.fn().mockResolvedValue(undefined),
+  } as unknown as LifecycleControl & {
     pause: ReturnType<typeof vi.fn>;
-    heartbeat: ReturnType<typeof vi.fn>;
+    resumeIfPaused: ReturnType<typeof vi.fn>;
   };
 }
 
@@ -49,7 +52,7 @@ function fakeSignals() {
   };
 }
 
-describe("SSELifecycle", () => {
+describe("SSEConnectionLifecycle", () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -61,7 +64,7 @@ describe("SSELifecycle", () => {
   it("arms an idle pause when the tab becomes hidden", () => {
     const conn = fakeConnection();
     const signals = fakeSignals();
-    const lifecycle = new SSELifecycle(
+    const lifecycle = new SSEConnectionLifecycle(
       conn,
       { short: 100, normal: 1_000 },
       { signals: signals.signals },
@@ -77,24 +80,29 @@ describe("SSELifecycle", () => {
     expect(conn.pause).toHaveBeenCalledTimes(1);
   });
 
-  it("heartbeats when the tab becomes visible again", () => {
+  it("resumes when the tab becomes visible again and cancels pending idle pause", () => {
     const conn = fakeConnection();
     const signals = fakeSignals();
-    const lifecycle = new SSELifecycle(
+    const lifecycle = new SSEConnectionLifecycle(
       conn,
       { short: 100, normal: 1_000 },
       { signals: signals.signals },
     );
     lifecycle.start();
 
+    signals.fireVisibility(false);
+    vi.advanceTimersByTime(50);
     signals.fireVisibility(true);
-    expect(conn.heartbeat).toHaveBeenCalledTimes(1);
+
+    vi.advanceTimersByTime(1_000);
+    expect(conn.pause).not.toHaveBeenCalled();
+    expect(conn.resumeIfPaused).toHaveBeenCalledTimes(1);
   });
 
   it("arms an idle pause on blur (long timeout)", () => {
     const conn = fakeConnection();
     const signals = fakeSignals();
-    const lifecycle = new SSELifecycle(
+    const lifecycle = new SSEConnectionLifecycle(
       conn,
       { short: 100, normal: 1_000 },
       { signals: signals.signals },
@@ -108,24 +116,29 @@ describe("SSELifecycle", () => {
     expect(conn.pause).toHaveBeenCalledTimes(1);
   });
 
-  it("heartbeats on activity", () => {
+  it("resumes on activity and cancels pending blur pause", () => {
     const conn = fakeConnection();
     const signals = fakeSignals();
-    const lifecycle = new SSELifecycle(
+    const lifecycle = new SSEConnectionLifecycle(
       conn,
       { short: 100, normal: 1_000 },
       { signals: signals.signals },
     );
     lifecycle.start();
 
+    signals.fireBlur();
+    vi.advanceTimersByTime(500);
     signals.fireActivity();
-    expect(conn.heartbeat).toHaveBeenCalledTimes(1);
+
+    vi.advanceTimersByTime(1_000);
+    expect(conn.pause).not.toHaveBeenCalled();
+    expect(conn.resumeIfPaused).toHaveBeenCalledTimes(1);
   });
 
   it("stop() detaches listeners and cancels the pending idle pause", () => {
     const conn = fakeConnection();
     const signals = fakeSignals();
-    const lifecycle = new SSELifecycle(
+    const lifecycle = new SSEConnectionLifecycle(
       conn,
       { short: 100, normal: 1_000 },
       { signals: signals.signals },
@@ -144,7 +157,7 @@ describe("SSELifecycle", () => {
   it("start() is idempotent", () => {
     const conn = fakeConnection();
     const signals = fakeSignals();
-    const lifecycle = new SSELifecycle(
+    const lifecycle = new SSEConnectionLifecycle(
       conn,
       { short: 100, normal: 1_000 },
       { signals: signals.signals },

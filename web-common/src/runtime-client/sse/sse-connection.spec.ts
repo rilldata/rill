@@ -123,7 +123,33 @@ describe("SSEConnection", () => {
     expect(client.start.mock.calls.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("heartbeat() resumes from PAUSED", async () => {
+  it("resets retryAttempts when a stable open connection closes (wasStable close path)", async () => {
+    const conn = new SSEConnection({
+      retryOnError: true,
+      retryOnClose: true,
+      maxRetryAttempts: 3,
+    });
+    conn.start("http://x/sse");
+    const client = latestClient();
+
+    // Build up one retry attempt first.
+    client.fire("error", new Error("net"));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(client.start).toHaveBeenCalledTimes(2);
+
+    // Open successfully, then simulate wall-clock time passing without firing
+    // the open-path 5s timer reset.
+    const openedAt = Date.now();
+    client.fire("open");
+    vi.setSystemTime(openedAt + 6_000);
+
+    // A stable server close should reset attempts so reconnect is immediate.
+    client.fire("close");
+    expect(get(conn.status)).toBe(ConnectionStatus.CONNECTING);
+    expect(client.start).toHaveBeenCalledTimes(3);
+  });
+
+  it("resumeIfPaused() resumes from PAUSED", async () => {
     const conn = new SSEConnection({
       retryOnError: true,
       maxRetryAttempts: 3,
@@ -135,7 +161,7 @@ describe("SSEConnection", () => {
     conn.pause();
     expect(get(conn.status)).toBe(ConnectionStatus.PAUSED);
 
-    await conn.heartbeat();
+    await conn.resumeIfPaused();
     expect(get(conn.status)).toBe(ConnectionStatus.CONNECTING);
   });
 
@@ -153,11 +179,20 @@ describe("SSEConnection", () => {
     conn.pause();
     expect(get(conn.status)).toBe(ConnectionStatus.PAUSED);
 
-    // Restart from pause via heartbeat; retryAttempts should be 0, so the
+    // Restart from pause via resumeIfPaused; retryAttempts should be 0, so the
     // next start call happens without backoff.
-    await conn.heartbeat();
+    await conn.resumeIfPaused();
     await vi.advanceTimersByTimeAsync(0);
     expect(client.start).toHaveBeenCalledTimes(3);
+  });
+
+  it("keeps heartbeat() as a backward-compatible alias", async () => {
+    const conn = new SSEConnection();
+    const resumeSpy = vi.spyOn(conn, "resumeIfPaused");
+
+    await conn.heartbeat();
+
+    expect(resumeSpy).toHaveBeenCalledTimes(1);
   });
 
   it("close(true) clears listeners", () => {
@@ -193,9 +228,7 @@ describe("SSEConnection", () => {
   });
 
   it("counts onBeforeReconnect rejections as failed attempts and lands CLOSED after maxRetryAttempts", async () => {
-    const hook = vi
-      .fn()
-      .mockRejectedValue(new Error("refresh failed"));
+    const hook = vi.fn().mockRejectedValue(new Error("refresh failed"));
     const conn = new SSEConnection({
       retryOnError: true,
       maxRetryAttempts: 2,
@@ -221,5 +254,27 @@ describe("SSEConnection", () => {
     expect(client.start).toHaveBeenCalledTimes(1);
     expect(errors.some((e) => e.message === "refresh failed")).toBe(true);
     expect(get(conn.status)).toBe(ConnectionStatus.CLOSED);
+  });
+
+  it("keeps onBeforeReconnect retries in a single guarded reconnect task", async () => {
+    const hook = vi.fn().mockRejectedValue(new Error("refresh failed"));
+    const conn = new SSEConnection({
+      retryOnError: true,
+      maxRetryAttempts: 3,
+      onBeforeReconnect: hook,
+    });
+    conn.start("http://x/sse");
+    const client = latestClient();
+
+    client.fire("error", new Error("net"));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(hook).toHaveBeenCalledTimes(1);
+
+    // If the reconnect guard is held correctly, this extra trigger during the
+    // hook-failure backoff window is ignored and does not start a parallel loop.
+    void (conn as unknown as { reconnect: () => Promise<void> }).reconnect();
+
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(hook).toHaveBeenCalledTimes(2);
   });
 });
