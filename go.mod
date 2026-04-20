@@ -45,7 +45,7 @@ require (
 	github.com/fatih/color v1.16.0
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/getkin/kin-openapi v0.132.0
-	github.com/go-git/go-git/v5 v5.17.1
+	github.com/go-git/go-git/v5 v5.18.0
 	github.com/go-jose/go-jose/v3 v3.0.5
 	github.com/go-logr/zapr v1.2.4
 	github.com/go-playground/validator/v10 v10.14.0
@@ -68,7 +68,7 @@ require (
 	github.com/jackc/pgconn v1.14.3
 	github.com/jackc/pgtype v1.14.3
 	github.com/jackc/pgx/v4 v4.18.3
-	github.com/jackc/pgx/v5 v5.7.5
+	github.com/jackc/pgx/v5 v5.9.1
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/joho/godotenv v1.5.1
 	github.com/kelseyhightower/envconfig v1.4.0
@@ -84,9 +84,9 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2
 	github.com/prometheus/client_golang v1.23.2
 	github.com/redis/go-redis/v9 v9.6.3
-	github.com/riverqueue/river v0.19.0
-	github.com/riverqueue/river/riverdriver/riverpgxv5 v0.19.0
-	github.com/riverqueue/river/rivertype v0.19.0
+	github.com/riverqueue/river v0.35.0
+	github.com/riverqueue/river/riverdriver/riverpgxv5 v0.35.0
+	github.com/riverqueue/river/rivertype v0.35.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/cors v1.11.1
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
@@ -126,7 +126,7 @@ require (
 	golang.org/x/sync v0.20.0
 	golang.org/x/sys v0.42.0
 	golang.org/x/term v0.41.0
-	golang.org/x/text v0.35.0
+	golang.org/x/text v0.36.0
 	google.golang.org/api v0.230.0
 	google.golang.org/genai v1.44.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20260401024825-9d38bb4040a9
@@ -384,8 +384,8 @@ require (
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/richardlehane/mscfb v1.0.4 // indirect
 	github.com/richardlehane/msoleps v1.0.3 // indirect
-	github.com/riverqueue/river/riverdriver v0.19.0 // indirect
-	github.com/riverqueue/river/rivershared v0.19.0 // indirect
+	github.com/riverqueue/river/riverdriver v0.35.0 // indirect
+	github.com/riverqueue/river/rivershared v0.35.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.1 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.10.0 // indirect
@@ -400,7 +400,7 @@ require (
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.6.0 // indirect
 	github.com/tidwall/gjson v1.18.0 // indirect
-	github.com/tidwall/match v1.1.1 // indirect
+	github.com/tidwall/match v1.2.0 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/tilt-dev/fsnotify v1.4.8-0.20220602155310-fff9c274a375 // indirect
@@ -431,10 +431,10 @@ require (
 	go.uber.org/goleak v1.3.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.49.0 // indirect
-	golang.org/x/mod v0.33.0 // indirect
-	golang.org/x/telemetry v0.0.0-20260209163413-e7419c687ee4 // indirect
+	golang.org/x/mod v0.35.0 // indirect
+	golang.org/x/telemetry v0.0.0-20260311193753-579e4da9a98c // indirect
 	golang.org/x/time v0.14.0 // indirect
-	golang.org/x/tools v0.42.0 // indirect
+	golang.org/x/tools v0.43.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	google.golang.org/genproto v0.0.0-20250303144028-a0af3efb3deb // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260401024825-9d38bb4040a9 // indirect

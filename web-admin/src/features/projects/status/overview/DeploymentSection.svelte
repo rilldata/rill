@@ -5,7 +5,11 @@
     createAdminServiceGetBillingSubscription,
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
-  import { isTrialPlan } from "@rilldata/web-admin/features/billing/plans/utils";
+  import {
+    isFreePlan,
+    isProPlan,
+    isTrialPlan,
+  } from "@rilldata/web-admin/features/billing/plans/utils";
   import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
@@ -32,6 +36,7 @@
   import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
   import ProjectClone from "./ProjectClone.svelte";
   import OverviewCard from "@rilldata/web-common/features/projects/status/overview/OverviewCard.svelte";
+  import ClusterSize from "./ClusterSize.svelte";
 
   export let organization: string;
   export let project: string;
@@ -116,10 +121,15 @@
 
   $: canManage = $proj.data?.projectPermissions?.manageProject ?? false;
 
+  // Slots
+  $: currentSlots = Number(projectData?.prodSlots) || 0;
+
   // Billing plan detection
   $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
   $: planName = $subscriptionQuery?.data?.subscription?.plan?.name ?? "";
   $: isFree = isTrialPlan(planName);
+  $: showSlots =
+    isTrialPlan(planName) || isFreePlan(planName) || isProPlan(planName);
 </script>
 
 <OverviewCard title="Deployment">
@@ -157,6 +167,15 @@
         {formatEnvironmentName(deployment?.environment)}
       </span>
     </div>
+
+    {#if !$subscriptionQuery?.isLoading && showSlots}
+      <div class="info-row">
+        <span class="info-label">Cluster Size</span>
+        <span class="info-value">
+          <ClusterSize slots={currentSlots} />
+        </span>
+      </div>
+    {/if}
 
     {#if isGithubConnected}
       <div class="info-row">

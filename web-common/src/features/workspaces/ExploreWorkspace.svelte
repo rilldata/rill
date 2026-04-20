@@ -17,6 +17,7 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import ExplainAndFixErrorButton from "@rilldata/web-common/features/chat/ExplainAndFixErrorButton.svelte";
   import ReconcileWarningPanel from "../entity-management/ReconcileWarningPanel.svelte";
   import Spinner from "../entity-management/Spinner.svelte";
   import PreviewButton from "../explores/PreviewButton.svelte";
@@ -124,6 +125,7 @@
               resource={exploreResource ?? metricsViewResource}
               {parseError}
               remoteContent={$remoteContent}
+              {filePath}
             >
               {#if selectedView === "code"}
                 <ExploreEditor
@@ -134,12 +136,17 @@
                 />
               {:else if selectedView === "viz"}
                 {#if parseError || rootCauseReconcileError}
-                  <ErrorPage
-                    body={parseError?.message ?? rootCauseReconcileError ?? ""}
-                    fatal
-                    header="Unable to load dashboard preview"
-                    statusCode={404}
-                  />
+                  <div class="flex flex-col items-center gap-4">
+                    <ErrorPage
+                      body={parseError?.message ??
+                        rootCauseReconcileError ??
+                        ""}
+                      fatal
+                      header="Unable to load dashboard preview"
+                      statusCode={404}
+                    />
+                    <ExplainAndFixErrorButton {filePath} large />
+                  </div>
                 {:else if exploreName && metricsViewName}
                   <DashboardStateManager {exploreName}>
                     <Dashboard {metricsViewName} {exploreName} />

@@ -270,6 +270,27 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	return res, nil
 }
 
+func (c *Connection) Head(ctx context.Context, db, schema, table string, limit int64) (*drivers.Result, error) {
+	tbl, err := c.InformationSchema().Lookup(ctx, db, schema, table)
+	if err != nil {
+		return nil, err
+	}
+
+	var columns []string
+	for _, field := range tbl.Schema.Fields {
+		columns = append(columns, c.Dialect().EscapeIdentifier(field.Name))
+	}
+
+	limitClause := ""
+	if limit > 0 {
+		limitClause = fmt.Sprintf(" LIMIT %d", limit)
+	}
+
+	return c.Query(ctx, &drivers.Statement{
+		Query: fmt.Sprintf("SELECT %s FROM %s%s", strings.Join(columns, ", "), c.Dialect().EscapeTable(db, schema, table), limitClause),
+	})
+}
+
 func (c *Connection) QuerySchema(ctx context.Context, query string, args []any) (*runtimev1.StructType, error) {
 	// ClickHouse does not return schema with LIMIT 0, so we need to wrap query inside DESCRIBE to explicitly get the schema
 	query = fmt.Sprintf("DESCRIBE (%s)", query)
