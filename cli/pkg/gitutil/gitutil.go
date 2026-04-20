@@ -150,7 +150,7 @@ func ExtractRemotes(projectPath string, detectDotGit bool) ([]Remote, error) {
 	return res, nil
 }
 
-func CommitAndPush(ctx context.Context, projectPath string, config *Config, commitMsg string, author *object.Signature, allowEmpty bool) error {
+func CommitAndPush(ctx context.Context, projectPath string, config *Config, commitMsg string, author *object.Signature) error {
 	// init git repo
 	repo, err := git.PlainInitWithOptions(projectPath, &git.PlainInitOptions{
 		InitOptions: git.InitOptions{
@@ -203,7 +203,7 @@ func CommitAndPush(ctx context.Context, projectPath string, config *Config, comm
 	if commitMsg == "" {
 		commitMsg = "Auto committed by Rill"
 	}
-	_, err = wt.Commit(commitMsg, &git.CommitOptions{Author: author, AllowEmptyCommits: allowEmpty})
+	_, err = wt.Commit(commitMsg, &git.CommitOptions{Author: author, AllowEmptyCommits: false})
 	if err != nil {
 		if !errors.Is(err, git.ErrEmptyCommit) {
 			return fmt.Errorf("failed to commit files to git: %w", err)

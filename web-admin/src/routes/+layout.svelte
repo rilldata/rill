@@ -105,7 +105,9 @@
     // Welcome page should be a full screen experience
     isWelcomePage($page) ||
     // Project welcome page should not show the banner to avoid breaking the UX.
-    isProjectWelcomePage($page);
+    isProjectWelcomePage($page) ||
+    // Project create page should be a full page experience as well.
+    isProjectCreatePage($page);
   $: hideBillingManager =
     // billing manager needs organization
     !organization ||
@@ -156,7 +158,7 @@
       {#if !hideBillingManager}
         <BillingBannerManager {organization} {organizationPermissions} />
       {/if}
-      {#if !isEmbed && !hideTopBar && !withinProject($page) && !isProjectCreatePage($page)}
+      {#if !isEmbed && !hideTopBar && !withinProject($page)}
         <OrgHeader
           readProjects={organizationPermissions?.readProjects}
           {planDisplayName}

@@ -127,10 +127,7 @@ export class FileAndResourceWatcher {
             break;
 
           default:
-            console.warn(
-              `Unknown event type: ${event.type}`,
-              JSON.stringify(event),
-            );
+            console.warn(`Unknown event type: ${event.type}`);
             return;
         }
 
@@ -198,7 +195,6 @@ export class FileAndResourceWatcher {
 
   private async handleFileEvent(res: V1WatchFilesResponse) {
     if (!res?.path || res.path.includes(".db")) return;
-    console.log(`[${res.event}] ${res.path}`);
 
     const isNew = !this.seenFiles.has(res.path);
 
@@ -251,11 +247,11 @@ export class FileAndResourceWatcher {
   private async handleResourceEvent(res: V1WatchResourcesResponse) {
     // Log resource status to the browser console during e2e tests. Currently, our e2e tests make assertions
     // based on these logs. However, the e2e tests really should make UI-based assertions.
-    // if (import.meta.env.VITE_PLAYWRIGHT_TEST) {
-    console.log(
-      `[${res.resource?.meta?.reconcileStatus}] ${res.name?.kind}/${res.name?.name}`,
-    );
-    // }
+    if (import.meta.env.VITE_PLAYWRIGHT_TEST) {
+      console.log(
+        `[${res.resource?.meta?.reconcileStatus}] ${res.name?.kind}/${res.name?.name}`,
+      );
+    }
 
     // Type guards
     if (!res?.event || !res?.name || !res?.name?.name || !res?.name?.kind) {

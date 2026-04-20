@@ -2,6 +2,7 @@
   import { createAdminServiceListProjectsForOrganization } from "../../client";
   import ProjectCard from "./ProjectCard.svelte";
   import { Button } from "@rilldata/web-common/components/button";
+  import { projectWelcomeEnabled } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
 
   export let organization: string;
 
@@ -15,9 +16,11 @@
     class="flex flex-row items-center text-fg-secondary text-base font-normal leading-normal"
   >
     <span class="grow">Check out your projects below.</span>
-    <Button type="primary" href="/{organization}/-/create-project">
-      Create new
-    </Button>
+    {#if projectWelcomeEnabled}
+      <Button type="primary" href="/{organization}/-/create-project">
+        Create new
+      </Button>
+    {/if}
   </span>
 
   {#if $projs.data && $projs.data.projects?.length === 0}

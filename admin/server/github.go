@@ -1146,7 +1146,7 @@ func (s *Server) pushAssetToGit(ctx context.Context, assetID, remote, branch, to
 		Password:      token,
 		DefaultBranch: branch,
 	}
-	return cligitutil.CommitAndPush(ctx, projPath, config, "", author, false)
+	return cligitutil.CommitAndPush(ctx, projPath, config, "", author)
 }
 
 func (s *Server) githubAppInstallationURL(state githubConnectState) (string, error) {
@@ -1192,7 +1192,7 @@ func (s *Server) seedFilesToRepo(ctx context.Context, remote, branch, token stri
 		Email: "service-account@rilldata.com", // not an actual email
 		When:  time.Now(),
 	}
-	return cligitutil.CommitAndPush(ctx, gitPath, cfg, "Initial commit", author, false)
+	return cligitutil.CommitAndPush(ctx, gitPath, cfg, "Initial commit", author)
 }
 
 func fromStringPtr(s *string) string {

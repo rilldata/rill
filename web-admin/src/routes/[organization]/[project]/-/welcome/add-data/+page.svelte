@@ -29,6 +29,7 @@
     });
 
     projectWelcomeStatusStores.setProjectWelcomeStatus(project, false);
+    // TODO: land user to edit screen when that is available
     setTimeout(
       () =>
         void goto(

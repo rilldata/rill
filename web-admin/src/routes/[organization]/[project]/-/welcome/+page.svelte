@@ -19,6 +19,7 @@
       commitMessage: "Initial dashboard commit",
     });
 
+    // TODO: land user to edit screen when that is available
     setTimeout(
       () =>
         void goto(
