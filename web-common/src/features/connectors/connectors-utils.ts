@@ -124,9 +124,24 @@ export function getConnectorIconKey(connector: V1AnalyzedConnector): string {
 
   // Special case: DuckLake connectors use an `attach` clause pointing at a
   // DuckLake catalog (e.g. `'ducklake:metadata.ducklake' AS ...`).
+  // Detection covers both resolved config and the raw project/preset config
+  // so the icon still shows even when the runtime redacts merged config, and
+  // falls back to the default connector name written by the DuckLake tile.
   if (connector.driver?.name === "duckdb") {
-    const attach = connector.config?.attach;
-    if (typeof attach === "string" && attach.includes("ducklake:")) {
+    const attachCandidates: unknown[] = [
+      connector.config?.attach,
+      connector.projectConfig?.attach,
+      connector.presetConfig?.attach,
+    ];
+    const isDuckLakeAttach = attachCandidates.some(
+      (v) => typeof v === "string" && v.includes("ducklake:"),
+    );
+    const name = connector.name ?? "";
+    if (
+      isDuckLakeAttach ||
+      name === "ducklake" ||
+      name.startsWith("ducklake_")
+    ) {
       return "ducklake";
     }
   }
