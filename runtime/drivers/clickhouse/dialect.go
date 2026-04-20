@@ -257,7 +257,7 @@ func (d *dialect) IsNonNullFinite(floatColumn string) string {
 	return fmt.Sprintf("%s IS NOT NULL AND isFinite(%s)", sanitizedFloatColumn, sanitizedFloatColumn)
 }
 
-func (d dialect) ColumnNumericHistogramBucket(db, dbSchema, table, column string) (string, error) {
+func (d *dialect) ColumnNumericHistogramBucket(db, dbSchema, table, column string) (string, error) {
 	sanitizedColumnName := d.EscapeIdentifier(column)
 	return fmt.Sprintf("SELECT (quantileTDigest(0.75)(%s)-quantileTDigest(0.25)(%s)) AS iqr, uniq(%s) AS count, (max(%s) - min(%s)) AS range FROM %s",
 		sanitizedColumnName,

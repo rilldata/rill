@@ -99,7 +99,7 @@ func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.Time
 	return sb.String(), nil, nil
 }
 
-func (d *dialect) ColumnCardinalitySQL(db, dbSchema, table, column string) (string, error) {
+func (d *dialect) ColumnCardinality(db, dbSchema, table, column string) (string, error) {
 	return fmt.Sprintf("SELECT approx_count_distinct(%s) AS count FROM %s", d.EscapeIdentifier(column), d.EscapeTable(db, dbSchema, table)), nil
 }
 
@@ -124,7 +124,7 @@ func (d *dialect) IsNonNullFinite(floatColumn string) string {
 	return fmt.Sprintf("%s IS NOT NULL AND %s > -1e308 AND %s < 1e308", sanitizedFloatColumn, sanitizedFloatColumn, sanitizedFloatColumn)
 }
 
-func (d dialect) ColumnNumericHistogramBucket(db, dbSchema, table, column string) (string, error) {
+func (d *dialect) ColumnNumericHistogramBucket(db, dbSchema, table, column string) (string, error) {
 	sanitizedColumnName := d.EscapeIdentifier(column)
 	return fmt.Sprintf("SELECT (percentile_approx(%s, 0.75)-percentile_approx(%s, 0.25)) AS iqr, approx_count_distinct(%s) AS count, (max(%s) - min(%s)) AS `range` FROM %s",
 		sanitizedColumnName,
