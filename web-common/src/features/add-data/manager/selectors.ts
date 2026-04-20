@@ -2,6 +2,7 @@ import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "@rilldata/web-common/features/connectors/selectors.ts";
 import { derived } from "svelte/store";
 import { connectors } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
+import { LIVE_OLAP_WAREHOUSES } from "@rilldata/web-common/features/sources/modal/constants.ts";
 import type { AddDataConfig } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
 
 export function getSupportedConnectorInfos(
@@ -19,7 +20,11 @@ export function getSupportedConnectorInfos(
           (c) =>
             (config.importOnly ? true : c.name !== "duckdb") &&
             c.category !== "ai" &&
-            (isModellingSupportedResp.data || c.category === "olap"),
+            // When modeling isn't supported, also allow warehouses that can be
+            // queried live as OLAP (Snowflake, BigQuery).
+            (isModellingSupportedResp.data ||
+              c.category === "olap" ||
+              LIVE_OLAP_WAREHOUSES.includes(c.name)),
         )
         .sort((a, b) => {
           if (a.name === "https" || a.name === "local_file") return 1;
