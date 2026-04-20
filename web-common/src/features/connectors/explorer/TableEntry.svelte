@@ -23,7 +23,7 @@
   export let store: ConnectorExplorerStore;
   export let showGenerateMetricsAndDashboard: boolean = false;
   export let showGenerateModel: boolean = false;
-  export let isOlapConnector: boolean = false;
+  export let metricsMode: "import" | "live" | "both" = "import";
 
   let contextMenuOpen = false;
 
@@ -133,6 +133,7 @@
           sideOffset={16}
         >
           <TableMenuItems
+            {driver}
             {connector}
             {database}
             {databaseSchema}
@@ -140,7 +141,7 @@
             {showGenerateMetricsAndDashboard}
             {showGenerateModel}
             {isModelingSupported}
-            {isOlapConnector}
+            {metricsMode}
           />
         </DropdownMenu.Content>
       </DropdownMenu.Root>

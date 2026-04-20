@@ -1,5 +1,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
+  import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
+  import MetricsViewIcon from "@rilldata/web-common/components/icons/MetricsViewIcon.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
@@ -10,14 +13,16 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
+  import { WandIcon } from "lucide-svelte";
   import { useRuntimeClient } from "../../../runtime-client/v2";
+  import { featureFlags } from "../../feature-flags";
   import { generateMetricsFromTable } from "../../metrics-views/ai-generation/generateMetricsView";
   import {
     createSqlModelFromTable,
     createYamlModelFromTable,
   } from "../code-utils";
-  import GenerateMenuItem from "./GenerateMenuItem.svelte";
 
+  export let driver: string = "";
   export let connector: string;
   export let database: string = "";
   export let databaseSchema: string = "";
@@ -25,10 +30,18 @@
   export let showGenerateMetricsAndDashboard: boolean = false;
   export let showGenerateModel: boolean = false;
   export let isModelingSupported: boolean | undefined = false;
-  export let isOlapConnector: boolean = false;
+  export let metricsMode: "import" | "live" | "both" = "import";
 
   const client = useRuntimeClient();
+  const { ai } = featureFlags;
   $: ({ instanceId } = client);
+
+  // Display label for the live-OLAP path in the submenu.
+  const DRIVER_DISPLAY_NAMES: Record<string, string> = {
+    snowflake: "Snowflake",
+    bigquery: "BigQuery",
+  };
+  $: liveDriverLabel = DRIVER_DISPLAY_NAMES[driver] ?? driver;
 
   async function handleCreateModel(
     modelCreationFn: () => Promise<[string, string]>,
@@ -75,7 +88,7 @@
     }
   }
 
-  async function handleGenerateMetrics() {
+  async function handleGenerateMetrics(isOlapConnector: boolean) {
     await generateMetricsFromTable(
       client,
       instanceId,
@@ -88,7 +101,7 @@
     );
   }
 
-  async function handleGenerateDashboard() {
+  async function handleGenerateDashboard(isOlapConnector: boolean) {
     await generateMetricsFromTable(
       client,
       instanceId,
@@ -109,7 +122,80 @@
   </NavigationMenuItem>
 {/if}
 
-{#if isOlapConnector || showGenerateMetricsAndDashboard}
-  <GenerateMenuItem type="metrics" onClick={handleGenerateMetrics} />
-  <GenerateMenuItem type="dashboard" onClick={handleGenerateDashboard} />
+{#if showGenerateMetricsAndDashboard}
+  {#if metricsMode === "both"}
+    <DropdownMenu.Sub>
+      <DropdownMenu.SubTrigger class="gap-2">
+        <div
+          class="grid place-content-center opacity-80 text-fg-secondary"
+          style:height="18px"
+        >
+          <MetricsViewIcon />
+        </div>
+        <div class="flex gap-x-2 items-center text-left flex-grow">
+          Generate metrics
+          {#if $ai}
+            with AI
+            <WandIcon class="w-3 h-3" />
+          {/if}
+        </div>
+      </DropdownMenu.SubTrigger>
+      <DropdownMenu.SubContent>
+        <NavigationMenuItem onclick={() => handleGenerateMetrics(false)}>
+          Import to DuckDB
+        </NavigationMenuItem>
+        <NavigationMenuItem onclick={() => handleGenerateMetrics(true)}>
+          Live on {liveDriverLabel}
+        </NavigationMenuItem>
+      </DropdownMenu.SubContent>
+    </DropdownMenu.Sub>
+
+    <DropdownMenu.Sub>
+      <DropdownMenu.SubTrigger class="gap-2">
+        <div
+          class="grid place-content-center opacity-80 text-fg-secondary"
+          style:height="18px"
+        >
+          <ExploreIcon />
+        </div>
+        <div class="flex gap-x-2 items-center text-left flex-grow">
+          Generate dashboard
+          {#if $ai}
+            with AI
+            <WandIcon class="w-3 h-3" />
+          {/if}
+        </div>
+      </DropdownMenu.SubTrigger>
+      <DropdownMenu.SubContent>
+        <NavigationMenuItem onclick={() => handleGenerateDashboard(false)}>
+          Import to DuckDB
+        </NavigationMenuItem>
+        <NavigationMenuItem onclick={() => handleGenerateDashboard(true)}>
+          Live on {liveDriverLabel}
+        </NavigationMenuItem>
+      </DropdownMenu.SubContent>
+    </DropdownMenu.Sub>
+  {:else}
+    {@const isLive = metricsMode === "live"}
+    <NavigationMenuItem onclick={() => handleGenerateMetrics(isLive)}>
+      <MetricsViewIcon slot="icon" />
+      <div class="flex gap-x-2 items-center">
+        Generate metrics
+        {#if $ai}
+          with AI
+          <WandIcon class="w-3 h-3" />
+        {/if}
+      </div>
+    </NavigationMenuItem>
+    <NavigationMenuItem onclick={() => handleGenerateDashboard(isLive)}>
+      <ExploreIcon slot="icon" />
+      <div class="flex gap-x-2 items-center">
+        Generate dashboard
+        {#if $ai}
+          with AI
+          <WandIcon class="w-3 h-3" />
+        {/if}
+      </div>
+    </NavigationMenuItem>
+  {/if}
 {/if}

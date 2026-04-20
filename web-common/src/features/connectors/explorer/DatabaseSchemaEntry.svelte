@@ -5,6 +5,7 @@
     V1AnalyzedConnector,
     V1TableInfo,
   } from "../../../runtime-client";
+  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "../../../runtime-client/v2";
   import TableEntry from "./TableEntry.svelte";
   import { useInfiniteListTables } from "../selectors";
@@ -20,6 +21,35 @@
   const client = useRuntimeClient();
 
   $: connectorName = connector?.name as string;
+
+  $: instanceQuery = createRuntimeServiceGetInstance(client, {
+    sensitive: true,
+  });
+  $: projectOlapConnector = $instanceQuery.data?.instance?.olapConnector;
+  $: isProjectOlap = projectOlapConnector === connectorName;
+  $: canLiveOlap = connector.driver?.implementsOlap ?? false;
+  $: canImportToDuckDB =
+    (connector.driver?.implementsWarehouse ||
+      connector.driver?.implementsSqlStore) ??
+    false;
+  // If the connector can both be ingested into DuckDB and queried live as OLAP
+  // (Snowflake, BigQuery), and it's not already the project's default OLAP,
+  // offer both paths on the metrics/dashboard menu.
+  function resolveMetricsMode(
+    projectOlap: boolean,
+    live: boolean,
+    imp: boolean,
+  ): "import" | "live" | "both" {
+    if (projectOlap) return "live";
+    if (live && imp) return "both";
+    if (live) return "live";
+    return "import";
+  }
+  $: metricsMode = resolveMetricsMode(
+    isProjectOlap,
+    canLiveOlap,
+    canImportToDuckDB,
+  );
 
   $: expandedStore = store.getItem(connectorName, database, databaseSchema);
   $: expanded = $expandedStore;
@@ -121,10 +151,8 @@
               connector.driver.implementsWarehouse ||
               connector.driver.implementsSqlStore) ??
               false}
-            showGenerateModel={(connector.driver.implementsWarehouse ||
-              connector.driver.implementsSqlStore) ??
-              false}
-            isOlapConnector={connector.driver.implementsOlap ?? false}
+            showGenerateModel={canImportToDuckDB && !isProjectOlap}
+            {metricsMode}
             {database}
             {databaseSchema}
             table={tableInfo.name}
