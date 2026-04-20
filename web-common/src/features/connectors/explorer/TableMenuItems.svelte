@@ -124,57 +124,51 @@
 
 {#if showGenerateMetricsAndDashboard}
   {#if metricsMode === "both"}
-    <DropdownMenu.Sub>
-      <DropdownMenu.SubTrigger class="gap-2">
-        <div
-          class="grid place-content-center opacity-80 text-fg-secondary"
-          style:height="18px"
-        >
-          <MetricsViewIcon />
-        </div>
-        <div class="flex gap-x-2 items-center text-left flex-grow">
-          Generate metrics
-          {#if $ai}
-            with AI
-            <WandIcon class="w-3 h-3" />
-          {/if}
-        </div>
-      </DropdownMenu.SubTrigger>
-      <DropdownMenu.SubContent>
-        <NavigationMenuItem onclick={() => handleGenerateMetrics(false)}>
-          Import to DuckDB
-        </NavigationMenuItem>
-        <NavigationMenuItem onclick={() => handleGenerateMetrics(true)}>
-          Live on {liveDriverLabel}
-        </NavigationMenuItem>
-      </DropdownMenu.SubContent>
-    </DropdownMenu.Sub>
+    <DropdownMenu.Separator />
+    <DropdownMenu.Label>Import to DuckDB</DropdownMenu.Label>
+    <NavigationMenuItem onclick={() => handleGenerateMetrics(false)}>
+      <MetricsViewIcon slot="icon" />
+      <div class="flex gap-x-2 items-center">
+        Generate metrics
+        {#if $ai}
+          with AI
+          <WandIcon class="w-3 h-3" />
+        {/if}
+      </div>
+    </NavigationMenuItem>
+    <NavigationMenuItem onclick={() => handleGenerateDashboard(false)}>
+      <ExploreIcon slot="icon" />
+      <div class="flex gap-x-2 items-center">
+        Generate dashboard
+        {#if $ai}
+          with AI
+          <WandIcon class="w-3 h-3" />
+        {/if}
+      </div>
+    </NavigationMenuItem>
 
-    <DropdownMenu.Sub>
-      <DropdownMenu.SubTrigger class="gap-2">
-        <div
-          class="grid place-content-center opacity-80 text-fg-secondary"
-          style:height="18px"
-        >
-          <ExploreIcon />
-        </div>
-        <div class="flex gap-x-2 items-center text-left flex-grow">
-          Generate dashboard
-          {#if $ai}
-            with AI
-            <WandIcon class="w-3 h-3" />
-          {/if}
-        </div>
-      </DropdownMenu.SubTrigger>
-      <DropdownMenu.SubContent>
-        <NavigationMenuItem onclick={() => handleGenerateDashboard(false)}>
-          Import to DuckDB
-        </NavigationMenuItem>
-        <NavigationMenuItem onclick={() => handleGenerateDashboard(true)}>
-          Live on {liveDriverLabel}
-        </NavigationMenuItem>
-      </DropdownMenu.SubContent>
-    </DropdownMenu.Sub>
+    <DropdownMenu.Separator />
+    <DropdownMenu.Label>Live on {liveDriverLabel}</DropdownMenu.Label>
+    <NavigationMenuItem onclick={() => handleGenerateMetrics(true)}>
+      <MetricsViewIcon slot="icon" />
+      <div class="flex gap-x-2 items-center">
+        Generate metrics
+        {#if $ai}
+          with AI
+          <WandIcon class="w-3 h-3" />
+        {/if}
+      </div>
+    </NavigationMenuItem>
+    <NavigationMenuItem onclick={() => handleGenerateDashboard(true)}>
+      <ExploreIcon slot="icon" />
+      <div class="flex gap-x-2 items-center">
+        Generate dashboard
+        {#if $ai}
+          with AI
+          <WandIcon class="w-3 h-3" />
+        {/if}
+      </div>
+    </NavigationMenuItem>
   {:else}
     {@const isLive = metricsMode === "live"}
     <NavigationMenuItem onclick={() => handleGenerateMetrics(isLive)}>
