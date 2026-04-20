@@ -113,7 +113,9 @@
 
       <div class="summary-panel">
         <span class="summary-label">Est. hourly project cost</span>
-        <span class="summary-value text-fg-secondary">${totalHourlyCost}/hr</span>
+        <span class="summary-value text-fg-secondary"
+          >${totalHourlyCost}/hr</span
+        >
         <span class="summary-breakdown-plain">
           ${prodHourlyCost} prod + ${devHourlyCost} dev
         </span>
