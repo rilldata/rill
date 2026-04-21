@@ -25,6 +25,24 @@ var DialectSnowflake drivers.Dialect = func() drivers.Dialect {
 	return d
 }()
 
+func (d *dialect) OrderByExpression(name string, desc bool) string {
+	res := d.EscapeIdentifier(name)
+	if desc {
+		res += " DESC"
+	}
+	res += " NULLS LAST"
+	return res
+}
+
+func (d *dialect) OrderByAliasExpression(name string, desc bool) string {
+	res := d.EscapeAlias(name)
+	if desc {
+		res += " DESC"
+	}
+	res += " NULLS LAST"
+	return res
+}
+
 func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain runtimev1.TimeGrain, tz string, firstDayOfWeek, firstMonthOfYear int) (string, error) {
 	if tz == "UTC" || tz == "Etc/UTC" {
 		tz = ""

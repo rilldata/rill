@@ -244,7 +244,7 @@ func databaseTypeToPB(dbt string, scale int64, nullable bool) (*runtimev1.Type, 
 		if scale == 0 {
 			t.Code = runtimev1.Type_CODE_INT256
 		} else {
-			t.Code = runtimev1.Type_CODE_FLOAT64
+			t.Code = runtimev1.Type_CODE_DECIMAL
 		}
 	case "VARCHAR", "STRING", "TEXT", "CHAR", "CHARACTER":
 		t.Code = runtimev1.Type_CODE_STRING
