@@ -28,7 +28,6 @@
     Prism = mod.default;
     (window as any).Prism = Prism; // eslint-disable-line @typescript-eslint/no-explicit-any
     await import("prismjs/components/prism-json");
-    await import("prismjs/components/prism-yaml");
     ready = true;
   });
 
