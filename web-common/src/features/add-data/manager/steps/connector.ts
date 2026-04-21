@@ -122,7 +122,7 @@ export async function createConnector({
   try {
     // Capture original .env and compute updated contents up front
     // Use originalBlob from updateDotEnvWithSecrets for consistent conflict detection
-    let { newBlob: newEnvBlob, originalBlob: originalEnvBlob } =
+    const { newBlob: initialEnvBlob, originalBlob: originalEnvBlob } =
       await updateDotEnvWithSecrets(
         runtimeClient,
         queryClient,
@@ -134,6 +134,7 @@ export async function createConnector({
           existingEnvBlob: existingEnvBlob ?? undefined,
         },
       );
+    let newEnvBlob = initialEnvBlob;
 
     // Persist DuckLake catalog URIs extracted from the raw ATTACH clause.
     // These are not tied to a form field, so updateDotEnvWithSecrets cannot
