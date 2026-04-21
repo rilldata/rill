@@ -114,9 +114,10 @@ export class SSEFetchClient {
       }
     } finally {
       // Only the currently active run should emit close and clear transport.
-      if (!isCurrentRun()) return;
-      this.stop();
-      this.events.emit("close");
+      if (isCurrentRun()) {
+        this.stop();
+        this.events.emit("close");
+      }
     }
   }
 

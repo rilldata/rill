@@ -47,12 +47,7 @@ describe("SSEFetchClient", () => {
     await client.start("http://x/sse");
 
     expect(errorHandler).not.toHaveBeenCalled();
-    expect(seen).toEqual([
-      "open",
-      "message:first",
-      "message:second",
-      "close",
-    ]);
+    expect(seen).toEqual(["open", "message:first", "message:second", "close"]);
   });
 
   it("sends the JWT from getJwt as a Bearer Authorization header", async () => {

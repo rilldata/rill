@@ -264,7 +264,8 @@ export class SSEConnection {
           try {
             await this.params.onBeforeReconnect();
           } catch (err) {
-            const errorArg = err instanceof Error ? err : new Error(String(err));
+            const errorArg =
+              err instanceof Error ? err : new Error(String(err));
             this.events.emit("error", errorArg);
             // Treat hook failures like transport failures. The attempt already
             // counted, so continue in-loop and retry under the same guard.

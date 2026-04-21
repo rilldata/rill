@@ -43,16 +43,12 @@ describe("readSSEStream", () => {
   });
 
   it("honors `event:` to set message type", async () => {
-    const messages = await collect(
-      streamFrom(["event: file\ndata: {}\n\n"]),
-    );
+    const messages = await collect(streamFrom(["event: file\ndata: {}\n\n"]));
     expect(messages).toEqual([{ type: "file", data: "{}" }]);
   });
 
   it("ignores comment lines", async () => {
-    const messages = await collect(
-      streamFrom([":keepalive\n\ndata: hi\n\n"]),
-    );
+    const messages = await collect(streamFrom([":keepalive\n\ndata: hi\n\n"]));
     expect(messages).toEqual([{ data: "hi" }]);
   });
 
@@ -64,9 +60,7 @@ describe("readSSEStream", () => {
   });
 
   it("treats the empty line as an event boundary", async () => {
-    const messages = await collect(
-      streamFrom(["data: a\n\ndata: b\n\n"]),
-    );
+    const messages = await collect(streamFrom(["data: a\n\ndata: b\n\n"]));
     expect(messages).toEqual([{ data: "a" }, { data: "b" }]);
   });
 
@@ -85,9 +79,7 @@ describe("readSSEStream", () => {
   });
 
   it("holds a trailing partial line until the next chunk", async () => {
-    const messages = await collect(
-      streamFrom(["data: par", "tial\n\n"]),
-    );
+    const messages = await collect(streamFrom(["data: par", "tial\n\n"]));
     expect(messages).toEqual([{ data: "partial" }]);
   });
 
