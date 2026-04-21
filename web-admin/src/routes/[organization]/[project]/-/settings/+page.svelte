@@ -7,6 +7,7 @@
   import DangerZone from "@rilldata/web-admin/components/settings/DangerZone.svelte";
   import DeleteProject from "@rilldata/web-admin/features/projects/settings/DeleteProject.svelte";
   import HibernateProject from "@rilldata/web-admin/features/projects/settings/HibernateProject.svelte";
+  import ProjectDevSlotsSettings from "@rilldata/web-admin/features/projects/settings/ProjectDevSlotsSettings.svelte";
   import ProjectNameSettings from "@rilldata/web-admin/features/projects/settings/ProjectNameSettings.svelte";
   import ProjectVisibilitySettings from "@rilldata/web-admin/features/projects/settings/ProjectVisibilitySettings.svelte";
 
@@ -33,6 +34,8 @@
     <ProjectGithubConnection {organization} {project} />
   </div>
 </SettingsContainer>
+
+<ProjectDevSlotsSettings {organization} {project} />
 
 <div class="danger-zone-section">
   <h3 class="danger-zone-title">Danger Zone</h3>
