@@ -52,6 +52,7 @@ message ResourceMeta {
   optional google.protobuf.Timestamp deleted_on = 12;
   ReconcileStatus reconcile_status = 16;
   string reconcile_error = 8;
+  repeated string reconcile_warnings = 18;
   google.protobuf.Timestamp reconcile_on = 17;
   optional ResourceName renamed_from = 13;
 }
@@ -156,6 +157,8 @@ message ModelState {
   string test_hash = 27;
   // test_errors contains the results of the model's tests.
   repeated string test_errors = 28;
+  // test_warnings contains warnings from the most recent test run, stored separately from execution warnings.
+  repeated string test_warnings = 30;
   // refreshed_on is the time the model was last executed.
   google.protobuf.Timestamp refreshed_on = 4;
   // incremental_state contains the result of the most recent invocation of the model's incremental state resolver.
@@ -166,6 +169,8 @@ message ModelState {
   string partitions_model_id = 10;
   // partitions_have_errors is true if one or more partitions failed to execute.
   bool partitions_have_errors = 11;
+  // warnings contains any warnings generated during the model's execution.
+  repeated string warnings = 29;
   // total_execution_duration_ms is the time user queries took to execute while refreshing the model.
   // In case of incremental models it is the sum of all successful executions so far.
   // This is not the time it took to refresh the model which also includes other stuff like taking a write lock.
@@ -294,6 +299,26 @@ message MetricsViewSpec {
     // Signifies that the underlying table has `duration` column. Will be used while querying to add additional filter.
     bool has_duration = 11;
   }
+  // Pre-aggregated rollup that can be used to accelerate queries.
+  // The system automatically routes queries to a rollup when the query can be satisfied from the pre-aggregated data.
+  message Rollup {
+    string database = 1;
+    string database_schema = 2;
+    string table = 3;
+    string model = 4;
+    // Time grain of the rollup.
+    TimeGrain time_grain = 5;
+    // IANA timezone the rollup was aggregated in; defaults to UTC
+    string time_zone = 6;
+    // Resolved list of dimensions present in the rollup. If `dimensions_selector` is set, this will only be set in `state.valid_spec`.
+    repeated string dimensions = 7;
+    // Resolved list of measures present in the rollup. If `measures_selector` is set, this will only be set in `state.valid_spec`.
+    repeated string measures = 8;
+    // Dynamic selector for `dimensions`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+    FieldSelector dimensions_selector = 9;
+    // Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+    FieldSelector measures_selector = 10;
+  }
   // Connector containing the table
   string connector = 1;
   // Name of the database where table is located (optional)
@@ -333,13 +358,20 @@ message MetricsViewSpec {
   uint32 first_day_of_week = 12;
   // Month number to use as the base for time aggregations by year. Defaults to 1 (January).
   uint32 first_month_of_year = 13;
-  // Cache controls for the metrics view.
+  // Cache controls for the metrics view. By default, enabled for Rill managed models and disabled for streaming (externally managed) data sources.
   optional bool cache_enabled = 25;
+  // Defaults to use watermark if cache is enabled.
   string cache_key_sql = 26;
+  // Defaults to 60 seconds if cache is enabled.
   int64 cache_key_ttl_seconds = 27;
+  // TTL for caching timestamp boundaries (min/max) of base and rollup tables. Defaults to 5 minutes if unset.
+  // Takes effect only when mv level caching is disabled otherwise the timestamp boundaries are cached with the same TTL
+  // as the rest of the query results set via `cache.timestamps_ttl` in the metrics view YAML.
+  int64 cache_timestamps_ttl_seconds = 35;
   // Query attributes that can be templated with user context and used by drivers (e.g., appended to SETTINGS in ClickHouse).
   // Keys and values are stored as templates and will be resolved at query time.
   map<string, string> query_attributes = 33;
+  repeated Rollup rollups = 34;
 }
 
 message SecurityRule {
@@ -636,6 +668,7 @@ message ReportState {
 message ReportExecution {
   bool adhoc = 1;
   string error_message = 2;
+  repeated string warnings = 6;
   google.protobuf.Timestamp report_time = 3;
   google.protobuf.Timestamp started_on = 4;
   google.protobuf.Timestamp finished_on = 5;
@@ -703,6 +736,7 @@ message AssertionResult {
   AssertionStatus status = 1;
   google.protobuf.Struct fail_row = 2;
   string error_message = 3;
+  repeated string warnings = 4;
 }
 
 enum AssertionStatus {

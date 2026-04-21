@@ -88,6 +88,18 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 		}
 	}
 
+	// Resolve rollup model names to table names (same pattern as main model resolution above)
+	for _, rollup := range mv.Spec.Rollups {
+		if rollup.Model != "" {
+			res, err := r.C.Get(ctx, &runtimev1.ResourceName{Name: rollup.Model, Kind: runtime.ResourceKindModel}, false)
+			if err == nil && res.GetModel().State.ResultTable != "" {
+				rollup.Table = res.GetModel().State.ResultTable
+			} else {
+				rollup.Table = rollup.Model
+			}
+		}
+	}
+
 	refsForHasInternalRefCheck := self.Meta.Refs
 	parentModel := ""
 	parentTable := ""

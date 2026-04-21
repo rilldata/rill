@@ -14,7 +14,7 @@ _[string]_ - Refers to the resource type and must be `explore` _(required)_
 
 ### `display_name`
 
-_[string]_ - Refers to the display name for the explore dashboard _(required)_
+_[string]_ - Refers to the display name for the explore dashboard 
 
 ### `metrics_view`
 

@@ -32,8 +32,17 @@ describe("bridgeSmallGaps", () => {
     // Gap of 2 indices (< default 36px threshold with 1:1 pixel mapping)
     const data: (number | null)[] = [10, null, 20];
     const result = bridgeSmallGaps(data, identity, cloneWith, xPixel, true);
-    expect(result.values[1]).toBe(15); // linearly interpolated
+    expect(result.values[1]).toBe(0); // filled with zero
     expect(result.bridgedSegments).toEqual([{ startIndex: 0, endIndex: 2 }]);
+  });
+
+  it("fills multiple consecutive nulls with zeros", () => {
+    const data: (number | null)[] = [3, null, null, null, 7];
+    const result = bridgeSmallGaps(data, identity, cloneWith, xPixel, true);
+    expect(result.values[1]).toBe(0);
+    expect(result.values[2]).toBe(0);
+    expect(result.values[3]).toBe(0);
+    expect(result.bridgedSegments).toEqual([{ startIndex: 0, endIndex: 4 }]);
   });
 
   it("does not bridge when connectNulls is false", () => {

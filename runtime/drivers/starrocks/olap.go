@@ -19,7 +19,7 @@ var _ drivers.OLAPStore = (*connection)(nil)
 
 // Dialect implements drivers.OLAPStore.
 func (c *connection) Dialect() drivers.Dialect {
-	return drivers.DialectStarRocks
+	return DialectStarRocks
 }
 
 // MayBeScaledToZero implements drivers.OLAPStore.
@@ -105,6 +105,27 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 	}, nil
 }
 
+func (c *connection) Head(ctx context.Context, db, schema, table string, limit int64) (*drivers.Result, error) {
+	tbl, err := c.InformationSchema().Lookup(ctx, db, schema, table)
+	if err != nil {
+		return nil, err
+	}
+
+	var columns []string
+	for _, field := range tbl.Schema.Fields {
+		columns = append(columns, c.Dialect().EscapeIdentifier(field.Name))
+	}
+
+	limitClause := ""
+	if limit > 0 {
+		limitClause = fmt.Sprintf(" LIMIT %d", limit)
+	}
+
+	return c.Query(ctx, &drivers.Statement{
+		Query: fmt.Sprintf("SELECT %s FROM %s%s", strings.Join(columns, ", "), c.Dialect().EscapeTable(db, schema, table), limitClause),
+	})
+}
+
 // QuerySchema implements drivers.OLAPStore.
 func (c *connection) QuerySchema(ctx context.Context, query string, args []any) (*runtimev1.StructType, error) {
 	db := c.db
@@ -124,6 +145,11 @@ func (c *connection) QuerySchema(ctx context.Context, query string, args []any) 
 // InformationSchema implements drivers.OLAPStore.
 func (c *connection) InformationSchema() drivers.OLAPInformationSchema {
 	return &informationSchema{c: c}
+}
+
+// EstimateSize implements drivers.OLAPStore.
+func (c *connection) EstimateSize(ctx context.Context) (int64, error) {
+	return -1, nil
 }
 
 // rowsToSchema converts SQL rows to StructType schema.

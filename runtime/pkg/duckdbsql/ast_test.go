@@ -355,7 +355,7 @@ with
   tbl3 as (select col1 from read_csv( 'AdBids_June.csv', delim='|', columns={'timestamp':'TIMESTAMP'}))
 select col1 from tbl2 union all select col1 from tbl3 union all select col1 from read_csv( 'AdBids_July.csv', delim='|', columns={'timestamp':'TIMESTAMP'})
 `,
-			`WITH tbl2 AS (SELECT col1 FROM AdBids_May), tbl3 AS (SELECT col1 FROM AdBids_June)((SELECT col1 FROM tbl2) UNION ALL (SELECT col1 FROM tbl3)) UNION ALL (SELECT col1 FROM AdBids_July)`,
+			`WITH tbl2 AS (SELECT col1 FROM AdBids_May), tbl3 AS (SELECT col1 FROM AdBids_June)(SELECT col1 FROM tbl2) UNION ALL ((SELECT col1 FROM tbl3) UNION ALL (SELECT col1 FROM AdBids_July))`,
 		},
 		{
 			"replace with pivot statement",
@@ -449,7 +449,7 @@ with
 select col1 from tbl2 union all select col1 from tbl3 union all select col1 from "s3://data/AdBid_July.csv"
 `,
 			[]string{"A_M", "A_J", "tbl2", "tbl3", "A_Jl"},
-			`WITH tbl2 AS (SELECT col1 FROM A_M AS a), tbl3 AS (SELECT col1 FROM A_J AS i)((SELECT col1 FROM tbl2) UNION ALL (SELECT col1 FROM tbl3)) UNION ALL (SELECT col1 FROM A_Jl)`,
+			`WITH tbl2 AS (SELECT col1 FROM A_M AS a), tbl3 AS (SELECT col1 FROM A_J AS i)(SELECT col1 FROM tbl2) UNION ALL ((SELECT col1 FROM tbl3) UNION ALL (SELECT col1 FROM A_Jl))`,
 		},
 	}
 
