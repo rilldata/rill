@@ -12,17 +12,19 @@ export interface SSESubscriberOptions {
 }
 
 /**
- * Typed routing layer over SSEConnection. Consumers register one decoder
- * per event type; SSESubscriber runs it, catches parse errors, and emits
- * the decoded payload through a typed event API.
+ * Typed routing layer over SSEConnection.
  *
- * Per the SSE spec, frames without an `event:` line default to type
- * "message". The subscriber normalizes `msg.type === undefined` to
- * "message" before decoder lookup, so a consumer streaming untagged
- * frames (e.g. the admin AI endpoint emits success payloads untagged and
- * failures as `event: error`) can register a "message" decoder and route
- * them cleanly. If no "message" decoder is registered, untagged frames
- * fall through to `onUnknown`.
+ * Consumers register one decoder per event type. For each incoming message,
+ * SSESubscriber runs the matching decoder and emits the decoded payload
+ * through a typed event API.
+ *
+ * If a decoder throws, the subscriber calls `onParseError` and skips emit.
+ *
+ * Per the SSE spec, frames without an `event:` line default to `"message"`.
+ * This class normalizes `message.type === undefined` to `"message"` before
+ * decoder lookup. Consumers that stream untagged frames can register a
+ * `"message"` decoder to handle them. If no `"message"` decoder is
+ * registered, untagged frames fall through to `onUnknown`.
  */
 export class SSESubscriber<TMap extends Record<string, unknown>> {
   private readonly events = createEventBinding<TMap>();
@@ -54,24 +56,26 @@ export class SSESubscriber<TMap extends Record<string, unknown>> {
   }
 
   private handleMessage = (message: SSEMessage) => {
-    const type = (message.type ?? "message") as keyof TMap;
-    const decoder = this.decoders[type];
+    const eventType = (message.type ?? "message") as keyof TMap;
+    const decoder = this.decoders[eventType];
     if (!decoder) {
       this.options.onUnknown?.(message);
       return;
     }
-    let payload: TMap[typeof type];
     try {
-      payload = decoder(message.data);
+      this.emitDecoded(eventType, decoder(message.data));
     } catch (err) {
       this.options.onParseError?.(err, message);
-      return;
     }
+  };
+
+  // Centralize the emit cast so message handling stays linear/readable.
+  private emitDecoded(type: keyof TMap, payload: unknown): void {
     // Cast narrows the variadic emit signature; the TMap[K] payload is
-    // type-safe at the call site above.
-    (this.events.emit as (type: keyof TMap, payload: unknown) => void)(
+    // type-safe at the call site that invokes this helper.
+    (this.events.emit as (eventType: keyof TMap, payload: unknown) => void)(
       type,
       payload,
     );
-  };
+  }
 }
