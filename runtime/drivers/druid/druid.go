@@ -231,7 +231,6 @@ type connection struct {
 	config        *configProperties
 	connectorName string
 	logger        *zap.Logger
-	dialect       drivers.Dialect
 }
 
 // Ping implements drivers.Handle.

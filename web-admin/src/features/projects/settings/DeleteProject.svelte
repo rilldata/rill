@@ -11,12 +11,12 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import AlertDialogGuardedConfirmation from "@rilldata/web-common/components/alert-dialog/alert-dialog-guarded-confirmation.svelte";
 
-  export let organization: string;
-  export let project: string;
+  let { organization, project }: { organization: string; project: string } =
+    $props();
 
   const deleteProjectMutation = createAdminServiceDeleteProject();
 
-  $: deleteProjectResult = $deleteProjectMutation;
+  let deleteProjectResult = $derived($deleteProjectMutation);
 
   async function deleteProject() {
     await $deleteProjectMutation.mutateAsync({
@@ -42,24 +42,21 @@
 </script>
 
 <SettingsContainer title="Delete Project">
-  <svelte:fragment slot="body">
-    Permanently delete this project and all of its contents from the Rill
-    platform. This action is not reversible — please continue with caution.
-  </svelte:fragment>
+  Permanently delete this project and all of its contents from the Rill
+  platform. This action is not reversible — please continue with caution.
 
-  <AlertDialogGuardedConfirmation
-    slot="action"
-    title="Delete Project?"
-    description={`The project "${project}" will be permanently deleted along with all its dashboards, data, and settings. This action cannot be undone.`}
-    confirmText={`delete ${project}`}
-    confirmButtonText="Delete"
-    confirmButtonType="destructive"
-    loading={deleteProjectResult.isPending}
-    error={deleteProjectResult.error?.message}
-    onConfirm={deleteProject}
-  >
-    <svelte:fragment>
+  {#snippet action()}
+    <AlertDialogGuardedConfirmation
+      title="Delete Project?"
+      description={`The project "${project}" will be permanently deleted along with all its dashboards, data, and settings. This action cannot be undone.`}
+      confirmText={`delete ${project}`}
+      confirmButtonText="Delete"
+      confirmButtonType="destructive"
+      loading={deleteProjectResult.isPending}
+      error={deleteProjectResult.error?.message}
+      onConfirm={deleteProject}
+    >
       <Button type="destructive">Delete Project</Button>
-    </svelte:fragment>
-  </AlertDialogGuardedConfirmation>
+    </AlertDialogGuardedConfirmation>
+  {/snippet}
 </SettingsContainer>

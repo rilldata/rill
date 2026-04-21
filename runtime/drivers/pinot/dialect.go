@@ -31,7 +31,9 @@ func (d *dialect) UnnestSQLSuffix(_ string) string {
 	panic("Pinot auto unnests")
 }
 
-func (d *dialect) GetTimeDimensionParameter() string { return "CAST(? AS TIMESTAMP)" }
+func (d *dialect) GetTimeDimensionParameter(_ runtimev1.Type_Code) string {
+	return "CAST(? AS TIMESTAMP)"
+}
 
 func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain runtimev1.TimeGrain, tz string, _, _ int) (string, error) {
 	// TODO: Handle tz instead of ignoring it.

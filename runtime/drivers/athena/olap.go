@@ -37,6 +37,11 @@ func (c *Connection) InformationSchema() drivers.OLAPInformationSchema {
 	return c
 }
 
+// EstimateSize implements drivers.OLAPStore.
+func (c *Connection) EstimateSize(ctx context.Context) (int64, error) {
+	return -1, nil
+}
+
 // MayBeScaledToZero implements drivers.OLAPStore.
 func (c *Connection) MayBeScaledToZero(ctx context.Context) bool {
 	return true
@@ -70,6 +75,27 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 		Rows:   rows,
 		Schema: rows.runtimeSchema(),
 	}, nil
+}
+
+func (c *Connection) Head(ctx context.Context, db, schema, table string, limit int64) (*drivers.Result, error) {
+	tbl, err := c.InformationSchema().Lookup(ctx, db, schema, table)
+	if err != nil {
+		return nil, err
+	}
+
+	var columns []string
+	for _, field := range tbl.Schema.Fields {
+		columns = append(columns, c.Dialect().EscapeIdentifier(field.Name))
+	}
+
+	limitClause := ""
+	if limit > 0 {
+		limitClause = fmt.Sprintf(" LIMIT %d", limit)
+	}
+
+	return c.Query(ctx, &drivers.Statement{
+		Query: fmt.Sprintf("SELECT %s FROM %s%s", strings.Join(columns, ", "), c.Dialect().EscapeTable(db, schema, table), limitClause),
+	})
 }
 
 // QuerySchema implements drivers.OLAPStore.

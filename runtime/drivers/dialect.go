@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/civil"
 	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 
@@ -52,7 +53,7 @@ type Dialect interface {
 	AnyValueExpression(expr string) string
 	MinDimensionExpression(expr string) string
 	MaxDimensionExpression(expr string) string
-	GetTimeDimensionParameter() string
+	GetTimeDimensionParameter(typeCode runtimev1.Type_Code) string
 	CastToDataType(typ runtimev1.Type_Code) (string, error)
 	SafeDivideExpression(numExpr, denExpr string) string
 	OrderByExpression(name string, desc bool) string
@@ -248,7 +249,7 @@ func (b *BaseDialect) MaxDimensionExpression(expr string) string {
 	return fmt.Sprintf("MAX(%s)", expr)
 }
 
-func (b *BaseDialect) GetTimeDimensionParameter() string {
+func (b *BaseDialect) GetTimeDimensionParameter(_ runtimev1.Type_Code) string {
 	return "?"
 }
 
@@ -335,8 +336,12 @@ func (b *BaseDialect) SelectInlineResults(result *Result) (string, []any, []any,
 			if i > 0 {
 				prefix += ", "
 			}
-			prefix += fmt.Sprintf("%s AS %s", "?", b.escapeIdentifier(result.Schema.Fields[i].Name))
-			args = append(args, v)
+			argExpr, argVal, err := getArgExpr(v, result.Schema.Fields[i].Type.Code)
+			if err != nil {
+				return "", nil, nil, fmt.Errorf("select inline: failed to get argument expression: %w", err)
+			}
+			prefix += fmt.Sprintf("%s AS %s", argExpr, b.escapeIdentifier(result.Schema.Fields[i].Name))
+			args = append(args, argVal)
 		}
 	}
 	if err := result.Err(); err != nil {
@@ -401,4 +406,23 @@ func DoubleQuotesEscapeIdentifier(ident string) string {
 	// Most other dialects follow ANSI SQL: use double quotes.
 	// Replace any internal double quotes with escaped double quotes.
 	return fmt.Sprintf(`"%s"`, strings.ReplaceAll(ident, `"`, `""`)) // nolint:gocritic
+}
+
+func getArgExpr(val any, typ runtimev1.Type_Code) (string, any, error) {
+	// handle bigquery non-timestamp time types separately
+	switch v := val.(type) {
+	case civil.Date:
+		return "CAST(? AS DATE)", v.String(), nil
+	case civil.DateTime:
+		return "CAST(? AS DATETIME)", v.String(), nil
+	}
+	// handle date types especially otherwise they get sent as time.Time args which will be treated as datetime/timestamp types in olap
+	if typ == runtimev1.Type_CODE_DATE {
+		t, ok := val.(time.Time)
+		if !ok {
+			return "", nil, fmt.Errorf("could not cast value %v to time.Time for date type", val)
+		}
+		return "CAST(? AS DATE)", t.Format(time.DateOnly), nil
+	}
+	return "?", val, nil
 }

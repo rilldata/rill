@@ -152,7 +152,7 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 			return err
 		}
 
-		err = e.BindQuery(ctx, qry, tsRes)
+		err = e.BindQuery(qry, tsRes)
 		if err != nil {
 			return err
 		}
@@ -168,6 +168,14 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 		format = drivers.FileFormatParquet
 	default:
 		return fmt.Errorf("unsupported format: %s", opts.Format.String())
+	}
+
+	// Rewrite time ranges before generating export headers (which read the resolved Start/End)
+	if opts.IncludeHeader {
+		err = e.RewriteQueryTimeRanges(ctx, qry, q.ExecutionTime)
+		if err != nil {
+			return err
+		}
 	}
 
 	headers, err := q.generateExportHeaders(ctx, rt, instanceID, opts, qry)

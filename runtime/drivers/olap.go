@@ -40,10 +40,17 @@ type OLAPStore interface {
 	// Query executes a query against the OLAP driver and returns an iterator for the resulting rows and schema.
 	// The result MUST be closed after use.
 	Query(ctx context.Context, stmt *Statement) (*Result, error)
+	// Head executes a query with a limit of N and returns the resulting rows and schema.
+	// It is separate from Query to allow drivers like BigQuery to optimize table previews and not incur huge costs of running a full query with limit.
+	// The result MUST be closed after use.
+	Head(ctx context.Context, db, schema, table string, limit int64) (*Result, error)
 	// QuerySchema returns the schema of the sql without trying not to run the actual query.
 	QuerySchema(ctx context.Context, query string, args []any) (*runtimev1.StructType, error)
 	// InformationSchema enables introspecting the tables and views available in the OLAP driver.
 	InformationSchema() OLAPInformationSchema
+	// EstimateSize returns an estimate of the total data size in bytes.
+	// Returns -1 if size estimation is not supported by the driver.
+	EstimateSize(ctx context.Context) (int64, error)
 }
 
 // Statement wraps a query to execute against an OLAP driver.
