@@ -28,7 +28,7 @@
   export let stateManager: AddDataStateManager;
   export let importAddDataStep: ImportAddDataStep;
   export let onBack: () => void;
-  export let onDone: (generatedDashboard?: string) => void;
+  export let onDone: () => void;
 
   const runtimeClient = useRuntimeClient();
   const initialAddDataStep = { ...importAddDataStep };
@@ -93,10 +93,7 @@
           }
         },
       );
-      onDone(
-        importAddDataStep.config.importTo.canvasName ??
-          importAddDataStep.config.importTo.exploreName,
-      );
+      onDone();
       if (!config.skipNavigation) return goto(currentFileRoute);
     } catch (e) {
       error = e?.response?.data?.message ?? e?.message ?? "Unknown error";

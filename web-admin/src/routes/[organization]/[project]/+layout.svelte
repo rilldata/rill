@@ -182,7 +182,6 @@
 
   let projectData = $derived($projectQuery.data);
   let error = $derived($projectQuery.error as HTTPError);
-  $effect(() => console.log(activeBranch, projectData));
 
   let deploymentStatus = $derived(projectData?.deployment?.status);
   let isProjectAvailable = $derived(

@@ -2,7 +2,9 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { createAdminServiceListProjectsForOrganization } from "@rilldata/web-admin/client";
-  import CreateProjectForm from "@rilldata/web-admin/features/projects/CreateProjectForm.svelte";
+  import CreateProjectForm, {
+    CreateProjectDevBranchName,
+  } from "@rilldata/web-admin/features/projects/CreateProjectForm.svelte";
   import { getName } from "@rilldata/web-common/features/entity-management/name-utils.ts";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types.ts";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
@@ -17,7 +19,6 @@
   import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
   import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types.ts";
   import { projectWelcomeStatusStores } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
-  import { CreateProjectDevBranchName } from "@rilldata/web-admin/features/projects/publish-project.ts";
 
   let organization = $derived(page.params.organization);
 

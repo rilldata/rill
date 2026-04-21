@@ -1,5 +1,6 @@
 <script module lang="ts">
   export const CreateProjectFormId = "create-project-form";
+  export const CreateProjectDevBranchName = "dev";
 </script>
 
 <script lang="ts">
@@ -7,6 +8,7 @@
     createAdminServiceCreateDeployment,
     createAdminServiceCreateManagedGitRepo,
     createAdminServiceCreateProject,
+    getAdminServiceListDeploymentsQueryKey,
     getAdminServiceListProjectsForOrganizationQueryKey,
     type RpcStatus,
   } from "@rilldata/web-admin/client";
@@ -21,7 +23,6 @@
     getPrettyDeployError,
   } from "@rilldata/web-common/features/project/deploy/deploy-errors.ts";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors.ts";
-  import { CreateProjectDevBranchName } from "@rilldata/web-admin/features/projects/publish-project.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 
   const {
@@ -66,6 +67,8 @@
       validators: schema,
       async onUpdate({ form }) {
         if (!form.valid) return;
+        const project = form.data.name;
+
         // Step 1: Create the git repo.
 
         // As an optimization, we only create the git repo once.
@@ -75,7 +78,7 @@
           const createManagedGitRepoResult =
             await $createManagedGitRepo.mutateAsync({
               org: organization,
-              data: { name: form.data.name },
+              data: { name: project },
             });
           createdGitRepo = createManagedGitRepoResult.remote ?? "";
         }
@@ -84,7 +87,7 @@
         const resp = await $createProjectMutation.mutateAsync({
           org: organization,
           data: {
-            project: form.data.name,
+            project,
             gitRemote: createdGitRepo,
             prodSlots: "4",
             skipDeploy: true,
@@ -99,15 +102,21 @@
         // TODO: Handle deployment creation failure. Project would be created leading to possible duplicate project error on retry.
         await $createDeployMutation.mutateAsync({
           org: organization,
-          project: form.data.name,
+          project,
           data: {
             environment: "dev",
             branch: CreateProjectDevBranchName,
             editable: true,
           },
         });
+        void queryClient.invalidateQueries({
+          queryKey: getAdminServiceListDeploymentsQueryKey(
+            organization,
+            project,
+          ),
+        });
 
-        onCreate(form.data.name, resp.project?.frontendUrl ?? "/");
+        onCreate(project, resp.project?.frontendUrl ?? "/");
       },
       onError({ result }) {
         const error =

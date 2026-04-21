@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { onMount } from "svelte";
   import AddDataManager from "@rilldata/web-common/features/add-data/manager/AddDataManager.svelte";
@@ -21,16 +20,9 @@
   let organization = $derived(page.params.organization);
   let project = $derived(page.params.project);
 
-  async function handleDone(generatedDashboard?: string) {
+  async function handleDone() {
     projectWelcomeStatusStores.setProjectWelcomeBranch(project, "");
-    await goto(
-      await publishProjectAndRedirect(
-        runtimeClient,
-        organization,
-        project,
-        generatedDashboard,
-      ),
-    );
+    await publishProjectAndRedirect(runtimeClient, organization, project);
   }
 
   onMount(async () => {

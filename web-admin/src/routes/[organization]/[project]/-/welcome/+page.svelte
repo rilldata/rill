@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import ConnectYourDataWidget from "@rilldata/web-common/features/add-data/ConnectYourDataWidget.svelte";
   import TitleContent from "@rilldata/web-common/features/welcome/TitleContent.svelte";
@@ -13,16 +12,9 @@
   let organization = $derived(page.params.organization);
   let project = $derived(page.params.project);
 
-  async function handleDone(dashboardName?: string) {
+  async function handleDone() {
     projectWelcomeStatusStores.setProjectWelcomeBranch(project, "");
-    return goto(
-      await publishProjectAndRedirect(
-        runtimeClient,
-        organization,
-        project,
-        dashboardName,
-      ),
-    );
+    await publishProjectAndRedirect(runtimeClient, organization, project);
   }
 </script>
 
