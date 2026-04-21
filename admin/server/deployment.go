@@ -966,6 +966,7 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 	for _, v := range vars {
 		resp.VariablesLegacy[v.Name] = v.Value // nolint:staticcheck // Still need to populate for backward compatibility.
 	}
+	resp.VariablesLegacy["rill.watch_repo"] = strconv.FormatBool(depl.Editable) // nolint:staticcheck // Still need to populate for backward compatibility.
 
 	// parsing duckdb connector config
 	rCfg, err := provisioner.NewRuntimeConfig(pr.Config)
