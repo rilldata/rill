@@ -31,8 +31,6 @@ import (
 
 const devDeplTTL = 6 * time.Hour
 
-const devSlots = 8
-
 const prodDeplTTL = 14 * 24 * time.Hour
 
 // runtimeAccessTokenTTL is the validity duration of JWTs issued for runtime access when calling GetProject.
