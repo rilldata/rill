@@ -39,8 +39,8 @@ type Executor struct {
 	instanceCfg     drivers.InstanceConfig
 	queryAttributes map[string]string
 
-	timestamps          map[string]metricsview.TimestampsResult
-	selectedRollupTable string // set by rewriteQueryForRollup when a rollup is selected, used only for testing
+	timestamps       map[string]metricsview.TimestampsResult
+	latestQueryTable string // table used by the last Query/Export call; metricsview table by default, rollup table if selected
 }
 
 // New creates a new Executor for the provided metrics view.
@@ -101,10 +101,10 @@ func (e *Executor) Close() {
 	e.olapRelease()
 }
 
-// SelectedRollupTable returns the rollup table selected by the last Query/Export call,
-// or "" if the base table was used. Useful for testing rollup routing decisions.
-func (e *Executor) SelectedRollupTable() string {
-	return e.selectedRollupTable
+// LatestQueryTable returns the table used by the last Query/Export call.
+// Returns the rollup table if one was selected, otherwise the base metricsview table.
+func (e *Executor) LatestQueryTable() string {
+	return e.latestQueryTable
 }
 
 // CacheKey returns a cache key based on the executor's metrics view's cache key configuration.

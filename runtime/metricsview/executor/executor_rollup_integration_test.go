@@ -16,6 +16,7 @@ import (
 )
 
 const (
+	rollupTestBaseTable   = "base_events"
 	rollupTestDailyTable  = "rollup_day"
 	rollupTestWeeklyTable = "rollup_week"
 	rollupTestMonthTable  = "rollup_month"
@@ -129,15 +130,6 @@ func newRollupTestExecutor(t *testing.T, rt *runtime.Runtime, instanceID string)
 	return e
 }
 
-// queryRollupTable runs e.Query and returns which rollup table was selected (or "" for base table).
-func queryRollupTable(t *testing.T, e *executor.Executor, qry *metricsview.Query) string {
-	t.Helper()
-	res, err := e.Query(context.Background(), qry, nil)
-	require.NoError(t, err)
-	res.Close()
-	return e.SelectedRollupTable()
-}
-
 func TestRollupIntegration(t *testing.T) {
 	rt, instanceID := newRollupTestRuntime(t)
 
@@ -159,7 +151,7 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			table := queryRollupTable(t, e, qry)
+			table := queryAndGetTable(t, e, qry)
 			require.Equal(t, rollupTestDailyTable, table)
 		})
 
@@ -180,7 +172,7 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			table := queryRollupTable(t, e, qry)
+			table := queryAndGetTable(t, e, qry)
 			// Both daily and monthly are eligible; monthly is coarser
 			require.Equal(t, rollupTestMonthTable, table)
 		})
@@ -202,7 +194,7 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			table := queryRollupTable(t, e, qry)
+			table := queryAndGetTable(t, e, qry)
 			// Daily and monthly are eligible (year derivable from both); monthly is coarser
 			require.Equal(t, rollupTestMonthTable, table)
 		})
@@ -224,7 +216,7 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			table := queryRollupTable(t, e, qry)
+			table := queryAndGetTable(t, e, qry)
 			// All 3 eligible (no grain check); monthly is coarsest
 			require.Equal(t, rollupTestMonthTable, table)
 		})
@@ -248,7 +240,7 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			table := queryRollupTable(t, e, qry)
+			table := queryAndGetTable(t, e, qry)
 			// Daily and weekly eligible (week derivable from day); weekly is coarser
 			require.Equal(t, rollupTestWeeklyTable, table)
 		})
@@ -270,7 +262,7 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			table := queryRollupTable(t, e, qry)
+			table := queryAndGetTable(t, e, qry)
 			// Weekly lacks March data; monthly ineligible (week not derivable from month); daily covers all
 			require.Equal(t, rollupTestDailyTable, table)
 		})
@@ -292,8 +284,8 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			table := queryRollupTable(t, e, qry)
-			require.Empty(t, table)
+			table := queryAndGetTable(t, e, qry)
+			require.Equal(t, rollupTestBaseTable, table)
 		})
 
 		t.Run("end_misaligned_watermark_accepts_rollup", func(t *testing.T) {
@@ -313,7 +305,7 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			table := queryRollupTable(t, e, qry)
+			table := queryAndGetTable(t, e, qry)
 			// Monthly is coarsest eligible
 			require.Equal(t, rollupTestMonthTable, table)
 		})
@@ -332,8 +324,8 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			table := queryRollupTable(t, e, qry)
-			require.Empty(t, table)
+			table := queryAndGetTable(t, e, qry)
+			require.Equal(t, rollupTestBaseTable, table)
 		})
 
 		t.Run("missing_dimension_returns_nil", func(t *testing.T) {
@@ -353,8 +345,8 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			table := queryRollupTable(t, e, qry)
-			require.Empty(t, table)
+			table := queryAndGetTable(t, e, qry)
+			require.Equal(t, rollupTestBaseTable, table)
 		})
 
 		t.Run("computed_measure_returns_nil", func(t *testing.T) {
@@ -372,8 +364,8 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			table := queryRollupTable(t, e, qry)
-			require.Empty(t, table)
+			table := queryAndGetTable(t, e, qry)
+			require.Equal(t, rollupTestBaseTable, table)
 		})
 
 		t.Run("spine_query_uses_rollup", func(t *testing.T) {
@@ -399,7 +391,7 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			table := queryRollupTable(t, e, qry)
+			table := queryAndGetTable(t, e, qry)
 			// Monthly is coarsest eligible
 			require.Equal(t, rollupTestMonthTable, table)
 		})
@@ -418,7 +410,7 @@ func TestRollupIntegration(t *testing.T) {
 				// No TimeRange: means "all data"
 			}
 
-			table := queryRollupTable(t, e, qry)
+			table := queryAndGetTable(t, e, qry)
 			// Weekly rollup is partial (Jan+Feb only); daily and monthly cover full range.
 			// Monthly is coarsest eligible.
 			require.Equal(t, rollupTestMonthTable, table)
@@ -441,8 +433,8 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			table := queryRollupTable(t, e, qry)
-			require.Empty(t, table)
+			table := queryAndGetTable(t, e, qry)
+			require.Equal(t, rollupTestBaseTable, table)
 		})
 
 		t.Run("where_filter_dimension_not_in_rollup", func(t *testing.T) {
@@ -471,8 +463,8 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			table := queryRollupTable(t, e, qry)
-			require.Empty(t, table)
+			table := queryAndGetTable(t, e, qry)
+			require.Equal(t, rollupTestBaseTable, table)
 		})
 
 		t.Run("time_range_coverage_not_covered", func(t *testing.T) {
@@ -525,8 +517,8 @@ explore:
 					End:   time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC),
 				},
 			}
-			table := queryRollupTable(t, e, qry)
-			require.Empty(t, table)
+			table := queryAndGetTable(t, e, qry)
+			require.Equal(t, rollupTestBaseTable, table)
 		})
 
 		t.Run("query_wider_than_data", func(t *testing.T) {
@@ -546,7 +538,7 @@ explore:
 					End:   time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 				},
 			}
-			table := queryRollupTable(t, e, qry)
+			table := queryAndGetTable(t, e, qry)
 			// Query clamped to base data range; daily is the only eligible rollup for day grain
 			require.Equal(t, rollupTestDailyTable, table)
 		})
@@ -612,7 +604,7 @@ explore:
 					End:   time.Date(2024, 4, 1, 0, 0, 0, 0, time.UTC),
 				},
 			}
-			table := queryRollupTable(t, e, qry)
+			table := queryAndGetTable(t, e, qry)
 			// Both monthly rollups cover the range; narrow has smaller data range
 			require.Equal(t, "rollup_month_narrow", table)
 		})
@@ -665,8 +657,8 @@ explore:
 					{Name: "total_impressions"},
 				},
 			}
-			table := queryRollupTable(t, e, qry)
-			require.Empty(t, table)
+			table := queryAndGetTable(t, e, qry)
+			require.Equal(t, rollupTestBaseTable, table)
 		})
 	})
 
@@ -726,7 +718,7 @@ explore:
 					End:   time.Date(2024, 2, 4, 0, 0, 0, 0, time.UTC),
 				},
 			}
-			table := queryRollupTable(t, e, qry)
+			table := queryAndGetTable(t, e, qry)
 			require.Equal(t, "rollup_week", table)
 		})
 
@@ -749,8 +741,8 @@ explore:
 					End:   time.Date(2024, 2, 4, 0, 0, 0, 0, time.UTC),
 				},
 			}
-			table := queryRollupTable(t, e, qry)
-			require.Empty(t, table)
+			table := queryAndGetTable(t, e, qry)
+			require.Equal(t, rollupTestBaseTable, table)
 		})
 	})
 
@@ -902,4 +894,13 @@ explore:
 			require.Equal(t, float64(2480), rows[0].impressions)
 		})
 	})
+}
+
+// queryAndGetTable runs e.Query and returns which table was used (base or rollup).
+func queryAndGetTable(t *testing.T, e *executor.Executor, qry *metricsview.Query) string {
+	t.Helper()
+	res, err := e.Query(context.Background(), qry, nil)
+	require.NoError(t, err)
+	res.Close()
+	return e.LatestQueryTable()
 }

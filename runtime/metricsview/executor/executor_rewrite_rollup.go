@@ -82,7 +82,7 @@ type rollupCandidate struct {
 // rewriteQueryForRollup checks if a rollup table can satisfy the query.
 // It returns a synthetic MetricsViewSpec pointing to the rollup table, or nil if no rollup matches.
 func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Query) (*runtimev1.MetricsViewSpec, error) {
-	e.selectedRollupTable = ""
+	e.latestQueryTable = e.metricsView.Table
 
 	if len(e.metricsView.Rollups) == 0 {
 		return nil, nil
@@ -301,7 +301,7 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 		attribute.String("rollup.result", "selected"),
 		attribute.String("rollup.selected_table", best.rollup.Table),
 	)
-	e.selectedRollupTable = best.rollup.Table
+	e.latestQueryTable = best.rollup.Table
 	return buildSyntheticSpec(e.metricsView, best.rollup), nil
 }
 
