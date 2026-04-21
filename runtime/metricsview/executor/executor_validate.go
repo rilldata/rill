@@ -164,6 +164,20 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 		return res, err
 	}
 
+	// Validate rollup tables
+	allDimNames := make([]string, 0, len(mv.Dimensions))
+	for _, d := range mv.Dimensions {
+		allDimNames = append(allDimNames, d.Name)
+	}
+	allMeasureNames := make([]string, 0, len(mv.Measures))
+	for _, m := range mv.Measures {
+		if m.Type != runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE || m.Window != nil {
+			continue
+		}
+		allMeasureNames = append(allMeasureNames, m.Name)
+	}
+	e.validateAndNormalizeRollups(ctx, mv, allDimNames, allMeasureNames, res)
+
 	// Pinot does not have any native support for time shift using time grain specifiers
 	if e.olap.Dialect() == drivers.DialectPinot && (mv.FirstDayOfWeek > 1 || mv.FirstMonthOfYear > 1) {
 		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("time shift not supported for Pinot dialect, so FirstDayOfWeek and FirstMonthOfYear should be 1"))
@@ -252,6 +266,102 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 	}
 
 	return res, nil
+}
+
+// validateAndNormalizeRollups validates that rollup tables exist and contain the expected columns.
+// It reuses validateDimension/validateMeasure to check expressions against the rollup table,
+// handling expression-based dimensions correctly (not just column lookups).
+func (e *Executor) validateAndNormalizeRollups(ctx context.Context, mv *runtimev1.MetricsViewSpec, allDimensions, allMeasures []string, res *ValidateMetricsViewResult) {
+	// Build lookup from dimension/measure name to spec definition
+	dimsByName := make(map[string]*runtimev1.MetricsViewSpec_Dimension, len(mv.Dimensions))
+	for _, d := range mv.Dimensions {
+		dimsByName[strings.ToLower(d.Name)] = d
+	}
+	measuresByName := make(map[string]*runtimev1.MetricsViewSpec_Measure, len(mv.Measures))
+	for _, m := range mv.Measures {
+		measuresByName[strings.ToLower(m.Name)] = m
+	}
+
+	for i, rollup := range mv.Rollups {
+		// Resolve dimension selector
+		var err error
+		rollup.Dimensions, err = fieldselectorpb.ResolveFields(rollup.Dimensions, rollup.DimensionsSelector, allDimensions)
+		if err != nil {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: invalid dimensions: %w", i, err))
+			continue
+		}
+		rollup.DimensionsSelector = nil
+
+		// Resolve measure selector
+		rollup.Measures, err = fieldselectorpb.ResolveFields(rollup.Measures, rollup.MeasuresSelector, allMeasures)
+		if err != nil {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: invalid measures: %w", i, err))
+			continue
+		}
+		rollup.MeasuresSelector = nil
+
+		// time_grain is required and must be >= smallest_time_grain
+		if rollup.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: time_grain is required", i))
+			continue
+		}
+		if mv.SmallestTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED && rollup.TimeGrain < mv.SmallestTimeGrain {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: time_grain %q must be greater than or equal to smallest_time_grain %q", i, metricsview.TimeGrainFromProto(rollup.TimeGrain), metricsview.TimeGrainFromProto(mv.SmallestTimeGrain)))
+			continue
+		}
+
+		t, err := e.olap.InformationSchema().Lookup(ctx, rollup.Database, rollup.DatabaseSchema, rollup.Table)
+		if err != nil {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: table %q does not exist", i, rollup.Table))
+			continue
+		}
+
+		// Build a subset spec with just this rollup's dims and measures, then validate
+		// all at once using validateAllDimensionsAndMeasures (single dry-run query).
+		// Falls back to individual validation on error to report per-field details.
+		var subsetDims []*runtimev1.MetricsViewSpec_Dimension
+		for _, dimName := range rollup.Dimensions {
+			d := dimsByName[strings.ToLower(dimName)]
+			if d == nil {
+				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: dimension %q not found in metrics view", i, dimName))
+				continue
+			}
+			subsetDims = append(subsetDims, d)
+		}
+		var subsetMeasures []*runtimev1.MetricsViewSpec_Measure
+		for _, mName := range rollup.Measures {
+			m := measuresByName[strings.ToLower(mName)]
+			if m == nil {
+				continue
+			}
+			subsetMeasures = append(subsetMeasures, m)
+		}
+
+		subsetSpec := &runtimev1.MetricsViewSpec{
+			Dimensions: subsetDims,
+			Measures:   subsetMeasures,
+		}
+		if err := e.validateAllDimensionsAndMeasures(ctx, t, subsetSpec); err != nil {
+			// Fall back to individual validation for detailed per-field errors
+			cols := make(map[string]*runtimev1.StructType_Field, len(t.Schema.Fields))
+			for _, f := range t.Schema.Fields {
+				cols[strings.ToLower(f.Name)] = f
+			}
+			for _, d := range subsetDims {
+				if err := e.validateDimension(ctx, t, d, cols); err != nil {
+					res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: %w", i, err))
+				}
+			}
+			for _, m := range subsetMeasures {
+				if m.Type != runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE || m.Window != nil {
+					continue
+				}
+				if err := e.validateMeasure(ctx, t, m); err != nil {
+					res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: invalid expression for measure %q: %w", i, m.Name, err))
+				}
+			}
+		}
+	}
 }
 
 // resolves the parent metrics view and inherits all its dimensions and measures unless they are overridden in the current metrics view.
