@@ -56,6 +56,8 @@ describe("SSEConnection", () => {
 
   it("goes CLOSED → CONNECTING → OPEN when the transport opens", () => {
     const conn = new SSEConnection();
+    const openHandler = vi.fn();
+    conn.on("open", openHandler);
     expect(get(conn.status)).toBe(ConnectionStatus.CLOSED);
 
     conn.start("http://x/sse");
@@ -63,6 +65,7 @@ describe("SSEConnection", () => {
 
     latestClient().fire("open");
     expect(get(conn.status)).toBe(ConnectionStatus.OPEN);
+    expect(openHandler).toHaveBeenCalledTimes(1);
   });
 
   it("retries on error with exponential backoff and stops at maxRetryAttempts", async () => {
@@ -186,6 +189,71 @@ describe("SSEConnection", () => {
     expect(client.start).toHaveBeenCalledTimes(3);
   });
 
+  it("pause() cancels pending reconnect backoff", async () => {
+    const conn = new SSEConnection({
+      retryOnError: true,
+      maxRetryAttempts: 3,
+    });
+    conn.start("http://x/sse");
+    const client = latestClient();
+
+    // First retry attempt is immediate.
+    client.fire("error", new Error("net"));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(client.start).toHaveBeenCalledTimes(2);
+
+    // Second retry attempt would wait 2000ms.
+    client.fire("error", new Error("net"));
+    conn.pause();
+    expect(get(conn.status)).toBe(ConnectionStatus.PAUSED);
+
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(client.start).toHaveBeenCalledTimes(2);
+  });
+
+  it("close() emits close exactly once when transitioning to CLOSED", () => {
+    const conn = new SSEConnection();
+    const closeHandler = vi.fn();
+    conn.on("close", closeHandler);
+    conn.start("http://x/sse");
+
+    conn.close();
+    conn.close();
+
+    expect(get(conn.status)).toBe(ConnectionStatus.CLOSED);
+    expect(closeHandler).toHaveBeenCalledTimes(1);
+  });
+
+  it("close() cancels reconnect while awaiting onBeforeReconnect", async () => {
+    let resolveHook: (() => void) | undefined;
+    const hook = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveHook = resolve;
+        }),
+    );
+
+    const conn = new SSEConnection({
+      retryOnError: true,
+      maxRetryAttempts: 3,
+      onBeforeReconnect: hook,
+    });
+    conn.start("http://x/sse");
+    const client = latestClient();
+
+    client.fire("error", new Error("net"));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(hook).toHaveBeenCalledTimes(1);
+    expect(client.start).toHaveBeenCalledTimes(1);
+
+    conn.close();
+    resolveHook?.();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(client.start).toHaveBeenCalledTimes(1);
+    expect(get(conn.status)).toBe(ConnectionStatus.CLOSED);
+  });
+
   it("keeps heartbeat() as a backward-compatible alias", async () => {
     const conn = new SSEConnection();
     const resumeSpy = vi.spyOn(conn, "resumeIfPaused");
@@ -205,6 +273,23 @@ describe("SSEConnection", () => {
 
     // Firing an error on the (detached) underlying client after close + cleanup
     // should not reach the subscriber.
+    latestClient().fire("error", new Error("net"));
+    expect(errorHandler).not.toHaveBeenCalled();
+  });
+
+  it("cleanup() transitions to CLOSED, emits close, and clears listeners", () => {
+    const conn = new SSEConnection();
+    const closeHandler = vi.fn();
+    const errorHandler = vi.fn();
+    conn.on("close", closeHandler);
+    conn.on("error", errorHandler);
+    conn.start("http://x/sse");
+
+    conn.cleanup();
+
+    expect(get(conn.status)).toBe(ConnectionStatus.CLOSED);
+    expect(closeHandler).toHaveBeenCalledTimes(1);
+
     latestClient().fire("error", new Error("net"));
     expect(errorHandler).not.toHaveBeenCalled();
   });
@@ -241,7 +326,7 @@ describe("SSEConnection", () => {
 
     // First transport failure → first retry (delay 0); hook rejects.
     client.fire("error", new Error("net"));
-    // Let the first hook reject and the recursive reconnect re-enter.
+    // Let the first hook reject and the guarded reconnect loop continue.
     await vi.advanceTimersByTimeAsync(0);
     // Second attempt also runs the hook; delay is 1000 * 2^1 = 2000 on the
     // 2nd real attempt. Flush that as well.

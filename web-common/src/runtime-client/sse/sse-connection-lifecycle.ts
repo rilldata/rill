@@ -2,7 +2,8 @@ import { Throttler } from "@rilldata/web-common/lib/throttler";
 
 /**
  * Narrow connection contract needed by SSEConnectionLifecycle.
- * Keeps lifecycle policy decoupled from concrete connection implementations.
+ * Lifecycle owns only pause/resume decisions; opening/closing the connection
+ * remains the caller's responsibility.
  */
 export interface LifecycleControl {
   pause(): void;
@@ -55,12 +56,17 @@ export interface SSEConnectionLifecycleOptions {
 }
 
 /**
- * Manages idle pausing for an SSE stream connection based on tab visibility
- * and focus. Schedules a delayed pause on blur/hide, and cancels that pending
- * pause while resuming on focus/show/activity.
+ * Policy layer that interprets browser lifecycle signals and decides when to
+ * call pause/resume on an existing SSE connection.
  *
- * Optional by design. A consumer that wants a persistent connection simply
- * doesn't attach this layer.
+ * Behavior:
+ *   - hidden tab: schedule pause with short timeout
+ *   - blur: schedule pause with normal timeout
+ *   - visible/activity/focus: cancel pending pause and resume if paused
+ *
+ * This class never starts or closes the connection; it only applies
+ * pause/resume timing policy. Optional by design: omit it for always-on
+ * streams.
  */
 export class SSEConnectionLifecycle {
   private readonly throttler: Throttler;
@@ -76,8 +82,8 @@ export class SSEConnectionLifecycle {
   }
 
   /**
-   * Attach DOM listeners and begin managing idle state. Idempotent; a
-   * second call while already started is a no-op.
+   * Attach signal listeners and begin applying pause/resume policy.
+   * Idempotent; a second call while already started is a no-op.
    */
   public start(): void {
     if (this.started) return;
@@ -100,7 +106,8 @@ export class SSEConnectionLifecycle {
 
   /**
    * Detach all listeners and cancel any pending idle pause. Safe to call
-   * multiple times.
+   * multiple times. This stops lifecycle policy only; it does not pause or
+   * close the connection directly.
    */
   public stop(): void {
     this.cancelScheduledPause();

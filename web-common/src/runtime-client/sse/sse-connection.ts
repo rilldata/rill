@@ -1,5 +1,4 @@
 import { createEventBinding } from "@rilldata/web-common/lib/event-emitter.ts";
-import { asyncWait } from "@rilldata/web-common/lib/waitUtils";
 import { get, writable } from "svelte/store";
 import { SSEConnectionLifecycle } from "./sse-connection-lifecycle";
 import { SSEFetchClient, type SSEMessage } from "./sse-fetch-client";
@@ -35,6 +34,13 @@ export type SSEConnectionOptions = {
   onBeforeReconnect?: () => Promise<void>;
 };
 
+export type SSEStartOptions = {
+  method?: "GET" | "POST";
+  body?: Record<string, unknown>;
+  headers?: Record<string, string>;
+  getJwt?: () => string | undefined;
+};
+
 export enum ConnectionStatus {
   CONNECTING = "connecting",
   OPEN = "open",
@@ -51,26 +57,20 @@ type SSEConnectionEvents = {
 };
 
 /**
- * Reconnect layer over SSEFetchClient. Owns:
- *   - Exponential-backoff retry up to maxRetryAttempts.
- *   - Connection-status store (CONNECTING / OPEN / PAUSED / CLOSED).
- *   - Stable-threshold retry-count reset (both open-then-stable and
- *     server-closes-stable paths).
- *   - Optional onBeforeReconnect hook for auth refresh.
+ * Transport-control layer over SSEFetchClient. Owns status
+ * (CONNECTING / OPEN / PAUSED / CLOSED), exponential-backoff retry up to
+ * maxRetryAttempts, retry-count reset after a stable connection, and an
+ * optional onBeforeReconnect hook for auth refresh between retries. Emits
+ * `reconnect` only on post-initial successful opens.
  *
- * Does not own lifecycle policy (visibility, idle pausing). Attach an
- * SSEConnectionLifecycle if you want that.
+ * Does not decide lifecycle policy (for example pausing on tab hide or
+ * resuming on activity). Attach `SSEConnectionLifecycle` for that.
  */
 export class SSEConnection {
   public status = writable<ConnectionStatus>(ConnectionStatus.CLOSED);
 
   public url: string;
-  public options: {
-    method?: "GET" | "POST";
-    body?: Record<string, unknown>;
-    headers?: Record<string, string>;
-    getJwt?: () => string | undefined;
-  };
+  public options: SSEStartOptions;
 
   private readonly events = createEventBinding<SSEConnectionEvents>();
   public readonly on = this.events.on;
@@ -85,8 +85,11 @@ export class SSEConnection {
   private autoCloseLifecycle: SSEConnectionLifecycle | undefined;
   private autoCloseDisabled = false;
 
-  private retryAttempts = writable(0);
-  private isReconnecting = false;
+  private retryAttemptCount = writable(0);
+  // Single-flight guard + cancellation signal for reconnect().
+  // When set, one reconnect loop is active; calling abortReconnect() aborts
+  // backoff/hook work and guarantees that loop exits before openConnection().
+  private reconnectController: AbortController | null = null;
   private connectionCount = 0;
   private openedAt: number | null = null;
 
@@ -106,21 +109,15 @@ export class SSEConnection {
 
   /**
    * Start streaming from the given URL. Begins a new logical session, so
-   * retry state is cleared — previous failures shouldn't prevent a new
-   * endpoint from connecting.
+   * retry state is cleared.
    */
-  public start(
-    url: string,
-    options: {
-      method?: "GET" | "POST";
-      body?: Record<string, unknown>;
-      headers?: Record<string, string>;
-      getJwt?: () => string | undefined;
-    } = {},
-  ): void {
+  public start(url: string, options: SSEStartOptions = {}): void {
     this.url = url;
     this.options = options;
-    this.retryAttempts.set(0);
+    this.retryAttemptCount.set(0);
+    this.connectionCount = 0;
+    this.openedAt = null;
+    this.abortReconnect();
     this.openConnection();
   }
 
@@ -129,8 +126,7 @@ export class SSEConnection {
    * compatibility paths that still call scheduleAutoClose/heartbeat.
    */
   public resumeIfPaused = async () => {
-    const status = get(this.status);
-    if (status === ConnectionStatus.PAUSED) {
+    if (get(this.status) === ConnectionStatus.PAUSED) {
       await this.reconnect();
     }
 
@@ -152,44 +148,45 @@ export class SSEConnection {
    */
   public pause(): void {
     const status = get(this.status);
-
     if (
       status === ConnectionStatus.CLOSED ||
       status === ConnectionStatus.PAUSED
     )
       return;
 
-    // Client-initiated close (auto-close after idle): reset retries because
-    // an intentional pause is not a connection failure.
-    // See also: handleCloseEvent() resets retries for server-initiated closes.
-    this.retryAttempts.set(0);
-
+    // Intentional pause isn't a failure, so reset the retry budget.
+    this.retryAttemptCount.set(0);
+    this.openedAt = null;
+    this.abortReconnect();
     this.status.set(ConnectionStatus.PAUSED);
-
-    // This fires a "close" event on the SSEFetchClient, but handleCloseEvent
-    // ignores it because status is already PAUSED.
     this.client.stop();
   }
 
   /**
-   * Transition to CLOSED. Pass cleanup=true to also clear listeners.
+   * Terminate the session. Pass cleanup=true to also clear listeners.
    */
   public close = (cleanup = false) => {
-    this.pause();
+    if (get(this.status) === ConnectionStatus.CLOSED) {
+      if (cleanup) this.events.clearListeners();
+      return;
+    }
 
+    this.openedAt = null;
+    this.abortReconnect();
     this.status.set(ConnectionStatus.CLOSED);
+    this.client.stop();
+    this.events.emit("close");
 
     if (cleanup) {
-      this.cleanup();
+      this.events.clearListeners();
     }
   };
 
   /**
-   * Stop streaming and clear all connection listeners.
+   * Fully tear down the session and listeners.
    */
   public cleanup(): void {
-    this.pause();
-    this.events.clearListeners();
+    this.close(true);
   }
 
   /**
@@ -218,47 +215,43 @@ export class SSEConnection {
     this.autoCloseDisabled = false;
   }
 
-  /**
-   * Issue the underlying fetch and arm auto-close. Called by both start()
-   * (new session) and reconnect() (retry of the current session); only
-   * start() resets retry state, so reconnect() can call this without
-   * clobbering its own retry counter.
-   */
   private openConnection(): void {
     this.status.set(ConnectionStatus.CONNECTING);
-
     void this.client.start(this.url, this.options);
-
     if (this.autoCloseLifecycle) {
       this.scheduleAutoClose();
     }
   }
 
   private async reconnect() {
-    if (this.isReconnecting) return;
-    this.isReconnecting = true;
+    if (this.reconnectController) return;
+    const controller = new AbortController();
+    this.reconnectController = controller;
+    const { signal } = controller;
 
     try {
-      // Keep retries in a single guarded task. Avoid self-recursion so
-      // isReconnecting stays true for the entire retry cycle.
-      while (true) {
+      while (!signal.aborted) {
         this.autoCloseLifecycle?.cancelScheduledPause();
 
-        if (get(this.status) === ConnectionStatus.OPEN) return;
+        const status = get(this.status);
+        if (
+          status === ConnectionStatus.OPEN ||
+          status === ConnectionStatus.CLOSED
+        )
+          return;
 
-        const currentAttempts = get(this.retryAttempts);
-
+        const currentAttempts = get(this.retryAttemptCount);
         if (currentAttempts >= (this.params?.maxRetryAttempts ?? 0)) {
-          this.status.set(ConnectionStatus.CLOSED);
+          this.close();
           return;
         }
 
         if (currentAttempts > 0) {
-          const delay = BACKOFF_DELAY * 2 ** currentAttempts;
-          await asyncWait(delay);
+          await waitOrAbort(BACKOFF_DELAY * 2 ** currentAttempts, signal);
+          if (signal.aborted) return;
         }
 
-        this.retryAttempts.update((n) => n + 1);
+        this.retryAttemptCount.update((n) => n + 1);
 
         if (this.params?.onBeforeReconnect) {
           try {
@@ -267,23 +260,30 @@ export class SSEConnection {
             const errorArg =
               err instanceof Error ? err : new Error(String(err));
             this.events.emit("error", errorArg);
-            // Treat hook failures like transport failures. The attempt already
-            // counted, so continue in-loop and retry under the same guard.
+            // Hook failure counts as a failed attempt; stay in-loop under
+            // the same guard so the next iteration applies backoff.
             continue;
           }
+          if (signal.aborted) return;
         }
 
         this.openConnection();
         return;
       }
     } finally {
-      this.isReconnecting = false;
+      if (this.reconnectController === controller) {
+        this.reconnectController = null;
+      }
     }
+  }
+
+  private abortReconnect(): void {
+    this.reconnectController?.abort();
+    this.reconnectController = null;
   }
 
   private handleError = (error: Error) => {
     const status = get(this.status);
-
     if (
       status === ConnectionStatus.CLOSED ||
       status === ConnectionStatus.PAUSED
@@ -293,32 +293,31 @@ export class SSEConnection {
     if (this.params?.retryOnError) {
       this.status.set(ConnectionStatus.CONNECTING);
       void this.reconnect();
+    } else {
+      // No retry configured: terminate the session and fire `close` so
+      // awaiters (e.g. one-shot chat streams) can settle.
+      this.close();
     }
 
     const errorArg = error instanceof Error ? error : new Error(String(error));
     this.events.emit("error", errorArg);
   };
 
-  // Fired by SSEFetchClient when the underlying fetch ends for any reason:
-  //   1. Client-initiated pause (AbortError).
-  //   2. Network error (transport failure).
-  //   3. Application termination.
-  // Client-initiated closes are ignored here; pause() handles its own
-  // cleanup before setting status to PAUSED, so the guard below skips them.
+  // Fires when the underlying fetch ends. Client-initiated closes (pause()
+  // or close()) set status away from OPEN before stopping the client, so
+  // the guard below filters them out; this handler runs only for
+  // server-initiated closes.
   private handleCloseEvent = () => {
-    const status = get(this.status);
+    if (get(this.status) !== ConnectionStatus.OPEN) return;
 
-    if (status !== ConnectionStatus.OPEN) return;
-
-    // Server-initiated close. Reset retries if the connection had been
-    // stable (open > MIN_STABLE_DURATION); unstable connections (e.g.
-    // server opens then immediately closes) should still accumulate retries.
-    // See also: pause() resets retries for client-initiated closes.
+    // Reset retries when a stable connection closes so the next failure
+    // starts with a fresh budget; unstable closes (server opens then
+    // immediately closes) still accumulate attempts.
     const wasStable =
       this.openedAt !== null &&
       Date.now() - this.openedAt >= MIN_STABLE_DURATION;
     if (wasStable) {
-      this.retryAttempts.set(0);
+      this.retryAttemptCount.set(0);
     }
     this.openedAt = null;
 
@@ -327,7 +326,6 @@ export class SSEConnection {
       void this.reconnect();
     } else {
       this.close();
-      this.events.emit("close");
     }
   };
 
@@ -339,16 +337,19 @@ export class SSEConnection {
     this.connectionCount += 1;
     this.openedAt = Date.now();
     this.status.set(ConnectionStatus.OPEN);
+    this.events.emit("open");
 
-    // Once the connection has been stable for MIN_STABLE_DURATION, reset
-    // retries so a future failure starts with a fresh budget. Mirrors the
-    // wasStable check in handleCloseEvent for the case where the connection
-    // errors out instead of closing cleanly. Especially important for
-    // keep-alive consumers (e.g. cloud editor) that don't cycle through
-    // pause(), which is the other place retries reset.
+    // Mirror handleCloseEvent's wasStable reset for the case where the
+    // connection later errors out instead of closing cleanly. A stale timer
+    // from an earlier open no-ops here because `openedAt` reflects the
+    // current connection — a rapid reopen overwrites it, and pause/close
+    // clear it to null.
     setTimeout(() => {
-      if (get(this.status) === ConnectionStatus.OPEN) {
-        this.retryAttempts.set(0);
+      if (
+        this.openedAt !== null &&
+        Date.now() - this.openedAt >= MIN_STABLE_DURATION
+      ) {
+        this.retryAttemptCount.set(0);
       }
     }, MIN_STABLE_DURATION);
 
@@ -356,4 +357,19 @@ export class SSEConnection {
       this.events.emit("reconnect");
     }
   };
+}
+
+function waitOrAbort(ms: number, signal: AbortSignal): Promise<void> {
+  if (signal.aborted) return Promise.resolve();
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    const onAbort = () => {
+      clearTimeout(timer);
+      resolve();
+    };
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
 }
