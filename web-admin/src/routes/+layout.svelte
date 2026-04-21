@@ -9,6 +9,7 @@
     isBillingUpgradePage,
     isProjectInvitePage,
     isPublicReportPage,
+    isWelcomePage,
     withinOrganization,
     withinProject,
   } from "@rilldata/web-admin/features/navigation/nav-utils";
@@ -98,7 +99,9 @@
     // upgrade callback landing page shouldn't show any rill identifications
     isBillingUpgradePage($page) ||
     // public reports are shared to external users who shouldn't be shown any rill related stuff
-    isPublicReportPage($page);
+    isPublicReportPage($page) ||
+    // Welcome page should be a full screen experience
+    isWelcomePage($page);
   $: hideBillingManager =
     // billing manager needs organization
     !organization ||
