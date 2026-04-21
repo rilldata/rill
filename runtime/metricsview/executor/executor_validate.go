@@ -300,9 +300,13 @@ func (e *Executor) validateAndNormalizeRollups(ctx context.Context, mv *runtimev
 		}
 		rollup.MeasuresSelector = nil
 
-		// time_grain is required
+		// time_grain is required and must be >= smallest_time_grain
 		if rollup.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: time_grain is required", i))
+			continue
+		}
+		if mv.SmallestTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED && rollup.TimeGrain < mv.SmallestTimeGrain {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: time_grain %q must be greater than or equal to smallest_time_grain %q", i, metricsview.TimeGrainFromProto(rollup.TimeGrain), metricsview.TimeGrainFromProto(mv.SmallestTimeGrain)))
 			continue
 		}
 
@@ -312,35 +316,49 @@ func (e *Executor) validateAndNormalizeRollups(ctx context.Context, mv *runtimev
 			continue
 		}
 
-		cols := make(map[string]*runtimev1.StructType_Field, len(t.Schema.Fields))
-		for _, f := range t.Schema.Fields {
-			cols[strings.ToLower(f.Name)] = f
-		}
-
-		// Validate dimensions using the same logic as the base table validation.
-		// This handles expression-based dimensions correctly (not just column lookups).
+		// Build a subset spec with just this rollup's dims and measures, then validate
+		// all at once using validateAllDimensionsAndMeasures (single dry-run query).
+		// Falls back to individual validation on error to report per-field details.
+		var subsetDims []*runtimev1.MetricsViewSpec_Dimension
 		for _, dimName := range rollup.Dimensions {
 			d := dimsByName[strings.ToLower(dimName)]
 			if d == nil {
 				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: dimension %q not found in metrics view", i, dimName))
 				continue
 			}
-			if err := e.validateDimension(ctx, t, d, cols); err != nil {
-				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: %w", i, err))
-			}
+			subsetDims = append(subsetDims, d)
 		}
-
-		// Validate measures using the same logic as the base table validation
+		var subsetMeasures []*runtimev1.MetricsViewSpec_Measure
 		for _, mName := range rollup.Measures {
 			m := measuresByName[strings.ToLower(mName)]
 			if m == nil {
 				continue
 			}
-			if m.Type != runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE || m.Window != nil {
-				continue
+			subsetMeasures = append(subsetMeasures, m)
+		}
+
+		subsetSpec := &runtimev1.MetricsViewSpec{
+			Dimensions: subsetDims,
+			Measures:   subsetMeasures,
+		}
+		if err := e.validateAllDimensionsAndMeasures(ctx, t, subsetSpec); err != nil {
+			// Fall back to individual validation for detailed per-field errors
+			cols := make(map[string]*runtimev1.StructType_Field, len(t.Schema.Fields))
+			for _, f := range t.Schema.Fields {
+				cols[strings.ToLower(f.Name)] = f
 			}
-			if err := e.validateMeasure(ctx, t, m); err != nil {
-				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: invalid expression for measure %q: %w", i, mName, err))
+			for _, d := range subsetDims {
+				if err := e.validateDimension(ctx, t, d, cols); err != nil {
+					res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: %w", i, err))
+				}
+			}
+			for _, m := range subsetMeasures {
+				if m.Type != runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE || m.Window != nil {
+					continue
+				}
+				if err := e.validateMeasure(ctx, t, m); err != nil {
+					res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: invalid expression for measure %q: %w", i, m.Name, err))
+				}
 			}
 		}
 	}

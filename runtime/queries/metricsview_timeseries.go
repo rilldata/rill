@@ -125,13 +125,14 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 	}
 	defer e.Close()
 
-	if len(mv.ValidSpec.Rollups) > 0 && mv.ValidSpec.TimeDimension != "" {
+	// Bind cached timestamps (including rollups) for rollup routing.
+	// Skip when query uses a non-primary time dimension since rollup routing won't apply.
+	if len(mv.ValidSpec.Rollups) > 0 && mv.ValidSpec.TimeDimension != "" && (q.TimeDimension == "" || q.TimeDimension == mv.ValidSpec.TimeDimension) {
 		tsRes, err := ResolveTimestampResult(ctx, rt, instanceID, q.MetricsViewName, q.TimeDimension, q.SecurityClaims, priority)
 		if err != nil {
 			return err
 		}
-		err = e.BindQuery(qry, tsRes)
-		if err != nil {
+		if err := e.BindQuery(qry, tsRes); err != nil {
 			return err
 		}
 	}
