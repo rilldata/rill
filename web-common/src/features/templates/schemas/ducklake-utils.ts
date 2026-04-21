@@ -1,5 +1,21 @@
+import {
+  findAvailableEnvVarName,
+  makeEnvVarKey,
+  replaceOrAddEnvVariable,
+} from "@rilldata/web-common/features/connectors/code-utils";
 import { ducklakeSchema } from "./ducklake";
 import type { MultiStepFormSchema } from "./types";
+
+/**
+ * Maps DuckLake password field keys (e.g. `catalog_postgres_password`) to the
+ * resolved `.env` variable name used in the generated YAML. When present, the
+ * composer emits `password={{ .env.<name> }}` instead of the raw value.
+ */
+export type DuckLakeSecretRefs = Record<string, string>;
+
+export interface ComposeDuckLakeAttachOptions {
+  secretRefs?: DuckLakeSecretRefs;
+}
 
 /**
  * Compose a DuckDB `ATTACH` clause string (without the leading `ATTACH`
@@ -8,8 +24,11 @@ import type { MultiStepFormSchema } from "./types";
  * Example output:
  *   `'ducklake:duckdb_database.ducklake' AS my_ducklake (DATA_PATH 'files/', OVERRIDE_DATA_PATH true)`
  */
-export function composeDuckLakeAttach(values: Record<string, unknown>): string {
-  const identifier = composeCatalogIdentifier(values);
+export function composeDuckLakeAttach(
+  values: Record<string, unknown>,
+  opts?: ComposeDuckLakeAttachOptions,
+): string {
+  const identifier = composeCatalogIdentifier(values, opts?.secretRefs);
   if (!identifier) return "";
 
   const alias = stringValue(values.alias);
@@ -46,8 +65,10 @@ export function composeDuckLakeAttach(values: Record<string, unknown>): string {
   }
 
   // Always emit boolean options so the user can see each configured advanced
-  // setting reflected in the generated ATTACH clause.
+  // setting reflected in the generated ATTACH clause. `mode` is a boolean in
+  // form state (true = read-only) and maps to DuckDB's `READ_ONLY` ATTACH flag.
   const boolParams: Array<[string, string]> = [
+    ["READ_ONLY", "mode"],
     ["OVERRIDE_DATA_PATH", "override_data_path"],
     ["CREATE_IF_NOT_EXISTS", "create_if_not_exists"],
     ["ENCRYPTED", "encrypted"],
@@ -69,7 +90,10 @@ export function composeDuckLakeAttach(values: Record<string, unknown>): string {
  * Build the portion of the DuckLake URI that follows `ducklake:`,
  * dispatching on the chosen `catalog_type`.
  */
-function composeCatalogIdentifier(values: Record<string, unknown>): string {
+function composeCatalogIdentifier(
+  values: Record<string, unknown>,
+  secretRefs?: DuckLakeSecretRefs,
+): string {
   const type = stringValue(values.catalog_type) || "duckdb";
 
   switch (type) {
@@ -82,30 +106,45 @@ function composeCatalogIdentifier(values: Record<string, unknown>): string {
     }
 
     case "postgres": {
-      const kv = keyValuePairs([
-        ["dbname", values.catalog_postgres_dbname],
-        ["host", values.catalog_postgres_host],
-        ["port", values.catalog_postgres_port],
-        ["user", values.catalog_postgres_user],
-        ["password", values.catalog_postgres_password],
-      ]);
+      const kv = keyValuePairs(
+        [
+          ["dbname", values.catalog_postgres_dbname],
+          ["host", values.catalog_postgres_host],
+          ["port", values.catalog_postgres_port],
+          ["user", values.catalog_postgres_user],
+          ["password", values.catalog_postgres_password],
+        ],
+        { password: fieldSecretRef(secretRefs, "catalog_postgres_password") },
+      );
       return kv ? `postgres:${kv}` : "";
     }
 
     case "mysql": {
-      const kv = keyValuePairs([
-        ["database", values.catalog_mysql_database],
-        ["host", values.catalog_mysql_host],
-        ["port", values.catalog_mysql_port],
-        ["user", values.catalog_mysql_user],
-        ["password", values.catalog_mysql_password],
-      ]);
+      const kv = keyValuePairs(
+        [
+          ["database", values.catalog_mysql_database],
+          ["host", values.catalog_mysql_host],
+          ["port", values.catalog_mysql_port],
+          ["user", values.catalog_mysql_user],
+          ["password", values.catalog_mysql_password],
+        ],
+        { password: fieldSecretRef(secretRefs, "catalog_mysql_password") },
+      );
       return kv ? `mysql:${kv}` : "";
     }
 
     default:
       return "";
   }
+}
+
+function fieldSecretRef(
+  secretRefs: DuckLakeSecretRefs | undefined,
+  fieldKey: string,
+): string | undefined {
+  const envVarName = secretRefs?.[fieldKey];
+  if (!envVarName) return undefined;
+  return `{{ .env.${envVarName} }}`;
 }
 
 /**
@@ -119,9 +158,20 @@ function composeDataPath(values: Record<string, unknown>): string | undefined {
   return value || undefined;
 }
 
-function keyValuePairs(entries: Array<[string, unknown]>): string {
+function keyValuePairs(
+  entries: Array<[string, unknown]>,
+  overrides: Record<string, string | undefined> = {},
+): string {
   const parts: string[] = [];
   for (const [key, raw] of entries) {
+    const override = overrides[key];
+    if (override !== undefined) {
+      // When an override is supplied (e.g. a templated secret reference), emit
+      // it only if the user also provided a value for that field; otherwise
+      // skip the pair so empty passwords do not inject a template ref.
+      if (stringValue(raw)) parts.push(`${key}=${override}`);
+      continue;
+    }
     const v = stringValue(raw);
     if (v) parts.push(`${key}=${v}`);
   }
@@ -133,14 +183,19 @@ function keyValuePairs(entries: Array<[string, unknown]>): string {
  * "parameters" tab, synthesise an `attach` value from the parameter fields
  * and return a copy of `values` with that `attach` set. Otherwise returns the
  * original values unchanged.
+ *
+ * When `secretRefs` is supplied, password fields are emitted as
+ * `{{ .env.<NAME> }}` template references rather than raw values, so the
+ * generated ATTACH string stays free of plaintext secrets.
  */
 export function applyDuckLakeFormTransform(
   schema: MultiStepFormSchema | null | undefined,
   values: Record<string, unknown>,
+  opts?: ComposeDuckLakeAttachOptions,
 ): Record<string, unknown> {
   if (schema !== ducklakeSchema) return values;
   if (values.connection_mode !== "parameters") return values;
-  const attach = composeDuckLakeAttach(values);
+  const attach = composeDuckLakeAttach(values, opts);
   return { ...values, attach };
 }
 
@@ -162,6 +217,34 @@ export function injectDuckLakeAttach(
   return { ...filteredValues, attach };
 }
 
+/**
+ * List of DuckLake password form-field keys whose values must be stored in
+ * `.env` and referenced via template in the generated ATTACH clause.
+ */
+export const DUCKLAKE_SECRET_FIELD_KEYS = [
+  "catalog_postgres_password",
+  "catalog_mysql_password",
+] as const;
+
+/**
+ * Resolve the `.env` variable names for DuckLake password fields, matching
+ * the name `makeEnvVarKey` will use when writing secrets and compiling YAML.
+ * Returns an empty object for non-DuckLake schemas so callers can pass the
+ * result through unconditionally.
+ */
+export function buildDuckLakeSecretRefs(
+  schema: MultiStepFormSchema | null | undefined,
+  driverName: string,
+  existingEnvBlob: string,
+): DuckLakeSecretRefs {
+  if (schema !== ducklakeSchema) return {};
+  const refs: DuckLakeSecretRefs = {};
+  for (const key of DUCKLAKE_SECRET_FIELD_KEYS) {
+    refs[key] = makeEnvVarKey(driverName, key, existingEnvBlob, schema);
+  }
+  return refs;
+}
+
 function stringValue(v: unknown): string {
   if (typeof v !== "string") return "";
   return v.trim();
@@ -178,4 +261,81 @@ function numberValue(v: unknown): number | undefined {
 
 function escapeSqlString(v: string): string {
   return v.replace(/'/g, "''");
+}
+
+/**
+ * Catalog URI schemes whose bodies often carry raw credentials and should be
+ * routed through `.env`. File-path catalogs (`sqlite:`, bare DuckDB files) are
+ * intentionally omitted since they do not contain secrets.
+ */
+const DUCKLAKE_CATALOG_ENV_VAR_BASE: Record<string, string> = {
+  postgres: "DUCKLAKE_POSTGRES",
+  mysql: "DUCKLAKE_MYSQL",
+  md: "DUCKLAKE_MOTHERDUCK",
+};
+
+const DUCKLAKE_CATALOG_URI_PATTERN =
+  /'ducklake:(postgres|mysql|md):([^']*)'/g;
+
+const ENV_TEMPLATE_ONLY_PATTERN = /^{{\s*\.env\.[^{}\s]+\s*}}$/;
+
+export interface DuckLakeAttachExtraction {
+  /** The attach string with raw catalog bodies replaced by `{{ .env.X }}` refs. */
+  rewrittenAttach: string;
+  /** Map of allocated env var name to the raw catalog body to persist in `.env`. */
+  extractedSecrets: Record<string, string>;
+}
+
+/**
+ * Extract credential-bearing catalog URIs from a raw DuckLake ATTACH string.
+ *
+ * For each `'ducklake:<driver>:<body>'` occurrence where driver is one of
+ * `postgres`, `mysql`, or `md`, the entire body is extracted into a generic
+ * env var (e.g. `DUCKLAKE_POSTGRES`) and replaced with a `{{ .env.<name> }}`
+ * template reference. Conflicts against `existingEnvBlob` are resolved by
+ * suffixing `_1`, `_2`, etc., matching `makeEnvVarKey`'s strategy.
+ *
+ * Idempotent: catalog bodies that already contain only a single env-template
+ * reference are left unchanged so resubmitting a previously-extracted attach
+ * does not re-wrap the value.
+ */
+export function extractDuckLakeAttachSecrets(
+  attach: string,
+  existingEnvBlob: string,
+): DuckLakeAttachExtraction {
+  if (!attach) return { rewrittenAttach: attach, extractedSecrets: {} };
+  const extractedSecrets: Record<string, string> = {};
+  // Track allocations across multiple matches in a single attach so two
+  // postgres catalogs in one string don't collide on the same env var name.
+  let reservedBlob = existingEnvBlob;
+
+  const rewrittenAttach = attach.replace(
+    DUCKLAKE_CATALOG_URI_PATTERN,
+    (_match, driver: string, body: string) => {
+      const trimmed = body.trim();
+      if (!trimmed) return `'ducklake:${driver}:${body}'`;
+      if (ENV_TEMPLATE_ONLY_PATTERN.test(trimmed)) {
+        return `'ducklake:${driver}:${body}'`;
+      }
+      const base = DUCKLAKE_CATALOG_ENV_VAR_BASE[driver];
+      const envVarName = findAvailableEnvVarName(reservedBlob, base);
+      extractedSecrets[envVarName] = trimmed;
+      reservedBlob = replaceOrAddEnvVariable(reservedBlob, envVarName, trimmed);
+      return `'ducklake:${driver}:{{ .env.${envVarName} }}'`;
+    },
+  );
+  return { rewrittenAttach, extractedSecrets };
+}
+
+/**
+ * Return true when the schema + form values describe a DuckLake configuration
+ * whose raw `attach` string should be scanned for catalog secrets. Parameters
+ * mode is skipped since the composer already routes passwords through `.env`.
+ */
+export function shouldExtractDuckLakeAttachSecrets(
+  schema: MultiStepFormSchema | null | undefined,
+  values: Record<string, unknown>,
+): boolean {
+  if (schema !== ducklakeSchema) return false;
+  return values.connection_mode !== "parameters";
 }

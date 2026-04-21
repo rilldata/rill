@@ -37,12 +37,12 @@ export const ducklakeSchema: MultiStepFormSchema = {
     },
     mode: {
       type: "boolean",
-      title: "Enable write mode",
+      title: "Read only",
       description:
-        "Read-write mode allows Rill to drop, create, and modify tables, not just query them",
-      default: false,
+        "Restrict Rill to read-only queries. Disable to let Rill drop, create, and modify tables.",
+      default: true,
       "x-display": "toggle",
-      "x-yaml-value": "readwrite",
+      "x-yaml-value": { true: "readonly", false: "readwrite" },
       "x-step": "connector",
       "x-advanced": true,
     },
@@ -141,9 +141,10 @@ export const ducklakeSchema: MultiStepFormSchema = {
     catalog_postgres_password: {
       type: "string",
       title: "Password",
-      description:
-        "Password is embedded in the generated `ATTACH` string. For production use, edit the ATTACH SQL directly and use env-var templating.",
+      description: "PostgreSQL password. Stored as a secret in `.env`.",
       "x-placeholder": "your_password",
+      "x-secret": true,
+      "x-env-var-name": "DUCKLAKE_CATALOG_POSTGRES_PASSWORD",
       "x-ui-only": true,
       "x-step": "connector",
     },
@@ -181,9 +182,10 @@ export const ducklakeSchema: MultiStepFormSchema = {
     catalog_mysql_password: {
       type: "string",
       title: "Password",
-      description:
-        "Password is embedded in the generated `ATTACH` string. For production use, edit the ATTACH SQL directly and use env-var templating.",
+      description: "MySQL password. Stored as a secret in `.env`.",
       "x-placeholder": "your_password",
+      "x-secret": true,
+      "x-env-var-name": "DUCKLAKE_CATALOG_MYSQL_PASSWORD",
       "x-ui-only": true,
       "x-step": "connector",
     },

@@ -72,8 +72,17 @@ export type JSONSchemaField = {
   "x-docs-url"?: string;
   /** Field is an advanced setting, hidden by default behind an expandable section. */
   "x-advanced"?: boolean;
-  /** For boolean fields: the YAML value to emit when the toggle is checked (true). When unchecked, the field is omitted. */
-  "x-yaml-value"?: string | number | boolean;
+  /**
+   * For boolean fields: the YAML value to emit.
+   * - If a scalar, it is emitted only when the toggle is checked (true); unchecked fields are omitted.
+   * - If an object with `true` and/or `false` keys, the matching value is emitted for each toggle state,
+   *   so both states round-trip to YAML.
+   */
+  "x-yaml-value"?:
+    | string
+    | number
+    | boolean
+    | { true?: string | number | boolean; false?: string | number | boolean };
   /** Field controls UI behavior only and is excluded from generated YAML. */
   "x-ui-only"?: boolean;
   /**

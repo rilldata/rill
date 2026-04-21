@@ -26,12 +26,18 @@ import {
   findRadioEnumKey,
   getSchemaSecretKeys,
 } from "@rilldata/web-common/features/templates/schema-utils.ts";
-import { applyDuckLakeFormTransform } from "@rilldata/web-common/features/templates/schemas/ducklake-utils.ts";
+import {
+  applyDuckLakeFormTransform,
+  buildDuckLakeSecretRefs,
+  extractDuckLakeAttachSecrets,
+  shouldExtractDuckLakeAttachSecrets,
+} from "@rilldata/web-common/features/templates/schemas/ducklake-utils.ts";
 import type { MultiStepFormSchema } from "@rilldata/web-common/features/templates/schemas/types.ts";
 import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types.ts";
 import {
   maybeUnsetOlapConnectorInYaml,
+  replaceOrAddEnvVariable,
   unsetResourceEnvVars,
   updateDotEnvWithSecrets,
   updateRillYAMLWithOlapConnector,
@@ -70,8 +76,33 @@ export async function createConnector({
 
   // DuckLake "parameters" tab composes individual param fields into a single
   // `attach` string; apply here so the same shape flows through yaml preview,
-  // .env secret handling, and file write.
-  formValues = applyDuckLakeFormTransform(schema, formValues);
+  // .env secret handling, and file write. Password fields are stored in `.env`
+  // and referenced via template in the composed ATTACH clause.
+  const duckLakeSecretRefs = buildDuckLakeSecretRefs(
+    schema,
+    connectorDriver.name ?? "",
+    existingEnvBlob ?? "",
+  );
+  formValues = applyDuckLakeFormTransform(schema, formValues, {
+    secretRefs: duckLakeSecretRefs,
+  });
+
+  // DuckLake "ATTACH SQL" tab: route credential-bearing catalog URIs in the
+  // user-pasted attach string through `.env`. We do this before
+  // updateDotEnvWithSecrets so the same baseline blob drives conflict
+  // detection for both the extracted catalog and any form-field secrets.
+  let duckLakeAttachSecrets: Record<string, string> = {};
+  if (shouldExtractDuckLakeAttachSecrets(schema, formValues)) {
+    const rawAttach = formValues.attach;
+    if (typeof rawAttach === "string") {
+      const { rewrittenAttach, extractedSecrets } =
+        extractDuckLakeAttachSecrets(rawAttach, existingEnvBlob ?? "");
+      if (Object.keys(extractedSecrets).length > 0) {
+        formValues = { ...formValues, attach: rewrittenAttach };
+        duckLakeAttachSecrets = extractedSecrets;
+      }
+    }
+  }
 
   // Fast-path: public auth skips validation/test and advances directly
   if (isMultiStepConnector(schema) && isPublicAuth(schema, formValues)) {
@@ -91,7 +122,7 @@ export async function createConnector({
   try {
     // Capture original .env and compute updated contents up front
     // Use originalBlob from updateDotEnvWithSecrets for consistent conflict detection
-    const { newBlob: newEnvBlob, originalBlob: originalEnvBlob } =
+    let { newBlob: newEnvBlob, originalBlob: originalEnvBlob } =
       await updateDotEnvWithSecrets(
         runtimeClient,
         queryClient,
@@ -103,6 +134,16 @@ export async function createConnector({
           existingEnvBlob: existingEnvBlob ?? undefined,
         },
       );
+
+    // Persist DuckLake catalog URIs extracted from the raw ATTACH clause.
+    // These are not tied to a form field, so updateDotEnvWithSecrets cannot
+    // write them; append directly using the same env blob so write ordering
+    // matches the rest of the secret handling.
+    for (const [envVarName, rawValue] of Object.entries(
+      duckLakeAttachSecrets,
+    )) {
+      newEnvBlob = replaceOrAddEnvVariable(newEnvBlob, envVarName, rawValue);
+    }
 
     /**
      * Optimistic updates (Test and Connect):

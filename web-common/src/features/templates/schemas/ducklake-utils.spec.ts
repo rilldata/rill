@@ -1,7 +1,10 @@
 import { describe, it, expect } from "vitest";
 import {
   applyDuckLakeFormTransform,
+  buildDuckLakeSecretRefs,
   composeDuckLakeAttach,
+  extractDuckLakeAttachSecrets,
+  shouldExtractDuckLakeAttachSecrets,
 } from "./ducklake-utils";
 import { ducklakeSchema } from "./ducklake";
 
@@ -78,6 +81,66 @@ describe("composeDuckLakeAttach", () => {
     ).toBe(
       "'ducklake:mysql:database=mydb host=localhost port=3306 user=root password=secret'",
     );
+  });
+
+  it("substitutes postgres password with an env template reference when secretRefs is provided", () => {
+    expect(
+      composeDuckLakeAttach(
+        {
+          catalog_type: "postgres",
+          catalog_postgres_dbname: "mydb",
+          catalog_postgres_host: "localhost",
+          catalog_postgres_user: "postgres",
+          catalog_postgres_password: "secret",
+        },
+        {
+          secretRefs: {
+            catalog_postgres_password: "DUCKLAKE_CATALOG_POSTGRES_PASSWORD",
+          },
+        },
+      ),
+    ).toBe(
+      "'ducklake:postgres:dbname=mydb host=localhost user=postgres password={{ .env.DUCKLAKE_CATALOG_POSTGRES_PASSWORD }}'",
+    );
+  });
+
+  it("substitutes mysql password with an env template reference when secretRefs is provided", () => {
+    expect(
+      composeDuckLakeAttach(
+        {
+          catalog_type: "mysql",
+          catalog_mysql_database: "mydb",
+          catalog_mysql_host: "localhost",
+          catalog_mysql_user: "root",
+          catalog_mysql_password: "secret",
+        },
+        {
+          secretRefs: {
+            catalog_mysql_password: "DUCKLAKE_CATALOG_MYSQL_PASSWORD",
+          },
+        },
+      ),
+    ).toBe(
+      "'ducklake:mysql:database=mydb host=localhost user=root password={{ .env.DUCKLAKE_CATALOG_MYSQL_PASSWORD }}'",
+    );
+  });
+
+  it("omits the password pair when secretRefs is provided but the password is empty", () => {
+    expect(
+      composeDuckLakeAttach(
+        {
+          catalog_type: "postgres",
+          catalog_postgres_dbname: "mydb",
+          catalog_postgres_host: "localhost",
+          catalog_postgres_password: "",
+        },
+        {
+          secretRefs: {
+            catalog_postgres_password: "DUCKLAKE_CATALOG_POSTGRES_PASSWORD",
+          },
+        },
+      ),
+    ).toBe("'ducklake:postgres:dbname=mydb host=localhost'");
   });
 
   it("includes an alias when provided", () => {
@@ -193,6 +256,7 @@ describe("composeDuckLakeAttach", () => {
         alias: "my_ducklake",
         data_path_type: "s3",
         data_path_s3: "s3://bucket/",
+        mode: true,
         override_data_path: false,
         create_if_not_exists: false,
         data_inlining_row_limit: 100,
@@ -216,12 +280,31 @@ describe("composeDuckLakeAttach", () => {
         "SNAPSHOT_VERSION 'v1', " +
         "METADATA_PARAMETERS {a: 1}, " +
         "DATA_INLINING_ROW_LIMIT 100, " +
+        "READ_ONLY true, " +
         "OVERRIDE_DATA_PATH false, " +
         "CREATE_IF_NOT_EXISTS false, " +
         "ENCRYPTED true, " +
         "AUTOMATIC_MIGRATION true" +
         ")",
     );
+  });
+
+  it("emits READ_ONLY from the mode toggle in both states", () => {
+    expect(
+      composeDuckLakeAttach({
+        catalog_type: "duckdb",
+        catalog_duckdb_path: "c.ducklake",
+        mode: true,
+      }),
+    ).toBe("'ducklake:c.ducklake' (READ_ONLY true)");
+
+    expect(
+      composeDuckLakeAttach({
+        catalog_type: "duckdb",
+        catalog_duckdb_path: "c.ducklake",
+        mode: false,
+      }),
+    ).toBe("'ducklake:c.ducklake' (READ_ONLY false)");
   });
 });
 
@@ -253,5 +336,172 @@ describe("applyDuckLakeFormTransform", () => {
     expect(result.attach).toBe(
       "'ducklake:duckdb_database.ducklake' (DATA_PATH 'other_data_path/')",
     );
+  });
+
+  it("threads secretRefs through to composeDuckLakeAttach", () => {
+    const result = applyDuckLakeFormTransform(
+      ducklakeSchema,
+      {
+        connection_mode: "parameters",
+        catalog_type: "postgres",
+        catalog_postgres_dbname: "mydb",
+        catalog_postgres_host: "localhost",
+        catalog_postgres_user: "postgres",
+        catalog_postgres_password: "secret",
+      },
+      {
+        secretRefs: {
+          catalog_postgres_password: "DUCKLAKE_CATALOG_POSTGRES_PASSWORD",
+        },
+      },
+    );
+    expect(result.attach).toBe(
+      "'ducklake:postgres:dbname=mydb host=localhost user=postgres password={{ .env.DUCKLAKE_CATALOG_POSTGRES_PASSWORD }}'",
+    );
+  });
+});
+
+describe("buildDuckLakeSecretRefs", () => {
+  it("returns an empty object for non-DuckLake schemas", () => {
+    expect(buildDuckLakeSecretRefs(null, "postgres", "")).toEqual({});
+    expect(
+      buildDuckLakeSecretRefs(
+        { type: "object", title: "Other", properties: {} },
+        "duckdb",
+        "",
+      ),
+    ).toEqual({});
+  });
+
+  it("resolves env var names for the DuckLake password fields", () => {
+    const refs = buildDuckLakeSecretRefs(ducklakeSchema, "duckdb", "");
+    expect(refs).toEqual({
+      catalog_postgres_password: "DUCKLAKE_CATALOG_POSTGRES_PASSWORD",
+      catalog_mysql_password: "DUCKLAKE_CATALOG_MYSQL_PASSWORD",
+    });
+  });
+
+  it("suffixes env var names to avoid conflicts in an existing .env blob", () => {
+    const envBlob =
+      "DUCKLAKE_CATALOG_POSTGRES_PASSWORD=existing\n" +
+      "DUCKLAKE_CATALOG_MYSQL_PASSWORD=existing";
+    const refs = buildDuckLakeSecretRefs(ducklakeSchema, "duckdb", envBlob);
+    expect(refs).toEqual({
+      catalog_postgres_password: "DUCKLAKE_CATALOG_POSTGRES_PASSWORD_1",
+      catalog_mysql_password: "DUCKLAKE_CATALOG_MYSQL_PASSWORD_1",
+    });
+  });
+});
+
+describe("extractDuckLakeAttachSecrets", () => {
+  it("returns empty extraction for empty input", () => {
+    expect(extractDuckLakeAttachSecrets("", "")).toEqual({
+      rewrittenAttach: "",
+      extractedSecrets: {},
+    });
+  });
+
+  it("leaves non-credential catalog URIs alone", () => {
+    const attach =
+      "'ducklake:catalog.ducklake' AS my_ducklake (DATA_PATH 'files/')";
+    const result = extractDuckLakeAttachSecrets(attach, "");
+    expect(result.rewrittenAttach).toBe(attach);
+    expect(result.extractedSecrets).toEqual({});
+
+    const sqliteAttach = "'ducklake:sqlite:catalog.sqlite' AS x";
+    const sqliteResult = extractDuckLakeAttachSecrets(sqliteAttach, "");
+    expect(sqliteResult.rewrittenAttach).toBe(sqliteAttach);
+    expect(sqliteResult.extractedSecrets).toEqual({});
+  });
+
+  it("extracts a postgres catalog body into DUCKLAKE_POSTGRES", () => {
+    const attach =
+      "'ducklake:postgres:dbname=mydb host=localhost password=secret' AS my_ducklake (DATA_PATH 'files/')";
+    const result = extractDuckLakeAttachSecrets(attach, "");
+    expect(result.rewrittenAttach).toBe(
+      "'ducklake:postgres:{{ .env.DUCKLAKE_POSTGRES }}' AS my_ducklake (DATA_PATH 'files/')",
+    );
+    expect(result.extractedSecrets).toEqual({
+      DUCKLAKE_POSTGRES: "dbname=mydb host=localhost password=secret",
+    });
+  });
+
+  it("extracts mysql and motherduck catalog bodies", () => {
+    const mysql = extractDuckLakeAttachSecrets(
+      "'ducklake:mysql:database=x host=y password=z'",
+      "",
+    );
+    expect(mysql.extractedSecrets).toEqual({
+      DUCKLAKE_MYSQL: "database=x host=y password=z",
+    });
+    expect(mysql.rewrittenAttach).toBe(
+      "'ducklake:mysql:{{ .env.DUCKLAKE_MYSQL }}'",
+    );
+
+    const md = extractDuckLakeAttachSecrets(
+      "'ducklake:md:my_db?motherduck_token=abc'",
+      "",
+    );
+    expect(md.extractedSecrets).toEqual({
+      DUCKLAKE_MOTHERDUCK: "my_db?motherduck_token=abc",
+    });
+    expect(md.rewrittenAttach).toBe(
+      "'ducklake:md:{{ .env.DUCKLAKE_MOTHERDUCK }}'",
+    );
+  });
+
+  it("suffixes when the base env var is already defined", () => {
+    const envBlob = "DUCKLAKE_POSTGRES=existing";
+    const result = extractDuckLakeAttachSecrets(
+      "'ducklake:postgres:dbname=mydb' AS x",
+      envBlob,
+    );
+    expect(result.extractedSecrets).toEqual({
+      DUCKLAKE_POSTGRES_1: "dbname=mydb",
+    });
+    expect(result.rewrittenAttach).toBe(
+      "'ducklake:postgres:{{ .env.DUCKLAKE_POSTGRES_1 }}' AS x",
+    );
+  });
+
+  it("is idempotent when the body is already a single env template", () => {
+    const attach =
+      "'ducklake:postgres:{{ .env.DUCKLAKE_POSTGRES }}' AS my_ducklake";
+    const result = extractDuckLakeAttachSecrets(attach, "");
+    expect(result.rewrittenAttach).toBe(attach);
+    expect(result.extractedSecrets).toEqual({});
+  });
+
+  it("allocates distinct env vars when the same driver appears twice", () => {
+    const attach =
+      "'ducklake:postgres:dbname=a password=1' vs 'ducklake:postgres:dbname=b password=2'";
+    const result = extractDuckLakeAttachSecrets(attach, "");
+    expect(result.extractedSecrets).toEqual({
+      DUCKLAKE_POSTGRES: "dbname=a password=1",
+      DUCKLAKE_POSTGRES_1: "dbname=b password=2",
+    });
+    expect(result.rewrittenAttach).toBe(
+      "'ducklake:postgres:{{ .env.DUCKLAKE_POSTGRES }}' vs 'ducklake:postgres:{{ .env.DUCKLAKE_POSTGRES_1 }}'",
+    );
+  });
+});
+
+describe("shouldExtractDuckLakeAttachSecrets", () => {
+  it("only runs for the DuckLake schema", () => {
+    expect(shouldExtractDuckLakeAttachSecrets(null, {})).toBe(false);
+    expect(shouldExtractDuckLakeAttachSecrets(ducklakeSchema, {})).toBe(true);
+  });
+
+  it("skips parameters mode so the composer can emit env refs itself", () => {
+    expect(
+      shouldExtractDuckLakeAttachSecrets(ducklakeSchema, {
+        connection_mode: "parameters",
+      }),
+    ).toBe(false);
+    expect(
+      shouldExtractDuckLakeAttachSecrets(ducklakeSchema, {
+        connection_mode: "sql",
+      }),
+    ).toBe(true);
   });
 });

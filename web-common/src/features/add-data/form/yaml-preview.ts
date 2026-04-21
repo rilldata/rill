@@ -7,7 +7,10 @@ import {
 import type { MultiStepFormSchema } from "@rilldata/web-common/features/templates/schemas/types.ts";
 import {
   applyDuckLakeFormTransform,
+  buildDuckLakeSecretRefs,
+  extractDuckLakeAttachSecrets,
   injectDuckLakeAttach,
+  shouldExtractDuckLakeAttachSecrets,
 } from "@rilldata/web-common/features/templates/schemas/ducklake-utils.ts";
 import { compileConnectorYAML } from "@rilldata/web-common/features/connectors/code-utils.ts";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
@@ -41,7 +44,26 @@ export function getConnectorYamlPreview({
   // single `attach` YAML key. We inject `attach` both before and after the
   // filter pipeline — the tab-group filter would otherwise drop `attach`
   // since it lives under the "sql" tab.
-  const transformedValues = applyDuckLakeFormTransform(schema, formValues);
+  const duckLakeSecretRefs = buildDuckLakeSecretRefs(
+    schema,
+    connector.name ?? "",
+    existingEnvBlob ?? "",
+  );
+  let transformedValues = applyDuckLakeFormTransform(schema, formValues, {
+    secretRefs: duckLakeSecretRefs,
+  });
+  // Mirror the connector-submit path so the preview reflects the rewritten
+  // attach string (raw catalog URIs replaced with `{{ .env.X }}` refs).
+  if (shouldExtractDuckLakeAttachSecrets(schema, transformedValues)) {
+    const rawAttach = transformedValues.attach;
+    if (typeof rawAttach === "string") {
+      const { rewrittenAttach, extractedSecrets } =
+        extractDuckLakeAttachSecrets(rawAttach, existingEnvBlob ?? "");
+      if (Object.keys(extractedSecrets).length > 0) {
+        transformedValues = { ...transformedValues, attach: rewrittenAttach };
+      }
+    }
+  }
   const filteredValues = schema
     ? injectDuckLakeAttach(
         schema,
