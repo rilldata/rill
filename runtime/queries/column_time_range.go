@@ -64,14 +64,14 @@ func (q *ColumnTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 	defer release()
 
 	// TODO: Try and merge this with metrics_time_range. Both use same queries but metrics_time_range uses a specific timestamp column from metrics_view
-	switch olap.Dialect() {
-	case drivers.DialectDuckDB, drivers.DialectClickHouse, drivers.DialectSnowflake:
+	switch olap.Dialect().String() {
+	case drivers.DialectNameDuckDB, drivers.DialectNameClickHouse, drivers.DialectNameSnowflake:
 		return q.resolveDuckDBAndClickhouse(ctx, olap, priority)
-	case drivers.DialectStarRocks:
+	case drivers.DialectNameStarRocks:
 		return q.resolveStarRocks(ctx, olap, priority)
-	case drivers.DialectBigQuery:
+	case drivers.DialectNameBigQuery:
 		return q.resolveBigQuery(ctx, olap, priority)
-	case drivers.DialectDruid:
+	case drivers.DialectNameDruid:
 		return q.resolveDruid(ctx, olap, priority)
 	default:
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
@@ -227,8 +227,8 @@ func (q *ColumnTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPSto
 	group.Go(func() error {
 		minSQL := fmt.Sprintf(
 			"SELECT min(%[1]s) as \"min\" FROM %[2]s",
-			safeName(q.ColumnName),
-			drivers.DialectDruid.EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
+			olap.Dialect().EscapeIdentifier(q.ColumnName),
+			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 		)
 
 		rows, err := olap.Query(ctx, &drivers.Statement{
@@ -260,7 +260,7 @@ func (q *ColumnTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPSto
 	group.Go(func() error {
 		maxSQL := fmt.Sprintf(
 			"SELECT max(%[1]s) as \"max\" FROM %[2]s",
-			safeName(q.ColumnName),
+			olap.Dialect().EscapeIdentifier(q.ColumnName),
 			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 		)
 
