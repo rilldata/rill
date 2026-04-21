@@ -11,11 +11,10 @@
   } from "@rilldata/web-admin/features/branches/branch-utils";
   import { getStatusDotClass } from "@rilldata/web-admin/features/projects/status/display-utils";
   import { Button } from "@rilldata/web-common/components/button";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import * as Popover from "@rilldata/web-common/components/popover";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { PlusIcon } from "lucide-svelte";
   import {
-    isActiveDeployment,
     useDevDeployments,
     useCreateDevDeployment,
     invalidateDeployments,
@@ -38,9 +37,16 @@
   $: deployments = $devDeployments.data?.deployments ?? [];
   $: isLoading = $devDeployments.isLoading;
 
-  // All active deployments owned by the current user, sorted by most recently updated
+  // Deployments owned by the current user (excludes ones being torn down),
+  // sorted by most recently updated. Stopped and errored branches are shown
+  // so the user can resume or retry them.
   $: ownDeployments = deployments
-    .filter((d) => d.ownerUserId === currentUserId && isActiveDeployment(d))
+    .filter(
+      (d) =>
+        d.ownerUserId === currentUserId &&
+        d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING &&
+        d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED,
+    )
     .sort((a, b) => (b.updatedOn ?? "").localeCompare(a.updatedOn ?? ""));
 
   // If viewing a branch the user owns, clicking the button should go straight there
@@ -51,7 +57,7 @@
   $: hasOwnSessions = ownDeployments.length > 0;
   $: isStarting = $createMutation.isPending;
 
-  // Reset state when dropdown opens
+  // Reset state when popover opens
   $: if (open) {
     branchName = "";
     showNewBranchInput = !hasOwnSessions;
@@ -68,7 +74,7 @@
   }
 
   // When the user owns a deployment on the active branch, the button
-  // links directly to that editor (no dropdown).
+  // links directly to that editor (no popover).
   $: directEditHref = activeBranchDeployment
     ? editUrl(activeBranchDeployment.branch)
     : undefined;
@@ -79,8 +85,9 @@
     void goto(directEditHref!);
   }
 
-  function handleNavClick() {
+  function handleBranchClick() {
     requestSkipBranchInjection();
+    open = false;
   }
 
   async function handleCreate() {
@@ -115,7 +122,7 @@
 </script>
 
 {#if directEditHref}
-  <!-- On a branch the user owns: navigate directly, no dropdown -->
+  <!-- On a branch the user owns: navigate directly, no popover -->
   <Button
     type="secondary"
     href={directEditHref}
@@ -125,8 +132,8 @@
     Edit
   </Button>
 {:else}
-  <DropdownMenu.Root bind:open>
-    <DropdownMenu.Trigger>
+  <Popover.Root bind:open>
+    <Popover.Trigger>
       {#snippet child({ props })}
         <Button
           {...props}
@@ -138,17 +145,21 @@
           Edit
         </Button>
       {/snippet}
-    </DropdownMenu.Trigger>
+    </Popover.Trigger>
 
-    <DropdownMenu.Content align="end" class="min-w-[200px] max-w-[280px]">
+    <Popover.Content
+      align="end"
+      padding="1.5"
+      class="w-auto min-w-[200px] max-w-[280px]"
+    >
       {#if hasOwnSessions}
-        <DropdownMenu.Group>
-          <DropdownMenu.Label>Your branches</DropdownMenu.Label>
-        </DropdownMenu.Group>
+        <div class="section-label">Your branches</div>
         {#each ownDeployments as deployment (deployment.id)}
-          <DropdownMenu.Item
+          <a
+            class="branch-row"
             href={editUrl(deployment.branch)}
-            onclick={handleNavClick}
+            onclick={handleBranchClick}
+            data-sveltekit-preload-data="hover"
           >
             <span
               class="inline-block size-1.5 rounded-full flex-none {statusDot(
@@ -158,27 +169,19 @@
             <span class="font-mono truncate">
               {deployment.branch || "main"}
             </span>
-          </DropdownMenu.Item>
+          </a>
         {/each}
 
-        <DropdownMenu.Separator />
+        <div class="separator"></div>
 
         {#if showNewBranchInput}
-          <!-- svelte-ignore a11y_click_events_have_key_events -->
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
-          <div
-            class="flex flex-col gap-y-1.5 px-2 pb-1.5 pt-0.5"
-            onclick={(e) => e.stopPropagation()}
-          >
+          <div class="flex flex-col gap-y-1.5 px-2 pb-1.5 pt-0.5">
             <!-- svelte-ignore a11y_autofocus -->
             <input
               class="branch-input"
               type="text"
               bind:value={branchName}
-              onkeydown={(e) => {
-                e.stopPropagation();
-                handleKeydown(e);
-              }}
+              onkeydown={handleKeydown}
               placeholder="branch-name"
               autofocus
             />
@@ -194,37 +197,23 @@
             </Button>
           </div>
         {:else}
-          <!-- Raw button (not DropdownMenu.Item) so clicking doesn't close the menu -->
           <button
             class="new-branch-btn"
-            onclick={(e) => {
-              e.stopPropagation();
-              showNewBranchInput = true;
-            }}
+            onclick={() => (showNewBranchInput = true)}
           >
             <PlusIcon size="12" />
             <span>New branch...</span>
           </button>
         {/if}
       {:else}
-        <DropdownMenu.Group>
-          <DropdownMenu.Label>Create a branch</DropdownMenu.Label>
-        </DropdownMenu.Group>
-        <!-- svelte-ignore a11y_click_events_have_key_events -->
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div
-          class="flex flex-col gap-y-1.5 px-2 pb-1.5 pt-0.5"
-          onclick={(e) => e.stopPropagation()}
-        >
+        <div class="section-label">Create a branch</div>
+        <div class="flex flex-col gap-y-1.5 px-2 pb-1.5 pt-0.5">
           <!-- svelte-ignore a11y_autofocus -->
           <input
             class="branch-input"
             type="text"
             bind:value={branchName}
-            onkeydown={(e) => {
-              e.stopPropagation();
-              handleKeydown(e);
-            }}
+            onkeydown={handleKeydown}
             placeholder="branch-name"
             autofocus
           />
@@ -240,11 +229,25 @@
           </Button>
         </div>
       {/if}
-    </DropdownMenu.Content>
-  </DropdownMenu.Root>
+    </Popover.Content>
+  </Popover.Root>
 {/if}
 
 <style lang="postcss">
+  .section-label {
+    @apply px-2 py-1.5 text-xs text-fg-secondary font-semibold;
+  }
+
+  .branch-row {
+    @apply flex items-center gap-x-2 rounded-sm px-2 py-1.5 text-xs;
+    @apply text-fg-primary hover:bg-surface-hover hover:text-fg-accent;
+    @apply cursor-pointer outline-none;
+  }
+
+  .separator {
+    @apply -mx-1 my-1 h-px bg-border;
+  }
+
   .new-branch-btn {
     @apply flex w-full items-center gap-x-2 rounded-sm px-2 py-1.5 text-xs;
     @apply text-primary-600 hover:bg-surface-hover cursor-pointer;

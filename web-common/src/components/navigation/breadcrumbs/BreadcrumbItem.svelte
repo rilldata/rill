@@ -4,7 +4,7 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import type { PathOption, PathOptions } from "./types";
-  import { getNonVariableSubRoute } from "@rilldata/web-common/components/navigation/breadcrumbs/utils.ts";
+  import { getCarryOverSubRoute } from "@rilldata/web-common/components/navigation/breadcrumbs/utils.ts";
   import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
   import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
 
@@ -54,8 +54,7 @@
 
     newPath.push(id);
     const path = `/${newPath.join("/")}`;
-    // add the sub route if it has no variables
-    return path + getNonVariableSubRoute(path, route);
+    return path + getCarryOverSubRoute(path, route);
   }
 </script>
 

@@ -2,6 +2,7 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import MetricsViewIcon from "@rilldata/web-common/components/icons/MetricsViewIcon.svelte";
+  import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
@@ -81,9 +82,7 @@
             onclick={async () => {
               const filePath = resource?.meta?.filePaths?.[0];
               if (filePath) {
-                await navigateToFile(
-                  filePath.startsWith("/") ? filePath : `/${filePath}`,
-                );
+                await navigateToFile(`/${removeLeadingSlash(filePath)}`);
               }
             }}
           >
