@@ -17,20 +17,20 @@ const (
 
 // resolveTimestampsForTable dispatches to the appropriate dialect-specific method.
 func (e *Executor) resolveTimestampsForTable(ctx context.Context, database, databaseSchema, table, timeExpr, watermarkExpr string) (metricsview.TimestampsResult, error) {
-	switch e.olap.Dialect() {
-	case drivers.DialectDuckDB:
+	switch e.olap.Dialect().String() {
+	case drivers.DialectNameDuckDB:
 		return e.resolveDuckDB(ctx, database, databaseSchema, table, timeExpr, watermarkExpr)
-	case drivers.DialectClickHouse:
+	case drivers.DialectNameClickHouse:
 		return e.resolveClickHouse(ctx, database, databaseSchema, table, timeExpr, watermarkExpr)
-	case drivers.DialectPinot:
+	case drivers.DialectNamePinot:
 		return e.resolvePinot(ctx, database, databaseSchema, table, timeExpr, watermarkExpr)
-	case drivers.DialectDruid:
+	case drivers.DialectNameDruid:
 		return e.resolveDruid(ctx, database, databaseSchema, table, timeExpr, watermarkExpr)
-	case drivers.DialectStarRocks:
+	case drivers.DialectNameStarRocks:
 		return e.resolveStarRocks(ctx, database, databaseSchema, table, timeExpr, watermarkExpr)
-	case drivers.DialectSnowflake:
+	case drivers.DialectNameSnowflake:
 		return e.resolveSnowflake(ctx, database, databaseSchema, table, timeExpr, watermarkExpr)
-	case drivers.DialectBigQuery:
+	case drivers.DialectNameBigQuery:
 		return e.resolveBigQuery(ctx, database, databaseSchema, table, timeExpr, watermarkExpr)
 	default:
 		return metricsview.TimestampsResult{}, fmt.Errorf("not available for dialect '%s'", e.olap.Dialect())
