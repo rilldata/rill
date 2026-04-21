@@ -420,14 +420,6 @@
 />
 
 <style lang="postcss">
-  .section-heading {
-    @apply mt-2;
-  }
-
-  .section-heading-text {
-    @apply font-sans text-xs font-semibold leading-none text-fg-tertiary;
-  }
-
   .empty-container {
     @apply border border-border rounded-xl py-10 flex flex-col items-center gap-y-2;
   }

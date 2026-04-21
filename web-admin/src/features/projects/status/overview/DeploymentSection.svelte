@@ -8,19 +8,12 @@
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
 
-  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { createQueryServiceProjectStorage } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size";
-  import {
-    useParserReconcileError,
-    useProjectDeployment,
-    useRuntimeVersion,
-  } from "../selectors";
+  import { useParserReconcileError, useProjectDeployment } from "../selectors";
   import {
     formatEnvironmentName,
-    formatConnectorName,
-    getOlapEngineLabel,
     getStatusDotClass,
     getStatusLabel,
     isTransitoryStatus,
@@ -66,16 +59,6 @@
   );
   $: lastUpdated = $githubLastSynced.data ?? $dashboardsLastUpdated;
 
-  // Runtime
-  $: runtimeVersionQuery = useRuntimeVersion(runtimeClient);
-  $: version = $runtimeVersionQuery.data?.version?.match(/v[\d.]+/)?.[0] ?? "";
-
-  // Connectors — sensitive: true is needed to read projectConnectors (OLAP/AI connector types)
-  $: instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {
-    sensitive: true,
-  });
-  $: instance = $instanceQuery.data?.instance;
-
   // Project storage (OLAP connector data size)
   $: storageQuery = createQueryServiceProjectStorage(runtimeClient, {});
   $: defaultOlapEntry = $storageQuery.data?.entries?.find(
@@ -98,20 +81,6 @@
     : "";
   $: isGithubConnected =
     !!projectData?.gitRemote && !projectData?.managedGitId && !!githubUrl;
-
-  $: olapConnector = instance?.projectConnectors?.find(
-    (c) => c.name === instance?.olapConnector,
-  );
-  // When hibernated the runtime is unreachable; fall back to the cached connector type from the admin DB.
-  $: cachedOlapType = (projectData as any)?.olapConnector as string | undefined;
-  $: olapEngineLabel = olapConnector
-    ? getOlapEngineLabel(olapConnector)
-    : cachedOlapType
-      ? formatConnectorName(cachedOlapType)
-      : "DuckDB";
-  $: aiConnector = instance?.projectConnectors?.find(
-    (c) => c.name === instance?.aiConnector,
-  );
 
   // Slots
   $: currentSlots =

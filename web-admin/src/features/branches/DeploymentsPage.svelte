@@ -8,6 +8,8 @@
     isFreePlan,
     isProPlan,
     isManagedPlan,
+    isTeamPlan,
+    isEnterprisePlan,
   } from "@rilldata/web-admin/features/billing/plans/utils";
   import { SLOT_RATE_PER_HR } from "@rilldata/web-admin/features/projects/status/overview/slots-utils";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -38,7 +40,9 @@
       (isTrialPlan(planName) ||
         isFreePlan(planName) ||
         isProPlan(planName) ||
-        isManagedPlan(planName)),
+        isManagedPlan(planName) ||
+        isTeamPlan(planName) ||
+        isEnterprisePlan(planName)),
   );
 
   // Billing cycle dates
@@ -60,8 +64,8 @@
   }
 
   // Slot types
-  let prodSlots = $derived(Number(projectData?.prodSlots) || 0);
-  let devSlots = $derived(Number(projectData?.devSlots) || 0);
+  let prodSlots = $derived(parseInt(projectData?.prodSlots ?? "0", 10) || 0);
+  let devSlots = $derived(parseInt(projectData?.devSlots ?? "0", 10) || 0);
   let totalSlots = $derived(prodSlots + devSlots);
 
   // Cluster info (split into number + unit for display)
@@ -113,7 +117,7 @@
         <span class="summary-breakdown-plain">
           ${prodHourlyCost} prod + ${devHourlyCost} dev
         </span>
-        {#if cycleStart || cycleEnd}
+        {#if cycleStart && cycleEnd}
           <span class="summary-cycle">
             Billing cycle: {formatCycleDate(cycleStart)} – {formatCycleDate(
               cycleEnd,

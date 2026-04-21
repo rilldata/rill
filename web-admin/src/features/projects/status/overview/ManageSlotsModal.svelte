@@ -105,12 +105,7 @@
   }
 </script>
 
-<Dialog.Root
-  bind:open
-  onOpenChange={(isOpen) => {
-    open = isOpen;
-  }}
->
+<Dialog.Root bind:open>
   <Dialog.Content class="max-w-2xl">
     <Dialog.Header>
       <Dialog.Title>{title}</Dialog.Title>
