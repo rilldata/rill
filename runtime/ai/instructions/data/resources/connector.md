@@ -42,6 +42,18 @@ aws_secret_access_key: "{{ .env.aws_secret_access_key }}"
 
 NOTE: Some legacy projects use the deprecated `.vars` instead of `.env`.
 
+### Interactive UI (Rill app): requesting missing connector fields
+
+When you are running in the Rill UI and a connector cannot be completed from the user’s message alone (for example ClickHouse at `localhost:9000` without credentials), or **`project_status` / `write_file` / reconcile errors** show authentication or configuration failures, call the tool **`request_connector_fields`**.
+
+Pass:
+
+- **`driver`**: the connector driver (e.g. `clickhouse`).
+- **`missing_fields`**: snake_case YAML property keys the user still must supply (e.g. `username`, `password`), inferred from this document, the user’s request, and error messages—not from inventing new keys.
+- Optionally **`message`**, **`related_errors`** (short excerpts from tool errors), and **`connector_path`** if known.
+
+The UI may intercept this tool call to show forms and write secrets to `.env` using `{{ .env.KEY }}` placeholders in the connector YAML. Prefer this over asking for passwords in plain chat text when credentials are required.
+
 ### Managed connectors
 
 OLAP connectors can be provisioned automatically by Rill using `managed: true`. This is supported for `duckdb` and `clickhouse` drivers:

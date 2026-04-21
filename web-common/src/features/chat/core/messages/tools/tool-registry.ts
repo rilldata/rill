@@ -21,6 +21,10 @@ import {
   createSimpleTooCall,
   type SimpleToolCall,
 } from "@rilldata/web-common/features/chat/core/messages/simple-tool-call/simple-tool-call.ts";
+import {
+  createRequestConnectorFieldsBlock,
+  type RequestConnectorFieldsBlock,
+} from "@rilldata/web-common/features/chat/core/messages/request-connector-fields/request-connector-fields-block.ts";
 import { isCurrentActivePage } from "@rilldata/web-common/features/file-explorer/utils.ts";
 
 // =============================================================================
@@ -40,7 +44,11 @@ export type ToolRenderMode = "inline" | "block" | "hidden";
 // =============================================================================
 
 /** Block types that can be created by tools */
-export type ToolBlockType = ChartBlock | FileDiffBlock | SimpleToolCall;
+export type ToolBlockType =
+  | ChartBlock
+  | FileDiffBlock
+  | SimpleToolCall
+  | RequestConnectorFieldsBlock;
 
 /**
  * Configuration for a tool's rendering behavior.
@@ -54,6 +62,7 @@ export interface ToolConfig {
   createBlock?: (
     callMessage: V1Message,
     resultMessage: V1Message | undefined,
+    allMessages: V1Message[],
   ) => ToolBlockType | null;
 
   /** Used to process any UI action or side effects from tool calls. */
@@ -77,8 +86,9 @@ const DEFAULT_TOOL_CONFIG: ToolConfig = {
  *
  * To add a new block-level tool:
  * 1. Add the tool name to ToolName in types.ts
- * 2. Create the block type and factory in a new directory (e.g., file-diff/)
+ * 2. Create the block type and factory in a new directory (e.g., file-diff/, request-connector-fields/)
  * 3. Add an entry here with renderMode: "block" and the createBlock factory
+ * 4. If it is a new block type (not reusing simple-tool-call), extend Block in block-transform.ts and render it in Messages.svelte
  */
 const TOOL_CONFIGS: Partial<Record<string, ToolConfig>> = {
   // Hidden tools - internal orchestration agents, not shown in UI
@@ -107,6 +117,16 @@ const TOOL_CONFIGS: Partial<Record<string, ToolConfig>> = {
     renderMode: "block",
     createBlock: createSimpleTooCall,
     onCall: handleNavigateToolCall,
+  },
+
+  [ToolName.REQUEST_CONNECTOR_FIELDS]: {
+    renderMode: "block",
+    createBlock: createRequestConnectorFieldsBlock,
+  },
+
+  // Invoked when the user submits the connector form; LLM runs server-side — hide raw tool UI
+  [ToolName.CONNECTOR_FORM_SUBMITTED]: {
+    renderMode: "hidden",
   },
 
   // All other tools default to "inline" (shown in thinking blocks)

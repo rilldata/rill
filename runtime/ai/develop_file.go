@@ -127,6 +127,7 @@ func (t *DevelopFile) Handler(ctx context.Context, args *DevelopFileArgs) (*Deve
 			ListTablesName,
 			ShowTableName,
 			QuerySQLName,
+			RequestConnectorFieldsName,
 		},
 		MaxIterations: 10,
 		UnwrapCall:    true,

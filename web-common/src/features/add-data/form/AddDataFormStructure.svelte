@@ -33,10 +33,10 @@
   export let schema: MultiStepFormSchema | null;
   export let superFormsParams: ReturnType<typeof createConnectorForm>;
   export let labels = defaultFormLabels;
-  export let yamlPreview: string;
+  export let yamlPreview: string | undefined = undefined;
   export let step: AddDataState;
   export let onSave: (() => void) | undefined = undefined;
-  export let onBack: () => void | Promise<void>;
+  export let onBack: (() => void | Promise<void>) | undefined = undefined;
 
   $: ({ form, formId, tainted, submit, submitting, errors, enhance } =
     superFormsParams);
@@ -47,7 +47,8 @@
 
   $: ({ message, details } = getSubmitError($errors));
 
-  $: hideRightPannel = connectorDriver.name === "local_file";
+  $: hideRightPannel =
+    connectorDriver.name === "local_file" && yamlPreview !== undefined;
 
   $: formClass = getFormClass(step);
 
@@ -190,14 +191,16 @@
     <div
       class="w-full bg-surface-subtle border-t border-gray-200 p-6 flex justify-between gap-2"
     >
-      <Button
-        disabled={runningBackAction}
-        loading={runningBackAction}
-        onClick={() => void handleBack()}
-        type="tertiary"
-      >
-        Back
-      </Button>
+      {#if onBack}
+        <Button
+          disabled={runningBackAction}
+          loading={runningBackAction}
+          onClick={() => void handleBack()}
+          type="tertiary"
+        >
+          Back
+        </Button>
+      {/if}
 
       <div class="flex gap-2">
         {#if onSave && isSaveButtonEnabled}
