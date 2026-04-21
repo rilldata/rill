@@ -16,11 +16,8 @@
   import { onDestroy, onMount } from "svelte";
   import { createAnnotationsQuery } from "../annotations-selectors";
   import { adjustTimeInterval, localToTimeZoneOffset } from "../utils";
+  import { resolveEffectiveChartType, usesVegaRenderer } from "./chart-series";
   import { chartBrushStore, chartHoverStore, hoverIndex } from "./hover-index";
-  import {
-    resolveEffectiveChartType,
-    usesVegaRenderer,
-  } from "./chart-series";
   import { createVisibilityObserver } from "./interactions";
   import MeasureChartBody from "./MeasureChartBody.svelte";
   import { ScrubController } from "./ScrubController";

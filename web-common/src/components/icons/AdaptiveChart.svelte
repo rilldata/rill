@@ -1,8 +1,6 @@
 <script>
   export let size = "18px";
   export let primaryColor = "#3524C7";
-  export let secondaryColor = "#9CABFF";
-  void secondaryColor;
 </script>
 
 <svg
@@ -20,6 +18,6 @@
     font-family="Inter, sans-serif"
     font-weight="700"
     font-size="10"
-    fill="var(--surface-base, white)"
-  >A</text>
+    fill="var(--surface-base, white)">A</text
+  >
 </svg>

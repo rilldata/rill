@@ -1,4 +1,5 @@
 import { DashboardFetchMocks } from "@rilldata/web-common/features/dashboards/dashboard-fetch-mocks";
+import DashboardStateManagerTest from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/DashboardStateManagerTest.svelte";
 import {
   type HoistedPageForExploreTests,
   PageMockForExploreTests,
@@ -27,7 +28,6 @@ import {
   applyMutationsToDashboard,
   type TestDashboardMutation,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
-import DashboardStateManagerTest from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/DashboardStateManagerTest.svelte";
 import { getCleanMetricsExploreForAssertion } from "@rilldata/web-common/features/dashboards/url-state/url-state-variations.spec";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
@@ -201,7 +201,6 @@ describe("Explore web view store", () => {
       pageMock.gotoSearch(initialSearch);
       // apply any mutations in the init view
       await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, initView.mutations);
-      const initState = getCleanMetricsExploreForAssertion();
 
       const viewSearch = `view=${view.view}${view.additionalParams ?? ""}`;
       // simulate going to the view's url

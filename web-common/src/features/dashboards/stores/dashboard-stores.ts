@@ -1,6 +1,7 @@
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getWhereFilterExpressionIndex } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+import { correctExploreState } from "@rilldata/web-common/features/dashboards/stores/correct-explore-state.ts";
 import { type ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   createAndExpression,
@@ -23,15 +24,14 @@ import type {
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import { V1Operation } from "@rilldata/web-common/runtime-client";
-import type { ExpandedState, SortingState } from "tanstack-table-8-svelte-5";
 import { derived, writable, type Readable } from "svelte/store";
+import type { ExpandedState, SortingState } from "tanstack-table-8-svelte-5";
 import { SortType } from "web-common/src/features/dashboards/proto-state/derived-types";
 import {
   PivotChipType,
   type PivotChipData,
   type PivotTableMode,
 } from "../pivot/types";
-import { correctExploreState } from "@rilldata/web-common/features/dashboards/stores/correct-explore-state.ts";
 
 export interface MetricsExplorerStoreType {
   entities: Record<string, ExploreState>;
@@ -612,7 +612,6 @@ const metricsViewReducers = {
       exploreState.dynamicYAxisScale = value;
     });
   },
-
 };
 
 export const metricsExplorerStore: Readable<MetricsExplorerStoreType> &
