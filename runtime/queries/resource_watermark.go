@@ -91,13 +91,13 @@ func (q *ResourceWatermark) resolveMetricsView(ctx context.Context, rt *runtime.
 		sql = fmt.Sprintf("SELECT %s FROM %s", spec.WatermarkExpression, olap.Dialect().EscapeTable(spec.Database, spec.DatabaseSchema, spec.Table))
 	} else if spec.TimeDimension != "" {
 		// get the actual time column if its defined in the dimension list
-		expr := safeName(spec.TimeDimension)
+		expr := olap.Dialect().EscapeIdentifier(spec.TimeDimension)
 		for _, dim := range spec.Dimensions {
 			if dim.Name == spec.TimeDimension {
 				if dim.Expression != "" {
 					expr = dim.Expression
 				} else {
-					expr = safeName(dim.Column)
+					expr = olap.Dialect().EscapeIdentifier(dim.Column)
 				}
 				break
 			}

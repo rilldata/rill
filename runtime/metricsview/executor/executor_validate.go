@@ -81,7 +81,7 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 	// Populate empty database/databaseSchema from table metadata for StarRocks only.
 	// StarRocks requires fully qualified table names (catalog.database.table),
 	// even when the metrics view YAML doesn't explicitly specify them (e.g., when using models).
-	if e.olap.Dialect() == drivers.DialectStarRocks {
+	if e.olap.Dialect().String() == drivers.DialectNameStarRocks {
 		if mv.Database == "" && t.Database != "" {
 			mv.Database = t.Database
 		}
@@ -94,10 +94,11 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 	// make sure for olaps like Druid and Pinot both database and database_schema are not set
 	// for Clickhouse we allow only database_schema as we already use that in OLAPInformationSchema.Lookup(...)
 	// not doing any validation for duckdb as we ignore database and database_schema in Dialect.EscapeTable(...) so not to break any existing metrics view
-	if (e.olap.Dialect() == drivers.DialectDruid || e.olap.Dialect() == drivers.DialectPinot) && mv.Database != "" && mv.DatabaseSchema != "" {
-		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("only one of database or database_schema can be set for %s as it only supports one level of namespacing", e.olap.Dialect().String()))
+	dialectName := e.olap.Dialect().String()
+	if (dialectName == drivers.DialectNameDruid || dialectName == drivers.DialectNamePinot) && mv.Database != "" && mv.DatabaseSchema != "" {
+		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("only one of database or database_schema can be set for %s as it only supports one level of namespacing", dialectName))
 	}
-	if e.olap.Dialect() == drivers.DialectClickHouse && mv.Database != "" {
+	if dialectName == drivers.DialectNameClickHouse && mv.Database != "" {
 		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("database cannot be set for clickHouse, set database_schema instead"))
 	}
 
@@ -131,7 +132,7 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 
 	// ClickHouse specifically does not support using a column name as a dimension or measure name if the dimension or measure has an expression.
 	// This is due to ClickHouse's aggressive substitution of aliases: https://github.com/ClickHouse/ClickHouse/issues/9715.
-	if e.olap.Dialect() == drivers.DialectClickHouse {
+	if e.olap.Dialect().String() == drivers.DialectNameClickHouse {
 		for _, d := range mv.Dimensions {
 			if d.Expression == "" && !d.Unnest {
 				continue
@@ -165,12 +166,12 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 	}
 
 	// Pinot does not have any native support for time shift using time grain specifiers
-	if e.olap.Dialect() == drivers.DialectPinot && (mv.FirstDayOfWeek > 1 || mv.FirstMonthOfYear > 1) {
+	if e.olap.Dialect().String() == drivers.DialectNamePinot && (mv.FirstDayOfWeek > 1 || mv.FirstMonthOfYear > 1) {
 		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("time shift not supported for Pinot dialect, so FirstDayOfWeek and FirstMonthOfYear should be 1"))
 	}
 
 	// StarRocks does not support time shift using time grain specifiers
-	if e.olap.Dialect() == drivers.DialectStarRocks && (mv.FirstDayOfWeek > 1 || mv.FirstMonthOfYear > 1) {
+	if e.olap.Dialect().String() == drivers.DialectNameStarRocks && (mv.FirstDayOfWeek > 1 || mv.FirstMonthOfYear > 1) {
 		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("time shift not supported for StarRocks dialect, so FirstDayOfWeek and FirstMonthOfYear should be 1"))
 	}
 
@@ -388,8 +389,9 @@ func (e *Executor) validateAllDimensionsAndMeasures(ctx context.Context, t *driv
 	var dimExprs []string
 	var unnestClauses []string
 	var groupIndexes []string
+	escapeTable := dialect.EscapeTable(t.Database, t.DatabaseSchema, t.Name)
 	for idx, d := range mv.Dimensions {
-		dimExpr, unnestClause, err := dialect.DimensionSelect(t.Database, t.DatabaseSchema, t.Name, d)
+		dimExpr, unnestClause, err := dialect.DimensionSelect(escapeTable, d)
 		if err != nil {
 			return fmt.Errorf("failed to validate dimension %q: %w", d.Name, err)
 		}
@@ -621,7 +623,7 @@ func (e *Executor) validateTimeDimension(ctx context.Context, t *drivers.OlapTab
 		}
 		typeCode := schema.Fields[0].Type.Code
 
-		if typeCode != runtimev1.Type_CODE_TIMESTAMP && typeCode != runtimev1.Type_CODE_DATE && !(e.olap.Dialect() == drivers.DialectPinot && typeCode == runtimev1.Type_CODE_INT64) {
+		if typeCode != runtimev1.Type_CODE_TIMESTAMP && typeCode != runtimev1.Type_CODE_DATE && !(e.olap.Dialect().String() == drivers.DialectNamePinot && typeCode == runtimev1.Type_CODE_INT64) {
 			res.TimeDimensionErr = fmt.Errorf("time dimension %q is not a TIMESTAMP column, got %s", e.metricsView.TimeDimension, typeCode)
 		}
 		return
@@ -632,7 +634,7 @@ func (e *Executor) validateTimeDimension(ctx context.Context, t *drivers.OlapTab
 	if !ok {
 		res.TimeDimensionErr = fmt.Errorf("timeseries %q is not a column in table %q or defined in metrics view", e.metricsView.TimeDimension, e.metricsView.Table)
 		return
-	} else if f.Type.Code != runtimev1.Type_CODE_TIMESTAMP && f.Type.Code != runtimev1.Type_CODE_DATE && !(e.olap.Dialect() == drivers.DialectPinot && f.Type.Code == runtimev1.Type_CODE_INT64) {
+	} else if f.Type.Code != runtimev1.Type_CODE_TIMESTAMP && f.Type.Code != runtimev1.Type_CODE_DATE && !(e.olap.Dialect().String() == drivers.DialectNamePinot && f.Type.Code == runtimev1.Type_CODE_INT64) {
 		res.TimeDimensionErr = fmt.Errorf("time dimension %q is not a TIMESTAMP column, got %s", e.metricsView.TimeDimension, f.Type.Code)
 		return
 	}
@@ -652,14 +654,15 @@ func (e *Executor) validateDimension(ctx context.Context, t *drivers.OlapTable, 
 	}
 
 	dialect := e.olap.Dialect()
-	expr, unnestClause, err := dialect.DimensionSelect(t.Database, t.DatabaseSchema, t.Name, d)
+	escapeTable := dialect.EscapeTable(t.Database, t.DatabaseSchema, t.Name)
+	expr, unnestClause, err := dialect.DimensionSelect(escapeTable, d)
 	if err != nil {
 		return fmt.Errorf("failed to validate dimension %q: %w", d.Name, err)
 	}
 
 	// Validate with a query if it's an expression
 	err = e.olap.Exec(ctx, &drivers.Statement{
-		Query:           fmt.Sprintf("SELECT %s FROM %s %s GROUP BY 1", expr, dialect.EscapeTable(t.Database, t.DatabaseSchema, t.Name), unnestClause),
+		Query:           fmt.Sprintf("SELECT %s FROM %s %s GROUP BY 1", expr, escapeTable, unnestClause),
 		DryRun:          true,
 		QueryAttributes: e.queryAttributes,
 	})

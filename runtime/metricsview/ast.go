@@ -532,7 +532,7 @@ func (a *AST) ResolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 		// StarRocks returns DECIMAL for division, which gets mapped to string.
 		// Cast to DOUBLE for consistent numeric handling across all dialects.
 		expr := fmt.Sprintf("%s/%#f", a.Dialect.EscapeAlias(m.Name), *qm.Compute.PercentOfTotal.Total)
-		if a.Dialect == drivers.DialectStarRocks {
+		if a.Dialect.String() == drivers.DialectNameStarRocks {
 			expr = fmt.Sprintf("CAST(%s AS DOUBLE)", expr)
 		}
 
