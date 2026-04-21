@@ -17,7 +17,7 @@ export const ducklakeSchema: MultiStepFormSchema = {
       "x-ui-only": true,
       "x-tab-group": {
         sql: ["attach"],
-        parameters: ["catalog", "alias", "data_path"],
+        parameters: ["catalog_type", "alias", "data_path_type"],
       },
       "x-step": "connector",
     },
@@ -33,7 +33,6 @@ export const ducklakeSchema: MultiStepFormSchema = {
         "Supported metadata backends: DuckDB file, SQLite, Postgres, MySQL. Data path can be local or object storage (s3://, gs://, azure://).",
       "x-docs-url":
         "https://ducklake.select/docs/stable/duckdb/usage/connecting",
-      "x-visible-if": { connection_mode: "sql" },
       "x-step": "connector",
     },
     mode: {
@@ -48,40 +47,272 @@ export const ducklakeSchema: MultiStepFormSchema = {
       "x-advanced": true,
     },
 
-    // ── Parameters tab ──────────────────────────────────────────────
-    // These fields compose into the `attach` string at submission time
-    // (see composeDuckLakeAttach). They are UI-only and never written
-    // to the generated YAML as standalone keys.
-    catalog: {
+    // ── Parameters tab: catalog ──────────────────────────────
+    // `catalog_type` picks the metadata backend; the fields under each
+    // option compose into the `ducklake:<prefix>` portion of `attach`
+    // (see composeDuckLakeAttach). All are x-ui-only and never emitted
+    // as standalone YAML keys.
+    catalog_type: {
       type: "string",
       title: "Metadata catalog",
+      enum: ["duckdb", "sqlite", "postgres", "mysql"],
+      default: "duckdb",
+      "x-display": "select",
+      "x-select-style": "rich",
+      "x-enum-labels": ["DuckDB file", "SQLite", "PostgreSQL", "MySQL"],
+      "x-enum-descriptions": [
+        "Store metadata in a local DuckDB file",
+        "Store metadata in a SQLite file",
+        "Store metadata in a PostgreSQL database",
+        "Store metadata in a MySQL database",
+      ],
+      "x-ui-only": true,
+      "x-grouped-fields": {
+        duckdb: ["catalog_duckdb_path"],
+        sqlite: ["catalog_sqlite_path"],
+        postgres: [
+          "catalog_postgres_dbname",
+          "catalog_postgres_host",
+          "catalog_postgres_port",
+          "catalog_postgres_user",
+          "catalog_postgres_password",
+        ],
+        mysql: [
+          "catalog_mysql_database",
+          "catalog_mysql_host",
+          "catalog_mysql_port",
+          "catalog_mysql_user",
+          "catalog_mysql_password",
+        ],
+      },
+      "x-step": "connector",
+    },
+    catalog_duckdb_path: {
+      type: "string",
+      title: "DuckDB file path",
       description:
-        "The metadata identifier that follows `ducklake:`. For a DuckDB file, this is the file path (e.g. `duckdb_database.ducklake`). For an external catalog, use a connection string (e.g. `postgres:dbname=... host=...`).",
-      "x-placeholder": "duckdb_database.ducklake",
+        "Path to a DuckDB file that stores the DuckLake metadata. Created if it does not exist.",
+      "x-placeholder": "catalog.ducklake",
       "x-monospace": true,
-      "x-visible-if": { connection_mode: "parameters" },
       "x-ui-only": true,
       "x-step": "connector",
     },
+    catalog_sqlite_path: {
+      type: "string",
+      title: "SQLite file path",
+      description:
+        "Path to a SQLite file that stores the DuckLake metadata. Created if it does not exist.",
+      "x-placeholder": "catalog.sqlite",
+      "x-monospace": true,
+      "x-ui-only": true,
+      "x-step": "connector",
+    },
+    catalog_postgres_dbname: {
+      type: "string",
+      title: "Database",
+      description: "Postgres database containing the DuckLake metadata tables.",
+      "x-placeholder": "mydb",
+      "x-ui-only": true,
+      "x-step": "connector",
+    },
+    catalog_postgres_host: {
+      type: "string",
+      title: "Host",
+      "x-placeholder": "localhost",
+      "x-ui-only": true,
+      "x-step": "connector",
+    },
+    catalog_postgres_port: {
+      type: "string",
+      title: "Port",
+      pattern: "^\\d+$",
+      errorMessage: { pattern: "Port must be a number" },
+      "x-placeholder": "5432",
+      "x-ui-only": true,
+      "x-step": "connector",
+    },
+    catalog_postgres_user: {
+      type: "string",
+      title: "User",
+      "x-placeholder": "postgres",
+      "x-ui-only": true,
+      "x-step": "connector",
+    },
+    catalog_postgres_password: {
+      type: "string",
+      title: "Password",
+      description:
+        "Password is embedded in the generated `ATTACH` string. For production use, edit the ATTACH SQL directly and use env-var templating.",
+      "x-placeholder": "your_password",
+      "x-ui-only": true,
+      "x-step": "connector",
+    },
+    catalog_mysql_database: {
+      type: "string",
+      title: "Database",
+      description: "MySQL database containing the DuckLake metadata tables.",
+      "x-placeholder": "mydb",
+      "x-ui-only": true,
+      "x-step": "connector",
+    },
+    catalog_mysql_host: {
+      type: "string",
+      title: "Host",
+      "x-placeholder": "localhost",
+      "x-ui-only": true,
+      "x-step": "connector",
+    },
+    catalog_mysql_port: {
+      type: "string",
+      title: "Port",
+      pattern: "^\\d+$",
+      errorMessage: { pattern: "Port must be a number" },
+      "x-placeholder": "3306",
+      "x-ui-only": true,
+      "x-step": "connector",
+    },
+    catalog_mysql_user: {
+      type: "string",
+      title: "User",
+      "x-placeholder": "root",
+      "x-ui-only": true,
+      "x-step": "connector",
+    },
+    catalog_mysql_password: {
+      type: "string",
+      title: "Password",
+      description:
+        "Password is embedded in the generated `ATTACH` string. For production use, edit the ATTACH SQL directly and use env-var templating.",
+      "x-placeholder": "your_password",
+      "x-ui-only": true,
+      "x-step": "connector",
+    },
+
     alias: {
       type: "string",
       title: "Alias",
       description:
         "Optional database alias used in queries. Inserted as `AS <alias>` in the generated `ATTACH` clause.",
       "x-placeholder": "my_ducklake",
-      "x-visible-if": { connection_mode: "parameters" },
       "x-ui-only": true,
       "x-step": "connector",
     },
-    data_path: {
+
+    // ── Parameters tab: data path ────────────────────────────
+    // `data_path_type` picks the storage backend. For object storage
+    // (s3/gcs/azure) we require the matching Rill connector so that
+    // DuckDB secret bridging (generateSecretSQL) has credentials to use.
+    data_path_type: {
       type: "string",
-      title: "DATA_PATH",
-      description: "The storage location of the data files.",
-      "x-placeholder": "other_data_path/",
-      "x-visible-if": { connection_mode: "parameters" },
+      title: "Data path",
+      enum: ["local", "s3", "gcs", "azure"],
+      default: "local",
+      "x-display": "select",
+      "x-select-style": "rich",
+      "x-enum-labels": [
+        "Local filesystem",
+        "Amazon S3",
+        "Google Cloud Storage",
+        "Azure Blob Storage",
+      ],
+      "x-enum-descriptions": [
+        "Store data files on the local filesystem",
+        "Store data files in an S3 bucket",
+        "Store data files in a GCS bucket",
+        "Store data files in Azure Blob Storage",
+      ],
+      "x-ui-only": true,
+      "x-required-driver": {
+        s3: "s3",
+        gcs: "gcs",
+        azure: "azure",
+      },
+      "x-grouped-fields": {
+        local: ["data_path_local"],
+        s3: ["data_path_s3_info", "data_path_s3"],
+        gcs: ["data_path_gcs_info", "data_path_gcs"],
+        azure: ["data_path_azure_info", "data_path_azure"],
+      },
+      "x-step": "connector",
+    },
+    data_path_local: {
+      type: "string",
+      title: "Data path",
+      description: "Local filesystem directory for DuckLake data files.",
+      "x-placeholder": "data/",
+      "x-monospace": true,
       "x-ui-only": true,
       "x-step": "connector",
     },
+    data_path_s3_info: {
+      type: "boolean",
+      title: "S3 Connector Required",
+      default: true,
+      "x-informational": true,
+      "x-ui-only": true,
+      "x-step": "connector",
+    },
+    data_path_s3: {
+      type: "string",
+      title: "S3 URI",
+      description: "S3 URI for the DuckLake data directory.",
+      pattern: "^s3://[^/]+(/.*)?$",
+      errorMessage: {
+        pattern: "Must be an S3 URI (e.g. s3://bucket/path/)",
+      },
+      "x-placeholder": "s3://bucket/path/",
+      "x-monospace": true,
+      "x-ui-only": true,
+      "x-step": "connector",
+    },
+    data_path_gcs_info: {
+      type: "boolean",
+      title: "GCS Connector Required",
+      default: true,
+      "x-informational": true,
+      "x-ui-only": true,
+      "x-step": "connector",
+    },
+    data_path_gcs: {
+      type: "string",
+      title: "GCS URI",
+      description: "GCS URI for the DuckLake data directory.",
+      pattern: "^gs://[^/]+(/.*)?$",
+      errorMessage: {
+        pattern: "Must be a GCS URI (e.g. gs://bucket/path/)",
+      },
+      "x-placeholder": "gs://bucket/path/",
+      "x-monospace": true,
+      "x-ui-only": true,
+      "x-step": "connector",
+    },
+    data_path_azure_info: {
+      type: "boolean",
+      title: "Azure Connector Required",
+      default: true,
+      "x-informational": true,
+      "x-ui-only": true,
+      "x-step": "connector",
+    },
+    data_path_azure: {
+      type: "string",
+      title: "Azure URI",
+      description: "Azure URI for the DuckLake data directory.",
+      pattern: "^azure://.+",
+      errorMessage: {
+        pattern: "Must be an Azure URI (e.g. azure://container/path/)",
+      },
+      "x-placeholder": "azure://container/path/",
+      "x-monospace": true,
+      "x-ui-only": true,
+      "x-step": "connector",
+    },
+
+    // ── Advanced parameters ──────────────────────────────────
+    // These remain top-level (not in the tab group) so they live under
+    // the collapsible "Advanced options" toggle. They use x-visible-if
+    // to hide on the SQL tab; because they are x-ui-only, they survive
+    // tab switches (the clear-hidden renderer skips x-ui-only fields).
     override_data_path: {
       type: "boolean",
       title: "OVERRIDE_DATA_PATH",
@@ -158,17 +389,6 @@ export const ducklakeSchema: MultiStepFormSchema = {
       "x-step": "connector",
       "x-advanced": true,
     },
-    metadata_path: {
-      type: "string",
-      title: "METADATA_PATH",
-      description:
-        "The connection string for connecting to the metadata catalog.",
-      "x-placeholder": "postgres:dbname=mydb host=localhost",
-      "x-visible-if": { connection_mode: "parameters" },
-      "x-ui-only": true,
-      "x-step": "connector",
-      "x-advanced": true,
-    },
     metadata_schema: {
       type: "string",
       title: "METADATA_SCHEMA",
@@ -222,8 +442,44 @@ export const ducklakeSchema: MultiStepFormSchema = {
       then: { required: ["attach"] },
     },
     {
-      if: { properties: { connection_mode: { const: "parameters" } } },
-      then: { required: ["catalog"] },
+      if: {
+        properties: {
+          connection_mode: { const: "parameters" },
+          catalog_type: { const: "duckdb" },
+        },
+      },
+      then: { required: ["catalog_duckdb_path"] },
+    },
+    {
+      if: {
+        properties: {
+          connection_mode: { const: "parameters" },
+          catalog_type: { const: "sqlite" },
+        },
+      },
+      then: { required: ["catalog_sqlite_path"] },
+    },
+    {
+      if: {
+        properties: {
+          connection_mode: { const: "parameters" },
+          catalog_type: { const: "postgres" },
+        },
+      },
+      then: {
+        required: ["catalog_postgres_dbname", "catalog_postgres_host"],
+      },
+    },
+    {
+      if: {
+        properties: {
+          connection_mode: { const: "parameters" },
+          catalog_type: { const: "mysql" },
+        },
+      },
+      then: {
+        required: ["catalog_mysql_database", "catalog_mysql_host"],
+      },
     },
   ],
 };

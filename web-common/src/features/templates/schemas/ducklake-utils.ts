@@ -9,18 +9,21 @@ import type { MultiStepFormSchema } from "./types";
  *   `'ducklake:duckdb_database.ducklake' AS my_ducklake (DATA_PATH 'files/', OVERRIDE_DATA_PATH true)`
  */
 export function composeDuckLakeAttach(values: Record<string, unknown>): string {
-  const catalog = stringValue(values.catalog);
-  if (!catalog) return "";
+  const identifier = composeCatalogIdentifier(values);
+  if (!identifier) return "";
 
   const alias = stringValue(values.alias);
 
   const options: string[] = [];
 
+  const dataPath = composeDataPath(values);
+  if (dataPath) {
+    options.push(`DATA_PATH '${escapeSqlString(dataPath)}'`);
+  }
+
   const stringParams: Array<[string, string]> = [
-    ["DATA_PATH", "data_path"],
     ["META_PARAMETER_NAME", "meta_parameter_name"],
     ["METADATA_CATALOG", "metadata_catalog"],
-    ["METADATA_PATH", "metadata_path"],
     ["METADATA_SCHEMA", "metadata_schema"],
     ["SNAPSHOT_TIME", "snapshot_time"],
     ["SNAPSHOT_VERSION", "snapshot_version"],
@@ -59,7 +62,70 @@ export function composeDuckLakeAttach(values: Record<string, unknown>): string {
 
   const optionsStr = options.length ? ` (${options.join(", ")})` : "";
   const aliasStr = alias ? ` AS ${alias}` : "";
-  return `'ducklake:${escapeSqlString(catalog)}'${aliasStr}${optionsStr}`;
+  return `'ducklake:${escapeSqlString(identifier)}'${aliasStr}${optionsStr}`;
+}
+
+/**
+ * Build the portion of the DuckLake URI that follows `ducklake:`,
+ * dispatching on the chosen `catalog_type`.
+ */
+function composeCatalogIdentifier(values: Record<string, unknown>): string {
+  const type = stringValue(values.catalog_type) || "duckdb";
+
+  switch (type) {
+    case "duckdb":
+      return stringValue(values.catalog_duckdb_path);
+
+    case "sqlite": {
+      const path = stringValue(values.catalog_sqlite_path);
+      return path ? `sqlite:${path}` : "";
+    }
+
+    case "postgres": {
+      const kv = keyValuePairs([
+        ["dbname", values.catalog_postgres_dbname],
+        ["host", values.catalog_postgres_host],
+        ["port", values.catalog_postgres_port],
+        ["user", values.catalog_postgres_user],
+        ["password", values.catalog_postgres_password],
+      ]);
+      return kv ? `postgres:${kv}` : "";
+    }
+
+    case "mysql": {
+      const kv = keyValuePairs([
+        ["database", values.catalog_mysql_database],
+        ["host", values.catalog_mysql_host],
+        ["port", values.catalog_mysql_port],
+        ["user", values.catalog_mysql_user],
+        ["password", values.catalog_mysql_password],
+      ]);
+      return kv ? `mysql:${kv}` : "";
+    }
+
+    default:
+      return "";
+  }
+}
+
+/**
+ * Return the storage path for the currently selected `data_path_type`,
+ * or undefined when no path is set (so DATA_PATH is omitted from ATTACH).
+ */
+function composeDataPath(values: Record<string, unknown>): string | undefined {
+  const type = stringValue(values.data_path_type) || "local";
+  const key = `data_path_${type}`;
+  const value = stringValue(values[key]);
+  return value || undefined;
+}
+
+function keyValuePairs(entries: Array<[string, unknown]>): string {
+  const parts: string[] = [];
+  for (const [key, raw] of entries) {
+    const v = stringValue(raw);
+    if (v) parts.push(`${key}=${v}`);
+  }
+  return parts.join(" ");
 }
 
 /**
