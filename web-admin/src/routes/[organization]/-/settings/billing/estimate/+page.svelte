@@ -174,17 +174,20 @@
   <div class="estimate-grid">
     <!-- LEFT: Input panel -->
     <div class="input-panel">
-      <div class="panel-header">
-        <span class="panel-title">Select compute unit</span>
-        <span class="unit-hint">1 unit = 4 GiB RAM, 1 vCPU · $0.15/unit/hr</span
-        >
+      <!-- Compute subsection -->
+      <div class="subsection-header">
+        <div class="subsection-title-group">
+          <span class="subsection-title">Compute</span>
+          <span class="subsection-sub">1 unit = 4 GiB RAM, 1 vCPU</span>
+        </div>
+        <span class="subsection-rate">$0.15/unit/hr</span>
       </div>
 
       <!-- Production units -->
       <div class="input-row">
         <div class="input-info">
           <span class="input-label">Production</span>
-          <span class="input-desc">Minimum 2 units · $0.15/unit/hr</span>
+          <span class="input-desc">Minimum 2 units</span>
         </div>
         <div class="stepper">
           <button
@@ -212,9 +215,9 @@
               <span class="text-fg-muted flex">
                 <InfoCircle size="13px" />
               </span>
-              <TooltipContent maxWidth="220px" slot="tooltip-content">
-                We hibernate your deployment when it's inactive, saving you on
-                cost.
+              <TooltipContent maxWidth="240px" slot="tooltip-content">
+                Deployments hibernate when inactive, so you're only billed for
+                active hours.
               </TooltipContent>
             </Tooltip>
           </span>
@@ -247,7 +250,6 @@
       <div class="input-row">
         <div class="input-info">
           <span class="input-label">Development</span>
-          <span class="input-desc">Same rate as prod unit</span>
         </div>
         <div class="stepper">
           <button
@@ -275,9 +277,9 @@
               <span class="text-fg-muted flex">
                 <InfoCircle size="13px" />
               </span>
-              <TooltipContent maxWidth="220px" slot="tooltip-content">
-                We hibernate your deployment when it's inactive, saving you on
-                cost.
+              <TooltipContent maxWidth="240px" slot="tooltip-content">
+                Deployments hibernate when inactive, so you're only billed for
+                active hours.
               </TooltipContent>
             </Tooltip>
           </span>
@@ -304,15 +306,15 @@
         </div>
       </div>
 
-      <div class="input-divider"></div>
+      <!-- Storage subsection -->
+      <div class="subsection-header subsection-header-gap">
+        <span class="subsection-title">Storage</span>
+        <span class="subsection-rate">$1/GB/mo above 1 GB free</span>
+      </div>
 
-      <!-- Storage -->
       <div class="input-row">
         <div class="input-info">
           <span class="input-label">Storage (GB)</span>
-          <span class="input-desc"
-            >1 GB included free · $1/GB/mo above that</span
-          >
         </div>
         <div class="stepper">
           <button
@@ -334,7 +336,7 @@
 
     <!-- RIGHT: Cost summary -->
     <div class="cost-panel">
-      <h2 class="cost-title">Estimate monthly cost</h2>
+      <h2 class="cost-title">Estimated monthly cost</h2>
       <span class="cost-total">{fmtUSD(monthlyCost)}</span>
       <span class="cost-daily">~{fmtUSD(dailyCost)}/day</span>
 
@@ -345,9 +347,8 @@
         <div class="cost-row-info">
           <span class="cost-row-label">Production</span>
           <span class="cost-row-desc">
-            {prodUnits} units × {prodHoursPerDay} hrs × {DAYS_PER_MONTH} days × ${RATE_PER_UNIT_HR.toFixed(
-              2,
-            )}
+            {prodUnits} units × {prodHoursPerDay} hrs/day × {DAYS_PER_MONTH} days
+            × ${RATE_PER_UNIT_HR.toFixed(2)}/unit/hr
           </span>
         </div>
         <span class="cost-row-amount">{fmtUSD(prodCost)}</span>
@@ -358,25 +359,25 @@
         <div class="cost-row-info">
           <span class="cost-row-label">Development</span>
           <span class="cost-row-desc">
-            {devUnits} units × {devHoursPerDay} hrs × {DAYS_PER_MONTH} days × ${RATE_PER_UNIT_HR.toFixed(
-              2,
-            )}
+            {devUnits} units × {devHoursPerDay} hrs/day × {DAYS_PER_MONTH} days ×
+            ${RATE_PER_UNIT_HR.toFixed(2)}/unit/hr
           </span>
         </div>
         <span class="cost-row-amount">{fmtUSD(devCost)}</span>
       </div>
 
-      <!-- Storage breakdown -->
-      <div class="cost-row">
-        <div class="cost-row-info">
-          <span class="cost-row-label">Storage (GB)</span>
-          <span class="cost-row-desc">
-            {storageGB} GB − {FREE_STORAGE_GB} GB free = {billableStorageGB} GB ×
-            ${STORAGE_RATE_PER_GB}
-          </span>
+      <!-- Storage breakdown (hidden when no billable storage) -->
+      {#if billableStorageGB > 0}
+        <div class="cost-row">
+          <div class="cost-row-info">
+            <span class="cost-row-label">Storage (GB)</span>
+            <span class="cost-row-desc">
+              {billableStorageGB} billable GB × ${STORAGE_RATE_PER_GB}/GB/mo
+            </span>
+          </div>
+          <span class="cost-row-amount">{fmtUSD(storageCost)}</span>
         </div>
-        <span class="cost-row-amount">{fmtUSD(storageCost)}</span>
-      </div>
+      {/if}
 
       <div class="cost-divider"></div>
 
@@ -402,7 +403,7 @@
         </div>
 
         <span class="recurring-note">
-          Then {fmtUSD(monthlyCost)}/mo based on current usage
+          Then {fmtUSD(monthlyCost)}/mo at this configuration
         </span>
       {/if}
 
@@ -465,15 +466,27 @@
     @apply border border-border rounded-xl bg-white p-6 flex flex-col;
   }
 
-  .panel-header {
-    @apply flex items-center justify-between mb-4;
+  .subsection-header {
+    @apply flex items-center justify-between mb-1;
   }
 
-  .panel-title {
+  .subsection-header-gap {
+    @apply mt-4;
+  }
+
+  .subsection-title-group {
+    @apply flex items-baseline gap-2;
+  }
+
+  .subsection-title {
     @apply text-sm font-semibold text-fg-primary;
   }
 
-  .unit-hint {
+  .subsection-sub {
+    @apply text-xs text-fg-tertiary;
+  }
+
+  .subsection-rate {
     @apply text-xs text-fg-tertiary;
   }
 
