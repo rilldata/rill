@@ -1,4 +1,4 @@
-package metricsview
+package executor
 
 import (
 	"time"
@@ -6,9 +6,9 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
-// GrainOrder defines the numeric ordering of grains for derivability checks and rollup selection.
+// grainOrder defines the numeric ordering of grains for derivability checks and rollup selection.
 // Two branches diverge from day: day->week and day->month->quarter->year.
-var GrainOrder = map[runtimev1.TimeGrain]int{
+var grainOrder = map[runtimev1.TimeGrain]int{
 	runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND: 0,
 	runtimev1.TimeGrain_TIME_GRAIN_SECOND:      1,
 	runtimev1.TimeGrain_TIME_GRAIN_MINUTE:      2,
@@ -40,7 +40,7 @@ var grainBranch = map[runtimev1.TimeGrain]int{
 	runtimev1.TimeGrain_TIME_GRAIN_YEAR:        branchCalendar,
 }
 
-// GrainDerivableFrom returns true if queryGrain can be computed by re-aggregating data stored at rollupGrain.
+// grainDerivableFrom returns true if queryGrain can be computed by re-aggregating data stored at rollupGrain.
 //
 // The grain hierarchy has two branches diverging from day:
 //
@@ -50,7 +50,7 @@ var grainBranch = map[runtimev1.TimeGrain]int{
 // A coarser grain is derivable from a finer grain only if they are on the
 // same branch (or one is sub-day/day and the other is on a branch rooted at day).
 // For example, month is derivable from day, but not from week.
-func GrainDerivableFrom(queryGrain, rollupGrain runtimev1.TimeGrain) bool {
+func grainDerivableFrom(queryGrain, rollupGrain runtimev1.TimeGrain) bool {
 	if queryGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED || rollupGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 		return false
 	}
@@ -58,8 +58,8 @@ func GrainDerivableFrom(queryGrain, rollupGrain runtimev1.TimeGrain) bool {
 		return true
 	}
 
-	qOrder := GrainOrder[queryGrain]
-	rOrder := GrainOrder[rollupGrain]
+	qOrder := grainOrder[queryGrain]
+	rOrder := grainOrder[rollupGrain]
 
 	// Query grain must be coarser (higher order) than rollup grain
 	if qOrder <= rOrder {
@@ -83,17 +83,13 @@ func GrainDerivableFrom(queryGrain, rollupGrain runtimev1.TimeGrain) bool {
 	return false
 }
 
-// TimeAligned returns true if t is aligned to the boundary of the given grain.
+// timeAligned returns true if t is aligned to the boundary of the given grain.
 // For sub-day grains, alignment is checked in UTC. For day and coarser, alignment is checked in the given timezone.
 // For week grain, firstDayOfWeek (1=Monday, 7=Sunday) is used.
-func TimeAligned(t time.Time, grain runtimev1.TimeGrain, tz *time.Location, firstDayOfWeek uint32) bool {
+func timeAligned(t time.Time, grain runtimev1.TimeGrain, tz *time.Location, firstDayOfWeek uint32) bool {
 	if tz == nil {
 		tz = time.UTC
 	}
-	return isAligned(t, grain, tz, firstDayOfWeek)
-}
-
-func isAligned(t time.Time, grain runtimev1.TimeGrain, tz *time.Location, firstDayOfWeek uint32) bool {
 	if t.IsZero() {
 		return true
 	}

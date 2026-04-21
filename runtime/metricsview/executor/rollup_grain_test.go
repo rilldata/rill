@@ -1,4 +1,4 @@
-package metricsview
+package executor
 
 import (
 	"testing"
@@ -60,7 +60,7 @@ func TestGrainDerivableFrom(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := GrainDerivableFrom(tt.query, tt.rollup)
+			got := grainDerivableFrom(tt.query, tt.rollup)
 			require.Equal(t, tt.expected, got)
 		})
 	}
@@ -101,7 +101,7 @@ func TestTimeAligned(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := TimeAligned(tt.t, tt.grain, tt.tz, tt.firstDayOfWeek)
+			got := timeAligned(tt.t, tt.grain, tt.tz, tt.firstDayOfWeek)
 			require.Equal(t, tt.expected, got)
 		})
 	}

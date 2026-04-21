@@ -129,6 +129,15 @@ func newRollupTestExecutor(t *testing.T, rt *runtime.Runtime, instanceID string)
 	return e
 }
 
+// queryRollupTable runs e.Query and returns which rollup table was selected (or "" for base table).
+func queryRollupTable(t *testing.T, e *executor.Executor, qry *metricsview.Query) string {
+	t.Helper()
+	res, err := e.Query(context.Background(), qry, nil)
+	require.NoError(t, err)
+	res.Close()
+	return e.SelectedRollupTable()
+}
+
 func TestRollupIntegration(t *testing.T) {
 	rt, instanceID := newRollupTestRuntime(t)
 
@@ -139,7 +148,7 @@ func TestRollupIntegration(t *testing.T) {
 
 			qry := &metricsview.Query{
 				Dimensions: []metricsview.Dimension{
-					{Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainDay}}},
+					{Name: "timestamp", Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainDay}}},
 				},
 				Measures: []metricsview.Measure{
 					{Name: "total_impressions"},
@@ -150,9 +159,7 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			table, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
-			require.NoError(t, err)
-			require.True(t, ok)
+			table := queryRollupTable(t, e, qry)
 			require.Equal(t, rollupTestDailyTable, table)
 		})
 
@@ -162,7 +169,7 @@ func TestRollupIntegration(t *testing.T) {
 
 			qry := &metricsview.Query{
 				Dimensions: []metricsview.Dimension{
-					{Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainMonth}}},
+					{Name: "timestamp", Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainMonth}}},
 				},
 				Measures: []metricsview.Measure{
 					{Name: "total_impressions"},
@@ -173,9 +180,7 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			table, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
-			require.NoError(t, err)
-			require.True(t, ok)
+			table := queryRollupTable(t, e, qry)
 			// Both daily and monthly are eligible; monthly is coarser
 			require.Equal(t, rollupTestMonthTable, table)
 		})
@@ -186,7 +191,7 @@ func TestRollupIntegration(t *testing.T) {
 
 			qry := &metricsview.Query{
 				Dimensions: []metricsview.Dimension{
-					{Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainYear}}},
+					{Name: "timestamp", Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainYear}}},
 				},
 				Measures: []metricsview.Measure{
 					{Name: "total_impressions"},
@@ -197,9 +202,7 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			table, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
-			require.NoError(t, err)
-			require.True(t, ok)
+			table := queryRollupTable(t, e, qry)
 			// Daily and monthly are eligible (year derivable from both); monthly is coarser
 			require.Equal(t, rollupTestMonthTable, table)
 		})
@@ -221,9 +224,7 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			table, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
-			require.NoError(t, err)
-			require.True(t, ok)
+			table := queryRollupTable(t, e, qry)
 			// All 3 eligible (no grain check); monthly is coarsest
 			require.Equal(t, rollupTestMonthTable, table)
 		})
@@ -236,7 +237,7 @@ func TestRollupIntegration(t *testing.T) {
 			// Jan 1, 2024 = Monday; Feb 5, 2024 = Monday (5 weeks later)
 			qry := &metricsview.Query{
 				Dimensions: []metricsview.Dimension{
-					{Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainWeek}}},
+					{Name: "timestamp", Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainWeek}}},
 				},
 				Measures: []metricsview.Measure{
 					{Name: "total_impressions"},
@@ -247,9 +248,7 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			table, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
-			require.NoError(t, err)
-			require.True(t, ok)
+			table := queryRollupTable(t, e, qry)
 			// Daily and weekly eligible (week derivable from day); weekly is coarser
 			require.Equal(t, rollupTestWeeklyTable, table)
 		})
@@ -260,7 +259,7 @@ func TestRollupIntegration(t *testing.T) {
 
 			qry := &metricsview.Query{
 				Dimensions: []metricsview.Dimension{
-					{Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainWeek}}},
+					{Name: "timestamp", Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainWeek}}},
 				},
 				Measures: []metricsview.Measure{
 					{Name: "total_impressions"},
@@ -271,9 +270,7 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			table, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
-			require.NoError(t, err)
-			require.True(t, ok)
+			table := queryRollupTable(t, e, qry)
 			// Weekly lacks March data; monthly ineligible (week not derivable from month); daily covers all
 			require.Equal(t, rollupTestDailyTable, table)
 		})
@@ -295,9 +292,8 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			_, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
-			require.NoError(t, err)
-			require.False(t, ok)
+			table := queryRollupTable(t, e, qry)
+			require.Empty(t, table)
 		})
 
 		t.Run("end_misaligned_watermark_accepts_rollup", func(t *testing.T) {
@@ -317,9 +313,7 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			table, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
-			require.NoError(t, err)
-			require.True(t, ok)
+			table := queryRollupTable(t, e, qry)
 			// Monthly is coarsest eligible
 			require.Equal(t, rollupTestMonthTable, table)
 		})
@@ -338,9 +332,8 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			_, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
-			require.NoError(t, err)
-			require.False(t, ok)
+			table := queryRollupTable(t, e, qry)
+			require.Empty(t, table)
 		})
 
 		t.Run("missing_dimension_returns_nil", func(t *testing.T) {
@@ -360,9 +353,8 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			_, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
-			require.NoError(t, err)
-			require.False(t, ok)
+			table := queryRollupTable(t, e, qry)
+			require.Empty(t, table)
 		})
 
 		t.Run("computed_measure_returns_nil", func(t *testing.T) {
@@ -380,9 +372,8 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			_, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
-			require.NoError(t, err)
-			require.False(t, ok)
+			table := queryRollupTable(t, e, qry)
+			require.Empty(t, table)
 		})
 
 		t.Run("spine_query_uses_rollup", func(t *testing.T) {
@@ -390,7 +381,15 @@ func TestRollupIntegration(t *testing.T) {
 			defer e.Close()
 
 			qry := &metricsview.Query{
-				Spine: &metricsview.Spine{},
+				Spine: &metricsview.Spine{
+					TimeRange: &metricsview.TimeSpine{
+						Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+						End:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+					},
+				},
+				Dimensions: []metricsview.Dimension{
+					{Name: "timestamp", Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainMonth}}},
+				},
 				Measures: []metricsview.Measure{
 					{Name: "total_impressions"},
 				},
@@ -400,9 +399,7 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			table, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
-			require.NoError(t, err)
-			require.True(t, ok)
+			table := queryRollupTable(t, e, qry)
 			// Monthly is coarsest eligible
 			require.Equal(t, rollupTestMonthTable, table)
 		})
@@ -421,9 +418,7 @@ func TestRollupIntegration(t *testing.T) {
 				// No TimeRange: means "all data"
 			}
 
-			table, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
-			require.NoError(t, err)
-			require.True(t, ok)
+			table := queryRollupTable(t, e, qry)
 			// Weekly rollup is partial (Jan+Feb only); daily and monthly cover full range.
 			// Monthly is coarsest eligible.
 			require.Equal(t, rollupTestMonthTable, table)
@@ -435,7 +430,7 @@ func TestRollupIntegration(t *testing.T) {
 
 			qry := &metricsview.Query{
 				Dimensions: []metricsview.Dimension{
-					{Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainHour}}},
+					{Name: "timestamp", Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainHour}}},
 				},
 				Measures: []metricsview.Measure{
 					{Name: "total_impressions"},
@@ -446,9 +441,8 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			_, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
-			require.NoError(t, err)
-			require.False(t, ok)
+			table := queryRollupTable(t, e, qry)
+			require.Empty(t, table)
 		})
 
 		t.Run("where_filter_dimension_not_in_rollup", func(t *testing.T) {
@@ -477,9 +471,8 @@ func TestRollupIntegration(t *testing.T) {
 				},
 			}
 
-			_, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
-			require.NoError(t, err)
-			require.False(t, ok)
+			table := queryRollupTable(t, e, qry)
+			require.Empty(t, table)
 		})
 
 		t.Run("time_range_coverage_not_covered", func(t *testing.T) {
@@ -522,7 +515,7 @@ explore:
 
 			qry := &metricsview.Query{
 				Dimensions: []metricsview.Dimension{
-					{Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainDay}}},
+					{Name: "timestamp", Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainDay}}},
 				},
 				Measures: []metricsview.Measure{
 					{Name: "total_impressions"},
@@ -532,9 +525,8 @@ explore:
 					End:   time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC),
 				},
 			}
-			_, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
-			require.NoError(t, err)
-			require.False(t, ok)
+			table := queryRollupTable(t, e, qry)
+			require.Empty(t, table)
 		})
 
 		t.Run("query_wider_than_data", func(t *testing.T) {
@@ -544,7 +536,7 @@ explore:
 
 			qry := &metricsview.Query{
 				Dimensions: []metricsview.Dimension{
-					{Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainDay}}},
+					{Name: "timestamp", Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainDay}}},
 				},
 				Measures: []metricsview.Measure{
 					{Name: "total_impressions"},
@@ -554,9 +546,7 @@ explore:
 					End:   time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 				},
 			}
-			table, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
-			require.NoError(t, err)
-			require.True(t, ok)
+			table := queryRollupTable(t, e, qry)
 			// Query clamped to base data range; daily is the only eligible rollup for day grain
 			require.Equal(t, rollupTestDailyTable, table)
 		})
@@ -612,7 +602,7 @@ explore:
 
 			qry := &metricsview.Query{
 				Dimensions: []metricsview.Dimension{
-					{Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainMonth}}},
+					{Name: "timestamp", Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainMonth}}},
 				},
 				Measures: []metricsview.Measure{
 					{Name: "total_impressions"},
@@ -622,9 +612,7 @@ explore:
 					End:   time.Date(2024, 4, 1, 0, 0, 0, 0, time.UTC),
 				},
 			}
-			table, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
-			require.NoError(t, err)
-			require.True(t, ok)
+			table := queryRollupTable(t, e, qry)
 			// Both monthly rollups cover the range; narrow has smaller data range
 			require.Equal(t, "rollup_month_narrow", table)
 		})
@@ -677,9 +665,8 @@ explore:
 					{Name: "total_impressions"},
 				},
 			}
-			_, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
-			require.NoError(t, err)
-			require.False(t, ok)
+			table := queryRollupTable(t, e, qry)
+			require.Empty(t, table)
 		})
 	})
 
@@ -729,7 +716,7 @@ explore:
 			// 2024-01-07 = Sunday, 2024-02-04 = Sunday
 			qry := &metricsview.Query{
 				Dimensions: []metricsview.Dimension{
-					{Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainWeek}}},
+					{Name: "timestamp", Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainWeek}}},
 				},
 				Measures: []metricsview.Measure{
 					{Name: "total_impressions"},
@@ -739,9 +726,7 @@ explore:
 					End:   time.Date(2024, 2, 4, 0, 0, 0, 0, time.UTC),
 				},
 			}
-			table, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
-			require.NoError(t, err)
-			require.True(t, ok)
+			table := queryRollupTable(t, e, qry)
 			require.Equal(t, "rollup_week", table)
 		})
 
@@ -754,7 +739,7 @@ explore:
 
 			qry := &metricsview.Query{
 				Dimensions: []metricsview.Dimension{
-					{Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainWeek}}},
+					{Name: "timestamp", Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainWeek}}},
 				},
 				Measures: []metricsview.Measure{
 					{Name: "total_impressions"},
@@ -764,9 +749,8 @@ explore:
 					End:   time.Date(2024, 2, 4, 0, 0, 0, 0, time.UTC),
 				},
 			}
-			_, ok, err := e.RewriteQueryForRollupTest(context.Background(), qry)
-			require.NoError(t, err)
-			require.False(t, ok)
+			table := queryRollupTable(t, e, qry)
+			require.Empty(t, table)
 		})
 	})
 

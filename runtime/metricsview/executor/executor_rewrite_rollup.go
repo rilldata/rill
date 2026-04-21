@@ -82,6 +82,8 @@ type rollupCandidate struct {
 // rewriteQueryForRollup checks if a rollup table can satisfy the query.
 // It returns a synthetic MetricsViewSpec pointing to the rollup table, or nil if no rollup matches.
 func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Query) (*runtimev1.MetricsViewSpec, error) {
+	e.selectedRollupTable = ""
+
 	if len(e.metricsView.Rollups) == 0 {
 		return nil, nil
 	}
@@ -263,7 +265,7 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 		// the last rollup bucket would include data beyond the requested range. rollupEligible only checks start alignment.
 		// Essentially it just check if base has data >= query end time, then makes sure the query end time is rollup grain aligned
 		if hasTimeRange && !qry.TimeRange.End.IsZero() && !baseMax.Before(qry.TimeRange.End) &&
-			!metricsview.TimeAligned(qry.TimeRange.End, rollup.TimeGrain, rollupLoc, e.metricsView.FirstDayOfWeek) {
+			!timeAligned(qry.TimeRange.End, rollup.TimeGrain, rollupLoc, e.metricsView.FirstDayOfWeek) {
 			rejectCandidate(rejectEndNotAligned,
 				attribute.String("rollup.query_end", qry.TimeRange.End.Format(time.RFC3339)),
 				attribute.String("rollup.base_max", baseMax.Format(time.RFC3339)),
@@ -278,7 +280,7 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 		dataRange := rollupMax.Sub(rollupMin)
 		c := &rollupCandidate{
 			rollup:     rollup,
-			grainOrder: metricsview.GrainOrder[rollup.TimeGrain],
+			grainOrder: grainOrder[rollup.TimeGrain],
 			dataRange:  dataRange,
 		}
 
@@ -299,6 +301,7 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 		attribute.String("rollup.result", "selected"),
 		attribute.String("rollup.selected_table", best.rollup.Table),
 	)
+	e.selectedRollupTable = best.rollup.Table
 	return buildSyntheticSpec(e.metricsView, best.rollup), nil
 }
 
@@ -308,7 +311,7 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 func rollupEligible(rollup *runtimev1.MetricsViewSpec_Rollup, qry *metricsview.Query, queryGrain runtimev1.TimeGrain, whereDims map[string]bool, primaryTimeDim string, firstDayOfWeek uint32) (bool, string, error) {
 	// 1. Grain derivable: if query has a time grain, it must be derivable from rollup grain
 	if queryGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
-		if !metricsview.GrainDerivableFrom(queryGrain, rollup.TimeGrain) {
+		if !grainDerivableFrom(queryGrain, rollup.TimeGrain) {
 			return false, rejectGrainNotDerivable, nil
 		}
 	}
@@ -341,7 +344,7 @@ func rollupEligible(rollup *runtimev1.MetricsViewSpec_Rollup, qry *metricsview.Q
 			}
 			rollupLoc = loc
 		}
-		if !metricsview.TimeAligned(qry.TimeRange.Start, rollup.TimeGrain, rollupLoc, firstDayOfWeek) {
+		if !timeAligned(qry.TimeRange.Start, rollup.TimeGrain, rollupLoc, firstDayOfWeek) {
 			return false, rejectStartNotAligned, nil
 		}
 	}
@@ -444,7 +447,7 @@ func extractQueryTimeGrain(qry *metricsview.Query) runtimev1.TimeGrain {
 		if g == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 			continue
 		}
-		if smallest == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED || metricsview.GrainOrder[g] < metricsview.GrainOrder[smallest] {
+		if smallest == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED || grainOrder[g] < grainOrder[smallest] {
 			smallest = g
 		}
 	}
