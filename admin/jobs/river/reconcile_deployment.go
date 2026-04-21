@@ -76,7 +76,7 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 
 			// Initialize the deployment (by provisioning a runtime and creating an instance on it)
 			if err := w.admin.StartDeploymentInner(ctx, depl); err != nil {
-				if w.isNonRetryable(err) || job.Attempt >= job.MaxAttempts {
+				if w.isNonRetryable(err) {
 					return w.cancelAsErrored(ctx, depl.ID, err)
 				}
 				return err
@@ -118,18 +118,12 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 		// Delete the deployment and all its resources.
 		err := w.admin.StopDeploymentInner(ctx, depl)
 		if err != nil {
-			if job.Attempt >= job.MaxAttempts {
-				return w.cancelAsErrored(ctx, depl.ID, err)
-			}
 			return err
 		}
 
 		// Delete the deployment
 		err = w.admin.DB.DeleteDeployment(ctx, depl.ID)
 		if err != nil {
-			if job.Attempt >= job.MaxAttempts {
-				return w.cancelAsErrored(ctx, depl.ID, err)
-			}
 			return err
 		}
 
