@@ -183,5 +183,5 @@ func catalogPrefix(catalog string) string {
 	if catalog == "" {
 		return ""
 	}
-	return drivers.DialectDatabricks.EscapeIdentifier(catalog) + "."
+	return DatabricksEscapeIdentifier(catalog) + "."
 }

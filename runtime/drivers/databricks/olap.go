@@ -16,7 +16,7 @@ var _ drivers.OLAPStore = (*connection)(nil)
 
 // Dialect implements drivers.OLAPStore.
 func (c *connection) Dialect() drivers.Dialect {
-	return drivers.DialectDatabricks
+	return DialectDatabricks
 }
 
 // Exec implements drivers.OLAPStore.
@@ -120,7 +120,7 @@ func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) erro
 		return err
 	}
 
-	fqn := drivers.DialectDatabricks.EscapeTable(table.Database, table.DatabaseSchema, table.Name)
+	fqn := DialectDatabricks.EscapeTable(table.Database, table.DatabaseSchema, table.Name)
 
 	objectType := "TABLE"
 	if table.View {

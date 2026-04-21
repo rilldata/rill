@@ -178,7 +178,7 @@
           {schema}
           step={legacyStep}
           {form}
-          {errors}
+          errors={$errors}
           {onStringInputChange}
           {handleFileUpload}
           iconMap={ICONS}
