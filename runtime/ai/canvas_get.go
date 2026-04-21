@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/rilldata/rill/runtime"
@@ -48,8 +49,18 @@ func (t *GetCanvas) Spec() *mcp.Tool {
 }
 
 func (t *GetCanvas) CheckAccess(ctx context.Context) (bool, error) {
+	// Must be allowed to use AI and query objects
 	s := GetSession(ctx)
-	return s.Claims().Can(runtime.ReadObjects), nil
+	if !s.Claims().Can(runtime.UseAI) || !s.Claims().Can(runtime.ReadObjects) {
+		return false, nil
+	}
+
+	// Only allow for rill user agents since it's not useful in MCP contexts.
+	if !strings.HasPrefix(s.CatalogSession().UserAgent, "rill") {
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func (t *GetCanvas) Handler(ctx context.Context, args *GetCanvasArgs) (*GetCanvasResult, error) {

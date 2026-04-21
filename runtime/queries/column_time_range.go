@@ -64,12 +64,14 @@ func (q *ColumnTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 	defer release()
 
 	// TODO: Try and merge this with metrics_time_range. Both use same queries but metrics_time_range uses a specific timestamp column from metrics_view
-	switch olap.Dialect() {
-	case drivers.DialectDuckDB, drivers.DialectClickHouse:
+	switch olap.Dialect().String() {
+	case drivers.DialectNameDuckDB, drivers.DialectNameClickHouse, drivers.DialectNameSnowflake:
 		return q.resolveDuckDBAndClickhouse(ctx, olap, priority)
-	case drivers.DialectStarRocks:
+	case drivers.DialectNameStarRocks:
 		return q.resolveStarRocks(ctx, olap, priority)
-	case drivers.DialectDruid:
+	case drivers.DialectNameBigQuery:
+		return q.resolveBigQuery(ctx, olap, priority)
+	case drivers.DialectNameDruid:
 		return q.resolveDruid(ctx, olap, priority)
 	default:
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
@@ -79,7 +81,7 @@ func (q *ColumnTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 func (q *ColumnTimeRange) resolveDuckDBAndClickhouse(ctx context.Context, olap drivers.OLAPStore, priority int) error {
 	rangeSQL := fmt.Sprintf(
 		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\" FROM %[2]s",
-		safeName(q.ColumnName),
+		olap.Dialect().EscapeIdentifier(q.ColumnName),
 		olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 	)
 
@@ -173,6 +175,51 @@ func (q *ColumnTimeRange) resolveStarRocks(ctx context.Context, olap drivers.OLA
 	return errors.New("no rows returned")
 }
 
+func (q *ColumnTimeRange) resolveBigQuery(ctx context.Context, olap drivers.OLAPStore, priority int) error {
+	d := olap.Dialect()
+	rangeSQL := fmt.Sprintf(
+		"SELECT min(%[1]s) as `min`, max(%[1]s) as `max` FROM %[2]s",
+		d.EscapeIdentifier(q.ColumnName),
+		d.EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
+	)
+
+	rows, err := olap.Query(ctx, &drivers.Statement{
+		Query:            rangeSQL,
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
+	})
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		summary := &runtimev1.TimeRangeSummary{}
+		rowMap := make(map[string]any)
+		err = rows.MapScan(rowMap)
+		if err != nil {
+			return err
+		}
+		if v := rowMap["min"]; v != nil {
+			minTime, ok := v.(time.Time)
+			if !ok {
+				return fmt.Errorf("not a timestamp column")
+			}
+			summary.Min = timestamppb.New(minTime)
+			summary.Max = timestamppb.New(rowMap["max"].(time.Time))
+		}
+		q.Result = summary
+		return nil
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return err
+	}
+
+	return errors.New("no rows returned")
+}
+
 func (q *ColumnTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPStore, priority int) error {
 	var minTime, maxTime time.Time
 	group, ctx := errgroup.WithContext(ctx)
@@ -180,8 +227,8 @@ func (q *ColumnTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPSto
 	group.Go(func() error {
 		minSQL := fmt.Sprintf(
 			"SELECT min(%[1]s) as \"min\" FROM %[2]s",
-			safeName(q.ColumnName),
-			drivers.DialectDruid.EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
+			olap.Dialect().EscapeIdentifier(q.ColumnName),
+			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 		)
 
 		rows, err := olap.Query(ctx, &drivers.Statement{
@@ -213,7 +260,7 @@ func (q *ColumnTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPSto
 	group.Go(func() error {
 		maxSQL := fmt.Sprintf(
 			"SELECT max(%[1]s) as \"max\" FROM %[2]s",
-			safeName(q.ColumnName),
+			olap.Dialect().EscapeIdentifier(q.ColumnName),
 			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 		)
 

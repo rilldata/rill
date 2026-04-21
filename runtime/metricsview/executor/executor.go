@@ -179,19 +179,21 @@ func (e *Executor) Timestamps(ctx context.Context, timeDim string) (metricsview.
 	}
 
 	var res metricsview.TimestampsResult
-	switch e.olap.Dialect() {
-	case drivers.DialectDuckDB:
+	switch e.olap.Dialect().String() {
+	case drivers.DialectNameDuckDB:
 		res, err = e.resolveDuckDB(ctx, timeExpr)
-	case drivers.DialectClickHouse:
+	case drivers.DialectNameClickHouse:
 		res, err = e.resolveClickHouse(ctx, timeExpr)
-	case drivers.DialectPinot:
+	case drivers.DialectNamePinot:
 		res, err = e.resolvePinot(ctx, timeExpr)
-	case drivers.DialectDruid:
+	case drivers.DialectNameDruid:
 		res, err = e.resolveDruid(ctx, timeExpr)
-	case drivers.DialectStarRocks:
+	case drivers.DialectNameStarRocks:
 		res, err = e.resolveStarRocks(ctx, timeExpr)
-	case drivers.DialectSnowflake:
+	case drivers.DialectNameSnowflake:
 		res, err = e.resolveSnowflake(ctx, timeExpr)
+	case drivers.DialectNameBigQuery:
+		res, err = e.resolveBigQuery(ctx, timeExpr)
 	default:
 		return metricsview.TimestampsResult{}, fmt.Errorf("not available for dialect '%s'", e.olap.Dialect())
 	}
@@ -246,7 +248,8 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 	}
 
 	// Setting both base and comparison time ranges in case there are time_comparison measures.
-	if e.metricsView.TimeDimension != "" {
+	// Do not set it for BigQuery because it requires datatype to be already discovered to set time parameter.
+	if e.olap.Dialect().String() != drivers.DialectNameBigQuery && e.metricsView.TimeDimension != "" {
 		now := time.Now()
 		qry.TimeRange = &metricsview.TimeRange{
 			Start: now.Add(-time.Second),
@@ -370,7 +373,7 @@ func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionT
 		// If e.olap is a DuckDB, use it directly. Else open a "duckdb" handle (which is always available, even for instances where DuckDB is not the main OLAP connector).
 		var duck drivers.OLAPStore
 		var releaseDuck func()
-		if e.olap.Dialect() == drivers.DialectDuckDB {
+		if e.olap.Dialect().String() == drivers.DialectNameDuckDB {
 			duck = e.olap
 		} else {
 			handle, release, err := e.rt.AcquireHandle(ctx, e.instanceID, "duckdb")
@@ -498,7 +501,7 @@ func (e *Executor) Search(ctx context.Context, qry *metricsview.SearchQuery, exe
 	// This is a hacky implementation since both metricsview.Query and AST are designed for aggregate queries.
 	// TODO :: Refactor the code and extract common functionality from metricsview.Query and AST and write SearchQuery to underlying SQL/Native druid query directly.
 
-	if e.olap.Dialect() == drivers.DialectDruid {
+	if e.olap.Dialect().String() == drivers.DialectNameDruid {
 		// native search
 		res, err := e.executeSearchInDruid(ctx, qry, executionTime)
 		if err == nil || !errors.Is(err, errDruidNativeSearchUnimplemented) {
@@ -562,7 +565,7 @@ func (e *Executor) Search(ctx context.Context, qry *metricsview.SearchQuery, exe
 		if err != nil {
 			return nil, err
 		}
-		finalSQL.WriteString(fmt.Sprintf("SELECT %s AS dimension, %s AS value FROM (%s)", e.olap.Dialect().EscapeStringValue(d), e.olap.Dialect().EscapeIdentifier(d), sql))
+		finalSQL.WriteString(fmt.Sprintf("SELECT %s AS dimension, %s AS value FROM (%s)", drivers.EscapeStringValue(d), e.olap.Dialect().EscapeIdentifier(d), sql))
 		finalArgs = append(finalArgs, args...)
 	}
 

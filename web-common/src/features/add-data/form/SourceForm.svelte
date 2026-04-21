@@ -1,6 +1,10 @@
 <script lang="ts">
   import { createConnectorForm } from "@rilldata/web-common/features/sources/modal/FormValidation.ts";
-  import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
+  import {
+    runtimeServiceGetFile,
+    runtimeServiceGetInstance,
+    getRuntimeServiceGetInstanceQueryKey,
+  } from "@rilldata/web-common/runtime-client";
   import { getConnectorSchema } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
   import { onMount } from "svelte";
   import { getSourceYamlPreview } from "./yaml-preview.ts";
@@ -50,6 +54,7 @@
   // This prevents the preview from updating when Test and Connect writes to .env.
   // Use null to indicate "not yet loaded" vs "" for "loaded but empty"
   let existingEnvBlob: string | null = null;
+  let defaultOLAP = "duckdb";
   onMount(async () => {
     try {
       const envFile = await runtimeServiceGetFile(runtimeClient, {
@@ -59,6 +64,19 @@
     } catch {
       // .env doesn't exist yet
       existingEnvBlob = "";
+    }
+    try {
+      const runtimeInstance = await queryClient.fetchQuery({
+        queryKey: getRuntimeServiceGetInstanceQueryKey(
+          runtimeClient.instanceId,
+          {},
+        ),
+        queryFn: () =>
+          runtimeServiceGetInstance(runtimeClient, { sensitive: false }),
+      });
+      defaultOLAP = runtimeInstance?.instance?.olapConnector || "duckdb";
+    } catch {
+      // fall back to duckdb
     }
   });
 
@@ -82,6 +100,7 @@
         formValues: $form,
         schema,
         existingEnvBlob,
+        outputConnector: defaultOLAP,
       })
     : "";
 
@@ -134,6 +153,7 @@
       formValues,
       schema,
       existingEnvBlob,
+      outputConnector: defaultOLAP,
     });
 
     const importFrom: ImportFromConfig = {
