@@ -10,12 +10,14 @@ import {
   isResourceReconciling,
   smartRefetchIntervalFunc,
 } from "@rilldata/web-admin/lib/refetch-interval-store.ts";
+import { injectBranchIntoPath } from "@rilldata/web-admin/features/branches/branch-utils.ts";
 
 export function useDeployingDashboards(
   client: RuntimeClient,
   orgName: string,
   projName: string,
   deployingDashboard: string | null,
+  activeBranch: string | undefined,
 ): CreateQueryResult<{
   redirectPath: string | null;
   dashboardsErrored: boolean;
@@ -47,7 +49,10 @@ export function useDeployingDashboards(
           if (dashboardsErrored) {
             return {
               // Redirect to status page if dashboards errored
-              redirectPath: `/${orgName}/${projName}/-/status`,
+              redirectPath: injectBranchIntoPath(
+                `/${orgName}/${projName}/-/status`,
+                activeBranch,
+              ),
               dashboardsErrored,
             };
           }
@@ -59,7 +64,10 @@ export function useDeployingDashboards(
           // Redirect to home page if no specific dashboard was deployed
           if (!deployingDashboard || !dashboard?.meta?.name) {
             return {
-              redirectPath: `/${orgName}/${projName}`,
+              redirectPath: injectBranchIntoPath(
+                `/${orgName}/${projName}`,
+                activeBranch,
+              ),
               dashboardsErrored: false,
             };
           }
@@ -68,7 +76,10 @@ export function useDeployingDashboards(
             dashboard.meta.name.kind === ResourceKind.Explore
               ? "explore"
               : "canvas";
-          const redirectPath = `/${orgName}/${projName}/${resourceRoute}/${dashboard.meta.name.name}`;
+          const redirectPath = injectBranchIntoPath(
+            `/${orgName}/${projName}/${resourceRoute}/${dashboard.meta.name.name}`,
+            activeBranch,
+          );
           return {
             redirectPath,
             dashboardsErrored: false,

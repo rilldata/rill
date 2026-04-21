@@ -718,7 +718,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	}
 
 	// Create the project
-	proj, err := s.admin.CreateProject(ctx, org, opts, !req.SkipDeploy, req.Editable)
+	proj, err := s.admin.CreateProject(ctx, org, opts, !req.SkipDeploy)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

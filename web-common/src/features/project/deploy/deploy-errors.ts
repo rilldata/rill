@@ -1,6 +1,4 @@
 // rpc error: code = PermissionDenied desc = does not have permission to create assets
-import { duckdbSchema } from "@rilldata/web-common/features/templates/schemas/duckdb.ts";
-
 const RPCErrorExtractor = /rpc error: code = (.*) desc = (.*)/;
 const ProjectQuotaErrorMatcher =
   /quota exceeded: org .* is limited to (\d+) projects/;

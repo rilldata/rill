@@ -358,14 +358,6 @@ func (s *Server) CreateManagedGitRepo(ctx context.Context, req *adminv1.CreateMa
 		return nil, err
 	}
 
-	// Only make an initial commit if seed changes are provided.
-	if len(req.SeedChanges) > 0 {
-		err := s.seedFilesToRepo(ctx, *repo.CloneURL, *repo.DefaultBranch, token, req.SeedChanges)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to seed files to managed git repo: %v", err)
-		}
-	}
-
 	return &adminv1.CreateManagedGitRepoResponse{
 		Remote:            *repo.CloneURL,
 		Username:          "x-access-token",
@@ -1161,38 +1153,6 @@ func (s *Server) githubAppInstallationURL(state githubConnectState) (string, err
 	}
 
 	return urlutil.MustWithQuery(res, map[string]string{"state": string(stateJSON)}), nil
-}
-
-func (s *Server) seedFilesToRepo(ctx context.Context, remote, branch, token string, seedChanges map[string]string) error {
-	gitPath, err := os.MkdirTemp(os.TempDir(), "repos")
-	if err != nil {
-		return fmt.Errorf("failed to create temp dir: %w", err)
-	}
-	defer os.RemoveAll(gitPath)
-
-	for name, content := range seedChanges {
-		// Clean the path and ensure it doesn't escape the temp directory.
-		cleanPath := filepath.Join(gitPath, filepath.Clean("/"+name))
-		if err := os.MkdirAll(filepath.Dir(cleanPath), 0o755); err != nil {
-			return fmt.Errorf("failed to create directory for %q: %w", name, err)
-		}
-		if err := os.WriteFile(cleanPath, []byte(content), 0o644); err != nil {
-			return fmt.Errorf("failed to write file %q: %w", name, err)
-		}
-	}
-
-	cfg := &cligitutil.Config{
-		Remote:        remote,
-		Username:      "x-access-token",
-		Password:      token,
-		DefaultBranch: branch,
-	}
-	author := &object.Signature{
-		Name:  "service-account",
-		Email: "service-account@rilldata.com", // not an actual email
-		When:  time.Now(),
-	}
-	return cligitutil.CommitAndPush(ctx, gitPath, cfg, "Initial commit", author)
 }
 
 func fromStringPtr(s *string) string {

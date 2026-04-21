@@ -687,11 +687,6 @@ paths:
               name:
                 type: string
                 description: "name of the repo to create. \nNote: The final name will be suffixed with a random string to ensure uniqueness."
-              seedChanges:
-                type: object
-                additionalProperties:
-                  type: string
-                description: Optional set of changes to seed the repo with.
   /v1/orgs/{org}/create_asset:
     post:
       summary: CreateAsset returns a one time signed URL using which any asset can be uploaded.
@@ -1041,9 +1036,6 @@ paths:
                 type: string
               skipDeploy:
                 type: boolean
-              editable:
-                type: boolean
-                description: When editable is set the default deployment is a dev deployment capable of edit.
       x-visibility: public
   /v1/orgs/{org}/projects-for-user:
     get:

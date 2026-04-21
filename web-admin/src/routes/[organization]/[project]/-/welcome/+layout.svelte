@@ -8,16 +8,23 @@
   } from "@rilldata/web-admin/client";
   import { baseGetProjectQueryOptions } from "@rilldata/web-admin/features/projects/project-query-options.ts";
   import { resolveRuntimeConnection } from "@rilldata/web-admin/features/projects/project-runtime.ts";
+  import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils.ts";
 
   let { children }: { children: Snippet } = $props();
 
   let organization = $derived(page.params.organization);
   let project = $derived(page.params.project);
 
+  let activeBranch = $derived(extractBranchFromPath(page.url.pathname));
   let projectQuery = $derived(
-    createAdminServiceGetProject(organization, project, undefined, {
-      query: baseGetProjectQueryOptions,
-    }),
+    createAdminServiceGetProject(
+      organization,
+      project,
+      activeBranch ? { branch: activeBranch } : undefined,
+      {
+        query: baseGetProjectQueryOptions,
+      },
+    ),
   );
 
   let projectData = $derived($projectQuery.data);

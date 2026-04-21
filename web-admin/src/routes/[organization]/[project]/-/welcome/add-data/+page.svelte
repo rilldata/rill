@@ -5,11 +5,10 @@
   import AddDataManager from "@rilldata/web-common/features/add-data/manager/AddDataManager.svelte";
   import { AddDataStep } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { runtimeServiceGitPush } from "@rilldata/web-common/runtime-client";
   import type { PageData } from "./$types";
-  import { DeployingDashboardUrlParam } from "@rilldata/web-common/features/project/deploy/utils.ts";
   import { fetchAnalyzeConnectors } from "@rilldata/web-common/features/connectors/selectors.ts";
   import { projectWelcomeStatusStores } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
+  import { publishProjectAndRedirect } from "@rilldata/web-admin/features/projects/publish-project.ts";
 
   let { data }: { data: PageData } = $props();
 
@@ -23,15 +22,14 @@
   let project = $derived(page.params.project);
 
   async function handleDone(generatedDashboard?: string) {
-    // Push the initial commit to the current branch.
-    await runtimeServiceGitPush(runtimeClient, {
-      commitMessage: "Initial dashboard commit",
-    });
-
-    projectWelcomeStatusStores.setProjectWelcomeStatus(project, false);
-    // TODO: land user to edit screen when that is available
-    return goto(
-      `/${organization}/${project}/-/deploying?${DeployingDashboardUrlParam}=${generatedDashboard}`,
+    projectWelcomeStatusStores.setProjectWelcomeBranch(project, "");
+    await goto(
+      await publishProjectAndRedirect(
+        runtimeClient,
+        organization,
+        project,
+        generatedDashboard,
+      ),
     );
   }
 

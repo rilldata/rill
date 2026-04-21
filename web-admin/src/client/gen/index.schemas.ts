@@ -1765,19 +1765,10 @@ export type AdminServiceCancelBillingSubscriptionParams = {
   superuserForceAccess?: boolean;
 };
 
-/**
- * Optional set of changes to seed the repo with.
- */
-export type AdminServiceCreateManagedGitRepoBodySeedChanges = {
-  [key: string]: string;
-};
-
 export type AdminServiceCreateManagedGitRepoBody = {
   /** name of the repo to create. 
 Note: The final name will be suffixed with a random string to ensure uniqueness. */
   name?: string;
-  /** Optional set of changes to seed the repo with. */
-  seedChanges?: AdminServiceCreateManagedGitRepoBodySeedChanges;
 };
 
 export type AdminServiceCreateAssetBody = {
@@ -1854,8 +1845,6 @@ Either git_remote or archive_asset_id should be set. */
   archiveAssetId?: string;
   prodVersion?: string;
   skipDeploy?: boolean;
-  /** When editable is set the default deployment is a dev deployment capable of edit. */
-  editable?: boolean;
 };
 
 export type AdminServiceListProjectsForOrganizationAndUserParams = {

@@ -31,10 +31,12 @@ export const load = async ({
     throw redirect(307, `/${organization}`);
   }
 
-  if (
-    projectWelcomeStatusStores.inProjectWelcomeStep(project) &&
-    !isProjectWelcomePage({ route })
-  ) {
-    throw redirect(307, `/${organization}/${project}/-/welcome`);
+  const projectWelcomeBranch =
+    projectWelcomeStatusStores.getProjectWelcomeBranch(project);
+  if (projectWelcomeBranch && !isProjectWelcomePage({ route })) {
+    throw redirect(
+      307,
+      `/${organization}/${project}/@${projectWelcomeBranch}/-/welcome`,
+    );
   }
 };

@@ -9649,8 +9649,6 @@ func (m *CreateProjectRequest) validate(all bool) error {
 
 	// no validation rules for SkipDeploy
 
-	// no validation rules for Editable
-
 	if len(errors) > 0 {
 		return CreateProjectRequestMultiError(errors)
 	}
@@ -31459,8 +31457,6 @@ func (m *CreateManagedGitRepoRequest) validate(all bool) error {
 	// no validation rules for Org
 
 	// no validation rules for Name
-
-	// no validation rules for SeedChanges
 
 	if len(errors) > 0 {
 		return CreateManagedGitRepoRequestMultiError(errors)

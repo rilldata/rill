@@ -3147,11 +3147,6 @@ paths:
                                 name:
                                     description: "name of the repo to create. \nNote: The final name will be suffixed with a random string to ensure uniqueness."
                                     type: string
-                                seedChanges:
-                                    additionalProperties:
-                                        type: string
-                                    description: Optional set of changes to seed the repo with.
-                                    type: object
                             type: object
                 required: true
                 x-originalParamName: body
@@ -3547,9 +3542,6 @@ paths:
                                         directory_name should be the most recently observed local directory name for the project.
                                         See ListProjectsForFingerprint for more context.
                                     type: string
-                                editable:
-                                    description: When editable is set the default deployment is a dev deployment capable of edit.
-                                    type: boolean
                                 gitRemote:
                                     description: |-
                                         git_remote is set for projects whose project files are stored in Git.

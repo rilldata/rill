@@ -2,7 +2,7 @@ import { projectWelcomeStatusStores } from "@rilldata/web-admin/features/welcome
 import { redirect } from "@sveltejs/kit";
 
 export const load = ({ params: { organization, project } }) => {
-  if (!projectWelcomeStatusStores.inProjectWelcomeStep(project)) {
+  if (!projectWelcomeStatusStores.getProjectWelcomeBranch(project)) {
     throw redirect(307, `/${organization}/${project}`);
   }
 };

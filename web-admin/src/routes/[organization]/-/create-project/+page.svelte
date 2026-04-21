@@ -17,13 +17,14 @@
   import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
   import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types.ts";
   import { projectWelcomeStatusStores } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
+  import { CreateProjectDevBranchName } from "@rilldata/web-admin/features/projects/publish-project.ts";
 
   let organization = $derived(page.params.organization);
 
   let projectsQuery = $derived(
     createAdminServiceListProjectsForOrganization(organization, undefined),
   );
-  let hasProjects = $derived(projectsQuery.data?.projects?.length > 0);
+  let hasProjects = $derived($projectsQuery.data?.projects?.length > 0);
 
   let defaultProjectName = $derived(
     getName(
@@ -37,8 +38,14 @@
   let startTeamPlanType: TeamPlanDialogTypes = $state("base");
 
   function handleCreate(projectName: string, frontendUrl: string) {
-    projectWelcomeStatusStores.setProjectWelcomeStatus(projectName, true);
-    setTimeout(() => void goto(`${frontendUrl}/-/welcome`));
+    projectWelcomeStatusStores.setProjectWelcomeBranch(
+      projectName,
+      CreateProjectDevBranchName,
+    );
+    setTimeout(
+      () =>
+        void goto(`${frontendUrl}/@${CreateProjectDevBranchName}/-/welcome`),
+    );
   }
 </script>
 

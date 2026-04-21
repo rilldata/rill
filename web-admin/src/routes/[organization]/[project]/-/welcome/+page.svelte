@@ -4,10 +4,9 @@
   import ConnectYourDataWidget from "@rilldata/web-common/features/add-data/ConnectYourDataWidget.svelte";
   import TitleContent from "@rilldata/web-common/features/welcome/TitleContent.svelte";
   import ProjectCards from "@rilldata/web-common/features/welcome/ProjectCards.svelte";
-  import { runtimeServiceGitPush } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { DeployingDashboardUrlParam } from "@rilldata/web-common/features/project/deploy/utils.ts";
   import { projectWelcomeStatusStores } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
+  import { publishProjectAndRedirect } from "@rilldata/web-admin/features/projects/publish-project.ts";
 
   const runtimeClient = useRuntimeClient();
 
@@ -15,15 +14,14 @@
   let project = $derived(page.params.project);
 
   async function handleDone(dashboardName?: string) {
-    // Push the initial commit to the current branch.
-    await runtimeServiceGitPush(runtimeClient, {
-      commitMessage: "Initial dashboard commit",
-    });
-
-    projectWelcomeStatusStores.setProjectWelcomeStatus(project, false);
-    // TODO: land user to edit screen when that is available
+    projectWelcomeStatusStores.setProjectWelcomeBranch(project, "");
     return goto(
-      `/${organization}/${project}/-/deploying?${DeployingDashboardUrlParam}=${dashboardName}`,
+      await publishProjectAndRedirect(
+        runtimeClient,
+        organization,
+        project,
+        dashboardName,
+      ),
     );
   }
 </script>

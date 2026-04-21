@@ -4,8 +4,10 @@
 
 <script lang="ts">
   import {
+    createAdminServiceCreateDeployment,
     createAdminServiceCreateManagedGitRepo,
     createAdminServiceCreateProject,
+    getAdminServiceListProjectsForOrganizationQueryKey,
     type RpcStatus,
   } from "@rilldata/web-admin/client";
   import { Button } from "@rilldata/web-common/components/button";
@@ -14,13 +16,13 @@
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
   import type { AxiosError } from "axios";
-  import { sanitizeSlug } from "@rilldata/web-common/lib/string-utils.ts";
   import {
     type DeployError,
     getPrettyDeployError,
   } from "@rilldata/web-common/features/project/deploy/deploy-errors.ts";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors.ts";
-  import { getProjectInitFiles } from "@rilldata/web-admin/features/projects/get-project-init-files.ts";
+  import { CreateProjectDevBranchName } from "@rilldata/web-admin/features/projects/publish-project.ts";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 
   const {
     organization,
@@ -44,12 +46,12 @@
         )
         .min(1, "Name must be at least 1 character")
         .max(40, "Name must be at most 40 characters"),
-      displayName: string(),
     }),
   );
 
   const createManagedGitRepo = createAdminServiceCreateManagedGitRepo();
   const createProjectMutation = createAdminServiceCreateProject();
+  const createDeployMutation = createAdminServiceCreateDeployment();
 
   let billingIssueMessage = $derived(
     useCategorisedOrganizationBillingIssues(organization),
@@ -57,51 +59,55 @@
   let isOrgOnTrial = $derived(!!$billingIssueMessage.data?.trial);
 
   let createdGitRepo = $state("");
-  let createdGitRepoForDisplayName = $state("");
 
-  const { form, tainted, errors, enhance, submit, submitting } = superForm(
-    defaults(
-      // eslint-disable-next-line svelte/valid-compile
-      { name: defaultName, displayName: defaultName.replace(/[_-]/g, " ") },
-      schema,
-    ),
-    {
+  let formInstance = $derived(
+    superForm(defaults({ name: defaultName }, schema), {
       SPA: true,
       validators: schema,
       async onUpdate({ form }) {
         if (!form.valid) return;
+        // Step 1: Create the git repo.
+
         // As an optimization, we only create the git repo once.
         // Note that this is not really persisted across page reloads.
         // We dont really need it since there orphaned repos are deleted eventually.
-        if (
-          !createdGitRepo ||
-          createdGitRepoForDisplayName !== form.data.displayName
-        ) {
+        if (!createdGitRepo) {
           const createManagedGitRepoResult =
             await $createManagedGitRepo.mutateAsync({
               org: organization,
-              data: {
-                name: form.data.name,
-                seedChanges: getProjectInitFiles(form.data.displayName),
-              },
+              data: { name: form.data.name },
             });
           createdGitRepo = createManagedGitRepoResult.remote ?? "";
-          // TODO: maybe we improve this by pushing the new displayName?
-          createdGitRepoForDisplayName = form.data.displayName;
         }
 
+        // Step 2: Create the project.
         const resp = await $createProjectMutation.mutateAsync({
           org: organization,
           data: {
             project: form.data.name,
             gitRemote: createdGitRepo,
             prodSlots: "4",
+            skipDeploy: true,
+          },
+        });
+        void queryClient.invalidateQueries({
+          queryKey:
+            getAdminServiceListProjectsForOrganizationQueryKey(organization),
+        });
+
+        // Step 3: Create the editable dev deployment.
+        // TODO: Handle deployment creation failure. Project would be created leading to possible duplicate project error on retry.
+        await $createDeployMutation.mutateAsync({
+          org: organization,
+          project: form.data.name,
+          data: {
+            environment: "dev",
+            branch: CreateProjectDevBranchName,
             editable: true,
           },
         });
-        if (resp.project?.frontendUrl) {
-          onCreate(form.data.name, resp.project?.frontendUrl);
-        }
+
+        onCreate(form.data.name, resp.project?.frontendUrl ?? "/");
       },
       onError({ result }) {
         const error =
@@ -122,24 +128,10 @@
           $errors["name"] = [error];
         }
       },
-    },
+    }),
   );
 
-  // As a convenience, we auto generate a project name based on the display name.
-  // But the moment the project name is directly changed,
-  // we should stop doing this since the user probably changed it directly.
-  function updateName(displayName: string) {
-    if ($tainted?.name) return;
-    form.update(
-      ($form) => {
-        $form.name = sanitizeSlug(displayName);
-        return $form;
-      },
-      { taint: false },
-    );
-  }
-  let displayName = $derived($form.displayName);
-  $effect(() => updateName(displayName));
+  let { form, errors, enhance, submit, submitting } = $derived(formInstance);
 </script>
 
 <form
@@ -151,18 +143,6 @@
   use:enhance
   class="flex flex-col gap-y-4"
 >
-  <Input
-    bind:value={$form.displayName}
-    errors={$errors?.displayName}
-    id="displayName"
-    label="Name"
-    textClass="text-sm"
-    alwaysShowError
-    claimFocusOnMount
-    width="500px"
-    size="xl"
-    capitalizeLabel={false}
-  />
   <Input
     bind:value={$form.name}
     errors={$errors?.name}

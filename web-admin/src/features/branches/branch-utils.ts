@@ -94,6 +94,7 @@ export function handleBranchNavigation(
   project: string,
   navigateFn: (url: string) => Promise<void>,
 ): void {
+  console.log("handleBranchNavigation", activeBranch, nav.to?.url?.toString());
   if (!activeBranch || !nav.to?.url) return;
   if (consumeSkipBranchInjection()) return;
   if (nav.type === "popstate") return;
@@ -103,6 +104,7 @@ export function handleBranchNavigation(
     organization,
     project,
   );
+  console.log("handleBranchNavigation:redirect", redirect);
   if (!redirect) return;
   nav.cancel();
   void navigateFn(redirect);

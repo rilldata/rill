@@ -4,25 +4,25 @@ import { sessionStorageStore } from "@rilldata/web-common/lib/store-utils/sessio
 const ProjectWelcomeStatusKey = "rill:welcome:project:status";
 
 class ProjectWelcomeStatusStores {
-  private welcomeStatus = new Map<string, Writable<boolean>>();
+  private welcomeStatus = new Map<string, Writable<string>>();
 
-  public inProjectWelcomeStep(project: string): boolean {
+  public getProjectWelcomeBranch(project: string): string {
     const statusStore = this.get(project);
     return get(statusStore);
   }
 
-  public setProjectWelcomeStatus(project: string, value: boolean): void {
+  public setProjectWelcomeBranch(project: string, value: string): void {
     const statusStore = this.get(project);
     statusStore.set(value);
   }
 
-  private get(project: string): Writable<boolean> {
+  private get(project: string): Writable<string> {
     if (this.welcomeStatus.has(project)) {
       return this.welcomeStatus.get(project);
     }
     const statusStore = sessionStorageStore(
       ProjectWelcomeStatusKey + ":" + project,
-      false,
+      "",
     );
     this.welcomeStatus.set(project, statusStore);
     return statusStore;
