@@ -23,13 +23,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-// Non-retryable deployment errors. Callers (e.g., the reconcile worker) use
-// `errors.Is` to cancel the job instead of retrying.
-var (
-	ErrInvalidEnvironment    = errors.New("invalid environment, must be either 'prod' or 'dev'")
-	ErrInvalidRuntimeVersion = errors.New("invalid runtime version")
-)
-
 type CreateDeploymentOptions struct {
 	ProjectID   string
 	OwnerUserID *string
@@ -211,7 +204,8 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 	case "dev":
 		slots = proj.DevSlots
 	default:
-		return ErrInvalidEnvironment
+		// Invalid environment
+		return errors.New("Invalid environment, must be either 'prod' or 'dev'")
 	}
 
 	// Provision the runtime
@@ -419,7 +413,8 @@ func (s *Service) UpdateDeploymentInner(ctx context.Context, d *database.Deploym
 	case "dev":
 		slots = proj.DevSlots
 	default:
-		return ErrInvalidEnvironment
+		// Invalid environment
+		return errors.New("Invalid environment, must be either 'prod' or 'dev'")
 	}
 
 	// Provision the runtime. This is idempotent and will (partially) update the existing provisioned runtime if the config has changed.
@@ -674,7 +669,7 @@ func validateRuntimeVersion(ver string) error {
 				return err
 			}
 			if !matched {
-				return fmt.Errorf("%w: %q", ErrInvalidRuntimeVersion, ver)
+				return fmt.Errorf("not a valid version %q", ver)
 			}
 		}
 	}

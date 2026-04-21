@@ -455,7 +455,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		)
 	}
 	// Grant permissions for dev deployments: viewers get dashboard access, editors get full dev access.
-	if depl != nil && depl.Environment == "dev" {
+	if depl.Environment == "dev" {
 		instancePermissions = append(
 			instancePermissions,
 			runtime.ReadInstance,

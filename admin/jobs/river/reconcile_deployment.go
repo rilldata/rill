@@ -164,11 +164,9 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 }
 
 // isNonRetryable returns true for errors that won't resolve with retries,
-// such as capacity limits or configuration errors.
+// such as capacity limits.
 func (w *ReconcileDeploymentWorker) isNonRetryable(err error) bool {
-	return errors.Is(err, provisioner.ErrNoCapacity) ||
-		errors.Is(err, admin.ErrInvalidEnvironment) ||
-		errors.Is(err, admin.ErrInvalidRuntimeVersion)
+	return errors.Is(err, provisioner.ErrNoCapacity)
 }
 
 // cancelAsErrored marks the deployment as errored and cancels the river job.
