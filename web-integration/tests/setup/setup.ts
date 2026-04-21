@@ -141,7 +141,7 @@ setup.describe("global setup", () => {
       })
       .click();
 
-    await page.waitForURL("/");
+    await page.waitForURL(/\/(-\/welcome\/theme)?/);
 
     // Save the admin's Rill auth cookies to file.
     // Subsequent tests can seed their browser with this state, instead of needing to go through the log-in flow again.

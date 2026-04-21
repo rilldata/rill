@@ -17,7 +17,7 @@
   $: project = $page.params.project;
 
   $: spec = component.specStore;
-  $: metricsViewName = $spec?.metrics_view;
+  $: metricsViewName = $spec?.metrics_view ?? "";
 
   // Check if component can be linked to explore
   $: exploreAvailability = useExploreAvailability(client, metricsViewName);
@@ -37,7 +37,7 @@
 
 {#if $exploreAvailability.isAvailable}
   <ExploreLink
-    exploreName={$context.exploreName}
+    exploreName={$context.exploreName ?? metricsViewName}
     displayName={$exploreAvailability.displayName}
     {organization}
     {project}

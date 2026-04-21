@@ -7,9 +7,11 @@ import {
   type ImportToConfig,
 } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
 import {
+  getRuntimeServiceGetInstanceQueryKey,
   runtimeServiceCreateTrigger,
   runtimeServiceGenerateCanvasFile,
   runtimeServiceGenerateMetricsViewFile,
+  runtimeServiceGetInstance,
   runtimeServicePutFile,
 } from "@rilldata/web-common/runtime-client";
 import {
@@ -181,6 +183,17 @@ async function runCreateModelStep(
     throw new Error("Model name and path must be generated upstream.");
   }
 
+  // Get the default OLAP connector for the output block
+  const runtimeInstance = await queryClient.fetchQuery({
+    queryKey: getRuntimeServiceGetInstanceQueryKey(
+      runtimeClient.instanceId,
+      {},
+    ),
+    queryFn: () =>
+      runtimeServiceGetInstance(runtimeClient, { sensitive: false }),
+  });
+  const defaultOLAP = runtimeInstance?.instance?.olapConnector || "duckdb";
+
   // Build the model YAML based on the import source
   let yaml = "";
   const importFromConfig = config.importFrom;
@@ -200,6 +213,7 @@ async function runCreateModelStep(
         },
         {
           connectorInstanceName: config.connector,
+          outputConnector: defaultOLAP,
         },
       );
       break;
@@ -219,6 +233,7 @@ async function runCreateModelStep(
         },
         {
           connectorInstanceName: config.connector,
+          outputConnector: defaultOLAP,
         },
       );
       break;

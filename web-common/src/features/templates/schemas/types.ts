@@ -58,6 +58,12 @@ export type JSONSchemaField = {
   "x-file-accept"?: string;
   /** How to encode file content: base64, json (parse+stringify), or raw (pass-through). */
   "x-file-encoding"?: "base64" | "json" | "raw";
+  /** Maximum file size in bytes. */
+  "x-file-size-limit"?: number;
+  /** If true, the file size limit is only a soft limit and does not prevent file upload. */
+  "x-file-size-soft-limit"?: boolean;
+  /** Warning message to display when file size exceeds soft limit. */
+  "x-file-size-limit-warning-message"?: string;
   /** Extract values from parsed file content into other form fields. Maps form field key to JSON property name. */
   "x-file-extract"?: Record<string, string>;
   /** Field is read-only and shown for informational purposes only. */
