@@ -89,14 +89,17 @@ export function getDimensionValuesForRow(
 export function getDimensionValuesFromRowData(
   config: PivotDataStoreConfig,
   rowData: PivotDataRow,
-): Array<{ dimensionName: string; value: string }> {
+): Array<{ dimensionName: string; value: string | null }> {
   return config.rowDimensionNames
     .filter((dim) => !isTimeDimension(dim, config.time.timeDimension))
-    .map((dim) => ({
-      dimensionName: dim,
-      value: String(rowData[dim] ?? ""),
-    }))
-    .filter(({ value }) => value !== "");
+    .map((dim) => {
+      const val = rowData[dim];
+      return {
+        dimensionName: dim,
+        value: val === null || val === undefined ? null : String(val),
+      };
+    })
+    .filter(({ value }) => value !== undefined);
 }
 
 /**
@@ -217,10 +220,12 @@ export function computePivotRowSelection(
       if (rowDimValues.length === 0) return false;
 
       // A row is selected if every dimension that IS filtered
-      // contains the row's value for that dimension
+      // contains the row's value for that dimension.
+      // Null values only match if null is explicitly in the filter set.
       return rowDimValues.every(({ dimensionName, value }) => {
         const selectedSet = dimensionFilters.get(dimensionName);
         if (!selectedSet) return true; // dimension not filtered; doesn't block
+        if (value === null) return selectedSet.has(null as unknown as string);
         return selectedSet.has(value);
       });
     },
