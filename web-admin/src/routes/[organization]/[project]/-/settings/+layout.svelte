@@ -21,6 +21,11 @@
       hasPermission: true,
     },
     {
+      label: "Project Configuration",
+      route: "/configuration",
+      hasPermission: true,
+    },
+    {
       label: "Public URLs",
       route: "/public-urls",
       hasPermission: true,
