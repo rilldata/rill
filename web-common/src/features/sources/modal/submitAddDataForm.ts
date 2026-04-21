@@ -10,7 +10,9 @@ import {
 import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
 import {
   type V1ConnectorDriver,
+  getRuntimeServiceGetInstanceQueryKey,
   runtimeServiceDeleteFile,
+  runtimeServiceGetInstance,
   runtimeServicePutFile,
   runtimeServiceUnpackEmpty,
 } from "../../../runtime-client";
@@ -476,6 +478,13 @@ export async function submitAddSourceForm(
     ? undefined
     : connectorInstanceName;
 
+  // Get the default OLAP connector for the output block
+  const runtimeInstance = await queryClient.fetchQuery({
+    queryKey: getRuntimeServiceGetInstanceQueryKey(client.instanceId, {}),
+    queryFn: () => runtimeServiceGetInstance(client, { sensitive: false }),
+  });
+  const defaultOLAP = runtimeInstance?.instance?.olapConnector || "duckdb";
+
   // Create model YAML file
   const newSourceFilePath = getFileAPIPathFromNameAndType(
     newSourceName,
@@ -489,6 +498,7 @@ export async function submitAddSourceForm(
       stringKeys: schemaStringKeys,
       connectorInstanceName: yamlConnectorInstanceName,
       originalDriverName: connector.name || undefined,
+      outputConnector: defaultOLAP,
     }),
     create: true,
     createOnly: false,

@@ -10,7 +10,7 @@ import (
 // rewriteDruidGroups rewrites the AST to always have GROUP BY in every SELECT node for Druid queries.
 // This is needed to tap into code paths that ensure correct ordering of derived measures.
 func (e *Executor) rewriteDruidGroups(ast *metricsview.AST) error {
-	if ast.Dialect != drivers.DialectDruid {
+	if ast.Dialect.String() != drivers.DialectNameDruid {
 		return nil
 	}
 
