@@ -957,467 +957,6 @@ describe("pivot-click-to-filter: column header level selection constraint", () =
   });
 });
 
-describe("pivot-click-to-filter: nesting level must match", () => {
-  // Data: outer=A has child inner=X; outer=B has child inner=Y
-  const nestedData: PivotDataRow[] = [
-    {
-      outer: "A",
-      revenue: 100,
-      subRows: [{ outer: "X", inner: "X", revenue: 50 }],
-    },
-    {
-      outer: "B",
-      revenue: 200,
-      subRows: [{ outer: "Y", inner: "Y", revenue: 75 }],
-    },
-  ];
-
-  const parentRowA: PivotDataRow = nestedData[0];
-  const childRowXUnderA: PivotDataRow = nestedData[0].subRows![0];
-  const parentRowB: PivotDataRow = nestedData[1];
-
-  function setupNestingLevelTest() {
-    const selfFilteredDimensions = writable<Set<string>>(new Set());
-    const { fm, filterClass } = stubFilterManagerWithClass("mv1");
-
-    // Parent row header clicks: only "outer" filter
-    vi.mocked(getFiltersForRowHeader).mockImplementation(
-      (_config, rowId, _data) => {
-        if (rowId === "1") return makePivotFilter("outer", ["A"]);
-        if (rowId === "2") return makePivotFilter("outer", ["B"]);
-        return {
-          filters: undefined,
-          timeRange: { start: undefined, end: undefined },
-        };
-      },
-    );
-
-    // Child cell clicks: "outer" + "inner" filter
-    vi.mocked(getFiltersForCell).mockImplementation(
-      (_config, rowId, _colId) => {
-        if (rowId === "1.0") {
-          return makeMultiDimPivotFilter([
-            { name: "outer", values: ["A"] },
-            { name: "inner", values: ["X"] },
-          ]);
-        }
-        if (rowId === "2.0") {
-          return makeMultiDimPivotFilter([
-            { name: "outer", values: ["B"] },
-            { name: "inner", values: ["Y"] },
-          ]);
-        }
-        return {
-          filters: undefined,
-          timeRange: { start: undefined, end: undefined },
-        };
-      },
-    );
-
-    const result = createPivotClickToFilter(
-      createFactoryArgs({
-        pivotConfig: writable(
-          nestedConfigTwoDims(),
-        ) as Readable<PivotDataStoreConfig>,
-        pivotDataStore: stubPivotDataStore(nestedData),
-        filterManager: fm,
-        activeComponent: writable<string | null>("pivot-1"),
-        selfFilteredDimensions,
-      }),
-    );
-
-    return { result, filterClass, selfFilteredDimensions };
-  }
-
-  it("should reset when parent is selected then child cell is clicked", () => {
-    const { result, filterClass } = setupNestingLevelTest();
-
-    // Click parent row header A (depth 0)
-    result.handleCellClickToFilter("1", "outer", true, parentRowA);
-
-    let sel = get(result.clickSelection);
-    const dkA = dimKeyFromDimValues({ outer: "A", inner: "" }, [
-      "outer",
-      "inner",
-    ]);
-    expect(sel.isRowHeaderSelected(dkA)).toBe(true);
-    expect(sel.currentRowDepth).toBe(0);
-
-    // Now click child cell X under A (depth 1) — should reset parent selection
-    filterClass.addDimensionValueSelections.mockClear();
-    filterClass.toggleDimensionValueSelections.mockClear();
-
-    result.handleCellClickToFilter("1.0", "revenue", false, childRowXUnderA);
-
-    sel = get(result.clickSelection);
-
-    // Parent selection should be gone
-    expect(sel.isRowHeaderSelected(dkA)).toBe(false);
-    // Child cell should be selected
-    const dkChild = dimKeyFromDimValues({ outer: "A", inner: "X" }, [
-      "outer",
-      "inner",
-    ]);
-    expect(sel.isCellSelected(dkChild, "revenue")).toBe(true);
-    expect(sel.currentRowDepth).toBe(1);
-
-    // Old parent value should have been removed via toggleDimensionValueSelections
-    expect(filterClass.toggleDimensionValueSelections).toHaveBeenCalledWith(
-      "outer",
-      ["A"],
-      false,
-      false,
-    );
-
-    result.destroy();
-  });
-
-  it("should reset when child is selected then parent header is clicked", () => {
-    const { result, filterClass } = setupNestingLevelTest();
-
-    // Click child cell X under A (depth 1)
-    result.handleCellClickToFilter("1.0", "revenue", false, childRowXUnderA);
-
-    let sel = get(result.clickSelection);
-    expect(sel.currentRowDepth).toBe(1);
-
-    // Now click parent header B (depth 0) — should reset child selection
-    filterClass.addDimensionValueSelections.mockClear();
-    filterClass.toggleDimensionValueSelections.mockClear();
-
-    result.handleCellClickToFilter("2", "outer", true, parentRowB);
-
-    sel = get(result.clickSelection);
-
-    // Child cell should be gone
-    const dkChild = dimKeyFromDimValues({ outer: "A", inner: "X" }, [
-      "outer",
-      "inner",
-    ]);
-    expect(sel.isCellSelected(dkChild, "revenue")).toBe(false);
-
-    // Parent B should be selected
-    const dkB = dimKeyFromDimValues({ outer: "B", inner: "" }, [
-      "outer",
-      "inner",
-    ]);
-    expect(sel.isRowHeaderSelected(dkB)).toBe(true);
-    expect(sel.currentRowDepth).toBe(0);
-
-    result.destroy();
-  });
-
-  it("should NOT reset when clicks are at the same nesting level", () => {
-    const { result } = setupNestingLevelTest();
-
-    // Click parent header A (depth 0)
-    result.handleCellClickToFilter("1", "outer", true, parentRowA);
-
-    // Click parent header B (depth 0) — same level, should accumulate
-    result.handleCellClickToFilter("2", "outer", true, parentRowB);
-
-    const sel = get(result.clickSelection);
-    const dkA = dimKeyFromDimValues({ outer: "A", inner: "" }, [
-      "outer",
-      "inner",
-    ]);
-    const dkB = dimKeyFromDimValues({ outer: "B", inner: "" }, [
-      "outer",
-      "inner",
-    ]);
-    expect(sel.isRowHeaderSelected(dkA)).toBe(true);
-    expect(sel.isRowHeaderSelected(dkB)).toBe(true);
-    expect(sel.currentRowDepth).toBe(0);
-
-    result.destroy();
-  });
-});
-
-describe("pivot-click-to-filter: bordered-header anchoring", () => {
-  // Same data as nesting level tests
-  const nestedData: PivotDataRow[] = [
-    {
-      outer: "A",
-      revenue: 100,
-      subRows: [{ outer: "X", inner: "X", revenue: 50 }],
-    },
-    {
-      outer: "B",
-      revenue: 200,
-      subRows: [{ outer: "Y", inner: "Y", revenue: 75 }],
-    },
-  ];
-
-  const parentRowA: PivotDataRow = nestedData[0];
-  const childRowXUnderA: PivotDataRow = nestedData[0].subRows![0];
-
-  function setupAnchoringTest() {
-    const selfFilteredDimensions = writable<Set<string>>(new Set());
-    const { fm, filterClass } = stubFilterManagerWithClass("mv1");
-
-    vi.mocked(getFiltersForRowHeader).mockImplementation(
-      (_config, rowId, _data) => {
-        if (rowId === "1") return makePivotFilter("outer", ["A"]);
-        return {
-          filters: undefined,
-          timeRange: { start: undefined, end: undefined },
-        };
-      },
-    );
-
-    vi.mocked(getFiltersForCell).mockImplementation(
-      (_config, rowId, _colId) => {
-        if (rowId === "1.0") {
-          return makeMultiDimPivotFilter([
-            { name: "outer", values: ["A"] },
-            { name: "inner", values: ["X"] },
-          ]);
-        }
-        return {
-          filters: undefined,
-          timeRange: { start: undefined, end: undefined },
-        };
-      },
-    );
-
-    const result = createPivotClickToFilter(
-      createFactoryArgs({
-        pivotConfig: writable(
-          nestedConfigTwoDims(),
-        ) as Readable<PivotDataStoreConfig>,
-        pivotDataStore: stubPivotDataStore(nestedData),
-        filterManager: fm,
-        activeComponent: writable<string | null>("pivot-1"),
-        selfFilteredDimensions,
-      }),
-    );
-
-    return { result, filterClass, selfFilteredDimensions };
-  }
-
-  it("clicking derived-blue header adds border without filter change", () => {
-    const { result, filterClass } = setupAnchoringTest();
-
-    // Click child cell X under A
-    result.handleCellClickToFilter("1.0", "revenue", false, childRowXUnderA);
-    filterClass.addDimensionValueSelections.mockClear();
-    filterClass.toggleDimensionValueSelections.mockClear();
-
-    // Now click parent header A (derived-blue from child selection)
-    result.handleCellClickToFilter("1", "outer", true, parentRowA);
-
-    const sel = get(result.clickSelection);
-    const dkA = dimKeyFromDimValues({ outer: "A", inner: "" }, [
-      "outer",
-      "inner",
-    ]);
-
-    // Header should now be bordered
-    expect(sel.isRowHeaderSelected(dkA)).toBe(true);
-
-    // Child cell should still be selected
-    const dkChild = dimKeyFromDimValues({ outer: "A", inner: "X" }, [
-      "outer",
-      "inner",
-    ]);
-    expect(sel.isCellSelected(dkChild, "revenue")).toBe(true);
-
-    // No filter changes should have occurred
-    expect(filterClass.addDimensionValueSelections).not.toHaveBeenCalled();
-    expect(filterClass.toggleDimensionValueSelections).not.toHaveBeenCalled();
-
-    result.destroy();
-  });
-
-  it("re-clicking bordered header with children removes border only", () => {
-    const { result, filterClass } = setupAnchoringTest();
-
-    // Click child cell, then border the parent
-    result.handleCellClickToFilter("1.0", "revenue", false, childRowXUnderA);
-    result.handleCellClickToFilter("1", "outer", true, parentRowA);
-    filterClass.addDimensionValueSelections.mockClear();
-    filterClass.toggleDimensionValueSelections.mockClear();
-
-    // Re-click the bordered parent header
-    result.handleCellClickToFilter("1", "outer", true, parentRowA);
-
-    const sel = get(result.clickSelection);
-    const dkA = dimKeyFromDimValues({ outer: "A", inner: "" }, [
-      "outer",
-      "inner",
-    ]);
-
-    // Border should be removed
-    expect(sel.isRowHeaderSelected(dkA)).toBe(false);
-
-    // Child cell should still be selected
-    const dkChild = dimKeyFromDimValues({ outer: "A", inner: "X" }, [
-      "outer",
-      "inner",
-    ]);
-    expect(sel.isCellSelected(dkChild, "revenue")).toBe(true);
-
-    // No filter changes
-    expect(filterClass.addDimensionValueSelections).not.toHaveBeenCalled();
-    expect(filterClass.toggleDimensionValueSelections).not.toHaveBeenCalled();
-
-    result.destroy();
-  });
-
-  it("bordered header persists when child cell is deselected", () => {
-    const { result, filterClass } = setupAnchoringTest();
-
-    // Click child cell, then border the parent
-    result.handleCellClickToFilter("1.0", "revenue", false, childRowXUnderA);
-    result.handleCellClickToFilter("1", "outer", true, parentRowA);
-    filterClass.addDimensionValueSelections.mockClear();
-    filterClass.toggleDimensionValueSelections.mockClear();
-
-    // Deselect the child cell
-    result.handleCellClickToFilter("1.0", "revenue", false, childRowXUnderA);
-
-    const sel = get(result.clickSelection);
-
-    // Child cell should be gone
-    const dkChild = dimKeyFromDimValues({ outer: "A", inner: "X" }, [
-      "outer",
-      "inner",
-    ]);
-    expect(sel.isCellSelected(dkChild, "revenue")).toBe(false);
-
-    // Bordered parent should still be there
-    const dkA = dimKeyFromDimValues({ outer: "A", inner: "" }, [
-      "outer",
-      "inner",
-    ]);
-    expect(sel.isRowHeaderSelected(dkA)).toBe(true);
-
-    // "inner" and "outer" from child should be removed (orphaned)
-    // but "outer"="A" should be retained by the bordered header
-    expect(filterClass.toggleDimensionValueSelections).toHaveBeenCalledWith(
-      "inner",
-      ["X"],
-      false,
-      false,
-    );
-    // "outer"="A" should NOT be removed since the bordered header retains it
-    const outerToggleCalls =
-      filterClass.toggleDimensionValueSelections.mock.calls.filter(
-        (call: unknown[]) => call[0] === "outer",
-      );
-    expect(outerToggleCalls.length).toBe(0);
-
-    result.destroy();
-  });
-});
-
-describe("pivot-click-to-filter: parent×parent promotion", () => {
-  // Nested rows: outer > inner, columns: region > category
-  const nestedData: PivotDataRow[] = [
-    {
-      outer: "Zoom",
-      revenue: 100,
-      subRows: [{ outer: "US-East", inner: "US-East", revenue: 50 }],
-    },
-  ];
-
-  const parentRowZoom: PivotDataRow = nestedData[0];
-  const childRowUSEast: PivotDataRow = nestedData[0].subRows![0];
-
-  it("bordered parent + parent column click promotes to parent×parent", () => {
-    const selfFilteredDimensions = writable<Set<string>>(new Set());
-    const { fm, filterClass } = stubFilterManagerWithClass("mv1");
-
-    // Child cell clicks return outer+inner filters
-    vi.mocked(getFiltersForCell).mockImplementation(
-      (_config, rowId, colId) => {
-        if (rowId === "1.0") {
-          return makeMultiDimPivotFilter([
-            { name: "outer", values: ["Zoom"] },
-            { name: "inner", values: ["US-East"] },
-            { name: "region", values: ["NA"] },
-          ]);
-        }
-        return {
-          filters: undefined,
-          timeRange: { start: undefined, end: undefined },
-        };
-      },
-    );
-
-    vi.mocked(getFiltersForColumnHeader).mockImplementation(
-      (_config, path) => {
-        if (path["quarter"]) {
-          return makePivotFilter("quarter", [path["quarter"]]);
-        }
-        return {
-          filters: undefined,
-          timeRange: { start: undefined, end: undefined },
-        };
-      },
-    );
-
-    const result = createPivotClickToFilter(
-      createFactoryArgs({
-        pivotConfig: writable(
-          nestedConfigTwoDims(),
-        ) as Readable<PivotDataStoreConfig>,
-        pivotDataStore: stubPivotDataStore(nestedData),
-        filterManager: fm,
-        activeComponent: writable<string | null>("pivot-1"),
-        selfFilteredDimensions,
-      }),
-    );
-
-    // Click 1: child cell (Zoom > US-East × NA region)
-    result.handleCellClickToFilter("1.0", "revenue", false, childRowUSEast);
-
-    // Click 2: border the parent header (Zoom)
-    result.handleCellClickToFilter("1", "outer", true, parentRowZoom);
-
-    let sel = get(result.clickSelection);
-    const dkZoom = dimKeyFromDimValues({ outer: "Zoom", inner: "" }, [
-      "outer",
-      "inner",
-    ]);
-    expect(sel.isRowHeaderSelected(dkZoom)).toBe(true);
-    expect(sel.cellSelections.size).toBe(1);
-
-    // Click 3: parent column header Q3
-    filterClass.addDimensionValueSelections.mockClear();
-    filterClass.toggleDimensionValueSelections.mockClear();
-
-    result.handleColumnHeaderClick({ quarter: "Q3" });
-
-    sel = get(result.clickSelection);
-
-    // Cell selections should be cleared (promoted to parent×parent)
-    expect(sel.cellSelections.size).toBe(0);
-
-    // Row header should still be there
-    expect(sel.isRowHeaderSelected(dkZoom)).toBe(true);
-
-    // Column header should be selected
-    expect(sel.isColumnHeaderSelected({ quarter: "Q3" })).toBe(true);
-
-    // Child filter values (inner, region) should have been removed
-    expect(filterClass.toggleDimensionValueSelections).toHaveBeenCalledWith(
-      "inner",
-      ["US-East"],
-      false,
-      false,
-    );
-
-    // New column filter should have been added
-    expect(filterClass.addDimensionValueSelections).toHaveBeenCalledWith(
-      "quarter",
-      ["Q3"],
-    );
-
-    result.destroy();
-  });
-});
-
 describe("pivot-click-to-filter: deselect retains shared column filters", () => {
   it("should retain column dimension values still needed by remaining cells", () => {
     const selfFilteredDimensions = writable<Set<string>>(new Set());
@@ -1499,6 +1038,351 @@ describe("pivot-click-to-filter: deselect retains shared column filters", () => 
       );
     expect(statusToggleCalls.length).toBe(0);
     expect(typeToggleCalls.length).toBe(0);
+
+    result.destroy();
+  });
+});
+
+describe("pivot-click-to-filter: header/cell mutual exclusivity", () => {
+  // Nested data: outer=Zoom has child inner=US-East; outer=Airtable has child inner=US-West
+  const nestedData: PivotDataRow[] = [
+    {
+      outer: "Zoom",
+      revenue: 100,
+      subRows: [{ outer: "US-East", inner: "US-East", revenue: 50 }],
+    },
+    {
+      outer: "Airtable",
+      revenue: 200,
+      subRows: [{ outer: "US-West", inner: "US-West", revenue: 75 }],
+    },
+  ];
+
+  const parentRowZoom: PivotDataRow = nestedData[0];
+  const childRowUSEastUnderZoom: PivotDataRow = nestedData[0].subRows![0];
+  const parentRowAirtable: PivotDataRow = nestedData[1];
+  const childRowUSWestUnderAirtable: PivotDataRow = nestedData[1].subRows![0];
+
+  function setupMutualExclusivityTest() {
+    const selfFilteredDimensions = writable<Set<string>>(new Set());
+    const { fm, filterClass } = stubFilterManagerWithClass("mv1");
+
+    vi.mocked(getFiltersForRowHeader).mockImplementation(
+      (_config, rowId, _data) => {
+        if (rowId === "1") return makePivotFilter("outer", ["Zoom"]);
+        if (rowId === "2") return makePivotFilter("outer", ["Airtable"]);
+        return {
+          filters: undefined,
+          timeRange: { start: undefined, end: undefined },
+        };
+      },
+    );
+
+    vi.mocked(getFiltersForCell).mockImplementation(
+      (_config, rowId, _colId) => {
+        if (rowId === "1.0") {
+          return makeMultiDimPivotFilter([
+            { name: "outer", values: ["Zoom"] },
+            { name: "inner", values: ["US-East"] },
+          ]);
+        }
+        if (rowId === "2.0") {
+          return makeMultiDimPivotFilter([
+            { name: "outer", values: ["Airtable"] },
+            { name: "inner", values: ["US-West"] },
+          ]);
+        }
+        return {
+          filters: undefined,
+          timeRange: { start: undefined, end: undefined },
+        };
+      },
+    );
+
+    const result = createPivotClickToFilter(
+      createFactoryArgs({
+        pivotConfig: writable(
+          nestedConfigTwoDims(),
+        ) as Readable<PivotDataStoreConfig>,
+        pivotDataStore: stubPivotDataStore(nestedData),
+        filterManager: fm,
+        activeComponent: writable<string | null>("pivot-1"),
+        selfFilteredDimensions,
+      }),
+    );
+
+    return { result, filterClass, selfFilteredDimensions };
+  }
+
+  it("row header click evicts child cells under it", () => {
+    const { result, filterClass } = setupMutualExclusivityTest();
+
+    // Select child cell under Zoom
+    result.handleCellClickToFilter(
+      "1.0",
+      "revenue",
+      false,
+      childRowUSEastUnderZoom,
+    );
+    const dkChild = dimKeyFromDimValues({ outer: "Zoom", inner: "US-East" }, [
+      "outer",
+      "inner",
+    ]);
+    expect(get(result.clickSelection).isCellSelected(dkChild, "revenue")).toBe(
+      true,
+    );
+
+    // Now click Zoom parent header
+    filterClass.toggleDimensionValueSelections.mockClear();
+    result.handleCellClickToFilter("1", "outer", true, parentRowZoom);
+
+    const sel = get(result.clickSelection);
+    const dkZoom = dimKeyFromDimValues({ outer: "Zoom", inner: "" }, [
+      "outer",
+      "inner",
+    ]);
+
+    // Header should be selected, child cell should be gone
+    expect(sel.isRowHeaderSelected(dkZoom)).toBe(true);
+    expect(sel.isCellSelected(dkChild, "revenue")).toBe(false);
+
+    // inner=US-East should have been removed (orphaned by cell eviction)
+    expect(filterClass.toggleDimensionValueSelections).toHaveBeenCalledWith(
+      "inner",
+      ["US-East"],
+      false,
+      false,
+    );
+
+    result.destroy();
+  });
+
+  it("cell click evicts ancestor row header", () => {
+    const { result, filterClass } = setupMutualExclusivityTest();
+
+    // Select Zoom parent header
+    result.handleCellClickToFilter("1", "outer", true, parentRowZoom);
+    const dkZoom = dimKeyFromDimValues({ outer: "Zoom", inner: "" }, [
+      "outer",
+      "inner",
+    ]);
+    expect(get(result.clickSelection).isRowHeaderSelected(dkZoom)).toBe(true);
+
+    // Now click child cell under Zoom
+    filterClass.addDimensionValueSelections.mockClear();
+    result.handleCellClickToFilter(
+      "1.0",
+      "revenue",
+      false,
+      childRowUSEastUnderZoom,
+    );
+
+    const sel = get(result.clickSelection);
+    const dkChild = dimKeyFromDimValues({ outer: "Zoom", inner: "US-East" }, [
+      "outer",
+      "inner",
+    ]);
+
+    // Cell should be selected, header should be gone
+    expect(sel.isCellSelected(dkChild, "revenue")).toBe(true);
+    expect(sel.isRowHeaderSelected(dkZoom)).toBe(false);
+
+    result.destroy();
+  });
+
+  it("different lineage coexists: header + cell under different parent", () => {
+    const { result } = setupMutualExclusivityTest();
+
+    // Select Zoom parent header
+    result.handleCellClickToFilter("1", "outer", true, parentRowZoom);
+
+    // Select child cell under Airtable (different lineage)
+    result.handleCellClickToFilter(
+      "2.0",
+      "revenue",
+      false,
+      childRowUSWestUnderAirtable,
+    );
+
+    const sel = get(result.clickSelection);
+    const dkZoom = dimKeyFromDimValues({ outer: "Zoom", inner: "" }, [
+      "outer",
+      "inner",
+    ]);
+    const dkAirtableChild = dimKeyFromDimValues(
+      { outer: "Airtable", inner: "US-West" },
+      ["outer", "inner"],
+    );
+
+    // Both should coexist
+    expect(sel.isRowHeaderSelected(dkZoom)).toBe(true);
+    expect(sel.isCellSelected(dkAirtableChild, "revenue")).toBe(true);
+
+    result.destroy();
+  });
+
+  it("column header evicts cells under it", () => {
+    const selfFilteredDimensions = writable<Set<string>>(new Set());
+    const { fm, filterClass } = stubFilterManagerWithClass("mv1");
+
+    const data: PivotDataRow[] = [{ country: "US", revenue: 100 }];
+
+    vi.mocked(getFiltersFromRow).mockImplementation(
+      (_config, _rowData, _colId) => {
+        return makeMultiDimPivotFilter([
+          { name: "country", values: ["US"] },
+          { name: "region", values: ["NA"] },
+        ]);
+      },
+    );
+
+    vi.mocked(getFiltersForColumnHeader).mockImplementation(
+      (_config, path) => {
+        return makePivotFilter("region", [path["region"]]);
+      },
+    );
+
+    const result = createPivotClickToFilter(
+      createFactoryArgs({
+        pivotConfig: writable({
+          rowDimensionNames: ["country"],
+          colDimensionNames: ["region"],
+          measureNames: ["revenue"],
+          isFlat: true,
+        }) as Readable<PivotDataStoreConfig>,
+        pivotDataStore: stubPivotDataStore(data),
+        filterManager: fm,
+        activeComponent: writable<string | null>("pivot-1"),
+        selfFilteredDimensions,
+      }),
+    );
+
+    // Select cell in NA column
+    result.handleCellClickToFilter("1", "revenue", false, data[0]);
+    const dkUS = dimKeyFromRow(data[0], ["country"]);
+    expect(get(result.clickSelection).isCellSelected(dkUS, "revenue")).toBe(
+      true,
+    );
+
+    // Click NA column header — should evict the cell
+    filterClass.toggleDimensionValueSelections.mockClear();
+    result.handleColumnHeaderClick({ region: "NA" });
+
+    const sel = get(result.clickSelection);
+    expect(sel.isColumnHeaderSelected({ region: "NA" })).toBe(true);
+    expect(sel.isCellSelected(dkUS, "revenue")).toBe(false);
+
+    // country=US should have been removed (orphaned by cell eviction)
+    expect(filterClass.toggleDimensionValueSelections).toHaveBeenCalledWith(
+      "country",
+      ["US"],
+      false,
+      false,
+    );
+
+    result.destroy();
+  });
+
+  it("cell click evicts ancestor column header", () => {
+    const selfFilteredDimensions = writable<Set<string>>(new Set());
+    const { fm, filterClass } = stubFilterManagerWithClass("mv1");
+
+    const data: PivotDataRow[] = [{ country: "US", revenue: 100 }];
+
+    vi.mocked(getFiltersFromRow).mockImplementation(
+      (_config, _rowData, _colId) => {
+        return makeMultiDimPivotFilter([
+          { name: "country", values: ["US"] },
+          { name: "region", values: ["NA"] },
+        ]);
+      },
+    );
+
+    vi.mocked(getFiltersForColumnHeader).mockImplementation(
+      (_config, path) => {
+        return makePivotFilter("region", [path["region"]]);
+      },
+    );
+
+    const result = createPivotClickToFilter(
+      createFactoryArgs({
+        pivotConfig: writable({
+          rowDimensionNames: ["country"],
+          colDimensionNames: ["region"],
+          measureNames: ["revenue"],
+          isFlat: true,
+        }) as Readable<PivotDataStoreConfig>,
+        pivotDataStore: stubPivotDataStore(data),
+        filterManager: fm,
+        activeComponent: writable<string | null>("pivot-1"),
+        selfFilteredDimensions,
+      }),
+    );
+
+    // Select NA column header
+    result.handleColumnHeaderClick({ region: "NA" });
+    expect(
+      get(result.clickSelection).isColumnHeaderSelected({ region: "NA" }),
+    ).toBe(true);
+
+    // Click cell in NA column — should evict the column header
+    result.handleCellClickToFilter("1", "revenue", false, data[0]);
+
+    const sel = get(result.clickSelection);
+    const dkUS = dimKeyFromRow(data[0], ["country"]);
+    expect(sel.isCellSelected(dkUS, "revenue")).toBe(true);
+    expect(sel.isColumnHeaderSelected({ region: "NA" })).toBe(false);
+
+    result.destroy();
+  });
+
+  it("column header + cell in different column coexist", () => {
+    const selfFilteredDimensions = writable<Set<string>>(new Set());
+    const { fm, filterClass } = stubFilterManagerWithClass("mv1");
+
+    const data: PivotDataRow[] = [{ country: "US", revenue: 100 }];
+
+    // Cell click returns region=EU (different from the NA header)
+    vi.mocked(getFiltersFromRow).mockImplementation(
+      (_config, _rowData, _colId) => {
+        return makeMultiDimPivotFilter([
+          { name: "country", values: ["US"] },
+          { name: "region", values: ["EU"] },
+        ]);
+      },
+    );
+
+    vi.mocked(getFiltersForColumnHeader).mockImplementation(
+      (_config, path) => {
+        return makePivotFilter("region", [path["region"]]);
+      },
+    );
+
+    const result = createPivotClickToFilter(
+      createFactoryArgs({
+        pivotConfig: writable({
+          rowDimensionNames: ["country"],
+          colDimensionNames: ["region"],
+          measureNames: ["revenue"],
+          isFlat: true,
+        }) as Readable<PivotDataStoreConfig>,
+        pivotDataStore: stubPivotDataStore(data),
+        filterManager: fm,
+        activeComponent: writable<string | null>("pivot-1"),
+        selfFilteredDimensions,
+      }),
+    );
+
+    // Select NA column header
+    result.handleColumnHeaderClick({ region: "NA" });
+
+    // Select cell in EU column (different lineage)
+    result.handleCellClickToFilter("1", "revenue", false, data[0]);
+
+    const sel = get(result.clickSelection);
+    const dkUS = dimKeyFromRow(data[0], ["country"]);
+    expect(sel.isColumnHeaderSelected({ region: "NA" })).toBe(true);
+    expect(sel.isCellSelected(dkUS, "revenue")).toBe(true);
 
     result.destroy();
   });
