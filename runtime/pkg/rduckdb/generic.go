@@ -162,11 +162,12 @@ func NewGeneric(ctx context.Context, opts *GenericOptions) (res DB, dbErr error)
 			 FROM duckdb_databases()
 			 WHERE internal = false -- ignore internal information_schema databases
 			   AND (path IS NOT NULL OR database_name = 'memory') -- all databases except the in-memory one should have a path 
-			   AND database_name != current_database() AND database_name != '__ducklake_metadata_my_ducklake'`,
+			   AND database_name != current_database() AND database_name NOT LIKE '__ducklake_metadata_%'`,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("error getting attached database name: %w. Set property `db_name` in the corresponding connector.yaml", err)
 		}
+		defer rows.Close()
 		for rows.Next() {
 			if opts.DBName != "" {
 				// more than one attached database, require user to specify db_name
