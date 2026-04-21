@@ -14,6 +14,9 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
+  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { AxiosError } from "axios";
@@ -69,9 +72,7 @@
         message: `Default dev cluster size updated to ${units} — ${instance}`,
       });
     } catch (err) {
-      const parsed = parseUpdateProjectError(
-        err as AxiosError<RpcStatus>,
-      );
+      const parsed = parseUpdateProjectError(err as AxiosError<RpcStatus>);
       eventBus.emit("notification", {
         message: parsed.message || "Failed to update dev cluster size",
         type: "error",
@@ -88,7 +89,17 @@
   </p>
 
   <div class="field">
-    <span class="label">Default cluster size</span>
+    <div class="label-row">
+      <span class="label">Default cluster size</span>
+      <Tooltip location="right" alignment="middle" distance={8}>
+        <div class="text-fg-tertiary flex items-center">
+          <InfoCircle size="12px" />
+        </div>
+        <TooltipContent slot="tooltip-content">
+          1 Compute unit = 4 GiB RAM, 1 vCPU
+        </TooltipContent>
+      </Tooltip>
+    </div>
     <div class="row">
       <span class="value">
         {#if $updateProjectMutation.isPending}
@@ -107,7 +118,7 @@
           class="change-trigger {dropdownOpen ? 'open' : ''}"
           disabled={$updateProjectMutation.isPending}
         >
-          <span>Change</span>
+          <span>Select cluster size</span>
           {#if dropdownOpen}
             <CaretUpIcon size="12px" />
           {:else}
@@ -135,7 +146,6 @@
         </DropdownMenu.Content>
       </DropdownMenu.Root>
     </div>
-    <span class="hint">1 Compute unit = 4 GiB RAM, 1 vCPU</span>
   </div>
 </SettingsContainer>
 
@@ -146,6 +156,10 @@
 
   .field {
     @apply mt-4 flex flex-col gap-y-1;
+  }
+
+  .label-row {
+    @apply flex items-center gap-x-1;
   }
 
   .label {
@@ -170,10 +184,6 @@
 
   .instance {
     @apply text-fg-secondary;
-  }
-
-  .hint {
-    @apply text-xs text-fg-tertiary mt-1;
   }
 
   :global(.change-trigger) {
