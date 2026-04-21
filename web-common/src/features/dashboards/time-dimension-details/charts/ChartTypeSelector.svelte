@@ -20,6 +20,24 @@
 
   const comparisonCharts = [TDDChart.STACKED_AREA, TDDChart.STACKED_BAR];
 
+  let tabEls: HTMLElement[] = [];
+  let indicatorLeft = 0;
+  let indicatorWidth = 0;
+  let ready = false;
+
+  $: activeIndex = chartTypeTabs.findIndex(
+    (t) =>
+      t.id === chartType ||
+      (t.id === TDDChart.DEFAULT && isAdaptiveChartType(chartType)),
+  );
+
+  $: if (tabEls[activeIndex]) {
+    const el = tabEls[activeIndex];
+    indicatorLeft = el.offsetLeft;
+    indicatorWidth = el.offsetWidth;
+    ready = true;
+  }
+
   const comparisonChartFallbacks: Record<TDDChart, TDDChart> = {
     [TDDChart.STACKED_AREA]: TDDChart.DEFAULT,
     [TDDChart.STACKED_BAR]: TDDChart.GROUPED_BAR,
@@ -88,12 +106,19 @@
 </script>
 
 <div class="chart-type-selector">
-  {#each chartTypeTabs as { label, tooltip, id, Icon } (id)}
+  {#if ready}
+    <div
+      class="indicator"
+      style:left="{indicatorLeft}px"
+      style:width="{indicatorWidth}px"
+    ></div>
+  {/if}
+  {#each chartTypeTabs as { label, tooltip, id, Icon }, i (id)}
     {@const active =
       chartType === id ||
       (id === TDDChart.DEFAULT && isAdaptiveChartType(chartType))}
     {@const disabled = !hasComparison && comparisonCharts.includes(id)}
-    <div class="chart-type-tab" class:active class:disabled>
+    <div bind:this={tabEls[i]} class="chart-type-tab" class:disabled>
       <IconButton
         {disabled}
         disableHover
@@ -124,18 +149,23 @@
 
 <style lang="postcss">
   .chart-type-selector {
-    @apply flex items-center gap-x-1;
+    @apply relative flex items-center gap-x-1;
     @apply bg-surface-muted rounded-lg p-[3px];
     min-width: 200px;
   }
 
-  .chart-type-tab {
-    @apply flex-1 flex items-center justify-center;
-    @apply rounded-md;
+  .indicator {
+    @apply absolute bg-surface-overlay border border-border rounded-md;
+    top: 3px;
+    bottom: 3px;
+    transition:
+      left 150ms cubic-bezier(0.4, 0, 0.2, 1),
+      width 150ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .chart-type-tab.active {
-    @apply bg-surface-overlay border border-border;
+  .chart-type-tab {
+    @apply relative z-10 flex-1 flex items-center justify-center;
+    @apply rounded-md;
   }
 
   .chart-type-tab.disabled {
