@@ -172,8 +172,10 @@
   </div>
 
   <div class="estimate-grid">
-    <!-- LEFT: Input panel -->
-    <div class="input-panel">
+    <!-- LEFT: Input cards -->
+    <div class="input-column">
+      <!-- Compute card -->
+      <div class="input-panel">
       <!-- Compute subsection -->
       <div class="subsection-header">
         <div class="subsection-title-group">
@@ -306,30 +308,34 @@
         </div>
       </div>
 
-      <!-- Storage subsection -->
-      <div class="subsection-header subsection-header-gap">
-        <span class="subsection-title">Storage</span>
-        <span class="subsection-rate">$1/GB/mo above 1 GB free</span>
       </div>
 
-      <div class="input-row">
-        <div class="input-info">
-          <span class="input-label">Storage (GB)</span>
+      <!-- Storage card -->
+      <div class="input-panel">
+        <div class="subsection-header">
+          <span class="subsection-title">Storage</span>
+          <span class="subsection-rate">$1/GB/mo above 1 GB free</span>
         </div>
-        <div class="stepper">
-          <button
-            class="stepper-btn"
-            onclick={() => storageGB--}
-            disabled={storageGB <= 1}>−</button
-          >
-          <input
-            class="stepper-input"
-            type="number"
-            bind:value={storageGB}
-            min="1"
-            onblur={(e) => clampInput(e, 1, 9999, (v) => (storageGB = v))}
-          />
-          <button class="stepper-btn" onclick={() => storageGB++}>+</button>
+
+        <div class="input-row">
+          <div class="input-info">
+            <span class="input-label">Storage (GB)</span>
+          </div>
+          <div class="stepper">
+            <button
+              class="stepper-btn"
+              onclick={() => storageGB--}
+              disabled={storageGB <= 1}>−</button
+            >
+            <input
+              class="stepper-input"
+              type="number"
+              bind:value={storageGB}
+              min="1"
+              onblur={(e) => clampInput(e, 1, 9999, (v) => (storageGB = v))}
+            />
+            <button class="stepper-btn" onclick={() => storageGB++}>+</button>
+          </div>
         </div>
       </div>
     </div>
@@ -461,17 +467,17 @@
     align-items: start;
   }
 
-  /* Left panel */
+  /* Left column */
+  .input-column {
+    @apply flex flex-col gap-4;
+  }
+
   .input-panel {
     @apply border border-border rounded-xl bg-white p-6 flex flex-col;
   }
 
   .subsection-header {
     @apply flex items-center justify-between mb-1;
-  }
-
-  .subsection-header-gap {
-    @apply mt-4;
   }
 
   .subsection-title-group {
