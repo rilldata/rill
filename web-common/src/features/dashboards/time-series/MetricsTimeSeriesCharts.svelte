@@ -258,10 +258,7 @@
 <svelte:window onclick={maybeClearMeasureSelection} />
 
 <div class="max-w-full h-fit flex flex-col max-h-full pr-2">
-  <div
-    class:mb-6={tddChartType !== TDDChart.DEFAULT}
-    class="flex items-center gap-x-1 px-2.5"
-  >
+  <div class="flex items-center gap-x-1 px-2.5">
     {#if showTimeDimensionDetail}
       <div class="flex justify-between w-full items-center py-2">
         <BackToExplore />
@@ -331,6 +328,7 @@
       <ChartSettingsMenu
         bind:connectNulls
         {dynamicYAxisScale}
+        {exploreName}
         chartType={tddChartType}
         hasComparison={Boolean(includedValuesForDimension.length)}
         onChartTypeChange={(type) =>

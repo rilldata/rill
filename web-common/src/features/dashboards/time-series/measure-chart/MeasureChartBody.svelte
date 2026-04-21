@@ -1,6 +1,7 @@
 <script lang="ts">
   import BarChart from "@rilldata/web-common/components/time-series-chart/BarChart.svelte";
   import TimeSeriesChart from "@rilldata/web-common/components/time-series-chart/TimeSeriesChart.svelte";
+  import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import type { Annotation } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/annotation-utils";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { formatGrainBucket } from "@rilldata/web-common/lib/time/ranges/formatter";
@@ -16,7 +17,11 @@
   import { measureSelection } from "../measure-selection/measure-selection";
   import { groupAnnotations } from "./annotation-utils";
   import { AnnotationPopoverController } from "./AnnotationPopoverController";
-  import { buildChartSeries, computeTooltipDelta } from "./chart-series";
+  import {
+    buildChartSeries,
+    computeTooltipDelta,
+    determineMode,
+  } from "./chart-series";
   import ComparisonTooltip from "./ComparisonTooltip.svelte";
   import ExplainButton from "./ExplainButton.svelte";
   import { hoverIndex } from "./hover-index";
@@ -74,6 +79,7 @@
   export let metricsViewName: string;
   export let connectNulls: boolean = true;
   export let dynamicYAxis: boolean = false;
+  export let tddChartType: TDDChart = TDDChart.DEFAULT;
 
   const annotationPopover = new AnnotationPopoverController();
   const hoveredAnnotationGroup = annotationPopover.hoveredGroup;
@@ -98,9 +104,7 @@
   $: config = computeChartConfig(clientWidth, height, showTimeDimensionDetail);
   $: pb = config.plotBounds;
 
-  // TODO: FIX ME before final push
-  // Chart series & mode
-  $: mode = "line" as const;
+  $: mode = determineMode(tddChartType, data);
   $: chartSeries = buildChartSeries(data, dimensionData, showComparison);
   $: barSeries =
     mode === "bar" && showComparison && chartSeries.length === 2

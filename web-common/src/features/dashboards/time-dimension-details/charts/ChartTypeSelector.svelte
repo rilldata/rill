@@ -1,11 +1,15 @@
 <script lang="ts">
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
+  import AdaptiveChart from "@rilldata/web-common/components/icons/AdaptiveChart.svelte";
   import BarChart from "@rilldata/web-common/components/icons/BarChart.svelte";
   import LineChart from "@rilldata/web-common/components/icons/LineChart.svelte";
   import StackedArea from "@rilldata/web-common/components/icons/StackedArea.svelte";
   import StackedBar from "@rilldata/web-common/components/icons/StackedBar.svelte";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
+  import {
+    TDDChart,
+    isAdaptiveChartType,
+  } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import type { ComponentType, SvelteComponent } from "svelte";
 
   export let exploreName: string;
@@ -16,51 +20,50 @@
 
   const comparisonCharts = [TDDChart.STACKED_AREA, TDDChart.STACKED_BAR];
 
-  let buttonEls: HTMLElement[] = [];
-  let indicatorLeft = 0;
-  let indicatorWidth = 0;
-  let ready = false;
-
-  $: activeIndex = chartTypeTabs.findIndex((t) => t.id === chartType);
-
-  $: if (buttonEls[activeIndex]) {
-    const el = buttonEls[activeIndex];
-    indicatorLeft = el.offsetLeft;
-    indicatorWidth = el.offsetWidth;
-    ready = true;
-  }
-
   const comparisonChartFallbacks: Record<TDDChart, TDDChart> = {
     [TDDChart.STACKED_AREA]: TDDChart.DEFAULT,
     [TDDChart.STACKED_BAR]: TDDChart.GROUPED_BAR,
     [TDDChart.DEFAULT]: TDDChart.DEFAULT,
+    [TDDChart.LINE]: TDDChart.LINE,
     [TDDChart.GROUPED_BAR]: TDDChart.GROUPED_BAR,
   };
 
   const chartTypeTabs: {
     label: string;
+    tooltip: string;
     id: TDDChart;
     Icon: ComponentType<SvelteComponent>;
   }[] = [
     {
       label: "Line",
-      id: TDDChart.DEFAULT,
+      tooltip: "Line",
+      id: TDDChart.LINE,
       Icon: LineChart,
     },
     {
       label: "Bar",
+      tooltip: "Bar",
       id: TDDChart.GROUPED_BAR,
       Icon: BarChart,
     },
     {
       label: "Stacked area",
+      tooltip: "Stacked area",
       id: TDDChart.STACKED_AREA,
       Icon: StackedArea,
     },
     {
       label: "Stacked bar",
+      tooltip: "Stacked bar",
       id: TDDChart.STACKED_BAR,
       Icon: StackedBar,
+    },
+    {
+      label: "Adaptive",
+      tooltip:
+        "Line chart by default. Switches to bar when there are few data points, and stacked bar when comparing dimension",
+      id: TDDChart.DEFAULT,
+      Icon: AdaptiveChart,
     },
   ];
 
@@ -85,20 +88,12 @@
 </script>
 
 <div class="chart-type-selector">
-  {#if ready}
-    <div
-      class="indicator"
-      style:left="{indicatorLeft}px"
-      style:width="{indicatorWidth}px"
-    ></div>
-  {/if}
-  {#each chartTypeTabs as { label, id, Icon }, i (id)}
-    {#if i > 0}
-      <div class="chart-type-divider"></div>
-    {/if}
-    {@const active = chartType === id}
+  {#each chartTypeTabs as { label, tooltip, id, Icon } (id)}
+    {@const active =
+      chartType === id ||
+      (id === TDDChart.DEFAULT && isAdaptiveChartType(chartType))}
     {@const disabled = !hasComparison && comparisonCharts.includes(id)}
-    <div bind:this={buttonEls[i]} class="chart-icon-wrapper" class:disabled>
+    <div class="chart-type-tab" class:active class:disabled>
       <IconButton
         {disabled}
         disableHover
@@ -117,10 +112,10 @@
             : active
               ? "var(--color-theme-300)"
               : "var(--color-gray-300)"}
-          size="18px"
+          size="16px"
         />
         <svelte:fragment slot="tooltip-content">
-          {disabled ? `Add comparison values to use ${label} chart` : label}
+          {disabled ? `Add comparison values to use ${label} chart` : tooltip}
         </svelte:fragment>
       </IconButton>
     </div>
@@ -129,31 +124,21 @@
 
 <style lang="postcss">
   .chart-type-selector {
-    @apply relative flex items-center gap-x-1;
-    @apply bg-surface-muted rounded p-0.5;
-    @apply border border-slate-200;
+    @apply flex items-center gap-x-1;
+    @apply bg-surface-muted rounded-lg p-[3px];
+    min-width: 200px;
   }
 
-  .indicator {
-    @apply absolute rounded bg-white;
-    @apply top-0.5 bottom-0.5;
-    box-shadow:
-      0 1px 2px rgb(0 0 0 / 0.08),
-      0 0 0 1px rgb(0 0 0 / 0.04);
-    transition:
-      left 150ms cubic-bezier(0.4, 0, 0.2, 1),
-      width 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  .chart-type-tab {
+    @apply flex-1 flex items-center justify-center;
+    @apply rounded-md;
   }
 
-  .chart-icon-wrapper {
-    @apply relative z-10;
+  .chart-type-tab.active {
+    @apply bg-surface-overlay border border-border;
   }
 
-  .chart-icon-wrapper.disabled {
+  .chart-type-tab.disabled {
     @apply opacity-80;
-  }
-
-  .chart-type-divider {
-    @apply w-px h-4 bg-slate-300 mx-0.5;
   }
 </style>

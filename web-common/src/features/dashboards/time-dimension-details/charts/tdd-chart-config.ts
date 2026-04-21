@@ -12,6 +12,7 @@ import { TDDChart } from "../types";
  */
 export const TDD_TO_COMPONENT_CHART_TYPE: Record<TDDChart, ChartType> = {
   [TDDChart.DEFAULT]: "line_chart",
+  [TDDChart.LINE]: "line_chart",
   [TDDChart.STACKED_BAR]: "stacked_bar",
   [TDDChart.GROUPED_BAR]: "bar_chart",
   [TDDChart.STACKED_AREA]: "area_chart",

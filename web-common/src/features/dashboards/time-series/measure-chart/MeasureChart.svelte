@@ -17,6 +17,10 @@
   import { createAnnotationsQuery } from "../annotations-selectors";
   import { adjustTimeInterval, localToTimeZoneOffset } from "../utils";
   import { chartBrushStore, chartHoverStore, hoverIndex } from "./hover-index";
+  import {
+    resolveEffectiveChartType,
+    usesVegaRenderer,
+  } from "./chart-series";
   import { createVisibilityObserver } from "./interactions";
   import MeasureChartBody from "./MeasureChartBody.svelte";
   import { ScrubController } from "./ScrubController";
@@ -80,13 +84,18 @@
   $: measureName = measure.name ?? "";
   $: height = showTimeDimensionDetail ? 245 : 145;
 
+  $: effectiveChartType = resolveEffectiveChartType(
+    tddChartType,
+    hasDimensionComparison,
+  );
+  $: usesVegaChart = usesVegaRenderer(effectiveChartType);
+
   // Seed the shared brush store from the persisted scrub interval so TDD Vega
   // charts can render the brush on mount, chart-type switch, or page refresh.
   $: {
-    const isTdd = tddChartType !== TDDChart.DEFAULT;
     const brushStoreEmpty = $chartBrushStore.startMs === undefined;
     if (
-      isTdd &&
+      usesVegaChart &&
       brushStoreEmpty &&
       chartScrubInterval?.start &&
       chartScrubInterval?.end
@@ -322,10 +331,10 @@
     >
       {error ?? "Error loading data"}
     </div>
-  {:else if tddChartType !== TDDChart.DEFAULT && data.length > 0}
+  {:else if usesVegaChart && data.length > 0}
     <div class="w-full" style:height="{height}px">
       <TDDMeasureChart
-        chartType={tddChartType}
+        chartType={effectiveChartType}
         {metricsViewName}
         {measure}
         {timeDimension}
@@ -367,6 +376,7 @@
       {metricsViewName}
       {connectNulls}
       {dynamicYAxis}
+      {tddChartType}
     />
   {:else}
     <div class="flex items-center justify-center h-full text-gray-400 text-sm">
