@@ -16,7 +16,8 @@ export const assumedUser = {
 
   /**
    * Navigates to Rill Cloud as the given user in the current tab.
-   * Stores the email in sessionStorage so the banner knows who we're browsing as.
+   * Writes the email to localStorage so every open tab shows the
+   * "browsing as" banner (auth cookies are browser-wide).
    * Optionally redirects to a specific path (e.g. "/<orgName>") after assuming.
    */
   assume(email: string, opts?: { ttlMinutes?: number; redirect?: string }) {
@@ -41,8 +42,6 @@ export const assumedUser = {
     set("");
     if (browser) localStorage.removeItem(STORAGE_KEY);
 
-    // Redirect to login; the auth provider (Auth0) session is the real superuser,
-    // so it auto-completes and issues a fresh superuser token.
     const u = new URL("auth/login", ADMIN_URL);
     u.searchParams.set("redirect", window.location.origin);
     window.location.href = u.toString();

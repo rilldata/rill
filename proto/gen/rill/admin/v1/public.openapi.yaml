@@ -2406,6 +2406,10 @@ paths:
                   required: true
                   schema:
                     type: string
+                - in: query
+                  name: superuserForceAccess
+                  schema:
+                    type: boolean
             responses:
                 "200":
                     content:

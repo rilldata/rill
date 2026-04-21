@@ -463,6 +463,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       x-visibility: public
     patch:
       summary: UpdateOrganization updates an organization

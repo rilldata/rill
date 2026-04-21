@@ -1,44 +1,27 @@
 <script lang="ts">
+  import DeleteBillingIssueDialog from "@rilldata/web-admin/features/superuser/dialogs/DeleteBillingIssueDialog.svelte";
+  import ExtendTrialDialog from "@rilldata/web-admin/features/superuser/dialogs/ExtendTrialDialog.svelte";
   import OrgPicker from "@rilldata/web-admin/features/superuser/shared/OrgPicker.svelte";
-  import ConfirmActionDialog from "@rilldata/web-admin/features/superuser/dialogs/ConfirmActionDialog.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import {
-    type V1BillingIssueType,
-    getAdminServiceListOrganizationBillingIssuesQueryKey,
-  } from "@rilldata/web-admin/client";
+  import { type V1BillingIssueType } from "@rilldata/web-admin/client";
   import {
     getBillingSetupURL,
-    createExtendTrialMutation,
-    createDeleteBillingIssueMutation,
     getBillingIssues,
   } from "@rilldata/web-admin/features/superuser/billing/selectors";
-  import { useQueryClient } from "@tanstack/svelte-query";
 
-  // Billing Setup state
   let setupOrg = "";
   let setupLoading = false;
   let setupUrl = "";
 
-  // Extend Trial state
   let trialOrg = "";
   let trialDays = 14;
-  let trialLoading = false;
-
-  // Extend Trial dialog state
   let extendDialogOpen = false;
 
-  // Billing Issues state
   let issuesOrg = "";
-
-  // Delete Billing Issue dialog state
   let deleteIssueDialogOpen = false;
   let deleteIssueOrg = "";
   let deleteIssueType: V1BillingIssueType = "BILLING_ISSUE_TYPE_UNSPECIFIED";
-
-  const queryClient = useQueryClient();
-  const extendTrial = createExtendTrialMutation();
-  const deleteBillingIssue = createDeleteBillingIssueMutation();
 
   $: billingIssuesQuery = getBillingIssues(issuesOrg);
 
@@ -67,51 +50,6 @@
       });
     } finally {
       setupLoading = false;
-    }
-  }
-
-  async function doExtendTrial() {
-    trialLoading = true;
-    try {
-      await $extendTrial.mutateAsync({
-        data: { org: trialOrg, days: trialDays },
-      });
-      eventBus.emit("notification", {
-        type: "success",
-        message: `Trial extended by ${trialDays} days for ${trialOrg}`,
-      });
-      trialOrg = "";
-    } catch (err) {
-      eventBus.emit("notification", {
-        type: "error",
-        message: `Failed to extend trial: ${err}`,
-      });
-      throw err;
-    } finally {
-      trialLoading = false;
-    }
-  }
-
-  async function doDeleteIssue() {
-    try {
-      await $deleteBillingIssue.mutateAsync({
-        org: deleteIssueOrg,
-        type: deleteIssueType,
-      });
-      eventBus.emit("notification", {
-        type: "success",
-        message: `Billing issue "${deleteIssueType}" deleted for ${deleteIssueOrg}`,
-      });
-      await queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationBillingIssuesQueryKey(deleteIssueOrg),
-      });
-    } catch (err) {
-      eventBus.emit("notification", {
-        type: "error",
-        message: `Failed to delete billing issue: ${err}`,
-      });
-      throw err;
     }
   }
 </script>
@@ -203,8 +141,7 @@
         onClick={() => {
           if (trialOrg) extendDialogOpen = true;
         }}
-        disabled={trialLoading || !trialOrg}
-        loading={trialLoading}
+        disabled={!trialOrg}
       >
         Extend Trial
       </Button>
@@ -259,17 +196,14 @@
   </section>
 </div>
 
-<ConfirmActionDialog
+<ExtendTrialDialog
   bind:open={extendDialogOpen}
-  title="Extend Trial"
-  description={`This will extend the trial for "${trialOrg}" by ${trialDays} day${trialDays === 1 ? "" : "s"}.`}
-  onConfirm={doExtendTrial}
+  org={trialOrg}
+  days={trialDays}
+  on:extended={() => (trialOrg = "")}
 />
-
-<ConfirmActionDialog
+<DeleteBillingIssueDialog
   bind:open={deleteIssueDialogOpen}
-  title="Delete Billing Issue"
-  description={`This will delete the billing issue "${deleteIssueType}" for "${deleteIssueOrg}". This action cannot be undone.`}
-  confirmLabel="Delete"
-  onConfirm={doDeleteIssue}
+  org={deleteIssueOrg}
+  issueType={deleteIssueType}
 />

@@ -1,23 +1,11 @@
 <script lang="ts">
   import OrgPicker from "@rilldata/web-admin/features/superuser/shared/OrgPicker.svelte";
-  import ConfirmActionDialog from "@rilldata/web-admin/features/superuser/dialogs/ConfirmActionDialog.svelte";
+  import UpdateQuotasDialog from "@rilldata/web-admin/features/superuser/dialogs/UpdateQuotasDialog.svelte";
   import { Button } from "@rilldata/web-common/components/button";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import {
-    getOrgForQuotas,
-    createUpdateOrgQuotasMutation,
-  } from "@rilldata/web-admin/features/superuser/quotas/selectors";
-  import { getAdminServiceGetOrganizationQueryKey } from "@rilldata/web-admin/client";
-  import { useQueryClient } from "@tanstack/svelte-query";
+  import { getOrganization } from "@rilldata/web-admin/features/superuser/quotas/selectors";
 
   let activeOrg = "";
-
-  // Save quotas dialog state
   let saveDialogOpen = false;
-  let saveLoading = false;
-
-  const queryClient = useQueryClient();
-  const updateOrgQuotas = createUpdateOrgQuotasMutation();
 
   // Quota fields for editing
   let projects = "";
@@ -27,7 +15,7 @@
   let outstandingInvites = "";
   let storageLimitBytes = "";
 
-  $: orgQuery = getOrgForQuotas(activeOrg);
+  $: orgQuery = getOrganization(activeOrg);
 
   // Populate fields when org data loads
   $: if ($orgQuery.data?.organization?.quotas) {
@@ -42,43 +30,20 @@
     storageLimitBytes = q.storageLimitBytesPerDeployment ?? "";
   }
 
-  async function doSaveQuotas() {
-    saveLoading = true;
-    try {
-      await $updateOrgQuotas.mutateAsync({
-        data: {
-          org: activeOrg,
-          projects: projects ? Number(projects) : undefined,
-          deployments: deployments ? Number(deployments) : undefined,
-          slotsTotal: slotsTotal ? Number(slotsTotal) : undefined,
-          slotsPerDeployment: slotsPerDeployment
-            ? Number(slotsPerDeployment)
-            : undefined,
-          outstandingInvites: outstandingInvites
-            ? Number(outstandingInvites)
-            : undefined,
-          storageLimitBytesPerDeployment: storageLimitBytes
-            ? storageLimitBytes
-            : undefined,
-        },
-      });
-      eventBus.emit("notification", {
-        type: "success",
-        message: `Quotas updated for org: ${activeOrg}`,
-      });
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceGetOrganizationQueryKey(activeOrg),
-      });
-    } catch (err) {
-      eventBus.emit("notification", {
-        type: "error",
-        message: `Failed to update quotas: ${err}`,
-      });
-      throw err;
-    } finally {
-      saveLoading = false;
-    }
-  }
+  $: quotasPayload = {
+    projects: projects ? Number(projects) : undefined,
+    deployments: deployments ? Number(deployments) : undefined,
+    slotsTotal: slotsTotal ? Number(slotsTotal) : undefined,
+    slotsPerDeployment: slotsPerDeployment
+      ? Number(slotsPerDeployment)
+      : undefined,
+    outstandingInvites: outstandingInvites
+      ? Number(outstandingInvites)
+      : undefined,
+    storageLimitBytesPerDeployment: storageLimitBytes
+      ? storageLimitBytes
+      : undefined,
+  };
 </script>
 
 <h1 class="text-lg font-semibold text-fg-primary">Quotas</h1>
@@ -181,10 +146,8 @@
   </section>
 </div>
 
-<ConfirmActionDialog
+<UpdateQuotasDialog
   bind:open={saveDialogOpen}
-  title="Update Quotas"
-  description={`This will update the resource quotas for "${activeOrg}". This change takes effect immediately.`}
-  loading={saveLoading}
-  onConfirm={doSaveQuotas}
+  org={activeOrg}
+  quotas={quotasPayload}
 />

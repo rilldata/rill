@@ -1731,6 +1731,10 @@ export type AdminServiceGetOrganizationParams = {
   superuserForceAccess?: boolean;
 };
 
+export type AdminServiceDeleteOrganizationParams = {
+  superuserForceAccess?: boolean;
+};
+
 export type AdminServiceUpdateOrganizationBody = {
   description?: string;
   newName?: string;

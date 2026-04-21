@@ -1,57 +1,38 @@
 <script lang="ts">
+  import AssumeUserDialog from "@rilldata/web-admin/features/superuser/dialogs/AssumeUserDialog.svelte";
+  import DeleteOrgDialog from "@rilldata/web-admin/features/superuser/dialogs/DeleteOrgDialog.svelte";
   import OrgPicker from "@rilldata/web-admin/features/superuser/shared/OrgPicker.svelte";
-  import ConfirmActionDialog from "@rilldata/web-admin/features/superuser/dialogs/ConfirmActionDialog.svelte";
-  import GuardedDeleteDialog from "@rilldata/web-admin/features/superuser/dialogs/GuardedDeleteDialog.svelte";
   import { Button } from "@rilldata/web-common/components/button";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import {
     getOrganization,
     getOrgMembers,
     getOrgProjects,
-    createDeleteOrgMutation,
+    pickAssumableMember,
   } from "@rilldata/web-admin/features/superuser/organizations/selectors";
-  import { assumedUser } from "@rilldata/web-admin/features/superuser/users/assume-state";
 
   let selectedOrg = "";
 
-  // Open as User dialog state
   let assumeDialogOpen = false;
   let assumeEmail = "";
-  let assumeOrgName = "";
+  let assumeRedirect: string | undefined = undefined;
+  let assumeContextLabel = "";
 
-  // Delete Org dialog state
   let deleteOrgDialogOpen = false;
   let deleteOrgName = "";
-  let deleteOrgLoading = false;
-  let deleteOrgError: string | undefined = undefined;
 
-  const deleteOrg = createDeleteOrgMutation();
-
-  // Load details for the selected org
   $: orgQuery = getOrganization(selectedOrg);
   $: membersQuery = getOrgMembers(selectedOrg);
   $: projectsQuery = getOrgProjects(selectedOrg);
 
-  async function doAssume() {
-    assumedUser.assume(assumeEmail, { redirect: `/${assumeOrgName}` });
-  }
-
-  async function doDeleteOrg() {
-    deleteOrgLoading = true;
-    deleteOrgError = undefined;
-    try {
-      await $deleteOrg.mutateAsync({ org: deleteOrgName });
-      eventBus.emit("notification", {
-        type: "success",
-        message: `Organization "${deleteOrgName}" deleted`,
-      });
-      selectedOrg = "";
-    } catch (err) {
-      deleteOrgError = `Failed to delete organization: ${err}`;
-      throw err;
-    } finally {
-      deleteOrgLoading = false;
-    }
+  function openAssume(
+    email: string,
+    redirect: string | undefined,
+    contextLabel: string,
+  ) {
+    assumeEmail = email;
+    assumeRedirect = redirect;
+    assumeContextLabel = contextLabel;
+    assumeDialogOpen = true;
   }
 </script>
 
@@ -72,7 +53,6 @@
   {/if}
 </div>
 
-<!-- Selected org details -->
 {#if selectedOrg}
   {#if $orgQuery.isFetching}
     <p class="text-sm text-fg-secondary py-4">Loading organization...</p>
@@ -133,15 +113,15 @@
                 <Button
                   type="text"
                   onClick={() => {
-                    const admin = $membersQuery.data?.members?.find(
-                      (m) => m.roleName === "admin",
+                    const member = pickAssumableMember(
+                      $membersQuery.data?.members,
                     );
-                    const member = admin ?? $membersQuery.data?.members?.[0];
-                    if (member?.userEmail) {
-                      assumedUser.assume(member.userEmail, {
-                        redirect: `/${org.name}/${projectName}`,
-                      });
-                    }
+                    if (!member) return;
+                    openAssume(
+                      member.userEmail,
+                      `/${org.name}/${projectName}`,
+                      `${org.name}/${projectName}`,
+                    );
                   }}
                 >
                   {projectName}
@@ -197,11 +177,12 @@
                       class="font-normal"
                       type="tertiary"
                       disabled={!member.userEmail}
-                      onClick={() => {
-                        assumeEmail = member.userEmail ?? "";
-                        assumeOrgName = org.name ?? "";
-                        assumeDialogOpen = true;
-                      }}
+                      onClick={() =>
+                        openAssume(
+                          member.userEmail ?? "",
+                          `/${org.name}`,
+                          org.name ?? "",
+                        )}
                     >
                       Open as user
                     </Button>
@@ -216,20 +197,14 @@
   {/if}
 {/if}
 
-<ConfirmActionDialog
+<AssumeUserDialog
   bind:open={assumeDialogOpen}
-  title="Open as User"
-  description={`You will start browsing Rill Cloud as ${assumeEmail}, landing on the "${assumeOrgName}" organization. The session will expire after 60 minutes. Use the banner to unassume when done.`}
-  onConfirm={doAssume}
+  email={assumeEmail}
+  redirect={assumeRedirect}
+  contextLabel={assumeContextLabel}
 />
-
-<GuardedDeleteDialog
+<DeleteOrgDialog
   bind:open={deleteOrgDialogOpen}
-  title="Delete Organization"
-  description={`This will permanently delete "${deleteOrgName}" and all its projects, members, and data. This action cannot be undone.`}
-  confirmText={deleteOrgName}
-  confirmButtonText="Delete"
-  loading={deleteOrgLoading}
-  error={deleteOrgError}
-  onConfirm={doDeleteOrg}
+  org={deleteOrgName}
+  on:deleted={() => (selectedOrg = "")}
 />

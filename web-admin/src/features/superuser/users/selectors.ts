@@ -1,7 +1,12 @@
+// All mutations in this file bake in `superuserForceAccess: true`. The
+// superuser console routinely operates on users the caller isn't a member of,
+// so every mutation needs the flag. Wrapping `mutateAsync` here means call
+// sites just pass the business args (e.g. `{ email }`) and cannot forget.
 import {
-  createAdminServiceSearchUsers,
   createAdminServiceDeleteUser,
+  createAdminServiceSearchUsers,
 } from "@rilldata/web-admin/client";
+import { derived } from "svelte/store";
 
 export function searchUsers(emailPattern: string) {
   return createAdminServiceSearchUsers(
@@ -11,5 +16,13 @@ export function searchUsers(emailPattern: string) {
 }
 
 export function createDeleteUserMutation() {
-  return createAdminServiceDeleteUser();
+  const mutation = createAdminServiceDeleteUser();
+  return derived(mutation, ($m) => ({
+    ...$m,
+    mutateAsync: (vars: { email: string }) =>
+      $m.mutateAsync({
+        email: vars.email,
+        params: { superuserForceAccess: true },
+      }),
+  }));
 }

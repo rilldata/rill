@@ -1,64 +1,23 @@
 <script lang="ts">
+  import AssumeUserDialog from "@rilldata/web-admin/features/superuser/dialogs/AssumeUserDialog.svelte";
+  import DeleteUserDialog from "@rilldata/web-admin/features/superuser/dialogs/DeleteUserDialog.svelte";
   import SearchInput from "@rilldata/web-admin/features/superuser/shared/SearchInput.svelte";
-  import ConfirmActionDialog from "@rilldata/web-admin/features/superuser/dialogs/ConfirmActionDialog.svelte";
-  import GuardedDeleteDialog from "@rilldata/web-admin/features/superuser/dialogs/GuardedDeleteDialog.svelte";
   import { Button } from "@rilldata/web-common/components/button";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import {
-    searchUsers,
-    createDeleteUserMutation,
-  } from "@rilldata/web-admin/features/superuser/users/selectors";
-  import { getAdminServiceSearchUsersQueryKey } from "@rilldata/web-admin/client";
+  import { searchUsers } from "@rilldata/web-admin/features/superuser/users/selectors";
   import { assumedUser } from "@rilldata/web-admin/features/superuser/users/assume-state";
-  import { useQueryClient } from "@tanstack/svelte-query";
 
   let searchQuery = "";
 
-  // Assume user dialog state
   let assumeDialogOpen = false;
   let assumeEmail = "";
 
-  // Delete user dialog state
   let deleteDialogOpen = false;
   let deleteEmail = "";
-  let deleteLoading = false;
-  let deleteError: string | undefined = undefined;
-
-  const queryClient = useQueryClient();
-  const deleteUser = createDeleteUserMutation();
 
   $: usersQuery = searchUsers(searchQuery);
 
   function handleSearch(e: CustomEvent<string>) {
     searchQuery = e.detail;
-  }
-
-  function handleUnassume() {
-    assumedUser.unassume();
-  }
-
-  async function doAssume() {
-    assumedUser.assume(assumeEmail, {});
-  }
-
-  async function doDelete() {
-    deleteLoading = true;
-    deleteError = undefined;
-    try {
-      await $deleteUser.mutateAsync({ email: deleteEmail });
-      eventBus.emit("notification", {
-        type: "success",
-        message: `User ${deleteEmail} deleted`,
-      });
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceSearchUsersQueryKey(),
-      });
-    } catch (err) {
-      deleteError = `Failed to delete user: ${err}`;
-      throw err;
-    } finally {
-      deleteLoading = false;
-    }
   }
 </script>
 
@@ -131,7 +90,7 @@
                     large
                     class="font-normal"
                     type="tertiary"
-                    onClick={handleUnassume}>Unassume</Button
+                    onClick={() => assumedUser.unassume()}>Unassume</Button
                   >
                 {:else}
                   <Button
@@ -168,20 +127,5 @@
   <p class="text-sm text-fg-secondary">No users found for "{searchQuery}"</p>
 {/if}
 
-<ConfirmActionDialog
-  bind:open={assumeDialogOpen}
-  title="Open as User"
-  description={`You will start browsing Rill Cloud as ${assumeEmail}. The session will expire after 60 minutes. Use the banner to unassume when done.`}
-  onConfirm={doAssume}
-/>
-
-<GuardedDeleteDialog
-  bind:open={deleteDialogOpen}
-  title="Delete User"
-  description={`This will permanently delete the user ${deleteEmail}. This action cannot be undone.`}
-  confirmText={deleteEmail}
-  confirmButtonText="Delete"
-  loading={deleteLoading}
-  error={deleteError}
-  onConfirm={doDelete}
-/>
+<AssumeUserDialog bind:open={assumeDialogOpen} email={assumeEmail} />
+<DeleteUserDialog bind:open={deleteDialogOpen} email={deleteEmail} />

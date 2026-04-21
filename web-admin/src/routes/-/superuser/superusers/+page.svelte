@@ -5,7 +5,7 @@
     createAdminServiceSetSuperuser,
     getAdminServiceListSuperusersQueryKey,
   } from "@rilldata/web-admin/client";
-  import ConfirmActionDialog from "@rilldata/web-admin/features/superuser/dialogs/ConfirmActionDialog.svelte";
+  import RemoveSuperuserDialog from "@rilldata/web-admin/features/superuser/dialogs/RemoveSuperuserDialog.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -13,7 +13,6 @@
   let newEmail = "";
   let addLoading = false;
 
-  // Remove superuser dialog state
   let removeDialogOpen = false;
   let removeTarget = "";
 
@@ -45,27 +44,6 @@
       });
     } finally {
       addLoading = false;
-    }
-  }
-
-  async function doRemove() {
-    try {
-      await $setSuperuser.mutateAsync({
-        data: { email: removeTarget, superuser: false },
-      });
-      eventBus.emit("notification", {
-        type: "success",
-        message: `${removeTarget} removed as superuser`,
-      });
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListSuperusersQueryKey(),
-      });
-    } catch (err) {
-      eventBus.emit("notification", {
-        type: "error",
-        message: `Failed: ${err}`,
-      });
-      throw err;
     }
   }
 </script>
@@ -157,10 +135,4 @@
   </table>
 {/if}
 
-<ConfirmActionDialog
-  bind:open={removeDialogOpen}
-  title="Remove Superuser"
-  description={`Remove superuser access for ${removeTarget}? They will lose access to this console.`}
-  confirmLabel="Remove"
-  onConfirm={doRemove}
-/>
+<RemoveSuperuserDialog bind:open={removeDialogOpen} email={removeTarget} />
