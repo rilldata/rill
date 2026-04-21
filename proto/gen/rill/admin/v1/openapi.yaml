@@ -3537,6 +3537,9 @@ paths:
                                     type: string
                                 description:
                                     type: string
+                                devSlots:
+                                    format: int64
+                                    type: string
                                 directoryName:
                                     description: |-
                                         directory_name should be the most recently observed local directory name for the project.

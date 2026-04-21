@@ -574,6 +574,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		attribute.String("args.provisioner", req.Provisioner),
 		attribute.String("args.prod_version", req.ProdVersion),
 		attribute.Int64("args.prod_slots", req.ProdSlots),
+		attribute.Int64("args.dev_slots", req.DevSlots),
 		attribute.String("args.sub_path", req.Subpath),
 		attribute.String("args.primary_branch", req.PrimaryBranch),
 		attribute.String("args.git_remote", req.GitRemote),
@@ -614,6 +615,9 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q is limited to %d projects", org.Name, org.QuotaProjects)
 	}
 	if org.QuotaSlotsPerDeployment >= 0 && int(req.ProdSlots) > org.QuotaSlotsPerDeployment {
+		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org can't provision more than %d slots per deployment; contact support for larger deployments", org.QuotaSlotsPerDeployment)
+	}
+	if org.QuotaSlotsPerDeployment >= 0 && int(req.DevSlots) > org.QuotaSlotsPerDeployment {
 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org can't provision more than %d slots per deployment; contact support for larger deployments", org.QuotaSlotsPerDeployment)
 	}
 	if org.QuotaSlotsTotal >= 0 && usage.Slots+int(req.ProdSlots) > org.QuotaSlotsTotal {
@@ -664,7 +668,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		ProdVersion:          req.ProdVersion,
 		ProdSlots:            int(req.ProdSlots),
 		ProdTTLSeconds:       prodTTL,
-		DevSlots:             devSlots,
+		DevSlots:             int(req.DevSlots),
 		DevTTLSeconds:        devTTL,
 	}
 

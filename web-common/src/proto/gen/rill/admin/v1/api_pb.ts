@@ -3835,6 +3835,11 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
   prodVersion = "";
 
   /**
+   * @generated from field: int64 dev_slots = 17;
+   */
+  devSlots = protoInt64.zero;
+
+  /**
    * @generated from field: bool skip_deploy = 15;
    */
   skipDeploy = false;
@@ -3859,6 +3864,7 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
     { no: 10, name: "git_remote", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "archive_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "prod_version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 17, name: "dev_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 15, name: "skip_deploy", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 

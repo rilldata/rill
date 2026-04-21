@@ -1034,6 +1034,9 @@ paths:
                 description: archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
               prodVersion:
                 type: string
+              devSlots:
+                type: string
+                format: int64
               skipDeploy:
                 type: boolean
       x-visibility: public
