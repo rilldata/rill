@@ -61,7 +61,7 @@
     {
       label: "Adaptive",
       tooltip:
-        "Line chart by default. Switches to bar when there are few data points, and stacked bar when comparing dimension",
+        "Adaptive: Line chart by default. Switches to bar when there are few data points, and stacked bar when comparing dimension",
       id: TDDChart.DEFAULT,
       Icon: AdaptiveChart,
     },
