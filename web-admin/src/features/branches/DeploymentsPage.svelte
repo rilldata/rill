@@ -7,12 +7,12 @@
     isTrialPlan,
     isFreePlan,
     isProPlan,
+    isManagedPlan,
   } from "@rilldata/web-admin/features/billing/plans/utils";
   import { SLOT_RATE_PER_HR } from "@rilldata/web-admin/features/projects/status/overview/slots-utils";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
-  import { devSlotsOverride } from "./dev-slots-store";
 
   let {
     organization,
@@ -26,9 +26,6 @@
   let proj = $derived(createAdminServiceGetProject(organization, project));
   let projectData = $derived($proj.data?.project);
 
-  // Slots
-  let currentSlots = $derived(Number(projectData?.prodSlots) || 0);
-
   // Billing
   let subscriptionQuery = $derived(
     createAdminServiceGetBillingSubscription(organization),
@@ -38,7 +35,10 @@
   );
   let showDeploymentSection = $derived(
     planName !== "" &&
-      (isTrialPlan(planName) || isFreePlan(planName) || isProPlan(planName)),
+      (isTrialPlan(planName) ||
+        isFreePlan(planName) ||
+        isProPlan(planName) ||
+        isManagedPlan(planName)),
   );
 
   // Billing cycle dates
@@ -60,9 +60,8 @@
   }
 
   // Slot types
-  let prodSlots = $derived(currentSlots);
-  let apiDevSlots = $derived(Number(projectData?.devSlots) || 0);
-  let devSlots = $derived($devSlotsOverride ?? apiDevSlots);
+  let prodSlots = $derived(Number(projectData?.prodSlots) || 0);
+  let devSlots = $derived(Number(projectData?.devSlots) || 0);
   let totalSlots = $derived(prodSlots + devSlots);
 
   // Cluster info (split into number + unit for display)
@@ -232,14 +231,6 @@
   .summary-cycle {
     @apply text-xs text-fg-tertiary;
   }
-  /* Section headings */
-  .section-heading {
-    @apply mt-2;
-  }
-  .section-heading-text {
-    @apply font-sans text-xs font-semibold leading-none text-fg-tertiary;
-  }
-
   /* Breakdown cards */
   .section-grid {
     @apply grid gap-5;

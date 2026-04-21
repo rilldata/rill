@@ -44,7 +44,6 @@
   } from "lucide-svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import ManageSlotsModal from "@rilldata/web-admin/features/projects/status/overview/ManageSlotsModal.svelte";
-  import { devSlotsOverride } from "./dev-slots-store";
 
   let { organization, project }: { organization: string; project: string } =
     $props();
@@ -100,12 +99,11 @@
       ? parseInt($projectQuery.data.project.prodSlots, 10)
       : null,
   );
-  let apiDevSlots = $derived(
+  let devSlots = $derived(
     $projectQuery.data?.project?.devSlots != null
       ? parseInt($projectQuery.data.project.devSlots, 10)
       : null,
   );
-  let devSlots = $derived($devSlotsOverride ?? apiDevSlots);
 
   let visibleDeployments = $derived.by(() => {
     const active = ($allDeployments.data?.deployments ?? []).filter(
@@ -319,7 +317,7 @@
                     </div>
                   </DropdownMenu.Item>
                 {/if}
-                {#if !prod && isActiveDeployment(deployment)}
+                {#if !prod && canManage && isActiveDeployment(deployment)}
                   <DropdownMenu.Item
                     class="font-normal flex items-center"
                     onclick={() => {
@@ -419,9 +417,6 @@
   title="Manage Dev Cluster Size"
   minSlots={0}
   slotType="dev"
-  onApply={(slots) => {
-    devSlotsOverride.set(slots);
-  }}
 />
 
 <style lang="postcss">

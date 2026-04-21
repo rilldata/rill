@@ -30,7 +30,6 @@
     title = "Manage Cluster Size",
     minSlots = DEFAULT_MANAGED_SLOTS,
     slotType = "prod",
-    onApply,
   }: {
     open?: boolean;
     organization: string;
@@ -39,7 +38,6 @@
     title?: string;
     minSlots?: number;
     slotType?: "prod" | "dev";
-    onApply?: (slots: number) => void;
   } = $props();
 
   let selectedSlots = $state(0);
@@ -81,25 +79,12 @@
   let hasChanged = $derived(selectedSlots !== currentSlots);
 
   async function applySlotChange() {
-    if (slotType === "dev") {
-      // TODO: Wire to API once UpdateProjectRequest supports dev_slots
-      onApply?.(selectedSlots);
-      const newTier = tierForSlots(selectedSlots);
-      eventBus.emit("notification", {
-        message: newTier
-          ? `Dev cluster size updated to ${newTier.instance}`
-          : `Dev cluster size updated to ${selectedSlots} units`,
-      });
-      open = false;
-      return;
-    }
-
+    const data =
+      slotType === "dev"
+        ? { devSlots: String(selectedSlots) }
+        : { prodSlots: String(selectedSlots) };
     try {
-      await $updateProject.mutateAsync({
-        org: organization,
-        project,
-        data: { prodSlots: String(selectedSlots) },
-      });
+      await $updateProject.mutateAsync({ org: organization, project, data });
       await queryClient.refetchQueries({
         queryKey: getAdminServiceGetProjectQueryKey(organization, project),
       });
