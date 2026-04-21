@@ -202,6 +202,53 @@ func TestMetricViewAggregationAgainstDuckDB(t *testing.T) {
 	})
 }
 
+func TestMetricViewAggregationAgainstSnowflake(t *testing.T) {
+	testmode.Expensive(t)
+
+	rt, instanceID := newSnowflakeInstance(t)
+	t.Run("testMetricsViewsAggregation", func(t *testing.T) { testMetricsViewsAggregation(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregationURI", func(t *testing.T) { testMetricsViewsAggregationURI(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_export_day", func(t *testing.T) { testMetricsViewsAggregation_export_day(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_export_hour", func(t *testing.T) { testMetricsViewsAggregation_export_hour(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_no_limit", func(t *testing.T) { testMetricsViewsAggregation_no_limit(t, rt, instanceID) })
+	t.Run("testMetricsViewAggregation_measure_filters", func(t *testing.T) { testSnowflakeMetricsViewAggregation_measure_filters(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_timezone", func(t *testing.T) { testMetricsViewsAggregation_timezone(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_filter", func(t *testing.T) { testMetricsViewsAggregation_filter(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_filter_with_timestamp", func(t *testing.T) { testMetricsViewsAggregation_filter_with_timestamp(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_filter_2dims", func(t *testing.T) { testMetricsViewsAggregation_filter_2dims(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_having_gt", func(t *testing.T) { testMetricsViewsAggregation_having_gt(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_having_same_name", func(t *testing.T) { testMetricsViewsAggregation_having_same_name(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_having", func(t *testing.T) { testMetricsViewsAggregation_having(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_having_with_limit", func(t *testing.T) { testMetricsViewsAggregation_having_with_limit(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_where", func(t *testing.T) { testMetricsViewsAggregation_where(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_whereAndSQLBoth", func(t *testing.T) { testMetricsViewsAggregation_whereAndSQLBoth(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_filter_having_measure", func(t *testing.T) { testMetricsViewsAggregation_filter_having_measure(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_filter_with_where_and_having_measure", func(t *testing.T) {
+		testMetricsViewsAggregation_filter_with_where_and_having_measure(t, rt, instanceID)
+	})
+	t.Run("testMetricsViewsAggregation_2time_aggregations", func(t *testing.T) { testMetricsViewsAggregation_2time_aggregations(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_comparison_no_time_dim", func(t *testing.T) { testMetricsViewsAggregation_comparison_no_time_dim(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_comparison_no_dims", func(t *testing.T) { testMetricsViewsAggregation_comparison_no_dims(t, rt, instanceID) })
+	t.Run("TestMetricsViewsAggregation_comparison_measure_filter_with_a_single_derivative_measure", func(t *testing.T) {
+		testMetricsViewsAggregation_comparison_measure_filter_with_a_single_derivative_measure(t, rt, instanceID)
+	})
+	t.Run("testMetricsViewsAggregation_comparison_measure_filter_no_duplicates", func(t *testing.T) {
+		testMetricsViewsAggregation_comparison_measure_filter_no_duplicates(t, rt, instanceID)
+	})
+	t.Run("testMetricsViewsAggregation_comparison_measure_filter_with_totals", func(t *testing.T) {
+		testMetricsViewsAggregation_comparison_measure_filter_with_totals(t, rt, instanceID)
+	})
+	t.Run("testMetricsViewsAggregation_comparison_with_offset", func(t *testing.T) { testMetricsViewsAggregation_comparison_with_offset(t, rt, instanceID) })
+	t.Run("testMetricsViewAggregation_percent_of_totals", func(t *testing.T) { testMetricsViewAggregation_percent_of_totals(t, rt, instanceID) })
+	t.Run("testMetricsViewAggregation_percent_of_totals_with_limit", func(t *testing.T) { testMetricsViewAggregation_percent_of_totals_with_limit(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_comparison_with_offset_and_limit_and_delta", func(t *testing.T) {
+		testMetricsViewsAggregation_comparison_with_offset_and_limit_and_delta(t, rt, instanceID)
+	})
+	t.Run("testMetricsViewsAggregation_comparison_date_dimension", func(t *testing.T) {
+		testMetricsViewsAggregation_comparison_date_dimension(t, rt, instanceID)
+	})
+}
+
 func testClaims() *runtime.SecurityClaims {
 	return &runtime.SecurityClaims{SkipChecks: true}
 }
@@ -5349,4 +5396,145 @@ measures:
 `,
 		},
 	})
+}
+
+func newSnowflakeInstance(t testruntime.TestingT) (*runtime.Runtime, string) {
+	return testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		TestConnectors: []string{"snowflake"},
+		Files: map[string]string{
+			"rill.yaml": "olap_connector: snowflake",
+			"metrics/ad_bids_metrics.yaml": `version: 1
+type: metrics_view
+
+display_name: Ad Bids
+table: ad_bids
+database: integration_test
+database_schema: public
+timeseries: timestamp
+
+dimensions:
+  - name: pub
+    display_name: Publisher
+    column: publisher
+    uri: CONCAT('http://localhost/', publisher)
+  - name: dom
+    display_name: Domain
+    column: domain
+  - name: nolabel_pub
+    column: publisher
+  - name: space_label
+    display_name: Space Label
+    expression: "publisher"
+  - name: null_publisher
+    display_name: Null Publisher
+    expression: "case when publisher is null then true else false end"
+  - name: event_date
+    display_name: Event Date
+    expression: "DATE(timestamp)"
+
+measures:
+  - display_name: "Number of bids"
+    expression: count(*)
+  - display_name: "Average bid price"
+    expression: avg(bid_price)
+  - name: m1
+    expression: avg(bid_price)
+  - name: bid_price
+    display_name: Avg Bid Price
+    expression: avg(bid_price)
+`,
+			"metrics/ad_bids_metrics_view.yaml": `version: 1
+type: metrics_view
+
+display_name: Ad Bids
+table: ad_bids
+database: integration_test
+database_schema: public
+timeseries: timestamp
+
+dimensions:
+  - name: publisher
+    display_name: Publisher
+    column: publisher
+  - name: domain
+    display_name: Domain
+    column: domain
+
+measures:
+  - name: total_records
+    display_name: Total records
+    expression: COUNT(*)
+  - name: bid_price_sum
+    display_name: Sum of Bid Price
+    expression: SUM(bid_price)
+`,
+		},
+	})
+}
+
+func testSnowflakeMetricsViewAggregation_measure_filters(t *testing.T, rt *runtime.Runtime, instanceID string) {
+	ctr := &queries.ColumnTimeRange{
+		Database:       "integration_test",
+		DatabaseSchema: "public",
+		TableName:      "ad_bids",
+		ColumnName:     "timestamp",
+	}
+	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
+	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
+
+	lmt := int64(250)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "dom",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_1",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
+			Start: ctr.Result.Min,
+			End:   timestamppb.New(maxTime),
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "dom",
+				Desc: true,
+			},
+		},
+		Limit: &lmt,
+		Having: &runtimev1.Expression{
+			Expression: &runtimev1.Expression_Cond{
+				Cond: &runtimev1.Condition{
+					Op: runtimev1.Operation_OPERATION_GT,
+					Exprs: []*runtimev1.Expression{
+						{
+							Expression: &runtimev1.Expression_Ident{
+								Ident: "measure_1",
+							},
+						},
+						{
+							Expression: &runtimev1.Expression_Val{
+								Val: structpb.NewNumberValue(3.25),
+							},
+						},
+					},
+				},
+			},
+		},
+		SecurityClaims: testClaims(),
+	}
+
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	require.Len(t, q.Result.Data, 3)
+	require.Equal(t, "sports.yahoo.com", q.Result.Data[0].AsMap()["dom"])
+	require.Equal(t, "news.google.com", q.Result.Data[1].AsMap()["dom"])
+	require.Equal(t, "instagram.com", q.Result.Data[2].AsMap()["dom"])
 }
