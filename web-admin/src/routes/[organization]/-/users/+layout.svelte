@@ -38,14 +38,22 @@
 </script>
 
 <ContentContainer title="Manage users" maxWidth={1100}>
-  <div class="container flex-col md:flex-row">
+  <div class="settings-layout">
     <LeftNav {basePage} baseRoute="/[organization]/-/users" {navItems} />
-    <slot />
+    <div class="flex flex-col gap-y-6 w-full min-w-0">
+      <slot />
+    </div>
   </div>
 </ContentContainer>
 
 <style lang="postcss">
-  .container {
-    @apply flex pt-6 gap-6 max-w-full overflow-hidden;
+  .settings-layout {
+    @apply flex flex-col pt-6 gap-6 max-w-full;
+  }
+
+  @media (min-width: 768px) {
+    .settings-layout {
+      @apply flex-row items-start;
+    }
   }
 </style>
