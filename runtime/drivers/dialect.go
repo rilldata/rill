@@ -340,7 +340,7 @@ func (b *BaseDialect) SelectInlineResults(result *Result) (string, []any, []any,
 			if err != nil {
 				return "", nil, nil, fmt.Errorf("select inline: failed to get argument expression: %w", err)
 			}
-			prefix += fmt.Sprintf("%s AS %s", argExpr, b.escapeIdentifier(result.Schema.Fields[i].Name))
+			prefix += fmt.Sprintf("%s AS %s", argExpr, b.escapeAlias(result.Schema.Fields[i].Name))
 			args = append(args, argVal)
 		}
 	}
