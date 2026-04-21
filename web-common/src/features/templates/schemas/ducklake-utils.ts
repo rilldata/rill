@@ -339,3 +339,78 @@ export function shouldExtractDuckLakeAttachSecrets(
   if (schema !== ducklakeSchema) return false;
   return values.connection_mode !== "parameters";
 }
+
+const DUCKLAKE_KNOWN_CATALOG_SCHEMES = new Set([
+  "postgres",
+  "mysql",
+  "md",
+  "sqlite",
+]);
+
+/**
+ * Structural validation for the raw DuckLake ATTACH SQL.
+ *
+ * Catches mistakes that we can identify without a full SQL parser:
+ * leading `ATTACH` keyword, unbalanced quotes, missing `ducklake:` prefix,
+ * empty catalog body, and unknown catalog schemes. Returns one message per
+ * distinct issue; an empty array means the string passes structural checks.
+ */
+export function validateDuckLakeAttach(attach: unknown): string[] {
+  if (typeof attach !== "string") return [];
+  const value = attach.trim();
+  if (!value) return [];
+
+  const errors: string[] = [];
+
+  if (/^ATTACH\b/i.test(value)) {
+    errors.push(
+      'Remove the leading "ATTACH" keyword — Rill adds it automatically.',
+    );
+  }
+
+  const quoteCount = (value.match(/'/g) ?? []).length;
+  if (quoteCount % 2 !== 0) {
+    errors.push(
+      "Unbalanced single quotes. Wrap the catalog URI in a single pair of quotes (e.g. 'ducklake:...').",
+    );
+  }
+
+  const quotedBodies = [...value.matchAll(/'([^']*)'/g)].map((m) => m[1]);
+  const duckLakeBodies = quotedBodies
+    .filter((body) => body.trimStart().toLowerCase().startsWith("ducklake:"))
+    .map((body) => body.trim());
+
+  if (duckLakeBodies.length === 0) {
+    errors.push(
+      "Catalog URI must begin with `ducklake:` (e.g. 'ducklake:catalog.ducklake' or 'ducklake:postgres:dbname=...').",
+    );
+    return errors;
+  }
+
+  for (const body of duckLakeBodies) {
+    const afterDuckLake = body.slice("ducklake:".length);
+    if (!afterDuckLake.trim()) {
+      errors.push("Catalog URI has no value after `ducklake:`.");
+      continue;
+    }
+
+    const schemeMatch = afterDuckLake.match(/^([a-zA-Z][a-zA-Z0-9_]*):/);
+    if (!schemeMatch) continue;
+
+    const scheme = schemeMatch[1].toLowerCase();
+    const subBody = afterDuckLake.slice(schemeMatch[0].length).trim();
+
+    if (!DUCKLAKE_KNOWN_CATALOG_SCHEMES.has(scheme)) {
+      errors.push(
+        `Unknown catalog scheme \`${scheme}:\`. Use one of: ${[...DUCKLAKE_KNOWN_CATALOG_SCHEMES].join(", ")}, or a file path for a DuckDB catalog.`,
+      );
+      continue;
+    }
+
+    if (!subBody) {
+      errors.push(`\`${scheme}:\` catalog has no body.`);
+    }
+  }
+
+  return errors;
+}

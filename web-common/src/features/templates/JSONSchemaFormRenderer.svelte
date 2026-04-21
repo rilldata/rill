@@ -188,7 +188,8 @@
     values: Record<string, unknown>,
   ) {
     const properties = currentSchema.properties ?? {};
-    return Object.entries(properties).filter(([key]) => {
+    return Object.entries(properties).filter(([key, prop]) => {
+      if (prop["x-hidden"]) return false;
       if (!isStepMatch(currentSchema, key, currentStep)) return false;
       return isVisibleForValues(currentSchema, key, values);
     });
@@ -252,6 +253,7 @@
     for (const [key, prop] of Object.entries(properties)) {
       const grouped = prop[groupKey];
       if (!grouped) continue;
+      if (prop["x-hidden"]) continue;
       if (!isStepMatch(currentSchema, key, currentStep)) continue;
 
       const filteredOptions: Record<string, string[]> = {};

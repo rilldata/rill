@@ -5,6 +5,7 @@ import {
   composeDuckLakeAttach,
   extractDuckLakeAttachSecrets,
   shouldExtractDuckLakeAttachSecrets,
+  validateDuckLakeAttach,
 } from "./ducklake-utils";
 import { ducklakeSchema } from "./ducklake";
 
@@ -482,6 +483,85 @@ describe("extractDuckLakeAttachSecrets", () => {
     });
     expect(result.rewrittenAttach).toBe(
       "'ducklake:postgres:{{ .env.DUCKLAKE_POSTGRES }}' vs 'ducklake:postgres:{{ .env.DUCKLAKE_POSTGRES_1 }}'",
+    );
+  });
+});
+
+describe("validateDuckLakeAttach", () => {
+  it("returns no errors for empty, whitespace, or non-string input", () => {
+    expect(validateDuckLakeAttach("")).toEqual([]);
+    expect(validateDuckLakeAttach("   ")).toEqual([]);
+    expect(validateDuckLakeAttach(undefined)).toEqual([]);
+    expect(validateDuckLakeAttach(null)).toEqual([]);
+    expect(validateDuckLakeAttach(42)).toEqual([]);
+  });
+
+  it("accepts a well-formed duckdb catalog clause", () => {
+    expect(
+      validateDuckLakeAttach(
+        "'ducklake:catalog.ducklake' AS my_ducklake (DATA_PATH 'files/')",
+      ),
+    ).toEqual([]);
+  });
+
+  it("accepts postgres, mysql, and motherduck schemes", () => {
+    expect(
+      validateDuckLakeAttach("'ducklake:postgres:dbname=x host=y'"),
+    ).toEqual([]);
+    expect(
+      validateDuckLakeAttach("'ducklake:mysql:database=x host=y'"),
+    ).toEqual([]);
+    expect(
+      validateDuckLakeAttach("'ducklake:md:my_db?motherduck_token=abc'"),
+    ).toEqual([]);
+    expect(validateDuckLakeAttach("'ducklake:sqlite:catalog.sqlite'")).toEqual(
+      [],
+    );
+  });
+
+  it("flags a leading ATTACH keyword", () => {
+    const errors = validateDuckLakeAttach(
+      "ATTACH 'ducklake:catalog.ducklake'",
+    );
+    expect(errors).toContainEqual(
+      expect.stringContaining('Remove the leading "ATTACH"'),
+    );
+  });
+
+  it("flags unbalanced single quotes", () => {
+    const errors = validateDuckLakeAttach("'ducklake:catalog.ducklake");
+    expect(errors).toContainEqual(
+      expect.stringContaining("Unbalanced single quotes"),
+    );
+  });
+
+  it("flags a missing ducklake: prefix", () => {
+    const errors = validateDuckLakeAttach("'catalog.ducklake'");
+    expect(errors).toContainEqual(
+      expect.stringContaining("Catalog URI must begin with `ducklake:`"),
+    );
+  });
+
+  it("flags an empty body after the ducklake: prefix", () => {
+    const errors = validateDuckLakeAttach("'ducklake:'");
+    expect(errors).toContainEqual(
+      expect.stringContaining("has no value after `ducklake:`"),
+    );
+  });
+
+  it("flags an unknown catalog scheme", () => {
+    const errors = validateDuckLakeAttach(
+      "'ducklake:potsgres:dbname=x host=y'",
+    );
+    expect(errors).toContainEqual(
+      expect.stringContaining("Unknown catalog scheme `potsgres:`"),
+    );
+  });
+
+  it("flags an empty body after a known scheme prefix", () => {
+    const errors = validateDuckLakeAttach("'ducklake:postgres:'");
+    expect(errors).toContainEqual(
+      expect.stringContaining("`postgres:` catalog has no body"),
     );
   });
 });

@@ -105,6 +105,19 @@ export type JSONSchemaField = {
    * When set, this name is used instead of computing it from driver + property key.
    */
   "x-env-var-name"?: string;
+  /**
+   * Name of a registered custom validator to run against this field's value.
+   * The validator returns a list of error messages; empty list means valid.
+   * Runs in addition to JSON Schema validation, after `pruneEmptyFields`.
+   */
+  "x-custom-validator"?: string;
+  /**
+   * Hide the field from the rendered form without removing it from the schema.
+   * The field's value still participates in conditional logic (x-visible-if,
+   * allOf/if/then) and tab-group filtering, so downstream code that depends on
+   * `connection_mode` / `auth_method` etc. continues to work.
+   */
+  "x-hidden"?: boolean;
   // Allow custom keywords such as errorMessage or future x-extensions.
   [key: string]: unknown;
 };
