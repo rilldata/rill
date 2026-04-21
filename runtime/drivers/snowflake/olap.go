@@ -16,7 +16,7 @@ var _ drivers.OLAPStore = (*connection)(nil)
 
 // Dialect implements drivers.OLAPStore.
 func (c *connection) Dialect() drivers.Dialect {
-	return drivers.DialectSnowflake
+	return DialectSnowflake
 }
 
 // Exec implements drivers.OLAPStore.
@@ -152,7 +152,7 @@ func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) erro
 
 	// HACK: Since All and Lookup don't always return the correct casing, we uppercase the table name here as that's usually necessary in Snowflake.
 	// This is a workaround until we return correct casing from All and Lookup.
-	fqn := drivers.DialectSnowflake.EscapeTable(strings.ToUpper(table.Database), strings.ToUpper(table.DatabaseSchema), strings.ToUpper(table.Name))
+	fqn := c.Dialect().EscapeTable(strings.ToUpper(table.Database), strings.ToUpper(table.DatabaseSchema), strings.ToUpper(table.Name))
 
 	objectType := "TABLE"
 	if table.View {
@@ -244,7 +244,7 @@ func databaseTypeToPB(dbt string, scale int64, nullable bool) (*runtimev1.Type, 
 		if scale == 0 {
 			t.Code = runtimev1.Type_CODE_INT256
 		} else {
-			t.Code = runtimev1.Type_CODE_FLOAT64
+			t.Code = runtimev1.Type_CODE_DECIMAL
 		}
 	case "VARCHAR", "STRING", "TEXT", "CHAR", "CHARACTER":
 		t.Code = runtimev1.Type_CODE_STRING

@@ -37,9 +37,10 @@ require (
 	github.com/c2h5oh/datasize v0.0.0-20220606134207-859f65c6625b
 	github.com/confluentinc/confluent-kafka-go/v2 v2.2.0
 	github.com/coreos/go-oidc/v3 v3.17.0
+	github.com/databricks/databricks-sql-go v1.10.0
 	github.com/dgraph-io/ristretto v0.1.1
 	github.com/docker/go-connections v0.6.0
-	github.com/duckdb/duckdb-go/v2 v2.5.5
+	github.com/duckdb/duckdb-go/v2 v2.10502.0
 	github.com/eapache/go-resiliency v1.3.0
 	github.com/envoyproxy/protoc-gen-validate v1.3.0
 	github.com/fatih/color v1.16.0
@@ -141,14 +142,16 @@ require (
 )
 
 require (
+	github.com/apache/arrow/go/v12 v12.0.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/signin v1.0.8 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
+	github.com/dnephin/pflag v1.0.7 // indirect
 	github.com/docker/compose/v5 v5.1.2 // indirect
-	github.com/duckdb/duckdb-go-bindings/lib/darwin-amd64 v0.3.3 // indirect
-	github.com/duckdb/duckdb-go-bindings/lib/darwin-arm64 v0.3.3 // indirect
-	github.com/duckdb/duckdb-go-bindings/lib/linux-amd64 v0.3.3 // indirect
-	github.com/duckdb/duckdb-go-bindings/lib/linux-arm64 v0.3.3 // indirect
-	github.com/duckdb/duckdb-go-bindings/lib/windows-amd64 v0.3.3 // indirect
+	github.com/duckdb/duckdb-go-bindings/lib/darwin-amd64 v0.10502.0 // indirect
+	github.com/duckdb/duckdb-go-bindings/lib/darwin-arm64 v0.10502.0 // indirect
+	github.com/duckdb/duckdb-go-bindings/lib/linux-amd64 v0.10502.0 // indirect
+	github.com/duckdb/duckdb-go-bindings/lib/linux-arm64 v0.10502.0 // indirect
+	github.com/duckdb/duckdb-go-bindings/lib/windows-amd64 v0.10502.0 // indirect
 	github.com/go-openapi/swag/cmdutils v0.25.4 // indirect
 	github.com/go-openapi/swag/conv v0.25.5 // indirect
 	github.com/go-openapi/swag/fileutils v0.25.5 // indirect
@@ -165,11 +168,13 @@ require (
 	github.com/moby/moby/client v0.4.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/prometheus/otlptranslator v1.0.0 // indirect
+	github.com/rs/zerolog v1.28.0 // indirect
 	github.com/segmentio/encoding v0.5.4 // indirect
 	github.com/sigstore/sigstore v1.10.4 // indirect
 	github.com/sigstore/sigstore-go v1.1.4 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v4 v4.0.0-rc.4 // indirect
+	gotest.tools/gotestsum v1.8.2 // indirect
 	gotest.tools/v3 v3.5.2 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
@@ -254,7 +259,7 @@ require (
 	github.com/docker/docker v28.5.2+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.9.5 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
-	github.com/duckdb/duckdb-go-bindings v0.3.3 // indirect
+	github.com/duckdb/duckdb-go-bindings v0.10502.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/dvsekhvalnov/jose2go v1.8.0 // indirect
 	github.com/ebitengine/purego v0.10.0 // indirect
