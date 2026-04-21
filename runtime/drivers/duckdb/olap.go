@@ -30,7 +30,7 @@ var (
 )
 
 func (c *connection) Dialect() drivers.Dialect {
-	return drivers.DialectDuckDB
+	return DialectDuckDB
 }
 
 func (c *connection) MayBeScaledToZero(ctx context.Context) bool {

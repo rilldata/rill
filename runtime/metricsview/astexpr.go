@@ -431,7 +431,11 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 		if not {
 			b.writeString(" NOT ")
 		}
-		b.writeString(b.ast.Dialect.GetRegexMatchFunction())
+		regexFunc, err := b.ast.Dialect.GetRegexMatchFunction()
+		if err != nil {
+			return err
+		}
+		b.writeString(regexFunc)
 		b.writeByte('(')
 		if leftOverride != "" {
 			b.writeParenthesizedString(leftOverride)
@@ -673,8 +677,11 @@ func (b *sqlExprBuilder) writeArrayContainsCondition(leftExpr string, right *Exp
 	if not {
 		b.writeString("NOT ")
 	}
-
-	b.writeString(b.ast.Dialect.GetArrayContainsFunction())
+	arrayContainsFunc, err := b.ast.Dialect.GetArrayContainsFunction()
+	if err != nil {
+		return err
+	}
+	b.writeString(arrayContainsFunc)
 	b.writeByte('(')
 	b.writeParenthesizedString(leftExpr)
 	b.writeString(", [")

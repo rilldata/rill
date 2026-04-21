@@ -1,0 +1,428 @@
+package drivers
+
+import (
+	"fmt"
+	"strings"
+	"time"
+
+	"cloud.google.com/go/civil"
+	"github.com/google/uuid"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+
+	// Load IANA time zone data
+	_ "time/tzdata"
+)
+
+// DialectName constants identify SQL dialects by name.
+// Use Dialect.String() == DialectNameDuckDB for comparisons.
+const (
+	DialectNameAthena     = "athena"
+	DialectNameBigQuery   = "bigquery"
+	DialectNameClickHouse = "clickhouse"
+	DialectNameDuckDB     = "duckdb"
+	DialectNameDruid      = "druid"
+	DialectNameMySQL      = "mysql"
+	DialectNamePinot      = "pinot"
+	DialectNamePostgres   = "postgres"
+	DialectNameRedshift   = "redshift"
+	DialectNameSnowflake  = "snowflake"
+	DialectNameStarRocks  = "starrocks"
+)
+
+// Dialect is the SQL dialect used by an OLAP driver.
+type Dialect interface {
+	String() string
+	CanPivot() bool
+	EscapeIdentifier(ident string) string
+	EscapeAlias(alias string) string
+	EscapeQualifiedIdentifier(name string) string
+	EscapeTable(db, schema, table string) string
+	EscapeMember(tbl, name string) string
+	EscapeMemberAlias(tbl, alias string) string
+	ConvertToDateTruncSpecifier(grain runtimev1.TimeGrain) string
+	SupportsILike() bool
+	GetCastExprForLike() string
+	SupportsRegexMatch() bool
+	GetRegexMatchFunction() (string, error)
+	RequiresArrayContainsForInOperator() bool
+	GetArrayContainsFunction() (string, error)
+	DimensionSelect(escapeTable string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error)
+	LateralUnnest(expr, tableAlias, colName string) (tbl string, tupleStyle, auto bool, err error)
+	UnnestSQLSuffix(tbl string) string
+	MetricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_Dimension) (string, error)
+	AnyValueExpression(expr string) string
+	MinDimensionExpression(expr string) string
+	MaxDimensionExpression(expr string) string
+	GetTimeDimensionParameter(typeCode runtimev1.Type_Code) string
+	CastToDataType(typ runtimev1.Type_Code) (string, error)
+	SafeDivideExpression(numExpr, denExpr string) string
+	OrderByExpression(name string, desc bool) string
+	OrderByAliasExpression(name string, desc bool) string
+	JoinOnExpression(lhs, rhs string) string
+	DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain runtimev1.TimeGrain, tz string, firstDayOfWeek, firstMonthOfYear int) (string, error)
+	DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string, error)
+	IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.TimeGrain) (string, error)
+	SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string, tz *time.Location, firstDay, firstMonth int) (string, []any, error)
+	SelectInlineResults(result *Result) (string, []any, []any, error)
+	LookupSelectExpr(lookupTable, lookupKeyColumn string) (string, error)
+	SanitizeQueryForLogging(sql string) string
+	ColumnCardinality(db, dbSchema, table, column string) (string, error)
+	ColumnDescriptiveStatistics(db, dbSchema, table, column string) (string, error)
+	IsNonNullFinite(floatColumn string) string
+	ColumnNullCount(escapeTable, column string) (string, error)
+	ColumnNumericHistogramBucket(db, dbSchema, table, column string) (string, error)
+}
+
+// BaseDialect provides default implementations for the Dialect interface.
+type BaseDialect struct {
+	name             string
+	escapeIdentifier func(string) string
+	escapeAlias      func(string) string
+}
+
+func NewBaseDialect(name string, escapeIdentifier, escapeAlias func(string) string) BaseDialect {
+	return BaseDialect{name: name, escapeIdentifier: escapeIdentifier, escapeAlias: escapeAlias}
+}
+
+func (b *BaseDialect) CanPivot() bool {
+	return false
+}
+
+func (b *BaseDialect) String() string {
+	return b.name
+}
+
+func (b *BaseDialect) EscapeIdentifier(ident string) string {
+	return b.escapeIdentifier(ident)
+}
+
+func (b *BaseDialect) EscapeAlias(alias string) string {
+	return b.escapeAlias(alias)
+}
+
+// EscapeQualifiedIdentifier escapes a dot-separated qualified name (e.g. "schema.table") by escaping each part individually.
+// Use this instead of EscapeIdentifier when the input may contain dots that represent schema/table separators.
+// WARNING: Only use it for edge features where it is an acceptable trade-off to NOT support tables with a dot in their name (which we occasionally see in real-world use cases).
+func (b *BaseDialect) EscapeQualifiedIdentifier(name string) string {
+	if name == "" {
+		return name
+	}
+	parts := strings.Split(name, ".")
+	for i, part := range parts {
+		parts[i] = b.escapeIdentifier(part)
+	}
+	return strings.Join(parts, ".")
+}
+
+func (b *BaseDialect) ConvertToDateTruncSpecifier(grain runtimev1.TimeGrain) string {
+	switch grain {
+	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
+		return "MILLISECOND"
+	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
+		return "SECOND"
+	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
+		return "MINUTE"
+	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
+		return "HOUR"
+	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
+		return "DAY"
+	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
+		return "WEEK"
+	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
+		return "MONTH"
+	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
+		return "QUARTER"
+	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
+		return "YEAR"
+	}
+	return ""
+}
+
+func (b *BaseDialect) SupportsILike() bool { return true }
+
+// GetCastExprForLike returns the cast expression for use in a LIKE or ILIKE condition, or an empty string if no cast is necessary.
+func (b *BaseDialect) GetCastExprForLike() string {
+	return ""
+}
+
+func (b *BaseDialect) SupportsRegexMatch() bool {
+	return false
+}
+
+func (b *BaseDialect) GetRegexMatchFunction() (string, error) {
+	return "", fmt.Errorf("regex match not supported for %s dialect", b.String())
+}
+
+// EscapeTable returns an escaped table name with database, schema and table.
+func (b *BaseDialect) EscapeTable(db, schema, table string) string {
+	var sb strings.Builder
+	if db != "" {
+		sb.WriteString(b.escapeIdentifier(db))
+		sb.WriteString(".")
+	}
+	if schema != "" {
+		sb.WriteString(b.escapeIdentifier(schema))
+		sb.WriteString(".")
+	}
+	sb.WriteString(b.escapeIdentifier(table))
+	return sb.String()
+}
+
+// EscapeMember returns an escaped member name with table alias and column name.
+func (b *BaseDialect) EscapeMember(tbl, name string) string {
+	if tbl == "" {
+		return b.escapeIdentifier(name)
+	}
+	return fmt.Sprintf("%s.%s", b.escapeIdentifier(tbl), b.escapeIdentifier(name))
+}
+
+// EscapeMemberAlias is like EscapeMember but uses EscapeAlias for the column name.
+func (b *BaseDialect) EscapeMemberAlias(tbl, alias string) string {
+	if tbl == "" {
+		return b.escapeAlias(alias)
+	}
+	return fmt.Sprintf("%s.%s", b.escapeIdentifier(tbl), b.escapeAlias(alias))
+}
+
+func (b *BaseDialect) DimensionSelect(escapeTable string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error) {
+	colName := b.escapeIdentifier(dim.Name)
+	alias := b.escapeAlias(dim.Name)
+	if !dim.Unnest {
+		expr, err := b.MetricsViewDimensionExpression(dim)
+		if err != nil {
+			return "", "", fmt.Errorf("failed to get dimension expression: %w", err)
+		}
+		return fmt.Sprintf(`(%s) AS %s`, expr, alias), "", nil
+	}
+
+	unnestColName := b.escapeIdentifier(TempName(fmt.Sprintf("%s_%s_", "unnested", dim.Name)))
+	unnestTableName := TempName("tbl")
+	sel := fmt.Sprintf(`%s AS %s`, unnestColName, alias)
+	if dim.Expression == "" {
+		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl_name("unnested_colName") ...
+		return sel, fmt.Sprintf(`, LATERAL UNNEST(%s.%s) %s(%s)`, escapeTable, colName, unnestTableName, unnestColName), nil
+	}
+	return sel, fmt.Sprintf(`, LATERAL UNNEST(%s) %s(%s)`, dim.Expression, unnestTableName, unnestColName), nil
+}
+
+func (b *BaseDialect) LateralUnnest(expr, tableAlias, colName string) (tbl string, tupleStyle, auto bool, err error) {
+	return fmt.Sprintf(`LATERAL UNNEST(%s) %s(%s)`, expr, tableAlias, b.escapeIdentifier(colName)), true, false, nil
+}
+
+func (b *BaseDialect) UnnestSQLSuffix(tbl string) string {
+	return fmt.Sprintf(", %s", tbl)
+}
+
+func (b *BaseDialect) RequiresArrayContainsForInOperator() bool {
+	return false
+}
+
+func (b *BaseDialect) GetArrayContainsFunction() (string, error) {
+	return "", fmt.Errorf("array contains not supported for %s dialect", b.String())
+}
+
+func (b *BaseDialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_Dimension) (string, error) {
+	if dimension.LookupTable != "" {
+		return "", fmt.Errorf("lookup tables are not supported for %s dialect", b.String())
+	}
+	if dimension.Expression != "" {
+		return dimension.Expression, nil
+	}
+	if dimension.Column != "" {
+		return b.escapeIdentifier(dimension.Column), nil
+	}
+	// Backwards compatibility for older projects that have not run reconcile on this metrics view.
+	// In that case `column` will not be present.
+	return b.escapeIdentifier(dimension.Name), nil
+}
+
+// AnyValueExpression applies the ANY_VALUE aggregation function (or equivalent) to the given expression.
+func (b *BaseDialect) AnyValueExpression(expr string) string {
+	return fmt.Sprintf("ANY_VALUE(%s)", expr)
+}
+
+func (b *BaseDialect) MinDimensionExpression(expr string) string {
+	return fmt.Sprintf("MIN(%s)", expr)
+}
+
+func (b *BaseDialect) MaxDimensionExpression(expr string) string {
+	return fmt.Sprintf("MAX(%s)", expr)
+}
+
+func (b *BaseDialect) GetTimeDimensionParameter(_ runtimev1.Type_Code) string {
+	return "?"
+}
+
+func (b *BaseDialect) CastToDataType(typ runtimev1.Type_Code) (string, error) {
+	switch typ {
+	case runtimev1.Type_CODE_TIMESTAMP:
+		return "TIMESTAMP", nil
+	default:
+		return "", fmt.Errorf("unsupported cast type %q for %s dialect", typ.String(), b.String())
+	}
+}
+
+func (b *BaseDialect) SafeDivideExpression(numExpr, denExpr string) string {
+	return fmt.Sprintf("(%s)/CAST(%s AS DOUBLE)", numExpr, denExpr)
+}
+
+func (b *BaseDialect) OrderByExpression(name string, desc bool) string {
+	res := b.escapeIdentifier(name)
+	if desc {
+		res += " DESC"
+	}
+	return res
+}
+
+func (b *BaseDialect) OrderByAliasExpression(name string, desc bool) string {
+	res := b.escapeAlias(name)
+	if desc {
+		res += " DESC"
+	}
+	return res
+}
+
+func (b *BaseDialect) JoinOnExpression(lhs, rhs string) string {
+	return fmt.Sprintf("%s IS NOT DISTINCT FROM %s", lhs, rhs)
+}
+
+func (b *BaseDialect) DateTruncExpr(_ *runtimev1.MetricsViewSpec_Dimension, _ runtimev1.TimeGrain, _ string, _, _ int) (string, error) {
+	return "", fmt.Errorf("DateTruncExpr not implemented for %s dialect", b.String())
+}
+
+func (b *BaseDialect) DateDiff(_ runtimev1.TimeGrain, _, _ time.Time) (string, error) {
+	return "", fmt.Errorf("DateDiff not implemented for %s dialect", b.String())
+}
+
+func (b *BaseDialect) IntervalSubtract(_, _ string, _ runtimev1.TimeGrain) (string, error) {
+	return "", fmt.Errorf("IntervalSubtract not implemented for %s dialect", b.String())
+}
+
+func (b *BaseDialect) SelectTimeRangeBins(_, _ time.Time, _ runtimev1.TimeGrain, _ string, _ *time.Location, _, _ int) (string, []any, error) {
+	return "", nil, fmt.Errorf("SelectTimeRangeBins not implemented for %s dialect", b.String())
+}
+
+func (b *BaseDialect) SelectInlineResults(result *Result) (string, []any, []any, error) {
+	// check schema field type for compatibility
+	for _, f := range result.Schema.Fields {
+		if !CheckTypeCompatibility(f) {
+			return "", nil, nil, fmt.Errorf("select inline: schema field type not supported %q: %w", f.Type.Code, ErrOptimizationFailure)
+		}
+	}
+
+	values := make([]any, len(result.Schema.Fields))
+	valuePtrs := make([]any, len(result.Schema.Fields))
+	for i := range values {
+		valuePtrs[i] = &values[i]
+	}
+
+	var dimVals []any
+	var args []any
+
+	prefix := ""
+	suffix := ""
+	// creating inline query for all dialects in one loop, accumulating field exprs first and then creating the query can be more cleaner
+	for result.Next() {
+		if err := result.Scan(valuePtrs...); err != nil {
+			return "", nil, nil, fmt.Errorf("select inline: failed to scan value: %w", err)
+		}
+		// format: SELECT ? AS a, ? AS b UNION ALL SELECT ...
+		if prefix != "" {
+			prefix += " UNION ALL "
+		}
+		prefix += "SELECT "
+		dimVals = append(dimVals, values[0])
+		for i, v := range values {
+			if i > 0 {
+				prefix += ", "
+			}
+			argExpr, argVal, err := getArgExpr(v, result.Schema.Fields[i].Type.Code)
+			if err != nil {
+				return "", nil, nil, fmt.Errorf("select inline: failed to get argument expression: %w", err)
+			}
+			prefix += fmt.Sprintf("%s AS %s", argExpr, b.escapeIdentifier(result.Schema.Fields[i].Name))
+			args = append(args, argVal)
+		}
+	}
+	if err := result.Err(); err != nil {
+		return "", nil, nil, err
+	}
+	return prefix + suffix, args, dimVals, nil
+}
+
+func (b *BaseDialect) LookupSelectExpr(_, _ string) (string, error) {
+	return "", fmt.Errorf("lookup tables are not supported for %s dialect", b.String())
+}
+
+func (b *BaseDialect) SanitizeQueryForLogging(sql string) string { return sql }
+
+func (b *BaseDialect) ColumnCardinality(db, dbSchema, table, column string) (string, error) {
+	return "", fmt.Errorf("ColumnCardinality not implemented for %s dialect", b.String())
+}
+
+func (b *BaseDialect) ColumnDescriptiveStatistics(db, dbSchema, table, column string) (string, error) {
+	return "", fmt.Errorf("ColumnDescriptiveStatistics not implemented for %s dialect", b.String())
+}
+
+func (b *BaseDialect) IsNonNullFinite(_ string) string {
+	return "1=1"
+}
+
+func (b *BaseDialect) ColumnNullCount(escapeTable, column string) (string, error) {
+	return fmt.Sprintf("SELECT count(*) AS count FROM %s WHERE %s IS NULL", escapeTable, b.escapeIdentifier(column)), nil
+}
+
+func (b *BaseDialect) ColumnNumericHistogramBucket(db, dbSchema, table, column string) (string, error) {
+	return "", fmt.Errorf("ColumnNumericHistogramBucket not implemented for %s dialect", b.String())
+}
+
+func EscapeStringValue(s string) string {
+	return fmt.Sprintf("'%s'", strings.ReplaceAll(s, "'", "''"))
+}
+
+func CheckTypeCompatibility(f *runtimev1.StructType_Field) bool {
+	switch f.Type.Code {
+	// types that align with native go types are supported
+	case runtimev1.Type_CODE_STRING,
+		runtimev1.Type_CODE_INT8, runtimev1.Type_CODE_INT16, runtimev1.Type_CODE_INT32, runtimev1.Type_CODE_INT64,
+		runtimev1.Type_CODE_UINT8, runtimev1.Type_CODE_UINT16, runtimev1.Type_CODE_UINT32, runtimev1.Type_CODE_UINT64,
+		runtimev1.Type_CODE_FLOAT32, runtimev1.Type_CODE_FLOAT64,
+		runtimev1.Type_CODE_BOOL,
+		runtimev1.Type_CODE_TIME, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIMESTAMP:
+		return true
+	default:
+		return false
+	}
+}
+
+func TempName(prefix string) string {
+	return prefix + strings.ReplaceAll(uuid.New().String(), "-", "")
+}
+
+func DoubleQuotesEscapeIdentifier(ident string) string {
+	if ident == "" {
+		return ident
+	}
+	// Most other dialects follow ANSI SQL: use double quotes.
+	// Replace any internal double quotes with escaped double quotes.
+	return fmt.Sprintf(`"%s"`, strings.ReplaceAll(ident, `"`, `""`)) // nolint:gocritic
+}
+
+func getArgExpr(val any, typ runtimev1.Type_Code) (string, any, error) {
+	// handle bigquery non-timestamp time types separately
+	switch v := val.(type) {
+	case civil.Date:
+		return "CAST(? AS DATE)", v.String(), nil
+	case civil.DateTime:
+		return "CAST(? AS DATETIME)", v.String(), nil
+	}
+	// handle date types especially otherwise they get sent as time.Time args which will be treated as datetime/timestamp types in olap
+	if typ == runtimev1.Type_CODE_DATE {
+		t, ok := val.(time.Time)
+		if !ok {
+			return "", nil, fmt.Errorf("could not cast value %v to time.Time for date type", val)
+		}
+		return "CAST(? AS DATE)", t.Format(time.DateOnly), nil
+	}
+	return "?", val, nil
+}

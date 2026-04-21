@@ -67,10 +67,7 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 	}
 	defer release()
 
-	if !supportedTableHeadDialects[olap.Dialect()] {
-		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
-	}
-	if olap.Dialect() == drivers.DialectDuckDB {
+	if olap.Dialect().String() == drivers.DialectNameDuckDB {
 		return olap.WithConnection(ctx, priority, func(ctx context.Context, ensuredCtx context.Context) error {
 			// views return duplicate column names, so we need to create a temporary table
 			temporaryTableName := tempName("profile_columns_")
