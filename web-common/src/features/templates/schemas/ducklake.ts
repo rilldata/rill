@@ -48,6 +48,7 @@ export const ducklakeSchema: MultiStepFormSchema = {
       default: true,
       "x-display": "toggle",
       "x-yaml-value": { true: "readonly", false: "readwrite" },
+      "x-visible-if": { connection_mode: "parameters" },
       "x-step": "connector",
       "x-advanced": true,
     },

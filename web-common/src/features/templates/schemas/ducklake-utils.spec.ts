@@ -542,6 +542,20 @@ describe("validateDuckLakeAttach", () => {
     );
   });
 
+  it("accepts the alternative (TYPE DUCKLAKE) form without the ducklake: prefix", () => {
+    expect(
+      validateDuckLakeAttach(
+        "'https://blobs.duckdb.org/datalake/tpch-sf3.ducklake' AS my_resource (TYPE ducklake)",
+      ),
+    ).toEqual([]);
+
+    expect(
+      validateDuckLakeAttach(
+        "'catalog.ducklake' AS x (TYPE DUCKLAKE)",
+      ),
+    ).toEqual([]);
+  });
+
   it("flags an empty body after the ducklake: prefix", () => {
     const errors = validateDuckLakeAttach("'ducklake:'");
     expect(errors).toContainEqual(

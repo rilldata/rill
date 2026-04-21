@@ -351,9 +351,10 @@ const DUCKLAKE_KNOWN_CATALOG_SCHEMES = new Set([
  * Structural validation for the raw DuckLake ATTACH SQL.
  *
  * Catches mistakes that we can identify without a full SQL parser:
- * leading `ATTACH` keyword, unbalanced quotes, missing `ducklake:` prefix,
- * empty catalog body, and unknown catalog schemes. Returns one message per
- * distinct issue; an empty array means the string passes structural checks.
+ * leading `ATTACH` keyword, unbalanced quotes, missing `ducklake:` prefix
+ * (when `TYPE DUCKLAKE` is also absent), empty catalog body, and unknown
+ * catalog schemes. Returns one message per distinct issue; an empty array
+ * means the string passes structural checks.
  */
 export function validateDuckLakeAttach(attach: unknown): string[] {
   if (typeof attach !== "string") return [];
@@ -375,15 +376,23 @@ export function validateDuckLakeAttach(attach: unknown): string[] {
     );
   }
 
+  // DuckLake accepts two equivalent forms: a `ducklake:` URI prefix, or a plain
+  // URI paired with `(TYPE DUCKLAKE)` in the options. Only the first form has a
+  // nested scheme we can validate (postgres:/mysql:/md:/sqlite:), so the scheme
+  // checks below are skipped when `TYPE DUCKLAKE` is declared.
+  const hasTypeDuckLakeOption = /\bTYPE\s+DUCKLAKE\b/i.test(value);
+
   const quotedBodies = [...value.matchAll(/'([^']*)'/g)].map((m) => m[1]);
   const duckLakeBodies = quotedBodies
     .filter((body) => body.trimStart().toLowerCase().startsWith("ducklake:"))
     .map((body) => body.trim());
 
   if (duckLakeBodies.length === 0) {
-    errors.push(
-      "Catalog URI must begin with `ducklake:` (e.g. 'ducklake:catalog.ducklake' or 'ducklake:postgres:dbname=...').",
-    );
+    if (!hasTypeDuckLakeOption) {
+      errors.push(
+        "Catalog URI must begin with `ducklake:`, or include `(TYPE DUCKLAKE)` in the options (e.g. 'ducklake:catalog.ducklake' or 'https://.../catalog.ducklake' AS x (TYPE DUCKLAKE)).",
+      );
+    }
     return errors;
   }
 
