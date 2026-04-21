@@ -101,7 +101,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 
 	// Bind cached timestamps (including rollups) for rollup routing.
 	// Skip when query uses a non-primary time dimension since rollup routing won't apply.
-	timeDim := q.TimeRange.TimeDimension
+	timeDim := q.TimeRange.GetTimeDimension()
 	if len(mv.ValidSpec.Rollups) > 0 && mv.ValidSpec.TimeDimension != "" && (timeDim == "" || timeDim == mv.ValidSpec.TimeDimension) {
 		tsRes, err := ResolveTimestampResult(ctx, rt, instanceID, q.MetricsViewName, timeDim, q.SecurityClaims, priority)
 		if err != nil {
