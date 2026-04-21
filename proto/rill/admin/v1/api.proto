@@ -1928,10 +1928,10 @@ message GetDeploymentConfigRequest {
 }
 
 message GetDeploymentConfigResponse {
-  // Deprecated: Variables for the deployment (connector credentials, etc.). Use `project_variables` instead.
-  map<string, string> variables = 1;
-  // Project-specific variables for the deployment.
-  repeated ProjectVariable project_variables = 7;
+  // Variables for the deployment.
+  repeated ProjectVariable variables = 7;
+  // Deprecated: Variables for the deployment. Use `variables` instead.
+map<string, string> variables_legacy = 1;
   // Annotations for the deployment (org/project metadata, etc.)
   map<string, string> annotations = 2;
   // Frontend URL for the deployment.
