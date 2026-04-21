@@ -686,15 +686,11 @@ components:
                     title: Duckdb connector config for the deployment
                     type: object
                 editable:
+                    description: Whether the deployment is editable (dev environment with changes persisted to git repo).
                     type: boolean
                 frontendUrl:
                     description: Frontend URL for the deployment.
                     type: string
-                projectVariables:
-                    description: Project-specific variables for the deployment.
-                    items:
-                        $ref: '#/components/schemas/v1ProjectVariable'
-                    type: array
                 updatedOn:
                     description: Timestamp when the deployment was last updated.
                     format: date-time
@@ -703,9 +699,14 @@ components:
                     description: Whether the deployment is git based or archive based.
                     type: boolean
                 variables:
+                    description: Variables for the deployment.
+                    items:
+                        $ref: '#/components/schemas/v1ProjectVariable'
+                    type: array
+                variablesLegacy:
                     additionalProperties:
                         type: string
-                    description: 'Deprecated: Variables for the deployment (connector credentials, etc.). Use `project_variables` instead.'
+                    description: 'Deprecated: Variables for the deployment. Use `variables` instead.'
                     type: object
             type: object
         v1GetDeploymentCredentialsResponse:

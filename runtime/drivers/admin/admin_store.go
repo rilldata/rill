@@ -117,7 +117,7 @@ func (h *Handle) GetDeploymentConfig(ctx context.Context) (*drivers.DeploymentCo
 	}
 
 	return &drivers.DeploymentConfig{
-		Variables:             groupVariablesByEnv(res.ProjectVariables),
+		Variables:             groupVariablesByEnv(res.Variables),
 		Annotations:           res.Annotations,
 		FrontendURL:           res.FrontendUrl,
 		UpdatedOn:             res.UpdatedOn.AsTime(),

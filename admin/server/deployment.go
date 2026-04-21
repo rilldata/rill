@@ -949,11 +949,11 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 	if err != nil {
 		return nil, err
 	}
-	resp.ProjectVariables = make([]*adminv1.ProjectVariable, 0, len(vars))
+	resp.Variables = make([]*adminv1.ProjectVariable, 0, len(vars))
 	for _, v := range vars {
-		resp.ProjectVariables = append(resp.ProjectVariables, projectVariableToDTO(v))
+		resp.Variables = append(resp.Variables, projectVariableToDTO(v))
 	}
-	resp.ProjectVariables = append(resp.ProjectVariables, &adminv1.ProjectVariable{
+	resp.Variables = append(resp.Variables, &adminv1.ProjectVariable{
 		Name:        "rill.watch_repo",
 		Value:       strconv.FormatBool(depl.Editable),
 		Environment: depl.Environment,
@@ -962,9 +962,9 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 	})
 
 	// remove in next release
-	resp.Variables = make(map[string]string, len(vars)) // nolint:staticcheck // Still need to populate for backward compatibility.
+	resp.VariablesLegacy = make(map[string]string, len(vars)) // nolint:staticcheck // Still need to populate for backward compatibility.
 	for _, v := range vars {
-		resp.Variables[v.Name] = v.Value // nolint:staticcheck // Still need to populate for backward compatibility.
+		resp.VariablesLegacy[v.Name] = v.Value // nolint:staticcheck // Still need to populate for backward compatibility.
 	}
 
 	// parsing duckdb connector config

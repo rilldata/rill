@@ -196,9 +196,9 @@ type RuntimeServiceClient interface {
 	// GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
 	// It only pushes the changes to the existing remote repo.
 	GitPush(ctx context.Context, in *GitPushRequest, opts ...grpc.CallOption) (*GitPushResponse, error)
-	// PullEnv pulls environment variables from cloud to local .env file
+	// PullEnv pulls environment variables from admin service to local .env file
 	PullEnv(ctx context.Context, in *PullEnvRequest, opts ...grpc.CallOption) (*PullEnvResponse, error)
-	// PushEnv pushes local environment variables to cloud
+	// PushEnv pushes local environment variables to admin service
 	PushEnv(ctx context.Context, in *PushEnvRequest, opts ...grpc.CallOption) (*PushEnvResponse, error)
 }
 
@@ -907,9 +907,9 @@ type RuntimeServiceServer interface {
 	// GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
 	// It only pushes the changes to the existing remote repo.
 	GitPush(context.Context, *GitPushRequest) (*GitPushResponse, error)
-	// PullEnv pulls environment variables from cloud to local .env file
+	// PullEnv pulls environment variables from admin service to local .env file
 	PullEnv(context.Context, *PullEnvRequest) (*PullEnvResponse, error)
-	// PushEnv pushes local environment variables to cloud
+	// PushEnv pushes local environment variables to admin service
 	PushEnv(context.Context, *PushEnvRequest) (*PushEnvResponse, error)
 	mustEmbedUnimplementedRuntimeServiceServer()
 }

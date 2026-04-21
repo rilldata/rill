@@ -795,7 +795,7 @@ paths:
         - RuntimeService
   /v1/instances/{instanceId}/env/pull:
     post:
-      summary: PullEnv pulls environment variables from cloud to local .env file
+      summary: PullEnv pulls environment variables from admin service to local .env file
       operationId: RuntimeService_PullEnv
       responses:
         "200":
@@ -820,7 +820,7 @@ paths:
         - RuntimeService
   /v1/instances/{instanceId}/env/push:
     post:
-      summary: PushEnv pushes local environment variables to cloud
+      summary: PushEnv pushes local environment variables to admin service
       operationId: RuntimeService_PushEnv
       responses:
         "200":

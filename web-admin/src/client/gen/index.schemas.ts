@@ -536,9 +536,11 @@ export interface V1GetCurrentUserResponse {
 }
 
 /**
- * Deprecated: Variables for the deployment (connector credentials, etc.). Use `project_variables` instead.
+ * Deprecated: Variables for the deployment. Use `variables` instead.
  */
-export type V1GetDeploymentConfigResponseVariables = { [key: string]: string };
+export type V1GetDeploymentConfigResponseVariablesLegacy = {
+  [key: string]: string;
+};
 
 export type V1GetDeploymentConfigResponseAnnotations = {
   [key: string]: string;
@@ -549,10 +551,10 @@ export type V1GetDeploymentConfigResponseDuckdbConnectorConfig = {
 };
 
 export interface V1GetDeploymentConfigResponse {
-  /** Deprecated: Variables for the deployment (connector credentials, etc.). Use `project_variables` instead. */
-  variables?: V1GetDeploymentConfigResponseVariables;
-  /** Project-specific variables for the deployment. */
-  projectVariables?: V1ProjectVariable[];
+  /** Variables for the deployment. */
+  variables?: V1ProjectVariable[];
+  /** Deprecated: Variables for the deployment. Use `variables` instead. */
+  variablesLegacy?: V1GetDeploymentConfigResponseVariablesLegacy;
   annotations?: V1GetDeploymentConfigResponseAnnotations;
   /** Frontend URL for the deployment. */
   frontendUrl?: string;
@@ -561,6 +563,7 @@ export interface V1GetDeploymentConfigResponse {
   /** Whether the deployment is git based or archive based. */
   usesArchive?: boolean;
   duckdbConnectorConfig?: V1GetDeploymentConfigResponseDuckdbConnectorConfig;
+  /** Whether the deployment is editable (dev environment with changes persisted to git repo). */
   editable?: boolean;
 }
 

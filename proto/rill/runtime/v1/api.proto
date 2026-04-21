@@ -375,7 +375,7 @@ service RuntimeService {
 
   // Env APIs
 
-  // PullEnv pulls environment variables from cloud to local .env file
+  // PullEnv pulls environment variables from admin service to local .env file
   rpc PullEnv(PullEnvRequest) returns (PullEnvResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/env/pull",
@@ -383,7 +383,7 @@ service RuntimeService {
     };
   }
 
-  // PushEnv pushes local environment variables to cloud
+  // PushEnv pushes local environment variables to admin service
   rpc PushEnv(PushEnvRequest) returns (PushEnvResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/env/push",

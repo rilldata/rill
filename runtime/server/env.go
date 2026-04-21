@@ -43,7 +43,7 @@ func (s *Server) PullEnv(ctx context.Context, req *runtimev1.PullEnvRequest) (*r
 	}
 	defer release()
 
-	// Fetch cloud variables for all environments
+	// Fetch cloud variables
 	cloudPerEnv, err := admin.GetProjectVariables(ctx, inst.Environment)
 	if err != nil && !errors.Is(err, drivers.ErrNotAuthenticated) {
 		return nil, fmt.Errorf("failed to get project variables: %w", err)
@@ -149,7 +149,7 @@ func (s *Server) PushEnv(ctx context.Context, req *runtimev1.PushEnvRequest) (*r
 
 	localPerEnv := p.GetDotEnvPerEnvironment()
 
-	// Fetch existing cloud variables for all environments
+	// Fetch existing cloud variables
 	cloudPerEnv, err := admin.GetProjectVariables(ctx, inst.Environment)
 	if err != nil && !errors.Is(err, drivers.ErrNotAuthenticated) {
 		return nil, fmt.Errorf("failed to get project variables: %w", err)

@@ -595,7 +595,7 @@ export const RuntimeService = {
       kind: MethodKind.Unary,
     },
     /**
-     * PullEnv pulls environment variables from cloud to local .env file
+     * PullEnv pulls environment variables from admin service to local .env file
      *
      * @generated from rpc rill.runtime.v1.RuntimeService.PullEnv
      */
@@ -606,7 +606,7 @@ export const RuntimeService = {
       kind: MethodKind.Unary,
     },
     /**
-     * PushEnv pushes local environment variables to cloud
+     * PushEnv pushes local environment variables to admin service
      *
      * @generated from rpc rill.runtime.v1.RuntimeService.PushEnv
      */

@@ -4803,18 +4803,18 @@ export class GetDeploymentConfigRequest extends Message<GetDeploymentConfigReque
  */
 export class GetDeploymentConfigResponse extends Message<GetDeploymentConfigResponse> {
   /**
-   * Deprecated: Variables for the deployment (connector credentials, etc.). Use `project_variables` instead.
+   * Variables for the deployment.
    *
-   * @generated from field: map<string, string> variables = 1;
+   * @generated from field: repeated rill.admin.v1.ProjectVariable variables = 7;
    */
-  variables: { [key: string]: string } = {};
+  variables: ProjectVariable[] = [];
 
   /**
-   * Project-specific variables for the deployment.
+   * Deprecated: Variables for the deployment. Use `variables` instead.
    *
-   * @generated from field: repeated rill.admin.v1.ProjectVariable project_variables = 7;
+   * @generated from field: map<string, string> variables_legacy = 1;
    */
-  projectVariables: ProjectVariable[] = [];
+  variablesLegacy: { [key: string]: string } = {};
 
   /**
    * Annotations for the deployment (org/project metadata, etc.)
@@ -4852,6 +4852,8 @@ export class GetDeploymentConfigResponse extends Message<GetDeploymentConfigResp
   duckdbConnectorConfig?: Struct;
 
   /**
+   * Whether the deployment is editable (dev environment with changes persisted to git repo).
+   *
    * @generated from field: bool editable = 8;
    */
   editable = false;
@@ -4864,8 +4866,8 @@ export class GetDeploymentConfigResponse extends Message<GetDeploymentConfigResp
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.GetDeploymentConfigResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 7, name: "project_variables", kind: "message", T: ProjectVariable, repeated: true },
+    { no: 7, name: "variables", kind: "message", T: ProjectVariable, repeated: true },
+    { no: 1, name: "variables_legacy", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 2, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 3, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "updated_on", kind: "message", T: Timestamp },

@@ -82,16 +82,19 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 	restartController := false
 
 	// Update variables
-	allvars := make(map[string]string)
-	for _, envVars := range cfg.Variables {
-		for k, v := range envVars {
-			allvars[k] = v
-		}
+	vars := make(map[string]string)
+	// default first
+	for k, v := range cfg.Variables[""] {
+		vars[k] = v
 	}
-	varsChanged := !maps.Equal(inst.Variables, allvars)
+	// then overlay env specific
+	for k, v := range cfg.Variables[inst.Environment] {
+		vars[k] = v
+	}
+	varsChanged := !maps.Equal(inst.Variables, vars)
 	if varsChanged {
-		inst.Variables = allvars
 		if !cfg.Editable { // for editable deployments we will write vars to `.env` which will also trigger controller restart
+			inst.Variables = vars
 			restartController = true
 		}
 	}
@@ -172,12 +175,8 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 		switch env {
 		case "":
 			path = ".env"
-		case "dev":
-			path = ".dev.env"
 		default:
-			// should not happen because only dev vars will be fetched for editable deployments
-			r.rt.Logger.Error("skipping variables for non-dev environment. Only `dev` deployments can be made editable.", zap.String("env", env), zap.String("instance_id", inst.ID))
-			continue
+			path = fmt.Sprintf(".%s.env", env)
 		}
 		contents, err := godotenv.Marshal(envVars)
 		if err != nil {
