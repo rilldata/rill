@@ -12,9 +12,7 @@ export function getCarryOverSubRoute(
   newPrefix: string,
   currentRoute: string,
 ): string {
-  const subRoute = currentRoute
-    .split("/")
-    .slice(newPrefix.split("/").length);
+  const subRoute = currentRoute.split("/").slice(newPrefix.split("/").length);
 
   // No sub-route past the new prefix.
   if (subRoute.length === 0) return "";
