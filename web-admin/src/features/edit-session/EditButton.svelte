@@ -37,13 +37,16 @@
   $: deployments = $devDeployments.data?.deployments ?? [];
   $: isLoading = $devDeployments.isLoading;
 
-  // Deployments owned by the current user (excludes ones being torn down),
-  // sorted by most recently updated. Stopped and errored branches are shown
-  // so the user can resume or retry them.
+  // Editable deployments owned by the current user (excludes ones being
+  // torn down), sorted by most recently updated. Stopped and errored
+  // branches are shown so the user can resume or retry them. Non-editable
+  // deployments (e.g. created via the CLI without `--editable`) are hidden
+  // because the edit surface cannot function against them.
   $: ownDeployments = deployments
     .filter(
       (d) =>
         d.ownerUserId === currentUserId &&
+        d.editable &&
         d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING &&
         d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED,
     )
@@ -53,6 +56,19 @@
   $: activeBranchDeployment = activeBranch
     ? ownDeployments.find((d) => d.branch === activeBranch)
     : undefined;
+
+  // True when the active branch has a deployment the user owns but which
+  // isn't editable (e.g. created via the CLI without `--editable`). Used to
+  // show a dropdown banner explaining that the user needs a new branch.
+  $: activeBranchIsNonEditable =
+    !!activeBranch &&
+    !!currentUserId &&
+    deployments.some(
+      (d) =>
+        d.branch === activeBranch &&
+        d.ownerUserId === currentUserId &&
+        !d.editable,
+    );
 
   $: hasOwnSessions = ownDeployments.length > 0;
   $: isStarting = $createMutation.isPending;
@@ -152,6 +168,13 @@
       padding="1.5"
       class="w-auto min-w-[200px] max-w-[280px]"
     >
+      {#if activeBranchIsNonEditable}
+        <div class="banner">
+          This branch isn't editable. Start a new one below{hasOwnSessions
+            ? " or switch to another"
+            : ""}.
+        </div>
+      {/if}
       {#if hasOwnSessions}
         <div class="section-label">Your branches</div>
         {#each ownDeployments as deployment (deployment.id)}
@@ -236,6 +259,11 @@
 <style lang="postcss">
   .section-label {
     @apply px-2 py-1.5 text-xs text-fg-secondary font-semibold;
+  }
+
+  .banner {
+    @apply mx-0.5 mt-0.5 mb-1.5 rounded-sm px-2 py-1.5;
+    @apply text-xs text-yellow-800 bg-yellow-50 border border-yellow-200;
   }
 
   .branch-row {
