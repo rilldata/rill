@@ -19,6 +19,7 @@ const (
 	DialectNameAthena     = "athena"
 	DialectNameBigQuery   = "bigquery"
 	DialectNameClickHouse = "clickhouse"
+	DialectNameDatabricks = "databricks"
 	DialectNameDuckDB     = "duckdb"
 	DialectNameDruid      = "druid"
 	DialectNameMySQL      = "mysql"
