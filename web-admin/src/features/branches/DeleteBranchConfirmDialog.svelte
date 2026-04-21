@@ -29,12 +29,11 @@
   </AlertDialogTrigger>
   <AlertDialogContent>
     <AlertDialogHeader>
-      <AlertDialogTitle>Delete this deployment?</AlertDialogTitle>
+      <AlertDialogTitle>Delete this branch?</AlertDialogTitle>
       <AlertDialogDescription>
         <div class="mt-1">
-          The deployment on branch <span class="font-mono text-xs font-medium"
-            >{branch}</span
-          > will be deleted. Any unpushed changes will be lost.
+          The branch <span class="font-mono text-xs font-medium">{branch}</span>
+          will be deleted. Any unpushed changes will be lost.
         </div>
       </AlertDialogDescription>
     </AlertDialogHeader>

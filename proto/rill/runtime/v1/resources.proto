@@ -299,6 +299,26 @@ message MetricsViewSpec {
     // Signifies that the underlying table has `duration` column. Will be used while querying to add additional filter.
     bool has_duration = 11;
   }
+  // Pre-aggregated rollup that can be used to accelerate queries.
+  // The system automatically routes queries to a rollup when the query can be satisfied from the pre-aggregated data.
+  message Rollup {
+    string database = 1;
+    string database_schema = 2;
+    string table = 3;
+    string model = 4;
+    // Time grain of the rollup.
+    TimeGrain time_grain = 5;
+    // IANA timezone the rollup was aggregated in; defaults to UTC
+    string time_zone = 6;
+    // Resolved list of dimensions present in the rollup. If `dimensions_selector` is set, this will only be set in `state.valid_spec`.
+    repeated string dimensions = 7;
+    // Resolved list of measures present in the rollup. If `measures_selector` is set, this will only be set in `state.valid_spec`.
+    repeated string measures = 8;
+    // Dynamic selector for `dimensions`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+    FieldSelector dimensions_selector = 9;
+    // Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+    FieldSelector measures_selector = 10;
+  }
   // Connector containing the table
   string connector = 1;
   // Name of the database where table is located (optional)
@@ -338,13 +358,20 @@ message MetricsViewSpec {
   uint32 first_day_of_week = 12;
   // Month number to use as the base for time aggregations by year. Defaults to 1 (January).
   uint32 first_month_of_year = 13;
-  // Cache controls for the metrics view.
+  // Cache controls for the metrics view. By default, enabled for Rill managed models and disabled for streaming (externally managed) data sources.
   optional bool cache_enabled = 25;
+  // Defaults to use watermark if cache is enabled.
   string cache_key_sql = 26;
+  // Defaults to 60 seconds if cache is enabled.
   int64 cache_key_ttl_seconds = 27;
+  // TTL for caching timestamp boundaries (min/max) of base and rollup tables. Defaults to 5 minutes if unset.
+  // Takes effect only when mv level caching is disabled otherwise the timestamp boundaries are cached with the same TTL
+  // as the rest of the query results set via `cache.timestamps_ttl` in the metrics view YAML.
+  int64 cache_timestamps_ttl_seconds = 35;
   // Query attributes that can be templated with user context and used by drivers (e.g., appended to SETTINGS in ClickHouse).
   // Keys and values are stored as templates and will be resolved at query time.
   map<string, string> query_attributes = 33;
+  repeated Rollup rollups = 34;
 }
 
 message SecurityRule {

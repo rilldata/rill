@@ -112,6 +112,7 @@
           {resource}
           {parseError}
           remoteContent={$remoteContent}
+          {filePath}
         >
           {#if $selectedView === "code"}
             <MetricsEditor

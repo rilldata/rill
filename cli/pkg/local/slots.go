@@ -14,3 +14,16 @@ func DefaultProdSlots(ch *cmdutil.Helper) int {
 	}
 	return 4
 }
+
+// DefaultDevSlots returns the default number of slots for dev environments.
+//
+// A slot represents the following resources:
+//   - 1 CPU core
+//   - 4 GB of memory
+//   - 40 GB of storage
+func DefaultDevSlots(ch *cmdutil.Helper) int {
+	if ch.IsDev() {
+		return 1
+	}
+	return 8
+}
