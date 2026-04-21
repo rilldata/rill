@@ -106,11 +106,7 @@ export function createSchemasafeValidator(
       const fileSizeIssues = checkFileSizeLimits(stepSchema, data);
       const customIssues = checkCustomValidators(stepSchema, data);
 
-      if (
-        isValid &&
-        fileSizeIssues.length === 0 &&
-        customIssues.length === 0
-      ) {
+      if (isValid && fileSizeIssues.length === 0 && customIssues.length === 0) {
         return { data: pruned, success: true };
       }
 

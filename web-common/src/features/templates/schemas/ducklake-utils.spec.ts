@@ -520,9 +520,7 @@ describe("validateDuckLakeAttach", () => {
   });
 
   it("flags a leading ATTACH keyword", () => {
-    const errors = validateDuckLakeAttach(
-      "ATTACH 'ducklake:catalog.ducklake'",
-    );
+    const errors = validateDuckLakeAttach("ATTACH 'ducklake:catalog.ducklake'");
     expect(errors).toContainEqual(
       expect.stringContaining('Remove the leading "ATTACH"'),
     );
@@ -550,9 +548,7 @@ describe("validateDuckLakeAttach", () => {
     ).toEqual([]);
 
     expect(
-      validateDuckLakeAttach(
-        "'catalog.ducklake' AS x (TYPE DUCKLAKE)",
-      ),
+      validateDuckLakeAttach("'catalog.ducklake' AS x (TYPE DUCKLAKE)"),
     ).toEqual([]);
   });
 

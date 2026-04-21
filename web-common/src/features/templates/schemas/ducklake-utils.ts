@@ -274,8 +274,7 @@ const DUCKLAKE_CATALOG_ENV_VAR_BASE: Record<string, string> = {
   md: "DUCKLAKE_MOTHERDUCK",
 };
 
-const DUCKLAKE_CATALOG_URI_PATTERN =
-  /'ducklake:(postgres|mysql|md):([^']*)'/g;
+const DUCKLAKE_CATALOG_URI_PATTERN = /'ducklake:(postgres|mysql|md):([^']*)'/g;
 
 const ENV_TEMPLATE_ONLY_PATTERN = /^{{\s*\.env\.[^{}\s]+\s*}}$/;
 
