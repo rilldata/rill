@@ -514,6 +514,7 @@
             class:cross-intersection={cs.crossIntersection}
             class:cross-row-arm={cs.crossRowArm}
             class:cross-col-arm={cs.crossColArm}
+            class:partial-aggregate-cell={cs.partialAggregateCell}
             class:cross-selected-row-header={cs.crossSelectedRowHeader}
             class:interactive-cell={cs.interactiveCell}
             class:border-r={shouldShowRightBorder(i)}
@@ -823,6 +824,11 @@
   }
   .with-row-dimension .ancestor-of-selected-row:hover > td:first-of-type {
     @apply bg-primary-100;
+  }
+
+  /* Grey background for data cells on parent rows that partially contain filtered data */
+  .partial-aggregate-cell.cell {
+    @apply bg-surface-muted;
   }
 
   /* Parent column header highlight when a child column header is selected */

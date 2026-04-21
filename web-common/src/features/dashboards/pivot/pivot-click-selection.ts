@@ -77,6 +77,8 @@ export interface SelectionEntry {
   columnId: string;
   /** For flat-table dimension cell clicks: the index into rowDimensionNames */
   dimClickIndex?: number;
+  /** Row nesting depth for nested tables: 0 = parent, 1 = first child, etc. */
+  rowDepth?: number;
 }
 
 // ---- Selection state ----
@@ -112,6 +114,11 @@ export interface PivotClickSelectionState {
   isAncestorOfSelectedColumnHeader: (
     dimensionPath: Record<string, string>,
   ) => boolean;
+  /**
+   * Returns the row nesting depth of existing selections, or -1 if none.
+   * All row selections are at the same depth (enforced by nesting level matching).
+   */
+  currentRowDepth: number;
 }
 
 export function createEmptyClickSelectionState(): PivotClickSelectionState {
@@ -128,6 +135,7 @@ export function createEmptyClickSelectionState(): PivotClickSelectionState {
     selectedCellColumnIds: new Set(),
     getClickedDimensionIndex: () => -1,
     isAncestorOfSelectedColumnHeader: () => false,
+    currentRowDepth: -1,
   };
 }
 
@@ -162,12 +170,31 @@ export function buildClickSelection(
     }
   }
 
+  // Derive current row depth from the first row-level selection found.
+  // All selections are at the same depth (enforced by nesting level matching).
+  let currentRowDepth = -1;
+  for (const entry of rowHeaders.values()) {
+    if (entry.rowDepth !== undefined) {
+      currentRowDepth = entry.rowDepth;
+      break;
+    }
+  }
+  if (currentRowDepth === -1) {
+    for (const entry of cells.values()) {
+      if (entry.rowDepth !== undefined) {
+        currentRowDepth = entry.rowDepth;
+        break;
+      }
+    }
+  }
+
   return {
     rowHeaderSelections: rowHeaders,
     cellSelections: cells,
     columnHeaderSelections: colHeaders,
     hasAnySelection: hasAny,
     hasCrossSelection,
+    currentRowDepth,
     isRowHeaderSelected: (dk) => rowHeaders.has(dk),
     isCellSelected: (dk, cid) => cells.has(cellKey(dk, cid)),
     hasSelectedCellInRow: (dk) => rowsWithSelectedCells.has(dk),

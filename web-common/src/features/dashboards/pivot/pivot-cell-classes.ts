@@ -134,6 +134,8 @@ export interface NestedCellState {
   colDimHoverBody: boolean;
   selectedColBody: boolean;
   cellSelectedRowHeader: boolean;
+  /** Grey background for data cells on parent rows that partially contain filtered data */
+  partialAggregateCell: boolean;
   crossIntersection: boolean;
   crossRowArm: boolean;
   crossColArm: boolean;
@@ -182,6 +184,8 @@ export function nestedCellState(ctx: NestedCellContext): NestedCellState {
     colDimHoverBody: ctx.inHoveredCol,
     selectedColBody: ctx.inSelectedCol && !ctx.hasCrossSelection,
     cellSelectedRowHeader: ctx.cellIndex === 0 && ctx.hasClickedCell,
+    partialAggregateCell:
+      ctx.isAncestorOfSelectedHeader && ctx.cellIndex > 0 && !ctx.hasCrossSelection,
     crossIntersection:
       ctx.hasCrossSelection &&
       ctx.isRowHeaderSelected &&

@@ -1,18 +1,11 @@
 import { getValuesForExpandedKey } from "@rilldata/web-common/features/dashboards/pivot/pivot-expansion";
-import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
-import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import {
   V1Operation,
   type V1Expression,
 } from "@rilldata/web-common/runtime-client";
+import { getValuesInExpression } from "../stores/filter-utils";
 import {
-  createAndExpression,
-  createInExpression,
-  getValuesInExpression,
-} from "../stores/filter-utils";
-import {
-  getTimeForQuery,
-  getTimeGrainFromDimension,
+  buildPivotFilter,
   getValuesForFlatTable,
   isTimeDimension,
 } from "./pivot-utils";
@@ -20,7 +13,6 @@ import type {
   PivotDataRow,
   PivotDataStoreConfig,
   PivotFilter,
-  TimeFilters,
 } from "./types";
 
 export interface PivotRowSelectionState {
@@ -44,7 +36,7 @@ export interface PivotRowSelectionState {
 /**
  * Returns the raw dimension values for a row, including time dimensions.
  * Shared by getDimensionValuesForRow (which filters out time) and
- * getFiltersForRowHeader (which needs time for TimeFilters).
+ * getFiltersForRowHeader (which passes entries to buildPivotFilter).
  */
 function getRawRowValues(
   config: PivotDataStoreConfig,
@@ -115,44 +107,13 @@ export function getFiltersForRowData(
   config: PivotDataStoreConfig,
   rowData: PivotDataRow,
 ): PivotFilter {
-  const { rowDimensionNames } = config;
-
-  const rowNestTimeFilters: TimeFilters[] = [];
-  const rowNestFilters = rowDimensionNames
-    .map((dim) => {
-      const value = rowData[dim];
-      if (value === undefined) return null;
-      if (value === null) return createInExpression(dim, [null]);
-      return createInExpression(dim, [String(value)]);
-    })
-    .filter((f): f is V1Expression => {
-      if (!f) return false;
-      if (
-        isTimeDimension(f.cond?.exprs?.[0].ident, config.time.timeDimension)
-      ) {
-        rowNestTimeFilters.push({
-          timeStart: f.cond?.exprs?.[1].val as string,
-          interval: getTimeGrainFromDimension(
-            f.cond?.exprs?.[0].ident as string,
-          ),
-        });
-        return false;
-      }
-      return true;
-    });
-
-  let rowFilters: V1Expression | undefined = undefined;
-  if (rowNestFilters.length) {
-    rowFilters = createAndExpression(rowNestFilters);
-  }
-
-  const timeRange: TimeRangeString = getTimeForQuery(
-    config.time,
-    rowNestTimeFilters,
-  );
-
-  const filters = mergeFilters(rowFilters, config.whereFilter);
-  return { filters, timeRange };
+  const dimEntries = config.rowDimensionNames
+    .filter((dim) => rowData[dim] !== undefined)
+    .map((dim) => ({
+      name: dim,
+      value: rowData[dim] === null ? null : String(rowData[dim]),
+    }));
+  return buildPivotFilter(config, dimEntries);
 }
 
 /**
@@ -275,41 +236,12 @@ export function getFiltersForRowHeader(
   rowId: string,
   tableData: PivotDataRow[],
 ): PivotFilter {
-  const { rowDimensionNames } = config;
   const values = getRawRowValues(config, rowId, tableData);
-
-  const rowNestTimeFilters: TimeFilters[] = [];
-  const rowNestFilters = values
-    .map((value, index) =>
-      createInExpression(rowDimensionNames[index], [value]),
-    )
-    .filter((f) => {
-      if (
-        isTimeDimension(f.cond?.exprs?.[0].ident, config.time.timeDimension)
-      ) {
-        rowNestTimeFilters.push({
-          timeStart: f.cond?.exprs?.[1].val as string,
-          interval: getTimeGrainFromDimension(
-            f.cond?.exprs?.[0].ident as string,
-          ),
-        });
-        return false;
-      } else return true;
-    });
-
-  let rowFilters: V1Expression | undefined = undefined;
-  if (rowNestFilters.length) {
-    rowFilters = createAndExpression(rowNestFilters);
-  }
-
-  const timeRange: TimeRangeString = getTimeForQuery(
-    config.time,
-    rowNestTimeFilters,
-  );
-
-  const filters = mergeFilters(rowFilters, config.whereFilter);
-
-  return { filters, timeRange };
+  const dimEntries = values.map((value, index) => ({
+    name: config.rowDimensionNames[index],
+    value,
+  }));
+  return buildPivotFilter(config, dimEntries);
 }
 
 /**
@@ -321,35 +253,11 @@ export function getFiltersForColumnHeader(
   config: PivotDataStoreConfig,
   dimensionPath: Record<string, string>,
 ): PivotFilter {
-  const defaultTimeRange = {
-    start: config.time.timeStart,
-    end: config.time.timeEnd,
-  };
-
-  const timeFilters: TimeFilters[] = [];
-  const dimExprs = Object.entries(dimensionPath)
-    .map(([name, value]) => {
-      const expr = createInExpression(name, [value]);
-      if (isTimeDimension(name, config.time.timeDimension)) {
-        timeFilters.push({
-          timeStart: value,
-          interval: getTimeGrainFromDimension(name),
-        });
-        return null;
-      }
-      return expr;
-    })
-    .filter(Boolean) as V1Expression[];
-
-  const timeRange =
-    timeFilters.length > 0
-      ? getTimeForQuery(config.time, timeFilters)
-      : defaultTimeRange;
-
-  const dimFilter =
-    dimExprs.length > 0 ? createAndExpression(dimExprs) : undefined;
-  const filters = mergeFilters(dimFilter, config.whereFilter);
-  return { filters, timeRange };
+  const dimEntries = Object.entries(dimensionPath).map(([name, value]) => ({
+    name,
+    value,
+  }));
+  return buildPivotFilter(config, dimEntries);
 }
 
 // --- Merged from pivot-filter-extraction.ts ---
