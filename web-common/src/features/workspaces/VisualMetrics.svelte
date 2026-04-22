@@ -590,19 +590,19 @@
                   focus:ring-2 focus:ring-primary-100 focus:border-primary-600 break-all overflow-hidden
                  "
                 >
+                  {#if analyzedConnector}
+                    <span class="flex-none">
+                      <svelte:component
+                        this={connectorIconMapping[
+                          getConnectorIconKey(analyzedConnector)
+                        ]}
+                        size="14px"
+                      />
+                    </span>
+                  {/if}
                   {#if !hasValidOLAPTableSelected}
                     <span class="text-fg-muted truncate">Select table</span>
                   {:else}
-                    {#if analyzedConnector}
-                      <span class="flex-none">
-                        <svelte:component
-                          this={connectorIconMapping[
-                            getConnectorIconKey(analyzedConnector)
-                          ]}
-                          size="14px"
-                        />
-                      </span>
-                    {/if}
                     <span class="text-fg-secondary truncate">
                       {modelOrSourceOrTableName}
                     </span>
