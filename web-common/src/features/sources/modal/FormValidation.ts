@@ -82,10 +82,7 @@ export function createConnectorForm(args: {
       form.message.set((result.error as any).details || result.error.message);
     },
     resetForm: false,
-    // "auto" = validate on blur, and re-validate on input once errors exist —
-    // so users see error state settle on blur (not while typing) but watch it
-    // clear live as they correct the input.
-    validationMethod: "auto",
+    validationMethod: "onsubmit",
   });
   return form;
 }
