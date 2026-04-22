@@ -119,6 +119,14 @@ export class DashboardStateSync {
 
     redirectUrl.search = exploreStateParams.toString();
 
+    // Preserve any URL params not managed by the explore state (e.g. ?tags= for folder breadcrumb context).
+    const knownExploreParams = new Set(Object.values(ExploreStateURLParams));
+    pageState.url.searchParams.forEach((value, key) => {
+      if (!knownExploreParams.has(key as ExploreStateURLParams)) {
+        redirectUrl.searchParams.set(key, value);
+      }
+    });
+
     return redirectUrl;
   }
 
