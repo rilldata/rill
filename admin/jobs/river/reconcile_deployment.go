@@ -7,7 +7,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
-	"github.com/rilldata/rill/admin/provisioner"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/riverqueue/river"
 	"go.opentelemetry.io/otel/attribute"
@@ -75,10 +74,8 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 			}
 
 			// Initialize the deployment (by provisioning a runtime and creating an instance on it)
-			if err := w.admin.StartDeploymentInner(ctx, depl); err != nil {
-				if w.isNonRetryable(err) {
-					return w.cancelAsErrored(ctx, depl.ID, err)
-				}
+			err := w.admin.StartDeploymentInner(ctx, depl)
+			if err != nil {
 				return err
 			}
 		}
@@ -155,18 +152,4 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 	}
 
 	return nil
-}
-
-// isNonRetryable returns true for errors that won't resolve with retries,
-// such as capacity limits.
-func (w *ReconcileDeploymentWorker) isNonRetryable(err error) bool {
-	return errors.Is(err, provisioner.ErrNoCapacity)
-}
-
-// cancelAsErrored marks the deployment as errored and cancels the river job.
-func (w *ReconcileDeploymentWorker) cancelAsErrored(ctx context.Context, deplID string, err error) error {
-	if _, dbErr := w.admin.DB.UpdateDeploymentStatus(ctx, deplID, database.DeploymentStatusErrored, err.Error()); dbErr != nil {
-		w.admin.Logger.Error("reconcile deployment: failed to set errored status", observability.ZapCtx(ctx), zap.Error(dbErr))
-	}
-	return river.JobCancel(err)
 }

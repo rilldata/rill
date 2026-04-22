@@ -454,19 +454,19 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			runtime.EditTrigger,
 		)
 	}
-	// Grant permissions for dev deployments: viewers get dashboard access, editors get full dev access.
-	if depl.Environment == "dev" {
+	// Grant permissions for editable deployments: viewers get dashboard access, editors get full dev access.
+	if depl.Editable {
 		instancePermissions = append(
 			instancePermissions,
 			runtime.ReadInstance,
 			runtime.ReadOLAP,
+			runtime.ReadProfiling,
+			runtime.ReadRepo,
 			runtime.ReadResolvers,
 		)
 		if permissions.ManageDev {
 			instancePermissions = append(
 				instancePermissions,
-				runtime.ReadProfiling,
-				runtime.ReadRepo,
 				runtime.EditRepo,
 				runtime.EditTrigger,
 			)

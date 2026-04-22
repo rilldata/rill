@@ -260,7 +260,7 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 		runtime.ReadAPI,
 		runtime.UseAI,
 	}
-	if depl.Environment == "dev" {
+	if depl.Editable {
 		instancePermissions = append(instancePermissions,
 			runtime.ReadInstance,
 			runtime.ReadOLAP,
