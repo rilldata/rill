@@ -419,15 +419,15 @@ export class AddDataFormManager {
     const key = name || target.id;
 
     // Clear stale field-level errors as soon as the user edits the input.
+    // superForm requires errors to be set to `undefined` rather than deleted,
+    // otherwise the error isn't cleared from its internal state.
     const clearFieldError = (store: ErrorsStore) => {
       if (!store?.update || !key) return;
       store.update(($errors) => {
         if (!$errors || !Object.prototype.hasOwnProperty.call($errors, key)) {
           return $errors;
         }
-        const next = { ...$errors };
-        delete next[key];
-        return next;
+        return { ...$errors, [key]: undefined };
       });
     };
     clearFieldError(this.errorsStore);
