@@ -32,6 +32,7 @@ Rill offers flexible connection strategies to fit different data architectures a
 ### ClickHouse
 ### Druid
 ### DuckDB
+### Google BigQuery
 ### MotherDuck
 ### Pinot
 ### Snowflake
@@ -60,6 +61,15 @@ Rill offers flexible connection strategies to fit different data architectures a
     link="/developers/build/connectors/olap/duckdb"
     linkLabel="Learn more"
     referenceLink="duckdb"
+  />
+
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-BigQuery.svg" alt="Google BigQuery" />}
+    header="Google BigQuery"
+    content="Connect to Google BigQuery for analytics and data warehousing with service account authentication."
+    link="/developers/build/connectors/olap/bigquery"
+    linkLabel="Learn more"
+    referenceLink="bigquery"
   />
 
   <ConnectorIcon
