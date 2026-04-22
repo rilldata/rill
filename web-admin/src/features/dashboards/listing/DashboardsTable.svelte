@@ -8,12 +8,15 @@
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { renderComponent } from "tanstack-table-8-svelte-5";
+  import DashboardsFilterToolbar from "./DashboardsFilterToolbar.svelte";
   import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
   import { useDashboards, useIsInitialBuild } from "./selectors";
 
   export let isEmbedded = false;
   export let isPreview = false;
   export let previewLimit = 5;
+
+  let selectedTags: string[] = [];
 
   const runtimeClient = useRuntimeClient();
   $: ({
@@ -32,11 +35,30 @@
   $: initialBuild = useIsInitialBuild(runtimeClient);
   $: isBuilding = $initialBuild.data === true;
 
+  function getResourceTags(resource: V1Resource): string[] {
+    return resource.explore
+      ? (resource.explore.spec?.tags ?? [])
+      : (resource.canvas?.spec?.tags ?? []);
+  }
+
+  $: allDashboards = dashboardsData ?? [];
+
+  $: availableTags = Array.from(
+    new Set(allDashboards.flatMap(getResourceTags)),
+  ).sort();
+
+  $: filteredDashboards =
+    selectedTags.length === 0
+      ? allDashboards
+      : allDashboards.filter((resource) => {
+          const resourceTags = getResourceTags(resource);
+          return selectedTags.some((t) => resourceTags.includes(t));
+        });
+
   $: displayData = isPreview
-    ? (dashboardsData?.slice(0, previewLimit) ?? [])
-    : (dashboardsData ?? []);
-  $: hasMoreDashboards =
-    isPreview && dashboardsData && dashboardsData.length > previewLimit;
+    ? filteredDashboards.slice(0, previewLimit)
+    : filteredDashboards;
+  $: hasMoreDashboards = isPreview && filteredDashboards.length > previewLimit;
 
   /**
    * Table column definitions.
@@ -66,6 +88,9 @@
         const refreshedOn = isMetricsExplorer
           ? resource.explore?.state?.dataRefreshedOn
           : resource.canvas?.state?.dataRefreshedOn;
+        const tags = isMetricsExplorer
+          ? (resource.explore?.spec?.tags ?? [])
+          : (resource.canvas?.spec?.tags ?? []);
 
         return renderComponent(DashboardsTableCompositeCell, {
           name,
@@ -77,6 +102,7 @@
           isEmbedded,
           organization,
           project,
+          tags,
         });
       },
     },
@@ -137,6 +163,11 @@
       {initialSorting}
       toolbar={!isPreview}
     >
+      <DashboardsFilterToolbar
+        slot="toolbar"
+        {availableTags}
+        bind:selectedTags
+      />
       <ResourceListEmptyState
         slot="empty"
         icon={ExploreIcon}

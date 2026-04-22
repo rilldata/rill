@@ -15,6 +15,7 @@
   export let isEmbedded: boolean;
   export let organization: string;
   export let project: string;
+  export let tags: string[] = [];
 
   $: lastRefreshedDate = lastRefreshed ? new Date(lastRefreshed) : null;
 
@@ -39,6 +40,9 @@
     {#if error !== ""}
       <Tag color="red">Error</Tag>
     {/if}
+    {#each tags as tag (tag)}
+      <Tag color="gray">{tag}</Tag>
+    {/each}
   </div>
   <div
     class="flex gap-x-1 text-fg-tertiary text-xs font-normal min-h-[16px] overflow-hidden"

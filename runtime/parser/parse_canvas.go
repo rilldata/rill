@@ -49,6 +49,7 @@ type CanvasYAML struct {
 		} `yaml:"items"`
 	}
 	Security *SecurityPolicyYAML `yaml:"security"`
+	Tags     []string            `yaml:"tags"`
 }
 
 func (p *Parser) parseCanvas(node *Node) error {
@@ -288,6 +289,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 	r.CanvasSpec.Rows = rows
 	r.CanvasSpec.SecurityRules = rules
 	r.CanvasSpec.PinnedFilters = tmp.Filters.Pinned
+	r.CanvasSpec.Tags = tmp.Tags
 
 	// Track inline components
 	for _, def := range inlineComponentDefs {

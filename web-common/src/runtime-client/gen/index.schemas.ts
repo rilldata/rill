@@ -480,6 +480,8 @@ The values should be valid IANA location identifiers. */
   /** Security rules to apply for access to the canvas. */
   securityRules?: V1SecurityRule[];
   pinnedFilters?: string[];
+  /** Tags for organizing and filtering the canvas on the project dashboards list. */
+  tags?: string[];
 }
 
 export interface V1CanvasState {
@@ -973,6 +975,8 @@ These are not currently parsed from YAML, but will be derived from the parent me
   allowCustomTimeRange?: boolean;
   /** When true, it indicates that the explore was defined in a metrics view either explicitly or emitted because version was not set. */
   definedInMetricsView?: boolean;
+  /** Tags for organizing and filtering the explore on the project dashboards list. */
+  tags?: string[];
 }
 
 export interface V1ExploreState {

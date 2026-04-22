@@ -4403,6 +4403,11 @@ definitions:
         items:
           type: string
         title: Array of dimension or measure names
+      tags:
+        type: array
+        items:
+          type: string
+        description: Tags for organizing and filtering the canvas on the project dashboards list.
   v1CanvasState:
     type: object
     properties:
@@ -5252,6 +5257,11 @@ definitions:
       definedInMetricsView:
         type: boolean
         description: When true, it indicates that the explore was defined in a metrics view either explicitly or emitted because version was not set.
+      tags:
+        type: array
+        items:
+          type: string
+        description: Tags for organizing and filtering the explore on the project dashboards list.
   v1ExploreState:
     type: object
     properties:

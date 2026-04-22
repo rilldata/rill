@@ -487,6 +487,8 @@ message ExploreSpec {
   bool allow_custom_time_range = 20;
   // When true, it indicates that the explore was defined in a metrics view either explicitly or emitted because version was not set.
   bool defined_in_metrics_view = 21;
+  // Tags for organizing and filtering the explore on the project dashboards list.
+  repeated string tags = 22;
 }
 
 message ExploreState {
@@ -866,6 +868,8 @@ message CanvasSpec {
   repeated SecurityRule security_rules = 6;
   // Array of dimension or measure names
   repeated string pinned_filters = 16;
+  // Tags for organizing and filtering the canvas on the project dashboards list.
+  repeated string tags = 19;
 }
 
 message CanvasState {
