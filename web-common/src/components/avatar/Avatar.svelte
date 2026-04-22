@@ -1,31 +1,27 @@
 <script lang="ts">
+  import { Avatar } from "bits-ui";
   import { cn } from "@rilldata/web-common/lib/shadcn";
 
+  let loadingStatus: Avatar.RootProps["loadingStatus"] = undefined;
   export let src: string | null = null;
   export let alt: string | null = null;
   export let avatarSize: string = "h-12 w-12";
   export let fontSize: string = "text-xs";
   export let bgColor: string = "bg-blue-500";
 
-  let imageError = false;
-
-  // Reset error state when src changes
-  $: if (src) {
-    imageError = false;
-  }
-
   function getInitials(name: string) {
     return name.charAt(0).toUpperCase();
   }
-
-  $: showImage = src && !imageError;
 </script>
 
-<div
+<Avatar.Root
+  onLoadingStatusChange={(status) => {
+    loadingStatus = status;
+  }}
   class={cn(
     avatarSize,
     "rounded-full",
-    showImage ? "border-foreground" : "border-transparent",
+    loadingStatus === "loaded" ? "border-foreground" : "border-transparent",
     "text-[17px]",
     "font-medium",
     "uppercase",
@@ -35,41 +31,28 @@
   <div
     class={cn(
       avatarSize,
-      `flex items-center justify-center overflow-hidden rounded-full border relative`,
+      `flex items-center justify-center overflow-hidden rounded-full border`,
       {
         "border-dashed bg-transparent border-gray-400": !src && !alt,
-        [`border-transparent ${bgColor}`]: (!src && alt) || (imageError && alt),
+        [`border-transparent ${bgColor}`]:
+          (!src && alt) || (loadingStatus === "error" && alt),
       },
     )}
   >
-    <!-- When src is provided, both the image and initials fallback are always in the DOM.
-         The image is absolute-positioned over the fallback; visibility toggles on error. -->
     {#if src}
-      <img
-        {src}
-        {alt}
-        class={cn("absolute inset-0 h-full w-full object-cover", {
-          invisible: imageError,
-        })}
-        on:error={() => {
-          imageError = true;
-        }}
-      />
+      <Avatar.Image {src} {alt} />
       {#if alt}
-        <span
-          class={cn(fontSize, "text-white", {
-            invisible: !imageError,
-          })}
-        >
-          {getInitials(alt)}
-        </span>
+        <!-- Show a fallback if the image fails to load -->
+        <Avatar.Fallback class={cn(fontSize, "text-white")}>
+          {getInitials(alt ?? "")}
+        </Avatar.Fallback>
       {/if}
     {:else if alt}
-      <span class={cn(fontSize, "text-white")}>
+      <Avatar.Fallback class={cn(fontSize, "text-white")}>
         {getInitials(alt)}
-      </span>
+      </Avatar.Fallback>
     {:else}
-      <span class={cn(fontSize, "text-fg-secondary")}>
+      <Avatar.Fallback class={cn(fontSize, "text-fg-secondary")}>
         <svg
           class="mt-[6px]"
           width="24"
@@ -87,7 +70,7 @@
             fill="#94A3B8"
           />
         </svg>
-      </span>
+      </Avatar.Fallback>
     {/if}
   </div>
-</div>
+</Avatar.Root>
