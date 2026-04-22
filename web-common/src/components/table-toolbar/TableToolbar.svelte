@@ -38,7 +38,7 @@
   } = $props();
 </script>
 
-<section class="flex flex-col gap-y-2 w-full">
+<section class="flex flex-col w-full">
   <div class="flex flex-row items-center justify-between h-9 gap-x-4">
     <div class="flex flex-row items-center">
       <TableToolbarFilterDropdown {filterGroups} {onFilterChange} />

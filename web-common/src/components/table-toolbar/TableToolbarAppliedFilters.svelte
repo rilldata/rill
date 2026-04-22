@@ -48,7 +48,7 @@
 <div class="applied-filters-wrapper" class:open={hasFilters}>
   <div class="applied-filters-inner">
     {#if hasFilters}
-      <hr class="border-t" />
+      <hr class="border-t mt-2" />
       <div class="flex flex-row items-center justify-between gap-x-2 h-9">
         <div class="flex flex-row items-center gap-2 flex-wrap">
           {#each appliedFilters as filter (`${filter.key}:${filter.resetValue}`)}

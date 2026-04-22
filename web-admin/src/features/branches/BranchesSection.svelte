@@ -33,6 +33,8 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CopyableCodeBlock from "@rilldata/web-common/components/calls-to-action/CopyableCodeBlock.svelte";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
+  import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
+  import type { FilterGroup } from "@rilldata/web-common/components/table-toolbar/types";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import {
     EyeIcon,
@@ -100,10 +102,55 @@
       : null,
   );
 
+  // Toolbar state
+  let searchText = $state("");
+  let statusFilter = $state<"all" | "running" | "stopped" | "pending" | "errored">("all");
+
+  let filterGroups = $derived([
+    {
+      label: "Status",
+      key: "status",
+      options: [
+        { label: "Ready", value: "running" },
+        { label: "Pending", value: "pending" },
+        { label: "Error", value: "errored" },
+        { label: "Stopped", value: "stopped" },
+      ],
+      selected: statusFilter,
+      defaultValue: "all",
+    },
+  ] satisfies FilterGroup[]);
+
+  function statusMatches(d: V1Deployment): boolean {
+    if (statusFilter === "all") return true;
+    const s = d.status;
+    switch (statusFilter) {
+      case "running":
+        return s === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING;
+      case "pending":
+        return (
+          s === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING ||
+          s === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING
+        );
+      case "errored":
+        return s === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED;
+      case "stopped":
+        return (
+          s === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED ||
+          s === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING
+        );
+      default:
+        return true;
+    }
+  }
+
   let visibleDeployments = $derived.by(() => {
+    const q = searchText.trim().toLowerCase();
     const active = ($allDeployments.data?.deployments ?? []).filter(
       (d: V1Deployment) =>
-        d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED,
+        d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED &&
+        statusMatches(d) &&
+        (q === "" || (d.branch ?? "").toLowerCase().includes(q)),
     );
     return [...active].sort((a, b) => {
       const aIsProd = isProdDeployment(a);
@@ -204,6 +251,22 @@
 
 <section class="flex flex-col gap-y-5">
   <h2 class="text-lg font-medium">Branches</h2>
+
+  <TableToolbar
+    {searchText}
+    onSearchChange={(text) => {
+      searchText = text;
+    }}
+    {filterGroups}
+    onFilterChange={(key, value) => {
+      if (key === "status") statusFilter = value as typeof statusFilter;
+    }}
+    onClearAllFilters={() => {
+      statusFilter = "all";
+      searchText = "";
+    }}
+    showSort={false}
+  />
 
   {#if $allDeployments.isLoading}
     <div class="empty-container">
