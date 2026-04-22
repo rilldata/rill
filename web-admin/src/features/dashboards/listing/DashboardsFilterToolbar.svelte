@@ -10,6 +10,7 @@
 
   export let availableTags: string[] = [];
   export let selectedTags: string[] = [];
+  export let onTagsChange: (tags: string[]) => void;
 
   const table = getContext<Readable<Table<unknown>>>("table");
 
@@ -20,13 +21,14 @@
 
   beforeNavigate(() => {
     filter = "";
-    selectedTags = [];
   });
 
   function toggleTag(tag: string) {
-    selectedTags = selectedTags.includes(tag)
-      ? selectedTags.filter((t) => t !== tag)
-      : [...selectedTags, tag];
+    onTagsChange(
+      selectedTags.includes(tag)
+        ? selectedTags.filter((t) => t !== tag)
+        : [...selectedTags, tag],
+    );
   }
 
   $: tagsLabel =

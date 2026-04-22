@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import ResourceError from "@rilldata/web-common/features/resources/ResourceError.svelte";
   import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
@@ -16,7 +17,22 @@
   export let isPreview = false;
   export let previewLimit = 5;
 
-  let selectedTags: string[] = [];
+  const TAGS_PARAM = "tags";
+
+  $: selectedTags = ($page.url.searchParams.get(TAGS_PARAM) ?? "")
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean);
+
+  function setSelectedTags(tags: string[]) {
+    const url = new URL($page.url);
+    if (tags.length === 0) {
+      url.searchParams.delete(TAGS_PARAM);
+    } else {
+      url.searchParams.set(TAGS_PARAM, tags.join(","));
+    }
+    void goto(url, { replaceState: true, noScroll: true, keepFocus: true });
+  }
 
   const runtimeClient = useRuntimeClient();
   $: ({
@@ -166,7 +182,8 @@
       <DashboardsFilterToolbar
         slot="toolbar"
         {availableTags}
-        bind:selectedTags
+        {selectedTags}
+        onTagsChange={setSelectedTags}
       />
       <ResourceListEmptyState
         slot="empty"
