@@ -39,7 +39,8 @@ type Executor struct {
 	instanceCfg     drivers.InstanceConfig
 	queryAttributes map[string]string
 
-	timestamps map[string]metricsview.TimestampsResult
+	timestamps       map[string]metricsview.TimestampsResult
+	latestQueryTable string // table used by the last Query/Export call; metricsview table by default, rollup table if selected
 }
 
 // New creates a new Executor for the provided metrics view.
@@ -98,6 +99,12 @@ func New(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtim
 // Close releases the resources held by the Executor.
 func (e *Executor) Close() {
 	e.olapRelease()
+}
+
+// LatestQueryTable returns the table used by the last Query/Export call.
+// Returns the rollup table if one was selected, otherwise the base metricsview table.
+func (e *Executor) LatestQueryTable() string {
+	return e.latestQueryTable
 }
 
 // CacheKey returns a cache key based on the executor's metrics view's cache key configuration.
@@ -161,6 +168,7 @@ func (e *Executor) ValidateQuery(qry *metricsview.Query) error {
 }
 
 // Timestamps queries min, max and watermark for the metrics view.
+// For the primary time dimension it also resolves rollup table timestamps if rollups are present.
 func (e *Executor) Timestamps(ctx context.Context, timeDim string) (metricsview.TimestampsResult, error) {
 	if timeDim == "" {
 		timeDim = e.metricsView.TimeDimension
@@ -178,30 +186,26 @@ func (e *Executor) Timestamps(ctx context.Context, timeDim string) (metricsview.
 		return metricsview.TimestampsResult{}, fmt.Errorf("no time dimension found in metrics view '%s'", timeDim)
 	}
 
-	var res metricsview.TimestampsResult
-	switch e.olap.Dialect() {
-	case drivers.DialectDuckDB:
-		res, err = e.resolveDuckDB(ctx, timeExpr)
-	case drivers.DialectClickHouse:
-		res, err = e.resolveClickHouse(ctx, timeExpr)
-	case drivers.DialectPinot:
-		res, err = e.resolvePinot(ctx, timeExpr)
-	case drivers.DialectDruid:
-		res, err = e.resolveDruid(ctx, timeExpr)
-	case drivers.DialectStarRocks:
-		res, err = e.resolveStarRocks(ctx, timeExpr)
-	case drivers.DialectSnowflake:
-		res, err = e.resolveSnowflake(ctx, timeExpr)
-	case drivers.DialectBigQuery:
-		res, err = e.resolveBigQuery(ctx, timeExpr)
-	default:
-		return metricsview.TimestampsResult{}, fmt.Errorf("not available for dialect '%s'", e.olap.Dialect())
-	}
+	mv := e.metricsView
+	res, err := e.resolveTimestampsForTable(ctx, mv.Database, mv.DatabaseSchema, mv.Table, timeExpr, mv.WatermarkExpression)
 	if err != nil {
 		return metricsview.TimestampsResult{}, err
 	}
 
 	res.Now = time.Now()
+
+	// For the primary time dimension, also resolve rollup table timestamps
+	if timeDim == mv.TimeDimension && len(mv.Rollups) > 0 {
+		res.Rollups = make(map[string]metricsview.TimestampsResult, len(mv.Rollups))
+		for _, rollup := range mv.Rollups {
+			rts, err := e.resolveTimestampsForTable(ctx, rollup.Database, rollup.DatabaseSchema, rollup.Table, timeExpr, "")
+			if err != nil {
+				return metricsview.TimestampsResult{}, fmt.Errorf("failed to resolve timestamps for rollup %q: %w", rollup.Table, err)
+			}
+			res.Rollups[rollup.Table] = rts
+		}
+	}
+
 	e.timestamps[timeDim] = res
 
 	return res, nil
@@ -249,7 +253,7 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 
 	// Setting both base and comparison time ranges in case there are time_comparison measures.
 	// Do not set it for BigQuery because it requires datatype to be already discovered to set time parameter.
-	if e.olap.Dialect() != drivers.DialectBigQuery && e.metricsView.TimeDimension != "" {
+	if e.olap.Dialect().String() != drivers.DialectNameBigQuery && e.metricsView.TimeDimension != "" {
 		now := time.Now()
 		qry.TimeRange = &metricsview.TimeRange{
 			Start: now.Add(-time.Second),
@@ -324,7 +328,17 @@ func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionT
 		return nil, err
 	}
 
-	ast, err := metricsview.NewAST(e.metricsView, e.security, qry, e.olap.Dialect())
+	// Check if a rollup table can satisfy the query; if so, use a synthetic spec pointing to it
+	mvForAST := e.metricsView
+	rollupSpec, err := e.rewriteQueryForRollup(ctx, qry)
+	if err != nil {
+		return nil, err
+	}
+	if rollupSpec != nil {
+		mvForAST = rollupSpec
+	}
+
+	ast, err := metricsview.NewAST(mvForAST, e.security, qry, e.olap.Dialect())
 	if err != nil {
 		return nil, err
 	}
@@ -373,7 +387,7 @@ func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionT
 		// If e.olap is a DuckDB, use it directly. Else open a "duckdb" handle (which is always available, even for instances where DuckDB is not the main OLAP connector).
 		var duck drivers.OLAPStore
 		var releaseDuck func()
-		if e.olap.Dialect() == drivers.DialectDuckDB {
+		if e.olap.Dialect().String() == drivers.DialectNameDuckDB {
 			duck = e.olap
 		} else {
 			handle, release, err := e.rt.AcquireHandle(ctx, e.instanceID, "duckdb")
@@ -456,7 +470,17 @@ func (e *Executor) Export(ctx context.Context, qry *metricsview.Query, execution
 		return "", err
 	}
 
-	ast, err := metricsview.NewAST(e.metricsView, e.security, qry, e.olap.Dialect())
+	// Check if a rollup table can satisfy the query; if so, use a synthetic spec pointing to it
+	mvForAST := e.metricsView
+	rollupSpec, err := e.rewriteQueryForRollup(ctx, qry)
+	if err != nil {
+		return "", err
+	}
+	if rollupSpec != nil {
+		mvForAST = rollupSpec
+	}
+
+	ast, err := metricsview.NewAST(mvForAST, e.security, qry, e.olap.Dialect())
 	if err != nil {
 		return "", err
 	}
@@ -501,7 +525,7 @@ func (e *Executor) Search(ctx context.Context, qry *metricsview.SearchQuery, exe
 	// This is a hacky implementation since both metricsview.Query and AST are designed for aggregate queries.
 	// TODO :: Refactor the code and extract common functionality from metricsview.Query and AST and write SearchQuery to underlying SQL/Native druid query directly.
 
-	if e.olap.Dialect() == drivers.DialectDruid {
+	if e.olap.Dialect().String() == drivers.DialectNameDruid {
 		// native search
 		res, err := e.executeSearchInDruid(ctx, qry, executionTime)
 		if err == nil || !errors.Is(err, errDruidNativeSearchUnimplemented) {
@@ -565,7 +589,7 @@ func (e *Executor) Search(ctx context.Context, qry *metricsview.SearchQuery, exe
 		if err != nil {
 			return nil, err
 		}
-		finalSQL.WriteString(fmt.Sprintf("SELECT %s AS dimension, %s AS value FROM (%s)", e.olap.Dialect().EscapeStringValue(d), e.olap.Dialect().EscapeIdentifier(d), sql))
+		finalSQL.WriteString(fmt.Sprintf("SELECT %s AS dimension, %s AS value FROM (%s)", drivers.EscapeStringValue(d), e.olap.Dialect().EscapeIdentifier(d), sql))
 		finalArgs = append(finalArgs, args...)
 	}
 

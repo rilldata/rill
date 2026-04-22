@@ -1854,6 +1854,7 @@ Either git_remote or archive_asset_id should be set. */
   /** archive_asset_id is set for projects whose project files are not stored in github but are managed by rill. */
   archiveAssetId?: string;
   prodVersion?: string;
+  devSlots?: string;
   skipDeploy?: boolean;
 };
 
@@ -1894,6 +1895,7 @@ export type AdminServiceUpdateProjectBody = {
   newName?: string;
   prodTtlSeconds?: string;
   prodVersion?: string;
+  devSlots?: string;
   superuserForceAccess?: boolean;
 };
 
