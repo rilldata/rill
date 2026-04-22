@@ -15,9 +15,9 @@
   $: count = resources.length;
 </script>
 
-<div class="w-full">
+<div>
   <button
-    class="flex items-center gap-x-1.5 w-full px-4 py-2 bg-surface-background border border-b-0 first:rounded-t-lg hover:bg-surface-hover text-left"
+    class="flex items-center gap-x-1.5 w-full px-4 py-2 bg-surface-background hover:bg-surface-hover text-left"
     onclick={() => (open = !open)}
     aria-expanded={open}
   >
@@ -48,7 +48,7 @@
           ? (resource.explore?.spec?.tags ?? [])
           : (resource.canvas?.spec?.tags ?? [])}
         <li
-          class="block w-full h-[60px] border border-t-0 bg-surface-background last:rounded-b-lg hover:bg-surface-hover"
+          class="block w-full h-[60px] border-t bg-surface-background hover:bg-surface-hover"
         >
           <DashboardsTableCompositeCell
             {name}

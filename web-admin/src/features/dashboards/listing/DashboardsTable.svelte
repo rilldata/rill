@@ -210,7 +210,7 @@
   <div class="flex flex-col w-full gap-y-3">
     {#if !isPreview}
       <DashboardsFilterToolbar
-        {availableTags}
+        availableTags={$tagAsFolders ? [] : availableTags}
         {selectedTags}
         onTagsChange={setSelectedTags}
         bind:searchText
@@ -218,7 +218,7 @@
     {/if}
 
     {#if $tagAsFolders && !isPreview}
-      <!-- Folder mode: grouped by tag -->
+      <!-- Folder mode: grouped by tag, all inside one bordered container -->
       {#if tagGroups.length === 0}
         <div class="text-center py-16 text-fg-secondary text-sm font-semibold">
           {searchText
@@ -226,7 +226,7 @@
             : "You don't have any dashboards yet"}
         </div>
       {:else}
-        <div class="flex flex-col w-full gap-y-2">
+        <div class="w-full border rounded-lg overflow-hidden divide-y">
           {#each tagGroups as { tag, resources } (tag)}
             <DashboardsTagFolder
               {tag}
