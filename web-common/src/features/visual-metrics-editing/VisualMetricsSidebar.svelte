@@ -154,7 +154,7 @@
         fields: [
           {
             key: "lower_is_better",
-            hint: "Flips delta coloring so decreases show green and increases show red. Use for metrics like MTTR, error rate, or p99 latency",
+            hint: "Flips delta coloring so decreases show green and increases show red",
             label: "Lower is better",
             boolean: true,
           },

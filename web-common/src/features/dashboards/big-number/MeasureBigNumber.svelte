@@ -247,7 +247,7 @@
               <div
                 role="complementary"
                 class="w-fit max-w-full overflow-hidden text-ellipsis {comparisonDeltaColorClass}"
-                class:font-semibold={isComparisonPositive}
+                class:font-semibold={lowerIsBetter ? isComparisonNegative : isComparisonPositive}
                 onmouseenter={() => {
                   tooltipValue =
                     measureValueFormatterTooltip(diff) ?? "no data";
