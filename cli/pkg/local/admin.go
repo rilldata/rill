@@ -20,7 +20,7 @@ type localAdminService struct {
 
 var _ drivers.AdminService = &localAdminService{}
 
-func newLocalAdminService(ch *cmdutil.Helper, root string, environment string) drivers.AdminService {
+func newLocalAdminService(ch *cmdutil.Helper, root, environment string) drivers.AdminService {
 	return &localAdminService{
 		ch:          ch,
 		root:        root,
