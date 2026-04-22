@@ -8,7 +8,10 @@
   } from "../../../runtime-client";
   import { useRuntimeClient } from "../../../runtime-client/v2";
   import TableEntry from "./TableEntry.svelte";
-  import { useInfiniteListTables } from "../selectors";
+  import {
+    useInfiniteListTables,
+    useIsModelingSupportedForDefaultOlapDriverOLAP,
+  } from "../selectors";
   import Button from "../../../components/button/Button.svelte";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
   import { onMount } from "svelte";
@@ -27,17 +30,26 @@
   });
   $: projectOlapConnector = $instanceQuery.data?.instance?.olapConnector;
 
-  // Route "Generate metrics/dashboard" to live-connect only when the source IS
-  // the project's OLAP, or when the source is OLAP-only (no import path exists).
-  // Otherwise fall through to the import-to-OLAP model flow so e.g. Snowflake
-  // tables materialize into DuckDB when DuckDB is the project's OLAP.
-  $: isOlapConnector =
-    (connector.driver?.implementsOlap ?? false) &&
-    (projectOlapConnector === connectorName ||
-      !(
-        connector.driver?.implementsWarehouse ||
-        connector.driver?.implementsSqlStore
-      ));
+  // Whether the project's OLAP can be written to (i.e. models can materialize
+  // into it). True for managed DuckDB, provisioned, or read-write connectors.
+  $: projectOlapWriteableQuery =
+    useIsModelingSupportedForDefaultOlapDriverOLAP(client);
+  $: projectOlapWriteable = $projectOlapWriteableQuery.data ?? false;
+
+  $: sourceCanLive = connector.driver?.implementsOlap ?? false;
+  $: sourceCanIngest =
+    (connector.driver?.implementsWarehouse ||
+      connector.driver?.implementsSqlStore) ??
+    false;
+  $: isProjectOlap = projectOlapConnector === connectorName;
+
+  // "Create model" requires an ingestable source AND a writeable project OLAP,
+  // and is pointless when the source is already the project's OLAP.
+  $: canImport = projectOlapWriteable && sourceCanIngest && !isProjectOlap;
+
+  // Live-connect when the source can answer OLAP queries directly and importing
+  // isn't available (or the source IS the project's OLAP, so data is in place).
+  $: isOlapConnector = sourceCanLive && !canImport;
 
   $: expandedStore = store.getItem(connectorName, database, databaseSchema);
   $: expanded = $expandedStore;
@@ -135,14 +147,8 @@
           <TableEntry
             driver={connector.driver.name}
             connector={connectorName}
-            showGenerateMetricsAndDashboard={(connector.driver.implementsOlap ||
-              connector.driver.implementsWarehouse ||
-              connector.driver.implementsSqlStore) ??
-              false}
-            showGenerateModel={projectOlapConnector !== connectorName &&
-              ((connector.driver.implementsWarehouse ||
-                connector.driver.implementsSqlStore) ??
-                false)}
+            showGenerateMetricsAndDashboard={isOlapConnector || canImport}
+            showGenerateModel={canImport}
             {isOlapConnector}
             {database}
             {databaseSchema}
