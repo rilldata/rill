@@ -56,23 +56,7 @@ olap_connector: ducklake
 
 ## Advanced Options
 
-The `attach` clause accepts the full set of DuckLake ATTACH options. Common ones include:
-
-| Option | Description |
-|---|---|
-| `DATA_PATH` | Storage location of Parquet data files. Defaults to `metadata_file.files` for DuckDB metadata; required otherwise. |
-| `CREATE_IF_NOT_EXISTS` | Create the DuckLake if it does not already exist. Defaults to `true`. |
-| `OVERRIDE_DATA_PATH` | If the supplied `DATA_PATH` differs from the stored path, override it. |
-| `METADATA_CATALOG` | Name of the attached catalog database (e.g. `__ducklake_metadata_my_lake`). |
-| `METADATA_SCHEMA` | Schema within the catalog to store DuckLake tables. Defaults to `main`. |
-| `METADATA_PATH` | Connection string for the metadata catalog. |
-| `METADATA_PARAMETERS` | Additional key/value parameters for the catalog server. |
-| `META_PARAMETER_NAME` | Name of a parameter to forward to the catalog server. |
-| `AUTOMATIC_MIGRATION` | Migrate the DuckLake catalog schema if the version does not match. |
-| `DATA_INLINING_ROW_LIMIT` | Number of rows for which data inlining is used. |
-| `ENCRYPTED` | Whether data is stored encrypted. |
-| `SNAPSHOT_TIME` | Connect to DuckLake at a point-in-time snapshot. |
-| `SNAPSHOT_VERSION` | Connect to DuckLake at a specific snapshot ID. |
+The `attach` clause is passed through to DuckDB and accepts the full set of DuckLake ATTACH options — see the [DuckLake ATTACH reference](https://ducklake.select/docs/stable/duckdb/usage/connecting) for the complete list.
 
 Example with multiple options:
 
