@@ -13,7 +13,12 @@
   import DashboardsFilterToolbar from "./DashboardsFilterToolbar.svelte";
   import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
   import DashboardsTagFolder from "./DashboardsTagFolder.svelte";
-  import { useDashboards, useIsInitialBuild } from "./selectors";
+  import {
+    UNTAGGED_KEY,
+    getResourceTags,
+    useDashboards,
+    useIsInitialBuild,
+  } from "./selectors";
 
   export let isEmbedded = false;
   export let isPreview = false;
@@ -56,12 +61,6 @@
   $: initialBuild = useIsInitialBuild(runtimeClient);
   $: isBuilding = $initialBuild.data === true;
 
-  function getResourceTags(resource: V1Resource): string[] {
-    return resource.explore
-      ? (resource.explore.spec?.tags ?? [])
-      : (resource.canvas?.spec?.tags ?? []);
-  }
-
   function matchesSearch(resource: V1Resource, query: string): boolean {
     if (!query) return true;
     const q = query.toLowerCase();
@@ -88,7 +87,11 @@
       ? allDashboards
       : allDashboards.filter((resource) => {
           const resourceTags = getResourceTags(resource);
-          return selectedTags.some((t) => resourceTags.includes(t));
+          return selectedTags.some((t) =>
+            t === UNTAGGED_KEY
+              ? resourceTags.length === 0
+              : resourceTags.includes(t),
+          );
         });
 
   $: searchFilteredDashboards = tagFilteredDashboards.filter((r) =>
@@ -101,19 +104,24 @@
     const activeTags = selectedTags.length > 0 ? selectedTags : availableTags;
     const groups: { tag: string; resources: V1Resource[] }[] = [];
     const untagged: V1Resource[] = [];
+    const untaggedVisible =
+      selectedTags.length === 0 || selectedTags.includes(UNTAGGED_KEY);
 
     for (const tag of activeTags) {
+      if (tag === UNTAGGED_KEY) continue;
       const members = searchFilteredDashboards.filter((r) =>
         getResourceTags(r).includes(tag),
       );
       if (members.length > 0) groups.push({ tag, resources: members });
     }
 
-    for (const r of searchFilteredDashboards) {
-      if (getResourceTags(r).length === 0) untagged.push(r);
+    if (untaggedVisible) {
+      for (const r of searchFilteredDashboards) {
+        if (getResourceTags(r).length === 0) untagged.push(r);
+      }
+      if (untagged.length > 0)
+        groups.push({ tag: UNTAGGED_KEY, resources: untagged });
     }
-    if (untagged.length > 0)
-      groups.push({ tag: "Untagged", resources: untagged });
 
     return groups;
   })();
