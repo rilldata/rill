@@ -304,7 +304,7 @@ func (s *Server) ReloadConfig(ctx context.Context, req *runtimev1.ReloadConfigRe
 		return nil, err
 	}
 	if ok {
-		// It is okay to not propgate count and modified values here since on cloud it will not be used 
+		// It is okay to not propgate count and modified values here since on cloud it will not be used
 		return &runtimev1.ReloadConfigResponse{}, nil
 	}
 	_, _, err = s.pullEnv(ctx, req.InstanceId)

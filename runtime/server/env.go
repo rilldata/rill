@@ -49,7 +49,10 @@ func (s *Server) PullEnv(ctx context.Context, req *runtimev1.PullEnvRequest) (*r
 	if err != nil && !errors.Is(err, drivers.ErrNotAuthenticated) {
 		return nil, fmt.Errorf("failed to get project variables: %w", err)
 	}
-	cloudPerEnv := cfg.Variables
+	var cloudPerEnv map[string]map[string]string
+	if cfg != nil {
+		cloudPerEnv = cfg.Variables
+	}
 
 	// Parse local .env files
 	p, err := parser.Parse(ctx, repo, req.InstanceId, inst.Environment, inst.OLAPConnector, false)
@@ -157,7 +160,10 @@ func (s *Server) PushEnv(ctx context.Context, req *runtimev1.PushEnvRequest) (*r
 	if err != nil && !errors.Is(err, drivers.ErrNotAuthenticated) {
 		return nil, fmt.Errorf("failed to get project variables: %w", err)
 	}
-	cloudPerEnv := cfg.Variables
+	var cloudPerEnv map[string]map[string]string
+	if cfg != nil {
+		cloudPerEnv = cfg.Variables
+	}
 
 	var addedCount, changedCount int32
 
