@@ -4,7 +4,10 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { timeAgo } from "@rilldata/web-common/lib/time/relative-time";
+
+  const { tagAsFolders } = featureFlags;
 
   export let name: string;
   export let title: string;
@@ -45,9 +48,11 @@
     {#if error !== ""}
       <Tag color="red">Error</Tag>
     {/if}
-    {#each tags as tag (tag)}
-      <Tag color="gray">{tag}</Tag>
-    {/each}
+    {#if !$tagAsFolders}
+      {#each tags as tag (tag)}
+        <Tag color="gray">{tag}</Tag>
+      {/each}
+    {/if}
   </div>
   <div
     class="flex gap-x-1 text-fg-tertiary text-xs font-normal min-h-[16px] overflow-hidden"

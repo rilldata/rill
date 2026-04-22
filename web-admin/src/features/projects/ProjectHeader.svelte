@@ -129,6 +129,9 @@
             (isMetricsExplorer
               ? resource?.explore?.spec?.displayName
               : resource?.canvas?.spec?.displayName) || name,
+          // depth: 2 ensures path generation always anchors at the project
+          // level, even when a tag segment is inserted before this one.
+          depth: 2,
           section: isMetricsExplorer ? "explore" : "canvas",
           resourceKind: isMetricsExplorer
             ? ResourceKind.Explore
