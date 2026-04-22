@@ -54,8 +54,11 @@ type FormStore = Writable<FormData> & {
 };
 
 type ErrorsStore = Writable<ValidationErrors> & {
-  set: (errors: ValidationErrors) => void;
-  update: (updater: (errors: ValidationErrors) => ValidationErrors) => void;
+  set: (errors: ValidationErrors, options?: { force?: boolean }) => void;
+  update: (
+    updater: (errors: ValidationErrors) => ValidationErrors,
+    options?: { force?: boolean },
+  ) => void;
 };
 
 const BUTTON_LABELS = {
@@ -419,16 +422,17 @@ export class AddDataFormManager {
     const key = name || target.id;
 
     // Clear stale field-level errors as soon as the user edits the input.
-    // superForm requires errors to be set to `undefined` rather than deleted,
-    // otherwise the error isn't cleared from its internal state.
+    // Pass `force: true` so superForm writes through without merging against
+    // its internal error tree; without this, the error silently persists.
     const clearFieldError = (store: ErrorsStore) => {
-      if (!store?.update || !key) return;
-      store.update(($errors) => {
-        if (!$errors || !Object.prototype.hasOwnProperty.call($errors, key)) {
-          return $errors;
-        }
-        return { ...$errors, [key]: undefined };
-      });
+      if (!store?.set || !key) return;
+      const current = get(store) as Record<string, unknown> | undefined;
+      if (!current || !Object.prototype.hasOwnProperty.call(current, key)) {
+        return;
+      }
+      const next = { ...current };
+      delete next[key];
+      store.set(next, { force: true });
     };
     clearFieldError(this.errorsStore);
     if (name === "path" || name === "sql") {
