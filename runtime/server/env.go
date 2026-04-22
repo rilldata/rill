@@ -44,10 +44,11 @@ func (s *Server) PullEnv(ctx context.Context, req *runtimev1.PullEnvRequest) (*r
 	defer release()
 
 	// Fetch cloud variables
-	cloudPerEnv, err := admin.GetProjectVariables(ctx, inst.Environment)
+	cfg, err := admin.GetConfig(ctx)
 	if err != nil && !errors.Is(err, drivers.ErrNotAuthenticated) {
 		return nil, fmt.Errorf("failed to get project variables: %w", err)
 	}
+	cloudPerEnv := cfg.Variables
 
 	// Parse local .env files
 	// Instance's project_variables contains variables from both rill.yaml and .env so can't be used here
@@ -150,10 +151,11 @@ func (s *Server) PushEnv(ctx context.Context, req *runtimev1.PushEnvRequest) (*r
 	localPerEnv := p.GetDotEnvPerEnvironment()
 
 	// Fetch existing cloud variables
-	cloudPerEnv, err := admin.GetProjectVariables(ctx, inst.Environment)
+	cfg, err := admin.GetConfig(ctx)
 	if err != nil && !errors.Is(err, drivers.ErrNotAuthenticated) {
 		return nil, fmt.Errorf("failed to get project variables: %w", err)
 	}
+	cloudPerEnv := cfg.Variables
 
 	var addedCount, changedCount int32
 

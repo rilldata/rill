@@ -108,7 +108,7 @@ func (h *Handle) ProvisionConnector(ctx context.Context, name, driver string, ar
 	return res.Resource.Config.AsMap(), nil
 }
 
-func (h *Handle) GetDeploymentConfig(ctx context.Context) (*drivers.DeploymentConfig, error) {
+func (h *Handle) GetConfig(ctx context.Context) (*drivers.Config, error) {
 	res, err := h.admin.GetDeploymentConfig(ctx, &adminv1.GetDeploymentConfigRequest{
 		DeploymentId: "", // Will default to the deployment ID of the current access token.
 	})
@@ -116,7 +116,7 @@ func (h *Handle) GetDeploymentConfig(ctx context.Context) (*drivers.DeploymentCo
 		return nil, err
 	}
 
-	return &drivers.DeploymentConfig{
+	return &drivers.Config{
 		Variables:             groupVariablesByEnv(res.Variables),
 		Annotations:           res.Annotations,
 		FrontendURL:           res.FrontendUrl,
@@ -152,26 +152,6 @@ func (h *Handle) ListDeployments(ctx context.Context) ([]*drivers.Deployment, er
 	}
 
 	return res, nil
-}
-
-func (h *Handle) GetProjectVariables(ctx context.Context, environment string) (map[string]map[string]string, error) {
-	projectResp, err := h.admin.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
-		Id: h.config.ProjectID,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := h.admin.GetProjectVariables(ctx, &adminv1.GetProjectVariablesRequest{
-		Org:         projectResp.Project.OrgName,
-		Project:     projectResp.Project.Name,
-		Environment: environment,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return groupVariablesByEnv(resp.Variables), nil
 }
 
 func (h *Handle) UpdateProjectVariables(ctx context.Context, environment string, variables map[string]string) error {

@@ -71,7 +71,7 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 
 	r.rt.Logger.Info("Reloading config for instance", zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 
-	cfg, err := admin.GetDeploymentConfig(ctx)
+	cfg, err := admin.GetConfig(ctx)
 	if err != nil {
 		return err
 	}

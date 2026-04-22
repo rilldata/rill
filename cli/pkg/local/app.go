@@ -436,7 +436,7 @@ func (a *App) Serve(opts ServeOptions) error {
 		AllowedOrigins:  a.allowedOrigins,
 		ServePrometheus: true,
 	}
-	runtimeServer, err := runtimeserver.NewServer(ctx, runtimeOpts, a.Runtime, runtimeServerLogger, ratelimit.NewNoop(), a.ch.Telemetry(ctx), newLocalAdminService(a.ch, a.ProjectPath))
+	runtimeServer, err := runtimeserver.NewServer(ctx, runtimeOpts, a.Runtime, runtimeServerLogger, ratelimit.NewNoop(), a.ch.Telemetry(ctx), newLocalAdminService(a.ch, a.ProjectPath, a.Instance.Environment))
 	if err != nil {
 		return err
 	}
