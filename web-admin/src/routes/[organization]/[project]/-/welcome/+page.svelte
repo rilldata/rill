@@ -13,7 +13,7 @@
   let project = $derived(page.params.project);
 
   async function handleDone() {
-    projectWelcomeStatusStores.setProjectWelcomeBranch(project, "");
+    projectWelcomeStatusStores.setProjectWelcomeStep(project, false);
     await checkpointProjectAndRedirect(runtimeClient, organization, project);
   }
 </script>

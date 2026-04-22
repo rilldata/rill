@@ -2,6 +2,8 @@ import { goto } from "$app/navigation";
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { runtimeServiceGitPush } from "@rilldata/web-common/runtime-client";
 
+export const CreateProjectBranchName = "dev";
+
 /**
  * Checkpoints the current project state and redirects to the project dashboard.
  * Will be the cloud editing screen once it's available.

@@ -5,6 +5,7 @@ import { error, redirect } from "@sveltejs/kit";
 import { isAxiosError } from "axios";
 import { projectWelcomeStatusStores } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
 import { isProjectWelcomePage } from "@rilldata/web-admin/features/navigation/nav-utils.ts";
+import { CreateProjectBranchName } from "@rilldata/web-admin/features/projects/publish-project.ts";
 
 export const load = async ({
   params: { organization, project },
@@ -31,12 +32,13 @@ export const load = async ({
     throw redirect(307, `/${organization}`);
   }
 
-  const projectWelcomeBranch =
-    projectWelcomeStatusStores.getProjectWelcomeBranch(project);
-  if (projectWelcomeBranch && !isProjectWelcomePage({ route })) {
+  if (
+    projectWelcomeStatusStores.isProjectWelcomeStep(project) &&
+    !isProjectWelcomePage({ route })
+  ) {
     throw redirect(
       307,
-      `/${organization}/${project}/@${projectWelcomeBranch}/-/welcome`,
+      `/${organization}/${project}/@${CreateProjectBranchName}/-/welcome`,
     );
   }
 };

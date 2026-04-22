@@ -1,6 +1,5 @@
 <script module lang="ts">
   export const CreateProjectFormId = "create-project-form";
-  export const CreateProjectDevBranchName = "dev";
 </script>
 
 <script lang="ts">
@@ -24,6 +23,7 @@
   } from "@rilldata/web-common/features/project/deploy/deploy-errors.ts";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
+  import { CreateProjectBranchName } from "@rilldata/web-admin/features/projects/publish-project.ts";
 
   const {
     organization,
@@ -105,7 +105,7 @@
           project,
           data: {
             environment: "dev",
-            branch: CreateProjectDevBranchName,
+            branch: CreateProjectBranchName,
             editable: true,
           },
         });
