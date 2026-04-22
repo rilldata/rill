@@ -7192,8 +7192,7 @@ type MetricsViewSpec_Measure struct {
 	TreatNullsAs        string                               `protobuf:"bytes,14,opt,name=treat_nulls_as,json=treatNullsAs,proto3" json:"treat_nulls_as,omitempty"`
 	// The data type of the measure. Only populated in ValidSpec.
 	DataType *Type `protobuf:"bytes,15,opt,name=data_type,json=dataType,proto3" json:"data_type,omitempty"`
-	// When true, a decrease is the good direction (e.g. MTTR, p99 latency, error rate).
-	// Delta coloring is flipped: decreases render green, increases render red.
+	// When true, delta coloring is inverted: increases are highlighted red and decreases use the default color.
 	LowerIsBetter bool `protobuf:"varint,17,opt,name=lower_is_better,json=lowerIsBetter,proto3" json:"lower_is_better,omitempty"`
 }
 

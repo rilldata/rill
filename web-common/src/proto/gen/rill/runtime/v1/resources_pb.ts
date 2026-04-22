@@ -1999,8 +1999,7 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
   dataType?: Type;
 
   /**
-   * When true, a decrease is the good direction (e.g. MTTR, p99 latency, error rate).
-   * Delta coloring is flipped: decreases render green, increases render red.
+   * When true, delta coloring is inverted: increases are highlighted red and decreases use the default color.
    *
    * @generated from field: bool lower_is_better = 17;
    */
