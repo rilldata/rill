@@ -51,6 +51,8 @@
     error: projectParserError,
     isLoading: projectParserLoading,
   } = $projectParserQuery);
+  // When a fresh empty project created, projectParser wont be available yet.
+  // So make sure to do null check on projectParser's state here.
   $: hasParseErrors =
     projectParserData?.projectParser?.state?.parseErrors?.length > 0;
 </script>

@@ -5,7 +5,7 @@
   import ProjectCards from "@rilldata/web-common/features/welcome/ProjectCards.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { projectWelcomeStatusStores } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
-  import { publishProjectAndRedirect } from "@rilldata/web-admin/features/projects/publish-project.ts";
+  import { checkpointProjectAndRedirect } from "@rilldata/web-admin/features/projects/publish-project.ts";
 
   const runtimeClient = useRuntimeClient();
 
@@ -14,7 +14,7 @@
 
   async function handleDone() {
     projectWelcomeStatusStores.setProjectWelcomeBranch(project, "");
-    await publishProjectAndRedirect(runtimeClient, organization, project);
+    await checkpointProjectAndRedirect(runtimeClient, organization, project);
   }
 </script>
 

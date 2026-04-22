@@ -4,8 +4,6 @@ import { sessionStorageStore } from "@rilldata/web-common/lib/store-utils/sessio
 const ProjectWelcomeStatusKey = "rill:welcome:project:status";
 
 class ProjectWelcomeStatusStores {
-  private welcomeStatus = new Map<string, Writable<string>>();
-
   public getProjectWelcomeBranch(project: string): string {
     const statusStore = this.get(project);
     return get(statusStore);
@@ -17,14 +15,10 @@ class ProjectWelcomeStatusStores {
   }
 
   private get(project: string): Writable<string> {
-    const existingStatusStore = this.welcomeStatus.get(project);
-    if (existingStatusStore) return existingStatusStore;
-
     const statusStore = sessionStorageStore(
       ProjectWelcomeStatusKey + ":" + project,
       "",
     );
-    this.welcomeStatus.set(project, statusStore);
     return statusStore;
   }
 }

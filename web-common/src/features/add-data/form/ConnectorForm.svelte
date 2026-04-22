@@ -92,7 +92,8 @@
       existingEnvBlob: cachedEnvBlob,
     });
     onClose();
-    if (config) return goto(`/files${addLeadingSlash(connectorPath)}`);
+    if (!config.skipNavigation)
+      return goto(`/files${addLeadingSlash(connectorPath)}`);
   }
 
   async function cleanupAndBack() {

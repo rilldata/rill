@@ -177,12 +177,12 @@
       </Button>
       <div class="grow"></div>
     {/if}
-    {#if config.skipNavigation}
+    {#if !config.skipNavigation}
       <Button
         disabled={!currentFileRoute}
         type="tertiary"
         href={currentFileRoute}
-        onClick={() => onDone}
+        onClick={onDone}
         large
       >
         Skip and view project
