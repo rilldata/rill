@@ -421,20 +421,10 @@ export class AddDataFormManager {
     const { name, value } = target;
     const key = name || target.id;
 
-    // Clear stale field-level errors as soon as the user edits the input.
-    // Pass `force: true` so superForm writes through without merging against
-    // its internal error tree; without this, the error silently persists.
-    const clearFieldError = (store: ErrorsStore) => {
-      if (!store?.set || !key) return;
-      const current = get(store) as Record<string, unknown> | undefined;
-      if (!current || !Object.prototype.hasOwnProperty.call(current, key)) {
-        return;
-      }
-      const next = { ...current };
-      delete next[key];
-      store.set(next, { force: true });
-    };
-    clearFieldError(this.errorsStore);
+    // Clear all field-level errors on any text edit. `force: true` bypasses
+    // superForm's internal error-tree merge, which otherwise keeps stale
+    // errors visible.
+    this.errorsStore.set({}, { force: true });
     if (name === "path" || name === "sql") {
       const nameTainted =
         taintedFields && typeof taintedFields === "object"
