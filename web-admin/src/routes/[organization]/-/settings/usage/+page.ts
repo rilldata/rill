@@ -1,16 +1,21 @@
-import { isEnterprisePlan } from "@rilldata/web-admin/features/billing/plans/utils";
-import { error, redirect } from "@sveltejs/kit";
+import {
+  isFreePlan,
+  isProPlan,
+  isTrialPlan,
+} from "@rilldata/web-admin/features/billing/plans/utils";
+import { error } from "@sveltejs/kit";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async ({ params: { organization }, parent }) => {
-  const { subscription, billingPortalUrl } = await parent();
+  const { subscription } = await parent();
+  const planName = subscription?.plan?.name ?? "";
 
-  if (!billingPortalUrl) {
-    throw redirect(307, `/${organization}/-/settings`);
-  }
+  const allowed =
+    isFreePlan(planName) || isProPlan(planName) || isTrialPlan(planName);
 
-  // Orgs on an Enterprise Plan should not see this page
-  if (subscription?.plan && isEnterprisePlan(subscription.plan.name)) {
+  if (planName && !allowed) {
     throw error(404, "Page not found");
   }
+
+  return { organization };
 };
