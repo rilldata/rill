@@ -163,6 +163,8 @@ func (s *Server) PushEnv(ctx context.Context, req *runtimev1.PushEnvRequest) (*r
 	var cloudPerEnv map[string]map[string]string
 	if cfg != nil {
 		cloudPerEnv = cfg.Variables
+	} else {
+		cloudPerEnv = make(map[string]map[string]string)
 	}
 
 	var addedCount, changedCount int32
