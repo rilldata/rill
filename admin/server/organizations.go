@@ -1027,6 +1027,13 @@ func (s *Server) SudoUpdateOrganizationCustomDomain(ctx context.Context, req *ad
 		return nil, err
 	}
 
+	// If the custom domain changed, we need to update the deployment annotations for this org so that the new custom domain is picked up.
+	if req.CustomDomain != org.CustomDomain {
+		if err := s.admin.UpdateOrgDeploymentAnnotations(ctx, org); err != nil {
+			return nil, err
+		}
+	}
+
 	return &adminv1.SudoUpdateOrganizationCustomDomainResponse{
 		Organization: s.organizationToDTO(org, true),
 	}, nil
