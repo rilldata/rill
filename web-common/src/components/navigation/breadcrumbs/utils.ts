@@ -1,16 +1,16 @@
 const VARIABLE_SEGMENT_RE = /\[.*]/;
 
 /**
- * Given a new URL prefix (e.g. a different org, project, or section) and
- * the current page's route id, returns the portion of the current sub-route
+ * Given the current page's route id and a new URL prefix (e.g. a different
+ * org, project, or section), returns the portion of the current sub-route
  * that can be safely carried over to the new prefix — so a user switching
  * projects in a breadcrumb stays on the same sub-page (e.g. settings, alerts).
  *
  * Returns "" when the sub-route shouldn't follow the user.
  */
 export function getCarryOverSubRoute(
-  newPrefix: string,
   currentRoute: string,
+  newPrefix: string,
 ): string {
   const subRoute = currentRoute.split("/").slice(newPrefix.split("/").length);
 

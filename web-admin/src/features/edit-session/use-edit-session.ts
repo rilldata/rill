@@ -1,5 +1,4 @@
 import {
-  createAdminServiceCreateDeployment,
   createAdminServiceListDeployments,
   getAdminServiceListDeploymentsQueryKey,
 } from "@rilldata/web-admin/client";
@@ -39,19 +38,6 @@ export function useDevDeployments(org: string, project: string) {
         }
       : $query.data,
   }));
-}
-
-/**
- * Mutation to create a dev deployment with editable=true.
- */
-export function useCreateDevDeployment() {
-  return createAdminServiceCreateDeployment({
-    mutation: {
-      onSuccess: (_data, variables) => {
-        void invalidateDeployments(variables.org, variables.project);
-      },
-    },
-  });
 }
 
 /**

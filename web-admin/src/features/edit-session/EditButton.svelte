@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import {
+    createAdminServiceCreateDeployment,
     createAdminServiceGetCurrentUser,
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
@@ -14,11 +15,7 @@
   import * as Popover from "@rilldata/web-common/components/popover";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { PlusIcon } from "lucide-svelte";
-  import {
-    useDevDeployments,
-    useCreateDevDeployment,
-    invalidateDeployments,
-  } from "./use-edit-session";
+  import { useDevDeployments, invalidateDeployments } from "./use-edit-session";
 
   export let organization: string;
   export let project: string;
@@ -27,7 +24,7 @@
 
   const user = createAdminServiceGetCurrentUser();
   const devDeployments = useDevDeployments(organization, project);
-  const createMutation = useCreateDevDeployment();
+  const createMutation = createAdminServiceCreateDeployment();
 
   let open = false;
   let branchName = "";
