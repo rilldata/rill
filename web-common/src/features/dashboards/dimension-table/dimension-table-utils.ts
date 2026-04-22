@@ -372,6 +372,7 @@ export function prepareVirtualizedDimTableColumns(
           description: comparison.description,
           enableResize: false,
           format: comparison.format,
+          lowerIsBetter: selectedMeasure?.lowerIsBetter ?? false,
           tooltipFormatter,
           highlight,
           sorted,
