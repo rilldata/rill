@@ -3783,8 +3783,8 @@ definitions:
       lowerIsBetter:
         type: boolean
         description: |-
-          When true, a decrease is the good direction (e.g. MTTR, p99 latency, error rate).
-          Delta coloring is flipped: decreases render green, increases render red.
+          When true, a decrease is the good direction (e.g. query latency, error rate).
+          Delta coloring is flipped: increases render red.
     title: Measures are aggregated computed values
   MetricsViewSpecMeasureType:
     type: string
