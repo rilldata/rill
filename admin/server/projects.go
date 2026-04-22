@@ -15,17 +15,14 @@ import (
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/env"
 	"github.com/rilldata/rill/runtime/pkg/observability"
-	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -342,141 +339,21 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		}
 	}
 
-	var attr map[string]any
-	var rules []*runtimev1.SecurityRule
-	if claims.OwnerType() == auth.OwnerTypeUser {
-		a, restrictResources, resources, err := s.getAttributesAndResourceRestrictionsForUser(ctx, proj.OrganizationID, proj.ID, claims.OwnerID(), "")
-		if err != nil {
-			return nil, err
-		}
-		attr = a
-		userRules := securityRulesFromResources(restrictResources, resources)
-		rules = append(rules, userRules...)
-	} else if claims.OwnerType() == auth.OwnerTypeService {
-		attr, err = s.jwtAttributesForService(ctx, claims.OwnerID(), permissions)
-		if err != nil {
-			return nil, err
-		}
-	} else if claims.OwnerType() == auth.OwnerTypeMagicAuthToken {
-		mdl, ok := claims.AuthTokenModel().(*database.MagicAuthToken)
-		if !ok {
-			return nil, status.Errorf(codes.Internal, "unexpected type %T for magic auth token model", claims.AuthTokenModel())
-		}
-
-		for _, r := range mdl.Resources {
-			rules = append(rules, &runtimev1.SecurityRule{
-				Rule: &runtimev1.SecurityRule_TransitiveAccess{
-					TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
-						Resource: &runtimev1.ResourceName{
-							Kind: r.Type,
-							Name: r.Name,
-						},
-					},
-				},
-			})
-		}
-
-		if len(mdl.Resources) == 0 {
-			// If no resources are specified, deny all access.
-			rules = append(rules, &runtimev1.SecurityRule{
-				Rule: &runtimev1.SecurityRule_Access{
-					Access: &runtimev1.SecurityRuleAccess{
-						Allow: false,
-					},
-				},
-			})
-		}
-
-		attr = mdl.Attributes
-		for mv, filter := range mdl.MetricsViewFilterJSONs {
-			expr := &runtimev1.Expression{}
-			err := protojson.Unmarshal([]byte(filter), expr)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "could not unmarshal metrics view %q filter: %s", mv, err.Error())
-			}
-			if mv == "" {
-				return nil, status.Errorf(codes.Internal, "empty metrics view name in metrics view filter")
-			}
-			if mv == "*" { // backwards compatibility: apply to all MVs
-				rules = append(rules, &runtimev1.SecurityRule{
-					Rule: &runtimev1.SecurityRule_RowFilter{
-						RowFilter: &runtimev1.SecurityRuleRowFilter{
-							Expression: expr,
-						},
-					},
-				})
-				continue
-			}
-			rules = append(rules, &runtimev1.SecurityRule{
-				Rule: &runtimev1.SecurityRule_RowFilter{
-					RowFilter: &runtimev1.SecurityRuleRowFilter{
-						ConditionResources: []*runtimev1.ResourceName{
-							{
-								Kind: runtime.ResourceKindMetricsView,
-								Name: mv,
-							},
-						},
-						Expression: expr,
-					},
-				},
-			})
-		}
-
-		if len(mdl.Fields) > 0 {
-			rules = append(rules, &runtimev1.SecurityRule{
-				Rule: &runtimev1.SecurityRule_FieldAccess{
-					FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-						Fields:    mdl.Fields,
-						Allow:     true,
-						Exclusive: true,
-					},
-				},
-			})
-		}
-	}
-
 	ttlDuration := runtimeAccessTokenDefaultTTL
 	if req.AccessTokenTtlSeconds != 0 {
 		ttlDuration = time.Duration(req.AccessTokenTtlSeconds) * time.Second
 	}
 
-	instancePermissions := []runtime.Permission{
-		runtime.ReadObjects,
-		runtime.ReadMetrics,
-		runtime.ReadAPI,
-		runtime.UseAI,
-	}
-	if permissions.ManageProject {
-		instancePermissions = append(
-			instancePermissions,
-			runtime.ReadInstance,
-			runtime.ReadResolvers,
-			runtime.EditTrigger,
-		)
-	}
-
-	var systemPermissions []runtime.Permission
-	if req.IssueSuperuserToken {
-		if !claims.Superuser(ctx) {
-			return nil, status.Error(codes.PermissionDenied, "only superusers can issue superuser tokens")
-		}
-		// NOTE: The ManageInstances permission is currently used by the runtime to skip access checks.
-		systemPermissions = append(systemPermissions, runtime.ManageInstances)
-	}
-
-	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
-		AudienceURL:       depl.RuntimeAudience,
-		Subject:           claims.OwnerID(),
-		TTL:               ttlDuration,
-		SystemPermissions: systemPermissions,
-		InstancePermissions: map[string][]runtime.Permission{
-			depl.RuntimeInstanceID: instancePermissions,
-		},
-		Attributes:    attr,
-		SecurityRules: rules,
+	jwt, err := s.issueRuntimeToken(ctx, &issueRuntimeTokenOptions{
+		project:            proj,
+		deployment:         depl,
+		projectPermissions: permissions,
+		forOwner:           true,
+		forManagement:      req.IssueSuperuserToken,
+		ttl:                ttlDuration,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
+		return nil, err
 	}
 
 	s.admin.Used.Deployment(depl.ID)
