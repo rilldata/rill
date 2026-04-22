@@ -109,6 +109,7 @@ export interface MetricsViewSpecMeasure {
   formatD3Locale?: MetricsViewSpecMeasureFormatD3Locale;
   validPercentOfTotal?: boolean;
   treatNullsAs?: string;
+  inverseTheme?: boolean;
   dataType?: Runtimev1Type;
 }
 

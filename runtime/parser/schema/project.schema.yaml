@@ -2164,7 +2164,10 @@ definitions:
                 treat_nulls_as:
                   type: string
                   description: used to configure what value to fill in for missing time buckets. This also works generally as COALESCING over non empty time buckets.
-                
+                inverse_theme:
+                  type: boolean
+                  description: when `true`, swaps the `kpi-positive` and `kpi-negative` theme colors for this measure's delta indicators. Useful for measures where a decrease is the favourable outcome (e.g. bounce rate, error rate). Defaults to `false`.
+
               required:
                 - name
 

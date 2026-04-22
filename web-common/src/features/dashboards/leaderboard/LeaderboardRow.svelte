@@ -46,6 +46,7 @@
     string,
     (value: number | string | null | undefined) => string | null | undefined
   >;
+  export let inverseThemeByMeasure: Record<string, boolean> = {};
 
   function shouldShowContextColumns(measureName: string): boolean {
     return (
@@ -305,9 +306,13 @@
             : null}
           customStyle={deltaAbsMap[measureName] !== null &&
           deltaAbsMap[measureName] < 0
-            ? "text-kpi-negative"
-            : deltaAbsMap[measureName] !== null && deltaAbsMap[measureName] > 0
+            ? inverseThemeByMeasure[measureName]
               ? "text-kpi-positive"
+              : "text-kpi-negative"
+            : deltaAbsMap[measureName] !== null && deltaAbsMap[measureName] > 0
+              ? inverseThemeByMeasure[measureName]
+                ? "text-kpi-negative"
+                : "text-kpi-positive"
               : ""}
           truncate={true}
         />
@@ -329,6 +334,7 @@
             ? formatMeasurePercentageDifference(deltaRels[measureName])
             : null}
           color="text-fg-secondary"
+          inverseTheme={inverseThemeByMeasure[measureName] ?? false}
         />
         {#if showZigZags[measureName]}
           <LongBarZigZag />

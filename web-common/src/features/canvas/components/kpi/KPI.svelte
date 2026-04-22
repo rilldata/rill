@@ -109,10 +109,15 @@
     computedValues.delta !== null && computedValues.delta > 0;
   $: isDeltaNegative =
     computedValues.delta !== null && computedValues.delta < 0;
+  $: inverseTheme = !!measure?.inverseTheme;
   $: comparisonDeltaColorClass = isDeltaPositive
-    ? "text-kpi-positive"
-    : isDeltaNegative
+    ? inverseTheme
       ? "text-kpi-negative"
+      : "text-kpi-positive"
+    : isDeltaNegative
+      ? inverseTheme
+        ? "text-kpi-positive"
+        : "text-kpi-negative"
       : "text-fg-secondary";
 
   // Get value based on hover type
@@ -293,6 +298,7 @@
                       color="text-fg-secondary"
                       showPosSign
                       tabularNumber={false}
+                      {inverseTheme}
                       value={formatMeasurePercentageDifference(
                         computedValues.percent,
                       )}

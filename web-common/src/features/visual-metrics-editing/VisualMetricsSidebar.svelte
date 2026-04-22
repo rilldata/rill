@@ -148,6 +148,19 @@
         ],
         selected: 0,
       },
+      {
+        label: "Inverse theme colors",
+        optional: true,
+        fields: [
+          {
+            key: "inverse_theme",
+            hint: "Swap positive and negative delta colors for this measure (e.g. when a decrease is the favourable outcome)",
+            label: "Inverse theme colors",
+            boolean: true,
+          },
+        ],
+        selected: 0,
+      },
     ],
     dimensions: [
       {
@@ -366,8 +379,8 @@
 
       {#if boolean}
         <div class="flex gap-x-2 items-center h-full rounded-full">
-          <Switch bind:checked={editingClone[key]} id="auto-save" medium />
-          <Label class="font-medium text-fg-secondary text-sm" for="auto-save"
+          <Switch bind:checked={editingClone[key]} id={key} medium />
+          <Label class="font-medium text-fg-secondary text-sm" for={key}
             >{label}</Label
           >
           {#if hint}

@@ -7,6 +7,7 @@
   export let customStyle = "";
   export let value: string | number | undefined | null | NumberParts;
   export let color = "!text-fg-primary";
+  export let inverseTheme = false;
 
   let isNull = false;
   let isValueNegative = false;
@@ -38,11 +39,13 @@
     : ''}"
 >
   {#if isValueNegative}
-    <span class="text-kpi-negative">
+    <span class={inverseTheme ? "text-kpi-positive" : "text-kpi-negative"}>
       {value}
     </span>
   {:else if isValuePositive}
-    <span class="text-kpi-positive">{value}</span>
+    <span class={inverseTheme ? "text-kpi-negative" : "text-kpi-positive"}
+      >{value}</span
+    >
   {:else}
     <span class="text-fg-secondary">{value}</span>
   {/if}

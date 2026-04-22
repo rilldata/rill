@@ -127,6 +127,13 @@
     (measure) => measure.name!,
   );
 
+  $: inverseThemeByMeasure = Object.fromEntries(
+    leaderboardMeasures.map((measure) => [
+      measure.name!,
+      !!measure.inverseTheme,
+    ]),
+  );
+
   $: atLeastOneActive = Boolean($selectedValues.data?.length);
 
   $: isComplexFilter = isExpressionUnsupported(whereFilter);
@@ -393,6 +400,7 @@
             {tooltipFormatters}
             {dimensionColumnWidth}
             {maxValues}
+            {inverseThemeByMeasure}
           />
         {/each}
       </DelayedLoadingRows>
@@ -416,6 +424,7 @@
           {tooltipFormatters}
           {dimensionColumnWidth}
           {maxValues}
+          {inverseThemeByMeasure}
         />
       {/each}
     </tbody>

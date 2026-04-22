@@ -2,15 +2,20 @@
   export let assembled: boolean;
   export let formattedValue: string;
   export let value: number | null | undefined;
+  export let inverseTheme = false;
 </script>
 
 {#if assembled}
   {#if value !== null && value !== undefined}
     <span
       class="pointer-events-none {value > 0
-        ? 'text-kpi-positive'
-        : value < 0
+        ? inverseTheme
           ? 'text-kpi-negative'
+          : 'text-kpi-positive'
+        : value < 0
+          ? inverseTheme
+            ? 'text-kpi-positive'
+            : 'text-kpi-negative'
           : 'text-fg-secondary'}"
     >
       {formattedValue}

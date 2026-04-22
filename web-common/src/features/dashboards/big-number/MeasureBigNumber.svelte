@@ -148,10 +148,15 @@
   $: noChange = !comparisonValue;
   $: isComparisonPositive = diff > 0;
   $: isComparisonNegative = diff < 0;
+  $: inverseTheme = !!measure?.inverseTheme;
   $: comparisonDeltaColorClass = isComparisonPositive
-    ? "text-kpi-positive"
-    : isComparisonNegative
+    ? inverseTheme
       ? "text-kpi-negative"
+      : "text-kpi-positive"
+    : isComparisonNegative
+      ? inverseTheme
+        ? "text-kpi-positive"
+        : "text-kpi-negative"
       : "text-fg-secondary";
 
   $: formattedDiff = `${isComparisonPositive ? "+" : ""}${measureValueFormatter(
@@ -297,6 +302,7 @@
                 >
                   <PercentageChange
                     tabularNumber={false}
+                    {inverseTheme}
                     value={formatMeasurePercentageDifference(output)}
                   />
                 </WithTween>
