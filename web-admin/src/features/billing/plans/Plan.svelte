@@ -2,12 +2,15 @@
   import {
     createAdminServiceCancelBillingSubscription,
     createAdminServiceGetBillingSubscription,
+    createAdminServiceGetOrganization,
     createAdminServiceListProjectsForOrganization,
+    createAdminServiceUpdateBillingSubscription,
     V1BillingIssueType,
     V1BillingPlanType,
   } from "@rilldata/web-admin/client";
   import { getErrorForMutation } from "@rilldata/web-admin/client/utils";
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
+  import { needsPaymentSetup } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
   import { getOrganizationUsageMetrics } from "@rilldata/web-admin/features/billing/plans/selectors";
   import type {
     PlanTier,
@@ -55,9 +58,15 @@
   let subscription = $derived($subscriptionQuery?.data?.subscription);
   let plan = $derived(subscription?.plan);
 
+  let orgQuery = $derived(createAdminServiceGetOrganization(organization));
+  let hasPaymentCustomer = $derived(
+    !!$orgQuery.data?.organization?.paymentCustomerId,
+  );
+
   let categorisedIssues = $derived(
     useCategorisedOrganizationBillingIssues(organization),
   );
+  let paymentIssues = $derived($categorisedIssues.data?.payment);
 
   let subHasEnded = $derived(!!$categorisedIssues.data?.cancelled);
   let planType = $derived(plan?.planType);
@@ -194,11 +203,49 @@
     if (showUpgradeDialog) upgradeDialogOpen = true;
   });
 
-  async function handleSubscribe() {
-    window.open(
-      await fetchPaymentsPortalURL(organization, window.location.href),
-      "_self",
-    );
+  // Pro upgrade confirmation
+  let upgradeProDialogOpen = $state(false);
+  let upgradeProLoading = $state(false);
+  let upgradeProError = $state<string | null>(null);
+  let proPlanUpdater = createAdminServiceUpdateBillingSubscription();
+
+  async function handleUpgradeToPro() {
+    // No payment method on file, or payment issues → send to Stripe portal to set up.
+    if (!hasPaymentCustomer || paymentIssues?.length) {
+      const setup = paymentIssues?.length
+        ? needsPaymentSetup(paymentIssues)
+        : true;
+      window.open(
+        await fetchPaymentsPortalURL(organization, window.location.href, setup),
+        "_self",
+      );
+      return;
+    }
+    // Payment method on file → confirm before upgrading.
+    upgradeProError = null;
+    upgradeProDialogOpen = true;
+  }
+
+  async function confirmUpgradeToPro() {
+    upgradeProLoading = true;
+    upgradeProError = null;
+    try {
+      await $proPlanUpdater.mutateAsync({
+        org: organization,
+        data: { planName: "pro_plan" },
+      });
+      eventBus.emit("notification", {
+        type: "success",
+        message: "You're on the Pro plan",
+      });
+      void invalidateBillingInfo(organization);
+      upgradeProDialogOpen = false;
+    } catch (e) {
+      upgradeProError =
+        e instanceof Error ? e.message : "An unexpected error occurred";
+    } finally {
+      upgradeProLoading = false;
+    }
   }
 
   function handleContactSales() {
@@ -303,22 +350,23 @@
           <button class="contact-us-btn" onclick={handleContactSales}>
             Contact us
           </button>
-        {:else if currentPlan === "trial" || currentPlan === "free"}
-          <button class="subscribe-btn" onclick={handleSubscribe}>
-            Subscribe to Pro
-          </button>
-        {:else if currentPlan === "team"}
-          <button class="subscribe-btn" onclick={handleSubscribe}>
-            Switch to Pro
+        {:else if currentPlan === "trial" || currentPlan === "free" || currentPlan === "team"}
+          <button class="subscribe-btn" onclick={handleUpgradeToPro}>
+            Upgrade to Pro
           </button>
         {/if}
       </div>
     </div>
 
     {#if currentPlan === "enterprise" || currentPlan === "managed"}
-      <p class="text-sm text-fg-tertiary mt-4">
+      <p class="text-sm text-fg-tertiary mt-4 pb-4">
         Fully managed slots, dedicated CSM, white-label capabilities, and custom
         SLAs. Contact your CSM for contract details or changes.
+      </p>
+    {:else if currentPlan === "team"}
+      <p class="text-sm text-fg-tertiary mt-4 pb-4">
+        Legacy flat-rate plan. $250/mo includes up to 8 slots and 10 GB storage,
+        with $25/GB for overages. Upgrade to Pro for usage-based pricing.
       </p>
     {/if}
 
@@ -413,15 +461,9 @@
           {/if}
         </div>
       </div>
-    {:else if currentPlan === "team"}
-      <div class="period-estimate">
-        <span class="period-label">Current period estimate</span>
-        <span class="period-value">TODO: period total</span>
-        <span class="period-cycle">{periodStart} – {periodEnd}</span>
-      </div>
     {/if}
 
-    {#if currentPlan !== "enterprise" && currentPlan !== "managed"}
+    {#if currentPlan !== "enterprise" && currentPlan !== "managed" && currentPlan !== "team"}
       <!-- Cost + usage row -->
       <!-- TODO: replace per-bucket dollar values with accrued costs once the
            billing usage API exposes them. Current values (prodCost/devCost/
@@ -489,6 +531,7 @@
           {showUpgradeDialog}
           {dialogType}
           {renewEndDate}
+          onUpgradeToPro={handleUpgradeToPro}
         />
       {/if}
     {/if}
@@ -533,6 +576,38 @@
   type={dialogType}
   endDate={renewEndDate}
 />
+
+<AlertDialog bind:open={upgradeProDialogOpen}>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>Upgrade to Pro?</AlertDialogTitle>
+      <AlertDialogDescription>
+        Your subscription will start today using the payment method on file.
+        You'll be billed monthly based on usage at $0.15/unit/hr and $1/GB
+        storage/mo. Cancel anytime.
+      </AlertDialogDescription>
+      {#if upgradeProError}
+        <p class="text-red-500 text-sm">{upgradeProError}</p>
+      {/if}
+    </AlertDialogHeader>
+    <AlertDialogFooter class="mt-3">
+      <Button
+        type="secondary"
+        onClick={() => (upgradeProDialogOpen = false)}
+        disabled={upgradeProLoading}
+      >
+        Cancel
+      </Button>
+      <Button
+        type="primary"
+        onClick={confirmUpgradeToPro}
+        loading={upgradeProLoading}
+      >
+        Upgrade to Pro
+      </Button>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
 
 <style lang="postcss">
   .section-header {
@@ -587,25 +662,6 @@
 
   .plan-description {
     @apply font-sans font-semibold text-lg leading-7 align-middle text-fg-tertiary;
-  }
-
-  .period-estimate {
-    @apply flex flex-col items-center mt-4 pt-6 pb-4;
-    gap: 8px;
-  }
-
-  .period-label {
-    @apply font-sans font-semibold text-xs text-fg-tertiary;
-    line-height: 100%;
-  }
-
-  .period-value {
-    @apply font-sans font-semibold text-4xl leading-10 text-fg-primary;
-  }
-
-  .period-cycle {
-    @apply font-sans font-medium text-xs text-fg-tertiary;
-    line-height: 100%;
   }
 
   .trial-label {

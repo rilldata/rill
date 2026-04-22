@@ -12,12 +12,14 @@
     showUpgradeDialog = false,
     dialogType = "base",
     renewEndDate = "",
+    onUpgradeToPro,
   }: {
     organization: string;
     currentPlan: PlanTier;
     showUpgradeDialog?: boolean;
     dialogType?: TeamPlanDialogTypes;
     renewEndDate?: string;
+    onUpgradeToPro?: () => void;
   } = $props();
 
   // Hide plans smaller than current. Team (legacy) shows Pro + Enterprise.
@@ -176,8 +178,8 @@
       {#if currentPlan === "pro"}
         <button class="col-btn current-btn" disabled>Current plan</button>
       {:else}
-        <button class="col-btn primary-btn" onclick={handleEstimateCost}>
-          Subscribe to Pro
+        <button class="col-btn primary-btn" onclick={() => onUpgradeToPro?.()}>
+          Upgrade to Pro
         </button>
       {/if}
     </div>

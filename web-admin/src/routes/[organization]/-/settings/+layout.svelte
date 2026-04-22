@@ -5,7 +5,10 @@
   import { page } from "$app/stores";
   import { V1BillingPlanType } from "@rilldata/web-admin/client";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
-  import { isEnterprisePlan } from "@rilldata/web-admin/features/billing/plans/utils";
+  import {
+    isEnterprisePlan,
+    isTeamPlan,
+  } from "@rilldata/web-admin/features/billing/plans/utils";
   import type { PageData } from "./$types";
   import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
 
@@ -26,6 +29,10 @@
     planType === V1BillingPlanType.BILLING_PLAN_TYPE_ENTERPRISE ||
       isEnterprisePlan(planName),
   );
+  let isTeam = $derived(
+    planType === V1BillingPlanType.BILLING_PLAN_TYPE_TEAM ||
+      isTeamPlan(planName),
+  );
 
   let navItems = $derived([
     { label: "General", route: "", hasPermission: true },
@@ -37,7 +44,7 @@
     {
       label: "Usage",
       route: "/billing/usage",
-      hasPermission: !isEnterprise,
+      hasPermission: !isEnterprise && !isTeam,
     },
   ]);
 </script>
