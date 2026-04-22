@@ -37,6 +37,11 @@
   import type { FilterGroup } from "@rilldata/web-common/components/table-toolbar/types";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import {
+    createUrlFilterSync,
+    parseEnumParam,
+    parseStringParam,
+  } from "@rilldata/web-common/lib/url-filter-sync";
+  import {
     EyeIcon,
     GitBranchIcon,
     PlayIcon,
@@ -44,6 +49,7 @@
     Trash2Icon,
   } from "lucide-svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { onMount } from "svelte";
 
   let { organization, project }: { organization: string; project: string } =
     $props();
@@ -102,11 +108,51 @@
       : null,
   );
 
-  // Toolbar state
-  let searchText = $state("");
-  let statusFilter = $state<
-    "all" | "running" | "stopped" | "pending" | "errored"
-  >("all");
+  // Toolbar state — synced to URL params `q` and `status`
+  const statusValues = [
+    "all",
+    "running",
+    "pending",
+    "errored",
+    "stopped",
+  ] as const;
+
+  const filterSync = createUrlFilterSync([
+    { key: "q", type: "string" },
+    { key: "status", type: "enum", defaultValue: "all" },
+  ]);
+
+  let searchText = $state(parseStringParam(page.url.searchParams.get("q")));
+  let statusFilter = $state<(typeof statusValues)[number]>(
+    parseEnumParam(page.url.searchParams.get("status"), statusValues, "all"),
+  );
+  let mounted = $state(false);
+
+  onMount(() => {
+    filterSync.init(page.url);
+    mounted = true;
+  });
+
+  // URL → local state on external navigation (back/forward)
+  $effect(() => {
+    if (!mounted) return;
+    const url = page.url;
+    if (filterSync.hasExternalNavigation(url)) {
+      filterSync.markSynced(url);
+      searchText = parseStringParam(url.searchParams.get("q"));
+      statusFilter = parseEnumParam(
+        url.searchParams.get("status"),
+        statusValues,
+        "all",
+      );
+    }
+  });
+
+  // Local state → URL
+  $effect(() => {
+    if (!mounted) return;
+    filterSync.syncToUrl({ q: searchText, status: statusFilter });
+  });
 
   let filterGroups = $derived([
     {
