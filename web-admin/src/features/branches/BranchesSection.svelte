@@ -104,7 +104,9 @@
 
   // Toolbar state
   let searchText = $state("");
-  let statusFilter = $state<"all" | "running" | "stopped" | "pending" | "errored">("all");
+  let statusFilter = $state<
+    "all" | "running" | "stopped" | "pending" | "errored"
+  >("all");
 
   let filterGroups = $derived([
     {
