@@ -266,6 +266,13 @@
     measureNamesAndLabels.label,
   );
 
+  // When the metrics view YAML already specifies a live connector, trust the
+  // YAML fields (connector/database/database_schema/table) directly rather than
+  // walking every dataset via OLAPListTables. For warehouses like BigQuery, that
+  // enumeration issues an INFORMATION_SCHEMA.TABLES query per dataset and often
+  // never completes in projects with many datasets.
+  $: hasLiveConnectorYAML = Boolean(yamlConnector && modelOrSourceOrTableName);
+
   $: tablesQuery = createConnectorServiceOLAPListTables(
     runtimeClient,
     { connector },
@@ -274,7 +281,8 @@
         enabled:
           !!runtimeClient.instanceId &&
           !!connector &&
-          !hasValidModelOrSourceSelection,
+          !hasValidModelOrSourceSelection &&
+          !hasLiveConnectorYAML,
       },
     },
   );
@@ -284,12 +292,13 @@
   $: hasValidOLAPTableSelected =
     !hasValidModelOrSourceSelection &&
     modelOrSourceOrTableName &&
-    tables.find(
-      (table) =>
-        table.name === modelOrSourceOrTableName &&
-        (!database || table.database === database) &&
-        (!databaseSchema || table.databaseSchema === databaseSchema),
-    );
+    (hasLiveConnectorYAML ||
+      tables.find(
+        (table) =>
+          table.name === modelOrSourceOrTableName &&
+          (!database || table.database === database) &&
+          (!databaseSchema || table.databaseSchema === databaseSchema),
+      ));
 
   $: tableMode = Boolean(hasValidOLAPTableSelected);
 
@@ -552,7 +561,7 @@
         <div class="flex flex-col gap-y-1 w-full">
           <InputLabel label="Table" id="table">
             <svelte:fragment slot="mode-switch">
-              {#if isModelingSupported}
+              {#if isModelingSupported && !yamlConnector}
                 <button
                   onclick={switchTableMode}
                   class="ml-auto text-primary-600 font-medium text-xs"
