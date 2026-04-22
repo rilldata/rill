@@ -258,8 +258,8 @@ func (r *Runtime) ReloadConfig(ctx context.Context, instanceID string) error {
 }
 
 func instanceAnnotationsToAttribs(instance *drivers.Instance) []attribute.KeyValue {
-	attrs := make([]attribute.KeyValue, 0, len(instance.Annotations)+1)
-	attrs = append(attrs, attribute.String("instance_id", instance.ID))
+	attrs := make([]attribute.KeyValue, 0, len(instance.Annotations)+2)
+	attrs = append(attrs, attribute.String("instance_id", instance.ID), attribute.String("environment", instance.Environment))
 	for k, v := range instance.Annotations {
 		attrs = append(attrs, attribute.String(k, v))
 	}
