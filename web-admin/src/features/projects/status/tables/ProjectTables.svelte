@@ -29,7 +29,7 @@
   import RefreshResourceConfirmDialog from "@rilldata/web-common/features/projects/status/RefreshResourceConfirmDialog.svelte";
   import {
     createUrlFilterSync,
-    parseEnumParam,
+    parseArrayParam,
     parseStringParam,
   } from "@rilldata/web-common/lib/url-filter-sync";
   import { onMount } from "svelte";
@@ -43,14 +43,13 @@
   $: instance = $instanceQuery.data?.instance;
   $: connectorName = instance?.olapConnector ?? "";
 
-  // Filters — initialized from URL params
+  // Filters — initialized from URL params (type is multi-select array)
   const filterSync = createUrlFilterSync([
     { key: "q", type: "string" },
-    { key: "type", type: "enum", defaultValue: "all" },
+    { key: "type", type: "array" },
   ]);
   filterSync.init($page.url);
 
-  const typeValues = ["all", "table", "view"] as const;
   let searchText = parseStringParam($page.url.searchParams.get("q"));
 
   // Debounce search for server-side filtering
@@ -84,10 +83,8 @@
   // createQuery (unlike createInfiniteQuery) handles re-creation in $: blocks safely
   $: modelResourcesQuery = useModelResources(runtimeClient);
   $: modelResources = $modelResourcesQuery.data ?? new Map();
-  let typeFilter: (typeof typeValues)[number] = parseEnumParam(
+  let typeFilter: string[] = parseArrayParam(
     $page.url.searchParams.get("type"),
-    typeValues,
-    "all",
   );
   let mounted = false;
 
@@ -95,11 +92,7 @@
   $: if (mounted && filterSync.hasExternalNavigation($page.url)) {
     filterSync.markSynced($page.url);
     searchText = parseStringParam($page.url.searchParams.get("q"));
-    typeFilter = parseEnumParam(
-      $page.url.searchParams.get("type"),
-      typeValues,
-      "all",
-    );
+    typeFilter = parseArrayParam($page.url.searchParams.get("type"));
   }
 
   // Sync filter state → URL
@@ -120,7 +113,8 @@
         { label: "View", value: "view" },
       ],
       selected: typeFilter,
-      defaultValue: "all",
+      defaultValue: [],
+      multiSelect: true,
     },
   ] satisfies FilterGroup[];
 
@@ -227,10 +221,14 @@
     }}
     {filterGroups}
     onFilterChange={(key, value) => {
-      if (key === "type") typeFilter = value as typeof typeFilter;
+      if (key === "type") {
+        typeFilter = typeFilter.includes(value)
+          ? typeFilter.filter((v) => v !== value)
+          : [...typeFilter, value];
+      }
     }}
     onClearAllFilters={() => {
-      typeFilter = "all";
+      typeFilter = [];
       searchText = "";
     }}
     showSort={false}

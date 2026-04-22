@@ -38,7 +38,7 @@
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import {
     createUrlFilterSync,
-    parseEnumParam,
+    parseArrayParam,
     parseStringParam,
   } from "@rilldata/web-common/lib/url-filter-sync";
   import {
@@ -108,23 +108,15 @@
       : null,
   );
 
-  // Toolbar state — synced to URL params `q` and `status`
-  const statusValues = [
-    "all",
-    "running",
-    "pending",
-    "errored",
-    "stopped",
-  ] as const;
-
+  // Toolbar state — synced to URL params `q` and `status` (multi-select array)
   const filterSync = createUrlFilterSync([
     { key: "q", type: "string" },
-    { key: "status", type: "enum", defaultValue: "all" },
+    { key: "status", type: "array" },
   ]);
 
   let searchText = $state(parseStringParam(page.url.searchParams.get("q")));
-  let statusFilter = $state<(typeof statusValues)[number]>(
-    parseEnumParam(page.url.searchParams.get("status"), statusValues, "all"),
+  let statusFilter = $state<string[]>(
+    parseArrayParam(page.url.searchParams.get("status")),
   );
   let mounted = $state(false);
 
@@ -140,11 +132,7 @@
     if (filterSync.hasExternalNavigation(url)) {
       filterSync.markSynced(url);
       searchText = parseStringParam(url.searchParams.get("q"));
-      statusFilter = parseEnumParam(
-        url.searchParams.get("status"),
-        statusValues,
-        "all",
-      );
+      statusFilter = parseArrayParam(url.searchParams.get("status"));
     }
   });
 
@@ -165,31 +153,34 @@
         { label: "Stopped", value: "stopped" },
       ],
       selected: statusFilter,
-      defaultValue: "all",
+      defaultValue: [],
+      multiSelect: true,
     },
   ] satisfies FilterGroup[]);
 
   function statusMatches(d: V1Deployment): boolean {
-    if (statusFilter === "all") return true;
+    if (statusFilter.length === 0) return true;
     const s = d.status;
-    switch (statusFilter) {
-      case "running":
-        return s === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING;
-      case "pending":
-        return (
-          s === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING ||
-          s === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING
-        );
-      case "errored":
-        return s === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED;
-      case "stopped":
-        return (
-          s === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED ||
-          s === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING
-        );
-      default:
-        return true;
-    }
+    return statusFilter.some((sel) => {
+      switch (sel) {
+        case "running":
+          return s === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING;
+        case "pending":
+          return (
+            s === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING ||
+            s === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING
+          );
+        case "errored":
+          return s === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED;
+        case "stopped":
+          return (
+            s === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED ||
+            s === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING
+          );
+        default:
+          return false;
+      }
+    });
   }
 
   let visibleDeployments = $derived.by(() => {
@@ -307,10 +298,14 @@
     }}
     {filterGroups}
     onFilterChange={(key, value) => {
-      if (key === "status") statusFilter = value as typeof statusFilter;
+      if (key === "status") {
+        statusFilter = statusFilter.includes(value)
+          ? statusFilter.filter((v) => v !== value)
+          : [...statusFilter, value];
+      }
     }}
     onClearAllFilters={() => {
-      statusFilter = "all";
+      statusFilter = [];
       searchText = "";
     }}
     showSort={false}

@@ -12,11 +12,46 @@
   import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
   import RadixLarge from "@rilldata/web-common/components/typography/RadixLarge.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
+  import {
+    createUrlFilterSync,
+    parseArrayParam,
+    parseStringParam,
+  } from "@rilldata/web-common/lib/url-filter-sync";
   import { Plus } from "lucide-svelte";
+  import { onMount } from "svelte";
 
   let open = false;
-  let searchText = "";
-  let filterByEnvironment: EnvironmentTypes = EnvironmentType.UNDEFINED;
+
+  // Filters — synced to URL params `q` and `env` (multi-select array)
+  const filterSync = createUrlFilterSync([
+    { key: "q", type: "string" },
+    { key: "env", type: "array" },
+  ]);
+  filterSync.init($page.url);
+
+  let searchText = parseStringParam($page.url.searchParams.get("q"));
+  let envFilter: EnvironmentTypes[] = parseArrayParam(
+    $page.url.searchParams.get("env"),
+  ) as EnvironmentTypes[];
+  let mounted = false;
+
+  // URL → local state on external navigation (back/forward)
+  $: if (mounted && filterSync.hasExternalNavigation($page.url)) {
+    filterSync.markSynced($page.url);
+    searchText = parseStringParam($page.url.searchParams.get("q"));
+    envFilter = parseArrayParam(
+      $page.url.searchParams.get("env"),
+    ) as EnvironmentTypes[];
+  }
+
+  // Local state → URL
+  $: if (mounted) {
+    filterSync.syncToUrl({ q: searchText, env: envFilter });
+  }
+
+  onMount(() => {
+    mounted = true;
+  });
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -43,22 +78,22 @@
   );
 
   $: filteredVariables = searchedVariables.filter((variable) => {
-    if (filterByEnvironment === EnvironmentType.UNDEFINED) {
-      return true;
-    }
-    if (filterByEnvironment === EnvironmentType.DEVELOPMENT) {
-      return (
-        variable.environment === EnvironmentType.DEVELOPMENT ||
-        variable.environment === EnvironmentType.UNDEFINED
-      );
-    }
-    if (filterByEnvironment === EnvironmentType.PRODUCTION) {
-      return (
-        variable.environment === EnvironmentType.PRODUCTION ||
-        variable.environment === EnvironmentType.UNDEFINED
-      );
-    }
-    return false;
+    if (envFilter.length === 0) return true;
+    return envFilter.some((sel) => {
+      if (sel === EnvironmentType.DEVELOPMENT) {
+        return (
+          variable.environment === EnvironmentType.DEVELOPMENT ||
+          variable.environment === EnvironmentType.UNDEFINED
+        );
+      }
+      if (sel === EnvironmentType.PRODUCTION) {
+        return (
+          variable.environment === EnvironmentType.PRODUCTION ||
+          variable.environment === EnvironmentType.UNDEFINED
+        );
+      }
+      return false;
+    });
   });
 
   $: sortedVariables = [...filteredVariables].sort((a, b) => {
@@ -66,36 +101,33 @@
   });
 
   function handleFilterChange(_key: string, value: string) {
-    filterByEnvironment = value as EnvironmentTypes;
+    const v = value as EnvironmentTypes;
+    envFilter = envFilter.includes(v)
+      ? envFilter.filter((x) => x !== v)
+      : [...envFilter, v];
   }
 
   function handleClearAllFilters() {
-    filterByEnvironment = EnvironmentType.UNDEFINED;
+    envFilter = [];
+    searchText = "";
   }
 
-  $: environmentLabel =
-    filterByEnvironment === EnvironmentType.UNDEFINED
-      ? "All environments"
-      : filterByEnvironment === EnvironmentType.PRODUCTION
-        ? "Production"
-        : "Development";
-
   $: emptyTextWhenNoVariables =
-    filterByEnvironment === EnvironmentType.UNDEFINED
+    envFilter.length === 0
       ? "No environment variables"
-      : `No environment variables for ${environmentLabel}`;
+      : `No environment variables match the selected filters`;
 
   $: filterGroups = [
     {
-      label: "Filter by environment",
+      label: "Environment",
       key: "environment",
       options: [
-        { value: EnvironmentType.UNDEFINED, label: "All environments" },
         { value: EnvironmentType.PRODUCTION, label: "Production" },
         { value: EnvironmentType.DEVELOPMENT, label: "Development" },
       ],
-      selected: filterByEnvironment,
-      defaultValue: EnvironmentType.UNDEFINED,
+      selected: envFilter,
+      defaultValue: [],
+      multiSelect: true,
     },
   ];
 </script>
