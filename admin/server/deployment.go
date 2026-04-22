@@ -35,12 +35,12 @@ func (s *Server) TriggerReconcile(ctx context.Context, req *adminv1.TriggerRecon
 
 	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	proj, err := s.admin.DB.FindProject(ctx, depl.ProjectID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -50,7 +50,7 @@ func (s *Server) TriggerReconcile(ctx context.Context, req *adminv1.TriggerRecon
 
 	err = s.admin.TriggerParser(ctx, depl)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.TriggerReconcileResponse{}, nil
@@ -65,12 +65,12 @@ func (s *Server) TriggerRefreshSources(ctx context.Context, req *adminv1.Trigger
 
 	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	proj, err := s.admin.DB.FindProject(ctx, depl.ProjectID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -85,7 +85,7 @@ func (s *Server) TriggerRefreshSources(ctx context.Context, req *adminv1.Trigger
 
 	rt, err := s.admin.OpenRuntimeClient(depl)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 	defer rt.Close()
 
@@ -95,7 +95,7 @@ func (s *Server) TriggerRefreshSources(ctx context.Context, req *adminv1.Trigger
 		All:        len(names) == 0, // Backwards compatibility
 	})
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.TriggerRefreshSourcesResponse{}, nil
@@ -113,7 +113,7 @@ func (s *Server) ListDeployments(ctx context.Context, req *adminv1.ListDeploymen
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -125,7 +125,7 @@ func (s *Server) ListDeployments(ctx context.Context, req *adminv1.ListDeploymen
 
 	depls, err := s.admin.DB.FindDeploymentsForProject(ctx, proj.ID, req.Environment, req.Branch)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	// Filter deployments based on permissions and specified environment and user ID.
@@ -162,12 +162,12 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 
 	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	proj, err := s.admin.DB.FindProject(ctx, depl.ProjectID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -292,7 +292,7 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 		SecurityRules: rules,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
+		return nil, fmt.Errorf("could not issue jwt: %w", err)
 	}
 
 	s.admin.Used.Deployment(depl.ID)
@@ -317,7 +317,7 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -357,7 +357,7 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 			b := make([]byte, 8)
 			_, err := rand.Read(b)
 			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
+				return nil, err
 			}
 			branch = fmt.Sprintf("rill/%s", hex.EncodeToString(b))
 		}
@@ -373,13 +373,13 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 			return nil, err
 		}
 		if len(depl) > 0 {
-			return nil, status.Errorf(codes.InvalidArgument, "another deployment for the specified branch %q already exists in %q environment", branch, depl[0].Environment)
+			return nil, status.Errorf(codes.AlreadyExists, "another deployment for the specified branch %q already exists in %q environment", branch, depl[0].Environment)
 		}
 	}
 
 	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	// Check projects quota
@@ -456,12 +456,12 @@ func (s *Server) StartDeployment(ctx context.Context, req *adminv1.StartDeployme
 
 	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	proj, err := s.admin.DB.FindProject(ctx, depl.ProjectID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -496,12 +496,12 @@ func (s *Server) StopDeployment(ctx context.Context, req *adminv1.StopDeployment
 
 	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	proj, err := s.admin.DB.FindProject(ctx, depl.ProjectID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -518,7 +518,7 @@ func (s *Server) StopDeployment(ctx context.Context, req *adminv1.StopDeployment
 
 	err = s.admin.StopDeployment(ctx, depl)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.StopDeploymentResponse{
@@ -534,12 +534,12 @@ func (s *Server) DeleteDeployment(ctx context.Context, req *adminv1.DeleteDeploy
 
 	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	proj, err := s.admin.DB.FindProject(ctx, depl.ProjectID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -556,7 +556,7 @@ func (s *Server) DeleteDeployment(ctx context.Context, req *adminv1.DeleteDeploy
 
 	err = s.admin.TeardownDeployment(ctx, depl)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.DeleteDeploymentResponse{DeploymentId: depl.ID}, nil
@@ -573,20 +573,20 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	if proj.PrimaryDeploymentID == nil {
-		return nil, status.Error(codes.InvalidArgument, "project does not have a deployment")
+		return nil, status.Error(codes.FailedPrecondition, "project does not have a deployment")
 	}
 
 	prodDepl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	if req.Branch != "" && req.Branch != prodDepl.Branch {
-		return nil, status.Error(codes.InvalidArgument, "project does not have a deployment for given branch")
+		return nil, status.Error(codes.FailedPrecondition, "project does not have a deployment for given branch")
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -668,7 +668,7 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 		SecurityRules: rules,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
+		return nil, fmt.Errorf("could not issue jwt: %w", err)
 	}
 
 	s.admin.Used.Deployment(prodDepl.ID)
@@ -699,21 +699,21 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	if proj.PrimaryDeploymentID == nil {
-		return nil, status.Error(codes.InvalidArgument, "project does not have a deployment")
+		return nil, status.Error(codes.FailedPrecondition, "project does not have a deployment")
 	}
 
 	prodDepl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 	s.admin.Used.Deployment(prodDepl.ID)
 
 	if req.Branch != "" && req.Branch != prodDepl.Branch {
-		return nil, status.Error(codes.InvalidArgument, "project does not have a deployment for given branch")
+		return nil, status.Error(codes.FailedPrecondition, "project does not have a deployment for given branch")
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -830,7 +830,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		SecurityRules: rules,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
+		return nil, fmt.Errorf("could not issue jwt: %w", err)
 	}
 
 	// Build the iframe URL search params
@@ -870,12 +870,12 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	// Fetch the org to apply its custom domain (if any) to the embed URL
 	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "could not find organization: %s", err.Error())
+		return nil, err
 	}
 
 	iFrameURL, err := s.admin.URLs.WithCustomDomain(org.CustomDomain).Embed(iframeQuery)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "could not construct iframe url: %s", err.Error())
+		return nil, err
 	}
 
 	return &adminv1.GetIFrameResponse{
@@ -918,7 +918,7 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 		return nil, err
 	}
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "can't update deployment %q because its runtime has not been initialized yet", depl.ID)
+		return nil, status.Errorf(codes.FailedPrecondition, "can't update deployment %q because its runtime has not been initialized yet", depl.ID)
 	}
 
 	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
@@ -950,15 +950,15 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 	// parsing duckdb connector config
 	rCfg, err := provisioner.NewRuntimeConfig(pr.Config)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "invalid runtime config: %v", err)
+		return nil, fmt.Errorf("invalid runtime config: %w", err)
 	}
 	configStruct, err := rCfg.DuckdbConfig().AsMap()
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to decode DuckDB connector config: %v", err)
+		return nil, fmt.Errorf("failed to decode DuckDB connector config: %w", err)
 	}
 	configStructPb, err := structpb.NewStruct(configStruct)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to encode DuckDB connector config: %v", err)
+		return nil, fmt.Errorf("failed to encode DuckDB connector config: %w", err)
 	}
 	resp.DuckdbConnectorConfig = configStructPb
 

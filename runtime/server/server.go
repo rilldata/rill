@@ -335,7 +335,9 @@ func mapGRPCError(err error) error {
 	var te *traceError
 	errors.As(err, &te)
 
-	if errors.Is(err, context.DeadlineExceeded) {
+	if _, ok := status.FromError(err); ok {
+		// Already a gRPC status error. Pass through, but still let trace data be attached below.
+	} else if errors.Is(err, context.DeadlineExceeded) {
 		err = status.Error(codes.DeadlineExceeded, err.Error())
 	} else if errors.Is(err, context.Canceled) {
 		err = status.Error(codes.Canceled, err.Error())
@@ -345,6 +347,16 @@ func mapGRPCError(err error) error {
 		err = ErrForbidden
 	} else if errors.Is(err, metricsview.ErrForbidden) {
 		err = ErrForbidden
+	} else if errors.Is(err, drivers.ErrResourceNotFound) {
+		err = status.Error(codes.NotFound, err.Error())
+	} else if errors.Is(err, drivers.ErrResourceAlreadyExists) {
+		err = status.Error(codes.AlreadyExists, err.Error())
+	} else if errors.Is(err, drivers.ErrNotFound) {
+		err = status.Error(codes.NotFound, err.Error())
+	} else if errors.Is(err, drivers.ErrStorageLimitExceeded) {
+		err = status.Error(codes.ResourceExhausted, err.Error())
+	} else if errors.Is(err, runtime.ErrAdminNotConfigured) || errors.Is(err, runtime.ErrAINotConfigured) {
+		err = status.Error(codes.FailedPrecondition, err.Error())
 	}
 
 	// Attach trace details to the gRPC status after error mapping

@@ -38,7 +38,7 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 
 	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find organization for project: %v", err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -94,7 +94,7 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 		// NOTE: Another problem is that if the creator is an admin, attrs["admin"] will be true. It shouldn't be a problem today, but could end up leaking some privileges in the future if we're not careful.
 		attrs, err := s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, projPerms)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 		opts.Attributes = attrs
 	}
@@ -106,7 +106,7 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 		}
 		val, err := protojson.Marshal(filter)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, err
 		}
 
 		filterSize += len(val)
@@ -121,7 +121,7 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 
 	token, err := s.admin.IssueMagicAuthToken(ctx, opts)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	tokenStr := token.Token().String()
@@ -147,17 +147,17 @@ func (s *Server) GetCurrentMagicAuthToken(ctx context.Context, req *adminv1.GetC
 		if errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.NotFound, fmt.Sprintf("project with id %s not found", tkn.ProjectID))
 		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find organization for project: %v", err.Error())
+		return nil, err
 	}
 
 	pb, err := s.magicAuthTokenToPB(tkn, org, proj)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.GetCurrentMagicAuthTokenResponse{
@@ -190,7 +190,7 @@ func (s *Server) ListMagicAuthTokens(ctx context.Context, req *adminv1.ListMagic
 
 	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find organization for project: %v", err.Error())
+		return nil, err
 	}
 
 	var createdByUserID *string
@@ -215,7 +215,7 @@ func (s *Server) ListMagicAuthTokens(ctx context.Context, req *adminv1.ListMagic
 
 	pbs, err := s.magicAuthTokensToPB(tokens, org, proj)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.ListMagicAuthTokensResponse{
@@ -231,12 +231,12 @@ func (s *Server) RevokeMagicAuthToken(ctx context.Context, req *adminv1.RevokeMa
 
 	tkn, err := s.admin.DB.FindMagicAuthToken(ctx, req.TokenId, false)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	proj, err := s.admin.DB.FindProject(ctx, tkn.ProjectID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find project for token: %v", err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -251,7 +251,7 @@ func (s *Server) RevokeMagicAuthToken(ctx context.Context, req *adminv1.RevokeMa
 
 	err = s.admin.DB.DeleteMagicAuthToken(ctx, tkn.ID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.RevokeMagicAuthTokenResponse{}, nil

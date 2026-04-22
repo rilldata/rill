@@ -131,7 +131,7 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 	// Get table info
 	tbl, err := olap.InformationSchema().Lookup(ctx, req.Database, req.DatabaseSchema, req.Table)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "table not found: %s", err)
+		return nil, status.Errorf(codes.NotFound, "table not found: %s", err)
 	}
 
 	// Try to generate the YAML with AI

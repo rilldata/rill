@@ -2,11 +2,10 @@ package server
 
 import (
 	"context"
-	"errors"
+	"fmt"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -27,18 +26,12 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 	// Check if user has access to query for canvas data (we use the ReadAPI permission for this for now)
 	claims := auth.GetClaims(ctx, req.InstanceId)
 	if !claims.Can(runtime.ReadAPI) {
-		return nil, status.Errorf(codes.FailedPrecondition, "does not have access to canvas data")
+		return nil, status.Error(codes.PermissionDenied, "does not have access to canvas data")
 	}
 
 	res, err := s.runtime.ResolveCanvas(ctx, req.InstanceId, req.Canvas, claims, req.Unsafe)
 	if err != nil {
-		if errors.Is(err, drivers.ErrResourceNotFound) {
-			return nil, status.Errorf(codes.NotFound, "canvas with name %q not found", req.Canvas)
-		}
-		if errors.Is(err, runtime.ErrForbidden) {
-			return nil, status.Errorf(codes.PermissionDenied, "user does not have access to canvas %q", req.Canvas)
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &runtimev1.ResolveCanvasResponse{
@@ -59,20 +52,17 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 	// Check if user has access to query for component data (we use the ReadAPI permission for this for now)
 	claims := auth.GetClaims(ctx, req.InstanceId)
 	if !claims.Can(runtime.ReadAPI) {
-		return nil, status.Errorf(codes.FailedPrecondition, "does not have access to component data")
+		return nil, status.Error(codes.PermissionDenied, "does not have access to component data")
 	}
 
 	// Find the component spec
 	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindComponent, Name: req.Component}, false)
 	if err != nil {
-		if errors.Is(err, drivers.ErrResourceNotFound) {
-			return nil, status.Errorf(codes.NotFound, "component with name %q not found", req.Component)
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 	spec := res.GetComponent().State.ValidSpec
 	if spec == nil {
@@ -82,7 +72,7 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 	// Get current instance metadata
 	inst, err := s.runtime.Instance(ctx, req.InstanceId)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	// Parse args
@@ -103,7 +93,7 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 	if spec.RendererProperties != nil {
 		v, err := parser.ResolveTemplateRecursively(spec.RendererProperties.AsMap(), td, false)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, fmt.Errorf("failed to resolve renderer properties: %w", err)
 		}
 
 		props, ok := v.(map[string]any)
@@ -113,7 +103,7 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 
 		rendererProps, err = structpb.NewStruct(props)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to convert renderer properties to struct: %s", err.Error())
+			return nil, fmt.Errorf("failed to convert renderer properties to struct: %w", err)
 		}
 	}
 

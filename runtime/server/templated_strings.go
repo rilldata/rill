@@ -25,7 +25,7 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 
 	claims := auth.GetClaims(ctx, req.InstanceId)
 	if !claims.Can(runtime.ReadAPI) {
-		return nil, status.Errorf(codes.FailedPrecondition, "does not have access to query data")
+		return nil, status.Error(codes.PermissionDenied, "does not have access to query data")
 	}
 
 	additionalWhereByMetricsView := map[string]map[string]any{}
@@ -61,10 +61,7 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 		Claims: claims,
 	})
 	if err != nil {
-		if errors.Is(err, ctx.Err()) {
-			return nil, err
-		}
-		return nil, status.Errorf(codes.InvalidArgument, "failed to resolve template: %s", err.Error())
+		return nil, fmt.Errorf("failed to resolve template: %w", err)
 	}
 	defer resolveRes.Close()
 

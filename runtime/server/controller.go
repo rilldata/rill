@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -41,12 +40,12 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 
 	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	rs, err := ctrl.List(ctx, req.Kind, req.Path, false)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	slices.SortFunc(rs, func(a, b *runtimev1.Resource) int {
@@ -73,7 +72,7 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 		r := rs[i]
 		r, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, claims, r)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, err
 		}
 		if !access {
 			// Remove from the slice
@@ -103,19 +102,19 @@ func (s *Server) WatchResources(req *runtimev1.WatchResourcesRequest, ss runtime
 
 	ctrl, err := s.runtime.Controller(ss.Context(), req.InstanceId)
 	if err != nil {
-		return status.Error(codes.InvalidArgument, err.Error())
+		return err
 	}
 
 	if req.Replay {
 		rs, err := ctrl.List(ss.Context(), req.Kind, "", false)
 		if err != nil {
-			return status.Error(codes.InvalidArgument, err.Error())
+			return err
 		}
 
 		for _, r := range rs {
 			r, access, err := s.runtime.ApplySecurityPolicy(ss.Context(), req.InstanceId, claims, r)
 			if err != nil {
-				return status.Error(codes.InvalidArgument, err.Error())
+				return err
 			}
 			if !access {
 				continue
@@ -126,7 +125,7 @@ func (s *Server) WatchResources(req *runtimev1.WatchResourcesRequest, ss runtime
 				Resource: r,
 			})
 			if err != nil {
-				return status.Error(codes.InvalidArgument, err.Error())
+				return err
 			}
 		}
 	}
@@ -173,15 +172,12 @@ func (s *Server) GetResource(ctx context.Context, req *runtimev1.GetResourceRequ
 
 	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	r, err := ctrl.Get(ctx, req.Name, false)
 	if err != nil {
-		if errors.Is(err, drivers.ErrResourceNotFound) {
-			return nil, status.Error(codes.NotFound, "resource not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	if req.SkipSecurityChecks {
@@ -193,10 +189,10 @@ func (s *Server) GetResource(ctx context.Context, req *runtimev1.GetResourceRequ
 
 	r, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, claims, r)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 	if !access {
-		return nil, status.Error(codes.NotFound, "resource not found")
+		return nil, ErrForbidden
 	}
 
 	return &runtimev1.GetResourceResponse{Resource: r}, nil
@@ -217,24 +213,21 @@ func (s *Server) GetExplore(ctx context.Context, req *runtimev1.GetExploreReques
 
 	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	n := &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: req.Name}
 	e, err := ctrl.Get(ctx, n, false)
 	if err != nil {
-		if errors.Is(err, drivers.ErrResourceNotFound) {
-			return nil, status.Error(codes.NotFound, "resource not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	e, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, claims, e)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 	if !access {
-		return nil, status.Error(codes.NotFound, "resource not found")
+		return nil, ErrForbidden
 	}
 
 	validSpec := e.GetExplore().State.ValidSpec
@@ -247,18 +240,15 @@ func (s *Server) GetExplore(ctx context.Context, req *runtimev1.GetExploreReques
 	n = &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: validSpec.MetricsView}
 	m, err := ctrl.Get(ctx, n, false)
 	if err != nil {
-		if errors.Is(err, drivers.ErrResourceNotFound) {
-			return nil, status.Error(codes.NotFound, "metrics view not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	m, access, err = s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, claims, m)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 	if !access {
-		return nil, status.Error(codes.NotFound, "metrics view not found")
+		return nil, ErrForbidden
 	}
 
 	return &runtimev1.GetExploreResponse{
@@ -282,24 +272,21 @@ func (s *Server) GetModelPartitions(ctx context.Context, req *runtimev1.GetModel
 
 	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	n := &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: req.Model}
 	r, err := ctrl.Get(ctx, n, false)
 	if err != nil {
-		if errors.Is(err, drivers.ErrResourceNotFound) {
-			return nil, status.Error(codes.NotFound, "resource not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	r, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, claims, r)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 	if !access {
-		return nil, status.Error(codes.NotFound, "resource not found")
+		return nil, ErrForbidden
 	}
 
 	partitionsModelID := r.GetModel().State.PartitionsModelId
@@ -318,7 +305,7 @@ func (s *Server) GetModelPartitions(ctx context.Context, req *runtimev1.GetModel
 
 	catalog, release, err := s.runtime.Catalog(ctx, req.InstanceId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 	defer release()
 
@@ -334,7 +321,7 @@ func (s *Server) GetModelPartitions(ctx context.Context, req *runtimev1.GetModel
 
 	partitions, err := catalog.FindModelPartitions(ctx, opts)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	var nextPageToken string
@@ -362,7 +349,7 @@ func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTrigger
 
 	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	// Build refresh trigger spec
@@ -392,7 +379,7 @@ func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTrigger
 		for _, kind := range kinds {
 			rs, err := ctrl.List(ctx, kind, "", false)
 			if err != nil {
-				return nil, status.Error(codes.InvalidArgument, fmt.Errorf("failed to list resources of kind %q: %w", kind, err).Error())
+				return nil, fmt.Errorf("failed to list resources of kind %q: %w", kind, err)
 			}
 			for _, r := range rs {
 				if kind == runtime.ResourceKindModel {
@@ -413,7 +400,7 @@ func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTrigger
 	r := &runtimev1.Resource{Resource: &runtimev1.Resource_RefreshTrigger{RefreshTrigger: &runtimev1.RefreshTrigger{Spec: spec}}}
 	err = ctrl.Create(ctx, n, nil, nil, nil, false, r)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, fmt.Errorf("failed to create trigger: %w", err).Error())
+		return nil, fmt.Errorf("failed to create trigger: %w", err)
 	}
 
 	return &runtimev1.CreateTriggerResponse{}, nil
