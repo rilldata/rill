@@ -57,12 +57,14 @@ export function getSourceYamlPreview({
   schema,
   formValues,
   existingEnvBlob,
+  outputConnector,
 }: {
   connectorName: string;
   connector: V1ConnectorDriver;
   schema: MultiStepFormSchema | null;
   formValues: Record<string, unknown>;
   existingEnvBlob: string | null;
+  outputConnector?: string;
 }) {
   const isPublicAuth = formValues.auth_method === "public";
   const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
@@ -86,6 +88,7 @@ export function getSourceYamlPreview({
       secretKeys: rewrittenSecretKeys,
       stringKeys: rewrittenStringKeys,
       originalDriverName: connector.name || undefined,
+      outputConnector,
     });
   }
   return getConnectorYamlPreview({

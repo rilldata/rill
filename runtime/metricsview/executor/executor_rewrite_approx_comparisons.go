@@ -51,7 +51,7 @@ func (e *Executor) rewriteApproxComparisonNode(a *metricsview.AST, n *metricsvie
 	sortField := a.Root.OrderBy[0]
 
 	cteRewrite := e.instanceCfg.MetricsApproximateComparisonsCTE && !isMultiPhase
-	if e.olap.Dialect() == drivers.DialectDruid && cteRewrite {
+	if e.olap.Dialect().String() == drivers.DialectNameDruid && cteRewrite {
 		// if there are unnests in the query, we can't rewrite the query for Druid
 		// it fails with join on cte having multi value dimension, issue - https://github.com/apache/druid/issues/16896
 		for _, dim := range n.FromSelect.DimFields {

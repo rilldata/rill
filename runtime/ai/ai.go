@@ -113,10 +113,17 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 		if err != nil {
 			return nil, fmt.Errorf("failed to find session %q: %w", opts.SessionID, err)
 		}
-		retrieveUntilMessageID := session.SharedUntilMessageID
-		if session.OwnerID == opts.Claims.UserID || opts.Claims.SkipChecks {
-			// If the user owns the session or skipCheck enabled, they can see all messages.
-			retrieveUntilMessageID = ""
+
+		// Check access: you can access anonymous sessions, your own sessions, and shared sessions.
+		// For shared sessions, if you are not the owner, you can only see messages up to the SharedUntilMessageID (inclusive).
+		// For sessions without an owner (unauthenticated users using a public project), we don't check access and rely on security by obscurity (generally a decent trade-off, but specifically introduced to get citation links over MCP working for unauthenticated demos).
+		// It's important to respect SkipChecks to ensure access in Rill Developer (where auth is disabled, but SkipChecks is true).
+		var retrieveUntilMessageID string
+		if session.OwnerID != "" && session.OwnerID != opts.Claims.UserID && !opts.Claims.SkipChecks {
+			if session.SharedUntilMessageID == "" {
+				return nil, fmt.Errorf("access denied to session %q", session.ID)
+			}
+			retrieveUntilMessageID = session.SharedUntilMessageID
 		}
 
 		ms, err := catalog.FindAIMessages(ctx, opts.SessionID)
@@ -156,12 +163,6 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 		if err != nil {
 			return nil, fmt.Errorf("failed to create session: %w", err)
 		}
-	}
-
-	// Check access: for now, only allow users to access their own sessions or shared sessions with trimmed messages.
-	// Checking !SkipChecks to ensure access for superusers and for Rill Developer (where auth is disabled and SkipChecks is true).
-	if opts.Claims.UserID != session.OwnerID && !opts.Claims.SkipChecks && session.SharedUntilMessageID == "" {
-		return nil, fmt.Errorf("access denied to session %q", session.ID)
 	}
 
 	// Setup logger

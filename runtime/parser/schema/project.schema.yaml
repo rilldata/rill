@@ -211,6 +211,9 @@ definitions:
             log_queries:
               type: boolean
               description: Controls whether to log raw SQL queries
+            max_bytes_billed:
+              type: integer
+              description: Maximum number of bytes billed for a query. Queries that exceed this limit will fail with an error. This can help prevent unexpectedly high costs from large queries. It is highly recommended to set this when running on `on-demand pricing` model. The default value is 0 i.e. no limits are enforced in Rill.
           examples:
             - # Example: BigQuery connector configuration
               type: connector                                  # Must be `connector` (required)
@@ -2198,6 +2201,36 @@ definitions:
                 measures:
                   description: Specifies which measures to apply the annotation to. Applies to all measures if not specified
                   $ref: '#/definitions/field_selector_properties'
+          rollups:
+            type: array
+            description: Pre-aggregated rollup tables that can be used to accelerate queries. When a query's dimensions, measures, time grain, and time range match a rollup, the query is automatically routed to the rollup table instead of the base table.
+            items:
+              type: object
+              properties:
+                model:
+                  type: string
+                  description: Refers to the model or table powering the rollup (required)
+                database:
+                  type: string
+                  description: Refers to the database to use in the OLAP engine
+                database_schema:
+                  type: string
+                  description: Refers to the schema to use in the OLAP engine
+                time_grain:
+                  type: string
+                  description: 'The time grain of the rollup (required). Valid values are: millisecond, second, minute, hour, day, week, month, quarter, year'
+                time_zone:
+                  type: string
+                  description: IANA timezone of the rollup table (e.g. America/New_York). For day+ grains, queries are only routed to the rollup if the query timezone matches.
+                dimensions:
+                  $ref: '#/definitions/field_selector_properties'
+                  description: Optional field selectors for dimensions to include in the rollup from the base metrics view. If not specified, all dimensions are included.
+                measures:
+                  $ref: '#/definitions/field_selector_properties'
+                  description: Optional field selectors for measures to include in the rollup from the base metrics view. If not specified, all measures are included.
+              required:
+                - model
+                - time_grain
           security:
               $ref: '#/definitions/security_policy_properties'
               description: Defines a security policy for the dashboard
