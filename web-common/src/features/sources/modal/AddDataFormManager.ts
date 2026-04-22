@@ -54,11 +54,8 @@ type FormStore = Writable<FormData> & {
 };
 
 type ErrorsStore = Writable<ValidationErrors> & {
-  set: (errors: ValidationErrors, options?: { force?: boolean }) => void;
-  update: (
-    updater: (errors: ValidationErrors) => ValidationErrors,
-    options?: { force?: boolean },
-  ) => void;
+  set: (errors: ValidationErrors) => void;
+  update: (updater: (errors: ValidationErrors) => ValidationErrors) => void;
 };
 
 const BUTTON_LABELS = {
@@ -421,10 +418,19 @@ export class AddDataFormManager {
     const { name, value } = target;
     const key = name || target.id;
 
-    // Clear all field-level errors on any text edit. `force: true` bypasses
-    // superForm's internal error-tree merge, which otherwise keeps stale
-    // errors visible.
-    this.errorsStore.set({}, { force: true });
+    // Clear stale field-level errors as soon as the user edits the input.
+    const clearFieldError = (store: ErrorsStore) => {
+      if (!store?.update || !key) return;
+      store.update(($errors) => {
+        if (!$errors || !Object.prototype.hasOwnProperty.call($errors, key)) {
+          return $errors;
+        }
+        const next = { ...$errors };
+        delete next[key];
+        return next;
+      });
+    };
+    clearFieldError(this.errorsStore);
     if (name === "path" || name === "sql") {
       const nameTainted =
         taintedFields && typeof taintedFields === "object"
