@@ -268,10 +268,21 @@
   }
 
   function onStringInputChange(event: Event) {
+    const target = event.target as HTMLInputElement;
+    console.log("[onStringInputChange] fired", {
+      name: target?.name,
+      id: target?.id,
+      value: target?.value,
+      errorsBefore: JSON.stringify(get(paramsErrors)),
+    });
     clearErrorOnInput();
     formManager.onStringInputChange(
       event,
       $paramsTainted as Record<string, boolean> | null | undefined,
+    );
+    console.log(
+      "[onStringInputChange] errorsAfter",
+      JSON.stringify(get(paramsErrors)),
     );
   }
 </script>
