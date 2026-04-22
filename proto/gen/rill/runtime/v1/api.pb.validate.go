@@ -7574,6 +7574,17 @@ func (m *GetResourceRequest) validate(all bool) error {
 
 	// no validation rules for InstanceId
 
+	if m.GetName() == nil {
+		err := GetResourceRequestValidationError{
+			field:  "Name",
+			reason: "value is required",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	if all {
 		switch v := interface{}(m.GetName()).(type) {
 		case interface{ ValidateAll() error }:

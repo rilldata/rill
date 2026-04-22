@@ -11,8 +11,8 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
-	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -169,9 +169,8 @@ func parseClaims(ctx context.Context, aud *Audience, authorizationHeader string)
 		return nil, err
 	}
 
-	// Set subject in span
-	span := trace.SpanFromContext(ctx)
-	span.SetAttributes(semconv.EnduserID(claims.Claims("").UserID))
+	// Set user ID in span and request log
+	observability.AddRequestAttributes(ctx, semconv.EnduserID(claims.Claims("").UserID))
 
 	ctx = withClaimsProvider(ctx, claims)
 	return ctx, nil

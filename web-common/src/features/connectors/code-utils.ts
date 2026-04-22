@@ -4,6 +4,7 @@ import {
   type ConnectorDriverProperty,
   getRuntimeServiceGetFileQueryKey,
   runtimeServiceGetFile,
+  type V1GetFileResponse,
 } from "../../runtime-client";
 import type { RuntimeClient } from "../../runtime-client/v2";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
@@ -37,6 +38,9 @@ materialize: true
 connector: {{ connector }}
 
 sql: {{ sql }}{{ dev_section }}
+
+output:
+  connector: {{ output_connector }}
 `;
 }
 
@@ -310,12 +314,20 @@ export async function unsetResourceEnvVars(
   queryClient: QueryClient,
   yaml: string,
 ) {
-  const envBlob = await queryClient.fetchQuery({
-    queryKey: getRuntimeServiceGetFileQueryKey(runtimeClient.instanceId, {
-      path: ".env",
-    }),
-    queryFn: () => runtimeServiceGetFile(runtimeClient, { path: ".env" }),
-  });
+  let envBlob: V1GetFileResponse | undefined = undefined;
+  try {
+    envBlob = await queryClient.fetchQuery({
+      queryKey: getRuntimeServiceGetFileQueryKey(runtimeClient.instanceId, {
+        path: ".env",
+      }),
+      queryFn: () => runtimeServiceGetFile(runtimeClient, { path: ".env" }),
+    });
+  } catch (error) {
+    if (error.message?.includes("no such file or directory")) {
+      return "";
+    }
+    throw error;
+  }
 
   // Get the existing env and remove the resource's env vars
   let blob = envBlob?.blob ?? "";
@@ -705,6 +717,16 @@ export async function createYamlModelFromTable(
   // Use the sufficiently qualified table name directly
   const selectStatement = `select * from ${sufficientlyQualifiedTableName}`;
 
+  // Get default OLAP connector for the output
+  const runtimeInstance = await queryClient.fetchQuery({
+    queryKey: getRuntimeServiceGetInstanceQueryKey(client.instanceId, {}),
+    queryFn: () => runtimeServiceGetInstance(client, { sensitive: true }),
+  });
+  if (!runtimeInstance) {
+    throw new Error(`Could not find runtime instance ${client.instanceId}`);
+  }
+  const defaultOLAP = runtimeInstance?.instance?.olapConnector || "duckdb";
+
   // NOTE: Redshift does not support LIMIT clauses in its UNLOAD data exports.
   const shouldIncludeDevSection = driverName !== "redshift";
   const devSection = shouldIncludeDevSection
@@ -714,7 +736,8 @@ export async function createYamlModelFromTable(
   const yamlContent = yamlModelTemplate(driverName)
     .replace("{{ connector }}", connector)
     .replace(/{{ sql }}/g, selectStatement)
-    .replace("{{ dev_section }}", devSection);
+    .replace("{{ dev_section }}", devSection)
+    .replace("{{ output_connector }}", defaultOLAP);
 
   // Write the YAML file
   await runtimeServicePutFile(client, {
@@ -759,23 +782,6 @@ export async function createSqlModelFromTable(
   }
   const driverName = analyzedConnector.driver?.name as string;
 
-  // Determine whether the connector is the default OLAP connector
-  const runtimeInstanceQueryKey = getRuntimeServiceGetInstanceQueryKey(
-    client.instanceId,
-    {},
-  );
-  const runtimeInstanceQueryFn = async () =>
-    runtimeServiceGetInstance(client, { sensitive: true });
-  const runtimeInstance = await queryClient.fetchQuery({
-    queryKey: runtimeInstanceQueryKey,
-    queryFn: runtimeInstanceQueryFn,
-  });
-  if (!runtimeInstance) {
-    throw new Error(`Could not find runtime instance ${client.instanceId}`);
-  }
-  const isDefaultOLAPConnector =
-    runtimeInstance?.instance?.olapConnector === connector;
-
   // Get new model name
   const allNames = [
     ...fileArtifacts.getNamesForKind(ResourceKind.Source),
@@ -792,9 +798,10 @@ export async function createSqlModelFromTable(
     table,
   );
 
-  // Create model
+  // Create model — OLAP models use the same connector for both source and output
   const topComments = `-- Model SQL\n-- Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/${driverName}`;
   const connectorLine = `-- @connector: ${connector}`;
+  const outputConnectorLine = `-- @output.connector: ${connector}`;
   const selectStatement = isNonStandardIdentifier(
     sufficientlyQualifiedTableName,
   )
@@ -803,10 +810,8 @@ export async function createSqlModelFromTable(
   const devLimit = "{{ if dev }} limit 100000 {{ end}}";
 
   let modelSQL = `${topComments}\n`;
-
-  if (!isDefaultOLAPConnector) {
-    modelSQL += `${connectorLine}\n`;
-  }
+  modelSQL += `${connectorLine}\n`;
+  modelSQL += `${outputConnectorLine}\n`;
 
   modelSQL += `\n${selectStatement}`;
 
