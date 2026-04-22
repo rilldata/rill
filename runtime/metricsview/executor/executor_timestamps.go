@@ -26,7 +26,7 @@ func (e *Executor) resolveTimestampsForTable(ctx context.Context, database, data
 		return e.resolvePinot(ctx, database, databaseSchema, table, timeExpr, watermarkExpr)
 	case drivers.DialectNameDruid:
 		return e.resolveDruid(ctx, database, databaseSchema, table, timeExpr, watermarkExpr)
-	case drivers.DialectNameStarRocks:
+	case drivers.DialectNameStarRocks, drivers.DialectNameDatabricks:
 		return e.resolveStarRocks(ctx, database, databaseSchema, table, timeExpr, watermarkExpr)
 	case drivers.DialectNameSnowflake:
 		return e.resolveSnowflake(ctx, database, databaseSchema, table, timeExpr, watermarkExpr)

@@ -69,8 +69,8 @@ func (q *ColumnTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		return q.resolveDuckDBAndClickhouse(ctx, olap, priority)
 	case drivers.DialectNameStarRocks:
 		return q.resolveStarRocks(ctx, olap, priority)
-	case drivers.DialectNameBigQuery:
-		return q.resolveBigQuery(ctx, olap, priority)
+	case drivers.DialectNameBigQuery, drivers.DialectNameDatabricks:
+		return q.resolveBigQueryAndDatabricks(ctx, olap, priority)
 	case drivers.DialectNameDruid:
 		return q.resolveDruid(ctx, olap, priority)
 	default:
@@ -175,7 +175,7 @@ func (q *ColumnTimeRange) resolveStarRocks(ctx context.Context, olap drivers.OLA
 	return errors.New("no rows returned")
 }
 
-func (q *ColumnTimeRange) resolveBigQuery(ctx context.Context, olap drivers.OLAPStore, priority int) error {
+func (q *ColumnTimeRange) resolveBigQueryAndDatabricks(ctx context.Context, olap drivers.OLAPStore, priority int) error {
 	d := olap.Dialect()
 	rangeSQL := fmt.Sprintf(
 		"SELECT min(%[1]s) as `min`, max(%[1]s) as `max` FROM %[2]s",
