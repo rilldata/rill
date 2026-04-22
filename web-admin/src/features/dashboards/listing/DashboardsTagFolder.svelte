@@ -44,9 +44,6 @@
         {@const refreshedOn = isMetricsExplorer
           ? resource.explore?.state?.dataRefreshedOn
           : resource.canvas?.state?.dataRefreshedOn}
-        {@const tags = isMetricsExplorer
-          ? (resource.explore?.spec?.tags ?? [])
-          : (resource.canvas?.spec?.tags ?? [])}
         <li
           class="block w-full h-[60px] border-t bg-surface-background hover:bg-surface-hover"
         >
@@ -60,7 +57,6 @@
             {isEmbedded}
             {organization}
             {project}
-            {tags}
             activeTag={tag}
           />
         </li>
