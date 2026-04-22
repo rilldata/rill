@@ -3,6 +3,8 @@ package drivers
 import (
 	"context"
 	"fmt"
+
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
 type InformationSchema interface {
@@ -12,6 +14,18 @@ type InformationSchema interface {
 	ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*TableInfo, string, error)
 	// GetTable returns metadata about a specific table.
 	GetTable(ctx context.Context, database, databaseSchema, table string) (*TableMetadata, error)
+
+	// All returns metadata about all tables and views.
+	// The like argument can optionally be passed to filter the tables by name.
+	All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*OlapTable, string, error)
+	// Lookup returns metadata about a specific tables and views.
+	Lookup(ctx context.Context, db, schema, name string) (*OlapTable, error)
+	// LoadPhysicalSize populates the PhysicalSizeBytes field of table metadata.
+	// It should be called after All or Lookup and not on manually created tables.
+	LoadPhysicalSize(ctx context.Context, tables []*OlapTable) error
+	// LoadDDL populates the DDL field of a single table's metadata.
+	// Drivers that don't support DDL retrieval should return nil (leaving DDL empty).
+	LoadDDL(ctx context.Context, table *OlapTable) error
 }
 
 const (
@@ -41,8 +55,22 @@ type TableMetadata struct {
 	Schema map[string]string
 }
 
+// OlapTable represents a table in an information schema.
+type OlapTable struct {
+	Database                string
+	DatabaseSchema          string
+	IsDefaultDatabase       bool
+	IsDefaultDatabaseSchema bool
+	Name                    string
+	View                    bool
+	// Schema is the table schema. It is only set when only single table is looked up. It is not set when listing all tables.
+	Schema            *runtimev1.StructType
+	UnsupportedCols   map[string]string
+	PhysicalSizeBytes int64
+	DDL               string
+}
+
 // AllFromInformationSchema is a helper function that drivers implementing InformationSchema can use to implement Olap.All()
-// This is a short term solution. Longer term we should merge OLAPInformationSchema and InformationSchema interfaces.
 func AllFromInformationSchema(ctx context.Context, like string, pageSize uint32, pageToken string, i InformationSchema) ([]*OlapTable, string, error) {
 	if like != "" {
 		return nil, "", fmt.Errorf("like filter not supported")

@@ -9,13 +9,13 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-// informationSchema implements drivers.OLAPInformationSchema for StarRocks.
+// informationSchema implements drivers.InformationSchema for StarRocks.
 // Uses fully qualified names (catalog.information_schema.tables) instead of SET CATALOG/USE.
 type informationSchema struct {
 	c *connection
 }
 
-var _ drivers.OLAPInformationSchema = (*informationSchema)(nil)
+var _ drivers.InformationSchema = (*informationSchema)(nil)
 
 // All returns metadata about all tables and views.
 // For StarRocks, we query from the configured catalog's information_schema.
@@ -200,7 +200,7 @@ func (i *informationSchema) LoadPhysicalSize(ctx context.Context, tables []*driv
 	return nil
 }
 
-// LoadDDL implements drivers.OLAPInformationSchema.
+// LoadDDL implements drivers.InformationSchema.
 func (i *informationSchema) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
 	db := i.c.db
 
@@ -223,19 +223,10 @@ func (i *informationSchema) LoadDDL(ctx context.Context, table *drivers.OlapTabl
 	return nil
 }
 
-// InformationSchema interface implementation for drivers.InformationSchema
-
-var _ drivers.InformationSchema = (*informationSchemaImpl)(nil)
-
-// informationSchemaImpl implements drivers.InformationSchema for StarRocks
-type informationSchemaImpl struct {
-	c *connection
-}
-
 // ListDatabaseSchemas returns a list of database schemas in StarRocks.
 // StarRocks structure: Catalog -> Database -> Table
 // We map: Database = catalog, DatabaseSchema = database
-func (i *informationSchemaImpl) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
+func (i *informationSchema) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
 	db := i.c.db
 
 	catalog := i.c.configProp.Catalog
@@ -296,7 +287,7 @@ func (i *informationSchemaImpl) ListDatabaseSchemas(ctx context.Context, pageSiz
 
 // ListTables returns a list of tables in a specific database schema.
 // database parameter = catalog, databaseSchema parameter = database
-func (i *informationSchemaImpl) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+func (i *informationSchema) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
 	db := i.c.db
 
 	// StarRocks mapping: database parameter = catalog
@@ -370,7 +361,7 @@ func (i *informationSchemaImpl) ListTables(ctx context.Context, database, databa
 }
 
 // GetTable returns metadata about a specific table.
-func (i *informationSchemaImpl) GetTable(ctx context.Context, database, databaseSchema, tableName string) (*drivers.TableMetadata, error) {
+func (i *informationSchema) GetTable(ctx context.Context, database, databaseSchema, tableName string) (*drivers.TableMetadata, error) {
 	db := i.c.db
 
 	// StarRocks mapping: database parameter = catalog

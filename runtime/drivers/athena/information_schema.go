@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/athena"
 	"github.com/aws/aws-sdk-go-v2/service/athena/types"
 	"github.com/aws/smithy-go"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pagination"
 	"golang.org/x/sync/errgroup"
@@ -162,6 +163,47 @@ ORDER BY c.ordinal_position
 		return nil, err
 	}
 	return res, nil
+}
+
+// All implements drivers.InformationSchema.
+func (c *Connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
+	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
+}
+
+// LoadPhysicalSize implements drivers.InformationSchema.
+func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
+	return nil
+}
+
+// LoadDDL implements drivers.InformationSchema.
+func (c *Connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
+	return nil // Not implemented
+}
+
+// Lookup implements drivers.InformationSchema.
+func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
+	meta, err := c.GetTable(ctx, db, schema, name)
+	if err != nil {
+		return nil, err
+	}
+	runtimeSchema := &runtimev1.StructType{
+		Fields: make([]*runtimev1.StructType_Field, 0, len(meta.Schema)),
+	}
+	for name, typ := range meta.Schema {
+		runtimeSchema.Fields = append(runtimeSchema.Fields, &runtimev1.StructType_Field{
+			Name: name,
+			Type: athenaTypeToRuntimeType(typ),
+		})
+	}
+	return &drivers.OlapTable{
+		Database:          db,
+		DatabaseSchema:    schema,
+		Name:              name,
+		View:              meta.View,
+		Schema:            runtimeSchema,
+		UnsupportedCols:   nil,
+		PhysicalSizeBytes: 0,
+	}, nil
 }
 
 func (c *Connection) listCatalogs(ctx context.Context, client *athena.Client) ([]string, error) {

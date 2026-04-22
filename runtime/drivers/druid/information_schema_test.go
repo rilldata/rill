@@ -5,39 +5,26 @@ import (
 	"testing"
 
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/activity"
-	"github.com/rilldata/rill/runtime/storage"
-	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 )
 
 func TestInformationSchema(t *testing.T) {
 	testmode.Expensive(t)
+	_, olap := acquireTestDruid(t)
+	infoSchema := olap.InformationSchema()
+	ctx := t.Context()
+	expectedTables := fetchExpectedTables(t, ctx, olap)
 
-	cfg := testruntime.AcquireConnector(t, "druid")
-	conn, err := drivers.Open("druid", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
-	require.NoError(t, err)
-	t.Cleanup(func() { conn.Close() })
-
-	olap, ok := conn.AsOLAP("default")
-	require.True(t, ok)
-
-	infoSchema, ok := conn.AsInformationSchema()
-	require.True(t, ok)
-
-	expectedTables := fetchExpectedTables(t, olap)
-
-	t.Run("testInformationSchemaAll", func(t *testing.T) { testInformationSchemaAll(t, olap, expectedTables) })
-	t.Run("testInformationSchemaAllLike", func(t *testing.T) { testInformationSchemaAllLike(t, olap, expectedTables) })
-	t.Run("testInformationSchemaAllPagination", func(t *testing.T) { testInformationSchemaAllPagination(t, olap, expectedTables) })
-	t.Run("testInformationSchemaAllPaginationWithLike", func(t *testing.T) { testInformationSchemaAllPaginationWithLike(t, olap, expectedTables) })
-	t.Run("testInformationSchemaLookup", func(t *testing.T) { testInformationSchemaLookup(t, olap, expectedTables) })
-	t.Run("testInformationSchemaListDatabaseSchemas", func(t *testing.T) { testInformationSchemaListDatabaseSchemas(t, infoSchema, expectedTables) })
-	t.Run("testInformationSchemaListTables", func(t *testing.T) { testInformationSchemaListTables(t, infoSchema, expectedTables) })
-	t.Run("testInformationSchemaGetTable", func(t *testing.T) { testInformationSchemaGetTable(t, infoSchema, expectedTables) })
-	t.Run("testInformationSchemaListTablesPagination", func(t *testing.T) { testInformationSchemaListTablesPagination(t, infoSchema, expectedTables) })
+	t.Run("testInformationSchemaAll", func(t *testing.T) { testInformationSchemaAll(t, ctx, infoSchema, expectedTables) })
+	t.Run("testInformationSchemaAllLike", func(t *testing.T) { testInformationSchemaAllLike(t, ctx, infoSchema, expectedTables) })
+	t.Run("testInformationSchemaAllPagination", func(t *testing.T) { testInformationSchemaAllPagination(t, ctx, infoSchema, expectedTables) })
+	t.Run("testInformationSchemaAllPaginationWithLike", func(t *testing.T) { testInformationSchemaAllPaginationWithLike(t, ctx, infoSchema, expectedTables) })
+	t.Run("testInformationSchemaLookup", func(t *testing.T) { testInformationSchemaLookup(t, ctx, infoSchema, expectedTables) })
+	t.Run("testInformationSchemaListDatabaseSchemas", func(t *testing.T) { testInformationSchemaListDatabaseSchemas(t, ctx, infoSchema, expectedTables) })
+	t.Run("testInformationSchemaListTables", func(t *testing.T) { testInformationSchemaListTables(t, ctx, infoSchema, expectedTables) })
+	t.Run("testInformationSchemaGetTable", func(t *testing.T) { testInformationSchemaGetTable(t, ctx, infoSchema, expectedTables) })
+	t.Run("testInformationSchemaListTablesPagination", func(t *testing.T) { testInformationSchemaListTablesPagination(t, ctx, infoSchema, expectedTables) })
 
 }
 
@@ -46,9 +33,9 @@ type expectedTable struct {
 	Name   string
 }
 
-func fetchExpectedTables(t *testing.T, olap drivers.OLAPStore) []expectedTable {
+func fetchExpectedTables(t *testing.T, ctx context.Context, olap drivers.OLAPStore) []expectedTable {
 	qry := "SELECT TABLE_SCHEMA, TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'druid' ORDER BY TABLE_SCHEMA, TABLE_NAME"
-	rows, err := olap.Query(context.Background(), &drivers.Statement{Query: qry})
+	rows, err := olap.Query(ctx, &drivers.Statement{Query: qry})
 	require.NoError(t, err)
 	defer rows.Close()
 
@@ -67,14 +54,12 @@ func fetchExpectedTables(t *testing.T, olap drivers.OLAPStore) []expectedTable {
 	return expected
 }
 
-func testInformationSchemaAll(t *testing.T, olap drivers.OLAPStore, expected []expectedTable) {
-	ctx := context.Background()
-
-	tables, _, err := olap.InformationSchema().All(ctx, "", 10000, "")
+func testInformationSchemaAll(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema, expected []expectedTable) {
+	tables, _, err := infoSchema.All(ctx, "", 10000, "")
 	require.NoError(t, err)
 	require.Equal(t, len(expected), len(tables))
 
-	err = olap.InformationSchema().LoadPhysicalSize(ctx, tables)
+	err = infoSchema.LoadPhysicalSize(ctx, tables)
 	require.NoError(t, err)
 
 	// Check tables against expected, preserving order
@@ -88,7 +73,7 @@ func testInformationSchemaAll(t *testing.T, olap drivers.OLAPStore, expected []e
 	}
 }
 
-func testInformationSchemaAllLike(t *testing.T, olap drivers.OLAPStore, expected []expectedTable) {
+func testInformationSchemaAllLike(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema, expected []expectedTable) {
 	// Pick the first table whose name starts with "w" from expected tables
 	var filteredExpected []expectedTable
 	for _, tbl := range expected {
@@ -97,7 +82,7 @@ func testInformationSchemaAllLike(t *testing.T, olap drivers.OLAPStore, expected
 		}
 	}
 	likePattern := "w%"
-	tables, _, err := olap.InformationSchema().All(context.Background(), likePattern, 0, "")
+	tables, _, err := infoSchema.All(ctx, likePattern, 0, "")
 	require.NoError(t, err)
 
 	for i, tbl := range tables {
@@ -106,14 +91,13 @@ func testInformationSchemaAllLike(t *testing.T, olap drivers.OLAPStore, expected
 	}
 }
 
-func testInformationSchemaAllPagination(t *testing.T, olap drivers.OLAPStore, expected []expectedTable) {
-	ctx := context.Background()
+func testInformationSchemaAllPagination(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema, expected []expectedTable) {
 	pageSize := 2
 	var resultTables []string
 	var nextToken string
 
 	for {
-		tables, token, err := olap.InformationSchema().All(ctx, "", uint32(pageSize), nextToken)
+		tables, token, err := infoSchema.All(ctx, "", uint32(pageSize), nextToken)
 		require.NoError(t, err)
 
 		// Collect tables in order
@@ -134,8 +118,7 @@ func testInformationSchemaAllPagination(t *testing.T, olap drivers.OLAPStore, ex
 	}
 }
 
-func testInformationSchemaAllPaginationWithLike(t *testing.T, olap drivers.OLAPStore, expected []expectedTable) {
-	ctx := context.Background()
+func testInformationSchemaAllPaginationWithLike(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema, expected []expectedTable) {
 	pageSize := 2
 
 	var filteredExpected []expectedTable
@@ -150,7 +133,7 @@ func testInformationSchemaAllPaginationWithLike(t *testing.T, olap drivers.OLAPS
 	var nextToken string
 
 	for {
-		tables, token, err := olap.InformationSchema().All(ctx, likePattern, uint32(pageSize), nextToken)
+		tables, token, err := infoSchema.All(ctx, likePattern, uint32(pageSize), nextToken)
 		require.NoError(t, err)
 
 		for _, tbl := range tables {
@@ -169,27 +152,23 @@ func testInformationSchemaAllPaginationWithLike(t *testing.T, olap drivers.OLAPS
 	}
 }
 
-func testInformationSchemaLookup(t *testing.T, olap drivers.OLAPStore, expected []expectedTable) {
-	ctx := context.Background()
-
+func testInformationSchemaLookup(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema, expected []expectedTable) {
 	require.GreaterOrEqual(t, len(expected), 1, "expected one table for schema lookup test")
 	testTable := expected[0].Name
 	testSchema := expected[0].Schema
 
 	// Lookup the table
-	table, err := olap.InformationSchema().Lookup(ctx, testSchema, "", testTable)
+	table, err := infoSchema.Lookup(ctx, testSchema, "", testTable)
 	require.NoError(t, err)
 	require.Equal(t, testTable, table.Name)
 	require.Equal(t, testSchema, table.DatabaseSchema)
 
 	// Lookup a table that does not exist
-	_, err = olap.InformationSchema().Lookup(ctx, "", "", "nonexistent_table")
+	_, err = infoSchema.Lookup(ctx, "", "", "nonexistent_table")
 	require.Equal(t, drivers.ErrNotFound, err)
 }
 
-func testInformationSchemaListDatabaseSchemas(t *testing.T, infoSchema drivers.InformationSchema, expected []expectedTable) {
-	ctx := context.Background()
-
+func testInformationSchemaListDatabaseSchemas(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema, expected []expectedTable) {
 	databaseSchemas, _, err := infoSchema.ListDatabaseSchemas(ctx, 10000, "")
 	require.NoError(t, err)
 	require.Equal(t, 1, len(databaseSchemas))
@@ -201,9 +180,7 @@ func testInformationSchemaListDatabaseSchemas(t *testing.T, infoSchema drivers.I
 	require.Equal(t, 1, len(databaseSchemas))
 }
 
-func testInformationSchemaListTables(t *testing.T, infoSchema drivers.InformationSchema, expected []expectedTable) {
-	ctx := context.Background()
-
+func testInformationSchemaListTables(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema, expected []expectedTable) {
 	tables, _, err := infoSchema.ListTables(ctx, "", "druid", 10000, "")
 	require.NoError(t, err)
 	require.Equal(t, len(expected), len(tables))
@@ -216,9 +193,7 @@ func testInformationSchemaListTables(t *testing.T, infoSchema drivers.Informatio
 	}
 }
 
-func testInformationSchemaGetTable(t *testing.T, infoSchema drivers.InformationSchema, expected []expectedTable) {
-	ctx := context.Background()
-
+func testInformationSchemaGetTable(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema, expected []expectedTable) {
 	require.GreaterOrEqual(t, len(expected), 1, "expected one table for schema get table test")
 	testTable := expected[0].Name
 
@@ -231,8 +206,7 @@ func testInformationSchemaGetTable(t *testing.T, infoSchema drivers.InformationS
 	require.Equal(t, 0, len(table.Schema))
 }
 
-func testInformationSchemaListTablesPagination(t *testing.T, infoSchema drivers.InformationSchema, expected []expectedTable) {
-	ctx := context.Background()
+func testInformationSchemaListTablesPagination(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema, expected []expectedTable) {
 	pageSize := 2
 	var resultTables []string
 	var nextToken string

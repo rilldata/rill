@@ -360,7 +360,7 @@ func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 	return table, nil
 }
 
-// LoadDDL implements drivers.OLAPInformationSchema.
+// LoadDDL implements drivers.InformationSchema.
 func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
 	return nil // Not implemented
 }

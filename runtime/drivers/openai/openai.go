@@ -214,11 +214,6 @@ func (o *openaiHandle) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
 
-// AsInformationSchema implements drivers.Handle.
-func (o *openaiHandle) AsInformationSchema() (drivers.InformationSchema, bool) {
-	return nil, false
-}
-
 // AsModelExecutor implements drivers.Handle.
 func (o *openaiHandle) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
 	return nil, drivers.ErrNotImplemented

@@ -92,7 +92,7 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 
 	// db and schema validation
 	// make sure for olaps like Druid and Pinot both database and database_schema are not set
-	// for Clickhouse we allow only database_schema as we already use that in OLAPInformationSchema.Lookup(...)
+	// for Clickhouse we allow only database_schema as we already use that in InformationSchema.Lookup(...)
 	// not doing any validation for duckdb as we ignore database and database_schema in Dialect.EscapeTable(...) so not to break any existing metrics view
 	dialectName := e.olap.Dialect().String()
 	if (dialectName == drivers.DialectNameDruid || dialectName == drivers.DialectNamePinot) && mv.Database != "" && mv.DatabaseSchema != "" {

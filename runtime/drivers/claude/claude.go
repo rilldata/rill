@@ -175,11 +175,6 @@ func (h *handle) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
 
-// AsInformationSchema implements drivers.Handle.
-func (h *handle) AsInformationSchema() (drivers.InformationSchema, bool) {
-	return nil, false
-}
-
 // AsModelExecutor implements drivers.Handle.
 func (h *handle) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
 	return nil, drivers.ErrNotImplemented

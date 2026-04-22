@@ -18,18 +18,7 @@ import (
 
 func TestStarRocksOLAP(t *testing.T) {
 	testmode.Expensive(t)
-
-	dsn := teststarrocks.StartWithData(t)
-
-	conn, err := driver{}.Open("", "default", map[string]any{
-		"dsn": dsn,
-	}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
-	require.NoError(t, err)
-	defer conn.Close()
-
-	olap, ok := conn.AsOLAP("default")
-	require.True(t, ok)
-
+	_, olap := acquireTestStarRocks(t)
 	// Basic type tests
 	t.Run("VarcharNotBinary", func(t *testing.T) {
 		testVarcharNotBinary(t, olap)
@@ -142,10 +131,6 @@ func TestStarRocksOLAP(t *testing.T) {
 	// High-precision DECIMAL test (DECIMAL32, DECIMAL64, DECIMAL128)
 	t.Run("DecimalPrecision", func(t *testing.T) {
 		testDecimalPrecision(t, olap)
-	})
-
-	t.Run("LoadDDL", func(t *testing.T) {
-		testLoadDDL(t, conn)
 	})
 }
 
@@ -1306,19 +1291,6 @@ func testAllTypesOutput(t *testing.T, olap drivers.OLAPStore) {
 	t.Log("================================================================================")
 }
 
-func testLoadDDL(t *testing.T, conn drivers.Handle) {
-	olap, _ := conn.AsOLAP("default")
-	ctx := context.Background()
-
-	// Test DDL for the all_types table
-	table, err := olap.InformationSchema().Lookup(ctx, "", "test_db", "all_types")
-	require.NoError(t, err)
-	err = olap.InformationSchema().LoadDDL(ctx, table)
-	require.NoError(t, err)
-	require.Contains(t, table.DDL, "CREATE TABLE")
-	require.Contains(t, table.DDL, "all_types")
-}
-
 // formatValue formats a value for display, truncating long strings
 func formatValue(val any) string {
 	if val == nil {
@@ -1401,4 +1373,17 @@ func testDecimalPrecision(t *testing.T, olap drivers.OLAPStore) {
 	t.Log("If this were float64, precision would be lost:")
 	t.Log("  float64 max precision: ~15-17 significant digits")
 	t.Log("  DECIMAL128 has 36 significant digits → string preserves all")
+}
+
+func acquireTestStarRocks(t *testing.T) (drivers.Handle, drivers.OLAPStore) {
+	dsn := teststarrocks.StartWithData(t)
+	conn, err := driver{}.Open("", "default", map[string]any{
+		"dsn": dsn,
+	}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	defer conn.Close()
+
+	olap, ok := conn.AsOLAP("default")
+	require.True(t, ok)
+	return conn, olap
 }

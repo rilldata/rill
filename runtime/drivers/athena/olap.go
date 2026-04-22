@@ -33,7 +33,7 @@ func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 }
 
 // InformationSchema implements drivers.OLAPStore.
-func (c *Connection) InformationSchema() drivers.OLAPInformationSchema {
+func (c *Connection) InformationSchema() drivers.InformationSchema {
 	return c
 }
 
@@ -106,47 +106,6 @@ func (c *Connection) QuerySchema(ctx context.Context, query string, args []any) 
 // WithConnection implements drivers.OLAPStore.
 func (c *Connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
 	return drivers.ErrNotImplemented
-}
-
-// All implements drivers.OLAPInformationSchema.
-func (c *Connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
-	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
-}
-
-// LoadPhysicalSize implements drivers.OLAPInformationSchema.
-func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
-	return nil
-}
-
-// LoadDDL implements drivers.OLAPInformationSchema.
-func (c *Connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
-	return nil // Not implemented
-}
-
-// Lookup implements drivers.OLAPInformationSchema.
-func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
-	meta, err := c.GetTable(ctx, db, schema, name)
-	if err != nil {
-		return nil, err
-	}
-	runtimeSchema := &runtimev1.StructType{
-		Fields: make([]*runtimev1.StructType_Field, 0, len(meta.Schema)),
-	}
-	for name, typ := range meta.Schema {
-		runtimeSchema.Fields = append(runtimeSchema.Fields, &runtimev1.StructType_Field{
-			Name: name,
-			Type: athenaTypeToRuntimeType(typ),
-		})
-	}
-	return &drivers.OlapTable{
-		Database:          db,
-		DatabaseSchema:    schema,
-		Name:              name,
-		View:              meta.View,
-		Schema:            runtimeSchema,
-		UnsupportedCols:   nil,
-		PhysicalSizeBytes: 0,
-	}, nil
 }
 
 type rows struct {
