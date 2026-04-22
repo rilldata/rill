@@ -208,7 +208,6 @@
 
   function buildDashboardPathOption(
     resource: (typeof sortedVisualizations)[number],
-    groupLabel?: string,
   ): PathOption {
     const name = resource.meta.name.name;
     const isMetricsExplorer = !!resource?.explore;
@@ -224,32 +223,23 @@
       resourceKind: isMetricsExplorer
         ? ResourceKind.Explore
         : ResourceKind.Canvas,
-      groupLabel,
     };
   }
 
-  // Dashboard breadcrumb options. When tagAsFolders is on we group by tag
-  // (UNTAGGED_KEY last) so the dropdown is "sorted based on tags".
+  // Dashboard breadcrumb options. When tagAsFolders is on and a tag folder is
+  // active, the dropdown is scoped to just that tag's dashboards.
   $: visualizationPaths = {
     options: (() => {
       const map = new Map<string, PathOption>();
-      if ($tagAsFolders) {
-        const orderedTags: string[] = [...allDashboardTags, UNTAGGED_KEY];
-        for (const tag of orderedTags) {
-          for (const resource of dashboardsByTag.get(tag) ?? []) {
-            map.set(
-              resource.meta.name.name.toLowerCase(),
-              buildDashboardPathOption(resource, tag),
-            );
-          }
-        }
-      } else {
-        for (const resource of sortedVisualizations) {
-          map.set(
-            resource.meta.name.name.toLowerCase(),
-            buildDashboardPathOption(resource),
-          );
-        }
+      const scopedResources =
+        $tagAsFolders && activeTag
+          ? (dashboardsByTag.get(activeTag) ?? [])
+          : sortedVisualizations;
+      for (const resource of scopedResources) {
+        map.set(
+          resource.meta.name.name.toLowerCase(),
+          buildDashboardPathOption(resource),
+        );
       }
       return map;
     })(),
