@@ -28,6 +28,8 @@
   import { parseDocument, Scalar, YAMLMap, YAMLSeq } from "yaml";
   import ConnectorExplorer from "../connectors/explorer/ConnectorExplorer.svelte";
   import { connectorExplorerStore } from "../connectors/explorer/connector-explorer-store";
+  import { connectorIconMapping } from "../connectors/connector-metadata";
+  import { getConnectorIconKey } from "../connectors/connectors-utils";
   import { useIsModelingSupportedForConnectorOLAP as useIsModelingSupportedForConnector } from "../connectors/selectors";
   import { FileArtifact } from "../entity-management/file-artifact";
   import {
@@ -169,6 +171,14 @@
     },
   );
   $: hasNonDuckDBOLAPConnector = $hasNonDuckDBOLAPConnectorQuery.data;
+
+  $: analyzedConnectorsQuery = createRuntimeServiceAnalyzeConnectors(
+    runtimeClient,
+    {},
+  );
+  $: analyzedConnector = $analyzedConnectorsQuery.data?.connectors?.find(
+    (c) => c.name === connector,
+  );
 
   $: resourceKind = hasSourceSelected
     ? ResourceKind.Source
@@ -583,6 +593,16 @@
                   {#if !hasValidOLAPTableSelected}
                     <span class="text-fg-muted truncate">Select table</span>
                   {:else}
+                    {#if analyzedConnector}
+                      <span class="flex-none">
+                        <svelte:component
+                          this={connectorIconMapping[
+                            getConnectorIconKey(analyzedConnector)
+                          ]}
+                          size="14px"
+                        />
+                      </span>
+                    {/if}
                     <span class="text-fg-secondary truncate">
                       {modelOrSourceOrTableName}
                     </span>
