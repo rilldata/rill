@@ -126,6 +126,9 @@
   $: leaderboardMeasureNames = leaderboardMeasures.map(
     (measure) => measure.name!,
   );
+  $: lowerIsBetterMap = Object.fromEntries(
+    leaderboardMeasures.map((m) => [m.name!, m.lowerIsBetter ?? false]),
+  );
 
   $: atLeastOneActive = Boolean($selectedValues.data?.length);
 
@@ -393,6 +396,7 @@
             {tooltipFormatters}
             {dimensionColumnWidth}
             {maxValues}
+            {lowerIsBetterMap}
           />
         {/each}
       </DelayedLoadingRows>
@@ -416,6 +420,7 @@
           {tooltipFormatters}
           {dimensionColumnWidth}
           {maxValues}
+          {lowerIsBetterMap}
         />
       {/each}
     </tbody>

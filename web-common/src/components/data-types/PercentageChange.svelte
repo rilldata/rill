@@ -17,6 +17,7 @@
     | PERC_DIFF;
   export let tabularNumber = true;
   export let assembled = true;
+  export let lowerIsBetter = false;
 
   let diffIsNegative = false;
   let diffIsPositive = false;
@@ -83,8 +84,8 @@
     {:else if value !== null && assembled}
       <span
         class="text-fg-secondary"
-        class:text-kpi-negative={diffIsNegative}
-        class:text-kpi-positive={diffIsPositive}
+        class:text-kpi-negative={lowerIsBetter ? diffIsPositive : diffIsNegative}
+        class:text-kpi-positive={lowerIsBetter ? diffIsNegative : diffIsPositive}
       >
         {approxSign}{negSign}{posSign}{intValue}{suffix}<span class="opacity-50"
           >%</span

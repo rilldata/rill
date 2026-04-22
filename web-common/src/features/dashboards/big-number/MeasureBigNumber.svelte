@@ -148,9 +148,10 @@
   $: noChange = !comparisonValue;
   $: isComparisonPositive = diff > 0;
   $: isComparisonNegative = diff < 0;
-  $: comparisonDeltaColorClass = isComparisonPositive
+  $: lowerIsBetter = measure?.lowerIsBetter ?? false;
+  $: comparisonDeltaColorClass = (lowerIsBetter ? isComparisonNegative : isComparisonPositive)
     ? "text-kpi-positive"
-    : isComparisonNegative
+    : (lowerIsBetter ? isComparisonPositive : isComparisonNegative)
       ? "text-kpi-negative"
       : "text-fg-secondary";
 
@@ -297,6 +298,7 @@
                 >
                   <PercentageChange
                     tabularNumber={false}
+                    {lowerIsBetter}
                     value={formatMeasurePercentageDifference(output)}
                   />
                 </WithTween>

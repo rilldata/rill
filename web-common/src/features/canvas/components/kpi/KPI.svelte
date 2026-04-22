@@ -109,9 +109,10 @@
     computedValues.delta !== null && computedValues.delta > 0;
   $: isDeltaNegative =
     computedValues.delta !== null && computedValues.delta < 0;
-  $: comparisonDeltaColorClass = isDeltaPositive
+  $: lowerIsBetter = measure?.lowerIsBetter ?? false;
+  $: comparisonDeltaColorClass = (lowerIsBetter ? isDeltaNegative : isDeltaPositive)
     ? "text-kpi-positive"
-    : isDeltaNegative
+    : (lowerIsBetter ? isDeltaPositive : isDeltaNegative)
       ? "text-kpi-negative"
       : "text-fg-secondary";
 
@@ -293,6 +294,7 @@
                       color="text-fg-secondary"
                       showPosSign
                       tabularNumber={false}
+                      {lowerIsBetter}
                       value={formatMeasurePercentageDifference(
                         computedValues.percent,
                       )}

@@ -2164,7 +2164,12 @@ definitions:
                 treat_nulls_as:
                   type: string
                   description: used to configure what value to fill in for missing time buckets. This also works generally as COALESCING over non empty time buckets.
-                
+                lower_is_better:
+                  type: boolean
+                  description: >
+                    When true, decreases in this measure are rendered green and increases red in KPI grids and dashboards.
+                    Use for metrics where a lower value is better, e.g. MTTR, p99 latency, error rate, cycle time. (optional)
+
               required:
                 - name
 

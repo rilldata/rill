@@ -3780,6 +3780,11 @@ definitions:
       dataType:
         $ref: '#/definitions/runtimev1Type'
         description: The data type of the measure. Only populated in ValidSpec.
+      lowerIsBetter:
+        type: boolean
+        description: |-
+          When true, a decrease is the good direction (e.g. MTTR, p99 latency, error rate).
+          Delta coloring is flipped: decreases render green, increases render red.
     title: Measures are aggregated computed values
   MetricsViewSpecMeasureType:
     type: string

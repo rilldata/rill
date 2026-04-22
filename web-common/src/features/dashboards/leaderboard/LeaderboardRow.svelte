@@ -46,6 +46,7 @@
     string,
     (value: number | string | null | undefined) => string | null | undefined
   >;
+  export let lowerIsBetterMap: Record<string, boolean> = {};
 
   function shouldShowContextColumns(measureName: string): boolean {
     return (
@@ -304,9 +305,10 @@
             ? formatters[measureName]?.(deltaAbsMap[measureName])
             : null}
           customStyle={deltaAbsMap[measureName] !== null &&
-          deltaAbsMap[measureName] < 0
+          (lowerIsBetterMap[measureName] ? deltaAbsMap[measureName] > 0 : deltaAbsMap[measureName] < 0)
             ? "text-kpi-negative"
-            : deltaAbsMap[measureName] !== null && deltaAbsMap[measureName] > 0
+            : deltaAbsMap[measureName] !== null &&
+                (lowerIsBetterMap[measureName] ? deltaAbsMap[measureName] < 0 : deltaAbsMap[measureName] > 0)
               ? "text-kpi-positive"
               : ""}
           truncate={true}
@@ -329,6 +331,7 @@
             ? formatMeasurePercentageDifference(deltaRels[measureName])
             : null}
           color="text-fg-secondary"
+          lowerIsBetter={lowerIsBetterMap[measureName] ?? false}
         />
         {#if showZigZags[measureName]}
           <LongBarZigZag />

@@ -148,6 +148,19 @@
         ],
         selected: 0,
       },
+      {
+        label: "Lower is better",
+        optional: true,
+        fields: [
+          {
+            key: "lower_is_better",
+            hint: "Flips delta coloring so decreases show green and increases show red. Use for metrics like MTTR, error rate, or p99 latency",
+            label: "Lower is better",
+            boolean: true,
+          },
+        ],
+        selected: 0,
+      },
     ],
     dimensions: [
       {
