@@ -725,6 +725,11 @@ components:
                     format: int64
                     type: integer
             type: object
+        v1GetEmbeddedAnalyticsResponse:
+            properties:
+                iframeUrl:
+                    type: string
+            type: object
         v1GetGithubRepoStatusResponse:
             properties:
                 defaultBranch:
@@ -2501,6 +2506,7 @@ paths:
     /v1/orgs/{org}/billing/subscriptions/renew: {}
     /v1/orgs/{org}/create-managed-git-repo: {}
     /v1/orgs/{org}/create_asset: {}
+    /v1/orgs/{org}/embedded-analytics/{canvas}: {}
     /v1/orgs/{org}/invites:
         get:
             operationId: AdminService_ListOrganizationInvites

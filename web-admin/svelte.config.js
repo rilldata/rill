@@ -53,6 +53,7 @@ const config = {
           "https://www.loom.com/",
           "https://www.vimeo.com",
           "https://portal.withorb.com",
+          "https://ui.rilldata.com",
           "blob:",
           "data:",
         ],

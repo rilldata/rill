@@ -150,6 +150,7 @@ import type {
   V1GetDeploymentConfigResponse,
   V1GetDeploymentCredentialsResponse,
   V1GetDeploymentResponse,
+  V1GetEmbeddedAnalyticsResponse,
   V1GetGithubRepoStatusResponse,
   V1GetGithubUserStatusResponse,
   V1GetIFrameResponse,
@@ -2990,6 +2991,110 @@ export const createAdminServiceCreateAsset = <
 
   return createMutation(mutationOptions, queryClient);
 };
+/**
+ * @summary GetEmbeddedAnalytics returns an iframe URL for an embedded analytics canvas.
+ */
+export const adminServiceGetEmbeddedAnalytics = (
+  org: string,
+  canvas: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetEmbeddedAnalyticsResponse>({
+    url: `/v1/orgs/${org}/embedded-analytics/${canvas}`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getAdminServiceGetEmbeddedAnalyticsQueryKey = (
+  org?: string,
+  canvas?: string,
+) => {
+  return [`/v1/orgs/${org}/embedded-analytics/${canvas}`] as const;
+};
+
+export const getAdminServiceGetEmbeddedAnalyticsQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceGetEmbeddedAnalytics>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  canvas: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetEmbeddedAnalytics>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetEmbeddedAnalyticsQueryKey(org, canvas);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetEmbeddedAnalytics>>
+  > = ({ signal }) => adminServiceGetEmbeddedAnalytics(org, canvas, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(org && canvas),
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceGetEmbeddedAnalytics>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceGetEmbeddedAnalyticsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetEmbeddedAnalytics>>
+>;
+export type AdminServiceGetEmbeddedAnalyticsQueryError = RpcStatus;
+
+/**
+ * @summary GetEmbeddedAnalytics returns an iframe URL for an embedded analytics canvas.
+ */
+
+export function createAdminServiceGetEmbeddedAnalytics<
+  TData = Awaited<ReturnType<typeof adminServiceGetEmbeddedAnalytics>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  canvas: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetEmbeddedAnalytics>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceGetEmbeddedAnalyticsQueryOptions(
+    org,
+    canvas,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 /**
  * @summary ListOrganizationInvites lists all the org invites
  */

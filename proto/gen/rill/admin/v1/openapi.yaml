@@ -725,6 +725,11 @@ components:
                     format: int64
                     type: integer
             type: object
+        v1GetEmbeddedAnalyticsResponse:
+            properties:
+                iframeUrl:
+                    type: string
+            type: object
         v1GetGithubRepoStatusResponse:
             properties:
                 defaultBranch:
@@ -3208,6 +3213,34 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: CreateAsset returns a one time signed URL using which any asset can be uploaded.
+    /v1/orgs/{org}/embedded-analytics/{canvas}:
+        get:
+            operationId: AdminService_GetEmbeddedAnalytics
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: canvas
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetEmbeddedAnalyticsResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: GetEmbeddedAnalytics returns an iframe URL for an embedded analytics canvas.
     /v1/orgs/{org}/invites:
         get:
             operationId: AdminService_ListOrganizationInvites

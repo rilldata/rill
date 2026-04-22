@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { createAdminServiceListProjectsForOrganization } from "@rilldata/web-admin/client";
+  import {
+    createAdminServiceGetEmbeddedAnalytics,
+    createAdminServiceListProjectsForOrganization,
+  } from "@rilldata/web-admin/client";
   import { getOrganizationUsageMetrics } from "@rilldata/web-admin/features/billing/plans/selectors";
   import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
   import type { PageData } from "./$types";
 
   export let data: PageData;
@@ -16,52 +16,23 @@
     createAdminServiceListProjectsForOrganization(organization);
   $: projects = $projectsQuery.data?.projects ?? [];
 
-  // Aggregate slots
-  $: totalProdSlots = projects.reduce(
-    (sum, p) => sum + Number(p.prodSlots ?? 0),
-    0,
-  );
-  $: totalDevSlots = projects.reduce(
-    (sum, p) => sum + Number(p.devSlots ?? 0),
-    0,
-  );
-  $: totalSlots = totalProdSlots + totalDevSlots;
-
-  // Storage per project
+  // Storage per project (for the by-project table)
   $: usageMetrics = getOrganizationUsageMetrics(organization);
   $: storageByProject = new Map(
     ($usageMetrics?.data ?? []).map((m) => [m.project_name, m.size]),
   );
-  $: totalStorageBytes = projects.reduce(
-    (sum, p) => sum + (storageByProject.get(p.name ?? "") ?? 0),
-    0,
+
+  // Embedded analytics canvases replacing the two KPI sections.
+  $: topLevelQuery = createAdminServiceGetEmbeddedAnalytics(
+    organization,
+    "usage_top_level",
+  );
+  $: middleLevelQuery = createAdminServiceGetEmbeddedAnalytics(
+    organization,
+    "usage_middle_level",
   );
 
-  // Pricing constants
   const RATE_PER_UNIT_HR = 0.15;
-  const FREE_STORAGE_GB = 1;
-
-  // Hours elapsed in current month (placeholder until Orb API)
-  $: hoursElapsed = (() => {
-    const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    return Math.max(
-      0,
-      Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60)),
-    );
-  })();
-
-  // Current period costs
-  $: prodCost = totalProdSlots * hoursElapsed * RATE_PER_UNIT_HR;
-  $: devCost = totalDevSlots * hoursElapsed * RATE_PER_UNIT_HR;
-  $: billableStorageGB = Math.max(totalStorageBytes / 1e9 - FREE_STORAGE_GB, 0);
-  $: storageCost = billableStorageGB * 1; // $1/GB/mo
-  $: totalCost = prodCost + devCost + storageCost;
-
-  // Daily costs
-  $: prodDailyRate = totalProdSlots * 24 * RATE_PER_UNIT_HR;
-  $: devDailyRate = totalDevSlots * 24 * RATE_PER_UNIT_HR;
-  $: totalDailyRate = totalSlots * 24 * RATE_PER_UNIT_HR;
 
   function fmtUSD(n: number): string {
     return n.toLocaleString(undefined, {
@@ -111,101 +82,42 @@
       {formatCyclePeriod()}
     </span>
   </div>
-
-  <div class="summary-bar">
-    <div class="summary-cell">
-      <span class="summary-label">Total estimated cost</span>
-      <span class="summary-value">{fmtUSD(totalCost)}</span>
-      <a href="/{organization}/-/settings/billing" class="summary-link">
-        View my plan
-        <svg
-          class="w-3 h-3"
-          viewBox="0 0 12 12"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.5"
-        >
-          <path d="M1 6h9M7.5 3l3 3-3 3" />
-        </svg>
-      </a>
-    </div>
-    <div class="summary-divider"></div>
-    <div class="summary-cell">
-      <span class="summary-label">Production</span>
-      <span class="summary-value">{fmtUSD(prodCost)}</span>
-      <span class="summary-desc"
-        >{hoursElapsed} hrs · {totalProdSlots} units × ${RATE_PER_UNIT_HR.toFixed(
-          2,
-        )}</span
-      >
-    </div>
-    <div class="summary-divider"></div>
-    <div class="summary-cell">
-      <span class="summary-label">Development</span>
-      <span class="summary-value">{fmtUSD(devCost)}</span>
-      <span class="summary-desc"
-        >{hoursElapsed} hrs · {totalDevSlots} units × ${RATE_PER_UNIT_HR.toFixed(
-          2,
-        )}</span
-      >
-    </div>
-    <div class="summary-divider"></div>
-    <div class="summary-cell">
-      <span class="summary-label">Storage</span>
-      <span class="summary-value">{fmtUSD(storageCost)}</span>
-      <span class="summary-desc"
-        >{(totalStorageBytes / 1e9).toFixed(1)} GB · {FREE_STORAGE_GB} GB free ·
-        $1/GB/mo</span
-      >
-    </div>
+  <div class="embed-wrapper">
+    {#if $topLevelQuery.isLoading}
+      <div class="embed-placeholder">Loading…</div>
+    {:else if $topLevelQuery.error}
+      <div class="embed-error">
+        Failed to load usage analytics: {$topLevelQuery.error.message ??
+          "unknown error"}
+      </div>
+    {:else if $topLevelQuery.data?.iframeUrl}
+      <iframe
+        src={$topLevelQuery.data.iframeUrl}
+        title="Usage – top level"
+        class="embed-iframe embed-iframe-top"
+      ></iframe>
+    {/if}
   </div>
 
-  <!-- By project -->
-  <h2 class="section-title mt-10 mb-3">By project</h2>
-
-  <div class="summary-bar">
-    <div class="summary-cell">
-      <span class="summary-label">Total projects</span>
-      <span class="summary-value-lg">{projects.length}</span>
-    </div>
-    <div class="summary-divider"></div>
-    <div class="summary-cell">
-      <span class="summary-label inline-flex items-center gap-1">
-        Total compute units
-        <Tooltip location="right" alignment="middle" distance={8}>
-          <span class="text-fg-muted flex">
-            <InfoCircle size="13px" />
-          </span>
-          <TooltipContent maxWidth="200px" slot="tooltip-content">
-            1 unit = 4 GiB RAM / 1 vCPU
-          </TooltipContent>
-        </Tooltip>
-      </span>
-      <span class="summary-value-lg">{totalSlots}</span>
-      <span class="summary-desc">{fmtUSD(totalDailyRate)}/day</span>
-    </div>
-    <div class="summary-divider"></div>
-    <div class="summary-cell">
-      <span class="summary-label">Prod compute units</span>
-      <span class="summary-value-lg">{totalProdSlots}</span>
-      <span class="summary-desc">{fmtUSD(prodDailyRate)}/day</span>
-    </div>
-    <div class="summary-divider"></div>
-    <div class="summary-cell">
-      <span class="summary-label">Dev compute units</span>
-      <span class="summary-value-lg">{totalDevSlots}</span>
-      <span class="summary-desc">{fmtUSD(devDailyRate)}/day</span>
-    </div>
-    <div class="summary-divider"></div>
-    <div class="summary-cell">
-      <span class="summary-label">Storage</span>
-      <span class="summary-value-lg">{formatMemorySize(totalStorageBytes)}</span
-      >
-      <span class="summary-desc">{FREE_STORAGE_GB} GB free · $1/GB/mo</span>
-    </div>
+  <!-- Current usage by project -->
+  <h2 class="section-title mt-10 mb-3">Current Usage by Project</h2>
+  <div class="embed-wrapper">
+    {#if $middleLevelQuery.isLoading}
+      <div class="embed-placeholder">Loading…</div>
+    {:else if $middleLevelQuery.error}
+      <div class="embed-error">
+        Failed to load usage analytics: {$middleLevelQuery.error.message ??
+          "unknown error"}
+      </div>
+    {:else if $middleLevelQuery.data?.iframeUrl}
+      <iframe
+        src={$middleLevelQuery.data.iframeUrl}
+        title="Usage – by project"
+        class="embed-iframe embed-iframe-middle"
+      ></iframe>
+    {/if}
   </div>
 
-  <!-- Project table -->
   <div class="table-wrapper">
     <table class="project-table">
       <thead>
@@ -266,40 +178,24 @@
     @apply text-sm text-fg-tertiary;
   }
 
-  /* Summary bar */
-  .summary-bar {
-    @apply flex border border-border rounded-xl overflow-hidden bg-white;
+  /* Embedded canvas wrappers */
+  .embed-wrapper {
+    @apply border border-border rounded-xl overflow-hidden bg-white mb-4;
   }
-
-  .summary-cell {
-    @apply flex-1 flex flex-col gap-1 p-5;
+  .embed-iframe {
+    @apply w-full block border-0;
   }
-
-  .summary-divider {
-    @apply w-px bg-border my-4;
+  .embed-iframe-top {
+    height: 180px;
   }
-
-  .summary-label {
-    @apply text-xs font-semibold text-fg-tertiary;
+  .embed-iframe-middle {
+    height: 240px;
   }
-
-  .summary-value {
-    @apply font-sans font-medium text-2xl leading-8 tabular-nums text-fg-secondary;
+  .embed-placeholder {
+    @apply text-sm text-fg-tertiary p-5;
   }
-
-  .summary-value-lg {
-    @apply font-sans font-medium text-2xl leading-8 tabular-nums text-fg-secondary;
-  }
-
-  .summary-desc {
-    @apply text-xs text-fg-tertiary;
-  }
-
-  .summary-link {
-    @apply flex items-center gap-1 text-xs font-medium text-primary-500 no-underline mt-0.5;
-  }
-  .summary-link:hover {
-    @apply text-primary-600 underline;
+  .embed-error {
+    @apply text-sm text-red-600 p-5;
   }
 
   /* Project table */

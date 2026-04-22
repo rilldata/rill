@@ -1,10 +1,14 @@
 package server
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"math"
+	"net/http"
 	"strings"
 	"time"
 
@@ -877,6 +881,36 @@ func (s *Server) ListOrganizationBillingIssues(ctx context.Context, req *adminv1
 	}, nil
 }
 
+func (s *Server) GetEmbeddedAnalytics(ctx context.Context, req *adminv1.GetEmbeddedAnalyticsRequest) (*adminv1.GetEmbeddedAnalyticsResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Org),
+		attribute.String("args.canvas", req.Canvas),
+	)
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to view org analytics")
+	}
+
+	if s.admin.EmbeddedAnalyticsServiceToken == "" {
+		return nil, status.Error(codes.Unavailable, "embedded analytics is not configured")
+	}
+
+	iframeURL, err := s.fetchEmbeddedAnalyticsIframeURL(ctx, req.Canvas)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to fetch embedded analytics: %v", err))
+	}
+
+	return &adminv1.GetEmbeddedAnalyticsResponse{
+		IframeUrl: iframeURL,
+	}, nil
+}
+
 func (s *Server) SudoDeleteOrganizationBillingIssue(ctx context.Context, req *adminv1.SudoDeleteOrganizationBillingIssueRequest) (*adminv1.SudoDeleteOrganizationBillingIssueResponse, error) {
 	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org), attribute.String("args.type", req.Type.String()))
 
@@ -1278,4 +1312,56 @@ func biggerOfInt64(ptr *int64, def int64) int64 {
 	}
 
 	return def
+}
+
+func (s *Server) fetchEmbeddedAnalyticsIframeURL(ctx context.Context, canvas string) (string, error) {
+	type iframeRequest struct {
+		Resource   string         `json:"resource"`
+		Type       string         `json:"type"`
+		Attributes map[string]any `json:"attributes"`
+	}
+
+	type iframeResponse struct {
+		IframeURL string `json:"iframeSrc"`
+	}
+
+	reqBody := iframeRequest{
+		Resource: canvas,
+		Type:     "canvas",
+		Attributes: map[string]any{
+			"organization_id": "654b91fa-d39a-46d2-8d6f-33d2fb55cbde",
+			"project_id":      "",
+		},
+	}
+
+	body, err := json.Marshal(reqBody)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	url := "https://api.rilldata.com/v1/organizations/embedded-analytics/projects/embedded-analytics/iframe"
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Authorization", "Bearer "+s.admin.EmbeddedAnalyticsServiceToken)
+
+	resp, err := http.DefaultClient.Do(httpReq)
+	if err != nil {
+		return "", fmt.Errorf("failed to call iframe API: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		respBody, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("iframe API returned status %d: %s", resp.StatusCode, string(respBody))
+	}
+
+	var iframeResp iframeResponse
+	if err := json.NewDecoder(resp.Body).Decode(&iframeResp); err != nil {
+		return "", fmt.Errorf("failed to decode iframe response: %w", err)
+	}
+
+	return iframeResp.IframeURL, nil
 }

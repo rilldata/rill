@@ -110,6 +110,7 @@ type Config struct {
 	StripeAPIKey                      string `split_words:"true"`
 	StripeWebhookSecret               string `split_words:"true"`
 	PylonIdentitySecret               string `split_words:"true"`
+	EmbeddedAnalyticsServiceToken     string `split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -318,19 +319,20 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Init admin service
 			admOpts := &admin.Options{
-				DatabaseDriver:            conf.DatabaseDriver,
-				DatabaseDSN:               conf.DatabaseURL,
-				DatabaseEncryptionKeyring: conf.DatabaseEncryptionKeyring,
-				ExternalURL:               conf.ExternalGRPCURL, // NOTE: using gRPC url
-				FrontendURL:               conf.FrontendURL,
-				ProvisionerSetJSON:        conf.ProvisionerSetJSON,
-				ProvisionerMaxConcurrency: conf.ProvisionerMaxConcurrency,
-				DefaultProvisioner:        conf.DefaultProvisioner,
-				Version:                   ch.Version,
-				MetricsProjectOrg:         metricsProjectOrg,
-				MetricsProjectName:        metricsProjectName,
-				AutoscalerCron:            conf.AutoscalerCron,
-				ScaleDownConstraint:       conf.ScaleDownConstraint,
+				DatabaseDriver:                conf.DatabaseDriver,
+				DatabaseDSN:                   conf.DatabaseURL,
+				DatabaseEncryptionKeyring:     conf.DatabaseEncryptionKeyring,
+				ExternalURL:                   conf.ExternalGRPCURL, // NOTE: using gRPC url
+				FrontendURL:                   conf.FrontendURL,
+				ProvisionerSetJSON:            conf.ProvisionerSetJSON,
+				ProvisionerMaxConcurrency:     conf.ProvisionerMaxConcurrency,
+				DefaultProvisioner:            conf.DefaultProvisioner,
+				Version:                       ch.Version,
+				MetricsProjectOrg:             metricsProjectOrg,
+				MetricsProjectName:            metricsProjectName,
+				AutoscalerCron:                conf.AutoscalerCron,
+				ScaleDownConstraint:           conf.ScaleDownConstraint,
+				EmbeddedAnalyticsServiceToken: conf.EmbeddedAnalyticsServiceToken,
 			}
 			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiService, assetsBucket, biller, p)
 			if err != nil {

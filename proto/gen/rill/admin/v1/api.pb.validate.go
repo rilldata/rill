@@ -48297,6 +48297,236 @@ var _ interface {
 	ErrorName() string
 } = BillingIssueMetadataNeverSubscribedValidationError{}
 
+// Validate checks the field values on GetEmbeddedAnalyticsRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetEmbeddedAnalyticsRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetEmbeddedAnalyticsRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetEmbeddedAnalyticsRequestMultiError, or nil if none found.
+func (m *GetEmbeddedAnalyticsRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetEmbeddedAnalyticsRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetOrg()) < 1 {
+		err := GetEmbeddedAnalyticsRequestValidationError{
+			field:  "Org",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetCanvas()) < 1 {
+		err := GetEmbeddedAnalyticsRequestValidationError{
+			field:  "Canvas",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return GetEmbeddedAnalyticsRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetEmbeddedAnalyticsRequestMultiError is an error wrapping multiple
+// validation errors returned by GetEmbeddedAnalyticsRequest.ValidateAll() if
+// the designated constraints aren't met.
+type GetEmbeddedAnalyticsRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetEmbeddedAnalyticsRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetEmbeddedAnalyticsRequestMultiError) AllErrors() []error { return m }
+
+// GetEmbeddedAnalyticsRequestValidationError is the validation error returned
+// by GetEmbeddedAnalyticsRequest.Validate if the designated constraints
+// aren't met.
+type GetEmbeddedAnalyticsRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetEmbeddedAnalyticsRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetEmbeddedAnalyticsRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetEmbeddedAnalyticsRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetEmbeddedAnalyticsRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetEmbeddedAnalyticsRequestValidationError) ErrorName() string {
+	return "GetEmbeddedAnalyticsRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetEmbeddedAnalyticsRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetEmbeddedAnalyticsRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetEmbeddedAnalyticsRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetEmbeddedAnalyticsRequestValidationError{}
+
+// Validate checks the field values on GetEmbeddedAnalyticsResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetEmbeddedAnalyticsResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetEmbeddedAnalyticsResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetEmbeddedAnalyticsResponseMultiError, or nil if none found.
+func (m *GetEmbeddedAnalyticsResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetEmbeddedAnalyticsResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for IframeUrl
+
+	if len(errors) > 0 {
+		return GetEmbeddedAnalyticsResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetEmbeddedAnalyticsResponseMultiError is an error wrapping multiple
+// validation errors returned by GetEmbeddedAnalyticsResponse.ValidateAll() if
+// the designated constraints aren't met.
+type GetEmbeddedAnalyticsResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetEmbeddedAnalyticsResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetEmbeddedAnalyticsResponseMultiError) AllErrors() []error { return m }
+
+// GetEmbeddedAnalyticsResponseValidationError is the validation error returned
+// by GetEmbeddedAnalyticsResponse.Validate if the designated constraints
+// aren't met.
+type GetEmbeddedAnalyticsResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetEmbeddedAnalyticsResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetEmbeddedAnalyticsResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetEmbeddedAnalyticsResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetEmbeddedAnalyticsResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetEmbeddedAnalyticsResponseValidationError) ErrorName() string {
+	return "GetEmbeddedAnalyticsResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetEmbeddedAnalyticsResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetEmbeddedAnalyticsResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetEmbeddedAnalyticsResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetEmbeddedAnalyticsResponseValidationError{}
+
 // Validate checks the field values on ListGithubUserReposResponse_Repo with
 // the rules defined in the proto definition for this message. If any rules
 // are violated, the first error encountered is returned, or nil if there are
