@@ -1,9 +1,10 @@
 <script lang="ts">
   import { Database, Folder } from "lucide-svelte";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
-  import type {
-    V1AnalyzedConnector,
-    V1TableInfo,
+  import {
+    createRuntimeServiceGetInstance,
+    type V1AnalyzedConnector,
+    type V1TableInfo,
   } from "../../../runtime-client";
   import { useRuntimeClient } from "../../../runtime-client/v2";
   import TableEntry from "./TableEntry.svelte";
@@ -20,6 +21,23 @@
   const client = useRuntimeClient();
 
   $: connectorName = connector?.name as string;
+
+  $: instanceQuery = createRuntimeServiceGetInstance(client, {
+    sensitive: true,
+  });
+  $: projectOlapConnector = $instanceQuery.data?.instance?.olapConnector;
+
+  // Route "Generate metrics/dashboard" to live-connect only when the source IS
+  // the project's OLAP, or when the source is OLAP-only (no import path exists).
+  // Otherwise fall through to the import-to-OLAP model flow so e.g. Snowflake
+  // tables materialize into DuckDB when DuckDB is the project's OLAP.
+  $: isOlapConnector =
+    (connector.driver?.implementsOlap ?? false) &&
+    (projectOlapConnector === connectorName ||
+      !(
+        connector.driver?.implementsWarehouse ||
+        connector.driver?.implementsSqlStore
+      ));
 
   $: expandedStore = store.getItem(connectorName, database, databaseSchema);
   $: expanded = $expandedStore;
@@ -124,7 +142,7 @@
             showGenerateModel={(connector.driver.implementsWarehouse ||
               connector.driver.implementsSqlStore) ??
               false}
-            isOlapConnector={connector.driver.implementsOlap ?? false}
+            {isOlapConnector}
             {database}
             {databaseSchema}
             table={tableInfo.name}
