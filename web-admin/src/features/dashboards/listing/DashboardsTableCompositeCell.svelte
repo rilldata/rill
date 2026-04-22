@@ -16,13 +16,18 @@
   export let organization: string;
   export let project: string;
   export let tags: string[] = [];
+  // When set, appends ?tags=<activeTag> so back-navigation preserves folder context.
+  export let activeTag: string | undefined = undefined;
 
   $: lastRefreshedDate = lastRefreshed ? new Date(lastRefreshed) : null;
 
   $: dashboardSlug = isMetricsExplorer ? "explore" : "canvas";
-  $: href = isEmbedded
+  $: basePath = isEmbedded
     ? `/-/embed/${dashboardSlug}/${name}`
     : `/${organization}/${project}/${dashboardSlug}/${name}`;
+  $: href = activeTag
+    ? `${basePath}?tags=${encodeURIComponent(activeTag)}`
+    : basePath;
 
   $: resourceKind = isMetricsExplorer
     ? ResourceKind.Explore

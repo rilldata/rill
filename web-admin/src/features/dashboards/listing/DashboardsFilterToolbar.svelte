@@ -4,23 +4,16 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import { Search } from "@rilldata/web-common/components/search";
-  import type { Table } from "tanstack-table-8-svelte-5";
-  import { getContext } from "svelte";
-  import type { Readable } from "svelte/store";
 
   export let availableTags: string[] = [];
   export let selectedTags: string[] = [];
   export let onTagsChange: (tags: string[]) => void;
+  export let searchText = "";
 
-  const table = getContext<Readable<Table<unknown>>>("table");
-
-  let filter = "";
   let tagsOpen = false;
 
-  $: $table.setGlobalFilter(filter);
-
   beforeNavigate(() => {
-    filter = "";
+    searchText = "";
   });
 
   function toggleTag(tag: string) {
@@ -71,7 +64,7 @@
     <Search
       placeholder="Search"
       autofocus={false}
-      bind:value={filter}
+      bind:value={searchText}
       rounded="lg"
     />
   </div>

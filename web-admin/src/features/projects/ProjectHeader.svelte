@@ -57,6 +57,7 @@
     dimensionSearch,
     dashboardChat,
     stickyDashboardState,
+    tagAsFolders,
   } = featureFlags;
 
   $: ({
@@ -84,6 +85,29 @@
   $: reportsQuery = useReports(runtimeClient, onReportPage);
 
   $: visualizations = $visualizationsQuery.data ?? [];
+
+  // Tag breadcrumb: active when tagAsFolders is on and a ?tags= param is present.
+  $: activeTag = $tagAsFolders
+    ? ($page.url.searchParams.get("tags") ?? "").split(",")[0] || undefined
+    : undefined;
+
+  $: allDashboardTags = Array.from(
+    new Set(
+      visualizations.flatMap((r) =>
+        r.explore ? (r.explore.spec?.tags ?? []) : (r.canvas?.spec?.tags ?? []),
+      ),
+    ),
+  ).sort();
+
+  $: tagPathsOptions = new Map(
+    allDashboardTags.map((tag) => [
+      tag.toLowerCase(),
+      {
+        label: tag,
+        href: `/${organization}/${project}?tags=${encodeURIComponent(tag)}`,
+      },
+    ]),
+  );
   $: alerts = $alertsQuery.data?.resources ?? [];
   $: reports = $reportsQuery.data?.resources ?? [];
 
@@ -134,12 +158,22 @@
     }, new Map<string, PathOption>()),
   };
 
+  $: tagPathsSegment =
+    $tagAsFolders && activeTag && tagPathsOptions.size > 0
+      ? { options: tagPathsOptions }
+      : null;
+
   $: pathParts = [
     { options: $orgPathsQuery.data ?? new Map() },
     { options: $projectPathsQuery.data ?? new Map() },
+    ...(tagPathsSegment ? [tagPathsSegment] : []),
     visualizationPaths,
     report ? reportPaths : alert ? alertPaths : null,
   ];
+
+  $: currentPath = tagPathsSegment
+    ? [organization, project, activeTag, dashboard, report || alert]
+    : [organization, project, dashboard, report || alert];
 
   $: exploreQuery = useExplore(runtimeClient, dashboard, {
     enabled:
@@ -161,8 +195,6 @@
     ? $canvasQuery.data?.canvas?.displayName || dashboard
     : $exploreQuery.data?.explore?.explore?.state?.validSpec?.displayName ||
       dashboard;
-
-  $: currentPath = [organization, project, dashboard, report || alert];
 </script>
 
 <Header borderBottom={!onProjectPage}>
