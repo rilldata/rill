@@ -90,7 +90,7 @@
 </script>
 
 <div
-  class="flex flex-col border rounded-sm overflow-hidden overflow-x-auto"
+  class="flex flex-col border rounded-sm overflow-x-auto"
   style:--grid-template-columns={columnLayout}
 >
   {#each headers as headerGroup (headerGroup.id)}
@@ -129,10 +129,12 @@
 
   {#each rows as row (row.id)}
     <div class="row {rowPadding}">
-      {#each row.getVisibleCells() as cell (cell.id)}
+      {#each row.getVisibleCells() as cell, i (cell.id)}
         <div
           class="pl-{cell.column.columnDef.meta?.marginLeft ||
-            '4'} pr-1 flex items-center truncate"
+            '4'} pr-1 flex items-center truncate {i === 0
+            ? 'font-medium text-fg-primary'
+            : ''}"
         >
           <svelte:component
             this={flexRender(cell.column.columnDef.cell, cell.getContext())}
