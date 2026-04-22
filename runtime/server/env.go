@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"maps"
 	"path/filepath"
+	"strings"
 
 	"github.com/joho/godotenv"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -51,7 +52,6 @@ func (s *Server) PullEnv(ctx context.Context, req *runtimev1.PullEnvRequest) (*r
 	cloudPerEnv := cfg.Variables
 
 	// Parse local .env files
-	// Instance's project_variables contains variables from both rill.yaml and .env so can't be used here
 	p, err := parser.Parse(ctx, repo, req.InstanceId, inst.Environment, inst.OLAPConnector, false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse project: %w", err)
@@ -97,12 +97,14 @@ func (s *Server) PullEnv(ctx context.Context, req *runtimev1.PullEnvRequest) (*r
 		} else {
 			envFileName = fmt.Sprintf(".%s.env", env)
 		}
-
-		err = godotenv.Write(merged, filepath.Join(root, envFileName))
+		contents, err := godotenv.Marshal(merged)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal env vars: %w", err)
+		}
+		err = repo.Put(ctx, filepath.Join(root, envFileName), strings.NewReader(contents))
 		if err != nil {
 			return nil, fmt.Errorf("failed to write %q: %w", envFileName, err)
 		}
-
 		_, err = gitutil.EnsureGitignoreHas(ctx, repo, envFileName)
 		if err != nil {
 			return nil, fmt.Errorf("failed to update .gitignore for %q: %w", envFileName, err)
