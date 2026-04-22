@@ -108,7 +108,7 @@ func (p *StaticProvisioner) Provision(ctx context.Context, r *provisioner.Resour
 		}
 	}
 	if len(targets) == 0 {
-		return nil, fmt.Errorf("%w: no runtimes found with sufficient available slots", provisioner.ErrNoCapacity)
+		return nil, fmt.Errorf("no runtimes found with sufficient available slots")
 	}
 
 	// Select an eligible runtime using an approximately round-robin strategy
