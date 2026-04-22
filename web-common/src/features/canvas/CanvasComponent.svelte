@@ -88,7 +88,7 @@
     onmousedown={onMouseDown}
   >
     {#if component}
-      <svelte:component this={component.component} {component} />
+      <svelte:component this={component.component} {component} {editable} />
     {:else}
       <div class="size-full grid place-content-center">
         <LoadingSpinner size="36px" />

@@ -38,24 +38,9 @@ export async function fetchMessage(
     // 200 response should always have a message.
     return toolCallResp.message!;
   } catch (e) {
-    const apiError = e.response?.data?.message ?? "";
-    switch (true) {
-      case apiError.includes("failed to find the conversation"):
-        throw error(
-          404,
-          new Error(
-            "Failed to get conversation. Check if you have access to it.",
-          ),
-        );
-
-      case apiError.includes("failed to find the call"):
-        throw error(
-          404,
-          new Error(
-            "Failed to get tool call for query. Check if you have access to it or if the call was deleted.",
-          ),
-        );
-    }
+    const apiError = e.response?.data?.message;
+    // Rethrow api error. Top level message will just be InternalError
+    if (apiError) throw error(400, new Error(apiError));
     throw e;
   }
 }

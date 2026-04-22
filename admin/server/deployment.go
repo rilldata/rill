@@ -171,15 +171,30 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 	}
 
 	claims := auth.GetClaims(ctx)
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
 
-	if depl.Environment == "dev" {
-		if !permissions.ReadDev {
-			return nil, status.Error(codes.PermissionDenied, "does not have permission to read dev deployment")
+	if !forceAccess {
+		if depl.Environment == "dev" {
+			if !permissions.ReadDev {
+				return nil, status.Error(codes.PermissionDenied, "does not have permission to read dev deployment")
+			}
+		} else {
+			if !permissions.ReadProd {
+				return nil, status.Error(codes.PermissionDenied, "does not have permission to read prod deployment")
+			}
 		}
-	} else {
-		if !permissions.ReadProd {
-			return nil, status.Error(codes.PermissionDenied, "does not have permission to read prod deployment")
+
+		if req.For != nil || req.ExternalUserId != "" {
+			if depl.Environment == "dev" {
+				if !permissions.ManageDev {
+					return nil, status.Error(codes.PermissionDenied, "does not have permission to manage dev deployment")
+				}
+			} else {
+				if !permissions.ManageProd {
+					return nil, status.Error(codes.PermissionDenied, "does not have permission to manage prod deployment")
+				}
+			}
 		}
 	}
 
@@ -204,14 +219,6 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 			// Some users use service accounts for generating JWTs for end users without passing req.For, and we don't want to accidentally pass a shared subject ID across those users (which could leak e.g. AI chats).
 		}
 	} else if req.For != nil {
-		if depl.Environment == "prod" && !permissions.ManageProd {
-			return nil, status.Error(codes.PermissionDenied, "does not have permission to manage prod deployment")
-		}
-
-		if depl.Environment == "dev" && !permissions.ManageDev {
-			return nil, status.Error(codes.PermissionDenied, "does not have permission to manage dev deployment")
-		}
-
 		switch forVal := req.For.(type) {
 		case *adminv1.GetDeploymentRequest_UserId:
 			if req.ExternalUserId != "" {
@@ -583,9 +590,10 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 	}
 
 	claims := auth.GetClaims(ctx)
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
 
-	if !permissions.ManageProd {
+	if !forceAccess && !permissions.ManageProd {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage deployment")
 	}
 
@@ -709,9 +717,10 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	}
 
 	claims := auth.GetClaims(ctx)
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
 
-	if !permissions.ManageProd {
+	if !forceAccess && !permissions.ManageProd {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage deployment")
 	}
 
@@ -953,7 +962,7 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 	}
 	resp.DuckdbConnectorConfig = configStructPb
 
-	annotations := s.admin.NewDeploymentAnnotations(org, proj)
+	annotations := s.admin.NewDeploymentAnnotations(org, proj, depl.Environment)
 	resp.Annotations = annotations.ToMap()
 
 	resp.FrontendUrl = s.admin.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name)

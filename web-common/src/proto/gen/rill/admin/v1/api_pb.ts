@@ -1145,6 +1145,13 @@ export class GetDeploymentRequest extends Message<GetDeploymentRequest> {
    */
   externalUserId = "";
 
+  /**
+   * If true, superusers can access the deployment even without org/project membership.
+   *
+   * @generated from field: bool superuser_force_access = 10;
+   */
+  superuserForceAccess = false;
+
   constructor(data?: PartialMessage<GetDeploymentRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1159,6 +1166,7 @@ export class GetDeploymentRequest extends Message<GetDeploymentRequest> {
     { no: 4, name: "user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "for" },
     { no: 5, name: "attributes", kind: "message", T: Struct, oneof: "for" },
     { no: 9, name: "external_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetDeploymentRequest {
@@ -2576,6 +2584,13 @@ export class GetDeploymentCredentialsRequest extends Message<GetDeploymentCreden
    */
   externalUserId = "";
 
+  /**
+   * If true, superusers can access the deployment even without org/project membership.
+   *
+   * @generated from field: bool superuser_force_access = 10;
+   */
+  superuserForceAccess = false;
+
   constructor(data?: PartialMessage<GetDeploymentCredentialsRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2592,6 +2607,7 @@ export class GetDeploymentCredentialsRequest extends Message<GetDeploymentCreden
     { no: 6, name: "user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "for" },
     { no: 5, name: "attributes", kind: "message", T: Struct, oneof: "for" },
     { no: 9, name: "external_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetDeploymentCredentialsRequest {
@@ -2795,6 +2811,13 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
    */
   query: { [key: string]: string } = {};
 
+  /**
+   * If true, superusers can access the project even without org/project membership.
+   *
+   * @generated from field: bool superuser_force_access = 17;
+   */
+  superuserForceAccess = false;
+
   constructor(data?: PartialMessage<GetIFrameRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2819,6 +2842,7 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
     { no: 13, name: "navigation", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "query", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 17, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetIFrameRequest {
@@ -3817,6 +3841,11 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
   prodVersion = "";
 
   /**
+   * @generated from field: int64 dev_slots = 17;
+   */
+  devSlots = protoInt64.zero;
+
+  /**
    * @generated from field: bool skip_deploy = 15;
    */
   skipDeploy = false;
@@ -3841,6 +3870,7 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
     { no: 10, name: "git_remote", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "archive_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "prod_version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 17, name: "dev_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 15, name: "skip_deploy", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
@@ -4053,6 +4083,11 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
   prodVersion?: string;
 
   /**
+   * @generated from field: optional int64 dev_slots = 16;
+   */
+  devSlots?: bigint;
+
+  /**
    * @generated from field: bool superuser_force_access = 14;
    */
   superuserForceAccess = false;
@@ -4079,6 +4114,7 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
     { no: 9, name: "new_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 10, name: "prod_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
     { no: 11, name: "prod_version", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 16, name: "dev_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
     { no: 14, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 

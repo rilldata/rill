@@ -822,7 +822,7 @@ message WatchResourcesResponse {
 
 message GetResourceRequest {
   string instance_id = 1;
-  ResourceName name = 2;
+  ResourceName name = 2 [(validate.rules).message.required = true];
   bool skip_security_checks = 3;
 }
 

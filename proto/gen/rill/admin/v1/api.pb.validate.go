@@ -2509,6 +2509,8 @@ func (m *GetDeploymentRequest) validate(all bool) error {
 
 	// no validation rules for ExternalUserId
 
+	// no validation rules for SuperuserForceAccess
+
 	switch v := m.For.(type) {
 	case *GetDeploymentRequest_UserId:
 		if v == nil {
@@ -6243,6 +6245,8 @@ func (m *GetDeploymentCredentialsRequest) validate(all bool) error {
 
 	// no validation rules for ExternalUserId
 
+	// no validation rules for SuperuserForceAccess
+
 	switch v := m.For.(type) {
 	case *GetDeploymentCredentialsRequest_UserId:
 		if v == nil {
@@ -6629,6 +6633,8 @@ func (m *GetIFrameRequest) validate(all bool) error {
 	// no validation rules for State
 
 	// no validation rules for Query
+
+	// no validation rules for SuperuserForceAccess
 
 	switch v := m.For.(type) {
 	case *GetIFrameRequest_UserId:
@@ -9643,6 +9649,8 @@ func (m *CreateProjectRequest) validate(all bool) error {
 
 	// no validation rules for ProdVersion
 
+	// no validation rules for DevSlots
+
 	// no validation rules for SkipDeploy
 
 	if len(errors) > 0 {
@@ -10158,6 +10166,10 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 
 	if m.ProdVersion != nil {
 		// no validation rules for ProdVersion
+	}
+
+	if m.DevSlots != nil {
+		// no validation rules for DevSlots
 	}
 
 	if len(errors) > 0 {

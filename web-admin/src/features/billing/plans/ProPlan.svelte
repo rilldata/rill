@@ -19,7 +19,7 @@
   } = $props();
 </script>
 
-<SettingsContainer title={plan?.displayName ?? "Pro Plan"}>
+<SettingsContainer title={plan?.displayName ?? "Pro"}>
   <div slot="body">
     Next billing cycle will start on
     <b>{getNextBillingCycleDate(subscription.currentBillingCycleEndDate)}</b>.

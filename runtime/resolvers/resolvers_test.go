@@ -54,8 +54,13 @@ type TestYAML struct {
 	ErrorContains      string           `yaml:"error_contains,omitempty"`
 }
 
-// update is a flag that denotes whether to overwrite the results in the test files instead of checking them.
-var update = flag.Bool("update", false, "Update test results")
+func init() {
+	// Register the -update flag only if no other package (e.g. gotest.tools/v3) has already done so,
+	// to avoid a "flag redefined" panic from transitive dependencies.
+	if flag.Lookup("update") == nil {
+		flag.Bool("update", false, "Update test results")
+	}
+}
 
 // TestResolvers loads the test YAML files in ./testdata and runs them. Each test file should match the schema of TestFileYAML.
 //
@@ -80,7 +85,12 @@ var update = flag.Bool("update", false, "Update test results")
 func TestResolvers(t *testing.T) {
 	// Evaluate the -update flag.
 	flag.Parse()
-	update := update != nil && *update
+	var update bool
+	if f := flag.Lookup("update"); f != nil {
+		if getter, ok := f.Value.(flag.Getter); ok {
+			update, _ = getter.Get().(bool)
+		}
+	}
 
 	// Discover the test files.
 	files, err := filepath.Glob("./testdata/*.yaml")
