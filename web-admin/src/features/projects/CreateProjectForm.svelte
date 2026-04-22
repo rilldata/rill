@@ -73,7 +73,7 @@
 
         // As an optimization, we only create the git repo once.
         // Note that this is not really persisted across page reloads.
-        // We dont really need it since there orphaned repos are deleted eventually.
+        // We dont really need it since the orphaned repos are deleted eventually.
         if (!createdGitRepo) {
           const createManagedGitRepoResult =
             await $createManagedGitRepo.mutateAsync({
@@ -156,7 +156,7 @@
     bind:value={$form.name}
     errors={$errors?.name}
     id="name"
-    label="URL"
+    label="Name"
     textClass="text-sm"
     alwaysShowError
     width="500px"

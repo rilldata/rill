@@ -17,9 +17,9 @@ class ProjectWelcomeStatusStores {
   }
 
   private get(project: string): Writable<string> {
-    if (this.welcomeStatus.has(project)) {
-      return this.welcomeStatus.get(project);
-    }
+    const existingStatusStore = this.welcomeStatus.get(project);
+    if (existingStatusStore) return existingStatusStore;
+
     const statusStore = sessionStorageStore(
       ProjectWelcomeStatusKey + ":" + project,
       "",
