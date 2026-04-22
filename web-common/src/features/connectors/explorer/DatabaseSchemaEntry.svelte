@@ -139,9 +139,10 @@
               connector.driver.implementsWarehouse ||
               connector.driver.implementsSqlStore) ??
               false}
-            showGenerateModel={(connector.driver.implementsWarehouse ||
-              connector.driver.implementsSqlStore) ??
-              false}
+            showGenerateModel={projectOlapConnector !== connectorName &&
+              ((connector.driver.implementsWarehouse ||
+                connector.driver.implementsSqlStore) ??
+                false)}
             {isOlapConnector}
             {database}
             {databaseSchema}
