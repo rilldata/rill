@@ -17,13 +17,42 @@
   import { navEntryDragDropStore } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
   import { PROTECTED_DIRECTORIES } from "@rilldata/web-common/features/file-explorer/protected-paths";
   import { isCurrentActivePage } from "@rilldata/web-common/features/file-explorer/utils";
+  import { editorMode } from "@rilldata/web-common/layout/editor-mode-store";
   import { createRuntimeServiceListFiles } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { get } from "svelte/store";
   import { eventBus } from "../../lib/event-bus/event-bus";
+  import { ResourceKind } from "../entity-management/resource-selectors";
   import { fileArtifacts } from "../entity-management/file-artifacts";
   import NavDirectory from "./NavDirectory.svelte";
-  import { findDirectory, transformFileList } from "./transform-file-list";
+  import {
+    findDirectory,
+    transformFileList,
+    type Directory,
+  } from "./transform-file-list";
   import QuickView from "@rilldata/web-common/features/resource-graph/quick-view/QuickView.svelte";
+
+  const VISUAL_KINDS = new Set<ResourceKind>([
+    ResourceKind.MetricsView,
+    ResourceKind.Explore,
+    ResourceKind.Canvas,
+  ]);
+
+  function filterTreeToVisualKinds(tree: Directory): Directory {
+    const files = tree.files.filter((fileName) => {
+      const filePath =
+        tree.path === "/" ? `/${fileName}` : `${tree.path}/${fileName}`;
+      const artifact = fileArtifacts.getFileArtifact(filePath);
+      const kind = get(artifact.resourceName)?.kind as ResourceKind | undefined;
+      return kind !== undefined && VISUAL_KINDS.has(kind);
+    });
+
+    const directories = tree.directories
+      .map(filterTreeToVisualKinds)
+      .filter((d) => d.files.length > 0 || d.directories.length > 0);
+
+    return { ...tree, files, directories };
+  }
 
   export let hasUnsaved: boolean;
 
@@ -64,6 +93,11 @@
   );
 
   $: ({ data: fileTree } = $getFileTree);
+
+  $: displayTree =
+    fileTree && $editorMode === "visual"
+      ? filterTreeToVisualKinds(fileTree)
+      : fileTree;
 
   let showRenameModelModal = false;
   let renameFilePath: string;
@@ -167,9 +201,9 @@
 
 <!-- File tree -->
 <ul class="flex flex-col w-full items-start justify-start overflow-auto">
-  {#if fileTree}
+  {#if displayTree}
     <NavDirectory
-      directory={fileTree}
+      directory={displayTree}
       {onRename}
       {onDuplicate}
       {onDelete}

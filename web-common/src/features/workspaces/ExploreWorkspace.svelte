@@ -10,7 +10,7 @@
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import ExploreEditor from "@rilldata/web-common/features/explores/ExploreEditor.svelte";
-  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
+  import { editorMode } from "@rilldata/web-common/layout/editor-mode-store";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
@@ -27,7 +27,6 @@
   import Dashboard from "../dashboards/workspace/Dashboard.svelte";
 
   export let fileArtifact: FileArtifact;
-  export let hideCodeToggle = false;
   export let inPreviewMode = false;
 
   const runtimeClient = useRuntimeClient();
@@ -54,10 +53,7 @@
 
   $: resourceIsReconciling = resourceIsLoading(exploreResource);
 
-  $: workspace = workspaces.get(filePath);
-  $: selectedViewStore = workspace.view;
-
-  $: selectedView = $selectedViewStore ?? "code";
+  $: selectedView = $editorMode === "visual" ? "viz" : "code";
 
   $: metricsViewName = metricsViewResource?.meta?.name?.name;
 
@@ -102,7 +98,6 @@
         slot="header"
         titleInput={fileName}
         {filePath}
-        codeToggle={!hideCodeToggle}
         resourceKind={ResourceKind.Explore}
       >
         <div class="flex gap-x-2" slot="cta">
@@ -170,7 +165,7 @@
             exploreResource={exploreResource?.explore}
             {fileArtifact}
             viewingDashboard={selectedView === "viz"}
-            switchView={() => selectedViewStore.set("code")}
+            switchView={() => editorMode.set("code")}
           />
         {/if}
       </svelte:fragment>

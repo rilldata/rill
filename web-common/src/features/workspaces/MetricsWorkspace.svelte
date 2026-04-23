@@ -6,10 +6,10 @@
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import MetricsInspector from "@rilldata/web-common/features/metrics-views/MetricsInspector.svelte";
   import MetricsEditor from "@rilldata/web-common/features/metrics-views/editor/MetricsEditor.svelte";
+  import { editorMode } from "@rilldata/web-common/layout/editor-mode-store";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
-  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
@@ -22,7 +22,6 @@
   import VisualMetrics from "./VisualMetrics.svelte";
 
   export let fileArtifact: FileArtifact;
-  export let hideCodeToggle = false;
   export let inPreviewMode = false;
 
   const runtimeClient = useRuntimeClient();
@@ -36,7 +35,7 @@
     fileName,
   } = fileArtifact);
 
-  $: workspace = workspaces.get(filePath);
+  $: selectedView = $editorMode === "visual" ? "viz" : "code";
 
   $: metricsViewName = $resourceName?.name ?? getNameFromFile(filePath);
 
@@ -60,8 +59,6 @@
     ? $isModelingSupportedForConnector.data
     : $isModelingSupportedForDefaultOlapDriver.data;
 
-  $: selectedView = workspace.view;
-
   // Parse error for the editor gutter and banner
   $: parseErrorQuery = fileArtifact.getParseError(queryClient);
   $: parseError = $parseErrorQuery;
@@ -79,16 +76,15 @@
   }
 </script>
 
-<WorkspaceContainer inspector={$selectedView === "code" && isModelingSupported}>
+<WorkspaceContainer inspector={selectedView === "code" && isModelingSupported}>
   <WorkspaceHeader
     {filePath}
     {resource}
     resourceKind={ResourceKind.MetricsView}
     hasUnsavedChanges={$hasUnsavedChanges}
     onTitleChange={onChangeCallback}
-    showInspectorToggle={$selectedView === "code" && isModelingSupported}
+    showInspectorToggle={selectedView === "code" && isModelingSupported}
     slot="header"
-    codeToggle={!hideCodeToggle}
     titleInput={fileName}
   >
     <div class="flex gap-x-2" slot="cta">
@@ -114,7 +110,7 @@
           remoteContent={$remoteContent}
           {filePath}
         >
-          {#if $selectedView === "code"}
+          {#if selectedView === "code"}
             <MetricsEditor
               bind:autoSave={$autoSave}
               {fileArtifact}
@@ -126,9 +122,7 @@
             {#key fileArtifact}
               <VisualMetrics
                 {fileArtifact}
-                switchView={() => {
-                  $selectedView = "code";
-                }}
+                switchView={() => editorMode.set("code")}
               />
             {/key}
           {/if}

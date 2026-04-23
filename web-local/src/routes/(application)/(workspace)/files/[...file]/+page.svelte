@@ -13,11 +13,18 @@
   import ExploreWorkspace from "@rilldata/web-common/features/workspaces/ExploreWorkspace.svelte";
   import MetricsWorkspace from "@rilldata/web-common/features/workspaces/MetricsWorkspace.svelte";
   import ModelWorkspace from "@rilldata/web-common/features/workspaces/ModelWorkspace.svelte";
+  import { editorMode } from "@rilldata/web-common/layout/editor-mode-store";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
   import { onMount } from "svelte";
   import type { PageData } from "./$types";
+
+  const VISUAL_KINDS = new Set<ResourceKind>([
+    ResourceKind.MetricsView,
+    ResourceKind.Explore,
+    ResourceKind.Canvas,
+  ]);
 
   const workspaces = new Map([
     [ResourceKind.Source, ModelWorkspace],
@@ -47,7 +54,19 @@
 
   $: resourceKind = <ResourceKind | undefined>$resourceName?.kind;
 
-  $: workspace = workspaces.get(resourceKind ?? $inferredResourceKind);
+  $: effectiveKind = resourceKind ?? $inferredResourceKind;
+
+  $: workspace = workspaces.get(effectiveKind);
+
+  // Auto-promote to code mode when the user navigates to a non-visual-editable
+  // file (e.g. a Source or Model) while the global editor mode is "visual".
+  $: if (
+    $editorMode === "visual" &&
+    effectiveKind !== undefined &&
+    (effectiveKind === null || !VISUAL_KINDS.has(effectiveKind))
+  ) {
+    editorMode.set("code");
+  }
 
   $: resourceQuery = getResource(queryClient);
 

@@ -10,6 +10,7 @@
     ResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
+  import { editorMode } from "@rilldata/web-common/layout/editor-mode-store";
   import {
     WorkspaceContainer,
     WorkspaceHeader,
@@ -30,7 +31,6 @@
   const runtimeClient = useRuntimeClient();
 
   let canvasName: string;
-  let selectedView: "split" | "code" | "viz";
 
   $: ({
     autoSave,
@@ -49,8 +49,7 @@
   $: resourceIsReconciling = resourceIsLoading(data);
 
   $: workspace = workspaces.get(filePath);
-  $: selectedViewStore = workspace.view;
-  $: selectedView = $selectedViewStore ?? "code";
+  $: selectedView = $editorMode === "visual" ? "viz" : "code";
 
   $: canvasName = getNameFromFile(filePath);
 
@@ -95,7 +94,6 @@
         resource={data}
         hasUnsavedChanges={$hasUnsavedChanges}
         titleInput={fileName}
-        codeToggle
         onTitleChange={onChangeCallback}
         resourceKind={ResourceKind.Canvas}
       >
