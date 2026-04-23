@@ -627,10 +627,10 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	req.Type = runtime.ResourceKindFromShorthand(req.Type)
 
 	// If navigation is disabled and a specific resource is requested, limit access to only that resource.
-	var overrideResources []*runtimev1.ResourceName
+	var overrideResources []database.ResourceName
 	if !req.Navigation && req.Resource != "" {
-		overrideResources = []*runtimev1.ResourceName{{
-			Kind: req.Type,
+		overrideResources = []database.ResourceName{{
+			Type: req.Type,
 			Name: req.Resource,
 		}}
 	}

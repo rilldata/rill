@@ -349,7 +349,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		deployment:         depl,
 		projectPermissions: permissions,
 		forOwner:           true,
-		forManagement:      req.IssueSuperuserToken,
+		grantManageAll:     req.IssueSuperuserToken,
 		ttl:                ttlDuration,
 	})
 	if err != nil {

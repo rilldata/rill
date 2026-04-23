@@ -15,7 +15,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
-// issueRuntimeTokenOptions configures a call to (*Server).issueRuntimeToken.
+// issueRuntimeTokenOptions configures a call to issueRuntimeToken.
 type issueRuntimeTokenOptions struct {
 	// project the deployment belongs to.
 	project *database.Project
@@ -24,39 +24,45 @@ type issueRuntimeTokenOptions struct {
 	// projectPermissions of the claims owner.
 	// Passed separately from the claims to accommodate overrides for public projects and forced superuser access.
 	projectPermissions *adminv1.ProjectPermissions
-	// forOwner issues the token for the current claims owner (user / service / anon / magic token).
+	// forOwner issues the token for the current claims owner (user/service/anon/etc).
 	forOwner bool
-	// forManagement grants runtime.ManageInstances. May only be combined with forOwner.
-	// The helper verifies the caller is a superuser and otherwise returns PermissionDenied.
-	forManagement bool
 	// forUserID issues the token for a specific Rill user. Mutually exclusive with the other for* fields.
 	forUserID string
-	// forUserEmail issues the token for a user by email (synthesising non-admin attributes if unknown).
+	// forUserEmail issues the token for a user by email.
+	// The email does not have to correspond to an existing user; if it doesn't, synthetic attributes are generated based on the email.
 	// Mutually exclusive with the other for* fields.
 	forUserEmail string
-	// forUserAttributes issues the token with explicit attributes (no principal resolution).
+	// forUserAttributes issues the token with explicit user attributes (no extra resolution).
 	// Mutually exclusive with the other for* fields.
 	forUserAttributes map[string]any
-	// externalUserID, if non-empty, sets the JWT subject to a stable hash of the id scoped to the project.
-	// May be set on its own — in that case no principal is resolved and the token carries only the
-	// external subject (plus any extraAttributes). Cannot be combined with forUserID, whose user
-	// ID would itself be the subject.
+	// externalUserID is an optional external user ID to be used when the token is issued for a non-Rill end user (usually in an embedded context).
+	// It will be hashed and used as the JWT's subject.
+	// It cannot be combined with forOwner or forUserID.
+	// It may be set on its own, i.e. you do not have to set any of the for* fields.
 	externalUserID string
-	// extraAttributes is merged into the JWT attributes and takes precedence over principal-derived keys.
+	// grantManageAll grants runtime.ManageInstances permission.
+	// Only available for tokens with forOwner where the owner is a superuser.
+	grantManageAll bool
+	// extraAttributes will be merged into the resolved JWT attributes, but will not override attributes from other sources.
 	extraAttributes map[string]any
-	// overrideResources, when non-nil, replaces principal-derived resource-restriction rules with
-	// TransitiveAccess rules for exactly these resources. Incompatible with magic-token principals.
-	overrideResources []*runtimev1.ResourceName
+	// overrideResources optionally overrides and replaces other resource-restriction rules.
+	overrideResources []database.ResourceName
 	// ttl is how long the token is valid for.
 	ttl time.Duration
 }
 
-// issueRuntimeToken issues a runtime JWT for a deployment based on opts.
-// It centralizes subject/attribute/rule resolution and instance-permission derivation
-// that was previously duplicated across GetProject, GetDeployment, GetDeploymentCredentials,
-// GetIFrame, and the runtime proxy.
+// issueRuntimeToken issues a runtime JWT for a deployment based on the provided options and the currently authenticated user.
+// It should only be used from server handlers as it requires the context to carry auth claims.
 func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenOptions) (string, error) {
-	// Validate that exactly one "for" mode is set.
+	// Get claims
+	claims := auth.GetClaims(ctx)
+	if claims == nil {
+		return "", status.Error(codes.Unauthenticated, "cannot issue runtime token without claims")
+	}
+
+	// Validate that at most one "for" mode is set.
+	// Note: it is valid to set none of them, which means no base subject/attributes/rules will be resolved.
+	// Note: forManagement is treated differently as it is a modifier on forOwner, which is checked separately below.
 	forCount := 0
 	if opts.forOwner {
 		forCount++
@@ -71,20 +77,7 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 		forCount++
 	}
 	if forCount > 1 {
-		return "", status.Error(codes.Internal, "issueRuntimeToken: at most one of forOwner/forUserID/forUserEmail/forUserAttributes may be set")
-	}
-	if opts.forManagement && !opts.forOwner {
-		return "", status.Error(codes.Internal, "issueRuntimeToken: forManagement requires forOwner")
-	}
-	if opts.externalUserID != "" && opts.forUserID != "" {
-		return "", status.Error(codes.InvalidArgument, "external_user_id cannot be specified together with user_id")
-	}
-
-	claims := auth.GetClaims(ctx)
-
-	// Enforce forManagement: only superusers may mint management tokens.
-	if opts.forManagement && !claims.Superuser(ctx) {
-		return "", status.Error(codes.PermissionDenied, "only superusers can issue management tokens")
+		return "", status.Error(codes.Internal, "at most one of forOwner/forUserID/forUserEmail/forUserAttributes may be set")
 	}
 
 	// Resolve principal: subject, attributes, and resource-restriction rules.
@@ -92,24 +85,10 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 	var attr map[string]any
 	var rules []*runtimev1.SecurityRule
 	switch {
-	case opts.forUserID != "":
-		subject = opts.forUserID
-		a, restrict, resources, err := s.getAttributesAndResourceRestrictionsForUser(ctx, opts.project.OrganizationID, opts.project.ID, opts.forUserID, "")
-		if err != nil {
-			return "", err
-		}
-		attr = a
-		rules = append(rules, securityRulesFromResources(restrict, resources)...)
-	case opts.forUserEmail != "":
-		a, restrict, resources, err := s.getAttributesAndResourceRestrictionsForUser(ctx, opts.project.OrganizationID, opts.project.ID, "", opts.forUserEmail)
-		if err != nil {
-			return "", err
-		}
-		attr = a
-		rules = append(rules, securityRulesFromResources(restrict, resources)...)
-	case opts.forUserAttributes != nil:
-		attr = opts.forUserAttributes
 	case opts.forOwner:
+		if opts.externalUserID != "" {
+			return "", status.Error(codes.InvalidArgument, "externalUserID cannot be specified together with forOwner")
+		}
 		switch claims.OwnerType() {
 		case auth.OwnerTypeUser:
 			subject = claims.OwnerID()
@@ -131,9 +110,6 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 			}
 			attr = a
 		case auth.OwnerTypeMagicAuthToken:
-			if opts.overrideResources != nil {
-				return "", status.Error(codes.PermissionDenied, "resource overrides are not supported for magic-token credentials")
-			}
 			subject = claims.OwnerID()
 			mdl, ok := claims.AuthTokenModel().(*database.MagicAuthToken)
 			if !ok {
@@ -150,6 +126,28 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 		default:
 			return "", status.Errorf(codes.InvalidArgument, "unsupported owner type %q", claims.OwnerType())
 		}
+	case opts.forUserID != "":
+		if opts.externalUserID != "" {
+			return "", status.Error(codes.InvalidArgument, "externalUserID cannot be specified together with forUserID")
+		}
+		subject = opts.forUserID
+		a, restrict, resources, err := s.getAttributesAndResourceRestrictionsForUser(ctx, opts.project.OrganizationID, opts.project.ID, opts.forUserID, "")
+		if err != nil {
+			return "", err
+		}
+		attr = a
+		rules = append(rules, securityRulesFromResources(restrict, resources)...)
+	case opts.forUserEmail != "":
+		a, restrict, resources, err := s.getAttributesAndResourceRestrictionsForUser(ctx, opts.project.OrganizationID, opts.project.ID, "", opts.forUserEmail)
+		if err != nil {
+			return "", err
+		}
+		attr = a
+		rules = append(rules, securityRulesFromResources(restrict, resources)...)
+	case opts.forUserAttributes != nil:
+		attr = opts.forUserAttributes
+	default:
+		// No principal: no subject, no attributes, no rules.
 	}
 
 	// Apply externalUserID after principal resolution so it overrides whatever subject was set.
@@ -158,62 +156,71 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 	}
 
 	// overrideResources replaces any principal-derived resource rules with a fresh allow-list.
-	// Magic-token principals have already been rejected above.
-	if opts.overrideResources != nil {
-		rules = rules[:0]
-		for _, r := range opts.overrideResources {
-			rules = append(rules, &runtimev1.SecurityRule{
-				Rule: &runtimev1.SecurityRule_TransitiveAccess{
-					TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
-						Resource: r,
-					},
-				},
-			})
-		}
+	if len(opts.overrideResources) > 0 {
+		rules = securityRulesFromResources(true, opts.overrideResources)
 	}
 
-	// Merge extraAttributes; later keys win so callers can force specific values (e.g., "embed": true).
+	// Merge extraAttributes (earlier keys win)
 	if len(opts.extraAttributes) > 0 {
 		if attr == nil {
 			attr = make(map[string]any, len(opts.extraAttributes))
 		}
 		for k, v := range opts.extraAttributes {
-			attr[k] = v
+			if _, exists := attr[k]; !exists {
+				attr[k] = v
+			}
 		}
 	}
 
-	// Derive instance permissions uniformly from deployment environment + project permissions.
+	// Check if allowed to manage the deployment's environment.
+	// NOTE: Only applicable for tokens issued for the claims owner (not possible to delegate to other end users).
+	var manageDepl bool
+	if opts.forOwner {
+		manageDepl = (opts.deployment.Environment == "prod" && opts.projectPermissions.ManageProd)
+		manageDepl = manageDepl || (opts.deployment.Environment != "prod" && opts.projectPermissions.ManageDev)
+	}
+
+	// Derive instance permissions from deployment config and project permissions.
 	instancePermissions := []runtime.Permission{
-		runtime.ReadObjects,
-		runtime.ReadMetrics,
 		runtime.ReadAPI,
+		runtime.ReadMetrics,
+		runtime.ReadObjects,
 		runtime.UseAI,
 	}
-	if opts.deployment.Environment == "dev" {
-		instancePermissions = append(instancePermissions,
-			runtime.ReadOLAP,
-			runtime.ReadProfiling,
-			runtime.ReadRepo,
+	if manageDepl {
+		instancePermissions = append(
+			instancePermissions,
+			runtime.ReadInstance,
 			runtime.ReadResolvers,
+			runtime.EditTrigger,
 		)
-		if opts.projectPermissions.ManageDev {
-			instancePermissions = append(instancePermissions, runtime.EditRepo, runtime.EditTrigger)
-		}
-	} else {
-		if opts.projectPermissions.ManageProd || opts.projectPermissions.ManageProject {
-			instancePermissions = append(instancePermissions, runtime.ReadResolvers, runtime.EditTrigger)
-		}
-		if opts.projectPermissions.ManageProject {
-			instancePermissions = append(instancePermissions, runtime.ReadInstance)
+		if opts.deployment.Editable {
+			instancePermissions = append(
+				instancePermissions,
+				runtime.ReadOLAP,
+				runtime.ReadProfiling,
+				runtime.ReadRepo,
+				runtime.EditRepo,
+			)
 		}
 	}
 
+	// Derive system permissions; only used for grantManageAll for now.
 	var systemPermissions []runtime.Permission
-	if opts.forManagement {
-		// NOTE: ManageInstances is currently used by the runtime to skip access checks.
+	if opts.grantManageAll {
+		// Must be for an owner who is a superuser
+		if !opts.forOwner {
+			return "", status.Error(codes.Internal, "grantManageAll requires forOwner")
+		}
+		if !claims.Superuser(ctx) {
+			return "", status.Error(codes.PermissionDenied, "only superusers can issue management tokens")
+		}
+
+		// NOTE: ManageInstances is currently used by the runtime to allow skipping access checks.
 		systemPermissions = append(systemPermissions, runtime.ManageInstances)
 	}
 
+	// Issue JWT.
 	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
 		AudienceURL:       opts.deployment.RuntimeAudience,
 		Subject:           subject,
@@ -228,7 +235,6 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 	if err != nil {
 		return "", status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
 	}
-
 	return jwt, nil
 }
 
@@ -236,7 +242,6 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 // a resource allow-list (or blanket deny), metrics-view row filters, and a field allow-list.
 func securityRulesFromMagicAuthToken(mdl *database.MagicAuthToken) ([]*runtimev1.SecurityRule, error) {
 	var rules []*runtimev1.SecurityRule
-
 	if len(mdl.Resources) == 0 {
 		// No resources means deny all access.
 		rules = append(rules, &runtimev1.SecurityRule{
