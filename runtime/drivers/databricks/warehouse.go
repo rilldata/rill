@@ -12,7 +12,6 @@ import (
 
 	"github.com/apache/arrow-go/v18/arrow"
 	"github.com/apache/arrow-go/v18/arrow/ipc"
-	"github.com/apache/arrow-go/v18/arrow/memory"
 	"github.com/apache/arrow-go/v18/parquet"
 	"github.com/apache/arrow-go/v18/parquet/compress"
 	"github.com/apache/arrow-go/v18/parquet/pqarrow"
@@ -94,11 +93,13 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 	if err != nil {
 		return nil, err
 	}
+	defer func() {
+		if outErr != nil {
+			ipcStreams.Close()
+		}
+	}()
 
 	if !ipcStreams.HasNext() {
-		rows.Close()
-		conn.Close()
-		db.Close()
 		return nil, drivers.ErrNoRows
 	}
 
@@ -172,6 +173,7 @@ func (f *fileIterator) Next(ctx context.Context) ([]string, error) {
 		f.db.Close()
 		// Mark rows as nil to prevent double close
 		f.rows = nil
+		f.ipcStreams = nil
 	}()
 
 	f.logger.Debug("downloading results in parquet file", observability.ZapCtx(ctx))
@@ -243,7 +245,7 @@ func (f *fileIterator) Next(ctx context.Context) ([]string, error) {
 			return nil, err
 		}
 
-		rdr, err := ipc.NewReader(stream, ipc.WithAllocator(allocator), ipc.WithSchema(schema))
+		rdr, err := ipc.NewReader(stream, ipc.WithSchema(schema))
 		if err != nil {
 			return nil, err
 		}
