@@ -80,7 +80,8 @@ var spec = drivers.Spec{
 			Hint:        "Schema within the catalog (optional; defaults to the workspace default)",
 		},
 	},
-	ImplementsOLAP: true,
+	ImplementsOLAP:      true,
+	ImplementsWarehouse: true,
 }
 
 type driver struct{}
@@ -114,9 +115,6 @@ func (c *configProperties) validate() error {
 	}
 	if c.DSN != "" && len(set) > 0 {
 		return fmt.Errorf("databricks: only one of 'dsn' or [%s] can be set", strings.Join(set, ", "))
-	}
-	if c.DSN == "" && (c.Host == "" || c.HTTPPath == "" || c.Token == "") {
-		return errors.New("databricks: either 'dsn' or 'host', 'http_path', and 'token' are required")
 	}
 	return nil
 }
@@ -159,9 +157,10 @@ func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Cl
 	}
 
 	return &connection{
-		config: conf,
-		logger: logger,
-		dbMu:   semaphore.NewWeighted(1),
+		config:  conf,
+		storage: st,
+		logger:  logger,
+		dbMu:    semaphore.NewWeighted(1),
 	}, nil
 }
 
@@ -178,8 +177,9 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type connection struct {
-	config *configProperties
-	logger *zap.Logger
+	config  *configProperties
+	storage *storage.Client
+	logger  *zap.Logger
 
 	db    *sqlx.DB // lazily populated using getDB
 	dbErr error
@@ -282,7 +282,7 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 
 // AsWarehouse implements drivers.Handle.
 func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
-	return nil, false
+	return c, true
 }
 
 // AsNotifier implements drivers.Handle.
