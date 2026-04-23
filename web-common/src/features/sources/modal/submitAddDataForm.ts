@@ -214,18 +214,19 @@ async function saveConnectorWithoutTest(
   // Update .env file with secrets (keep ordering consistent with Test and Connect).
   // When existingEnvBlob is provided (e.g. Save overriding an in-flight Test and Connect),
   // use it as the baseline so env var names stay consistent and don't get _1 suffixes.
-  let { newBlob: newEnvBlob, originalBlob: envBlobForYaml } =
-    await updateDotEnvWithSecrets(
-      client,
-      queryClient,
-      connector,
-      transformedValues,
-      {
-        secretKeys: schemaSecretKeys,
-        schema: schema ?? undefined,
-        existingEnvBlob: existingEnvBlob,
-      },
-    );
+  const envResult = await updateDotEnvWithSecrets(
+    client,
+    queryClient,
+    connector,
+    transformedValues,
+    {
+      secretKeys: schemaSecretKeys,
+      schema: schema ?? undefined,
+      existingEnvBlob: existingEnvBlob,
+    },
+  );
+  let newEnvBlob = envResult.newBlob;
+  const envBlobForYaml = envResult.originalBlob;
 
   // DuckLake "ATTACH SQL" tab: route credential-bearing catalog URIs in the
   // raw attach string through `.env` alongside any form-field secrets.
