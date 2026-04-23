@@ -15,6 +15,10 @@ export function withinOrganization({ route }: Pick<Page, "route">): boolean {
   return !!route?.id?.startsWith("/[organization]");
 }
 
+export function isProjectCreatePage(page: Page): boolean {
+  return page.route.id === "/[organization]/-/create-project";
+}
+
 export function isProjectPage(page: Page): boolean {
   const routeId = page.route?.id;
   if (!routeId) return false;
@@ -110,6 +114,10 @@ export function isBillingUpgradePage(page: Page): boolean {
 
 export function isWelcomePage({ route }: Pick<Page, "route">): boolean {
   return !!route.id?.startsWith("/-/welcome");
+}
+
+export function isProjectWelcomePage({ route }: Pick<Page, "route">): boolean {
+  return !!route.id?.startsWith("/[organization]/[project]/-/welcome");
 }
 
 export function isAuthPage({ route }: Pick<Page, "route">): boolean {
