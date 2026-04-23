@@ -30,6 +30,7 @@
   export let selected: number = -1;
   export let full = false;
   export let multiline = false;
+  export let rows: number | undefined = undefined;
   export let fontFamily = "inherit";
   export let sameWidth = false;
   export let textClass = "text-xs";
@@ -171,6 +172,7 @@
           class="multiline-input"
           {disabled}
           {placeholder}
+          {rows}
           name={id}
           aria-label={label || title || placeholder}
           bind:this={inputElement}

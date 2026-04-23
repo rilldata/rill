@@ -28,6 +28,8 @@ export const ducklakeSchema: MultiStepFormSchema = {
         "DuckDB `ATTACH` clause that points at your DuckLake catalog. Include the metadata backend and `DATA_PATH`.",
       "x-placeholder":
         "'ducklake:duckdb_database.ducklake' (DATA_PATH 'other_data_path/', OVERRIDE_DATA_PATH true)",
+      "x-display": "textarea",
+      "x-rows": 5,
       "x-monospace": true,
       "x-hint":
         "Supported metadata backends: DuckDB file, SQLite, Postgres, MySQL. Data path can be local or object storage (s3://, gs://, azure://).",
