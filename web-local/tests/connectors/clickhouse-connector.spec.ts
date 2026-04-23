@@ -16,8 +16,8 @@ test.describe("ClickHouse connector", () => {
 
   test.beforeAll(async () => {
     await clickhouseOne.start();
-    await clickhouseOne.seedAdBids();
     await clickhouseTwo.start();
+    await clickhouseOne.seedAdBids();
     await clickhouseTwo.seedAdImpressions();
   });
 

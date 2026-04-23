@@ -183,7 +183,14 @@ export function compileConnectorYAML(
           "x-env-var-name"?: string;
           default?: string | number | boolean;
           type?: string;
-          "x-yaml-value"?: string | number | boolean;
+          "x-yaml-value"?:
+            | string
+            | number
+            | boolean
+            | {
+                true?: string | number | boolean;
+                false?: string | number | boolean;
+              };
           "x-advanced"?: boolean;
         }
       >;
@@ -278,10 +285,20 @@ driver: ${driverName}`;
         return `${key}: "{{ .env.${envVarName} }}"`; // uses standard Go template syntax
       }
 
-      // For boolean fields with x-yaml-value, emit the mapped value instead of true/false
+      // For boolean fields with x-yaml-value, emit the mapped value instead of true/false.
+      // Object form maps both toggle states so each round-trips to YAML; scalar form
+      // emits only when the toggle is checked.
       const schemaPropForMap = options?.schema?.properties?.[key];
-      if (schemaPropForMap?.["x-yaml-value"] !== undefined && value === true) {
-        return `${key}: ${schemaPropForMap["x-yaml-value"]}`;
+      const yamlValueRule = schemaPropForMap?.["x-yaml-value"];
+      if (
+        yamlValueRule !== null &&
+        typeof yamlValueRule === "object" &&
+        typeof value === "boolean"
+      ) {
+        const mapped = yamlValueRule[value ? "true" : "false"];
+        if (mapped !== undefined) return `${key}: ${mapped}`;
+      } else if (yamlValueRule !== undefined && value === true) {
+        return `${key}: ${yamlValueRule}`;
       }
 
       const isStringProperty = stringPropertyKeys.includes(key);

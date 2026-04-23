@@ -1,7 +1,7 @@
 <script lang="ts">
   import { IconButton } from "@rilldata/web-common/components/button";
   import { EyeIcon, EyeOffIcon } from "lucide-svelte";
-  import { onMount } from "svelte";
+  import { onMount, type ComponentType, type SvelteComponent } from "svelte";
   import { slide } from "svelte/transition";
   import FieldSwitcher from "./FieldSwitcher.svelte";
   import InputLabel from "./InputLabel.svelte";
@@ -42,6 +42,9 @@
   export let textInputPrefix = "";
   export let lockTooltip: string | undefined = undefined;
   export let disabledMessage = "No valid options";
+  /** Optional icon rendered inside the Select trigger when `options` is set. */
+  export let leadingIcon: ComponentType<SvelteComponent> | undefined =
+    undefined;
   export let options:
     | { value: string; label: string; type?: string }[]
     | undefined = undefined;
@@ -245,6 +248,7 @@
       {size}
       fontSize={size === "sm" ? 12 : 14}
       {truncate}
+      {leadingIcon}
       placeholder={disabled ? disabledMessage : placeholder}
     />
   {/if}

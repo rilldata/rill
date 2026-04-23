@@ -29,6 +29,8 @@
         keyword.toLowerCase().includes(searchTextLowerCase),
       ),
   );
+
+  $: pathPrefix = config.pathPrefix ?? "";
 </script>
 
 <div class="source-selector">
@@ -47,7 +49,9 @@
         <svelte:element
           this={config.welcomeScreen ? "a" : "button"}
           {...config.welcomeScreen
-            ? { href: `/welcome/add-data?schema=${connector.name}` }
+            ? {
+                href: `${pathPrefix}/welcome/add-data?schema=${connector.name}`,
+              }
             : { onclick: () => onSelect(connector.name) }}
           class="source-selector-cell"
           aria-label={`Connect to ${connector.name}`}

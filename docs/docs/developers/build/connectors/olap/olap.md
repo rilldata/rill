@@ -40,6 +40,7 @@ Rill supports the use of several different OLAP engines to power your dashboards
 ### ClickHouse
 ### Druid
 ### DuckDB
+### DuckLake
 ### MotherDuck
 ### Pinot
 ### Snowflake
@@ -76,6 +77,14 @@ Rill supports the use of several different OLAP engines to power your dashboards
     link="/developers/build/connectors/olap/duckdb"
     linkLabel="Learn more"
     referenceLink="duckdb"
+  />
+
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-DuckLake.svg" alt="DuckLake" />}
+    content="Open lakehouse format built on DuckDB — catalog in SQL, data in Parquet."
+    link="/developers/build/connectors/olap/ducklake"
+    linkLabel="Learn more"
+    referenceLink="ducklake"
   />
 
   <ConnectorIcon
