@@ -146,7 +146,7 @@ func (f *fileIterator) Close() error {
 
 // Format implements drivers.FileIterator.
 func (f *fileIterator) Format() string {
-	return ""
+	return "parquet"
 }
 
 // SetKeepFilesUntilClose implements drivers.FileIterator.
@@ -188,8 +188,6 @@ func (f *fileIterator) Next(ctx context.Context) ([]string, error) {
 		f.logger.Debug("time taken to write arrow records in parquet file", zap.Duration("duration", time.Since(tf)), observability.ZapCtx(ctx))
 	}()
 
-	allocator := memory.DefaultAllocator
-
 	// Read the first IPC stream to get the schema and initial records
 	firstStream, err := f.ipcStreams.Next()
 	if err != nil {
@@ -199,7 +197,7 @@ func (f *fileIterator) Next(ctx context.Context) ([]string, error) {
 		return nil, err
 	}
 
-	rdr, err := ipc.NewReader(firstStream, ipc.WithAllocator(allocator))
+	rdr, err := ipc.NewReader(firstStream)
 	if err != nil {
 		return nil, err
 	}
