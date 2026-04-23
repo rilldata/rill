@@ -19,12 +19,15 @@
     emitNotification,
   } from "@rilldata/web-common/lib/rpc";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
+  import EmbedBranding from "@rilldata/web-common/features/embeds/EmbedBranding.svelte";
+  import { requiresEmbedBranding } from "@rilldata/web-common/features/embeds/embed-store.ts";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import { onMount } from "svelte";
   import type { PageData } from "./$types";
 
   export let data: PageData;
   const {
+    billingPlan,
     instanceId,
     missingRequireParams,
     navigationEnabled,
@@ -60,7 +63,8 @@
           | ResourceKind.Canvas
           | undefined);
 
-  $: showTopBar = navigationEnabled || showDashboardChat;
+  $: showBranding = requiresEmbedBranding(billingPlan);
+  $: showTopBar = navigationEnabled || showDashboardChat || showBranding;
 
   // Suppress browser back/forward
   beforeNavigate((nav) => {
@@ -141,6 +145,7 @@
           class="flex items-center w-full pr-4 py-1 min-h-[2.5rem] bg-surface-subtle"
           class:border-b={!onProjectPage}
         >
+          <EmbedBranding {billingPlan} />
           <EmbedHeader {activeResource} {navigationEnabled} />
         </div>
       </ThemeProvider>

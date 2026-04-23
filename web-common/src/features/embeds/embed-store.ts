@@ -1,6 +1,12 @@
 import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
 import { guidGenerator } from "@rilldata/web-common/lib/guid.ts";
 
+const BRANDING_PLANS = ["free-plan", "pro-plan"];
+
+export function requiresEmbedBranding(billingPlan: string | null): boolean {
+  return billingPlan !== null && BRANDING_PLANS.includes(billingPlan);
+}
+
 /**
  * Stores embed params in-memory so that the components that manipulate url need not be aware of these.
  * It can also increase the url size unnessarily, especially the `access_token`.
@@ -17,6 +23,7 @@ export class EmbedStore {
   public readonly navigationEnabled: boolean;
   public readonly theme: string | null;
   public readonly themeMode: string | null;
+  public readonly billingPlan: string | null;
   public readonly embedId: string;
 
   /**
@@ -48,6 +55,22 @@ export class EmbedStore {
     this.theme = url.searchParams.get("theme");
     this.themeMode = url.searchParams.get("theme_mode");
     this.embedId = `embed-${guidGenerator()}`;
+
+    // Decode billing_plan from the JWT access token's payload (attr field)
+    if (this.accessToken) {
+      try {
+        const base64 = this.accessToken
+          .split(".")[1]
+          .replace(/-/g, "+")
+          .replace(/_/g, "/");
+        const payload = JSON.parse(atob(base64));
+        this.billingPlan = payload?.attr?.billing_plan ?? null;
+      } catch {
+        this.billingPlan = null;
+      }
+    } else {
+      this.billingPlan = null;
+    }
 
     if (!this.instanceId) {
       this.missingRequireParams.push("instance_id");

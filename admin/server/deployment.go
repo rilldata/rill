@@ -808,6 +808,17 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		rules = append(rules, securityRulesFromResources(restrictResources, resources)...)
 	}
 
+	// Fetch the org (needed for billing plan attribute and custom domain)
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "could not find organization: %s", err.Error())
+	}
+
+	// Add billing plan to attributes for use in security policies
+	if org.BillingPlanName != nil && *org.BillingPlanName != "" {
+		attr["billing_plan"] = *org.BillingPlanName
+	}
+
 	// Determine TTL for the access token
 	ttlDuration := runtimeAccessTokenEmbedTTL
 	if req.TtlSeconds > 0 {
@@ -866,12 +877,6 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 
 	for k, v := range req.Query {
 		iframeQuery[k] = v
-	}
-
-	// Fetch the org to apply its custom domain (if any) to the embed URL
-	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "could not find organization: %s", err.Error())
 	}
 
 	iFrameURL, err := s.admin.URLs.WithCustomDomain(org.CustomDomain).Embed(iframeQuery)
