@@ -185,7 +185,9 @@ export function nestedCellState(ctx: NestedCellContext): NestedCellState {
     selectedColBody: ctx.inSelectedCol && !ctx.hasCrossSelection,
     cellSelectedRowHeader: ctx.cellIndex === 0 && ctx.hasClickedCell,
     partialAggregateCell:
-      ctx.isAncestorOfSelectedHeader && ctx.cellIndex > 0 && !ctx.hasCrossSelection,
+      ctx.isAncestorOfSelectedHeader &&
+      ctx.cellIndex > 0 &&
+      !ctx.hasCrossSelection,
     crossIntersection:
       ctx.hasCrossSelection &&
       ctx.isRowHeaderSelected &&

@@ -79,10 +79,7 @@ function filter1(name: string, values: (string | null)[]): PivotFilter {
   return filter({ name, values });
 }
 
-function dk(
-  dims: Record<string, string | null>,
-  order: string[],
-): string {
+function dk(dims: Record<string, string | null>, order: string[]): string {
   return dimKeyFromDimValues(dims, order);
 }
 
@@ -146,7 +143,11 @@ function createFactoryArgs(
 ): Parameters<typeof createPivotClickToFilter>[0] {
   return {
     pivotConfig: writable(
-      makeConfig({ rowDimensionNames: ["country"], measureNames: ["total"], isFlat: true }),
+      makeConfig({
+        rowDimensionNames: ["country"],
+        measureNames: ["total"],
+        isFlat: true,
+      }),
     ) as Readable<PivotDataStoreConfig>,
     pivotDataStore: stubPivotDataStore([]),
     filterManager: stubFilterManager(),
@@ -312,7 +313,11 @@ describe("nested table: multi-select", () => {
     measureNames: ["revenue"],
   });
   const data: PivotDataRow[] = [
-    { country: "US", revenue: 100, subRows: [{ country: "US-East", revenue: 50 }] },
+    {
+      country: "US",
+      revenue: 100,
+      subRows: [{ country: "US-East", revenue: 50 }],
+    },
   ];
   const dkRow0 = dimKeyFromRow(data[0], ["country"]);
 
@@ -339,21 +344,45 @@ describe("nested table: cross-parent selection isolation", () => {
     measureNames: ["revenue"],
   });
   const data: PivotDataRow[] = [
-    { outer: "A", revenue: 100, subRows: [{ outer: "X", inner: "X", revenue: 50 }] },
-    { outer: "B", revenue: 200, subRows: [{ outer: "X", inner: "X", revenue: 75 }] },
+    {
+      outer: "A",
+      revenue: 100,
+      subRows: [{ outer: "X", inner: "X", revenue: 50 }],
+    },
+    {
+      outer: "B",
+      revenue: 200,
+      subRows: [{ outer: "X", inner: "X", revenue: 75 }],
+    },
   ];
   const innerRowXUnderA = data[0].subRows![0];
   const dims = ["outer", "inner"];
 
   function setupCrossParent() {
     vi.mocked(getFiltersForCell).mockImplementation((_cfg, rowId) => {
-      if (rowId === "1.0") return filter({ name: "outer", values: ["A"] }, { name: "inner", values: ["X"] });
-      if (rowId === "2.0") return filter({ name: "outer", values: ["B"] }, { name: "inner", values: ["X"] });
+      if (rowId === "1.0")
+        return filter(
+          { name: "outer", values: ["A"] },
+          { name: "inner", values: ["X"] },
+        );
+      if (rowId === "2.0")
+        return filter(
+          { name: "outer", values: ["B"] },
+          { name: "inner", values: ["X"] },
+        );
       return EMPTY_FILTER;
     });
     vi.mocked(getFiltersForRowHeader).mockImplementation((_cfg, rowId) => {
-      if (rowId === "1.0") return filter({ name: "outer", values: ["A"] }, { name: "inner", values: ["X"] });
-      if (rowId === "2.0") return filter({ name: "outer", values: ["B"] }, { name: "inner", values: ["X"] });
+      if (rowId === "1.0")
+        return filter(
+          { name: "outer", values: ["A"] },
+          { name: "inner", values: ["X"] },
+        );
+      if (rowId === "2.0")
+        return filter(
+          { name: "outer", values: ["B"] },
+          { name: "inner", values: ["X"] },
+        );
       return EMPTY_FILTER;
     });
     return setup(config, data);
@@ -372,8 +401,18 @@ describe("nested table: cross-parent selection isolation", () => {
 
     result.handleCellClickToFilter("1.0", "revenue", false, innerRowXUnderA);
 
-    expect(sel(result).isCellSelected(dk({ outer: "A", inner: "X" }, dims), "revenue")).toBe(true);
-    expect(sel(result).isCellSelected(dk({ outer: "B", inner: "X" }, dims), "revenue")).toBe(false);
+    expect(
+      sel(result).isCellSelected(
+        dk({ outer: "A", inner: "X" }, dims),
+        "revenue",
+      ),
+    ).toBe(true);
+    expect(
+      sel(result).isCellSelected(
+        dk({ outer: "B", inner: "X" }, dims),
+        "revenue",
+      ),
+    ).toBe(false);
     expect(sel(result).cellSelections.size).toBe(1);
 
     result.destroy();
@@ -384,8 +423,12 @@ describe("nested table: cross-parent selection isolation", () => {
 
     result.handleCellClickToFilter("1.0", "outer", true, innerRowXUnderA);
 
-    expect(sel(result).isRowHeaderSelected(dk({ outer: "A", inner: "X" }, dims))).toBe(true);
-    expect(sel(result).isRowHeaderSelected(dk({ outer: "B", inner: "X" }, dims))).toBe(false);
+    expect(
+      sel(result).isRowHeaderSelected(dk({ outer: "A", inner: "X" }, dims)),
+    ).toBe(true);
+    expect(
+      sel(result).isRowHeaderSelected(dk({ outer: "B", inner: "X" }, dims)),
+    ).toBe(false);
 
     result.destroy();
   });
@@ -415,7 +458,10 @@ describe("null dimension values", () => {
 
     result.handleCellClickToFilter("0", "total", false, data[0]);
     expect(sel(result).isCellSelected(dkNull, "total")).toBe(true);
-    expect(filterClass.addDimensionValueSelections).toHaveBeenCalledWith("country", [null]);
+    expect(filterClass.addDimensionValueSelections).toHaveBeenCalledWith(
+      "country",
+      [null],
+    );
 
     result.destroy();
   });
@@ -475,7 +521,10 @@ describe("selection survives sorting", () => {
     // Simulate sort: UK now first
     pivotDataStore.set({
       isFetching: false,
-      data: [{ country: "UK", revenue: 200 }, { country: "US", revenue: 100 }],
+      data: [
+        { country: "UK", revenue: 200 },
+        { country: "US", revenue: 100 },
+      ],
       columnDef: [],
       assembled: true,
       totalColumns: 0,
@@ -483,7 +532,12 @@ describe("selection survives sorting", () => {
     });
 
     expect(sel(result).isCellSelected(usDk, "total")).toBe(true);
-    expect(sel(result).isCellSelected(dimKeyFromRow({ country: "UK" }, ["country"]), "total")).toBe(false);
+    expect(
+      sel(result).isCellSelected(
+        dimKeyFromRow({ country: "UK" }, ["country"]),
+        "total",
+      ),
+    ).toBe(false);
 
     result.destroy();
   });
@@ -528,9 +582,17 @@ describe("column header level selection constraint", () => {
     result.handleColumnHeaderClick({ region: "NA", category: "Electronics" });
 
     expect(sel(result).isColumnHeaderSelected({ region: "NA" })).toBe(false);
-    expect(sel(result).isColumnHeaderSelected({ region: "NA", category: "Electronics" })).toBe(true);
+    expect(
+      sel(result).isColumnHeaderSelected({
+        region: "NA",
+        category: "Electronics",
+      }),
+    ).toBe(true);
     expect(sel(result).columnHeaderSelections.size).toBe(1);
-    expect(filterClass.addDimensionValueSelections).toHaveBeenCalledWith("category", ["Electronics"]);
+    expect(filterClass.addDimensionValueSelections).toHaveBeenCalledWith(
+      "category",
+      ["Electronics"],
+    );
 
     result.destroy();
   });
@@ -545,7 +607,10 @@ describe("column header level selection constraint", () => {
     result.handleColumnHeaderClick({ region: "NA", category: "Electronics" });
 
     expect(filterClass.toggleDimensionValueSelections).toHaveBeenCalledWith(
-      "region", ["EU"], false, false,
+      "region",
+      ["EU"],
+      false,
+      false,
     );
 
     result.destroy();
@@ -560,7 +625,12 @@ describe("column header level selection constraint", () => {
 
     expect(sel(result).isColumnHeaderSelected({ region: "NA" })).toBe(false);
     expect(sel(result).isColumnHeaderSelected({ region: "EU" })).toBe(false);
-    expect(sel(result).isColumnHeaderSelected({ region: "NA", category: "Electronics" })).toBe(true);
+    expect(
+      sel(result).isColumnHeaderSelected({
+        region: "NA",
+        category: "Electronics",
+      }),
+    ).toBe(true);
     expect(sel(result).columnHeaderSelections.size).toBe(1);
 
     result.destroy();
@@ -583,7 +653,12 @@ describe("column header level selection constraint", () => {
     result.handleColumnHeaderClick({ region: "NA" }); // deselect
 
     result.handleColumnHeaderClick({ region: "NA", category: "Electronics" });
-    expect(sel(result).isColumnHeaderSelected({ region: "NA", category: "Electronics" })).toBe(true);
+    expect(
+      sel(result).isColumnHeaderSelected({
+        region: "NA",
+        category: "Electronics",
+      }),
+    ).toBe(true);
     expect(sel(result).columnHeaderSelections.size).toBe(1);
 
     result.destroy();
@@ -596,7 +671,10 @@ describe("column header level selection constraint", () => {
     result.handleColumnHeaderClick({ region: "NA", category: "Electronics" });
 
     expectNoToggle(filterClass, "region");
-    expect(filterClass.addDimensionValueSelections).toHaveBeenCalledWith("category", ["Electronics"]);
+    expect(filterClass.addDimensionValueSelections).toHaveBeenCalledWith(
+      "category",
+      ["Electronics"],
+    );
 
     result.destroy();
   });
@@ -672,7 +750,10 @@ describe("deselect retains shared column filters", () => {
     expect(sel(result).isCellSelected(dkNY, "revenue")).toBe(true);
 
     expect(filterClass.toggleDimensionValueSelections).toHaveBeenCalledWith(
-      "borough", ["Bronx"], false, false,
+      "borough",
+      ["Bronx"],
+      false,
+      false,
     );
     expectNoToggle(filterClass, "status");
     expectNoToggle(filterClass, "type");
@@ -687,8 +768,16 @@ describe("header/cell mutual exclusivity", () => {
     measureNames: ["revenue"],
   });
   const nestedData: PivotDataRow[] = [
-    { outer: "Zoom", revenue: 100, subRows: [{ outer: "US-East", inner: "US-East", revenue: 50 }] },
-    { outer: "Airtable", revenue: 200, subRows: [{ outer: "US-West", inner: "US-West", revenue: 75 }] },
+    {
+      outer: "Zoom",
+      revenue: 100,
+      subRows: [{ outer: "US-East", inner: "US-East", revenue: 50 }],
+    },
+    {
+      outer: "Airtable",
+      revenue: 200,
+      subRows: [{ outer: "US-West", inner: "US-West", revenue: 75 }],
+    },
   ];
   const dims = ["outer", "inner"];
   const parentZoom = nestedData[0];
@@ -700,14 +789,28 @@ describe("header/cell mutual exclusivity", () => {
       if (rowId === "1") return filter1("outer", ["Zoom"]);
       if (rowId === "2") return filter1("outer", ["Airtable"]);
       if (rowId === "1.0")
-        return filter({ name: "outer", values: ["Zoom"] }, { name: "inner", values: ["US-East"] });
+        return filter(
+          { name: "outer", values: ["Zoom"] },
+          { name: "inner", values: ["US-East"] },
+        );
       if (rowId === "2.0")
-        return filter({ name: "outer", values: ["Airtable"] }, { name: "inner", values: ["US-West"] });
+        return filter(
+          { name: "outer", values: ["Airtable"] },
+          { name: "inner", values: ["US-West"] },
+        );
       return EMPTY_FILTER;
     });
     vi.mocked(getFiltersForCell).mockImplementation((_cfg, rowId) => {
-      if (rowId === "1.0") return filter({ name: "outer", values: ["Zoom"] }, { name: "inner", values: ["US-East"] });
-      if (rowId === "2.0") return filter({ name: "outer", values: ["Airtable"] }, { name: "inner", values: ["US-West"] });
+      if (rowId === "1.0")
+        return filter(
+          { name: "outer", values: ["Zoom"] },
+          { name: "inner", values: ["US-East"] },
+        );
+      if (rowId === "2.0")
+        return filter(
+          { name: "outer", values: ["Airtable"] },
+          { name: "inner", values: ["US-West"] },
+        );
       return EMPTY_FILTER;
     });
     return setup(nestedConfig, nestedData);
@@ -727,7 +830,10 @@ describe("header/cell mutual exclusivity", () => {
     expect(sel(result).isRowHeaderSelected(dkZoom)).toBe(true);
     expect(sel(result).isCellSelected(dkChild, "revenue")).toBe(false);
     expect(filterClass.toggleDimensionValueSelections).toHaveBeenCalledWith(
-      "inner", ["US-East"], false, false,
+      "inner",
+      ["US-East"],
+      false,
+      false,
     );
 
     result.destroy();
@@ -755,8 +861,15 @@ describe("header/cell mutual exclusivity", () => {
     result.handleCellClickToFilter("1", "outer", true, parentZoom);
     result.handleCellClickToFilter("2.0", "revenue", false, childUSWest);
 
-    expect(sel(result).isRowHeaderSelected(dk({ outer: "Zoom", inner: "" }, dims))).toBe(true);
-    expect(sel(result).isCellSelected(dk({ outer: "Airtable", inner: "US-West" }, dims), "revenue")).toBe(true);
+    expect(
+      sel(result).isRowHeaderSelected(dk({ outer: "Zoom", inner: "" }, dims)),
+    ).toBe(true);
+    expect(
+      sel(result).isCellSelected(
+        dk({ outer: "Airtable", inner: "US-West" }, dims),
+        "revenue",
+      ),
+    ).toBe(true);
 
     result.destroy();
   });
@@ -779,7 +892,10 @@ describe("header/cell mutual exclusivity", () => {
     expect(sel(result).rowHeaderSelections.size).toBe(1);
     // Orphaned inner value is removed from the global filter
     expect(filterClass.toggleDimensionValueSelections).toHaveBeenCalledWith(
-      "inner", ["US-East"], false, false,
+      "inner",
+      ["US-East"],
+      false,
+      false,
     );
 
     result.destroy();
@@ -834,7 +950,10 @@ describe("header/cell mutual exclusivity", () => {
 
   function setupFlatWithCol(cellRegion: string) {
     vi.mocked(getFiltersFromRow).mockImplementation(() =>
-      filter({ name: "country", values: ["US"] }, { name: "region", values: [cellRegion] }),
+      filter(
+        { name: "country", values: ["US"] },
+        { name: "region", values: [cellRegion] },
+      ),
     );
     vi.mocked(getFiltersForColumnHeader).mockImplementation((_cfg, path) =>
       filter1("region", [path["region"]]),
@@ -855,7 +974,10 @@ describe("header/cell mutual exclusivity", () => {
     expect(sel(result).isColumnHeaderSelected({ region: "NA" })).toBe(true);
     expect(sel(result).isCellSelected(dkUS, "revenue")).toBe(false);
     expect(filterClass.toggleDimensionValueSelections).toHaveBeenCalledWith(
-      "country", ["US"], false, false,
+      "country",
+      ["US"],
+      false,
+      false,
     );
 
     result.destroy();

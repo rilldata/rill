@@ -9,11 +9,7 @@ import {
   getValuesForFlatTable,
   isTimeDimension,
 } from "./pivot-utils";
-import type {
-  PivotDataRow,
-  PivotDataStoreConfig,
-  PivotFilter,
-} from "./types";
+import type { PivotDataRow, PivotDataStoreConfig, PivotFilter } from "./types";
 
 export interface PivotRowSelectionState {
   /** True if at least one row dimension has active filter selections */
@@ -128,8 +124,8 @@ export function getFiltersForRowData(
 export function extractSelectionDimensionFilters(
   whereFilter: V1Expression | undefined,
   rowDimensionNames: string[],
-): Map<string, Set<string>> {
-  const result = new Map<string, Set<string>>();
+): Map<string, Set<string | null>> {
+  const result = new Map<string, Set<string | null>>();
   if (!whereFilter?.cond?.exprs) return result;
 
   for (const expr of whereFilter.cond.exprs) {
@@ -140,7 +136,7 @@ export function extractSelectionDimensionFilters(
 
     const values = getValuesInExpression(expr);
     if (values.length > 0) {
-      result.set(ident, new Set(values as string[]));
+      result.set(ident, new Set(values as (string | null)[]));
     }
   }
 
@@ -160,7 +156,7 @@ export function extractSelectionDimensionFilters(
 export function computePivotRowSelection(
   config: PivotDataStoreConfig,
   _tableData: PivotDataRow[],
-  dimensionFilters: Map<string, Set<string>>,
+  dimensionFilters: Map<string, Set<string | null>>,
 ): PivotRowSelectionState {
   const hasActiveSelection = dimensionFilters.size > 0;
 
@@ -193,13 +189,12 @@ export function computePivotRowSelection(
       if (depth !== undefined && !config.isFlat) {
         const firstDim = config.rowDimensionNames[0];
         const actualDim = config.rowDimensionNames[depth];
-        const value = rowData[firstDim];
-        if (value === undefined) return false;
-        const strValue = String(value ?? "");
-        if (!strValue) return false;
+        const raw = rowData[firstDim];
+        if (raw === undefined) return false;
+        const value = raw === null ? null : String(raw);
 
         const selectedSet = dimensionFilters.get(actualDim);
-        if (selectedSet && !selectedSet.has(strValue)) return false;
+        if (selectedSet && !selectedSet.has(value)) return false;
 
         // Also verify all ancestor dimensions match their filters.
         // parentRows[i] is at depth i and stores its value under firstDim.
@@ -208,8 +203,11 @@ export function computePivotRowSelection(
             const ancestorDim = config.rowDimensionNames[i];
             const ancestorSet = dimensionFilters.get(ancestorDim);
             if (!ancestorSet) continue;
-            const ancestorValue = String(parentRows[i][firstDim] ?? "");
-            if (!ancestorValue || !ancestorSet.has(ancestorValue)) return false;
+            const ancestorRaw = parentRows[i][firstDim];
+            if (ancestorRaw === undefined) return false;
+            const ancestorValue =
+              ancestorRaw === null ? null : String(ancestorRaw);
+            if (!ancestorSet.has(ancestorValue)) return false;
           }
         }
 
@@ -225,7 +223,6 @@ export function computePivotRowSelection(
       return rowDimValues.every(({ dimensionName, value }) => {
         const selectedSet = dimensionFilters.get(dimensionName);
         if (!selectedSet) return true; // dimension not filtered; doesn't block
-        if (value === null) return selectedSet.has(null as unknown as string);
         return selectedSet.has(value);
       });
     },

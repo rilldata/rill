@@ -550,3 +550,69 @@ describe("3-dimension nested table: row header click styling by depth", () => {
     expect(measureCellState(true).partialAggregateCell).toBe(true);
   });
 });
+
+describe("null dimension value handling in isRowSelected", () => {
+  const flatConfig: PivotDataStoreConfig = {
+    rowDimensionNames: ["country"],
+    measureNames: ["revenue"],
+    colDimensionNames: ["region"],
+    isFlat: true,
+    time: { timeDimension: "", timeStart: undefined, timeEnd: undefined },
+  } as unknown as PivotDataStoreConfig;
+
+  const nestedConfig: PivotDataStoreConfig = {
+    rowDimensionNames: ["country", "city"],
+    measureNames: ["revenue"],
+    colDimensionNames: ["region"],
+    isFlat: false,
+    time: { timeDimension: "", timeStart: undefined, timeEnd: undefined },
+  } as unknown as PivotDataStoreConfig;
+
+  it("flat: null row is selected when null is in its own dimension's filter set", () => {
+    const dimensionFilters = new Map<string, Set<string | null>>([
+      ["country", new Set([null])],
+    ]);
+    const rs = computePivotRowSelection(flatConfig, [], dimensionFilters);
+    const nullRow: PivotDataRow = { country: null, revenue: 100 };
+    expect(rs.isRowSelected(nullRow)).toBe(true);
+  });
+
+  it("nested: null-valued row is not short-circuited as unselected when only a non-row-dim is filtered", () => {
+    const dimensionFilters = new Map<string, Set<string | null>>([
+      ["region", new Set(["NA"])],
+    ]);
+    const rs = computePivotRowSelection(nestedConfig, [], dimensionFilters);
+    // In nested mode the row at depth 0 stores its value under rowDimensionNames[0] (country)
+    const nullRow: PivotDataRow = { country: null, revenue: 100 };
+    expect(rs.isRowSelected(nullRow, 0, [])).toBe(true);
+  });
+
+  it("nested: null-valued row is selected when null is in its own dimension's filter set", () => {
+    const dimensionFilters = new Map<string, Set<string | null>>([
+      ["country", new Set([null])],
+    ]);
+    const rs = computePivotRowSelection(nestedConfig, [], dimensionFilters);
+    const nullRow: PivotDataRow = { country: null, revenue: 100 };
+    expect(rs.isRowSelected(nullRow, 0, [])).toBe(true);
+  });
+
+  it("nested: child under null parent is selected when ancestor filter is null", () => {
+    const dimensionFilters = new Map<string, Set<string | null>>([
+      ["country", new Set([null])],
+    ]);
+    const rs = computePivotRowSelection(nestedConfig, [], dimensionFilters);
+    // Parent row at depth 0 has null country; child at depth 1 stores city under country key (firstDim)
+    const parent: PivotDataRow = { country: null, revenue: 100 };
+    const child: PivotDataRow = { country: "NYC", revenue: 50 };
+    expect(rs.isRowSelected(child, 1, [parent])).toBe(true);
+  });
+
+  it("nested: non-null row is NOT selected when filter is only null", () => {
+    const dimensionFilters = new Map<string, Set<string | null>>([
+      ["country", new Set([null])],
+    ]);
+    const rs = computePivotRowSelection(nestedConfig, [], dimensionFilters);
+    const usRow: PivotDataRow = { country: "US", revenue: 100 };
+    expect(rs.isRowSelected(usRow, 0, [])).toBe(false);
+  });
+});
