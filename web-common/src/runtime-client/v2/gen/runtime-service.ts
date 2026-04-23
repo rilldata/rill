@@ -55,6 +55,8 @@ import {
   ListResourcesRequest,
   ListToolsRequest,
   PingRequest,
+  PullEnvRequest,
+  PushEnvRequest,
   PutFileRequest,
   QueryResolverRequest,
   ReloadConfigRequest,
@@ -103,6 +105,8 @@ import type {
   V1ListResourcesResponse,
   V1ListToolsResponse,
   V1PingResponse,
+  V1PullEnvResponse,
+  V1PushEnvResponse,
   V1PutFileResponse,
   V1QueryResolverResponse,
   V1ReloadConfigResponse,
@@ -3578,6 +3582,130 @@ export function createRuntimeServiceGitPushMutation(
   Omit<PartialMessage<GitPushRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceGitPushMutationOptions(
+    client,
+    options,
+  );
+  return createMutation(mutationOptions, queryClient);
+}
+
+/**
+ * Raw RPC call: RuntimeService.PullEnv
+ */
+export async function runtimeServicePullEnv(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<PullEnvRequest>, "instanceId">,
+  options?: { signal?: AbortSignal },
+): Promise<V1PullEnvResponse> {
+  const r = await client.runtimeService.pullEnv(
+    PullEnvRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({ emitDefaultValues: true }) as unknown as V1PullEnvResponse;
+}
+
+export function getRuntimeServicePullEnvMutationOptions(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      V1PullEnvResponse,
+      unknown,
+      Omit<PartialMessage<PullEnvRequest>, "instanceId">
+    >
+  >,
+): CreateMutationOptions<
+  V1PullEnvResponse,
+  unknown,
+  Omit<PartialMessage<PullEnvRequest>, "instanceId">
+> {
+  return {
+    mutationFn: (request) => runtimeServicePullEnv(client, request),
+    ...options,
+  };
+}
+
+export function createRuntimeServicePullEnvMutation(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      V1PullEnvResponse,
+      unknown,
+      Omit<PartialMessage<PullEnvRequest>, "instanceId">
+    >
+  >,
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  V1PullEnvResponse,
+  unknown,
+  Omit<PartialMessage<PullEnvRequest>, "instanceId">
+> {
+  const mutationOptions = getRuntimeServicePullEnvMutationOptions(
+    client,
+    options,
+  );
+  return createMutation(mutationOptions, queryClient);
+}
+
+/**
+ * Raw RPC call: RuntimeService.PushEnv
+ */
+export async function runtimeServicePushEnv(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<PushEnvRequest>, "instanceId">,
+  options?: { signal?: AbortSignal },
+): Promise<V1PushEnvResponse> {
+  const r = await client.runtimeService.pushEnv(
+    PushEnvRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({ emitDefaultValues: true }) as unknown as V1PushEnvResponse;
+}
+
+export function getRuntimeServicePushEnvMutationOptions(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      V1PushEnvResponse,
+      unknown,
+      Omit<PartialMessage<PushEnvRequest>, "instanceId">
+    >
+  >,
+): CreateMutationOptions<
+  V1PushEnvResponse,
+  unknown,
+  Omit<PartialMessage<PushEnvRequest>, "instanceId">
+> {
+  return {
+    mutationFn: (request) => runtimeServicePushEnv(client, request),
+    ...options,
+  };
+}
+
+export function createRuntimeServicePushEnvMutation(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      V1PushEnvResponse,
+      unknown,
+      Omit<PartialMessage<PushEnvRequest>, "instanceId">
+    >
+  >,
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  V1PushEnvResponse,
+  unknown,
+  Omit<PartialMessage<PushEnvRequest>, "instanceId">
+> {
+  const mutationOptions = getRuntimeServicePushEnvMutationOptions(
     client,
     options,
   );

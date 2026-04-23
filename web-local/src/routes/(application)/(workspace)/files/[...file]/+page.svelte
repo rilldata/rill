@@ -13,6 +13,7 @@
   import ExploreWorkspace from "@rilldata/web-common/features/workspaces/ExploreWorkspace.svelte";
   import MetricsWorkspace from "@rilldata/web-common/features/workspaces/MetricsWorkspace.svelte";
   import ModelWorkspace from "@rilldata/web-common/features/workspaces/ModelWorkspace.svelte";
+  import EnvWorkspace from "@rilldata/web-common/features/environment-variables/EnvWorkspace.svelte";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
@@ -48,6 +49,8 @@
   $: resourceKind = <ResourceKind | undefined>$resourceName?.kind;
 
   $: workspace = workspaces.get(resourceKind ?? $inferredResourceKind);
+
+  $: isEnvFile = path === "/.env" || /^\/\.\w+\.env$/.test(path);
 
   $: resourceQuery = getResource(queryClient);
 
@@ -87,6 +90,8 @@
   <GeneratingMessage title="Generating your Canvas dashboard..." />
 {:else if workspace}
   <svelte:component this={workspace} {fileArtifact} />
+{:else if isEnvFile}
+  <EnvWorkspace {fileArtifact} />
 {:else}
   <WorkspaceContainer inspector={false}>
     <FileWorkspaceHeader

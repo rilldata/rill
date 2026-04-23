@@ -939,14 +939,35 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 	}
 
 	resp := &adminv1.GetDeploymentConfigResponse{
+		FrontendUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name),
+		Editable:    depl.Editable,
 		UpdatedOn:   timestamppb.New(depl.UpdatedOn),
 		UsesArchive: proj.ArchiveAssetID != nil,
 	}
-	vars, err := s.admin.ResolveVariables(ctx, depl)
+
+	// variables
+	vars, err := s.admin.DB.FindProjectVariables(ctx, depl.ProjectID, &depl.Environment)
 	if err != nil {
 		return nil, err
 	}
-	resp.Variables = vars
+	resp.Variables = make([]*adminv1.ProjectVariable, 0, len(vars))
+	for _, v := range vars {
+		resp.Variables = append(resp.Variables, projectVariableToDTO(v))
+	}
+	resp.Variables = append(resp.Variables, &adminv1.ProjectVariable{
+		Name:        "rill.watch_repo",
+		Value:       strconv.FormatBool(depl.Editable),
+		Environment: depl.Environment,
+		CreatedOn:   timestamppb.Now(),
+		UpdatedOn:   timestamppb.Now(),
+	})
+
+	// remove in next release
+	resp.VariablesLegacy = make(map[string]string, len(vars)) // nolint:staticcheck // Still need to populate for backward compatibility.
+	for _, v := range vars {
+		resp.VariablesLegacy[v.Name] = v.Value // nolint:staticcheck // Still need to populate for backward compatibility.
+	}
+	resp.VariablesLegacy["rill.watch_repo"] = strconv.FormatBool(depl.Editable) // nolint:staticcheck // Still need to populate for backward compatibility.
 
 	// parsing duckdb connector config
 	rCfg, err := provisioner.NewRuntimeConfig(pr.Config)
@@ -965,8 +986,6 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 
 	annotations := s.admin.NewDeploymentAnnotations(org, proj, depl.Environment)
 	resp.Annotations = annotations.ToMap()
-
-	resp.FrontendUrl = s.admin.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name)
 
 	return resp, nil
 }

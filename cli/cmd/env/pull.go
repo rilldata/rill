@@ -10,6 +10,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/parser"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/spf13/cobra"
 )
 
@@ -71,23 +72,31 @@ func PullVars(ctx context.Context, ch *cmdutil.Helper, projectPath, projectName,
 		return err
 	}
 	res, err := client.GetProjectVariables(ctx, &adminv1.GetProjectVariablesRequest{
-		Org:         ch.Org,
-		Project:     projectName,
-		Environment: environment,
+		Org:                ch.Org,
+		Project:            projectName,
+		Environment:        environment,
+		ForAllEnvironments: environment == "",
 	})
 	if err != nil {
 		return err
 	}
 
-	resVars := make(map[string]string, len(res.Variables))
-	for _, v := range res.Variables {
-		resVars[v.Name] = v.Value
+	// new vars from the cloud
+	newVars := groupVariablesByEnv(res)
+
+	// existing vars from the .env files in the project
+	currentVars := p.GetDotEnvPerEnvironment()
+
+	// If variables for every environment are exactly the same as what's in the .env file, skip writing and warn the user
+	equal := true
+	for env, resVars := range newVars {
+		if !maps.Equal(resVars, currentVars[env]) {
+			equal = false
+			break
+		}
 	}
 
-	dotEnv := p.GetDotEnv()
-
-	// If the variables match any existing .env file, do nothing
-	if maps.Equal(resVars, dotEnv) && warnForNoVars {
+	if equal && warnForNoVars {
 		if len(res.Variables) == 0 {
 			ch.Printf("No cloud credentials found for project %q.\n", projectName)
 		} else {
@@ -97,23 +106,46 @@ func PullVars(ctx context.Context, ch *cmdutil.Helper, projectPath, projectName,
 	}
 
 	// Merge the current .env file with pulled variables
-	vars := make(map[string]string)
-	maps.Copy(vars, dotEnv)
-	maps.Copy(vars, resVars)
-	err = godotenv.Write(vars, filepath.Join(projectPath, ".env"))
-	if err != nil {
-		return err
-	}
+	for env, resVars := range newVars {
+		vars := make(map[string]string)
+		existing := currentVars[env]
+		maps.Copy(vars, existing)
+		maps.Copy(vars, resVars)
+		path := pathForEnv(env)
+		err = godotenv.Write(vars, filepath.Join(projectPath, path))
+		if err != nil {
+			return err
+		}
+		ch.Printf("Updated %q file with cloud credentials from project %q.\n", path, projectName)
 
-	// Add to gitignore if necessary
-	changed, err := cmdutil.EnsureGitignoreHasDotenv(ctx, repo)
-	if err != nil {
-		return err
+		// Add to gitignore if necessary
+		changed, err := gitutil.EnsureGitignoreHas(ctx, repo, path)
+		if err != nil {
+			return err
+		}
+		if changed {
+			ch.Printf("Added %q to .gitignore.\n", path)
+		}
 	}
-	if changed {
-		ch.Printf("Added .env to .gitignore.\n")
-	}
-
-	ch.Printf("Updated .env file with cloud credentials from project %q.\n", projectName)
 	return nil
+}
+
+func groupVariablesByEnv(res *adminv1.GetProjectVariablesResponse) map[string]map[string]string {
+	perEnvVars := make(map[string]map[string]string)
+	for _, v := range res.Variables {
+		vars, ok := perEnvVars[v.Environment]
+		if !ok {
+			vars = make(map[string]string)
+			perEnvVars[v.Environment] = vars
+		}
+		vars[v.Name] = v.Value
+	}
+	return perEnvVars
+}
+
+func pathForEnv(env string) string {
+	if env == "" {
+		return ".env"
+	}
+	return fmt.Sprintf(".%s.env", env)
 }

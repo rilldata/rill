@@ -35,15 +35,13 @@
 
   $: projectVariables = $getProjectVariables.data?.variables || [];
 
-  $: variableNames = projectVariables.map((variable) => {
-    return {
-      environment: getEnvironmentType(variable.environment),
-      name: variable.name,
-    };
-  });
+  $: variableNames = projectVariables.map((variable) => ({
+    environment: getEnvironmentType(variable.environment),
+    name: variable.name ?? "",
+  }));
 
   $: searchedVariables = projectVariables.filter((variable) =>
-    variable.name.toLowerCase().includes(searchText.toLowerCase()),
+    (variable.name ?? "").toLowerCase().includes(searchText.toLowerCase()),
   );
 
   $: filteredVariables = searchedVariables.filter((variable) => {
@@ -70,7 +68,10 @@
   });
 
   $: sortedVariables = filteredVariables.sort((a, b) => {
-    return new Date(b.updatedOn).getTime() - new Date(a.updatedOn).getTime();
+    return (
+      new Date(b.updatedOn ?? 0).getTime() -
+      new Date(a.updatedOn ?? 0).getTime()
+    );
   });
 
   function handleFilterByEnvironment(environment: EnvironmentTypes) {
