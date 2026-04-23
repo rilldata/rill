@@ -39,6 +39,7 @@ const config = {
         "script-src": [
           "self",
           "https://*.app-us1.com/",
+          //https://support.usepylon.com/articles/5968160735-chat-widget-debugging-guide
           "https://*.usepylon.com",
           "https://*.pusher.com",
           ...(dev ? ["http:"] : []),
@@ -71,7 +72,6 @@ const config = {
           "https://docs.google.com",
           "https://storage.googleapis.com",
           "https://cdn.prod.website-files.com",
-          "https://*.stripe.com",
           "wss://*.pusher.com",
           ...(dev ? ["http://localhost:*", "ws://localhost:*"] : []),
         ],
