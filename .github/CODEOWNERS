@@ -1,0 +1,4 @@
+/admin/   @rilldata/platform
+/cli/     @rilldata/platform
+/proto/   @rilldata/platform
+/runtime/ @rilldata/platform
