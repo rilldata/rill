@@ -393,9 +393,10 @@ func (p *KubernetesProvisioner) CheckResource(ctx context.Context, r *provisione
 
 	// Determine if we should re-provision, and exit early if not
 	trigger := false
-	trigger = trigger || state.Version != opts.RillVersion                                                         // Version changed
-	trigger = trigger || depl.ObjectMeta.Annotations["checksum/templates"] != p.templatesChecksum                  // Templates changed
-	trigger = trigger || depl.ObjectMeta.Annotations["organization_plan"] != opts.Annotations["organization_plan"] // Billing plan changed
+	trigger = trigger || state.Version != opts.RillVersion                                                                           // Version changed
+	trigger = trigger || depl.ObjectMeta.Annotations["checksum/templates"] != p.templatesChecksum                                    // Templates changed
+	trigger = trigger || depl.ObjectMeta.Annotations["organization_plan"] != opts.Annotations["organization_plan"]                   // Billing plan changed
+	trigger = trigger || depl.ObjectMeta.Annotations["organization_custom_domain"] != opts.Annotations["organization_custom_domain"] // Custom domain changed
 
 	if !trigger {
 		return r, nil

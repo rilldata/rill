@@ -9,7 +9,6 @@ web-admin/src/routes/[organization]/-/settings/+layout.ts: error TS2307
 web-admin/src/routes/[organization]/-/settings/+page.ts: error TS2307
 web-admin/src/routes/[organization]/-/settings/billing/+page.ts: error TS2307
 web-admin/src/routes/[organization]/-/settings/billing/payment/+page.ts: error TS2307
-web-admin/src/routes/[organization]/-/settings/billing/estimate/+page.ts: error TS2307
 web-admin/src/routes/[organization]/-/settings/billing/upgrade/+page.ts: error TS2307
 web-admin/src/routes/[organization]/-/settings/usage/+page.ts: error TS2307
 web-admin/src/routes/[organization]/-/upgrade-callback/+page.ts: error TS2307

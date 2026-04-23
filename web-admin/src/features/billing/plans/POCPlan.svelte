@@ -10,12 +10,10 @@
     organization,
     hasPayment,
     plan,
-    billingPortalUrl,
   }: {
     organization: string;
     hasPayment: boolean;
     plan: V1BillingPlan;
-    billingPortalUrl: string | undefined;
   } = $props();
 
   let open = $state(false);
@@ -24,16 +22,6 @@
 <SettingsContainer title={plan?.displayName}>
   <div>
     <div>You're currently on a custom contract.</div>
-    {#if billingPortalUrl}
-      <div>
-        <a
-          href={billingPortalUrl}
-          target="_blank"
-          rel="noreferrer noopener"
-          class="invoice-link">View Invoice</a
-        >
-      </div>
-    {/if}
     <PlanQuotas {organization} />
   </div>
   {#snippet contact()}
@@ -50,12 +38,3 @@
 </SettingsContainer>
 
 <StartTeamPlanDialog bind:open {organization} type="base" />
-
-<style lang="postcss">
-  .invoice-link {
-    @apply text-sm text-primary-500 no-underline mt-2 inline-block;
-  }
-  .invoice-link:hover {
-    @apply text-primary-600 underline;
-  }
-</style>
