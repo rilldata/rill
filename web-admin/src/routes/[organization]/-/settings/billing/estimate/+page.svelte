@@ -11,6 +11,8 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import { ArrowLeft, RotateCw, ChevronDown } from "lucide-svelte";
   import { page } from "$app/stores";
   import type { PageData } from "./$types";
 
@@ -41,7 +43,17 @@
   let prodHoursPerDay = $state(24);
   let devUnits = $state(0);
   let devHoursPerDay = $state(24);
-  let storageGB = $state(1);
+  let storageAmount = $state(1);
+  let storageUnit = $state<"GB" | "TB">("GB");
+
+  // Billing is calculated in integer GB; TB converts at 1 TB = 1000 GB
+  // (decimal, SI). Floor defends against transient fractional input values.
+  let storageGB = $derived(
+    Math.max(
+      Math.floor(storageUnit === "TB" ? storageAmount * 1000 : storageAmount),
+      0,
+    ),
+  );
 
   // Pre-fill from current deployment once data loads
   let prefilled = $state(false);
@@ -49,7 +61,8 @@
     if (!prefilled && !$projectsQuery.isLoading && projects.length > 0) {
       prodUnits = Math.max(currentProdSlots, 2);
       devUnits = currentDevSlots;
-      storageGB = Math.max(currentStorageGB, 1);
+      storageAmount = Math.max(currentStorageGB, 1);
+      storageUnit = "GB";
       prefilled = true;
     }
   });
@@ -59,7 +72,8 @@
     prodHoursPerDay = 24;
     devUnits = currentDevSlots;
     devHoursPerDay = 24;
-    storageGB = Math.max(currentStorageGB, 1);
+    storageAmount = Math.max(currentStorageGB, 1);
+    storageUnit = "GB";
   }
 
   // Pricing constants
@@ -67,13 +81,30 @@
   const STORAGE_RATE_PER_GB = 1;
   const FREE_STORAGE_GB = 1;
   const DAYS_PER_MONTH = 30;
+  const DEFAULT_ACTIVE_HOURS = 8;
+
+  // "Always on" mirrors hours === 24; toggling restores a sensible default.
+  let prodAlwaysOn = $derived(prodHoursPerDay === 24);
+  let devAlwaysOn = $derived(devHoursPerDay === 24);
+
+  function toggleProdAlwaysOn() {
+    prodHoursPerDay = prodAlwaysOn ? DEFAULT_ACTIVE_HOURS : 24;
+  }
+  function toggleDevAlwaysOn() {
+    devHoursPerDay = devAlwaysOn ? DEFAULT_ACTIVE_HOURS : 24;
+  }
+
+  // Hours used by the estimate; clamped so mid-typing overflows (e.g. "25")
+  // don't produce out-of-range costs or breakdown text.
+  let effectiveProdHours = $derived(Math.min(Math.max(prodHoursPerDay, 0), 24));
+  let effectiveDevHours = $derived(Math.min(Math.max(devHoursPerDay, 0), 24));
 
   // Cost calculations
   let prodCost = $derived(
-    prodUnits * prodHoursPerDay * DAYS_PER_MONTH * RATE_PER_UNIT_HR,
+    prodUnits * effectiveProdHours * DAYS_PER_MONTH * RATE_PER_UNIT_HR,
   );
   let devCost = $derived(
-    devUnits * devHoursPerDay * DAYS_PER_MONTH * RATE_PER_UNIT_HR,
+    devUnits * effectiveDevHours * DAYS_PER_MONTH * RATE_PER_UNIT_HR,
   );
   let billableStorageGB = $derived(Math.max(storageGB - FREE_STORAGE_GB, 0));
   let storageCost = $derived(billableStorageGB * STORAGE_RATE_PER_GB);
@@ -82,7 +113,7 @@
 
   // TODO: Wire to billing API when available
   let availableCredit = $derived(100);
-  let firstBill = $derived(Math.max(monthlyCost - availableCredit, 0));
+  let youPay = $derived(Math.max(monthlyCost - availableCredit, 0));
 
   // Billing plan
   let subscriptionQuery = $derived(
@@ -106,7 +137,8 @@
       prodHoursPerDay === 24 &&
       devUnits === currentDevSlots &&
       devHoursPerDay === 24 &&
-      storageGB === Math.max(currentStorageGB, 1),
+      storageAmount === Math.max(currentStorageGB, 1) &&
+      storageUnit === "GB",
   );
 
   async function handleSubscribe() {
@@ -139,320 +171,383 @@
 </script>
 
 <div class="estimate-page">
-  <!-- Back link + title -->
+  <!-- Back link -->
   <a href="/{organization}/-/settings/billing" class="back-link">
-    <svg
-      class="w-3.5 h-3.5"
-      viewBox="0 0 14 14"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="1.5"
-    >
-      <path d="M9 2.5L4.5 7 9 11.5" />
-    </svg>
+    <ArrowLeft class="w-4 h-4" />
     Billing
   </a>
   <h1 class="page-title">Estimate your cost</h1>
 
-  <div class="page-header">
-    <span class="prefill-note">Pre-filled from your current deployment</span>
-    <button class="reset-btn" onclick={resetToUsage} disabled={isCurrentConfig}>
-      <svg
-        class="w-3.5 h-3.5"
-        viewBox="0 0 14 14"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.5"
-      >
-        <path d="M1.5 2.5v3.5h3.5" />
-        <path d="M2.1 8.5a5 5 0 1 0 .9-4.5L1.5 6" />
-      </svg>
-      Reset to current configuration
-    </button>
-  </div>
+  <p class="pricing-hint">
+    Pricing: <strong>$0.15</strong> per unit/hr · <strong>$1</strong> per GB/month.
+    1 unit = 4 GiB RAM, 1 vCPU.
+  </p>
 
   <div class="estimate-grid">
-    <!-- LEFT: Input cards -->
-    <div class="input-column">
-      <!-- Compute card -->
-      <div class="input-panel">
-      <!-- Compute subsection -->
-      <div class="subsection-header">
-        <div class="subsection-title-group">
-          <span class="subsection-title">Compute</span>
-          <span class="subsection-sub">1 unit = 4 GiB RAM, 1 vCPU</span>
+    <!-- LEFT: Compute unit and storage -->
+    <div class="input-panel">
+      <div class="panel-header">
+        <div class="panel-header-text">
+          <span class="panel-title">Compute unit and storage</span>
+          <span class="panel-sub">Pre-filled from your current deployment.</span>
         </div>
-        <span class="subsection-rate">$0.15/unit/hr</span>
+        <button
+          class="reset-btn"
+          onclick={resetToUsage}
+          disabled={isCurrentConfig}
+          type="button"
+        >
+          <RotateCw class="w-4 h-4" />
+          Reset
+        </button>
       </div>
 
-      <!-- Production units -->
-      <div class="input-row">
-        <div class="input-info">
-          <span class="input-label">Production</span>
-          <span class="input-desc">Minimum 2 units</span>
-        </div>
-        <div class="stepper">
-          <button
-            class="stepper-btn"
-            onclick={() => prodUnits--}
-            disabled={prodUnits <= 2}>−</button
-          >
-          <input
-            class="stepper-input"
-            type="number"
-            bind:value={prodUnits}
-            min="2"
-            onblur={(e) => clampInput(e, 2, 9999, (v) => (prodUnits = v))}
-          />
-          <button class="stepper-btn" onclick={() => prodUnits++}>+</button>
-        </div>
-      </div>
-
-      <!-- Production active hours -->
-      <div class="input-row input-row-sub">
-        <div class="input-info">
-          <span class="input-label-sub inline-flex items-center gap-1">
-            Active hours per day
-            <Tooltip location="right" alignment="middle" distance={8}>
-              <span class="text-fg-muted flex">
-                <InfoCircle size="13px" />
-              </span>
-              <TooltipContent maxWidth="240px" slot="tooltip-content">
-                Deployments hibernate when inactive, so you're only billed for
-                active hours.
-              </TooltipContent>
-            </Tooltip>
-          </span>
-        </div>
-        <div class="stepper">
-          <button
-            class="stepper-btn"
-            onclick={() => prodHoursPerDay--}
-            disabled={prodHoursPerDay <= 1}>−</button
-          >
-          <input
-            class="stepper-input"
-            type="number"
-            bind:value={prodHoursPerDay}
-            min="1"
-            max="24"
-            onblur={(e) => clampInput(e, 1, 24, (v) => (prodHoursPerDay = v))}
-          />
-          <button
-            class="stepper-btn"
-            onclick={() => prodHoursPerDay++}
-            disabled={prodHoursPerDay >= 24}>+</button
-          >
-        </div>
-      </div>
-
-      <div class="input-divider"></div>
-
-      <!-- Development units -->
-      <div class="input-row">
-        <div class="input-info">
-          <span class="input-label">Development</span>
-        </div>
-        <div class="stepper">
-          <button
-            class="stepper-btn"
-            onclick={() => devUnits--}
-            disabled={devUnits <= 0}>−</button
-          >
-          <input
-            class="stepper-input"
-            type="number"
-            bind:value={devUnits}
-            min="0"
-            onblur={(e) => clampInput(e, 0, 9999, (v) => (devUnits = v))}
-          />
-          <button class="stepper-btn" onclick={() => devUnits++}>+</button>
-        </div>
-      </div>
-
-      <!-- Development active hours -->
-      <div class="input-row input-row-sub">
-        <div class="input-info">
-          <span class="input-label-sub inline-flex items-center gap-1">
-            Active hours per day
-            <Tooltip location="right" alignment="middle" distance={8}>
-              <span class="text-fg-muted flex">
-                <InfoCircle size="13px" />
-              </span>
-              <TooltipContent maxWidth="240px" slot="tooltip-content">
-                Deployments hibernate when inactive, so you're only billed for
-                active hours.
-              </TooltipContent>
-            </Tooltip>
-          </span>
-        </div>
-        <div class="stepper">
-          <button
-            class="stepper-btn"
-            onclick={() => devHoursPerDay--}
-            disabled={devHoursPerDay <= 1}>−</button
-          >
-          <input
-            class="stepper-input"
-            type="number"
-            bind:value={devHoursPerDay}
-            min="1"
-            max="24"
-            onblur={(e) => clampInput(e, 1, 24, (v) => (devHoursPerDay = v))}
-          />
-          <button
-            class="stepper-btn"
-            onclick={() => devHoursPerDay++}
-            disabled={devHoursPerDay >= 24}>+</button
-          >
-        </div>
-      </div>
-
-      </div>
-
-      <!-- Storage card -->
-      <div class="input-panel">
-        <div class="subsection-header">
-          <span class="subsection-title">Storage</span>
-          <span class="subsection-rate">$1/GB/mo above 1 GB free</span>
-        </div>
-
-        <div class="input-row">
-          <div class="input-info">
-            <span class="input-label">Storage (GB)</span>
-          </div>
+      <!-- Production row -->
+      <div class="field-row">
+        <div class="field-col">
+          <span class="field-label">Production unit</span>
           <div class="stepper">
             <button
               class="stepper-btn"
-              onclick={() => storageGB--}
-              disabled={storageGB <= 1}>−</button
+              onclick={() => prodUnits--}
+              disabled={prodUnits <= 2}
+              aria-label="Decrease production units"
             >
+              −
+            </button>
             <input
               class="stepper-input"
               type="number"
-              bind:value={storageGB}
-              min="1"
-              onblur={(e) => clampInput(e, 1, 9999, (v) => (storageGB = v))}
+              bind:value={prodUnits}
+              min="2"
+              onblur={(e) => clampInput(e, 2, 9999, (v) => (prodUnits = v))}
+              aria-label="Production units"
             />
-            <button class="stepper-btn" onclick={() => storageGB++}>+</button>
+            <button
+              class="stepper-btn"
+              onclick={() => prodUnits++}
+              aria-label="Increase production units"
+            >
+              +
+            </button>
           </div>
+          <span class="field-hint">Minimum 2 units</span>
+        </div>
+
+        <div class="field-col">
+          <span class="field-label">Active hours per day</span>
+          <div class="stepper">
+            <button
+              class="stepper-btn"
+              onclick={() => prodHoursPerDay--}
+              disabled={prodHoursPerDay <= 1 || prodAlwaysOn}
+              aria-label="Decrease production active hours"
+            >
+              −
+            </button>
+            <input
+              class="stepper-input"
+              type="number"
+              bind:value={prodHoursPerDay}
+              min="1"
+              max="24"
+              disabled={prodAlwaysOn}
+              onblur={(e) => clampInput(e, 1, 24, (v) => (prodHoursPerDay = v))}
+              aria-label="Production active hours"
+            />
+            <button
+              class="stepper-btn"
+              onclick={() => prodHoursPerDay++}
+              disabled={prodHoursPerDay >= 24 || prodAlwaysOn}
+              aria-label="Increase production active hours"
+            >
+              +
+            </button>
+          </div>
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              class="checkbox"
+              checked={prodAlwaysOn}
+              onchange={toggleProdAlwaysOn}
+            />
+            Always on
+          </label>
+        </div>
+      </div>
+
+      <div class="field-divider"></div>
+
+      <!-- Development row -->
+      <div class="field-row">
+        <div class="field-col">
+          <span class="field-label">Development unit</span>
+          <div class="stepper">
+            <button
+              class="stepper-btn"
+              onclick={() => devUnits--}
+              disabled={devUnits <= 0}
+              aria-label="Decrease development units"
+            >
+              −
+            </button>
+            <input
+              class="stepper-input"
+              type="number"
+              bind:value={devUnits}
+              min="0"
+              onblur={(e) => clampInput(e, 0, 9999, (v) => (devUnits = v))}
+              aria-label="Development units"
+            />
+            <button
+              class="stepper-btn"
+              onclick={() => devUnits++}
+              aria-label="Increase development units"
+            >
+              +
+            </button>
+          </div>
+        </div>
+
+        <div class="field-col">
+          <span class="field-label">
+            Active hours per day
+            <Tooltip location="top" alignment="middle" distance={8}>
+              <span class="info-icon"><InfoCircle size="14px" /></span>
+              <TooltipContent maxWidth="240px" slot="tooltip-content">
+                Deployments hibernate when inactive, so you're only billed for
+                active hours.
+              </TooltipContent>
+            </Tooltip>
+          </span>
+          <div class="stepper">
+            <button
+              class="stepper-btn"
+              onclick={() => devHoursPerDay--}
+              disabled={devHoursPerDay <= 1 || devAlwaysOn}
+              aria-label="Decrease development active hours"
+            >
+              −
+            </button>
+            <input
+              class="stepper-input"
+              type="number"
+              bind:value={devHoursPerDay}
+              min="1"
+              max="24"
+              disabled={devAlwaysOn}
+              onblur={(e) => clampInput(e, 1, 24, (v) => (devHoursPerDay = v))}
+              aria-label="Development active hours"
+            />
+            <button
+              class="stepper-btn"
+              onclick={() => devHoursPerDay++}
+              disabled={devHoursPerDay >= 24 || devAlwaysOn}
+              aria-label="Increase development active hours"
+            >
+              +
+            </button>
+          </div>
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              class="checkbox"
+              checked={devAlwaysOn}
+              onchange={toggleDevAlwaysOn}
+            />
+            Always on
+          </label>
+        </div>
+      </div>
+
+      <div class="field-divider"></div>
+
+      <!-- Storage row -->
+      <div class="storage-row">
+        <div class="storage-info">
+          <span class="panel-title">Storage</span>
+          <span class="panel-sub">1 GB included free</span>
+        </div>
+        <div class="storage-controls">
+          <input
+            class="storage-input"
+            type="number"
+            bind:value={storageAmount}
+            min="1"
+            step="1"
+            onblur={(e) => clampInput(e, 1, 999999, (v) => (storageAmount = v))}
+            onkeydown={(e) => {
+              if (e.key === "." || e.key === "e" || e.key === "-") {
+                e.preventDefault();
+              }
+            }}
+            aria-label="Storage amount"
+          />
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger class="storage-unit-trigger">
+              {storageUnit}
+              <ChevronDown class="w-4 h-4" />
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content align="end" class="min-w-[64px]">
+              <DropdownMenu.Item onclick={() => (storageUnit = "GB")}>
+                GB
+              </DropdownMenu.Item>
+              <DropdownMenu.Item onclick={() => (storageUnit = "TB")}>
+                TB
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
         </div>
       </div>
     </div>
 
     <!-- RIGHT: Cost summary -->
     <div class="cost-panel">
-      <h2 class="cost-title">Estimated monthly cost</h2>
-      <span class="cost-total">{fmtUSD(monthlyCost)}</span>
-      <span class="cost-daily">~{fmtUSD(dailyCost)}/day</span>
-
-      <div class="cost-divider"></div>
-
-      <!-- Production breakdown -->
-      <div class="cost-row">
-        <div class="cost-row-info">
-          <span class="cost-row-label">Production</span>
-          <span class="cost-row-desc">
-            {prodUnits} units × {prodHoursPerDay} hrs/day × {DAYS_PER_MONTH} days
-            × ${RATE_PER_UNIT_HR.toFixed(2)}/unit/hr
-          </span>
-        </div>
-        <span class="cost-row-amount">{fmtUSD(prodCost)}</span>
+      <div class="cost-header">
+        <span class="cost-title">Estimate monthly cost</span>
+        <span class="cost-total">{fmtUSD(monthlyCost)}</span>
+        <span class="cost-daily">~{fmtUSD(dailyCost)}/day</span>
       </div>
 
-      <!-- Development breakdown -->
-      <div class="cost-row">
-        <div class="cost-row-info">
-          <span class="cost-row-label">Development</span>
-          <span class="cost-row-desc">
-            {devUnits} units × {devHoursPerDay} hrs/day × {DAYS_PER_MONTH} days ×
-            ${RATE_PER_UNIT_HR.toFixed(2)}/unit/hr
-          </span>
+      <div class="cost-breakdown">
+        <div class="cost-row">
+          <div class="cost-row-info">
+            <span class="cost-row-label">Production</span>
+            <span class="cost-row-desc">
+              <strong>{prodUnits}</strong> units × <strong
+                >{effectiveProdHours}</strong
+              > hrs × <strong>{DAYS_PER_MONTH}</strong> days × <strong
+                >${RATE_PER_UNIT_HR.toFixed(2)}</strong
+              >
+            </span>
+          </div>
+          <span class="cost-row-amount">{fmtUSD(prodCost)}</span>
         </div>
-        <span class="cost-row-amount">{fmtUSD(devCost)}</span>
-      </div>
 
-      <!-- Storage breakdown (hidden when no billable storage) -->
-      {#if billableStorageGB > 0}
+        <div class="cost-row">
+          <div class="cost-row-info">
+            <span class="cost-row-label">Development</span>
+            <span class="cost-row-desc">
+              <strong>{devUnits}</strong> units × <strong
+                >{effectiveDevHours}</strong
+              > hrs × <strong>{DAYS_PER_MONTH}</strong> days × <strong
+                >${RATE_PER_UNIT_HR.toFixed(2)}</strong
+              >
+            </span>
+          </div>
+          <span class="cost-row-amount">{fmtUSD(devCost)}</span>
+        </div>
+
         <div class="cost-row">
           <div class="cost-row-info">
             <span class="cost-row-label">Storage (GB)</span>
             <span class="cost-row-desc">
-              {billableStorageGB} billable GB × ${STORAGE_RATE_PER_GB}/GB/mo
+              <strong>{billableStorageGB}</strong> billable GB × <strong
+                >${STORAGE_RATE_PER_GB}</strong
+              >/GB
             </span>
           </div>
           <span class="cost-row-amount">{fmtUSD(storageCost)}</span>
         </div>
-      {/if}
-
-      <div class="cost-divider"></div>
-
-      <!-- Monthly total -->
-      <div class="cost-row">
-        <span class="cost-row-label font-semibold">Monthly cost</span>
-        <span class="cost-row-amount font-semibold">{fmtUSD(monthlyCost)}</span>
       </div>
 
-      <!-- Available credit (trial/team plans only) -->
-      {#if !isPro && availableCredit > 0}
-        <div class="cost-row">
-          <div class="cost-row-info">
-            <span class="credit-label">Available credit</span>
-            <span class="cost-row-desc">Applied to your first bill</span>
+      <div class="cost-footer">
+        <div class="monthly-row">
+          <span class="monthly-label">Monthly cost</span>
+          <span class="monthly-amount">{fmtUSD(monthlyCost)}</span>
+        </div>
+
+        {#if !isPro && availableCredit > 0}
+          <div class="credit-row">
+            <div class="credit-info">
+              <span class="credit-label">Available credit</span>
+              <span class="credit-desc">Applied to your first bill</span>
+            </div>
+            <span class="credit-amount">-{fmtUSD(availableCredit)}</span>
           </div>
-          <span class="credit-amount">-{fmtUSD(availableCredit)}</span>
-        </div>
 
-        <div class="first-bill">
-          <span class="first-bill-label">Estimated first bill</span>
-          <span class="first-bill-amount">{fmtUSD(firstBill)}</span>
-        </div>
+          <div class="you-pay">
+            <span class="you-pay-label">You pay</span>
+            <span class="you-pay-amount">{fmtUSD(youPay)}</span>
+          </div>
 
-        <span class="recurring-note">
-          Then {fmtUSD(monthlyCost)}/mo at this configuration
-        </span>
-      {/if}
+          <span class="recurring-note">
+            Then {fmtUSD(monthlyCost)}/mo at this configuration.
+          </span>
+        {/if}
+      </div>
 
-      <!-- Actions -->
-      {#if !isPro}
-        <button class="subscribe-btn" onclick={handleSubscribe}>
-          Subscribe to Pro
+      <div class="cost-actions">
+        {#if !isPro}
+          <button class="subscribe-btn" onclick={handleSubscribe} type="button">
+            Subscribe to Pro
+          </button>
+        {/if}
+        <button
+          class="contact-link"
+          onclick={handleContactSales}
+          type="button"
+        >
+          Contact sales for volume discounts
         </button>
-      {/if}
-
-      <button class="contact-link" onclick={handleContactSales}>
-        Contact sales for volume discounts
-      </button>
+      </div>
     </div>
   </div>
 </div>
 
 <style lang="postcss">
   .estimate-page {
-    @apply flex flex-col w-full max-w-5xl;
+    @apply flex flex-col items-center w-full pt-6 pb-12 px-4 gap-3;
   }
 
   .back-link {
-    @apply flex items-center gap-1 text-sm text-fg-secondary no-underline mb-1;
+    @apply flex items-center gap-1 text-base font-medium text-fg-secondary no-underline w-[900px] pt-3;
   }
   .back-link:hover {
     @apply text-fg-primary;
   }
 
   .page-title {
-    @apply text-2xl font-semibold text-fg-primary mb-2;
+    @apply text-2xl font-semibold text-fg-secondary w-[900px];
   }
 
-  .page-header {
-    @apply flex items-center justify-between mb-6;
+  .pricing-hint {
+    @apply text-sm text-fg-secondary w-[900px] mt-2;
+  }
+  .pricing-hint strong {
+    @apply font-semibold;
   }
 
-  .prefill-note {
-    @apply text-sm text-fg-tertiary;
+  .estimate-grid {
+    @apply flex items-start gap-3 w-[900px];
+  }
+
+  /* Left panel */
+  .input-panel {
+    @apply flex-1 flex flex-col gap-8 bg-white border border-border rounded-lg p-6;
+    box-shadow:
+      0 1px 3px 0 rgba(0, 0, 0, 0.1),
+      0 1px 2px 0 rgba(0, 0, 0, 0.1);
+  }
+
+  .panel-header {
+    @apply flex items-start gap-2 w-full;
+  }
+
+  .panel-header-text {
+    @apply flex flex-col gap-2;
+  }
+
+  .panel-title {
+    @apply text-base font-semibold text-fg-primary leading-none;
+  }
+
+  .panel-sub {
+    @apply text-sm text-fg-tertiary leading-none;
   }
 
   .reset-btn {
-    @apply flex items-center gap-1.5 text-sm font-medium text-primary-500 bg-transparent border-none cursor-pointer p-0;
+    @apply flex items-center gap-2 text-xs font-medium text-primary-500 bg-transparent border-none cursor-pointer ml-auto p-0;
   }
   .reset-btn:hover:not(:disabled) {
     @apply text-primary-600;
@@ -461,76 +556,48 @@
     @apply text-fg-disabled cursor-default;
   }
 
-  .estimate-grid {
-    @apply grid gap-6;
-    grid-template-columns: 1fr 1fr;
-    align-items: start;
+  /* Field rows (Production / Development) */
+  .field-row {
+    @apply flex gap-6 w-full pb-6 border-b border-border;
   }
 
-  /* Left column */
-  .input-column {
-    @apply flex flex-col gap-4;
+  .field-row:last-of-type {
+    @apply border-b-0 pb-0;
   }
 
-  .input-panel {
-    @apply border border-border rounded-xl bg-white p-6 flex flex-col;
+  .field-col {
+    @apply flex-1 flex flex-col gap-2;
   }
 
-  .subsection-header {
-    @apply flex items-center justify-between mb-1;
+  .field-label {
+    @apply inline-flex items-center gap-2 text-sm font-semibold text-fg-secondary leading-none;
   }
 
-  .subsection-title-group {
-    @apply flex items-baseline gap-2;
+  .info-icon {
+    @apply text-fg-tertiary flex;
   }
 
-  .subsection-title {
-    @apply text-sm font-semibold text-fg-primary;
+  .field-hint {
+    @apply text-sm text-fg-tertiary leading-none;
   }
 
-  .subsection-sub {
-    @apply text-xs text-fg-tertiary;
-  }
-
-  .subsection-rate {
-    @apply text-xs text-fg-tertiary;
-  }
-
-  .input-row {
-    @apply flex items-center justify-between py-4;
-  }
-
-  .input-info {
-    @apply flex flex-col gap-0.5;
-  }
-
-  .input-label {
-    @apply text-sm font-semibold text-fg-primary;
-  }
-
-  .input-desc {
-    @apply text-xs text-fg-tertiary;
-  }
-
-  .input-divider {
-    @apply border-t border-border;
-  }
-
-  .input-row-sub {
-    @apply py-2;
-  }
-
-  .input-label-sub {
-    @apply text-xs text-fg-secondary;
+  .field-divider {
+    @apply -my-4;
   }
 
   /* Stepper */
   .stepper {
-    @apply flex items-center border border-border rounded-md overflow-hidden shrink-0;
+    @apply flex items-center w-full;
   }
 
   .stepper-btn {
-    @apply w-8 h-8 flex items-center justify-center text-fg-secondary bg-transparent border-none cursor-pointer text-base;
+    @apply w-9 h-9 flex items-center justify-center text-base text-fg-primary bg-white border border-border cursor-pointer;
+  }
+  .stepper-btn:first-child {
+    @apply rounded-l-md;
+  }
+  .stepper-btn:last-child {
+    @apply rounded-r-md;
   }
   .stepper-btn:hover:not(:disabled) {
     @apply bg-surface-subtle;
@@ -540,7 +607,7 @@
   }
 
   .stepper-input {
-    @apply w-10 h-8 text-sm font-medium text-fg-primary border-x border-border tabular-nums text-center bg-transparent outline-none;
+    @apply flex-1 h-9 text-sm text-fg-primary text-center bg-white border-y border-border tabular-nums outline-none min-w-0;
     -moz-appearance: textfield;
   }
   .stepper-input::-webkit-outer-spin-button,
@@ -548,87 +615,172 @@
     -webkit-appearance: none;
     margin: 0;
   }
+  .stepper-input:disabled {
+    @apply bg-surface-subtle text-fg-disabled;
+  }
+
+  /* Checkbox */
+  .checkbox-label {
+    @apply flex items-center gap-2 text-sm font-medium text-fg-primary cursor-pointer select-none;
+  }
+
+  .checkbox {
+    @apply w-4 h-4 rounded border border-border bg-white cursor-pointer accent-primary-500;
+  }
+
+  /* Storage row */
+  .storage-row {
+    @apply flex items-start gap-3 w-full;
+  }
+
+  .storage-info {
+    @apply flex-1 flex flex-col gap-1.5;
+  }
+
+  .storage-controls {
+    @apply flex items-center gap-2;
+  }
+
+  .storage-input {
+    @apply w-16 h-9 px-3 py-1 text-sm text-fg-primary bg-white border border-border rounded-sm tabular-nums outline-none;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    -moz-appearance: textfield;
+  }
+  .storage-input::-webkit-outer-spin-button,
+  .storage-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  :global(.storage-unit-trigger) {
+    @apply flex items-center gap-2 h-9 px-4 text-sm font-medium text-fg-primary bg-white border border-border rounded-sm cursor-pointer outline-none;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  }
+  :global(.storage-unit-trigger:hover) {
+    @apply bg-surface-subtle;
+  }
+  :global(.storage-unit-trigger:focus-visible) {
+    @apply ring-2 ring-primary-400 ring-offset-2;
+  }
 
   /* Right panel */
   .cost-panel {
-    @apply border border-border rounded-xl bg-white p-6 flex flex-col;
+    @apply w-96 flex flex-col gap-6 bg-white border border-border rounded-lg p-6;
+    box-shadow:
+      0 1px 3px 0 rgba(0, 0, 0, 0.1),
+      0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  }
+
+  .cost-header {
+    @apply flex flex-col gap-2 pb-6 border-b border-border;
   }
 
   .cost-title {
-    @apply text-sm font-semibold text-fg-primary mb-1;
+    @apply text-sm font-semibold text-fg-primary leading-none;
   }
 
   .cost-total {
-    @apply text-4xl font-bold text-fg-primary tabular-nums tracking-tight;
+    @apply text-4xl font-semibold text-fg-primary tabular-nums leading-[44px];
   }
 
   .cost-daily {
-    @apply text-sm text-fg-tertiary mt-1 mb-4;
+    @apply text-xs font-medium text-fg-tertiary leading-none;
   }
 
-  .cost-divider {
-    @apply border-t border-border my-3;
+  .cost-breakdown {
+    @apply flex flex-col gap-3;
   }
 
   .cost-row {
-    @apply flex items-start justify-between py-2;
+    @apply flex items-start gap-6 w-full;
   }
 
   .cost-row-info {
-    @apply flex flex-col gap-0.5;
+    @apply flex-1 flex flex-col gap-1.5 min-w-0;
   }
 
   .cost-row-label {
-    @apply text-sm text-fg-primary;
+    @apply text-xs font-semibold text-fg-primary leading-none;
   }
 
   .cost-row-desc {
-    @apply text-xs text-fg-tertiary;
+    @apply text-xs text-fg-tertiary leading-4;
+  }
+  .cost-row-desc strong {
+    @apply font-semibold;
   }
 
   .cost-row-amount {
-    @apply text-sm text-fg-primary tabular-nums text-right;
+    @apply text-xs font-semibold text-fg-tertiary tabular-nums whitespace-nowrap;
+  }
+
+  .cost-footer {
+    @apply flex flex-col gap-3;
+  }
+
+  .monthly-row {
+    @apply flex items-center gap-6 py-4 border-y border-border;
+  }
+
+  .monthly-label {
+    @apply flex-1 text-xs font-semibold text-fg-primary leading-none;
+  }
+
+  .monthly-amount {
+    @apply text-base font-semibold text-fg-secondary tabular-nums;
+  }
+
+  .credit-row {
+    @apply flex items-start gap-6;
+  }
+
+  .credit-info {
+    @apply flex-1 flex flex-col gap-1.5 min-w-0;
   }
 
   .credit-label {
-    @apply text-sm font-medium;
-    color: #16a34a;
+    @apply text-xs font-semibold text-green-700 leading-none;
+  }
+
+  .credit-desc {
+    @apply text-xs text-fg-tertiary leading-4;
   }
 
   .credit-amount {
-    @apply text-sm font-medium tabular-nums text-right;
-    color: #16a34a;
+    @apply text-base font-semibold text-green-700 tabular-nums whitespace-nowrap;
   }
 
-  .first-bill {
-    @apply flex items-center justify-between rounded-lg px-4 py-3 mt-2;
-    background: var(--rill-colors-theme-primary-50, #ecf0ff);
+  .you-pay {
+    @apply flex items-center gap-6 py-2 px-4 rounded-md bg-primary-50;
   }
 
-  .first-bill-label {
-    @apply text-sm font-medium;
-    color: #6366f1;
+  .you-pay-label {
+    @apply flex-1 text-base font-semibold text-primary-500 leading-none;
   }
 
-  .first-bill-amount {
-    @apply text-xl font-bold tabular-nums;
-    color: #6366f1;
+  .you-pay-amount {
+    @apply text-2xl font-semibold text-primary-500 tabular-nums;
+    line-height: 36px;
   }
 
   .recurring-note {
-    @apply text-xs text-fg-tertiary mt-2;
+    @apply text-xs text-fg-tertiary text-center leading-4;
+  }
+
+  .cost-actions {
+    @apply flex flex-col gap-1.5;
   }
 
   .subscribe-btn {
-    @apply w-full py-2.5 px-4 text-sm font-medium text-white rounded-none cursor-pointer mt-6 border-none;
-    background: #6366f1;
+    @apply w-full h-9 px-4 text-sm font-medium text-white bg-primary-500 rounded-sm border-none cursor-pointer;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   }
   .subscribe-btn:hover {
-    background: #4f46e5;
+    @apply bg-primary-600;
   }
 
   .contact-link {
-    @apply text-sm text-primary-500 bg-transparent border-none cursor-pointer mt-3 p-0;
+    @apply w-full h-9 px-4 text-sm font-medium text-primary-500 bg-transparent border-none cursor-pointer;
   }
   .contact-link:hover {
     @apply text-primary-600 underline;
