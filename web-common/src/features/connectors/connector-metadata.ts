@@ -7,6 +7,7 @@ import ClickHouseCloudIcon from "../../components/icons/connectors/ClickHouseClo
 import ApacheIcebergIcon from "../../components/icons/connectors/ApacheIcebergIcon.svelte";
 import DeltaLakeIcon from "../../components/icons/connectors/DeltaLakeIcon.svelte";
 import DuckDbIcon from "../../components/icons/connectors/DuckDBIcon.svelte";
+import DuckLakeIcon from "../../components/icons/connectors/DuckLakeIcon.svelte";
 import GeminiIcon from "../../components/icons/connectors/GeminiIcon.svelte";
 import GoogleBigQueryIcon from "../../components/icons/connectors/GoogleBigQueryIcon.svelte";
 import AthenaIcon from "../../components/icons/connectors/AthenaIcon.svelte";
@@ -37,6 +38,7 @@ export const connectorIconMapping = {
   motherduck: MotherDuckIcon,
   druid: ApacheDruidIcon,
   duckdb: DuckDbIcon,
+  ducklake: DuckLakeIcon,
   gcs: GoogleCloudStorageIcon,
   iceberg: ApacheIcebergIcon,
   mysql: MySqlIcon,
@@ -61,6 +63,7 @@ export const connectorClassMapping = {
 
 export const connectorLabelMapping = {
   duckdb: "DuckDB",
+  ducklake: "DuckLake",
   clickhouse: "ClickHouse",
   motherduck: "MotherDuck",
   s3: "S3",
@@ -80,6 +83,13 @@ export const connectorKeywordMapping = {
   gcs: ["bucket", "object storage"],
   iceberg: ["apache", "table format", "lakehouse", "parquet"],
   motherduck: ["duckdb", "serverless"],
+  ducklake: [
+    "duckdb",
+    "lakehouse",
+    "catalog",
+    "parquet",
+    "iceberg alternative",
+  ],
   mysql: ["relational", "rdbms", "database"],
   pinot: ["apache", "olap", "real-time analytics"],
   postgres: ["relational", "rdbms", "database"],
