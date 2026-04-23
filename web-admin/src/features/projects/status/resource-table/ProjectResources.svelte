@@ -20,9 +20,13 @@
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
   import RefreshAllSourcesAndModelsConfirmDialog from "@rilldata/web-common/features/resources/RefreshAllSourcesAndModelsConfirmDialog.svelte";
+  import TagFilterDropdown from "@rilldata/web-common/features/resources/TagFilterDropdown.svelte";
   import { useResources } from "../selectors";
   import { isResourceReconciling } from "@rilldata/web-admin/lib/refetch-interval-store";
-  import { filterResources } from "@rilldata/web-common/features/resources/resource-filter-utils";
+  import {
+    filterResources,
+    getAvailableTags,
+  } from "@rilldata/web-common/features/resources/resource-filter-utils";
   import {
     createUrlFilterSync,
     parseArrayParam,
@@ -38,6 +42,7 @@
   const filterSync = createUrlFilterSync([
     { key: "kind", type: "array" },
     { key: "status", type: "array" },
+    { key: "tags", type: "array" },
     { key: "q", type: "string" },
   ]);
   filterSync.init($page.url);
@@ -48,6 +53,7 @@
   let searchText = parseStringParam($page.url.searchParams.get("q"));
   let selectedTypes = parseArrayParam($page.url.searchParams.get("kind"));
   let selectedStatuses = parseArrayParam($page.url.searchParams.get("status"));
+  let selectedTags = parseArrayParam($page.url.searchParams.get("tags"));
   let mounted = false;
 
   // Sync URL → local state on external navigation (back/forward)
@@ -55,6 +61,7 @@
     filterSync.markSynced($page.url);
     selectedTypes = parseArrayParam($page.url.searchParams.get("kind"));
     selectedStatuses = parseArrayParam($page.url.searchParams.get("status"));
+    selectedTags = parseArrayParam($page.url.searchParams.get("tags"));
     searchText = parseStringParam($page.url.searchParams.get("q"));
   }
 
@@ -63,6 +70,7 @@
     filterSync.syncToUrl({
       kind: selectedTypes,
       status: selectedStatuses,
+      tags: selectedTags,
       q: searchText,
     });
   }
@@ -114,12 +122,15 @@
 
   $: isRefreshButtonDisabled = hasReconcilingResources;
 
-  // Filter resources by type, search text, and status
+  $: availableTags = getAvailableTags($resources.data?.resources);
+
+  // Filter resources by type, search text, status, and tags
   $: filteredResources = filterResources(
     $resources.data?.resources,
     selectedTypes,
     searchText,
     selectedStatuses,
+    selectedTags,
   );
 
   function toggleType(type: string) {
@@ -141,6 +152,7 @@
   function clearFilters() {
     selectedTypes = [];
     selectedStatuses = [];
+    selectedTags = [];
     searchText = "";
   }
 
@@ -247,7 +259,13 @@
       </DropdownMenu.Content>
     </DropdownMenu.Root>
 
-    {#if selectedTypes.length > 0 || searchText || selectedStatuses.length > 0}
+    <TagFilterDropdown
+      tags={availableTags}
+      closeOnSelect={false}
+      bind:selectedTags
+    />
+
+    {#if selectedTypes.length > 0 || searchText || selectedStatuses.length > 0 || selectedTags.length > 0}
       <button
         class="shrink-0 text-sm text-primary-500 hover:text-primary-600 whitespace-nowrap"
         onclick={clearFilters}

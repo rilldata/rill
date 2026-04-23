@@ -13,6 +13,7 @@ function makeResource(
   opts?: {
     reconcileError?: string;
     reconcileStatus?: V1ReconcileStatus;
+    tags?: string[];
   },
 ): V1Resource {
   return {
@@ -21,6 +22,7 @@ function makeResource(
       reconcileError: opts?.reconcileError ?? "",
       reconcileStatus:
         opts?.reconcileStatus ?? V1ReconcileStatus.RECONCILE_STATUS_IDLE,
+      tags: opts?.tags,
     },
   };
 }
@@ -143,5 +145,16 @@ describe("filterResources", () => {
   it("returns empty when no resources match", () => {
     const result = filterResources(resources, [], "nonexistent", []);
     expect(result).toEqual([]);
+  });
+
+  it("filters by tag", () => {
+    const taggedResources = [
+      makeResource(ResourceKind.Model, "m1", { tags: ["finance"] }),
+      makeResource(ResourceKind.Model, "m2", { tags: ["marketing"] }),
+      makeResource(ResourceKind.Model, "m3"),
+    ];
+    const result = filterResources(taggedResources, [], "", [], ["finance"]);
+    expect(result).toHaveLength(1);
+    expect(result[0].meta?.name?.name).toBe("m1");
   });
 });

@@ -23,14 +23,18 @@
   import {
     filterTemporaryTables,
     applyTableFilters,
+    applyTagFilter,
     splitTablesByModel,
   } from "@rilldata/web-common/features/projects/status/tables/utils";
+  import { getAvailableTags } from "@rilldata/web-common/features/resources/resource-filter-utils";
+  import TagFilterDropdown from "@rilldata/web-common/features/resources/TagFilterDropdown.svelte";
   import ResourceSpecDialog from "@rilldata/web-common/features/projects/status/ResourceSpecDialog.svelte";
   import ModelPartitionsDialog from "@rilldata/web-common/features/projects/status/tables/ModelPartitionsDialog.svelte";
   import RefreshErroredPartitionsDialog from "@rilldata/web-common/features/projects/status/tables/RefreshErroredPartitionsDialog.svelte";
   import RefreshResourceConfirmDialog from "@rilldata/web-common/features/projects/status/RefreshResourceConfirmDialog.svelte";
   import {
     createUrlFilterSync,
+    parseArrayParam,
     parseEnumParam,
     parseStringParam,
   } from "@rilldata/web-common/lib/url-filter-sync";
@@ -49,6 +53,7 @@
   const filterSync = createUrlFilterSync([
     { key: "q", type: "string" },
     { key: "type", type: "enum", defaultValue: "all" },
+    { key: "tags", type: "array" },
   ]);
   filterSync.init($page.url);
 
@@ -91,6 +96,7 @@
     typeValues,
     "all",
   );
+  let selectedTags = parseArrayParam($page.url.searchParams.get("tags"));
   let typeDropdownOpen = false;
   let mounted = false;
 
@@ -103,11 +109,16 @@
       typeValues,
       "all",
     );
+    selectedTags = parseArrayParam($page.url.searchParams.get("tags"));
   }
 
   // Sync filter state → URL
   $: if (mounted) {
-    filterSync.syncToUrl({ q: searchText, type: typeFilter });
+    filterSync.syncToUrl({
+      q: searchText,
+      type: typeFilter,
+      tags: selectedTags,
+    });
   }
 
   onMount(() => {
@@ -121,15 +132,25 @@
     { label: "View", value: "view" },
   ];
 
-  // Split once on unfiltered tables, then apply type filter per section
+  // Tags — collected from model resources only (external tables have no tags).
+  // `modelResources` indexes each resource twice (by result table and model name),
+  // so values() is deduped inside getAvailableTags via its Set.
+  $: availableTags = getAvailableTags([...modelResources.values()]);
+
+  // Split once on unfiltered tables, then apply type + tag filters per section.
+  // Tag filter only applies to model tables; external tables are hidden entirely
+  // when a tag filter is active since they can't match.
   $: ({ modelTables: allModelTables, externalTables: allExternalTables } =
     splitTablesByModel(filteredTables, modelResources));
-  $: modelTables = applyTableFilters(allModelTables, typeFilter, isViewMap);
-  $: externalTables = applyTableFilters(
-    allExternalTables,
-    typeFilter,
-    isViewMap,
+  $: modelTables = applyTagFilter(
+    applyTableFilters(allModelTables, typeFilter, isViewMap),
+    modelResources,
+    selectedTags,
   );
+  $: externalTables =
+    selectedTags.length > 0
+      ? []
+      : applyTableFilters(allExternalTables, typeFilter, isViewMap);
 
   // Dialog states
   let specDialogOpen = false;
@@ -257,12 +278,19 @@
       </DropdownMenu.Content>
     </DropdownMenu.Root>
 
-    {#if typeFilter !== "all" || searchText}
+    <TagFilterDropdown
+      tags={availableTags}
+      closeOnSelect={false}
+      bind:selectedTags
+    />
+
+    {#if typeFilter !== "all" || searchText || selectedTags.length > 0}
       <button
         class="shrink-0 text-sm text-primary-500 hover:text-primary-600 whitespace-nowrap"
         onclick={() => {
           typeFilter = "all";
           searchText = "";
+          selectedTags = [];
         }}
       >
         Clear

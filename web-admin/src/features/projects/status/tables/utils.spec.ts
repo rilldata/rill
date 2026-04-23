@@ -12,6 +12,7 @@ import {
   shouldFilterByPending,
   splitTablesByModel,
   applyTableFilters,
+  applyTagFilter,
 } from "@rilldata/web-common/features/projects/status/tables/utils";
 import type {
   V1OlapTableInfo,
@@ -388,6 +389,50 @@ describe("tables utils", () => {
       expect(viewResult).toEqual([
         { name: "loading_table", physicalSizeBytes: undefined },
       ]);
+    });
+  });
+
+  describe("applyTagFilter", () => {
+    const tables: V1OlapTableInfo[] = [
+      { name: "finance_model" },
+      { name: "marketing_model" },
+      { name: "untagged_model" },
+    ];
+    const modelResources = new Map<string, V1Resource>([
+      ["finance_model", { meta: { tags: ["finance", "pii"] } }],
+      ["marketing_model", { meta: { tags: ["marketing"] } }],
+      ["untagged_model", { meta: {} }],
+    ]);
+
+    it("returns all tables when no tags selected", () => {
+      expect(applyTagFilter(tables, modelResources, [])).toEqual(tables);
+    });
+
+    it("filters to tables whose model has the tag", () => {
+      const result = applyTagFilter(tables, modelResources, ["finance"]);
+      expect(result).toEqual([{ name: "finance_model" }]);
+    });
+
+    it("ORs across selected tags", () => {
+      const result = applyTagFilter(tables, modelResources, [
+        "finance",
+        "marketing",
+      ]);
+      expect(result.map((t) => t.name)).toEqual([
+        "finance_model",
+        "marketing_model",
+      ]);
+    });
+
+    it("excludes tables whose model has no matching tag", () => {
+      const result = applyTagFilter(tables, modelResources, ["pii"]);
+      expect(result).toEqual([{ name: "finance_model" }]);
+    });
+
+    it("matches case-insensitively on table name", () => {
+      const upperTables: V1OlapTableInfo[] = [{ name: "Finance_Model" }];
+      const result = applyTagFilter(upperTables, modelResources, ["finance"]);
+      expect(result).toEqual([{ name: "Finance_Model" }]);
     });
   });
 });
