@@ -33,6 +33,7 @@ type issueRuntimeTokenOptions struct {
 	// Mutually exclusive with the other for* fields.
 	forUserEmail string
 	// forUserAttributes issues the token with explicit user attributes (no extra resolution).
+	// A non-nil empty map counts as set and selects this mode.
 	// Mutually exclusive with the other for* fields.
 	forUserAttributes map[string]any
 	// externalUserID is an optional external user ID to be used when the token is issued for a non-Rill end user (usually in an embedded context).
@@ -87,7 +88,7 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 	switch {
 	case opts.forOwner:
 		if opts.externalUserID != "" {
-			return "", status.Error(codes.InvalidArgument, "externalUserID cannot be specified together with forOwner")
+			return "", status.Error(codes.Internal, "externalUserID cannot be specified together with forOwner")
 		}
 		switch claims.OwnerType() {
 		case auth.OwnerTypeUser:
@@ -128,7 +129,7 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 		}
 	case opts.forUserID != "":
 		if opts.externalUserID != "" {
-			return "", status.Error(codes.InvalidArgument, "externalUserID cannot be specified together with forUserID")
+			return "", status.Error(codes.Internal, "externalUserID cannot be specified together with forUserID")
 		}
 		subject = opts.forUserID
 		a, restrict, resources, err := s.getAttributesAndResourceRestrictionsForUser(ctx, opts.project.OrganizationID, opts.project.ID, opts.forUserID, "")
@@ -176,8 +177,11 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 	// NOTE: Only applicable for tokens issued for the claims owner (not possible to delegate to other end users).
 	var manageDepl bool
 	if opts.forOwner {
-		manageDepl = (opts.deployment.Environment == "prod" && opts.projectPermissions.ManageProd)
-		manageDepl = manageDepl || (opts.deployment.Environment != "prod" && opts.projectPermissions.ManageDev)
+		if opts.deployment.Environment == "prod" {
+			manageDepl = opts.projectPermissions.ManageProd
+		} else {
+			manageDepl = opts.projectPermissions.ManageDev
+		}
 	}
 
 	// Derive instance permissions from deployment config and project permissions.
