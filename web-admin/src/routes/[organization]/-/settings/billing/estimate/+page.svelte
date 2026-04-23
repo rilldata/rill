@@ -189,7 +189,8 @@
       <div class="panel-header">
         <div class="panel-header-text">
           <span class="panel-title">Compute unit and storage</span>
-          <span class="panel-sub">Pre-filled from your current deployment.</span>
+          <span class="panel-sub">Pre-filled from your current deployment.</span
+          >
         </div>
         <button
           class="reset-btn"
@@ -414,11 +415,10 @@
           <div class="cost-row-info">
             <span class="cost-row-label">Production</span>
             <span class="cost-row-desc">
-              <strong>{prodUnits}</strong> units × <strong
-                >{effectiveProdHours}</strong
-              > hrs × <strong>{DAYS_PER_MONTH}</strong> days × <strong
-                >${RATE_PER_UNIT_HR.toFixed(2)}</strong
-              >
+              <strong>{prodUnits}</strong> units ×
+              <strong>{effectiveProdHours}</strong>
+              hrs × <strong>{DAYS_PER_MONTH}</strong> days ×
+              <strong>${RATE_PER_UNIT_HR.toFixed(2)}</strong>
             </span>
           </div>
           <span class="cost-row-amount">{fmtUSD(prodCost)}</span>
@@ -428,11 +428,10 @@
           <div class="cost-row-info">
             <span class="cost-row-label">Development</span>
             <span class="cost-row-desc">
-              <strong>{devUnits}</strong> units × <strong
-                >{effectiveDevHours}</strong
-              > hrs × <strong>{DAYS_PER_MONTH}</strong> days × <strong
-                >${RATE_PER_UNIT_HR.toFixed(2)}</strong
-              >
+              <strong>{devUnits}</strong> units ×
+              <strong>{effectiveDevHours}</strong>
+              hrs × <strong>{DAYS_PER_MONTH}</strong> days ×
+              <strong>${RATE_PER_UNIT_HR.toFixed(2)}</strong>
             </span>
           </div>
           <span class="cost-row-amount">{fmtUSD(devCost)}</span>
@@ -442,9 +441,8 @@
           <div class="cost-row-info">
             <span class="cost-row-label">Storage (GB)</span>
             <span class="cost-row-desc">
-              <strong>{billableStorageGB}</strong> billable GB × <strong
-                >${STORAGE_RATE_PER_GB}</strong
-              >/GB
+              <strong>{billableStorageGB}</strong> billable GB ×
+              <strong>${STORAGE_RATE_PER_GB}</strong>/GB
             </span>
           </div>
           <span class="cost-row-amount">{fmtUSD(storageCost)}</span>
@@ -483,11 +481,7 @@
             Subscribe to Pro
           </button>
         {/if}
-        <button
-          class="contact-link"
-          onclick={handleContactSales}
-          type="button"
-        >
+        <button class="contact-link" onclick={handleContactSales} type="button">
           Contact sales for volume discounts
         </button>
       </div>
