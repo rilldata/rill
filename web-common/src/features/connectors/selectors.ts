@@ -277,6 +277,7 @@ export async function fetchAnalyzeConnectors(client: RuntimeClient) {
   const resp = await queryClient.fetchQuery({
     queryKey,
     queryFn: () => runtimeServiceAnalyzeConnectors(client, {}),
+    staleTime: Infinity,
   });
   return resp?.connectors ?? [];
 }

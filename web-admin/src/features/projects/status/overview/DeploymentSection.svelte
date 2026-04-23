@@ -2,18 +2,33 @@
   import { page } from "$app/stores";
   import {
     createAdminServiceGetProject,
+    createAdminServiceGetBillingSubscription,
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
+  import {
+    isFreePlan,
+    isProPlan,
+    isTrialPlan,
+  } from "@rilldata/web-admin/features/billing/plans/utils";
   import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
 
+  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { createQueryServiceProjectStorage } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size";
-  import { useParserReconcileError, useProjectDeployment } from "../selectors";
+  import {
+    useParserReconcileError,
+    useProjectDeployment,
+    useRuntimeVersion,
+  } from "../selectors";
   import {
     formatEnvironmentName,
+    formatConnectorName,
+    getOlapEngineLabel,
+  } from "@rilldata/web-common/features/resources/display-utils";
+  import {
     getStatusDotClass,
     getStatusLabel,
     isTransitoryStatus,
@@ -59,6 +74,16 @@
   );
   $: lastUpdated = $githubLastSynced.data ?? $dashboardsLastUpdated;
 
+  // Runtime
+  $: runtimeVersionQuery = useRuntimeVersion(runtimeClient);
+  $: version = $runtimeVersionQuery.data?.version?.match(/v[\d.]+/)?.[0] ?? "";
+
+  // Connectors — sensitive: true is needed to read projectConnectors (OLAP/AI connector types)
+  $: instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {
+    sensitive: true,
+  });
+  $: instance = $instanceQuery.data?.instance;
+
   // Project storage (OLAP connector data size)
   $: storageQuery = createQueryServiceProjectStorage(runtimeClient, {});
   $: defaultOlapEntry = $storageQuery.data?.entries?.find(
@@ -82,15 +107,32 @@
   $: isGithubConnected =
     !!projectData?.gitRemote && !projectData?.managedGitId && !!githubUrl;
 
-  // Slots
+  $: olapConnector = instance?.projectConnectors?.find(
+    (c) => c.name === instance?.olapConnector,
+  );
+  $: olapEngineLabel = getOlapEngineLabel(olapConnector);
+  $: aiConnector = instance?.projectConnectors?.find(
+    (c) => c.name === instance?.aiConnector,
+  );
+
+  // Slots — pick dev vs prod based on the deployment's environment
   $: currentSlots =
     deployment?.environment === "dev"
       ? Number(projectData?.devSlots) || 0
       : Number(projectData?.prodSlots) || 0;
+
+  // Billing plan detection
+  $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
+  $: planName = $subscriptionQuery?.data?.subscription?.plan?.name ?? "";
+  $: showSlots =
+    isTrialPlan(planName) || isFreePlan(planName) || isProPlan(planName);
 </script>
 
 <OverviewCard title="Deployment">
   <div slot="header-right" class="flex items-center gap-3">
+    <!-- TODO: re-add "Upgrade to Pro" link when ready.
+         Gate on: canManage && (isTrialPlan || isFreePlan || isTeamPlan) && !subscriptionQuery.isLoading
+    -->
     <ProjectClone
       {organization}
       {project}
@@ -120,12 +162,14 @@
       </span>
     </div>
 
-    <div class="info-row">
-      <span class="info-label">Cluster Size</span>
-      <span class="info-value">
-        <ClusterSize slots={currentSlots} />
-      </span>
-    </div>
+    {#if !$subscriptionQuery?.isLoading && showSlots}
+      <div class="info-row">
+        <span class="info-label">Cluster Size</span>
+        <span class="info-value">
+          <ClusterSize slots={currentSlots} />
+        </span>
+      </div>
+    {/if}
 
     {#if isGithubConnected}
       <div class="info-row">
@@ -137,7 +181,7 @@
             rel="noopener noreferrer"
             class="repo-link"
           >
-            {githubUrl?.replace("https://github.com/", "")}
+            {githubUrl.replace("https://github.com/", "")}
           </a>
         </span>
       </div>
@@ -163,20 +207,44 @@
           })}
         </span>
       </div>
+    {/if}
 
-      {#if dataSizeBytes !== undefined}
-        <div class="info-row">
-          <span class="info-label">{dataLabel}</span>
-          <span class="info-value">
-            <a
-              href="/{organization}/{project}/-/status/tables"
-              class="repo-link"
-            >
-              {formatMemorySize(dataSizeBytes)}
-            </a>
-          </span>
-        </div>
-      {/if}
+    {#if version}
+      <div class="info-row">
+        <span class="info-label">Runtime</span>
+        <span class="info-value">{version}</span>
+      </div>
+    {/if}
+
+    <div class="info-row">
+      <span class="info-label">OLAP Engine</span>
+      <span class="info-value">{olapEngineLabel}</span>
+    </div>
+
+    <div class="info-row">
+      <span class="info-label">AI Connector</span>
+      <span class="info-value">
+        {#if aiConnector && aiConnector.name !== "admin"}
+          {formatConnectorName(aiConnector.type)}
+          <span class="text-fg-tertiary text-xs ml-1">({aiConnector.name})</span>
+        {:else}
+          Rill Managed
+        {/if}
+      </span>
+    </div>
+
+    {#if dataSizeBytes !== undefined}
+      <div class="info-row">
+        <span class="info-label">{dataLabel}</span>
+        <span class="info-value">
+          <a
+            href="/{organization}/{project}/-/status/tables"
+            class="repo-link"
+          >
+            {formatMemorySize(dataSizeBytes)}
+          </a>
+        </span>
+      </div>
     {/if}
 
     {#if parserReconcileError && isGithubConnected}

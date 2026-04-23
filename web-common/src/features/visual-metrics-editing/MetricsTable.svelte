@@ -49,6 +49,7 @@
 
   $: wrapperWidth = wrapperRect.width;
   $: expressionWidth = Math.max(180, wrapperRect.width * 0.25);
+  $: hasHorizontalOverflow = tableWidth > wrapperWidth;
 
   $: filteredIndices = items
     .map((_, i) => i)
@@ -123,7 +124,8 @@
 <div
   class="wrapper"
   style:max-height="{Math.max(80, ((filteredIndices?.length ?? 0) + 1) * 40) +
-    1}px"
+    1 +
+    (hasHorizontalOverflow ? 15 : 0)}px"
   onscroll={(e) => {
     scroll = e.currentTarget.scrollLeft;
   }}

@@ -40,7 +40,6 @@ export async function waitForProjectParserVersion(
     );
 
     if (!projectParserQuery?.resource?.meta?.version) {
-      // throw new Error("Project parser version not found");
       currentVersion = 0;
     } else {
       currentVersion = Number(projectParserQuery.resource.meta.version);

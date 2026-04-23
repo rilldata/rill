@@ -262,6 +262,7 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 	}
 	if depl.Environment == "dev" {
 		instancePermissions = append(instancePermissions,
+			runtime.ReadInstance,
 			runtime.ReadOLAP,
 			runtime.ReadProfiling,
 			runtime.ReadRepo,
@@ -962,7 +963,7 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 	}
 	resp.DuckdbConnectorConfig = configStructPb
 
-	annotations := s.admin.NewDeploymentAnnotations(org, proj)
+	annotations := s.admin.NewDeploymentAnnotations(org, proj, depl.Environment)
 	resp.Annotations = annotations.ToMap()
 
 	resp.FrontendUrl = s.admin.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name)
