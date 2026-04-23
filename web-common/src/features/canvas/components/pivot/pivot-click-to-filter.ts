@@ -478,6 +478,45 @@ export function createPivotClickToFilter(
   }
 
   /**
+   * Find row header dimKeys that are descendants of the clicked header (its
+   * dimValues are a strict superset of the clicked header's dimValues).
+   * Strictness excludes the clicked header itself from the eviction set.
+   */
+  function findRowHeadersUnderRowHeader(
+    selection: PivotClickSelectionState,
+    headerDimValues: Record<string, string | null>,
+    clickedDk: string,
+  ): string[] {
+    const keys: string[] = [];
+    for (const [dk, entry] of selection.rowHeaderSelections) {
+      if (dk === clickedDk) continue;
+      if (isDimSubset(headerDimValues, entry.dimValues)) {
+        keys.push(dk);
+      }
+    }
+    return keys;
+  }
+
+  /**
+   * Find row header dimKeys that are ancestors of the clicked header (its
+   * dimValues are a strict subset of the clicked header's dimValues).
+   */
+  function findRowHeadersAboveRowHeader(
+    selection: PivotClickSelectionState,
+    headerDimValues: Record<string, string | null>,
+    clickedDk: string,
+  ): string[] {
+    const keys: string[] = [];
+    for (const [dk, entry] of selection.rowHeaderSelections) {
+      if (dk === clickedDk) continue;
+      if (isDimSubset(entry.dimValues, headerDimValues)) {
+        keys.push(dk);
+      }
+    }
+    return keys;
+  }
+
+  /**
    * Find column header keys whose dimension path values are all present
    * in the cell's dimValues (i.e., column headers "above" the cell).
    */
@@ -733,15 +772,37 @@ export function createPivotClickToFilter(
     // Mutual exclusivity: headers and cells under the same lineage cannot
     // coexist. When adding a new selection, evict the opposite domain.
     if (isRowHeader) {
-      // Clicking a row header: evict cells under this header
+      // Clicking a row header: evict cells under this header, plus any row
+      // headers in the same lineage (both descendants and ancestors).
       const cellKeysToEvict = findCellsUnderRowHeader(
         $clickSelection,
         dimValues,
       );
-      const evictedEntries = cellKeysToEvict
+      const descendantHeaderKeysToEvict = findRowHeadersUnderRowHeader(
+        $clickSelection,
+        dimValues,
+        dk,
+      );
+      const ancestorHeaderKeysToEvict = findRowHeadersAboveRowHeader(
+        $clickSelection,
+        dimValues,
+        dk,
+      );
+      const rowHeaderKeysToEvict = [
+        ...descendantHeaderKeysToEvict,
+        ...ancestorHeaderKeysToEvict,
+      ];
+
+      const evictedCellEntries = cellKeysToEvict
         .map((k) => $clickSelection.cellSelections.get(k))
         .filter(Boolean) as SelectionEntry[];
-      const evictedDimValues = collectRemovalsFromEntries(evictedEntries);
+      const evictedHeaderEntries = rowHeaderKeysToEvict
+        .map((k) => $clickSelection.rowHeaderSelections.get(k))
+        .filter(Boolean) as SelectionEntry[];
+      const evictedDimValues = collectRemovalsFromEntries([
+        ...evictedCellEntries,
+        ...evictedHeaderEntries,
+      ]);
 
       const removals: ExtractedFilter[] = [...evictedDimValues.entries()].map(
         ([dimensionName, values]) => ({
@@ -759,6 +820,7 @@ export function createPivotClickToFilter(
         additions,
         updateSelectionSets: (nextRowHeaders, nextCells) => {
           for (const k of cellKeysToEvict) nextCells.delete(k);
+          for (const k of rowHeaderKeysToEvict) nextRowHeaders.delete(k);
           nextRowHeaders.set(dk, { dimKey: dk, dimValues, columnId });
         },
       });

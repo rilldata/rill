@@ -667,6 +667,10 @@ describe("header/cell mutual exclusivity", () => {
     vi.mocked(getFiltersForRowHeader).mockImplementation((_cfg, rowId) => {
       if (rowId === "1") return filter1("outer", ["Zoom"]);
       if (rowId === "2") return filter1("outer", ["Airtable"]);
+      if (rowId === "1.0")
+        return filter({ name: "outer", values: ["Zoom"] }, { name: "inner", values: ["US-East"] });
+      if (rowId === "2.0")
+        return filter({ name: "outer", values: ["Airtable"] }, { name: "inner", values: ["US-West"] });
       return EMPTY_FILTER;
     });
     vi.mocked(getFiltersForCell).mockImplementation((_cfg, rowId) => {
@@ -721,6 +725,68 @@ describe("header/cell mutual exclusivity", () => {
 
     expect(sel(result).isRowHeaderSelected(dk({ outer: "Zoom", inner: "" }, dims))).toBe(true);
     expect(sel(result).isCellSelected(dk({ outer: "Airtable", inner: "US-West" }, dims), "revenue")).toBe(true);
+
+    result.destroy();
+  });
+
+  it("parent row header click evicts child row header under it", () => {
+    const { result, filterClass } = setupNested();
+    const dkZoom = dk({ outer: "Zoom", inner: "" }, dims);
+    const dkChild = dk({ outer: "Zoom", inner: "US-East" }, dims);
+
+    // Select child row header first
+    result.handleCellClickToFilter("1.0", "inner", true, childUSEast);
+    expect(sel(result).isRowHeaderSelected(dkChild)).toBe(true);
+
+    // Click parent row header — child must be evicted
+    filterClass.toggleDimensionValueSelections.mockClear();
+    result.handleCellClickToFilter("1", "outer", true, parentZoom);
+
+    expect(sel(result).isRowHeaderSelected(dkZoom)).toBe(true);
+    expect(sel(result).isRowHeaderSelected(dkChild)).toBe(false);
+    expect(sel(result).rowHeaderSelections.size).toBe(1);
+    // Orphaned inner value is removed from the global filter
+    expect(filterClass.toggleDimensionValueSelections).toHaveBeenCalledWith(
+      "inner", ["US-East"], false, false,
+    );
+
+    result.destroy();
+  });
+
+  it("child row header click evicts ancestor row header above it", () => {
+    const { result } = setupNested();
+    const dkZoom = dk({ outer: "Zoom", inner: "" }, dims);
+    const dkChild = dk({ outer: "Zoom", inner: "US-East" }, dims);
+
+    // Select parent first
+    result.handleCellClickToFilter("1", "outer", true, parentZoom);
+    expect(sel(result).isRowHeaderSelected(dkZoom)).toBe(true);
+
+    // Click child row header — parent must be evicted
+    result.handleCellClickToFilter("1.0", "inner", true, childUSEast);
+
+    expect(sel(result).isRowHeaderSelected(dkChild)).toBe(true);
+    expect(sel(result).isRowHeaderSelected(dkZoom)).toBe(false);
+    expect(sel(result).rowHeaderSelections.size).toBe(1);
+
+    result.destroy();
+  });
+
+  it("parent row header click keeps sibling-lineage row headers intact", () => {
+    const { result } = setupNested();
+    const dkZoom = dk({ outer: "Zoom", inner: "" }, dims);
+    const dkAirtableChild = dk({ outer: "Airtable", inner: "US-West" }, dims);
+
+    // Select a child under a different parent first
+    result.handleCellClickToFilter("2.0", "inner", true, childUSWest);
+    expect(sel(result).isRowHeaderSelected(dkAirtableChild)).toBe(true);
+
+    // Click Zoom parent — Airtable's child header is a different lineage, must coexist
+    result.handleCellClickToFilter("1", "outer", true, parentZoom);
+
+    expect(sel(result).isRowHeaderSelected(dkZoom)).toBe(true);
+    expect(sel(result).isRowHeaderSelected(dkAirtableChild)).toBe(true);
+    expect(sel(result).rowHeaderSelections.size).toBe(2);
 
     result.destroy();
   });
