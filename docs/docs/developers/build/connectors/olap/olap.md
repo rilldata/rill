@@ -72,19 +72,19 @@ Rill supports the use of several different OLAP engines to power your dashboards
   />
 
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-BigQuery.svg" alt="Google BigQuery" />}
-    content="Serverless cloud data warehouse with native support for metrics views as a live connector."
-    link="/developers/build/connectors/olap/bigquery"
-    linkLabel="Learn more"
-    referenceLink="bigquery"
-  />
-  
-  <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-DuckLake.svg" alt="DuckLake" />}
     content="Open lakehouse format built on DuckDB — catalog in SQL, data in Parquet."
     link="/developers/build/connectors/olap/ducklake"
     linkLabel="Learn more"
     referenceLink="ducklake"
+  />
+
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-BigQuery.svg" alt="Google BigQuery" />}
+    content="Serverless cloud data warehouse with native support for metrics views as a live connector."
+    link="/developers/build/connectors/olap/bigquery"
+    linkLabel="Learn more"
+    referenceLink="bigquery"
   />
 
   <ConnectorIcon
