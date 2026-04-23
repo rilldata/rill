@@ -69,7 +69,7 @@ export class MetricsService
       project_id: MD5(projectPathParts[projectPathParts.length - 1]).toString(),
       user_id: localConfig.userId,
       analytics_enabled: localConfig.analyticsEnabled,
-      mode: localConfig.readonly ? "read-only" : "edit",
+      mode: "edit",
     };
   }
 

@@ -81,7 +81,7 @@ message GetMetadataResponse {
   string build_time = 7;
   bool is_dev = 8;
   bool analytics_enabled = 9;
-  bool readonly = 10;
+  reserved 10;
   int32 grpc_port = 11;
   string login_url = 12;
   string admin_url = 13;
