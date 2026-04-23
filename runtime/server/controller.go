@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -240,6 +241,9 @@ func (s *Server) GetExplore(ctx context.Context, req *runtimev1.GetExploreReques
 	n = &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: validSpec.MetricsView}
 	m, err := ctrl.Get(ctx, n, false)
 	if err != nil {
+		if errors.Is(err, drivers.ErrResourceNotFound) {
+			return nil, status.Error(codes.NotFound, "metrics view not found")
+		}
 		return nil, err
 	}
 
