@@ -42,7 +42,10 @@ import type {
   PivotDataStore,
   PivotDataStoreConfig,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
-import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import {
+  createAndExpression,
+  createInExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import {
   type Readable,
@@ -401,19 +404,26 @@ export function createPivotClickToFilter(
     newDimensionPath: Record<string, string>,
     newFilters: V1Expression,
   ) {
-    const $config = get(pivotConfig);
-    if (!$config) return;
-
-    // Build combined old filters from all existing column header selections
-    const oldExprs: V1Expression[] = [];
+    // Aggregate values per dimension across all old column header selections.
+    // Deduping matters: without it, a dimension value shared across multiple
+    // old headers (e.g. Y=Y1 in both {X:X1,Y:Y1} and {X:X2,Y:Y1}) emits
+    // duplicate IN exprs, which later cause toggleDimensionValueSelections to
+    // re-toggle (remove then re-add) the shared value.
+    const valuesByDim = new Map<string, Set<string>>();
     for (const oldKey of oldColumnHeaders) {
       const entries = JSON.parse(oldKey) as [string, string][];
-      const oldPath = Object.fromEntries(entries) as Record<string, string>;
-      const oldColFilters = getFiltersForColumnHeader($config, oldPath);
-      if (oldColFilters.filters?.cond?.exprs) {
-        oldExprs.push(...oldColFilters.filters.cond.exprs);
+      for (const [dim, value] of entries) {
+        let set = valuesByDim.get(dim);
+        if (!set) {
+          set = new Set();
+          valuesByDim.set(dim, set);
+        }
+        set.add(value);
       }
     }
+    const oldExprs: V1Expression[] = [...valuesByDim.entries()].map(
+      ([dim, values]) => createInExpression(dim, [...values]),
+    );
 
     const oldFilters = createAndExpression(oldExprs);
     const newKey = columnHeaderKey(newDimensionPath);

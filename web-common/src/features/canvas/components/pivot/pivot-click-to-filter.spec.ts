@@ -600,6 +600,38 @@ describe("column header level selection constraint", () => {
 
     result.destroy();
   });
+
+  it("removes shared child-level dim values on child-to-parent level switch across multiple children", () => {
+    const { result, filterClass } = setupColHeaders();
+
+    // Two leaf (level 2) col headers sharing category=Electronics
+    result.handleColumnHeaderClick({ region: "NA", category: "Electronics" });
+    result.handleColumnHeaderClick({ region: "EU", category: "Electronics" });
+    filterClass.toggleDimensionValueSelections.mockClear();
+
+    // Click parent (level 1) — should replace both, dropping the shared
+    // category value since the new selection doesn't mention category
+    result.handleColumnHeaderClick({ region: "NA" });
+
+    expect(sel(result).columnHeaderSelections.size).toBe(1);
+    expect(sel(result).isColumnHeaderSelected({ region: "NA" })).toBe(true);
+
+    // Shared category=Electronics must be toggled off exactly once and not
+    // re-added by a duplicate toggle
+    const categoryCalls =
+      filterClass.toggleDimensionValueSelections.mock.calls.filter(
+        (c: unknown[]) => c[0] === "category",
+      );
+    expect(categoryCalls.length).toBe(1);
+    expect(categoryCalls[0]).toEqual([
+      "category",
+      ["Electronics"],
+      false,
+      false,
+    ]);
+
+    result.destroy();
+  });
 });
 
 describe("deselect retains shared column filters", () => {
