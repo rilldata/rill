@@ -156,11 +156,11 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 		return nil, nil, err
 	}
 
-	// Check the theme exists
+	// Check the theme exists; if not found, clear the reference and continue with default colors
 	if spec.Theme != "" {
 		_, err := r.C.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindTheme, Name: spec.Theme}, false)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to find theme %q: %w", spec.Theme, err)
+			spec.Theme = ""
 		}
 	}
 
