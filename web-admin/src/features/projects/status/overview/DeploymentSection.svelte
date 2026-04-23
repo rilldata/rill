@@ -27,6 +27,8 @@
     formatEnvironmentName,
     formatConnectorName,
     getOlapEngineLabel,
+  } from "@rilldata/web-common/features/resources/display-utils";
+  import {
     getStatusDotClass,
     getStatusLabel,
     isTransitoryStatus,

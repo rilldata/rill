@@ -1,11 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { V1DeploymentStatus } from "@rilldata/web-admin/client";
 import {
+  formatConnectorName,
   formatEnvironmentName,
+  getOlapEngineLabel,
+} from "@rilldata/web-common/features/resources/display-utils";
+import {
   getStatusDotClass,
   getStatusLabel,
-  formatConnectorName,
-  getOlapEngineLabel,
   getResourceKindTagColor,
 } from "./display-utils";
 

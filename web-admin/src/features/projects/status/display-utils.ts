@@ -1,12 +1,5 @@
 import { V1DeploymentStatus } from "@rilldata/web-admin/client";
 
-// Re-export shared utilities from web-common
-export {
-  formatConnectorName,
-  formatEnvironmentName,
-  getOlapEngineLabel,
-} from "@rilldata/web-common/features/resources/display-utils";
-
 /**
  * Returns the Tailwind CSS class for a deployment status indicator dot.
  * Green for running, yellow for in-progress states, red for errors, gray for not deployed.
