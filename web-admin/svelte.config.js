@@ -38,7 +38,6 @@ const config = {
         "default-src": ["self"],
         "script-src": [
           "self",
-          "unsafe-eval",
           "https://*.app-us1.com/",
           "https://*.usepylon.com",
           "https://*.pusher.com",
