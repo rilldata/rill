@@ -355,6 +355,8 @@ func mapGRPCError(err error) error {
 		err = status.Error(codes.NotFound, err.Error())
 	} else if errors.Is(err, runtime.ErrAdminNotConfigured) || errors.Is(err, runtime.ErrAINotConfigured) {
 		err = status.Error(codes.FailedPrecondition, err.Error())
+	} else if errors.Is(err, runtime.ErrControllerClosed) {
+		err = status.Error(codes.Unavailable, err.Error())
 	}
 
 	// Attach trace details to the gRPC status after error mapping
