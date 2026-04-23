@@ -29,10 +29,6 @@ func DatabricksEscapeIdentifier(ident string) string {
 	return fmt.Sprintf("`%s`", strings.ReplaceAll(ident, "`", "``"))
 }
 
-func (d *dialect) GetTimeDimensionParameter(typeCode runtimev1.Type_Code) string {
-	return "?"
-}
-
 func (d *dialect) SafeDivideExpression(numExpr, denExpr string) string {
 	return fmt.Sprintf("TRY_DIVIDE(%s, CAST(%s AS DOUBLE))", numExpr, denExpr)
 }
@@ -108,33 +104,29 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 		expr = fmt.Sprintf("CAST(%s AS TIMESTAMP)", expr)
 	}
 
-	if tz == "" {
-		if grain == runtimev1.TimeGrain_TIME_GRAIN_WEEK && firstDayOfWeek > 1 {
-			offset := 8 - firstDayOfWeek
-			return fmt.Sprintf("DATEADD(DAY, -%d, DATE_TRUNC('%s', DATEADD(DAY, %d, %s)))", offset, specifier, offset, expr), nil
-		}
-		if grain == runtimev1.TimeGrain_TIME_GRAIN_YEAR && firstMonthOfYear > 1 {
-			offset := 13 - firstMonthOfYear
-			return fmt.Sprintf("ADD_MONTHS(DATE_TRUNC('%s', ADD_MONTHS(%s, %d)), -%d)", specifier, expr, offset, offset), nil
-		}
-		return fmt.Sprintf("DATE_TRUNC('%s', %s)", specifier, expr), nil
+	// With a timezone, truncate in local time by wrapping the input with FROM_UTC_TIMESTAMP
+	// and converting the result back with TO_UTC_TIMESTAMP.
+	inner := expr
+	if tz != "" {
+		inner = fmt.Sprintf("FROM_UTC_TIMESTAMP(%s, '%s')", expr, tz)
 	}
 
-	// With timezone: convert UTC to local, truncate, convert back to UTC
-	localExpr := fmt.Sprintf("FROM_UTC_TIMESTAMP(%s, '%s')", expr, tz)
-	wrapTZ := func(inner string) string {
-		return fmt.Sprintf("TO_UTC_TIMESTAMP(%s, '%s')", inner, tz)
-	}
-
-	if grain == runtimev1.TimeGrain_TIME_GRAIN_WEEK && firstDayOfWeek > 1 {
+	var result string
+	switch {
+	case grain == runtimev1.TimeGrain_TIME_GRAIN_WEEK && firstDayOfWeek > 1:
 		offset := 8 - firstDayOfWeek
-		return wrapTZ(fmt.Sprintf("DATEADD(DAY, -%d, DATE_TRUNC('%s', DATEADD(DAY, %d, %s)))", offset, specifier, offset, localExpr)), nil
-	}
-	if grain == runtimev1.TimeGrain_TIME_GRAIN_YEAR && firstMonthOfYear > 1 {
+		result = fmt.Sprintf("DATEADD(DAY, -%d, DATE_TRUNC('%s', DATEADD(DAY, %d, %s)))", offset, specifier, offset, inner)
+	case grain == runtimev1.TimeGrain_TIME_GRAIN_YEAR && firstMonthOfYear > 1:
 		offset := 13 - firstMonthOfYear
-		return wrapTZ(fmt.Sprintf("ADD_MONTHS(DATE_TRUNC('%s', ADD_MONTHS(%s, %d)), -%d)", specifier, localExpr, offset, offset)), nil
+		result = fmt.Sprintf("ADD_MONTHS(DATE_TRUNC('%s', ADD_MONTHS(%s, %d)), -%d)", specifier, inner, offset, offset)
+	default:
+		result = fmt.Sprintf("DATE_TRUNC('%s', %s)", specifier, inner)
 	}
-	return wrapTZ(fmt.Sprintf("DATE_TRUNC('%s', %s)", specifier, localExpr)), nil
+
+	if tz != "" {
+		result = fmt.Sprintf("TO_UTC_TIMESTAMP(%s, '%s')", result, tz)
+	}
+	return result, nil
 }
 
 func (d *dialect) DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string, error) {
