@@ -77,11 +77,13 @@ func validateCartesianChart(props map[string]any, metricsViews map[string]*runti
 	}
 
 	// Validate optional multi-field measures (y.fields)
-	if yFields, ok := getPathStringSlice(props, "y.fields"); ok {
-		for _, f := range yFields {
-			if !metricsViewHasMeasure(mv, f) {
-				return fmt.Errorf("referenced y.fields value %q is not a measure in metrics view %q", f, mvn)
-			}
+	yFields, err := getPathStringSlice(props, "y.fields")
+	if err != nil {
+		return err
+	}
+	for _, f := range yFields {
+		if !metricsViewHasMeasure(mv, f) {
+			return fmt.Errorf("referenced y.fields value %q is not a measure in metrics view %q", f, mvn)
 		}
 	}
 
@@ -154,11 +156,13 @@ func validateFunnelChart(props map[string]any, metricsViews map[string]*runtimev
 	}
 
 	// Validate optional multi-field measures (measure.fields)
-	if fields, ok := getPathStringSlice(props, "measure.fields"); ok {
-		for _, f := range fields {
-			if !metricsViewHasMeasure(mv, f) {
-				return fmt.Errorf("referenced measure.fields value %q is not a measure in metrics view %q", f, mvn)
-			}
+	fields, err := getPathStringSlice(props, "measure.fields")
+	if err != nil {
+		return err
+	}
+	for _, f := range fields {
+		if !metricsViewHasMeasure(mv, f) {
+			return fmt.Errorf("referenced measure.fields value %q is not a measure in metrics view %q", f, mvn)
 		}
 	}
 
@@ -260,9 +264,12 @@ func validateKPIGrid(props map[string]any, metricsViews map[string]*runtimev1.Me
 		return err
 	}
 
-	measures, ok := getPathStringSlice(props, "measures")
-	if !ok || len(measures) == 0 {
-		return errors.New("renderer properties for kpi_grid must include a non-empty 'measures' array")
+	measures, err := getPathStringSlice(props, "measures")
+	if err != nil {
+		return err
+	}
+	if len(measures) == 0 {
+		return errors.New("renderer properties for kpi_grid must include a non-empty 'measures' array of strings")
 	}
 	for _, m := range measures {
 		if !metricsViewHasMeasure(mv, m) {
@@ -280,9 +287,12 @@ func validateTable(props map[string]any, metricsViews map[string]*runtimev1.Metr
 		return err
 	}
 
-	columns, ok := getPathStringSlice(props, "columns")
-	if !ok || len(columns) == 0 {
-		return errors.New("renderer properties for table must include a non-empty 'columns' array")
+	columns, err := getPathStringSlice(props, "columns")
+	if err != nil {
+		return err
+	}
+	if len(columns) == 0 {
+		return errors.New("renderer properties for table must include a non-empty 'columns' array of strings")
 	}
 	for _, col := range columns {
 		if !metricsViewHasDimension(mv, col) && !metricsViewHasMeasure(mv, col) {
@@ -300,9 +310,18 @@ func validatePivot(props map[string]any, metricsViews map[string]*runtimev1.Metr
 		return err
 	}
 
-	measures, _ := getPathStringSlice(props, "measures")
-	rowDims, _ := getPathStringSlice(props, "row_dimensions")
-	colDims, _ := getPathStringSlice(props, "col_dimensions")
+	measures, err := getPathStringSlice(props, "measures")
+	if err != nil {
+		return err
+	}
+	rowDims, err := getPathStringSlice(props, "row_dimensions")
+	if err != nil {
+		return err
+	}
+	colDims, err := getPathStringSlice(props, "col_dimensions")
+	if err != nil {
+		return err
+	}
 
 	if len(measures) == 0 && len(rowDims) == 0 && len(colDims) == 0 {
 		return errors.New("renderer properties for pivot must include at least one of 'measures', 'row_dimensions', or 'col_dimensions'")
@@ -334,8 +353,14 @@ func validateLeaderboard(props map[string]any, metricsViews map[string]*runtimev
 		return err
 	}
 
-	measures, _ := getPathStringSlice(props, "measures")
-	dimensions, _ := getPathStringSlice(props, "dimensions")
+	measures, err := getPathStringSlice(props, "measures")
+	if err != nil {
+		return err
+	}
+	dimensions, err := getPathStringSlice(props, "dimensions")
+	if err != nil {
+		return err
+	}
 
 	if len(measures) == 0 && len(dimensions) == 0 {
 		return errors.New("renderer properties for leaderboard must include at least one 'measures' or 'dimensions' entry")
@@ -371,7 +396,10 @@ func requireMetricsView(props map[string]any, metricsViews map[string]*runtimev1
 
 // validateOptionalDimensionField validates that a field at the given path, if present, is a dimension in the metrics view.
 func validateOptionalDimensionField(mv *runtimev1.MetricsViewSpec, mvName string, props map[string]any, path string) error {
-	field, ok := pathutil.GetPathString(props, path)
+	field, ok, err := getOptionalPathString(props, path)
+	if err != nil {
+		return err
+	}
 	if !ok {
 		return nil
 	}
@@ -383,7 +411,10 @@ func validateOptionalDimensionField(mv *runtimev1.MetricsViewSpec, mvName string
 
 // validateOptionalMeasureField validates that a field at the given path, if present, is a measure in the metrics view.
 func validateOptionalMeasureField(mv *runtimev1.MetricsViewSpec, mvName string, props map[string]any, path string) error {
-	field, ok := pathutil.GetPathString(props, path)
+	field, ok, err := getOptionalPathString(props, path)
+	if err != nil {
+		return err
+	}
 	if !ok {
 		return nil
 	}
@@ -417,25 +448,41 @@ func validateOptionalColorDimensionField(mv *runtimev1.MetricsViewSpec, mvName s
 }
 
 // getPathStringSlice extracts a []string from a nested path in the props map.
-// Returns false if the path doesn't exist or the value is not a []any of strings.
-func getPathStringSlice(props map[string]any, path string) ([]string, bool) {
+// Returns (nil, nil) if the path is absent. Returns an error if the value is
+// present but malformed (not an array, or an array containing non-strings).
+func getPathStringSlice(props map[string]any, path string) ([]string, error) {
 	raw, ok := pathutil.GetPath(props, path)
 	if !ok {
-		return nil, false
+		return nil, nil
 	}
 	arr, ok := raw.([]any)
 	if !ok {
-		return nil, false
+		return nil, fmt.Errorf("renderer property %q is malformed: must be an array of strings", path)
 	}
 	result := make([]string, 0, len(arr))
 	for _, v := range arr {
 		s, ok := v.(string)
 		if !ok {
-			return nil, false
+			return nil, fmt.Errorf("renderer property %q is malformed: must be an array of strings", path)
 		}
 		result = append(result, s)
 	}
-	return result, true
+	return result, nil
+}
+
+// getOptionalPathString extracts a string from a nested path in the props map.
+// Returns ("", false, nil) if the path is absent, (value, true, nil) if present
+// and a string, and an error if present but not a string.
+func getOptionalPathString(props map[string]any, path string) (string, bool, error) {
+	raw, ok := pathutil.GetPath(props, path)
+	if !ok {
+		return "", false, nil
+	}
+	s, ok := raw.(string)
+	if !ok {
+		return "", false, fmt.Errorf("renderer property %q is malformed: must be a string", path)
+	}
+	return s, true, nil
 }
 
 // metricsViewHasDimension returns true if the metrics view has a dimension with the given name.
