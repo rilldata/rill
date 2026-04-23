@@ -15,9 +15,7 @@ import { derived } from "svelte/store";
 export const UNTAGGED_KEY = "not-tagged";
 
 export function getResourceTags(resource: V1Resource): string[] {
-  return resource.explore
-    ? (resource.explore.spec?.tags ?? [])
-    : (resource.canvas?.spec?.tags ?? []);
+  return resource.meta?.tags ?? [];
 }
 
 export function getPrimaryTag(resource: V1Resource): string {

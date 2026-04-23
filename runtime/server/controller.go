@@ -411,7 +411,7 @@ func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTrigger
 	name := fmt.Sprintf("trigger_%s", randomString(8))
 	n := &runtimev1.ResourceName{Kind: runtime.ResourceKindRefreshTrigger, Name: name}
 	r := &runtimev1.Resource{Resource: &runtimev1.Resource_RefreshTrigger{RefreshTrigger: &runtimev1.RefreshTrigger{Spec: spec}}}
-	err = ctrl.Create(ctx, n, nil, nil, nil, false, r)
+	err = ctrl.Create(ctx, n, nil, nil, nil, nil, false, r)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, fmt.Errorf("failed to create trigger: %w", err).Error())
 	}

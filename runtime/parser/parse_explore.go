@@ -37,7 +37,6 @@ type ExploreYAML struct {
 		HidePivot bool `yaml:"hide_pivot"`
 	} `yaml:"embeds"`
 	Security *SecurityPolicyYAML `yaml:"security"`
-	Tags     []string            `yaml:"tags"`
 }
 
 // ExploreTimeRangeYAML represents a time range in an ExploreYAML.
@@ -270,7 +269,7 @@ func (p *Parser) parseExplore(node *Node) error {
 	}
 
 	// Track explore
-	r, err := p.insertResource(ResourceKindExplore, node.Name, node.Paths, node.Refs...)
+	r, err := p.insertResource(ResourceKindExplore, node.Name, node.Paths, node.Tags, node.Refs...)
 	if err != nil {
 		return err
 	}
@@ -296,7 +295,6 @@ func (p *Parser) parseExplore(node *Node) error {
 	r.ExploreSpec.SecurityRules = rules
 	r.ExploreSpec.LockTimeZone = tmp.LockTimeZone
 	r.ExploreSpec.AllowCustomTimeRange = allowCustomTimeRange
-	r.ExploreSpec.Tags = tmp.Tags
 
 	return nil
 }

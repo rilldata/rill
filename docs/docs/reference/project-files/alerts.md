@@ -217,6 +217,10 @@ _[string]_ - Name is usually inferred from the filename, but can be specified ma
 
 _[array of string]_ - List of resource references 
 
+### `tags`
+
+_[array of string]_ - Tags for organizing and filtering the resource (e.g. on the project dashboards list). 
+
 ### `dev`
 
 _[object]_ - Overrides any properties in development environment. 

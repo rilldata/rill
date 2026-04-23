@@ -149,9 +149,7 @@
         const refreshedOn = isMetricsExplorer
           ? resource.explore?.state?.dataRefreshedOn
           : resource.canvas?.state?.dataRefreshedOn;
-        const tags = isMetricsExplorer
-          ? (resource.explore?.spec?.tags ?? [])
-          : (resource.canvas?.spec?.tags ?? []);
+        const tags = resource.meta?.tags ?? [];
 
         return renderComponent(DashboardsTableCompositeCell, {
           name,

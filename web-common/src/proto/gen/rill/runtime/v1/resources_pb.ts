@@ -388,6 +388,13 @@ export class ResourceMeta extends Message<ResourceMeta> {
   filePaths: string[] = [];
 
   /**
+   * Tags for organizing and filtering resources. Parsed generically from any resource YAML's top-level "tags:" field.
+   *
+   * @generated from field: repeated string tags = 19;
+   */
+  tags: string[] = [];
+
+  /**
    * @generated from field: bool hidden = 7;
    */
   hidden = false;
@@ -464,6 +471,7 @@ export class ResourceMeta extends Message<ResourceMeta> {
     { no: 2, name: "refs", kind: "message", T: ResourceName, repeated: true },
     { no: 3, name: "owner", kind: "message", T: ResourceName, opt: true },
     { no: 4, name: "file_paths", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 19, name: "tags", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 7, name: "hidden", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 15, name: "version", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 5, name: "spec_version", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
@@ -2825,13 +2833,6 @@ export class ExploreSpec extends Message<ExploreSpec> {
    */
   definedInMetricsView = false;
 
-  /**
-   * Tags for organizing and filtering the explore on the project dashboards list.
-   *
-   * @generated from field: repeated string tags = 22;
-   */
-  tags: string[] = [];
-
   constructor(data?: PartialMessage<ExploreSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2858,7 +2859,6 @@ export class ExploreSpec extends Message<ExploreSpec> {
     { no: 19, name: "lock_time_zone", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 20, name: "allow_custom_time_range", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 21, name: "defined_in_metrics_view", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 22, name: "tags", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExploreSpec {
@@ -5036,13 +5036,6 @@ export class CanvasSpec extends Message<CanvasSpec> {
    */
   pinnedFilters: string[] = [];
 
-  /**
-   * Tags for organizing and filtering the canvas on the project dashboards list.
-   *
-   * @generated from field: repeated string tags = 19;
-   */
-  tags: string[] = [];
-
   constructor(data?: PartialMessage<CanvasSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5067,7 +5060,6 @@ export class CanvasSpec extends Message<CanvasSpec> {
     { no: 18, name: "rows", kind: "message", T: CanvasRow, repeated: true },
     { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 16, name: "pinned_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 19, name: "tags", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasSpec {

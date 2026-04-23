@@ -302,7 +302,7 @@ sql: SELECT '{{.partition.partition_key}}' AS partition_key, NOW() AS created_at
 	require.NoError(t, err)
 
 	trgName := &runtimev1.ResourceName{Kind: runtime.ResourceKindRefreshTrigger, Name: "test-partition-refresh"}
-	err = ctrl.Create(ctx, trgName, nil, nil, nil, false, &runtimev1.Resource{
+	err = ctrl.Create(ctx, trgName, nil, nil, nil, nil, false, &runtimev1.Resource{
 		Resource: &runtimev1.Resource_RefreshTrigger{
 			RefreshTrigger: &runtimev1.RefreshTrigger{
 				Spec: &runtimev1.RefreshTriggerSpec{

@@ -560,28 +560,28 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst
 	// Create and return if not updating
 	n := runtime.ResourceNameFromParser(def.Name)
 	if existing == nil {
-		return r.C.Create(ctx, n, refs, self.Meta.Name, def.Paths, false, res)
+		return r.C.Create(ctx, n, refs, self.Meta.Name, def.Paths, def.Tags, false, res)
 	}
 
 	// Handle changed name and/or path
 	if n.Kind == existing.Meta.Name.Kind && n.Name != existing.Meta.Name.Name {
 		// The name may have changed to a different case (e.g. aAa -> Aaa).
 		// Note that this also updates the paths (updating them separately with UpdateMeta would be considered a mutation of a renamed resource, which requires falling back to a less optimal reconciliation).
-		err := r.C.UpdateName(ctx, existing.Meta.Name, n, self.Meta.Name, def.Paths)
+		err := r.C.UpdateName(ctx, existing.Meta.Name, n, self.Meta.Name, def.Paths, def.Tags)
 		if err != nil {
 			return err
 		}
 	} else if !slices.Equal(existing.Meta.FilePaths, def.Paths) {
 		// The path may have been changed. Usually this case is covered in the UpdateName case above because changing a file path usually changes the name.
-		err := r.C.UpdateMeta(ctx, n, existing.Meta.Refs, self.Meta.Name, def.Paths)
+		err := r.C.UpdateMeta(ctx, n, existing.Meta.Refs, self.Meta.Name, def.Paths, existing.Meta.Tags)
 		if err != nil {
 			return err
 		}
 	}
 
-	// Update meta if refs changed
-	if !equalResourceNames(existing.Meta.Refs, refs) {
-		err := r.C.UpdateMeta(ctx, n, refs, self.Meta.Name, def.Paths)
+	// Update meta if refs or tags changed
+	if !equalResourceNames(existing.Meta.Refs, refs) || !slices.Equal(existing.Meta.Tags, def.Tags) {
+		err := r.C.UpdateMeta(ctx, n, refs, self.Meta.Name, def.Paths, def.Tags)
 		if err != nil {
 			return err
 		}
@@ -589,7 +589,7 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst
 
 	// Update spec if it changed
 	if res != nil {
-		err := r.C.UpdateMeta(ctx, n, refs, self.Meta.Name, def.Paths)
+		err := r.C.UpdateMeta(ctx, n, refs, self.Meta.Name, def.Paths, def.Tags)
 		if err != nil {
 			return err
 		}
@@ -643,7 +643,7 @@ func (r *ProjectParserReconciler) attemptRename(ctx context.Context, inst *drive
 	// NOTE: Not comparing owner and paths since changing those are allowed when renaming.
 
 	// Run rename
-	err = r.C.UpdateName(ctx, existing.Meta.Name, newName, self.Meta.Name, def.Paths)
+	err = r.C.UpdateName(ctx, existing.Meta.Name, newName, self.Meta.Name, def.Paths, def.Tags)
 	if err != nil {
 		return false, err
 	}
