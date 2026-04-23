@@ -30,6 +30,6 @@
     {/snippet}
   </Tooltip.Trigger>
   <Tooltip.Content side="bottom">
-    Open Rill AI {isMac ? "⌘" : "Ctrl"} + J
+    Open Conversational AI {isMac ? "⌘" : "Ctrl"} + J
   </Tooltip.Content>
 </Tooltip.Root>
