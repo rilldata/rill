@@ -227,7 +227,7 @@ func (s *Server) ListUserAuthTokens(ctx context.Context, req *adminv1.ListUserAu
 
 		id, err := uuid.Parse(t.ID)
 		if err != nil {
-			return nil, fmt.Errorf("invalid token ID %q: %w", t.ID, err)
+			return nil, status.Errorf(codes.Internal, "invalid token ID %q: %v", t.ID, err)
 		}
 
 		prefix := authtoken.FromID(authtoken.TypeUser, id).Prefix()
@@ -760,7 +760,7 @@ func (s *Server) findUserAuthTokenFuzzy(ctx context.Context, input string) (*dat
 	for i, dbToken := range dbTokens {
 		id, err := uuid.Parse(dbToken.ID)
 		if err != nil {
-			return nil, fmt.Errorf("invalid token ID %q: %w", dbToken.ID, err)
+			return nil, status.Errorf(codes.Internal, "invalid token ID %q: %v", dbToken.ID, err)
 		}
 		tokens[i] = authtoken.FromID(authtoken.TypeUser, id)
 	}

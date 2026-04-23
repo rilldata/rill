@@ -555,7 +555,7 @@ func (s *Server) GetAIMessage(ctx context.Context, req *runtimev1.GetAIMessageRe
 
 	pbMsg, err := messageToPB(session, msg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert message to protobuf: %w", err)
+		return nil, status.Errorf(codes.Internal, "failed to convert message to protobuf: %v", err)
 	}
 
 	return &runtimev1.GetAIMessageResponse{

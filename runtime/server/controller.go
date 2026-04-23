@@ -72,7 +72,7 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 		r := rs[i]
 		r, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, claims, r)
 		if err != nil {
-			return nil, err
+			return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)
 		}
 		if !access {
 			// Remove from the slice
@@ -114,7 +114,7 @@ func (s *Server) WatchResources(req *runtimev1.WatchResourcesRequest, ss runtime
 		for _, r := range rs {
 			r, access, err := s.runtime.ApplySecurityPolicy(ss.Context(), req.InstanceId, claims, r)
 			if err != nil {
-				return err
+				return mapGRPCErrorWithFallback(err, codes.InvalidArgument)
 			}
 			if !access {
 				continue
@@ -189,7 +189,7 @@ func (s *Server) GetResource(ctx context.Context, req *runtimev1.GetResourceRequ
 
 	r, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, claims, r)
 	if err != nil {
-		return nil, err
+		return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)
 	}
 	if !access {
 		return nil, ErrForbidden
@@ -224,7 +224,7 @@ func (s *Server) GetExplore(ctx context.Context, req *runtimev1.GetExploreReques
 
 	e, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, claims, e)
 	if err != nil {
-		return nil, err
+		return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)
 	}
 	if !access {
 		return nil, ErrForbidden
@@ -245,7 +245,7 @@ func (s *Server) GetExplore(ctx context.Context, req *runtimev1.GetExploreReques
 
 	m, access, err = s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, claims, m)
 	if err != nil {
-		return nil, err
+		return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)
 	}
 	if !access {
 		return nil, ErrForbidden
@@ -283,7 +283,7 @@ func (s *Server) GetModelPartitions(ctx context.Context, req *runtimev1.GetModel
 
 	r, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, claims, r)
 	if err != nil {
-		return nil, err
+		return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)
 	}
 	if !access {
 		return nil, ErrForbidden

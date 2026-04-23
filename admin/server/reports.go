@@ -375,7 +375,7 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 	var report reportYAML
 	err = yaml.Unmarshal(file.Data, &report)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal report YAML: %w", err)
+		return nil, status.Errorf(codes.Internal, "failed to unmarshal report YAML: %s", err.Error())
 	}
 
 	found := false

@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -93,7 +92,7 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 	if spec.RendererProperties != nil {
 		v, err := parser.ResolveTemplateRecursively(spec.RendererProperties.AsMap(), td, false)
 		if err != nil {
-			return nil, fmt.Errorf("failed to resolve renderer properties: %w", err)
+			return nil, status.Errorf(codes.InvalidArgument, "failed to resolve renderer properties: %s", err.Error())
 		}
 
 		props, ok := v.(map[string]any)
@@ -103,7 +102,7 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 
 		rendererProps, err = structpb.NewStruct(props)
 		if err != nil {
-			return nil, fmt.Errorf("failed to convert renderer properties to struct: %w", err)
+			return nil, status.Errorf(codes.Internal, "failed to convert renderer properties to struct: %s", err.Error())
 		}
 	}
 

@@ -215,7 +215,7 @@ func (s *Server) ListMagicAuthTokens(ctx context.Context, req *adminv1.ListMagic
 
 	pbs, err := s.magicAuthTokensToPB(tokens, org, proj)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &adminv1.ListMagicAuthTokensResponse{

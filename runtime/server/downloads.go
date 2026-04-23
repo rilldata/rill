@@ -61,7 +61,7 @@ func (s *Server) ExportReport(ctx context.Context, req *runtimev1.ExportReportRe
 
 	r, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, auth.GetClaims(ctx, req.InstanceId), res)
 	if err != nil {
-		return nil, err
+		return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)
 	}
 	if !access {
 		return nil, ErrForbidden
@@ -376,20 +376,21 @@ func init() {
 }
 
 // generateDownloadToken generates and encrypts a download token for the given request and attributes.
+// NOTE: The error it returns is a gRPC status.Error, so should be propagated as-is in gRPC handlers.
 func (s *Server) generateDownloadToken(req *runtimev1.ExportRequest, claims *runtime.SecurityClaims) (string, error) {
 	r, err := proto.Marshal(req)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal download token: %w", err)
+		return "", status.Errorf(codes.Internal, "failed to marshal download token: %s", err.Error())
 	}
 
 	r, err = gzipCompress(r)
 	if err != nil {
-		return "", fmt.Errorf("failed to compress download token: %w", err)
+		return "", status.Errorf(codes.Internal, "failed to compress download token: %s", err.Error())
 	}
 
 	claimsJSON, err := json.Marshal(claims)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal claims: %w", err)
+		return "", status.Errorf(codes.Internal, "failed to marshal claims: %s", err.Error())
 	}
 
 	tkn := downloadToken{
@@ -400,7 +401,7 @@ func (s *Server) generateDownloadToken(req *runtimev1.ExportRequest, claims *run
 
 	res, err := s.codec.Encode(tkn)
 	if err != nil {
-		return "", fmt.Errorf("failed to encode download token: %w", err)
+		return "", status.Errorf(codes.Internal, "failed to encode download token: %s", err.Error())
 	}
 
 	if len(res) > maxDownloadTokenSize {

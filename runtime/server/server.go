@@ -353,8 +353,6 @@ func mapGRPCError(err error) error {
 		err = status.Error(codes.AlreadyExists, err.Error())
 	} else if errors.Is(err, drivers.ErrNotFound) {
 		err = status.Error(codes.NotFound, err.Error())
-	} else if errors.Is(err, drivers.ErrStorageLimitExceeded) {
-		err = status.Error(codes.ResourceExhausted, err.Error())
 	} else if errors.Is(err, runtime.ErrAdminNotConfigured) || errors.Is(err, runtime.ErrAINotConfigured) {
 		err = status.Error(codes.FailedPrecondition, err.Error())
 	}
@@ -374,6 +372,21 @@ func mapGRPCError(err error) error {
 	}
 
 	return err
+}
+
+// mapGRPCErrorWithFallback maps the error using the same logic as mapGRPCError.
+// If the error type isn't recognized, it returns a gRPC error with the provided fallback code instead.
+// Use this only in handlers where the middleware's behavior of running mapGRPCError and then falling back to codes.Unknown is not acceptable.
+// (E.g. for errors which if unknown are very likely to correspond to a specific code, such as InvalidArgument.)
+func mapGRPCErrorWithFallback(err error, fallback codes.Code) error {
+	if err == nil {
+		return nil
+	}
+	mapped := mapGRPCError(err)
+	if _, ok := status.FromError(mapped); ok {
+		return mapped
+	}
+	return status.Error(fallback, err.Error())
 }
 
 func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {

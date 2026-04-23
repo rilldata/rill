@@ -61,7 +61,7 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 		Claims: claims,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve template: %w", err)
+		return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)
 	}
 	defer resolveRes.Close()
 

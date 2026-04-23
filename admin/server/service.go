@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -460,7 +459,7 @@ func (s *Server) ListServiceAuthTokens(ctx context.Context, req *adminv1.ListSer
 	for i, token := range tokens {
 		id, err := uuid.Parse(token.ID)
 		if err != nil {
-			return nil, fmt.Errorf("invalid token ID %q: %w", token.ID, err)
+			return nil, status.Errorf(codes.Internal, "invalid token ID %q: %v", token.ID, err)
 		}
 
 		prefix := authtoken.FromID(authtoken.TypeService, id).Prefix()

@@ -46,14 +46,14 @@ func (s *Server) QueryResolver(ctx context.Context, req *runtimev1.QueryResolver
 		ForExport:  false,
 	})
 	if err != nil {
-		return nil, err
+		return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)
 	}
 	defer resolver.Close()
 
 	// Query the resolver
 	res, err := resolver.ResolveInteractive(ctx)
 	if err != nil {
-		return nil, err
+		return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)
 	}
 	defer res.Close()
 

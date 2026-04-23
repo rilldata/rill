@@ -392,7 +392,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			expr := &runtimev1.Expression{}
 			err := protojson.Unmarshal([]byte(filter), expr)
 			if err != nil {
-				return nil, fmt.Errorf("could not unmarshal metrics view %q filter: %w", mv, err)
+				return nil, status.Errorf(codes.Internal, "could not unmarshal metrics view %q filter: %s", mv, err.Error())
 			}
 			if mv == "" {
 				return nil, status.Errorf(codes.Internal, "empty metrics view name in metrics view filter")
@@ -476,7 +476,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		SecurityRules: rules,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("could not issue jwt: %w", err)
+		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
 	}
 
 	s.admin.Used.Deployment(depl.ID)
@@ -1571,7 +1571,7 @@ func (s *Server) GetCloneCredentials(ctx context.Context, req *adminv1.GetCloneC
 		}
 		downloadURL, err := s.generateSignedDownloadURL(asset)
 		if err != nil {
-			return nil, err
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 		return &adminv1.GetCloneCredentialsResponse{ArchiveDownloadUrl: downloadURL}, nil
 	}

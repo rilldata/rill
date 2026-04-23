@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -33,7 +32,7 @@ func (s *Server) ListInstances(ctx context.Context, req *runtimev1.ListInstances
 	for i, inst := range instances {
 		featureFlags, err := runtime.ResolveFeatureFlags(inst, claims.UserAttributes, true)
 		if err != nil {
-			return nil, err
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		pbs[i] = instanceToPB(inst, featureFlags, true)
 	}
@@ -65,15 +64,12 @@ func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequ
 
 	inst, err := s.runtime.Instance(ctx, req.InstanceId)
 	if err != nil {
-		if errors.Is(err, drivers.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "instance not found")
-		}
 		return nil, err
 	}
 
 	featureFlags, err := runtime.ResolveFeatureFlags(inst, claims.UserAttributes, true)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	return &runtimev1.GetInstanceResponse{
@@ -118,7 +114,7 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 
 	featureFlags, err := runtime.ResolveFeatureFlags(inst, claims.UserAttributes, true)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	return &runtimev1.CreateInstanceResponse{
@@ -188,7 +184,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 
 	featureFlags, err := runtime.ResolveFeatureFlags(inst, claims.UserAttributes, true)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	return &runtimev1.EditInstanceResponse{

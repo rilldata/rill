@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/server/auth"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -57,7 +58,7 @@ func (s *Server) Query(ctx context.Context, req *runtimev1.QueryRequest) (*runti
 		ExecutionTimeout: 2 * time.Minute,
 	})
 	if err != nil {
-		return nil, err
+		return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)
 	}
 
 	// NOTE: Currently, query returns nil res for successful dry-run queries

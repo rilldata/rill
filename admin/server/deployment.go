@@ -292,7 +292,7 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 		SecurityRules: rules,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("could not issue jwt: %w", err)
+		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
 	}
 
 	s.admin.Used.Deployment(depl.ID)
@@ -357,7 +357,7 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 			b := make([]byte, 8)
 			_, err := rand.Read(b)
 			if err != nil {
-				return nil, err
+				return nil, status.Error(codes.Internal, err.Error())
 			}
 			branch = fmt.Sprintf("rill/%s", hex.EncodeToString(b))
 		}
@@ -668,7 +668,7 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 		SecurityRules: rules,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("could not issue jwt: %w", err)
+		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
 	}
 
 	s.admin.Used.Deployment(prodDepl.ID)
@@ -830,7 +830,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		SecurityRules: rules,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("could not issue jwt: %w", err)
+		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
 	}
 
 	// Build the iframe URL search params
@@ -950,15 +950,15 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 	// parsing duckdb connector config
 	rCfg, err := provisioner.NewRuntimeConfig(pr.Config)
 	if err != nil {
-		return nil, fmt.Errorf("invalid runtime config: %w", err)
+		return nil, status.Errorf(codes.Internal, "invalid runtime config: %v", err)
 	}
 	configStruct, err := rCfg.DuckdbConfig().AsMap()
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode DuckDB connector config: %w", err)
+		return nil, status.Errorf(codes.Internal, "failed to decode DuckDB connector config: %v", err)
 	}
 	configStructPb, err := structpb.NewStruct(configStruct)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encode DuckDB connector config: %w", err)
+		return nil, status.Errorf(codes.Internal, "failed to encode DuckDB connector config: %v", err)
 	}
 	resp.DuckdbConnectorConfig = configStructPb
 

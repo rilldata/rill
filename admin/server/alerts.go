@@ -72,7 +72,7 @@ func (s *Server) GetAlertMeta(ctx context.Context, req *adminv1.GetAlertMetaRequ
 	if attr != nil {
 		attrPB, err = structpb.NewStruct(attr)
 		if err != nil {
-			return nil, err
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 	}
 
@@ -342,7 +342,7 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 	var alert alertYAML
 	err = yaml.Unmarshal(file.Data, &alert)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal alert YAML: %w", err)
+		return nil, status.Errorf(codes.Internal, "failed to unmarshal alert YAML: %s", err.Error())
 	}
 
 	found := false
