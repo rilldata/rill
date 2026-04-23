@@ -26,6 +26,13 @@ import {
 import { get } from "svelte/store";
 import { compileConnectorYAML } from "../../connectors/code-utils";
 import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
+import {
+  applyDuckLakeFormTransform,
+  buildDuckLakeSecretRefs,
+  extractDuckLakeAttachSecrets,
+  injectDuckLakeAttach,
+  shouldExtractDuckLakeAttachSecrets,
+} from "../../templates/schemas/ducklake-utils";
 import type { ActionResult } from "@sveltejs/kit";
 import type { QueryClient } from "@tanstack/query-core";
 import {
@@ -355,6 +362,8 @@ export class AddDataFormManager {
             connector,
             submitValues,
             false,
+            undefined,
+            this.schemaName,
           );
           onClose();
         }
@@ -403,6 +412,8 @@ export class AddDataFormManager {
       this.connector,
       submitValues,
       false,
+      undefined,
+      this.schemaName,
     );
     const connectorValues = this.filterValuesForStep(submitValues, "connector");
     setConnectorConfig(connectorValues);
@@ -518,9 +529,39 @@ export class AddDataFormManager {
     const connectorPropertiesForPreview = schemaConnectorFields ?? [];
 
     const getConnectorYamlPreview = (values: Record<string, unknown>) => {
+      // DuckLake "Parameters" tab: compose individual param fields into the
+      // single `attach` YAML key so the preview reflects what will actually be
+      // written. Mirrors the submit path so preview and final YAML match.
+      const duckLakeSecretRefs = buildDuckLakeSecretRefs(
+        schema,
+        connector.name ?? "",
+        existingEnvBlob ?? "",
+      );
+      let transformedValues = applyDuckLakeFormTransform(schema, values, {
+        secretRefs: duckLakeSecretRefs,
+      });
+      if (shouldExtractDuckLakeAttachSecrets(schema, transformedValues)) {
+        const rawAttach = transformedValues.attach;
+        if (typeof rawAttach === "string") {
+          const { rewrittenAttach, extractedSecrets } =
+            extractDuckLakeAttachSecrets(rawAttach, existingEnvBlob ?? "");
+          if (Object.keys(extractedSecrets).length > 0) {
+            transformedValues = {
+              ...transformedValues,
+              attach: rewrittenAttach,
+            };
+          }
+        }
+      }
       const filteredValues = schema
-        ? filterSchemaValuesForSubmit(schema, values, { step: "connector" })
-        : values;
+        ? injectDuckLakeAttach(
+            schema,
+            filterSchemaValuesForSubmit(schema, transformedValues, {
+              step: "connector",
+            }),
+            transformedValues,
+          )
+        : transformedValues;
       return compileConnectorYAML(connector, filteredValues, {
         fieldFilter: (property) => {
           if ("internal" in property && property.internal) return false;
@@ -628,6 +669,7 @@ export class AddDataFormManager {
         processedValues,
         true,
         existingEnvBlob,
+        this.schemaName,
       );
       return { ok: true } as const;
     } catch (e) {
