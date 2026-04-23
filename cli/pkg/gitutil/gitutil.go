@@ -150,7 +150,10 @@ func ExtractRemotes(projectPath string, detectDotGit bool) ([]Remote, error) {
 	return res, nil
 }
 
-func CommitAndPush(ctx context.Context, projectPath string, config *Config, commitMsg string, author *object.Signature) error {
+// CommitAndPush stages all changes in the given projectPath, commits with the given commitMsg and author, and pushes to the remote specified in config.
+// If force is true, it will force push the changes to the remote.
+// Force should be avoided. As of writing only used to throw away the initial commit created by github for managed git repos.
+func CommitAndPush(ctx context.Context, projectPath string, config *Config, commitMsg string, author *object.Signature, force bool) error {
 	// init git repo
 	repo, err := git.PlainInitWithOptions(projectPath, &git.PlainInitOptions{
 		InitOptions: git.InitOptions{
@@ -220,7 +223,7 @@ func CommitAndPush(ctx context.Context, projectPath string, config *Config, comm
 	if config.Username == "" {
 		// If no credentials are provided we assume that is user's self managed repo and auth is already set in git
 		// go-git does not support pushing to a private repo without auth so we will trigger the git command directly
-		return RunGitPush(ctx, projectPath, config.RemoteName(), config.DefaultBranch)
+		return RunGitPush(ctx, projectPath, config.RemoteName(), config.DefaultBranch, force)
 	}
 
 	u, err := url.Parse(config.Remote)
@@ -228,7 +231,7 @@ func CommitAndPush(ctx context.Context, projectPath string, config *Config, comm
 		return fmt.Errorf("failed to parse remote URL: %w", err)
 	}
 	u.User = url.UserPassword(config.Username, config.Password)
-	return RunGitPush(ctx, projectPath, u.String(), config.DefaultBranch)
+	return RunGitPush(ctx, projectPath, u.String(), config.DefaultBranch, force)
 }
 
 func Clone(ctx context.Context, path string, c *Config) (*git.Repository, error) {
