@@ -7,6 +7,8 @@ import {
   nestedHeaderState,
   nestedRowState,
 } from "./pivot-cell-classes";
+import { computePivotRowSelection } from "./pivot-row-selection";
+import type { PivotDataRow, PivotDataStoreConfig } from "./types";
 
 // ---- computeEffectiveDimIdx ----
 
@@ -403,5 +405,148 @@ describe("nestedHeaderState", () => {
     expect(result.inSelectedColRange).toBe(false);
     expect(result.cellSelectedColHeader).toBe(false);
     expect(result.ancestorSelectedColHeader).toBe(false);
+  });
+});
+
+describe("3-dimension nested table: row header click styling by depth", () => {
+  const config: PivotDataStoreConfig = {
+    rowDimensionNames: ["A", "B", "C"],
+    measureNames: ["revenue"],
+    colDimensionNames: [],
+    isFlat: false,
+    time: { timeDimension: "", timeStart: undefined, timeEnd: undefined },
+  } as unknown as PivotDataStoreConfig;
+
+  const aRow: PivotDataRow = { A: "a1", revenue: 100 };
+  const bRow: PivotDataRow = { A: "b1", revenue: 50 };
+  const cRow: PivotDataRow = { A: "c1", revenue: 25 };
+
+  function rowSelectionFor(filters: Record<string, string>) {
+    const dimensionFilters = new Map<string, Set<string>>();
+    for (const [dim, val] of Object.entries(filters)) {
+      dimensionFilters.set(dim, new Set([val]));
+    }
+    return computePivotRowSelection(config, [], dimensionFilters);
+  }
+
+  const aClickedFilters = { A: "a1" };
+  const bClickedFilters = { A: "a1", B: "b1" };
+  const cClickedFilters = { A: "a1", B: "b1", C: "c1" };
+
+  // hasAnySelection is true whenever a row header is selected
+  const hasAnySelection = true;
+  const hasCrossSelection = false;
+
+  function rowState(opts: {
+    row: PivotDataRow;
+    depth: number;
+    parents: PivotDataRow[];
+    isRowHeaderSelected: boolean;
+    isAncestorOfSelectedHeader: boolean;
+    filters: Record<string, string>;
+  }) {
+    const rs = rowSelectionFor(opts.filters);
+    const filterSelected = rs.isRowSelected(opts.row, opts.depth, opts.parents);
+    const hasClickedCell = false;
+    const isSelected =
+      opts.depth > 0 && hasAnySelection
+        ? filterSelected && (opts.isRowHeaderSelected || hasClickedCell)
+        : filterSelected;
+    return nestedRowState({
+      isSelected,
+      hasSelection: rs.hasActiveSelection,
+      isRowHeaderSelected: opts.isRowHeaderSelected,
+      hasClickedCell,
+      hasCrossSelection,
+      isAncestorOfSelectedHeader: opts.isAncestorOfSelectedHeader,
+      isShowMore: false,
+    });
+  }
+
+  function measureCellState(isAncestorOfSelectedHeader: boolean) {
+    return nestedCellState({
+      isActive: false,
+      isClicked: false,
+      cellIndex: 1, // measure column
+      hasClickedCell: false,
+      inHoveredCol: false,
+      inSelectedCol: false,
+      isRowHeaderSelected: false,
+      hasCrossSelection,
+      isAncestorOfSelectedHeader,
+      isTotalsRow: false,
+      canShowDataViewer: false,
+      enableClickToFilter: true,
+    });
+  }
+
+  it("A clicked: A row gets selectedRow (blue), not partial-aggregate", () => {
+    const rs = rowState({
+      row: aRow,
+      depth: 0,
+      parents: [],
+      isRowHeaderSelected: true,
+      isAncestorOfSelectedHeader: false,
+      filters: aClickedFilters,
+    });
+    expect(rs.selectedRow).toBe(true);
+    expect(rs.dimmedRow).toBe(false);
+    expect(measureCellState(false).partialAggregateCell).toBe(false);
+  });
+
+  it("B clicked: B row gets selectedRow (blue), not partial-aggregate", () => {
+    const rs = rowState({
+      row: bRow,
+      depth: 1,
+      parents: [aRow],
+      isRowHeaderSelected: true,
+      isAncestorOfSelectedHeader: false,
+      filters: bClickedFilters,
+    });
+    expect(rs.selectedRow).toBe(true);
+    expect(rs.dimmedRow).toBe(false);
+    expect(measureCellState(false).partialAggregateCell).toBe(false);
+  });
+
+  it("B clicked: A row is ancestor — partial-aggregate (grey) on measure cells", () => {
+    const rs = rowState({
+      row: aRow,
+      depth: 0,
+      parents: [],
+      isRowHeaderSelected: false,
+      isAncestorOfSelectedHeader: true,
+      filters: bClickedFilters,
+    });
+    expect(rs.ancestorOfSelectedRow).toBe(true);
+    expect(rs.selectedRow).toBe(false);
+    expect(measureCellState(true).partialAggregateCell).toBe(true);
+  });
+
+  it("C clicked: C row gets selectedRow (blue), not partial-aggregate", () => {
+    const rs = rowState({
+      row: cRow,
+      depth: 2,
+      parents: [aRow, bRow],
+      isRowHeaderSelected: true,
+      isAncestorOfSelectedHeader: false,
+      filters: cClickedFilters,
+    });
+    expect(rs.selectedRow).toBe(true);
+    expect(rs.dimmedRow).toBe(false);
+    expect(measureCellState(false).partialAggregateCell).toBe(false);
+  });
+
+  it("C clicked: B row is ancestor — partial-aggregate (grey) on measure cells", () => {
+    const rs = rowState({
+      row: bRow,
+      depth: 1,
+      parents: [aRow],
+      isRowHeaderSelected: false,
+      isAncestorOfSelectedHeader: true,
+      filters: cClickedFilters,
+    });
+    expect(rs.ancestorOfSelectedRow).toBe(true);
+    expect(rs.selectedRow).toBe(false);
+    expect(measureCellState(true).partialAggregateCell).toBe(true);
   });
 });

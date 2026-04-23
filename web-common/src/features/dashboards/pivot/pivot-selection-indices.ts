@@ -73,24 +73,39 @@ export function computeAncestorRowIds(
   rowDimensionNames: string[],
 ): Set<string> {
   if (!clickSelection?.hasAnySelection) return new Set();
+
+  const selectedDepthByDk = new Map<string, number>();
+  for (const [dk, entry] of clickSelection.rowHeaderSelections) {
+    selectedDepthByDk.set(dk, countSelectedDims(entry.dimValues) - 1);
+  }
+  for (const entry of clickSelection.cellSelections.values()) {
+    const depth = countSelectedDims(entry.dimValues) - 1;
+    const prior = selectedDepthByDk.get(entry.dimKey);
+    if (prior === undefined || depth < prior) {
+      selectedDepthByDk.set(entry.dimKey, depth);
+    }
+  }
+
   const ancestorIds = new Set<string>();
   for (const row of rows) {
     const dk =
       row.depth > 0
         ? nestedDimKeyFromRow(row, rowDimensionNames)
         : dimKeyFromRow(row.original, rowDimensionNames);
-    if (
-      clickSelection.isRowHeaderSelected(dk) ||
-      clickSelection.hasSelectedCellInRow(dk)
-    ) {
-      let id = row.id;
-      while (id.includes(".")) {
-        id = id.substring(0, id.lastIndexOf("."));
-        ancestorIds.add(id);
-      }
+    const selectedDepth = selectedDepthByDk.get(dk);
+    if (selectedDepth === undefined) continue;
+    if (row.depth !== selectedDepth) continue;
+    let id = row.id;
+    while (id.includes(".")) {
+      id = id.substring(0, id.lastIndexOf("."));
+      ancestorIds.add(id);
     }
   }
   return ancestorIds;
+}
+
+function countSelectedDims(dimValues: Record<string, string | null>): number {
+  return Object.keys(dimValues).length;
 }
 
 // ---- Column header hover/selection range helpers ----
