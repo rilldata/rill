@@ -5,6 +5,11 @@
   import ResourceListEmptyState from "@rilldata/web-common/features/resources/ResourceListEmptyState.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
+  import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
+  import type {
+    FilterGroup,
+    SortDirection,
+  } from "@rilldata/web-common/components/table-toolbar/types";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { renderComponent } from "tanstack-table-8-svelte-5";
@@ -32,11 +37,86 @@
   $: initialBuild = useIsInitialBuild(runtimeClient);
   $: isBuilding = $initialBuild.data === true;
 
+  // Toolbar state — preview mode skips the toolbar and shows just the first N rows.
+  let searchText = "";
+  let selectedTypes: string[] = [];
+  let sortDirection: SortDirection = "newest";
+
+  function getTitle(r: V1Resource): string {
+    return r.explore
+      ? (r.explore.spec?.displayName ?? r.meta?.name?.name ?? "")
+      : (r.canvas?.spec?.displayName ?? r.meta?.name?.name ?? "");
+  }
+
+  function getDescription(r: V1Resource): string {
+    return r.explore?.spec?.description ?? "";
+  }
+
+  function getLastRefreshed(r: V1Resource): string | undefined {
+    return r.explore
+      ? r.explore.state?.dataRefreshedOn
+      : r.canvas?.state?.dataRefreshedOn;
+  }
+
+  function matchesSearch(r: V1Resource, q: string): boolean {
+    if (!q) return true;
+    const needle = q.toLowerCase();
+    return (
+      getTitle(r).toLowerCase().includes(needle) ||
+      (r.meta?.name?.name ?? "").toLowerCase().includes(needle) ||
+      getDescription(r).toLowerCase().includes(needle)
+    );
+  }
+
+  function matchesType(r: V1Resource, types: string[]): boolean {
+    if (types.length === 0) return true;
+    if (types.includes("explore") && r.explore) return true;
+    if (types.includes("canvas") && r.canvas) return true;
+    return false;
+  }
+
+  $: rawData = dashboardsData ?? [];
+  $: processedData = rawData
+    .filter((r) => matchesType(r, selectedTypes) && matchesSearch(r, searchText))
+    .slice()
+    .sort((a, b) => {
+      const aTime = getLastRefreshed(a) ?? "";
+      const bTime = getLastRefreshed(b) ?? "";
+      const cmp = aTime < bTime ? -1 : aTime > bTime ? 1 : 0;
+      return sortDirection === "newest" ? -cmp : cmp;
+    });
+
   $: displayData = isPreview
-    ? (dashboardsData?.slice(0, previewLimit) ?? [])
-    : (dashboardsData ?? []);
+    ? processedData.slice(0, previewLimit)
+    : processedData;
   $: hasMoreDashboards =
-    isPreview && dashboardsData && dashboardsData.length > previewLimit;
+    isPreview && rawData.length > previewLimit;
+
+  $: filterGroups = [
+    {
+      label: "Type",
+      key: "type",
+      options: [
+        { value: "explore", label: "Explore" },
+        { value: "canvas", label: "Canvas" },
+      ],
+      selected: selectedTypes,
+      defaultValue: [],
+      multiSelect: true,
+    },
+  ] satisfies FilterGroup[];
+
+  function handleFilterChange(key: string, value: string) {
+    if (key !== "type") return;
+    selectedTypes = selectedTypes.includes(value)
+      ? selectedTypes.filter((v) => v !== value)
+      : [...selectedTypes, value];
+  }
+
+  function clearFilters() {
+    selectedTypes = [];
+    searchText = "";
+  }
 
   /**
    * Table column definitions.
@@ -137,6 +217,18 @@
       {initialSorting}
       toolbar={!isPreview}
     >
+      <TableToolbar
+        slot="toolbar"
+        {searchText}
+        onSearchChange={(t) => (searchText = t)}
+        {filterGroups}
+        onFilterChange={handleFilterChange}
+        onClearAllFilters={clearFilters}
+        sortDirection={sortDirection}
+        onSortToggle={() =>
+          (sortDirection = sortDirection === "newest" ? "oldest" : "newest")}
+        disabled={rawData.length === 0}
+      />
       <ResourceListEmptyState
         slot="empty"
         icon={ExploreIcon}

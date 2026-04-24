@@ -6,17 +6,20 @@
   let {
     filterGroups = [],
     onFilterChange,
+    disabled = false,
   }: {
     filterGroups: FilterGroup[];
     onFilterChange?: (key: string, value: string) => void;
+    disabled?: boolean;
   } = $props();
 </script>
 
 {#if filterGroups.length > 0}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger
-      class="flex flex-row items-center gap-x-1.5 h-9 px-2 text-sm font-medium text-fg-primary cursor-pointer"
+      class="flex flex-row items-center gap-x-1.5 h-9 px-2 text-sm font-medium text-fg-primary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
       aria-label="Filter options"
+      {disabled}
     >
       <FilterOutlined size="14" />
       <span>Filter</span>

@@ -3,7 +3,15 @@
   import NoAlertRunsYet from "@rilldata/web-admin/features/alerts/history/NoAlertRunsYet.svelte";
   import { useAlert } from "@rilldata/web-admin/features/alerts/selectors";
   import ResourceList from "@rilldata/web-common/features/resources/ResourceList.svelte";
-  import type { V1AlertExecution } from "@rilldata/web-common/runtime-client/gen/index.schemas";
+  import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
+  import type {
+    FilterGroup,
+    SortDirection,
+  } from "@rilldata/web-common/components/table-toolbar/types";
+  import {
+    V1AssertionStatus,
+    type V1AlertExecution,
+  } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { ColumnDef } from "tanstack-table-8-svelte-5";
   import { renderComponent } from "tanstack-table-8-svelte-5";
@@ -13,6 +21,61 @@
   const runtimeClient = useRuntimeClient();
 
   $: alertQuery = useAlert(runtimeClient, alert);
+
+  let selectedResults: string[] = [];
+  let sortDirection: SortDirection = "newest";
+
+  $: history = $alertQuery.data?.resource?.alert?.state?.executionHistory ?? [];
+
+  function getResult(e: V1AlertExecution): "ok" | "error" | "none" {
+    const status = e.result?.status;
+    if (
+      status === V1AssertionStatus.ASSERTION_STATUS_PASS ||
+      status === V1AssertionStatus.ASSERTION_STATUS_FAIL
+    )
+      return "ok";
+    if (status === V1AssertionStatus.ASSERTION_STATUS_ERROR) return "error";
+    return "none";
+  }
+
+  $: processedHistory = history
+    .filter(
+      (e) =>
+        selectedResults.length === 0 ||
+        selectedResults.includes(getResult(e)),
+    )
+    .slice()
+    .sort((a, b) => {
+      const aTime = a.executionTime ?? "";
+      const bTime = b.executionTime ?? "";
+      const cmp = aTime < bTime ? -1 : aTime > bTime ? 1 : 0;
+      return sortDirection === "newest" ? -cmp : cmp;
+    });
+
+  $: filterGroups = [
+    {
+      label: "Result",
+      key: "result",
+      options: [
+        { value: "ok", label: "OK" },
+        { value: "error", label: "Error" },
+      ],
+      selected: selectedResults,
+      defaultValue: [],
+      multiSelect: true,
+    },
+  ] satisfies FilterGroup[];
+
+  function handleFilterChange(key: string, value: string) {
+    if (key !== "result") return;
+    selectedResults = selectedResults.includes(value)
+      ? selectedResults.filter((v) => v !== value)
+      : [...selectedResults, value];
+  }
+
+  function clearFilters() {
+    selectedResults = [];
+  }
 
   /**
    * Table column definitions.
@@ -46,15 +109,25 @@
     </div>
   {:else if $alertQuery.isLoading}
     <div class="text-fg-secondary">Loading...</div>
-  {:else if !$alertQuery.data?.resource.alert.state.executionHistory.length}
+  {:else if !history.length}
     <NoAlertRunsYet />
   {:else}
     <ResourceList
       kind="alert"
       {columns}
-      data={$alertQuery.data?.resource.alert.state.executionHistory}
-      toolbar={false}
+      data={processedHistory}
       fixedRowHeight={false}
-    />
+    >
+      <TableToolbar
+        slot="toolbar"
+        showSearch={false}
+        {filterGroups}
+        onFilterChange={handleFilterChange}
+        onClearAllFilters={clearFilters}
+        {sortDirection}
+        onSortToggle={() =>
+          (sortDirection = sortDirection === "newest" ? "oldest" : "newest")}
+      />
+    </ResourceList>
   {/if}
 </div>

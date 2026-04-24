@@ -11,6 +11,7 @@
     searchText = "",
     onSearchChange,
     searchDisabled = false,
+    showSearch = true,
     filterGroups = [],
     onFilterChange,
     onClearAllFilters,
@@ -20,11 +21,13 @@
     showViewToggle = false,
     viewMode = "list" as ViewMode,
     onViewModeChange,
+    disabled = false,
     children,
   }: {
     searchText?: string;
     onSearchChange?: (text: string) => void;
     searchDisabled?: boolean;
+    showSearch?: boolean;
     filterGroups?: FilterGroup[];
     onFilterChange?: (key: string, value: string) => void;
     onClearAllFilters?: () => void;
@@ -34,6 +37,8 @@
     showViewToggle?: boolean;
     viewMode?: ViewMode;
     onViewModeChange?: (mode: ViewMode) => void;
+    /** Disables search, filter, and sort. Useful when the underlying data is empty. */
+    disabled?: boolean;
     children?: Snippet;
   } = $props();
 </script>
@@ -41,18 +46,24 @@
 <section class="flex flex-col w-full">
   <div class="flex flex-row items-center justify-between h-9 gap-x-4">
     <div class="flex flex-row items-center">
-      <TableToolbarFilterDropdown {filterGroups} {onFilterChange} />
+      <TableToolbarFilterDropdown
+        {filterGroups}
+        {onFilterChange}
+        {disabled}
+      />
     </div>
 
     <div class="flex flex-row items-center gap-x-3">
-      <TableToolbarSearch
-        {searchText}
-        {onSearchChange}
-        disabled={searchDisabled}
-      />
+      {#if showSearch}
+        <TableToolbarSearch
+          {searchText}
+          {onSearchChange}
+          disabled={searchDisabled || disabled}
+        />
+      {/if}
 
       {#if showSort}
-        <TableToolbarSort {sortDirection} {onSortToggle} />
+        <TableToolbarSort {sortDirection} {onSortToggle} {disabled} />
       {/if}
 
       {#if showViewToggle}

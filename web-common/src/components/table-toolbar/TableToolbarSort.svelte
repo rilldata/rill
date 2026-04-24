@@ -5,9 +5,11 @@
   let {
     sortDirection = "newest",
     onSortToggle,
+    disabled = false,
   }: {
     sortDirection: SortDirection;
     onSortToggle?: () => void;
+    disabled?: boolean;
   } = $props();
 
   const sortLabel = $derived(sortDirection === "newest" ? "Newest" : "Oldest");
@@ -15,9 +17,10 @@
 
 <button
   type="button"
-  class="flex flex-row items-center gap-x-1.5 h-9 px-2 text-sm font-medium text-fg-primary hover:text-fg-secondary cursor-pointer"
+  class="flex flex-row items-center gap-x-1.5 h-9 px-2 text-sm font-medium text-fg-primary hover:text-fg-secondary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-fg-primary"
   onclick={() => onSortToggle?.()}
   aria-label="Sort order: {sortLabel}"
+  {disabled}
 >
   <span>{sortLabel}</span>
   <ArrowUpDown size={14} />

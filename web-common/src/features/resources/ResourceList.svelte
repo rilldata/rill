@@ -14,7 +14,6 @@
   } from "tanstack-table-8-svelte-5";
   import { setContext } from "svelte";
   import { writable } from "svelte/store";
-  import ResourceListToolbar from "./ResourceListToolbar.svelte";
 
   export let data: unknown[] = [];
   export let columns: ColumnDef<unknown, unknown>[] = [];
@@ -78,9 +77,7 @@
 
 <div class="flex flex-col gap-y-3 w-full">
   {#if toolbar}
-    <slot name="toolbar">
-      <ResourceListToolbar />
-    </slot>
+    <slot name="toolbar" />
   {/if}
 
   <div class="w-full">
@@ -127,13 +124,16 @@
     @apply list-none p-0 m-0 w-full;
   }
 
-  .resource-list-item,
-  .resource-list-item-empty {
+  .resource-list-item {
     @apply block w-full border-b border-x-0 border-t-0;
   }
 
   .resource-list-item:first-child {
     @apply border-t;
+  }
+
+  .resource-list-item-empty {
+    @apply block w-full;
   }
 
   .resource-list-item.fixed-height {
