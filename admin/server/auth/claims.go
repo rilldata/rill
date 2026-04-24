@@ -49,6 +49,12 @@ func GetClaims(ctx context.Context) Claims {
 	return claims
 }
 
+// WithClaims returns a copy of ctx with the provided Claims attached.
+// Outside of this package, it should only be used for tests; the auth middleware is responsible for setting claims in production paths.
+func WithClaims(ctx context.Context, claims Claims) context.Context {
+	return context.WithValue(ctx, claimsContextKey{}, claims)
+}
+
 // anonClaims represents claims for an unauthenticated user.
 type anonClaims struct{}
 

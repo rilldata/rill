@@ -202,6 +202,7 @@
       header="Edit session failed"
       body={deployment?.statusMessage ||
         "The editing environment encountered an error. Please try again."}
+      href={projectUrl}
     />
   {:else if isStopped && deployment?.id}
     <SlimProjectHeader
@@ -238,6 +239,7 @@
       statusCode={404}
       header="No active edit session"
       body="This editing session is no longer active. Use the Edit button to start a new one."
+      href={projectUrl}
     />
   {/if}
 </div>

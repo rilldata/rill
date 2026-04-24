@@ -26,7 +26,7 @@ import (
 // Non-retryable deployment errors. Callers (e.g., the reconcile worker) use
 // `errors.Is` to cancel the job instead of retrying.
 var (
-	ErrInvalidEnvironment    = errors.New("invalid environment, must be either 'prod' or 'dev'")
+	ErrInvalidEnvironment    = errors.New("invalid environment; must be 'prod' or 'dev'")
 	ErrInvalidRuntimeVersion = errors.New("invalid runtime version")
 )
 
@@ -201,17 +201,12 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 	}
 
 	// Prepare deployment annotations
-	annotations := s.NewDeploymentAnnotations(org, proj)
+	annotations := s.NewDeploymentAnnotations(org, proj, depl.Environment)
 
 	// Resolve slots based on environment
-	var slots int
-	switch depl.Environment {
-	case "prod":
-		slots = proj.ProdSlots
-	case "dev":
-		slots = proj.DevSlots
-	default:
-		return ErrInvalidEnvironment
+	slots, err := resolveSlots(proj, depl.Environment)
+	if err != nil {
+		return err
 	}
 
 	// Provision the runtime
@@ -409,17 +404,12 @@ func (s *Service) UpdateDeploymentInner(ctx context.Context, d *database.Deploym
 	}
 
 	// Prepare deployment annotations
-	annotations := s.NewDeploymentAnnotations(org, proj)
+	annotations := s.NewDeploymentAnnotations(org, proj, d.Environment)
 
 	// Resolve slots based on environment
-	var slots int
-	switch d.Environment {
-	case "prod":
-		slots = proj.ProdSlots
-	case "dev":
-		slots = proj.DevSlots
-	default:
-		return ErrInvalidEnvironment
+	slots, err := resolveSlots(proj, d.Environment)
+	if err != nil {
+		return err
 	}
 
 	// Provision the runtime. This is idempotent and will (partially) update the existing provisioned runtime if the config has changed.
@@ -543,22 +533,24 @@ func (s *Service) IssueRuntimeManagementToken(aud string) (string, error) {
 	return jwt, nil
 }
 
-func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *database.Project) DeploymentAnnotations {
+func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *database.Project, environment string) DeploymentAnnotations {
 	var orgBillingPlanName string
 	if org.BillingPlanName != nil {
 		orgBillingPlanName = *org.BillingPlanName
 	}
-	return DeploymentAnnotations{
+	da := DeploymentAnnotations{
 		orgID:              org.ID,
 		orgName:            org.Name,
 		orgBillingPlanName: orgBillingPlanName,
 		orgCustomDomain:    org.CustomDomain,
 		projID:             proj.ID,
 		projName:           proj.Name,
-		projProdSlots:      fmt.Sprint(proj.ProdSlots),
 		projProvisioner:    proj.Provisioner,
 		projAnnotations:    proj.Annotations,
 	}
+	slots, _ := resolveSlots(proj, environment)
+	da.slots = fmt.Sprint(slots)
+	return da
 }
 
 func (s *Service) FindProvisionedRuntimeResource(ctx context.Context, deploymentID string) (*database.ProvisionerResource, bool, error) {
@@ -579,24 +571,37 @@ type DeploymentAnnotations struct {
 	orgCustomDomain    string
 	projID             string
 	projName           string
-	projProdSlots      string
+	slots              string
 	projProvisioner    string
 	projAnnotations    map[string]string
 }
 
 func (da *DeploymentAnnotations) ToMap() map[string]string {
-	res := make(map[string]string, len(da.projAnnotations)+7)
+	res := make(map[string]string, len(da.projAnnotations)+8)
 	for k, v := range da.projAnnotations {
 		res[k] = v
 	}
 	res["organization_id"] = da.orgID
 	res["organization_name"] = da.orgName
 	res["organization_plan"] = da.orgBillingPlanName
+	res["organization_custom_domain"] = da.orgCustomDomain
 	res["project_id"] = da.projID
 	res["project_name"] = da.projName
-	res["project_prod_slots"] = da.projProdSlots
+	res["slots"] = da.slots
 	res["project_provisioner"] = da.projProvisioner
 	return res
+}
+
+// resolveSlots returns the appropriate slot count for the given environment.
+func resolveSlots(proj *database.Project, environment string) (int, error) {
+	switch environment {
+	case "prod":
+		return proj.ProdSlots, nil
+	case "dev":
+		return proj.DevSlots, nil
+	default:
+		return 0, fmt.Errorf("%w: got %q", ErrInvalidEnvironment, environment)
+	}
 }
 
 type provisionRuntimeOptions struct {

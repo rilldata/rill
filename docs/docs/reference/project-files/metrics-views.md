@@ -264,6 +264,48 @@ _[array of object]_ - Used to define annotations that can be displayed on charts
 
       - **`exclude`** - _[object]_ - Select all fields except those listed here 
 
+### `rollups`
+
+_[array of object]_ - Pre-aggregated rollup tables that can be used to accelerate queries. When a query's dimensions, measures, time grain, and time range match a rollup, the query is automatically routed to the rollup table instead of the base table. 
+
+  - **`model`** - _[string]_ - Refers to the model or table powering the rollup (required) _(required)_
+
+  - **`database`** - _[string]_ - Refers to the database to use in the OLAP engine 
+
+  - **`database_schema`** - _[string]_ - Refers to the schema to use in the OLAP engine 
+
+  - **`time_grain`** - _[string]_ - The time grain of the rollup (required). Valid values are: millisecond, second, minute, hour, day, week, month, quarter, year _(required)_
+
+  - **`time_zone`** - _[string]_ - IANA timezone of the rollup table (e.g. America/New_York). For day+ grains, queries are only routed to the rollup if the query timezone matches. 
+
+  - **`dimensions`** - _[oneOf]_ - Optional field selectors for dimensions to include in the rollup from the base metrics view. If not specified, all dimensions are included. 
+
+    - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
+
+    - **option 2** - _[array of string]_ - Explicit list of fields to include in the selection
+
+    - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
+
+      - **`regex`** - _[string]_ - Select fields using a regular expression 
+
+      - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic 
+
+      - **`exclude`** - _[object]_ - Select all fields except those listed here 
+
+  - **`measures`** - _[oneOf]_ - Optional field selectors for measures to include in the rollup from the base metrics view. If not specified, all measures are included. 
+
+    - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
+
+    - **option 2** - _[array of string]_ - Explicit list of fields to include in the selection
+
+    - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
+
+      - **`regex`** - _[string]_ - Select fields using a regular expression 
+
+      - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic 
+
+      - **`exclude`** - _[object]_ - Select all fields except those listed here 
+
 ### `security`
 
 _[object]_ - Defines [security rules and access control policies](/developers/build/metrics-view/security) for resources 

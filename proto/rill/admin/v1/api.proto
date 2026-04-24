@@ -1812,6 +1812,7 @@ message CreateProjectRequest {
   // archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
   string archive_asset_id = 14;
   string prod_version = 13;
+  int64 dev_slots = 17;
   bool skip_deploy = 15;
   // Reserved for backwards compatibility (prod_olap_driver and prod_olap_dsn)
   reserved 6, 7;
@@ -1845,6 +1846,7 @@ message UpdateProjectRequest {
   optional string new_name = 9;
   optional int64 prod_ttl_seconds = 10;
   optional string prod_version = 11;
+  optional int64 dev_slots = 16;
   bool superuser_force_access = 14;
 }
 

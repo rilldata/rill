@@ -33,6 +33,7 @@
     isPublicAlertPage,
     isPublicReportPage,
     isPublicURLPage,
+    isProjectWelcomePage,
   } from "@rilldata/web-admin/features/navigation/nav-utils";
   import BranchDeploymentStopped from "@rilldata/web-admin/features/branches/BranchDeploymentStopped.svelte";
   import ProjectBuilding from "@rilldata/web-admin/features/projects/ProjectBuilding.svelte";
@@ -80,6 +81,7 @@
   let onProjectPage = $derived(isProjectPage(page));
   let onEditPage = $derived(isEditPage(page));
   let onPublicURLPage = $derived(isPublicURLPage(page));
+  let onWelcomePage = $derived(isProjectWelcomePage(page));
 
   // From root layout; passed through to header components
   let organizationPermissions = $derived(
@@ -275,25 +277,27 @@
         jwt={runtime.jwt}
         authContext={runtime.authContext}
       >
-        <ProjectHeader
-          {organization}
-          {project}
-          projectPermissions={runtime.projectPermissions}
-          manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
-          manageOrgMembers={organizationPermissions?.manageOrgMembers}
-          readProjects={organizationPermissions?.readProjects}
-          primaryBranch={projectData?.project?.primaryBranch}
-          {planDisplayName}
-          {organizationLogoUrl}
-        />
-        {#if onProjectPage && deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
-          <ProjectTabs
-            projectPermissions={runtime.projectPermissions}
+        {#if !onWelcomePage}
+          <ProjectHeader
             {organization}
-            pathname={page.url.pathname}
             {project}
-            {branchPrefix}
+            projectPermissions={runtime.projectPermissions}
+            manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
+            manageOrgMembers={organizationPermissions?.manageOrgMembers}
+            readProjects={organizationPermissions?.readProjects}
+            primaryBranch={projectData?.project?.primaryBranch}
+            {planDisplayName}
+            {organizationLogoUrl}
           />
+          {#if onProjectPage && deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
+            <ProjectTabs
+              projectPermissions={runtime.projectPermissions}
+              {organization}
+              pathname={page.url.pathname}
+              {project}
+              {branchPrefix}
+            />
+          {/if}
         {/if}
         {@render children()}
       </RuntimeProvider>

@@ -30,6 +30,10 @@ export function navigateToHome(options?: Parameters<typeof goto>[1]) {
   return goto(withEditorPrefix("/"), options);
 }
 
+export function getHomeHref(): string {
+  return withEditorPrefix("/");
+}
+
 export function navigateToExplore(
   name: string,
   options?: Parameters<typeof goto>[1],

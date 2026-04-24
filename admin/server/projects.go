@@ -15,23 +15,18 @@ import (
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/env"
 	"github.com/rilldata/rill/runtime/pkg/observability"
-	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const devDeplTTL = 6 * time.Hour
-
-const devSlots = 4
 
 const prodDeplTTL = 14 * 24 * time.Hour
 
@@ -344,159 +339,21 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		}
 	}
 
-	var attr map[string]any
-	var rules []*runtimev1.SecurityRule
-	if claims.OwnerType() == auth.OwnerTypeUser {
-		a, restrictResources, resources, err := s.getAttributesAndResourceRestrictionsForUser(ctx, proj.OrganizationID, proj.ID, claims.OwnerID(), "")
-		if err != nil {
-			return nil, err
-		}
-		attr = a
-		userRules := securityRulesFromResources(restrictResources, resources)
-		rules = append(rules, userRules...)
-	} else if claims.OwnerType() == auth.OwnerTypeService {
-		attr, err = s.jwtAttributesForService(ctx, claims.OwnerID(), permissions)
-		if err != nil {
-			return nil, err
-		}
-	} else if claims.OwnerType() == auth.OwnerTypeMagicAuthToken {
-		mdl, ok := claims.AuthTokenModel().(*database.MagicAuthToken)
-		if !ok {
-			return nil, status.Errorf(codes.Internal, "unexpected type %T for magic auth token model", claims.AuthTokenModel())
-		}
-
-		for _, r := range mdl.Resources {
-			rules = append(rules, &runtimev1.SecurityRule{
-				Rule: &runtimev1.SecurityRule_TransitiveAccess{
-					TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
-						Resource: &runtimev1.ResourceName{
-							Kind: r.Type,
-							Name: r.Name,
-						},
-					},
-				},
-			})
-		}
-
-		if len(mdl.Resources) == 0 {
-			// If no resources are specified, deny all access.
-			rules = append(rules, &runtimev1.SecurityRule{
-				Rule: &runtimev1.SecurityRule_Access{
-					Access: &runtimev1.SecurityRuleAccess{
-						Allow: false,
-					},
-				},
-			})
-		}
-
-		attr = mdl.Attributes
-		for mv, filter := range mdl.MetricsViewFilterJSONs {
-			expr := &runtimev1.Expression{}
-			err := protojson.Unmarshal([]byte(filter), expr)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "could not unmarshal metrics view %q filter: %s", mv, err.Error())
-			}
-			if mv == "" {
-				return nil, status.Errorf(codes.Internal, "empty metrics view name in metrics view filter")
-			}
-			if mv == "*" { // backwards compatibility: apply to all MVs
-				rules = append(rules, &runtimev1.SecurityRule{
-					Rule: &runtimev1.SecurityRule_RowFilter{
-						RowFilter: &runtimev1.SecurityRuleRowFilter{
-							Expression: expr,
-						},
-					},
-				})
-				continue
-			}
-			rules = append(rules, &runtimev1.SecurityRule{
-				Rule: &runtimev1.SecurityRule_RowFilter{
-					RowFilter: &runtimev1.SecurityRuleRowFilter{
-						ConditionResources: []*runtimev1.ResourceName{
-							{
-								Kind: runtime.ResourceKindMetricsView,
-								Name: mv,
-							},
-						},
-						Expression: expr,
-					},
-				},
-			})
-		}
-
-		if len(mdl.Fields) > 0 {
-			rules = append(rules, &runtimev1.SecurityRule{
-				Rule: &runtimev1.SecurityRule_FieldAccess{
-					FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-						Fields:    mdl.Fields,
-						Allow:     true,
-						Exclusive: true,
-					},
-				},
-			})
-		}
-	}
-
 	ttlDuration := runtimeAccessTokenDefaultTTL
 	if req.AccessTokenTtlSeconds != 0 {
 		ttlDuration = time.Duration(req.AccessTokenTtlSeconds) * time.Second
 	}
 
-	instancePermissions := []runtime.Permission{
-		runtime.ReadObjects,
-		runtime.ReadMetrics,
-		runtime.ReadAPI,
-		runtime.UseAI,
-	}
-	if permissions.ManageProject {
-		instancePermissions = append(
-			instancePermissions,
-			runtime.ReadInstance,
-			runtime.ReadResolvers,
-			runtime.EditTrigger,
-		)
-	}
-	// Grant permissions for dev deployments: viewers get dashboard access, editors get full dev access.
-	if depl != nil && depl.Environment == "dev" {
-		instancePermissions = append(
-			instancePermissions,
-			runtime.ReadInstance,
-			runtime.ReadOLAP,
-			runtime.ReadResolvers,
-		)
-		if permissions.ManageDev {
-			instancePermissions = append(
-				instancePermissions,
-				runtime.ReadProfiling,
-				runtime.ReadRepo,
-				runtime.EditRepo,
-				runtime.EditTrigger,
-			)
-		}
-	}
-
-	var systemPermissions []runtime.Permission
-	if req.IssueSuperuserToken {
-		if !claims.Superuser(ctx) {
-			return nil, status.Error(codes.PermissionDenied, "only superusers can issue superuser tokens")
-		}
-		// NOTE: The ManageInstances permission is currently used by the runtime to skip access checks.
-		systemPermissions = append(systemPermissions, runtime.ManageInstances)
-	}
-
-	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
-		AudienceURL:       depl.RuntimeAudience,
-		Subject:           claims.OwnerID(),
-		TTL:               ttlDuration,
-		SystemPermissions: systemPermissions,
-		InstancePermissions: map[string][]runtime.Permission{
-			depl.RuntimeInstanceID: instancePermissions,
-		},
-		Attributes:    attr,
-		SecurityRules: rules,
+	jwt, err := s.issueRuntimeToken(ctx, &issueRuntimeTokenOptions{
+		project:            proj,
+		deployment:         depl,
+		projectPermissions: permissions,
+		forOwner:           true,
+		grantManageAll:     req.IssueSuperuserToken,
+		ttl:                ttlDuration,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
+		return nil, err
 	}
 
 	s.admin.Used.Deployment(depl.ID)
@@ -592,6 +449,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		attribute.String("args.provisioner", req.Provisioner),
 		attribute.String("args.prod_version", req.ProdVersion),
 		attribute.Int64("args.prod_slots", req.ProdSlots),
+		attribute.Int64("args.dev_slots", req.DevSlots),
 		attribute.String("args.sub_path", req.Subpath),
 		attribute.String("args.primary_branch", req.PrimaryBranch),
 		attribute.String("args.git_remote", req.GitRemote),
@@ -632,6 +490,9 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q is limited to %d projects", org.Name, org.QuotaProjects)
 	}
 	if org.QuotaSlotsPerDeployment >= 0 && int(req.ProdSlots) > org.QuotaSlotsPerDeployment {
+		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org can't provision more than %d slots per deployment; contact support for larger deployments", org.QuotaSlotsPerDeployment)
+	}
+	if org.QuotaSlotsPerDeployment >= 0 && int(req.DevSlots) > org.QuotaSlotsPerDeployment {
 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org can't provision more than %d slots per deployment; contact support for larger deployments", org.QuotaSlotsPerDeployment)
 	}
 	if org.QuotaSlotsTotal >= 0 && usage.Slots+int(req.ProdSlots) > org.QuotaSlotsTotal {
@@ -682,7 +543,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		ProdVersion:          req.ProdVersion,
 		ProdSlots:            int(req.ProdSlots),
 		ProdTTLSeconds:       prodTTL,
-		DevSlots:             devSlots,
+		DevSlots:             int(req.DevSlots),
 		DevTTLSeconds:        devTTL,
 	}
 
@@ -806,6 +667,9 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	if req.ProdSlots != nil {
 		observability.AddRequestAttributes(ctx, attribute.Int64("args.prod_slots", *req.ProdSlots))
 	}
+	if req.DevSlots != nil {
+		observability.AddRequestAttributes(ctx, attribute.Int64("args.dev_slots", *req.DevSlots))
+	}
 	if req.ProdTtlSeconds != nil {
 		observability.AddRequestAttributes(ctx, attribute.Int64("args.prod_ttl_seconds", *req.ProdTtlSeconds))
 	}
@@ -830,14 +694,21 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage project")
 	}
 
-	// Enforce slot quotas when ProdSlots is being changed (superusers bypass)
-	if req.ProdSlots != nil && !forceAccess {
+	// Enforce slot quotas when ProdSlots or DevSlots is being changed (superusers bypass)
+	if (req.ProdSlots != nil || req.DevSlots != nil) && !forceAccess {
 		org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
-		if org.QuotaSlotsPerDeployment >= 0 && int(*req.ProdSlots) > org.QuotaSlotsPerDeployment {
-			return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org can't provision more than %d slots per deployment; contact support for larger deployments", org.QuotaSlotsPerDeployment)
+		if req.ProdSlots != nil {
+			if org.QuotaSlotsPerDeployment >= 0 && int(*req.ProdSlots) > org.QuotaSlotsPerDeployment {
+				return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org can't provision more than %d slots per deployment; contact support for larger deployments", org.QuotaSlotsPerDeployment)
+			}
+		}
+		if req.DevSlots != nil {
+			if org.QuotaSlotsPerDeployment >= 0 && int(*req.DevSlots) > org.QuotaSlotsPerDeployment {
+				return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org can't provision more than %d slots per deployment; contact support for larger deployments", org.QuotaSlotsPerDeployment)
+			}
 		}
 		if org.QuotaSlotsTotal >= 0 {
 			usage, err := s.admin.DB.CountProjectsQuotaUsage(ctx, org.ID)
@@ -845,7 +716,13 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 				return nil, err
 			}
 			// Calculate the delta: new slots minus current slots
-			delta := int(*req.ProdSlots) - proj.ProdSlots
+			delta := 0
+			if req.ProdSlots != nil {
+				delta += int(*req.ProdSlots) - proj.ProdSlots
+			}
+			if req.DevSlots != nil {
+				delta += int(*req.DevSlots) - proj.DevSlots
+			}
 			if delta > 0 && usage.Slots+delta > org.QuotaSlotsTotal {
 				return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q is limited to %d total slots; contact support for larger deployments", org.Name, org.QuotaSlotsTotal)
 			}
@@ -946,7 +823,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		PrimaryDeploymentID:  proj.PrimaryDeploymentID,
 		ProdSlots:            int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots))),
 		ProdTTLSeconds:       prodTTLSeconds,
-		DevSlots:             proj.DevSlots,
+		DevSlots:             int(valOrDefault(req.DevSlots, int64(proj.DevSlots))),
 		DevTTLSeconds:        proj.DevTTLSeconds,
 		Provisioner:          valOrDefault(req.Provisioner, proj.Provisioner),
 		Annotations:          proj.Annotations,

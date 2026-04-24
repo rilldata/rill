@@ -131,7 +131,7 @@ func (w *ValidateDeploymentsWorker) validateDeploymentsForProject(ctx context.Co
 		}
 
 		// Build annotations for the deployment
-		annotations := w.admin.NewDeploymentAnnotations(org, proj)
+		annotations := w.admin.NewDeploymentAnnotations(org, proj, depl.Environment)
 
 		// Validate each provisioned resource
 		for _, pr := range prs {

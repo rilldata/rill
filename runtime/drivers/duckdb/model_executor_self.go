@@ -572,6 +572,8 @@ func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, c
 		sb.WriteString("CREATE OR REPLACE TEMPORARY SECRET ")
 		sb.WriteString(safeSecretName)
 		sb.WriteString(" (TYPE S3")
+		// workaround for issue : https://github.com/duckdb/duckdb-python/issues/398#issuecomment-4258043324
+		sb.WriteString(", URL_STYLE path")
 
 		if s3Config.AccessKeyID != "" {
 			fmt.Fprintf(&sb, ", KEY_ID %s, SECRET %s", safeSQLString(s3Config.AccessKeyID), safeSQLString(s3Config.SecretAccessKey))
@@ -593,7 +595,6 @@ func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, c
 			}
 			sb.WriteString(", ENDPOINT ")
 			sb.WriteString(safeSQLString(s3Config.Endpoint))
-			sb.WriteString(", URL_STYLE path")
 		}
 		if s3Config.Region != "" {
 			sb.WriteString(", REGION ")

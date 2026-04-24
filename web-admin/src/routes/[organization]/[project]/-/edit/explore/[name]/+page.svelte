@@ -3,6 +3,7 @@
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardStateManager from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateManager.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
+  import { getHomeHref } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { PageData } from "./$types";
@@ -34,6 +35,7 @@
     statusCode={undefined}
     header="Error fetching dashboard"
     body="No measures available"
+    href={getHomeHref()}
   />
 {:else if metricsViewName}
   <div class="h-full overflow-hidden">

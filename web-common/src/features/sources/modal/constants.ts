@@ -102,6 +102,7 @@ export const OLAP_ENGINES = [
   "clickhouse",
   "motherduck",
   "duckdb",
+  "ducklake",
   "druid",
   "pinot",
   "starrocks",

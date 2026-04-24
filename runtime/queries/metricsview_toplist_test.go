@@ -23,8 +23,24 @@ func TestMetricsViewsToplistAgainstClickHouse(t *testing.T) {
 func TestMetricsViewsToplistAgainstBigQuery(t *testing.T) {
 	testmode.Expensive(t)
 	rt, instanceID := newBigQueryInstance(t)
-	t.Run("testBigQueryMetricsViewsToplist_measure_filters", func(t *testing.T) {
-		testBigQueryMetricsViewsToplist_measure_filters(t, rt, instanceID)
+	t.Run("testMetricsViewsToplist_measure_filters", func(t *testing.T) {
+		testMetricsViewsToplistWithCatalog_measure_filters(t, rt, instanceID, "rilldata", "integration_test")
+	})
+}
+
+func TestMetricsViewsToplistAgainstDatabricks(t *testing.T) {
+	testmode.Expensive(t)
+	rt, instanceID := newDatabricksInstance(t)
+	t.Run("testMetricsViewsToplist_measure_filters", func(t *testing.T) {
+		testMetricsViewsToplistWithCatalog_measure_filters(t, rt, instanceID, "", "integration_test")
+	})
+}
+
+func TestMetricsViewsToplistAgainstSnowflake(t *testing.T) {
+	testmode.Expensive(t)
+	rt, instanceID := newSnowflakeInstance(t)
+	t.Run("testMetricsViewsToplist_measure_filters", func(t *testing.T) {
+		testMetricsViewsToplistWithCatalog_measure_filters(t, rt, instanceID, "integration_test", "public")
 	})
 }
 
@@ -87,10 +103,10 @@ func testStarRocksMetricsViewsToplist_measure_filters(t *testing.T, rt *runtime.
 	require.NotEmpty(t, q.Result)
 }
 
-func testBigQueryMetricsViewsToplist_measure_filters(t *testing.T, rt *runtime.Runtime, instanceID string) {
+func testMetricsViewsToplistWithCatalog_measure_filters(t *testing.T, rt *runtime.Runtime, instanceID, database, databaseSchema string) {
 	ctr := &queries.ColumnTimeRange{
-		Database:       "rilldata",
-		DatabaseSchema: "integration_test",
+		Database:       database,
+		DatabaseSchema: databaseSchema,
 		TableName:      "ad_bids",
 		ColumnName:     "timestamp",
 	}
