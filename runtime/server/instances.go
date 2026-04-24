@@ -311,7 +311,7 @@ func (s *Server) ReloadConfig(ctx context.Context, req *runtimev1.ReloadConfigRe
 	}
 	// Ideally pullEnv should be called inside ReloadConfig only since it is just a simple version of ReloadConfig on local
 	// The issue is that `adminOverride` is available in server and not in runtime
-	// TODO: revisit this when relooking adminOverride 
+	// TODO: revisit this when relooking adminOverride
 	count, modified, err := s.pullEnv(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err

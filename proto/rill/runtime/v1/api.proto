@@ -546,7 +546,7 @@ message ReloadConfigRequest {
 
 // Response message for RuntimeService.ReloadConfig
 message ReloadConfigResponse {
-   // Number of variables pulled from admin service
+  // Number of variables pulled from admin service
   int32 variables_count = 1;
   // Whether the .env file(s) were modified
   bool modified = 2;
