@@ -13,6 +13,7 @@ import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-ma
 import { EntityType } from "../../entity-management/types";
 import { getConnectorSchema } from "../../sources/modal/connector-schemas";
 import {
+  filterSchemaValuesForSubmit,
   getSchemaFieldMetaList,
   getSchemaSecretKeys,
   getSchemaStringKeys,
@@ -54,15 +55,23 @@ export async function writeInlineConnector(opts: {
     createOnly: false,
   });
 
+  // Drop x-ui-only keys (e.g. auth_method) from the submitted values so
+  // they never end up in the YAML, matching the full connector flow.
+  const filteredValues = filterSchemaValuesForSubmit(schema, values, {
+    step: "connector",
+  });
+
   await runtimeServicePutFile(client, {
     path: getFileAPIPathFromNameAndType(connectorName, EntityType.Connector),
-    blob: compileConnectorYAML(connector, values, {
+    blob: compileConnectorYAML(connector, filteredValues, {
       connectorInstanceName: connectorName,
       orderedProperties: schemaFields,
       secretKeys,
       stringKeys,
       schema,
       existingEnvBlob: originalBlob,
+      fieldFilter: (property) =>
+        !("internal" in property && property.internal),
     }),
     create: true,
     createOnly: false,
