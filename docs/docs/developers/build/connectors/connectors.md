@@ -32,6 +32,7 @@ Rill offers flexible connection strategies to fit different data architectures a
 ### ClickHouse
 ### Druid
 ### DuckDB
+### DuckLake
 ### MotherDuck
 ### Pinot
 ### Snowflake
@@ -60,6 +61,15 @@ Rill offers flexible connection strategies to fit different data architectures a
     link="/developers/build/connectors/olap/duckdb"
     linkLabel="Learn more"
     referenceLink="duckdb"
+  />
+
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-DuckLake.svg" alt="DuckLake" />}
+    header="DuckLake"
+    content="Open lakehouse format built on DuckDB — catalog in SQL, data in Parquet."
+    link="/developers/build/connectors/olap/ducklake"
+    linkLabel="Learn more"
+    referenceLink="ducklake"
   />
 
   <ConnectorIcon
