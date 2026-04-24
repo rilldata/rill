@@ -180,11 +180,7 @@ describe("filterResources", () => {
         [],
         ["marketing", "finance"],
       );
-      expect(result.map((r) => r.meta?.name?.name)).toEqual([
-        "m1",
-        "m2",
-        "m3",
-      ]);
+      expect(result.map((r) => r.meta?.name?.name)).toEqual(["m1", "m2", "m3"]);
     });
 
     it("excludes resources with no tags when a tag filter is active", () => {
