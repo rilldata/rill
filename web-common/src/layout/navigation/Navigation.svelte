@@ -17,7 +17,6 @@
   import ConnectorExplorer from "../../features/connectors/explorer/ConnectorExplorer.svelte";
   import AddAssetButton from "../../features/entity-management/add/AddAssetButton.svelte";
   import FileExplorer from "../../features/file-explorer/FileExplorer.svelte";
-  import EditorModeToggle from "../EditorModeToggle.svelte";
   import Resizer from "../Resizer.svelte";
   import { DEFAULT_NAV_WIDTH, MAX_NAV_WIDTH, MIN_NAV_WIDTH } from "../config";
   import Footer from "./Footer.svelte";
@@ -90,9 +89,8 @@
     side="right"
   />
   <div class="inner" style:width="{width}px">
-    <div class="flex items-center gap-x-2 p-2 w-full pr-10">
+    <div class="p-2 w-full pr-10">
       <AddAssetButton />
-      <EditorModeToggle />
     </div>
     <div class="scroll-container">
       <div class="nav-wrapper" bind:contentRect>

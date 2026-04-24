@@ -26,6 +26,7 @@
   import InputWithConfirm from "../components/forms/InputWithConfirm.svelte";
   import Tag from "../components/tag/Tag.svelte";
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
+  import EditorModeToggle from "./EditorModeToggle.svelte";
 
   const { deploy, developerChat, stickyDashboardState } = featureFlags;
   const runtimeClient = useRuntimeClient();
@@ -102,7 +103,11 @@
   {#if !onDeployPage}
     <HeaderLogo href={mode === "Preview" ? "/dashboards" : "/"} />
 
-    <Tag text={mode} color="gray"></Tag>
+    {#if mode === "Developer"}
+      <EditorModeToggle />
+    {:else}
+      <Tag text={mode} color="gray"></Tag>
+    {/if}
 
     {#if mode === "Preview" || onVizRoute}
       {#if $exploresQuery?.data}
