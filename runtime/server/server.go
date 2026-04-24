@@ -16,6 +16,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
@@ -350,7 +351,7 @@ func mapGRPCError(err error) error {
 			err = status.Error(codes.AlreadyExists, err.Error())
 		} else if errors.Is(err, drivers.ErrNotFound) {
 			err = status.Error(codes.NotFound, err.Error())
-		} else if errors.Is(err, runtime.ErrAdminNotConfigured) || errors.Is(err, runtime.ErrAINotConfigured) {
+		} else if errors.Is(err, runtime.ErrAINotConfigured) {
 			err = status.Error(codes.FailedPrecondition, err.Error())
 		} else if errors.Is(err, runtime.ErrControllerClosed) {
 			err = status.Error(codes.Unavailable, err.Error())
