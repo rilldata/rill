@@ -26,13 +26,6 @@ import (
 // ErrDeploymentNotReady is returned when a deployment's runtime is not yet available.
 var ErrDeploymentNotReady = errors.New("deployment not ready")
 
-// Non-retryable deployment errors. Callers (e.g., the reconcile worker) use
-// `errors.Is` to cancel the job instead of retrying.
-var (
-	ErrInvalidEnvironment    = errors.New("invalid environment; must be 'prod' or 'dev'")
-	ErrInvalidRuntimeVersion = errors.New("invalid runtime version")
-)
-
 type CreateDeploymentOptions struct {
 	ProjectID   string
 	OwnerUserID *string
@@ -603,7 +596,7 @@ func resolveSlots(proj *database.Project, environment string) (int, error) {
 	case "dev":
 		return proj.DevSlots, nil
 	default:
-		return 0, fmt.Errorf("%w: got %q", ErrInvalidEnvironment, environment)
+		return 0, fmt.Errorf("invalid environment %q; must be 'prod' or 'dev'", environment)
 	}
 }
 
@@ -682,7 +675,7 @@ func validateRuntimeVersion(ver string) error {
 				return err
 			}
 			if !matched {
-				return fmt.Errorf("%w: %q", ErrInvalidRuntimeVersion, ver)
+				return fmt.Errorf("not a valid version %q", ver)
 			}
 		}
 	}

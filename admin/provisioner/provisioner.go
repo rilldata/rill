@@ -3,16 +3,11 @@ package provisioner
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/rilldata/rill/admin/database"
 	"go.uber.org/zap"
 )
-
-// ErrNoCapacity is returned by provisioners that are out of capacity for a new resource.
-// It is a non-retryable error: callers should cancel the operation rather than retry.
-var ErrNoCapacity = errors.New("provisioner: no capacity")
 
 // ProvisionerInitializer creates a new provisioner.
 type ProvisionerInitializer func(specJSON []byte, db database.DB, logger *zap.Logger) (Provisioner, error)
