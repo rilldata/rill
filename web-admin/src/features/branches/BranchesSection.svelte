@@ -36,7 +36,14 @@
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
+  import type { FilterGroup } from "@rilldata/web-common/components/table-toolbar/types";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
+  import {
+    createUrlFilterSync,
+    parseArrayParam,
+    parseStringParam,
+  } from "@rilldata/web-common/lib/url-filter-sync";
   import {
     EyeIcon,
     GitBranchIcon,
@@ -45,6 +52,7 @@
     Trash2Icon,
   } from "lucide-svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { onMount } from "svelte";
 
   let { organization, project }: { organization: string; project: string } =
     $props();
@@ -106,10 +114,88 @@
       : null,
   );
 
+  // Toolbar state — synced to URL params `q` and `status` (multi-select array)
+  const filterSync = createUrlFilterSync([
+    { key: "q", type: "string" },
+    { key: "status", type: "array" },
+  ]);
+
+  let searchText = $state(parseStringParam(page.url.searchParams.get("q")));
+  let statusFilter = $state<string[]>(
+    parseArrayParam(page.url.searchParams.get("status")),
+  );
+  let mounted = $state(false);
+
+  onMount(() => {
+    filterSync.init(page.url);
+    mounted = true;
+  });
+
+  // URL → local state on external navigation (back/forward)
+  $effect(() => {
+    if (!mounted) return;
+    const url = page.url;
+    if (filterSync.hasExternalNavigation(url)) {
+      filterSync.markSynced(url);
+      searchText = parseStringParam(url.searchParams.get("q"));
+      statusFilter = parseArrayParam(url.searchParams.get("status"));
+    }
+  });
+
+  // Local state → URL
+  $effect(() => {
+    if (!mounted) return;
+    filterSync.syncToUrl({ q: searchText, status: statusFilter });
+  });
+
+  let filterGroups = $derived([
+    {
+      label: "Status",
+      key: "status",
+      options: [
+        { label: "Ready", value: "running" },
+        { label: "Pending", value: "pending" },
+        { label: "Error", value: "errored" },
+        { label: "Stopped", value: "stopped" },
+      ],
+      selected: statusFilter,
+      defaultValue: [],
+      multiSelect: true,
+    },
+  ] satisfies FilterGroup[]);
+
+  function statusMatches(d: V1Deployment): boolean {
+    if (statusFilter.length === 0) return true;
+    const s = d.status;
+    return statusFilter.some((sel) => {
+      switch (sel) {
+        case "running":
+          return s === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING;
+        case "pending":
+          return (
+            s === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING ||
+            s === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING
+          );
+        case "errored":
+          return s === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED;
+        case "stopped":
+          return (
+            s === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED ||
+            s === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING
+          );
+        default:
+          return false;
+      }
+    });
+  }
+
   let visibleDeployments = $derived.by(() => {
+    const q = searchText.trim().toLowerCase();
     const active = ($allDeployments.data?.deployments ?? []).filter(
       (d: V1Deployment) =>
-        d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED,
+        d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED &&
+        statusMatches(d) &&
+        (q === "" || (d.branch ?? "").toLowerCase().includes(q)),
     );
     return [...active].sort((a, b) => {
       const aIsProd = isProdDeployment(a);
@@ -214,6 +300,26 @@
 
 <section class="flex flex-col gap-y-5">
   <h2 class="text-lg font-medium">Branches</h2>
+
+  <TableToolbar
+    {searchText}
+    onSearchChange={(text) => {
+      searchText = text;
+    }}
+    {filterGroups}
+    onFilterChange={(key, value) => {
+      if (key === "status") {
+        statusFilter = statusFilter.includes(value)
+          ? statusFilter.filter((v) => v !== value)
+          : [...statusFilter, value];
+      }
+    }}
+    onClearAllFilters={() => {
+      statusFilter = [];
+      searchText = "";
+    }}
+    showSort={false}
+  />
 
   {#if $allDeployments.isLoading}
     <div class="empty-container">

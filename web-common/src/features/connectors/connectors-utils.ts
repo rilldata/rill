@@ -126,6 +126,7 @@ export function makeTablePreviewHref(
  * Determines the correct icon key for a connector based on its configuration.
  * Special cases:
  * - MotherDuck connectors use "motherduck" icon even though they have driver: duckdb
+ * - DuckLake connectors use "ducklake" icon even though they have driver: duckdb
  * - ClickHouse Cloud connectors use "clickhousecloud" icon even though they have driver: clickhouse
  * - Supabase connectors use "supabase" icon even though they have driver: postgres
  */
@@ -134,6 +135,30 @@ export function getConnectorIconKey(connector: V1AnalyzedConnector): string {
   const path = connector.config?.path;
   if (typeof path === "string" && path.startsWith("md:")) {
     return "motherduck";
+  }
+
+  // Special case: DuckLake connectors use an `attach` clause pointing at a
+  // DuckLake catalog (e.g. `'ducklake:metadata.ducklake' AS ...`).
+  // Detection covers both resolved config and the raw project/preset config
+  // so the icon still shows even when the runtime redacts merged config, and
+  // falls back to the default connector name written by the DuckLake tile.
+  if (connector.driver?.name === "duckdb") {
+    const attachCandidates: unknown[] = [
+      connector.config?.attach,
+      connector.projectConfig?.attach,
+      connector.presetConfig?.attach,
+    ];
+    const isDuckLakeAttach = attachCandidates.some(
+      (v) => typeof v === "string" && v.includes("ducklake:"),
+    );
+    const name = connector.name ?? "";
+    if (
+      isDuckLakeAttach ||
+      name === "ducklake" ||
+      name.startsWith("ducklake_")
+    ) {
+      return "ducklake";
+    }
   }
 
   // Special case: ClickHouse Cloud connectors have "clickhouse.cloud" in host or dsn

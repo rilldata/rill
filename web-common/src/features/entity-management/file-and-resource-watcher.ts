@@ -78,6 +78,8 @@ export class FileAndResourceWatcher {
     REFETCH_LIST_FILES_THROTTLE_MS,
   );
 
+  private currentUrl: string | undefined;
+
   constructor() {
     this.setupSSEEventHandlers();
   }

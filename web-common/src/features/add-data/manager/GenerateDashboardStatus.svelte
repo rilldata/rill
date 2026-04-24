@@ -100,7 +100,7 @@
         },
       );
       onDone();
-      return goto(currentFileRoute);
+      if (!config.skipNavigation) return goto(currentFileRoute);
     } catch (e) {
       error = e?.response?.data?.message ?? e?.message ?? "Unknown error";
       stateManager.fireErrorEvent(error!, importStep);
@@ -183,15 +183,17 @@
       </Button>
       <div class="grow"></div>
     {/if}
-    <Button
-      disabled={!currentFileRoute}
-      type="tertiary"
-      href={currentFileRoute}
-      onClick={onDone}
-      large
-    >
-      Skip and view project
-    </Button>
+    {#if !config.skipNavigation}
+      <Button
+        disabled={!currentFileRoute}
+        type="tertiary"
+        href={currentFileRoute}
+        onClick={onDone}
+        large
+      >
+        Skip and view project
+      </Button>
+    {/if}
     {#if hasErrored}
       <Button type="primary" onClick={rerunImport} large>Try again</Button>
     {/if}

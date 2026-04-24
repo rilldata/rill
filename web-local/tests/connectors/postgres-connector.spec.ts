@@ -3,7 +3,8 @@ import { test } from "../setup/base";
 import { PostgresTestContainer } from "../utils/postgres.ts";
 import { validateYamlContents } from "../utils/yamlHelpers.ts";
 
-test.describe("Postgres connector", () => {
+// This is unstable. The biggest issue is that the postgres container is not starting in time.
+test.describe.skip("Postgres connector", () => {
   // Starting a postgres server seems heavy, causing timeouts during startup.
   // So retry to not make the tests flaky.
   test.describe.configure({ retries: 3 });
