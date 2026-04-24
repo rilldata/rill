@@ -17,6 +17,8 @@
   import ConnectorExplorer from "../../features/connectors/explorer/ConnectorExplorer.svelte";
   import AddAssetButton from "../../features/entity-management/add/AddAssetButton.svelte";
   import FileExplorer from "../../features/file-explorer/FileExplorer.svelte";
+  import VisualResourceNav from "../../features/visual-editing/VisualResourceNav.svelte";
+  import { editorMode } from "../editor-mode-store";
   import Resizer from "../Resizer.svelte";
   import { DEFAULT_NAV_WIDTH, MAX_NAV_WIDTH, MIN_NAV_WIDTH } from "../config";
   import Footer from "./Footer.svelte";
@@ -89,79 +91,85 @@
     side="right"
   />
   <div class="inner" style:width="{width}px">
-    <div class="p-2 w-full pr-10">
-      <AddAssetButton />
-    </div>
-    <div class="scroll-container">
-      <div class="nav-wrapper" bind:contentRect>
-        <section class="size-full overflow-y-auto pb-4">
-          <FileExplorer hasUnsaved={unsavedFileCount > 0} />
-        </section>
-
-        {#if navWrapperHeight}
-          <section class="connector-section">
-            {#if showConnectors}
-              <Resizer
-                dimension={connectorSectionHeight}
-                onUpdate={(height) => {
-                  connectorHeightPercentage = height / navWrapperHeight;
-                }}
-                direction="NS"
-                side="top"
-                min={0}
-                basis={navWrapperHeight * DEFAULT_PERCENTAGE}
-                max={navWrapperHeight * 0.9}
-                bind:resizing={resizingConnector}
-              />
-            {/if}
-
-            <button
-              onclick={() => {
-                const open = showConnectors;
-
-                if (!open) showConnectors = true;
-
-                connectorWrapper.animate(
-                  [
-                    {
-                      height: `${open ? connectorSectionHeight : 0}px`,
-                    },
-                    {
-                      height: `${open ? 0 : connectorSectionHeight}px`,
-                    },
-                  ],
-                  {
-                    duration: 200,
-                    easing: "ease-out",
-                  },
-                ).onfinish = () => {
-                  if (open) showConnectors = false;
-                };
-              }}
-            >
-              <CaretDownIcon
-                size="14px"
-                className="text-fg-secondary transition-transform {!showConnectors &&
-                  '-rotate-90'}"
-              />
-              <h3 class="text-fg-muted">Data Explorer</h3>
-            </button>
-
-            <div
-              class="connector-wrapper"
-              role="region"
-              aria-label="Data explorer"
-              bind:this={connectorWrapper}
-              style:height="{showConnectors ? connectorSectionHeight : 0}px"
-            >
-              {#if showConnectors}
-                <ConnectorExplorer store={connectorExplorerStore} />
-              {/if}
-            </div>
-          </section>
-        {/if}
+    {#if $editorMode === "visual"}
+      <div class="scroll-container">
+        <VisualResourceNav />
       </div>
-    </div>
+    {:else}
+      <div class="p-2 w-full pr-10">
+        <AddAssetButton />
+      </div>
+      <div class="scroll-container">
+        <div class="nav-wrapper" bind:contentRect>
+          <section class="size-full overflow-y-auto pb-4">
+            <FileExplorer hasUnsaved={unsavedFileCount > 0} />
+          </section>
+
+          {#if navWrapperHeight}
+            <section class="connector-section">
+              {#if showConnectors}
+                <Resizer
+                  dimension={connectorSectionHeight}
+                  onUpdate={(height) => {
+                    connectorHeightPercentage = height / navWrapperHeight;
+                  }}
+                  direction="NS"
+                  side="top"
+                  min={0}
+                  basis={navWrapperHeight * DEFAULT_PERCENTAGE}
+                  max={navWrapperHeight * 0.9}
+                  bind:resizing={resizingConnector}
+                />
+              {/if}
+
+              <button
+                onclick={() => {
+                  const open = showConnectors;
+
+                  if (!open) showConnectors = true;
+
+                  connectorWrapper.animate(
+                    [
+                      {
+                        height: `${open ? connectorSectionHeight : 0}px`,
+                      },
+                      {
+                        height: `${open ? 0 : connectorSectionHeight}px`,
+                      },
+                    ],
+                    {
+                      duration: 200,
+                      easing: "ease-out",
+                    },
+                  ).onfinish = () => {
+                    if (open) showConnectors = false;
+                  };
+                }}
+              >
+                <CaretDownIcon
+                  size="14px"
+                  className="text-fg-secondary transition-transform {!showConnectors &&
+                    '-rotate-90'}"
+                />
+                <h3 class="text-fg-muted">Data Explorer</h3>
+              </button>
+
+              <div
+                class="connector-wrapper"
+                role="region"
+                aria-label="Data explorer"
+                bind:this={connectorWrapper}
+                style:height="{showConnectors ? connectorSectionHeight : 0}px"
+              >
+                {#if showConnectors}
+                  <ConnectorExplorer store={connectorExplorerStore} />
+                {/if}
+              </div>
+            </section>
+          {/if}
+        </div>
+      </div>
+    {/if}
     <Footer />
   </div>
 </nav>
