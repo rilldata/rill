@@ -22,6 +22,10 @@
   import Footer from "./Footer.svelte";
   import SurfaceControlButton from "./SurfaceControlButton.svelte";
 
+  // When false, hides the footer (version info, links, traffic light).
+  // Used in cloud editing where the footer isn't relevant.
+  export let showFooterLinks = true;
+
   const DEFAULT_PERCENTAGE = 0.4;
 
   let width = DEFAULT_NAV_WIDTH;
@@ -162,7 +166,9 @@
         {/if}
       </div>
     </div>
-    <Footer />
+    {#if showFooterLinks}
+      <Footer />
+    {/if}
   </div>
 </nav>
 

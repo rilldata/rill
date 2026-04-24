@@ -11,6 +11,7 @@ import {
   getRuntimeServiceGetFileQueryKey,
   getRuntimeServiceGetModelPartitionsQueryKey,
   getRuntimeServiceGetResourceQueryKey,
+  getRuntimeServiceGitStatusQueryKey,
   getRuntimeServiceIssueDevJWTQueryKey,
   getRuntimeServiceListFilesQueryKey,
   getRuntimeServiceListResourcesQueryKey,
@@ -102,6 +103,14 @@ export class FileAndResourceWatcher {
 
   public scheduleAutoClose = (useShortTimeout = false) => {
     this.client.scheduleAutoClose(useShortTimeout);
+  };
+
+  public disableAutoClose = () => {
+    this.client.disableAutoClose();
+  };
+
+  public enableAutoClose = () => {
+    this.client.enableAutoClose();
   };
 
   private setupSSEEventHandlers() {
@@ -233,6 +242,12 @@ export class FileAndResourceWatcher {
 
           break;
       }
+
+      // Invalidate git status so the cloud editor's commit button
+      // reflects whether there are uncommitted changes.
+      void queryClient.invalidateQueries({
+        queryKey: getRuntimeServiceGitStatusQueryKey(this.instanceId, {}),
+      });
     }
     // Throttle refetching the list of files. This avoids refetching when many files are added in quick succession.
     if (isNew || res.event === V1FileEvent.FILE_EVENT_DELETE) {

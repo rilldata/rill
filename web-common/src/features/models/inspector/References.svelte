@@ -13,6 +13,7 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { derived } from "svelte/store";
   import { removeLeadingSlash } from "../../entity-management/entity-mappers";
+  import { getFileHref } from "../../../layout/navigation/editor-routing";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
 
   export let refs: V1ResourceName[];
@@ -73,7 +74,7 @@
             <div>
               <WithModelResultTooltip {modelHasError}>
                 <a
-                  href="/files/{removeLeadingSlash(filePath)}"
+                  href={getFileHref(`/${removeLeadingSlash(filePath)}`)}
                   class="text-fg-muted grid justify-between gap-x-2 pl-4 pr-4 hover:bg-yellow-200 hover:cursor-pointer"
                   style:grid-template-columns="auto max-content"
                   class:text-fg-secondary={modelHasError}

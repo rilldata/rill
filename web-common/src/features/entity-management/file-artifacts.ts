@@ -42,9 +42,14 @@ export class FileArtifacts {
   /**
    * Must be called synchronously (in the script block, not onMount)
    * so that child components can access the client during initial render.
+   * Also propagates the client to any artifacts created before the client
+   * was available (e.g. during +page.ts load).
    */
   setClient(client: RuntimeClient) {
     this.client = client;
+    for (const artifact of this.artifacts.values()) {
+      artifact.updateClient(client);
+    }
   }
 
   async init(client: RuntimeClient, queryClient: QueryClient) {

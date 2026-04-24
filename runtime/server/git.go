@@ -100,7 +100,7 @@ func (s *Server) GitStatus(ctx context.Context, req *runtimev1.GitStatusRequest)
 
 	gs, err := repo.Status(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get git status: %v", err)
+		return nil, fmt.Errorf("failed to get git status: %w", err)
 	}
 	if !gs.IsGitRepo {
 		return nil, status.Error(codes.FailedPrecondition, "not a git repository")
@@ -128,7 +128,7 @@ func (s *Server) ListGitCommits(ctx context.Context, req *runtimev1.ListGitCommi
 	pageSize := pagination.ValidPageSize(req.PageSize, 20)
 	commits, nextPageToken, err := repo.ListCommits(ctx, req.PageToken, pageSize)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list git commits: %v", err)
+		return nil, fmt.Errorf("failed to list git commits: %w", err)
 	}
 
 	res := make([]*runtimev1.GitCommit, 0, len(commits))
@@ -161,7 +161,7 @@ func (s *Server) GitCommit(ctx context.Context, req *runtimev1.GitCommitRequest)
 
 	hash, err := repo.Commit(ctx, req.CommitMessage)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to commit: %v", err)
+		return nil, fmt.Errorf("failed to commit: %w", err)
 	}
 	return &runtimev1.GitCommitResponse{
 		CommitSha: hash,
@@ -181,7 +181,7 @@ func (s *Server) RestoreGitCommit(ctx context.Context, req *runtimev1.RestoreGit
 
 	newCommitSHA, err := repo.RestoreCommit(ctx, req.CommitSha)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to restore commit: %v", err)
+		return nil, fmt.Errorf("failed to restore commit: %w", err)
 	}
 	return &runtimev1.RestoreGitCommitResponse{
 		NewCommitSha: newCommitSHA,
@@ -200,7 +200,7 @@ func (s *Server) GitMergeToBranch(ctx context.Context, req *runtimev1.GitMergeTo
 
 	err = repo.MergeToBranch(ctx, req.Branch, req.Force)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to merge: %v", err)
+		return nil, fmt.Errorf("failed to merge: %w", err)
 	}
 	return &runtimev1.GitMergeToBranchResponse{}, nil
 }
@@ -221,7 +221,7 @@ func (s *Server) GitPull(ctx context.Context, req *runtimev1.GitPullRequest) (*r
 		DiscardChanges: req.DiscardLocal,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to pull: %v", err)
+		return nil, fmt.Errorf("failed to pull: %w", err)
 	}
 	return &runtimev1.GitPullResponse{}, nil
 }
@@ -242,7 +242,7 @@ func (s *Server) GitPush(ctx context.Context, req *runtimev1.GitPushRequest) (*r
 		if errors.Is(err, drivers.ErrRemoteAhead) {
 			return nil, status.Error(codes.FailedPrecondition, "remote repository has changes that are not in local state, please pull first")
 		}
-		return nil, status.Errorf(codes.Internal, "failed to push: %v", err)
+		return nil, fmt.Errorf("failed to push: %w", err)
 	}
 	return &runtimev1.GitPushResponse{}, nil
 }
