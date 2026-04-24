@@ -84,8 +84,6 @@ export class FileAndResourceWatcher {
     this.setupSSEEventHandlers();
   }
 
-  private currentUrl: string | undefined;
-
   public watch = (url: string) => {
     if (url === this.currentUrl) return;
     this.currentUrl = url;
