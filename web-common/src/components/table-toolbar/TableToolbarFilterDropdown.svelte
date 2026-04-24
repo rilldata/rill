@@ -34,7 +34,7 @@
       <span>Filter</span>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start">
-      {#each filterGroups as group, i}
+      {#each filterGroups as group, i (group.key)}
         <DropdownMenu.Group>
           <DropdownMenu.Label class="uppercase"
             >{group.label}</DropdownMenu.Label
