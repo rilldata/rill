@@ -8,8 +8,20 @@
     onFilterChange,
   }: {
     filterGroups: FilterGroup[];
-    onFilterChange?: (key: string, value: string) => void;
+    onFilterChange?: (key: string, selected: string | string[]) => void;
   } = $props();
+
+  function handleClick(group: FilterGroup, value: string) {
+    if (group.multiSelect) {
+      const current = Array.isArray(group.selected) ? group.selected : [];
+      const next = current.includes(value)
+        ? current.filter((v) => v !== value)
+        : [...current, value];
+      onFilterChange?.(group.key, next);
+    } else {
+      onFilterChange?.(group.key, value);
+    }
+  }
 </script>
 
 {#if filterGroups.length > 0}
@@ -34,7 +46,7 @@
                 ? Array.isArray(group.selected) &&
                   group.selected.includes(option.value)
                 : group.selected === option.value}
-              onclick={() => onFilterChange?.(group.key, option.value)}
+              onclick={() => handleClick(group, option.value)}
             >
               {option.label}
             </DropdownMenu.CheckboxItem>
