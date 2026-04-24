@@ -1,6 +1,5 @@
 import { createEventBinding } from "@rilldata/web-common/lib/event-emitter.ts";
 import { get, writable } from "svelte/store";
-import { SSEConnectionLifecycle } from "./sse-connection-lifecycle";
 import { SSEFetchClient, type SSEMessage } from "./sse-fetch-client";
 
 const BACKOFF_DELAY = 1000;
@@ -9,15 +8,6 @@ const BACKOFF_DELAY = 1000;
 const MIN_STABLE_DURATION = 5000;
 
 export type SSEConnectionOptions = {
-  /**
-   * @deprecated Pass an SSEConnectionLifecycle alongside the connection instead.
-   * Retained so existing consumers compile unchanged; removed in the
-   * consumer-migration PR.
-   */
-  autoCloseTimeouts?: {
-    short: number;
-    normal: number;
-  };
   maxRetryAttempts?: number;
   retryOnError?: boolean;
   retryOnClose?: boolean;
@@ -78,13 +68,6 @@ export class SSEConnection {
 
   private client = new SSEFetchClient();
 
-  /**
-   * @deprecated Legacy auto-close compatibility shim. PR 2 removes these
-   * forwarding paths in favor of attaching SSEConnectionLifecycle directly.
-   */
-  private autoCloseLifecycle: SSEConnectionLifecycle | undefined;
-  private autoCloseDisabled = false;
-
   private retryAttemptCount = writable(0);
   // Single-flight guard + cancellation signal for reconnect().
   // When set, one reconnect loop is active; calling abortReconnect() aborts
@@ -94,13 +77,6 @@ export class SSEConnection {
   private openedAt: number | null = null;
 
   constructor(public params?: SSEConnectionOptions) {
-    if (params?.autoCloseTimeouts) {
-      this.autoCloseLifecycle = new SSEConnectionLifecycle(
-        this,
-        params.autoCloseTimeouts,
-      );
-    }
-
     this.client.on("error", this.handleError);
     this.client.on("message", this.handleMessage);
     this.client.on("close", this.handleCloseEvent);
@@ -122,24 +98,13 @@ export class SSEConnection {
   }
 
   /**
-   * Resume from PAUSED if necessary, and re-arm auto-close for legacy
-   * compatibility paths that still call scheduleAutoClose/heartbeat.
+   * Resume only if currently PAUSED. Typically called by
+   * SSEConnectionLifecycle in response to visibility/activity signals.
    */
   public resumeIfPaused = async () => {
     if (get(this.status) === ConnectionStatus.PAUSED) {
       await this.reconnect();
     }
-
-    if (this.autoCloseLifecycle) {
-      this.scheduleAutoClose();
-    }
-  };
-
-  /**
-   * @deprecated Use resumeIfPaused() instead.
-   */
-  public heartbeat = async () => {
-    await this.resumeIfPaused();
   };
 
   /**
@@ -189,38 +154,9 @@ export class SSEConnection {
     this.close(true);
   }
 
-  /**
-   * @deprecated Move to SSEConnectionLifecycle; removed in the
-   * consumer-migration PR.
-   */
-  public scheduleAutoClose(prioritize: boolean = false) {
-    if (this.autoCloseDisabled) return;
-    this.autoCloseLifecycle?.schedulePause(prioritize);
-  }
-
-  /**
-   * @deprecated Move to SSEConnectionLifecycle; removed in the
-   * consumer-migration PR.
-   */
-  public disableAutoClose() {
-    this.autoCloseDisabled = true;
-    this.autoCloseLifecycle?.cancelScheduledPause();
-  }
-
-  /**
-   * @deprecated Move to SSEConnectionLifecycle; removed in the
-   * consumer-migration PR.
-   */
-  public enableAutoClose() {
-    this.autoCloseDisabled = false;
-  }
-
   private openConnection(): void {
     this.status.set(ConnectionStatus.CONNECTING);
     void this.client.start(this.url, this.options);
-    if (this.autoCloseLifecycle) {
-      this.scheduleAutoClose();
-    }
   }
 
   private async reconnect() {
@@ -231,8 +167,6 @@ export class SSEConnection {
 
     try {
       while (!signal.aborted) {
-        this.autoCloseLifecycle?.cancelScheduledPause();
-
         const status = get(this.status);
         if (
           status === ConnectionStatus.OPEN ||

@@ -3,6 +3,7 @@
   import {
     createAdminServiceGetCurrentUser,
     createAdminServiceGetProject,
+    getAdminServiceGetProjectQueryKey,
     V1DeploymentStatus,
     type V1Organization,
   } from "@rilldata/web-admin/client";
@@ -27,6 +28,7 @@
   import { editorRoutePrefix } from "@rilldata/web-common/layout/navigation/editor-routing";
   import Navigation from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { onDestroy } from "svelte";
 
   $: organization = $page.params.organization;
@@ -121,6 +123,20 @@
   $: projectUrl = `/${organization}/${project}`;
   $: branchUrl = `/${organization}/${project}${branchPathPrefix(branch)}`;
 
+  // Invalidating this query refetches a fresh JWT; `runtimeClient.getJwt()`
+  // reads the updated value on the next call. Branch must be part of the
+  // key or the invalidation misses the branch-scoped cache entry.
+  const queryClient = useQueryClient();
+  $: onBeforeReconnect = async () => {
+    await queryClient.invalidateQueries({
+      queryKey: getAdminServiceGetProjectQueryKey(
+        organization,
+        project,
+        branch ? { branch } : undefined,
+      ),
+    });
+  };
+
   onDestroy(() => {
     $editorRoutePrefix = "";
   });
@@ -170,9 +186,8 @@
         />
         <EditSessionTimeoutBanner sessionStartedAt={deployment.createdOn} />
         <FileAndResourceWatcher
-          host={runtimeHost}
-          {instanceId}
-          keepAlive
+          lifecycle="none"
+          {onBeforeReconnect}
           errorBody="Lost connection to the editing environment. Try ending the session and starting a new one."
         >
           <div class="flex flex-1 overflow-hidden">
@@ -202,7 +217,6 @@
       header="Edit session failed"
       body={deployment?.statusMessage ||
         "The editing environment encountered an error. Please try again."}
-      href={projectUrl}
     />
   {:else if isStopped && deployment?.id}
     <SlimProjectHeader
@@ -239,7 +253,6 @@
       statusCode={404}
       header="No active edit session"
       body="This editing session is no longer active. Use the Edit button to start a new one."
-      href={projectUrl}
     />
   {/if}
 </div>

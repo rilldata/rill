@@ -27,3 +27,10 @@ export {
   type Decoder,
   type SSESubscriberOptions,
 } from "./sse-subscriber";
+
+export {
+  createSSEStream,
+  type CreateSSEStreamOptions,
+  type SSEStream,
+  type SSEStreamLifecycleConfig,
+} from "./create-sse-stream";
