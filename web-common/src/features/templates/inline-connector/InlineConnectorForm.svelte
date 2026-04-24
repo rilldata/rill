@@ -8,6 +8,7 @@
   import { fileArtifacts } from "../../entity-management/file-artifacts";
   import { getName } from "../../entity-management/name-utils";
   import { ResourceKind } from "../../entity-management/resource-selectors";
+  import { processFileContent } from "../file-encoding";
   import {
     writeInlineConnector,
     type InlineConnectorDriver,
@@ -47,9 +48,13 @@
 
   async function handleFileUpload(file: File): Promise<string> {
     const content = await file.text();
-    // Return raw JSON; compileConnectorYAML will base64-encode secret values.
-    gcsCredentialsJson = content;
-    return content;
+    // Match the full GCS connector form: compact the JSON to a single line
+    // (no whitespace) so the env var stays on one line.
+    const { encodedContent } = processFileContent(content, {
+      "x-file-encoding": "json",
+    });
+    gcsCredentialsJson = encodedContent;
+    return encodedContent;
   }
 
   function getFormValues(): {
@@ -114,7 +119,15 @@
     }
   }
 
-  $: canSave = getFormValues().valid && !submitting;
+  $: canSave =
+    !submitting &&
+    (driver === "s3"
+      ? !!awsAccessKeyId && !!awsSecretAccessKey
+      : driver === "gcs"
+        ? !!gcsCredentialsJson
+        : driver === "azure"
+          ? !!azureConnectionString
+          : false);
 </script>
 
 <div class="inline-connector-form">
@@ -183,7 +196,7 @@
     @apply flex flex-col gap-3;
     @apply p-3;
     @apply border border-gray-200 rounded;
-    @apply bg-surface-secondary;
+    @apply bg-surface-subtle;
   }
 
   .header {
