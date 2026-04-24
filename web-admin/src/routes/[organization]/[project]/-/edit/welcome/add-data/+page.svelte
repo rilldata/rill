@@ -4,10 +4,10 @@
   import AddDataManager from "@rilldata/web-common/features/add-data/manager/AddDataManager.svelte";
   import { AddDataStep } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import type { PageData } from "./$types";
   import { fetchAnalyzeConnectors } from "@rilldata/web-common/features/connectors/selectors.ts";
   import { projectWelcomeStatusStores } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
-  import { checkpointProjectAndRedirect } from "@rilldata/web-admin/features/projects/publish-project.ts";
+  import { checkpointProject } from "@rilldata/web-admin/features/projects/publish-project.ts";
+  import type { PageData } from "./$types";
 
   let { data }: { data: PageData } = $props();
 
@@ -17,12 +17,11 @@
 
   let isImportStep = $derived(addDataStep === AddDataStep.Import);
 
-  let organization = $derived(page.params.organization);
   let project = $derived(page.params.project);
 
   async function handleDone() {
     projectWelcomeStatusStores.setProjectWelcomeStep(project, false);
-    await checkpointProjectAndRedirect(runtimeClient, organization, project);
+    await checkpointProject(runtimeClient);
   }
 
   onMount(async () => {
@@ -42,7 +41,6 @@
         config={{
           welcomeScreen: true,
           skipNavigation: true,
-          pathPrefix: `/${organization}/${project}/-`,
         }}
         initSchema={data.schema}
         onStepChange={(step) => (addDataStep = step)}

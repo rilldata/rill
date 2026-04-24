@@ -40,7 +40,8 @@
   function handleCreate(projectName: string, frontendUrl: string) {
     projectWelcomeStatusStores.setProjectWelcomeStep(projectName, true);
     setTimeout(
-      () => void goto(`${frontendUrl}/@${CreateProjectBranchName}/-/welcome`),
+      () =>
+        void goto(`${frontendUrl}/@${CreateProjectBranchName}/-/edit/welcome`),
     );
   }
 </script>

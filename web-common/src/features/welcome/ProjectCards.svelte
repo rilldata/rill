@@ -17,7 +17,6 @@
   import ProjectCard from "@rilldata/web-common/features/welcome/ProjectCard.svelte";
 
   export let skipNavigation = false;
-  export let allowEmpty = true;
   export let onSelect: () => void = () => {};
 
   const runtimeClient = useRuntimeClient();
@@ -88,18 +87,16 @@
       </ProjectCard>
     {/each}
 
-    {#if allowEmpty}
-      <ProjectCard
-        onclick={() => unpackProject()}
-        loading={selectedProjectName === EMPTY_PROJECT_TITLE}
-        disabled={!!selectedProjectName}
-        label="Start a blank project"
-      >
-        <svelte:fragment slot="icon">
-          <AddCircleOutline size="16px" />
-        </svelte:fragment>
-        <span>Start a blank project</span>
-      </ProjectCard>
-    {/if}
+    <ProjectCard
+      onclick={() => unpackProject()}
+      loading={selectedProjectName === EMPTY_PROJECT_TITLE}
+      disabled={!!selectedProjectName}
+      label="Start a blank project"
+    >
+      <svelte:fragment slot="icon">
+        <AddCircleOutline size="16px" />
+      </svelte:fragment>
+      <span>Start a blank project</span>
+    </ProjectCard>
   </div>
 </section>

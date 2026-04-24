@@ -122,7 +122,7 @@ export function isWelcomePage({ route }: Pick<Page, "route">): boolean {
 }
 
 export function isProjectWelcomePage({ route }: Pick<Page, "route">): boolean {
-  return !!route.id?.startsWith("/[organization]/[project]/-/welcome");
+  return !!route.id?.startsWith("/[organization]/[project]/-/edit/welcome");
 }
 
 export function isAuthPage({ route }: Pick<Page, "route">): boolean {

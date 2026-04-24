@@ -9,6 +9,7 @@
   import { ChevronRightIcon } from "lucide-svelte";
   import { getSupportedConnectorInfos } from "@rilldata/web-common/features/add-data/manager/selectors.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { withEditorPrefix } from "@rilldata/web-common/layout/navigation/editor-routing.ts";
 
   export let config: AddDataConfig;
   export let onSelect: (name: string) => void;
@@ -29,8 +30,6 @@
         keyword.toLowerCase().includes(searchTextLowerCase),
       ),
   );
-
-  $: pathPrefix = config.pathPrefix ?? "";
 </script>
 
 <div class="source-selector">
@@ -50,7 +49,9 @@
           this={config.welcomeScreen ? "a" : "button"}
           {...config.welcomeScreen
             ? {
-                href: `${pathPrefix}/welcome/add-data?schema=${connector.name}`,
+                href: withEditorPrefix(
+                  `/welcome/add-data?schema=${connector.name}`,
+                ),
               }
             : { onclick: () => onSelect(connector.name) }}
           class="source-selector-cell"

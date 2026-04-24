@@ -1,25 +1,12 @@
-import { get, type Writable } from "svelte/store";
-import { sessionStorageStore } from "@rilldata/web-common/lib/store-utils/session-storage.ts";
-
-const ProjectWelcomeStatusKey = "rill:welcome:project:status";
-
 class ProjectWelcomeStatusStores {
+  private projectWelcomeStatusMap = new Map<string, boolean>();
+
   public isProjectWelcomeStep(project: string): boolean {
-    const statusStore = this.get(project);
-    return get(statusStore);
+    return this.projectWelcomeStatusMap.get(project) ?? false;
   }
 
   public setProjectWelcomeStep(project: string, value: boolean): void {
-    const statusStore = this.get(project);
-    statusStore.set(value);
-  }
-
-  private get(project: string): Writable<boolean> {
-    const statusStore = sessionStorageStore(
-      ProjectWelcomeStatusKey + ":" + project,
-      false,
-    );
-    return statusStore;
+    this.projectWelcomeStatusMap.set(project, value);
   }
 }
 

@@ -41,7 +41,6 @@
   import ProjectTabs from "@rilldata/web-admin/features/projects/ProjectTabs.svelte";
   import { baseGetProjectQueryOptions } from "@rilldata/web-admin/features/projects/project-query-options";
   import { resolveRuntimeConnection } from "@rilldata/web-admin/features/projects/project-runtime";
-  import RedeployProjectCta from "@rilldata/web-admin/features/projects/RedeployProjectCTA.svelte";
   import SlimProjectHeader from "@rilldata/web-admin/features/projects/SlimProjectHeader.svelte";
   import { createAdminServiceGetProjectWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-project-with-bearer-token";
   import { cloudVersion } from "@rilldata/web-admin/features/telemetry/initCloudMetrics";
@@ -54,6 +53,7 @@
   import type { HTTPError } from "@rilldata/web-common/lib/errors";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
+  import NoDeployment from "@rilldata/web-admin/features/projects/deployment/NoDeployment.svelte";
 
   let { children }: { children: Snippet } = $props();
 
@@ -313,8 +313,7 @@
       {organizationLogoUrl}
     />
     {#if !projectData.deployment}
-      <!-- No deployment = the project is "hibernating" -->
-      <RedeployProjectCta {organization} {project} />
+      <NoDeployment {organization} {project} />
     {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING}
       <ProjectBuilding branch={activeBranch} />
     {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED}
