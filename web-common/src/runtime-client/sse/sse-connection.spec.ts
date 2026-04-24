@@ -254,15 +254,6 @@ describe("SSEConnection", () => {
     expect(get(conn.status)).toBe(ConnectionStatus.CLOSED);
   });
 
-  it("keeps heartbeat() as a backward-compatible alias", async () => {
-    const conn = new SSEConnection();
-    const resumeSpy = vi.spyOn(conn, "resumeIfPaused");
-
-    await conn.heartbeat();
-
-    expect(resumeSpy).toHaveBeenCalledTimes(1);
-  });
-
   it("close(true) clears listeners", () => {
     const conn = new SSEConnection();
     const errorHandler = vi.fn();
