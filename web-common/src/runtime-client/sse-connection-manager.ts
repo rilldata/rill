@@ -59,6 +59,7 @@ export class SSEConnectionManager {
   private client = new SSEFetchClient();
 
   private autoCloseThrottler: Throttler | undefined;
+  private autoCloseDisabled = false;
   private retryAttempts = writable(0);
   private isReconnecting = false;
   private connectionCount = 0;
@@ -112,7 +113,7 @@ export class SSEConnectionManager {
 
       this.retryAttempts.update((n) => n + 1);
 
-      void this.start(this.url, this.options);
+      this.openConnection();
     } finally {
       this.isReconnecting = false;
     }
@@ -151,8 +152,26 @@ export class SSEConnectionManager {
    * Enable auto-close behavior to manage HTTP connection quota (browsers limit ~6 concurrent connections per host)
    */
   public scheduleAutoClose(prioritize: boolean = false) {
+    if (this.autoCloseDisabled) return;
     this.autoCloseThrottler?.cancel();
     this.autoCloseThrottler?.throttle(() => this.pause(), prioritize);
+  }
+
+  /**
+   * Disable auto-close so the SSE connection stays open indefinitely.
+   * Used by the cloud editor where a persistent connection is required
+   * to receive file-write events for save confirmation.
+   */
+  public disableAutoClose() {
+    this.autoCloseDisabled = true;
+    this.autoCloseThrottler?.cancel();
+  }
+
+  /**
+   * Re-enable auto-close (reverses disableAutoClose).
+   */
+  public enableAutoClose() {
+    this.autoCloseDisabled = false;
   }
 
   private handleError = (error: Error) => {
@@ -216,13 +235,27 @@ export class SSEConnectionManager {
     this.openedAt = Date.now();
     this.status.set(ConnectionStatus.OPEN);
 
+    // Once the connection has been stable for MIN_STABLE_DURATION, reset
+    // retries so a future failure starts with a fresh budget. Mirrors the
+    // wasStable check in handleCloseEvent for the case where the
+    // connection errors out instead of closing cleanly. Especially
+    // important for keep-alive consumers (e.g. cloud editor) that don't
+    // cycle through pause(), which is the other place retries reset.
+    setTimeout(() => {
+      if (get(this.status) === ConnectionStatus.OPEN) {
+        this.retryAttempts.set(0);
+      }
+    }, MIN_STABLE_DURATION);
+
     if (this.connectionCount > 1) {
       this.events.emit("reconnect");
     }
   };
 
   /**
-   * Start streaming from the given URL
+   * Start streaming from the given URL. Begins a new logical session, so
+   * retry state is cleared — previous failures shouldn't prevent a new
+   * endpoint from connecting.
    *
    * @param url - The SSE endpoint URL
    * @param options - Optional configuration
@@ -238,10 +271,20 @@ export class SSEConnectionManager {
   ): void {
     this.url = url;
     this.options = options;
+    this.retryAttempts.set(0);
+    this.openConnection();
+  }
 
+  /**
+   * Issue the underlying fetch and arm auto-close. Called by both start()
+   * (new session) and reconnect() (retry of the current session); only
+   * start() resets retry state, so reconnect() can call this without
+   * clobbering its own retry counter.
+   */
+  private openConnection(): void {
     this.status.set(ConnectionStatus.CONNECTING);
 
-    void this.client.start(url, options);
+    void this.client.start(this.url, this.options);
 
     if (this.params?.autoCloseTimeouts) {
       this.scheduleAutoClose();
