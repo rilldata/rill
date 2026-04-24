@@ -332,12 +332,12 @@ describe("tables utils", () => {
     ]);
 
     it("returns all tables when type is 'all'", () => {
-      const result = applyTableFilters(tables, "all", viewMap);
+      const result = applyTableFilters(tables, [], viewMap);
       expect(result).toEqual(tables);
     });
 
     it("filters by type: table", () => {
-      const result = applyTableFilters(tables, "table", viewMap);
+      const result = applyTableFilters(tables, ["table"], viewMap);
       expect(result).toEqual([
         { name: "users", physicalSizeBytes: "1024" },
         { name: "orders", physicalSizeBytes: "2048" },
@@ -345,7 +345,7 @@ describe("tables utils", () => {
     });
 
     it("filters by type: view", () => {
-      const result = applyTableFilters(tables, "view", viewMap);
+      const result = applyTableFilters(tables, ["view"], viewMap);
       expect(result).toEqual([
         { name: "analytics_view", physicalSizeBytes: "0" },
       ]);
@@ -356,12 +356,12 @@ describe("tables utils", () => {
         { name: "view_a", physicalSizeBytes: "0" },
       ];
       const allViewMap = new Map<string, boolean>([["view_a", true]]);
-      const result = applyTableFilters(allViews, "table", allViewMap);
+      const result = applyTableFilters(allViews, ["table"], allViewMap);
       expect(result).toEqual([]);
     });
 
     it("handles empty viewMap gracefully (falls back to size heuristic)", () => {
-      const result = applyTableFilters(tables, "table", new Map());
+      const result = applyTableFilters(tables, ["table"], new Map());
       // With empty viewMap, isLikelyView falls back to physicalSizeBytes heuristic
       // analytics_view has physicalSizeBytes "0", so isLikelyView returns true → filtered out
       expect(result).toEqual([
@@ -380,12 +380,16 @@ describe("tables utils", () => {
 
       const tableResult = applyTableFilters(
         tablesWithUnknown,
-        "table",
+        ["table"],
         emptyMap,
       );
       expect(tableResult).toEqual(tablesWithUnknown);
 
-      const viewResult = applyTableFilters(tablesWithUnknown, "view", emptyMap);
+      const viewResult = applyTableFilters(
+        tablesWithUnknown,
+        ["view"],
+        emptyMap,
+      );
       expect(viewResult).toEqual([
         { name: "loading_table", physicalSizeBytes: undefined },
       ]);

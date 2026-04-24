@@ -72,8 +72,17 @@ export type JSONSchemaField = {
   "x-docs-url"?: string;
   /** Field is an advanced setting, hidden by default behind an expandable section. */
   "x-advanced"?: boolean;
-  /** For boolean fields: the YAML value to emit when the toggle is checked (true). When unchecked, the field is omitted. */
-  "x-yaml-value"?: string | number | boolean;
+  /**
+   * For boolean fields: the YAML value to emit.
+   * - If a scalar, it is emitted only when the toggle is checked (true); unchecked fields are omitted.
+   * - If an object with `true` and/or `false` keys, the matching value is emitted for each toggle state,
+   *   so both states round-trip to YAML.
+   */
+  "x-yaml-value"?:
+    | string
+    | number
+    | boolean
+    | { true?: string | number | boolean; false?: string | number | boolean };
   /** Field controls UI behavior only and is excluded from generated YAML. */
   "x-ui-only"?: boolean;
   /**
@@ -96,6 +105,19 @@ export type JSONSchemaField = {
    * When set, this name is used instead of computing it from driver + property key.
    */
   "x-env-var-name"?: string;
+  /**
+   * Name of a registered custom validator to run against this field's value.
+   * The validator returns a list of error messages; empty list means valid.
+   * Runs in addition to JSON Schema validation, after `pruneEmptyFields`.
+   */
+  "x-custom-validator"?: string;
+  /**
+   * Hide the field from the rendered form without removing it from the schema.
+   * The field's value still participates in conditional logic (x-visible-if,
+   * allOf/if/then) and tab-group filtering, so downstream code that depends on
+   * `connection_mode` / `auth_method` etc. continues to work.
+   */
+  "x-hidden"?: boolean;
   // Allow custom keywords such as errorMessage or future x-extensions.
   [key: string]: unknown;
 };

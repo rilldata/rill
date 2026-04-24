@@ -1,10 +1,8 @@
 <script lang="ts">
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
-  import Search from "@rilldata/web-common/components/search/Search.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
+  import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
+  import type { FilterGroup } from "@rilldata/web-common/components/table-toolbar/types";
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -27,7 +25,6 @@
     splitTablesByModel,
   } from "@rilldata/web-common/features/projects/status/tables/utils";
   import { getAvailableTags } from "@rilldata/web-common/features/resources/resource-filter-utils";
-  import TagFilterDropdown from "@rilldata/web-common/features/resources/TagFilterDropdown.svelte";
   import ResourceSpecDialog from "@rilldata/web-common/features/projects/status/ResourceSpecDialog.svelte";
   import ModelPartitionsDialog from "@rilldata/web-common/features/projects/status/tables/ModelPartitionsDialog.svelte";
   import RefreshErroredPartitionsDialog from "@rilldata/web-common/features/projects/status/tables/RefreshErroredPartitionsDialog.svelte";
@@ -35,7 +32,6 @@
   import {
     createUrlFilterSync,
     parseArrayParam,
-    parseEnumParam,
     parseStringParam,
   } from "@rilldata/web-common/lib/url-filter-sync";
   import { onMount } from "svelte";
@@ -49,15 +45,14 @@
   $: instance = $instanceQuery.data?.instance;
   $: connectorName = instance?.olapConnector ?? "";
 
-  // Filters — initialized from URL params
+  // Filters — initialized from URL params (type is multi-select array)
   const filterSync = createUrlFilterSync([
     { key: "q", type: "string" },
-    { key: "type", type: "enum", defaultValue: "all" },
+    { key: "type", type: "array" },
     { key: "tags", type: "array" },
   ]);
   filterSync.init($page.url);
 
-  const typeValues = ["all", "table", "view"] as const;
   let searchText = parseStringParam($page.url.searchParams.get("q"));
 
   // Debounce search for server-side filtering
@@ -91,24 +86,17 @@
   // createQuery (unlike createInfiniteQuery) handles re-creation in $: blocks safely
   $: modelResourcesQuery = useModelResources(runtimeClient);
   $: modelResources = $modelResourcesQuery.data ?? new Map();
-  let typeFilter: (typeof typeValues)[number] = parseEnumParam(
+  let typeFilter: string[] = parseArrayParam(
     $page.url.searchParams.get("type"),
-    typeValues,
-    "all",
   );
   let selectedTags = parseArrayParam($page.url.searchParams.get("tags"));
-  let typeDropdownOpen = false;
   let mounted = false;
 
   // Sync URL → local state on external navigation (back/forward)
   $: if (mounted && filterSync.hasExternalNavigation($page.url)) {
     filterSync.markSynced($page.url);
     searchText = parseStringParam($page.url.searchParams.get("q"));
-    typeFilter = parseEnumParam(
-      $page.url.searchParams.get("type"),
-      typeValues,
-      "all",
-    );
+    typeFilter = parseArrayParam($page.url.searchParams.get("type"));
     selectedTags = parseArrayParam($page.url.searchParams.get("tags"));
   }
 
@@ -125,17 +113,58 @@
     mounted = true;
   });
 
-  type TypeOption = { label: string; value: "all" | "table" | "view" };
-  const typeOptions: TypeOption[] = [
-    { label: "All Types", value: "all" },
-    { label: "Table", value: "table" },
-    { label: "View", value: "view" },
-  ];
-
   // Tags — collected from model resources only (external tables have no tags).
   // `modelResources` indexes each resource twice (by result table and model name),
   // so values() is deduped inside getAvailableTags via its Set.
   $: availableTags = getAvailableTags([...modelResources.values()]);
+
+  $: filterGroups = [
+    {
+      label: "Type",
+      key: "type",
+      options: [
+        { label: "Table", value: "table" },
+        { label: "View", value: "view" },
+      ],
+      selected: typeFilter,
+      defaultValue: [],
+      multiSelect: true,
+    },
+    ...(availableTags.length > 0
+      ? [
+          {
+            label: "Tags",
+            key: "tags",
+            options: availableTags.map((t) => ({ value: t, label: t })),
+            selected: selectedTags,
+            defaultValue: [],
+            multiSelect: true,
+          },
+        ]
+      : []),
+  ] satisfies FilterGroup[];
+
+  function toggleType(type: string) {
+    if (typeFilter.includes(type)) {
+      typeFilter = typeFilter.filter((t) => t !== type);
+    } else {
+      typeFilter = [...typeFilter, type];
+    }
+  }
+
+  function toggleTag(tag: string) {
+    if (selectedTags.includes(tag)) {
+      selectedTags = selectedTags.filter((t) => t !== tag);
+    } else {
+      selectedTags = [...selectedTags, tag];
+    }
+  }
+
+  function clearFilters() {
+    typeFilter = [];
+    selectedTags = [];
+    searchText = "";
+  }
 
   // Split once on unfiltered tables, then apply type + tag filters per section.
   // Tag filter only applies to model tables; external tables are hidden entirely
@@ -238,65 +267,19 @@
     <h2 class="text-lg font-medium">Tables</h2>
   </div>
 
-  <div class="flex flex-row items-center gap-x-4 min-h-9">
-    <div class="flex-1 min-w-0 min-h-9">
-      <Search
-        bind:value={searchText}
-        placeholder="Search"
-        large
-        autofocus={false}
-        showBorderOnFocus={false}
-        retainValueOnMount
-      />
-    </div>
-
-    <DropdownMenu.Root bind:open={typeDropdownOpen}>
-      <DropdownMenu.Trigger
-        class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {typeDropdownOpen
-          ? 'bg-gray-200'
-          : 'hover:bg-surface-hover'} px-2 py-1"
-      >
-        <span class="text-fg-secondary font-medium">
-          {typeOptions.find((o) => o.value === typeFilter)?.label ?? "All"}
-        </span>
-        {#if typeDropdownOpen}
-          <CaretUpIcon size="12px" />
-        {:else}
-          <CaretDownIcon size="12px" />
-        {/if}
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Content align="start" class="w-32">
-        {#each typeOptions as option}
-          <DropdownMenu.Item
-            onclick={() => {
-              typeFilter = option.value;
-            }}
-          >
-            {option.label}
-          </DropdownMenu.Item>
-        {/each}
-      </DropdownMenu.Content>
-    </DropdownMenu.Root>
-
-    <TagFilterDropdown
-      tags={availableTags}
-      closeOnSelect={false}
-      bind:selectedTags
-    />
-
-    {#if typeFilter !== "all" || searchText || selectedTags.length > 0}
-      <button
-        class="shrink-0 text-sm text-primary-500 hover:text-primary-600 whitespace-nowrap"
-        onclick={() => {
-          typeFilter = "all";
-          searchText = "";
-          selectedTags = [];
-        }}
-      >
-        Clear
-      </button>
-    {/if}
-  </div>
+  <TableToolbar
+    {searchText}
+    onSearchChange={(text) => {
+      searchText = text;
+    }}
+    {filterGroups}
+    onFilterChange={(key, value) => {
+      if (key === "type") toggleType(value);
+      if (key === "tags") toggleTag(value);
+    }}
+    onClearAllFilters={clearFilters}
+    showSort={false}
+  />
 
   {#if $tablesList.isError}
     <div class="text-red-500">
