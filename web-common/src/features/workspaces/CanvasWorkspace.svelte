@@ -5,10 +5,7 @@
   import { createRootCauseErrorQuery } from "@rilldata/web-common/features/entity-management/error-utils";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-  import {
-    resourceIsLoading,
-    ResourceKind,
-  } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import { editorMode } from "@rilldata/web-common/layout/editor-mode-store";
   import {
@@ -20,7 +17,6 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import ReconcileWarningPanel from "../entity-management/ReconcileWarningPanel.svelte";
-  import PreviewButton from "../explores/PreviewButton.svelte";
   import CanvasBuilder from "../canvas/CanvasBuilder.svelte";
   import SaveDefaultsButton from "../canvas/components/SaveDefaultsButton.svelte";
   import CanvasLoadingState from "../canvas/CanvasLoadingState.svelte";
@@ -45,8 +41,6 @@
   $: resourceQuery = getResource(queryClient);
 
   $: ({ data } = $resourceQuery);
-
-  $: resourceIsReconciling = resourceIsLoading(data);
 
   $: workspace = workspaces.get(filePath);
   $: selectedView = $editorMode === "visual" ? "viz" : "code";
@@ -105,12 +99,6 @@
               saving={$saving}
             />
           {/if}
-
-          <PreviewButton
-            href="/canvas/{canvasName}"
-            disabled={!!parseError || !!reconcileError || resourceIsReconciling}
-            reconciling={resourceIsReconciling}
-          />
         </div>
       </WorkspaceHeader>
 

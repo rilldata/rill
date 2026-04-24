@@ -27,6 +27,7 @@
   import Tag from "../components/tag/Tag.svelte";
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
   import EditorModeToggle from "./EditorModeToggle.svelte";
+  import PreviewModeToggle from "./PreviewModeToggle.svelte";
 
   const { deploy, developerChat, stickyDashboardState } = featureFlags;
   const runtimeClient = useRuntimeClient();
@@ -134,6 +135,7 @@
     {:else if showDeveloperChat}
       <ChatToggle />
     {/if}
+    <PreviewModeToggle />
     {#if showDeployCTA}
       <DeployProjectCTA {hasValidDashboard} />
     {/if}

@@ -4,10 +4,7 @@
   import { createRootCauseErrorQuery } from "@rilldata/web-common/features/entity-management/error-utils";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-  import {
-    resourceIsLoading,
-    ResourceKind,
-  } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import ExploreEditor from "@rilldata/web-common/features/explores/ExploreEditor.svelte";
   import { editorMode } from "@rilldata/web-common/layout/editor-mode-store";
@@ -20,14 +17,12 @@
   import ExplainAndFixErrorButton from "@rilldata/web-common/features/chat/ExplainAndFixErrorButton.svelte";
   import ReconcileWarningPanel from "../entity-management/ReconcileWarningPanel.svelte";
   import Spinner from "../entity-management/Spinner.svelte";
-  import PreviewButton from "../explores/PreviewButton.svelte";
   import VisualExploreEditing from "./VisualExploreEditing.svelte";
   import StateManagersProvider from "../dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardStateManager from "../dashboards/state-managers/loaders/DashboardStateManager.svelte";
   import Dashboard from "../dashboards/workspace/Dashboard.svelte";
 
   export let fileArtifact: FileArtifact;
-  export let inPreviewMode = false;
 
   const runtimeClient = useRuntimeClient();
 
@@ -50,8 +45,6 @@
 
   $: exploreResource = resources?.explore;
   $: metricsViewResource = resources?.metricsView;
-
-  $: resourceIsReconciling = resourceIsLoading(exploreResource);
 
   $: selectedView = $editorMode === "visual" ? "viz" : "code";
 
@@ -99,19 +92,7 @@
         titleInput={fileName}
         {filePath}
         resourceKind={ResourceKind.Explore}
-      >
-        <div class="flex gap-x-2" slot="cta">
-          {#if !inPreviewMode}
-            <PreviewButton
-              href="/explore/{exploreName}"
-              disabled={!!parseError ||
-                !!reconcileError ||
-                resourceIsReconciling}
-              reconciling={resourceIsReconciling}
-            />
-          {/if}
-        </div>
-      </WorkspaceHeader>
+      />
 
       <svelte:fragment slot="body">
         <div class="flex flex-col h-full">

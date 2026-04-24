@@ -20,7 +20,9 @@
     errorEventHandler,
     initMetrics,
   } from "@rilldata/web-common/metrics/initMetrics";
+  import { editorReturnUrl } from "@rilldata/web-common/layout/editor-return-url-store";
   import { isDeployPage } from "@rilldata/web-common/layout/navigation/route-utils";
+  import { previewLocked } from "@rilldata/web-common/layout/preview-locked-store";
   import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
   import { LOCAL_HOST, LOCAL_INSTANCE_ID } from "../lib/runtime-client";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
@@ -58,6 +60,16 @@
     } else if (isDeveloperRoute($page.url.pathname)) {
       previewModeStore.set(false);
     }
+  }
+
+  // Mirror the CLI lock into a store so the nav knows whether exiting
+  // preview via the UI is allowed.
+  $: previewLocked.set(!!data.previewMode);
+
+  // Remember the last developer URL so the "return to editor" action
+  // can navigate back to where the user entered preview mode from.
+  $: if (isDeveloperRoute($page.url.pathname)) {
+    editorReturnUrl.set($page.url.pathname + $page.url.search);
   }
 
   let removeJavascriptListeners: () => void;
