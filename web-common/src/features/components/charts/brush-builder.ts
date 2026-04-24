@@ -1,3 +1,4 @@
+import { ScrubBoxColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 import type { View } from "svelte-vega";
 import type { SelectionParameter } from "vega-lite/types_unstable/selection.js";
 import { resolveCSSVariable } from "./util";
@@ -7,7 +8,7 @@ import { resolveCSSVariable } from "./util";
  * Add this to a layer's `params` array to enable brush/scrub selection.
  */
 export function createBrushParam(): SelectionParameter {
-  const scrubColor = resolveCSSVariable("var(--color-theme-200)");
+  const scrubColor = resolveCSSVariable(ScrubBoxColor);
   return {
     name: "brush",
     select: {

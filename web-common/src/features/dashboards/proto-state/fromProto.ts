@@ -179,7 +179,7 @@ export function getDashboardStateFromProto(
   } else if (isActivePageSet) {
     entity.tdd = {
       pinIndex: -1,
-      chartType: TDDChart.DEFAULT,
+      chartType: chartTypeMap(dashboard.chartType),
       expandedMeasureName: "",
     };
   }
