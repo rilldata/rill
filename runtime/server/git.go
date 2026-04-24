@@ -33,12 +33,7 @@ func (s *Server) ListGitBranches(ctx context.Context, req *runtimev1.ListGitBran
 	// List all deployments
 	admin, release, err := s.runtime.Admin(ctx, req.InstanceId)
 	if err != nil {
-		if errors.Is(err, runtime.ErrAdminNotConfigured) && s.adminOverride != nil {
-			admin = s.adminOverride
-			release = func() {}
-		} else {
-			return nil, err
-		}
+		return nil, err
 	}
 	defer release()
 

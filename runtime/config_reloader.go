@@ -2,7 +2,6 @@ package runtime
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"maps"
 	"time"
@@ -60,14 +59,11 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 
 	admin, release, err := r.rt.Admin(ctx, instanceID)
 	if err != nil {
-		if errors.Is(err, ErrAdminNotConfigured) {
-			return nil
-		}
 		return err
 	}
 	defer release()
 
-	r.rt.Logger.Info("Reloading config for instance", zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
+	r.rt.Logger.Debug("Reloading config for instance", zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 
 	cfg, err := admin.GetDeploymentConfig(ctx)
 	if err != nil {

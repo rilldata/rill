@@ -499,10 +499,6 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 
 	admin, release, err := r.C.Runtime.Admin(ctx, r.C.InstanceID)
 	if err != nil {
-		if errors.Is(err, runtime.ErrAdminNotConfigured) {
-			r.C.Logger.Info("Skipped sending report because an admin service is not configured", zap.String("report", self.Meta.Name.Name), observability.ZapCtx(ctx))
-			return false, nil, nil
-		}
 		return false, nil, fmt.Errorf("failed to get admin client: %w", err)
 	}
 	defer release()
@@ -530,6 +526,10 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 
 	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, ownerID, webOpenMode, emailRecipients, anonRecipients, t)
 	if err != nil {
+		if errors.Is(err, drivers.ErrReportsNotSupported) {
+			r.C.Logger.Info("Skipped sending report because an admin service is not configured", zap.String("report", self.Meta.Name.Name), observability.ZapCtx(ctx))
+			return false, nil, nil
+		}
 		return false, nil, fmt.Errorf("failed to get report metadata: %w", err)
 	}
 

@@ -145,3 +145,31 @@ type Handle interface {
 	// Examples: email notifier, slack notifier.
 	AsNotifier(properties map[string]any) (Notifier, error)
 }
+
+// embeddedDriver is a driver that serves a single, pre-opened Handle.
+type embeddedDriver struct {
+	s    Handle
+	spec Spec
+}
+
+var _ Driver = &embeddedDriver{}
+
+func NewEmbeddedDriver(handle Handle, spec Spec) Driver {
+	return &embeddedDriver{s: handle, spec: spec}
+}
+
+func (d *embeddedDriver) Spec() Spec {
+	return d.spec
+}
+
+func (d *embeddedDriver) Open(connectorName, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (Handle, error) {
+	return d.s, nil
+}
+
+func (d *embeddedDriver) HasAnonymousSourceAccess(ctx context.Context, srcProps map[string]any, logger *zap.Logger) (bool, error) {
+	return true, nil
+}
+
+func (d *embeddedDriver) TertiarySourceConnectors(ctx context.Context, srcProps map[string]any, logger *zap.Logger) ([]string, error) {
+	return nil, nil
+}

@@ -6,7 +6,13 @@ import (
 	"time"
 )
 
-var ErrNotAuthenticated = errors.New("not authenticated")
+var (
+	ErrNotAuthenticated = errors.New("not authenticated")
+
+	ErrReportsNotSupported      = errors.New("reports not supported by admin service")
+	ErrAlertsNotSupported       = errors.New("alerts not supported by admin service")
+	ErrProvisioningNotSupported = errors.New("provisioning not supported by admin service")
+)
 
 type AdminService interface {
 	GetReportMetadata(ctx context.Context, reportName, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*ReportMetadata, error)

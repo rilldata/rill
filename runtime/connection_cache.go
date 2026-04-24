@@ -124,10 +124,7 @@ func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig
 
 			// As a special carve-out, we never try to provision DuckDB through the admin service.
 			// (Since the driver just starts an embedded DuckDB when `managed: true`.)
-			skipAdminProvisioning := cfg.driver == "duckdb"
-
-			// Provisioning has been requested, but the instance does not have an admin connector.
-			if inst.AdminConnector == "" || skipAdminProvisioning {
+			if cfg.driver == "duckdb" {
 				// As a fallback, we pass the provision arguments to the driver, giving it a chance to provision itself if it supports it.
 				cfg.config["provision"] = true
 				cfg.config["provision_args"] = cfg.provisionArgs
@@ -141,6 +138,11 @@ func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig
 
 				newConfig, err := admin.ProvisionConnector(ctx, cfg.name, cfg.driver, cfg.provisionArgs)
 				if err != nil {
+					if errors.Is(err, drivers.ErrProvisioningNotSupported) {
+						// As a fallback, we pass the provision arguments to the driver, giving it a chance to provision itself if it supports it.
+						cfg.config["provision"] = true
+						cfg.config["provision_args"] = cfg.provisionArgs
+					}
 					return nil, fmt.Errorf("failed to provision %q: %w", cfg.name, err)
 				}
 

@@ -16,7 +16,6 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
@@ -63,8 +62,6 @@ type Server struct {
 	limiter  ratelimit.Limiter
 	activity *activity.Client
 	ai       *ai.Runner
-	// set for local runtimes
-	adminOverride drivers.AdminService
 }
 
 var (
@@ -75,7 +72,7 @@ var (
 
 // NewServer creates a new runtime server.
 // The provided ctx is used for the lifetime of the server for background refresh of the JWKS that is used to validate auth tokens.
-func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *zap.Logger, limiter ratelimit.Limiter, activityClient *activity.Client, adminOverride drivers.AdminService) (*Server, error) {
+func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *zap.Logger, limiter ratelimit.Limiter, activityClient *activity.Client) (*Server, error) {
 	// The runtime doesn't actually set cookies, but we use securecookie to encode/decode ephemeral tokens.
 	// If no session key pairs are provided, we generate a random one for the duration of the process.
 	var codec *securetoken.Codec
@@ -86,14 +83,13 @@ func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *
 	}
 
 	srv := &Server{
-		runtime:       rt,
-		opts:          opts,
-		logger:        logger,
-		codec:         codec,
-		limiter:       limiter,
-		activity:      activityClient,
-		ai:            ai.NewRunner(rt, activityClient),
-		adminOverride: adminOverride,
+		runtime:  rt,
+		opts:     opts,
+		logger:   logger,
+		codec:    codec,
+		limiter:  limiter,
+		activity: activityClient,
+		ai:       ai.NewRunner(rt, activityClient),
 	}
 
 	if opts.AuthEnable {

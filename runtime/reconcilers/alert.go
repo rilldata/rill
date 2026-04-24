@@ -522,7 +522,7 @@ func (r *AlertReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	// Get admin metadata for the alert (if an admin service is not configured, alerts will still work, the notifications just won't have open/edit links).
 	var adminMeta *drivers.AlertMetadata
 	admin, release, err := r.C.Runtime.Admin(ctx, r.C.InstanceID)
-	if err != nil && !errors.Is(err, runtime.ErrAdminNotConfigured) {
+	if err != nil {
 		return fmt.Errorf("failed to get admin client: %w", err)
 	}
 	if err == nil { // Connected successfully
@@ -541,7 +541,7 @@ func (r *AlertReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 			ownerID = a.Spec.Annotations["admin_owner_user_id"]
 		}
 		adminMeta, err = admin.GetAlertMetadata(ctx, self.Meta.Name.Name, ownerID, emailRecipients, anonRecipients, a.Spec.Annotations, a.Spec.GetQueryForUserId(), a.Spec.GetQueryForUserEmail())
-		if err != nil {
+		if err != nil && !errors.Is(err, drivers.ErrAlertsNotSupported) {
 			return fmt.Errorf("failed to get alert metadata: %w", err)
 		}
 	}
