@@ -48,7 +48,7 @@
     <div class="wrapper column p-10 2xl:py-16">
       {#if isProjectAvailable && !!runtime.host}
         {#key runtimeKey}
-          <FileAndResourceWatcher lifecycle="aggressive">
+          <FileAndResourceWatcher lifecycle="none">
             <div class="mx-auto my-auto">
               {@render children()}
             </div>
