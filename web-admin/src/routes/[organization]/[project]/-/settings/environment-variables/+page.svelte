@@ -100,11 +100,8 @@
     return new Date(b.updatedOn).getTime() - new Date(a.updatedOn).getTime();
   });
 
-  function handleFilterChange(_key: string, value: string) {
-    const v = value as EnvironmentTypes;
-    envFilter = envFilter.includes(v)
-      ? envFilter.filter((x) => x !== v)
-      : [...envFilter, v];
+  function handleFilterChange(_key: string, selected: string | string[]) {
+    envFilter = selected as EnvironmentTypes[];
   }
 
   function handleClearAllFilters() {

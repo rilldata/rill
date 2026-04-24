@@ -203,12 +203,8 @@
     }
   }
 
-  function toggleLevel(level: string) {
-    if (selectedLevels.includes(level)) {
-      selectedLevels = selectedLevels.filter((l) => l !== level);
-    } else {
-      selectedLevels = [...selectedLevels, level];
-    }
+  function onFilterChange(key: string, selected: string[] | string) {
+    if (key === "level") selectedLevels = selected as string[];
   }
 
   function clearFilters() {
@@ -244,9 +240,7 @@
   <TableToolbar
     bind:searchText
     {filterGroups}
-    onFilterChange={(key, value) => {
-      if (key === "level") toggleLevel(value);
-    }}
+    {onFilterChange}
     onClearAllFilters={clearFilters}
     showSort={false}
   />

@@ -50,6 +50,10 @@
   } from "lucide-svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { onMount } from "svelte";
+  import {
+    deploymentStatusFilterMatches,
+    getDeploymentStatusFilterGroup,
+  } from "@rilldata/web-admin/features/branches/deployment-filter-utils.ts";
 
   let { organization, project }: { organization: string; project: string } =
     $props();
@@ -143,52 +147,15 @@
   });
 
   let filterGroups = $derived([
-    {
-      label: "Status",
-      key: "status",
-      options: [
-        { label: "Ready", value: "running" },
-        { label: "Pending", value: "pending" },
-        { label: "Error", value: "errored" },
-        { label: "Stopped", value: "stopped" },
-      ],
-      selected: statusFilter,
-      defaultValue: [],
-      multiSelect: true,
-    },
+    getDeploymentStatusFilterGroup(statusFilter),
   ] satisfies FilterGroup[]);
-
-  function statusMatches(d: V1Deployment): boolean {
-    if (statusFilter.length === 0) return true;
-    const s = d.status;
-    return statusFilter.some((sel) => {
-      switch (sel) {
-        case "running":
-          return s === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING;
-        case "pending":
-          return (
-            s === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING ||
-            s === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING
-          );
-        case "errored":
-          return s === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED;
-        case "stopped":
-          return (
-            s === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED ||
-            s === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING
-          );
-        default:
-          return false;
-      }
-    });
-  }
 
   let visibleDeployments = $derived.by(() => {
     const q = searchText.trim().toLowerCase();
     const active = ($allDeployments.data?.deployments ?? []).filter(
       (d: V1Deployment) =>
         d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED &&
-        statusMatches(d) &&
+        deploymentStatusFilterMatches(statusFilter, d) &&
         (q === "" || (d.branch ?? "").toLowerCase().includes(q)),
     );
     return [...active].sort((a, b) => {
@@ -228,6 +195,10 @@
   let pendingId = $state("");
   let deleteDialogOpen = $state(false);
   let pendingDelete = $state<{ id: string; branch: string } | null>(null);
+
+  function onFilterChange(key: string, selected: string[]) {
+    if (key === "status") statusFilter = selected;
+  }
 
   async function mutateDeployment(
     deploymentId: string,
@@ -294,13 +265,7 @@
   <TableToolbar
     bind:searchText
     {filterGroups}
-    onFilterChange={(key, value) => {
-      if (key === "status") {
-        statusFilter = statusFilter.includes(value)
-          ? statusFilter.filter((v) => v !== value)
-          : [...statusFilter, value];
-      }
-    }}
+    {onFilterChange}
     onClearAllFilters={() => {
       statusFilter = [];
       searchText = "";

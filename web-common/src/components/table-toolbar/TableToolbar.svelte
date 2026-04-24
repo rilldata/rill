@@ -22,7 +22,7 @@
     searchText?: string;
     searchDisabled?: boolean;
     filterGroups?: FilterGroup[];
-    onFilterChange?: (key: string, value: string) => void;
+    onFilterChange?: (key: string, selected: string | string[]) => void;
     onClearAllFilters?: () => void;
     sortDirection?: SortDirection;
     showSort?: boolean;
