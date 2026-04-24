@@ -319,7 +319,6 @@ func (e *Executor) resolveDruid(ctx context.Context, database, databaseSchema, t
 	return ts, nil
 }
 
-
 func (e *Executor) resolveBigQuery(ctx context.Context, database, databaseSchema, table, timeExpr, watermarkExpr string) (metricsview.TimestampsResult, error) {
 	escapedTableName := e.olap.Dialect().EscapeTable(database, databaseSchema, table)
 	if watermarkExpr == "" {
@@ -363,7 +362,6 @@ func (e *Executor) resolveBigQuery(ctx context.Context, database, databaseSchema
 		Watermark: safeTime(watermark),
 	}, nil
 }
-
 
 func safeTime(tm *time.Time) time.Time {
 	if tm == nil {
