@@ -18,9 +18,7 @@
 
   const client = useRuntimeClient();
 
-  $: requiredDriver = currentValue
-    ? requiredDrivers[currentValue]
-    : undefined;
+  $: requiredDriver = currentValue ? requiredDrivers[currentValue] : undefined;
 
   $: isSupported =
     !!requiredDriver &&

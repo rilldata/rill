@@ -70,8 +70,7 @@ export async function writeInlineConnector(opts: {
       stringKeys,
       schema,
       existingEnvBlob: originalBlob,
-      fieldFilter: (property) =>
-        !("internal" in property && property.internal),
+      fieldFilter: (property) => !("internal" in property && property.internal),
     }),
     create: true,
     createOnly: false,
