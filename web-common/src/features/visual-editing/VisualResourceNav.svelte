@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import CanvasIcon from "@rilldata/web-common/components/icons/CanvasIcon.svelte";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import MetricsViewIcon from "@rilldata/web-common/components/icons/MetricsViewIcon.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
@@ -65,66 +66,109 @@
   $: exploreItems = itemsFrom(explores);
   $: canvasItems = itemsFrom(canvases);
   $: metricsItems = itemsFrom(metrics);
+
+  let dashboardsOpen = true;
+  let canvasesOpen = true;
+  let metricsOpen = true;
 </script>
 
 <nav class="flex flex-col gap-y-1 p-2 pb-6 w-full">
   {#if exploreItems.length}
     <section>
-      <h3>Dashboards</h3>
-      <ul>
-        {#each exploreItems as item (item.href)}
-          <li>
-            <a
-              href={item.href}
-              class="row"
-              class:active={currentFile === item.filePath}
-            >
-              <ExploreIcon size="15px" />
-              <span class="truncate">{item.name}</span>
-            </a>
-          </li>
-        {/each}
-      </ul>
+      <button
+        class="section-header"
+        aria-expanded={dashboardsOpen}
+        onclick={() => (dashboardsOpen = !dashboardsOpen)}
+      >
+        <CaretDownIcon
+          size="16px"
+          className="text-fg-secondary transition-transform {!dashboardsOpen &&
+            '-rotate-90'}"
+        />
+        <h3>Dashboards</h3>
+      </button>
+      {#if dashboardsOpen}
+        <ul>
+          {#each exploreItems as item (item.href)}
+            <li>
+              <a
+                href={item.href}
+                class="row"
+                class:active={currentFile === item.filePath}
+              >
+                <ExploreIcon size="15px" />
+                <span class="truncate">{item.name}</span>
+              </a>
+            </li>
+          {/each}
+        </ul>
+      {/if}
     </section>
   {/if}
 
   {#if canvasItems.length}
     <section>
-      <h3>Canvases</h3>
-      <ul>
-        {#each canvasItems as item (item.href)}
-          <li>
-            <a
-              href={item.href}
-              class="row"
-              class:active={currentFile === item.filePath}
-            >
-              <CanvasIcon size="15px" />
-              <span class="truncate">{item.name}</span>
-            </a>
-          </li>
-        {/each}
-      </ul>
+      <button
+        class="section-header"
+        aria-expanded={canvasesOpen}
+        onclick={() => (canvasesOpen = !canvasesOpen)}
+      >
+        <CaretDownIcon
+          size="16px"
+          className="text-fg-secondary transition-transform {!canvasesOpen &&
+            '-rotate-90'}"
+        />
+        <h3>Canvases</h3>
+      </button>
+      {#if canvasesOpen}
+        <ul>
+          {#each canvasItems as item (item.href)}
+            <li>
+              <a
+                href={item.href}
+                class="row"
+                class:active={currentFile === item.filePath}
+              >
+                <CanvasIcon size="15px" />
+                <span class="truncate">{item.name}</span>
+              </a>
+            </li>
+          {/each}
+        </ul>
+      {/if}
     </section>
   {/if}
 
   {#if metricsItems.length}
     <section>
-      <h3>Metrics</h3>
-      <ul>
-        {#each metricsItems as item (item.href)}
-          <li>
-            <a
-              href={item.href}
-              class="row"
-              class:active={currentFile === item.filePath}
-            >
-              <MetricsViewIcon size="15px" />
-              <span class="truncate">{item.name}</span>
-            </a>
-          </li>
-        {/each}
-      </ul>
+      <button
+        class="section-header"
+        aria-expanded={metricsOpen}
+        onclick={() => (metricsOpen = !metricsOpen)}
+      >
+        <CaretDownIcon
+          size="16px"
+          className="text-fg-secondary transition-transform {!metricsOpen &&
+            '-rotate-90'}"
+        />
+        <h3>Metrics</h3>
+      </button>
+      {#if metricsOpen}
+        <ul>
+          {#each metricsItems as item (item.href)}
+            <li>
+              <a
+                href={item.href}
+                class="row"
+                class:active={currentFile === item.filePath}
+              >
+                <MetricsViewIcon size="15px" />
+                <span class="truncate">{item.name}</span>
+              </a>
+            </li>
+          {/each}
+        </ul>
+      {/if}
     </section>
   {/if}
 
@@ -144,16 +188,25 @@
   }
 
   section {
-    @apply flex flex-col gap-y-0.5 mb-4;
+    @apply flex flex-col gap-y-0.5 mb-3;
+  }
+
+  .section-header {
+    @apply flex items-center gap-x-1.5 w-full;
+    @apply px-2 py-1.5 cursor-pointer rounded-md;
+    @apply text-fg-secondary;
+  }
+
+  .section-header:hover {
+    @apply bg-surface-hover;
   }
 
   h3 {
     @apply text-[11px] uppercase tracking-wide font-semibold text-fg-muted;
-    @apply px-2 pt-2 pb-1.5;
   }
 
   ul {
-    @apply flex flex-col gap-y-0.5;
+    @apply flex flex-col gap-y-0.5 pl-1;
   }
 
   .row {
