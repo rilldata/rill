@@ -313,7 +313,6 @@ func (s *Server) ReloadConfig(ctx context.Context, req *runtimev1.ReloadConfigRe
 	if err != nil {
 		return nil, err
 	}
-	// the count and modified values will be updated here
 	return &runtimev1.ReloadConfigResponse{
 		VariablesCount: int32(count),
 		Modified:       modified,
@@ -348,7 +347,10 @@ func (s *Server) pullEnv(ctx context.Context, instanceID string) (int, bool, err
 	if err != nil && !errors.Is(err, drivers.ErrNotAuthenticated) {
 		return 0, false, fmt.Errorf("failed to get project variables: %w", err)
 	}
-	cloudPerEnv := cfg.Variables
+	var cloudPerEnv map[string]map[string]string
+	if cfg != nil {
+		cloudPerEnv = cfg.Variables
+	}
 
 	// Parse local .env files
 	p, err := parser.Parse(ctx, repo, instanceID, inst.Environment, inst.OLAPConnector, false)
