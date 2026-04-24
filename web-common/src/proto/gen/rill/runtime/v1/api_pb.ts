@@ -1186,7 +1186,7 @@ export class ReloadConfigRequest extends Message$1<ReloadConfigRequest> {
  */
 export class ReloadConfigResponse extends Message$1<ReloadConfigResponse> {
   /**
-   * Number of variables pulled from cloud
+   * Number of variables pulled from admin service
    *
    * @generated from field: int32 variables_count = 1;
    */

@@ -13,7 +13,7 @@ rill env push [<project-name>] [flags]
 ### Flags
 
 ```
-      --environment string   Optional environment to resolve for (options: dev, prod)
+      --environment string   Optional environment to resolve for (options: dev, prod) (default "dev")
       --path string          Project directory (default ".")
       --project string       Cloud project name (will attempt to infer from Git remote if not provided)
 ```

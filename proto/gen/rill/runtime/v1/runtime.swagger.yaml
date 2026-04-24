@@ -7422,7 +7422,7 @@ definitions:
       variablesCount:
         type: integer
         format: int32
-        title: Number of variables pulled from cloud
+        title: Number of variables pulled from admin service
       modified:
         type: boolean
         title: Whether the .env file(s) were modified

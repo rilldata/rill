@@ -1588,7 +1588,7 @@ type ReloadConfigResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Number of variables pulled from cloud
+	// Number of variables pulled from admin service
 	VariablesCount int32 `protobuf:"varint,1,opt,name=variables_count,json=variablesCount,proto3" json:"variables_count,omitempty"`
 	// Whether the .env file(s) were modified
 	Modified bool `protobuf:"varint,2,opt,name=modified,proto3" json:"modified,omitempty"`
