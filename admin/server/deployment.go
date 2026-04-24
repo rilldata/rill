@@ -954,6 +954,8 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 	for _, v := range vars {
 		resp.Variables = append(resp.Variables, projectVariableToDTO(v))
 	}
+
+	// Enable the file watcher for editable deployments.
 	resp.Variables = append(resp.Variables, &adminv1.ProjectVariable{
 		Name:        "rill.watch_repo",
 		Value:       strconv.FormatBool(depl.Editable),
