@@ -66,7 +66,7 @@ func (q *ColumnTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 	// TODO: Try and merge this with metrics_time_range. Both use same queries but metrics_time_range uses a specific timestamp column from metrics_view
 	switch olap.Dialect().String() {
 	case drivers.DialectNameDuckDB, drivers.DialectNameClickHouse, drivers.DialectNameSnowflake, drivers.DialectNameBigQuery, drivers.DialectNameDatabricks:
-		return q.resolve(ctx, olap, priority)
+		return q.resolveGeneric(ctx, olap, priority)
 	case drivers.DialectNameStarRocks:
 		return q.resolveStarRocks(ctx, olap, priority)
 	case drivers.DialectNameDruid:
@@ -76,7 +76,7 @@ func (q *ColumnTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 	}
 }
 
-func (q *ColumnTimeRange) resolve(ctx context.Context, olap drivers.OLAPStore, priority int) error {
+func (q *ColumnTimeRange) resolveGeneric(ctx context.Context, olap drivers.OLAPStore, priority int) error {
 	d := olap.Dialect()
 
 	var rangeSQL string
