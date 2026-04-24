@@ -54,3 +54,18 @@ INSERT INTO integration_test.all_datatypes VALUES
     NULL,
     NULL
 );
+
+
+CREATE TABLE IF NOT EXISTS integration_test.foo (bar VARCHAR(255), baz INTEGER);
+INSERT INTO integration_test.foo VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4);
+
+CREATE TABLE IF NOT EXISTS integration_test.bar (bar VARCHAR(255), baz INTEGER);
+INSERT INTO integration_test.bar VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4);
+
+CREATE TABLE IF NOT EXISTS integration_test.foz (bar VARCHAR(255), baz INTEGER);
+INSERT INTO integration_test.foz VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4);
+
+CREATE TABLE IF NOT EXISTS integration_test.baz (bar VARCHAR(255), baz INTEGER);
+INSERT INTO integration_test.baz VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4);
+
+CREATE VIEW IF NOT EXISTS integration_test.model AS SELECT 1 AS col1, 2 AS col2, 3 AS col3;

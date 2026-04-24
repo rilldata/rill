@@ -34,28 +34,28 @@ TBLPROPERTIES ('parquet.compress'='SNAPPY');
 
 -- Simple test tables for information schema tests (CTAS with PARQUET format)
 CREATE TABLE foo
-WITH (format = 'PARQUET', external_location = 's3://integration-test.rilldata.com/athena/foo/')
+WITH (format = 'PARQUET', external_location = 's3://integration-test.rilldata.com/athena_integration_test/foo/')
 AS SELECT CAST('a' AS VARCHAR) AS bar, CAST(1 AS INT) AS baz
 UNION ALL SELECT 'a', 2
 UNION ALL SELECT 'b', 3
 UNION ALL SELECT 'c', 4;
 
 CREATE TABLE bar
-WITH (format = 'PARQUET', external_location = 's3://integration-test.rilldata.com/athena/bar/')
+WITH (format = 'PARQUET', external_location = 's3://integration-test.rilldata.com/athena_integration_test/bar/')
 AS SELECT CAST('a' AS VARCHAR) AS bar, CAST(1 AS INT) AS baz
 UNION ALL SELECT 'a', 2
 UNION ALL SELECT 'b', 3
 UNION ALL SELECT 'c', 4;
 
 CREATE TABLE foz
-WITH (format = 'PARQUET', external_location = 's3://integration-test.rilldata.com/athena/foz/')
+WITH (format = 'PARQUET', external_location = 's3://integration-test.rilldata.com/athena_integration_test/foz/')
 AS SELECT CAST('a' AS VARCHAR) AS bar, CAST(1 AS INT) AS baz
 UNION ALL SELECT 'a', 2
 UNION ALL SELECT 'b', 3
 UNION ALL SELECT 'c', 4;
 
 CREATE TABLE baz
-WITH (format = 'PARQUET', external_location = 's3://integration-test.rilldata.com/athena/baz/')
+WITH (format = 'PARQUET', external_location = 's3://integration-test.rilldata.com/athena_integration_test/baz/')
 AS SELECT CAST('a' AS VARCHAR) AS bar, CAST(1 AS INT) AS baz
 UNION ALL SELECT 'a', 2
 UNION ALL SELECT 'b', 3

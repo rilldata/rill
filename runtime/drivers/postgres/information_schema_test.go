@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	database       = "default_catalog"
-	databaseSchema = "test_db"
+	database       = "postgres"
+	databaseSchema = "public"
 )
 
 var knownTestTables = []string{"all_datatypes", "bar", "baz", "foo", "foz", "model"}
@@ -67,7 +67,7 @@ func testAll(t *testing.T, ctx context.Context, infoSchema drivers.InformationSc
 
 	for _, tbl := range tables {
 		require.True(t, tbl.IsDefaultDatabase, "table %s: expected IsDefaultDatabase=true", tbl.Name)
-		require.False(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=false", tbl.Name)
+		require.True(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=true", tbl.Name)
 	}
 }
 
@@ -120,8 +120,7 @@ func testListTables(t *testing.T, ctx context.Context, infoSchema drivers.Inform
 
 	for _, tbl := range tables {
 		require.True(t, tbl.IsDefaultDatabase, "table %s: expected IsDefaultDatabase=true", tbl.Name)
-		// BigQuery has no default dataset concept
-		require.False(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=false", tbl.Name)
+		require.True(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=true", tbl.Name)
 	}
 }
 

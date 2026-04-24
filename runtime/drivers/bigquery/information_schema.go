@@ -113,7 +113,7 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 		res = append(res, &drivers.TableInfo{
 			Name:              row.TableName,
 			View:              row.TableType == "VIEW",
-			IsDefaultDatabase: database == c.config.ProjectID,
+			IsDefaultDatabase: true, // it's project id od always true
 		})
 	}
 

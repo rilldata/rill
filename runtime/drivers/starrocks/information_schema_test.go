@@ -15,7 +15,7 @@ const (
 	databaseSchema = "test_db"
 )
 
-var knownTestTables = []string{"all_datatypes", "bar", "baz", "foo", "foz", "model"}
+var knownTestTables = []string{"all_types", "bar", "baz", "foo", "foz", "model"}
 
 const numKnown = 6
 
@@ -54,7 +54,7 @@ func testAll(t *testing.T, ctx context.Context, infoSchema drivers.InformationSc
 	tables := filterOLAP(all)
 	require.Equal(t, numKnown, len(tables))
 
-	require.Equal(t, "all_datatypes", tables[0].Name)
+	require.Equal(t, "all_types", tables[0].Name)
 	require.Equal(t, "bar", tables[1].Name)
 	require.Equal(t, "baz", tables[2].Name)
 	require.Equal(t, "foo", tables[3].Name)
@@ -110,7 +110,7 @@ func testListTables(t *testing.T, ctx context.Context, infoSchema drivers.Inform
 	tables := filterTableInfos(all)
 	require.Equal(t, numKnown, len(tables))
 
-	require.Equal(t, "all_datatypes", tables[0].Name)
+	require.Equal(t, "all_types", tables[0].Name)
 	require.Equal(t, "bar", tables[1].Name)
 	require.Equal(t, "baz", tables[2].Name)
 	require.Equal(t, "foo", tables[3].Name)
@@ -120,7 +120,6 @@ func testListTables(t *testing.T, ctx context.Context, infoSchema drivers.Inform
 
 	for _, tbl := range tables {
 		require.True(t, tbl.IsDefaultDatabase, "table %s: expected IsDefaultDatabase=true", tbl.Name)
-		// BigQuery has no default dataset concept
 		require.False(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=false", tbl.Name)
 	}
 }

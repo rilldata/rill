@@ -76,7 +76,9 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	q := fmt.Sprintf(`
 	SELECT
 		table_name,
-		CASE WHEN table_type = 'VIEW' THEN true ELSE false END AS is_view
+		CASE WHEN table_type = 'VIEW' THEN true ELSE false END AS is_view,
+		CASE WHEN table_catalog = current_catalog() THEN true ELSE false END AS is_default_database,
+		CASE WHEN table_schema = current_schema() THEN true ELSE false END AS is_default_database_schema
 	FROM %sinformation_schema.tables
 	WHERE table_schema = ?
 	`, catalogPrefix(database))
@@ -113,14 +115,16 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 
 	var res []*drivers.TableInfo
 	var name string
-	var isView bool
+	var isView, isDefaultDatabase, isDefaultDatabaseSchema bool
 	for rows.Next() {
-		if err := rows.Scan(&name, &isView); err != nil {
+		if err := rows.Scan(&name, &isView, &isDefaultDatabase, &isDefaultDatabaseSchema); err != nil {
 			return nil, "", err
 		}
 		res = append(res, &drivers.TableInfo{
-			Name: name,
-			View: isView,
+			Name:                    name,
+			View:                    isView,
+			IsDefaultDatabase:       isDefaultDatabase,
+			IsDefaultDatabaseSchema: isDefaultDatabaseSchema,
 		})
 	}
 	if err := rows.Err(); err != nil {
@@ -198,13 +202,8 @@ func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) erro
 
 	fqn := DialectDatabricks.EscapeTable(table.Database, table.DatabaseSchema, table.Name)
 
-	objectType := "TABLE"
-	if table.View {
-		objectType = "VIEW"
-	}
-
 	var ddl string
-	err = db.QueryRowContext(ctx, fmt.Sprintf("SHOW CREATE %s %s", objectType, fqn)).Scan(&ddl)
+	err = db.QueryRowContext(ctx, fmt.Sprintf("SHOW CREATE TABLE %s", fqn)).Scan(&ddl)
 	if err != nil {
 		return err
 	}

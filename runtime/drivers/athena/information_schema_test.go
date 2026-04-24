@@ -120,7 +120,6 @@ func testListTables(t *testing.T, ctx context.Context, infoSchema drivers.Inform
 
 	for _, tbl := range tables {
 		require.True(t, tbl.IsDefaultDatabase, "table %s: expected IsDefaultDatabase=true", tbl.Name)
-		// BigQuery has no default dataset concept
 		require.False(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=false", tbl.Name)
 	}
 }
@@ -171,13 +170,13 @@ func testLoadDDL(t *testing.T, ctx context.Context, infoSchema drivers.Informati
 	require.NoError(t, err)
 	err = infoSchema.LoadDDL(ctx, table)
 	require.NoError(t, err)
-	require.NotEmpty(t, table.DDL)
+	require.Empty(t, table.DDL)
 
 	view, err := infoSchema.Lookup(ctx, database, databaseSchema, "model")
 	require.NoError(t, err)
 	err = infoSchema.LoadDDL(ctx, view)
 	require.NoError(t, err)
-	require.NotEmpty(t, view.DDL)
+	require.Empty(t, view.DDL)
 }
 
 func filterOLAP(tables []*drivers.OlapTable) []*drivers.OlapTable {

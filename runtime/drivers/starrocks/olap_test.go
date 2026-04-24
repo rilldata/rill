@@ -1381,7 +1381,7 @@ func acquireTestStarRocks(t *testing.T) (drivers.Handle, drivers.OLAPStore) {
 		"dsn": dsn,
 	}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
-	defer conn.Close()
+	t.Cleanup(func() { conn.Close() })
 
 	olap, ok := conn.AsOLAP("default")
 	require.True(t, ok)
