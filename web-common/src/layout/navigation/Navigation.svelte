@@ -92,6 +92,9 @@
   />
   <div class="inner" style:width="{width}px">
     {#if $editorMode === "visual"}
+      <div class="p-2 w-full pr-10">
+        <AddAssetButton />
+      </div>
       <div class="scroll-container">
         <VisualResourceNav />
       </div>
