@@ -146,7 +146,6 @@ type Handle interface {
 	AsNotifier(properties map[string]any) (Notifier, error)
 }
 
-// embeddedDriver is a driver that serves a single, pre-opened Handle.
 type embeddedDriver struct {
 	s    Handle
 	spec Spec
@@ -154,6 +153,7 @@ type embeddedDriver struct {
 
 var _ Driver = &embeddedDriver{}
 
+// NewEmbeddedDriver returns a driver that serves a single, pre-opened handle everytime.
 func NewEmbeddedDriver(handle Handle, spec Spec) Driver {
 	return &embeddedDriver{s: handle, spec: spec}
 }
