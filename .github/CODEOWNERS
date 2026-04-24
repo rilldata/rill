@@ -1,9 +1,12 @@
 /admin/   @rilldata/platform
 /cli/     @rilldata/platform
-/proto/   @rilldata/platform
 /runtime/ @rilldata/platform
 
 /web-admin/       @rilldata/applications
 /web-common/      @rilldata/applications
 /web-integration/ @rilldata/applications
 /web-local/       @rilldata/applications
+
+/proto/                         @rilldata/applications @rilldata/platform
+/web-admin/src/client/          @rilldata/applications @rilldata/platform
+/web-common/src/runtime-client/ @rilldata/applications @rilldata/platform
