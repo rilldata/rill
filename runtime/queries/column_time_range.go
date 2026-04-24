@@ -79,21 +79,13 @@ func (q *ColumnTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 func (q *ColumnTimeRange) resolveGeneric(ctx context.Context, olap drivers.OLAPStore, priority int) error {
 	d := olap.Dialect()
 
-	var rangeSQL string
-	switch d.String() {
-	case drivers.DialectNameBigQuery, drivers.DialectNameDatabricks:
-		rangeSQL = fmt.Sprintf(
-			"SELECT min(%[1]s) as `min`, max(%[1]s) as `max` FROM %[2]s",
-			d.EscapeIdentifier(q.ColumnName),
-			d.EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
-		)
-	default:
-		rangeSQL = fmt.Sprintf(
-			"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\" FROM %[2]s",
-			d.EscapeIdentifier(q.ColumnName),
-			d.EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
-		)
-	}
+	rangeSQL := fmt.Sprintf(
+		"SELECT min(%[1]s) as %[3]s, max(%[1]s) as %[4]s FROM %[2]s",
+		d.EscapeIdentifier(q.ColumnName),
+		d.EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
+		d.EscapeAlias("min"),
+		d.EscapeAlias("max"),
+	)
 
 	rows, err := olap.Query(ctx, &drivers.Statement{
 		Query:            rangeSQL,
