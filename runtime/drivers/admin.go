@@ -12,8 +12,9 @@ type AdminService interface {
 	GetReportMetadata(ctx context.Context, reportName, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*ReportMetadata, error)
 	GetAlertMetadata(ctx context.Context, alertName, ownerID string, emailRecipients []string, anonRecipients bool, annotations map[string]string, queryForUserID, queryForUserEmail string) (*AlertMetadata, error)
 	ProvisionConnector(ctx context.Context, name, driver string, args map[string]any) (map[string]any, error)
-	GetDeploymentConfig(ctx context.Context) (*DeploymentConfig, error)
+	GetConfig(ctx context.Context) (*Config, error)
 	ListDeployments(ctx context.Context) ([]*Deployment, error)
+	UpdateProjectVariables(ctx context.Context, environment string, variables map[string]string) error
 }
 
 type ReportMetadata struct {
@@ -40,14 +41,16 @@ type AlertMetadata struct {
 	QueryForAttributes map[string]any
 }
 
-// DeploymentConfig holds configuration returned by the admin service for a deployment.
-type DeploymentConfig struct {
-	Variables             map[string]string
+// Config holds configuration returned by the admin service for the runtime instance.
+// For local runtimes only applicable fields like Variables will be populated.
+type Config struct {
+	Variables             map[string]map[string]string
 	Annotations           map[string]string
 	FrontendURL           string
 	UpdatedOn             time.Time
 	UsesArchive           bool
 	DuckdbConnectorConfig map[string]any
+	Editable              bool
 }
 
 type Deployment struct {

@@ -793,6 +793,31 @@ paths:
           type: string
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/env/push:
+    post:
+      summary: PushEnv pushes local environment variables to admin service
+      operationId: RuntimeService_PushEnv
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1PushEnvResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/files:
     get:
       summary: |-
@@ -7204,6 +7229,17 @@ definitions:
           Storage usage by the default OLAP connector in the project.
           If it is -1, it means the value is unknown.
           This is a convenience field derived from the entries.
+  v1PushEnvResponse:
+    type: object
+    properties:
+      addedCount:
+        type: integer
+        format: int32
+        title: Number of variables added
+      changedCount:
+        type: integer
+        format: int32
+        title: Number of variables changed
   v1PutFileResponse:
     type: object
     properties:

@@ -55,6 +55,8 @@ import {
   ListResourcesRequest,
   ListToolsRequest,
   PingRequest,
+  PushEnvRequest,
+  PushEnvResponse,
   PutFileRequest,
   QueryResolverRequest,
   ReloadConfigRequest,
@@ -3578,6 +3580,70 @@ export function createRuntimeServiceGitPushMutation(
   Omit<PartialMessage<GitPushRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceGitPushMutationOptions(
+    client,
+    options,
+  );
+  return createMutation(mutationOptions, queryClient);
+}
+
+/**
+ * Raw RPC call: RuntimeService.PushEnv
+ */
+export async function runtimeServicePushEnv(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<PushEnvRequest>, "instanceId">,
+  options?: { signal?: AbortSignal },
+): Promise<PartialMessage<PushEnvResponse>> {
+  const r = await client.runtimeService.pushEnv(
+    PushEnvRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as PartialMessage<PushEnvResponse>;
+}
+
+export function getRuntimeServicePushEnvMutationOptions(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      PartialMessage<PushEnvResponse>,
+      unknown,
+      Omit<PartialMessage<PushEnvRequest>, "instanceId">
+    >
+  >,
+): CreateMutationOptions<
+  PartialMessage<PushEnvResponse>,
+  unknown,
+  Omit<PartialMessage<PushEnvRequest>, "instanceId">
+> {
+  return {
+    mutationFn: (request) => runtimeServicePushEnv(client, request),
+    ...options,
+  };
+}
+
+export function createRuntimeServicePushEnvMutation(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      PartialMessage<PushEnvResponse>,
+      unknown,
+      Omit<PartialMessage<PushEnvRequest>, "instanceId">
+    >
+  >,
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  PartialMessage<PushEnvResponse>,
+  unknown,
+  Omit<PartialMessage<PushEnvRequest>, "instanceId">
+> {
+  const mutationOptions = getRuntimeServicePushEnvMutationOptions(
     client,
     options,
   );

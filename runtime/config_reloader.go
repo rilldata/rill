@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"strings"
 	"time"
 
+	"github.com/joho/godotenv"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/ctxsync"
@@ -69,7 +71,7 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 
 	r.rt.Logger.Info("Reloading config for instance", zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 
-	cfg, err := admin.GetDeploymentConfig(ctx)
+	cfg, err := admin.GetConfig(ctx)
 	if err != nil {
 		return err
 	}
@@ -80,10 +82,21 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 	restartController := false
 
 	// Update variables
-	varsChanged := !maps.Equal(inst.Variables, cfg.Variables)
+	vars := make(map[string]string)
+	// default first
+	for k, v := range cfg.Variables[""] {
+		vars[k] = v
+	}
+	// then overlay env specific
+	for k, v := range cfg.Variables[inst.Environment] {
+		vars[k] = v
+	}
+	varsChanged := !maps.Equal(inst.Variables, vars)
 	if varsChanged {
-		inst.Variables = cfg.Variables
-		restartController = true
+		if !cfg.Editable { // for editable deployments we will write vars to `.env` which will also trigger controller restart
+			inst.Variables = vars
+			restartController = true
+		}
 	}
 	inst.Annotations = cfg.Annotations
 
@@ -151,6 +164,28 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 	err = r.rt.EditInstance(ctx, inst, restartController)
 	if err != nil {
 		return err
+	}
+	if !(varsChanged && cfg.Editable) {
+		return nil
+	}
+
+	// write variables to .env files for editable deployments. This will also trigger controller restart via repo watcher
+	for env, envVars := range cfg.Variables {
+		var path string
+		switch env {
+		case "":
+			path = ".env"
+		default:
+			path = fmt.Sprintf(".%s.env", env)
+		}
+		contents, err := godotenv.Marshal(envVars)
+		if err != nil {
+			return fmt.Errorf("failed to marshal env vars: %w", err)
+		}
+		err = r.rt.PutFile(ctx, instanceID, path, strings.NewReader(contents), true, true)
+		if err != nil {
+			return fmt.Errorf("failed to write %s file: %w", path, err)
+		}
 	}
 	return nil
 }
