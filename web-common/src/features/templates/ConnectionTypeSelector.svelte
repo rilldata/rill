@@ -28,6 +28,13 @@
    */
   export let requiredDrivers: Record<string, string> = {};
 
+  /**
+   * When true, options with a missing required driver stay enabled so the
+   * caller can render an inline connector-creation form. A "Setup needed"
+   * hint is still shown.
+   */
+  export let allowInlineCreate: boolean = false;
+
   // Icon and color maps for rich select display.
   // Defaults support ClickHouse and DuckDB deployment types; override via props for other connectors.
   export let iconMap: Record<string, ComponentType<SvelteComponent>> = {
@@ -96,7 +103,9 @@
               const optLabel =
                 options.find((o) => o.value === optionValue)?.label ??
                 optionValue;
-              disabled[optionValue] = `Create a ${optLabel} connector first`;
+              disabled[optionValue] = allowInlineCreate
+                ? `${optLabel} connector setup needed`
+                : `Create a ${optLabel} connector first`;
             }
           }
           return disabled;
@@ -163,8 +172,10 @@
         <Select.Item
           value={option.value}
           label={option.label}
-          class="py-2 {disabledReason ? 'cursor-not-allowed' : ''}"
-          disabled={!!disabledReason}
+          class="py-2 {disabledReason && !allowInlineCreate
+            ? 'cursor-not-allowed'
+            : ''}"
+          disabled={!!disabledReason && !allowInlineCreate}
         >
           <div class="flex items-center gap-3">
             <div

@@ -34,6 +34,12 @@ export type JSONSchemaField = {
   "x-monospace"?: boolean;
   /** Initial number of visible rows for textarea fields. */
   "x-rows"?: number;
+  /**
+   * When true together with x-required-driver, options whose driver is
+   * missing stay clickable and an inline connector-creation form is rendered
+   * below the select. Currently supports s3, gcs, azure drivers.
+   */
+  "x-inline-create"?: boolean;
   /** Which modal step this field belongs to. */
   "x-step"?: "connector" | "source" | "explorer";
   /** Field holds a secret value that should be stored in .env, not in YAML. */
