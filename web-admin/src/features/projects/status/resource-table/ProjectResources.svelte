@@ -95,6 +95,30 @@
     ResourceKind.Connector,
   ];
 
+  $: resources = useResources(runtimeClient);
+
+  // Parse errors
+  $: projectParserQuery = createRuntimeServiceGetResource(
+    runtimeClient,
+    {
+      name: {
+        kind: ResourceKind.ProjectParser,
+        name: SingletonProjectParserName,
+      },
+    },
+    { query: { refetchOnMount: true, refetchOnWindowFocus: true } },
+  );
+  $: parseErrors =
+    $projectParserQuery.data?.resource?.projectParser?.state?.parseErrors ?? [];
+
+  $: hasReconcilingResources = $resources.data?.resources?.some(
+    isResourceReconciling,
+  );
+
+  $: isRefreshButtonDisabled = hasReconcilingResources;
+
+  $: availableTags = getAvailableTags($resources.data?.resources);
+
   $: filterGroups = [
     {
       label: "Type",
@@ -139,30 +163,6 @@
       selectedTags = [...selectedTags, tag];
     }
   }
-
-  $: resources = useResources(runtimeClient);
-
-  // Parse errors
-  $: projectParserQuery = createRuntimeServiceGetResource(
-    runtimeClient,
-    {
-      name: {
-        kind: ResourceKind.ProjectParser,
-        name: SingletonProjectParserName,
-      },
-    },
-    { query: { refetchOnMount: true, refetchOnWindowFocus: true } },
-  );
-  $: parseErrors =
-    $projectParserQuery.data?.resource?.projectParser?.state?.parseErrors ?? [];
-
-  $: hasReconcilingResources = $resources.data?.resources?.some(
-    isResourceReconciling,
-  );
-
-  $: isRefreshButtonDisabled = hasReconcilingResources;
-
-  $: availableTags = getAvailableTags($resources.data?.resources);
 
   // Filter resources by type, search text, status, and tags
   $: filteredResources = filterResources(
