@@ -8,32 +8,26 @@
   import type { Snippet } from "svelte";
 
   let {
-    searchText = "",
-    onSearchChange,
+    searchText = $bindable(""),
     searchDisabled = false,
     filterGroups = [],
     onFilterChange,
     onClearAllFilters,
-    sortDirection = "newest",
-    onSortToggle,
+    sortDirection = $bindable("newest"),
     showSort = true,
     showViewToggle = false,
-    viewMode = "list" as ViewMode,
-    onViewModeChange,
+    viewMode = $bindable("list"),
     children,
   }: {
     searchText?: string;
-    onSearchChange?: (text: string) => void;
     searchDisabled?: boolean;
     filterGroups?: FilterGroup[];
     onFilterChange?: (key: string, value: string) => void;
     onClearAllFilters?: () => void;
     sortDirection?: SortDirection;
-    onSortToggle?: () => void;
     showSort?: boolean;
     showViewToggle?: boolean;
     viewMode?: ViewMode;
-    onViewModeChange?: (mode: ViewMode) => void;
     children?: Snippet;
   } = $props();
 </script>
@@ -45,18 +39,14 @@
     </div>
 
     <div class="flex flex-row items-center gap-x-3">
-      <TableToolbarSearch
-        {searchText}
-        {onSearchChange}
-        disabled={searchDisabled}
-      />
+      <TableToolbarSearch bind:searchText disabled={searchDisabled} />
 
       {#if showSort}
-        <TableToolbarSort {sortDirection} {onSortToggle} />
+        <TableToolbarSort bind:sortDirection />
       {/if}
 
       {#if showViewToggle}
-        <TableToolbarViewToggle {viewMode} {onViewModeChange} />
+        <TableToolbarViewToggle bind:viewMode />
       {/if}
 
       {@render children?.()}

@@ -7,12 +7,17 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { createAdminServiceGetProject } from "../../client";
   import ProjectAccessControls from "./ProjectAccessControls.svelte";
+  import DeploymentStatusChip from "@rilldata/web-admin/features/projects/status/DeploymentStatusChip.svelte";
+  import ProjectCardActions from "@rilldata/web-admin/features/projects/ProjectCardActions.svelte";
 
-  export let organization: string;
-  export let project: string;
+  let { organization, project }: { organization: string; project: string } =
+    $props();
 
   // Check whether project is public or private
-  $: proj = createAdminServiceGetProject(organization, project);
+  let proj = $derived(createAdminServiceGetProject(organization, project));
+
+  let hovering = $state(false);
+  let actionsOpen = $state(false);
 
   function doesProjectNameIncludeUnderscores(project: string) {
     return project.includes("_");
@@ -20,7 +25,7 @@
 </script>
 
 {#if $proj.data}
-  <Card href="/{organization}/{project}">
+  <Card href="/{organization}/{project}" bind:hovering>
     <!-- Project name -->
     <h2
       class="text-fg-primary font-medium text-lg text-center px-4 {doesProjectNameIncludeUnderscores(
@@ -31,6 +36,16 @@
     >
       {project}
     </h2>
+    <!-- Project deployment status -->
+    <div class="absolute top-2.5 left-2.5 text-fg-secondary">
+      <DeploymentStatusChip {organization} {project} />
+    </div>
+    <!-- Project actions -->
+    {#if hovering || actionsOpen}
+      <div class="absolute top-2.5 right-2.5 text-fg-secondary">
+        <ProjectCardActions {organization} {project} bind:open={actionsOpen} />
+      </div>
+    {/if}
     <!-- Permissions tag -->
     <Tag>
       <ProjectAccessControls {organization} {project}>

@@ -242,10 +242,7 @@
   </div>
 
   <TableToolbar
-    {searchText}
-    onSearchChange={(text) => {
-      searchText = text;
-    }}
+    bind:searchText
     {filterGroups}
     onFilterChange={(key, value) => {
       if (key === "level") toggleLevel(value);

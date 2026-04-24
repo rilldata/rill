@@ -5,11 +5,9 @@
   import type { ViewMode } from "./types";
 
   let {
-    viewMode = "list",
-    onViewModeChange,
+    viewMode = $bindable("list"),
   }: {
     viewMode: ViewMode;
-    onViewModeChange?: (mode: ViewMode) => void;
   } = $props();
 </script>
 
@@ -19,7 +17,7 @@
     class="flex items-center justify-center w-8 h-8 {viewMode === 'grid'
       ? 'bg-surface-hover'
       : 'bg-input hover:bg-surface-hover'}"
-    onclick={() => onViewModeChange?.("grid")}
+    onclick={() => (viewMode = "grid")}
     aria-label="Grid view"
     aria-pressed={viewMode === "grid"}
   >
@@ -31,7 +29,7 @@
     'list'
       ? 'bg-surface-hover'
       : 'bg-input hover:bg-surface-hover'}"
-    onclick={() => onViewModeChange?.("list")}
+    onclick={() => (viewMode = "list")}
     aria-label="List view"
     aria-pressed={viewMode === "list"}
   >

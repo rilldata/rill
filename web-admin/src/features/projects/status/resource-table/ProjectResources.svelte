@@ -181,10 +181,7 @@
   <h2 class="text-lg font-medium">Resources</h2>
 
   <TableToolbar
-    {searchText}
-    onSearchChange={(text) => {
-      searchText = text;
-    }}
+    bind:searchText
     {filterGroups}
     onFilterChange={(key, value) => {
       if (key === "kind") toggleType(value);

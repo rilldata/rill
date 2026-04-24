@@ -155,8 +155,7 @@
           </p>
         </div>
         <TableToolbar
-          {searchText}
-          onSearchChange={(text) => (searchText = text)}
+          bind:searchText
           searchDisabled={projectVariables.length === 0}
           {filterGroups}
           onFilterChange={handleFilterChange}
