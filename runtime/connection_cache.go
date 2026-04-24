@@ -137,18 +137,19 @@ func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig
 				defer release()
 
 				newConfig, err := admin.ProvisionConnector(ctx, cfg.name, cfg.driver, cfg.provisionArgs)
-				if err != nil {
-					if errors.Is(err, drivers.ErrProvisioningNotSupported) {
-						// As a fallback, we pass the provision arguments to the driver, giving it a chance to provision itself if it supports it.
-						cfg.config["provision"] = true
-						cfg.config["provision_args"] = cfg.provisionArgs
-					}
+				if err != nil && !errors.Is(err, drivers.ErrProvisioningNotSupported) {
 					return nil, fmt.Errorf("failed to provision %q: %w", cfg.name, err)
 				}
-
-				// Merge the new provisioned config with the existing one.
-				for key, value := range newConfig {
-					cfg.config[key] = value
+				if errors.Is(err, drivers.ErrProvisioningNotSupported) {
+					// As a fallback, we pass the provision arguments to the driver, giving it a chance to provision itself if it supports it.
+					cfg.config["provision"] = true
+					cfg.config["provision_args"] = cfg.provisionArgs
+				} else {
+					// Success
+					// Merge the new provisioned config with the existing one.
+					for key, value := range newConfig {
+						cfg.config[key] = value
+					}
 				}
 			}
 		}
