@@ -309,6 +309,9 @@ func (s *Server) ReloadConfig(ctx context.Context, req *runtimev1.ReloadConfigRe
 			Modified:       summary.VarsModified,
 		}, nil
 	}
+	// Ideally pullEnv should be called inside ReloadConfig only since it is just a simple version of ReloadConfig on local
+	// The issue is that `adminOverride` is available in server and not in runtime
+	// TODO: revisit this when relooking adminOverride 
 	count, modified, err := s.pullEnv(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
@@ -362,16 +365,13 @@ func (s *Server) pullEnv(ctx context.Context, instanceID string) (int, bool, err
 
 	// Check if all environments are already up to date
 	equal := true
+	totalCount := 0
 	for env, cloudVars := range cloudPerEnv {
+		totalCount += len(cloudVars)
 		if !maps.Equal(cloudVars, localPerEnv[env]) {
 			equal = false
 			break
 		}
-	}
-
-	totalCount := 0
-	for _, vars := range cloudPerEnv {
-		totalCount += len(vars)
 	}
 
 	if equal {
