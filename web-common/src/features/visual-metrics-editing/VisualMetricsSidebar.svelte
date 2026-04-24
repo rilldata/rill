@@ -148,6 +148,19 @@
         ],
         selected: 0,
       },
+      {
+        label: "Lower is better",
+        optional: true,
+        fields: [
+          {
+            key: "lower_is_better",
+            hint: "When enabled, increases are highlighted red and decreases use the default color, instead of the other way around",
+            label: "Lower is better",
+            boolean: true,
+          },
+        ],
+        selected: 0,
+      },
     ],
     dimensions: [
       {

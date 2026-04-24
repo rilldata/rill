@@ -3780,6 +3780,9 @@ definitions:
       dataType:
         $ref: '#/definitions/runtimev1Type'
         description: The data type of the measure. Only populated in ValidSpec.
+      lowerIsBetter:
+        type: boolean
+        description: When true, delta coloring is inverted: increases are highlighted red and decreases use the default color.
     title: Measures are aggregated computed values
   MetricsViewSpecMeasureType:
     type: string
