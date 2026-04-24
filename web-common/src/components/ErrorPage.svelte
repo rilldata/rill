@@ -28,10 +28,15 @@
     {/if}
     <h2 class="header">{header}</h2>
     <CtaMessage>{body}</CtaMessage>
-    {#if !fatal && !onEmbedPage}
-      <a {href} class="back-link">
-        <CtaButton variant="secondary">Back to home</CtaButton>
-      </a>
+    {#if (!fatal && !onEmbedPage) || $$slots.cta}
+      <div class="cta-actions">
+        {#if !fatal && !onEmbedPage}
+          <a {href} class="back-link">
+            <CtaButton variant="secondary">Back to home</CtaButton>
+          </a>
+        {/if}
+        <slot name="cta" />
+      </div>
     {/if}
     {#if detail}
       <section class="detail-section">
@@ -63,6 +68,10 @@
 
   .header {
     @apply text-lg font-semibold;
+  }
+
+  .cta-actions {
+    @apply flex flex-col items-center gap-y-4;
   }
 
   .back-link {

@@ -137,17 +137,14 @@
                 />
               {:else if selectedView === "viz"}
                 {#if parseError || rootCauseReconcileError}
-                  <div class="flex flex-col items-center gap-4">
-                    <ErrorPage
-                      body={parseError?.message ??
-                        rootCauseReconcileError ??
-                        ""}
-                      fatal
-                      header="Unable to load dashboard preview"
-                      statusCode={404}
-                    />
-                    <ExplainAndFixErrorButton {filePath} large />
-                  </div>
+                  <ErrorPage
+                    body={parseError?.message ?? rootCauseReconcileError ?? ""}
+                    fatal
+                    header="Unable to load dashboard preview"
+                    statusCode={404}
+                  >
+                    <ExplainAndFixErrorButton slot="cta" {filePath} large />
+                  </ErrorPage>
                 {:else if exploreName && metricsViewName}
                   <DashboardStateManager {exploreName}>
                     <Dashboard {metricsViewName} {exploreName} />
