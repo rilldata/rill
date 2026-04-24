@@ -15,6 +15,7 @@ import {
   getRuntimeServiceListFilesQueryKey,
   getRuntimeServiceListResourcesQueryKey,
   V1FileEvent,
+  V1ReconcileStatus,
   type V1Resource,
   V1ResourceEvent,
   type V1WatchFilesResponse,
@@ -76,12 +77,18 @@ export class FileAndResourceWatcher {
     REFETCH_LIST_FILES_THROTTLE_MS,
   );
 
+  private currentUrl: string | undefined;
+
   constructor() {
     this.setupSSEEventHandlers();
   }
 
   public watch = (url: string) => {
-    void this.client.start(url);
+    if (url === this.currentUrl) return;
+    this.currentUrl = url;
+    void this.client.start(url, {
+      getJwt: () => this._runtimeClient?.getJwt(),
+    });
   };
 
   public heartbeat = () => {
@@ -89,6 +96,7 @@ export class FileAndResourceWatcher {
   };
 
   public close = (cleanup = false) => {
+    this.currentUrl = undefined;
     this.client.close(cleanup);
   };
 
@@ -296,12 +304,18 @@ export class FileAndResourceWatcher {
           return;
         }
 
-        // Proceed to query invalidations only when the resource state has changed
-        if (
+        const resourceVersionChanged =
           res.resource.meta.stateVersion ===
-          previousResource?.meta?.stateVersion
-        )
+          previousResource?.meta?.stateVersion;
+        const resourceFinishedReconciling =
+          previousResource?.meta?.reconcileStatus !==
+            V1ReconcileStatus.RECONCILE_STATUS_IDLE &&
+          res.resource.meta.reconcileStatus ===
+            V1ReconcileStatus.RECONCILE_STATUS_IDLE;
+        // Proceed to query invalidations only when the resource state has changed
+        if (!resourceVersionChanged && !resourceFinishedReconciling) {
           return;
+        }
 
         // Refetch `ListResources` queries
         void queryClient.refetchQueries({

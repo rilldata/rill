@@ -169,19 +169,10 @@ export class FileArtifacts {
    * Checks if a file has any errors and returns the first error message if any exist.
    * Returns null if there are no errors.
    */
-  async checkFileErrors(
-    queryClient: QueryClient,
-    filePath: string,
-  ): Promise<string | null> {
+  checkFileErrors(queryClient: QueryClient, filePath: string): string | null {
     const fileArtifact = this.getFileArtifact(filePath);
-    const hasErrorsStore = fileArtifact.getHasErrors(queryClient);
-    const hasErrors = get(hasErrorsStore);
-
-    if (hasErrors) {
-      const errors = get(fileArtifact.getAllErrors(queryClient));
-      return errors[0]?.message ?? null;
-    }
-    return null;
+    const fileParseErrors = fileArtifact.fetchParserErrors(queryClient);
+    return fileParseErrors[0]?.message ?? null;
   }
 }
 

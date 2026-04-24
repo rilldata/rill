@@ -38,7 +38,12 @@ export function useRillYamlPolicyCheck(client: RuntimeClient) {
           const yamlObj = parse(data.blob);
           const exploresSecurityPolicy = yamlObj?.explores?.security;
           const metricsViewsSecurityPolicy = yamlObj?.metricsViews?.security;
-          return !!exploresSecurityPolicy || !!metricsViewsSecurityPolicy;
+          const canvasesSecurityPolicy = yamlObj?.canvases?.security;
+          return (
+            !!exploresSecurityPolicy ||
+            !!metricsViewsSecurityPolicy ||
+            !!canvasesSecurityPolicy
+          );
         },
       },
     },

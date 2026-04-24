@@ -2,16 +2,17 @@ import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import {
   getRuntimeServiceGetFileQueryKey,
   getRuntimeServiceGetInstanceQueryKey,
+  getRuntimeServiceGetResourceQueryKey,
   runtimeServiceDeleteFile,
   runtimeServiceGetFile,
   runtimeServicePutFile,
   runtimeServiceUnpackEmpty,
   type V1ConnectorDriver,
   type V1GetInstanceResponse,
+  type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import { isProjectInitialized } from "@rilldata/web-common/features/welcome/is-project-initialized.ts";
 import {
-  runtimeServicePutFileAndWaitForReconciliation,
   waitForProjectParser,
   waitForResourceReconciliation,
 } from "@rilldata/web-common/features/entity-management/actions.ts";
@@ -27,7 +28,10 @@ import {
   getSchemaSecretKeys,
 } from "@rilldata/web-common/features/templates/schema-utils.ts";
 import type { MultiStepFormSchema } from "@rilldata/web-common/features/templates/schemas/types.ts";
-import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
+import {
+  addLeadingSlash,
+  getFileAPIPathFromNameAndType,
+} from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types.ts";
 import {
   maybeUnsetOlapConnectorInYaml,
@@ -40,6 +44,10 @@ import { fileArtifacts } from "@rilldata/web-common/features/entity-management/f
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import { getConnectorYamlPreview } from "@rilldata/web-common/features/add-data/form/yaml-preview.ts";
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils.ts";
+import {
+  getProjectParserVersion,
+  waitForProjectParserVersion,
+} from "@rilldata/web-common/features/entity-management/project-parser.ts";
 
 export async function createConnector({
   runtimeClient,
@@ -58,7 +66,7 @@ export async function createConnector({
   validate: boolean;
   existingEnvBlob: string | null;
 }) {
-  await maybeInitProject(runtimeClient, connectorDriver);
+  await maybeInitProject(runtimeClient);
 
   const schema = getConnectorSchema(connectorDriver.name ?? "");
 
@@ -72,9 +80,8 @@ export async function createConnector({
     : [];
 
   // Create connector file path outside try block for cleanup
-  const newConnectorFilePath = getFileAPIPathFromNameAndType(
-    connectorName,
-    EntityType.Connector,
+  const newConnectorFilePath = addLeadingSlash(
+    getFileAPIPathFromNameAndType(connectorName, EntityType.Connector),
   );
 
   try {
@@ -99,7 +106,21 @@ export async function createConnector({
      * 2. Create the `<connector>.yaml` file
      * 3. Wait for reconciliation and surface any file errors
      */
-    await runtimeServicePutFileAndWaitForReconciliation(runtimeClient, {
+
+    // Get the project parser starting version
+    const projectParserStartingVersion = getProjectParserVersion(
+      runtimeClient.instanceId,
+    );
+    // Get the starting version of the connector resource
+    const connectorStartingVersion = queryClient.getQueryData<{
+      resource: V1Resource | undefined;
+    }>(
+      getRuntimeServiceGetResourceQueryKey(runtimeClient.instanceId, {
+        name: { name: connectorName, kind: ResourceKind.Connector },
+      }),
+    )?.resource?.meta?.stateVersion;
+
+    await runtimeServicePutFile(runtimeClient, {
       path: ".env",
       blob: newEnvBlob,
       create: true,
@@ -119,17 +140,22 @@ export async function createConnector({
     });
 
     if (validate) {
-      // Wait for connector resource-level reconciliation
-      // This must happen after .env reconciliation since connectors depend on secrets
+      // Wait for project parser to finish updating before checking for errors.
+      await waitForProjectParserVersion(
+        runtimeClient.instanceId,
+        projectParserStartingVersion + 1,
+      );
+
       await waitForResourceReconciliation(
         runtimeClient,
         connectorName,
         ResourceKind.Connector,
+        connectorStartingVersion,
       );
 
       // Check for file errors
       // If the connector file has errors, rollback the changes
-      const errorMessage = await fileArtifacts.checkFileErrors(
+      const errorMessage = fileArtifacts.checkFileErrors(
         queryClient,
         newConnectorFilePath,
       );
@@ -165,9 +191,8 @@ export async function maybeDeleteConnector(
   queryClient: QueryClient,
   connectorName: string,
 ) {
-  const connectorFilePath = getFileAPIPathFromNameAndType(
-    connectorName,
-    EntityType.Connector,
+  const connectorFilePath = addLeadingSlash(
+    getFileAPIPathFromNameAndType(connectorName, EntityType.Connector),
   );
   if (!fileArtifacts.hasFileArtifact(connectorFilePath)) return;
 
@@ -198,24 +223,13 @@ export async function maybeDeleteConnector(
   await unsetOlapConnectorInRillYAML(runtimeClient, queryClient, connectorName);
 }
 
-export async function maybeInitProject(
-  client: RuntimeClient,
-  connector: V1ConnectorDriver,
-) {
+export async function maybeInitProject(client: RuntimeClient) {
   // If project is uninitialized, initialize an empty project
   const projectInitialized = await isProjectInitialized(client);
   if (projectInitialized) return;
-  // Determine the OLAP engine based on the connector being added
-  let olapEngine = "duckdb"; // Default for data sources
-
-  if (connector && OLAP_ENGINES.includes(connector.name as string)) {
-    // For OLAP engines, use the connector name as the OLAP engine
-    olapEngine = connector.name as string;
-  }
 
   await runtimeServiceUnpackEmpty(client, {
     displayName: EMPTY_PROJECT_TITLE,
-    olap: olapEngine, // Explicitly set OLAP based on connector type
   });
   await waitForProjectParser(client.instanceId);
 

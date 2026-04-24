@@ -4,6 +4,7 @@ import {
 } from "@rilldata/web-common/features/entity-management/file-path-utils";
 import {
   ResourceKind,
+  SingletonProjectParserName,
   useProjectParser,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
@@ -19,6 +20,7 @@ import {
   type V1ResourceName,
   getRuntimeServiceGetResourceQueryKey,
   runtimeServiceGetResource,
+  type V1GetResourceResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { QueryClient, QueryFunction } from "@tanstack/svelte-query";
@@ -390,10 +392,59 @@ export class FileArtifact {
     return store;
   };
 
+  fetchParserErrors(queryClient: QueryClient) {
+    const projectParserQuery = queryClient.getQueryData<V1GetResourceResponse>(
+      getRuntimeServiceGetResourceQueryKey(this.client.instanceId, {
+        name: {
+          kind: ResourceKind.ProjectParser,
+          name: SingletonProjectParserName,
+        },
+      }),
+    );
+    const projectParserErrors =
+      projectParserQuery?.resource?.projectParser?.state?.parseErrors ?? [];
+    return projectParserErrors.filter(
+      (e) => e.filePath === this.path && !e.warning,
+    );
+  }
+
   getHasErrors(queryClient: QueryClient) {
     return derived(
       this.getAllErrors(queryClient),
       (errors) => errors.length > 0,
+    );
+  }
+
+  getAllWarnings = (queryClient: QueryClient): Readable<V1ParseError[]> => {
+    const store = derived(
+      [
+        useProjectParser(queryClient, this.client),
+        this.getResource(queryClient),
+      ],
+      ([projectParser, resource]) => {
+        if (projectParser.isFetching || resource.isFetching) {
+          return get(store);
+        }
+
+        return [
+          ...(
+            projectParser.data?.projectParser?.state?.parseErrors ?? []
+          ).filter((e) => e.filePath === this.path && e.warning),
+          ...(resource.data?.meta?.reconcileWarnings ?? []).map((w) => ({
+            filePath: this.path,
+            message: w,
+          })),
+        ];
+      },
+      [],
+    );
+    return store;
+  };
+
+  getHasWarnings(queryClient: QueryClient) {
+    return derived(
+      this.getAllWarnings(queryClient),
+      (warnings) => warnings.length > 0,
     );
   }
 

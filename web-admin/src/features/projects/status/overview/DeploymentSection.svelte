@@ -1,34 +1,63 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import {
     createAdminServiceGetProject,
+    createAdminServiceGetBillingSubscription,
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
+  import {
+    isFreePlan,
+    isProPlan,
+    isTrialPlan,
+  } from "@rilldata/web-admin/features/billing/plans/utils";
+  import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
+
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
+  import { createQueryServiceProjectStorage } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { useProjectDeployment, useRuntimeVersion } from "../selectors";
+  import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size";
+  import {
+    useParserReconcileError,
+    useProjectDeployment,
+    useRuntimeVersion,
+  } from "../selectors";
   import {
     formatEnvironmentName,
     formatConnectorName,
     getOlapEngineLabel,
     getStatusDotClass,
     getStatusLabel,
+    isTransitoryStatus,
   } from "../display-utils";
+  import LoadingCircleOutline from "@rilldata/web-common/components/icons/LoadingCircleOutline.svelte";
+  import Callout from "@rilldata/web-common/components/callout/Callout.svelte";
   import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
   import ProjectClone from "./ProjectClone.svelte";
   import OverviewCard from "@rilldata/web-common/features/projects/status/overview/OverviewCard.svelte";
+  import ClusterSize from "./ClusterSize.svelte";
 
   export let organization: string;
   export let project: string;
 
   const runtimeClient = useRuntimeClient();
 
+  $: activeBranch = extractBranchFromPath($page.url.pathname);
+
   // Deployment
-  $: projectDeployment = useProjectDeployment(organization, project);
+  $: projectDeployment = useProjectDeployment(
+    organization,
+    project,
+    activeBranch,
+  );
   $: deployment = $projectDeployment.data;
   $: deploymentStatus =
     deployment?.status ?? V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED;
+
+  // ProjectParser — detects project-level failures (e.g. git branch not found)
+  $: parserErrorQuery = useParserReconcileError(runtimeClient);
+  $: parserReconcileError = $parserErrorQuery.data ?? "";
 
   // Project
   $: proj = createAdminServiceGetProject(organization, project);
@@ -52,6 +81,23 @@
     sensitive: true,
   });
   $: instance = $instanceQuery.data?.instance;
+
+  // Project storage (OLAP connector data size)
+  $: storageQuery = createQueryServiceProjectStorage(runtimeClient, {});
+  $: defaultOlapEntry = $storageQuery.data?.entries?.find(
+    (e) => e.isDefaultOlap,
+  );
+  $: isManaged =
+    defaultOlapEntry?.managed || defaultOlapEntry?.connector === "duckdb";
+  $: dataSizeBytes = (() => {
+    const val = $storageQuery.data?.defaultOlapSizeBytes;
+    if (val === undefined || val === null) return undefined;
+    const n = Number(val);
+    return n >= 0 ? n : undefined;
+  })();
+  $: dataLabel =
+    !defaultOlapEntry || isManaged ? "Data size" : "Data accessible";
+
   // Repo — only shown when the user connected their own GitHub
   $: githubUrl = projectData?.gitRemote
     ? getGitUrlFromRemote(projectData.gitRemote)
@@ -66,22 +112,40 @@
   $: aiConnector = instance?.projectConnectors?.find(
     (c) => c.name === instance?.aiConnector,
   );
+
+  // Slots
+  $: currentSlots = Number(projectData?.prodSlots) || 0;
+
+  // Billing plan detection
+  $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
+  $: planName = $subscriptionQuery?.data?.subscription?.plan?.name ?? "";
+  $: showSlots =
+    isTrialPlan(planName) || isFreePlan(planName) || isProPlan(planName);
 </script>
 
 <OverviewCard title="Deployment">
-  <ProjectClone
-    slot="header-right"
-    {organization}
-    {project}
-    gitRemote={projectData?.gitRemote}
-    managedGitId={projectData?.managedGitId}
-  />
+  <div slot="header-right" class="flex items-center gap-3">
+    <!-- TODO: re-add "Upgrade to Pro" link when ready.
+         Gate on: canManage && (isTrialPlan || isFreePlan || isTeamPlan) && !subscriptionQuery.isLoading
+    -->
+    <ProjectClone
+      {organization}
+      {project}
+      gitRemote={projectData?.gitRemote}
+      managedGitId={projectData?.managedGitId}
+      disabled={!!parserReconcileError}
+    />
+  </div>
 
   <div class="info-grid">
     <div class="info-row">
       <span class="info-label">Status</span>
       <span class="info-value flex items-center gap-2">
-        <span class="status-dot {getStatusDotClass(deploymentStatus)}"></span>
+        {#if isTransitoryStatus(deploymentStatus)}
+          <LoadingCircleOutline size="12px" />
+        {:else}
+          <span class="status-dot {getStatusDotClass(deploymentStatus)}"></span>
+        {/if}
         {getStatusLabel(deploymentStatus)}
       </span>
     </div>
@@ -92,6 +156,15 @@
         {formatEnvironmentName(deployment?.environment)}
       </span>
     </div>
+
+    {#if !$subscriptionQuery?.isLoading && showSlots}
+      <div class="info-row">
+        <span class="info-label">Cluster Size</span>
+        <span class="info-value">
+          <ClusterSize slots={currentSlots} />
+        </span>
+      </div>
+    {/if}
 
     {#if isGithubConnected}
       <div class="info-row">
@@ -109,52 +182,77 @@
       </div>
     {/if}
 
-    {#if isGithubConnected && primaryBranch}
+    {#if isGithubConnected && (deployment?.branch || primaryBranch)}
       <div class="info-row">
         <span class="info-label">Branch</span>
-        <span class="info-value">{primaryBranch}</span>
+        <span class="info-value">{deployment?.branch || primaryBranch}</span>
       </div>
     {/if}
 
-    {#if lastUpdated}
+    {#if parserReconcileError}
+      <!-- Project failed to load: show the error instead of project-level details
+           (Last synced, OLAP, AI) which would be stale defaults -->
+      <div class="mt-2">
+        <Callout level="error">
+          <span class="text-sm">{parserReconcileError}</span>
+        </Callout>
+      </div>
+    {:else}
+      {#if lastUpdated}
+        <div class="info-row">
+          <span class="info-label">Last synced</span>
+          <span class="info-value">
+            {lastUpdated.toLocaleString(undefined, {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+              hour: "numeric",
+              minute: "numeric",
+            })}
+          </span>
+        </div>
+      {/if}
+
+      {#if version}
+        <div class="info-row">
+          <span class="info-label">Runtime</span>
+          <span class="info-value">{version}</span>
+        </div>
+      {/if}
+
       <div class="info-row">
-        <span class="info-label">Last synced</span>
+        <span class="info-label">OLAP Engine</span>
+        <span class="info-value">{olapEngineLabel}</span>
+      </div>
+
+      <div class="info-row">
+        <span class="info-label">AI Connector</span>
         <span class="info-value">
-          {lastUpdated.toLocaleString(undefined, {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-            hour: "numeric",
-            minute: "numeric",
-          })}
+          {#if aiConnector && aiConnector.name !== "admin"}
+            {formatConnectorName(aiConnector.type)}
+            <span class="text-fg-tertiary text-xs ml-1"
+              >({aiConnector.name})</span
+            >
+          {:else}
+            Rill Managed
+          {/if}
         </span>
       </div>
+
+      {#if dataSizeBytes !== undefined}
+        <div class="info-row">
+          <span class="info-label">{dataLabel}</span>
+          <span class="info-value">
+            <a
+              href="/{organization}/{project}/-/status/tables"
+              class="repo-link"
+            >
+              {formatMemorySize(dataSizeBytes)}
+            </a>
+          </span>
+        </div>
+      {/if}
     {/if}
-
-    {#if version}
-      <div class="info-row">
-        <span class="info-label">Runtime</span>
-        <span class="info-value">{version}</span>
-      </div>
-    {/if}
-
-    <div class="info-row">
-      <span class="info-label">OLAP Engine</span>
-      <span class="info-value">{olapEngineLabel}</span>
-    </div>
-
-    <div class="info-row">
-      <span class="info-label">AI Connector</span>
-      <span class="info-value">
-        {#if aiConnector && aiConnector.name !== "admin"}
-          {formatConnectorName(aiConnector.type)}
-          <span class="text-fg-tertiary text-xs ml-1">({aiConnector.name})</span
-          >
-        {:else}
-          Rill Managed
-        {/if}
-      </span>
-    </div>
   </div>
 </OverviewCard>
 

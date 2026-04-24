@@ -82,12 +82,22 @@ type MetricsViewYAML struct {
 		Connector      string             `yaml:"connector"`
 		Measures       *FieldSelectorYAML `yaml:"measures"`
 	} `yaml:"annotations"`
+	Rollups []*struct {
+		Model          string             `yaml:"model"`
+		Database       string             `yaml:"database"`
+		DatabaseSchema string             `yaml:"database_schema"`
+		TimeGrain      string             `yaml:"time_grain"`
+		TimeZone       string             `yaml:"time_zone"`
+		Dimensions     *FieldSelectorYAML `yaml:"dimensions"`
+		Measures       *FieldSelectorYAML `yaml:"measures"`
+	} `yaml:"rollups"`
 	Security        *SecurityPolicyYAML
 	QueryAttributes map[string]string `yaml:"query_attributes"`
 	Cache           struct {
-		Enabled *bool  `yaml:"enabled"`
-		KeySQL  string `yaml:"key_sql"`
-		KeyTTL  string `yaml:"key_ttl"`
+		Enabled       *bool  `yaml:"enabled"`
+		KeySQL        string `yaml:"key_sql"`
+		KeyTTL        string `yaml:"key_ttl"`
+		TimestampsTTL string `yaml:"timestamps_ttl"` // fallback TTL for timestamp caching when MV-level cache is disabled; defaults to 5m
 	} `yaml:"cache"`
 	Explore *struct {
 		Skip                 bool                   `yaml:"skip"`
@@ -634,6 +644,12 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		return fmt.Errorf("invalid first month of year %d, must be between 1 and 12", tmp.FirstMonthOfYear)
 	}
 
+	if tmp.Cache.TimestampsTTL != "" {
+		if _, err := time.ParseDuration(tmp.Cache.TimestampsTTL); err != nil {
+			return fmt.Errorf(`invalid "cache.timestamps_ttl": %w`, err)
+		}
+	}
+
 	tmp.DefaultComparison.Mode = strings.ToLower(tmp.DefaultComparison.Mode)
 	if _, ok := comparisonModesMap[tmp.DefaultComparison.Mode]; !ok {
 		return fmt.Errorf("invalid mode: %q. allowed values: %s", tmp.DefaultComparison.Mode, strings.Join(validComparisonModes, ","))
@@ -733,6 +749,73 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 	}
 
+	// Validate and add rollup tables as refs
+	if len(tmp.Rollups) > 0 && tmp.TimeDimension == "" {
+		return fmt.Errorf(`rollups require a "timeseries" to be defined`)
+	}
+	var rollups []*runtimev1.MetricsViewSpec_Rollup
+	for i, rollup := range tmp.Rollups {
+		if rollup == nil {
+			return fmt.Errorf(`rollup[%d]: empty rollup configuration`, i)
+		}
+		if rollup.Model == "" {
+			return fmt.Errorf(`rollup[%d]: "model" is required`, i)
+		}
+		if rollup.TimeGrain == "" {
+			return fmt.Errorf(`rollup[%d]: "time_grain" is required`, i)
+		}
+		tg, err := parseTimeGrain(rollup.TimeGrain)
+		if err != nil {
+			return fmt.Errorf(`rollup[%d]: invalid "time_grain": %w`, i, err)
+		}
+		if rollup.TimeZone != "" {
+			if _, err := time.LoadLocation(rollup.TimeZone); err != nil {
+				return fmt.Errorf(`rollup[%d]: invalid "time_zone" %q: %w`, i, rollup.TimeZone, err)
+			}
+		}
+		// Validate and resolve dimensions
+		var dims []string
+		var dimsSelector *runtimev1.FieldSelector
+		if resolved, ok := rollup.Dimensions.TryResolve(); ok {
+			for _, dimName := range resolved {
+				nameType, ok := names[strings.ToLower(dimName)]
+				if !ok || nameType != nameIsDimension {
+					return fmt.Errorf(`rollup[%d]: dimension %q does not exist in the metrics view`, i, dimName)
+				}
+			}
+			dims = resolved
+		} else {
+			dimsSelector = rollup.Dimensions.Proto()
+		}
+		// Validate and resolve measures
+		var measures []string
+		var measSelector *runtimev1.FieldSelector
+		if resolved, ok := rollup.Measures.TryResolve(); ok {
+			for _, mName := range resolved {
+				nameType, ok := names[strings.ToLower(mName)]
+				if !ok || nameType != nameIsMeasure {
+					return fmt.Errorf(`rollup[%d]: measure %q does not exist in the metrics view`, i, mName)
+				}
+			}
+			measures = resolved
+		} else {
+			measSelector = rollup.Measures.Proto()
+		}
+
+		rollups = append(rollups, &runtimev1.MetricsViewSpec_Rollup{
+			Database:           rollup.Database,
+			DatabaseSchema:     rollup.DatabaseSchema,
+			Model:              rollup.Model,
+			TimeGrain:          tg,
+			TimeZone:           rollup.TimeZone,
+			Dimensions:         dims,
+			DimensionsSelector: dimsSelector,
+			Measures:           measures,
+			MeasuresSelector:   measSelector,
+		})
+		node.Refs = append(node.Refs, ResourceName{Name: rollup.Model})
+	}
+
 	securityRefs, err := inferRefsFromSecurityRules(securityRules)
 	if err != nil {
 		return err
@@ -784,6 +867,10 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	spec.SmallestTimeGrain = smallestTimeGrain
 	spec.FirstDayOfWeek = tmp.FirstDayOfWeek
 	spec.FirstMonthOfYear = tmp.FirstMonthOfYear
+	if tmp.Cache.TimestampsTTL != "" {
+		d, _ := time.ParseDuration(tmp.Cache.TimestampsTTL) // already validated above
+		spec.CacheTimestampsTtlSeconds = int64(d.Seconds())
+	}
 
 	spec.Dimensions = dimensions
 	spec.Measures = measures
@@ -820,6 +907,8 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			MeasuresSelector: annotationMeasuresSelector,
 		})
 	}
+
+	spec.Rollups = rollups
 
 	// Parse the dimensions and measures selectors
 	if tmp.Parent != "" {

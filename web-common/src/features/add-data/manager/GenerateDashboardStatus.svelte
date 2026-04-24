@@ -7,8 +7,10 @@
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import {
+    type AddDataConfig,
     type ImportAddDataStep,
     ImportDataStep,
+    ImportDataStepsOrder,
   } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
   import {
     cleanupImportStep,
@@ -20,7 +22,10 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
   import FeatherCheckCircle from "@rilldata/web-common/components/icons/FeatherCheckCircle.svelte";
+  import type { AddDataStateManager } from "@rilldata/web-common/features/add-data/manager/AddDataStateManager.svelte.ts";
 
+  export let config: AddDataConfig;
+  export let stateManager: AddDataStateManager;
   export let importAddDataStep: ImportAddDataStep;
   export let onBack: () => void;
   export let onDone: () => void;
@@ -64,7 +69,8 @@
     try {
       await runImportSteps(
         runtimeClient,
-        importAddDataStep.config,
+        config,
+        importAddDataStep,
         (step, currentFilePath) => {
           importStep = step;
           if (currentFilePath) {
@@ -88,9 +94,10 @@
         },
       );
       onDone();
-      return goto(currentFileRoute);
+      if (!config.skipNavigation) return goto(currentFileRoute);
     } catch (e) {
-      error = e?.response?.data?.message ?? e?.message ?? null;
+      error = e?.response?.data?.message ?? e?.message ?? "Unknown error";
+      stateManager.fireErrorEvent(error!, importStep);
     }
   }
 
@@ -130,8 +137,10 @@
     </div>
     <div class="flex flex-col gap-y-1 w-fit mx-auto">
       {#each steps as s (s.step)}
+        {@const isStepDone =
+          ImportDataStepsOrder[importStep] > ImportDataStepsOrder[s.step]}
         <div class="flex flex-row items-center gap-2 text-fg-tertiary text-sm">
-          {#if importStep > s.step}
+          {#if isStepDone}
             <FeatherCheckCircle size="18px" />
             <div>{s.doneLabel}</div>
           {:else if hasErrored}
@@ -168,15 +177,17 @@
       </Button>
       <div class="grow"></div>
     {/if}
-    <Button
-      disabled={!currentFileRoute}
-      type="tertiary"
-      href={currentFileRoute}
-      onClick={onDone}
-      large
-    >
-      Skip and view project
-    </Button>
+    {#if !config.skipNavigation}
+      <Button
+        disabled={!currentFileRoute}
+        type="tertiary"
+        href={currentFileRoute}
+        onClick={onDone}
+        large
+      >
+        Skip and view project
+      </Button>
+    {/if}
     {#if hasErrored}
       <Button type="primary" onClick={rerunImport} large>Try again</Button>
     {/if}
