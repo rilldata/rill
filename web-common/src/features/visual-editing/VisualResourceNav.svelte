@@ -96,7 +96,7 @@
                 class="row"
                 class:active={currentFile === item.filePath}
               >
-                <ExploreIcon size="18px" />
+                <ExploreIcon size="22px" />
                 <span class="truncate">{item.name}</span>
               </a>
             </li>
@@ -129,7 +129,7 @@
                 class="row"
                 class:active={currentFile === item.filePath}
               >
-                <CanvasIcon size="18px" />
+                <CanvasIcon size="22px" />
                 <span class="truncate">{item.name}</span>
               </a>
             </li>
@@ -162,7 +162,7 @@
                 class="row"
                 class:active={currentFile === item.filePath}
               >
-                <MetricsViewIcon size="18px" />
+                <MetricsViewIcon size="22px" />
                 <span class="truncate">{item.name}</span>
               </a>
             </li>

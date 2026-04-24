@@ -17,6 +17,7 @@
   import ConnectorExplorer from "../../features/connectors/explorer/ConnectorExplorer.svelte";
   import AddAssetButton from "../../features/entity-management/add/AddAssetButton.svelte";
   import FileExplorer from "../../features/file-explorer/FileExplorer.svelte";
+  import VisualAddButton from "../../features/visual-editing/VisualAddButton.svelte";
   import VisualResourceNav from "../../features/visual-editing/VisualResourceNav.svelte";
   import { editorMode } from "../editor-mode-store";
   import Resizer from "../Resizer.svelte";
@@ -93,7 +94,7 @@
   <div class="inner" style:width="{width}px">
     {#if $editorMode === "visual"}
       <div class="p-2 w-full pr-10">
-        <AddAssetButton />
+        <VisualAddButton />
       </div>
       <div class="scroll-container">
         <VisualResourceNav />
