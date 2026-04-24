@@ -87,7 +87,7 @@ func (s *Server) CreateAsset(ctx context.Context, req *adminv1.CreateAssetReques
 	// Find the parent org
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	// Check permissions (create asset and create project should be the same permission)
@@ -155,7 +155,7 @@ func (s *Server) CreateAsset(ctx context.Context, req *adminv1.CreateAssetReques
 	// If the upload fails or the asset is never linked to a use case, a background job will delete it after some time.
 	asset, err := s.admin.DB.InsertAsset(ctx, assetID, org.ID, objectURL.String(), claims.OwnerID(), req.Public)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to insert asset: %s", err.Error())
+		return nil, err
 	}
 
 	return &adminv1.CreateAssetResponse{
