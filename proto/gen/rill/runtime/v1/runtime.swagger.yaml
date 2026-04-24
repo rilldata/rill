@@ -7418,6 +7418,14 @@ definitions:
     type: object
   v1ReloadConfigResponse:
     type: object
+    properties:
+      variablesCount:
+        type: integer
+        format: int32
+        title: Number of variables pulled from cloud
+      modified:
+        type: boolean
+        title: Whether the .env file(s) were modified
     title: Response message for RuntimeService.ReloadConfig
   v1RenameFileResponse:
     type: object

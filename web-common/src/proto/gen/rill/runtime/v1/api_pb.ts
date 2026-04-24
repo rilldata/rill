@@ -1185,6 +1185,20 @@ export class ReloadConfigRequest extends Message$1<ReloadConfigRequest> {
  * @generated from message rill.runtime.v1.ReloadConfigResponse
  */
 export class ReloadConfigResponse extends Message$1<ReloadConfigResponse> {
+  /**
+   * Number of variables pulled from cloud
+   *
+   * @generated from field: int32 variables_count = 1;
+   */
+  variablesCount = 0;
+
+  /**
+   * Whether the .env file(s) were modified
+   *
+   * @generated from field: bool modified = 2;
+   */
+  modified = false;
+
   constructor(data?: PartialMessage<ReloadConfigResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1193,6 +1207,8 @@ export class ReloadConfigResponse extends Message$1<ReloadConfigResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.ReloadConfigResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "variables_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "modified", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReloadConfigResponse {
@@ -6448,90 +6464,6 @@ export class GitPushResponse extends Message$1<GitPushResponse> {
 
   static equals(a: GitPushResponse | PlainMessage<GitPushResponse> | undefined, b: GitPushResponse | PlainMessage<GitPushResponse> | undefined): boolean {
     return proto3.util.equals(GitPushResponse, a, b);
-  }
-}
-
-/**
- * @generated from message rill.runtime.v1.PullEnvRequest
- */
-export class PullEnvRequest extends Message$1<PullEnvRequest> {
-  /**
-   * @generated from field: string instance_id = 1;
-   */
-  instanceId = "";
-
-  constructor(data?: PartialMessage<PullEnvRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.PullEnvRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PullEnvRequest {
-    return new PullEnvRequest().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PullEnvRequest {
-    return new PullEnvRequest().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PullEnvRequest {
-    return new PullEnvRequest().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: PullEnvRequest | PlainMessage<PullEnvRequest> | undefined, b: PullEnvRequest | PlainMessage<PullEnvRequest> | undefined): boolean {
-    return proto3.util.equals(PullEnvRequest, a, b);
-  }
-}
-
-/**
- * @generated from message rill.runtime.v1.PullEnvResponse
- */
-export class PullEnvResponse extends Message$1<PullEnvResponse> {
-  /**
-   * Number of variables pulled from cloud
-   *
-   * @generated from field: int32 variables_count = 1;
-   */
-  variablesCount = 0;
-
-  /**
-   * Whether the .env file(s) were modified
-   *
-   * @generated from field: bool modified = 2;
-   */
-  modified = false;
-
-  constructor(data?: PartialMessage<PullEnvResponse>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.PullEnvResponse";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "variables_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 2, name: "modified", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PullEnvResponse {
-    return new PullEnvResponse().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PullEnvResponse {
-    return new PullEnvResponse().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PullEnvResponse {
-    return new PullEnvResponse().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: PullEnvResponse | PlainMessage<PullEnvResponse> | undefined, b: PullEnvResponse | PlainMessage<PullEnvResponse> | undefined): boolean {
-    return proto3.util.equals(PullEnvResponse, a, b);
   }
 }
 

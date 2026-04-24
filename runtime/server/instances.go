@@ -187,7 +187,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	_, err = s.runtime.ReloadConfig(ctx, req.InstanceId)
+	_, _, err = s.runtime.ReloadConfig(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
@@ -299,20 +299,25 @@ func (s *Server) ReloadConfig(ctx context.Context, req *runtimev1.ReloadConfigRe
 		return nil, ErrForbidden
 	}
 
-	ok, err := s.runtime.ReloadConfig(ctx, req.InstanceId)
+	summary, ok, err := s.runtime.ReloadConfig(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
 	if ok {
-		// It is okay to not propgate count and modified values here since on cloud it will not be used
-		return &runtimev1.ReloadConfigResponse{}, nil
+		return &runtimev1.ReloadConfigResponse{
+			VariablesCount: int32(summary.VarsCount),
+			Modified:       summary.VarsModified,
+		}, nil
 	}
-	_, _, err = s.pullEnv(ctx, req.InstanceId)
+	count, modified, err := s.pullEnv(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
 	// the count and modified values will be updated here
-	return &runtimev1.ReloadConfigResponse{}, nil
+	return &runtimev1.ReloadConfigResponse{
+		VariablesCount: int32(count),
+		Modified:       modified,
+	}, nil
 }
 
 func (s *Server) pullEnv(ctx context.Context, instanceID string) (int, bool, error) {
