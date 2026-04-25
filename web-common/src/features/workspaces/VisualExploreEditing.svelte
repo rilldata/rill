@@ -49,6 +49,10 @@
   export let viewingDashboard: boolean;
   export let autoSave: boolean;
   export let switchView: () => void;
+  // When set, all parsedDocument operations are scoped under this path. Used
+  // when the explore lives inline in a metrics view YAML (under `explore:`)
+  // so we don't write dashboard fields at the root of a metrics view file.
+  export let propertyPathPrefix: readonly string[] = [];
 
   const runtimeClient = useRuntimeClient();
   const StateManagers = getStateManagers();
@@ -72,6 +76,43 @@
 
   $: parsedDocument = parseDocument($editorContent ?? "");
 
+  // Prefix-aware accessors so this component works against an explore YAML
+  // (no prefix) or against an explore block nested in a metrics view YAML
+  // (prefix=['explore']).
+  function getProp(key: string): unknown {
+    return propertyPathPrefix.length
+      ? parsedDocument.getIn([...propertyPathPrefix, key])
+      : parsedDocument.get(key);
+  }
+
+  function setProp(key: string, value: unknown) {
+    if (propertyPathPrefix.length) {
+      parsedDocument.setIn([...propertyPathPrefix, key], value);
+    } else {
+      parsedDocument.set(key, value);
+    }
+  }
+
+  function deleteProp(key: string) {
+    if (propertyPathPrefix.length) {
+      parsedDocument.deleteIn([...propertyPathPrefix, key]);
+    } else {
+      parsedDocument.delete(key);
+    }
+  }
+
+  function deletePropPath(path: string[]) {
+    parsedDocument.deleteIn([...propertyPathPrefix, ...path]);
+  }
+
+  function setPropPath(path: string[], value: unknown) {
+    parsedDocument.setIn([...propertyPathPrefix, ...path], value);
+  }
+
+  function hasPropPath(path: string[]): boolean {
+    return parsedDocument.hasIn([...propertyPathPrefix, ...path]);
+  }
+
   $: metricsViewsQuery = useFilteredResources(
     runtimeClient,
     ResourceKind.MetricsView,
@@ -92,15 +133,15 @@
 
   $: metricsViewSpec = metricsViewResource?.state?.validSpec;
 
-  $: rawTitle = parsedDocument.get("title");
-  $: rawDisplayName = parsedDocument.get("display_name");
-  $: rawMetricsView = parsedDocument.get("metrics_view");
-  $: rawDimensions = parsedDocument.get("dimensions");
-  $: rawMeasures = parsedDocument.get("measures");
-  $: rawTimeZones = parsedDocument.get("time_zones");
-  $: rawTheme = parsedDocument.get("theme");
-  $: rawTimeRanges = parsedDocument.get("time_ranges");
-  $: rawDefaults = parsedDocument.get("defaults");
+  $: rawTitle = getProp("title");
+  $: rawDisplayName = getProp("display_name");
+  $: rawMetricsView = getProp("metrics_view");
+  $: rawDimensions = getProp("dimensions");
+  $: rawMeasures = getProp("measures");
+  $: rawTimeZones = getProp("time_zones");
+  $: rawTheme = getProp("theme");
+  $: rawTimeRanges = getProp("time_ranges");
+  $: rawDefaults = getProp("defaults");
 
   $: timeZones = new Set(
     rawTimeZones instanceof YAMLSeq
@@ -237,9 +278,9 @@
   ) {
     Object.entries(newRecord).forEach(([property, value]) => {
       if (!value) {
-        parsedDocument.delete(property);
+        deleteProp(property);
       } else {
-        parsedDocument.set(property, value);
+        setProp(property, value);
       }
     });
 
@@ -247,9 +288,9 @@
       removeProperties.forEach((prop) => {
         try {
           if (Array.isArray(prop)) {
-            parsedDocument.deleteIn(prop);
+            deletePropPath(prop);
           } else {
-            parsedDocument.delete(prop);
+            deleteProp(prop);
           }
         } catch {
           // ignore
@@ -523,14 +564,14 @@
         const altMode = isDarkMode ? "light" : "dark";
 
         // check if theme exists for alt mode
-        const setAltMode = !parsedDocument.hasIn(["theme", altMode]);
+        const setAltMode = !hasPropPath(["theme", altMode]);
 
-        parsedDocument.setIn(["theme", modeKey, "primary"], primary);
-        parsedDocument.setIn(["theme", modeKey, "secondary"], secondary);
+        setPropPath(["theme", modeKey, "primary"], primary);
+        setPropPath(["theme", modeKey, "secondary"], secondary);
 
         if (setAltMode) {
-          parsedDocument.setIn(["theme", altMode, "primary"], primary);
-          parsedDocument.setIn(["theme", altMode, "secondary"], secondary);
+          setPropPath(["theme", altMode, "primary"], primary);
+          setPropPath(["theme", altMode, "secondary"], secondary);
         }
 
         killState();

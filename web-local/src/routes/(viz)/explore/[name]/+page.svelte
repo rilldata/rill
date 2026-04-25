@@ -11,12 +11,14 @@
   import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
   import DashboardStateManager from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateManager.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { useProjectParser } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import {
     useExploreWithPolling,
     isExploreReconcilingForFirstTime,
     isExploreErrored,
   } from "@rilldata/web-common/features/explores/selectors";
+  import VisualExploreEditing from "@rilldata/web-common/features/workspaces/VisualExploreEditing.svelte";
   import {
     extractErrorStatusCode,
     isNotFoundError,
@@ -45,6 +47,19 @@
     ...($exploreResource.data?.explore?.meta?.filePaths ?? []),
     ...($exploreResource.data?.metricsView?.meta?.filePaths ?? []),
   ];
+
+  // Inline-explore editing: when this dashboard is synthesized from a
+  // metrics view's `explore:` block (or v0 default), the inspector edits
+  // that block in-place inside the metrics_view YAML.
+  $: explore = $exploreResource.data?.explore?.explore;
+  $: inlineExplore = !!validSpec?.definedInMetricsView;
+  $: metricsFilePath = $exploreResource.data?.metricsView?.meta?.filePaths?.[0];
+  $: showInlineInspector =
+    !$previewModeStore && inlineExplore && !!metricsFilePath;
+  $: inlineFileArtifact = metricsFilePath
+    ? fileArtifacts.getFileArtifact(metricsFilePath)
+    : undefined;
+  $: inlineAutoSave = inlineFileArtifact ? inlineFileArtifact.autoSave : null;
 
   $: projectParserQuery = useProjectParser(queryClient, runtimeClient, {
     enabled: $selectedMockUserStore?.admin,
@@ -128,12 +143,26 @@
       href={homeHref}
     />
   {:else if metricsViewName}
-    <div class="h-full overflow-hidden">
+    <div class="h-full flex overflow-hidden">
       {#key exploreName}
-        <StateManagersProvider {metricsViewName} {exploreName}>
-          <DashboardStateManager {exploreName}>
-            <Dashboard {metricsViewName} {exploreName} />
-          </DashboardStateManager>
+        <StateManagersProvider {metricsViewName} {exploreName} visualEditing>
+          <div class="flex-1 overflow-hidden">
+            <DashboardStateManager {exploreName}>
+              <Dashboard {metricsViewName} {exploreName} />
+            </DashboardStateManager>
+          </div>
+          {#if showInlineInspector && inlineFileArtifact && $inlineAutoSave !== null}
+            <VisualExploreEditing
+              fileArtifact={inlineFileArtifact}
+              {exploreName}
+              exploreResource={explore}
+              {metricsViewName}
+              viewingDashboard
+              autoSave={$inlineAutoSave}
+              switchView={() => {}}
+              propertyPathPrefix={["explore"]}
+            />
+          {/if}
         </StateManagersProvider>
       {/key}
     </div>
