@@ -12,7 +12,6 @@
 
   export let open = false;
   export let title: string;
-  export let description: string;
   export let onDelete: () => Promise<void>;
 
   async function handleDelete() {
@@ -36,7 +35,7 @@
       <AlertDialogTitle>{title}</AlertDialogTitle>
       <AlertDialogDescription>
         <div class="mt-1">
-          {@html description}
+          <slot />
         </div>
       </AlertDialogDescription>
     </AlertDialogHeader>

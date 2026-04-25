@@ -264,6 +264,8 @@
 <DeleteConfirmDialog
   bind:open={isDeleteConfirmOpen}
   title="Delete this report?"
-  description={`The report "<strong>${reportSpec?.displayName ?? ""}</strong>" will be permanently deleted and will no longer send scheduled emails.`}
   onDelete={handleDeleteReport}
-/>
+>
+  The report "<strong>{reportSpec?.displayName ?? ""}</strong>" will be
+  permanently deleted and will no longer send scheduled emails.
+</DeleteConfirmDialog>

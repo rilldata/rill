@@ -5,7 +5,7 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import AlertIcon from "@rilldata/web-common/components/icons/AlertIcon.svelte";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
-  import DeleteResourceConfirmDialog from "@rilldata/web-common/features/resources/DeleteResourceConfirmDialog.svelte";
+  import DeleteConfirmDialog from "@rilldata/web-common/features/resources/DeleteConfirmDialog.svelte";
   import ResourceListRow from "@rilldata/web-common/features/resources/ResourceListRow.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { timeAgo } from "@rilldata/web-common/lib/time/relative-time";
@@ -84,7 +84,11 @@
     {#if !isCreatedByCode}
       <DropdownMenu.Root bind:open={isDropdownOpen}>
         <DropdownMenu.Trigger class="flex-none">
-          <IconButton rounded active={isDropdownOpen}>
+          <IconButton
+            rounded
+            active={isDropdownOpen}
+            ariaLabel={`Actions for ${title}`}
+          >
             <ThreeDot size="16px" />
           </IconButton>
         </DropdownMenu.Trigger>
@@ -112,10 +116,11 @@
   {/snippet}
 </ResourceListRow>
 
-<DeleteResourceConfirmDialog
+<DeleteConfirmDialog
   bind:open={isDeleteConfirmOpen}
-  resourceKind="alert"
-  {title}
-  description="and will no longer trigger notifications"
+  title="Delete this alert?"
   onDelete={handleDelete}
-/>
+>
+  The alert "<strong>{title}</strong>" will be permanently deleted and will no
+  longer trigger notifications.
+</DeleteConfirmDialog>

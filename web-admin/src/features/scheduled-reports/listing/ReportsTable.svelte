@@ -139,7 +139,13 @@
   };
 </script>
 
-<ResourceList {columns} data={processedData} {columnVisibility} kind="report">
+<ResourceList
+  {columns}
+  data={processedData}
+  {columnVisibility}
+  kind="report"
+  isFiltered={searchText !== ""}
+>
   <TableToolbar
     slot="toolbar"
     {searchText}

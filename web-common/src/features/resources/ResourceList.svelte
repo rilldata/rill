@@ -22,6 +22,13 @@
   export let toolbar: boolean = true;
   export let fixedRowHeight: boolean = true;
   export let initialSorting: SortingState = [];
+  /**
+   * Whether the caller has applied search/filters to `data` before passing it in.
+   * When true and `data` is empty, the "No {kind}s match your search" empty state
+   * is shown. When false (or undefined), falls back to the table's own globalFilter
+   * state for backwards compatibility.
+   */
+  export let isFiltered: boolean | undefined = undefined;
 
   let sorting: SortingState = initialSorting;
   function setSorting(updater: Updater<SortingState>) {
@@ -71,8 +78,11 @@
   // Whenever the input data changes, rerender the table
   $: data && rerender();
 
-  // Check if we're in a filtered state (search is active)
-  $: isFiltered = $table.getState().globalFilter?.length > 0;
+  // Check if we're in a filtered state. Prefer the caller-provided value (since
+  // most callers now pre-filter `data` externally); otherwise fall back to the
+  // table's own globalFilter state.
+  $: isFilteredEffective =
+    isFiltered ?? ($table.getState().globalFilter?.length ?? 0) > 0;
 </script>
 
 <div class="flex flex-col gap-y-3 w-full">
@@ -94,7 +104,7 @@
       {:else}
         <li class="resource-list-item-empty">
           <div class="text-center py-16">
-            {#if isFiltered}
+            {#if isFilteredEffective}
               <!-- Filtered empty state: no results match search -->
               <div class="flex flex-col gap-y-2 items-center text-sm">
                 <div class="text-fg-secondary font-semibold">

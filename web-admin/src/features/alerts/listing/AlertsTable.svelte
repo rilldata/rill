@@ -143,7 +143,13 @@
   };
 </script>
 
-<ResourceList {columns} data={processedData} {columnVisibility} kind="alert">
+<ResourceList
+  {columns}
+  data={processedData}
+  {columnVisibility}
+  kind="alert"
+  isFiltered={searchText !== "" || selectedStatuses.length > 0}
+>
   <TableToolbar
     slot="toolbar"
     {searchText}

@@ -54,6 +54,7 @@
 <DeleteConfirmDialog
   bind:open={isDeleteConfirmOpen}
   title="Delete this public URL?"
-  description="Recipients of this URL will no longer be able to access it."
   onDelete={handleDelete}
-/>
+>
+  Recipients of this URL will no longer be able to access it.
+</DeleteConfirmDialog>

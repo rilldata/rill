@@ -184,8 +184,6 @@
     lastRefreshed: false,
     description: false,
   };
-
-  const initialSorting = [{ id: "name", desc: false }];
 </script>
 
 {#if isLoading}
@@ -201,8 +199,8 @@
       data={displayData}
       {columns}
       {columnVisibility}
-      {initialSorting}
       toolbar={resolvedToolbar}
+      isFiltered={searchText !== "" || selectedTypes.length > 0}
     >
       <TableToolbar
         slot="toolbar"

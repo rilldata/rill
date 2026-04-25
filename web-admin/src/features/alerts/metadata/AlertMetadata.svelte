@@ -264,6 +264,8 @@
 <DeleteConfirmDialog
   bind:open={isDeleteConfirmOpen}
   title="Delete this alert?"
-  description={`The alert "<strong>${alertSpec?.displayName ?? ""}</strong>" will be permanently deleted and will no longer trigger notifications.`}
   onDelete={handleDeleteAlert}
-/>
+>
+  The alert "<strong>{alertSpec?.displayName ?? ""}</strong>" will be
+  permanently deleted and will no longer trigger notifications.
+</DeleteConfirmDialog>

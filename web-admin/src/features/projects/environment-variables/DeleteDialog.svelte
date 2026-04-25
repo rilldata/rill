@@ -55,6 +55,9 @@
 <DeleteConfirmDialog
   bind:open
   title="Delete this environment variable?"
-  description={`The environment variable <span class="font-mono text-sm font-medium">${name}</span> will no longer be available for this project.`}
   onDelete={handleDelete}
-/>
+>
+  The environment variable <span class="font-mono text-sm font-medium"
+    >{name}</span
+  > will no longer be available for this project.
+</DeleteConfirmDialog>
