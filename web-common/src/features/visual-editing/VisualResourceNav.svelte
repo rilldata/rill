@@ -5,8 +5,16 @@
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import MetricsViewIcon from "@rilldata/web-common/components/icons/MetricsViewIcon.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
+  import {
+    createRuntimeServiceListResources,
+    type V1Resource,
+  } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+
+  type IconComponent =
+    | typeof ExploreIcon
+    | typeof CanvasIcon
+    | typeof MetricsViewIcon;
 
   const runtimeClient = useRuntimeClient();
 
@@ -31,41 +39,105 @@
   $: metrics = $metricsQuery.data ?? [];
 
   $: currentFile = $page.params.file ? `/${$page.params.file}` : undefined;
+  $: currentPath = $page.url.pathname;
 
-  function hrefFor(filePath: string | undefined): string | undefined {
+  function fileHref(filePath: string | undefined): string | undefined {
     if (!filePath) return undefined;
     return `/files${filePath.startsWith("/") ? "" : "/"}${filePath}`;
   }
 
   type Item = {
     name: string;
-    filePath: string | undefined;
-    href: string | undefined;
+    href: string;
+    icon: IconComponent;
+    activeWhenFile?: string;
+    activeWhenPath?: string;
   };
 
-  function itemsFrom(
-    resources: Array<{
-      meta?: { name?: { name?: string }; filePaths?: string[] };
-    }>,
-  ): Item[] {
+  function exploreItems(resources: V1Resource[]): Item[] {
     return resources
-      .map((r) => {
+      .map((r): Item | null => {
+        const name = r.meta?.name?.name ?? "";
         const filePath = r.meta?.filePaths?.[0];
-        return {
-          name: r.meta?.name?.name ?? "",
-          filePath,
-          href: hrefFor(filePath),
-        };
+        const href = fileHref(filePath);
+        if (!name || !href) return null;
+        return { name, href, icon: ExploreIcon, activeWhenFile: filePath };
       })
-      .filter((i) => i.name && i.href)
-      .sort((a, b) =>
-        a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
-      );
+      .filter((i): i is Item => i !== null);
   }
 
-  $: exploreItems = itemsFrom(explores);
-  $: canvasItems = itemsFrom(canvases);
-  $: metricsItems = itemsFrom(metrics);
+  function canvasItems(resources: V1Resource[]): Item[] {
+    return resources
+      .map((r): Item | null => {
+        const name = r.meta?.name?.name ?? "";
+        const filePath = r.meta?.filePaths?.[0];
+        const href = fileHref(filePath);
+        if (!name || !href) return null;
+        return { name, href, icon: CanvasIcon, activeWhenFile: filePath };
+      })
+      .filter((i): i is Item => i !== null);
+  }
+
+  // A "legacy" metrics view is one that isn't backed by a separate Explore
+  // resource. The single YAML file plays both roles, so we surface it in the
+  // Dashboards section as well, linking to the preview-only /explore/<name>
+  // route since there's no explore file to edit visually.
+  function legacyMetricsAsDashboards(
+    metrics: V1Resource[],
+    explores: V1Resource[],
+  ): Item[] {
+    const referenced = new Set(
+      explores
+        .map((e) => e.explore?.spec?.metricsView)
+        .filter((n): n is string => !!n),
+    );
+    return metrics
+      .filter((m) => {
+        const name = m.meta?.name?.name;
+        return name && !referenced.has(name);
+      })
+      .map((m) => {
+        const name = m.meta?.name?.name ?? "";
+        const href = `/explore/${name}`;
+        return {
+          name,
+          href,
+          icon: ExploreIcon,
+          activeWhenPath: href,
+        };
+      });
+  }
+
+  function metricsItems(resources: V1Resource[]): Item[] {
+    return resources
+      .map((r): Item | null => {
+        const name = r.meta?.name?.name ?? "";
+        const filePath = r.meta?.filePaths?.[0];
+        const href = fileHref(filePath);
+        if (!name || !href) return null;
+        return { name, href, icon: MetricsViewIcon, activeWhenFile: filePath };
+      })
+      .filter((i): i is Item => i !== null);
+  }
+
+  function sortByName(items: Item[]): Item[] {
+    return items.sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+    );
+  }
+
+  $: dashboardItems = sortByName([
+    ...exploreItems(explores),
+    ...legacyMetricsAsDashboards(metrics, explores),
+  ]);
+  $: canvasNavItems = sortByName(canvasItems(canvases));
+  $: metricsNavItems = sortByName(metricsItems(metrics));
+
+  function isActive(item: Item): boolean {
+    if (item.activeWhenPath) return currentPath === item.activeWhenPath;
+    if (item.activeWhenFile) return currentFile === item.activeWhenFile;
+    return false;
+  }
 
   let dashboardsOpen = true;
   let canvasesOpen = true;
@@ -73,7 +145,7 @@
 </script>
 
 <nav class="flex flex-col gap-y-1 p-2 pb-6 w-full">
-  {#if exploreItems.length}
+  {#if dashboardItems.length}
     <section>
       <button
         class="section-header"
@@ -89,14 +161,12 @@
       </button>
       {#if dashboardsOpen}
         <ul>
-          {#each exploreItems as item (item.href)}
+          {#each dashboardItems as item (item.href)}
             <li>
-              <a
-                href={item.href}
-                class="row"
-                class:active={currentFile === item.filePath}
-              >
-                <span class="icon-wrap"><ExploreIcon size="22px" /></span>
+              <a href={item.href} class="row" class:active={isActive(item)}>
+                <span class="icon-wrap">
+                  <svelte:component this={item.icon} size="22px" />
+                </span>
                 <span class="truncate">{item.name}</span>
               </a>
             </li>
@@ -106,7 +176,7 @@
     </section>
   {/if}
 
-  {#if canvasItems.length}
+  {#if canvasNavItems.length}
     <section>
       <button
         class="section-header"
@@ -122,14 +192,12 @@
       </button>
       {#if canvasesOpen}
         <ul>
-          {#each canvasItems as item (item.href)}
+          {#each canvasNavItems as item (item.href)}
             <li>
-              <a
-                href={item.href}
-                class="row"
-                class:active={currentFile === item.filePath}
-              >
-                <span class="icon-wrap"><CanvasIcon size="22px" /></span>
+              <a href={item.href} class="row" class:active={isActive(item)}>
+                <span class="icon-wrap">
+                  <svelte:component this={item.icon} size="22px" />
+                </span>
                 <span class="truncate">{item.name}</span>
               </a>
             </li>
@@ -139,7 +207,7 @@
     </section>
   {/if}
 
-  {#if metricsItems.length}
+  {#if metricsNavItems.length}
     <section>
       <button
         class="section-header"
@@ -155,14 +223,12 @@
       </button>
       {#if metricsOpen}
         <ul>
-          {#each metricsItems as item (item.href)}
+          {#each metricsNavItems as item (item.href)}
             <li>
-              <a
-                href={item.href}
-                class="row"
-                class:active={currentFile === item.filePath}
-              >
-                <span class="icon-wrap"><MetricsViewIcon size="22px" /></span>
+              <a href={item.href} class="row" class:active={isActive(item)}>
+                <span class="icon-wrap">
+                  <svelte:component this={item.icon} size="22px" />
+                </span>
                 <span class="truncate">{item.name}</span>
               </a>
             </li>
@@ -172,7 +238,7 @@
     </section>
   {/if}
 
-  {#if !exploreItems.length && !canvasItems.length && !metricsItems.length}
+  {#if !dashboardItems.length && !canvasNavItems.length && !metricsNavItems.length}
     <div class="empty-state">
       <p>No dashboards, canvases, or metrics views yet.</p>
       <p class="hint">
