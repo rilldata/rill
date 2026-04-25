@@ -111,27 +111,24 @@
       .filter((i): i is Item => i !== null);
   }
 
-  // A "legacy" metrics view here is one with no real Explore resource
-  // referencing it. The single YAML file plays both roles, so we surface it
-  // in the Dashboards section linked to /explore/<name>, the preview route
-  // that already knows how to render legacy v0 dashboards. Synthetic
-  // explores are ignored when computing the referenced set, since they
-  // exist only because of the metrics view itself.
-  function legacyMetricsAsDashboards(
+  // True orphan metrics views: no Explore at all (real or synthetic). The
+  // file plays both roles but the runtime did not surface a dashboard, so
+  // we link to /explore/<name> as a preview-route fallback. When a synthetic
+  // explore already exists, the metrics view is covered by exploreItems
+  // and must not be re-emitted here.
+  function orphanMetricsAsDashboards(
     metrics: V1Resource[],
     explores: V1Resource[],
-    metricsFilePaths: Set<string>,
   ): Item[] {
-    const referencedByReal = new Set(
+    const referenced = new Set(
       explores
-        .filter((e) => !isSyntheticExplore(e, metricsFilePaths))
         .map((e) => e.explore?.spec?.metricsView)
         .filter((n): n is string => !!n),
     );
     return metrics
       .filter((m) => {
         const name = m.meta?.name?.name;
-        return name && !referencedByReal.has(name);
+        return name && !referenced.has(name);
       })
       .map((m) => {
         const name = m.meta?.name?.name ?? "";
@@ -161,16 +158,31 @@
     );
   }
 
+  // The runtime can briefly surface duplicate Explore resources during
+  // reconciliation (e.g. when a metrics view emits both an auto-default
+  // explore and an inline one before settling). Drop entries whose href is
+  // already present so the nav never shows obvious duplicates.
+  function dedupeByHref(items: Item[]): Item[] {
+    const seen = new Set<string>();
+    return items.filter((item) => {
+      if (seen.has(item.href)) return false;
+      seen.add(item.href);
+      return true;
+    });
+  }
+
   $: metricsFilePaths = new Set(
     metrics.map((m) => m.meta?.filePaths?.[0]).filter((p): p is string => !!p),
   );
 
-  $: dashboardItems = sortByName([
-    ...exploreItems(explores, metricsFilePaths),
-    ...legacyMetricsAsDashboards(metrics, explores, metricsFilePaths),
-  ]);
-  $: canvasNavItems = sortByName(canvasItems(canvases));
-  $: metricsNavItems = sortByName(metricsItems(metrics));
+  $: dashboardItems = sortByName(
+    dedupeByHref([
+      ...exploreItems(explores, metricsFilePaths),
+      ...orphanMetricsAsDashboards(metrics, explores),
+    ]),
+  );
+  $: canvasNavItems = sortByName(dedupeByHref(canvasItems(canvases)));
+  $: metricsNavItems = sortByName(dedupeByHref(metricsItems(metrics)));
 
   function isActive(item: Item): boolean {
     return currentHref === item.href;
