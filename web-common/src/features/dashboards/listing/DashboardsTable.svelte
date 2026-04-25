@@ -4,7 +4,11 @@
   import ResourceListEmptyState from "@rilldata/web-common/features/resources/ResourceListEmptyState.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
-  import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
+  import {
+    applyTableFilters,
+    TableToolbar,
+    toggleArrayValue,
+  } from "@rilldata/web-common/components/table-toolbar";
   import type {
     FilterGroup,
     SortDirection,
@@ -68,17 +72,14 @@
     return false;
   }
 
-  $: processedData = (data ?? [])
-    .filter(
-      (r) => matchesType(r, selectedTypes) && matchesSearch(r, searchText),
-    )
-    .slice()
-    .sort((a, b) => {
-      const aTime = getCreatedOn(a) ?? "";
-      const bTime = getCreatedOn(b) ?? "";
-      const cmp = aTime < bTime ? -1 : aTime > bTime ? 1 : 0;
-      return sortDirection === "newest" ? -cmp : cmp;
-    });
+  $: processedData = applyTableFilters({
+    data: data ?? [],
+    searchText,
+    matchesSearch,
+    filterPredicates: [(r) => matchesType(r, selectedTypes)],
+    sortDirection,
+    getSortKey: getCreatedOn,
+  });
 
   $: displayData = isPreview
     ? processedData.slice(0, previewLimit)
@@ -101,9 +102,7 @@
 
   function handleFilterChange(key: string, value: string) {
     if (key !== "type") return;
-    selectedTypes = selectedTypes.includes(value)
-      ? selectedTypes.filter((v) => v !== value)
-      : [...selectedTypes, value];
+    selectedTypes = toggleArrayValue(selectedTypes, value);
   }
 
   function clearFilters() {

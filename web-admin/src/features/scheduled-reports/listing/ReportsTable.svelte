@@ -2,7 +2,11 @@
   import ResourceList from "@rilldata/web-common/features/resources/ResourceList.svelte";
   import ResourceListEmptyState from "@rilldata/web-common/features/resources/ResourceListEmptyState.svelte";
   import ReportIcon from "@rilldata/web-common/components/icons/ReportIcon.svelte";
-  import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
+  import {
+    applyTableFilters,
+    TableToolbar,
+    toggleArrayValue,
+  } from "@rilldata/web-common/components/table-toolbar";
   import type {
     FilterGroup,
     SortDirection,
@@ -39,23 +43,17 @@
     return getDisplayName(r).toLowerCase().includes(q.toLowerCase());
   }
 
-  $: processedData = (data ?? [])
-    .filter(
+  $: processedData = applyTableFilters({
+    data: data ?? [],
+    searchText,
+    matchesSearch,
+    filterPredicates: [
       (r) =>
-        matchesSearch(r, searchText) &&
-        (selectedResults.length === 0 ||
-          selectedResults.includes(getResult(r))),
-    )
-    .slice()
-    .sort((a, b) => {
-      const cmp =
-        getLastRun(a) < getLastRun(b)
-          ? -1
-          : getLastRun(a) > getLastRun(b)
-            ? 1
-            : 0;
-      return sortDirection === "newest" ? -cmp : cmp;
-    });
+        selectedResults.length === 0 || selectedResults.includes(getResult(r)),
+    ],
+    sortDirection,
+    getSortKey: getLastRun,
+  });
 
   $: filterGroups = [
     {
@@ -73,9 +71,7 @@
 
   function handleFilterChange(key: string, value: string) {
     if (key !== "result") return;
-    selectedResults = selectedResults.includes(value)
-      ? selectedResults.filter((v) => v !== value)
-      : [...selectedResults, value];
+    selectedResults = toggleArrayValue(selectedResults, value);
   }
 
   function clearFilters() {

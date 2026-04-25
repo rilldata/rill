@@ -3,7 +3,11 @@
   import NoAlertRunsYet from "@rilldata/web-admin/features/alerts/history/NoAlertRunsYet.svelte";
   import { useAlert } from "@rilldata/web-admin/features/alerts/selectors";
   import ResourceList from "@rilldata/web-common/features/resources/ResourceList.svelte";
-  import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
+  import {
+    applyTableFilters,
+    TableToolbar,
+    toggleArrayValue,
+  } from "@rilldata/web-common/components/table-toolbar";
   import type {
     FilterGroup,
     SortDirection,
@@ -38,18 +42,15 @@
     return "none";
   }
 
-  $: processedHistory = history
-    .filter(
+  $: processedHistory = applyTableFilters({
+    data: history,
+    filterPredicates: [
       (e) =>
         selectedResults.length === 0 || selectedResults.includes(getResult(e)),
-    )
-    .slice()
-    .sort((a, b) => {
-      const aTime = a.executionTime ?? "";
-      const bTime = b.executionTime ?? "";
-      const cmp = aTime < bTime ? -1 : aTime > bTime ? 1 : 0;
-      return sortDirection === "newest" ? -cmp : cmp;
-    });
+    ],
+    sortDirection,
+    getSortKey: (e) => e.executionTime,
+  });
 
   $: filterGroups = [
     {
@@ -67,9 +68,7 @@
 
   function handleFilterChange(key: string, value: string) {
     if (key !== "result") return;
-    selectedResults = selectedResults.includes(value)
-      ? selectedResults.filter((v) => v !== value)
-      : [...selectedResults, value];
+    selectedResults = toggleArrayValue(selectedResults, value);
   }
 
   function clearFilters() {
