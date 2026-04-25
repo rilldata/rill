@@ -82,14 +82,11 @@
         const filePath = r.meta?.filePaths?.[0];
         if (!name || !filePath) return null;
 
+        // Synthetic explores share the metrics view's filePath, so linking
+        // there would land in the metrics editor. Send them to /explore/<name>
+        // instead — the (viz) layout keeps the sidebar visible in editor mode.
         if (isSyntheticExplore(r, metricsFilePaths)) {
-          const baseHref = fileHref(filePath);
-          if (!baseHref) return null;
-          return {
-            name,
-            href: `${baseHref}?view=dashboard`,
-            icon: ExploreIcon,
-          };
+          return { name, href: `/explore/${name}`, icon: ExploreIcon };
         }
 
         const href = fileHref(filePath);

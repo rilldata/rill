@@ -1,6 +1,5 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { page } from "$app/stores";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
@@ -17,9 +16,6 @@
     useIsModelingSupportedForConnectorOLAP as useIsModelingSupportedForConnector,
     useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver,
   } from "../connectors/selectors";
-  import Dashboard from "../dashboards/workspace/Dashboard.svelte";
-  import DashboardStateManager from "../dashboards/state-managers/loaders/DashboardStateManager.svelte";
-  import StateManagersProvider from "../dashboards/state-managers/StateManagersProvider.svelte";
   import GoToDashboardButton from "../metrics-views/GoToDashboardButton.svelte";
   import ReconcileWarningPanel from "../entity-management/ReconcileWarningPanel.svelte";
   import VisualMetrics from "./VisualMetrics.svelte";
@@ -37,12 +33,6 @@
     remoteContent,
     fileName,
   } = fileArtifact);
-
-  // `?view=dashboard` is set by the visual nav when the user clicks a
-  // synthetic explore (one emitted from this metrics view's inline `explore:`
-  // block or v0 defaults). In that mode we render the dashboard preview
-  // inside the workspace chrome instead of the metrics editor.
-  $: dashboardView = $page.url.searchParams.get("view") === "dashboard";
 
   $: selectedView = $editorMode === "visual" ? "viz" : "code";
 
@@ -85,25 +75,19 @@
   }
 </script>
 
-<WorkspaceContainer
-  inspector={!dashboardView && selectedView === "code" && isModelingSupported}
->
+<WorkspaceContainer inspector={selectedView === "code" && isModelingSupported}>
   <WorkspaceHeader
     {filePath}
     {resource}
-    resourceKind={dashboardView
-      ? ResourceKind.Explore
-      : ResourceKind.MetricsView}
+    resourceKind={ResourceKind.MetricsView}
     hasUnsavedChanges={$hasUnsavedChanges}
     onTitleChange={onChangeCallback}
-    showInspectorToggle={!dashboardView &&
-      selectedView === "code" &&
-      isModelingSupported}
+    showInspectorToggle={selectedView === "code" && isModelingSupported}
     slot="header"
     titleInput={fileName}
   >
     <div class="flex gap-x-2" slot="cta">
-      {#if !inPreviewMode && !isOldMetricsView && !dashboardView}
+      {#if !inPreviewMode && !isOldMetricsView}
         <GoToDashboardButton {resource} />
       {/if}
     </div>
@@ -112,59 +96,40 @@
   <svelte:fragment slot="body">
     <div class="flex flex-col h-full">
       <div class="flex-1 overflow-hidden">
-        {#if dashboardView}
-          {#key metricsViewName}
-            <StateManagersProvider
-              metricsViewName={metricsViewName ?? ""}
-              exploreName={metricsViewName ?? ""}
-            >
-              <DashboardStateManager exploreName={metricsViewName ?? ""}>
-                <Dashboard
-                  metricsViewName={metricsViewName ?? ""}
-                  exploreName={metricsViewName ?? ""}
-                />
-              </DashboardStateManager>
-            </StateManagersProvider>
-          {/key}
-        {:else}
-          <WorkspaceEditorContainer
-            {resource}
-            {parseError}
-            remoteContent={$remoteContent}
-            {filePath}
-          >
-            {#if selectedView === "code"}
-              <MetricsEditor
-                bind:autoSave={$autoSave}
+        <WorkspaceEditorContainer
+          {resource}
+          {parseError}
+          remoteContent={$remoteContent}
+          {filePath}
+        >
+          {#if selectedView === "code"}
+            <MetricsEditor
+              bind:autoSave={$autoSave}
+              {fileArtifact}
+              {filePath}
+              {parseError}
+              {metricsViewName}
+            />
+          {:else}
+            {#key fileArtifact}
+              <VisualMetrics
                 {fileArtifact}
-                {filePath}
-                {parseError}
-                {metricsViewName}
+                switchView={() => editorMode.set("code")}
               />
-            {:else}
-              {#key fileArtifact}
-                <VisualMetrics
-                  {fileArtifact}
-                  switchView={() => editorMode.set("code")}
-                />
-              {/key}
-            {/if}
-          </WorkspaceEditorContainer>
-        {/if}
+            {/key}
+          {/if}
+        </WorkspaceEditorContainer>
       </div>
       <ReconcileWarningPanel {fileArtifact} />
     </div>
   </svelte:fragment>
 
-  <svelte:fragment slot="inspector">
-    {#if !dashboardView}
-      <MetricsInspector
-        {filePath}
-        {connector}
-        {database}
-        {databaseSchema}
-        {table}
-      />
-    {/if}
-  </svelte:fragment>
+  <MetricsInspector
+    {filePath}
+    {connector}
+    {database}
+    {databaseSchema}
+    {table}
+    slot="inspector"
+  />
 </WorkspaceContainer>
