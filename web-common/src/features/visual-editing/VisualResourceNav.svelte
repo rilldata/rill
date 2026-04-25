@@ -38,8 +38,11 @@
   $: canvases = $canvasesQuery.data ?? [];
   $: metrics = $metricsQuery.data ?? [];
 
-  $: currentFile = $page.params.file ? `/${$page.params.file}` : undefined;
-  $: currentPath = $page.url.pathname;
+  // Normalize the current URL to "<pathname><search>" so active matching can
+  // include the ?view=dashboard query — that lets a metrics view file appear
+  // as separate active states under the Metrics row (no query) and the
+  // Dashboards row (?view=dashboard) without both lighting up at once.
+  $: currentHref = $page.url.pathname + $page.url.search;
 
   function fileHref(filePath: string | undefined): string | undefined {
     if (!filePath) return undefined;
@@ -50,8 +53,6 @@
     name: string;
     href: string;
     icon: IconComponent;
-    activeWhenFile?: string;
-    activeWhenPath?: string;
   };
 
   // A "synthetic" Explore is one the runtime auto-creates from a legacy v0
@@ -84,18 +85,16 @@
         if (isSyntheticExplore(r, metricsFilePaths)) {
           const baseHref = fileHref(filePath);
           if (!baseHref) return null;
-          const href = `${baseHref}?view=dashboard`;
           return {
             name,
-            href,
+            href: `${baseHref}?view=dashboard`,
             icon: ExploreIcon,
-            activeWhenFile: filePath,
           };
         }
 
         const href = fileHref(filePath);
         if (!href) return null;
-        return { name, href, icon: ExploreIcon, activeWhenFile: filePath };
+        return { name, href, icon: ExploreIcon };
       })
       .filter((i): i is Item => i !== null);
   }
@@ -107,7 +106,7 @@
         const filePath = r.meta?.filePaths?.[0];
         const href = fileHref(filePath);
         if (!name || !href) return null;
-        return { name, href, icon: CanvasIcon, activeWhenFile: filePath };
+        return { name, href, icon: CanvasIcon };
       })
       .filter((i): i is Item => i !== null);
   }
@@ -136,12 +135,10 @@
       })
       .map((m) => {
         const name = m.meta?.name?.name ?? "";
-        const href = `/explore/${name}`;
         return {
           name,
-          href,
+          href: `/explore/${name}`,
           icon: ExploreIcon,
-          activeWhenPath: href,
         };
       });
   }
@@ -153,7 +150,7 @@
         const filePath = r.meta?.filePaths?.[0];
         const href = fileHref(filePath);
         if (!name || !href) return null;
-        return { name, href, icon: MetricsViewIcon, activeWhenFile: filePath };
+        return { name, href, icon: MetricsViewIcon };
       })
       .filter((i): i is Item => i !== null);
   }
@@ -176,9 +173,7 @@
   $: metricsNavItems = sortByName(metricsItems(metrics));
 
   function isActive(item: Item): boolean {
-    if (item.activeWhenPath) return currentPath === item.activeWhenPath;
-    if (item.activeWhenFile) return currentFile === item.activeWhenFile;
-    return false;
+    return currentHref === item.href;
   }
 
   let dashboardsOpen = true;
