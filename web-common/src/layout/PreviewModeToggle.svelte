@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { Button } from "@rilldata/web-common/components/button";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -26,6 +27,11 @@
     (filePath ? getNameFromFile(filePath) : undefined);
 
   $: previewHref = (() => {
+    const path = $page.url.pathname;
+    // Already on a viz route: enter preview in place rather than navigating.
+    if (path.startsWith("/explore/") || path.startsWith("/canvas/")) {
+      return path;
+    }
     if (resourceKind === ResourceKind.Explore && resourceName) {
       return `/explore/${resourceName}`;
     }
@@ -40,6 +46,20 @@
   $: inPreviewMode = $previewModeStore;
   $: showReturn = inPreviewMode && !$previewLocked;
   $: showPreview = !inPreviewMode;
+
+  async function enterPreview() {
+    previewModeStore.set(true);
+    if ($page.url.pathname !== previewHref) {
+      await goto(previewHref);
+    }
+  }
+
+  async function exitPreview() {
+    previewModeStore.set(false);
+    if ($page.url.pathname !== returnHref) {
+      await goto(returnHref);
+    }
+  }
 </script>
 
 {#if showPreview}
@@ -49,7 +69,7 @@
       type="secondary"
       preload={false}
       compact
-      href={previewHref}
+      onClick={enterPreview}
     >
       <div class="flex gap-x-1 items-center">
         <Play size={14} />
@@ -71,7 +91,7 @@
       type="secondary"
       preload={false}
       compact
-      href={returnHref}
+      onClick={exitPreview}
     >
       <div class="flex gap-x-1 items-center">
         <Pencil size={14} />
