@@ -47,10 +47,8 @@
     return r.explore?.spec?.description ?? "";
   }
 
-  function getLastRefreshed(r: V1Resource): string | undefined {
-    return r.explore
-      ? r.explore.state?.dataRefreshedOn
-      : r.canvas?.state?.dataRefreshedOn;
+  function getCreatedOn(r: V1Resource): string | undefined {
+    return r.meta?.createdOn;
   }
 
   function matchesSearch(r: V1Resource, q: string): boolean {
@@ -76,8 +74,8 @@
     )
     .slice()
     .sort((a, b) => {
-      const aTime = getLastRefreshed(a) ?? "";
-      const bTime = getLastRefreshed(b) ?? "";
+      const aTime = getCreatedOn(a) ?? "";
+      const bTime = getCreatedOn(b) ?? "";
       const cmp = aTime < bTime ? -1 : aTime > bTime ? 1 : 0;
       return sortDirection === "newest" ? -cmp : cmp;
     });
