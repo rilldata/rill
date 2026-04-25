@@ -96,7 +96,7 @@
                 class="row"
                 class:active={currentFile === item.filePath}
               >
-                <ExploreIcon size="22px" />
+                <span class="icon-wrap"><ExploreIcon size="22px" /></span>
                 <span class="truncate">{item.name}</span>
               </a>
             </li>
@@ -129,7 +129,7 @@
                 class="row"
                 class:active={currentFile === item.filePath}
               >
-                <CanvasIcon size="22px" />
+                <span class="icon-wrap"><CanvasIcon size="22px" /></span>
                 <span class="truncate">{item.name}</span>
               </a>
             </li>
@@ -162,7 +162,7 @@
                 class="row"
                 class:active={currentFile === item.filePath}
               >
-                <MetricsViewIcon size="22px" />
+                <span class="icon-wrap"><MetricsViewIcon size="22px" /></span>
                 <span class="truncate">{item.name}</span>
               </a>
             </li>
@@ -213,6 +213,11 @@
     @apply flex items-center gap-x-2 px-2 py-1.5 rounded-md;
     @apply text-sm text-fg-primary;
     @apply transition-colors;
+  }
+
+  .icon-wrap {
+    @apply flex-none flex items-center justify-center;
+    @apply size-[22px];
   }
 
   .row:hover {

@@ -14,10 +14,7 @@ import { handleUninitializedProject } from "@rilldata/web-common/features/welcom
 import { localServiceGetMetadata } from "@rilldata/web-common/runtime-client/local-service";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { getLocalRuntimeClient } from "../lib/runtime-client";
-import {
-  DEVELOPER_ALLOWED_PREFIXES,
-  PREVIEW_ALLOWED_PREFIXES,
-} from "./route-constants";
+import { PREVIEW_ALLOWED_PREFIXES } from "./route-constants";
 import { Settings } from "luxon";
 
 Settings.defaultLocale = "en";
@@ -36,35 +33,24 @@ export async function load({ url, depends, untrack, route }) {
   const metadata = cachedMetadata;
   const previewMode = metadata.previewMode ?? false;
 
-  // Enforce mode-based route locking.
-  // Wrapped in untrack() so SvelteKit does not register url.pathname as a
-  // dependency; without this, the entire load function re-runs on every
-  // client-side navigation, causing unnecessary data refetches and UI flicker.
+  // Enforce route locking only when --preview is set from the CLI. Without
+  // the CLI lock the user can toggle into preview from the nav, so they need
+  // to be free to navigate to /dashboards (and other preview routes) and
+  // back to /files. Wrapped in untrack() so SvelteKit does not register
+  // url.pathname as a dependency; without this, the entire load function
+  // re-runs on every client-side navigation, causing unnecessary data
+  // refetches and UI flicker.
   untrack(() => {
-    if (previewMode) {
-      // Preview mode: only allow preview-related and shared routes
-      const isAllowed = PREVIEW_ALLOWED_PREFIXES.some((prefix) =>
-        url.pathname.startsWith(prefix),
-      );
-      if (!isAllowed) {
-        eventBus.emit("notification", {
-          message: "This page is only available in Developer mode",
-        });
-        throw redirect(303, "/dashboards");
-      }
-    } else {
-      // Developer mode: block preview-exclusive routes
-      const isAllowed =
-        url.pathname === "/" ||
-        DEVELOPER_ALLOWED_PREFIXES.some((prefix) =>
-          url.pathname.startsWith(prefix),
-        );
-      if (!isAllowed) {
-        eventBus.emit("notification", {
-          message: "This page is only available in Preview mode",
-        });
-        throw redirect(303, "/");
-      }
+    if (!previewMode) return;
+
+    const isAllowed = PREVIEW_ALLOWED_PREFIXES.some((prefix) =>
+      url.pathname.startsWith(prefix),
+    );
+    if (!isAllowed) {
+      eventBus.emit("notification", {
+        message: "This page is only available in Developer mode",
+      });
+      throw redirect(303, "/dashboards");
     }
   });
 

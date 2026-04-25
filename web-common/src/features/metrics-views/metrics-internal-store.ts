@@ -5,6 +5,7 @@ export function initBlankDashboardYAML(dashboardTitle: string) {
 # Dashboard YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/dashboards
 
+version: 1
 type: metrics_view
 
 title: ""
