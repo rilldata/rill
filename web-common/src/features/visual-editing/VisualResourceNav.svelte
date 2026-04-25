@@ -54,30 +54,33 @@
     activeWhenPath?: string;
   };
 
-  // A "synthetic" Explore is one the backend auto-creates for a legacy v0
-  // metrics view. It has no explore YAML of its own, so its filePaths[0]
-  // points back at the metrics view file. Detect by file-path overlap.
-  function exploreItems(explores: V1Resource[], metrics: V1Resource[]): Item[] {
-    const metricsFilePaths = new Set(
-      metrics
-        .map((m) => m.meta?.filePaths?.[0])
-        .filter((p): p is string => !!p),
-    );
+  // A "synthetic" Explore is one the runtime auto-creates from a legacy v0
+  // metrics view's embedded dashboard config. It has no explore YAML of its
+  // own, so meta.filePaths[0] points back at the metrics view file. Detect
+  // by file-path overlap.
+  function isSyntheticExplore(
+    explore: V1Resource,
+    metricsFilePaths: Set<string>,
+  ): boolean {
+    const filePath = explore.meta?.filePaths?.[0];
+    return !!filePath && metricsFilePaths.has(filePath);
+  }
+
+  // Real explores only — points the user at the editable dashboard YAML.
+  // Synthetic explores are skipped here (would route the user back into the
+  // metrics view file). Orphan v0 metrics views are picked up by
+  // legacyMetricsAsDashboards instead.
+  function exploreItems(
+    explores: V1Resource[],
+    metricsFilePaths: Set<string>,
+  ): Item[] {
     return explores
+      .filter((r) => !isSyntheticExplore(r, metricsFilePaths))
       .map((r): Item | null => {
         const name = r.meta?.name?.name ?? "";
         const filePath = r.meta?.filePaths?.[0];
-        if (!name || !filePath) return null;
-
-        // Synthetic explore: route to the preview dashboard, not the
-        // underlying metrics YAML.
-        if (metricsFilePaths.has(filePath)) {
-          const href = `/explore/${name}`;
-          return { name, href, icon: ExploreIcon, activeWhenPath: href };
-        }
-
         const href = fileHref(filePath);
-        if (!href) return null;
+        if (!name || !filePath || !href) return null;
         return { name, href, icon: ExploreIcon, activeWhenFile: filePath };
       })
       .filter((i): i is Item => i !== null);
@@ -95,23 +98,27 @@
       .filter((i): i is Item => i !== null);
   }
 
-  // A "legacy" metrics view is one that isn't backed by a separate Explore
-  // resource. The single YAML file plays both roles, so we surface it in the
-  // Dashboards section as well, linking to the preview-only /explore/<name>
-  // route since there's no explore file to edit visually.
+  // A "legacy" metrics view here is one with no real Explore resource
+  // referencing it. The single YAML file plays both roles, so we surface it
+  // in the Dashboards section linked to /explore/<name>, the preview route
+  // that already knows how to render legacy v0 dashboards. Synthetic
+  // explores are ignored when computing the referenced set, since they
+  // exist only because of the metrics view itself.
   function legacyMetricsAsDashboards(
     metrics: V1Resource[],
     explores: V1Resource[],
+    metricsFilePaths: Set<string>,
   ): Item[] {
-    const referenced = new Set(
+    const referencedByReal = new Set(
       explores
+        .filter((e) => !isSyntheticExplore(e, metricsFilePaths))
         .map((e) => e.explore?.spec?.metricsView)
         .filter((n): n is string => !!n),
     );
     return metrics
       .filter((m) => {
         const name = m.meta?.name?.name;
-        return name && !referenced.has(name);
+        return name && !referencedByReal.has(name);
       })
       .map((m) => {
         const name = m.meta?.name?.name ?? "";
@@ -143,9 +150,13 @@
     );
   }
 
+  $: metricsFilePaths = new Set(
+    metrics.map((m) => m.meta?.filePaths?.[0]).filter((p): p is string => !!p),
+  );
+
   $: dashboardItems = sortByName([
-    ...exploreItems(explores, metrics),
-    ...legacyMetricsAsDashboards(metrics, explores),
+    ...exploreItems(explores, metricsFilePaths),
+    ...legacyMetricsAsDashboards(metrics, explores, metricsFilePaths),
   ]);
   $: canvasNavItems = sortByName(canvasItems(canvases));
   $: metricsNavItems = sortByName(metricsItems(metrics));
