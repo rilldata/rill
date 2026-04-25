@@ -54,13 +54,30 @@
     activeWhenPath?: string;
   };
 
-  function exploreItems(resources: V1Resource[]): Item[] {
-    return resources
+  // A "synthetic" Explore is one the backend auto-creates for a legacy v0
+  // metrics view. It has no explore YAML of its own, so its filePaths[0]
+  // points back at the metrics view file. Detect by file-path overlap.
+  function exploreItems(explores: V1Resource[], metrics: V1Resource[]): Item[] {
+    const metricsFilePaths = new Set(
+      metrics
+        .map((m) => m.meta?.filePaths?.[0])
+        .filter((p): p is string => !!p),
+    );
+    return explores
       .map((r): Item | null => {
         const name = r.meta?.name?.name ?? "";
         const filePath = r.meta?.filePaths?.[0];
+        if (!name || !filePath) return null;
+
+        // Synthetic explore: route to the preview dashboard, not the
+        // underlying metrics YAML.
+        if (metricsFilePaths.has(filePath)) {
+          const href = `/explore/${name}`;
+          return { name, href, icon: ExploreIcon, activeWhenPath: href };
+        }
+
         const href = fileHref(filePath);
-        if (!name || !href) return null;
+        if (!href) return null;
         return { name, href, icon: ExploreIcon, activeWhenFile: filePath };
       })
       .filter((i): i is Item => i !== null);
@@ -127,7 +144,7 @@
   }
 
   $: dashboardItems = sortByName([
-    ...exploreItems(explores),
+    ...exploreItems(explores, metrics),
     ...legacyMetricsAsDashboards(metrics, explores),
   ]);
   $: canvasNavItems = sortByName(canvasItems(canvases));
