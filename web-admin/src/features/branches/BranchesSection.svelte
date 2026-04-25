@@ -4,6 +4,7 @@
   import {
     V1DeploymentStatus,
     createAdminServiceDeleteDeployment,
+    createAdminServiceGetCurrentUser,
     createAdminServiceGetProject,
     createAdminServiceListDeployments,
     createAdminServiceListOrganizationMemberUsers,
@@ -33,6 +34,8 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CopyableCodeBlock from "@rilldata/web-common/components/calls-to-action/CopyableCodeBlock.svelte";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
   import type { FilterGroup } from "@rilldata/web-common/components/table-toolbar/types";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
@@ -53,6 +56,8 @@
 
   let { organization, project }: { organization: string; project: string } =
     $props();
+
+  const user = createAdminServiceGetCurrentUser();
 
   let orgMembers = $derived(
     createAdminServiceListOrganizationMemberUsers(organization, {
@@ -87,6 +92,7 @@
 
   let primaryBranch = $derived($projectQuery.data?.project?.primaryBranch);
   let activeBranch = $derived(extractBranchFromPath(page.url.pathname));
+  let currentUserId = $derived($user.data?.user?.id);
 
   let userNameMap = $derived(
     new Map(
@@ -218,6 +224,10 @@
       hour: "numeric",
       minute: "numeric",
     });
+  }
+
+  function editUrl(branch: string | undefined): string {
+    return `/${organization}/${project}${branchPathPrefix(branch)}/-/edit`;
   }
 
   function previewUrl(branch: string | undefined): string {
@@ -353,13 +363,30 @@
           status === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED &&
           !isPending}
         {@const canStop = !prod && isActiveDeployment(deployment) && !isPending}
+        {@const branchName = deployment.branch || primaryBranch || "main"}
         <div class="data-row">
           <div class="pl-4 flex items-center gap-2 truncate">
-            <span class="font-mono text-xs truncate">
-              {deployment.branch || primaryBranch || "main"}
+            <span class="font-mono text-xs truncate" title={branchName}>
+              {branchName}
             </span>
             {#if prod}
               <span class="prod-badge">Production</span>
+            {/if}
+            {#if !prod && !deployment.editable}
+              <Tooltip location="bottom" distance={8}>
+                <span class="readonly-badge">Read-only</span>
+                <TooltipContent slot="tooltip-content">
+                  <div class="text-xs max-w-[360px] flex flex-col gap-y-1">
+                    <span>This deployment isn't configured for editing.</span>
+                    <span>
+                      To edit this branch, recreate it with
+                      <code class="font-mono"
+                        >rill project deployment create {branchName} --editable</code
+                      >.
+                    </span>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
             {/if}
             {#if isCurrent}
               <span class="current-badge">Current</span>
@@ -397,6 +424,18 @@
                 </IconButton>
               </DropdownMenu.Trigger>
               <DropdownMenu.Content align="start">
+                {#if !prod && !!currentUserId && deployment.ownerUserId === currentUserId && deployment.editable}
+                  <DropdownMenu.Item
+                    class="font-normal flex items-center"
+                    href={editUrl(deployment.branch)}
+                    onclick={requestSkipBranchInjection}
+                  >
+                    <div class="flex items-center">
+                      <PlayIcon size="12px" />
+                      <span class="ml-2">Open editor</span>
+                    </div>
+                  </DropdownMenu.Item>
+                {/if}
                 <DropdownMenu.Item
                   class="font-normal flex items-center"
                   href={prod
@@ -509,7 +548,8 @@
     @apply shrink-0 text-xs bg-primary-50 text-primary-600 px-1.5 py-0.5 rounded;
   }
 
-  .current-badge {
+  .current-badge,
+  .readonly-badge {
     @apply shrink-0 text-xs bg-gray-100 text-fg-muted px-1.5 py-0.5 rounded;
   }
 
