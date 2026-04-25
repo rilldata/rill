@@ -66,21 +66,35 @@
     return !!filePath && metricsFilePaths.has(filePath);
   }
 
-  // Real explores only — points the user at the editable dashboard YAML.
-  // Synthetic explores are skipped here (would route the user back into the
-  // metrics view file). Orphan v0 metrics views are picked up by
-  // legacyMetricsAsDashboards instead.
+  // Both real and synthetic explores show under Dashboards. A real explore
+  // links to its own YAML for visual editing. A synthetic explore (one
+  // emitted from a metrics view's inline explore block or v0 defaults) links
+  // to the metrics file with `?view=dashboard` so the workspace renders the
+  // dashboard view inside the editor chrome.
   function exploreItems(
     explores: V1Resource[],
     metricsFilePaths: Set<string>,
   ): Item[] {
     return explores
-      .filter((r) => !isSyntheticExplore(r, metricsFilePaths))
       .map((r): Item | null => {
         const name = r.meta?.name?.name ?? "";
         const filePath = r.meta?.filePaths?.[0];
+        if (!name || !filePath) return null;
+
+        if (isSyntheticExplore(r, metricsFilePaths)) {
+          const baseHref = fileHref(filePath);
+          if (!baseHref) return null;
+          const href = `${baseHref}?view=dashboard`;
+          return {
+            name,
+            href,
+            icon: ExploreIcon,
+            activeWhenFile: filePath,
+          };
+        }
+
         const href = fileHref(filePath);
-        if (!name || !filePath || !href) return null;
+        if (!href) return null;
         return { name, href, icon: ExploreIcon, activeWhenFile: filePath };
       })
       .filter((i): i is Item => i !== null);

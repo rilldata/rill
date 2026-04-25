@@ -178,10 +178,16 @@ version: 1
 type: metrics_view
 
 model: # Choose a model to underpin your metrics view
-timeseries: # Choose a timestamp column (if any) from your model 
+timeseries: # Choose a timestamp column (if any) from your model
 
 dimensions:
 measures:
+
+# Inline dashboard. Removing this block disables the default dashboard;
+# replace with a separate explore YAML for fully custom layouts.
+explore:
+  dimensions: '*'
+  measures: '*'
 `;
     case ResourceKind.Explore:
       if (baseResource) {

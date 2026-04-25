@@ -10,7 +10,6 @@ type: metrics_view
 
 title: ""
 table: ""
-default_time_range: ""
 smallest_time_grain: ""
 timeseries: ""
 measures:
@@ -21,10 +20,16 @@ dimensions:
     label: First dimension
     column: dimension1
     description: ""
-available_time_zones:
-  - "UTC"
-  - "America/Los_Angeles"
-  - "America/New_York"
+
+# Inline dashboard. Removing this block disables the default dashboard;
+# replace with a separate explore YAML for fully custom layouts.
+explore:
+  dimensions: '*'
+  measures: '*'
+  time_zones:
+    - "UTC"
+    - "America/Los_Angeles"
+    - "America/New_York"
 `;
   const template = parseDocument(metricsTemplate);
   template.set("title", dashboardTitle);
