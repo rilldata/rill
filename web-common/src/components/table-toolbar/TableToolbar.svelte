@@ -46,11 +46,7 @@
 <section class="flex flex-col w-full">
   <div class="flex flex-row items-center justify-between h-9 gap-x-4">
     <div class="flex flex-row items-center">
-      <TableToolbarFilterDropdown
-        {filterGroups}
-        {onFilterChange}
-        {disabled}
-      />
+      <TableToolbarFilterDropdown {filterGroups} {onFilterChange} {disabled} />
     </div>
 
     <div class="flex flex-row items-center gap-x-3">

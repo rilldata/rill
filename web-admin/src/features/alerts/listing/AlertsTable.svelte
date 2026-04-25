@@ -143,12 +143,7 @@
   };
 </script>
 
-<ResourceList
-  {columns}
-  data={processedData}
-  {columnVisibility}
-  kind="alert"
->
+<ResourceList {columns} data={processedData} {columnVisibility} kind="alert">
   <TableToolbar
     slot="toolbar"
     {searchText}

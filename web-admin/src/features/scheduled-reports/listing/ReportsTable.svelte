@@ -29,7 +29,9 @@
   }
 
   function getResult(r: V1Resource): "ok" | "error" {
-    return r.report?.state?.executionHistory?.[0]?.errorMessage ? "error" : "ok";
+    return r.report?.state?.executionHistory?.[0]?.errorMessage
+      ? "error"
+      : "ok";
   }
 
   function matchesSearch(r: V1Resource, q: string): boolean {
@@ -137,12 +139,7 @@
   };
 </script>
 
-<ResourceList
-  {columns}
-  data={processedData}
-  {columnVisibility}
-  kind="report"
->
+<ResourceList {columns} data={processedData} {columnVisibility} kind="report">
   <TableToolbar
     slot="toolbar"
     {searchText}

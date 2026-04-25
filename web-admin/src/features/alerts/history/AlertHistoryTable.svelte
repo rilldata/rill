@@ -41,8 +41,7 @@
   $: processedHistory = history
     .filter(
       (e) =>
-        selectedResults.length === 0 ||
-        selectedResults.includes(getResult(e)),
+        selectedResults.length === 0 || selectedResults.includes(getResult(e)),
     )
     .slice()
     .sort((a, b) => {

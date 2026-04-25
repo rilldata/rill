@@ -77,7 +77,9 @@
 
   $: rawData = dashboardsData ?? [];
   $: processedData = rawData
-    .filter((r) => matchesType(r, selectedTypes) && matchesSearch(r, searchText))
+    .filter(
+      (r) => matchesType(r, selectedTypes) && matchesSearch(r, searchText),
+    )
     .slice()
     .sort((a, b) => {
       const aTime = getLastRefreshed(a) ?? "";
@@ -89,8 +91,7 @@
   $: displayData = isPreview
     ? processedData.slice(0, previewLimit)
     : processedData;
-  $: hasMoreDashboards =
-    isPreview && rawData.length > previewLimit;
+  $: hasMoreDashboards = isPreview && rawData.length > previewLimit;
 
   $: filterGroups = [
     {
@@ -224,7 +225,7 @@
         {filterGroups}
         onFilterChange={handleFilterChange}
         onClearAllFilters={clearFilters}
-        sortDirection={sortDirection}
+        {sortDirection}
         onSortToggle={() =>
           (sortDirection = sortDirection === "newest" ? "oldest" : "newest")}
         disabled={rawData.length === 0}
