@@ -20,9 +20,11 @@
       header="Canvas not found"
       body={errorMessage || "An unknown error occurred."}
     >
-      {#if filePath}
-        <ExplainAndFixErrorButton slot="cta" {filePath} large />
-      {/if}
+      <svelte:fragment slot="cta">
+        {#if filePath}
+          <ExplainAndFixErrorButton {filePath} large />
+        {/if}
+      </svelte:fragment>
     </ErrorPage>
   {:else if isReconciling}
     <DashboardBuilding />
