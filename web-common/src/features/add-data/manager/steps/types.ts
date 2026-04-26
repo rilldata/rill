@@ -19,6 +19,8 @@ export enum AddDataStep {
 export type AddDataConfig = {
   welcomeScreen?: boolean;
   importOnly?: boolean;
+  skipNavigation?: boolean;
+  pathPrefix?: string;
 
   // Telemetry related config
   medium?: BehaviourEventMedium;

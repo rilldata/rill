@@ -28,10 +28,12 @@
     getAdminServiceListDeploymentsQueryKey,
   } from "@rilldata/web-admin/client";
   import {
+    isEditPage,
     isProjectPage,
     isPublicAlertPage,
     isPublicReportPage,
     isPublicURLPage,
+    isProjectWelcomePage,
   } from "@rilldata/web-admin/features/navigation/nav-utils";
   import BranchDeploymentStopped from "@rilldata/web-admin/features/branches/BranchDeploymentStopped.svelte";
   import ProjectBuilding from "@rilldata/web-admin/features/projects/ProjectBuilding.svelte";
@@ -77,7 +79,9 @@
   });
 
   let onProjectPage = $derived(isProjectPage(page));
+  let onEditPage = $derived(isEditPage(page));
   let onPublicURLPage = $derived(isPublicURLPage(page));
+  let onWelcomePage = $derived(isProjectWelcomePage(page));
 
   // From root layout; passed through to header components
   let organizationPermissions = $derived(
@@ -114,13 +118,16 @@
    * `GetProject` with default cookie-based auth.
    * When `activeBranch` is set, the branch param is passed so the API
    * returns the branch deployment instead of production.
+   *
+   * On the edit page, the edit layout manages its own readiness detection,
+   * so we skip aggressive polling here to avoid unnecessary requests.
    */
   let cookieProjectQuery = $derived(
     createAdminServiceGetProject(
       organization,
       project,
       activeBranch ? { branch: activeBranch } : undefined,
-      { query: baseGetProjectQueryOptions },
+      { query: onEditPage ? {} : baseGetProjectQueryOptions },
     ),
   );
 
@@ -257,7 +264,10 @@
     body={error.response.data?.message}
   />
 {:else if projectData}
-  {#if isProjectAvailable && runtime.host != null && runtime.instanceId}
+  {#if onEditPage}
+    <!-- Edit layout manages its own runtime and header -->
+    {@render children()}
+  {:else if isProjectAvailable && runtime.host != null && runtime.instanceId}
     <!-- Re-key on host::instanceId to force RuntimeProvider to tear down and
          reconnect when the deployment changes (e.g. branch switch, View As). -->
     {#key `${runtime.host}::${runtime.instanceId}`}
@@ -267,25 +277,27 @@
         jwt={runtime.jwt}
         authContext={runtime.authContext}
       >
-        <ProjectHeader
-          {organization}
-          {project}
-          projectPermissions={runtime.projectPermissions}
-          manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
-          manageOrgMembers={organizationPermissions?.manageOrgMembers}
-          readProjects={organizationPermissions?.readProjects}
-          primaryBranch={projectData?.project?.primaryBranch}
-          {planDisplayName}
-          {organizationLogoUrl}
-        />
-        {#if onProjectPage && deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
-          <ProjectTabs
-            projectPermissions={runtime.projectPermissions}
+        {#if !onWelcomePage}
+          <ProjectHeader
             {organization}
-            pathname={page.url.pathname}
             {project}
-            {branchPrefix}
+            projectPermissions={runtime.projectPermissions}
+            manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
+            manageOrgMembers={organizationPermissions?.manageOrgMembers}
+            readProjects={organizationPermissions?.readProjects}
+            primaryBranch={projectData?.project?.primaryBranch}
+            {planDisplayName}
+            {organizationLogoUrl}
           />
+          {#if onProjectPage && deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
+            <ProjectTabs
+              projectPermissions={runtime.projectPermissions}
+              {organization}
+              pathname={page.url.pathname}
+              {project}
+              {branchPrefix}
+            />
+          {/if}
         {/if}
         {@render children()}
       </RuntimeProvider>

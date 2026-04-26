@@ -16,6 +16,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+const defaultTimestampsCacheTTL = 5 * time.Minute
+
 func init() {
 	runtime.RegisterResolverInitializer("metrics_time_range", newMetricsViewTimeRangeResolver)
 }
@@ -24,6 +26,7 @@ type metricsViewTimeRangeResolver struct {
 	runtime    *runtime.Runtime
 	instanceID string
 	mvName     string
+	mv         *runtimev1.MetricsViewSpec
 	executor   *executor.Executor
 	args       *metricsViewTimeRangeResolverArgs
 }
@@ -76,11 +79,9 @@ func newMetricsViewTimeRangeResolver(ctx context.Context, opts *runtime.Resolver
 	if err != nil {
 		return nil, err
 	}
-
 	if !security.CanAccess() {
 		return nil, runtime.ErrForbidden
 	}
-
 	var userAttrs map[string]any
 	if opts.Claims != nil {
 		userAttrs = opts.Claims.UserAttributes
@@ -95,6 +96,7 @@ func newMetricsViewTimeRangeResolver(ctx context.Context, opts *runtime.Resolver
 		runtime:    opts.Runtime,
 		instanceID: opts.InstanceID,
 		mvName:     tr.MetricsView,
+		mv:         mv,
 		executor:   ex,
 		args:       args,
 	}, nil
@@ -110,6 +112,18 @@ func (r *metricsViewTimeRangeResolver) CacheKey(ctx context.Context) ([]byte, bo
 	if err != nil {
 		return nil, false, err
 	}
+
+	// When spec has rollups and MV-level caching is disabled, use TTL-based caching to ensure rollup timestamp queries are cached
+	if !ok && len(r.mv.Rollups) > 0 {
+		ttl := defaultTimestampsCacheTTL
+		if r.mv.CacheTimestampsTtlSeconds > 0 {
+			ttl = time.Duration(r.mv.CacheTimestampsTtlSeconds) * time.Second
+		}
+		bucket := time.Now().Truncate(ttl).Unix()
+		key = []byte(fmt.Sprintf("ts:%d", bucket))
+		ok = true
+	}
+
 	key = append(key, []byte(r.args.TimeDimension)...)
 	return key, ok, nil
 }
@@ -128,24 +142,42 @@ func (r *metricsViewTimeRangeResolver) ResolveInteractive(ctx context.Context) (
 		return nil, err
 	}
 
-	row := map[string]any{}
+	// Build base row
+	baseRow := map[string]any{"table": ""}
 	if !ts.Min.IsZero() {
-		row["min"] = ts.Min
-		row["max"] = ts.Max
-		row["watermark"] = ts.Watermark
+		baseRow["min"] = ts.Min
+		baseRow["max"] = ts.Max
+		baseRow["watermark"] = ts.Watermark
 	} else {
-		row["min"] = nil
-		row["max"] = nil
-		row["watermark"] = nil
+		baseRow["min"] = nil
+		baseRow["max"] = nil
+		baseRow["watermark"] = nil
 	}
+
+	rows := []map[string]any{baseRow}
+
+	// add rollups to subsequent rows
+	for table, rts := range ts.Rollups {
+		row := map[string]any{"table": table}
+		if !rts.Min.IsZero() {
+			row["min"] = rts.Min
+			row["max"] = rts.Max
+		} else {
+			row["min"] = nil
+			row["max"] = nil
+		}
+		rows = append(rows, row)
+	}
+
 	schema := &runtimev1.StructType{
 		Fields: []*runtimev1.StructType_Field{
+			{Name: "table", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}},
 			{Name: "min", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP, Nullable: true}},
 			{Name: "max", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP, Nullable: true}},
 			{Name: "watermark", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP, Nullable: true}},
 		},
 	}
-	return runtime.NewMapsResolverResult([]map[string]any{row}, schema), nil
+	return runtime.NewMapsResolverResult(rows, schema), nil
 }
 
 func (r *metricsViewTimeRangeResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
@@ -156,6 +188,8 @@ func (r *metricsViewTimeRangeResolver) InferRequiredSecurityRules() ([]*runtimev
 	return nil, errors.New("security rule inference not implemented")
 }
 
+// resolveTimestampResult resolves timestamps for a metrics view including rollup data.
+// It parses all rows: the first row (table="") populates the base TimestampsResult, and subsequent rows (table=name) populate TimestampsResult.Rollups.
 func resolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName, timeDimension string, security *runtime.SecurityClaims, priority int) (metricsview.TimestampsResult, error) {
 	res, _, err := rt.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID: instanceID,
@@ -174,27 +208,45 @@ func resolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID
 	}
 	defer res.Close()
 
-	row, err := res.Next()
-	if err != nil {
-		if errors.Is(err, io.EOF) {
-			return metricsview.TimestampsResult{}, errors.New("time range query returned no results")
+	var tsRes metricsview.TimestampsResult
+	hasBase := false
+	for {
+		row, err := res.Next()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return metricsview.TimestampsResult{}, err
 		}
-		return metricsview.TimestampsResult{}, err
+
+		table, _ := row["table"].(string)
+		mn, err := anyToTime(row["min"])
+		if err != nil {
+			return metricsview.TimestampsResult{}, err
+		}
+		mx, err := anyToTime(row["max"])
+		if err != nil {
+			return metricsview.TimestampsResult{}, err
+		}
+
+		if table == "" {
+			hasBase = true
+			tsRes.Min = mn
+			tsRes.Max = mx
+			tsRes.Watermark, err = anyToTime(row["watermark"])
+			if err != nil {
+				return metricsview.TimestampsResult{}, err
+			}
+		} else {
+			if tsRes.Rollups == nil {
+				tsRes.Rollups = make(map[string]metricsview.TimestampsResult)
+			}
+			tsRes.Rollups[table] = metricsview.TimestampsResult{Min: mn, Max: mx}
+		}
 	}
 
-	tsRes := metricsview.TimestampsResult{}
-
-	tsRes.Min, err = anyToTime(row["min"])
-	if err != nil {
-		return tsRes, err
-	}
-	tsRes.Max, err = anyToTime(row["max"])
-	if err != nil {
-		return tsRes, err
-	}
-	tsRes.Watermark, err = anyToTime(row["watermark"])
-	if err != nil {
-		return tsRes, err
+	if !hasBase {
+		return metricsview.TimestampsResult{}, errors.New("time range query returned no results")
 	}
 
 	return tsRes, nil

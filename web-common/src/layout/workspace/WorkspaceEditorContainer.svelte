@@ -8,6 +8,7 @@
     V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import ExplainAndFixErrorButton from "@rilldata/web-common/features/chat/ExplainAndFixErrorButton.svelte";
 
   // Direct error string (existing API, still supported)
   export let error: string | undefined = undefined;
@@ -17,6 +18,7 @@
   export let resource: V1Resource | undefined = undefined;
   export let parseError: V1ParseError | undefined = undefined;
   export let remoteContent: string | null | undefined = undefined;
+  export let filePath: string | undefined = undefined;
 
   const runtimeClient = useRuntimeClient();
 
@@ -52,8 +54,14 @@
       transition:slide={{ duration: LIST_SLIDE_DURATION }}
       class="border border-destructive bg-destructive/15 dark:bg-destructive/30 text-fg-primary border-l-4 px-2 py-5 max-h-72 overflow-auto"
     >
-      <div class="flex gap-x-2 items-center">
-        <CancelCircle className="text-destructive" />{effectiveError}
+      <div class="flex gap-x-2">
+        <CancelCircle className="text-destructive flex-shrink-0 mt-0.5" />
+        <div class="flex flex-col gap-2 min-w-0">
+          <span class="break-words">{effectiveError}</span>
+          {#if filePath}
+            <ExplainAndFixErrorButton {filePath} />
+          {/if}
+        </div>
       </div>
     </div>
   {/if}

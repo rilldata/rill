@@ -7,8 +7,11 @@
   import BillingBannerManager from "@rilldata/web-admin/features/billing/banner/BillingBannerManager.svelte";
   import {
     isBillingUpgradePage,
+    isProjectCreatePage,
     isProjectInvitePage,
+    isProjectWelcomePage,
     isPublicReportPage,
+    isWelcomePage,
     withinOrganization,
     withinProject,
   } from "@rilldata/web-admin/features/navigation/nav-utils";
@@ -98,7 +101,13 @@
     // upgrade callback landing page shouldn't show any rill identifications
     isBillingUpgradePage($page) ||
     // public reports are shared to external users who shouldn't be shown any rill related stuff
-    isPublicReportPage($page);
+    isPublicReportPage($page) ||
+    // Welcome page should be a full screen experience
+    isWelcomePage($page) ||
+    // Project welcome page should not show the banner to avoid breaking the UX.
+    isProjectWelcomePage($page) ||
+    // Project create page should be a full page experience as well.
+    isProjectCreatePage($page);
   $: hideBillingManager =
     // billing manager needs organization
     !organization ||

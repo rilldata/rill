@@ -134,7 +134,6 @@ function getRillDefaultExploreViewState(
     leaderboardShowContextForAllMeasures: false,
 
     dynamicYAxisScale: false,
-    forceLineChart: false,
 
     selectedDimensionName: "",
   };

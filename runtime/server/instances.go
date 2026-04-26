@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -26,7 +25,7 @@ func (s *Server) ListInstances(ctx context.Context, req *runtimev1.ListInstances
 
 	instances, err := s.runtime.Instances(ctx)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	pbs := make([]*runtimev1.Instance, len(instances))
@@ -65,10 +64,7 @@ func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequ
 
 	inst, err := s.runtime.Instance(ctx, req.InstanceId)
 	if err != nil {
-		if errors.Is(err, drivers.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "instance not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	featureFlags, err := runtime.ResolveFeatureFlags(inst, claims.UserAttributes, true)
@@ -113,7 +109,7 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 
 	err := s.runtime.CreateInstance(ctx, inst)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	featureFlags, err := runtime.ResolveFeatureFlags(inst, claims.UserAttributes, true)
@@ -178,7 +174,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 
 	err = s.runtime.EditInstance(ctx, inst, true)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	err = s.runtime.ReloadConfig(ctx, req.InstanceId)
@@ -209,7 +205,7 @@ func (s *Server) DeleteInstance(ctx context.Context, req *runtimev1.DeleteInstan
 
 	err := s.runtime.DeleteInstance(ctx, req.InstanceId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	return &runtimev1.DeleteInstanceResponse{}, nil
@@ -236,7 +232,7 @@ func (s *Server) GetLogs(ctx context.Context, req *runtimev1.GetLogsRequest) (*r
 
 	logBuffer, err := s.runtime.InstanceLogs(ctx, req.InstanceId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 	return &runtimev1.GetLogsResponse{Logs: logBuffer.GetLogs(req.Ascending, int(req.Limit), lvl)}, nil
 }
@@ -263,13 +259,13 @@ func (s *Server) WatchLogs(req *runtimev1.WatchLogsRequest, srv runtimev1.Runtim
 
 	logBuffer, err := s.runtime.InstanceLogs(ctx, req.InstanceId)
 	if err != nil {
-		return status.Error(codes.InvalidArgument, err.Error())
+		return err
 	}
 	if req.Replay {
 		for _, l := range logBuffer.GetLogs(true, int(req.ReplayLimit), lvl) {
 			err := srv.Send(&runtimev1.WatchLogsResponse{Log: l})
 			if err != nil {
-				return status.Error(codes.InvalidArgument, err.Error())
+				return err
 			}
 		}
 	}

@@ -1,6 +1,7 @@
 <script lang="ts">
   import BarChart from "@rilldata/web-common/components/time-series-chart/BarChart.svelte";
   import TimeSeriesChart from "@rilldata/web-common/components/time-series-chart/TimeSeriesChart.svelte";
+  import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import type { Annotation } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/annotation-utils";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { formatGrainBucket } from "@rilldata/web-common/lib/time/ranges/formatter";
@@ -46,7 +47,7 @@
     HoverState,
     TimeSeriesPoint,
   } from "./types";
-  import { dateToIndex, snapIndex } from "./utils";
+  import { dateToIndex, formatUniqueTickLabels, snapIndex } from "./utils";
 
   const chartId = Math.random().toString(36).slice(2, 11);
   const CLICK_THRESHOLD_PX = 4;
@@ -77,8 +78,8 @@
   export let scrubController: ScrubController;
   export let metricsViewName: string;
   export let connectNulls: boolean = true;
-  export let forceLineChart: boolean = false;
   export let dynamicYAxis: boolean = false;
+  export let tddChartType: TDDChart = TDDChart.DEFAULT;
 
   const annotationPopover = new AnnotationPopoverController();
   const hoveredAnnotationGroup = annotationPopover.hoveredGroup;
@@ -103,9 +104,7 @@
   $: config = computeChartConfig(clientWidth, height, showTimeDimensionDetail);
   $: pb = config.plotBounds;
 
-  // Chart series & mode
-  $: mode =
-    forceLineChart || showTimeDimensionDetail ? "line" : determineMode(data);
+  $: mode = determineMode(tddChartType, data);
   $: chartSeries = buildChartSeries(data, dimensionData, showComparison);
   $: barSeries =
     mode === "bar" && showComparison && chartSeries.length === 2
@@ -185,6 +184,12 @@
     return measureFormatter(value);
   };
   $: axisFormatter = createMeasureValueFormatter(measure, "axis");
+  $: defaultFormatter = createMeasureValueFormatter(measure, "table");
+  $: yTickLabels = formatUniqueTickLabels(
+    yTicks,
+    axisFormatter,
+    defaultFormatter,
+  );
 
   // Annotations
   $: annotationGroups = groupAnnotations(
@@ -440,7 +445,7 @@
       plotWidth={pb.width}
       plotTop={pb.top}
       plotHeight={pb.height}
-      {axisFormatter}
+      {yTickLabels}
     />
 
     <!-- Chart body -->

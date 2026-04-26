@@ -4,6 +4,7 @@
   import {
     V1DeploymentStatus,
     createAdminServiceDeleteDeployment,
+    createAdminServiceGetCurrentUser,
     createAdminServiceGetProject,
     createAdminServiceListDeployments,
     createAdminServiceListOrganizationMemberUsers,
@@ -33,7 +34,16 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CopyableCodeBlock from "@rilldata/web-common/components/calls-to-action/CopyableCodeBlock.svelte";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
+  import type { FilterGroup } from "@rilldata/web-common/components/table-toolbar/types";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
+  import {
+    createUrlFilterSync,
+    parseArrayParam,
+    parseStringParam,
+  } from "@rilldata/web-common/lib/url-filter-sync";
   import {
     EyeIcon,
     GitBranchIcon,
@@ -42,9 +52,12 @@
     Trash2Icon,
   } from "lucide-svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { onMount } from "svelte";
 
   let { organization, project }: { organization: string; project: string } =
     $props();
+
+  const user = createAdminServiceGetCurrentUser();
 
   let orgMembers = $derived(
     createAdminServiceListOrganizationMemberUsers(organization, {
@@ -79,6 +92,7 @@
 
   let primaryBranch = $derived($projectQuery.data?.project?.primaryBranch);
   let activeBranch = $derived(extractBranchFromPath(page.url.pathname));
+  let currentUserId = $derived($user.data?.user?.id);
 
   let userNameMap = $derived(
     new Map(
@@ -100,10 +114,88 @@
       : null,
   );
 
+  // Toolbar state — synced to URL params `q` and `status` (multi-select array)
+  const filterSync = createUrlFilterSync([
+    { key: "q", type: "string" },
+    { key: "status", type: "array" },
+  ]);
+
+  let searchText = $state(parseStringParam(page.url.searchParams.get("q")));
+  let statusFilter = $state<string[]>(
+    parseArrayParam(page.url.searchParams.get("status")),
+  );
+  let mounted = $state(false);
+
+  onMount(() => {
+    filterSync.init(page.url);
+    mounted = true;
+  });
+
+  // URL → local state on external navigation (back/forward)
+  $effect(() => {
+    if (!mounted) return;
+    const url = page.url;
+    if (filterSync.hasExternalNavigation(url)) {
+      filterSync.markSynced(url);
+      searchText = parseStringParam(url.searchParams.get("q"));
+      statusFilter = parseArrayParam(url.searchParams.get("status"));
+    }
+  });
+
+  // Local state → URL
+  $effect(() => {
+    if (!mounted) return;
+    filterSync.syncToUrl({ q: searchText, status: statusFilter });
+  });
+
+  let filterGroups = $derived([
+    {
+      label: "Status",
+      key: "status",
+      options: [
+        { label: "Ready", value: "running" },
+        { label: "Pending", value: "pending" },
+        { label: "Error", value: "errored" },
+        { label: "Stopped", value: "stopped" },
+      ],
+      selected: statusFilter,
+      defaultValue: [],
+      multiSelect: true,
+    },
+  ] satisfies FilterGroup[]);
+
+  function statusMatches(d: V1Deployment): boolean {
+    if (statusFilter.length === 0) return true;
+    const s = d.status;
+    return statusFilter.some((sel) => {
+      switch (sel) {
+        case "running":
+          return s === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING;
+        case "pending":
+          return (
+            s === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING ||
+            s === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING
+          );
+        case "errored":
+          return s === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED;
+        case "stopped":
+          return (
+            s === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED ||
+            s === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING
+          );
+        default:
+          return false;
+      }
+    });
+  }
+
   let visibleDeployments = $derived.by(() => {
+    const q = searchText.trim().toLowerCase();
     const active = ($allDeployments.data?.deployments ?? []).filter(
       (d: V1Deployment) =>
-        d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED,
+        d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED &&
+        statusMatches(d) &&
+        (q === "" || (d.branch ?? "").toLowerCase().includes(q)),
     );
     return [...active].sort((a, b) => {
       const aIsProd = isProdDeployment(a);
@@ -132,6 +224,10 @@
       hour: "numeric",
       minute: "numeric",
     });
+  }
+
+  function editUrl(branch: string | undefined): string {
+    return `/${organization}/${project}${branchPathPrefix(branch)}/-/edit`;
   }
 
   function previewUrl(branch: string | undefined): string {
@@ -205,6 +301,26 @@
 <section class="flex flex-col gap-y-5">
   <h2 class="text-lg font-medium">Branches</h2>
 
+  <TableToolbar
+    {searchText}
+    onSearchChange={(text) => {
+      searchText = text;
+    }}
+    {filterGroups}
+    onFilterChange={(key, value) => {
+      if (key === "status") {
+        statusFilter = statusFilter.includes(value)
+          ? statusFilter.filter((v) => v !== value)
+          : [...statusFilter, value];
+      }
+    }}
+    onClearAllFilters={() => {
+      statusFilter = [];
+      searchText = "";
+    }}
+    showSort={false}
+  />
+
   {#if $allDeployments.isLoading}
     <div class="empty-container">
       <DelayedSpinner isLoading={true} size="20px" />
@@ -252,13 +368,30 @@
           status === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED &&
           !isPending}
         {@const canStop = !prod && isActiveDeployment(deployment) && !isPending}
+        {@const branchName = deployment.branch || primaryBranch || "main"}
         <div class="data-row">
           <div class="pl-4 flex items-center gap-2 truncate">
-            <span class="font-mono text-xs truncate">
-              {deployment.branch || primaryBranch || "main"}
+            <span class="font-mono text-xs truncate" title={branchName}>
+              {branchName}
             </span>
             {#if prod}
               <span class="prod-badge">Production</span>
+            {/if}
+            {#if !prod && !deployment.editable}
+              <Tooltip location="bottom" distance={8}>
+                <span class="readonly-badge">Read-only</span>
+                <TooltipContent slot="tooltip-content">
+                  <div class="text-xs max-w-[360px] flex flex-col gap-y-1">
+                    <span>This deployment isn't configured for editing.</span>
+                    <span>
+                      To edit this branch, recreate it with
+                      <code class="font-mono"
+                        >rill project deployment create {branchName} --editable</code
+                      >.
+                    </span>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
             {/if}
             {#if isCurrent}
               <span class="current-badge">Current</span>
@@ -296,6 +429,18 @@
                 </IconButton>
               </DropdownMenu.Trigger>
               <DropdownMenu.Content align="start">
+                {#if !prod && !!currentUserId && deployment.ownerUserId === currentUserId && deployment.editable}
+                  <DropdownMenu.Item
+                    class="font-normal flex items-center"
+                    href={editUrl(deployment.branch)}
+                    onclick={requestSkipBranchInjection}
+                  >
+                    <div class="flex items-center">
+                      <PlayIcon size="12px" />
+                      <span class="ml-2">Open editor</span>
+                    </div>
+                  </DropdownMenu.Item>
+                {/if}
                 <DropdownMenu.Item
                   class="font-normal flex items-center"
                   href={prod
@@ -408,7 +553,8 @@
     @apply shrink-0 text-xs bg-primary-50 text-primary-600 px-1.5 py-0.5 rounded;
   }
 
-  .current-badge {
+  .current-badge,
+  .readonly-badge {
     @apply shrink-0 text-xs bg-gray-100 text-fg-muted px-1.5 py-0.5 rounded;
   }
 

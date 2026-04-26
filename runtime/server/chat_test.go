@@ -319,6 +319,74 @@ measures:
 	require.Len(t, get3.Messages, len(res4.Messages))
 }
 
+func TestAnonymousSessionAccess(t *testing.T) {
+	rt, instanceID := testruntime.NewInstance(t)
+	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
+	require.NoError(t, err)
+
+	// Claims for an anonymous and authenticated user.
+	anonClaims := &runtime.SecurityClaims{
+		UserID:      "",
+		Permissions: []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI},
+	}
+	authedClaims := &runtime.SecurityClaims{
+		UserID:      "foo",
+		Permissions: []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI},
+	}
+
+	// Create an anonymous session with a message directly to avoid LLM calls and keep the test cheap.
+	runner := ai.NewRunner(rt, activity.NewNoopClient())
+	sess, err := runner.Session(t.Context(), &ai.SessionOptions{
+		InstanceID:        instanceID,
+		CreateIfNotExists: true,
+		Claims:            anonClaims,
+		UserAgent:         "test",
+	})
+	require.NoError(t, err)
+	msg, err := sess.CallTool(t.Context(), ai.RoleUser, ai.ListMetricsViewsName, nil, &ai.ListMetricsViewsArgs{})
+	require.NoError(t, err)
+	err = sess.Flush(t.Context())
+	require.NoError(t, err)
+
+	// Anonymous user can access the anonymous session
+	anonCtx := auth.WithClaims(t.Context(), anonClaims)
+	convRes, err := srv.GetConversation(anonCtx, &runtimev1.GetConversationRequest{
+		InstanceId:     instanceID,
+		ConversationId: msg.Call.SessionID,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, convRes.Conversation)
+	require.Equal(t, msg.Call.SessionID, convRes.Conversation.Id)
+
+	// Anonymous user can access the message in the anonymous session
+	msgRes, err := srv.GetAIMessage(anonCtx, &runtimev1.GetAIMessageRequest{
+		InstanceId:     instanceID,
+		ConversationId: msg.Call.SessionID,
+		MessageId:      msg.Call.ID,
+	})
+	require.NoError(t, err)
+	require.Equal(t, msg.Call.ID, msgRes.Message.Id)
+
+	// Authenticated user can also access the anonymous session
+	authedCtx := auth.WithClaims(t.Context(), authedClaims)
+	convRes, err = srv.GetConversation(authedCtx, &runtimev1.GetConversationRequest{
+		InstanceId:     instanceID,
+		ConversationId: msg.Call.SessionID,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, convRes.Conversation)
+	require.Equal(t, msg.Call.SessionID, convRes.Conversation.Id)
+
+	// Authenticated user can access the message in the anonymous session
+	msgRes, err = srv.GetAIMessage(authedCtx, &runtimev1.GetAIMessageRequest{
+		InstanceId:     instanceID,
+		ConversationId: msg.Call.SessionID,
+		MessageId:      msg.Call.ID,
+	})
+	require.NoError(t, err)
+	require.Equal(t, msg.Call.ID, msgRes.Message.Id)
+}
+
 func TestAgentChoiceAndContext(t *testing.T) {
 	// Skip in CI since we make real LLM calls.
 	testmode.Expensive(t)
