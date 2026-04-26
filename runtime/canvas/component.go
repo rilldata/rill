@@ -13,8 +13,8 @@ import (
 // The provided metricsViews should contain every valid metrics view referenced by the component (as determined in the parser).
 // If the renderer properties reference a metrics view not in metricsViews, assume the metrics view is invalid or does not exist (don't look it up separately in the catalog).
 //
-// Note: that metrics views referenced through markdown or metrics_sql cannot be validated here.
-// This is because the upstream parser can't extract refs from them, so the metrics views cannot be passed through to here.
+// Note: metrics views referenced through markdown content cannot be validated here.
+// This is because the upstream parser can't extract refs from templates, so the metrics views cannot be passed through to here.
 // Warning: if you try to fix this, note that the refs must be added in the parser, not looked up dynamically here;
 // a dynamic lookup will have a race condition where the metrics view may not have been reconciled yet.
 func ValidateRendererProperties(renderer string, props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) error {
@@ -230,13 +230,9 @@ func validateImage(props map[string]any) error {
 }
 
 // validateKPI validates properties for kpi.
-// kpi supports metrics_sql as an alternative to metrics_view; field validation is skipped in that case.
 func validateKPI(props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) error {
 	mvn, mv, err := requireMetricsView(props, metricsViews)
 	if err != nil {
-		if _, hasSQL := pathutil.GetPath(props, "metrics_sql"); hasSQL {
-			return nil
-		}
 		return err
 	}
 
@@ -253,14 +249,9 @@ func validateKPI(props map[string]any, metricsViews map[string]*runtimev1.Metric
 }
 
 // validateKPIGrid validates properties for kpi_grid.
-// kpi_grid supports metrics_sql as an alternative to metrics_view; field validation is skipped in that case.
 func validateKPIGrid(props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) error {
 	mvn, mv, err := requireMetricsView(props, metricsViews)
 	if err != nil {
-		// kpi_grid supports metrics_sql as an alternative data source
-		if _, hasSQL := pathutil.GetPath(props, "metrics_sql"); hasSQL {
-			return nil
-		}
 		return err
 	}
 
