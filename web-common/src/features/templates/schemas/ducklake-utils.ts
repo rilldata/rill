@@ -194,9 +194,17 @@ export function applyDuckLakeFormTransform(
   opts?: ComposeDuckLakeAttachOptions,
 ): Record<string, unknown> {
   if (schema !== ducklakeSchema) return values;
-  if (values.connection_mode !== "parameters") return values;
-  const attach = composeDuckLakeAttach(values, opts);
-  return { ...values, attach };
+  if (values.connection_mode === "parameters") {
+    const attach = composeDuckLakeAttach(values, opts);
+    return { ...values, attach };
+  }
+  // SQL mode: keep the user-typed value visible in the textarea, but strip
+  // any `ATTACH ... ;` wrapper before it flows downstream into YAML.
+  if (typeof values.attach === "string") {
+    const cleaned = stripAttachKeyword(values.attach);
+    if (cleaned !== values.attach) return { ...values, attach: cleaned };
+  }
+  return values;
 }
 
 /**
@@ -347,6 +355,21 @@ const DUCKLAKE_KNOWN_CATALOG_SCHEMES = new Set([
 ]);
 
 /**
+ * Strip the optional `ATTACH [OR REPLACE] [IF NOT EXISTS]` prefix and a
+ * trailing `;` from a user-pasted ATTACH statement. Rill emits the keyword
+ * itself, so the stored form value should be just the clause body. The
+ * textarea shows whatever the user typed; the wrapper is removed only when
+ * the value flows into YAML, preview, or validation.
+ */
+export function stripAttachKeyword(value: string): string {
+  return value
+    .replace(/^\s*ATTACH\b\s*/i, "")
+    .replace(/^(?:OR\s+REPLACE\s+)?(?:IF\s+NOT\s+EXISTS\s+)?/i, "")
+    .replace(/;\s*$/, "")
+    .trim();
+}
+
+/**
  * Structural validation for the raw DuckLake ATTACH SQL.
  *
  * Catches mistakes that we can identify without a full SQL parser:
@@ -357,16 +380,12 @@ const DUCKLAKE_KNOWN_CATALOG_SCHEMES = new Set([
  */
 export function validateDuckLakeAttach(attach: unknown): string[] {
   if (typeof attach !== "string") return [];
-  const value = attach.trim();
+  // The user may paste a full `ATTACH ... ;` statement; strip the wrapper
+  // before validating so we only check the clause body.
+  const value = stripAttachKeyword(attach);
   if (!value) return [];
 
   const errors: string[] = [];
-
-  if (/^ATTACH\b/i.test(value)) {
-    errors.push(
-      'Remove the leading "ATTACH" keyword — Rill adds it automatically.',
-    );
-  }
 
   const quoteCount = (value.match(/'/g) ?? []).length;
   if (quoteCount % 2 !== 0) {

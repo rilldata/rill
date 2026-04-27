@@ -10,14 +10,14 @@ export const ducklakeSchema: MultiStepFormSchema = {
   properties: {
     connection_mode: {
       type: "string",
-      enum: ["sql", "parameters"],
-      default: "sql",
+      enum: ["parameters", "sql"],
+      default: "parameters",
       "x-display": "tabs",
-      "x-enum-labels": ["ATTACH SQL", "Parameters"],
+      "x-enum-labels": ["Parameters", "ATTACH SQL"],
       "x-ui-only": true,
       "x-tab-group": {
-        sql: ["attach"],
         parameters: ["catalog_type", "alias", "data_path_type"],
+        sql: ["attach"],
       },
       "x-step": "connector",
     },
