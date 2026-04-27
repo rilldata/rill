@@ -13,7 +13,7 @@
 </script>
 
 {#if variant === "cta"}
-  <Button type="primary" wide onClick={handleClick}>
+  <Button type="secondary" onClick={handleClick}>
     <SparklesIcon size="16px" />
     <span>Explain and fix</span>
   </Button>

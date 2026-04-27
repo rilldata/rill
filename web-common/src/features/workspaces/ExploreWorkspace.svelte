@@ -127,6 +127,7 @@
               {parseError}
               remoteContent={$remoteContent}
               {filePath}
+              showError={selectedView === "code"}
             >
               {#if selectedView === "code"}
                 <ExploreEditor
