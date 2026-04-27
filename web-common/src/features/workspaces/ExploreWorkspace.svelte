@@ -126,6 +126,7 @@
               {parseError}
               remoteContent={$remoteContent}
               {filePath}
+              showError={selectedView === "code"}
             >
               {#if selectedView === "code"}
                 <ExploreEditor
@@ -136,17 +137,16 @@
                 />
               {:else if selectedView === "viz"}
                 {#if parseError || rootCauseReconcileError}
-                  <div class="flex flex-col items-center gap-4">
-                    <ErrorPage
-                      body={parseError?.message ??
-                        rootCauseReconcileError ??
-                        ""}
-                      fatal
-                      header="Unable to load dashboard preview"
-                      statusCode={404}
-                    />
-                    <ExplainAndFixErrorButton {filePath} large />
-                  </div>
+                  <ErrorPage
+                    body={parseError?.message ?? rootCauseReconcileError ?? ""}
+                    fatal
+                    header="Unable to load dashboard preview"
+                    statusCode={404}
+                  >
+                    <svelte:fragment slot="cta">
+                      <ExplainAndFixErrorButton {filePath} variant="cta" />
+                    </svelte:fragment>
+                  </ErrorPage>
                 {:else if exploreName && metricsViewName}
                   <DashboardStateManager {exploreName}>
                     <Dashboard {metricsViewName} {exploreName} />
