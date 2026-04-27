@@ -10,6 +10,7 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 
 ### _OLAP Engines_
 - [**ClickHouse**](#clickhouse) - ClickHouse analytical database
+- [**Databricks**](#databricks) - Databricks SQL warehouse
 - [**Druid**](#druid) - Apache Druid
 - [**DuckDB**](#duckdb) - Embedded DuckDB engine (default)
 - [**External DuckDB**](#external-duckdb) - External DuckDB database
@@ -20,6 +21,7 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 ### _Data Warehouses_
 - [**Athena**](#athena) - Amazon Athena
 - [**BigQuery**](#bigquery) - Google BigQuery
+- [**Databricks**](#databricks) - Databricks SQL warehouse
 - [**Redshift**](#redshift) - Amazon Redshift
 - [**Snowflake**](#snowflake) - Snowflake data warehouse
 
@@ -317,6 +319,57 @@ port: 9000 # Port number of the ClickHouse server
 database: "mydatabase" # Name of the ClickHouse database
 ssl: true # Enable SSL for secure connection
 cluster: "mycluster" # Cluster name
+```
+
+## databricks`
+
+### `driver`
+
+_[string]_ - Refers to the driver type and must be driver `databricks` _(required)_
+
+### `host`
+
+_[string]_ - Host where the Databricks instance is running 
+
+### `http_path`
+
+_[string]_ - HTTP path sets up the endpoint to the warehouse 
+
+### `token`
+
+_[string]_ - Token sets up the Personal Access Token 
+
+### `catalog`
+
+_[string]_ - Default catalog name. Optional. 
+
+### `schema`
+
+_[string]_ - Default schema name. Optional. 
+
+### `dsn`
+
+_[string]_ - DSN (Data Source Name) for the Databricks connection.
+
+This is intended for **advanced configuration** where you want to specify
+properties that are not explicitly defined above.  
+It can only be used when the other connection fields (host, http_path, token, catalog, schema) are **not used**.
+Refer to https://github.com/databricks/databricks-sql-go for the full list of supported DSN parameters and their formats.
+ 
+
+### `log_queries`
+
+_[boolean]_ - Controls whether to log raw SQL queries 
+
+```yaml
+# Example: Databricks connector configuration
+type: connector # Must be `connector` (required)
+driver: databricks # Must be `databricks` _(required)_
+host: "my-databricks-instance.cloud.databricks.com" # Hostname of the Databricks instance
+http_path: "/sql/1.0/endpoints/1234567890abcdef" # HTTP path for the Databricks SQL warehouse endpoint
+token: "{{ .env.DATABRICKS_TOKEN }}" # Personal Access Token for authentication
+catalog: "my_catalog" # Default catalog name (optional)
+schema: "my_schema" # Default schema name (optional)
 ```
 
 ## Druid

@@ -48,14 +48,7 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 		return nil, err
 	}
 
-	var dsn string
-	if srcProps.DSN != "" { // get from src properties
-		dsn = srcProps.DSN
-	} else {
-		dsn = c.config.resolveDSN()
-	}
-
-	db, err := sql.Open("databricks", dsn)
+	db, err := sql.Open("databricks", c.config.resolveDSN())
 	if err != nil {
 		return nil, err
 	}
@@ -291,7 +284,6 @@ func (f *fileIterator) writeRecords(ctx context.Context, rdr *ipc.Reader, writer
 
 type sourceProperties struct {
 	SQL string `mapstructure:"sql"`
-	DSN string `mapstructure:"dsn"`
 }
 
 func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
