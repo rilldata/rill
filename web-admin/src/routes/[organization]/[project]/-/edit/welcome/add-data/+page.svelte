@@ -5,7 +5,7 @@
   import { AddDataStep } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { fetchAnalyzeConnectors } from "@rilldata/web-common/features/connectors/selectors.ts";
-  import { projectWelcomeStatusStores } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
+  import { projectWelcomeStatus } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
   import { checkpointProject } from "@rilldata/web-admin/features/projects/publish-project.ts";
   import type { PageData } from "./$types";
 
@@ -20,7 +20,7 @@
   let project = $derived(page.params.project);
 
   async function handleDone() {
-    projectWelcomeStatusStores.setProjectWelcomeStep(project, false);
+    projectWelcomeStatus.setProjectWelcomeStep(project, false);
     await checkpointProject(runtimeClient);
   }
 

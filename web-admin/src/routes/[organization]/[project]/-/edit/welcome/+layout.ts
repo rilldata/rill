@@ -1,4 +1,4 @@
-import { projectWelcomeStatusStores } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
+import { projectWelcomeStatus } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
 import { redirect } from "@sveltejs/kit";
 import {
   extractBranchFromPath,
@@ -6,7 +6,7 @@ import {
 } from "@rilldata/web-admin/features/branches/branch-utils.ts";
 
 export const load = ({ params: { organization, project }, url }) => {
-  if (!projectWelcomeStatusStores.isProjectWelcomeStep(project)) {
+  if (!projectWelcomeStatus.isProjectWelcomeStep(project)) {
     const branch = extractBranchFromPath(url.pathname);
     throw redirect(
       307,

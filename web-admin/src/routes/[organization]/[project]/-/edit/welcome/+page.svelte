@@ -4,7 +4,7 @@
   import TitleContent from "@rilldata/web-common/features/welcome/TitleContent.svelte";
   import ProjectCards from "@rilldata/web-common/features/welcome/ProjectCards.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { projectWelcomeStatusStores } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
+  import { projectWelcomeStatus } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
   import { checkpointProject } from "@rilldata/web-admin/features/projects/publish-project.ts";
 
   const runtimeClient = useRuntimeClient();
@@ -12,7 +12,7 @@
   let project = $derived(page.params.project);
 
   async function handleDone() {
-    projectWelcomeStatusStores.setProjectWelcomeStep(project, false);
+    projectWelcomeStatus.setProjectWelcomeStep(project, false);
     await checkpointProject(runtimeClient);
   }
 </script>

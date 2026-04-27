@@ -53,7 +53,7 @@
   import type { HTTPError } from "@rilldata/web-common/lib/errors";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
-  import NoDeployment from "@rilldata/web-admin/features/projects/deployment/NoDeployment.svelte";
+  import NoActiveProdDeployment from "@rilldata/web-admin/features/projects/deployment/NoActiveProdDeployment.svelte";
 
   let { children }: { children: Snippet } = $props();
 
@@ -313,7 +313,7 @@
       {organizationLogoUrl}
     />
     {#if !projectData.deployment}
-      <NoDeployment {organization} {project} />
+      <NoActiveProdDeployment {organization} {project} />
     {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING}
       <ProjectBuilding branch={activeBranch} />
     {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED}

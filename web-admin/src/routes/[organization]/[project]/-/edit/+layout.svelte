@@ -189,8 +189,8 @@
             {organizationLogoUrl}
             editContext={true}
           />
+          <EditSessionTimeoutBanner sessionStartedAt={deployment.createdOn} />
         {/if}
-        <EditSessionTimeoutBanner sessionStartedAt={deployment.createdOn} />
         <FileAndResourceWatcher
           lifecycle="none"
           {onBeforeReconnect}
