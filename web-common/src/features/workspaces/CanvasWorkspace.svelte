@@ -125,7 +125,7 @@
               {parseError}
               remoteContent={$remoteContent}
               {filePath}
-              showError={selectedView === "code"}
+              showError={selectedView === "code" || ready}
             >
               {#if selectedView === "code"}
                 <CanvasEditor
