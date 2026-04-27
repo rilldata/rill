@@ -1,0 +1,44 @@
+expensive: true
+connectors:
+  - databricks
+project_files:
+  all_datatypes_duckdb.yaml:
+    type: model
+    connector: databricks
+    sql: "select id, boolean_col, tinyint_col, smallint_col, int32_col, int64_col, float_col, double_col, decimal_col, string_col, varchar_col, date_col, timestamp_col, timestamp_ntz_col, binary_col, array_col, map_col, struct_col from integration_test.all_datatypes"
+    output:
+      connector: duckdb
+tests:
+  - name: query_all_results_duckdb
+    resolver: sql
+    properties:
+      sql: "select * from all_datatypes_duckdb order by id"
+    result_csv: |
+      id,boolean_col,tinyint_col,smallint_col,int32_col,int64_col,float_col,double_col,decimal_col,string_col,varchar_col,date_col,timestamp_col,timestamp_ntz_col,binary_col,array_col,map_col,struct_col
+      1,true,127,32767,2147483647,9223372036854776000,3.140000104904175,2.718,456.789000,Sample String,Large text data,2024-03-26,2024-03-26T14:30:00Z,2024-03-26T14:30:00Z,SGVsbG8=,"[1,2,3]","{""city"":""New York""}","{""city"":""New York"",""zip"":10001}"
+      2,false,0,0,0,0,0,0,0.000000,,,1970-01-01,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,,[],{},"{""city"":"""",""zip"":0}"
+      3,,,,,,,,,,,,,,,,,"{""city"":null,""zip"":null}"
+  - name: query_all_datatypes_duckdb
+    resolver: sql
+    properties:
+      sql: "describe all_datatypes_duckdb"
+    result_csv: |
+      column_name,column_type,null,key,default,extra
+      id,INTEGER,YES,,,
+      boolean_col,BOOLEAN,YES,,,
+      tinyint_col,TINYINT,YES,,,
+      smallint_col,SMALLINT,YES,,,
+      int32_col,INTEGER,YES,,,
+      int64_col,BIGINT,YES,,,
+      float_col,FLOAT,YES,,,
+      double_col,DOUBLE,YES,,,
+      decimal_col,VARCHAR,YES,,,
+      string_col,VARCHAR,YES,,,
+      varchar_col,VARCHAR,YES,,,
+      date_col,DATE,YES,,,
+      timestamp_col,TIMESTAMP WITH TIME ZONE,YES,,,
+      timestamp_ntz_col,TIMESTAMP,YES,,,
+      binary_col,BLOB,YES,,,
+      array_col,INTEGER[],YES,,,
+      map_col,"MAP(VARCHAR, VARCHAR)",YES,,,
+      struct_col,"STRUCT(city VARCHAR, zip INTEGER)",YES,,,
