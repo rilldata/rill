@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Handle, NodeToolbar, Position, useSvelteFlow } from "@xyflow/svelte";
+  import { Handle, Position, useSvelteFlow } from "@xyflow/svelte";
   import { resourceShorthandMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
   import type { ResourceNodeData } from "../shared/types";
@@ -7,9 +7,6 @@
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import { getInspectStore, openInspect } from "./inspect-store";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
-  import ExternalLink from "@rilldata/web-common/components/icons/ExternalLink.svelte";
 
   export let id: string;
   export let type: string;
@@ -85,29 +82,6 @@
   function handleDoubleClick() {
     fitView({ nodes: [{ id }], duration: 300, padding: 0.5 });
   }
-
-  $: resourceName = data?.resource?.meta?.name?.name ?? "";
-  $: artifact =
-    resourceName && kind
-      ? fileArtifacts.findFileArtifact(kind, resourceName)
-      : undefined;
-
-  function openFile(e?: MouseEvent) {
-    e?.stopPropagation();
-    if (!artifact?.path) return;
-
-    // Force code view when opening from the graph; otherwise the file may open
-    // in its preview view by default.
-    try {
-      const key = artifact.path;
-      const prefs = JSON.parse(localStorage.getItem(key) || "{}");
-      localStorage.setItem(key, JSON.stringify({ ...prefs, view: "code" }));
-    } catch (error) {
-      console.warn(`Failed to save file view preference:`, error);
-    }
-
-    navigateToFile(artifact.path);
-  }
 </script>
 
 <div
@@ -154,23 +128,6 @@
       <LoadingSpinner size="0.7em" />
     {/if}
   </div>
-
-  <NodeToolbar
-    isVisible={selected && !!artifact?.path}
-    position={Position.Top}
-    align="center"
-    offset={4}
-  >
-    <button
-      class="toolbar-open-btn"
-      aria-label="Open in code"
-      title={`Open ${artifact?.path}`}
-      onclick={openFile}
-    >
-      <ExternalLink size="12px" />
-      <span>Open</span>
-    </button>
-  </NodeToolbar>
 </div>
 
 <style lang="postcss">
@@ -235,15 +192,5 @@
     border: none;
     box-shadow: none;
     opacity: 0;
-  }
-
-  .toolbar-open-btn {
-    @apply h-7 px-3 rounded-[2px] border flex items-center justify-center gap-x-1.5 shadow-sm transition-colors;
-    @apply text-xs font-medium;
-    @apply bg-primary-600 text-white border-primary-600;
-  }
-
-  .toolbar-open-btn:focus {
-    @apply outline-none;
   }
 </style>
