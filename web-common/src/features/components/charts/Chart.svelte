@@ -23,6 +23,7 @@
   import type { Readable } from "svelte/store";
   import { getChroma } from "../../themes/theme-utils";
   import { discoverTemporalBrushSignal } from "./brush-builder";
+  import { clearExternalBrush, setExternalBrush } from "./highlight-controller";
   import type { ChartDataResult, ChartType } from "./types";
   import { generateSpec, getColorMappingForChart } from "./util";
 
@@ -45,6 +46,9 @@
   export let onHover:
     | ((dimension: string | null | undefined, time: Date | undefined) => void)
     | undefined = undefined;
+
+  export let externalBrushStartMs: number | undefined = undefined;
+  export let externalBrushEndMs: number | undefined = undefined;
 
   export let view: View;
 
@@ -145,6 +149,20 @@
   let clearHandler: ((name: string, value: unknown) => void) | undefined;
   let currentBrushSignal: string | undefined;
 
+  // Tracks whether the user started a pointer interaction on THIS chart.
+  // The pointerup handler is on `window` (so the brush completes even if the
+  // pointer leaves the chart), but we must only fire onBrushEnd when the
+  // interaction originated here; otherwise every sibling chart's handler fires.
+  let isLocalPointerDown = false;
+
+  // Guards against signal listener callbacks triggered by programmatic
+  // setExternalBrush/clearExternalBrush calls (which fire synchronously).
+  let isApplyingExternalBrush = false;
+
+  function handleLocalPointerDown() {
+    isLocalPointerDown = true;
+  }
+
   function attachBrushListener(v: View) {
     detachBrushListener();
 
@@ -154,6 +172,8 @@
 
     // Detect brush-end via DOM pointerup
     pointerUpHandler = () => {
+      if (!isLocalPointerDown) return;
+      isLocalPointerDown = false;
       try {
         const value = v.signal(signalName);
         const interval = resolveSignalIntervalField(value);
@@ -168,6 +188,7 @@
 
     // Detect brush-clear (user clicks outside brush or double-clicks)
     clearHandler = (_name: string, value: unknown) => {
+      if (isApplyingExternalBrush) return;
       if (value === null || value === undefined) {
         onBrushClear?.();
       }
@@ -195,6 +216,28 @@
     attachBrushListener(view);
   }
 
+  // Apply external brush state from sibling charts
+  $: if (useBrush && view) {
+    isApplyingExternalBrush = true;
+    if (
+      externalBrushStartMs !== undefined &&
+      externalBrushEndMs !== undefined
+    ) {
+      setExternalBrush(
+        view,
+        externalBrushStartMs,
+        externalBrushEndMs,
+        brushTemporalField,
+      );
+    } else if (
+      externalBrushStartMs === undefined &&
+      externalBrushEndMs === undefined
+    ) {
+      clearExternalBrush(view, brushTemporalField);
+    }
+    isApplyingExternalBrush = false;
+  }
+
   onDestroy(() => {
     detachBrushListener();
   });
@@ -213,17 +256,20 @@
     No Data to Display
   </div>
 {:else}
-  <VegaLiteRenderer
-    bind:viewVL={view}
-    canvasDashboard={isCanvas}
-    data={{ "metrics-view": data }}
-    {themeMode}
-    {spec}
-    {colorMapping}
-    {signalListeners}
-    renderer={useBrush ? "svg" : "canvas"}
-    {expressionFunctions}
-    {hasComparison}
-    config={getRillTheme(isThemeModeDark, theme)}
-  />
+  <!-- svelte-ignore a11y-no-static-element-interactions -->
+  <div class="size-full" on:pointerdown={handleLocalPointerDown}>
+    <VegaLiteRenderer
+      bind:viewVL={view}
+      canvasDashboard={isCanvas}
+      data={{ "metrics-view": data }}
+      {themeMode}
+      {spec}
+      {colorMapping}
+      {signalListeners}
+      renderer="canvas"
+      {expressionFunctions}
+      {hasComparison}
+      config={getRillTheme(isThemeModeDark, theme)}
+    />
+  </div>
 {/if}

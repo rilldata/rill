@@ -120,12 +120,18 @@
 
   // Clear hidden fields for the active step to avoid stale submissions.
   // Depend on `$form` so this runs when the auth method (or other values) change.
+  // x-ui-only fields are preserved across visibility changes: they never reach
+  // the submitted payload (filterSchemaInternalValues strips them), and
+  // clearing them would destroy user input when switching between equivalent
+  // representations of the same configuration (e.g. DuckLake's ATTACH SQL
+  // vs Parameters tabs).
   $: if (schema) {
     const currentValues = $form;
     const properties = schema.properties ?? {};
 
-    const shouldClear = Object.entries(properties).some(([key]) => {
+    const shouldClear = Object.entries(properties).some(([key, prop]) => {
       if (!isStepMatch(schema, key, stepFilter)) return false;
+      if (prop["x-ui-only"]) return false;
       const visible = isVisibleForValues(schema, key, currentValues);
       return !visible && key in currentValues && currentValues[key] !== "";
     });
@@ -133,8 +139,9 @@
     if (shouldClear) {
       form.update(
         ($form) => {
-          for (const key of Object.keys(properties)) {
+          for (const [key, prop] of Object.entries(properties)) {
             if (!isStepMatch(schema, key, stepFilter)) continue;
+            if (prop["x-ui-only"]) continue;
             const visible = isVisibleForValues(schema, key, $form);
             if (!visible && key in $form && $form[key] !== "") {
               $form[key] = "";
@@ -181,7 +188,8 @@
     values: Record<string, unknown>,
   ) {
     const properties = currentSchema.properties ?? {};
-    return Object.entries(properties).filter(([key]) => {
+    return Object.entries(properties).filter(([key, prop]) => {
+      if (prop["x-hidden"]) return false;
       if (!isStepMatch(currentSchema, key, currentStep)) return false;
       return isVisibleForValues(currentSchema, key, values);
     });
@@ -245,6 +253,7 @@
     for (const [key, prop] of Object.entries(properties)) {
       const grouped = prop[groupKey];
       if (!grouped) continue;
+      if (prop["x-hidden"]) continue;
       if (!isStepMatch(currentSchema, key, currentStep)) continue;
 
       const filteredOptions: Record<string, string[]> = {};

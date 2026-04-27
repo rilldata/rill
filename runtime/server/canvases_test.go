@@ -443,8 +443,7 @@ security:
 		InstanceId: instanceID,
 		Canvas:     "c1",
 	})
-	require.Error(t, err)
-	require.ErrorContains(t, err, "does not have access")
+	require.ErrorIs(t, err, runtime.ErrForbidden)
 
 	// Check metrics view column-level security.
 	// The 'sum' measure should be excluded.

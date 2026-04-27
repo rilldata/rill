@@ -2,11 +2,14 @@
 
 <script lang="ts">
   import { page } from "$app/stores";
+  import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
   import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
+  import Callout from "@rilldata/web-common/components/callout/Callout.svelte";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
+  $: activeBranch = extractBranchFromPath($page.url.pathname);
   $: basePage = `/${organization}/${project}/-/settings`;
 
   const navItems = [
@@ -47,6 +50,14 @@
       minWidth="180px"
     />
     <div class="flex flex-col gap-y-6 w-full min-w-0">
+      {#if activeBranch}
+        <Callout level="info">
+          <span class="text-sm">
+            These settings apply to the entire project, not just the
+            <span class="font-mono">{activeBranch}</span> branch.
+          </span>
+        </Callout>
+      {/if}
       <slot />
     </div>
   </div>

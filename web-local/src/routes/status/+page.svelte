@@ -3,7 +3,10 @@
     ResourceKind,
     SingletonProjectParserName,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { formatConnectorName } from "@rilldata/web-common/features/resources/display-utils";
+  import {
+    formatConnectorName,
+    getOlapEngineLabel,
+  } from "@rilldata/web-common/features/resources/display-utils";
   import ErrorsOverviewSection from "@rilldata/web-common/features/resources/overview/ErrorsOverviewSection.svelte";
   import ResourcesOverviewSection from "@rilldata/web-common/features/resources/overview/ResourcesOverviewSection.svelte";
   import {
@@ -107,7 +110,11 @@
     <div class="info-row">
       <span class="info-label">OLAP Engine</span>
       <span class="info-value">
-        {formatConnectorName(instance?.olapConnector || "duckdb")}
+        {getOlapEngineLabel(
+          instance?.olapConnector
+            ? { name: instance.olapConnector }
+            : undefined,
+        )}
       </span>
     </div>
     <div class="info-row">

@@ -342,7 +342,7 @@ func TestRBACOld(t *testing.T) {
 		})
 
 		require.Error(t, err)
-		require.Equal(t, codes.InvalidArgument, status.Code(err))
+		require.Equal(t, codes.FailedPrecondition, status.Code(err))
 		require.ErrorContains(t, err, "this user is the billing email for the organization")
 	})
 
@@ -352,7 +352,7 @@ func TestRBACOld(t *testing.T) {
 		})
 
 		require.Error(t, err)
-		require.Equal(t, codes.InvalidArgument, status.Code(err))
+		require.Equal(t, codes.FailedPrecondition, status.Code(err))
 		require.ErrorContains(t, err, "this user is the billing email for the organization")
 	})
 
@@ -370,7 +370,7 @@ func TestRBACOld(t *testing.T) {
 		})
 
 		require.Error(t, err)
-		require.Equal(t, codes.InvalidArgument, status.Code(err))
+		require.Equal(t, codes.FailedPrecondition, status.Code(err))
 		require.ErrorContains(t, err, "cannot remove the last admin member")
 	})
 
@@ -385,7 +385,7 @@ func TestRBACOld(t *testing.T) {
 		})
 
 		require.Error(t, err)
-		require.Equal(t, codes.InvalidArgument, status.Code(err))
+		require.Equal(t, codes.FailedPrecondition, status.Code(err))
 		require.ErrorContains(t, err, "last admin")
 	})
 
@@ -538,7 +538,7 @@ func TestRBACOld(t *testing.T) {
 				Role:  "viewer",
 			})
 			require.Error(t, err)
-			require.Equal(t, codes.InvalidArgument, status.Code(err))
+			require.Equal(t, codes.FailedPrecondition, status.Code(err))
 			require.ErrorContains(t, err, "last admin")
 
 			// check changing role of invited user

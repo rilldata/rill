@@ -226,7 +226,7 @@ func TestRunGitPush_NoNewCommits(t *testing.T) {
 	branch := getCurrentBranch(t, tempDir)
 
 	// Push with no new commits; remote is already up to date — should not error.
-	err := RunGitPush(context.Background(), tempDir, "origin", branch)
+	err := RunGitPush(context.Background(), tempDir, "origin", branch, false)
 	require.NoError(t, err, "RunGitPush should not fail when there are no new commits")
 }
 

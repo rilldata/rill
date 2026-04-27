@@ -171,8 +171,12 @@ func RunUpstreamMerge(ctx context.Context, remote, path, branch string, favourLo
 	return nil
 }
 
-func RunGitPush(ctx context.Context, path, remoteName, branchName string) error {
-	cmd := exec.CommandContext(ctx, "git", "-C", path, "push", remoteName, branchName)
+func RunGitPush(ctx context.Context, path, remoteName, branchName string, force bool) error {
+	args := []string{"-C", path, "push", remoteName, branchName}
+	if force {
+		args = append(args, "--force")
+	}
+	cmd := exec.CommandContext(ctx, "git", args...)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		var execErr *exec.ExitError
 		if errors.As(err, &execErr) {

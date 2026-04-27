@@ -19,7 +19,6 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/observability"
-	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -35,12 +34,12 @@ func (s *Server) TriggerReconcile(ctx context.Context, req *adminv1.TriggerRecon
 
 	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	proj, err := s.admin.DB.FindProject(ctx, depl.ProjectID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -50,7 +49,7 @@ func (s *Server) TriggerReconcile(ctx context.Context, req *adminv1.TriggerRecon
 
 	err = s.admin.TriggerParser(ctx, depl)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.TriggerReconcileResponse{}, nil
@@ -65,12 +64,12 @@ func (s *Server) TriggerRefreshSources(ctx context.Context, req *adminv1.Trigger
 
 	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	proj, err := s.admin.DB.FindProject(ctx, depl.ProjectID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -85,7 +84,7 @@ func (s *Server) TriggerRefreshSources(ctx context.Context, req *adminv1.Trigger
 
 	rt, err := s.admin.OpenRuntimeClient(depl)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 	defer rt.Close()
 
@@ -95,7 +94,7 @@ func (s *Server) TriggerRefreshSources(ctx context.Context, req *adminv1.Trigger
 		All:        len(names) == 0, // Backwards compatibility
 	})
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.TriggerRefreshSourcesResponse{}, nil
@@ -113,7 +112,7 @@ func (s *Server) ListDeployments(ctx context.Context, req *adminv1.ListDeploymen
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -125,7 +124,7 @@ func (s *Server) ListDeployments(ctx context.Context, req *adminv1.ListDeploymen
 
 	depls, err := s.admin.DB.FindDeploymentsForProject(ctx, proj.ID, req.Environment, req.Branch)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	// Filter deployments based on permissions and specified environment and user ID.
@@ -162,12 +161,12 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 
 	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	proj, err := s.admin.DB.FindProject(ctx, depl.ProjectID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -198,102 +197,36 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 		}
 	}
 
-	var subject string
-	var attr map[string]any
-	var restrictResources bool
-	var resources []database.ResourceName
-	if req.For == nil && req.ExternalUserId == "" {
-		if claims.OwnerType() == auth.OwnerTypeUser {
-			subject = claims.OwnerID()
-			attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
-			if err != nil {
-				return nil, err
-			}
-			restrictResources, resources, err = s.getResourceRestrictionsForUser(ctx, proj.ID, claims.OwnerID())
-			if err != nil {
-				return nil, err
-			}
-		} else if claims.OwnerType() == auth.OwnerTypeService {
-			attr = map[string]any{"admin": true}
-			// NOTE: Intentionally leaving the `subject` empty out of caution.
-			// Some users use service accounts for generating JWTs for end users without passing req.For, and we don't want to accidentally pass a shared subject ID across those users (which could leak e.g. AI chats).
-		}
-	} else if req.For != nil {
-		switch forVal := req.For.(type) {
-		case *adminv1.GetDeploymentRequest_UserId:
-			if req.ExternalUserId != "" {
-				return nil, status.Error(codes.InvalidArgument, "external_user_id cannot be specified together with user_id")
-			}
-			subject = forVal.UserId
-			attr, restrictResources, resources, err = s.getAttributesAndResourceRestrictionsForUser(ctx, proj.OrganizationID, proj.ID, forVal.UserId, "")
-			if err != nil {
-				return nil, err
-			}
-		case *adminv1.GetDeploymentRequest_UserEmail:
-			attr, restrictResources, resources, err = s.getAttributesAndResourceRestrictionsForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.UserEmail)
-			if err != nil {
-				return nil, err
-			}
-		case *adminv1.GetDeploymentRequest_Attributes:
-			attr = forVal.Attributes.AsMap()
-		default:
-			return nil, status.Error(codes.InvalidArgument, "invalid 'for' type")
-		}
-	}
-
-	// Handle external user ID (see API docstring for details)
-	if req.ExternalUserId != "" {
-		subject = subjectForExternalUser(req.ExternalUserId, proj.ID)
-	}
-
 	ttlDuration := runtimeAccessTokenEmbedTTL
 	if req.AccessTokenTtlSeconds > 0 {
 		ttlDuration = time.Duration(req.AccessTokenTtlSeconds) * time.Second
 	}
 
-	// get resource level security rules if applicable
-	rules := securityRulesFromResources(restrictResources, resources)
-
-	instancePermissions := []runtime.Permission{
-		runtime.ReadObjects,
-		runtime.ReadMetrics,
-		runtime.ReadAPI,
-		runtime.UseAI,
+	opts := &issueRuntimeTokenOptions{
+		project:            proj,
+		deployment:         depl,
+		projectPermissions: permissions,
+		externalUserID:     req.ExternalUserId,
+		ttl:                ttlDuration,
 	}
-	if depl.Environment == "dev" {
-		instancePermissions = append(instancePermissions,
-			runtime.ReadInstance,
-			runtime.ReadOLAP,
-			runtime.ReadProfiling,
-			runtime.ReadRepo,
-			runtime.ReadResolvers,
-		)
-		if permissions.ManageDev {
-			instancePermissions = append(instancePermissions,
-				runtime.EditRepo,
-				runtime.EditTrigger,
-			)
+	switch forVal := req.For.(type) {
+	case nil:
+		if req.ExternalUserId == "" {
+			opts.forOwner = true
 		}
-	} else if permissions.ManageProd {
-		instancePermissions = append(instancePermissions,
-			runtime.ReadResolvers,
-			runtime.EditTrigger,
-		)
+	case *adminv1.GetDeploymentRequest_UserId:
+		opts.forUserID = forVal.UserId
+	case *adminv1.GetDeploymentRequest_UserEmail:
+		opts.forUserEmail = forVal.UserEmail
+	case *adminv1.GetDeploymentRequest_Attributes:
+		opts.forUserAttributes = forVal.Attributes.AsMap()
+	default:
+		return nil, status.Error(codes.InvalidArgument, "invalid 'for' type")
 	}
 
-	// Generate JWT
-	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
-		AudienceURL: depl.RuntimeAudience,
-		Subject:     subject,
-		TTL:         ttlDuration,
-		InstancePermissions: map[string][]runtime.Permission{
-			depl.RuntimeInstanceID: instancePermissions,
-		},
-		Attributes:    attr,
-		SecurityRules: rules,
-	})
+	jwt, err := s.issueRuntimeToken(ctx, opts)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
+		return nil, err
 	}
 
 	s.admin.Used.Deployment(depl.ID)
@@ -302,7 +235,7 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 		RuntimeHost: depl.RuntimeHost,
 		InstanceId:  depl.RuntimeInstanceID,
 		AccessToken: jwt,
-		TtlSeconds:  uint32(ttlDuration.Seconds()),
+		TtlSeconds:  uint32(opts.ttl.Seconds()),
 	}, nil
 }
 
@@ -318,7 +251,7 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -374,13 +307,13 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 			return nil, err
 		}
 		if len(depl) > 0 {
-			return nil, status.Errorf(codes.InvalidArgument, "another deployment for the specified branch %q already exists in %q environment", branch, depl[0].Environment)
+			return nil, status.Errorf(codes.AlreadyExists, "another deployment for the specified branch %q already exists in %q environment", branch, depl[0].Environment)
 		}
 	}
 
 	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	// Check projects quota
@@ -457,12 +390,12 @@ func (s *Server) StartDeployment(ctx context.Context, req *adminv1.StartDeployme
 
 	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	proj, err := s.admin.DB.FindProject(ctx, depl.ProjectID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -497,12 +430,12 @@ func (s *Server) StopDeployment(ctx context.Context, req *adminv1.StopDeployment
 
 	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	proj, err := s.admin.DB.FindProject(ctx, depl.ProjectID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -519,7 +452,7 @@ func (s *Server) StopDeployment(ctx context.Context, req *adminv1.StopDeployment
 
 	err = s.admin.StopDeployment(ctx, depl)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.StopDeploymentResponse{
@@ -535,12 +468,12 @@ func (s *Server) DeleteDeployment(ctx context.Context, req *adminv1.DeleteDeploy
 
 	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	proj, err := s.admin.DB.FindProject(ctx, depl.ProjectID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -557,7 +490,7 @@ func (s *Server) DeleteDeployment(ctx context.Context, req *adminv1.DeleteDeploy
 
 	err = s.admin.TeardownDeployment(ctx, depl)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.DeleteDeploymentResponse{DeploymentId: depl.ID}, nil
@@ -574,20 +507,20 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	if proj.PrimaryDeploymentID == nil {
-		return nil, status.Error(codes.InvalidArgument, "project does not have a deployment")
+		return nil, status.Error(codes.FailedPrecondition, "project does not have a deployment")
 	}
 
 	prodDepl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	if req.Branch != "" && req.Branch != prodDepl.Branch {
-		return nil, status.Error(codes.InvalidArgument, "project does not have a deployment for given branch")
+		return nil, status.Error(codes.FailedPrecondition, "project does not have a deployment for given branch")
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -598,78 +531,36 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage deployment")
 	}
 
-	var subject string
-	var attr map[string]any
-	var restrictResources bool
-	var resources []database.ResourceName
-	if req.For == nil && req.ExternalUserId == "" {
-		if claims.OwnerType() == auth.OwnerTypeUser {
-			subject = claims.OwnerID()
-			attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
-			if err != nil {
-				return nil, err
-			}
-			restrictResources, resources, err = s.getResourceRestrictionsForUser(ctx, proj.ID, claims.OwnerID())
-			if err != nil {
-				return nil, err
-			}
-		}
-		// NOTE: Intentionally leaving the `subject` empty in other cases out of caution.
-		// Some users use service accounts for generating JWTs for end users without passing req.For, and we don't want to accidentally pass a shared subject ID across those users (which could leak e.g. AI chats).
-	} else if req.For != nil {
-		switch forVal := req.For.(type) {
-		case *adminv1.GetDeploymentCredentialsRequest_UserId:
-			if req.ExternalUserId != "" {
-				return nil, status.Error(codes.InvalidArgument, "external_user_id cannot be specified together with user_id")
-			}
-			subject = forVal.UserId
-			attr, restrictResources, resources, err = s.getAttributesAndResourceRestrictionsForUser(ctx, proj.OrganizationID, proj.ID, forVal.UserId, "")
-			if err != nil {
-				return nil, err
-			}
-		case *adminv1.GetDeploymentCredentialsRequest_UserEmail:
-			attr, restrictResources, resources, err = s.getAttributesAndResourceRestrictionsForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.UserEmail)
-			if err != nil {
-				return nil, err
-			}
-		case *adminv1.GetDeploymentCredentialsRequest_Attributes:
-			attr = forVal.Attributes.AsMap()
-		default:
-			return nil, status.Error(codes.InvalidArgument, "invalid 'for' type")
-		}
-	}
-
-	// Handle external user ID (see API docstring for details)
-	if req.ExternalUserId != "" {
-		subject = subjectForExternalUser(req.ExternalUserId, proj.ID)
-	}
-
 	ttlDuration := runtimeAccessTokenEmbedTTL
 	if req.TtlSeconds > 0 {
 		ttlDuration = time.Duration(req.TtlSeconds) * time.Second
 	}
 
-	// get resource level security rules if applicable
-	rules := securityRulesFromResources(restrictResources, resources)
+	opts := &issueRuntimeTokenOptions{
+		project:            proj,
+		deployment:         prodDepl,
+		projectPermissions: permissions,
+		externalUserID:     req.ExternalUserId,
+		ttl:                ttlDuration,
+	}
+	switch forVal := req.For.(type) {
+	case nil:
+		if req.ExternalUserId == "" {
+			opts.forOwner = true
+		}
+	case *adminv1.GetDeploymentCredentialsRequest_UserId:
+		opts.forUserID = forVal.UserId
+	case *adminv1.GetDeploymentCredentialsRequest_UserEmail:
+		opts.forUserEmail = forVal.UserEmail
+	case *adminv1.GetDeploymentCredentialsRequest_Attributes:
+		opts.forUserAttributes = forVal.Attributes.AsMap()
+	default:
+		return nil, status.Error(codes.InvalidArgument, "invalid 'for' type")
+	}
 
-	// Generate JWT
-	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
-		AudienceURL: prodDepl.RuntimeAudience,
-		Subject:     subject,
-		TTL:         ttlDuration,
-		InstancePermissions: map[string][]runtime.Permission{
-			prodDepl.RuntimeInstanceID: {
-				runtime.ReadObjects,
-				runtime.ReadMetrics,
-				runtime.ReadAPI,
-				runtime.UseAI,
-			},
-		},
-		Attributes:    attr,
-		SecurityRules: rules,
-	})
+	jwt, err := s.issueRuntimeToken(ctx, opts)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
+		return nil, err
 	}
 
 	s.admin.Used.Deployment(prodDepl.ID)
@@ -678,7 +569,7 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 		RuntimeHost: prodDepl.RuntimeHost,
 		InstanceId:  prodDepl.RuntimeInstanceID,
 		AccessToken: jwt,
-		TtlSeconds:  uint32(ttlDuration.Seconds()),
+		TtlSeconds:  uint32(opts.ttl.Seconds()),
 	}, nil
 }
 
@@ -700,21 +591,21 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	if proj.PrimaryDeploymentID == nil {
-		return nil, status.Error(codes.InvalidArgument, "project does not have a deployment")
+		return nil, status.Error(codes.FailedPrecondition, "project does not have a deployment")
 	}
 
 	prodDepl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 	s.admin.Used.Deployment(prodDepl.ID)
 
 	if req.Branch != "" && req.Branch != prodDepl.Branch {
-		return nil, status.Error(codes.InvalidArgument, "project does not have a deployment for given branch")
+		return nil, status.Error(codes.FailedPrecondition, "project does not have a deployment for given branch")
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -723,61 +614,6 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 
 	if !forceAccess && !permissions.ManageProd {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage deployment")
-	}
-
-	// Get user attributes to pass in the JWT
-	var subject string
-	var attr map[string]any
-	var restrictResources bool
-	var resources []database.ResourceName
-	if req.For == nil && req.ExternalUserId == "" {
-		if claims.OwnerType() == auth.OwnerTypeUser {
-			subject = claims.OwnerID()
-			attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
-			if err != nil {
-				return nil, err
-			}
-			restrictResources, resources, err = s.getResourceRestrictionsForUser(ctx, proj.ID, claims.OwnerID())
-			if err != nil {
-				return nil, err
-			}
-		}
-		// NOTE: Intentionally leaving the `subject` empty in other cases out of caution.
-		// Some users use service accounts for generating JWTs for end users without passing req.For, and we don't want to accidentally pass a shared subject ID across those users (which could leak e.g. AI chats).
-	} else if req.For != nil {
-		switch forVal := req.For.(type) {
-		case *adminv1.GetIFrameRequest_UserId:
-			if req.ExternalUserId != "" {
-				return nil, status.Error(codes.InvalidArgument, "external_user_id cannot be specified together with user_id")
-			}
-			subject = forVal.UserId
-			attr, restrictResources, resources, err = s.getAttributesAndResourceRestrictionsForUser(ctx, proj.OrganizationID, proj.ID, forVal.UserId, "")
-			if err != nil {
-				return nil, err
-			}
-		case *adminv1.GetIFrameRequest_UserEmail:
-			attr, restrictResources, resources, err = s.getAttributesAndResourceRestrictionsForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.UserEmail)
-			if err != nil {
-				return nil, err
-			}
-		case *adminv1.GetIFrameRequest_Attributes:
-			attr = forVal.Attributes.AsMap()
-		default:
-			return nil, status.Error(codes.InvalidArgument, "invalid 'for' type")
-		}
-	}
-
-	// Handle external user ID (see API docstring for details)
-	if req.ExternalUserId != "" {
-		subject = subjectForExternalUser(req.ExternalUserId, proj.ID)
-	}
-
-	// Add an `embed` attribute for use in security policies or feature flags (as `{{.user.embed}}`).
-	if _, ok := attr["embed"]; !ok {
-		if attr == nil {
-			attr = make(map[string]any)
-		}
-		attr["embed"] = true
 	}
 
 	// Backwards compatibility for req.Type and req.Kind
@@ -790,48 +626,47 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	}
 	req.Type = runtime.ResourceKindFromShorthand(req.Type)
 
-	var rules []*runtimev1.SecurityRule
 	// If navigation is disabled and a specific resource is requested, limit access to only that resource.
+	var overrideResources []database.ResourceName
 	if !req.Navigation && req.Resource != "" {
-		rules = append(rules, &runtimev1.SecurityRule{
-			Rule: &runtimev1.SecurityRule_TransitiveAccess{
-				TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
-					Resource: &runtimev1.ResourceName{
-						Kind: req.Type,
-						Name: req.Resource,
-					},
-				},
-			},
-		})
-	} else {
-		// get resource level security rules if navigation is enabled
-		rules = append(rules, securityRulesFromResources(restrictResources, resources)...)
+		overrideResources = []database.ResourceName{{
+			Type: req.Type,
+			Name: req.Resource,
+		}}
 	}
 
-	// Determine TTL for the access token
 	ttlDuration := runtimeAccessTokenEmbedTTL
 	if req.TtlSeconds > 0 {
 		ttlDuration = time.Duration(req.TtlSeconds) * time.Second
 	}
 
-	// Generate JWT
-	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
-		AudienceURL: prodDepl.RuntimeAudience,
-		Subject:     subject,
-		TTL:         ttlDuration,
-		InstancePermissions: map[string][]runtime.Permission{
-			prodDepl.RuntimeInstanceID: {
-				runtime.ReadObjects,
-				runtime.ReadMetrics,
-				runtime.ReadAPI,
-				runtime.UseAI,
-			},
-		},
-		Attributes:    attr,
-		SecurityRules: rules,
-	})
+	opts := &issueRuntimeTokenOptions{
+		project:            proj,
+		deployment:         prodDepl,
+		projectPermissions: permissions,
+		externalUserID:     req.ExternalUserId,
+		extraAttributes:    map[string]any{"embed": true},
+		overrideResources:  overrideResources,
+		ttl:                ttlDuration,
+	}
+	switch forVal := req.For.(type) {
+	case nil:
+		if req.ExternalUserId == "" {
+			opts.forOwner = true
+		}
+	case *adminv1.GetIFrameRequest_UserId:
+		opts.forUserID = forVal.UserId
+	case *adminv1.GetIFrameRequest_UserEmail:
+		opts.forUserEmail = forVal.UserEmail
+	case *adminv1.GetIFrameRequest_Attributes:
+		opts.forUserAttributes = forVal.Attributes.AsMap()
+	default:
+		return nil, status.Error(codes.InvalidArgument, "invalid 'for' type")
+	}
+
+	jwt, err := s.issueRuntimeToken(ctx, opts)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
+		return nil, err
 	}
 
 	// Build the iframe URL search params
@@ -871,12 +706,12 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	// Fetch the org to apply its custom domain (if any) to the embed URL
 	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "could not find organization: %s", err.Error())
+		return nil, err
 	}
 
 	iFrameURL, err := s.admin.URLs.WithCustomDomain(org.CustomDomain).Embed(iframeQuery)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "could not construct iframe url: %s", err.Error())
+		return nil, err
 	}
 
 	return &adminv1.GetIFrameResponse{
@@ -884,7 +719,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		RuntimeHost: prodDepl.RuntimeHost,
 		InstanceId:  prodDepl.RuntimeInstanceID,
 		AccessToken: jwt,
-		TtlSeconds:  uint32(ttlDuration.Seconds()),
+		TtlSeconds:  uint32(opts.ttl.Seconds()),
 	}, nil
 }
 
@@ -919,7 +754,7 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 		return nil, err
 	}
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "can't update deployment %q because its runtime has not been initialized yet", depl.ID)
+		return nil, status.Errorf(codes.FailedPrecondition, "can't update deployment %q because its runtime has not been initialized yet", depl.ID)
 	}
 
 	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)

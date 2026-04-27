@@ -26,7 +26,8 @@ export function isProjectPage(page: Page): boolean {
     routeId === "/[organization]/[project]" ||
     (routeId.startsWith("/[organization]/[project]/-/") &&
       !routeId.startsWith("/[organization]/[project]/-/invite") &&
-      !routeId.startsWith("/[organization]/[project]/-/share"))
+      !routeId.startsWith("/[organization]/[project]/-/share") &&
+      !routeId.startsWith("/[organization]/[project]/-/edit"))
   );
 }
 
@@ -96,6 +97,10 @@ export function isPublicAlertPage(page: Page): boolean {
     !!page.route.id?.startsWith("/[organization]/[project]/-/alerts/[alert]") &&
     page.url.searchParams.has("token")
   );
+}
+
+export function isEditPage(page: Page): boolean {
+  return !!page.route?.id?.startsWith("/[organization]/[project]/-/edit");
 }
 
 export function isProjectRequestAccessPage(page: Page): boolean {
