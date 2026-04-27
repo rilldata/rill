@@ -227,9 +227,13 @@
             {:else if primaryTotalResult.isLoading}
               <div class="loading h-6 w-16"></div>
             {:else if primaryTotalResult.data}
-              <span class:opacity-50={primaryTotalResult.isFetching}>
-                {measureValueFormatter(computedValues.primary)}
-              </span>
+              {#if computedValues.primary != null}
+                <span class:opacity-50={primaryTotalResult.isFetching}>
+                  {measureValueFormatter(computedValues.primary)}
+                </span>
+              {:else}
+                <span class="text-fg-muted italic text-lg">no data</span>
+              {/if}
             {/if}
           </div>
 
@@ -252,7 +256,7 @@
                     onfocus={() => handleHoverOrFocus("comparison")}
                     onblur={handleLeaveOrBlur}
                   >
-                    {measureValueFormatter(computedValues.comparison)}
+                    {computedValues.comparison != null ? measureValueFormatter(computedValues.comparison) : "no data"}
                   </span>
                 {/if}
 
