@@ -8,7 +8,6 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
     V1LogLevel,
-    type V1Log,
     type V1WatchLogsResponse,
   } from "@rilldata/web-common/runtime-client";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
@@ -149,7 +148,7 @@
   }
 
   function handleLogMessage(response: V1WatchLogsResponse) {
-    const log = response.log as V1Log | undefined;
+    const log = response.log;
     if (!log) return;
 
     logStore.addLog(log);

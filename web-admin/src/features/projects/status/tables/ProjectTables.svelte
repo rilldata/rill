@@ -146,6 +146,12 @@
     createRuntimeServiceCreateTriggerMutation(runtimeClient);
   const queryClient = useQueryClient();
 
+  function onFilterChange(key: string, selected: string[]) {
+    if (key === "type") {
+      typeFilter = selected;
+    }
+  }
+
   // Handlers
   function handleModelInfoClick(resource: V1Resource) {
     specResourceName = resource.meta?.name?.name ?? "";
@@ -215,18 +221,9 @@
   </div>
 
   <TableToolbar
-    {searchText}
-    onSearchChange={(text) => {
-      searchText = text;
-    }}
+    bind:searchText
     {filterGroups}
-    onFilterChange={(key, value) => {
-      if (key === "type") {
-        typeFilter = typeFilter.includes(value)
-          ? typeFilter.filter((v) => v !== value)
-          : [...typeFilter, value];
-      }
-    }}
+    {onFilterChange}
     onClearAllFilters={() => {
       typeFilter = [];
       searchText = "";
