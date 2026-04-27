@@ -126,6 +126,9 @@
   $: leaderboardMeasureNames = leaderboardMeasures.map(
     (measure) => measure.name!,
   );
+  $: lowerIsBetterMap = Object.fromEntries(
+    leaderboardMeasures.map((m) => [m.name!, m.lowerIsBetter ?? false]),
+  );
 
   $: inverseThemeByMeasure = Object.fromEntries(
     leaderboardMeasures.map((measure) => [
@@ -400,7 +403,7 @@
             {tooltipFormatters}
             {dimensionColumnWidth}
             {maxValues}
-            {inverseThemeByMeasure}
+            {lowerIsBetterMap}
           />
         {/each}
       </DelayedLoadingRows>
@@ -424,7 +427,7 @@
           {tooltipFormatters}
           {dimensionColumnWidth}
           {maxValues}
-          {inverseThemeByMeasure}
+          {lowerIsBetterMap}
         />
       {/each}
     </tbody>

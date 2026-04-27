@@ -191,7 +191,7 @@ export type MeasureColumnProps = Array<{
   tooltipFormatter: (value: unknown) => string | null | undefined;
   name: string;
   type: MeasureType;
-  inverseTheme: boolean;
+  lowerIsBetter: boolean;
 }>;
 export function getMeasureColumnProps(
   config: PivotDataStoreConfig,
@@ -242,7 +242,7 @@ export function getMeasureColumnProps(
       name: m,
       type,
       icon,
-      inverseTheme: !!measure?.inverseTheme,
+      lowerIsBetter: measure?.lowerIsBetter ?? false,
     };
   });
 }
@@ -348,13 +348,13 @@ function getFlatColumnDef(
                 ? formatMeasurePercentageDifference(measureValue)
                 : null,
             inTable: true,
-            inverseTheme: m.inverseTheme,
+            lowerIsBetter: m.lowerIsBetter,
           });
         } else if (m.type === "comparison_delta") {
           return cellComponent(PivotDeltaCell, {
             formattedValue: m.formatter(measureValue),
             value: measureValue,
-            inverseTheme: m.inverseTheme,
+            lowerIsBetter: m.lowerIsBetter,
           });
         }
         const value = m.formatter(measureValue);
@@ -530,13 +530,13 @@ function getNestedColumnDef(
                   ? formatMeasurePercentageDifference(measureValue)
                   : null,
               inTable: true,
-              inverseTheme: m.inverseTheme,
+              lowerIsBetter: m.lowerIsBetter,
             });
           } else if (m.type === "comparison_delta") {
             return cellComponent(PivotDeltaCell, {
               formattedValue: m.formatter(measureValue),
               value: measureValue,
-              inverseTheme: m.inverseTheme,
+              lowerIsBetter: m.lowerIsBetter,
             });
           }
           const value = m.formatter(measureValue);

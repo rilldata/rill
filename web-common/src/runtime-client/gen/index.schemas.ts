@@ -111,6 +111,7 @@ export interface MetricsViewSpecMeasure {
   treatNullsAs?: string;
   inverseTheme?: boolean;
   dataType?: Runtimev1Type;
+  lowerIsBetter?: boolean;
 }
 
 export type MetricsViewSpecMeasureType =

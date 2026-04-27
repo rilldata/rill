@@ -46,7 +46,7 @@
     string,
     (value: number | string | null | undefined) => string | null | undefined
   >;
-  export let inverseThemeByMeasure: Record<string, boolean> = {};
+  export let lowerIsBetterMap: Record<string, boolean> = {};
 
   function shouldShowContextColumns(measureName: string): boolean {
     return (
@@ -305,8 +305,10 @@
             ? formatters[measureName]?.(deltaAbsMap[measureName])
             : null}
           customStyle={deltaAbsMap[measureName] !== null &&
-          deltaAbsMap[measureName] < 0
-            ? inverseThemeByMeasure[measureName]
+          (lowerIsBetterMap[measureName] ? deltaAbsMap[measureName] > 0 : deltaAbsMap[measureName] < 0)
+            ? "text-kpi-negative"
+            : deltaAbsMap[measureName] !== null &&
+                (lowerIsBetterMap[measureName] ? deltaAbsMap[measureName] < 0 : deltaAbsMap[measureName] > 0)
               ? "text-kpi-positive"
               : "text-kpi-negative"
             : deltaAbsMap[measureName] !== null && deltaAbsMap[measureName] > 0
@@ -334,7 +336,7 @@
             ? formatMeasurePercentageDifference(deltaRels[measureName])
             : null}
           color="text-fg-secondary"
-          inverseTheme={inverseThemeByMeasure[measureName] ?? false}
+          lowerIsBetter={lowerIsBetterMap[measureName] ?? false}
         />
         {#if showZigZags[measureName]}
           <LongBarZigZag />

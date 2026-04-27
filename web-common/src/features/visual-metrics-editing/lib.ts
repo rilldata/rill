@@ -59,7 +59,7 @@ export class YAMLMeasure {
   display_name: string;
   description: string;
   valid_percent_of_total: boolean;
-  inverse_theme: boolean;
+  lower_is_better: boolean;
   format_d3: string;
   format_preset: FormatPreset | "";
   type: "simple" | "derived" | "time_comparison" | undefined;
@@ -70,7 +70,7 @@ export class YAMLMeasure {
     this.display_name = item?.get("display_name") ?? item?.get("label") ?? "";
     this.description = item?.get("description") ?? "";
     this.valid_percent_of_total = Boolean(item?.get("valid_percent_of_total"));
-    this.inverse_theme = Boolean(item?.get("inverse_theme"));
+    this.lower_is_better = Boolean(item?.get("lower_is_better"));
     this.format_d3 = item?.get("format_d3") ?? "";
     this.format_preset =
       (item?.get("format_preset") as unknown as FormatPreset) ??

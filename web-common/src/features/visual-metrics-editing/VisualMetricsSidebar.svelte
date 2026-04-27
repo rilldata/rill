@@ -149,13 +149,13 @@
         selected: 0,
       },
       {
-        label: "Inverse theme colors",
+        label: "Lower is better",
         optional: true,
         fields: [
           {
-            key: "inverse_theme",
-            hint: "Swap positive and negative delta colors for this measure (e.g. when a decrease is the favourable outcome)",
-            label: "Inverse theme colors",
+            key: "lower_is_better",
+            hint: "When enabled, increases are highlighted red and decreases use the default color, instead of the other way around",
+            label: "Lower is better",
             boolean: true,
           },
         ],

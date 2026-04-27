@@ -24,7 +24,13 @@
   export let dimTooltipEntries: DimTooltipEntry[] = [];
   export let deltaLabel: string | null;
   export let deltaPositive: boolean;
+  /** When true, an increase in value is rendered as the negative (red) color. */
+  export let lowerIsBetter: boolean = false;
   export let formatter: (value: number | null) => string;
+
+  // Arrow direction and sign track the actual value change. Color tracks
+  // whether the change is favorable, which `lowerIsBetter` flips.
+  $: deltaIsFavorable = lowerIsBetter ? !deltaPositive : deltaPositive;
 
   const GAP = 8;
 
@@ -111,8 +117,8 @@
     {#if absoluteDelta !== null && deltaLabel}
       <div
         class="delta-footer"
-        class:positive={deltaPositive}
-        class:negative={!deltaPositive}
+        class:positive={deltaIsFavorable}
+        class:negative={!deltaIsFavorable}
       >
         <span class="delta-arrow">{deltaPositive ? "▲" : "▼"}</span>
         <span class="delta-absolute"

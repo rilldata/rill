@@ -2164,9 +2164,9 @@ definitions:
                 treat_nulls_as:
                   type: string
                   description: used to configure what value to fill in for missing time buckets. This also works generally as COALESCING over non empty time buckets.
-                inverse_theme:
+                lower_is_better:
                   type: boolean
-                  description: when `true`, swaps the `kpi-positive` and `kpi-negative` theme colors for this measure's delta indicators. Useful for measures where a decrease is the favourable outcome (e.g. bounce rate, error rate). Defaults to `false`.
+                  description: When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas (KPIs, big numbers, leaderboards, pivot tables, time-series tooltips) swap their positive/negative coloring accordingly.
 
               required:
                 - name
