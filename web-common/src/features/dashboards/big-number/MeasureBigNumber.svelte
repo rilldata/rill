@@ -152,7 +152,7 @@
   // When comparisonValue < 0, dividing diff by a negative denominator flips the percentage sign,
   // so "positive %" actually means "value went lower". We flip lowerIsBetter to compensate.
   $: lowerIsBetterForPerc =
-    comparisonValue !== null && comparisonValue < 0
+    comparisonValue !== undefined && comparisonValue < 0
       ? !lowerIsBetter
       : lowerIsBetter;
   $: comparisonDeltaColorClass = (
