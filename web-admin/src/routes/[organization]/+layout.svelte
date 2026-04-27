@@ -4,6 +4,7 @@
   import { showWelcomeToRillDialog } from "@rilldata/web-admin/features/billing/plans/utils";
   import WelcomeToRillCloudDialog from "@rilldata/web-admin/features/billing/plans/WelcomeToRillCloudDialog.svelte";
   import { getActiveOrgLocalStorageKey } from "@rilldata/web-admin/features/organizations/active-org/local-storage";
+  import CommandPalette from "@rilldata/web-admin/features/command-palette/CommandPalette.svelte";
 
   const user = createAdminServiceGetCurrentUser();
   $: organization = $page.params.organization;
@@ -21,3 +22,4 @@
 <slot />
 
 <WelcomeToRillCloudDialog bind:open={$showWelcomeToRillDialog} />
+<CommandPalette />
