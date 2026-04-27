@@ -946,7 +946,7 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 	}
 
 	// variables
-	vars, err := s.admin.DB.FindProjectVariables(ctx, depl.ProjectID, &depl.Environment)
+	vars, err := s.admin.ResolveVariables(ctx, depl)
 	if err != nil {
 		return nil, err
 	}
@@ -955,21 +955,11 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 		resp.Variables = append(resp.Variables, projectVariableToDTO(v))
 	}
 
-	// Enable the file watcher for editable deployments.
-	resp.Variables = append(resp.Variables, &adminv1.ProjectVariable{
-		Name:        "rill.watch_repo",
-		Value:       strconv.FormatBool(depl.Editable),
-		Environment: depl.Environment,
-		CreatedOn:   timestamppb.Now(),
-		UpdatedOn:   timestamppb.Now(),
-	})
-
 	// remove in next release
 	resp.VariablesLegacy = make(map[string]string, len(vars)) // nolint:staticcheck // Still need to populate for backward compatibility.
 	for _, v := range vars {
 		resp.VariablesLegacy[v.Name] = v.Value // nolint:staticcheck // Still need to populate for backward compatibility.
 	}
-	resp.VariablesLegacy["rill.watch_repo"] = strconv.FormatBool(depl.Editable) // nolint:staticcheck // Still need to populate for backward compatibility.
 
 	// parsing duckdb connector config
 	rCfg, err := provisioner.NewRuntimeConfig(pr.Config)

@@ -55,9 +55,10 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("failed to create client: %w", err)
 			}
 			res, err := client.GetProjectVariables(cmd.Context(), &adminv1.GetProjectVariablesRequest{
-				Org:         ch.Org,
-				Project:     projectName,
-				Environment: environment,
+				Org:                ch.Org,
+				Project:            projectName,
+				Environment:        environment,
+				ForAllEnvironments: environment == "",
 			})
 			if err != nil {
 				return fmt.Errorf("failed to get project variables: %w", err)
@@ -120,7 +121,7 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	pushCmd.Flags().StringVar(&projectPath, "path", ".", "Project directory")
 	pushCmd.Flags().StringVar(&projectName, "project", "", "Cloud project name (will attempt to infer from Git remote if not provided)")
-	pushCmd.Flags().StringVar(&environment, "environment", "dev", "Optional environment to resolve for (options: dev, prod)")
+	pushCmd.Flags().StringVar(&environment, "environment", "", "Optional environment to push for (options: dev, prod). By default, pushes for all environments found in the local .env files.")
 
 	return pushCmd
 }

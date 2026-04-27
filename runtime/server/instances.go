@@ -295,7 +295,7 @@ func (s *Server) ReloadConfig(ctx context.Context, req *runtimev1.ReloadConfigRe
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	claims := auth.GetClaims(ctx, req.InstanceId)
-	if !claims.Can(runtime.EditRepo) {
+	if !claims.Can(runtime.ManageInstance) {
 		return nil, ErrForbidden
 	}
 

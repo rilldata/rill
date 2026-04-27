@@ -63,6 +63,10 @@ func (s *Server) PushEnv(ctx context.Context, req *runtimev1.PushEnvRequest) (*r
 	var addedCount, changedCount int32
 
 	for env, local := range localPerEnv {
+		if env != "" && env != inst.Environment {
+			// only allow pushing base variables or variables for the current environment
+			continue
+		}
 		cloud := cloudPerEnv[env]
 
 		// Merge: start with cloud, overlay local; track what changed
