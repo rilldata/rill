@@ -152,16 +152,15 @@
   // When comparisonValue < 0, dividing diff by a negative denominator flips the percentage sign,
   // so "positive %" actually means "value went lower". We flip lowerIsBetter to compensate.
   $: lowerIsBetterForPerc =
-    comparisonValue !== null && comparisonValue < 0 ? !lowerIsBetter : lowerIsBetter;
-  $: comparisonDeltaColorClass = (lowerIsBetter ? isComparisonNegative : isComparisonPositive)
+    comparisonValue !== null && comparisonValue < 0
+      ? !lowerIsBetter
+      : lowerIsBetter;
+  $: comparisonDeltaColorClass = (
+    lowerIsBetter ? isComparisonNegative : isComparisonPositive
+  )
     ? "text-kpi-positive"
     : (lowerIsBetter ? isComparisonPositive : isComparisonNegative)
       ? "text-kpi-negative"
-      : "text-kpi-positive"
-    : isComparisonNegative
-      ? inverseTheme
-        ? "text-kpi-positive"
-        : "text-kpi-negative"
       : "text-fg-secondary";
 
   $: formattedDiff = `${isComparisonPositive ? "+" : ""}${measureValueFormatter(
@@ -256,7 +255,9 @@
               <div
                 role="complementary"
                 class="w-fit max-w-full overflow-hidden text-ellipsis {comparisonDeltaColorClass}"
-                class:font-semibold={lowerIsBetter ? isComparisonNegative : isComparisonPositive}
+                class:font-semibold={lowerIsBetter
+                  ? isComparisonNegative
+                  : isComparisonPositive}
                 onmouseenter={() => {
                   tooltipValue =
                     measureValueFormatterTooltip(diff) ?? "no data";
@@ -298,7 +299,11 @@
                   copyValue =
                     measureValueFormatterUnabridged(value) ?? "no data";
                 }}
-                class="w-fit {(lowerIsBetter ? isComparisonNegative : isComparisonPositive) ? 'font-semibold' : ''} {comparisonDeltaColorClass}"
+                class="w-fit {(
+                  lowerIsBetter ? isComparisonNegative : isComparisonPositive
+                )
+                  ? 'font-semibold'
+                  : ''} {comparisonDeltaColorClass}"
               >
                 <WithTween
                   value={comparisonPercChange}

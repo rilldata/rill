@@ -13262,8 +13262,6 @@ func (m *MetricsViewSpec_Measure) validate(all bool) error {
 
 	// no validation rules for TreatNullsAs
 
-	// no validation rules for InverseTheme
-
 	if all {
 		switch v := interface{}(m.GetDataType()).(type) {
 		case interface{ ValidateAll() error }:

@@ -12,11 +12,6 @@
         ? 'text-kpi-positive'
         : (lowerIsBetter ? value > 0 : value < 0)
           ? 'text-kpi-negative'
-          : 'text-kpi-positive'
-        : value < 0
-          ? inverseTheme
-            ? 'text-kpi-positive'
-            : 'text-kpi-negative'
           : 'text-fg-secondary'}"
     >
       {formattedValue}

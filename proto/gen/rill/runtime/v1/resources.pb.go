@@ -7190,8 +7190,6 @@ type MetricsViewSpec_Measure struct {
 	FormatD3Locale      *structpb.Struct                     `protobuf:"bytes,13,opt,name=format_d3_locale,json=formatD3Locale,proto3" json:"format_d3_locale,omitempty"`
 	ValidPercentOfTotal bool                                 `protobuf:"varint,6,opt,name=valid_percent_of_total,json=validPercentOfTotal,proto3" json:"valid_percent_of_total,omitempty"`
 	TreatNullsAs        string                               `protobuf:"bytes,14,opt,name=treat_nulls_as,json=treatNullsAs,proto3" json:"treat_nulls_as,omitempty"`
-	// If true, swaps the kpi-positive and kpi-negative theme colors when rendering deltas for this measure (e.g. for "bounce rate" where a decrease is good).
-	InverseTheme bool `protobuf:"varint,17,opt,name=inverse_theme,json=inverseTheme,proto3" json:"inverse_theme,omitempty"`
 	// The data type of the measure. Only populated in ValidSpec.
 	DataType *Type `protobuf:"bytes,15,opt,name=data_type,json=dataType,proto3" json:"data_type,omitempty"`
 	// When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas (KPIs, big numbers, leaderboards, pivot tables, time-series tooltips) swap their positive/negative coloring accordingly.
@@ -7333,13 +7331,6 @@ func (x *MetricsViewSpec_Measure) GetTreatNullsAs() string {
 		return x.TreatNullsAs
 	}
 	return ""
-}
-
-func (x *MetricsViewSpec_Measure) GetInverseTheme() bool {
-	if x != nil {
-		return x.InverseTheme
-	}
-	return false
 }
 
 func (x *MetricsViewSpec_Measure) GetDataType() *Type {

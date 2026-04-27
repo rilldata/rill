@@ -1992,13 +1992,6 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
   treatNullsAs = "";
 
   /**
-   * If true, swaps the kpi-positive and kpi-negative theme colors when rendering deltas for this measure (e.g. for "bounce rate" where a decrease is good).
-   *
-   * @generated from field: bool inverse_theme = 17;
-   */
-  inverseTheme = false;
-
-  /**
    * The data type of the measure. Only populated in ValidSpec.
    *
    * @generated from field: rill.runtime.v1.Type data_type = 15;
@@ -2035,7 +2028,6 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
     { no: 13, name: "format_d3_locale", kind: "message", T: Struct },
     { no: 6, name: "valid_percent_of_total", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 14, name: "treat_nulls_as", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 17, name: "inverse_theme", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 15, name: "data_type", kind: "message", T: Type },
     { no: 17, name: "lower_is_better", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);

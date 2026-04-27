@@ -130,13 +130,6 @@
     leaderboardMeasures.map((m) => [m.name!, m.lowerIsBetter ?? false]),
   );
 
-  $: inverseThemeByMeasure = Object.fromEntries(
-    leaderboardMeasures.map((measure) => [
-      measure.name!,
-      !!measure.inverseTheme,
-    ]),
-  );
-
   $: atLeastOneActive = Boolean($selectedValues.data?.length);
 
   $: isComplexFilter = isExpressionUnsupported(whereFilter);

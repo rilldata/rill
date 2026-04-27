@@ -3777,9 +3777,6 @@ definitions:
         type: boolean
       treatNullsAs:
         type: string
-      inverseTheme:
-        type: boolean
-        description: If true, swaps the kpi-positive and kpi-negative theme colors when rendering deltas for this measure (e.g. for "bounce rate" where a decrease is good).
       dataType:
         $ref: '#/definitions/runtimev1Type'
         description: The data type of the measure. Only populated in ValidSpec.

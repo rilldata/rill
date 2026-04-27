@@ -269,8 +269,6 @@ message MetricsViewSpec {
     google.protobuf.Struct format_d3_locale = 13;
     bool valid_percent_of_total = 6;
     string treat_nulls_as = 14;
-    // If true, swaps the kpi-positive and kpi-negative theme colors when rendering deltas for this measure (e.g. for "bounce rate" where a decrease is good).
-    bool inverse_theme = 17;
     // The data type of the measure. Only populated in ValidSpec.
     Type data_type = 15;
     // When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas (KPIs, big numbers, leaderboards, pivot tables, time-series tooltips) swap their positive/negative coloring accordingly.

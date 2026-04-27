@@ -8,7 +8,6 @@
   export let showPosSign = false;
   export let color = "!text-fg-secondary";
   export let customStyle = "";
-  export let inverseTheme = false;
   export let value:
     | string
     | number
@@ -85,8 +84,12 @@
     {:else if value !== null && assembled}
       <span
         class="text-fg-secondary"
-        class:text-kpi-negative={lowerIsBetter ? diffIsPositive : diffIsNegative}
-        class:text-kpi-positive={lowerIsBetter ? diffIsNegative : diffIsPositive}
+        class:text-kpi-negative={lowerIsBetter
+          ? diffIsPositive
+          : diffIsNegative}
+        class:text-kpi-positive={lowerIsBetter
+          ? diffIsNegative
+          : diffIsPositive}
       >
         {approxSign}{negSign}{posSign}{intValue}{suffix}<span class="opacity-50"
           >%</span
