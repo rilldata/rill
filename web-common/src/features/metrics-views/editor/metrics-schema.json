@@ -196,9 +196,9 @@
             "type": "boolean",
             "description": "Indicates whether percent-of-total values should be rendered for this measure."
           },
-          "inverse_theme": {
+          "lower_is_better": {
             "type": "boolean",
-            "description": "If true, swaps the kpi-positive and kpi-negative theme colors when rendering deltas for this measure (e.g. for bounce rate, error rate, where a decrease is the favourable outcome)."
+            "description": "When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas swap their positive/negative coloring accordingly."
           }
         },
         "required": ["expression"]
