@@ -1,24 +1,33 @@
 <script lang="ts">
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { SparklesIcon } from "lucide-svelte";
   import { sidebarActions } from "./layouts/sidebar/sidebar-store";
 
   export let filePath: string;
   export let large = false;
+  export let variant: "compact" | "cta" = "compact";
 
   function handleClick() {
     sidebarActions.startChat(`Fix the errors in \`${filePath}\``);
   }
 </script>
 
-<button
-  class={large ? "explain-error-btn large" : "explain-error-btn"}
-  on:click|stopPropagation={handleClick}
-  aria-label="Explain and fix this error with AI"
-  title="Explain and fix"
->
-  <SparklesIcon size={large ? "16px" : "14px"} />
-  <span>Explain and fix</span>
-</button>
+{#if variant === "cta"}
+  <Button type="secondary" onClick={handleClick}>
+    <SparklesIcon size="16px" />
+    <span>Explain and fix</span>
+  </Button>
+{:else}
+  <button
+    class={large ? "explain-error-btn large" : "explain-error-btn"}
+    on:click|stopPropagation={handleClick}
+    aria-label="Explain and fix this error with AI"
+    title="Explain and fix"
+  >
+    <SparklesIcon size={large ? "16px" : "14px"} />
+    <span>Explain and fix</span>
+  </button>
+{/if}
 
 <style lang="postcss">
   .explain-error-btn {

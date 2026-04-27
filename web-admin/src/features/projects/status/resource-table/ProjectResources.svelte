@@ -156,14 +156,6 @@
       : []),
   ] satisfies FilterGroup[];
 
-  function toggleTag(tag: string) {
-    if (selectedTags.includes(tag)) {
-      selectedTags = selectedTags.filter((t) => t !== tag);
-    } else {
-      selectedTags = [...selectedTags, tag];
-    }
-  }
-
   // Filter resources by type, search text, status, and tags
   $: filteredResources = filterResources(
     $resources.data?.resources,
@@ -173,20 +165,10 @@
     selectedTags,
   );
 
-  function toggleType(type: string) {
-    if (selectedTypes.includes(type)) {
-      selectedTypes = selectedTypes.filter((t) => t !== type);
-    } else {
-      selectedTypes = [...selectedTypes, type];
-    }
-  }
-
-  function toggleStatus(status: string) {
-    if (selectedStatuses.includes(status)) {
-      selectedStatuses = selectedStatuses.filter((s) => s !== status);
-    } else {
-      selectedStatuses = [...selectedStatuses, status];
-    }
+  function onFilterChange(key: string, selected: string[] | string) {
+    if (key === "kind") selectedTypes = selected as string[];
+    if (key === "status") selectedStatuses = selected as string[];
+    if (key === "tags") selectedTags = selected as string[];
   }
 
   function clearFilters() {
@@ -212,16 +194,9 @@
   <h2 class="text-lg font-medium">Resources</h2>
 
   <TableToolbar
-    {searchText}
-    onSearchChange={(text) => {
-      searchText = text;
-    }}
+    bind:searchText
     {filterGroups}
-    onFilterChange={(key, value) => {
-      if (key === "kind") toggleType(value);
-      if (key === "status") toggleStatus(value);
-      if (key === "tags") toggleTag(value);
-    }}
+    {onFilterChange}
     onClearAllFilters={clearFilters}
     showSort={false}
   >

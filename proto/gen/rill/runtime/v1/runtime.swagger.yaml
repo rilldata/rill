@@ -5165,8 +5165,6 @@ definitions:
       chartDynamicYAxis:
         type: boolean
         title: Chart display settings (frontend-only; persisted in URL state)
-      chartForceLine:
-        type: boolean
   v1ExploreSortType:
     type: string
     enum:
@@ -7587,11 +7585,6 @@ definitions:
         type: array
         items:
           type: string
-      tags:
-        type: array
-        items:
-          type: string
-        description: Tags for organizing and filtering resources. Parsed generically from any resource YAML's top-level "tags:" field.
       hidden:
         type: boolean
       version:

@@ -73,6 +73,7 @@ const LeaderboardContextColumnReverseMap: Record<
 
 const TDDChartTypeReverseMap: Record<string, TDDChart> = {
   default: TDDChart.DEFAULT,
+  line: TDDChart.LINE,
   stacked_bar: TDDChart.STACKED_BAR,
   grouped_bar: TDDChart.GROUPED_BAR,
   stacked_area: TDDChart.STACKED_AREA,
@@ -178,7 +179,7 @@ export function getDashboardStateFromProto(
   } else if (isActivePageSet) {
     entity.tdd = {
       pinIndex: -1,
-      chartType: TDDChart.DEFAULT,
+      chartType: chartTypeMap(dashboard.chartType),
       expandedMeasureName: "",
     };
   }

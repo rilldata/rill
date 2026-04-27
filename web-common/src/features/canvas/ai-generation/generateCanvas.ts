@@ -1,10 +1,10 @@
-import { goto } from "$app/navigation";
 import { getConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager";
 import { ToolName } from "@rilldata/web-common/features/chat/core/types";
 import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
 import { pollForFileCreation } from "@rilldata/web-common/features/entity-management/actions";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
 import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
@@ -142,7 +142,7 @@ export async function createCanvasDashboardFromMetricsView(
     }
 
     // Navigate to the Canvas file
-    await goto(`/files${canvasFilePath}`);
+    await navigateToFile(canvasFilePath);
   } catch (err) {
     eventBus.emit("notification", {
       message: "Failed to create Canvas dashboard for " + metricsViewName,

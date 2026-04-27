@@ -35,7 +35,7 @@
   $: derivedError = parseError?.message ?? rootCauseReconcileError;
   $: effectiveError = error ?? derivedError;
   $: effectiveShowError =
-    remoteContent !== undefined ? !!remoteContent : showError;
+    showError && (remoteContent === undefined || !!remoteContent);
 </script>
 
 <div

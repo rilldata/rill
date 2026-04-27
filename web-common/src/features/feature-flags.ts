@@ -64,6 +64,7 @@ class FeatureFlags {
   developerChat = new FeatureFlag("user", false);
   deploy = new FeatureFlag("user", true);
   stickyDashboardState = new FeatureFlag("user", false);
+  cloudEditing = new FeatureFlag("user", false);
   customCharts = new FeatureFlag("user", false);
   tagAsFolders = new FeatureFlag("user", false);
 

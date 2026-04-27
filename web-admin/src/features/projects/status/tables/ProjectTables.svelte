@@ -144,20 +144,9 @@
       : []),
   ] satisfies FilterGroup[];
 
-  function toggleType(type: string) {
-    if (typeFilter.includes(type)) {
-      typeFilter = typeFilter.filter((t) => t !== type);
-    } else {
-      typeFilter = [...typeFilter, type];
-    }
-  }
-
-  function toggleTag(tag: string) {
-    if (selectedTags.includes(tag)) {
-      selectedTags = selectedTags.filter((t) => t !== tag);
-    } else {
-      selectedTags = [...selectedTags, tag];
-    }
+  function onFilterChange(key: string, selected: string[] | string) {
+    if (key === "type") typeFilter = selected as string[];
+    if (key === "tags") selectedTags = selected as string[];
   }
 
   function clearFilters() {
@@ -198,6 +187,12 @@
   const createTrigger =
     createRuntimeServiceCreateTriggerMutation(runtimeClient);
   const queryClient = useQueryClient();
+
+  function onFilterChange(key: string, selected: string[]) {
+    if (key === "type") {
+      typeFilter = selected;
+    }
+  }
 
   // Handlers
   function handleModelInfoClick(resource: V1Resource) {
@@ -268,15 +263,9 @@
   </div>
 
   <TableToolbar
-    {searchText}
-    onSearchChange={(text) => {
-      searchText = text;
-    }}
+    bind:searchText
     {filterGroups}
-    onFilterChange={(key, value) => {
-      if (key === "type") toggleType(value);
-      if (key === "tags") toggleTag(value);
-    }}
+    {onFilterChange}
     onClearAllFilters={clearFilters}
     showSort={false}
   />
