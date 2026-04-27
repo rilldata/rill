@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import CanvasIcon from "@rilldata/web-common/components/icons/CanvasIcon.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
