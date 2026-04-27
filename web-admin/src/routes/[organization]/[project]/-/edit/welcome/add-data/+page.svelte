@@ -40,7 +40,6 @@
       <AddDataManager
         config={{
           welcomeScreen: true,
-          skipNavigation: true,
         }}
         initSchema={data.schema}
         onStepChange={(step) => (addDataStep = step)}

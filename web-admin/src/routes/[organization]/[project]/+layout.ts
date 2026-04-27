@@ -4,15 +4,13 @@ import { fetchAllProjectsHibernating } from "@rilldata/web-admin/features/organi
 import { error, redirect } from "@sveltejs/kit";
 import { isAxiosError } from "axios";
 import { maybeRedirectToEditableDeployment } from "@rilldata/web-admin/features/branches/deployment-utils.ts";
-import {
-  isEditPage,
-  isProjectWelcomePage,
-} from "@rilldata/web-admin/features/navigation/nav-utils.ts";
+import { isEditPage } from "@rilldata/web-admin/features/navigation/nav-utils.ts";
 
 export const load = async ({
   params: { organization, project },
   parent,
   route,
+  url,
 }) => {
   const { organizationPermissions, issues } = await parent();
 
@@ -34,6 +32,7 @@ export const load = async ({
     throw redirect(307, `/${organization}`);
   }
 
-  if (!isEditPage({ route }))
-    await maybeRedirectToEditableDeployment(organization, project);
+  if (!isEditPage({ route })) {
+    await maybeRedirectToEditableDeployment(organization, project, url);
+  }
 };

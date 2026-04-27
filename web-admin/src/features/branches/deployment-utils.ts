@@ -6,8 +6,10 @@ import {
 } from "@rilldata/web-admin/client";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { redirect } from "@sveltejs/kit";
-import { injectBranchIntoPath } from "@rilldata/web-admin/features/branches/branch-utils.ts";
-import { isProjectWelcomePage } from "@rilldata/web-admin/features/navigation/nav-utils.ts";
+import {
+  extractBranchFromPath,
+  injectBranchIntoPath,
+} from "@rilldata/web-admin/features/branches/branch-utils.ts";
 
 /**
  * Invalidates all deployment queries for a project, triggering a refetch.
@@ -36,6 +38,7 @@ export function isProdDeployment(d: V1Deployment): boolean {
 export async function maybeRedirectToEditableDeployment(
   organization: string,
   project: string,
+  url: URL,
 ) {
   const deploymentsResp = await queryClient.fetchQuery({
     queryKey: getAdminServiceListDeploymentsQueryKey(organization, project, {}),
@@ -51,6 +54,10 @@ export async function maybeRedirectToEditableDeployment(
   const isActiveProdDeployment =
     prodDeployment && isActiveDeployment(prodDeployment);
   if (isActiveProdDeployment || !editableDeployment) return;
+
+  // If user is already in the editable deployment then do not do another redirect.
+  const currentBranch = extractBranchFromPath(url.pathname);
+  if (currentBranch === editableDeployment.branch) return;
 
   throw redirect(
     307,
