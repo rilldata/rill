@@ -37,40 +37,26 @@ export function transposeArray(
   return columnarBody;
 }
 
+const BG_BASE = "bg-surface-base";
+const BG_HIGHLIGHTED = "bg-surface-hover/50";
+const BG_DOUBLE_HIGHLIGHTED = "bg-surface-hover";
+
 export function getClassForCell(
-  palette: "fixed" | "default",
+  _palette: "fixed" | "default",
   highlightedRow: number | undefined,
   highlightedColStart: number | undefined,
   highlightedColEnd: number | undefined,
   rowIdx: number,
   colIdx: number,
 ) {
-  const bgColors = {
-    fixed: {
-      base: "bg-surface-base",
-      highlighted: "bg-surface-hover/50",
-      doubleHighlighted: "bg-surface-hover",
-    },
-    default: {
-      base: "bg-surface-base",
-      highlighted: "bg-surface-hover/50",
-      doubleHighlighted: "bg-surface-hover",
-    },
-  };
-
-  // Determine background color based on store
   const isRowHighlighted = highlightedRow === rowIdx;
   const isColHighlighted =
     highlightedColStart !== undefined &&
     highlightedColEnd !== undefined &&
     colIdx >= highlightedColStart &&
     colIdx <= highlightedColEnd;
-  const isHighlighted = isRowHighlighted || isColHighlighted;
-  const isDoubleHighlighted = isRowHighlighted && isColHighlighted;
 
-  let colorName = bgColors[palette].base;
-  if (isDoubleHighlighted) colorName = bgColors[palette].doubleHighlighted;
-  else if (isHighlighted) colorName = bgColors[palette].highlighted;
-
-  return colorName;
+  if (isRowHighlighted && isColHighlighted) return BG_DOUBLE_HIGHLIGHTED;
+  if (isRowHighlighted || isColHighlighted) return BG_HIGHLIGHTED;
+  return BG_BASE;
 }
