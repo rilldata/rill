@@ -141,7 +141,7 @@ test.describe.serial("Alerts", () => {
         adminPage
           .getByLabel("app_site_name leaderboard")
           .getByRole("row", { name: "My Little Universe" }),
-      ).toHaveText(/My Little Universe\s+4.6k\s+3.2k\s+229%/);
+      ).toHaveText(/My Little Universe\s+1\.4k\s*→\s*4\.6k\s+3\.2k\s+229%/);
       await expect(
         adminPage.getByRole("button", { name: "Requests 162k" }),
       ).toHaveText(/Requests\s+162k\s+-16,000\s+-9%/);
