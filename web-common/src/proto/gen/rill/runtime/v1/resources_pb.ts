@@ -1999,7 +1999,7 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
   dataType?: Type;
 
   /**
-   * When true, delta coloring is inverted: increases are highlighted red and decreases use the default color.
+   * When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas (KPIs, big numbers, leaderboards, pivot tables, time-series tooltips) swap their positive/negative coloring accordingly.
    *
    * @generated from field: bool lower_is_better = 17;
    */

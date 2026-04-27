@@ -7192,7 +7192,7 @@ type MetricsViewSpec_Measure struct {
 	TreatNullsAs        string                               `protobuf:"bytes,14,opt,name=treat_nulls_as,json=treatNullsAs,proto3" json:"treat_nulls_as,omitempty"`
 	// The data type of the measure. Only populated in ValidSpec.
 	DataType *Type `protobuf:"bytes,15,opt,name=data_type,json=dataType,proto3" json:"data_type,omitempty"`
-	// When true, delta coloring is inverted: increases are highlighted red and decreases use the default color.
+	// When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas (KPIs, big numbers, leaderboards, pivot tables, time-series tooltips) swap their positive/negative coloring accordingly.
 	LowerIsBetter bool `protobuf:"varint,17,opt,name=lower_is_better,json=lowerIsBetter,proto3" json:"lower_is_better,omitempty"`
 }
 

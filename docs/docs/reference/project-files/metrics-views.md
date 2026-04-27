@@ -202,7 +202,7 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
   - **`treat_nulls_as`** - _[string]_ - used to configure what value to fill in for missing time buckets. This also works generally as COALESCING over non empty time buckets. 
 
-  - **`lower_is_better`** - _[boolean]_ - When true, delta coloring is inverted — increases are highlighted red and decreases use the default color. Use for metrics where a lower value is the desired direction. 
+  - **`lower_is_better`** - _[boolean]_ - When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas (KPIs, big numbers, leaderboards, pivot tables, time-series tooltips) swap their positive/negative coloring accordingly. 
 
 ### `parent_dimensions`
 

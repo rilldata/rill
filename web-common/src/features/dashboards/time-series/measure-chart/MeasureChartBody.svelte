@@ -86,6 +86,8 @@
   const selStart = measureSelection.start;
   const selEnd = measureSelection.end;
 
+  $: lowerIsBetter = measure?.lowerIsBetter ?? false;
+
   let clientWidth = 425;
   let mouseDownX: number | null = null;
   let mouseDownY: number | null = null;
@@ -513,6 +515,7 @@
             {tooltipComparisonValue}
             {tooltipDeltaLabel}
             {tooltipDeltaPositive}
+            {lowerIsBetter}
             {showDelta}
             {valueFormatter}
           />
@@ -578,6 +581,7 @@
       {dimTooltipEntries}
       deltaLabel={tooltipDeltaLabel}
       deltaPositive={tooltipDeltaPositive}
+      {lowerIsBetter}
       formatter={valueFormatter}
     />
   {/if}
