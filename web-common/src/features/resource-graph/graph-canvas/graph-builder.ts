@@ -63,6 +63,46 @@ function toResourceKind(name?: V1ResourceName): ResourceKind | undefined {
 // Icon-only badge (~20px) + node padding (2*8px) + gap (~6px)
 const CONTENT_PADDING = 42;
 
+/**
+ * Build a name → id index for fallback ref resolution. The parser intentionally
+ * leaves `Kind` blank on some refs (e.g., a metrics view's `model:` field) so
+ * the runtime can infer whether the target is a Source, Model, or external
+ * table. Until that inference completes, refs may surface to the frontend with
+ * `kind === undefined`. This index lets us still resolve them by name when the
+ * name is unambiguous within the visible resource set.
+ *
+ * Ambiguous names (more than one resource with the same name) map to `null`
+ * and are not resolved — kind is required to disambiguate.
+ */
+function buildNameIndex(
+  resourceMap: Map<string, V1Resource>,
+): Map<string, string | null> {
+  const byName = new Map<string, string | null>();
+  for (const [id, res] of resourceMap) {
+    const name = res.meta?.name?.name;
+    if (!name) continue;
+    byName.set(name, byName.has(name) ? null : id);
+  }
+  return byName;
+}
+
+/**
+ * Resolve a ref to a full resource id. Prefers `kind:name` when both are set
+ * and the resource is in the visible set; otherwise falls back to a name-only
+ * lookup via `byName`.
+ */
+function resolveRefId(
+  ref: V1ResourceName | undefined,
+  resourceMap: Map<string, V1Resource>,
+  byName: Map<string, string | null>,
+): string | undefined {
+  if (!ref?.name) return undefined;
+  const id = resourceNameToId(ref);
+  if (id && resourceMap.has(id)) return id;
+  const fallback = byName.get(ref.name);
+  return fallback ?? undefined;
+}
+
 function estimateNodeWidth(label?: string | null) {
   const text = label?.trim() ?? "";
   if (!text.length) return MIN_NODE_WIDTH;
@@ -468,6 +508,7 @@ export function buildResourceGraph(
   // Build adjacency map for edges
   // dependentsMap: sourceId -> Set of dependentIds (outgoing edges from source)
   const dependentsMap = new Map<string, Set<string>>();
+  const byName = buildNameIndex(resourceMap);
 
   // First pass: collect all refs per dependent, tracking which have non-connector parents
   const nonConnectorParents = new Set<string>();
@@ -477,9 +518,8 @@ export function buildResourceGraph(
     if (!dependentId) continue;
 
     for (const ref of resource.meta?.refs ?? []) {
-      const sourceId = resourceNameToId(ref);
+      const sourceId = resolveRefId(ref, resourceMap, byName);
       if (!sourceId) continue;
-      if (!resourceMap.has(sourceId)) continue;
       if (sourceId === dependentId) continue;
 
       const sourceResource = resourceMap.get(sourceId);
@@ -576,13 +616,13 @@ function buildDirectedAdjacency(resources: Map<string, V1Resource>) {
     if (!incoming.has(id)) incoming.set(id, new Set());
     if (!outgoing.has(id)) outgoing.set(id, new Set());
   }
+  const byName = buildNameIndex(resources);
   for (const resource of resources.values()) {
     const dependentId = createResourceId(resource.meta);
     if (!dependentId) continue;
     for (const ref of resource.meta?.refs ?? []) {
-      const sourceId = createResourceId({ name: ref });
+      const sourceId = resolveRefId(ref, resources, byName);
       if (!sourceId) continue;
-      if (!resources.has(sourceId)) continue;
       if (!incoming.has(dependentId)) incoming.set(dependentId, new Set());
       if (!outgoing.has(sourceId)) outgoing.set(sourceId, new Set());
       incoming.get(dependentId)!.add(sourceId);
@@ -946,13 +986,13 @@ export function partitionResourcesByMetrics(
   }
 
   // Build adjacency from resource refs.
+  const byName = buildNameIndex(resourceMap);
   for (const res of resourceMap.values()) {
     const dependentId = createResourceId(res.meta);
     if (!dependentId) continue;
     for (const ref of res.meta?.refs ?? []) {
-      const sourceId = createResourceId({ name: ref });
+      const sourceId = resolveRefId(ref, resourceMap, byName);
       if (!sourceId) continue;
-      if (!resourceMap.has(sourceId)) continue;
       if (!adjacency.has(sourceId)) adjacency.set(sourceId, new Set());
       if (!adjacency.has(dependentId)) adjacency.set(dependentId, new Set());
       adjacency.get(dependentId)!.add(sourceId);

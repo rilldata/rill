@@ -265,10 +265,28 @@
   // sharing a connector with a dashboard tree are correctly excluded.
   $: dashboardConnectedIds = (() => {
     const idToResource = new Map<string, V1Resource>();
+    // Fallback name index: refs may surface with `kind === undefined` while
+    // the runtime is still inferring (e.g., a metrics view's `model:` field).
+    // We resolve those by name when the name is unambiguous.
+    const nameToId = new Map<string, string | null>();
     for (const r of normalizedResources) {
-      const id = `${r.meta?.name?.kind}:${r.meta?.name?.name}`;
+      const name = r.meta?.name?.name;
+      if (!name) continue;
+      const id = `${r.meta?.name?.kind}:${name}`;
       idToResource.set(id, r);
+      nameToId.set(name, nameToId.has(name) ? null : id);
     }
+
+    const resolveRef = (ref: {
+      kind?: string;
+      name?: string;
+    }): string | undefined => {
+      if (!ref?.name) return undefined;
+      const direct = `${ref.kind}:${ref.name}`;
+      if (idToResource.has(direct)) return direct;
+      const fallback = nameToId.get(ref.name);
+      return fallback ?? undefined;
+    };
 
     const connected = new Set<string>();
     const queue: string[] = [];
@@ -289,8 +307,8 @@
       connected.add(id);
       const r = idToResource.get(id);
       for (const ref of r?.meta?.refs ?? []) {
-        const refId = `${ref.kind}:${ref.name}`;
-        if (!connected.has(refId)) queue.push(refId);
+        const refId = resolveRef(ref);
+        if (refId && !connected.has(refId)) queue.push(refId);
       }
     }
 
