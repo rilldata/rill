@@ -43,10 +43,12 @@
   const status = watcher.status;
 
   const watcherEndpoint = `${runtimeClient.host}/v1/instances/${runtimeClient.instanceId}/sse?events=file,resource`;
+  console.log("start", watcherEndpoint);
   watcher.start(watcherEndpoint);
   void fileArtifacts.init(runtimeClient, queryClient);
 
   onDestroy(() => {
+    console.log("on destroy");
     watcher.close(true);
   });
 </script>

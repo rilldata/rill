@@ -13,30 +13,37 @@
   let deploymentsQuery = $derived(
     createAdminServiceListDeployments(organization, project, {}),
   );
+  let prodDeployment = $derived(
+    $deploymentsQuery.data?.deployments?.find(
+      (d) => !d.editable && d.environment === "prod",
+    ),
+  );
   let editableDeployment = $derived(
     $deploymentsQuery.data?.deployments?.find((d) => d.editable),
   );
 </script>
 
-{#if editableDeployment}
+{#if prodDeployment || !editableDeployment}
+  <!-- Primary deployment exists and is stopped/stopping. -->
+  <RedeployProjectCta {organization} {project} />
+{:else if editableDeployment}
   <CtaLayoutContainer>
     <CtaContentContainer>
       <CtaHeader variant="bold">
         This project hasn’t been published yet. What would you like to do next?
       </CtaHeader>
-      <Button
-        type="secondary"
-        href={injectBranchIntoPath(
-          `/${organization}/${project}/-/edit`,
-          editableDeployment.branch,
-        )}
-      >
-        Continue editing
-      </Button>
-      <Button type="primary">Publish (TODO)</Button>
+      <div class="flex flex-row gap-2 justify-start">
+        <Button
+          type="secondary"
+          href={injectBranchIntoPath(
+            `/${organization}/${project}/-/edit`,
+            editableDeployment.branch,
+          )}
+        >
+          Continue editing
+        </Button>
+        <Button type="primary">Publish (TODO)</Button>
+      </div>
     </CtaContentContainer>
   </CtaLayoutContainer>
-{:else}
-  <!-- No deployment = the project is "hibernating" -->
-  <RedeployProjectCta {organization} {project} />
 {/if}

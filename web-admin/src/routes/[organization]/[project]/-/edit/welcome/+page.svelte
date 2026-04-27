@@ -29,6 +29,6 @@
       Or jump right into an example project.
     </p>
 
-    <ProjectCards skipNavigation onSelect={handleDone} />
+    <ProjectCards onSelect={handleDone} />
   </div>
 </div>

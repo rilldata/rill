@@ -15,8 +15,12 @@
   import { EXAMPLES } from "./constants";
   import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-metadata.ts";
   import ProjectCard from "@rilldata/web-common/features/welcome/ProjectCard.svelte";
+  import { goto } from "$app/navigation";
+  import {
+    getFileHref,
+    navigateToHome,
+  } from "@rilldata/web-common/layout/navigation/editor-routing.ts";
 
-  export let skipNavigation = false;
   export let onSelect: () => void = () => {};
 
   const runtimeClient = useRuntimeClient();
@@ -53,12 +57,12 @@
       });
 
       onSelect();
-      if (skipNavigation) return;
-
-      // TODO: improve navigation in rill dev to avoid this artificial 5 second delay
-      setTimeout(() => {
-        window.location.assign("/?redirect=true");
-      }, 5000);
+      const dashboard = example?.firstFile;
+      if (dashboard) {
+        void goto(getFileHref(dashboard));
+      } else {
+        void navigateToHome();
+      }
     } catch {
       selectedProjectName = null;
     }

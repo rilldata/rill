@@ -176,7 +176,6 @@
     <SourceSelector {config} onSelect={schemaSelected} {onBack} />
   {:else if stepState.step === AddDataStep.CreateConnector}
     <ConnectorFormWrapper
-      {config}
       {stateManager}
       step={stepState}
       onSubmit={(connectorName, connectorFormValues) =>
