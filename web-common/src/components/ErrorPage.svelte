@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
@@ -30,12 +30,10 @@
     <CtaMessage>{body}</CtaMessage>
     {#if (!fatal && !onEmbedPage) || $$slots.cta}
       <div class="cta-actions">
-        {#if !fatal && !onEmbedPage}
-          <a {href} class="back-link">
-            <CtaButton variant="secondary">Back to home</CtaButton>
-          </a>
-        {/if}
         <slot name="cta" />
+        {#if !fatal && !onEmbedPage}
+          <Button type="ghost" {href}>Back to home</Button>
+        {/if}
       </div>
     {/if}
     {#if detail}
@@ -71,11 +69,7 @@
   }
 
   .cta-actions {
-    @apply flex flex-col items-center gap-y-4;
-  }
-
-  .back-link {
-    @apply no-underline;
+    @apply flex flex-col items-center gap-y-3;
   }
 
   .detail-section {

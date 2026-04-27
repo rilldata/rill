@@ -22,7 +22,7 @@
     >
       <svelte:fragment slot="cta">
         {#if filePath}
-          <ExplainAndFixErrorButton {filePath} large />
+          <ExplainAndFixErrorButton {filePath} variant="cta" />
         {/if}
       </svelte:fragment>
     </ErrorPage>

@@ -143,7 +143,9 @@
                     header="Unable to load dashboard preview"
                     statusCode={404}
                   >
-                    <ExplainAndFixErrorButton slot="cta" {filePath} large />
+                    <svelte:fragment slot="cta">
+                      <ExplainAndFixErrorButton {filePath} variant="cta" />
+                    </svelte:fragment>
                   </ErrorPage>
                 {:else if exploreName && metricsViewName}
                   <DashboardStateManager {exploreName}>
