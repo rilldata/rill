@@ -643,6 +643,11 @@ export class DeleteOrganizationRequest extends Message<DeleteOrganizationRequest
    */
   org = "";
 
+  /**
+   * @generated from field: bool superuser_force_access = 2;
+   */
+  superuserForceAccess = false;
+
   constructor(data?: PartialMessage<DeleteOrganizationRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -652,6 +657,7 @@ export class DeleteOrganizationRequest extends Message<DeleteOrganizationRequest
   static readonly typeName = "rill.admin.v1.DeleteOrganizationRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteOrganizationRequest {
@@ -9027,6 +9033,11 @@ export class GetCurrentUserResponse extends Message<GetCurrentUserResponse> {
    */
   preferences?: UserPreferences;
 
+  /**
+   * @generated from field: bool superuser = 3;
+   */
+  superuser = false;
+
   constructor(data?: PartialMessage<GetCurrentUserResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -9037,6 +9048,7 @@ export class GetCurrentUserResponse extends Message<GetCurrentUserResponse> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "user", kind: "message", T: User },
     { no: 2, name: "preferences", kind: "message", T: UserPreferences },
+    { no: 3, name: "superuser", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetCurrentUserResponse {

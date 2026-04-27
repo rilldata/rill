@@ -1358,6 +1358,7 @@ message CreateOrganizationResponse {
 
 message DeleteOrganizationRequest {
   string org = 1;
+  bool superuser_force_access = 2;
 }
 
 message DeleteOrganizationResponse {}
@@ -2406,6 +2407,7 @@ message GetCurrentUserRequest {}
 message GetCurrentUserResponse {
   User user = 1;
   UserPreferences preferences = 2;
+  bool superuser = 3;
 }
 
 message DeleteUserRequest {

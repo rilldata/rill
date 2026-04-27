@@ -1286,6 +1286,8 @@ func (m *DeleteOrganizationRequest) validate(all bool) error {
 
 	// no validation rules for Org
 
+	// no validation rules for SuperuserForceAccess
+
 	if len(errors) > 0 {
 		return DeleteOrganizationRequestMultiError(errors)
 	}
@@ -25200,6 +25202,8 @@ func (m *GetCurrentUserResponse) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for Superuser
 
 	if len(errors) > 0 {
 		return GetCurrentUserResponseMultiError(errors)

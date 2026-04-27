@@ -39,6 +39,7 @@ import type {
   AdminServiceCreateReportBodyBody,
   AdminServiceCreateServiceBody,
   AdminServiceCreateUsergroupBody,
+  AdminServiceDeleteOrganizationParams,
   AdminServiceDeleteUserParams,
   AdminServiceDeleteVirtualFileParams,
   AdminServiceGetAlertMetaBody,
@@ -2072,10 +2073,14 @@ export function createAdminServiceGetOrganization<
 /**
  * @summary DeleteOrganization deletes an organization
  */
-export const adminServiceDeleteOrganization = (org: string) => {
+export const adminServiceDeleteOrganization = (
+  org: string,
+  params?: AdminServiceDeleteOrganizationParams,
+) => {
   return httpClient<V1DeleteOrganizationResponse>({
     url: `/v1/orgs/${org}`,
     method: "DELETE",
+    params,
   });
 };
 
@@ -2086,13 +2091,13 @@ export const getAdminServiceDeleteOrganizationMutationOptions = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof adminServiceDeleteOrganization>>,
     TError,
-    { org: string },
+    { org: string; params?: AdminServiceDeleteOrganizationParams },
     TContext
   >;
 }): CreateMutationOptions<
   Awaited<ReturnType<typeof adminServiceDeleteOrganization>>,
   TError,
-  { org: string },
+  { org: string; params?: AdminServiceDeleteOrganizationParams },
   TContext
 > => {
   const mutationKey = ["adminServiceDeleteOrganization"];
@@ -2106,11 +2111,11 @@ export const getAdminServiceDeleteOrganizationMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminServiceDeleteOrganization>>,
-    { org: string }
+    { org: string; params?: AdminServiceDeleteOrganizationParams }
   > = (props) => {
-    const { org } = props ?? {};
+    const { org, params } = props ?? {};
 
-    return adminServiceDeleteOrganization(org);
+    return adminServiceDeleteOrganization(org, params);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -2133,7 +2138,7 @@ export const createAdminServiceDeleteOrganization = <
     mutation?: CreateMutationOptions<
       Awaited<ReturnType<typeof adminServiceDeleteOrganization>>,
       TError,
-      { org: string },
+      { org: string; params?: AdminServiceDeleteOrganizationParams },
       TContext
     >;
   },
@@ -2141,7 +2146,7 @@ export const createAdminServiceDeleteOrganization = <
 ): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceDeleteOrganization>>,
   TError,
-  { org: string },
+  { org: string; params?: AdminServiceDeleteOrganizationParams },
   TContext
 > => {
   const mutationOptions =

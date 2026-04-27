@@ -466,6 +466,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       x-visibility: public
     patch:
       summary: UpdateOrganization updates an organization
@@ -5131,6 +5135,8 @@ definitions:
         $ref: '#/definitions/v1User'
       preferences:
         $ref: '#/definitions/v1UserPreferences'
+      superuser:
+        type: boolean
   v1GetDeploymentConfigResponse:
     type: object
     properties:
