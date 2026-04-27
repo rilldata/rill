@@ -32,9 +32,22 @@ const DAGRE_EDGESEP = DAGRE_CONFIG.EDGESEP;
 const DEFAULT_EDGE_STYLE = EDGE_CONFIG.DEFAULT_STYLE;
 const ERROR_EDGE_STYLE = EDGE_CONFIG.ERROR_STYLE;
 
-// Resource kinds that should be displayed in the graph
+// Resource kinds that participate in the project graph (used for grouping
+// and adjacency).
 const ALLOWED_KINDS = new Set<ResourceKind>([
   ResourceKind.Connector,
+  ResourceKind.Source,
+  ResourceKind.Model,
+  ResourceKind.MetricsView,
+  ResourceKind.Explore,
+  ResourceKind.Canvas,
+]);
+
+// Resource kinds that render as nodes on the canvas. Connectors are excluded
+// — their info surfaces as a badge on Source/Model nodes — but they remain
+// in `ALLOWED_KINDS` so partition/adjacency logic can still group resources
+// by their connector and walk connector-rooted refs.
+const RENDERABLE_KINDS = new Set<ResourceKind>([
   ResourceKind.Source,
   ResourceKind.Model,
   ResourceKind.MetricsView,
@@ -405,18 +418,14 @@ export function buildResourceGraph(
     if (!id) continue;
 
     const kind = coerceResourceKind(resource);
-    if (!kind || !ALLOWED_KINDS.has(kind)) continue;
-    // Allow connectors even if hidden; GraphContainer pre-filters to OLAP only
-    if (resource.meta?.hidden && kind !== ResourceKind.Connector) continue;
+    if (!kind || !RENDERABLE_KINDS.has(kind)) continue;
+    if (resource.meta?.hidden) continue;
 
     resourceMap.set(id, resource);
     const label = resource.meta?.name?.name ?? "";
     const nodeWidth = estimateNodeWidth(label);
     let rankConstraint: "min" | "max" | undefined;
     switch (kind) {
-      case ResourceKind.Connector:
-        rankConstraint = "min";
-        break;
       case ResourceKind.Source:
       case ResourceKind.Model:
         // No special rank constraint - let them flow naturally in the graph
