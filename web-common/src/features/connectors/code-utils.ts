@@ -4,6 +4,7 @@ import {
   type ConnectorDriverProperty,
   getRuntimeServiceGetFileQueryKey,
   runtimeServiceGetFile,
+  type V1GetFileResponse,
 } from "../../runtime-client";
 import type { RuntimeClient } from "../../runtime-client/v2";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
@@ -313,12 +314,20 @@ export async function unsetResourceEnvVars(
   queryClient: QueryClient,
   yaml: string,
 ) {
-  const envBlob = await queryClient.fetchQuery({
-    queryKey: getRuntimeServiceGetFileQueryKey(runtimeClient.instanceId, {
-      path: ".env",
-    }),
-    queryFn: () => runtimeServiceGetFile(runtimeClient, { path: ".env" }),
-  });
+  let envBlob: V1GetFileResponse | undefined = undefined;
+  try {
+    envBlob = await queryClient.fetchQuery({
+      queryKey: getRuntimeServiceGetFileQueryKey(runtimeClient.instanceId, {
+        path: ".env",
+      }),
+      queryFn: () => runtimeServiceGetFile(runtimeClient, { path: ".env" }),
+    });
+  } catch (error) {
+    if (error.message?.includes("no such file or directory")) {
+      return "";
+    }
+    throw error;
+  }
 
   // Get the existing env and remove the resource's env vars
   let blob = envBlob?.blob ?? "";
