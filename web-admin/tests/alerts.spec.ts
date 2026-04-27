@@ -136,12 +136,17 @@ test.describe.serial("Alerts", () => {
 
       await adminPage.goto(link);
 
+      // Move the cursor away from the leaderboard so the row's hover-only
+      // "previous → current" inline preview doesn't render and the assertion
+      // can match the canonical row text.
+      await adminPage.mouse.move(0, 0);
+
       // Assert that the data is as expected
       await expect(
         adminPage
           .getByLabel("app_site_name leaderboard")
           .getByRole("row", { name: "My Little Universe" }),
-      ).toHaveText(/My Little Universe\s+1\.4k\s*→\s*4\.6k\s+3\.2k\s+229%/);
+      ).toHaveText(/My Little Universe\s+4.6k\s+3.2k\s+229%/);
       await expect(
         adminPage.getByRole("button", { name: "Requests 162k" }),
       ).toHaveText(/Requests\s+162k\s+-16,000\s+-9%/);
