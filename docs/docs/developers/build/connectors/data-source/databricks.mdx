@@ -1,0 +1,142 @@
+---
+title: Databricks
+description: Connect to data in Databricks
+sidebar_label: Databricks
+sidebar_position: 13
+---
+
+import { TwoStepFlowIntro, EnvPullTip, DevProdSeparation, DeployToCloud } from '@site/src/components/connector';
+
+{/* WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. */}
+
+## Overview
+
+[Databricks](https://docs.databricks.com) is a unified data and AI platform built on top of Apache Spark and the lakehouse architecture. Rill connects to Databricks SQL warehouses using the [Databricks SQL Go driver](https://github.com/databricks/databricks-sql-go), streaming query results in Arrow IPC format and writing them to Parquet files for fast ingestion into Rill's embedded engine.
+
+## Authentication
+
+Rill authenticates to Databricks using a [personal access token](https://docs.databricks.com/aws/en/dev-tools/auth/pat). The token must have access to the SQL warehouse and to the catalogs and schemas you intend to query.
+
+<TwoStepFlowIntro
+  connector="Databricks"
+  step1Description="Set up your Databricks connector with the SQL warehouse host, HTTP path, and personal access token"
+  step2Description="Define which table or query to ingest"
+/>
+
+### Using the UI
+
+1. Click **Add Data** in your Rill project
+2. Select **Databricks** as the data source type
+3. In the authentication step:
+   - Enter the **Server hostname** of your SQL warehouse (e.g. `dbc-xxxxxxxx-xxxx.cloud.databricks.com`)
+   - Enter the **HTTP path** of your SQL warehouse (e.g. `/sql/1.0/warehouses/xxxxxxxxxxxxxxxx`)
+   - Paste your **Personal Access Token**
+   - Optionally specify a default **Catalog** and **Schema**
+4. In the data model configuration step, enter your SQL query
+5. Click **Create** to finalize
+
+After the model YAML is generated, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
+
+### Manual Configuration
+
+If you prefer to configure manually:
+
+**Step 1: Create connector configuration**
+
+Create `connectors/databricks.yaml`:
+
+```yaml
+type: connector
+driver: databricks
+
+host: "{{ .env.DATABRICKS_HOST }}"
+http_path: "{{ .env.DATABRICKS_HTTP_PATH }}"
+token: "{{ .env.DATABRICKS_TOKEN }}"
+catalog: "main"     # optional
+schema: "default"   # optional
+```
+
+**Step 2: Add credentials to `.env`**
+
+```bash
+DATABRICKS_HOST=dbc-xxxxxxxx-xxxx.cloud.databricks.com
+DATABRICKS_HTTP_PATH=/sql/1.0/warehouses/xxxxxxxxxxxxxxxx
+DATABRICKS_TOKEN=dapi...
+```
+
+<EnvPullTip />
+
+Then, [create your first model](#create-your-first-model).
+
+### Connection String (DSN)
+
+For advanced configuration, you can specify a single DSN instead of the individual fields above. The DSN cannot be combined with `host`, `http_path`, `token`, `catalog`, or `schema`.
+
+```yaml
+type: connector
+driver: databricks
+
+dsn: "{{ .env.DATABRICKS_DSN }}"
+```
+
+```bash
+DATABRICKS_DSN=token:dapi...@dbc-xxxxxxxx-xxxx.cloud.databricks.com:443/sql/1.0/warehouses/xxxxxxxxxxxxxxxx?catalog=main&schema=default
+```
+
+See the [Databricks SQL Go driver](https://github.com/databricks/databricks-sql-go) documentation for the full list of supported DSN parameters.
+
+## Create Your First Model
+
+Once your connector is configured, create a model to define what data to pull.
+
+Create `models/databricks_data.yaml`:
+
+```yaml
+type: model
+connector: databricks
+
+dev:
+  sql: SELECT * FROM main.my_schema.my_table LIMIT 10000
+
+sql: SELECT * FROM main.my_schema.my_table
+```
+
+After creating the model, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
+
+## Separating Dev and Prod Environments
+
+<DevProdSeparation />
+
+## Deploy to Rill Cloud
+
+<DeployToCloud
+  connector="Databricks"
+  connectorId="databricks"
+  credentialDescription="a Databricks personal access token along with the SQL warehouse host and HTTP path"
+/>
+
+## Appendix
+
+### Finding your SQL Warehouse Connection Details
+
+In the Databricks workspace:
+
+1. Navigate to **SQL Warehouses** and select the warehouse you want to use.
+2. Open the **Connection details** tab.
+3. Copy the **Server hostname** and **HTTP path**.
+
+To create a personal access token:
+
+1. Click your profile icon and open **Settings**.
+2. Go to **Developer → Access tokens** and click **Generate new token**.
+3. Provide a name and lifetime, then copy the token. Databricks only shows the token once.
+
+For service principal authentication and other auth methods, see the [Databricks SQL driver authentication docs](https://github.com/databricks/databricks-sql-go#authentication).
+
+### Unsupported Data Types
+
+The Databricks ingestion path streams results as Arrow and writes them to Parquet. Columns of type `TIME` are not currently supported — exclude them from your query or cast them to a different type (for example, `STRING` or `TIMESTAMP`).
+
+:::warning Check your service principal permissions
+The user or service principal associated with the personal access token needs `SELECT` on the tables being read and `USE CATALOG` / `USE SCHEMA` on the parent catalog and schema. See the [Unity Catalog privileges reference](https://docs.databricks.com/aws/en/data-governance/unity-catalog/manage-privileges/privileges) for the full list.
+:::

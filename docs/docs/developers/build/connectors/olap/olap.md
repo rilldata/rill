@@ -38,6 +38,7 @@ Rill supports the use of several different OLAP engines to power your dashboards
 
 ### BigQuery
 ### ClickHouse
+### Databricks
 ### Druid
 ### DuckDB
 ### DuckLake
@@ -61,6 +62,14 @@ Rill supports the use of several different OLAP engines to power your dashboards
     link="/developers/build/connectors/olap/clickhouse"
     linkLabel="Learn more"
     referenceLink="clickhouse"
+  />
+
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-Databricks.svg" alt="Databricks" />}
+    content="Lakehouse platform with native support for metrics views as a live connector."
+    link="/developers/build/connectors/olap/databricks"
+    linkLabel="Learn more"
+    referenceLink="databricks"
   />
 
   <ConnectorIcon
