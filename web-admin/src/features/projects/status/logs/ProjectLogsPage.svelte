@@ -2,18 +2,24 @@
   import { page } from "$app/stores";
   import { onMount, onDestroy } from "svelte";
   import {
-    SSEConnectionManager,
     ConnectionStatus,
-  } from "@rilldata/web-common/runtime-client/sse-connection-manager";
+    createSSEStream,
+  } from "@rilldata/web-common/runtime-client/sse";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { V1LogLevel, type V1Log } from "@rilldata/web-common/runtime-client";
-  import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
-  import type { FilterGroup } from "@rilldata/web-common/components/table-toolbar/types";
+  import {
+    V1LogLevel,
+    type V1WatchLogsResponse,
+  } from "@rilldata/web-common/runtime-client";
+  import Search from "@rilldata/web-common/components/search/Search.svelte";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import {
     createUrlFilterSync,
     parseArrayParam,
     parseStringParam,
   } from "@rilldata/web-common/lib/url-filter-sync";
+  import { ProjectLogsStore, type LogEntry } from "./project-logs-store";
 
   const runtimeClient = useRuntimeClient();
 
@@ -27,11 +33,12 @@
     { value: V1LogLevel.LOG_LEVEL_ERROR, label: "Error" },
   ];
 
-  type LogEntry = V1Log & { _id: number };
-  let nextLogId = 0;
-  let logs: LogEntry[] = [];
+  const logStore = new ProjectLogsStore(MAX_LOGS);
+  // Bumped on each addLog so Svelte reactivity re-runs filtering.
+  let logsVersion = 0;
   let logsContainer: HTMLDivElement;
   let connectionError: string | null = null;
+  let filterDropdownOpen = false;
   let searchText = parseStringParam($page.url.searchParams.get("q"));
   let selectedLevels = parseArrayParam($page.url.searchParams.get("level"));
   let mounted = false;
@@ -54,43 +61,61 @@
     filterSync.syncToUrl({ q: searchText, level: selectedLevels });
   }
 
-  const logsConnection = new SSEConnectionManager({
-    maxRetryAttempts: 5,
-    retryOnError: true,
-    retryOnClose: true,
+  // Typed decoder layer: `createSSEStream` composes connection + subscriber so
+  // component code stays in UI concerns.
+  const logsStream = createSSEStream<{
+    log: V1WatchLogsResponse;
+    error: { code?: string; message?: string };
+  }>({
+    connection: {
+      maxRetryAttempts: 5,
+      retryOnError: true,
+      retryOnClose: true,
+    },
+    decoders: {
+      log: (data) => JSON.parse(data) as V1WatchLogsResponse,
+      error: (data) => {
+        try {
+          return JSON.parse(data) as { code?: string; message?: string };
+        } catch {
+          return { message: data };
+        }
+      },
+    },
   });
 
-  $: connectionStatus = logsConnection.status;
+  $: connectionStatus = logsStream.status;
   $: isConnected = $connectionStatus === ConnectionStatus.OPEN;
   $: isConnecting = $connectionStatus === ConnectionStatus.CONNECTING;
   $: isClosed = $connectionStatus === ConnectionStatus.CLOSED;
   $: hasConnectionError = isClosed && connectionError !== null;
 
-  $: filteredLogs = logs.filter((log) => {
-    const matchesLevel =
-      selectedLevels.length === 0 || selectedLevels.includes(log.level ?? "");
-    const matchesSearch =
-      !searchText ||
-      (log.message?.toLowerCase().includes(searchText.toLowerCase()) ??
-        false) ||
-      (log.jsonPayload?.toLowerCase().includes(searchText.toLowerCase()) ??
-        false);
-    return matchesLevel && matchesSearch;
-  });
+  let filteredLogs: LogEntry[] = [];
+  let totalLogs = 0;
+  $: {
+    // Depend on logsVersion so Svelte re-runs when new logs arrive; the
+    // reference below keeps the compiler from treating it as unused.
+    void logsVersion;
+    filteredLogs = logStore.getFiltered({
+      levels: selectedLevels,
+      search: searchText,
+    });
+    totalLogs = logStore.getAll().length;
+  }
 
-  $: filterGroups = [
-    {
-      label: "Level",
-      key: "level",
-      options: filterableLevels.map((l) => ({
-        value: l.value,
-        label: l.label,
-      })),
-      selected: selectedLevels,
-      defaultValue: [],
-      multiSelect: true,
-    },
-  ] satisfies FilterGroup[];
+  $: selectedLevelLabel = (() => {
+    if (selectedLevels.length === 0) return "All levels";
+    if (selectedLevels.length === 1) {
+      return (
+        filterableLevels.find((l) => l.value === selectedLevels[0])?.label ??
+        "1 level"
+      );
+    }
+    const first = filterableLevels.find(
+      (l) => l.value === selectedLevels[0],
+    )?.label;
+    return `${first}, +${selectedLevels.length - 1} other${selectedLevels.length > 2 ? "s" : ""}`;
+  })();
 
   let unsubs: (() => void)[] = [];
 
@@ -102,48 +127,45 @@
     const url = `${host}/v1/instances/${instanceId}/sse?events=log&logs_replay=true&logs_replay_limit=${REPLAY_LIMIT}`;
 
     unsubs = [
-      logsConnection.on("message", handleMessage),
-      logsConnection.on("error", handleError),
-      logsConnection.on("open", handleOpen),
+      logsStream.on("log", handleLogMessage),
+      logsStream.on("error", handleServerError),
+      logsStream.onConnection("error", handleTransportError),
+      logsStream.onConnection("open", handleOpen),
     ];
 
-    logsConnection.start(url, {
+    logsStream.start(url, {
       getJwt: () => runtimeClient.getJwt(),
     });
   });
 
   onDestroy(() => {
     unsubs.forEach((fn) => fn());
-    logsConnection.close(true);
+    logsStream.cleanup();
   });
 
   function isNearBottom(el: HTMLElement, threshold = 50): boolean {
     return el.scrollHeight - el.scrollTop - el.clientHeight <= threshold;
   }
 
-  function handleMessage(message: { data: string; type?: string }) {
-    try {
-      if (message.type && message.type !== "log") return;
+  function handleLogMessage(response: V1WatchLogsResponse) {
+    const log = response.log;
+    if (!log) return;
 
-      const response = JSON.parse(message.data);
-      const log = response.log as V1Log;
-      if (log) {
-        logs = [...logs, { ...log, _id: nextLogId++ }].slice(-MAX_LOGS);
+    logStore.addLog(log);
+    logsVersion++;
 
-        if (logsContainer && isNearBottom(logsContainer)) {
-          requestAnimationFrame(() => {
-            logsContainer.scrollTop = logsContainer.scrollHeight;
-          });
-        }
-      }
-    } catch (e) {
-      if (import.meta.env.DEV) {
-        console.warn("Failed to parse log message:", e);
-      }
+    if (logsContainer && isNearBottom(logsContainer)) {
+      requestAnimationFrame(() => {
+        logsContainer.scrollTop = logsContainer.scrollHeight;
+      });
     }
   }
 
-  function handleError(error: Error) {
+  function handleServerError(payload: { code?: string; message?: string }) {
+    connectionError = payload.message || payload.code || "Server error";
+  }
+
+  function handleTransportError(error: Error) {
     console.error("Logs SSE error:", error);
     connectionError = error.message || "Connection failed";
   }
@@ -158,7 +180,7 @@
 
     connectionError = null;
     const url = `${host}/v1/instances/${instanceId}/sse?events=log&logs_replay=true&logs_replay_limit=${REPLAY_LIMIT}`;
-    logsConnection.start(url, {
+    logsStream.start(url, {
       getJwt: () => runtimeClient.getJwt(),
     });
   }
@@ -203,8 +225,12 @@
     }
   }
 
-  function onFilterChange(key: string, selected: string[] | string) {
-    if (key === "level") selectedLevels = selected as string[];
+  function toggleLevel(level: string) {
+    if (selectedLevels.includes(level)) {
+      selectedLevels = selectedLevels.filter((l) => l !== level);
+    } else {
+      selectedLevels = [...selectedLevels, level];
+    }
   }
 
   function clearFilters() {
@@ -237,13 +263,55 @@
     </div>
   </div>
 
-  <TableToolbar
-    bind:searchText
-    {filterGroups}
-    {onFilterChange}
-    onClearAllFilters={clearFilters}
-    showSort={false}
-  />
+  <div class="flex flex-row items-center gap-x-4 min-h-9">
+    <div class="flex-1 min-w-0 min-h-9">
+      <Search
+        bind:value={searchText}
+        placeholder="Search"
+        large
+        autofocus={false}
+        showBorderOnFocus={false}
+        retainValueOnMount
+      />
+    </div>
+
+    <DropdownMenu.Root bind:open={filterDropdownOpen}>
+      <DropdownMenu.Trigger
+        class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {filterDropdownOpen
+          ? 'bg-gray-200'
+          : 'hover:bg-surface-hover'} px-2 py-1"
+      >
+        <span class="text-fg-secondary font-medium">
+          {selectedLevelLabel}
+        </span>
+        {#if filterDropdownOpen}
+          <CaretUpIcon size="12px" />
+        {:else}
+          <CaretDownIcon size="12px" />
+        {/if}
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content align="start" class="w-48">
+        {#each filterableLevels as level}
+          <DropdownMenu.CheckboxItem
+            closeOnSelect={false}
+            checked={selectedLevels.includes(level.value)}
+            onCheckedChange={() => toggleLevel(level.value)}
+          >
+            {level.label}
+          </DropdownMenu.CheckboxItem>
+        {/each}
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
+
+    {#if selectedLevels.length > 0 || searchText}
+      <button
+        class="shrink-0 text-sm text-primary-500 hover:text-primary-600 whitespace-nowrap"
+        onclick={clearFilters}
+      >
+        Clear
+      </button>
+    {/if}
+  </div>
 
   <div class="logs-container" bind:this={logsContainer}>
     {#if hasConnectionError}
@@ -251,7 +319,7 @@
         <span class="text-red-600">Connection failed: {connectionError}</span>
         <button class="retry-button" onclick={retryConnection}> Retry </button>
       </div>
-    {:else if logs.length === 0}
+    {:else if totalLogs === 0}
       <div class="empty-state">Waiting for logs...</div>
     {:else if filteredLogs.length === 0}
       <div class="empty-state">No logs match the current filters</div>

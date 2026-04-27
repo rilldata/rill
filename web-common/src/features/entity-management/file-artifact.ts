@@ -97,7 +97,7 @@ export class FileArtifact {
   }> = writable({ scroll: undefined, selection: undefined });
 
   private editorCallback: (content: string) => void = () => {};
-  private readonly client: RuntimeClient;
+  private client: RuntimeClient;
 
   // Last time the state of the resource `kind/name` was updated.
   // This is updated in watch-resources and is used there to avoid
@@ -126,7 +126,17 @@ export class FileArtifact {
     );
   }
 
+  /**
+   * Updates the runtime client reference. Called when the client becomes
+   * available after the artifact was created (e.g. during +page.ts load
+   * before RuntimeProvider has mounted).
+   */
+  updateClient(client: RuntimeClient) {
+    this.client = client;
+  }
+
   fetchContent = async (invalidate = false) => {
+    if (!this.client) return;
     const instanceId = this.client.instanceId;
     const queryParams = {
       path: this.path,
@@ -231,6 +241,7 @@ export class FileArtifact {
   };
 
   private saveContent = async (blob: string) => {
+    if (!this.client) return;
     const instanceId = this.client.instanceId;
 
     // Optimistically update the query

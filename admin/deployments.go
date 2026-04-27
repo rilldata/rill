@@ -23,6 +23,9 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+// ErrDeploymentNotReady is returned when a deployment's runtime is not yet available.
+var ErrDeploymentNotReady = errors.New("deployment not ready")
+
 type CreateDeploymentOptions struct {
 	ProjectID   string
 	OwnerUserID *string
@@ -494,9 +497,9 @@ func (s *Service) CheckProvisionerResource(ctx context.Context, pr *database.Pro
 func (s *Service) OpenRuntimeClient(depl *database.Deployment) (*client.Client, error) {
 	if depl.RuntimeHost == "" {
 		if depl.Status == database.DeploymentStatusErrored {
-			return nil, fmt.Errorf("deployment %q has no runtime host: %s", depl.ID, depl.StatusMessage)
+			return nil, fmt.Errorf("%w: deployment %q has no runtime host: %s", ErrDeploymentNotReady, depl.ID, depl.StatusMessage)
 		}
-		return nil, fmt.Errorf("deployment %q has no runtime host", depl.ID)
+		return nil, fmt.Errorf("%w: deployment %q has no runtime host", ErrDeploymentNotReady, depl.ID)
 	}
 
 	jwt, err := s.IssueRuntimeManagementToken(depl.RuntimeAudience)

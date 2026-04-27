@@ -20,7 +20,8 @@
     "local-test": "cd web-local && npx playwright test --headed --project=e2e-chrome -g",
     "gen:colors": "node web-common/src/features/themes/gen-colors.ts",
     "quality": "bash ./scripts/web-test-code-quality.sh",
-    "quality:ci": "FAIL_FAST=true bash ./scripts/web-test-code-quality.sh"
+    "quality:ci": "FAIL_FAST=true bash ./scripts/web-test-code-quality.sh",
+    "check:edit-route-parity": "node ./scripts/check-edit-route-parity.js"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.0.0",

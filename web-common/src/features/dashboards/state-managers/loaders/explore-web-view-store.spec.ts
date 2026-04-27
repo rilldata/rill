@@ -1,4 +1,5 @@
 import { DashboardFetchMocks } from "@rilldata/web-common/features/dashboards/dashboard-fetch-mocks";
+import DashboardStateManagerTest from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/DashboardStateManagerTest.svelte";
 import {
   type HoistedPageForExploreTests,
   PageMockForExploreTests,
@@ -27,7 +28,6 @@ import {
   applyMutationsToDashboard,
   type TestDashboardMutation,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
-import DashboardStateManagerTest from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/DashboardStateManagerTest.svelte";
 import { getCleanMetricsExploreForAssertion } from "@rilldata/web-common/features/dashboards/url-state/url-state-variations.spec";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
@@ -74,9 +74,9 @@ const TestCases: {
     view: {
       view: "tdd",
       additionalParams: "&measure=" + AD_BIDS_IMPRESSIONS_MEASURE,
-      mutations: [AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD],
+      mutations: [],
       expectedSearch:
-        "view=tdd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
+        "view=tdd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions",
     },
   },
   {
@@ -90,9 +90,9 @@ const TestCases: {
     view: {
       view: "tdd",
       additionalParams: "&measure=" + AD_BIDS_IMPRESSIONS_MEASURE,
-      mutations: [AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD],
+      mutations: [],
       expectedSearch:
-        "view=tdd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
+        "view=tdd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions",
     },
   },
 
@@ -137,9 +137,9 @@ const TestCases: {
     initView: {
       view: "tdd",
       additionalParams: "&measure=" + AD_BIDS_IMPRESSIONS_MEASURE,
-      mutations: [AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD],
+      mutations: [],
       expectedSearch:
-        "view=tdd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
+        "view=tdd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions",
     },
     view: {
       view: "pivot",
@@ -201,6 +201,7 @@ describe("Explore web view store", () => {
       pageMock.gotoSearch(initialSearch);
       // apply any mutations in the init view
       await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, initView.mutations);
+
       const initState = getCleanMetricsExploreForAssertion();
 
       const viewSearch = `view=${view.view}${view.additionalParams ?? ""}`;
@@ -217,7 +218,6 @@ describe("Explore web view store", () => {
       pageMock.gotoSearch(initialSearch);
       // new url should be filled with params from initView
       pageMock.assertSearchParams(initView.expectedSearch);
-      // assert state is the same as initial view
       expect(getCleanMetricsExploreForAssertion()).toEqual(initState);
       // Revisiting the same view doesn't break anything.
       pageMock.gotoSearch(initialSearch);
@@ -245,6 +245,30 @@ describe("Explore web view store", () => {
       ]);
     });
   }
+
+  // Chart type is a shared param between explore and tdd, so a change made in one
+  // view should surface on the other view's URL when the user switches back.
+  it("chart type set in tdd surfaces on the explore URL", async () => {
+    renderDashboardStateManager();
+    await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
+
+    const exploreSearch = "view=explore";
+    const tddSearch = `view=tdd&measure=${AD_BIDS_IMPRESSIONS_MEASURE}`;
+
+    pageMock.gotoSearch(exploreSearch);
+    pageMock.assertSearchParams("");
+
+    pageMock.gotoSearch(tddSearch);
+    await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, [
+      AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD,
+    ]);
+    pageMock.assertSearchParams(
+      `view=tdd&measure=${AD_BIDS_IMPRESSIONS_MEASURE}&chart_type=stacked_bar`,
+    );
+
+    pageMock.gotoSearch(exploreSearch);
+    pageMock.assertSearchParams("chart_type=stacked_bar");
+  });
 });
 
 // This needs to be there each file because of how hoisting works with vitest.
