@@ -188,12 +188,6 @@
     createRuntimeServiceCreateTriggerMutation(runtimeClient);
   const queryClient = useQueryClient();
 
-  function onFilterChange(key: string, selected: string[]) {
-    if (key === "type") {
-      typeFilter = selected;
-    }
-  }
-
   // Handlers
   function handleModelInfoClick(resource: V1Resource) {
     specResourceName = resource.meta?.name?.name ?? "";
