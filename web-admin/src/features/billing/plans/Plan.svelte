@@ -160,11 +160,21 @@
     $usageMetrics?.data?.reduce((s, m) => s + m.size, 0) ?? 0,
   );
 
-  // TODO: wire per-bucket accrued costs (prod compute, dev compute, storage)
-  // and the current period total from the billing usage API once it exposes
-  // accrued dollar amounts. Today's computed projections (slots × list rate)
-  // are misleading next to real billed amounts, so the UI renders TODO
-  // placeholders until the backend data is available.
+  // Storage cost estimate from current snapshot. Final billing is the
+  // average across the cycle, so the invoice may differ; the UI labels
+  // this as an estimate via tooltip.
+  const BYTES_PER_GB = 1024 ** 3;
+  const STORAGE_FREE_GB = 1;
+  const STORAGE_RATE_PER_GB = 1;
+  let storageCost = $derived(
+    Math.max(0, totalStorage / BYTES_PER_GB - STORAGE_FREE_GB) *
+      STORAGE_RATE_PER_GB,
+  );
+
+  // TODO: wire prod and dev compute accrued costs from the billing usage
+  // API once it exposes accrued dollar amounts. Today's computed projections
+  // (slots × list rate) are misleading next to real billed amounts, so the
+  // UI renders TODO placeholders until the backend data is available.
 
   // Billing cycle
   let cycleEnd = $derived(subscription?.currentBillingCycleEndDate);
@@ -465,10 +475,10 @@
 
     {#if currentPlan !== "enterprise" && currentPlan !== "managed" && currentPlan !== "team"}
       <!-- Cost + usage row -->
-      <!-- TODO: replace per-bucket dollar values with accrued costs once the
-           billing usage API exposes them. Current values (prodCost/devCost/
-           storageCost) project from current config × list rate, which is
-           misleading vs. actual billed amounts. -->
+      <!-- TODO: replace prod/dev dollar values with accrued costs once the
+           billing usage API exposes them. Current values project from
+           current config × list rate, which is misleading vs. actual
+           billed amounts. Storage is estimated from current snapshot. -->
       <div class="stats-row">
         <div class="flex items-center gap-4">
           <div class="stat-column">
@@ -480,7 +490,19 @@
             <span class="stat-label">{devSlots} Dev Compute Units</span>
           </div>
           <div class="stat-column">
-            <span class="stat-value">TODO: accrued storage cost</span>
+            <div class="flex items-center gap-1">
+              <span class="stat-value">{fmtCredit(storageCost)}</span>
+              <Tooltip location="top" alignment="middle" distance={8}>
+                <span class="text-fg-muted flex">
+                  <InfoCircle size="14px" />
+                </span>
+                <TooltipContent maxWidth="260px" slot="tooltip-content">
+                  Estimated from current storage at $1/GB/month after a 1 GB
+                  free allowance. Final billing is based on average storage
+                  across the cycle, so the invoice may differ.
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <span class="stat-label"
               >{totalStorage > 0 ? formatMemorySize(totalStorage) : "0 B"} Storage</span
             >
