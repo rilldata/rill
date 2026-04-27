@@ -22,6 +22,7 @@
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import { onMount } from "svelte";
   import type { PageData } from "./$types";
+  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
 
   export let data: PageData;
   const {
@@ -134,6 +135,7 @@
     host={runtimeHost}
     jwt={accessToken}
     authContext="embed"
+    externalUserId={EmbedStore.getInstance().externalUserId}
   >
     {#if showTopBar}
       <ThemeProvider theme={$activeDashboardTheme} applyLayout={false}>

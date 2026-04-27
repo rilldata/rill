@@ -76,7 +76,9 @@ export class ConversationManager {
         );
         break;
       case "browserStorage":
-        this.conversationSelector = new BrowserStorageConversationSelector();
+        this.conversationSelector = new BrowserStorageConversationSelector(
+          client,
+        );
         break;
       default:
         throw new Error(

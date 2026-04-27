@@ -16,10 +16,17 @@
   export let instanceId: string;
   export let jwt: string | undefined = undefined;
   export let authContext: AuthContext = "user";
+  export let externalUserId: string | null = null;
 
   // Returns a cached instance if a load function already created one for this host+instanceId.
   // If host/instanceId change, the parent's {#key} re-mounts us.
-  const client = getRuntimeClient({ host, instanceId, jwt, authContext });
+  const client = getRuntimeClient({
+    host,
+    instanceId,
+    jwt,
+    authContext,
+    externalUserId,
+  });
   setContext(RUNTIME_CONTEXT_KEY, client);
   featureFlags.setRuntimeClient(client);
 
