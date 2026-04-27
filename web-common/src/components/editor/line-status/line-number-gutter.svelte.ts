@@ -93,11 +93,9 @@ export const createLineNumberGutter = () =>
       );
     },
     lineMarkerChange(update) {
-      return update.transactions.some((tr) => {
-        const effectPresent = tr.effects.some((effect) =>
-          effect.is(updateLineStatuses),
-        );
-        return effectPresent || update;
-      });
+      if (update.docChanged || update.selectionSet) return true;
+      return update.transactions.some((tr) =>
+        tr.effects.some((effect) => effect.is(updateLineStatuses)),
+      );
     },
   });

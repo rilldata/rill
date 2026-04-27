@@ -204,6 +204,46 @@ func TestMetricsViewsComparisonAgainstSnowflake(t *testing.T) {
 	})
 }
 
+func TestMetricsViewsComparisonAgainstDatabricks(t *testing.T) {
+	testmode.Expensive(t)
+
+	rt, instanceID := newDatabricksInstance(t)
+	minTime, halfTime, maxTime := databricksAdBidsTimeRange(t, rt, instanceID)
+	t.Run("testMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist", func(t *testing.T) {
+		testMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(t, rt, instanceID, minTime, halfTime, maxTime)
+	})
+	t.Run("testMetricsViewsComparison_dim_order", func(t *testing.T) {
+		testMetricsViewsComparison_dim_order(t, rt, instanceID, minTime, halfTime, maxTime)
+	})
+	t.Run("testMetricsViewsComparison_dim_order_no_sort_order", func(t *testing.T) {
+		testMetricsViewsComparison_dim_order_no_sort_order(t, rt, instanceID, minTime, halfTime, maxTime)
+	})
+	t.Run("testMetricsViewsComparison_measure_order", func(t *testing.T) {
+		testMetricsViewsComparison_measure_order(t, rt, instanceID, minTime, halfTime, maxTime)
+	})
+	t.Run("testMetricsViewsComparison_measure_filters", func(t *testing.T) {
+		testMetricsViewsComparison_measure_filters(t, rt, instanceID, minTime, halfTime, maxTime)
+	})
+	t.Run("testMetricsViewsComparison_measure_filters_with_compare_no_alias", func(t *testing.T) {
+		testMetricsViewsComparison_measure_filters_with_compare_no_alias(t, rt, instanceID, minTime, halfTime, maxTime)
+	})
+	t.Run("testMetricsViewsComparison_measure_filters_with_compare_base_measure", func(t *testing.T) {
+		testMetricsViewsComparison_measure_filters_with_compare_base_measure(t, rt, instanceID, minTime, halfTime, maxTime)
+	})
+	t.Run("testMetricsViewsComparison_measure_filters_with_compare_aliases", func(t *testing.T) {
+		testMetricsViewsComparison_measure_filters_with_compare_aliases(t, rt, instanceID, minTime, halfTime, maxTime)
+	})
+	t.Run("testMetricsViewsComparison_comparsion_no_dim_values", func(t *testing.T) {
+		testMetricsViewsComparison_comparsion_no_dim_values(t, rt, instanceID)
+	})
+	t.Run("testMetricsViewsComparison_comparsion_having_same_name", func(t *testing.T) {
+		testMetricsViewsComparison_comparsion_having_same_name(t, rt, instanceID, minTime, halfTime, maxTime)
+	})
+	t.Run("testMetricsViewsComparison_general_toplist_having_same_name", func(t *testing.T) {
+		testMetricsViewsComparison_general_toplist_having_same_name(t, rt, instanceID, minTime, halfTime, maxTime)
+	})
+}
+
 // broken: due to unsorted subselect
 // func TestMetricsViewsComparison_Druid_dim_order_limit(t *testing.T) {
 // 	if os.Getenv("METRICS_CREDS") == "" {
@@ -1154,6 +1194,20 @@ func adBidsTimeRange(t *testing.T, rt *runtime.Runtime, instanceID string) (min,
 func bigQueryAdBidsTimeRange(t *testing.T, rt *runtime.Runtime, instanceID string) (min, half, max *timestamppb.Timestamp) {
 	ctr := &queries.ColumnTimeRange{
 		Database:       "rilldata",
+		DatabaseSchema: "integration_test",
+		TableName:      "ad_bids",
+		ColumnName:     "timestamp",
+	}
+	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
+	return ctr.Result.Min, timestamppb.New(ctr.Result.Min.AsTime().Add(diff / 2)), ctr.Result.Max
+}
+
+// databricksAdBidsTimeRange resolves the full time range for the Databricks ad_bids table and
+// returns min, the halfway point, and max as protobuf timestamps.
+func databricksAdBidsTimeRange(t *testing.T, rt *runtime.Runtime, instanceID string) (min, half, max *timestamppb.Timestamp) {
+	ctr := &queries.ColumnTimeRange{
 		DatabaseSchema: "integration_test",
 		TableName:      "ad_bids",
 		ColumnName:     "timestamp",

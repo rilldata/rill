@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { createConnectorForm } from "@rilldata/web-common/features/sources/modal/FormValidation.ts";
   import { getConnectorSchema } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
   import { getConnectorYamlPreview } from "./yaml-preview.ts";
@@ -18,6 +17,7 @@
     CreateConnectorStep,
   } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
   import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
+  import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { getConnectorDriverForSchema } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
   import type { AddDataStateManager } from "@rilldata/web-common/features/add-data/manager/AddDataStateManager.svelte.ts";
 
@@ -50,6 +50,7 @@
           queryClient,
           connectorName,
           connectorDriver,
+          schemaName: step.schema,
           formValues: form.data,
           validate: true,
           existingEnvBlob: cachedEnvBlob,
@@ -87,13 +88,14 @@
       queryClient,
       connectorName,
       connectorDriver,
+      schemaName: step.schema,
       formValues: $form,
       validate: false,
       existingEnvBlob: cachedEnvBlob,
     });
     onClose();
     if (!config.skipNavigation)
-      return goto(`/files${addLeadingSlash(connectorPath)}`);
+      return navigateToFile(addLeadingSlash(connectorPath));
   }
 
   async function cleanupAndBack() {

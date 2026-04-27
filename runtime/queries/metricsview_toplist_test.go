@@ -28,6 +28,14 @@ func TestMetricsViewsToplistAgainstBigQuery(t *testing.T) {
 	})
 }
 
+func TestMetricsViewsToplistAgainstDatabricks(t *testing.T) {
+	testmode.Expensive(t)
+	rt, instanceID := newDatabricksInstance(t)
+	t.Run("testMetricsViewsToplist_measure_filters", func(t *testing.T) {
+		testMetricsViewsToplistWithCatalog_measure_filters(t, rt, instanceID, "", "integration_test")
+	})
+}
+
 func TestMetricsViewsToplistAgainstSnowflake(t *testing.T) {
 	testmode.Expensive(t)
 	rt, instanceID := newSnowflakeInstance(t)

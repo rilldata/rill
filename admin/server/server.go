@@ -457,6 +457,9 @@ func mapGRPCError(err error) error {
 	if errors.Is(err, database.ErrValidation) {
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
+	if errors.Is(err, admin.ErrDeploymentNotReady) {
+		return status.Error(codes.FailedPrecondition, err.Error())
+	}
 	return status.Error(codes.Internal, err.Error())
 }
 

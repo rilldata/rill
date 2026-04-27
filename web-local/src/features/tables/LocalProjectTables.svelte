@@ -118,10 +118,15 @@
   // Split once on unfiltered tables, then apply type filter per section
   $: ({ modelTables: allModelTables, externalTables: allExternalTables } =
     splitTablesByModel(filteredTables, modelResources));
-  $: modelTables = applyTableFilters(allModelTables, typeFilter, isViewMap);
+  $: typeFilterArray = typeFilter === "all" ? [] : [typeFilter];
+  $: modelTables = applyTableFilters(
+    allModelTables,
+    typeFilterArray,
+    isViewMap,
+  );
   $: externalTables = applyTableFilters(
     allExternalTables,
-    typeFilter,
+    typeFilterArray,
     isViewMap,
   );
 

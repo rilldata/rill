@@ -331,20 +331,34 @@ func mapGRPCError(err error) error {
 	if err == nil {
 		return nil
 	}
+
 	// Extract trace data if present (will be attached after error mapping)
 	var te *traceError
 	errors.As(err, &te)
 
-	if errors.Is(err, context.DeadlineExceeded) {
-		err = status.Error(codes.DeadlineExceeded, err.Error())
-	} else if errors.Is(err, context.Canceled) {
-		err = status.Error(codes.Canceled, err.Error())
-	} else if errors.Is(err, queries.ErrForbidden) {
-		err = ErrForbidden
-	} else if errors.Is(err, runtime.ErrForbidden) {
-		err = ErrForbidden
-	} else if errors.Is(err, metricsview.ErrForbidden) {
-		err = ErrForbidden
+	// Map known non-gRPC errors to gRPC status errors
+	if _, ok := status.FromError(err); !ok {
+		if errors.Is(err, context.DeadlineExceeded) {
+			err = status.Error(codes.DeadlineExceeded, err.Error())
+		} else if errors.Is(err, context.Canceled) {
+			err = status.Error(codes.Canceled, err.Error())
+		} else if errors.Is(err, queries.ErrForbidden) {
+			err = ErrForbidden
+		} else if errors.Is(err, runtime.ErrForbidden) {
+			err = ErrForbidden
+		} else if errors.Is(err, metricsview.ErrForbidden) {
+			err = ErrForbidden
+		} else if errors.Is(err, drivers.ErrResourceNotFound) {
+			err = status.Error(codes.NotFound, err.Error())
+		} else if errors.Is(err, drivers.ErrResourceAlreadyExists) {
+			err = status.Error(codes.AlreadyExists, err.Error())
+		} else if errors.Is(err, drivers.ErrNotFound) {
+			err = status.Error(codes.NotFound, err.Error())
+		} else if errors.Is(err, runtime.ErrAdminNotConfigured) || errors.Is(err, runtime.ErrAINotConfigured) {
+			err = status.Error(codes.FailedPrecondition, err.Error())
+		} else if errors.Is(err, runtime.ErrControllerClosed) {
+			err = status.Error(codes.Unavailable, err.Error())
+		}
 	}
 
 	// Attach trace details to the gRPC status after error mapping
@@ -362,6 +376,21 @@ func mapGRPCError(err error) error {
 	}
 
 	return err
+}
+
+// mapGRPCErrorWithFallback maps the error using the same logic as mapGRPCError.
+// If the error type isn't recognized, it returns a gRPC error with the provided fallback code instead.
+// Use this only in handlers where the middleware's behavior of running mapGRPCError and then falling back to codes.Unknown is not acceptable.
+// (E.g. for errors which if unknown are very likely to correspond to a specific code, such as InvalidArgument.)
+func mapGRPCErrorWithFallback(err error, fallback codes.Code) error {
+	if err == nil {
+		return nil
+	}
+	mapped := mapGRPCError(err)
+	if _, ok := status.FromError(mapped); ok {
+		return mapped
+	}
+	return status.Error(fallback, err.Error())
 }
 
 func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {

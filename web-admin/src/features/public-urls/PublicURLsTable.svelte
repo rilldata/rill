@@ -98,5 +98,4 @@
   isFetchingNextPage={query.isFetchingNextPage}
   onLoadMore={() => query.fetchNextPage()}
   maxHeight={dynamicTableMaxHeight}
-  rowHeight={40}
 />

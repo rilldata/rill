@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import CanvasEditor from "@rilldata/web-common/features/canvas/CanvasEditor.svelte";
+  import { withEditorPrefix } from "@rilldata/web-common/layout/navigation/editor-routing";
   import VisualCanvasEditing from "@rilldata/web-common/features/canvas/inspector/VisualCanvasEditing.svelte";
   import { createRootCauseErrorQuery } from "@rilldata/web-common/features/entity-management/error-utils";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
@@ -109,7 +110,7 @@
           {/if}
 
           <PreviewButton
-            href="/canvas/{canvasName}"
+            href={withEditorPrefix(`/canvas/${canvasName}`)}
             disabled={!!parseError || !!reconcileError || resourceIsReconciling}
             reconciling={resourceIsReconciling}
           />
@@ -124,6 +125,7 @@
               {parseError}
               remoteContent={$remoteContent}
               {filePath}
+              showError={selectedView === "code" || ready}
             >
               {#if selectedView === "code"}
                 <CanvasEditor

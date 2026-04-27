@@ -51,10 +51,11 @@
     error: projectParserError,
     isLoading: projectParserLoading,
   } = $projectParserQuery);
-  // When a fresh empty project created, projectParser wont be available yet.
-  // So make sure to do null check on projectParser's state here.
+  // Optional chaining guards against (1) fresh empty projects where projectParser
+  // state is not yet available, and (2) the dev deployment runtime returning a
+  // different response shape than production (the global $runtime store issue; see #8590).
   $: hasParseErrors =
-    projectParserData?.projectParser?.state?.parseErrors?.length > 0;
+    (projectParserData?.projectParser?.state?.parseErrors?.length ?? 0) > 0;
 </script>
 
 {#if hasResourceErrorsLoading || projectParserLoading}
