@@ -29,6 +29,7 @@ import {
 } from "svelte/store";
 import { getFilterWithNullHandling } from "../query-util";
 import {
+  type LabelsConfig,
   OTHER_VALUE,
   OTHER_VALUE_DOMAIN_KEY,
   TOTAL_DOMAIN_KEY,
@@ -40,6 +41,7 @@ export type CircularChartSpec = {
   color?: FieldConfig<"nominal">;
   innerRadius?: number;
   show_other?: boolean;
+  labels?: LabelsConfig;
 };
 
 export type CircularChartDefaultOptions = {

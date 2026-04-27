@@ -1,5 +1,6 @@
 import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+import { DEFAULT_LABELS_THRESHOLD } from "@rilldata/web-common/features/components/charts/circular/constants";
 import {
   CircularChartProvider,
   type CircularChartSpec as CircularChartSpecBase,
@@ -48,6 +49,10 @@ export class CircularChartComponent extends BaseChart<CircularCanvasChartSpec> {
     show_other: {
       type: "boolean",
       label: 'Show "Other" bucket',
+    },
+    labels: {
+      type: "labels",
+      label: "Data labels",
     },
     color: {
       type: "positional",
@@ -140,6 +145,11 @@ export class CircularChartComponent extends BaseChart<CircularCanvasChartSpec> {
       metrics_view: metricsViewName,
       innerRadius: 50,
       show_other: true,
+      labels: {
+        show: true,
+        format: "percent",
+        threshold: DEFAULT_LABELS_THRESHOLD,
+      },
       color: {
         type: "nominal",
         field: randomDimension,
