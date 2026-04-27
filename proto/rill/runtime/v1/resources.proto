@@ -568,7 +568,7 @@ message ExplorePreset {
 
   // Chart display settings (frontend-only; persisted in URL state)
   optional bool chart_dynamic_y_axis = 35;
-  optional bool chart_force_line = 36;
+  reserved 36; // was chart_force_line; replaced by chart_type URL param
 }
 
 enum ExploreComparisonMode {

@@ -8,11 +8,12 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
     V1LogLevel,
-    type V1Log,
     type V1WatchLogsResponse,
   } from "@rilldata/web-common/runtime-client";
-  import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
-  import type { FilterGroup } from "@rilldata/web-common/components/table-toolbar/types";
+  import Search from "@rilldata/web-common/components/search/Search.svelte";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import {
     createUrlFilterSync,
     parseArrayParam,
@@ -37,6 +38,7 @@
   let logsVersion = 0;
   let logsContainer: HTMLDivElement;
   let connectionError: string | null = null;
+  let filterDropdownOpen = false;
   let searchText = parseStringParam($page.url.searchParams.get("q"));
   let selectedLevels = parseArrayParam($page.url.searchParams.get("level"));
   let mounted = false;
@@ -101,19 +103,19 @@
     totalLogs = logStore.getAll().length;
   }
 
-  $: filterGroups = [
-    {
-      label: "Level",
-      key: "level",
-      options: filterableLevels.map((l) => ({
-        value: l.value,
-        label: l.label,
-      })),
-      selected: selectedLevels,
-      defaultValue: [],
-      multiSelect: true,
-    },
-  ] satisfies FilterGroup[];
+  $: selectedLevelLabel = (() => {
+    if (selectedLevels.length === 0) return "All levels";
+    if (selectedLevels.length === 1) {
+      return (
+        filterableLevels.find((l) => l.value === selectedLevels[0])?.label ??
+        "1 level"
+      );
+    }
+    const first = filterableLevels.find(
+      (l) => l.value === selectedLevels[0],
+    )?.label;
+    return `${first}, +${selectedLevels.length - 1} other${selectedLevels.length > 2 ? "s" : ""}`;
+  })();
 
   let unsubs: (() => void)[] = [];
 
@@ -146,7 +148,7 @@
   }
 
   function handleLogMessage(response: V1WatchLogsResponse) {
-    const log = response.log as V1Log | undefined;
+    const log = response.log;
     if (!log) return;
 
     logStore.addLog(log);
@@ -223,11 +225,12 @@
     }
   }
 
-  function handleFilterChange(key: string, value: string) {
-    if (key !== "level") return;
-    selectedLevels = selectedLevels.includes(value)
-      ? selectedLevels.filter((l) => l !== value)
-      : [...selectedLevels, value];
+  function toggleLevel(level: string) {
+    if (selectedLevels.includes(level)) {
+      selectedLevels = selectedLevels.filter((l) => l !== level);
+    } else {
+      selectedLevels = [...selectedLevels, level];
+    }
   }
 
   function clearFilters() {
@@ -260,15 +263,55 @@
     </div>
   </div>
 
-  <TableToolbar
-    {searchText}
-    onSearchChange={(t) => (searchText = t)}
-    {filterGroups}
-    onFilterChange={handleFilterChange}
-    onClearAllFilters={clearFilters}
-    showSort={false}
-    disabled={totalLogs === 0}
-  />
+  <div class="flex flex-row items-center gap-x-4 min-h-9">
+    <div class="flex-1 min-w-0 min-h-9">
+      <Search
+        bind:value={searchText}
+        placeholder="Search"
+        large
+        autofocus={false}
+        showBorderOnFocus={false}
+        retainValueOnMount
+      />
+    </div>
+
+    <DropdownMenu.Root bind:open={filterDropdownOpen}>
+      <DropdownMenu.Trigger
+        class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {filterDropdownOpen
+          ? 'bg-gray-200'
+          : 'hover:bg-surface-hover'} px-2 py-1"
+      >
+        <span class="text-fg-secondary font-medium">
+          {selectedLevelLabel}
+        </span>
+        {#if filterDropdownOpen}
+          <CaretUpIcon size="12px" />
+        {:else}
+          <CaretDownIcon size="12px" />
+        {/if}
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content align="start" class="w-48">
+        {#each filterableLevels as level}
+          <DropdownMenu.CheckboxItem
+            closeOnSelect={false}
+            checked={selectedLevels.includes(level.value)}
+            onCheckedChange={() => toggleLevel(level.value)}
+          >
+            {level.label}
+          </DropdownMenu.CheckboxItem>
+        {/each}
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
+
+    {#if selectedLevels.length > 0 || searchText}
+      <button
+        class="shrink-0 text-sm text-primary-500 hover:text-primary-600 whitespace-nowrap"
+        onclick={clearFilters}
+      >
+        Clear
+      </button>
+    {/if}
+  </div>
 
   <div class="logs-container" bind:this={logsContainer}>
     {#if hasConnectionError}

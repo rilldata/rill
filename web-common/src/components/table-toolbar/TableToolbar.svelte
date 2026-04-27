@@ -8,35 +8,29 @@
   import type { Snippet } from "svelte";
 
   let {
-    searchText = "",
-    onSearchChange,
+    searchText = $bindable(""),
     searchDisabled = false,
     showSearch = true,
     filterGroups = [],
     onFilterChange,
     onClearAllFilters,
-    sortDirection = "newest",
-    onSortToggle,
+    sortDirection = $bindable("newest"),
     showSort = true,
     showViewToggle = false,
-    viewMode = "list" as ViewMode,
-    onViewModeChange,
+    viewMode = $bindable("list"),
     disabled = false,
     children,
   }: {
     searchText?: string;
-    onSearchChange?: (text: string) => void;
     searchDisabled?: boolean;
     showSearch?: boolean;
     filterGroups?: FilterGroup[];
-    onFilterChange?: (key: string, value: string) => void;
+    onFilterChange?: (key: string, selected: string | string[]) => void;
     onClearAllFilters?: () => void;
     sortDirection?: SortDirection;
-    onSortToggle?: () => void;
     showSort?: boolean;
     showViewToggle?: boolean;
     viewMode?: ViewMode;
-    onViewModeChange?: (mode: ViewMode) => void;
     /** Disables search, filter, and sort. Useful when the underlying data is empty. */
     disabled?: boolean;
     children?: Snippet;
@@ -52,18 +46,17 @@
     <div class="flex flex-row items-center gap-x-3">
       {#if showSearch}
         <TableToolbarSearch
-          {searchText}
-          {onSearchChange}
+          bind:searchText
           disabled={searchDisabled || disabled}
         />
       {/if}
 
       {#if showSort}
-        <TableToolbarSort {sortDirection} {onSortToggle} {disabled} />
+        <TableToolbarSort bind:sortDirection {disabled} />
       {/if}
 
       {#if showViewToggle}
-        <TableToolbarViewToggle {viewMode} {onViewModeChange} />
+        <TableToolbarViewToggle bind:viewMode />
       {/if}
 
       {@render children?.()}

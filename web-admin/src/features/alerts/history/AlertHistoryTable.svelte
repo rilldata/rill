@@ -6,7 +6,6 @@
   import {
     applyTableFilters,
     TableToolbar,
-    toggleArrayValue,
   } from "@rilldata/web-common/components/table-toolbar";
   import type {
     FilterGroup,
@@ -66,9 +65,9 @@
     },
   ] satisfies FilterGroup[];
 
-  function handleFilterChange(key: string, value: string) {
+  function handleFilterChange(key: string, selected: string | string[]) {
     if (key !== "result") return;
-    selectedResults = toggleArrayValue(selectedResults, value);
+    selectedResults = Array.isArray(selected) ? selected : [selected];
   }
 
   function clearFilters() {
@@ -122,9 +121,7 @@
         {filterGroups}
         onFilterChange={handleFilterChange}
         onClearAllFilters={clearFilters}
-        {sortDirection}
-        onSortToggle={() =>
-          (sortDirection = sortDirection === "newest" ? "oldest" : "newest")}
+        bind:sortDirection
       />
     </ResourceList>
   {/if}

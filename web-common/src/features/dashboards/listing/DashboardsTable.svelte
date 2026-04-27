@@ -7,7 +7,6 @@
   import {
     applyTableFilters,
     TableToolbar,
-    toggleArrayValue,
   } from "@rilldata/web-common/components/table-toolbar";
   import type {
     FilterGroup,
@@ -100,9 +99,9 @@
     },
   ] satisfies FilterGroup[];
 
-  function handleFilterChange(key: string, value: string) {
+  function handleFilterChange(key: string, selected: string | string[]) {
     if (key !== "type") return;
-    selectedTypes = toggleArrayValue(selectedTypes, value);
+    selectedTypes = Array.isArray(selected) ? selected : [selected];
   }
 
   function clearFilters() {
@@ -201,14 +200,11 @@
     >
       <TableToolbar
         slot="toolbar"
-        {searchText}
-        onSearchChange={(t) => (searchText = t)}
+        bind:searchText
         {filterGroups}
         onFilterChange={handleFilterChange}
         onClearAllFilters={clearFilters}
-        {sortDirection}
-        onSortToggle={() =>
-          (sortDirection = sortDirection === "newest" ? "oldest" : "newest")}
+        bind:sortDirection
         disabled={(data?.length ?? 0) === 0}
       />
       <svelte:fragment slot="empty">

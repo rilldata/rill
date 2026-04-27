@@ -42,8 +42,3 @@ export function applyTableFilters<T>(opts: {
       return sortDirection === "newest" ? -cmp : cmp;
     });
 }
-
-/** Toggle a value in an array: add if absent, remove if present. */
-export function toggleArrayValue<T>(arr: T[], value: T): T[] {
-  return arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value];
-}

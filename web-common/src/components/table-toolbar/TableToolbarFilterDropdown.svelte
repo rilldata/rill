@@ -9,15 +9,27 @@
     disabled = false,
   }: {
     filterGroups: FilterGroup[];
-    onFilterChange?: (key: string, value: string) => void;
+    onFilterChange?: (key: string, selected: string | string[]) => void;
     disabled?: boolean;
   } = $props();
+
+  function handleClick(group: FilterGroup, value: string) {
+    if (group.multiSelect) {
+      const current = Array.isArray(group.selected) ? group.selected : [];
+      const next = current.includes(value)
+        ? current.filter((v) => v !== value)
+        : [...current, value];
+      onFilterChange?.(group.key, next);
+    } else {
+      onFilterChange?.(group.key, value);
+    }
+  }
 </script>
 
 {#if filterGroups.length > 0}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger
-      class="flex flex-row items-center gap-x-1.5 h-9 px-2 text-sm font-medium text-fg-primary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+      class="flex flex-row items-center gap-x-1.5 h-9 px-2 text-sm font-medium text-fg-primary cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
       aria-label="Filter options"
       {disabled}
     >
@@ -25,7 +37,7 @@
       <span>Filter</span>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start">
-      {#each filterGroups as group, i}
+      {#each filterGroups as group, i (group.key)}
         <DropdownMenu.Group>
           <DropdownMenu.Label class="uppercase"
             >{group.label}</DropdownMenu.Label
@@ -37,7 +49,7 @@
                 ? Array.isArray(group.selected) &&
                   group.selected.includes(option.value)
                 : group.selected === option.value}
-              onclick={() => onFilterChange?.(group.key, option.value)}
+              onclick={() => handleClick(group, option.value)}
             >
               {option.label}
             </DropdownMenu.CheckboxItem>
