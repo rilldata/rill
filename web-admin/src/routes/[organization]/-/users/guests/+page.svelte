@@ -10,14 +10,14 @@
   import AddGuestsDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/AddGuestsDialog.svelte";
   import ConvertGuestToMemberDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/ConvertGuestToMemberDialog.svelte";
   import EditUserGroupDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/EditUserGroupDialog.svelte";
-  import OrgUsersFilters from "@rilldata/web-admin/features/organizations/user-management/OrgUsersFilters.svelte";
   import OrgUsersTable from "@rilldata/web-admin/features/organizations/user-management/table/users/OrgUsersTable.svelte";
   import {
     getOrgUserInvites,
     getOrgUserMembers,
   } from "@rilldata/web-admin/features/organizations/user-management/selectors.ts";
   import { Button } from "@rilldata/web-common/components/button";
-  import { Search } from "@rilldata/web-common/components/search";
+  import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
+  import type { FilterGroup } from "@rilldata/web-common/components/table-toolbar/types";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { Plus } from "lucide-svelte";
@@ -107,6 +107,30 @@
 
   const currentUser = createAdminServiceGetCurrentUser();
   $: billingContactUser = getOrganizationBillingContactUser(organization);
+
+  $: filterGroups = [
+    {
+      label: "User type",
+      key: "type",
+      options: [
+        { value: "all", label: "All" },
+        { value: "pending", label: "Pending" },
+      ],
+      selected: filterSelection,
+      defaultValue: "all",
+      multiSelect: false,
+    },
+  ] satisfies FilterGroup[];
+
+  function handleFilterChange(key: string, selected: string | string[]) {
+    if (key !== "type" || Array.isArray(selected)) return;
+    filterSelection = selected as typeof filterSelection;
+  }
+
+  function clearFilters() {
+    filterSelection = "all";
+    searchText = "";
+  }
 </script>
 
 <div class="flex flex-col w-full">
@@ -123,28 +147,18 @@
     </div>
   {:else if $orgMemberUsersInfiniteQuery.isSuccess && $orgInvitesInfiniteQuery.isSuccess}
     <div class="flex flex-col">
-      <div class="flex flex-row gap-x-4 h-9">
-        <Search
-          placeholder="Search"
-          bind:value={searchText}
-          large
-          autofocus={false}
-          showBorderOnFocus={false}
-        />
-        <OrgUsersFilters
-          bind:filterSelection
-          showMembers={false}
-          showRoleFilter={false}
-        />
-        <Button
-          type="primary"
-          large
-          onClick={() => (isAddGuestsDialogOpen = true)}
-        >
+      <TableToolbar
+        bind:searchText
+        {filterGroups}
+        onFilterChange={handleFilterChange}
+        onClearAllFilters={clearFilters}
+        showSort={false}
+      >
+        <Button type="primary" onClick={() => (isAddGuestsDialogOpen = true)}>
           <Plus size="16px" />
           <span>Add guest</span>
         </Button>
-      </div>
+      </TableToolbar>
       <div class="mt-6">
         <OrgUsersTable
           {organization}
