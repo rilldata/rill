@@ -31,6 +31,7 @@
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
   import {
     UNTAGGED_KEY,
+    UNTAGGED_LABEL,
     getPrimaryTag,
     getResourceTags,
     useDashboards,
@@ -203,7 +204,7 @@
         buildDashboardSubOption(r, UNTAGGED_KEY),
       );
       map.set(UNTAGGED_KEY, {
-        label: UNTAGGED_KEY,
+        label: UNTAGGED_LABEL,
         href: `/${organization}/${project}?tags=${encodeURIComponent(UNTAGGED_KEY)}`,
         subOptions: new Map(subEntries),
       });

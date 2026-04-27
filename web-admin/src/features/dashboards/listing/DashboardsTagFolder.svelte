@@ -3,6 +3,7 @@
   import CaretRightFilledIcon from "@rilldata/web-common/components/icons/CaretRightFilledIcon.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
+  import { UNTAGGED_KEY, UNTAGGED_LABEL } from "./selectors";
 
   export let tag: string;
   export let resources: V1Resource[];
@@ -13,6 +14,7 @@
   let open = true;
 
   $: count = resources.length;
+  $: tagLabel = tag === UNTAGGED_KEY ? UNTAGGED_LABEL : tag;
 </script>
 
 <div>
@@ -26,7 +28,7 @@
     {:else}
       <CaretRightFilledIcon size="12px" />
     {/if}
-    <span class="text-sm font-semibold text-fg-secondary">{tag}</span>
+    <span class="text-sm font-semibold text-fg-secondary">{tagLabel}</span>
     <span class="text-xs text-fg-tertiary ml-1">({count})</span>
   </button>
 
