@@ -139,7 +139,7 @@
   data={processedData}
   {columnVisibility}
   kind="report"
-  isFiltered={searchText !== ""}
+  isFiltered={searchText !== "" || selectedResults.length > 0}
 >
   <TableToolbar
     slot="toolbar"

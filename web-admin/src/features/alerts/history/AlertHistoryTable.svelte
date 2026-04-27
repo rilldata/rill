@@ -3,18 +3,7 @@
   import NoAlertRunsYet from "@rilldata/web-admin/features/alerts/history/NoAlertRunsYet.svelte";
   import { useAlert } from "@rilldata/web-admin/features/alerts/selectors";
   import ResourceList from "@rilldata/web-common/features/resources/ResourceList.svelte";
-  import {
-    applyTableFilters,
-    TableToolbar,
-  } from "@rilldata/web-common/components/table-toolbar";
-  import type {
-    FilterGroup,
-    SortDirection,
-  } from "@rilldata/web-common/components/table-toolbar/types";
-  import {
-    V1AssertionStatus,
-    type V1AlertExecution,
-  } from "@rilldata/web-common/runtime-client";
+  import { type V1AlertExecution } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { ColumnDef } from "tanstack-table-8-svelte-5";
   import { renderComponent } from "tanstack-table-8-svelte-5";
@@ -25,59 +14,11 @@
 
   $: alertQuery = useAlert(runtimeClient, alert);
 
-  let selectedResults: string[] = [];
-  let sortDirection: SortDirection = "newest";
-
   $: history = $alertQuery.data?.resource?.alert?.state?.executionHistory ?? [];
-
-  function getResult(e: V1AlertExecution): "ok" | "error" | "none" {
-    const status = e.result?.status;
-    if (
-      status === V1AssertionStatus.ASSERTION_STATUS_PASS ||
-      status === V1AssertionStatus.ASSERTION_STATUS_FAIL
-    )
-      return "ok";
-    if (status === V1AssertionStatus.ASSERTION_STATUS_ERROR) return "error";
-    return "none";
-  }
-
-  $: processedHistory = applyTableFilters({
-    data: history,
-    filterPredicates: [
-      (e) =>
-        selectedResults.length === 0 || selectedResults.includes(getResult(e)),
-    ],
-    sortDirection,
-    getSortKey: (e) => e.executionTime,
-  });
-
-  $: filterGroups = [
-    {
-      label: "Result",
-      key: "result",
-      options: [
-        { value: "ok", label: "OK" },
-        { value: "error", label: "Error" },
-      ],
-      selected: selectedResults,
-      defaultValue: [],
-      multiSelect: true,
-    },
-  ] satisfies FilterGroup[];
-
-  function handleFilterChange(key: string, selected: string | string[]) {
-    if (key !== "result") return;
-    selectedResults = Array.isArray(selected) ? selected : [selected];
-  }
-
-  function clearFilters() {
-    selectedResults = [];
-  }
 
   /**
    * Table column definitions.
-   * - "composite": Renders all dashboard data in a single cell.
-   * - Others: Used for sorting and filtering but not displayed.
+   * - "composite": Renders all execution data in a single cell.
    */
   const columns: ColumnDef<V1AlertExecution>[] = [
     {
@@ -112,17 +53,9 @@
     <ResourceList
       kind="alert"
       {columns}
-      data={processedHistory}
+      data={history}
+      toolbar={false}
       fixedRowHeight={false}
-    >
-      <TableToolbar
-        slot="toolbar"
-        showSearch={false}
-        {filterGroups}
-        onFilterChange={handleFilterChange}
-        onClearAllFilters={clearFilters}
-        bind:sortDirection
-      />
-    </ResourceList>
+    />
   {/if}
 </div>
