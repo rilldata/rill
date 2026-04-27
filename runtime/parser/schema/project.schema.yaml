@@ -47,6 +47,7 @@ definitions:
 
       ### _OLAP Engines_
       - [**ClickHouse**](#clickhouse) - ClickHouse analytical database
+      - [**Databricks**](#databricks) - Databricks SQL warehouse
       - [**Druid**](#druid) - Apache Druid
       - [**DuckDB**](#duckdb) - Embedded DuckDB engine (default)
       - [**External DuckDB**](#external-duckdb) - External DuckDB database
@@ -57,6 +58,7 @@ definitions:
       ### _Data Warehouses_
       - [**Athena**](#athena) - Amazon Athena
       - [**BigQuery**](#bigquery) - Google BigQuery
+      - [**Databricks**](#databricks) - Databricks SQL warehouse
       - [**Redshift**](#redshift) - Amazon Redshift
       - [**Snowflake**](#snowflake) - Snowflake data warehouse
 
@@ -313,6 +315,53 @@ definitions:
               cluster: "mycluster"                             # Cluster name
           required:
             - driver
+        - type: object
+          title: databricks
+          properties:
+            driver:
+              type: string
+              description: Refers to the driver type and must be driver `databricks`
+              const: databricks
+            host:
+              type: string
+              description: Host where the Databricks instance is running
+            http_path:
+              type: string
+              description: HTTP path sets up the endpoint to the warehouse
+            token:
+              type: string
+              description: Token sets up the Personal Access Token
+            catalog: 
+              type: string
+              description: Default catalog name. Optional.
+            schema:
+              type: string
+              description: Default schema name. Optional.
+            dsn:
+              type: string
+              description: |
+                DSN (Data Source Name) for the Databricks connection.
+
+                This is intended for **advanced configuration** where you want to specify
+                properties that are not explicitly defined above.  
+                It can only be used when the other connection fields (host, http_path, token, catalog, schema) are **not used**.
+                Refer to https://github.com/databricks/databricks-sql-go for the full list of supported DSN parameters and their formats.
+            log_queries:
+              type: boolean
+              description: Controls whether to log raw SQL queries
+          examples:
+            - # Example: Databricks connector configuration
+              type: connector                                  # Must be `connector` (required)
+              driver: databricks                               # Must be `databricks` _(required)_
+
+              host: "my-databricks-instance.cloud.databricks.com"  # Hostname of the Databricks instance
+              http_path: "/sql/1.0/endpoints/1234567890abcdef"    # HTTP path for the Databricks SQL warehouse endpoint
+              token: "{{ .env.DATABRICKS_TOKEN }}"                 # Personal Access Token for authentication
+              catalog: "my_catalog"                                # Default catalog name (optional)
+              schema: "my_schema"                                  # Default schema name (optional)
+          required:
+            - driver
+            - type
         # Note: Delta is not a standalone connector. It uses DuckDB's delta_scan() function.
         # See /developers/build/connectors/data-source/delta for configuration details.
         - type: object
@@ -1222,6 +1271,7 @@ definitions:
               - snowflake
               - bigquery
               - duckdb
+              - databricks
           uri:
             type: string
             description: |
@@ -2201,6 +2251,36 @@ definitions:
                 measures:
                   description: Specifies which measures to apply the annotation to. Applies to all measures if not specified
                   $ref: '#/definitions/field_selector_properties'
+          rollups:
+            type: array
+            description: Pre-aggregated rollup tables that can be used to accelerate queries. When a query's dimensions, measures, time grain, and time range match a rollup, the query is automatically routed to the rollup table instead of the base table.
+            items:
+              type: object
+              properties:
+                model:
+                  type: string
+                  description: Refers to the model or table powering the rollup (required)
+                database:
+                  type: string
+                  description: Refers to the database to use in the OLAP engine
+                database_schema:
+                  type: string
+                  description: Refers to the schema to use in the OLAP engine
+                time_grain:
+                  type: string
+                  description: 'The time grain of the rollup (required). Valid values are: millisecond, second, minute, hour, day, week, month, quarter, year'
+                time_zone:
+                  type: string
+                  description: IANA timezone of the rollup table (e.g. America/New_York). For day+ grains, queries are only routed to the rollup if the query timezone matches.
+                dimensions:
+                  $ref: '#/definitions/field_selector_properties'
+                  description: Optional field selectors for dimensions to include in the rollup from the base metrics view. If not specified, all dimensions are included.
+                measures:
+                  $ref: '#/definitions/field_selector_properties'
+                  description: Optional field selectors for measures to include in the rollup from the base metrics view. If not specified, all measures are included.
+              required:
+                - model
+                - time_grain
           security:
               $ref: '#/definitions/security_policy_properties'
               description: Defines a security policy for the dashboard

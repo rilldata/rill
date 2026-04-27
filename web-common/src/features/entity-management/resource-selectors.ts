@@ -183,7 +183,7 @@ export function useResource<T = V1Resource>(
     {
       query: {
         select: (data) => data?.resource as T,
-        enabled: !!client.instanceId && !!name && !!kind,
+        enabled: !!client?.instanceId && !!name && !!kind,
         ...queryOptions,
       },
     },
@@ -217,7 +217,7 @@ export function useResourceV2<T = V1Resource>(
     {
       query: {
         select: (data) => data?.resource as T,
-        enabled: !!client.instanceId && !!name && !!kind,
+        enabled: !!client?.instanceId && !!name && !!kind,
         ...queryOptions,
       },
     },

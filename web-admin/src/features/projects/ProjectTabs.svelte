@@ -93,7 +93,7 @@
     {/each}
   </nav>
 
-  {#if $width && $position}
+  {#if $width}
     <span style:width="{$width}px" style:transform="translateX({$position}px) "
     ></span>
   {/if}

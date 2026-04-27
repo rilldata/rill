@@ -121,7 +121,7 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 		var retrieveUntilMessageID string
 		if session.OwnerID != "" && session.OwnerID != opts.Claims.UserID && !opts.Claims.SkipChecks {
 			if session.SharedUntilMessageID == "" {
-				return nil, fmt.Errorf("access denied to session %q", session.ID)
+				return nil, fmt.Errorf("%w: access denied to session %q", runtime.ErrForbidden, session.ID)
 			}
 			retrieveUntilMessageID = session.SharedUntilMessageID
 		}

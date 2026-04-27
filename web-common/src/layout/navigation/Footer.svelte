@@ -12,10 +12,8 @@
 
   const metadataQuery = createLocalServiceGetMetadata();
 
-  $: ({ data } = $metadataQuery);
-
-  $: version = data?.version;
-  $: commitHash = data?.buildCommit;
+  $: version = $metadataQuery?.data?.version ?? null;
+  $: commitHash = $metadataQuery?.data?.buildCommit ?? null;
 
   const lineItems = [
     {

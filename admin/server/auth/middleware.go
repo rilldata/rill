@@ -9,8 +9,8 @@ import (
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
-	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -117,7 +117,7 @@ func (a *Authenticator) httpMiddleware(next http.Handler, lenient bool) http.Han
 			if err != nil {
 				// In lenient mode, we set anonClaims.
 				if lenient {
-					newCtx := context.WithValue(r.Context(), claimsContextKey{}, anonClaims{})
+					newCtx := WithClaims(r.Context(), anonClaims{})
 					next.ServeHTTP(w, r.WithContext(newCtx))
 					return
 				}
@@ -138,7 +138,7 @@ func (a *Authenticator) httpMiddleware(next http.Handler, lenient bool) http.Han
 			if err != nil {
 				// In lenient mode, we set anonClaims.
 				if lenient {
-					newCtx := context.WithValue(r.Context(), claimsContextKey{}, anonClaims{})
+					newCtx := WithClaims(r.Context(), anonClaims{})
 					next.ServeHTTP(w, r.WithContext(newCtx))
 					return
 				}
@@ -152,7 +152,7 @@ func (a *Authenticator) httpMiddleware(next http.Handler, lenient bool) http.Han
 		}
 
 		// No token was found. Set anonClaims.
-		newCtx := context.WithValue(r.Context(), claimsContextKey{}, anonClaims{})
+		newCtx := WithClaims(r.Context(), anonClaims{})
 		next.ServeHTTP(w, r.WithContext(newCtx))
 	})
 }
@@ -160,7 +160,7 @@ func (a *Authenticator) httpMiddleware(next http.Handler, lenient bool) http.Han
 func (a *Authenticator) parseClaimsFromBearer(ctx context.Context, authorizationHeader string) (context.Context, error) {
 	// If authorization header is not set, we set anonClaims.
 	if authorizationHeader == "" {
-		ctx = context.WithValue(ctx, claimsContextKey{}, anonClaims{})
+		ctx = WithClaims(ctx, anonClaims{})
 		return ctx, nil
 	}
 
@@ -185,12 +185,11 @@ func (a *Authenticator) parseClaimsFromToken(ctx context.Context, token string) 
 
 	// Set claims
 	claims := newAuthTokenClaims(validated, a.admin)
-	ctx = context.WithValue(ctx, claimsContextKey{}, claims)
+	ctx = WithClaims(ctx, claims)
 
-	// Set user ID in span
+	// Set user ID in span and request log
 	if claims.OwnerType() == OwnerTypeUser {
-		span := trace.SpanFromContext(ctx)
-		span.SetAttributes(semconv.EnduserID(claims.OwnerID()))
+		observability.AddRequestAttributes(ctx, semconv.EnduserID(claims.OwnerID()))
 	}
 
 	return ctx, nil

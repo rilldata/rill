@@ -3401,7 +3401,43 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	// no validation rules for CacheKeyTtlSeconds
 
+	// no validation rules for CacheTimestampsTtlSeconds
+
 	// no validation rules for QueryAttributes
+
+	for idx, item := range m.GetRollups() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewSpecValidationError{
+						field:  fmt.Sprintf("Rollups[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewSpecValidationError{
+						field:  fmt.Sprintf("Rollups[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewSpecValidationError{
+					field:  fmt.Sprintf("Rollups[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	if m.CacheEnabled != nil {
 		// no validation rules for CacheEnabled
@@ -5557,10 +5593,6 @@ func (m *ExplorePreset) validate(all bool) error {
 
 	if m.ChartDynamicYAxis != nil {
 		// no validation rules for ChartDynamicYAxis
-	}
-
-	if m.ChartForceLine != nil {
-		// no validation rules for ChartForceLine
 	}
 
 	if len(errors) > 0 {
@@ -13481,3 +13513,175 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = MetricsViewSpec_AnnotationValidationError{}
+
+// Validate checks the field values on MetricsViewSpec_Rollup with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *MetricsViewSpec_Rollup) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MetricsViewSpec_Rollup with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// MetricsViewSpec_RollupMultiError, or nil if none found.
+func (m *MetricsViewSpec_Rollup) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MetricsViewSpec_Rollup) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Database
+
+	// no validation rules for DatabaseSchema
+
+	// no validation rules for Table
+
+	// no validation rules for Model
+
+	// no validation rules for TimeGrain
+
+	// no validation rules for TimeZone
+
+	if all {
+		switch v := interface{}(m.GetDimensionsSelector()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewSpec_RollupValidationError{
+					field:  "DimensionsSelector",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewSpec_RollupValidationError{
+					field:  "DimensionsSelector",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDimensionsSelector()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewSpec_RollupValidationError{
+				field:  "DimensionsSelector",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetMeasuresSelector()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewSpec_RollupValidationError{
+					field:  "MeasuresSelector",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewSpec_RollupValidationError{
+					field:  "MeasuresSelector",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetMeasuresSelector()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewSpec_RollupValidationError{
+				field:  "MeasuresSelector",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return MetricsViewSpec_RollupMultiError(errors)
+	}
+
+	return nil
+}
+
+// MetricsViewSpec_RollupMultiError is an error wrapping multiple validation
+// errors returned by MetricsViewSpec_Rollup.ValidateAll() if the designated
+// constraints aren't met.
+type MetricsViewSpec_RollupMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MetricsViewSpec_RollupMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MetricsViewSpec_RollupMultiError) AllErrors() []error { return m }
+
+// MetricsViewSpec_RollupValidationError is the validation error returned by
+// MetricsViewSpec_Rollup.Validate if the designated constraints aren't met.
+type MetricsViewSpec_RollupValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MetricsViewSpec_RollupValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MetricsViewSpec_RollupValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MetricsViewSpec_RollupValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MetricsViewSpec_RollupValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MetricsViewSpec_RollupValidationError) ErrorName() string {
+	return "MetricsViewSpec_RollupValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MetricsViewSpec_RollupValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMetricsViewSpec_Rollup.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MetricsViewSpec_RollupValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MetricsViewSpec_RollupValidationError{}

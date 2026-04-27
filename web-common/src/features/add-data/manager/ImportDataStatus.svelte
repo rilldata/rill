@@ -21,6 +21,10 @@
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
+  import {
+    getFileHref,
+    withEditorPrefix,
+  } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
   import { runImportSteps } from "@rilldata/web-common/features/add-data/manager/steps/import.ts";
   import type { AddDataStateManager } from "@rilldata/web-common/features/add-data/manager/AddDataStateManager.svelte.ts";
@@ -35,7 +39,9 @@
   const runtimeClient = useRuntimeClient();
 
   let importStep = ImportDataStep.Init;
-  $: currentFileRoute = $previewModeStore ? "/dashboards" : "/";
+  $: currentFileRoute = $previewModeStore
+    ? withEditorPrefix("/dashboards")
+    : withEditorPrefix("/");
   $: sourceName = importAddDataStep.config.importTo.modelName ?? "";
   $: isDone = importStep === ImportDataStep.Done;
   let error: string | null = null;
@@ -61,9 +67,9 @@
           importStep = step;
           if (currentFilePath) {
             if ($previewModeStore) {
-              currentFileRoute = "/dashboards";
+              currentFileRoute = withEditorPrefix("/dashboards");
             } else {
-              currentFileRoute = `/files${addLeadingSlash(currentFilePath)}`;
+              currentFileRoute = getFileHref(addLeadingSlash(currentFilePath));
             }
           }
         },

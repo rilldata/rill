@@ -4,6 +4,7 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { resourceShorthandMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
@@ -69,7 +70,7 @@
         addDevLimit,
       );
 
-      await goto(`/files${newModelPath}`);
+      await navigateToFile(newModelPath);
 
       await behaviourEvent?.fireNavigationEvent(
         newModelName,

@@ -58,6 +58,12 @@ export type JSONSchemaField = {
   "x-file-accept"?: string;
   /** How to encode file content: base64, json (parse+stringify), or raw (pass-through). */
   "x-file-encoding"?: "base64" | "json" | "raw";
+  /** Maximum file size in bytes. */
+  "x-file-size-limit"?: number;
+  /** If true, the file size limit is only a soft limit and does not prevent file upload. */
+  "x-file-size-soft-limit"?: boolean;
+  /** Warning message to display when file size exceeds soft limit. */
+  "x-file-size-limit-warning-message"?: string;
   /** Extract values from parsed file content into other form fields. Maps form field key to JSON property name. */
   "x-file-extract"?: Record<string, string>;
   /** Field is read-only and shown for informational purposes only. */
@@ -66,8 +72,17 @@ export type JSONSchemaField = {
   "x-docs-url"?: string;
   /** Field is an advanced setting, hidden by default behind an expandable section. */
   "x-advanced"?: boolean;
-  /** For boolean fields: the YAML value to emit when the toggle is checked (true). When unchecked, the field is omitted. */
-  "x-yaml-value"?: string | number | boolean;
+  /**
+   * For boolean fields: the YAML value to emit.
+   * - If a scalar, it is emitted only when the toggle is checked (true); unchecked fields are omitted.
+   * - If an object with `true` and/or `false` keys, the matching value is emitted for each toggle state,
+   *   so both states round-trip to YAML.
+   */
+  "x-yaml-value"?:
+    | string
+    | number
+    | boolean
+    | { true?: string | number | boolean; false?: string | number | boolean };
   /** Field controls UI behavior only and is excluded from generated YAML. */
   "x-ui-only"?: boolean;
   /**
@@ -90,6 +105,19 @@ export type JSONSchemaField = {
    * When set, this name is used instead of computing it from driver + property key.
    */
   "x-env-var-name"?: string;
+  /**
+   * Name of a registered custom validator to run against this field's value.
+   * The validator returns a list of error messages; empty list means valid.
+   * Runs in addition to JSON Schema validation, after `pruneEmptyFields`.
+   */
+  "x-custom-validator"?: string;
+  /**
+   * Hide the field from the rendered form without removing it from the schema.
+   * The field's value still participates in conditional logic (x-visible-if,
+   * allOf/if/then) and tab-group filtering, so downstream code that depends on
+   * `connection_mode` / `auth_method` etc. continues to work.
+   */
+  "x-hidden"?: boolean;
   // Allow custom keywords such as errorMessage or future x-extensions.
   [key: string]: unknown;
 };
