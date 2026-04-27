@@ -284,7 +284,7 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 
 	// Wrap mux with final middleware and return
 	handler := s.authenticator.CookieToAuthHeader(mux) // Convert auth cookies to Authorization headers
-	handler = middleware.TraceMiddleware(handler)       // OpenTelemetry tracing
+	handler = middleware.TraceMiddleware(handler)      // OpenTelemetry tracing
 	handler = middleware.CacheControlMiddleware(handler)
 	return handler, nil
 }
