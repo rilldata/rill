@@ -2,6 +2,7 @@
   import ComponentHeader from "@rilldata/web-common/features/canvas/ComponentHeader.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import { Chart } from "@rilldata/web-common/features/components/charts";
+  import ComponentAccessDenied from "@rilldata/web-common/features/components/ComponentAccessDenied.svelte";
   import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -39,6 +40,7 @@
 
   $: store = getCanvasStore(canvasName, instanceId);
   $: ({
+    canvasEntity,
     canvasEntity: {
       metricsView,
       metricsView: { getMeasuresForMetricView },
@@ -55,6 +57,8 @@
     time_filters,
     dimension_filters,
   } = chartSpec);
+
+  $: isAccessDenied = canvasEntity.isMetricsViewAccessDenied(metrics_view);
 
   $: schemaStore = validateChartSchema(metricsView, chartSpec);
 
@@ -88,6 +92,8 @@
       <div class="flex items-center justify-center h-full w-full">
         <Spinner status={EntityStatus.Running} size="20px" />
       </div>
+    {:else if error && $isAccessDenied}
+      <ComponentAccessDenied />
     {:else if error}
       <ComponentError error={error.message} />
     {:else}
@@ -110,6 +116,8 @@
         theme={currentTheme}
       />
     {/if}
+  {:else if $isAccessDenied}
+    <ComponentAccessDenied />
   {:else}
     <ComponentError error={schema.error} />
   {/if}

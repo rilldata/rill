@@ -2,6 +2,7 @@
   import type { LeaderboardComponent } from "@rilldata/web-common/features/canvas/components/leaderboard";
   import { validateLeaderboardSchema } from "@rilldata/web-common/features/canvas/components/leaderboard/selector";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import ComponentAccessDenied from "@rilldata/web-common/features/components/ComponentAccessDenied.svelte";
   import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
   import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
   import {
@@ -45,6 +46,7 @@
 
   $: store = getCanvasStore(canvasName, instanceId);
   $: ({
+    canvasEntity,
     canvasEntity: {
       metricsView: {
         getMetricsViewFromName,
@@ -64,6 +66,8 @@
     dimensionNames = leaderboardProperties.dimensions ?? [];
     numRows = leaderboardProperties.num_rows ?? 7;
   }
+
+  $: isAccessDenied = canvasEntity.isMetricsViewAccessDenied(metricsViewName);
 
   $: metricsViewQuery = getMetricsViewFromName(metricsViewName);
 
@@ -239,6 +243,8 @@
       {/each}
     </div>
   </div>
+{:else if $isAccessDenied}
+  <ComponentAccessDenied />
 {:else}
   <ComponentError error={schema.error} />
 {/if}

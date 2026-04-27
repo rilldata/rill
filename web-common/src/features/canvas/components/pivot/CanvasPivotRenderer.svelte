@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ComponentAccessDenied from "@rilldata/web-common/features/components/ComponentAccessDenied.svelte";
   import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import PivotEmpty from "@rilldata/web-common/features/dashboards/pivot/PivotEmpty.svelte";
@@ -20,6 +21,7 @@
   export let pivotConfig: Readable<PivotDataStoreConfig> | undefined;
   export let pivotState: Writable<PivotState>;
   export let hasHeader = false;
+  export let isAccessDenied = false;
 
   $: pivotColumns = splitPivotChips($pivotState.columns);
 
@@ -33,7 +35,9 @@
   class:p-4={hasHeader}
   class:pt-1={hasHeader}
 >
-  {#if !schema.isValid}
+  {#if !schema.isValid && isAccessDenied}
+    <ComponentAccessDenied />
+  {:else if !schema.isValid}
     <ComponentError error={schema.error} />
   {:else if pivotDataStore && $pivotDataStore && pivotConfig && $pivotConfig}
     {#if $pivotDataStore?.error?.length}
