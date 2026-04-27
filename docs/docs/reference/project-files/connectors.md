@@ -321,7 +321,7 @@ ssl: true # Enable SSL for secure connection
 cluster: "mycluster" # Cluster name
 ```
 
-## databricks`
+## databricks
 
 ### `driver`
 

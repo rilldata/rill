@@ -116,6 +116,9 @@ func (c *configProperties) validate() error {
 	if c.DSN != "" && len(set) > 0 {
 		return fmt.Errorf("databricks: only one of 'dsn' or [%s] can be set", strings.Join(set, ", "))
 	}
+	if c.DSN == "" && (c.Host == "" || c.HTTPPath == "" || c.Token == "") {
+		return errors.New("databricks: either 'dsn' or 'host', 'http_path', and 'token' are required")
+	}
 	return nil
 }
 

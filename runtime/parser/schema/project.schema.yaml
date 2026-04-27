@@ -316,7 +316,7 @@ definitions:
           required:
             - driver
         - type: object
-          title: databricks`
+          title: databricks
           properties:
             driver:
               type: string
