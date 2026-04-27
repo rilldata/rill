@@ -1,4 +1,5 @@
 import type { View } from "svelte-vega";
+import { discoverTemporalBrushSignal } from "./brush-builder";
 
 /**
  * Programmatically sets the hover highlight on a Vega chart view.
@@ -67,6 +68,58 @@ export function setExternalHover(
 export function clearExternalHover(view: View): void {
   view.signal("hover_tuple", null);
   void view.runAsync();
+}
+
+/**
+ * Programmatically sets the brush selection on a Vega chart view.
+ * Used to synchronize brush across sibling TDD charts.
+ */
+export function setExternalBrush(
+  view: View,
+  startMs: number,
+  endMs: number,
+  brushTemporalField?: string,
+): void {
+  const signalName = discoverTemporalBrushSignal(view, brushTemporalField);
+  if (!signalName) return;
+
+  try {
+    const current = view.signal(signalName);
+    if (
+      Array.isArray(current) &&
+      current[0] === startMs &&
+      current[1] === endMs
+    ) {
+      return;
+    }
+  } catch {
+    // signal may not exist yet
+  }
+
+  try {
+    view.signal(signalName, [startMs, endMs]);
+    void view.runAsync();
+  } catch {
+    // view may have been finalized
+  }
+}
+
+/**
+ * Clears the brush selection on a Vega chart view.
+ */
+export function clearExternalBrush(
+  view: View,
+  brushTemporalField?: string,
+): void {
+  const signalName = discoverTemporalBrushSignal(view, brushTemporalField);
+  if (!signalName) return;
+
+  try {
+    view.signal(signalName, null);
+    void view.runAsync();
+  } catch {
+    // view may have been finalized
+  }
 }
 
 function isSignalEqual(

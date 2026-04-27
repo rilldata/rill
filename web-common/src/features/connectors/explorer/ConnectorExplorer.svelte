@@ -14,7 +14,7 @@
   const client = useRuntimeClient();
 
   $: connectors = getAnalyzedConnectors(client, olapOnly);
-  $: ({ data, error } = $connectors);
+  $: ({ data, error, isLoading } = $connectors);
 
   // When defaultExpanded is set, pre-seed the store so only that connector
   // starts expanded and others start collapsed.
@@ -54,6 +54,15 @@
         {/each}
       </ol>
     {/if}
+  {:else if isLoading}
+    <div class="flex flex-col gap-y-1.5 w-full px-2 py-2">
+      {#each [0.6, 0.75, 0.5] as width}
+        <div
+          class="h-5 bg-gray-200 animate-pulse rounded"
+          style:width="{width * 100}%"
+        ></div>
+      {/each}
+    </div>
   {/if}
 </div>
 

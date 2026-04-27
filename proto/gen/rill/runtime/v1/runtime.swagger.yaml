@@ -5190,8 +5190,6 @@ definitions:
       chartDynamicYAxis:
         type: boolean
         title: Chart display settings (frontend-only; persisted in URL state)
-      chartForceLine:
-        type: boolean
   v1ExploreSortType:
     type: string
     enum:
