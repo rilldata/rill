@@ -247,7 +247,7 @@
           <span class="info-value">
             <a
               href="/{organization}/{project}/-/status/tables"
-              class="repo-link"
+              class="data-size-link"
             >
               {formatMemorySize(dataSizeBytes)}
             </a>
@@ -282,5 +282,10 @@
   }
   .repo-link:hover {
     @apply underline;
+  }
+  .data-size-link {
+    @apply no-underline;
+    color: inherit;
+    font: inherit;
   }
 </style>

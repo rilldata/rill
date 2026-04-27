@@ -1,3 +1,11 @@
+export type PlanTier =
+  | "trial"
+  | "free"
+  | "pro"
+  | "team"
+  | "managed"
+  | "enterprise";
+
 /**
  * 1. base  - When user chooses to upgrade from a trial plan.
  * 2. size  - When user hits the size limit and wants to upgrade.

@@ -1,36 +1,52 @@
 <!-- ORG SETTINGS -->
 
 <script lang="ts">
+  import type { Snippet } from "svelte";
   import { page } from "$app/stores";
+  import { V1BillingPlanType } from "@rilldata/web-admin/client";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
-  import { isEnterprisePlan } from "@rilldata/web-admin/features/billing/plans/utils";
+  import {
+    isEnterprisePlan,
+    isTeamPlan,
+  } from "@rilldata/web-admin/features/billing/plans/utils";
   import type { PageData } from "./$types";
   import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
 
-  export let data: PageData;
+  let {
+    data,
+    children,
+  }: {
+    data: PageData;
+    children: Snippet;
+  } = $props();
 
-  $: ({ subscription, neverSubscribed, billingPortalUrl } = data);
+  let organization = $derived($page.params.organization);
+  let basePage = $derived(`/${organization}/-/settings`);
 
-  $: organization = $page.params.organization;
-  $: basePage = `/${organization}/-/settings`;
-  $: onEnterprisePlan =
-    subscription?.plan?.name && isEnterprisePlan(subscription.plan.name);
-  $: hideBillingSettings = neverSubscribed;
-  $: hideUsageSettings = onEnterprisePlan || !billingPortalUrl;
+  let planType = $derived(data.subscription?.plan?.planType);
+  let planName = $derived(data.subscription?.plan?.name ?? "");
+  let isEnterprise = $derived(
+    planType === V1BillingPlanType.BILLING_PLAN_TYPE_ENTERPRISE ||
+      isEnterprisePlan(planName),
+  );
+  let isTeam = $derived(
+    planType === V1BillingPlanType.BILLING_PLAN_TYPE_TEAM ||
+      isTeamPlan(planName),
+  );
 
-  $: navItems = [
+  let navItems = $derived([
     { label: "General", route: "", hasPermission: true },
     {
       label: "Billing",
       route: "/billing",
-      hasPermission: !hideBillingSettings,
+      hasPermission: true,
     },
     {
       label: "Usage",
-      route: "/usage",
-      hasPermission: !hideBillingSettings && !hideUsageSettings,
+      route: "/billing/usage",
+      hasPermission: !isEnterprise && !isTeam,
     },
-  ];
+  ]);
 </script>
 
 <ContentContainer title="Organization settings" maxWidth={1100}>
@@ -42,7 +58,7 @@
       minWidth="180px"
     />
     <div class="flex flex-col gap-y-6 w-full">
-      <slot />
+      {@render children()}
     </div>
   </div>
 </ContentContainer>

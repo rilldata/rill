@@ -28,10 +28,12 @@
     organization,
     subscription,
     plan,
+    billingPortalUrl,
   }: {
     organization: string;
     subscription: V1Subscription;
     plan: V1BillingPlan;
+    billingPortalUrl: string | undefined;
   } = $props();
 
   let planCanceller = $derived(createAdminServiceCancelBillingSubscription());
@@ -63,11 +65,16 @@
   <div>
     Next billing cycle will start on
     <b>{getNextBillingCycleDate(subscription.currentBillingCycleEndDate)}</b>.
-    <a
-      href="https://www.rilldata.com/pricing"
-      target="_blank"
-      rel="noreferrer noopener">See pricing details -></a
-    >
+    {#if billingPortalUrl}
+      <div>
+        <a
+          href={billingPortalUrl}
+          target="_blank"
+          rel="noreferrer noopener"
+          class="invoice-link">View Invoice</a
+        >
+      </div>
+    {/if}
     <PlanQuotas {organization} />
   </div>
   {#snippet contact()}
@@ -115,3 +122,12 @@
     </AlertDialog>
   {/snippet}
 </SettingsContainer>
+
+<style lang="postcss">
+  .invoice-link {
+    @apply text-sm text-primary-500 no-underline mt-2 inline-block;
+  }
+  .invoice-link:hover {
+    @apply text-primary-600 underline;
+  }
+</style>
