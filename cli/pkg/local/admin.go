@@ -27,14 +27,14 @@ var (
 	_ drivers.Driver       = &localAdminService{}
 )
 
-var s = &localAdminService{}
-
 func initLocalAdminService(ch *cmdutil.Helper, root, environment, frontendURL string) {
+	s := &localAdminService{
+		ch:          ch,
+		root:        root,
+		environment: environment,
+		frontendURL: frontendURL,
+	}
 	drivers.Register("local_admin", s)
-	s.ch = ch
-	s.root = root
-	s.environment = environment
-	s.frontendURL = frontendURL
 }
 
 // GetAlertMetadata implements drivers.AdminService.
