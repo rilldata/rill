@@ -155,7 +155,7 @@
       </div>
     </SelectPrimitive.Trigger>
 
-    <Select.Content class="w-full" sameWidth>
+    <Select.Content sameWidth>
       {#each options as option (option.value)}
         {@const Icon = getIcon(option.value)}
         {@const colors = getColors(option.value)}

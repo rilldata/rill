@@ -194,9 +194,17 @@ export function applyDuckLakeFormTransform(
   opts?: ComposeDuckLakeAttachOptions,
 ): Record<string, unknown> {
   if (schema !== ducklakeSchema) return values;
-  if (values.connection_mode !== "parameters") return values;
-  const attach = composeDuckLakeAttach(values, opts);
-  return { ...values, attach };
+  if (values.connection_mode === "parameters") {
+    const attach = composeDuckLakeAttach(values, opts);
+    return { ...values, attach };
+  }
+  // SQL mode: keep the user-typed value visible in the textarea, but strip
+  // any `ATTACH ... ;` wrapper before it flows downstream into YAML.
+  if (typeof values.attach === "string") {
+    const cleaned = stripAttachKeyword(values.attach);
+    if (cleaned !== values.attach) return { ...values, attach: cleaned };
+  }
+  return values;
 }
 
 /**
@@ -339,12 +347,88 @@ export function shouldExtractDuckLakeAttachSecrets(
   return values.connection_mode !== "parameters";
 }
 
+export interface DuckLakePipelineResult {
+  /**
+   * Form values after Parameters-tab composition and SQL-tab catalog secret
+   * extraction. Use these as the source of truth for YAML emission.
+   */
+  transformedValues: Record<string, unknown>;
+  /**
+   * Catalog secrets newly extracted from a raw `attach` string. Submit paths
+   * append these to the `.env` blob; preview paths discard them.
+   */
+  extractedSecrets: Record<string, string>;
+}
+
+/**
+ * Run the full DuckLake form-value pipeline: compose Parameters fields into
+ * `attach`, route password fields through env-var refs, and extract catalog
+ * secrets from a raw ATTACH string. No-op pass-through for non-DuckLake
+ * schemas so callers can apply it unconditionally.
+ *
+ * Submit paths append `extractedSecrets` to their `.env` blob; preview paths
+ * just use `transformedValues`.
+ */
+export function applyDuckLakeFormPipeline(
+  schema: MultiStepFormSchema | null | undefined,
+  formValues: Record<string, unknown>,
+  opts: { connectorName: string; existingEnvBlob: string },
+): DuckLakePipelineResult {
+  if (schema !== ducklakeSchema) {
+    return { transformedValues: formValues, extractedSecrets: {} };
+  }
+
+  const secretRefs = buildDuckLakeSecretRefs(
+    schema,
+    opts.connectorName,
+    opts.existingEnvBlob,
+  );
+  let transformedValues = applyDuckLakeFormTransform(schema, formValues, {
+    secretRefs,
+  });
+
+  let extractedSecrets: Record<string, string> = {};
+  if (shouldExtractDuckLakeAttachSecrets(schema, transformedValues)) {
+    const rawAttach = transformedValues.attach;
+    if (typeof rawAttach === "string") {
+      const result = extractDuckLakeAttachSecrets(
+        rawAttach,
+        opts.existingEnvBlob,
+      );
+      if (Object.keys(result.extractedSecrets).length > 0) {
+        transformedValues = {
+          ...transformedValues,
+          attach: result.rewrittenAttach,
+        };
+        extractedSecrets = result.extractedSecrets;
+      }
+    }
+  }
+
+  return { transformedValues, extractedSecrets };
+}
+
 const DUCKLAKE_KNOWN_CATALOG_SCHEMES = new Set([
   "postgres",
   "mysql",
   "md",
   "sqlite",
 ]);
+
+/**
+ * Strip the optional `ATTACH [OR REPLACE] [IF NOT EXISTS]` prefix and a
+ * trailing `;` from a user-pasted ATTACH statement. Rill emits the keyword
+ * itself, so the stored form value should be just the clause body. The
+ * textarea shows whatever the user typed; the wrapper is removed only when
+ * the value flows into YAML, preview, or validation.
+ */
+export function stripAttachKeyword(value: string): string {
+  return value
+    .replace(/^\s*ATTACH\b\s*/i, "")
+    .replace(/^(?:OR\s+REPLACE\s+)?(?:IF\s+NOT\s+EXISTS\s+)?/i, "")
+    .replace(/;\s*$/, "")
+    .trim();
+}
 
 /**
  * Structural validation for the raw DuckLake ATTACH SQL.
@@ -357,16 +441,12 @@ const DUCKLAKE_KNOWN_CATALOG_SCHEMES = new Set([
  */
 export function validateDuckLakeAttach(attach: unknown): string[] {
   if (typeof attach !== "string") return [];
-  const value = attach.trim();
+  // The user may paste a full `ATTACH ... ;` statement; strip the wrapper
+  // before validating so we only check the clause body.
+  const value = stripAttachKeyword(attach);
   if (!value) return [];
 
   const errors: string[] = [];
-
-  if (/^ATTACH\b/i.test(value)) {
-    errors.push(
-      'Remove the leading "ATTACH" keyword — Rill adds it automatically.',
-    );
-  }
 
   const quoteCount = (value.match(/'/g) ?? []).length;
   if (quoteCount % 2 !== 0) {
