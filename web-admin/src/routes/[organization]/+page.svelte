@@ -1,16 +1,16 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
   import OrganizationHibernating from "@rilldata/web-admin/features/organizations/hibernating/OrganizationHibernating.svelte";
   import { areAllProjectsHibernating } from "@rilldata/web-admin/features/organizations/selectors";
   import {
     createAdminServiceGetOrganization,
     createAdminServiceListProjectsForOrganization,
   } from "../../client";
-  import OrganizationHero from "../../features/organizations/OrganizationHero.svelte";
   import ProjectCards from "../../features/projects/ProjectCards.svelte";
-  import { Button } from "@rilldata/web-common/components/button";
+  import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
+  import OrganizationHero from "@rilldata/web-admin/features/organizations/OrganizationHero.svelte";
   import { projectWelcomeEnabled } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
+  import { Button } from "@rilldata/web-common/components/button";
 
   export let data;
   $: ({ organizationPermissions } = data);
@@ -55,10 +55,8 @@
         {organizationPermissions}
       />
     {:else}
-      <div class="flex flex-col gap-y-8">
-        <OrganizationHero {title} />
-        <ProjectCards organization={orgName} />
-      </div>
+      <OrganizationHero {title} />
+      <ProjectCards organization={orgName} />
     {/if}
   {/if}
 </ContentContainer>
