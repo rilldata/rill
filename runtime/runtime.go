@@ -250,11 +250,22 @@ func (r *Runtime) UpdateInstanceConnector(ctx context.Context, instanceID, name 
 	return nil
 }
 
-func (r *Runtime) ReloadConfig(ctx context.Context, instanceID string) error {
-	if r.configReloader != nil {
-		return r.configReloader.reloadConfig(ctx, instanceID)
+type ReloadConfigSummary struct {
+	VarsCount    int
+	VarsModified bool
+}
+
+// ReloadConfig reloads the instance's configuration.
+// It returns a boolean indicating whether the config was reloaded (i.e. if the reloader is enabled).
+func (r *Runtime) ReloadConfig(ctx context.Context, instanceID string) (ReloadConfigSummary, bool, error) {
+	if r.configReloader == nil {
+		return ReloadConfigSummary{}, false, nil
 	}
-	return nil
+	varsCount, modified, err := r.configReloader.reloadConfig(ctx, instanceID)
+	if err != nil {
+		return ReloadConfigSummary{}, false, err
+	}
+	return ReloadConfigSummary{VarsCount: varsCount, VarsModified: modified}, true, nil
 }
 
 func instanceAnnotationsToAttribs(instance *drivers.Instance) []attribute.KeyValue {

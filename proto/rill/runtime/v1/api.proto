@@ -372,6 +372,16 @@ service RuntimeService {
       body: "*"
     };
   }
+
+  // Env APIs
+
+  // PushEnv pushes local environment variables to admin service
+  rpc PushEnv(PushEnvRequest) returns (PushEnvResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/env/push",
+      body: "*"
+    };
+  }
 }
 
 // Request message for RuntimeService.Ping
@@ -535,7 +545,12 @@ message ReloadConfigRequest {
 }
 
 // Response message for RuntimeService.ReloadConfig
-message ReloadConfigResponse {}
+message ReloadConfigResponse {
+  // Number of variables pulled from admin service
+  int32 variables_count = 1;
+  // Whether the .env file(s) were modified
+  bool modified = 2;
+}
 
 // **********
 // Repos
@@ -1350,3 +1365,14 @@ message GitPushRequest {
 }
 
 message GitPushResponse {}
+
+message PushEnvRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+}
+
+message PushEnvResponse {
+  // Number of variables added
+  int32 added_count = 1;
+  // Number of variables changed
+  int32 changed_count = 2;
+}

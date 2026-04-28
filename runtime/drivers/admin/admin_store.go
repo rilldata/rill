@@ -108,7 +108,7 @@ func (h *Handle) ProvisionConnector(ctx context.Context, name, driver string, ar
 	return res.Resource.Config.AsMap(), nil
 }
 
-func (h *Handle) GetDeploymentConfig(ctx context.Context) (*drivers.DeploymentConfig, error) {
+func (h *Handle) GetConfig(ctx context.Context) (*drivers.Config, error) {
 	res, err := h.admin.GetDeploymentConfig(ctx, &adminv1.GetDeploymentConfigRequest{
 		DeploymentId: "", // Will default to the deployment ID of the current access token.
 	})
@@ -116,13 +116,14 @@ func (h *Handle) GetDeploymentConfig(ctx context.Context) (*drivers.DeploymentCo
 		return nil, err
 	}
 
-	return &drivers.DeploymentConfig{
-		Variables:             res.Variables,
+	return &drivers.Config{
+		Variables:             groupVariablesByEnv(res.Variables),
 		Annotations:           res.Annotations,
 		FrontendURL:           res.FrontendUrl,
 		UpdatedOn:             res.UpdatedOn.AsTime(),
 		UsesArchive:           res.UsesArchive,
 		DuckdbConnectorConfig: res.DuckdbConnectorConfig.AsMap(),
+		Editable:              res.Editable,
 	}, nil
 }
 
@@ -151,4 +152,34 @@ func (h *Handle) ListDeployments(ctx context.Context) ([]*drivers.Deployment, er
 	}
 
 	return res, nil
+}
+
+func (h *Handle) UpdateProjectVariables(ctx context.Context, environment string, variables map[string]string) error {
+	projectResp, err := h.admin.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
+		Id: h.config.ProjectID,
+	})
+	if err != nil {
+		return err
+	}
+
+	_, err = h.admin.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
+		Org:         projectResp.Project.OrgName,
+		Project:     projectResp.Project.Name,
+		Environment: environment,
+		Variables:   variables,
+	})
+	return err
+}
+
+func groupVariablesByEnv(variables []*adminv1.ProjectVariable) map[string]map[string]string {
+	perEnv := make(map[string]map[string]string, len(variables))
+	for _, v := range variables {
+		vars, ok := perEnv[v.Environment]
+		if !ok {
+			vars = make(map[string]string)
+			perEnv[v.Environment] = vars
+		}
+		vars[v.Name] = v.Value
+	}
+	return perEnv
 }

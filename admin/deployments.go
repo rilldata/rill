@@ -299,6 +299,10 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 	if err != nil {
 		return err
 	}
+	v := map[string]string{}
+	for _, variable := range vars {
+		v[variable.Name] = variable.Value
+	}
 
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
@@ -309,7 +313,7 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		AdminConnector: "admin",
 		AiConnector:    "admin",
 		Connectors:     connectors,
-		Variables:      vars,
+		Variables:      v,
 		Annotations:    annotations.ToMap(),
 		FrontendUrl:    frontendURL,
 	})
@@ -520,7 +524,7 @@ func (s *Service) IssueRuntimeManagementToken(aud string) (string, error) {
 		AudienceURL:       aud,
 		Subject:           "admin-service",
 		TTL:               time.Hour,
-		SystemPermissions: []runtime.Permission{runtime.ManageInstances, runtime.ReadInstance, runtime.EditInstance, runtime.EditTrigger, runtime.ReadObjects},
+		SystemPermissions: []runtime.Permission{runtime.ManageInstances, runtime.ReadInstance, runtime.ManageInstance, runtime.EditTrigger, runtime.ReadObjects},
 	})
 	if err != nil {
 		return "", err

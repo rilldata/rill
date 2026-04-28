@@ -534,18 +534,18 @@ func (s *Service) TriggerParserAndAwaitResource(ctx context.Context, depl *datab
 
 // ResolveVariables resolves the project's variables for the given environment.
 // It fetches the variable specific to the environment plus the default variables not set exclusively for the environment.
-func (s *Service) ResolveVariables(ctx context.Context, depl *database.Deployment) (map[string]string, error) {
+func (s *Service) ResolveVariables(ctx context.Context, depl *database.Deployment) ([]*database.ProjectVariable, error) {
 	vars, err := s.DB.FindProjectVariables(ctx, depl.ProjectID, &depl.Environment)
 	if err != nil {
 		return nil, err
 	}
-	res := make(map[string]string)
-	for _, v := range vars {
-		res[v.Name] = v.Value
-	}
-
-	// preset variables enforced for the instance
-	// repo should only be watched for editable deployments
-	res["rill.watch_repo"] = strconv.FormatBool(depl.Editable)
-	return res, nil
+	// Enable the file watcher for editable deployments.
+	vars = append(vars, &database.ProjectVariable{
+		Name:        "rill.watch_repo",
+		Value:       strconv.FormatBool(depl.Editable),
+		Environment: depl.Environment,
+		CreatedOn:   time.Now(),
+		UpdatedOn:   time.Now(),
+	})
+	return vars, nil
 }
