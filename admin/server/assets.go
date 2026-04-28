@@ -29,6 +29,55 @@ var maxAssetSizeForType = map[string]int64{
 	"image":  3 * (2 << 19),   // 3 MB
 }
 
+// supportedAssetTypes gives the allowed file extensions and MIME types for user-uploaded assets.
+// NOTE: This is not relevant at present, but more specific extensions must come before less specific ones (e.g. .tar.gz must come before .gz).
+var supportedAssetTypes = []struct {
+	Extension   string
+	MIMEType    string
+	AllowUpload bool
+}{
+	{
+		Extension:   ".tar.gz",
+		MIMEType:    "application/gzip",
+		AllowUpload: true,
+	},
+	{
+		Extension:   ".zip",
+		MIMEType:    "application/zip",
+		AllowUpload: true,
+	},
+	{
+		Extension:   ".png",
+		MIMEType:    "image/png",
+		AllowUpload: true,
+	},
+	{
+		Extension:   ".jpg",
+		MIMEType:    "image/jpeg",
+		AllowUpload: true,
+	},
+	{
+		Extension:   ".jpeg",
+		MIMEType:    "image/jpeg",
+		AllowUpload: true,
+	},
+	{
+		Extension:   ".svg",
+		MIMEType:    "image/svg+xml",
+		AllowUpload: false, // NOTE: SVGs can contain scripts, so we disallow uploading new ones for security reasons.
+	},
+	{
+		Extension:   ".gif",
+		MIMEType:    "image/gif",
+		AllowUpload: true,
+	},
+	{
+		Extension:   ".ico",
+		MIMEType:    "image/x-icon",
+		AllowUpload: true,
+	},
+}
+
 func (s *Server) CreateAsset(ctx context.Context, req *adminv1.CreateAssetRequest) (*adminv1.CreateAssetResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.organization", req.Org),
@@ -38,7 +87,7 @@ func (s *Server) CreateAsset(ctx context.Context, req *adminv1.CreateAssetReques
 	// Find the parent org
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	// Check permissions (create asset and create project should be the same permission)
@@ -56,9 +105,29 @@ func (s *Server) CreateAsset(ctx context.Context, req *adminv1.CreateAssetReques
 		return nil, status.Errorf(codes.InvalidArgument, "estimated size %d exceeds maximum size %d for type %q", req.EstimatedSizeBytes, maxSize, req.Type)
 	}
 
+	// Ensure extension has a leading dot
+	if req.Extension == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "missing extension")
+	}
+	if !strings.HasPrefix(req.Extension, ".") {
+		req.Extension = "." + req.Extension
+	}
+
+	// Check that its an allowed asset type
+	allowed := false
+	for _, t := range supportedAssetTypes {
+		if t.Extension == req.Extension {
+			allowed = t.AllowUpload
+			break
+		}
+	}
+	if !allowed {
+		return nil, status.Errorf(codes.InvalidArgument, "file extension %q is not allowed", req.Extension)
+	}
+
 	// Generate an ID and path for the asset
 	assetID := uuid.New().String()
-	objectPath := path.Join(req.Type, fmt.Sprintf("%s__%s__%s.%s", org.Name, req.Name, assetID, req.Extension))
+	objectPath := path.Join(req.Type, fmt.Sprintf("%s__%s__%s%s", org.Name, req.Name, assetID, req.Extension))
 	objectURL := &url.URL{
 		Scheme: "gs",
 		Host:   s.admin.Assets.BucketName(),
@@ -86,7 +155,7 @@ func (s *Server) CreateAsset(ctx context.Context, req *adminv1.CreateAssetReques
 	// If the upload fails or the asset is never linked to a use case, a background job will delete it after some time.
 	asset, err := s.admin.DB.InsertAsset(ctx, assetID, org.ID, objectURL.String(), claims.OwnerID(), req.Public)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to insert asset: %s", err.Error())
+		return nil, err
 	}
 
 	return &adminv1.CreateAssetResponse{
@@ -138,28 +207,21 @@ func (s *Server) assetHandler(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	// Set the content type header
-	ext := path.Ext(u.Path)
-	switch ext {
-	case ".tar.gz":
-		w.Header().Set("Content-Type", "application/gzip")
-	case ".zip":
-		w.Header().Set("Content-Type", "application/zip")
-	case ".png":
-		w.Header().Set("Content-Type", "image/png")
-	case ".jpg", ".jpeg":
-		w.Header().Set("Content-Type", "image/jpeg")
-	case ".svg":
-		w.Header().Set("Content-Type", "image/svg+xml")
-	case ".gif":
-		w.Header().Set("Content-Type", "image/gif")
-	case ".ico":
-		w.Header().Set("Content-Type", "image/x-icon")
-	default:
+	found := false
+	for _, t := range supportedAssetTypes {
+		if strings.HasSuffix(u.Path, t.Extension) { // Using HasSuffix to correctly check multi-part extensions like .tar.gz
+			w.Header().Set("Content-Type", t.MIMEType)
+			found = true
+			break
+		}
+	}
+	if !found { // Fallback content type
 		w.Header().Set("Content-Type", "application/octet-stream")
 	}
 
 	// Set the content disposition header
-	w.Header().Set("Content-Disposition", fmt.Sprintf("inline; filename=%s", path.Base(u.Path)))
+	// Using "attachment" as a security measure to prevent browsers from rendering the asset, which is a security vulnerability for e.g. SVGs containing scripts.
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", path.Base(u.Path)))
 
 	// Set the status code
 	w.WriteHeader(http.StatusOK)

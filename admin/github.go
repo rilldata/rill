@@ -165,8 +165,9 @@ func (g *githubClient) CreateManagedRepo(ctx context.Context, name string) (*git
 
 	// create the repo
 	repo, _, err := client.Repositories.Create(ctx, g.managedAcct, &github.Repository{
-		Name:    github.Ptr(repoName),
-		Private: github.Ptr(true),
+		Name:     github.Ptr(repoName),
+		Private:  github.Ptr(true),
+		AutoInit: github.Ptr(true),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create managed repo: %w", err)

@@ -42,9 +42,14 @@ export class FileArtifacts {
   /**
    * Must be called synchronously (in the script block, not onMount)
    * so that child components can access the client during initial render.
+   * Also propagates the client to any artifacts created before the client
+   * was available (e.g. during +page.ts load).
    */
   setClient(client: RuntimeClient) {
     this.client = client;
+    for (const artifact of this.artifacts.values()) {
+      artifact.updateClient(client);
+    }
   }
 
   async init(client: RuntimeClient, queryClient: QueryClient) {
@@ -169,19 +174,10 @@ export class FileArtifacts {
    * Checks if a file has any errors and returns the first error message if any exist.
    * Returns null if there are no errors.
    */
-  async checkFileErrors(
-    queryClient: QueryClient,
-    filePath: string,
-  ): Promise<string | null> {
+  checkFileErrors(queryClient: QueryClient, filePath: string): string | null {
     const fileArtifact = this.getFileArtifact(filePath);
-    const hasErrorsStore = fileArtifact.getHasErrors(queryClient);
-    const hasErrors = get(hasErrorsStore);
-
-    if (hasErrors) {
-      const errors = get(fileArtifact.getAllErrors(queryClient));
-      return errors[0]?.message ?? null;
-    }
-    return null;
+    const fileParseErrors = fileArtifact.fetchParserErrors(queryClient);
+    return fileParseErrors[0]?.message ?? null;
   }
 }
 

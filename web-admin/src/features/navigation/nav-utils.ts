@@ -15,6 +15,10 @@ export function withinOrganization({ route }: Pick<Page, "route">): boolean {
   return !!route?.id?.startsWith("/[organization]");
 }
 
+export function isProjectCreatePage(page: Page): boolean {
+  return page.route.id === "/[organization]/-/create-project";
+}
+
 export function isProjectPage(page: Page): boolean {
   const routeId = page.route?.id;
   if (!routeId) return false;
@@ -22,7 +26,8 @@ export function isProjectPage(page: Page): boolean {
     routeId === "/[organization]/[project]" ||
     (routeId.startsWith("/[organization]/[project]/-/") &&
       !routeId.startsWith("/[organization]/[project]/-/invite") &&
-      !routeId.startsWith("/[organization]/[project]/-/share"))
+      !routeId.startsWith("/[organization]/[project]/-/share") &&
+      !routeId.startsWith("/[organization]/[project]/-/edit"))
   );
 }
 
@@ -94,6 +99,10 @@ export function isPublicAlertPage(page: Page): boolean {
   );
 }
 
+export function isEditPage(page: Page): boolean {
+  return !!page.route?.id?.startsWith("/[organization]/[project]/-/edit");
+}
+
 export function isProjectRequestAccessPage(page: Page): boolean {
   return !!page.route.id?.startsWith(
     "/[organization]/[project]/-/request-access",
@@ -110,6 +119,10 @@ export function isBillingUpgradePage(page: Page): boolean {
 
 export function isWelcomePage({ route }: Pick<Page, "route">): boolean {
   return !!route.id?.startsWith("/-/welcome");
+}
+
+export function isProjectWelcomePage({ route }: Pick<Page, "route">): boolean {
+  return !!route.id?.startsWith("/[organization]/[project]/-/welcome");
 }
 
 export function isAuthPage({ route }: Pick<Page, "route">): boolean {

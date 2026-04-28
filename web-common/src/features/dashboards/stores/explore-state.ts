@@ -145,12 +145,6 @@ export interface ExploreState {
   dynamicYAxisScale: boolean;
 
   /**
-   * When true, time-series charts always render as line charts,
-   * even when bar charts would normally be used for fewer data points.
-   */
-  forceLineChart: boolean;
-
-  /**
    * state of context column in the leaderboard
    */
   // @deprecated
