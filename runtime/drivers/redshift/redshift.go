@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/redshiftdata"
 	redshift_types "github.com/aws/aws-sdk-go-v2/service/redshiftdata/types"
 	"github.com/aws/smithy-go/tracing/smithyoteltracing"
@@ -81,15 +82,19 @@ var spec = drivers.Spec{
 type driver struct{}
 
 type configProperties struct {
-	AccessKeyID       string `mapstructure:"aws_access_key_id"`
-	SecretAccessKey   string `mapstructure:"aws_secret_access_key"`
-	SessionToken      string `mapstructure:"aws_access_token"`
-	AWSRegion         string `mapstructure:"region"`
-	Database          string `mapstructure:"database"`
-	Workgroup         string `mapstructure:"workgroup"`
-	ClusterIdentifier string `mapstructure:"cluster_identifier"`
-	AllowHostAccess   bool   `mapstructure:"allow_host_access"`
-	LogQueries        bool   `mapstructure:"log_queries"`
+	AccessKeyID                 string `mapstructure:"aws_access_key_id"`
+	SecretAccessKey             string `mapstructure:"aws_secret_access_key"`
+	SessionToken                string `mapstructure:"aws_access_token"`
+	AWSRegion                   string `mapstructure:"region"`
+	Database                    string `mapstructure:"database"`
+	Workgroup                   string `mapstructure:"workgroup"`
+	ClusterIdentifier           string `mapstructure:"cluster_identifier"`
+	RoleARN                     string `mapstructure:"aws_role_arn"`
+	RoleSessionName             string `mapstructure:"aws_role_session_name"`
+	WebIdentityTokenFile        string `mapstructure:"aws_web_identity_token_file"`
+	GCPWorkloadIdentityAudience string `mapstructure:"gcp_workload_identity_audience"`
+	AllowHostAccess             bool   `mapstructure:"allow_host_access"`
+	LogQueries                  bool   `mapstructure:"log_queries"`
 }
 
 func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
@@ -239,6 +244,33 @@ func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 }
 
 func (c *Connection) awsConfig(ctx context.Context, awsRegion string) (aws.Config, error) {
+	if c.config.GCPWorkloadIdentityAudience != "" && c.config.RoleARN != "" {
+		creds, err := awsutil.NewWebIdentityCredentials(ctx, c.config.RoleARN, c.config.RoleSessionName, awsRegion,
+			awsutil.GCPMetadataTokenRetriever{Audience: c.config.GCPWorkloadIdentityAudience}, c.logger)
+		if err != nil {
+			return aws.Config{}, err
+		}
+		return config.LoadDefaultConfig(ctx,
+			config.WithDefaultRegion("us-east-1"),
+			config.WithRegion(awsRegion),
+			config.WithCredentialsProvider(creds),
+			config.WithLogger(awsutil.NewAWSLogger(c.logger)),
+		)
+	}
+	if c.config.WebIdentityTokenFile != "" && c.config.RoleARN != "" {
+		creds, err := awsutil.NewWebIdentityCredentials(ctx, c.config.RoleARN, c.config.RoleSessionName, awsRegion,
+			stscreds.IdentityTokenFile(c.config.WebIdentityTokenFile), c.logger)
+		if err != nil {
+			return aws.Config{}, err
+		}
+		return config.LoadDefaultConfig(ctx,
+			config.WithDefaultRegion("us-east-1"),
+			config.WithRegion(awsRegion),
+			config.WithCredentialsProvider(creds),
+			config.WithLogger(awsutil.NewAWSLogger(c.logger)),
+		)
+	}
+
 	loadOptions := []func(*config.LoadOptions) error{
 		// Setting the default region to an empty string, will result in the default region value being ignored
 		config.WithDefaultRegion("us-east-1"),
