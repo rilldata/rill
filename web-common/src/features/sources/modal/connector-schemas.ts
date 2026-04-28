@@ -106,6 +106,48 @@ export function getConnectorSchema(
 }
 
 /**
+ * Maps driver names to their full template names (e.g. "kafka" → "kafka-clickhouse").
+ * Populated when templates are fetched from the ListTemplates RPC so that
+ * AddDataFormManager can route to the right template for the active OLAP.
+ */
+export const templateNameMap = new Map<string, string>();
+
+/**
+ * Register a template schema dynamically. Called when templates are fetched
+ * from the ListTemplates RPC so that connectors not in the static schema map
+ * (e.g. kafka, hudi, mongodb when ClickHouse is the OLAP) work in the form
+ * flow. Also updates connectorInfoMap so getConnectorDriverForSchema resolves.
+ */
+export function registerTemplateSchema(
+  driverName: string,
+  templateName: string,
+  schema: MultiStepFormSchema,
+  displayName: string,
+) {
+  multiStepFormSchemas[driverName] = schema;
+  templateNameMap.set(driverName, templateName);
+  const category = (schema["x-category"] ?? "sourceOnly") as ConnectorCategory;
+  connectorInfoMap.set(driverName, {
+    name: driverName,
+    displayName,
+    category,
+    keywords: connectorKeywordMapping[driverName] ?? [],
+  });
+}
+
+/**
+ * Test seam: replace the schema cache with a fixture map. Used by specs that
+ * need a deterministic set of schemas without invoking the runtime.
+ */
+export function populateSchemaCache(
+  schemas: Record<string, MultiStepFormSchema>,
+) {
+  for (const [driverName, schema] of Object.entries(schemas)) {
+    multiStepFormSchemas[driverName] = schema;
+  }
+}
+
+/**
  * Get the backend driver name for a given schema name.
  * Returns x-driver if specified, otherwise returns the schema name.
  */

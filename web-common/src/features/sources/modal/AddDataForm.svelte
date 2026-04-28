@@ -18,7 +18,7 @@
   import { AddDataFormManager } from "./AddDataFormManager";
   import { createConnectorForm } from "./FormValidation";
   import AddDataFormSection from "./AddDataFormSection.svelte";
-  import { onMount } from "svelte";
+  import { onDestroy } from "svelte";
   import { get } from "svelte/store";
   import {
     getConnectorSchema,
@@ -29,7 +29,6 @@
     getSchemaButtonLabels,
     isVisibleForValues,
   } from "../../templates/schema-utils";
-  import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { ICONS } from "./icons";
 
   export let connector: V1ConnectorDriver;
@@ -110,22 +109,6 @@
   let prevDeploymentType: string | undefined = undefined;
 
   const connectorSchema = getConnectorSchema(schemaName);
-
-  // Capture .env blob ONCE on mount for consistent conflict detection in YAML preview.
-  // This prevents the preview from updating when Test and Connect writes to .env.
-  // Use null to indicate "not yet loaded" vs "" for "loaded but empty"
-  let existingEnvBlob: string | null = null;
-  onMount(async () => {
-    try {
-      const envFile = await runtimeServiceGetFile(runtimeClient, {
-        path: ".env",
-      });
-      existingEnvBlob = envFile.blob ?? "";
-    } catch {
-      // .env doesn't exist yet
-      existingEnvBlob = "";
-    }
-  });
 
   // Clear errors when connection type changes
   $: {
@@ -218,7 +201,9 @@
       client: runtimeClient,
       queryClient,
       values: $form,
-      existingEnvBlob: existingEnvBlob ?? undefined,
+      // Submit re-fetches .env when undefined; the preview no longer needs
+      // a captured blob since GenerateFile resolves env-var conflicts server-side.
+      existingEnvBlob: undefined,
     });
     if (result.ok) {
       // Use quiet close — saveConnector already navigated via goto().
@@ -232,13 +217,35 @@
     saving = false;
   }
 
-  // Re-compute preview when existingEnvBlob is loaded (changes from null to string)
-  $: yamlPreview = formManager.computeYamlPreview({
-    stepState,
-    isMultiStepConnector: isStepFlowConnector,
-    isConnectorForm,
-    formValues: $form,
-    existingEnvBlob: existingEnvBlob ?? "",
+  // Async, debounced YAML preview. Each form change kicks off a 150 ms timer;
+  // the latest server response replaces the visible preview. We keep the last
+  // valid blob on error so the YAML pane doesn't blank out while the user types.
+  let yamlPreview = "";
+  let previewTimer: ReturnType<typeof setTimeout> | undefined;
+  let previewSeq = 0;
+  $: void $form, stepState, schedulePreview();
+
+  function schedulePreview() {
+    if (previewTimer) clearTimeout(previewTimer);
+    previewTimer = setTimeout(async () => {
+      const seq = ++previewSeq;
+      try {
+        const blob = await formManager.computeYamlPreview({
+          client: runtimeClient,
+          stepState,
+          isMultiStepConnector: isStepFlowConnector,
+          isConnectorForm,
+          formValues: $form,
+        });
+        if (seq === previewSeq) yamlPreview = blob;
+      } catch {
+        // Keep last-valid preview on error so the pane doesn't flicker.
+      }
+    }, 150);
+  }
+
+  onDestroy(() => {
+    if (previewTimer) clearTimeout(previewTimer);
   });
   // Show Save button for connector forms on the connector step (not for public auth which skips connection test).
   // Intentionally not disabled when fields are empty: Save persists whatever the user has entered so far,
@@ -369,10 +376,12 @@
   >
     <div class="flex flex-col gap-6 flex-1 overflow-y-auto">
       {#if paramsError}
-        <SubmissionError
-          message={paramsError ?? ""}
-          details={paramsErrorDetails ?? ""}
-        />
+        <div class="max-h-32 overflow-y-auto">
+          <SubmissionError
+            message={paramsError ?? ""}
+            details={paramsErrorDetails ?? ""}
+          />
+        </div>
       {/if}
 
       <YamlPreview

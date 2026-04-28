@@ -3,6 +3,8 @@
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
+  import { createQuery } from "@tanstack/svelte-query";
+  import { derived } from "svelte/store";
   import { onMount } from "svelte";
   import { behaviourEvent } from "../../../metrics/initMetrics";
   import {
@@ -11,7 +13,15 @@
   } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import { useRuntimeClient } from "../../../runtime-client/v2";
-  import { connectorIconMapping } from "../../connectors/connector-metadata.ts";
+  import {
+    createRuntimeServiceGetInstance,
+    createRuntimeServiceListTemplates,
+    getRuntimeServiceListTemplatesQueryOptions,
+  } from "../../../runtime-client/v2/gen/runtime-service";
+  import {
+    connectorIconMapping,
+    connectorKeywordMapping,
+  } from "../../connectors/connector-metadata.ts";
   import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../../connectors/selectors";
   import { duplicateSourceName } from "../sources-store";
   import AddDataForm from "./AddDataForm.svelte";
@@ -19,16 +29,43 @@
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
   import {
-    connectors,
     getConnectorSchema,
     getFormWidth,
     isMultiStepConnector as isMultiStepConnectorSchema,
+    registerTemplateSchema,
     toConnectorDriver as toConnectorDriverFromSchema,
     type ConnectorInfo,
   } from "./connector-schemas";
+  import { setOlapCache } from "./generate-template";
+  import type { ConnectorCategory } from "../../templates/schemas/types";
   import { ICONS } from "./icons";
   import { resetConnectorStep } from "./connectorStepStore";
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
+
+  const runtimeClient = useRuntimeClient();
+
+  // Drive the connector picker from `ListTemplates` so source vs OLAP membership
+  // and OLAP-compatibility live in the template tags rather than frontend constants.
+  const instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {
+    sensitive: true,
+  });
+
+  // Source templates re-fetch whenever the instance OLAP changes.
+  const sourceTemplatesQueryOptions = derived(
+    [instanceQuery],
+    ([$instance]) => {
+      const olap = $instance.data?.instance?.olapConnector || "";
+      return getRuntimeServiceListTemplatesQueryOptions(
+        runtimeClient,
+        { tags: ["source", olap] },
+        { query: { enabled: !!olap } },
+      );
+    },
+  );
+  const sourceTemplatesQuery = createQuery(sourceTemplatesQueryOptions);
+  const olapTemplatesQuery = createRuntimeServiceListTemplates(runtimeClient, {
+    tags: ["olap"],
+  });
 
   let step = 0;
   let selectedConnector: null | V1ConnectorDriver = null;
@@ -38,11 +75,54 @@
   let requestConnector = false;
   let isSubmittingForm = false;
 
-  // Filter connectors by category from JSON schemas
-  $: sourceConnectors = connectors.filter(
-    (c) => c.category !== "olap" && c.category !== "ai",
+  // Cache OLAP for generate-template once the instance resolves.
+  $: {
+    const olap = $instanceQuery.data?.instance?.olapConnector;
+    if (olap) setOlapCache(runtimeClient.instanceId, olap);
+  }
+
+  // Map ListTemplates responses → ConnectorInfo, registering each schema in the cache
+  // so the form renderer (which still reads from `multiStepFormSchemas`) can resolve it.
+  function templatesToConnectors(
+    templates:
+      | {
+          name?: string;
+          driver?: string;
+          displayName?: string;
+          jsonSchema?: unknown;
+        }[]
+      | undefined,
+    fallbackCategory: ConnectorCategory,
+  ): ConnectorInfo[] {
+    if (!templates) return [];
+    return templates.map((t) => {
+      const driver = t.driver || t.name || "";
+      const displayName = t.displayName || driver;
+      const schema = (t.jsonSchema ?? null) as Record<string, unknown> | null;
+      if (schema && typeof schema === "object" && t.name) {
+        registerTemplateSchema(driver, t.name, schema as never, displayName);
+      }
+      const category =
+        (schema?.["x-category"] as ConnectorCategory | undefined) ??
+        fallbackCategory;
+      return {
+        name: driver,
+        displayName,
+        category,
+        keywords: connectorKeywordMapping[driver] ?? [],
+      };
+    });
+  }
+
+  $: sourceConnectors = templatesToConnectors(
+    $sourceTemplatesQuery.data?.templates,
+    "sourceOnly" as ConnectorCategory,
   );
-  $: olapConnectors = connectors.filter((c) => c.category === "olap");
+  $: olapConnectors = templatesToConnectors(
+    $olapTemplatesQuery.data?.templates,
+    "olap" as ConnectorCategory,
+  );
+  $: connectors = [...sourceConnectors, ...olapConnectors];
 
   // Get the form width class for the selected connector
   $: selectedSchema = selectedSchemaName
@@ -183,8 +263,6 @@
 
     resetModal();
   }
-
-  const runtimeClient = useRuntimeClient();
 
   $: isModelingSupportedForDefaultOlapDriver =
     useIsModelingSupportedForDefaultOlapDriver(runtimeClient);
