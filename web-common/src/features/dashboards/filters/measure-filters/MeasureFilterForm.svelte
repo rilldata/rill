@@ -60,12 +60,11 @@
     }),
   });
 
-  const { form, errors, submit, enhance } = superForm(
+  const { form, formId, errors, submit, enhance } = superForm(
     defaults(initialValues, yup(validationSchema)),
     {
       SPA: true,
       validators: yup(validationSchema),
-      id: "measure",
       onUpdate({ form }) {
         if (!form.valid) return;
         const values = form.data;
@@ -146,11 +145,7 @@
     use:enhance
     autocomplete="off"
     class="flex flex-col gap-y-3"
-    id="measure"
-    onsubmit={(e) => {
-      e.preventDefault();
-      submit(e);
-    }}
+    id={$formId}
   >
     <Select
       bind:value={$form["dimension"]}
@@ -198,6 +193,6 @@
       />
     {/if}
 
-    <Button submitForm type="primary" form="measure">Apply</Button>
+    <Button submitForm type="primary" form={$formId}>Apply</Button>
   </form>
 </Popover.Content>
