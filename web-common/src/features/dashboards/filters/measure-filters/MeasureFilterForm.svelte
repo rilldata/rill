@@ -60,7 +60,7 @@
     }),
   });
 
-  const { form, errors, validateForm, enhance } = superForm(
+  const { form, errors, validateForm } = superForm(
     defaults(initialValues, yup(validationSchema)),
     {
       SPA: true,
@@ -144,16 +144,7 @@
       />
     </div>
   {/if}
-  <form
-    autocomplete="off"
-    class="flex flex-col gap-y-3"
-    id="measure"
-    onsubmit={(e) => {
-      e.preventDefault();
-      void submit();
-    }}
-    use:enhance
-  >
+  <div class="flex flex-col gap-y-3">
     <Select
       bind:value={$form["dimension"]}
       id="dimension"
@@ -200,21 +191,6 @@
       />
     {/if}
 
-    <button
-      type="button"
-      style="background: red; color: white; padding: 8px;"
-      onclick={() => console.log("DEBUG: native button clicked")}
-    >
-      DEBUG native click
-    </button>
-    <Button
-      type="primary"
-      onClick={() => {
-        console.log("DEBUG: Apply Button onClick fired");
-        void submit();
-      }}
-    >
-      Apply
-    </Button>
-  </form>
+    <Button type="primary" onClick={submit}>Apply</Button>
+  </div>
 </Popover.Content>
