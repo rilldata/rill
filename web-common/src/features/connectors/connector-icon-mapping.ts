@@ -1,7 +1,5 @@
 import AmazonS3Icon from "../../components/icons/connectors/AmazonS3Icon.svelte";
 import ApacheDruidIcon from "../../components/icons/connectors/ApacheDruidIcon.svelte";
-import ApacheHudiIcon from "../../components/icons/connectors/ApacheHudiIcon.svelte";
-import ApacheKafkaIcon from "../../components/icons/connectors/ApacheKafkaIcon.svelte";
 import ApachePinotIcon from "../../components/icons/connectors/ApachePinotIcon.svelte";
 import ClaudeIcon from "../../components/icons/connectors/ClaudeIcon.svelte";
 import ClickHouseIcon from "../../components/icons/connectors/ClickHouseIcon.svelte";
@@ -34,8 +32,6 @@ export const connectorIconMapping = {
   claude: ClaudeIcon,
   clickhouse: ClickHouseIcon,
   delta: DeltaLakeIcon,
-  hudi: ApacheHudiIcon,
-  kafka: ApacheKafkaIcon,
   clickhousecloud: ClickHouseCloudIcon,
   gemini: GeminiIcon,
   motherduck: MotherDuckIcon,

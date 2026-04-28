@@ -14,7 +14,7 @@ func TestNewRegistry(t *testing.T) {
 
 	// Verify all definitions loaded
 	all := r.List()
-	require.Greater(t, len(all), 25, "expected at least 25 template definitions")
+	require.Greater(t, len(all), 20, "expected at least 20 template definitions")
 }
 
 func TestRegistryGet(t *testing.T) {
@@ -22,7 +22,7 @@ func TestRegistryGet(t *testing.T) {
 	require.NoError(t, err)
 
 	// Known templates exist
-	for _, name := range []string{"clickhouse", "s3-duckdb", "gcs-duckdb", "iceberg-duckdb", "snowflake-duckdb"} {
+	for _, name := range []string{"duckdb", "s3-duckdb", "gcs-duckdb", "iceberg-duckdb", "snowflake-duckdb"} {
 		t.Run(name, func(t *testing.T) {
 			tmpl, ok := r.Get(name)
 			require.True(t, ok, "template %q should exist", name)

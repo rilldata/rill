@@ -130,6 +130,30 @@ export function registerTemplateSchema(
   });
 }
 
+// Replace the in-memory schema cache with the provided schemas.
+// Test-only seam: lets specs run with a minimal, deterministic schema set
+// instead of the full static + API-loaded registry.
+export function populateSchemaCache(
+  schemas: Record<string, MultiStepFormSchema>,
+) {
+  for (const key of Object.keys(multiStepFormSchemas)) {
+    delete multiStepFormSchemas[key];
+  }
+  connectorInfoMap.clear();
+  templateNameMap.clear();
+
+  for (const [name, schema] of Object.entries(schemas)) {
+    multiStepFormSchemas[name] = schema;
+    const category = (schema["x-category"] ??
+      "sourceOnly") as ConnectorCategory;
+    connectorInfoMap.set(name, {
+      name,
+      displayName: schema.title ?? name,
+      category,
+    });
+  }
+}
+
 /**
  * Get the backend driver name for a given schema name.
  * Returns x-driver if specified, otherwise returns the schema name.

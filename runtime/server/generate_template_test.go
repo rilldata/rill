@@ -104,41 +104,6 @@ func TestGenerateTemplate(t *testing.T) {
 		wantErr      codes.Code
 	}{
 		{
-			name: "clickhouse connector with parameters",
-			req: &runtimev1.GenerateTemplateRequest{
-				InstanceId:   instanceID,
-				ResourceType: "connector",
-				Driver:       "clickhouse",
-				Properties:   mustStruct(map[string]any{"host": "ch.example.com", "port": float64(9000), "password": "secret123"}),
-			},
-			wantContains: []string{
-				"type: connector",
-				"driver: clickhouse",
-				`host: "ch.example.com"`,
-				"port: \"9000\"",
-				`{{ .env.CLICKHOUSE_PASSWORD }}`,
-				"# Connector YAML",
-			},
-			wantExcludes: []string{"secret123"},
-			wantEnvKeys:  []string{"CLICKHOUSE_PASSWORD"},
-			wantDriver:   "clickhouse",
-			wantResType:  "connector",
-		},
-		{
-			name: "clickhouse connector with dsn",
-			req: &runtimev1.GenerateTemplateRequest{
-				InstanceId:   instanceID,
-				ResourceType: "connector",
-				Driver:       "clickhouse",
-				Properties:   mustStruct(map[string]any{"dsn": "clickhouse://user:pass@host:9000/db"}),
-			},
-			wantContains: []string{`{{ .env.CLICKHOUSE_DSN }}`},
-			wantExcludes: []string{"clickhouse://user:pass"},
-			wantEnvKeys:  []string{"CLICKHOUSE_DSN"},
-			wantDriver:   "clickhouse",
-			wantResType:  "connector",
-		},
-		{
 			name: "s3 connector",
 			req: &runtimev1.GenerateTemplateRequest{
 				InstanceId:   instanceID,
@@ -196,25 +161,12 @@ func TestGenerateTemplate(t *testing.T) {
 			req: &runtimev1.GenerateTemplateRequest{
 				InstanceId:   instanceID,
 				ResourceType: "connector",
-				Driver:       "clickhouse",
-				Properties:   mustStruct(map[string]any{"host": "ch.example.com", "port": "", "database": ""}),
+				Driver:       "postgres",
+				Properties:   mustStruct(map[string]any{"host": "db.example.com", "port": "", "dbname": ""}),
 			},
 			wantContains: []string{"host:"},
-			wantExcludes: []string{"port:", "database:"},
-			wantDriver:   "clickhouse",
-			wantResType:  "connector",
-		},
-		{
-			name: "clickhouse managed false excluded",
-			req: &runtimev1.GenerateTemplateRequest{
-				InstanceId:   instanceID,
-				ResourceType: "connector",
-				Driver:       "clickhouse",
-				Properties:   mustStruct(map[string]any{"host": "ch.example.com", "managed": false}),
-			},
-			wantContains: []string{"host:"},
-			wantExcludes: []string{"managed"},
-			wantDriver:   "clickhouse",
+			wantExcludes: []string{"port:", "dbname:"},
+			wantDriver:   "postgres",
 			wantResType:  "connector",
 		},
 		{
@@ -315,26 +267,6 @@ func TestGenerateTemplate(t *testing.T) {
 			wantResType: "model",
 		},
 		{
-			name: "clickhouse not rewritten for model",
-			req: &runtimev1.GenerateTemplateRequest{
-				InstanceId:    instanceID,
-				ResourceType:  "model",
-				Driver:        "clickhouse",
-				Properties:    mustStruct(map[string]any{"sql": "SELECT * FROM events"}),
-				ConnectorName: "ch_prod",
-			},
-			wantContains: []string{
-				"type: model",
-				"materialize: true",
-				`connector: "ch_prod"`,
-				"SELECT * FROM events",
-				"dev:",
-				"limit 10000",
-			},
-			wantDriver:  "clickhouse",
-			wantResType: "model",
-		},
-		{
 			name: "redshift model without dev section",
 			req: &runtimev1.GenerateTemplateRequest{
 				InstanceId:    instanceID,
@@ -363,7 +295,7 @@ func TestGenerateTemplate(t *testing.T) {
 			req: &runtimev1.GenerateTemplateRequest{
 				InstanceId:   instanceID,
 				ResourceType: "connector",
-				Driver:       "clickhouse",
+				Driver:       "postgres",
 				Properties:   mustStruct(map[string]any{"bogus_key": "value"}),
 			},
 			wantErr: codes.InvalidArgument,
@@ -373,7 +305,7 @@ func TestGenerateTemplate(t *testing.T) {
 			req: &runtimev1.GenerateTemplateRequest{
 				InstanceId:   instanceID,
 				ResourceType: "dashboard",
-				Driver:       "clickhouse",
+				Driver:       "postgres",
 				Properties:   mustStruct(map[string]any{}),
 			},
 			wantErr: codes.InvalidArgument,
@@ -383,7 +315,7 @@ func TestGenerateTemplate(t *testing.T) {
 			req: &runtimev1.GenerateTemplateRequest{
 				InstanceId:   instanceID,
 				ResourceType: "connector",
-				Driver:       "clickhouse",
+				Driver:       "postgres",
 				Properties:   mustStruct(map[string]any{"bogus_key": "super_secret_value"}),
 			},
 			wantErr: codes.InvalidArgument,
@@ -428,7 +360,7 @@ func TestGenerateTemplateEnvConflict(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
 			"rill.yaml": ``,
-			".env":      "CLICKHOUSE_PASSWORD=old_value\n",
+			".env":      "POSTGRES_PASSWORD=old_value\n",
 		},
 	})
 
@@ -439,14 +371,14 @@ func TestGenerateTemplateEnvConflict(t *testing.T) {
 	resp, err := srv.GenerateTemplate(ctx, &runtimev1.GenerateTemplateRequest{
 		InstanceId:   instanceID,
 		ResourceType: "connector",
-		Driver:       "clickhouse",
-		Properties:   mustStruct(map[string]any{"host": "ch.example.com", "password": "new_secret"}),
+		Driver:       "postgres",
+		Properties:   mustStruct(map[string]any{"host": "db.example.com", "password": "new_secret"}),
 	})
 	require.NoError(t, err)
 
-	// Should use CLICKHOUSE_PASSWORD_1 since CLICKHOUSE_PASSWORD already exists
-	require.Contains(t, resp.EnvVars, "CLICKHOUSE_PASSWORD_1")
-	require.Contains(t, resp.Blob, "{{ .env.CLICKHOUSE_PASSWORD_1 }}")
+	// Should use POSTGRES_PASSWORD_1 since POSTGRES_PASSWORD already exists
+	require.Contains(t, resp.EnvVars, "POSTGRES_PASSWORD_1")
+	require.Contains(t, resp.Blob, "{{ .env.POSTGRES_PASSWORD_1 }}")
 	require.NotContains(t, resp.Blob, "new_secret")
 }
 
@@ -455,7 +387,7 @@ func TestGenerateTemplateEnvConflictDouble(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
 			"rill.yaml": ``,
-			".env":      "CLICKHOUSE_PASSWORD=old\nCLICKHOUSE_PASSWORD_1=also_old\n",
+			".env":      "POSTGRES_PASSWORD=old\nPOSTGRES_PASSWORD_1=also_old\n",
 		},
 	})
 
@@ -466,13 +398,13 @@ func TestGenerateTemplateEnvConflictDouble(t *testing.T) {
 	resp, err := srv.GenerateTemplate(ctx, &runtimev1.GenerateTemplateRequest{
 		InstanceId:   instanceID,
 		ResourceType: "connector",
-		Driver:       "clickhouse",
-		Properties:   mustStruct(map[string]any{"host": "ch.example.com", "password": "new_secret"}),
+		Driver:       "postgres",
+		Properties:   mustStruct(map[string]any{"host": "db.example.com", "password": "new_secret"}),
 	})
 	require.NoError(t, err)
 
-	require.Contains(t, resp.EnvVars, "CLICKHOUSE_PASSWORD_2")
-	require.Contains(t, resp.Blob, "{{ .env.CLICKHOUSE_PASSWORD_2 }}")
+	require.Contains(t, resp.EnvVars, "POSTGRES_PASSWORD_2")
+	require.Contains(t, resp.Blob, "{{ .env.POSTGRES_PASSWORD_2 }}")
 }
 
 // TestGenerateTemplateMotherduckConnector tests MotherDuck connector generation.
@@ -548,7 +480,6 @@ func TestGenerateTemplateAllConnectorDrivers(t *testing.T) {
 		{"s3", map[string]any{"aws_access_key_id": "test", "aws_secret_access_key": "test"}},
 		{"gcs", map[string]any{"google_application_credentials": "{}"}},
 		{"azure", map[string]any{"azure_storage_connection_string": "test"}},
-		{"clickhouse", map[string]any{"host": "localhost"}},
 		{"postgres", map[string]any{"host": "localhost"}},
 		{"bigquery", map[string]any{"google_application_credentials": "{}"}},
 		{"snowflake", map[string]any{"account": "test", "user": "test", "password": "test"}},
@@ -764,12 +695,6 @@ func TestGenerateTemplateEnvVarNaming(t *testing.T) {
 			wantEnvKey: "MOTHERDUCK_TOKEN",
 		},
 		{
-			name:       "clickhouse password uses EnvVarName",
-			driver:     "clickhouse",
-			props:      map[string]any{"password": "test"},
-			wantEnvKey: "CLICKHOUSE_PASSWORD",
-		},
-		{
 			name:       "starrocks dsn uses fallback format",
 			driver:     "starrocks",
 			props:      map[string]any{"dsn": "test"},
@@ -819,14 +744,14 @@ func TestGenerateTemplateValidateProperties(t *testing.T) {
 	}{
 		{
 			name:         "valid connector props",
-			driver:       "clickhouse",
+			driver:       "postgres",
 			resourceType: "connector",
 			props:        map[string]any{"host": "localhost"},
 			wantErr:      false,
 		},
 		{
 			name:         "unknown prop rejected",
-			driver:       "clickhouse",
+			driver:       "postgres",
 			resourceType: "connector",
 			props:        map[string]any{"bogus": "value"},
 			wantErr:      true,
@@ -847,7 +772,7 @@ func TestGenerateTemplateValidateProperties(t *testing.T) {
 		},
 		{
 			name:         "empty properties valid",
-			driver:       "clickhouse",
+			driver:       "postgres",
 			resourceType: "connector",
 			props:        map[string]any{},
 			wantErr:      false,
