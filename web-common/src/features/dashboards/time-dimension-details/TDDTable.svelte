@@ -49,17 +49,9 @@
   /** Formatter for the time axis in the table*/
   export let timeFormatter: (date: Date) => string;
 
-  /***
-   * In case there is no format defined, use the big num context
-   * so that the values are within bounds of the column. This is
-   * naive solution which should be removed later once we move to pivot
-   * UI.
-   */
-  $: hasNoFormatting = !measure.formatD3 && measure.formatPreset === "";
-
   $: formatter = createMeasureValueFormatter<null | undefined>(
     measure,
-    hasNoFormatting ? "big-number" : "table",
+    "table",
   );
 
   let pivot;
