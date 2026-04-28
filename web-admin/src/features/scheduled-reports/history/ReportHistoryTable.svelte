@@ -14,10 +14,12 @@
 
   $: reportQuery = useReport(runtimeClient, report);
 
+  $: history =
+    $reportQuery.data?.resource?.report?.state?.executionHistory ?? [];
+
   /**
    * Table column definitions.
-   * - "composite": Renders all dashboard data in a single cell.
-   * - Others: Used for sorting and filtering but not displayed.
+   * - "composite": Renders all execution data in a single cell.
    */
   const columns: ColumnDef<V1ReportExecution>[] = [
     {
@@ -45,13 +47,13 @@
     </div>
   {:else if $reportQuery.isLoading}
     <div class="text-fg-secondary">Loading...</div>
-  {:else if !$reportQuery.data?.resource.report.state.executionHistory.length}
+  {:else if !history.length}
     <NoRunsYet />
   {:else}
     <ResourceList
       kind="report"
       {columns}
-      data={$reportQuery.data?.resource.report.state.executionHistory}
+      data={history}
       toolbar={false}
       fixedRowHeight={false}
     />

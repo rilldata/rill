@@ -3,7 +3,7 @@
   import NoAlertRunsYet from "@rilldata/web-admin/features/alerts/history/NoAlertRunsYet.svelte";
   import { useAlert } from "@rilldata/web-admin/features/alerts/selectors";
   import ResourceList from "@rilldata/web-common/features/resources/ResourceList.svelte";
-  import type { V1AlertExecution } from "@rilldata/web-common/runtime-client/gen/index.schemas";
+  import { type V1AlertExecution } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { ColumnDef } from "tanstack-table-8-svelte-5";
   import { renderComponent } from "tanstack-table-8-svelte-5";
@@ -14,10 +14,11 @@
 
   $: alertQuery = useAlert(runtimeClient, alert);
 
+  $: history = $alertQuery.data?.resource?.alert?.state?.executionHistory ?? [];
+
   /**
    * Table column definitions.
-   * - "composite": Renders all dashboard data in a single cell.
-   * - Others: Used for sorting and filtering but not displayed.
+   * - "composite": Renders all execution data in a single cell.
    */
   const columns: ColumnDef<V1AlertExecution>[] = [
     {
@@ -46,13 +47,13 @@
     </div>
   {:else if $alertQuery.isLoading}
     <div class="text-fg-secondary">Loading...</div>
-  {:else if !$alertQuery.data?.resource.alert.state.executionHistory.length}
+  {:else if !history.length}
     <NoAlertRunsYet />
   {:else}
     <ResourceList
       kind="alert"
       {columns}
-      data={$alertQuery.data?.resource.alert.state.executionHistory}
+      data={history}
       toolbar={false}
       fixedRowHeight={false}
     />

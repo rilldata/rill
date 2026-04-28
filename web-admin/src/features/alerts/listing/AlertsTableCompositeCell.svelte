@@ -1,8 +1,18 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+  import { createAdminServiceDeleteAlert } from "@rilldata/web-admin/client";
+  import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import AlertIcon from "@rilldata/web-common/components/icons/AlertIcon.svelte";
-  import CancelCircleInverse from "@rilldata/web-common/components/icons/CancelCircleInverse.svelte";
-  import CheckCircleOutline from "@rilldata/web-common/components/icons/CheckCircleOutline.svelte";
+  import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
+  import DeleteConfirmDialog from "@rilldata/web-common/features/resources/DeleteConfirmDialog.svelte";
+  import ResourceListRow from "@rilldata/web-common/features/resources/ResourceListRow.svelte";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { timeAgo } from "@rilldata/web-common/lib/time/relative-time";
+  import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  import { Pencil, Trash2Icon } from "lucide-svelte";
   import ProjectAccessControls from "../../projects/ProjectAccessControls.svelte";
   import AlertOwnerBullet from "./AlertOwnerBullet.svelte";
 
@@ -13,30 +23,49 @@
   export let lastTrigger: string | undefined;
   export let ownerId: string;
   export let lastTriggerErrorMessage: string | undefined;
+
+  const runtimeClient = useRuntimeClient();
+  const queryClient = useQueryClient();
+  const deleteAlert = createAdminServiceDeleteAlert();
+
+  $: isCreatedByCode = !ownerId;
+
+  let isDropdownOpen = false;
+  let isDeleteConfirmOpen = false;
+
+  // TODO: Consider adding ?edit=true query param to auto-open the edit dialog on the resource page
+  function handleEdit() {
+    goto(`/${organization}/${project}/-/alerts/${id}`);
+  }
+
+  async function handleDelete() {
+    try {
+      await $deleteAlert.mutateAsync({
+        org: organization,
+        project,
+        name: id,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: getRuntimeServiceListResourcesQueryKey(
+          runtimeClient.instanceId,
+        ),
+      });
+    } catch {
+      eventBus.emit("notification", {
+        message: "Failed to delete alert",
+        type: "error",
+      });
+    }
+  }
 </script>
 
-<a
+<ResourceListRow
   href={`alerts/${id}`}
-  class="flex flex-col gap-y-1 group px-4 py-2.5 w-full h-full"
+  {title}
+  icon={AlertIcon}
+  errorMessage={lastTrigger ? lastTriggerErrorMessage : undefined}
 >
-  <div class="flex gap-x-2 items-center min-h-[20px]">
-    <AlertIcon size="14px" />
-    <span
-      class="text-fg-primary text-sm font-semibold group-hover:text-accent-primary-action truncate"
-    >
-      {title}
-    </span>
-    {#if lastTrigger}
-      {#if lastTriggerErrorMessage}
-        <CancelCircleInverse className="text-red-500 shrink-0" />
-      {:else}
-        <CheckCircleOutline className="text-primary-500 shrink-0" />
-      {/if}
-    {/if}
-  </div>
-  <div
-    class="flex gap-x-1 text-fg-secondary text-xs font-normal min-h-[16px] overflow-hidden"
-  >
+  {#snippet subtitle()}
     {#if !lastTrigger}
       <span class="shrink-0">Hasn't been checked yet</span>
     {:else}
@@ -49,5 +78,49 @@
         <AlertOwnerBullet {organization} {project} {ownerId} />
       </svelte:fragment>
     </ProjectAccessControls>
-  </div>
-</a>
+  {/snippet}
+
+  {#snippet actions()}
+    {#if !isCreatedByCode}
+      <DropdownMenu.Root bind:open={isDropdownOpen}>
+        <DropdownMenu.Trigger class="flex-none">
+          <IconButton
+            rounded
+            active={isDropdownOpen}
+            ariaLabel={`Actions for ${title}`}
+          >
+            <ThreeDot size="16px" />
+          </IconButton>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content align="start" class="min-w-[95px]">
+          <DropdownMenu.Item
+            class="font-normal flex items-center"
+            onclick={handleEdit}
+          >
+            <Pencil size="12px" />
+            <span class="ml-2">Edit</span>
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            class="font-normal flex items-center"
+            type="destructive"
+            onclick={() => {
+              isDeleteConfirmOpen = true;
+            }}
+          >
+            <Trash2Icon size="12px" />
+            <span class="ml-2">Delete</span>
+          </DropdownMenu.Item>
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
+    {/if}
+  {/snippet}
+</ResourceListRow>
+
+<DeleteConfirmDialog
+  bind:open={isDeleteConfirmOpen}
+  title="Delete this alert?"
+  onDelete={handleDelete}
+>
+  The alert "<strong>{title}</strong>" will be permanently deleted and will no
+  longer trigger notifications.
+</DeleteConfirmDialog>

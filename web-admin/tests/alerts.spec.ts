@@ -136,6 +136,11 @@ test.describe.serial("Alerts", () => {
 
       await adminPage.goto(link);
 
+      // Move the cursor away from the leaderboard so the row's hover-only
+      // "previous → current" inline preview doesn't render and the assertion
+      // can match the canonical row text.
+      await adminPage.mouse.move(0, 0);
+
       // Assert that the data is as expected
       await expect(
         adminPage
@@ -277,6 +282,7 @@ test.describe.serial("Alerts", () => {
       // Delete the alert
       await adminPage.getByLabel("Alert context menu").click();
       await adminPage.getByRole("menuitem", { name: "Delete Alert" }).click();
+      await adminPage.getByRole("button", { name: "Yes, delete" }).click();
 
       // Back to listing page without any alerts
       await expect(
@@ -381,20 +387,18 @@ test.describe.serial("Alerts", () => {
       );
     });
 
-    test("Should delete alert with schedule", async ({ adminPage }) => {
+    test("Should delete alert from the listing row menu", async ({
+      adminPage,
+    }) => {
       await adminPage.goto("/e2e/openrtb/-/alerts");
 
-      await adminPage
-        .getByRole("link", {
-          name: "Requests value alert",
-        })
-        .click();
+      // Open the row's actions menu and click Delete (covers the new listing-page action wired up in the row).
+      await adminPage.getByLabel("Actions for Requests value alert").click();
+      await adminPage.getByRole("menuitem", { name: "Delete" }).click();
+      await adminPage.getByRole("button", { name: "Yes, delete" }).click();
 
-      // Delete the alert
-      await adminPage.getByLabel("Alert context menu").click();
-      await adminPage.getByRole("menuitem", { name: "Delete Alert" }).click();
-
-      // Back to listing page without any alerts
+      // Stay on the listing page; no alerts remain.
+      await expect(adminPage).toHaveURL(/\/-\/alerts$/);
       await expect(
         adminPage.getByText("You don't have any alerts yet"),
       ).toBeVisible();

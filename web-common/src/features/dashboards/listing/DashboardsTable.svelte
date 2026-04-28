@@ -4,6 +4,14 @@
   import ResourceListEmptyState from "@rilldata/web-common/features/resources/ResourceListEmptyState.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
+  import {
+    applyTableFilters,
+    TableToolbar,
+  } from "@rilldata/web-common/components/table-toolbar";
+  import type {
+    FilterGroup,
+    SortDirection,
+  } from "@rilldata/web-common/components/table-toolbar/types";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { renderComponent } from "tanstack-table-8-svelte-5";
   import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
@@ -23,15 +31,83 @@
   export let getHref: (name: string, isMetricsExplorer: boolean) => string;
   /** "See all" link target when in preview mode */
   export let seeAllHref = "";
-  /** Whether to show the search toolbar. Defaults to !isPreview. */
+  /** Whether to show the toolbar. Defaults to !isPreview. */
   export let toolbar: boolean | undefined = undefined;
 
   $: resolvedToolbar = toolbar ?? !isPreview;
 
+  let searchText = "";
+  let selectedTypes: string[] = [];
+  let sortDirection: SortDirection = "newest";
+
+  function getTitle(r: V1Resource): string {
+    return r.explore
+      ? (r.explore.spec?.displayName ?? r.meta?.name?.name ?? "")
+      : (r.canvas?.spec?.displayName ?? r.meta?.name?.name ?? "");
+  }
+
+  function getDescription(r: V1Resource): string {
+    return r.explore?.spec?.description ?? "";
+  }
+
+  function getCreatedOn(r: V1Resource): string | undefined {
+    return r.meta?.createdOn;
+  }
+
+  function matchesSearch(r: V1Resource, q: string): boolean {
+    if (!q) return true;
+    const needle = q.toLowerCase();
+    return (
+      getTitle(r).toLowerCase().includes(needle) ||
+      (r.meta?.name?.name ?? "").toLowerCase().includes(needle) ||
+      getDescription(r).toLowerCase().includes(needle)
+    );
+  }
+
+  function matchesType(r: V1Resource, types: string[]): boolean {
+    if (types.length === 0) return true;
+    if (types.includes("explore") && r.explore) return true;
+    if (types.includes("canvas") && r.canvas) return true;
+    return false;
+  }
+
+  $: processedData = applyTableFilters({
+    data: data ?? [],
+    searchText,
+    matchesSearch,
+    filterPredicates: [(r) => matchesType(r, selectedTypes)],
+    sortDirection,
+    getSortKey: getCreatedOn,
+  });
+
   $: displayData = isPreview
-    ? (data?.slice(0, previewLimit) ?? [])
-    : (data ?? []);
-  $: hasMoreDashboards = isPreview && data && data.length > previewLimit;
+    ? processedData.slice(0, previewLimit)
+    : processedData;
+  $: hasMoreDashboards = isPreview && (data?.length ?? 0) > previewLimit;
+
+  $: filterGroups = [
+    {
+      label: "Type",
+      key: "type",
+      options: [
+        { value: "explore", label: "Explore" },
+        { value: "canvas", label: "Canvas" },
+      ],
+      selected: selectedTypes,
+      defaultValue: [],
+      multiSelect: true,
+    },
+  ] satisfies FilterGroup[];
+
+  function handleFilterChange(key: string, selected: string | string[]) {
+    if (key !== "type") return;
+    selectedTypes = Array.isArray(selected) ? selected : [selected];
+  }
+
+  function clearFilters() {
+    selectedTypes = [];
+    searchText = "";
+  }
 
   /**
    * Table column definitions.
@@ -104,8 +180,6 @@
     lastRefreshed: false,
     description: false,
   };
-
-  const initialSorting = [{ id: "name", desc: false }];
 </script>
 
 {#if isLoading}
@@ -121,9 +195,18 @@
       data={displayData}
       {columns}
       {columnVisibility}
-      {initialSorting}
       toolbar={resolvedToolbar}
+      isFiltered={searchText !== "" || selectedTypes.length > 0}
     >
+      <TableToolbar
+        slot="toolbar"
+        bind:searchText
+        {filterGroups}
+        onFilterChange={handleFilterChange}
+        onClearAllFilters={clearFilters}
+        bind:sortDirection
+        disabled={(data?.length ?? 0) === 0}
+      />
       <svelte:fragment slot="empty">
         <slot name="empty">
           <ResourceListEmptyState

@@ -2,6 +2,14 @@
   import ResourceList from "@rilldata/web-common/features/resources/ResourceList.svelte";
   import ResourceListEmptyState from "@rilldata/web-common/features/resources/ResourceListEmptyState.svelte";
   import ReportIcon from "@rilldata/web-common/components/icons/ReportIcon.svelte";
+  import {
+    applyTableFilters,
+    TableToolbar,
+  } from "@rilldata/web-common/components/table-toolbar";
+  import type {
+    FilterGroup,
+    SortDirection,
+  } from "@rilldata/web-common/components/table-toolbar/types";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { renderComponent, type ColumnDef } from "tanstack-table-8-svelte-5";
   import ReportsTableCompositeCell from "./ReportsTableCompositeCell.svelte";
@@ -9,6 +17,66 @@
   export let data: V1Resource[];
   export let organization: string;
   export let project: string;
+
+  let searchText = "";
+  let selectedResults: string[] = [];
+  let sortDirection: SortDirection = "newest";
+
+  function getDisplayName(r: V1Resource): string {
+    return r.report?.spec?.displayName || r.meta?.name?.name || "";
+  }
+
+  function getLastRun(r: V1Resource): string {
+    const last = r.report?.state?.executionHistory?.[0];
+    return last?.finishedOn ?? last?.startedOn ?? last?.reportTime ?? "";
+  }
+
+  function getResult(r: V1Resource): "ok" | "error" {
+    return r.report?.state?.executionHistory?.[0]?.errorMessage
+      ? "error"
+      : "ok";
+  }
+
+  function matchesSearch(r: V1Resource, q: string): boolean {
+    if (!q) return true;
+    return getDisplayName(r).toLowerCase().includes(q.toLowerCase());
+  }
+
+  $: processedData = applyTableFilters({
+    data: data ?? [],
+    searchText,
+    matchesSearch,
+    filterPredicates: [
+      (r) =>
+        selectedResults.length === 0 || selectedResults.includes(getResult(r)),
+    ],
+    sortDirection,
+    getSortKey: getLastRun,
+  });
+
+  $: filterGroups = [
+    {
+      label: "Last run",
+      key: "result",
+      options: [
+        { value: "ok", label: "OK" },
+        { value: "error", label: "Error" },
+      ],
+      selected: selectedResults,
+      defaultValue: [],
+      multiSelect: true,
+    },
+  ] satisfies FilterGroup[];
+
+  function handleFilterChange(key: string, selected: string | string[]) {
+    if (key !== "result") return;
+    selectedResults = Array.isArray(selected) ? selected : [selected];
+  }
+
+  function clearFilters() {
+    selectedResults = [];
+    searchText = "";
+  }
 
   /**
    * Table column definitions.
@@ -66,7 +134,22 @@
   };
 </script>
 
-<ResourceList {columns} {data} {columnVisibility} kind="report">
+<ResourceList
+  {columns}
+  data={processedData}
+  {columnVisibility}
+  kind="report"
+  isFiltered={searchText !== "" || selectedResults.length > 0}
+>
+  <TableToolbar
+    slot="toolbar"
+    bind:searchText
+    {filterGroups}
+    onFilterChange={handleFilterChange}
+    onClearAllFilters={clearFilters}
+    bind:sortDirection
+    disabled={(data?.length ?? 0) === 0}
+  />
   <ResourceListEmptyState
     slot="empty"
     icon={ReportIcon}
