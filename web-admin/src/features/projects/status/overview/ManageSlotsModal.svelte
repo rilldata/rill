@@ -1,0 +1,265 @@
+<script lang="ts">
+  import {
+    createAdminServiceUpdateProject,
+    getAdminServiceGetProjectQueryKey,
+    type RpcStatus,
+  } from "@rilldata/web-admin/client";
+  import * as Dialog from "@rilldata/web-common/components/dialog";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import type { AxiosError } from "axios";
+  import {
+    SLOT_TIERS,
+    POPULAR_SLOTS,
+    ALL_SLOTS,
+    SLOT_RATE_PER_HR,
+    HOURS_PER_MONTH,
+    DEFAULT_MANAGED_SLOTS,
+    type SlotTier,
+  } from "./slots-utils";
+
+  function tierForSlots(slots: number): SlotTier | undefined {
+    return SLOT_TIERS.find((t) => t.slots === slots);
+  }
+
+  let {
+    open = $bindable(false),
+    organization,
+    project,
+    currentSlots,
+    title = "Manage Cluster Size",
+    minSlots = DEFAULT_MANAGED_SLOTS,
+    slotType = "prod",
+  }: {
+    open?: boolean;
+    organization: string;
+    project: string;
+    currentSlots: number;
+    title?: string;
+    minSlots?: number;
+    slotType?: "prod" | "dev";
+  } = $props();
+
+  let selectedSlots = $state(0);
+  let showAllSizes = $state(false);
+
+  $effect(() => {
+    if (open) {
+      selectedSlots = currentSlots;
+      showAllSizes = false;
+    }
+  });
+
+  const updateProject = createAdminServiceUpdateProject();
+
+  // Filter tiers to only show slots >= minimum
+  let availableTiers = $derived(SLOT_TIERS.filter((t) => t.slots >= minSlots));
+
+  // Ensure the current slot count always appears in the popular list
+  let popularSlotsWithExtras = $derived(
+    (() => {
+      let slots = POPULAR_SLOTS.filter((s) => s >= minSlots);
+      if (
+        currentSlots >= minSlots &&
+        !slots.includes(currentSlots) &&
+        ALL_SLOTS.includes(currentSlots)
+      ) {
+        slots.push(currentSlots);
+      }
+      return slots.sort((a, b) => a - b);
+    })(),
+  );
+
+  let visibleTiers = $derived(
+    showAllSizes
+      ? availableTiers
+      : availableTiers.filter((t) => popularSlotsWithExtras.includes(t.slots)),
+  );
+
+  let hasChanged = $derived(selectedSlots !== currentSlots);
+
+  async function applySlotChange() {
+    const data =
+      slotType === "dev"
+        ? { devSlots: String(selectedSlots) }
+        : { prodSlots: String(selectedSlots) };
+    try {
+      await $updateProject.mutateAsync({ org: organization, project, data });
+      await queryClient.refetchQueries({
+        queryKey: getAdminServiceGetProjectQueryKey(organization, project),
+      });
+      const newTier = tierForSlots(selectedSlots);
+      eventBus.emit("notification", {
+        message: newTier
+          ? `Cluster size updated to ${newTier.instance}`
+          : `Cluster size updated to ${selectedSlots} units`,
+      });
+      open = false;
+    } catch (err) {
+      const axiosError = err as AxiosError<RpcStatus>;
+      eventBus.emit("notification", {
+        message: axiosError.response?.data?.message ?? "Failed to update units",
+        type: "error",
+      });
+    }
+  }
+</script>
+
+<Dialog.Root bind:open>
+  <Dialog.Content class="max-w-2xl">
+    <Dialog.Header>
+      <Dialog.Title>{title}</Dialog.Title>
+      <Dialog.Description>
+        Choose the vCPU and memory allocation for your deployment. Monthly
+        estimates assume ~{HOURS_PER_MONTH} hours at ${SLOT_RATE_PER_HR}/unit/hr.{#if minSlots > 0}
+          Minimum {minSlots * 4}GiB / {minSlots}vCPU.{/if}
+      </Dialog.Description>
+    </Dialog.Header>
+
+    <!-- Tier table -->
+    <div class="tier-table">
+      <div class="tier-header">
+        <span class="tier-cell tier-cell-wide">Cluster Size</span>
+        <span class="tier-cell">Est. $/mo</span>
+      </div>
+      <div class="tier-list">
+        {#each visibleTiers as tier}
+          <button
+            class="tier-row"
+            class:tier-active={tier.slots === currentSlots}
+            class:tier-selected={tier.slots === selectedSlots &&
+              tier.slots !== currentSlots}
+            onclick={() => {
+              selectedSlots = tier.slots;
+            }}
+          >
+            <span class="tier-cell tier-cell-wide">
+              {tier.instance}
+              <span class="slot-label"
+                >({tier.slots} {tier.slots === 1 ? "unit" : "units"})</span
+              >
+              {#if tier.slots === currentSlots}
+                <span class="current-badge">current</span>
+              {/if}
+              {#if tier.slots === minSlots}
+                <span class="min-badge">min</span>
+              {/if}
+            </span>
+            <span class="tier-cell">~${tier.rillBill.toLocaleString()}</span>
+          </button>
+        {/each}
+      </div>
+    </div>
+    <button class="show-all-btn" onclick={() => (showAllSizes = !showAllSizes)}>
+      {showAllSizes ? "Show popular sizes" : "Show all sizes"}
+    </button>
+
+    <!-- Hibernate CTA -->
+    <p class="hibernate-note">
+      Want to stop billing entirely?
+      <a
+        href="/{organization}/{project}/-/settings"
+        class="hibernate-link"
+        onclick={() => (open = false)}
+      >
+        Hibernate this project
+      </a>
+      from the project settings page.
+    </p>
+
+    <div class="footer">
+      <button class="cancel-btn" onclick={() => (open = false)}>
+        Cancel
+      </button>
+      <button
+        class="apply-btn"
+        disabled={!hasChanged || $updateProject.isPending}
+        onclick={applySlotChange}
+      >
+        {#if $updateProject.isPending}
+          Updating...
+        {:else}
+          Apply
+        {/if}
+      </button>
+    </div>
+  </Dialog.Content>
+</Dialog.Root>
+
+<style lang="postcss">
+  .tier-table {
+    @apply border border-border rounded-md overflow-hidden;
+  }
+  .tier-list {
+    @apply max-h-[280px] overflow-y-auto;
+  }
+  .tier-header {
+    @apply flex bg-surface-subtle text-xs font-semibold text-fg-secondary uppercase tracking-wide;
+  }
+  .tier-header .tier-cell {
+    @apply px-3 py-2;
+  }
+  .tier-row {
+    @apply flex text-sm border-t border-border w-full text-left bg-transparent cursor-pointer;
+  }
+  .tier-row:hover:not(.tier-active):not(.tier-selected) {
+    @apply bg-surface-subtle;
+  }
+  .tier-row .tier-cell {
+    @apply px-3 py-2;
+  }
+  .tier-active {
+    @apply bg-primary-50;
+  }
+  .tier-selected {
+    @apply bg-primary-100;
+  }
+  .tier-cell {
+    @apply flex-1 flex items-center gap-1.5;
+  }
+  .tier-cell-wide {
+    @apply flex-[2];
+  }
+  .slot-label {
+    @apply text-xs text-fg-tertiary font-normal;
+  }
+  .current-badge {
+    @apply text-[10px] text-primary-600 bg-primary-100 px-1.5 py-0.5 rounded-full leading-none font-medium;
+  }
+  .min-badge {
+    @apply text-[10px] text-fg-tertiary bg-surface-subtle px-1.5 py-0.5 rounded-full leading-none font-medium;
+  }
+  .show-all-btn {
+    @apply text-xs text-primary-500 bg-transparent border-none cursor-pointer p-0 mt-2;
+  }
+  .show-all-btn:hover {
+    @apply text-primary-600;
+  }
+  .hibernate-note {
+    @apply text-xs text-fg-tertiary mt-3 italic;
+  }
+  .hibernate-link {
+    @apply text-primary-500 no-underline;
+  }
+  .hibernate-link:hover {
+    @apply text-primary-600 underline;
+  }
+  .footer {
+    @apply flex justify-end gap-2 mt-4;
+  }
+  .cancel-btn {
+    @apply text-sm text-fg-secondary bg-transparent border border-border rounded-md px-3 py-1.5 cursor-pointer;
+  }
+  .cancel-btn:hover {
+    @apply bg-surface-subtle;
+  }
+  .apply-btn {
+    @apply text-sm text-white bg-primary-500 border-none rounded-md px-3 py-1.5 cursor-pointer font-medium;
+  }
+  .apply-btn:hover {
+    @apply bg-primary-600;
+  }
+  .apply-btn:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+</style>
