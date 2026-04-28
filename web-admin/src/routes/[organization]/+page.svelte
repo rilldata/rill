@@ -8,7 +8,7 @@
     createAdminServiceListProjectsForOrganization,
   } from "../../client";
   import OrganizationHero from "../../features/organizations/OrganizationHero.svelte";
-  import ProjectCards from "../../features/projects/ProjectCards.svelte";
+  import ProjectsList from "../../features/projects/ProjectsList.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import { projectWelcomeEnabled } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
 
@@ -57,7 +57,7 @@
     {:else}
       <div class="flex flex-col gap-y-8">
         <OrganizationHero {title} />
-        <ProjectCards organization={orgName} />
+        <ProjectsList organization={orgName} />
       </div>
     {/if}
   {/if}
