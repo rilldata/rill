@@ -250,18 +250,16 @@ setup.describe("global setup", () => {
       adminPage.getByRole("link", { name: "Programmatic Ads Bids" }),
     ).toBeVisible();
 
-    // Wait for the first dashboard to be ready
+    // Wait for the first dashboard to be ready. In the column-based layout,
+    // each row is a link whose accessible name aggregates the cell text;
+    // the Status cell renders "Ready" once reconcile completes.
     await expect(
-      adminPage.getByRole("link", {
-        name: "Programmatic Ads Auction auction_explore",
-      }),
-    ).toContainText("Last refreshed", { timeout: 15_000 });
+      adminPage.getByRole("link", { name: "Programmatic Ads Auction" }).first(),
+    ).toContainText("Ready", { timeout: 15_000 });
 
     await expect(
-      adminPage.getByRole("link", {
-        name: "Programmatic Ads Bids bids_explore",
-      }),
-    ).toContainText("Last refreshed", { timeout: 15_000 });
+      adminPage.getByRole("link", { name: "Programmatic Ads Bids" }),
+    ).toContainText("Ready", { timeout: 15_000 });
   });
 
   setup("should deploy the AdBids project", async ({ adminPage }) => {
