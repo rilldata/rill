@@ -27,11 +27,8 @@ import { get } from "svelte/store";
 import { compileConnectorYAML } from "../../connectors/code-utils";
 import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
 import {
-  applyDuckLakeFormTransform,
-  buildDuckLakeSecretRefs,
-  extractDuckLakeAttachSecrets,
+  applyDuckLakeFormPipeline,
   injectDuckLakeAttach,
-  shouldExtractDuckLakeAttachSecrets,
 } from "../../templates/schemas/ducklake-utils";
 import type { ActionResult } from "@sveltejs/kit";
 import type { QueryClient } from "@tanstack/query-core";
@@ -529,30 +526,13 @@ export class AddDataFormManager {
     const connectorPropertiesForPreview = schemaConnectorFields ?? [];
 
     const getConnectorYamlPreview = (values: Record<string, unknown>) => {
-      // DuckLake "Parameters" tab: compose individual param fields into the
-      // single `attach` YAML key so the preview reflects what will actually be
-      // written. Mirrors the submit path so preview and final YAML match.
-      const duckLakeSecretRefs = buildDuckLakeSecretRefs(
-        schema,
-        connector.name ?? "",
-        existingEnvBlob ?? "",
-      );
-      let transformedValues = applyDuckLakeFormTransform(schema, values, {
-        secretRefs: duckLakeSecretRefs,
+      // DuckLake: mirror the submit path so the preview shows the composed
+      // ATTACH clause and rewritten env-var refs. Discards extractedSecrets
+      // since previews don't write to `.env`.
+      const { transformedValues } = applyDuckLakeFormPipeline(schema, values, {
+        connectorName: connector.name ?? "",
+        existingEnvBlob: existingEnvBlob ?? "",
       });
-      if (shouldExtractDuckLakeAttachSecrets(schema, transformedValues)) {
-        const rawAttach = transformedValues.attach;
-        if (typeof rawAttach === "string") {
-          const { rewrittenAttach, extractedSecrets } =
-            extractDuckLakeAttachSecrets(rawAttach, existingEnvBlob ?? "");
-          if (Object.keys(extractedSecrets).length > 0) {
-            transformedValues = {
-              ...transformedValues,
-              attach: rewrittenAttach,
-            };
-          }
-        }
-      }
       const filteredValues = schema
         ? injectDuckLakeAttach(
             schema,

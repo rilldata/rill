@@ -24,11 +24,8 @@ import {
   updateRillYAMLWithOlapConnector,
 } from "../../connectors/code-utils";
 import {
-  applyDuckLakeFormTransform,
-  buildDuckLakeSecretRefs,
-  extractDuckLakeAttachSecrets,
+  applyDuckLakeFormPipeline,
   injectDuckLakeAttach,
-  shouldExtractDuckLakeAttachSecrets,
 } from "../../templates/schemas/ducklake-utils";
 import {
   runtimeServicePutFileAndWaitForReconciliation,
@@ -190,18 +187,6 @@ async function saveConnectorWithoutTest(
     ? getSchemaStringKeys(schema, { step: "connector" })
     : [];
 
-  // DuckLake "Parameters" tab: compose individual param fields into the single
-  // `attach` YAML key, routing password fields through `.env` so raw secrets
-  // never appear in the composed ATTACH clause.
-  const duckLakeSecretRefs = buildDuckLakeSecretRefs(
-    schema,
-    connector.name ?? "",
-    existingEnvBlob ?? "",
-  );
-  let transformedValues = applyDuckLakeFormTransform(schema, formValues, {
-    secretRefs: duckLakeSecretRefs,
-  });
-
   // Create connector file
   const newConnectorFilePath = getFileAPIPathFromNameAndType(
     newConnectorName,
@@ -218,7 +203,7 @@ async function saveConnectorWithoutTest(
     client,
     queryClient,
     connector,
-    transformedValues,
+    formValues,
     {
       secretKeys: schemaSecretKeys,
       schema: schema ?? undefined,
@@ -228,24 +213,18 @@ async function saveConnectorWithoutTest(
   let newEnvBlob = envResult.newBlob;
   const envBlobForYaml = envResult.originalBlob;
 
-  // DuckLake "ATTACH SQL" tab: route credential-bearing catalog URIs in the
-  // raw attach string through `.env` alongside any form-field secrets.
-  if (shouldExtractDuckLakeAttachSecrets(schema, transformedValues)) {
-    const rawAttach = transformedValues.attach;
-    if (typeof rawAttach === "string") {
-      const { rewrittenAttach, extractedSecrets } =
-        extractDuckLakeAttachSecrets(rawAttach, envBlobForYaml ?? "");
-      if (Object.keys(extractedSecrets).length > 0) {
-        transformedValues = { ...transformedValues, attach: rewrittenAttach };
-        for (const [envVarName, rawValue] of Object.entries(extractedSecrets)) {
-          newEnvBlob = replaceOrAddEnvVariable(
-            newEnvBlob,
-            envVarName,
-            rawValue,
-          );
-        }
-      }
-    }
+  // DuckLake: compose Parameters tab into `attach`, route password fields and
+  // raw-ATTACH catalog URIs through `.env`.
+  const { transformedValues, extractedSecrets } = applyDuckLakeFormPipeline(
+    schema,
+    formValues,
+    {
+      connectorName: connector.name ?? "",
+      existingEnvBlob: envBlobForYaml ?? "",
+    },
+  );
+  for (const [envVarName, rawValue] of Object.entries(extractedSecrets)) {
+    newEnvBlob = replaceOrAddEnvVariable(newEnvBlob, envVarName, rawValue);
   }
 
   // Re-inject `attach` after filtering — the tab-group filter drops it when
@@ -322,18 +301,6 @@ export async function submitAddConnectorForm(
   const schemaStringKeys = schema
     ? getSchemaStringKeys(schema, { step: "connector" })
     : [];
-
-  // DuckLake "Parameters" tab: compose individual param fields into the single
-  // `attach` YAML key, routing password fields through `.env` so raw secrets
-  // never appear in the composed ATTACH clause.
-  const duckLakeSecretRefs = buildDuckLakeSecretRefs(
-    schema,
-    connector.name ?? "",
-    existingEnvBlob ?? "",
-  );
-  formValues = applyDuckLakeFormTransform(schema, formValues, {
-    secretRefs: duckLakeSecretRefs,
-  });
 
   // Create a unique key for this connector submission
   const uniqueConnectorSubmissionKey = `${client.instanceId}:${effectiveSchemaName}`;
@@ -414,28 +381,19 @@ export async function submitAddConnectorForm(
       let newEnvBlob = envResult.newBlob;
       originalEnvBlob = envResult.originalBlob;
 
-      // DuckLake "ATTACH SQL" tab: route credential-bearing catalog URIs in
-      // the user-pasted attach string through `.env`. Uses the baseline
-      // originalEnvBlob so env-var naming stays consistent with any form-field
-      // secrets already processed by updateDotEnvWithSecrets.
-      if (shouldExtractDuckLakeAttachSecrets(schema, formValues)) {
-        const rawAttach = formValues.attach;
-        if (typeof rawAttach === "string") {
-          const { rewrittenAttach, extractedSecrets } =
-            extractDuckLakeAttachSecrets(rawAttach, originalEnvBlob ?? "");
-          if (Object.keys(extractedSecrets).length > 0) {
-            formValues = { ...formValues, attach: rewrittenAttach };
-            for (const [envVarName, rawValue] of Object.entries(
-              extractedSecrets,
-            )) {
-              newEnvBlob = replaceOrAddEnvVariable(
-                newEnvBlob,
-                envVarName,
-                rawValue,
-              );
-            }
-          }
-        }
+      // DuckLake: compose Parameters tab into `attach`, route password fields
+      // and raw-ATTACH catalog URIs through `.env` using the baseline blob so
+      // env-var naming stays consistent with the form-field secrets that
+      // updateDotEnvWithSecrets just processed.
+      const duckLakeResult = applyDuckLakeFormPipeline(schema, formValues, {
+        connectorName: connector.name ?? "",
+        existingEnvBlob: originalEnvBlob ?? "",
+      });
+      formValues = duckLakeResult.transformedValues;
+      for (const [envVarName, rawValue] of Object.entries(
+        duckLakeResult.extractedSecrets,
+      )) {
+        newEnvBlob = replaceOrAddEnvVariable(newEnvBlob, envVarName, rawValue);
       }
 
       if (saveAnyway) {

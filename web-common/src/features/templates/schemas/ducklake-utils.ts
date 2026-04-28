@@ -347,6 +347,67 @@ export function shouldExtractDuckLakeAttachSecrets(
   return values.connection_mode !== "parameters";
 }
 
+export interface DuckLakePipelineResult {
+  /**
+   * Form values after Parameters-tab composition and SQL-tab catalog secret
+   * extraction. Use these as the source of truth for YAML emission.
+   */
+  transformedValues: Record<string, unknown>;
+  /**
+   * Catalog secrets newly extracted from a raw `attach` string. Submit paths
+   * append these to the `.env` blob; preview paths discard them.
+   */
+  extractedSecrets: Record<string, string>;
+}
+
+/**
+ * Run the full DuckLake form-value pipeline: compose Parameters fields into
+ * `attach`, route password fields through env-var refs, and extract catalog
+ * secrets from a raw ATTACH string. No-op pass-through for non-DuckLake
+ * schemas so callers can apply it unconditionally.
+ *
+ * Submit paths append `extractedSecrets` to their `.env` blob; preview paths
+ * just use `transformedValues`.
+ */
+export function applyDuckLakeFormPipeline(
+  schema: MultiStepFormSchema | null | undefined,
+  formValues: Record<string, unknown>,
+  opts: { connectorName: string; existingEnvBlob: string },
+): DuckLakePipelineResult {
+  if (schema !== ducklakeSchema) {
+    return { transformedValues: formValues, extractedSecrets: {} };
+  }
+
+  const secretRefs = buildDuckLakeSecretRefs(
+    schema,
+    opts.connectorName,
+    opts.existingEnvBlob,
+  );
+  let transformedValues = applyDuckLakeFormTransform(schema, formValues, {
+    secretRefs,
+  });
+
+  let extractedSecrets: Record<string, string> = {};
+  if (shouldExtractDuckLakeAttachSecrets(schema, transformedValues)) {
+    const rawAttach = transformedValues.attach;
+    if (typeof rawAttach === "string") {
+      const result = extractDuckLakeAttachSecrets(
+        rawAttach,
+        opts.existingEnvBlob,
+      );
+      if (Object.keys(result.extractedSecrets).length > 0) {
+        transformedValues = {
+          ...transformedValues,
+          attach: result.rewrittenAttach,
+        };
+        extractedSecrets = result.extractedSecrets;
+      }
+    }
+  }
+
+  return { transformedValues, extractedSecrets };
+}
+
 const DUCKLAKE_KNOWN_CATALOG_SCHEMES = new Set([
   "postgres",
   "mysql",
