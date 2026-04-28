@@ -11,6 +11,7 @@ import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { derived, get, type Readable } from "svelte/store";
 import {
   ResourceKind,
+  useClientFilteredResources,
   useFilteredResources,
 } from "../entity-management/resource-selectors";
 
@@ -64,7 +65,7 @@ export class MetricsViewSelectors {
   >;
 
   constructor(client: RuntimeClient, metricsViewsData?: MetricsViewsData) {
-    this.allMetricsViews = useFilteredResources(
+    this.allMetricsViews = useClientFilteredResources(
       client,
       ResourceKind.MetricsView,
     );

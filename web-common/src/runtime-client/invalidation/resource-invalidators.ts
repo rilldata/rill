@@ -124,6 +124,14 @@ async function dispatchWrite(
       V1ReconcileStatus.RECONCILE_STATUS_IDLE &&
     event.resource.meta.reconcileStatus ===
       V1ReconcileStatus.RECONCILE_STATUS_IDLE;
+
+  console.log(
+    `[(${previousResource?.meta?.specVersion ?? "0"},${previousResource?.meta?.stateVersion ?? "0"})` +
+      `(${event.resource?.meta?.specVersion ?? "0"},${event.resource?.meta?.stateVersion ?? "0"})]` +
+      ` ${resourceVersionUnchanged}/${resourceFinishedReconciling}=${!resourceVersionUnchanged && !resourceFinishedReconciling}` +
+      ` ${event.name?.kind}/${event.name?.name}`,
+  );
+
   if (!resourceVersionUnchanged && !resourceFinishedReconciling) {
     return;
   }
