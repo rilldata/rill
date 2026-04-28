@@ -19,6 +19,7 @@
   import ComparisonInput from "./ComparisonInput.svelte";
   import MultiFieldInput from "./fields/MultiFieldInput.svelte";
   import SingleFieldInput from "./fields/SingleFieldInput.svelte";
+  import LabelsInput from "./LabelsInput.svelte";
   import MetricSelectorDropdown from "./MetricSelectorDropdown.svelte";
   import SparklineInput from "./SparklineInput.svelte";
   import TableTypeSelector from "./TableTypeSelector.svelte";
@@ -252,6 +253,18 @@
             onChange={(updatedSparkline) => {
               localParamValues[key] = updatedSparkline;
               component.updateProperty(key, updatedSparkline);
+            }}
+          />
+
+          <!-- DATA LABELS INPUT -->
+        {:else if config.type === "labels"}
+          <LabelsInput
+            {key}
+            label={config.label ?? key}
+            value={localParamValues[key]}
+            onChange={(next) => {
+              localParamValues[key] = next;
+              component.updateProperty(key, next);
             }}
           />
 
