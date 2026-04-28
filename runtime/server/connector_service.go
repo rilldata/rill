@@ -114,7 +114,7 @@ func (s *Server) OLAPGetTable(ctx context.Context, req *runtimev1.OLAPGetTableRe
 	if err != nil {
 		return nil, err
 	}
-	_ = olap.InformationSchema().LoadPhysicalSize(ctx, []*drivers.OlapTable{table})
+	_ = olap.InformationSchema().LoadPhysicalSize(ctx, []*drivers.TableInfo{table})
 
 	return &runtimev1.OLAPGetTableResponse{
 		Schema:             table.Schema,
@@ -179,12 +179,12 @@ func (s *Server) GetTable(ctx context.Context, req *runtimev1.GetTableRequest) (
 	}
 	defer release()
 
-	tableMetadata, err := olap.InformationSchema().GetTable(ctx, req.Database, req.DatabaseSchema, req.Table)
+	_, err = olap.InformationSchema().Lookup(ctx, req.Database, req.DatabaseSchema, req.Table)
 	if err != nil {
 		return nil, err
 	}
 
 	return &runtimev1.GetTableResponse{
-		Schema: tableMetadata.Schema,
+		Schema: nil,
 	}, nil
 }

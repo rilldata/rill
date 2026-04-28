@@ -231,7 +231,7 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 	}, nil
 }
 
-func (c *connection) All(ctx context.Context, ilike string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
+func (c *connection) All(ctx context.Context, ilike string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
 	// TODO: this bypasses the acquireMetaConn call in the original implementation. Fix this.
 	db, release, err := c.acquireDB()
 	if err != nil {
@@ -252,7 +252,7 @@ func (c *connection) All(ctx context.Context, ilike string, pageSize uint32, pag
 	return tables, nextToken, nil
 }
 
-func (c *connection) Lookup(ctx context.Context, _, _, name string) (*drivers.OlapTable, error) {
+func (c *connection) Lookup(ctx context.Context, _, _, name string) (*drivers.TableInfo, error) {
 	// TODO: this bypasses the acquireMetaConn call in the original implementation. Fix this.
 	db, release, err := c.acquireDB()
 	if err != nil {
@@ -277,12 +277,12 @@ func (c *connection) Lookup(ctx context.Context, _, _, name string) (*drivers.Ol
 	return tables[0], nil
 }
 
-func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
+func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.TableInfo) error {
 	// already populated in All and Lookup calls
 	return nil
 }
 
-func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
+func (c *connection) LoadDDL(ctx context.Context, table *drivers.TableInfo) error {
 	db, release, err := c.acquireDB()
 	if err != nil {
 		return err
@@ -297,11 +297,11 @@ func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) erro
 	return nil
 }
 
-func scanTables(rows []*rduckdb.Table) ([]*drivers.OlapTable, error) {
-	var res []*drivers.OlapTable
+func scanTables(rows []*rduckdb.Table) ([]*drivers.TableInfo, error) {
+	var res []*drivers.TableInfo
 
 	for _, row := range rows {
-		t := &drivers.OlapTable{
+		t := &drivers.TableInfo{
 			Database:                row.Database,
 			DatabaseSchema:          row.Schema,
 			IsDefaultDatabase:       true,

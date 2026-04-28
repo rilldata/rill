@@ -780,7 +780,7 @@ func (r *ModelReconciler) queryOutputTableStats(ctx context.Context, connector, 
 	if err != nil {
 		return rowCount, 0, nil
 	}
-	err = olap.InformationSchema().LoadPhysicalSize(ctx, []*drivers.OlapTable{tbl})
+	err = olap.InformationSchema().LoadPhysicalSize(ctx, []*drivers.TableInfo{tbl})
 	if err != nil {
 		return rowCount, 0, nil
 	}

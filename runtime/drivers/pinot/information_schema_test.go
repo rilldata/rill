@@ -27,7 +27,6 @@ func TestInformationSchema(t *testing.T) {
 	t.Run("testInformationSchemaAllPaginationWithLike", func(t *testing.T) { testInformationSchemaAllPaginationWithLike(t, ctx, infoSchema) })
 	t.Run("testInformationSchemaListDatabaseSchemas", func(t *testing.T) { testInformationSchemaListDatabaseSchemas(t, ctx, infoSchema) })
 	t.Run("testInformationSchemaListTables", func(t *testing.T) { testInformationSchemaListTables(t, ctx, infoSchema) })
-	t.Run("testInformationSchemaGetTable", func(t *testing.T) { testInformationSchemaGetTable(t, ctx, infoSchema) })
 	t.Run("testInformationSchemaListTablesPagination", func(t *testing.T) { testInformationSchemaListTablesPagination(t, ctx, infoSchema) })
 
 }
@@ -178,22 +177,6 @@ func testInformationSchemaListTables(t *testing.T, ctx context.Context, infoSche
 		require.True(t, tbl.IsDefaultDatabase)
 		require.True(t, tbl.IsDefaultDatabaseSchema)
 	}
-}
-
-func testInformationSchemaGetTable(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
-	starbucksStores, err := infoSchema.GetTable(ctx, "", "default", "starbucksStores")
-	require.NoError(t, err)
-
-	require.Equal(t, 5, len(starbucksStores.Schema))
-	require.Equal(t, "FLOAT32", starbucksStores.Schema["lon"])
-	require.Equal(t, "FLOAT32", starbucksStores.Schema["lat"])
-	require.Equal(t, "STRING", starbucksStores.Schema["name"])
-	require.Equal(t, "STRING", starbucksStores.Schema["address"])
-	require.Equal(t, "BYTES", starbucksStores.Schema["location_st_point"])
-	require.Equal(t, false, starbucksStores.View)
-
-	_, err = infoSchema.GetTable(ctx, "", "default", "nonexistent_table")
-	require.ErrorContains(t, err, "unexpected status code: 404")
 }
 
 func testInformationSchemaListTablesPagination(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {

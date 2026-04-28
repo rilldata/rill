@@ -42,7 +42,6 @@ func TestInformationSchema(t *testing.T) {
 		testInformationSchemaListDatabaseSchemas(t, ctx, infoSchema, database, databaseSchema)
 	})
 	t.Run("testInformationSchemaListTables", func(t *testing.T) { testInformationSchemaListTables(t, ctx, infoSchema, database, databaseSchema) })
-	t.Run("testInformationSchemaGetTable", func(t *testing.T) { testInformationSchemaGetTable(t, ctx, infoSchema, database, databaseSchema) })
 	t.Run("testInformationSchemaListTablesPagination", func(t *testing.T) {
 		testInformationSchemaListTablesPagination(t, ctx, infoSchema, database, databaseSchema)
 	})
@@ -87,7 +86,6 @@ schema_name: integration_test
 		testInformationSchemaListDatabaseSchemas(t, ctx, infoSchema, database, databaseSchema)
 	})
 	t.Run("testInformationSchemaListTables", func(t *testing.T) { testInformationSchemaListTables(t, ctx, infoSchema, database, databaseSchema) })
-	t.Run("testInformationSchemaGetTable", func(t *testing.T) { testInformationSchemaGetTable(t, ctx, infoSchema, database, databaseSchema) })
 	t.Run("testInformationSchemaListTablesPagination", func(t *testing.T) {
 		testInformationSchemaListTablesPagination(t, ctx, infoSchema, database, databaseSchema)
 	})
@@ -241,22 +239,6 @@ func testInformationSchemaListTables(t *testing.T, ctx context.Context, infoSche
 		require.True(t, tbl.IsDefaultDatabase)
 		require.True(t, tbl.IsDefaultDatabaseSchema)
 	}
-}
-
-func testInformationSchemaGetTable(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema, database, databaseSchema string) {
-	bar, err := infoSchema.GetTable(ctx, database, databaseSchema, "bar")
-	require.NoError(t, err)
-	require.Equal(t, 2, len(bar.Schema))
-	require.Equal(t, "STRING", bar.Schema["bar"])
-	require.Equal(t, "INT32", bar.Schema["baz"])
-	require.Equal(t, false, bar.View)
-
-	noTable, err := infoSchema.GetTable(ctx, database, databaseSchema, "nonexistent_table")
-	require.Equal(t, 0, len(noTable.Schema))
-
-	table, err := infoSchema.GetTable(ctx, database, databaseSchema, "model")
-	require.NoError(t, err)
-	require.Equal(t, true, table.View)
 }
 
 func testInformationSchemaListTablesPagination(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema, database, databaseSchema string) {

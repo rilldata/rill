@@ -180,17 +180,17 @@ func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, tab
 }
 
 // All implements drivers.InformationSchema.
-func (c *Connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
+func (c *Connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
 	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
 }
 
 // LoadPhysicalSize implements drivers.InformationSchema.
-func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
+func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.TableInfo) error {
 	return nil
 }
 
 // LoadDDL implements drivers.InformationSchema.
-func (c *Connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
+func (c *Connection) LoadDDL(ctx context.Context, table *drivers.TableInfo) error {
 	client, err := c.getClient(ctx)
 	if err != nil {
 		return err
@@ -219,7 +219,7 @@ func (c *Connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) erro
 }
 
 // Lookup implements drivers.InformationSchema.
-func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
+func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.TableInfo, error) {
 	client, err := c.getClient(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get BigQuery client: %w", err)
@@ -240,7 +240,7 @@ func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 	if err != nil {
 		return nil, err
 	}
-	tbl := &drivers.OlapTable{
+	tbl := &drivers.TableInfo{
 		Database:          db,
 		DatabaseSchema:    schema,
 		Name:              name,

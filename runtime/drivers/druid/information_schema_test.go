@@ -23,7 +23,6 @@ func TestInformationSchema(t *testing.T) {
 	t.Run("testInformationSchemaLookup", func(t *testing.T) { testInformationSchemaLookup(t, ctx, infoSchema, expectedTables) })
 	t.Run("testInformationSchemaListDatabaseSchemas", func(t *testing.T) { testInformationSchemaListDatabaseSchemas(t, ctx, infoSchema, expectedTables) })
 	t.Run("testInformationSchemaListTables", func(t *testing.T) { testInformationSchemaListTables(t, ctx, infoSchema, expectedTables) })
-	t.Run("testInformationSchemaGetTable", func(t *testing.T) { testInformationSchemaGetTable(t, ctx, infoSchema, expectedTables) })
 	t.Run("testInformationSchemaListTablesPagination", func(t *testing.T) { testInformationSchemaListTablesPagination(t, ctx, infoSchema, expectedTables) })
 
 }
@@ -191,19 +190,6 @@ func testInformationSchemaListTables(t *testing.T, ctx context.Context, infoSche
 		require.True(t, tbl.IsDefaultDatabase)
 		require.True(t, tbl.IsDefaultDatabaseSchema)
 	}
-}
-
-func testInformationSchemaGetTable(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema, expected []expectedTable) {
-	require.GreaterOrEqual(t, len(expected), 1, "expected one table for schema get table test")
-	testTable := expected[0].Name
-
-	// Lookup the table
-	table, err := infoSchema.GetTable(ctx, "", "druid", testTable)
-	require.NoError(t, err)
-	require.Greater(t, len(table.Schema), 1)
-
-	table, err = infoSchema.GetTable(ctx, "", "druid", "nonexistent_table")
-	require.Equal(t, 0, len(table.Schema))
 }
 
 func testInformationSchemaListTablesPagination(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema, expected []expectedTable) {

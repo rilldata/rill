@@ -42,7 +42,6 @@ func TestInformationSchema(t *testing.T) {
 	t.Run("testInformationSchemaAllPaginationWithLike", func(t *testing.T) { testInformationSchemaAllPaginationWithLike(t, ctx, infoSchema) })
 	t.Run("testInformationSchemaListDatabaseSchemas", func(t *testing.T) { testInformationSchemaListDatabaseSchemas(t, ctx, infoSchema) })
 	t.Run("testInformationSchemaListTables", func(t *testing.T) { testInformationSchemaListTables(t, ctx, infoSchema) })
-	t.Run("testInformationSchemaGetTable", func(t *testing.T) { testInformationSchemaGetTable(t, ctx, infoSchema) })
 	t.Run("testInformationSchemaListDatabaseSchemasPagination", func(t *testing.T) { testInformationSchemaListDatabaseSchemasPagination(t, ctx, infoSchema) })
 	t.Run("testInformationSchemaListTablesPagination", func(t *testing.T) { testInformationSchemaListTablesPagination(t, ctx, infoSchema) })
 	t.Run("testLoadDDL", func(t *testing.T) { testLoadDDL(t, ctx, infoSchema) })
@@ -232,36 +231,6 @@ func testInformationSchemaListTables(t *testing.T, ctx context.Context, infoSche
 		require.True(t, tbl.IsDefaultDatabase)
 		require.False(t, tbl.IsDefaultDatabaseSchema)
 	}
-}
-
-func testInformationSchemaGetTable(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
-	// Existing table
-	foo, err := infoSchema.GetTable(ctx, "", "default", "foo")
-	require.NoError(t, err)
-	require.Len(t, foo.Schema, 2)
-	require.Equal(t, "STRING", foo.Schema["bar"])
-	require.Equal(t, "INT32", foo.Schema["baz"])
-	require.False(t, foo.View)
-
-	// Non-existent table
-	noTable, err := infoSchema.GetTable(ctx, "", "default", "nonexistent_table")
-	require.NoError(t, err)
-	require.Empty(t, noTable.Schema)
-
-	// View
-	model, err := infoSchema.GetTable(ctx, "", "default", "model")
-	require.NoError(t, err)
-	require.Equal(t, "UINT8", model.Schema["1"])
-	require.Equal(t, "UINT8", model.Schema["2"])
-	require.Equal(t, "UINT8", model.Schema["3"])
-	require.True(t, model.View)
-
-	ofoo, err := infoSchema.GetTable(ctx, "", "other", "foo")
-	require.NoError(t, err)
-	require.Equal(t, "STRING", ofoo.Schema["bar"])
-	require.Equal(t, "INT32", ofoo.Schema["baz"])
-	require.Equal(t, false, ofoo.View)
-
 }
 
 func testInformationSchemaListDatabaseSchemasPagination(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {

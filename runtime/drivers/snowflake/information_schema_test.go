@@ -37,9 +37,6 @@ func TestInformationSchema(t *testing.T) {
 	t.Run("testListTables", func(t *testing.T) {
 		testListTables(t, ctx, infoSchema)
 	})
-	t.Run("testGetTable", func(t *testing.T) {
-		testGetTable(t, ctx, infoSchema)
-	})
 	t.Run("testListTablesPagination", func(t *testing.T) {
 		testListTablesPagination(t, ctx, infoSchema)
 	})
@@ -87,6 +84,9 @@ func testLookup(t *testing.T, ctx context.Context, infoSchema drivers.Informatio
 	model, err := infoSchema.Lookup(ctx, database, databaseSchema, "MODEL")
 	require.NoError(t, err)
 	require.True(t, model.View)
+
+	_, err = infoSchema.Lookup(ctx, database, databaseSchema, "nonexistent_table")
+	require.Error(t, err)
 }
 
 func testListDatabaseSchemas(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
@@ -122,23 +122,6 @@ func testListTables(t *testing.T, ctx context.Context, infoSchema drivers.Inform
 		require.True(t, tbl.IsDefaultDatabase, "table %s: expected IsDefaultDatabase=true", tbl.Name)
 		require.True(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=true", tbl.Name)
 	}
-}
-
-func testGetTable(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
-	bar, err := infoSchema.GetTable(ctx, database, databaseSchema, "BAR")
-	require.NoError(t, err)
-	require.Equal(t, 2, len(bar.Schema))
-	require.Contains(t, bar.Schema, "BAR")
-	require.Contains(t, bar.Schema, "BAZ")
-	require.False(t, bar.View)
-
-	noTable, err := infoSchema.GetTable(ctx, database, databaseSchema, "nonexistent_table")
-	require.NoError(t, err)
-	require.Equal(t, 0, len(noTable.Schema))
-
-	model, err := infoSchema.GetTable(ctx, database, databaseSchema, "MODEL")
-	require.NoError(t, err)
-	require.True(t, model.View)
 }
 
 func testListTablesPagination(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
@@ -179,12 +162,12 @@ func testLoadDDL(t *testing.T, ctx context.Context, infoSchema drivers.Informati
 	require.NotEmpty(t, view.DDL)
 }
 
-func filterOLAP(tables []*drivers.OlapTable) []*drivers.OlapTable {
+func filterOLAP(tables []*drivers.TableInfo) []*drivers.TableInfo {
 	known := make(map[string]bool, numKnown)
 	for _, n := range knownTestTables {
 		known[n] = true
 	}
-	var out []*drivers.OlapTable
+	var out []*drivers.TableInfo
 	for _, t := range tables {
 		if known[t.Name] {
 			out = append(out, t)

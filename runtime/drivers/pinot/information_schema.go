@@ -193,7 +193,7 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, nam
 	return &drivers.TableMetadata{Schema: schema, View: false}, nil
 }
 
-func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
+func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
 	// query /tables endpoint, for each table name, query /tables/{tableName}/schema
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.schemaURL+"/tables", http.NoBody)
 	for k, v := range c.headers {
@@ -254,12 +254,12 @@ func (c *connection) All(ctx context.Context, like string, pageSize uint32, page
 	}
 
 	if startIndex >= len(filteredTables) {
-		return []*drivers.OlapTable{}, "", nil
+		return []*drivers.TableInfo{}, "", nil
 	}
 
 	paginatedTables := filteredTables[startIndex:endIndex]
 
-	tables := make([]*drivers.OlapTable, len(paginatedTables))
+	tables := make([]*drivers.TableInfo, len(paginatedTables))
 	// fetch table schemas in parallel with concurrency of 5
 	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(5)
@@ -291,7 +291,7 @@ func (c *connection) All(ctx context.Context, like string, pageSize uint32, page
 	return tables, next, nil
 }
 
-func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
+func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.TableInfo, error) {
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.schemaURL+"/tables/"+name+"/schema", http.NoBody)
 	for k, v := range c.headers {
 		req.Header.Set(k, v)
@@ -347,7 +347,7 @@ func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 		schemaFields = append(schemaFields, &runtimev1.StructType_Field{Name: field.Name, Type: databaseTypeToPB(field.DataType, !field.NotNull, singleValueField)})
 	}
 
-	table := &drivers.OlapTable{
+	table := &drivers.TableInfo{
 		Database:          "",
 		DatabaseSchema:    "",
 		Name:              name,
@@ -361,13 +361,13 @@ func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 }
 
 // LoadDDL implements drivers.InformationSchema.
-func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
+func (c *connection) LoadDDL(ctx context.Context, table *drivers.TableInfo) error {
 	return nil // Not implemented
 }
 
 // LoadPhysicalSize populates the PhysicalSizeBytes field of the tables.
 // This was not tested when implemented so should be tested when pinot becomes a fairly used connector.
-func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
+func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.TableInfo) error {
 	if len(tables) == 0 {
 		return nil
 	}

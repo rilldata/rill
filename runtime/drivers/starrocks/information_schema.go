@@ -19,7 +19,7 @@ var _ drivers.InformationSchema = (*informationSchema)(nil)
 
 // All returns metadata about all tables and views.
 // For StarRocks, we query from the configured catalog's information_schema.
-func (i *informationSchema) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
+func (i *informationSchema) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
 	db := i.c.db
 
 	catalog := i.c.configProp.Catalog
@@ -63,7 +63,7 @@ func (i *informationSchema) All(ctx context.Context, like string, pageSize uint3
 	}
 	defer rows.Close()
 
-	var tables []*drivers.OlapTable
+	var tables []*drivers.TableInfo
 	for rows.Next() {
 		var schema, name string
 		var isView bool
@@ -71,7 +71,7 @@ func (i *informationSchema) All(ctx context.Context, like string, pageSize uint3
 			return nil, "", err
 		}
 
-		tables = append(tables, &drivers.OlapTable{
+		tables = append(tables, &drivers.TableInfo{
 			Database:       catalog, // StarRocks catalog -> Rill database
 			DatabaseSchema: schema,  // StarRocks database -> Rill databaseSchema
 			Name:           name,
@@ -95,7 +95,7 @@ func (i *informationSchema) All(ctx context.Context, like string, pageSize uint3
 
 // Lookup returns metadata about a specific table or view.
 // database parameter = catalog, schema parameter = database in StarRocks terms.
-func (i *informationSchema) Lookup(ctx context.Context, database, schema, name string) (*drivers.OlapTable, error) {
+func (i *informationSchema) Lookup(ctx context.Context, database, schema, name string) (*drivers.TableInfo, error) {
 	db := i.c.db
 
 	// StarRocks mapping: database parameter = catalog
@@ -179,7 +179,7 @@ func (i *informationSchema) Lookup(ctx context.Context, database, schema, name s
 
 	// StarRocks: Always save database (catalog) and databaseSchema (database) in metrics view YAML
 	// because StarRocks queries require fully qualified table names (catalog.database.table)
-	return &drivers.OlapTable{
+	return &drivers.TableInfo{
 		Database:                catalog,
 		DatabaseSchema:          tableSchema,
 		IsDefaultDatabase:       false,
@@ -193,7 +193,7 @@ func (i *informationSchema) Lookup(ctx context.Context, database, schema, name s
 
 // LoadPhysicalSize populates the PhysicalSizeBytes field of table metadata.
 // For external catalogs, this may not be available.
-func (i *informationSchema) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
+func (i *informationSchema) LoadPhysicalSize(ctx context.Context, tables []*drivers.TableInfo) error {
 	// StarRocks doesn't easily expose physical size for external tables
 	// For internal tables, we could query be_tablets but it's complex
 	// Return without error, leaving PhysicalSizeBytes as 0
@@ -201,7 +201,7 @@ func (i *informationSchema) LoadPhysicalSize(ctx context.Context, tables []*driv
 }
 
 // LoadDDL implements drivers.InformationSchema.
-func (i *informationSchema) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
+func (i *informationSchema) LoadDDL(ctx context.Context, table *drivers.TableInfo) error {
 	db := i.c.db
 
 	catalog := table.Database

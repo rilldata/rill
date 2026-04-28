@@ -80,7 +80,7 @@ func (t *ShowTable) Handler(ctx context.Context, args *ShowTableArgs) (*ShowTabl
 	}
 
 	// Load physical size
-	_ = olap.InformationSchema().LoadPhysicalSize(ctx, []*drivers.OlapTable{table})
+	_ = olap.InformationSchema().LoadPhysicalSize(ctx, []*drivers.TableInfo{table})
 
 	// Load DDL
 	_ = olap.InformationSchema().LoadDDL(ctx, table)

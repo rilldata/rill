@@ -175,18 +175,18 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 }
 
 // All implements drivers.InformationSchema.
-func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
+func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
 	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
 }
 
 // LoadPhysicalSize implements drivers.InformationSchema.
-func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
+func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.TableInfo) error {
 	return nil
 }
 
 // LoadDDL implements drivers.InformationSchema.
 // Note: table.Database is not used; in Postgres, the database is determined by the connection.
-func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
+func (c *connection) LoadDDL(ctx context.Context, table *drivers.TableInfo) error {
 	db, err := c.getDB(ctx)
 	if err != nil {
 		return err
@@ -241,7 +241,7 @@ func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) erro
 }
 
 // Lookup implements drivers.InformationSchema.
-func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
+func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.TableInfo, error) {
 	meta, err := c.GetTable(ctx, db, schema, name)
 	if err != nil {
 		return nil, err
@@ -255,7 +255,7 @@ func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 			Type: t,
 		})
 	}
-	return &drivers.OlapTable{
+	return &drivers.TableInfo{
 		Database:          db,
 		DatabaseSchema:    schema,
 		Name:              name,
