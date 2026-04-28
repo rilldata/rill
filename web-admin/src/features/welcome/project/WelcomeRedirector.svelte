@@ -24,7 +24,7 @@
       (file) => file.path === "/rill.yaml",
     );
     if (!hasRillYaml) {
-      projectWelcomeStatus.isProjectWelcomeStep(project);
+      projectWelcomeStatus.setProjectWelcomeStep(project, true);
       void goto(
         injectBranchIntoPath(
           `/${organization}/${project}/-/edit/welcome`,

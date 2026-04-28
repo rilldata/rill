@@ -53,7 +53,7 @@ export async function maybeRedirectToEditableDeployment(
 
   const isActiveProdDeployment =
     prodDeployment && isActiveDeployment(prodDeployment);
-  if (isActiveProdDeployment || !editableDeployment) return;
+  if (isActiveProdDeployment || !editableDeployment?.branch) return;
 
   // If user is already in the editable deployment then do not do another redirect.
   const currentBranch = extractBranchFromPath(url.pathname);

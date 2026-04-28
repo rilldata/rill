@@ -8,6 +8,7 @@ import {
 export const load = ({ params: { organization, project }, url }) => {
   if (!projectWelcomeStatus.isProjectWelcomeStep(project)) {
     const branch = extractBranchFromPath(url.pathname);
+    if (!branch) return;
     throw redirect(
       307,
       injectBranchIntoPath(`/${organization}/${project}/-/edit`, branch),
