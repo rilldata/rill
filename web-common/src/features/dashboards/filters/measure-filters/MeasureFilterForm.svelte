@@ -60,34 +60,36 @@
     }),
   });
 
-  const { form, errors, submit, enhance } = superForm(
+  const { form, errors, validateForm, enhance } = superForm(
     defaults(initialValues, yup(validationSchema)),
     {
       SPA: true,
       validators: yup(validationSchema),
       dataType: "json",
-      onUpdate({ form }) {
-        if (!form.valid) return;
-        const values = form.data;
-
-        onApply({
-          dimension: values.dimension,
-          oldDimension: dimensionName,
-          filter: {
-            measure: name,
-            operation: values.operation,
-            type: MeasureFilterType.Value,
-            value1: values.value1,
-            value2: values.value2 ?? "",
-          },
-        });
-
-        open = false;
-      },
       invalidateAll: false,
       resetForm: false,
     },
   );
+
+  async function submit() {
+    const result = await validateForm({ update: true });
+    if (!result.valid) return;
+    const values = result.data;
+
+    onApply({
+      dimension: values.dimension,
+      oldDimension: dimensionName,
+      filter: {
+        measure: name,
+        operation: values.operation,
+        type: MeasureFilterType.Value,
+        value1: values.value1,
+        value2: values.value2 ?? "",
+      },
+    });
+
+    open = false;
+  }
 
   $: ({ operation } = $form);
 
@@ -148,7 +150,7 @@
     id="measure"
     onsubmit={(e) => {
       e.preventDefault();
-      submit(e);
+      void submit();
     }}
     use:enhance
   >
@@ -198,6 +200,6 @@
       />
     {/if}
 
-    <Button submitForm type="primary" form="measure">Apply</Button>
+    <Button type="primary" onClick={submit}>Apply</Button>
   </form>
 </Popover.Content>
