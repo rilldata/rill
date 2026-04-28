@@ -20,7 +20,10 @@
   import RefreshAllSourcesAndModelsConfirmDialog from "@rilldata/web-common/features/resources/RefreshAllSourcesAndModelsConfirmDialog.svelte";
   import { useResources } from "../selectors";
   import { isResourceReconciling } from "@rilldata/web-admin/lib/refetch-interval-store";
-  import { filterResources } from "@rilldata/web-common/features/resources/resource-filter-utils";
+  import {
+    filterResources,
+    getAvailableTags,
+  } from "@rilldata/web-common/features/resources/resource-filter-utils";
   import {
     createUrlFilterSync,
     parseArrayParam,
@@ -36,6 +39,7 @@
   const filterSync = createUrlFilterSync([
     { key: "kind", type: "array" },
     { key: "status", type: "array" },
+    { key: "tags", type: "array" },
     { key: "q", type: "string" },
   ]);
   filterSync.init($page.url);
@@ -44,6 +48,7 @@
   let searchText = parseStringParam($page.url.searchParams.get("q"));
   let selectedTypes = parseArrayParam($page.url.searchParams.get("kind"));
   let selectedStatuses = parseArrayParam($page.url.searchParams.get("status"));
+  let selectedTags = parseArrayParam($page.url.searchParams.get("tags"));
   let mounted = false;
 
   // Sync URL → local state on external navigation (back/forward)
@@ -51,6 +56,7 @@
     filterSync.markSynced($page.url);
     selectedTypes = parseArrayParam($page.url.searchParams.get("kind"));
     selectedStatuses = parseArrayParam($page.url.searchParams.get("status"));
+    selectedTags = parseArrayParam($page.url.searchParams.get("tags"));
     searchText = parseStringParam($page.url.searchParams.get("q"));
   }
 
@@ -59,6 +65,7 @@
     filterSync.syncToUrl({
       kind: selectedTypes,
       status: selectedStatuses,
+      tags: selectedTags,
       q: searchText,
     });
   }
@@ -88,6 +95,30 @@
     ResourceKind.Connector,
   ];
 
+  $: resources = useResources(runtimeClient);
+
+  // Parse errors
+  $: projectParserQuery = createRuntimeServiceGetResource(
+    runtimeClient,
+    {
+      name: {
+        kind: ResourceKind.ProjectParser,
+        name: SingletonProjectParserName,
+      },
+    },
+    { query: { refetchOnMount: true, refetchOnWindowFocus: true } },
+  );
+  $: parseErrors =
+    $projectParserQuery.data?.resource?.projectParser?.state?.parseErrors ?? [];
+
+  $: hasReconcilingResources = $resources.data?.resources?.some(
+    isResourceReconciling,
+  );
+
+  $: isRefreshButtonDisabled = hasReconcilingResources;
+
+  $: availableTags = getAvailableTags($resources.data?.resources);
+
   $: filterGroups = [
     {
       label: "Type",
@@ -111,46 +142,39 @@
       defaultValue: [],
       multiSelect: true,
     },
+    ...(availableTags.length > 0
+      ? [
+          {
+            label: "Tags",
+            key: "tags",
+            options: availableTags.map((t) => ({ value: t, label: t })),
+            selected: selectedTags,
+            defaultValue: [],
+            multiSelect: true,
+          },
+        ]
+      : []),
   ] satisfies FilterGroup[];
 
-  $: resources = useResources(runtimeClient);
-
-  // Parse errors
-  $: projectParserQuery = createRuntimeServiceGetResource(
-    runtimeClient,
-    {
-      name: {
-        kind: ResourceKind.ProjectParser,
-        name: SingletonProjectParserName,
-      },
-    },
-    { query: { refetchOnMount: true, refetchOnWindowFocus: true } },
-  );
-  $: parseErrors =
-    $projectParserQuery.data?.resource?.projectParser?.state?.parseErrors ?? [];
-
-  $: hasReconcilingResources = $resources.data?.resources?.some(
-    isResourceReconciling,
-  );
-
-  $: isRefreshButtonDisabled = hasReconcilingResources;
-
-  // Filter resources by type, search text, and status
+  // Filter resources by type, search text, status, and tags
   $: filteredResources = filterResources(
     $resources.data?.resources,
     selectedTypes,
     searchText,
     selectedStatuses,
+    selectedTags,
   );
 
   function onFilterChange(key: string, selected: string[] | string) {
     if (key === "kind") selectedTypes = selected as string[];
     if (key === "status") selectedStatuses = selected as string[];
+    if (key === "tags") selectedTags = selected as string[];
   }
 
   function clearFilters() {
     selectedTypes = [];
     selectedStatuses = [];
+    selectedTags = [];
     searchText = "";
   }
 

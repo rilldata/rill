@@ -270,7 +270,7 @@ func (p *Parser) parseAlert(node *Node) error {
 	}
 
 	// Track alert
-	r, err := p.insertResource(ResourceKindAlert, node.Name, node.Paths, node.Refs...)
+	r, err := p.insertResource(ResourceKindAlert, node.Name, node.Paths, node.Tags, node.Refs...)
 	if err != nil {
 		return err
 	}

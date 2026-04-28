@@ -37,6 +37,7 @@ type Resource struct {
 	Name    ResourceName
 	Paths   []string
 	Refs    []ResourceName // Derived from rawRefs after parsing (can't contain ResourceKindUnspecified). Always sorted.
+	Tags    []string       // User-defined tags parsed from the YAML "tags:" field. Stored generically on ResourceMeta, not on per-kind specs.
 	rawRefs []ResourceName // Populated during parsing (may contain ResourceKindUnspecified)
 
 	// Only one of these will be non-nil
@@ -828,7 +829,8 @@ func (p *Parser) insertDryRun(kind ResourceKind, name string) error {
 
 // insertResource inserts a resource in the parser's internal state.
 // After calling insertResource, the caller can directly modify the returned resource's spec.
-func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, refs ...ResourceName) (*Resource, error) {
+// The tags parameter is stored generically on the resource and later propagated to ResourceMeta.Tags by the reconciler.
+func (p *Parser) insertResource(kind ResourceKind, name string, paths, tags []string, refs ...ResourceName) (*Resource, error) {
 	// Create the resource if not already present (ensures the spec for its kind is never nil)
 	rn := ResourceName{Kind: kind, Name: name}
 	_, ok := p.Resources[rn.Normalized()]
@@ -857,6 +859,7 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, 
 	r := &Resource{
 		Name:    rn,
 		Paths:   paths,
+		Tags:    tags,
 		rawRefs: refs,
 	}
 	switch kind {

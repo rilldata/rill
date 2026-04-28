@@ -42,6 +42,8 @@ message ResourceMeta {
   repeated ResourceName refs = 2;
   optional ResourceName owner = 3;
   repeated string file_paths = 4;
+  // Tags for organizing and filtering resources. Parsed generically from any resource YAML's top-level "tags:" field.
+  repeated string tags = 19;
   bool hidden = 7;
   int64 version = 15;
   int64 spec_version = 5;

@@ -4,7 +4,10 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { timeAgo } from "@rilldata/web-common/lib/time/relative-time";
+
+  const { tagAsFolders } = featureFlags;
 
   export let name: string;
   export let title: string;
@@ -15,13 +18,19 @@
   export let isEmbedded: boolean;
   export let organization: string;
   export let project: string;
+  export let tags: string[] = [];
+  // When set, appends ?tags=<activeTag> so back-navigation preserves folder context.
+  export let activeTag: string | undefined = undefined;
 
   $: lastRefreshedDate = lastRefreshed ? new Date(lastRefreshed) : null;
 
   $: dashboardSlug = isMetricsExplorer ? "explore" : "canvas";
-  $: href = isEmbedded
+  $: basePath = isEmbedded
     ? `/-/embed/${dashboardSlug}/${name}`
     : `/${organization}/${project}/${dashboardSlug}/${name}`;
+  $: href = activeTag
+    ? `${basePath}?tags=${encodeURIComponent(activeTag)}`
+    : basePath;
 
   $: resourceKind = isMetricsExplorer
     ? ResourceKind.Explore
@@ -38,6 +47,11 @@
     </span>
     {#if error !== ""}
       <Tag color="red">Error</Tag>
+    {/if}
+    {#if !$tagAsFolders}
+      {#each tags as tag (tag)}
+        <Tag color="gray">{tag}</Tag>
+      {/each}
     {/if}
   </div>
   <div

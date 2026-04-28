@@ -12,9 +12,11 @@
     prettyResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import RefreshAllSourcesAndModelsConfirmDialog from "@rilldata/web-common/features/resources/RefreshAllSourcesAndModelsConfirmDialog.svelte";
+  import TagFilterDropdown from "@rilldata/web-common/features/resources/TagFilterDropdown.svelte";
   import {
     filterableTypes,
     filterResources,
+    getAvailableTags,
     getStatusPriority,
     statusFilters,
   } from "@rilldata/web-common/features/resources/resource-filter-utils";
@@ -45,6 +47,8 @@
   export let selectedStatuses: string[] = [];
   /** Pre-set type filters (e.g. from overview resources section) */
   export let selectedTypes: string[] = [];
+  /** Pre-set tag filters */
+  export let selectedTags: string[] = [];
   /** Two-way bindable search text */
   export let searchText = "";
   /** Fixed table container height (web-admin uses 550) */
@@ -78,11 +82,14 @@
     return openDropdownResourceKey === resourceKey;
   };
 
+  $: availableTags = getAvailableTags(resources);
+
   $: filteredResources = filterResources(
     resources,
     selectedTypes,
     searchText,
     selectedStatuses,
+    selectedTags,
   );
 
   $: tableData = filteredResources.filter(
@@ -92,7 +99,10 @@
   );
 
   $: hasActiveFilters =
-    selectedTypes.length > 0 || searchText || selectedStatuses.length > 0;
+    selectedTypes.length > 0 ||
+    searchText ||
+    selectedStatuses.length > 0 ||
+    selectedTags.length > 0;
 
   function toggleType(type: string) {
     if (selectedTypes.includes(type)) {
@@ -113,6 +123,7 @@
   function clearFilters() {
     selectedTypes = [];
     selectedStatuses = [];
+    selectedTags = [];
     searchText = "";
   }
 
@@ -290,6 +301,8 @@
         {/each}
       </DropdownMenu.Content>
     </DropdownMenu.Root>
+
+    <TagFilterDropdown tags={availableTags} bind:selectedTags />
 
     {#if hasActiveFilters}
       <button

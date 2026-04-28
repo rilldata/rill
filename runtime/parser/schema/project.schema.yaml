@@ -3288,6 +3288,11 @@ definitions:
         items:
           type: string
           description: A string reference like `<resource-name>` or `<type/resource-name>`.
+      tags:
+        type: array
+        description: Tags for organizing and filtering the resource (e.g. on the project dashboards list).
+        items:
+          type: string
       dev:
         type: object
         description: Overrides any properties in development environment.

@@ -10,6 +10,24 @@ import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 
+// Virtual tag value used for dashboards that have no tags. Used as the
+// ?tags= URL param value, the map key for grouping, and the comparison
+// constant for "show untagged" logic.
+export const UNTAGGED_KEY = "not-tagged";
+
+// Display label rendered to the user wherever `UNTAGGED_KEY` would otherwise
+// surface (folder header, breadcrumb dropdown). The URL value stays
+// kebab-case for stable links.
+export const UNTAGGED_LABEL = "Not Tagged";
+
+export function getResourceTags(resource: V1Resource): string[] {
+  return resource.meta?.tags ?? [];
+}
+
+export function getPrimaryTag(resource: V1Resource): string {
+  return getResourceTags(resource)[0] ?? UNTAGGED_KEY;
+}
+
 export function useDashboardsLastUpdated(
   client: RuntimeClient,
   organization: string,

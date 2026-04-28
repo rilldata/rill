@@ -2344,6 +2344,8 @@ export interface V1ResourceMeta {
   refs?: V1ResourceName[];
   owner?: V1ResourceName;
   filePaths?: string[];
+  /** Tags for organizing and filtering resources. Parsed generically from any resource YAML's top-level "tags:" field. */
+  tags?: string[];
   hidden?: boolean;
   version?: string;
   specVersion?: string;

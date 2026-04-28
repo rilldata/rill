@@ -95,38 +95,87 @@
           align="start"
           class="min-w-44 max-h-96 overflow-y-auto"
         >
-          {#each options as [id, option] (id)}
+          {#each [...options] as [id, option], i (id)}
             {@const isSelected = id === current.toLowerCase()}
             {@const icon = option.resourceKind
               ? resourceIconMapping[option.resourceKind]
               : undefined}
-            <DropdownMenu.CheckboxItem
-              class="cursor-pointer"
-              checked={isSelected}
-              checkSize={"h-3 w-3"}
-              href={linkMaker(
-                currentPath,
-                depth,
-                id,
-                option,
-                $page.route.id ?? "",
-              )}
-              preloadData={option.preloadData}
-              onclick={() => {
-                if (onSelect) {
-                  onSelect(id);
-                }
-              }}
-            >
-              <span
-                class="text-xs text-fg-secondary flex-grow flex items-center gap-x-1.5"
+            {@const prevGroup =
+              i > 0 ? [...options][i - 1][1].groupLabel : undefined}
+            {@const showGroupHeader =
+              option.groupLabel && option.groupLabel !== prevGroup}
+            {#if showGroupHeader}
+              <div
+                class="px-2 pt-2 pb-0.5 text-[10px] uppercase tracking-wide text-fg-tertiary font-semibold"
               >
-                {#if icon}
-                  <svelte:component this={icon} size="12px" />
-                {/if}
-                {option.label}
-              </span>
-            </DropdownMenu.CheckboxItem>
+                {option.groupLabel}
+              </div>
+            {/if}
+            {#if option.subOptions && option.subOptions.size > 0}
+              <DropdownMenu.Sub>
+                <DropdownMenu.SubTrigger class="cursor-pointer">
+                  <span
+                    class="text-xs text-fg-secondary flex-grow flex items-center gap-x-1.5"
+                  >
+                    {#if icon}
+                      <svelte:component this={icon} size="12px" />
+                    {/if}
+                    {option.label}
+                  </span>
+                </DropdownMenu.SubTrigger>
+                <DropdownMenu.SubContent
+                  class="min-w-44 max-h-96 overflow-y-auto"
+                >
+                  {#each option.subOptions as [subId, subOption] (subId)}
+                    {@const subIcon = subOption.resourceKind
+                      ? resourceIconMapping[subOption.resourceKind]
+                      : undefined}
+                    <DropdownMenu.Item
+                      class="cursor-pointer"
+                      href={subOption.href}
+                      preloadData={subOption.preloadData}
+                    >
+                      <span
+                        class="text-xs text-fg-secondary flex-grow flex items-center gap-x-1.5"
+                      >
+                        {#if subIcon}
+                          <svelte:component this={subIcon} size="12px" />
+                        {/if}
+                        {subOption.label}
+                      </span>
+                    </DropdownMenu.Item>
+                  {/each}
+                </DropdownMenu.SubContent>
+              </DropdownMenu.Sub>
+            {:else}
+              <DropdownMenu.CheckboxItem
+                class="cursor-pointer"
+                checked={isSelected}
+                checkSize={"h-3 w-3"}
+                href={linkMaker(
+                  currentPath,
+                  depth,
+                  id,
+                  option,
+                  $page.route.id ?? "",
+                )}
+                preloadData={option.preloadData}
+                onclick={() => {
+                  if (onSelect) {
+                    onSelect(id);
+                  }
+                }}
+              >
+                <span
+                  class="text-xs text-fg-secondary flex-grow flex items-center gap-x-1.5"
+                >
+                  {#if icon}
+                    <svelte:component this={icon} size="12px" />
+                  {/if}
+                  {option.label}
+                </span>
+              </DropdownMenu.CheckboxItem>
+            {/if}
           {/each}
         </DropdownMenu.Content>
       </DropdownMenu.Root>

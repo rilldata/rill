@@ -26,6 +26,7 @@
   const filterSync = createUrlFilterSync([
     { key: "kind", type: "array" },
     { key: "status", type: "array" },
+    { key: "tags", type: "array" },
     { key: "q", type: "string" },
   ]);
   filterSync.init($page.url);
@@ -33,6 +34,7 @@
   let searchText = parseStringParam($page.url.searchParams.get("q"));
   let selectedTypes = parseArrayParam($page.url.searchParams.get("kind"));
   let selectedStatuses = parseArrayParam($page.url.searchParams.get("status"));
+  let selectedTags = parseArrayParam($page.url.searchParams.get("tags"));
   let mounted = false;
 
   // Sync URL → local state on external navigation (back/forward)
@@ -40,6 +42,7 @@
     filterSync.markSynced($page.url);
     selectedTypes = parseArrayParam($page.url.searchParams.get("kind"));
     selectedStatuses = parseArrayParam($page.url.searchParams.get("status"));
+    selectedTags = parseArrayParam($page.url.searchParams.get("tags"));
     searchText = parseStringParam($page.url.searchParams.get("q"));
   }
 
@@ -48,6 +51,7 @@
     filterSync.syncToUrl({
       kind: selectedTypes,
       status: selectedStatuses,
+      tags: selectedTags,
       q: searchText,
     });
   }
@@ -95,6 +99,7 @@
   onRefetch={() => $resourcesQuery.refetch()}
   bind:selectedStatuses
   bind:selectedTypes
+  bind:selectedTags
   bind:searchText
 />
 
