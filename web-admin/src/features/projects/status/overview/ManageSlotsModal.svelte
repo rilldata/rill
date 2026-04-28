@@ -154,6 +154,12 @@
       {showAllSizes ? "Show popular sizes" : "Show all sizes"}
     </button>
 
+    {#if slotType === "dev"}
+      <p class="dev-restart-note">
+        Changes apply to a running deployment after it is stopped and restarted.
+      </p>
+    {/if}
+
     <!-- Hibernate CTA -->
     <p class="hibernate-note">
       Want to stop billing entirely?
@@ -234,6 +240,9 @@
   }
   .show-all-btn:hover {
     @apply text-primary-600;
+  }
+  .dev-restart-note {
+    @apply text-xs text-fg-secondary mt-3 px-3 py-2 rounded-md bg-surface-subtle border border-border;
   }
   .hibernate-note {
     @apply text-xs text-fg-tertiary mt-3 italic;

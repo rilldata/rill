@@ -2,6 +2,8 @@
   import {
     createAdminServiceGetProject,
     createAdminServiceGetBillingSubscription,
+    createAdminServiceListDeployments,
+    type V1Deployment,
   } from "@rilldata/web-admin/client";
   import {
     isTrialPlan,
@@ -11,10 +13,14 @@
     isTeamPlan,
     isEnterprisePlan,
   } from "@rilldata/web-admin/features/billing/plans/utils";
+  import { isActiveDeployment, isProdDeployment } from "./deployment-utils";
+  import { isTransitoryStatus } from "@rilldata/web-admin/features/projects/status/display-utils";
   import { SLOT_RATE_PER_HR } from "@rilldata/web-admin/features/projects/status/overview/slots-utils";
+  import ManageSlotsModal from "@rilldata/web-admin/features/projects/status/overview/ManageSlotsModal.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
+  import { SlidersHorizontalIcon } from "lucide-svelte";
 
   let {
     organization,
@@ -63,21 +69,60 @@
     });
   }
 
+  // Deployments — used to count active dev deployments for total compute
+  let deploymentsQuery = $derived(
+    createAdminServiceListDeployments(
+      organization,
+      project,
+      {},
+      {
+        query: {
+          refetchInterval: (query) => {
+            const deployments = query.state.data?.deployments;
+            if (deployments?.some((d) => isTransitoryStatus(d.status!))) {
+              return 2000;
+            }
+            return false;
+          },
+        },
+      },
+    ),
+  );
+  let activeDevDeploymentCount = $derived(
+    ($deploymentsQuery.data?.deployments ?? []).filter(
+      (d: V1Deployment) => !isProdDeployment(d) && isActiveDeployment(d),
+    ).length,
+  );
+
   // Slot types
   let prodSlots = $derived(parseInt(projectData?.prodSlots ?? "0", 10) || 0);
-  let devSlots = $derived(parseInt(projectData?.devSlots ?? "0", 10) || 0);
-  let totalSlots = $derived(prodSlots + devSlots);
+  let devSlotsPerDeployment = $derived(
+    parseInt(projectData?.devSlots ?? "0", 10) || 0,
+  );
+  let runningDevSlots = $derived(
+    devSlotsPerDeployment * activeDevDeploymentCount,
+  );
+  let totalSlots = $derived(prodSlots + runningDevSlots);
 
   // Cluster info (split into number + unit for display)
   let prodMemory = $derived(prodSlots * 4);
   let prodCpu = $derived(prodSlots);
-  let devMemory = $derived(devSlots * 4);
-  let devCpu = $derived(devSlots);
+  let devMemory = $derived(devSlotsPerDeployment * 4);
+  let devCpu = $derived(devSlotsPerDeployment);
 
   // Cost calculations
   let prodHourlyCost = $derived((prodSlots * SLOT_RATE_PER_HR).toFixed(2));
-  let devHourlyCost = $derived((devSlots * SLOT_RATE_PER_HR).toFixed(2));
+  let devHourlyCostPerDeployment = $derived(
+    (devSlotsPerDeployment * SLOT_RATE_PER_HR).toFixed(2),
+  );
+  let runningDevHourlyCost = $derived(
+    (runningDevSlots * SLOT_RATE_PER_HR).toFixed(2),
+  );
   let totalHourlyCost = $derived((totalSlots * SLOT_RATE_PER_HR).toFixed(2));
+
+  // Manage units modals
+  let prodSlotsModalOpen = $state(false);
+  let devSlotsModalOpen = $state(false);
 </script>
 
 {#if showDeploymentSection}
@@ -103,7 +148,7 @@
         <span class="summary-breakdown">
           {prodSlots} production
           <span class="text-fg-tertiary">&middot;</span>
-          {devSlots} development
+          {runningDevSlots} development
         </span>
       </div>
 
@@ -115,7 +160,7 @@
           >${totalHourlyCost}/hr</span
         >
         <span class="summary-breakdown-plain">
-          ${prodHourlyCost} prod + ${devHourlyCost} dev
+          ${prodHourlyCost} prod + ${runningDevHourlyCost} dev
         </span>
         {#if cycleStart && cycleEnd}
           <span class="summary-cycle">
@@ -132,6 +177,13 @@
       <div class="breakdown-card breakdown-card-prod">
         <div class="breakdown-header">
           <h4 class="breakdown-title">Production</h4>
+          <button
+            class="manage-btn"
+            onclick={() => (prodSlotsModalOpen = true)}
+          >
+            <SlidersHorizontalIcon size="12px" />
+            Manage units
+          </button>
         </div>
         <div class="breakdown-body">
           <div class="breakdown-metric">
@@ -161,15 +213,19 @@
       <div class="breakdown-card breakdown-card-dev">
         <div class="breakdown-header">
           <h4 class="breakdown-title">Development</h4>
+          <button class="manage-btn" onclick={() => (devSlotsModalOpen = true)}>
+            <SlidersHorizontalIcon size="12px" />
+            Manage units
+          </button>
         </div>
         <div class="breakdown-body">
           <div class="breakdown-metric">
             <div class="metric-row">
               <span
                 class="metric-value"
-                class:metric-value-empty={devSlots === 0}
+                class:metric-value-empty={devSlotsPerDeployment === 0}
               >
-                {#if devSlots > 0}
+                {#if devSlotsPerDeployment > 0}
                   {devMemory}<span class="metric-unit">GiB</span>
                   <span class="metric-slash">/</span>
                   {devCpu}<span class="metric-unit">vCPU</span>
@@ -182,20 +238,46 @@
           </div>
           <div class="breakdown-details">
             <div class="detail-row">
-              <span class="detail-label">Units</span>
-              <span class="detail-value">{devSlots}</span>
+              <span class="detail-label">Units (per deployment)</span>
+              <span class="detail-value">{devSlotsPerDeployment}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Active deployments</span>
+              <span class="detail-value">{activeDevDeploymentCount}</span>
             </div>
             <div class="detail-row">
               <span class="detail-label">Est. cost</span>
               <span class="detail-value-sm">
-                {devSlots > 0 ? `~$${devHourlyCost}/hr` : "—"}
+                {runningDevSlots > 0 ? `~$${runningDevHourlyCost}/hr` : "—"}
               </span>
             </div>
           </div>
+          <p class="card-note">
+            Changes apply to a running deployment after it is stopped and
+            restarted.
+          </p>
         </div>
       </div>
     </div>
   </div>
+
+  <ManageSlotsModal
+    bind:open={prodSlotsModalOpen}
+    {organization}
+    {project}
+    currentSlots={prodSlots}
+    title="Manage Prod Cluster Size"
+  />
+
+  <ManageSlotsModal
+    bind:open={devSlotsModalOpen}
+    {organization}
+    {project}
+    currentSlots={devSlotsPerDeployment}
+    title="Manage Dev Cluster Size"
+    minSlots={0}
+    slotType="dev"
+  />
 {/if}
 
 <style lang="postcss">
@@ -251,6 +333,15 @@
   }
   .breakdown-title {
     @apply font-sans text-base font-semibold leading-none;
+  }
+  .manage-btn {
+    @apply inline-flex items-center gap-1.5 text-xs font-medium text-fg-secondary bg-transparent border border-border rounded-md px-2 py-1 cursor-pointer;
+  }
+  .manage-btn:hover {
+    @apply bg-surface-subtle text-fg-primary;
+  }
+  .card-note {
+    @apply text-xs text-fg-tertiary italic px-6 m-0;
   }
   /* Breakdown body */
   .breakdown-body {

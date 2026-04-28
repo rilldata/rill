@@ -45,12 +45,10 @@
     EyeIcon,
     GitBranchIcon,
     PlayIcon,
-    SlidersHorizontalIcon,
     StopCircleIcon,
     Trash2Icon,
   } from "lucide-svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import ManageSlotsModal from "@rilldata/web-admin/features/projects/status/overview/ManageSlotsModal.svelte";
   import { onMount } from "svelte";
 
   let { organization, project }: { organization: string; project: string } =
@@ -99,9 +97,6 @@
     ),
   );
 
-  let canManage = $derived(
-    $projectQuery.data?.projectPermissions?.manageProject ?? false,
-  );
   let prodSlots = $derived(
     $projectQuery.data?.project?.prodSlots != null
       ? parseInt($projectQuery.data.project.prodSlots, 10)
@@ -233,8 +228,6 @@
   let pendingId = $state("");
   let deleteDialogOpen = $state(false);
   let pendingDelete = $state<{ id: string; branch: string } | null>(null);
-  let prodSlotsModalOpen = $state(false);
-  let devSlotsModalOpen = $state(false);
 
   async function mutateDeployment(
     deploymentId: string,
@@ -282,7 +275,7 @@
       optimisticallyRemoveDeployment(organization, project, deploymentId);
       if (branch && branch === activeBranch) {
         requestSkipBranchInjection();
-        void goto(`/${organization}/${project}/-/status/branches`);
+        void goto(`/${organization}/${project}/-/status/deployments`);
       }
     } catch (err) {
       eventBus.emit("notification", {
@@ -411,34 +404,6 @@
                     <span class="ml-2">{prod ? "View" : "Preview"}</span>
                   </div>
                 </DropdownMenu.Item>
-                {#if prod && canManage && isActiveDeployment(deployment)}
-                  <DropdownMenu.Item
-                    class="font-normal flex items-center"
-                    onclick={() => {
-                      openDropdownId = "";
-                      prodSlotsModalOpen = true;
-                    }}
-                  >
-                    <div class="flex items-center">
-                      <SlidersHorizontalIcon size="12px" />
-                      <span class="ml-2">Manage units</span>
-                    </div>
-                  </DropdownMenu.Item>
-                {/if}
-                {#if !prod && canManage && isActiveDeployment(deployment)}
-                  <DropdownMenu.Item
-                    class="font-normal flex items-center"
-                    onclick={() => {
-                      openDropdownId = "";
-                      devSlotsModalOpen = true;
-                    }}
-                  >
-                    <div class="flex items-center">
-                      <SlidersHorizontalIcon size="12px" />
-                      <span class="ml-2">Manage units</span>
-                    </div>
-                  </DropdownMenu.Item>
-                {/if}
                 {#if canStart}
                   <DropdownMenu.Item
                     class="font-normal flex items-center"
@@ -507,24 +472,6 @@
   bind:open={deleteDialogOpen}
   branch={pendingDelete?.branch || primaryBranch || "main"}
   onConfirm={handleDelete}
-/>
-
-<ManageSlotsModal
-  bind:open={prodSlotsModalOpen}
-  {organization}
-  {project}
-  currentSlots={prodSlots ?? 0}
-  title="Manage Prod Cluster Size"
-/>
-
-<ManageSlotsModal
-  bind:open={devSlotsModalOpen}
-  {organization}
-  {project}
-  currentSlots={devSlots ?? 0}
-  title="Manage Dev Cluster Size"
-  minSlots={0}
-  slotType="dev"
 />
 
 <style lang="postcss">

@@ -18,7 +18,7 @@
     },
     {
       label: "Deployments",
-      route: "/branches",
+      route: "/deployments",
       hasPermission: !onBranch,
     },
     {
