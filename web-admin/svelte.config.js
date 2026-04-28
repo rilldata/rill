@@ -46,7 +46,8 @@ const config = {
           // confirm the exact subdomains.
           // https://support.usepylon.com/articles/5968160735-chat-widget-debugging-guide
           "https://widget.usepylon.com",
-          "https://*.pusher.com",
+          // Pusher JS SDK is likely bundled, but kept for Pylon's dynamic script injection.
+          "https://js.pusher.com",
           ...(dev ? ["http:"] : []),
           // Hash of the inline script injected by the Pylon chat widget at runtime.
           // If Pylon updates their widget, this hash may need to be refreshed.
@@ -73,11 +74,13 @@ const config = {
           "https://*.rilldata.com",
           "https://*.rilldata.io",
           "https://*.rilldata.in",
+          // *.usepylon.com: Pylon widget makes internal requests to unknown subdomains.
           "https://*.usepylon.com",
           "https://docs.google.com",
           "https://storage.googleapis.com",
           "https://cdn.prod.website-files.com",
-          "wss://*.pusher.com",
+          // Pusher cluster confirmed from HAR (ws-us3). Update if cluster changes.
+          "wss://ws-us3.pusher.com",
           ...(dev ? ["http://localhost:*", "ws://localhost:*"] : []),
         ],
         "font-src": [
