@@ -331,6 +331,7 @@ func (s *Server) CreateManagedGitRepo(ctx context.Context, req *adminv1.CreateMa
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.organization", req.Org),
 		attribute.String("args.name", req.Name),
+		attribute.Bool("args.auto_init", req.AutoInit),
 	)
 
 	// Find org
@@ -344,7 +345,7 @@ func (s *Server) CreateManagedGitRepo(ctx context.Context, req *adminv1.CreateMa
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to create projects")
 	}
 
-	repo, err := s.admin.CreateManagedGitRepo(ctx, org, req.Name, claims.OwnerID())
+	repo, err := s.admin.CreateManagedGitRepo(ctx, org, req.Name, claims.OwnerID(), req.AutoInit)
 	if err != nil {
 		return nil, err
 	}
