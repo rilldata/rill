@@ -1,39 +1,15 @@
 <script lang="ts">
-  import { createAdminServiceListProjectsForOrganization } from "../../client";
+  import type { V1Project } from "@rilldata/web-admin/client";
   import ProjectCard from "./ProjectCard.svelte";
-  import { Button } from "@rilldata/web-common/components/button";
-  import { projectWelcomeEnabled } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
 
   export let organization: string;
-
-  $: projs = createAdminServiceListProjectsForOrganization(organization, {
-    pageSize: 1000,
-  });
+  export let projects: V1Project[];
 </script>
 
-<div class="flex flex-col gap-y-4">
-  <span
-    class="flex flex-row items-center text-fg-secondary text-base font-normal leading-normal"
-  >
-    <span class="grow">Check out your projects below.</span>
-    {#if projectWelcomeEnabled}
-      <Button type="primary" href="/{organization}/-/create-project">
-        Create new
-      </Button>
-    {/if}
-  </span>
-
-  {#if $projs.data && $projs.data.projects?.length === 0}
-    <p class="text-fg-secondary text-xs">
-      This organization has no projects yet.
-    </p>
-  {:else if $projs.data && $projs.data.projects?.length > 0}
-    <ol class="flex gap-6 flex-wrap">
-      {#each $projs.data.projects as proj}
-        <li>
-          <ProjectCard {organization} project={proj.name} />
-        </li>
-      {/each}
-    </ol>
-  {/if}
-</div>
+<ol class="flex gap-6 flex-wrap">
+  {#each projects as proj (proj.name)}
+    <li>
+      <ProjectCard {organization} project={proj.name ?? ""} />
+    </li>
+  {/each}
+</ol>
