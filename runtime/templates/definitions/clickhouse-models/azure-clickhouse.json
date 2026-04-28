@@ -1,7 +1,7 @@
 {
   "name": "azure-clickhouse",
   "display_name": "Azure Blob Storage",
-  "description": "Read Azure Blob Storage files into ClickHouse using table functions",
+  "description": "Read Azure Blob Storage files into ClickHouse via a named collection",
   "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/azure",
   "driver": "azure",
   "olap": "clickhouse",
@@ -12,12 +12,13 @@
     "microsoft",
     "object-storage",
     "clickhouse",
-    "source"
+    "source",
+    "connector"
   ],
   "json_schema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
-    "x-category": "sourceOnly",
+    "x-category": "objectStore",
     "properties": {
       "auth_method": {
         "type": "string",
@@ -50,7 +51,8 @@
             "azure_storage_key"
           ],
           "public": []
-        }
+        },
+        "x-step": "connector"
       },
       "azure_storage_connection_string": {
         "type": "string",
@@ -59,6 +61,7 @@
         "x-placeholder": "DefaultEndpointsProtocol=https;AccountName=...;AccountKey=...;EndpointSuffix=core.windows.net",
         "x-secret": true,
         "x-env-var": "AZURE_STORAGE_CONNECTION_STRING",
+        "x-step": "connector",
         "x-visible-if": {
           "auth_method": "connection_string"
         }
@@ -68,6 +71,7 @@
         "title": "Storage account",
         "description": "Azure storage account name",
         "x-placeholder": "mystorageaccount",
+        "x-step": "connector",
         "x-visible-if": {
           "auth_method": "account_key"
         }
@@ -79,6 +83,7 @@
         "x-placeholder": "Enter storage key",
         "x-secret": true,
         "x-env-var": "AZURE_STORAGE_KEY",
+        "x-step": "connector",
         "x-visible-if": {
           "auth_method": "account_key"
         }
@@ -91,14 +96,16 @@
         "errorMessage": {
           "pattern": "Must be an Azure URI (e.g. azure://container/path or https://account.blob.core.windows.net/container/path)"
         },
-        "x-placeholder": "azure://container/path"
+        "x-placeholder": "azure://container/path",
+        "x-step": "source"
       },
       "name": {
         "type": "string",
         "title": "Model name",
         "description": "Name for the source model",
         "pattern": "^[a-zA-Z0-9_]+$",
-        "x-placeholder": "my_model"
+        "x-placeholder": "my_model",
+        "x-step": "source"
       }
     },
     "required": [
@@ -139,9 +146,14 @@
   },
   "files": [
     {
+      "name": "connector",
+      "path_template": "connectors/[[ .connector_name ]].yaml",
+      "code_template": "[[ if .config_props -]]\n# Connector YAML\n# Reference documentation: [[ .docs_url ]]\ntype: connector\ndriver: azure\n[[ renderProps .config_props ]]\n[[ end -]]\n"
+    },
+    {
       "name": "model",
       "path_template": "models/[[ .model_name ]].yaml",
-      "code_template": "# Model YAML\n# Reference documentation: https://docs.rilldata.com/reference/project-files/models\ntype: model\nmaterialize: true\nconnector: clickhouse\nsql: |[[ if eq .auth_method \"connection_string\" ]]\n  SELECT * FROM azureBlobStorage(\n      '[[ propVal .props \"azure_storage_connection_string\" ]]',\n      '[[ azureContainer .path ]]',\n      '[[ azureBlobPath .path ]]'\n  )[[ else if eq .auth_method \"account_key\" ]]\n  SELECT * FROM azureBlobStorage(\n      '[[ azureEndpoint .path .azure_storage_account ]]',\n      '[[ azureContainer .path ]]',\n      '[[ azureBlobPath .path ]]',\n      '[[ propVal .props \"azure_storage_account\" ]]',\n      '[[ propVal .props \"azure_storage_key\" ]]'\n  )[[ else ]]\n  SELECT * FROM azureBlobStorage(\n      '[[ azureEndpoint .path \"\" ]]',\n      '[[ azureContainer .path ]]',\n      '[[ azureBlobPath .path ]]'\n  )[[ end ]]\n"
+      "code_template": "# Model YAML\n# Reference documentation: https://docs.rilldata.com/reference/project-files/models\ntype: model\nmaterialize: true\nconnector: clickhouse\nsql: |[[ if ne .auth_method \"public\" ]]\n  SELECT * FROM azureBlobStorage(rill_[[ .connector_name ]], container='[[ azureContainer .path ]]', blob_path='[[ azureBlobPath .path ]]')[[ else ]]\n  SELECT * FROM azureBlobStorage('[[ azureEndpoint .path \"\" ]]', '[[ azureContainer .path ]]', '[[ azureBlobPath .path ]]')[[ end ]]\n"
     }
   ]
 }
