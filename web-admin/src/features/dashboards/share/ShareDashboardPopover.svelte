@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+  import { page } from "$app/stores";
   import CreatePublicURLForm from "@rilldata/web-admin/features/public-urls/CreatePublicURLForm.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
@@ -23,6 +25,18 @@
   const { hidePublicUrl } = featureFlags;
   let isOpen = false;
   let copied = false;
+
+  // Auto-open when arriving from the dashboards listing's "Share" item.
+  // Strip the query param afterwards so a refresh doesn't reopen the popover.
+  $: if (!isOpen && $page.url.searchParams.get("action") === "share") {
+    isOpen = true;
+    const url = new URL($page.url);
+    url.searchParams.delete("action");
+    void goto(url.pathname + url.search, {
+      replaceState: true,
+      noScroll: true,
+    });
+  }
 
   function onCopy() {
     navigator.clipboard.writeText(window.location.href).catch(console.error);
