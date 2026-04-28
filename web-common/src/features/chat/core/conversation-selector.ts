@@ -11,7 +11,6 @@ import { page } from "$app/stores";
 import { derived, get, type Readable, type Writable } from "svelte/store";
 import { sessionStorageStore } from "../../../lib/store-utils/session-storage";
 import { NEW_CONVERSATION_ID } from "./utils";
-import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
 // =============================================================================
 // CORE INTERFACE
@@ -120,13 +119,13 @@ export class BrowserStorageConversationSelector
   readonly currentConversationId: Readable<string>;
   readonly isNewConversation: Readable<boolean>;
 
-  constructor(client: RuntimeClient) {
+  constructor(userId: string | null) {
     // Create project-specific storage store based on current page params
     const currentPage = get(page);
     const organization = currentPage.params.organization || "";
     const project = currentPage.params.project || "";
 
-    const userPart = client.externalUserId ? "-" + client.externalUserId : "";
+    const userPart = userId ? "-" + userId : "";
     this.store = sessionStorageStore<string>(
       `sidebar-conversation-id-${organization}-${project}${userPart}`,
       NEW_CONVERSATION_ID,

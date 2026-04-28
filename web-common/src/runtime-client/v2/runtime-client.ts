@@ -17,8 +17,6 @@ export class RuntimeClient {
   readonly instanceId: string;
   readonly transport: Transport;
   readonly requestQueue: RequestQueue;
-  // Used to scope user settings in embed context
-  readonly externalUserId: string | null;
 
   // JWT state (mutable; read by the transport interceptor)
   private currentJwt: string | undefined;
@@ -34,7 +32,6 @@ export class RuntimeClient {
   constructor(opts: {
     host: string;
     instanceId: string;
-    externalUserId?: string | null;
     jwt?: string;
     authContext?: AuthContext;
   }) {
@@ -52,7 +49,6 @@ export class RuntimeClient {
     }
     this.host = opts.host;
     this.instanceId = opts.instanceId;
-    this.externalUserId = opts.externalUserId ?? null;
     this.currentJwt = opts.jwt;
     this.jwtReceivedAt = opts.jwt ? Date.now() : 0;
     this.authContext = opts.authContext ?? "user";

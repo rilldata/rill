@@ -24,7 +24,6 @@ export function getRuntimeClient(config: {
   instanceId: string;
   jwt?: string;
   authContext?: string;
-  externalUserId?: string | null;
 }): RuntimeClient {
   const authContext = config.authContext as AuthContext | undefined;
   const key = cacheKey(config.host, config.instanceId);
@@ -36,7 +35,6 @@ export function getRuntimeClient(config: {
   client = new RuntimeClient({
     host: config.host,
     instanceId: config.instanceId,
-    externalUserId: config.externalUserId,
     jwt: config.jwt,
     authContext,
   });

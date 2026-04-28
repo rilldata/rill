@@ -14,6 +14,7 @@ import {
   type ConversationSelector,
 } from "./conversation-selector";
 import { invalidateConversationsList, NEW_CONVERSATION_ID } from "./utils";
+import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
 
 export type ConversationStateType = "url" | "browserStorage";
 
@@ -77,7 +78,7 @@ export class ConversationManager {
         break;
       case "browserStorage":
         this.conversationSelector = new BrowserStorageConversationSelector(
-          client,
+          EmbedStore.getInstance()?.externalUserId ?? null,
         );
         break;
       default:
