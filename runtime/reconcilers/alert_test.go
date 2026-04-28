@@ -67,7 +67,7 @@ email:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 
-	_, metricsRes := newMetricsView("mv1", "bar", "__time", []any{"count(*)", runtimev1.Type_CODE_INT64}, []any{"country", runtimev1.Type_CODE_STRING})
+	_, metricsRes := newMetricsView("mv1", "bar", "__time", []any{"count(*)", &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true, RawType: "BIGINT"}}, []any{"country", &runtimev1.Type{Code: runtimev1.Type_CODE_STRING, Nullable: true, RawType: "VARCHAR"}})
 	testruntime.RequireResource(t, rt, id, metricsRes)
 
 	a1 := &runtimev1.Resource{
@@ -228,7 +228,7 @@ notify:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 
-	_, metricsRes := newMetricsView("mv1", "bar", "__time", []any{"count(*)", runtimev1.Type_CODE_INT64}, []any{"country", runtimev1.Type_CODE_STRING})
+	_, metricsRes := newMetricsView("mv1", "bar", "__time", []any{"count(*)", &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true, RawType: "BIGINT"}}, []any{"country", &runtimev1.Type{Code: runtimev1.Type_CODE_STRING, Nullable: true, RawType: "VARCHAR"}})
 	testruntime.RequireResource(t, rt, id, metricsRes)
 
 	a1 := &runtimev1.Resource{
@@ -499,7 +499,7 @@ notify:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 
-	_, metricsRes := newMetricsView("mv1", "bar", "__time", []any{"count(*)", runtimev1.Type_CODE_INT64}, []any{"country", runtimev1.Type_CODE_STRING})
+	_, metricsRes := newMetricsView("mv1", "bar", "__time", []any{"count(*)", &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true, RawType: "BIGINT"}}, []any{"country", &runtimev1.Type{Code: runtimev1.Type_CODE_STRING, Nullable: true, RawType: "VARCHAR"}})
 	testruntime.RequireResource(t, rt, id, metricsRes)
 
 	a1 := &runtimev1.Resource{
@@ -611,7 +611,7 @@ func newMetricsView(name, model, timeDim string, measures, dimensions []any) (*r
 			DisplayName: parser.ToDisplayName(name),
 			Expression:  expr,
 			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
-			DataType:    &runtimev1.Type{Code: measures[idx+1].(runtimev1.Type_Code), Nullable: true},
+			DataType:    measures[idx+1].(*runtimev1.Type),
 		}
 	}
 	for i := range len(dimensions) / 2 {
@@ -626,7 +626,7 @@ func newMetricsView(name, model, timeDim string, measures, dimensions []any) (*r
 			Name:        name,
 			DisplayName: parser.ToDisplayName(name),
 			Column:      name,
-			DataType:    &runtimev1.Type{Code: dimensions[idx+1].(runtimev1.Type_Code), Nullable: true},
+			DataType:    dimensions[idx+1].(*runtimev1.Type),
 			Type:        runtimev1.MetricsViewSpec_DIMENSION_TYPE_CATEGORICAL,
 		}
 	}
@@ -640,7 +640,7 @@ func newMetricsView(name, model, timeDim string, measures, dimensions []any) (*r
 		Name:              timeDim,
 		Column:            timeDim,
 		DisplayName:       parser.ToDisplayName(timeDim),
-		DataType:          &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP, Nullable: true},
+		DataType:          &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP, Nullable: true, RawType: "TIMESTAMP"},
 		Type:              runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME,
 		SmallestTimeGrain: runtimev1.TimeGrain_TIME_GRAIN_SECOND,
 	})
