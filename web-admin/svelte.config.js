@@ -52,7 +52,7 @@ const config = {
         ],
         // style-src keeps 'unsafe-inline': runtime style injection from
         // CodeMirror and other libraries cannot be hash-attributed.
-        "style-src": ["self", "unsafe-inline"],
+        "style-src": ["self", "unsafe-inline", "https://widget.usepylon.com"],
         "img-src": [...(dev ? ["http:"] : []), "https:", "data:", "blob:"],
         "frame-src": [
           "self",
@@ -71,6 +71,7 @@ const config = {
           "https://*.rilldata.com",
           "https://*.rilldata.io",
           "https://*.rilldata.in",
+          "https://apichatwidget.usepylon.com",
           "https://docs.google.com",
           "https://storage.googleapis.com",
           "https://cdn.prod.website-files.com",
@@ -81,6 +82,7 @@ const config = {
         "font-src": [
           "self",
           "https://fonts.gstatic.com",
+          "https://widget.usepylon.com",
         ],
       },
     },
