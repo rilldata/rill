@@ -7,6 +7,10 @@
     createAdminServiceListProjectsForOrganization,
   } from "../../client";
   import ProjectCards from "../../features/projects/ProjectCards.svelte";
+  import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
+  import OrganizationHero from "@rilldata/web-admin/features/organizations/OrganizationHero.svelte";
+  import { projectWelcomeEnabled } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
+  import { Button } from "@rilldata/web-common/components/button";
 
   export let data;
   $: ({ organizationPermissions } = data);
@@ -27,15 +31,32 @@
   <title>{title} overview - Rill</title>
 </svelte:head>
 
-<div class="p-5">
+<ContentContainer showTitle={false} maxWidth={1300}>
   {#if $org.data && $org.data.organization && $projs.data}
-    {#if $allProjectsHibernating.data}
+    {#if $projs.data.projects?.length === 0}
+      <OrganizationHero {title} />
+      <span>
+        This organization has no projects yet. <a
+          href="https://docs.rilldata.com/"
+          target="_blank"
+          rel="noreferrer noopener">See docs</a
+        >
+      </span>
+      {#if projectWelcomeEnabled}
+        <div class="w-fit">
+          <Button type="primary" href="/{orgName}/-/create-project">
+            Create new
+          </Button>
+        </div>
+      {/if}
+    {:else if $allProjectsHibernating.data}
       <OrganizationHibernating
         organization={orgName}
         {organizationPermissions}
       />
     {:else}
+      <OrganizationHero {title} />
       <ProjectCards organization={orgName} />
     {/if}
   {/if}
-</div>
+</ContentContainer>

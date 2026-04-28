@@ -15,14 +15,14 @@
 </script>
 
 <div class="flex flex-row gap-2">
-  <Button type="secondary" href={`/${organization}/${project}/#TODO`}>
-    Edit
-  </Button>
   <Dropdown.Root bind:open>
     <Dropdown.Trigger>
       <ThreeDot size="16px" />
     </Dropdown.Trigger>
     <Dropdown.Content class="w-48" align="start" side="right">
+      <Dropdown.Item href={`/${organization}/${project}/#TODO`}>
+        Edit
+      </Dropdown.Item>
       <Dropdown.Item>Rename</Dropdown.Item>
       <Dropdown.Item href="/{organization}/{project}/-/dashboards?share=true">
         Share

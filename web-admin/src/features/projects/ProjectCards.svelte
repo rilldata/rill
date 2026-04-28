@@ -68,14 +68,16 @@
 </script>
 
 <div class="flex flex-col gap-y-4">
-  <div class="flex flex-row items-center justify-between">
-    <h2 class="text-2xl font-semibold">Projects</h2>
+  <span
+    class="flex flex-row items-center text-fg-secondary text-base font-normal leading-normal"
+  >
+    <span class="grow">Check out your projects below.</span>
     {#if projectWelcomeEnabled}
       <Button type="secondary" href="/{organization}/-/create-project">
         + New project
       </Button>
     {/if}
-  </div>
+  </span>
 
   <TableToolbar
     bind:searchText
