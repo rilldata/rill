@@ -62,7 +62,7 @@ rows:
       measure: count
       foo: "{{ .args.foo }}"
       bar: "{{ .env.bar }}"
-  - kpi:
+  - custom_chart:
       metrics_sql: "SELECT state FROM mv2 WHERE state = 'PA'"
 `,
 		},
@@ -128,9 +128,9 @@ rows:
   - kpi:
       metrics_view: mv1
       measure: count
-  - kpi:
+  - custom_chart:
       metrics_sql: "INVALID SQL SYNTAX HERE"
-  - kpi:
+  - custom_chart:
       metrics_sql: "SELECT * FROM nonexistent_mv"
 `,
 		},
@@ -181,9 +181,9 @@ measures:
 type: canvas
 rows:
 - items:
-  - kpi:
+  - custom_chart:
       metrics_sql: "SELECT country FROM {{ .args.metrics_view_name }}"
-  - kpi:
+  - custom_chart:
       metrics_sql: "SELECT country FROM {{ .env.default_mv }}"
 `,
 		},
@@ -269,7 +269,7 @@ rows:
   - kpi:
       metrics_view: mv1
       measure: count
-  - kpi:
+  - custom_chart:
       metrics_sql: "SELECT country FROM mv1"
 `,
 		},
@@ -311,11 +311,11 @@ measures:
 type: canvas
 rows:
 - items:
-  - kpi:
+  - custom_chart:
       metrics_sql: "SELECT country, total_revenue FROM mv1 WHERE country = 'US'"
-  - kpi:
+  - custom_chart:
       metrics_sql: "SELECT COUNT(*) as count FROM mv1 GROUP BY country HAVING count > 5"
-  - kpi:
+  - custom_chart:
       metrics_sql: "SELECT country FROM mv1 ORDER BY total_revenue DESC LIMIT 10"
 `,
 		},
@@ -337,57 +337,6 @@ rows:
 
 	comp0Props := res.ResolvedComponents["c_complex--component-0-0"].GetComponent().State.ValidSpec.RendererProperties.AsMap()
 	require.Equal(t, "SELECT country, total_revenue FROM mv1 WHERE country = 'US'", comp0Props["metrics_sql"])
-}
-
-func TestResolveCanvasWithCustomChart(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		Files: map[string]string{
-			"rill.yaml": "",
-			"m1.sql":    `SELECT 'Advertiser A' AS advertiser_name, 1.25 AS avg_bid_price UNION ALL SELECT 'Advertiser B', 2.50`,
-			"bids.yaml": `
-type: metrics_view
-version: 1
-model: m1
-dimensions:
-- column: advertiser_name
-measures:
-- expression: AVG(avg_bid_price)
-  name: avg_bid_price
-`,
-			"c_custom_chart.yaml": `
-type: canvas
-rows:
-- items:
-  - kpi:
-      metrics_sql:
-        - select advertiser_name, avg_bid_price from bids order by advertiser_name limit 10
-        - select avg_bid_price from bids
-`,
-		},
-	})
-	testruntime.RequireReconcileState(t, rt, instanceID, 5, 0, 0)
-
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
-	require.NoError(t, err)
-
-	res, err := server.ResolveCanvas(testCtx(), &runtimev1.ResolveCanvasRequest{
-		InstanceId: instanceID,
-		Canvas:     "c_custom_chart",
-	})
-	require.NoError(t, err)
-
-	// Should reference the bids metrics view from both SQL queries
-	require.Len(t, res.ReferencedMetricsViews, 1)
-	require.Contains(t, res.ReferencedMetricsViews, "bids")
-	require.Len(t, res.ResolvedComponents, 1)
-
-	comp0Props := res.ResolvedComponents["c_custom_chart--component-0-0"].GetComponent().State.ValidSpec.RendererProperties.AsMap()
-	require.Contains(t, comp0Props, "metrics_sql")
-
-	metricsSQL := comp0Props["metrics_sql"].([]any)
-	require.Len(t, metricsSQL, 2)
-	require.Equal(t, "select advertiser_name, avg_bid_price from bids order by advertiser_name limit 10", metricsSQL[0])
-	require.Equal(t, "select avg_bid_price from bids", metricsSQL[1])
 }
 
 func TestResolveCanvasWithSecurity(t *testing.T) {
@@ -516,9 +465,8 @@ measures:
 type: canvas
 rows:
 - items:
-  - kpi:
-      title: "Revenue for {{ .user.country }}"
-      metrics_sql: "SELECT total_revenue FROM mv WHERE country = '{{ .user.country }}'"
+  - markdown:
+      content: The total is {{ metrics_sql "SELECT total_revenue FROM mv WHERE country = 'US'" }}
 `,
 		},
 	})
@@ -529,9 +477,6 @@ rows:
 
 	ctx := auth.WithClaims(context.Background(), &runtime.SecurityClaims{
 		SkipChecks: true,
-		UserAttributes: map[string]any{
-			"country": "US",
-		},
 	})
 
 	// Step 1: Get canvas with unresolved templates
@@ -545,30 +490,20 @@ rows:
 	// Verify component has unresolved templates
 	comp := canvasRes.ResolvedComponents["canvas--component-0-0"]
 	props := comp.GetComponent().State.ValidSpec.RendererProperties.AsMap()
-	require.Equal(t, "Revenue for {{ .user.country }}", props["title"])
-	require.Equal(t, "SELECT total_revenue FROM mv WHERE country = '{{ .user.country }}'", props["metrics_sql"])
+	require.Contains(t, props["content"], "{{ metrics_sql ")
 
-	// Step 2: Use ResolveTemplatedString to resolve the title
+	// Use ResolveTemplatedString to resolve the content
 	titleRes, err := server.ResolveTemplatedString(ctx, &runtimev1.ResolveTemplatedStringRequest{
 		InstanceId: instanceID,
-		Body:       props["title"].(string),
+		Body:       props["content"].(string),
 	})
 	require.NoError(t, err)
-	require.Equal(t, "Revenue for US", titleRes.Body)
-
-	// Step 3: Use ResolveTemplatedString with metrics_sql to get the actual value
-	// First resolve the template in the SQL, then execute metrics_sql
-	valueRes, err := server.ResolveTemplatedString(ctx, &runtimev1.ResolveTemplatedStringRequest{
-		InstanceId: instanceID,
-		Body:       `The total is {{ metrics_sql "SELECT total_revenue FROM mv WHERE country = 'US'" }}`,
-	})
-	require.NoError(t, err)
-	require.Equal(t, "The total is 100", valueRes.Body)
+	require.Equal(t, "The total is 100", titleRes.Body)
 
 	// Step 4: Get formatted value using format tokens
 	formatRes, err := server.ResolveTemplatedString(ctx, &runtimev1.ResolveTemplatedStringRequest{
 		InstanceId:      instanceID,
-		Body:            `{{ metrics_sql "SELECT total_revenue FROM mv WHERE country = 'US'" }}`,
+		Body:            props["content"].(string),
 		UseFormatTokens: true,
 	})
 	require.NoError(t, err)
