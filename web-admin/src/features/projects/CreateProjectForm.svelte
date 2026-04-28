@@ -90,6 +90,7 @@
             project,
             gitRemote: createdGitRepo,
             prodSlots: "4",
+            devSlots: "8",
             skipDeploy: true,
           },
         });

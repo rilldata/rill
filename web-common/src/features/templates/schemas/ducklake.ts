@@ -8,20 +8,16 @@ export const ducklakeSchema: MultiStepFormSchema = {
   "x-driver": "duckdb",
   "x-form-width": "wide",
   properties: {
-    // The Parameters tab UI is hidden for phase 1; we only expose the raw
-    // ATTACH SQL path. The enum, tab-group, and parameter composer code are
-    // preserved so the tab can be re-enabled later by flipping `x-hidden`.
     connection_mode: {
       type: "string",
-      enum: ["sql", "parameters"],
-      default: "sql",
+      enum: ["parameters", "sql"],
+      default: "parameters",
       "x-display": "tabs",
-      "x-enum-labels": ["ATTACH SQL", "Parameters"],
+      "x-enum-labels": ["Parameters", "ATTACH SQL"],
       "x-ui-only": true,
-      "x-hidden": true,
       "x-tab-group": {
-        sql: ["attach"],
         parameters: ["catalog_type", "alias", "data_path_type"],
+        sql: ["attach"],
       },
       "x-step": "connector",
     },
@@ -32,6 +28,8 @@ export const ducklakeSchema: MultiStepFormSchema = {
         "DuckDB `ATTACH` clause that points at your DuckLake catalog. Include the metadata backend and `DATA_PATH`.",
       "x-placeholder":
         "'ducklake:duckdb_database.ducklake' (DATA_PATH 'other_data_path/', OVERRIDE_DATA_PATH true)",
+      "x-display": "textarea",
+      "x-rows": 5,
       "x-monospace": true,
       "x-hint":
         "Supported metadata backends: DuckDB file, SQLite, Postgres, MySQL. Data path can be local or object storage (s3://, gs://, azure://).",

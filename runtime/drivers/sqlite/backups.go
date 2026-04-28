@@ -24,7 +24,7 @@ import (
 
 var (
 	// Maximum size of the SQLite snapshot for backup.
-	backupMaxSizeBytes int64 = 1024 * 1024 * 1024 // 1 GB
+	backupMaxSizeBytes int64 = 5 * 1024 * 1024 * 1024 // 5 GB
 
 	// Max time a backup may run for.
 	backupMaxDuration = 10 * time.Minute
