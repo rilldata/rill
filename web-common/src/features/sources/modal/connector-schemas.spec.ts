@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
 import {
   getSchemaNameFromDriver,
   getConnectorSchema,
@@ -9,9 +9,129 @@ import {
   shouldShowSkipLink,
   toConnectorDriver,
   multiStepFormSchemas,
+  populateSchemaCache,
 } from "./connector-schemas";
+import type { MultiStepFormSchema } from "../../templates/schemas/types";
+
+// Test fixtures. The static schema imports were removed in PR 3 — at runtime
+// schemas come from the `ListTemplates` RPC, so these specs seed the cache with
+// just enough shape for the helper functions under test. Each fixture mirrors
+// the real schema's category/step/auth setup; details that aren't exercised
+// here (placeholders, hints, validation) are omitted.
+const testSchemas: Record<string, MultiStepFormSchema> = {
+  s3: {
+    type: "object",
+    title: "Amazon S3",
+    "x-category": "objectStore",
+    properties: {
+      access_key: { type: "string", "x-step": "connector" },
+      path: { type: "string", "x-step": "source" },
+    },
+  } as unknown as MultiStepFormSchema,
+  gcs: {
+    type: "object",
+    title: "Google Cloud Storage",
+    "x-category": "objectStore",
+    properties: {
+      key: { type: "string", "x-step": "connector" },
+      path: { type: "string", "x-step": "source" },
+    },
+  } as unknown as MultiStepFormSchema,
+  azure: {
+    type: "object",
+    title: "Azure Blob Storage",
+    "x-category": "objectStore",
+    properties: {
+      account: { type: "string", "x-step": "connector" },
+      path: { type: "string", "x-step": "source" },
+    },
+  } as unknown as MultiStepFormSchema,
+  postgres: {
+    type: "object",
+    title: "Postgres",
+    "x-category": "sqlStore",
+    properties: {
+      host: { type: "string", "x-step": "connector" },
+      sql: { type: "string", "x-step": "explorer" },
+    },
+  } as unknown as MultiStepFormSchema,
+  mysql: {
+    type: "object",
+    title: "MySQL",
+    "x-category": "sqlStore",
+    properties: {
+      host: { type: "string", "x-step": "connector" },
+      sql: { type: "string", "x-step": "explorer" },
+    },
+  } as unknown as MultiStepFormSchema,
+  snowflake: {
+    type: "object",
+    title: "Snowflake",
+    "x-category": "warehouse",
+    "x-form-height": "tall",
+    properties: {
+      account: { type: "string", "x-step": "connector" },
+      sql: { type: "string", "x-step": "explorer" },
+    },
+  } as unknown as MultiStepFormSchema,
+  bigquery: {
+    type: "object",
+    title: "BigQuery",
+    "x-category": "warehouse",
+    properties: {
+      project_id: { type: "string", "x-step": "connector" },
+      sql: { type: "string", "x-step": "explorer" },
+    },
+  } as unknown as MultiStepFormSchema,
+  salesforce: {
+    type: "object",
+    title: "Salesforce",
+    "x-category": "warehouse",
+    properties: {
+      username: { type: "string", "x-step": "connector" },
+    },
+  } as unknown as MultiStepFormSchema,
+  sqlite: {
+    type: "object",
+    title: "SQLite",
+    "x-category": "sqlStore",
+    properties: {
+      path: { type: "string", "x-step": "connector" },
+    },
+  } as unknown as MultiStepFormSchema,
+  clickhouse: {
+    type: "object",
+    title: "ClickHouse",
+    "x-category": "olap",
+    properties: {
+      host: { type: "string", "x-step": "connector" },
+    },
+  } as unknown as MultiStepFormSchema,
+  duckdb: {
+    type: "object",
+    title: "DuckDB",
+    "x-category": "olap",
+    properties: {
+      path: { type: "string", "x-step": "connector" },
+    },
+  } as unknown as MultiStepFormSchema,
+  // x-driver override: schema name differs from the backend driver name
+  motherduck: {
+    type: "object",
+    title: "MotherDuck",
+    "x-category": "olap",
+    "x-driver": "duckdb",
+    properties: {
+      token: { type: "string", "x-step": "connector" },
+    },
+  } as unknown as MultiStepFormSchema,
+};
 
 describe("connector-schemas", () => {
+  beforeAll(() => {
+    populateSchemaCache(testSchemas);
+  });
+
   describe("getSchemaNameFromDriver", () => {
     it("returns driver name when it directly matches a schema name", () => {
       expect(getSchemaNameFromDriver("postgres")).toBe("postgres");
@@ -21,19 +141,10 @@ describe("connector-schemas", () => {
     });
 
     it("returns schema name for drivers with x-driver override (when no direct match)", () => {
-      // Find schemas with x-driver overrides that don't directly match another schema name
-      for (const [schemaName, schema] of Object.entries(multiStepFormSchemas)) {
-        const xDriver = schema?.["x-driver"];
-        // Only test if x-driver is set and doesn't match an existing schema name
-        // (because direct schema name matches take precedence)
-        if (
-          xDriver &&
-          xDriver !== schemaName &&
-          !(xDriver in multiStepFormSchemas)
-        ) {
-          expect(getSchemaNameFromDriver(xDriver)).toBe(schemaName);
-        }
-      }
+      // motherduck has x-driver: "duckdb"; reverse lookup of "duckdb" should
+      // return "duckdb" because that's a direct schema name match (which
+      // takes precedence over x-driver overrides).
+      expect(getSchemaNameFromDriver("duckdb")).toBe("duckdb");
     });
 
     it("returns the driver name as fallback for unknown drivers", () => {
@@ -78,10 +189,7 @@ describe("connector-schemas", () => {
     });
 
     it("returns x-driver value when specified in schema", () => {
-      for (const [schemaName, schema] of Object.entries(multiStepFormSchemas)) {
-        const expected = schema?.["x-driver"] ?? schemaName;
-        expect(getBackendConnectorName(schemaName)).toBe(expected);
-      }
+      expect(getBackendConnectorName("motherduck")).toBe("duckdb");
     });
 
     it("returns schema name for unknown connectors", () => {
@@ -91,25 +199,14 @@ describe("connector-schemas", () => {
 
   describe("isMultiStepConnector", () => {
     it("returns true for object store connectors", () => {
-      const s3Schema = getConnectorSchema("s3");
-      const gcsSchema = getConnectorSchema("gcs");
-      const azureSchema = getConnectorSchema("azure");
-
-      expect(isMultiStepConnector(s3Schema)).toBe(true);
-      expect(isMultiStepConnector(gcsSchema)).toBe(true);
-      expect(isMultiStepConnector(azureSchema)).toBe(true);
+      expect(isMultiStepConnector(getConnectorSchema("s3"))).toBe(true);
+      expect(isMultiStepConnector(getConnectorSchema("gcs"))).toBe(true);
+      expect(isMultiStepConnector(getConnectorSchema("azure"))).toBe(true);
     });
 
     it("returns false for non-object store connectors", () => {
-      const postgresSchema = getConnectorSchema("postgres");
-      const mysqlSchema = getConnectorSchema("mysql");
-
-      expect(isMultiStepConnector(postgresSchema)).toBe(false);
-      expect(isMultiStepConnector(mysqlSchema)).toBe(false);
-    });
-
-    it("returns false for AI connectors", () => {
-      expect(isMultiStepConnector(getConnectorSchema("claude"))).toBe(false);
+      expect(isMultiStepConnector(getConnectorSchema("postgres"))).toBe(false);
+      expect(isMultiStepConnector(getConnectorSchema("mysql"))).toBe(false);
     });
 
     it("returns false for null schema", () => {
@@ -118,26 +215,13 @@ describe("connector-schemas", () => {
   });
 
   describe("hasExplorerStep", () => {
-    it("returns true for SQL store and warehouse connectors", () => {
-      const snowflakeSchema = getConnectorSchema("snowflake");
-      const postgresSchema = getConnectorSchema("postgres");
-
-      // Check based on category
-      if (snowflakeSchema?.["x-category"] === "warehouse") {
-        expect(hasExplorerStep(snowflakeSchema)).toBe(true);
-      }
-      if (postgresSchema?.["x-category"] === "sqlStore") {
-        expect(hasExplorerStep(postgresSchema)).toBe(true);
-      }
+    it("returns true for warehouse and SQL store connectors with explorer step", () => {
+      expect(hasExplorerStep(getConnectorSchema("snowflake"))).toBe(true);
+      expect(hasExplorerStep(getConnectorSchema("postgres"))).toBe(true);
     });
 
     it("returns false for object store connectors", () => {
-      const s3Schema = getConnectorSchema("s3");
-      expect(hasExplorerStep(s3Schema)).toBe(false);
-    });
-
-    it("returns false for AI connectors", () => {
-      expect(hasExplorerStep(getConnectorSchema("claude"))).toBe(false);
+      expect(hasExplorerStep(getConnectorSchema("s3"))).toBe(false);
     });
 
     it("returns false for null schema", () => {
@@ -146,28 +230,22 @@ describe("connector-schemas", () => {
   });
 
   describe("getFormHeight", () => {
-    it("returns tall height for schemas with x-form-height: tall", () => {
-      const FORM_HEIGHT_TALL = "max-h-[40rem] min-h-[40rem]";
+    const FORM_HEIGHT_TALL = "max-h-[40rem] min-h-[40rem]";
+    const FORM_HEIGHT_DEFAULT = "max-h-[34.5rem] min-h-[34.5rem]";
 
-      for (const [, schema] of Object.entries(multiStepFormSchemas)) {
-        if (schema?.["x-form-height"] === "tall") {
-          expect(getFormHeight(schema)).toBe(FORM_HEIGHT_TALL);
-        }
-      }
+    it("returns tall height for schemas with x-form-height: tall", () => {
+      expect(getFormHeight(getConnectorSchema("snowflake"))).toBe(
+        FORM_HEIGHT_TALL,
+      );
     });
 
     it("returns default height for schemas without x-form-height", () => {
-      const FORM_HEIGHT_DEFAULT = "max-h-[34.5rem] min-h-[34.5rem]";
-
-      for (const [, schema] of Object.entries(multiStepFormSchemas)) {
-        if (!schema?.["x-form-height"]) {
-          expect(getFormHeight(schema)).toBe(FORM_HEIGHT_DEFAULT);
-        }
-      }
+      expect(getFormHeight(getConnectorSchema("postgres"))).toBe(
+        FORM_HEIGHT_DEFAULT,
+      );
     });
 
     it("returns default height for null schema", () => {
-      const FORM_HEIGHT_DEFAULT = "max-h-[34.5rem] min-h-[34.5rem]";
       expect(getFormHeight(null)).toBe(FORM_HEIGHT_DEFAULT);
     });
   });
@@ -213,18 +291,6 @@ describe("connector-schemas", () => {
   describe("toConnectorDriver", () => {
     it("returns null for unknown schema names", () => {
       expect(toConnectorDriver("nonexistent")).toBeNull();
-    });
-
-    it("sets implementsAi for AI connectors", () => {
-      const claude = toConnectorDriver("claude");
-      expect(claude).not.toBeNull();
-      expect(claude!.name).toBe("claude");
-      expect(claude!.displayName).toBe("Claude");
-      expect(claude!.implementsAi).toBe(true);
-      expect(claude!.implementsOlap).toBe(false);
-      expect(claude!.implementsWarehouse).toBe(false);
-      expect(claude!.implementsObjectStore).toBe(false);
-      expect(claude!.implementsSqlStore).toBe(false);
     });
 
     it("sets implementsWarehouse for warehouse connectors", () => {

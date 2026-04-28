@@ -4,59 +4,21 @@ import type {
   MultiStepFormSchema,
 } from "../../templates/schemas/types";
 import type { ConnectorStep } from "./connectorStepStore";
-import { athenaSchema } from "../../templates/schemas/athena";
-import { azureSchema } from "../../templates/schemas/azure";
-import { bigquerySchema } from "../../templates/schemas/bigquery";
 import { claudeSchema } from "../../templates/schemas/claude";
-import { clickhouseSchema } from "../../templates/schemas/clickhouse";
-import { gcsSchema } from "../../templates/schemas/gcs";
 import { geminiSchema } from "../../templates/schemas/gemini";
-import { mysqlSchema } from "../../templates/schemas/mysql";
 import { openaiSchema } from "../../templates/schemas/openai";
-import { postgresSchema } from "../../templates/schemas/postgres";
-import { redshiftSchema } from "../../templates/schemas/redshift";
-import { salesforceSchema } from "../../templates/schemas/salesforce";
-import { snowflakeSchema } from "../../templates/schemas/snowflake";
-import { sqliteSchema } from "../../templates/schemas/sqlite";
-import { localFileSchema } from "../../templates/schemas/local_file";
-import { duckdbSchema } from "../../templates/schemas/duckdb";
 import { ducklakeSchema } from "../../templates/schemas/ducklake";
-import { deltaSchema } from "../../templates/schemas/delta";
-import { httpsSchema } from "../../templates/schemas/https";
-import { icebergSchema } from "../../templates/schemas/iceberg";
-import { motherduckSchema } from "../../templates/schemas/motherduck";
-import { druidSchema } from "../../templates/schemas/druid";
-import { pinotSchema } from "../../templates/schemas/pinot";
-import { s3Schema } from "../../templates/schemas/s3";
-import { starrocksSchema } from "../../templates/schemas/starrocks";
-import { supabaseSchema } from "../../templates/schemas/supabase";
-import { SOURCES, OLAP_ENGINES, AI_CONNECTORS } from "./constants";
 import { connectorKeywordMapping } from "@rilldata/web-common/features/connectors/connector-metadata.ts";
 
+/**
+ * Connector schemas registered for synchronous lookup. Source-connector schemas
+ * are populated dynamically via `registerTemplateSchema` when the `ListTemplates`
+ * RPC resolves; AI connectors and DuckLake (which has client-side composer logic
+ * in `ducklake-utils.ts`) stay as static imports because their flows are not
+ * driven by the runtime templates registry.
+ */
 export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
-  athena: athenaSchema,
-  bigquery: bigquerySchema,
-  clickhouse: clickhouseSchema,
-  mysql: mysqlSchema,
-  postgres: postgresSchema,
-  redshift: redshiftSchema,
-  salesforce: salesforceSchema,
-  snowflake: snowflakeSchema,
-  sqlite: sqliteSchema,
-  motherduck: motherduckSchema,
-  duckdb: duckdbSchema,
   ducklake: ducklakeSchema,
-  druid: druidSchema,
-  pinot: pinotSchema,
-  starrocks: starrocksSchema,
-  supabase: supabaseSchema,
-  local_file: localFileSchema,
-  https: httpsSchema,
-  s3: s3Schema,
-  gcs: gcsSchema,
-  iceberg: icebergSchema,
-  azure: azureSchema,
-  delta: deltaSchema,
   claude: claudeSchema,
   openai: openaiSchema,
   gemini: geminiSchema,
@@ -73,29 +35,22 @@ export interface ConnectorInfo {
 }
 
 /**
- * All connectors enumerated from JSON schemas, sorted by display order.
- */
-export const connectors: ConnectorInfo[] = [
-  ...SOURCES,
-  ...OLAP_ENGINES,
-  ...AI_CONNECTORS,
-]
-  .filter((name) => multiStepFormSchemas[name]?.["x-category"])
-  .map((name) => {
-    const schema = multiStepFormSchemas[name];
-    return {
-      name,
-      displayName: schema.title ?? name,
-      category: schema["x-category"] as ConnectorCategory,
-      keywords: connectorKeywordMapping[name] ?? [],
-    };
-  });
-/**
- * Map of connector names to ConnectorInfo objects.
- * We need connector info by name in a lot of places, so we have a map to optimize lookups.
+ * Map of connector names to ConnectorInfo objects, populated dynamically by
+ * `registerTemplateSchema` when `ListTemplates` resolves. We need connector
+ * info by name in a lot of places, so we have a map to optimize lookups.
  */
 export const connectorInfoMap = new Map<string, ConnectorInfo>(
-  connectors.map((connector) => [connector.name, connector]),
+  Object.entries(multiStepFormSchemas)
+    .filter(([, schema]) => schema?.["x-category"])
+    .map(([name, schema]) => [
+      name,
+      {
+        name,
+        displayName: schema.title ?? name,
+        category: schema["x-category"] as ConnectorCategory,
+        keywords: connectorKeywordMapping[name] ?? [],
+      },
+    ]),
 );
 
 export function getConnectorSchema(

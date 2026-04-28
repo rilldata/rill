@@ -1,8 +1,19 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
 
 import { getValidationSchemaForConnector } from "./FormValidation";
+import { populateSchemaCache } from "./connector-schemas";
+import type { MultiStepFormSchema } from "../../templates/schemas/types";
+// Import the runtime template's JSON schema directly so this spec catches
+// drift between frontend validation and the backend's source-of-truth schema.
+import s3DuckdbTemplate from "../../../../../runtime/templates/definitions/duckdb-models/s3-duckdb.json";
 
 describe("getValidationSchemaForConnector (multi-step auth)", () => {
+  beforeAll(() => {
+    populateSchemaCache({
+      s3: s3DuckdbTemplate.json_schema as unknown as MultiStepFormSchema,
+    });
+  });
+
   it("enforces required fields for access key auth", async () => {
     const schema = getValidationSchemaForConnector("s3", "connector");
 
