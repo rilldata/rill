@@ -72,6 +72,21 @@ SELECT
     NULL;
 
 
+-- Simple test tables for information schema tests
+CREATE OR REPLACE TABLE integration_test.public.foo (bar VARCHAR, baz INT);
+INSERT INTO integration_test.public.foo VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4);
+
+CREATE OR REPLACE TABLE integration_test.public.bar (bar VARCHAR, baz INT);
+INSERT INTO integration_test.public.bar VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4);
+
+CREATE OR REPLACE TABLE integration_test.public.foz (bar VARCHAR, baz INT);
+INSERT INTO integration_test.public.foz VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4);
+
+CREATE OR REPLACE TABLE integration_test.public.baz (bar VARCHAR, baz INT);
+INSERT INTO integration_test.public.baz VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4);
+
+CREATE OR REPLACE VIEW integration_test.public.model AS SELECT 1 AS col1, 2 AS col2, 3 AS col3;
+
 -- The following tables are used for runtime/query tests.
 -- Snowflake does not support modeling, so data must be ingested offline before running these tests.
 
@@ -169,3 +184,4 @@ UNION ALL
 SELECT 1.0, 5, TO_TIMESTAMP_NTZ('2019-01-03'), '2019-01-03'::DATE, 'iphone', NULL, 'msn.com', NULL, NULL
 UNION ALL
 SELECT 1.0, 3, TO_TIMESTAMP_NTZ('2019-01-06'), '2019-01-06'::DATE, 'iphone', NULL, 'msn.com', NULL, NULL;
+

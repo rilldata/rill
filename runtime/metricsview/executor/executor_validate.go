@@ -92,7 +92,7 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 
 	// db and schema validation
 	// make sure for olaps like Druid and Pinot both database and database_schema are not set
-	// for Clickhouse we allow only database_schema as we already use that in OLAPInformationSchema.Lookup(...)
+	// for Clickhouse we allow only database_schema as we already use that in InformationSchema.Lookup(...)
 	// not doing any validation for duckdb as we ignore database and database_schema in Dialect.EscapeTable(...) so not to break any existing metrics view
 	dialectName := e.olap.Dialect().String()
 	if (dialectName == drivers.DialectNameDruid || dialectName == drivers.DialectNamePinot) && mv.Database != "" && mv.DatabaseSchema != "" {
@@ -494,7 +494,7 @@ func (e *Executor) resolveParentMetricsView(ctx context.Context) error {
 }
 
 // validateAllDimensionsAndMeasures validates all dimensions and measures with one query. It returns an error if any of the expressions are invalid.
-func (e *Executor) validateAllDimensionsAndMeasures(ctx context.Context, t *drivers.OlapTable, mv *runtimev1.MetricsViewSpec) error {
+func (e *Executor) validateAllDimensionsAndMeasures(ctx context.Context, t *drivers.TableInfo, mv *runtimev1.MetricsViewSpec) error {
 	dialect := e.olap.Dialect()
 	var dimExprs []string
 	var unnestClauses []string
@@ -558,7 +558,7 @@ func (e *Executor) validateAllDimensionsAndMeasures(ctx context.Context, t *driv
 
 // validateIndividualDimensionsAndMeasures validates each dimension and measure individually.
 // It adds validation errors to the provided res.
-func (e *Executor) validateIndividualDimensionsAndMeasures(ctx context.Context, t *drivers.OlapTable, mv *runtimev1.MetricsViewSpec, cols map[string]*runtimev1.StructType_Field, res *ValidateMetricsViewResult) {
+func (e *Executor) validateIndividualDimensionsAndMeasures(ctx context.Context, t *drivers.TableInfo, mv *runtimev1.MetricsViewSpec, cols map[string]*runtimev1.StructType_Field, res *ValidateMetricsViewResult) {
 	// Validate dimensions and measures concurrently with a limit of 10 concurrent validations
 	var mu sync.Mutex
 	var grp errgroup.Group
@@ -703,7 +703,7 @@ func (e *Executor) validateAndNormalizeAnnotations(ctx context.Context, mv *runt
 }
 
 // validateTimeDimension validates the time dimension in the metrics view.
-func (e *Executor) validateTimeDimension(ctx context.Context, t *drivers.OlapTable, tableSchema map[string]*runtimev1.StructType_Field, res *ValidateMetricsViewResult) {
+func (e *Executor) validateTimeDimension(ctx context.Context, t *drivers.TableInfo, tableSchema map[string]*runtimev1.StructType_Field, res *ValidateMetricsViewResult) {
 	if e.metricsView.TimeDimension == "" {
 		return
 	}
@@ -751,7 +751,7 @@ func (e *Executor) validateTimeDimension(ctx context.Context, t *drivers.OlapTab
 }
 
 // validateDimension validates a metrics view dimension.
-func (e *Executor) validateDimension(ctx context.Context, t *drivers.OlapTable, d *runtimev1.MetricsViewSpec_Dimension, fields map[string]*runtimev1.StructType_Field) error {
+func (e *Executor) validateDimension(ctx context.Context, t *drivers.TableInfo, d *runtimev1.MetricsViewSpec_Dimension, fields map[string]*runtimev1.StructType_Field) error {
 	// Validate with a simple check if it's a column
 	if d.Column != "" {
 		if _, isColumn := fields[strings.ToLower(d.Column)]; !isColumn {
@@ -783,7 +783,7 @@ func (e *Executor) validateDimension(ctx context.Context, t *drivers.OlapTable, 
 }
 
 // validateMeasure validates a metrics view measure.
-func (e *Executor) validateMeasure(ctx context.Context, t *drivers.OlapTable, m *runtimev1.MetricsViewSpec_Measure) error {
+func (e *Executor) validateMeasure(ctx context.Context, t *drivers.TableInfo, m *runtimev1.MetricsViewSpec_Measure) error {
 	err := e.olap.Exec(ctx, &drivers.Statement{
 		Query:           fmt.Sprintf("SELECT 1, (%s) FROM %s GROUP BY 1", m.Expression, e.olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name)),
 		DryRun:          true,

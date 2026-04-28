@@ -9,236 +9,14 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-// informationSchema implements drivers.OLAPInformationSchema for StarRocks.
-// Uses fully qualified names (catalog.information_schema.tables) instead of SET CATALOG/USE.
-type informationSchema struct {
-	c *connection
-}
-
-var _ drivers.OLAPInformationSchema = (*informationSchema)(nil)
-
-// All returns metadata about all tables and views.
-// For StarRocks, we query from the configured catalog's information_schema.
-func (i *informationSchema) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
-	db := i.c.db
-
-	catalog := i.c.configProp.Catalog
-
-	// Build query using fully qualified information_schema path
-	// Pattern: catalog.information_schema.tables
-	q := fmt.Sprintf(`
-		SELECT
-			table_schema,
-			table_name,
-			CASE
-				WHEN table_type = 'VIEW' THEN true
-				WHEN table_type = 'MATERIALIZED VIEW' THEN true
-				ELSE false
-			END AS is_view
-		FROM %s.information_schema.tables
-		WHERE table_schema NOT IN ('information_schema', '_statistics_', 'mysql', 'sys')
-	`, safeSQLName(catalog))
-
-	args := []any{}
-
-	if like != "" {
-		q += " AND table_name LIKE ?"
-		args = append(args, like)
-	}
-
-	if pageToken != "" {
-		q += " AND table_name > ?"
-		args = append(args, pageToken)
-	}
-
-	q += " ORDER BY table_schema, table_name"
-
-	if pageSize > 0 {
-		q += fmt.Sprintf(" LIMIT %d", pageSize+1)
-	}
-
-	rows, err := db.QueryxContext(ctx, q, args...)
-	if err != nil {
-		return nil, "", err
-	}
-	defer rows.Close()
-
-	var tables []*drivers.OlapTable
-	for rows.Next() {
-		var schema, name string
-		var isView bool
-		if err := rows.Scan(&schema, &name, &isView); err != nil {
-			return nil, "", err
-		}
-
-		tables = append(tables, &drivers.OlapTable{
-			Database:       catalog, // StarRocks catalog -> Rill database
-			DatabaseSchema: schema,  // StarRocks database -> Rill databaseSchema
-			Name:           name,
-			View:           isView,
-		})
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, "", err
-	}
-
-	// Handle pagination
-	var nextToken string
-	if pageSize > 0 && uint32(len(tables)) > pageSize {
-		tables = tables[:pageSize]
-		nextToken = tables[len(tables)-1].Name
-	}
-
-	return tables, nextToken, nil
-}
-
-// Lookup returns metadata about a specific table or view.
-// database parameter = catalog, schema parameter = database in StarRocks terms.
-func (i *informationSchema) Lookup(ctx context.Context, database, schema, name string) (*drivers.OlapTable, error) {
-	db := i.c.db
-
-	// StarRocks mapping: database parameter = catalog
-	// If database is empty, use connector's configured catalog
-	catalog := database
-	if catalog == "" {
-		catalog = i.c.configProp.Catalog
-	}
-
-	// StarRocks mapping: schema parameter = database
-	// If schema is empty, use connector's configured database
-	dbSchema := schema
-	if dbSchema == "" {
-		dbSchema = i.c.configProp.Database
-	}
-
-	// Query table metadata using fully qualified information_schema path
-	tableQuery := fmt.Sprintf(`
-		SELECT
-			table_schema,
-			table_name,
-			CASE
-				WHEN table_type = 'VIEW' THEN true
-				WHEN table_type = 'MATERIALIZED VIEW' THEN true
-				ELSE false
-			END AS is_view
-		FROM %s.information_schema.tables
-		WHERE table_schema = ? AND LOWER(table_name) = LOWER(?)
-	`, safeSQLName(catalog))
-
-	var tableSchema, tableName string
-	var isView bool
-	err := db.QueryRowxContext(ctx, tableQuery, dbSchema, name).Scan(&tableSchema, &tableName, &isView)
-	if err != nil {
-		return nil, fmt.Errorf("table not found: %w", err)
-	}
-
-	// Query column information using fully qualified information_schema path
-	columnsQuery := fmt.Sprintf(`
-		SELECT
-			column_name,
-			data_type
-		FROM %s.information_schema.columns
-		WHERE table_schema = ? AND LOWER(table_name) = LOWER(?)
-		ORDER BY ordinal_position
-	`, safeSQLName(catalog))
-
-	rows, err := db.QueryxContext(ctx, columnsQuery, dbSchema, name)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get columns: %w", err)
-	}
-	defer rows.Close()
-
-	var fields []*runtimev1.StructType_Field
-	unsupportedCols := make(map[string]string)
-
-	for rows.Next() {
-		var colName, dataType string
-		if err := rows.Scan(&colName, &dataType); err != nil {
-			return nil, err
-		}
-
-		runtimeType, err := i.c.databaseTypeToRuntimeType(dataType)
-		if err != nil {
-			if errors.Is(err, errUnsupportedType) {
-				unsupportedCols[colName] = dataType
-				continue // Skip unsupported types
-			}
-			return nil, err
-		}
-
-		fields = append(fields, &runtimev1.StructType_Field{
-			Name: colName,
-			Type: runtimeType,
-		})
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	// StarRocks: Always save database (catalog) and databaseSchema (database) in metrics view YAML
-	// because StarRocks queries require fully qualified table names (catalog.database.table)
-	return &drivers.OlapTable{
-		Database:                catalog,
-		DatabaseSchema:          tableSchema,
-		IsDefaultDatabase:       false,
-		IsDefaultDatabaseSchema: false,
-		Name:                    tableName,
-		View:                    isView,
-		Schema:                  &runtimev1.StructType{Fields: fields},
-		UnsupportedCols:         unsupportedCols,
-	}, nil
-}
-
-// LoadPhysicalSize populates the PhysicalSizeBytes field of table metadata.
-// For external catalogs, this may not be available.
-func (i *informationSchema) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
-	// StarRocks doesn't easily expose physical size for external tables
-	// For internal tables, we could query be_tablets but it's complex
-	// Return without error, leaving PhysicalSizeBytes as 0
-	return nil
-}
-
-// LoadDDL implements drivers.OLAPInformationSchema.
-func (i *informationSchema) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
-	db := i.c.db
-
-	catalog := table.Database
-	if catalog == "" {
-		catalog = i.c.configProp.Catalog
-	}
-	schema := table.DatabaseSchema
-	if schema == "" {
-		schema = i.c.configProp.Database
-	}
-
-	q := fmt.Sprintf("SHOW CREATE TABLE %s.%s.%s", safeSQLName(catalog), safeSQLName(schema), safeSQLName(table.Name))
-	var name, ddl string
-	err := db.QueryRowxContext(ctx, q).Scan(&name, &ddl)
-	if err != nil {
-		return err
-	}
-	table.DDL = ddl
-	return nil
-}
-
-// InformationSchema interface implementation for drivers.InformationSchema
-
-var _ drivers.InformationSchema = (*informationSchemaImpl)(nil)
-
-// informationSchemaImpl implements drivers.InformationSchema for StarRocks
-type informationSchemaImpl struct {
-	c *connection
-}
-
+// StarRocks Uses fully qualified names (catalog.information_schema.tables) instead of SET CATALOG/USE.
 // ListDatabaseSchemas returns a list of database schemas in StarRocks.
 // StarRocks structure: Catalog -> Database -> Table
 // We map: Database = catalog, DatabaseSchema = database
-func (i *informationSchemaImpl) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
-	db := i.c.db
+func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
+	db := c.db
 
-	catalog := i.c.configProp.Catalog
+	catalog := c.configProp.Catalog
 
 	// Query information_schema.schemata using fully qualified path
 	q := fmt.Sprintf(`
@@ -296,8 +74,8 @@ func (i *informationSchemaImpl) ListDatabaseSchemas(ctx context.Context, pageSiz
 
 // ListTables returns a list of tables in a specific database schema.
 // database parameter = catalog, databaseSchema parameter = database
-func (i *informationSchemaImpl) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
-	db := i.c.db
+func (c *connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+	db := c.db
 
 	// StarRocks mapping: database parameter = catalog
 	catalog := database
@@ -313,7 +91,8 @@ func (i *informationSchemaImpl) ListTables(ctx context.Context, database, databa
 				WHEN table_type = 'VIEW' THEN true
 				WHEN table_type = 'MATERIALIZED VIEW' THEN true
 				ELSE false
-			END AS is_view
+			END AS is_view,
+			DATABASE() = table_schema AS is_default_database_schema
 		FROM %s.information_schema.tables
 		WHERE table_schema = ?
 	`, safeSQLName(catalog))
@@ -340,14 +119,16 @@ func (i *informationSchemaImpl) ListTables(ctx context.Context, database, databa
 	var tables []*drivers.TableInfo
 	for rows.Next() {
 		var tableName string
-		var isView bool
-		if err := rows.Scan(&tableName, &isView); err != nil {
+		var isView, isDefaultDatabaseSchema bool
+		if err := rows.Scan(&tableName, &isView, &isDefaultDatabaseSchema); err != nil {
 			return nil, "", err
 		}
 
 		tables = append(tables, &drivers.TableInfo{
-			Name: tableName,
-			View: isView,
+			Name:                    tableName,
+			View:                    isView,
+			IsDefaultDatabase:       true,
+			IsDefaultDatabaseSchema: isDefaultDatabaseSchema,
 		})
 	}
 
@@ -366,8 +147,8 @@ func (i *informationSchemaImpl) ListTables(ctx context.Context, database, databa
 }
 
 // GetTable returns metadata about a specific table.
-func (i *informationSchemaImpl) GetTable(ctx context.Context, database, databaseSchema, tableName string) (*drivers.TableMetadata, error) {
-	db := i.c.db
+func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tableName string) (*drivers.TableMetadata, error) {
+	db := c.db
 
 	// StarRocks mapping: database parameter = catalog
 	catalog := database
@@ -422,4 +203,225 @@ func (i *informationSchemaImpl) GetTable(ctx context.Context, database, database
 		View:   isView,
 		Schema: schema,
 	}, nil
+}
+
+// All returns metadata about all tables and views.
+// For StarRocks, we query from the configured catalog's information_schema.
+func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+	db := c.db
+
+	catalog := c.configProp.Catalog
+
+	// Build query using fully qualified information_schema path
+	// Pattern: catalog.information_schema.tables
+	q := fmt.Sprintf(`
+		SELECT
+			table_schema,
+			table_name,
+			CASE
+				WHEN table_type = 'VIEW' THEN true
+				WHEN table_type = 'MATERIALIZED VIEW' THEN true
+				ELSE false
+			END AS is_view
+		FROM %s.information_schema.tables
+		WHERE table_schema NOT IN ('information_schema', '_statistics_', 'mysql', 'sys')
+	`, safeSQLName(catalog))
+
+	args := []any{}
+
+	if like != "" {
+		q += " AND table_name LIKE ?"
+		args = append(args, like)
+	}
+
+	if pageToken != "" {
+		q += " AND table_name > ?"
+		args = append(args, pageToken)
+	}
+
+	q += " ORDER BY table_schema, table_name"
+
+	if pageSize > 0 {
+		q += fmt.Sprintf(" LIMIT %d", pageSize+1)
+	}
+
+	rows, err := db.QueryxContext(ctx, q, args...)
+	if err != nil {
+		return nil, "", err
+	}
+	defer rows.Close()
+
+	var tables []*drivers.TableInfo
+	for rows.Next() {
+		var schema, name string
+		var isView bool
+		if err := rows.Scan(&schema, &name, &isView); err != nil {
+			return nil, "", err
+		}
+
+		tables = append(tables, &drivers.TableInfo{
+			Database:       catalog, // StarRocks catalog -> Rill database
+			DatabaseSchema: schema,  // StarRocks database -> Rill databaseSchema
+			Name:           name,
+			View:           isView,
+		})
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, "", err
+	}
+
+	// Handle pagination
+	var nextToken string
+	if pageSize > 0 && uint32(len(tables)) > pageSize {
+		tables = tables[:pageSize]
+		nextToken = tables[len(tables)-1].Name
+	}
+
+	return tables, nextToken, nil
+}
+
+// Lookup returns metadata about a specific table or view.
+// database parameter = catalog, schema parameter = database in StarRocks terms.
+func (c *connection) Lookup(ctx context.Context, database, schema, name string) (*drivers.TableInfo, error) {
+	db := c.db
+	// StarRocks mapping: database parameter = catalog
+	// If database is empty, use connector's configured catalog
+	catalog := database
+	if catalog == "" {
+		catalog = c.configProp.Catalog
+	}
+	// StarRocks mapping: schema parameter = database
+	// If schema is empty, use connector's configured database
+	dbSchema := schema
+	if dbSchema == "" {
+		dbSchema = c.configProp.Database
+	}
+
+	// Query table metadata using fully qualified information_schema path
+	tableQuery := fmt.Sprintf(`
+		SELECT
+			table_schema,
+			table_name,
+			CASE
+				WHEN table_type = 'VIEW' THEN true
+				WHEN table_type = 'MATERIALIZED VIEW' THEN true
+				ELSE false
+			END AS is_view
+		FROM %s.information_schema.tables
+		WHERE table_schema = ? AND LOWER(table_name) = LOWER(?)
+	`, safeSQLName(catalog))
+
+	var tableSchema, tableName string
+	var isView bool
+	err := db.QueryRowxContext(ctx, tableQuery, dbSchema, name).Scan(&tableSchema, &tableName, &isView)
+	if err != nil {
+		return nil, fmt.Errorf("table not found: %w", err)
+	}
+
+	// Query column information using fully qualified information_schema path
+	columnsQuery := fmt.Sprintf(`
+		SELECT
+			column_name,
+			data_type
+		FROM %s.information_schema.columns
+		WHERE table_schema = ? AND LOWER(table_name) = LOWER(?)
+		ORDER BY ordinal_position
+	`, safeSQLName(catalog))
+
+	rows, err := db.QueryxContext(ctx, columnsQuery, dbSchema, name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get columns: %w", err)
+	}
+	defer rows.Close()
+
+	var fields []*runtimev1.StructType_Field
+	unsupportedCols := make(map[string]string)
+
+	for rows.Next() {
+		var colName, dataType string
+		if err := rows.Scan(&colName, &dataType); err != nil {
+			return nil, err
+		}
+
+		runtimeType, err := c.databaseTypeToRuntimeType(dataType)
+		if err != nil {
+			if errors.Is(err, errUnsupportedType) {
+				unsupportedCols[colName] = dataType
+				continue // Skip unsupported types
+			}
+			return nil, err
+		}
+
+		fields = append(fields, &runtimev1.StructType_Field{
+			Name: colName,
+			Type: runtimeType,
+		})
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// StarRocks: Always save database (catalog) and databaseSchema (database) in metrics view YAML
+	// because StarRocks queries require fully qualified table names (catalog.database.table)
+	return &drivers.TableInfo{
+		Database:                catalog,
+		DatabaseSchema:          tableSchema,
+		IsDefaultDatabase:       false,
+		IsDefaultDatabaseSchema: false,
+		Name:                    tableName,
+		View:                    isView,
+		Schema:                  &runtimev1.StructType{Fields: fields},
+		UnsupportedCols:         unsupportedCols,
+	}, nil
+}
+
+// LoadPhysicalSize populates the PhysicalSizeBytes field of table metadata.
+// For external catalogs, this may not be available.
+func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.TableInfo) error {
+	// StarRocks doesn't easily expose physical size for external tables
+	// For internal tables, we could query be_tablets but it's complex
+	// Return without error, leaving PhysicalSizeBytes as 0
+	return nil
+}
+
+// LoadDDL implements drivers.InformationSchema.
+func (c *connection) LoadDDL(ctx context.Context, table *drivers.TableInfo) error {
+	db := c.db
+
+	catalog := table.Database
+	if catalog == "" {
+		catalog = c.configProp.Catalog
+	}
+	schema := table.DatabaseSchema
+	if schema == "" {
+		schema = c.configProp.Database
+	}
+
+	// SHOW CREATE TABLE works for both tables and views in StarRocks.
+	// For tables it returns columns: [Table, Create Table].
+	// For views it returns columns: [View, Create View, character_set_client, collation_connection].
+	// We extract the DDL by column name to avoid depending on column order or count.
+	rows, err := db.QueryxContext(ctx, fmt.Sprintf("SHOW CREATE TABLE %s", c.Dialect().EscapeTable(catalog, schema, table.Name)))
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		res := make(map[string]any)
+		if err := rows.MapScan(res); err != nil {
+			return err
+		}
+		for _, key := range []string{"Create Table", "Create View"} {
+			if v, ok := res[key]; ok && v != nil {
+				if b, ok := v.([]byte); ok {
+					table.DDL = string(b)
+				}
+				break
+			}
+		}
+	}
+	return rows.Err()
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/athena"
 	"github.com/aws/aws-sdk-go-v2/service/athena/types"
 	"github.com/aws/smithy-go"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pagination"
 	"golang.org/x/sync/errgroup"
@@ -73,11 +74,13 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	q := fmt.Sprintf(`
 	SELECT
 		table_name,
-		table_type
+		table_type,
+		current_catalog = table_catalog AS is_default_database,
+		current_schema = table_schema AS is_default_database_schema
 	FROM %s.information_schema.tables
-	WHERE table_schema = %s %s 
+	WHERE table_schema = %s %s
 	ORDER BY table_name
-	LIMIT %d 
+	LIMIT %d
 	`, sqlSafeName(database), escapeStringValue(databaseSchema), condFilter, limit+1)
 
 	client, err := c.getClient(ctx)
@@ -95,15 +98,24 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to get query results: %w", err)
 	}
-	// first row is header of skipping it
+	// first row is header, skip it
 	res := make([]*drivers.TableInfo, 0, len(results.ResultSet.Rows)-1)
 	for _, row := range results.ResultSet.Rows[1:] {
-		if len(row.Data) < 2 || row.Data[0].VarCharValue == nil || row.Data[1].VarCharValue == nil {
+		if len(row.Data) < 4 || row.Data[0].VarCharValue == nil || row.Data[1].VarCharValue == nil {
 			continue
 		}
+		var isDefaultDatabase, isDefaultDatabaseSchema bool
+		if row.Data[2].VarCharValue != nil {
+			isDefaultDatabase = strings.EqualFold(*row.Data[2].VarCharValue, "true")
+		}
+		if row.Data[3].VarCharValue != nil {
+			isDefaultDatabaseSchema = strings.EqualFold(*row.Data[3].VarCharValue, "true")
+		}
 		res = append(res, &drivers.TableInfo{
-			Name: *row.Data[0].VarCharValue,
-			View: strings.EqualFold(*row.Data[1].VarCharValue, "VIEW"),
+			Name:                    *row.Data[0].VarCharValue,
+			View:                    strings.EqualFold(*row.Data[1].VarCharValue, "VIEW"),
+			IsDefaultDatabase:       isDefaultDatabase,
+			IsDefaultDatabaseSchema: isDefaultDatabaseSchema,
 		})
 	}
 	next := ""
@@ -151,6 +163,47 @@ ORDER BY c.ordinal_position
 		return nil, err
 	}
 	return res, nil
+}
+
+// All implements drivers.InformationSchema.
+func (c *Connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
+}
+
+// LoadPhysicalSize implements drivers.InformationSchema.
+func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.TableInfo) error {
+	return nil
+}
+
+// LoadDDL implements drivers.InformationSchema.
+func (c *Connection) LoadDDL(ctx context.Context, table *drivers.TableInfo) error {
+	return nil // Not implemented
+}
+
+// Lookup implements drivers.InformationSchema.
+func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.TableInfo, error) {
+	meta, err := c.GetTable(ctx, db, schema, name)
+	if err != nil {
+		return nil, err
+	}
+	runtimeSchema := &runtimev1.StructType{
+		Fields: make([]*runtimev1.StructType_Field, 0, len(meta.Schema)),
+	}
+	for name, typ := range meta.Schema {
+		runtimeSchema.Fields = append(runtimeSchema.Fields, &runtimev1.StructType_Field{
+			Name: name,
+			Type: athenaTypeToRuntimeType(typ),
+		})
+	}
+	return &drivers.TableInfo{
+		Database:          db,
+		DatabaseSchema:    schema,
+		Name:              name,
+		View:              meta.View,
+		Schema:            runtimeSchema,
+		UnsupportedCols:   nil,
+		PhysicalSizeBytes: 0,
+	}, nil
 }
 
 func (c *Connection) listCatalogs(ctx context.Context, client *athena.Client) ([]string, error) {

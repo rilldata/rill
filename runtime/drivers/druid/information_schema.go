@@ -62,8 +62,10 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 			return nil, "", err
 		}
 		res = append(res, &drivers.TableInfo{
-			Name: name,
-			View: typ,
+			Name:                    name,
+			View:                    typ,
+			IsDefaultDatabase:       true,
+			IsDefaultDatabaseSchema: true,
 		})
 	}
 
@@ -140,7 +142,7 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 	}, nil
 }
 
-func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
+func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
 	var filter string
 	var args []any
 	if like != "" {
@@ -202,7 +204,7 @@ func (c *connection) All(ctx context.Context, like string, pageSize uint32, page
 	return tables, next, nil
 }
 
-func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
+func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.TableInfo, error) {
 	// Ensure Coordinator is ready.
 	// The issues is that the request
 	//	SELECT ...
@@ -252,11 +254,11 @@ func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 	return tables[0], nil
 }
 
-func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
+func (c *connection) LoadDDL(ctx context.Context, table *drivers.TableInfo) error {
 	return nil // Not implemented
 }
 
-func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
+func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.TableInfo) error {
 	q := `SELECT
     		datasource,
     		SUM("size") AS total_size
@@ -291,8 +293,8 @@ func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Ola
 	return nil
 }
 
-func scanTables(rows *sqlx.Rows) ([]*drivers.OlapTable, error) {
-	var res []*drivers.OlapTable
+func scanTables(rows *sqlx.Rows) ([]*drivers.TableInfo, error) {
+	var res []*drivers.TableInfo
 
 	for rows.Next() {
 		var schema string
@@ -308,7 +310,7 @@ func scanTables(rows *sqlx.Rows) ([]*drivers.OlapTable, error) {
 		}
 
 		// set t to res[len(res)-1] if it's the same table, else set t to a new table and append it
-		var t *drivers.OlapTable
+		var t *drivers.TableInfo
 		if len(res) > 0 {
 			t = res[len(res)-1]
 			if !(t.DatabaseSchema == schema && t.Name == name) {
@@ -316,7 +318,7 @@ func scanTables(rows *sqlx.Rows) ([]*drivers.OlapTable, error) {
 			}
 		}
 		if t == nil {
-			t = &drivers.OlapTable{
+			t = &drivers.TableInfo{
 				DatabaseSchema:          schema,
 				IsDefaultDatabaseSchema: true,
 				Name:                    name,

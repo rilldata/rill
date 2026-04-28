@@ -185,6 +185,20 @@ INSERT INTO `rilldata.integration_test.all_datatypes` VALUES
     (0, 0.0, Cast(0.0 as NUMERIC), Cast(0.0 as BIGNUMERIC), FALSE, '', b'', DATE(1970,1,1), DATETIME(1970,1,1,00,00,00), TIME(00,00,00), TIMESTAMP("1970-01-01 00:00:00 UTC"), PARSE_JSON('{}'), ST_GEOGPOINT(0, 0), INTERVAL 0 DAY, Range(DATE(1970,1,1),DATE(1970,1,2)), Range(DATETIME(1970,1,1,00,00,00),DATETIME(1970,1,1,00,00,01)), Range(TIMESTAMP("1970-01-01 00:00:00 UTC"),TIMESTAMP("1970-01-01 00:00:01 UTC")), [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],(0, 0.0, Cast(0.0 as NUMERIC), Cast(0.0 as BIGNUMERIC), FALSE, '', b'', DATE(1970,1,1), DATETIME(1970,1,1,00,00,00), TIME(00,00,00), TIMESTAMP("1970-01-01 00:00:00 UTC"), PARSE_JSON('{}'), ST_GEOGPOINT(0, 0), INTERVAL 0 DAY, Range(DATE(1970,1,1),DATE(1970,1,2)), Range(DATETIME(1970,1,1,00,00,00),DATETIME(1970,1,1,00,00,01)), Range(TIMESTAMP("1970-01-01 00:00:00 UTC"),TIMESTAMP("1970-01-01 00:00:01 UTC")), [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [])),
     (NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,NULL);
 
+CREATE OR REPLACE TABLE `rilldata.integration_test.foo` (bar STRING, baz INT64);
+INSERT INTO `rilldata.integration_test.foo` VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4);
+
+CREATE OR REPLACE TABLE `rilldata.integration_test.bar` (bar STRING, baz INT64);
+INSERT INTO `rilldata.integration_test.bar` VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4);
+
+CREATE OR REPLACE TABLE `rilldata.integration_test.foz` (bar STRING, baz INT64);
+INSERT INTO `rilldata.integration_test.foz` VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4);
+
+CREATE OR REPLACE TABLE `rilldata.integration_test.baz` (bar STRING, baz INT64);
+INSERT INTO `rilldata.integration_test.baz` VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4);
+
+CREATE OR REPLACE VIEW `rilldata.integration_test.model` AS SELECT 1 AS col1, 2 AS col2, 3 AS col3;
+
 -- The following tables are used for runtime/query tests.
 -- BigQuery does not support modeling, so data must be ingested offline before running these tests.
 
@@ -298,4 +312,3 @@ SELECT 1.0, 5, TIMESTAMP '2019-01-03 00:00:00 UTC', DATE '2019-01-03',
 UNION ALL
 SELECT 1.0, 3, TIMESTAMP '2019-01-06 00:00:00 UTC', DATE '2019-01-06',
     'iphone', NULL, 'msn.com', NULL, NULL;
-

@@ -213,11 +213,6 @@ func (c *Connection) ParsedConfig() *ConfigProperties {
 	return &cpy
 }
 
-// InformationSchema implements drivers.Handle.
-func (c *Connection) AsInformationSchema() (drivers.InformationSchema, bool) {
-	return nil, false
-}
-
 // Close implements drivers.Connection.
 func (c *Connection) Close() error {
 	return nil
@@ -250,6 +245,11 @@ func (c *Connection) AsAI(instanceID string) (drivers.AIService, bool) {
 
 // AsOLAP implements drivers.Connection.
 func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
+	return nil, false
+}
+
+// InformationSchema implements drivers.Handle.
+func (c *Connection) AsInformationSchema() (drivers.InformationSchema, bool) {
 	return nil, false
 }
 

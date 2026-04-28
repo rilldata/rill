@@ -291,7 +291,7 @@ func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 
 // AsInformationSchema implements drivers.Handle.
 func (c *connection) AsInformationSchema() (drivers.InformationSchema, bool) {
-	return &informationSchemaImpl{c: c}, true
+	return c, true
 }
 
 // AsObjectStore implements drivers.Handle.

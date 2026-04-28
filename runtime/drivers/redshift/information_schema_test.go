@@ -1,4 +1,4 @@
-package athena_test
+package redshift_test
 
 import (
 	"context"
@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	database       = "awsdatacatalog"
-	databaseSchema = "integration_test"
+	database       = "test_db"
+	databaseSchema = "public"
 )
 
 var knownTestTables = []string{"all_datatypes", "bar", "baz", "foo", "foz", "model"}
@@ -21,7 +21,7 @@ const numKnown = 6
 
 func TestInformationSchema(t *testing.T) {
 	testmode.Expensive(t)
-	_, olap := acquireTestAthena(t)
+	_, olap := acquireTestRedshift(t)
 	ctx := t.Context()
 	infoSchema := olap.InformationSchema()
 
@@ -64,7 +64,7 @@ func testAll(t *testing.T, ctx context.Context, infoSchema drivers.InformationSc
 
 	for _, tbl := range tables {
 		require.True(t, tbl.IsDefaultDatabase, "table %s: expected IsDefaultDatabase=true", tbl.Name)
-		require.False(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=false", tbl.Name)
+		require.True(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=true", tbl.Name)
 	}
 }
 
@@ -120,7 +120,7 @@ func testListTables(t *testing.T, ctx context.Context, infoSchema drivers.Inform
 
 	for _, tbl := range tables {
 		require.True(t, tbl.IsDefaultDatabase, "table %s: expected IsDefaultDatabase=true", tbl.Name)
-		require.False(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=false", tbl.Name)
+		require.True(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=true", tbl.Name)
 	}
 }
 

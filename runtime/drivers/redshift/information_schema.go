@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/redshiftdata"
 	"github.com/aws/aws-sdk-go-v2/service/redshiftdata/types"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pagination"
 )
@@ -90,11 +91,13 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	q := fmt.Sprintf(`
 	SELECT
 		table_name,
-		CASE WHEN table_type = 'VIEW' THEN true ELSE false END AS view
+		CASE WHEN table_type = 'VIEW' THEN true ELSE false END AS view,
+		CASE WHEN database_name = current_database() THEN true ELSE false END AS is_default_database,
+		CASE WHEN schema_name = current_schema() THEN true ELSE false END AS is_default_database_schema
 	FROM svv_all_tables
-	WHERE database_name = %s AND schema_name = %s %s 
+	WHERE database_name = %s AND schema_name = %s %s
 	ORDER BY table_name
-	LIMIT %d 
+	LIMIT %d
 	`, escapeStringValue(database), escapeStringValue(databaseSchema), condFilter, limit+1)
 
 	client, err := c.getClient(ctx)
@@ -125,9 +128,19 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 		if !ok {
 			return nil, "", fmt.Errorf("unexpected type for view field")
 		}
+		isDefaultDatabaseField, ok := record[2].(*types.FieldMemberBooleanValue)
+		if !ok {
+			return nil, "", fmt.Errorf("unexpected type for is_default_database field")
+		}
+		isDefaultDatabaseSchemaField, ok := record[3].(*types.FieldMemberBooleanValue)
+		if !ok {
+			return nil, "", fmt.Errorf("unexpected type for is_default_database_schema field")
+		}
 		res = append(res, &drivers.TableInfo{
-			Name: nameField.Value,
-			View: viewField.Value,
+			Name:                    nameField.Value,
+			View:                    viewField.Value,
+			IsDefaultDatabase:       isDefaultDatabaseField.Value,
+			IsDefaultDatabaseSchema: isDefaultDatabaseSchemaField.Value,
 		})
 	}
 	next := ""
@@ -139,13 +152,15 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 }
 
 func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
-	// Query to get column name and data type
 	q := fmt.Sprintf(`
 SELECT 
 	column_name, 
-	data_type
-FROM svv_all_columns
-WHERE database_name = %s AND schema_name = %s AND table_name = %s
+	data_type,
+	CASE WHEN table_type = 'VIEW' THEN true ELSE false END AS view
+FROM svv_all_columns c
+JOIN svv_all_tables t
+	ON t.database_name = c.database_name AND t.schema_name = c.schema_name AND t.table_name = c.table_name
+WHERE c.database_name = %s AND c.schema_name = %s AND c.table_name = %s
 ORDER BY ordinal_position;
 `, escapeStringValue(database), escapeStringValue(databaseSchema), escapeStringValue(table))
 
@@ -168,6 +183,7 @@ ORDER BY ordinal_position;
 	}
 
 	var column, dataType string
+	var isView bool
 	schemaMap := make(map[string]string, len(result.Records))
 	for _, record := range result.Records {
 		colField, ok := record[0].(*types.FieldMemberStringValue)
@@ -178,13 +194,60 @@ ORDER BY ordinal_position;
 		if !ok {
 			return nil, fmt.Errorf("unexpected type for data_type field")
 		}
+		viewField, ok := record[2].(*types.FieldMemberBooleanValue)
+		if !ok {
+			return nil, fmt.Errorf("unexpected type for view field")
+		}
 		column = colField.Value
 		dataType = typeField.Value
+		isView = viewField.Value
 		schemaMap[column] = dataType
 	}
 
 	return &drivers.TableMetadata{
 		Schema: schemaMap,
+		View:   isView,
+	}, nil
+}
+
+// All implements drivers.InformationSchema.
+func (c *Connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
+}
+
+// LoadPhysicalSize implements drivers.InformationSchema.
+func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.TableInfo) error {
+	return nil
+}
+
+// LoadDDL implements drivers.InformationSchema.
+func (c *Connection) LoadDDL(ctx context.Context, table *drivers.TableInfo) error {
+	return nil // Not implemented
+}
+
+// Lookup implements drivers.InformationSchema.
+func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.TableInfo, error) {
+	meta, err := c.GetTable(ctx, db, schema, name)
+	if err != nil {
+		return nil, err
+	}
+	runtimeSchema := &runtimev1.StructType{
+		Fields: make([]*runtimev1.StructType_Field, 0, len(meta.Schema)),
+	}
+	for name, typ := range meta.Schema {
+		runtimeSchema.Fields = append(runtimeSchema.Fields, &runtimev1.StructType_Field{
+			Name: name,
+			Type: redshiftTypeToRuntimeType(typ),
+		})
+	}
+	return &drivers.TableInfo{
+		Database:          db,
+		DatabaseSchema:    schema,
+		Name:              name,
+		View:              meta.View,
+		Schema:            runtimeSchema,
+		UnsupportedCols:   nil,
+		PhysicalSizeBytes: 0,
 	}, nil
 }
 

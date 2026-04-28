@@ -1,91 +1,193 @@
 package databricks_test
 
 import (
+	"context"
+	"sort"
 	"testing"
 
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 )
 
-func TestListDatabaseSchemas(t *testing.T) {
+const (
+	database       = "workspace"
+	databaseSchema = "integration_test"
+)
+
+var knownTestTables = []string{"all_datatypes", "bar", "baz", "foo", "foz", "model"}
+
+const numKnown = 6
+
+func TestInformationSchema(t *testing.T) {
 	testmode.Expensive(t)
+	_, olap := acquireTestDatabricks(t)
+	ctx := t.Context()
+	infoSchema := olap.InformationSchema()
 
-	conn, _ := acquireTestDatabricks(t)
-	is, ok := conn.AsInformationSchema()
-	require.True(t, ok)
+	t.Run("testAll", func(t *testing.T) {
+		testAll(t, ctx, infoSchema)
+	})
+	t.Run("testLookup", func(t *testing.T) {
+		testLookup(t, ctx, infoSchema)
+	})
+	t.Run("testListDatabaseSchemas", func(t *testing.T) {
+		testListDatabaseSchemas(t, ctx, infoSchema)
+	})
+	t.Run("testListTables", func(t *testing.T) {
+		testListTables(t, ctx, infoSchema)
+	})
+	t.Run("testListTablesPagination", func(t *testing.T) {
+		testListTablesPagination(t, ctx, infoSchema)
+	})
+	t.Run("testLoadDDL", func(t *testing.T) {
+		testLoadDDL(t, ctx, infoSchema)
+	})
+}
 
-	schemas, nextToken, err := is.ListDatabaseSchemas(t.Context(), 0, "")
+func testAll(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
+	all, _, err := infoSchema.All(ctx, "", 0, "")
 	require.NoError(t, err)
-	require.Empty(t, nextToken)
+	tables := filterOLAP(all)
+	require.Equal(t, numKnown, len(tables))
+
+	require.Equal(t, "all_datatypes", tables[0].Name)
+	require.Equal(t, "bar", tables[1].Name)
+	require.Equal(t, "baz", tables[2].Name)
+	require.Equal(t, "foo", tables[3].Name)
+	require.Equal(t, "foz", tables[4].Name)
+	require.Equal(t, "model", tables[5].Name)
+	require.True(t, tables[5].View)
+	for _, tbl := range tables[:5] {
+		require.False(t, tbl.View, "table %s should not be a view", tbl.Name)
+	}
+
+	for _, tbl := range tables {
+		require.True(t, tbl.IsDefaultDatabase, "table %s: expected IsDefaultDatabase=true", tbl.Name)
+		require.False(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=false", tbl.Name)
+	}
+}
+
+func testLookup(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
+	bar, err := infoSchema.Lookup(ctx, database, databaseSchema, "bar")
+	require.NoError(t, err)
+	require.Equal(t, "bar", bar.Name)
+	require.Equal(t, 2, len(bar.Schema.Fields))
+	fieldNames := make(map[string]bool)
+	for _, f := range bar.Schema.Fields {
+		fieldNames[f.Name] = true
+	}
+	require.True(t, fieldNames["bar"])
+	require.True(t, fieldNames["baz"])
+	require.False(t, bar.View)
+
+	model, err := infoSchema.Lookup(ctx, database, databaseSchema, "model")
+	require.NoError(t, err)
+	require.True(t, model.View)
+
+	_, err = infoSchema.Lookup(ctx, database, databaseSchema, "nonexistent_table")
+	require.Error(t, err)
+}
+
+func testListDatabaseSchemas(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
+	schemas, _, err := infoSchema.ListDatabaseSchemas(ctx, 0, "")
+	require.NoError(t, err)
+	require.NotEmpty(t, schemas)
 
 	found := false
 	for _, s := range schemas {
-		if s.DatabaseSchema == "integration_test" {
+		if s.Database == database && s.DatabaseSchema == databaseSchema {
 			found = true
+			break
 		}
-		require.NotEmpty(t, s.DatabaseSchema)
 	}
-	require.True(t, found, "expected integration_test schema to be present")
+	require.True(t, found, "expected schema %s.%s in ListDatabaseSchemas", database, databaseSchema)
 }
 
-func TestListTables(t *testing.T) {
-	testmode.Expensive(t)
-
-	conn, _ := acquireTestDatabricks(t)
-	is, ok := conn.AsInformationSchema()
-	require.True(t, ok)
-
-	tables, nextToken, err := is.ListTables(t.Context(), "", "integration_test", 0, "")
+func testListTables(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
+	all, _, err := infoSchema.ListTables(ctx, database, databaseSchema, 0, "")
 	require.NoError(t, err)
-	require.Empty(t, nextToken)
+	tables := filterTableInfos(all)
+	require.Equal(t, numKnown, len(tables))
 
-	found := false
+	require.Equal(t, "all_datatypes", tables[0].Name)
+	require.Equal(t, "bar", tables[1].Name)
+	require.Equal(t, "baz", tables[2].Name)
+	require.Equal(t, "foo", tables[3].Name)
+	require.Equal(t, "foz", tables[4].Name)
+	require.Equal(t, "model", tables[5].Name)
+	require.True(t, tables[5].View)
+
 	for _, tbl := range tables {
-		if tbl.Name == "all_datatypes" {
-			found = true
-			require.False(t, tbl.View)
-		}
+		require.True(t, tbl.IsDefaultDatabase, "table %s: expected IsDefaultDatabase=true", tbl.Name)
+		require.False(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=false", tbl.Name)
 	}
-	require.True(t, found, "expected all_datatypes table to be present")
 }
 
-func TestGetTable(t *testing.T) {
-	testmode.Expensive(t)
+func testListTablesPagination(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
+	pageSize := 2
 
-	conn, _ := acquireTestDatabricks(t)
-	is, ok := conn.AsInformationSchema()
-	require.True(t, ok)
+	var collectedAll []*drivers.TableInfo
+	var nextToken string
+	for {
+		tables, token, err := infoSchema.ListTables(ctx, database, databaseSchema, uint32(pageSize), nextToken)
+		require.NoError(t, err)
+		require.LessOrEqual(t, len(tables), pageSize)
+		collectedAll = append(collectedAll, tables...)
+		nextToken = token
+		if token == "" {
+			break
+		}
+	}
+	require.Equal(t, numKnown, len(filterTableInfos(collectedAll)))
 
-	meta, err := is.GetTable(t.Context(), "", "integration_test", "all_datatypes")
+	// All at once
+	tables, nextToken, err := infoSchema.ListTables(ctx, database, databaseSchema, 0, "")
 	require.NoError(t, err)
-	require.NotNil(t, meta)
-	require.False(t, meta.View)
-	require.NotEmpty(t, meta.Schema)
+	require.Equal(t, numKnown, len(filterTableInfos(tables)))
+	require.Empty(t, nextToken)
+}
 
-	// Verify expected columns and types from the init SQL.
-	// Databricks information_schema uses its own type aliases (e.g. SHORT, LONG, BYTE)
-	// and strips precision/length from scalar types (e.g. DECIMAL instead of DECIMAL(18,6)).
-	expected := map[string]string{
-		"id":                "INT",
-		"boolean_col":       "BOOLEAN",
-		"tinyint_col":       "BYTE",
-		"smallint_col":      "SHORT",
-		"int32_col":         "INT",
-		"int64_col":         "LONG",
-		"float_col":         "FLOAT",
-		"double_col":        "DOUBLE",
-		"decimal_col":       "DECIMAL",
-		"string_col":        "STRING",
-		"varchar_col":       "STRING",
-		"date_col":          "DATE",
-		"timestamp_col":     "TIMESTAMP",
-		"timestamp_ntz_col": "TIMESTAMP_NTZ",
-		"binary_col":        "BINARY",
-		"array_col":         "ARRAY",
-		"map_col":           "MAP",
-		"struct_col":        "STRUCT",
+func testLoadDDL(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
+	table, err := infoSchema.Lookup(ctx, database, databaseSchema, "bar")
+	require.NoError(t, err)
+	err = infoSchema.LoadDDL(ctx, table)
+	require.NoError(t, err)
+	require.NotEmpty(t, table.DDL)
+
+	view, err := infoSchema.Lookup(ctx, database, databaseSchema, "model")
+	require.NoError(t, err)
+	err = infoSchema.LoadDDL(ctx, view)
+	require.NoError(t, err)
+	require.NotEmpty(t, view.DDL)
+}
+
+func filterOLAP(tables []*drivers.TableInfo) []*drivers.TableInfo {
+	known := make(map[string]bool, numKnown)
+	for _, n := range knownTestTables {
+		known[n] = true
 	}
-	for col, typ := range expected {
-		require.Equal(t, typ, meta.Schema[col], "unexpected type for column %q", col)
+	var out []*drivers.TableInfo
+	for _, t := range tables {
+		if known[t.Name] {
+			out = append(out, t)
+		}
 	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
+	return out
+}
+
+func filterTableInfos(tables []*drivers.TableInfo) []*drivers.TableInfo {
+	known := make(map[string]bool, numKnown)
+	for _, n := range knownTestTables {
+		known[n] = true
+	}
+	var out []*drivers.TableInfo
+	for _, t := range tables {
+		if known[t.Name] {
+			out = append(out, t)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
+	return out
 }

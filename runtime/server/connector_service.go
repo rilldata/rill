@@ -114,7 +114,7 @@ func (s *Server) OLAPGetTable(ctx context.Context, req *runtimev1.OLAPGetTableRe
 	if err != nil {
 		return nil, err
 	}
-	_ = olap.InformationSchema().LoadPhysicalSize(ctx, []*drivers.OlapTable{table})
+	_ = olap.InformationSchema().LoadPhysicalSize(ctx, []*drivers.TableInfo{table})
 
 	return &runtimev1.OLAPGetTableResponse{
 		Schema:             table.Schema,
@@ -125,18 +125,13 @@ func (s *Server) OLAPGetTable(ctx context.Context, req *runtimev1.OLAPGetTableRe
 }
 
 func (s *Server) ListDatabaseSchemas(ctx context.Context, req *runtimev1.ListDatabaseSchemasRequest) (*runtimev1.ListDatabaseSchemasResponse, error) {
-	handle, release, err := s.runtime.AcquireHandle(ctx, req.InstanceId, req.Connector)
+	olap, release, err := s.runtime.OLAP(ctx, req.InstanceId, req.Connector)
 	if err != nil {
 		return nil, err
 	}
 	defer release()
 
-	is, ok := handle.AsInformationSchema()
-	if !ok {
-		return nil, fmt.Errorf("connector %q does not implement information schema", req.Connector)
-	}
-
-	items, next, err := is.ListDatabaseSchemas(ctx, req.PageSize, req.PageToken)
+	items, next, err := olap.InformationSchema().ListDatabaseSchemas(ctx, req.PageSize, req.PageToken)
 	if err != nil {
 		return nil, err
 	}
@@ -154,18 +149,13 @@ func (s *Server) ListDatabaseSchemas(ctx context.Context, req *runtimev1.ListDat
 }
 
 func (s *Server) ListTables(ctx context.Context, req *runtimev1.ListTablesRequest) (*runtimev1.ListTablesResponse, error) {
-	handle, release, err := s.runtime.AcquireHandle(ctx, req.InstanceId, req.Connector)
+	olap, release, err := s.runtime.OLAP(ctx, req.InstanceId, req.Connector)
 	if err != nil {
 		return nil, err
 	}
 	defer release()
 
-	is, ok := handle.AsInformationSchema()
-	if !ok {
-		return nil, fmt.Errorf("connector %q does not implement information schema", req.Connector)
-	}
-
-	items, next, err := is.ListTables(ctx, req.Database, req.DatabaseSchema, req.PageSize, req.PageToken)
+	items, next, err := olap.InformationSchema().ListTables(ctx, req.Database, req.DatabaseSchema, req.PageSize, req.PageToken)
 	if err != nil {
 		return nil, err
 	}
@@ -183,23 +173,18 @@ func (s *Server) ListTables(ctx context.Context, req *runtimev1.ListTablesReques
 }
 
 func (s *Server) GetTable(ctx context.Context, req *runtimev1.GetTableRequest) (*runtimev1.GetTableResponse, error) {
-	handle, release, err := s.runtime.AcquireHandle(ctx, req.InstanceId, req.Connector)
+	olap, release, err := s.runtime.OLAP(ctx, req.InstanceId, req.Connector)
 	if err != nil {
 		return nil, err
 	}
 	defer release()
 
-	is, ok := handle.AsInformationSchema()
-	if !ok {
-		return nil, fmt.Errorf("connector %q does not implement information schema", req.Connector)
-	}
-
-	tableMetadata, err := is.GetTable(ctx, req.Database, req.DatabaseSchema, req.Table)
+	_, err = olap.InformationSchema().Lookup(ctx, req.Database, req.DatabaseSchema, req.Table)
 	if err != nil {
 		return nil, err
 	}
 
 	return &runtimev1.GetTableResponse{
-		Schema: tableMetadata.Schema,
+		Schema: nil,
 	}, nil
 }

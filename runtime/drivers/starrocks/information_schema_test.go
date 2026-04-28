@@ -1,4 +1,4 @@
-package athena_test
+package starrocks
 
 import (
 	"context"
@@ -11,17 +11,17 @@ import (
 )
 
 const (
-	database       = "awsdatacatalog"
-	databaseSchema = "integration_test"
+	database       = "default_catalog"
+	databaseSchema = "test_db"
 )
 
-var knownTestTables = []string{"all_datatypes", "bar", "baz", "foo", "foz", "model"}
+var knownTestTables = []string{"all_types", "bar", "baz", "foo", "foz", "model"}
 
 const numKnown = 6
 
 func TestInformationSchema(t *testing.T) {
 	testmode.Expensive(t)
-	_, olap := acquireTestAthena(t)
+	_, olap := acquireTestStarRocks(t)
 	ctx := t.Context()
 	infoSchema := olap.InformationSchema()
 
@@ -51,7 +51,7 @@ func testAll(t *testing.T, ctx context.Context, infoSchema drivers.InformationSc
 	tables := filterOLAP(all)
 	require.Equal(t, numKnown, len(tables))
 
-	require.Equal(t, "all_datatypes", tables[0].Name)
+	require.Equal(t, "all_types", tables[0].Name)
 	require.Equal(t, "bar", tables[1].Name)
 	require.Equal(t, "baz", tables[2].Name)
 	require.Equal(t, "foo", tables[3].Name)
@@ -64,7 +64,7 @@ func testAll(t *testing.T, ctx context.Context, infoSchema drivers.InformationSc
 
 	for _, tbl := range tables {
 		require.True(t, tbl.IsDefaultDatabase, "table %s: expected IsDefaultDatabase=true", tbl.Name)
-		require.False(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=false", tbl.Name)
+		require.True(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=true", tbl.Name)
 	}
 }
 
@@ -110,7 +110,7 @@ func testListTables(t *testing.T, ctx context.Context, infoSchema drivers.Inform
 	tables := filterTableInfos(all)
 	require.Equal(t, numKnown, len(tables))
 
-	require.Equal(t, "all_datatypes", tables[0].Name)
+	require.Equal(t, "all_types", tables[0].Name)
 	require.Equal(t, "bar", tables[1].Name)
 	require.Equal(t, "baz", tables[2].Name)
 	require.Equal(t, "foo", tables[3].Name)
@@ -120,7 +120,7 @@ func testListTables(t *testing.T, ctx context.Context, infoSchema drivers.Inform
 
 	for _, tbl := range tables {
 		require.True(t, tbl.IsDefaultDatabase, "table %s: expected IsDefaultDatabase=true", tbl.Name)
-		require.False(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=false", tbl.Name)
+		require.True(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=true", tbl.Name)
 	}
 }
 
@@ -153,13 +153,13 @@ func testLoadDDL(t *testing.T, ctx context.Context, infoSchema drivers.Informati
 	require.NoError(t, err)
 	err = infoSchema.LoadDDL(ctx, table)
 	require.NoError(t, err)
-	require.Empty(t, table.DDL)
+	require.NotEmpty(t, table.DDL)
 
 	view, err := infoSchema.Lookup(ctx, database, databaseSchema, "model")
 	require.NoError(t, err)
 	err = infoSchema.LoadDDL(ctx, view)
 	require.NoError(t, err)
-	require.Empty(t, view.DDL)
+	require.NotEmpty(t, view.DDL)
 }
 
 func filterOLAP(tables []*drivers.TableInfo) []*drivers.TableInfo {

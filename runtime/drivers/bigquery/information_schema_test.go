@@ -1,4 +1,4 @@
-package athena_test
+package bigquery_test
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	database       = "awsdatacatalog"
+	database       = "rilldata"
 	databaseSchema = "integration_test"
 )
 
@@ -19,9 +19,9 @@ var knownTestTables = []string{"all_datatypes", "bar", "baz", "foo", "foz", "mod
 
 const numKnown = 6
 
-func TestInformationSchema(t *testing.T) {
+func TestInformationSchemaBigQuery(t *testing.T) {
 	testmode.Expensive(t)
-	_, olap := acquireTestAthena(t)
+	_, olap := acquireTestBigQuery(t)
 	ctx := t.Context()
 	infoSchema := olap.InformationSchema()
 
@@ -64,6 +64,7 @@ func testAll(t *testing.T, ctx context.Context, infoSchema drivers.InformationSc
 
 	for _, tbl := range tables {
 		require.True(t, tbl.IsDefaultDatabase, "table %s: expected IsDefaultDatabase=true", tbl.Name)
+		// BigQuery has no default dataset concept
 		require.False(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=false", tbl.Name)
 	}
 }
@@ -120,6 +121,7 @@ func testListTables(t *testing.T, ctx context.Context, infoSchema drivers.Inform
 
 	for _, tbl := range tables {
 		require.True(t, tbl.IsDefaultDatabase, "table %s: expected IsDefaultDatabase=true", tbl.Name)
+		// BigQuery has no default dataset concept
 		require.False(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=false", tbl.Name)
 	}
 }
@@ -153,13 +155,13 @@ func testLoadDDL(t *testing.T, ctx context.Context, infoSchema drivers.Informati
 	require.NoError(t, err)
 	err = infoSchema.LoadDDL(ctx, table)
 	require.NoError(t, err)
-	require.Empty(t, table.DDL)
+	require.NotEmpty(t, table.DDL)
 
 	view, err := infoSchema.Lookup(ctx, database, databaseSchema, "model")
 	require.NoError(t, err)
 	err = infoSchema.LoadDDL(ctx, view)
 	require.NoError(t, err)
-	require.Empty(t, view.DDL)
+	require.NotEmpty(t, view.DDL)
 }
 
 func filterOLAP(tables []*drivers.TableInfo) []*drivers.TableInfo {

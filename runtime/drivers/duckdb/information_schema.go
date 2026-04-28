@@ -54,7 +54,9 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 		q = `
         SELECT
             t.table_name AS table_name,
-            t.table_type = 'VIEW' AS view
+            t.table_type = 'VIEW' AS view,
+            t.table_catalog = current_database() AS is_default_database,
+            t.table_schema = current_schema() AS is_default_database_schema
         FROM information_schema.tables t
         WHERE t.table_catalog = ? AND t.table_schema = ?
         `
@@ -74,7 +76,9 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 			t.table_name,
 			CASE WHEN a.attached_table IS NOT NULL THEN FALSE
 				ELSE (t.table_type = 'VIEW')
-			END AS view
+			END AS view,
+			TRUE AS is_default_database,
+			TRUE AS is_default_database_schema
 		FROM information_schema.tables t
 		LEFT JOIN attached a
 			ON t.table_name = a.attached_table
@@ -111,12 +115,17 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 
 	var res []*drivers.TableInfo
 	var name string
-	var view bool
+	var view, isDefaultDatabase, isDefaultDatabaseSchema bool
 	for rows.Next() {
-		if err := rows.Scan(&name, &view); err != nil {
+		if err := rows.Scan(&name, &view, &isDefaultDatabase, &isDefaultDatabaseSchema); err != nil {
 			return nil, "", err
 		}
-		res = append(res, &drivers.TableInfo{Name: name, View: view})
+		res = append(res, &drivers.TableInfo{
+			Name:                    name,
+			View:                    view,
+			IsDefaultDatabase:       isDefaultDatabase,
+			IsDefaultDatabaseSchema: isDefaultDatabaseSchema,
+		})
 	}
 	if err := rows.Err(); err != nil {
 		return nil, "", err
@@ -222,7 +231,7 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 	}, nil
 }
 
-func (c *connection) All(ctx context.Context, ilike string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
+func (c *connection) All(ctx context.Context, ilike string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
 	// TODO: this bypasses the acquireMetaConn call in the original implementation. Fix this.
 	db, release, err := c.acquireDB()
 	if err != nil {
@@ -243,7 +252,7 @@ func (c *connection) All(ctx context.Context, ilike string, pageSize uint32, pag
 	return tables, nextToken, nil
 }
 
-func (c *connection) Lookup(ctx context.Context, _, _, name string) (*drivers.OlapTable, error) {
+func (c *connection) Lookup(ctx context.Context, _, _, name string) (*drivers.TableInfo, error) {
 	// TODO: this bypasses the acquireMetaConn call in the original implementation. Fix this.
 	db, release, err := c.acquireDB()
 	if err != nil {
@@ -268,12 +277,12 @@ func (c *connection) Lookup(ctx context.Context, _, _, name string) (*drivers.Ol
 	return tables[0], nil
 }
 
-func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
+func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.TableInfo) error {
 	// already populated in All and Lookup calls
 	return nil
 }
 
-func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
+func (c *connection) LoadDDL(ctx context.Context, table *drivers.TableInfo) error {
 	db, release, err := c.acquireDB()
 	if err != nil {
 		return err
@@ -288,11 +297,11 @@ func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) erro
 	return nil
 }
 
-func scanTables(rows []*rduckdb.Table) ([]*drivers.OlapTable, error) {
-	var res []*drivers.OlapTable
+func scanTables(rows []*rduckdb.Table) ([]*drivers.TableInfo, error) {
+	var res []*drivers.TableInfo
 
 	for _, row := range rows {
-		t := &drivers.OlapTable{
+		t := &drivers.TableInfo{
 			Database:                row.Database,
 			DatabaseSchema:          row.Schema,
 			IsDefaultDatabase:       true,

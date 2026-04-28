@@ -92,3 +92,18 @@ INSERT INTO all_datatypes (
     '1970-01-01', '1970-01-01 00:00:00', NULL, '00:00:00', 1970,
     0, B'0', '{}'
 );
+
+-- Simple test tables for information schema tests
+CREATE TABLE IF NOT EXISTS foo (bar VARCHAR(255), baz INT);
+INSERT INTO foo VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4);
+
+CREATE TABLE IF NOT EXISTS bar (bar VARCHAR(255), baz INT);
+INSERT INTO bar VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4);
+
+CREATE TABLE IF NOT EXISTS foz (bar VARCHAR(255), baz INT);
+INSERT INTO foz VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4);
+
+CREATE TABLE IF NOT EXISTS baz (bar VARCHAR(255), baz INT);
+INSERT INTO baz VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4);
+
+CREATE OR REPLACE VIEW model AS SELECT 1 AS col1, 2 AS col2, 3 AS col3;

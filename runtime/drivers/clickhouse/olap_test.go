@@ -22,11 +22,10 @@ func TestClickhouseSingle(t *testing.T) {
 	conn, err := driver{}.Open("", "default", map[string]any{"dsn": dsn, "mode": "readwrite"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	defer conn.Close()
-	prepareConn(t, conn)
-
 	c := conn.(*Connection)
 	olap, ok := conn.AsOLAP("default")
 	require.True(t, ok)
+	prepareConn(t, t.Context(), olap)
 
 	t.Run("WithConnection", func(t *testing.T) { testWithConnection(t, olap) })
 	t.Run("RenameView", func(t *testing.T) { testRenameView(t, c, olap) })

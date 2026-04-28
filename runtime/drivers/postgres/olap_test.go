@@ -57,16 +57,8 @@ func TestPgxOLAP(t *testing.T) {
 		testDryRun(t, olap)
 	})
 
-	t.Run("test information schema", func(t *testing.T) {
-		testInformationSchema(t, olap)
-	})
-
 	t.Run("test exec", func(t *testing.T) {
 		testExec(t, olap)
-	})
-
-	t.Run("test LoadDDL", func(t *testing.T) {
-		testLoadDDL(t, olap)
 	})
 }
 
@@ -322,42 +314,6 @@ func testDryRun(t *testing.T, olap drivers.OLAPStore) {
 	require.NoError(t, err)
 }
 
-func testInformationSchema(t *testing.T, olap drivers.OLAPStore) {
-	// Test All() method to list tables
-	tables, _, err := olap.InformationSchema().All(t.Context(), "", 100, "")
-	require.NoError(t, err)
-	require.NotEmpty(t, tables)
-
-	// Find our test table
-	var foundTable *drivers.OlapTable
-	for _, table := range tables {
-		if table.Name == "all_datatypes" {
-			foundTable = table
-			break
-		}
-	}
-	require.NotNil(t, foundTable, "all_datatypes table should be in the list")
-	require.False(t, foundTable.View)
-
-	// Test Lookup() method
-	table, err := olap.InformationSchema().Lookup(t.Context(), foundTable.Database, foundTable.DatabaseSchema, "all_datatypes")
-	require.NoError(t, err)
-	require.NotNil(t, table)
-	require.Equal(t, "all_datatypes", table.Name)
-	require.NotNil(t, table.Schema)
-	require.NotEmpty(t, table.Schema.Fields)
-
-	// Verify some fields exist
-	fieldNames := make(map[string]bool)
-	for _, field := range table.Schema.Fields {
-		fieldNames[field.Name] = true
-	}
-	require.True(t, fieldNames["id"])
-	require.True(t, fieldNames["name"])
-	require.True(t, fieldNames["age"])
-	require.True(t, fieldNames["uuid"])
-}
-
 func testExec(t *testing.T, olap drivers.OLAPStore) {
 	// Test Exec method - create a regular table instead of temp table
 	// (temp tables are session-specific and won't work with connection pooling)
@@ -396,31 +352,6 @@ func testExec(t *testing.T, olap drivers.OLAPStore) {
 	require.NoError(t, err)
 	require.Equal(t, int64(1), res["id"]) // INT returns as int64
 	require.Equal(t, "test", res["name"])
-}
-
-func testLoadDDL(t *testing.T, olap drivers.OLAPStore) {
-	// Test DDL for a table
-	table, err := olap.InformationSchema().Lookup(t.Context(), "", "", "all_datatypes")
-	require.NoError(t, err)
-	err = olap.InformationSchema().LoadDDL(t.Context(), table)
-	require.NoError(t, err)
-	require.Contains(t, table.DDL, "CREATE TABLE")
-	require.Contains(t, table.DDL, "all_datatypes")
-
-	// Create a view and test DDL for it
-	tableName := fmt.Sprintf("test_ddl_view_%d", time.Now().UnixNano())
-	err = olap.Exec(t.Context(), &drivers.Statement{Query: fmt.Sprintf("CREATE VIEW %s AS SELECT id, name FROM all_datatypes", tableName)})
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		_ = olap.Exec(t.Context(), &drivers.Statement{Query: fmt.Sprintf("DROP VIEW IF EXISTS %s", tableName)})
-	})
-
-	view, err := olap.InformationSchema().Lookup(t.Context(), "", "", tableName)
-	require.NoError(t, err)
-	err = olap.InformationSchema().LoadDDL(t.Context(), view)
-	require.NoError(t, err)
-	require.Contains(t, view.DDL, "CREATE VIEW")
-	require.Contains(t, view.DDL, tableName)
 }
 
 func acquireTestPostgres(t *testing.T) (drivers.Handle, drivers.OLAPStore) {
