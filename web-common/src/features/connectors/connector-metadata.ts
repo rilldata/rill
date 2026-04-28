@@ -5,6 +5,7 @@ import ClaudeIcon from "../../components/icons/connectors/ClaudeIcon.svelte";
 import ClickHouseIcon from "../../components/icons/connectors/ClickHouseIcon.svelte";
 import ClickHouseCloudIcon from "../../components/icons/connectors/ClickHouseCloudIcon.svelte";
 import ApacheIcebergIcon from "../../components/icons/connectors/ApacheIcebergIcon.svelte";
+import DatabricksIcon from "../../components/icons/connectors/DatabricksIcon.svelte";
 import DeltaLakeIcon from "../../components/icons/connectors/DeltaLakeIcon.svelte";
 import DuckDbIcon from "../../components/icons/connectors/DuckDBIcon.svelte";
 import DuckLakeIcon from "../../components/icons/connectors/DuckLakeIcon.svelte";
@@ -30,6 +31,7 @@ export const connectorIconMapping = {
   athena: AthenaIcon,
   azure: MicrosoftAzureBlobStorageIcon,
   bigquery: GoogleBigQueryIcon,
+  databricks: DatabricksIcon,
   claude: ClaudeIcon,
   clickhouse: ClickHouseIcon,
   delta: DeltaLakeIcon,
@@ -78,7 +80,8 @@ export const connectorKeywordMapping = {
   azure: ["object storage", "cloud storage"],
   bigquery: ["google", "gcp", "data warehouse"],
   clickhouse: ["olap", "columnar", "real-time analytics"],
-  deltalake: ["databricks", "lakehouse", "spark", "parquet"],
+  databricks: ["lakehouse", "spark", "olap", "warehouse"],
+  deltalake: ["lakehouse", "spark", "parquet"],
   druid: ["apache", "olap", "time series"],
   gcs: ["bucket", "object storage"],
   iceberg: ["apache", "table format", "lakehouse", "parquet"],

@@ -8,6 +8,7 @@ import { athenaSchema } from "../../templates/schemas/athena";
 import { azureSchema } from "../../templates/schemas/azure";
 import { bigquerySchema } from "../../templates/schemas/bigquery";
 import { claudeSchema } from "../../templates/schemas/claude";
+import { databricksSchema } from "../../templates/schemas/databricks";
 import { clickhouseSchema } from "../../templates/schemas/clickhouse";
 import { gcsSchema } from "../../templates/schemas/gcs";
 import { geminiSchema } from "../../templates/schemas/gemini";
@@ -58,6 +59,7 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   azure: azureSchema,
   delta: deltaSchema,
   claude: claudeSchema,
+  databricks: databricksSchema,
   openai: openaiSchema,
   gemini: geminiSchema,
 };
