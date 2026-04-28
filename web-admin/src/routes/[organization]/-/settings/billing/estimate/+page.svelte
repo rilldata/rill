@@ -495,30 +495,30 @@
   }
 
   .back-link {
-    @apply flex items-center gap-1 text-base font-medium text-fg-secondary no-underline w-[900px] pt-3;
+    @apply flex items-center gap-1 text-base font-medium text-fg-secondary no-underline max-w-[900px] w-full pt-3;
   }
   .back-link:hover {
     @apply text-fg-primary;
   }
 
   .page-title {
-    @apply text-2xl font-semibold text-fg-secondary w-[900px];
+    @apply text-2xl font-semibold text-fg-secondary max-w-[900px] w-full;
   }
 
   .pricing-hint {
-    @apply text-sm text-fg-secondary w-[900px] mt-2;
+    @apply text-sm text-fg-secondary max-w-[900px] w-full mt-2;
   }
   .pricing-hint strong {
     @apply font-semibold;
   }
 
   .estimate-grid {
-    @apply flex items-start gap-3 w-[900px];
+    @apply flex items-start gap-3 max-w-[900px] w-full;
   }
 
   /* Left panel */
   .input-panel {
-    @apply flex-1 flex flex-col gap-8 bg-white border border-border rounded-lg p-6;
+    @apply flex-1 min-w-0 flex flex-col gap-8 bg-surface-background border border-border rounded-lg p-6;
     box-shadow:
       0 1px 3px 0 rgba(0, 0, 0, 0.1),
       0 1px 2px 0 rgba(0, 0, 0, 0.1);
@@ -585,7 +585,7 @@
   }
 
   .stepper-btn {
-    @apply w-9 h-9 flex items-center justify-center text-base text-fg-primary bg-white border border-border cursor-pointer;
+    @apply w-9 h-9 flex items-center justify-center text-base text-fg-primary bg-surface-background border border-border cursor-pointer;
   }
   .stepper-btn:first-child {
     @apply rounded-l-md;
@@ -601,7 +601,7 @@
   }
 
   .stepper-input {
-    @apply flex-1 h-9 text-sm text-fg-primary text-center bg-white border-y border-border tabular-nums outline-none min-w-0;
+    @apply flex-1 h-9 text-sm text-fg-primary text-center bg-surface-background border-y border-border tabular-nums outline-none min-w-0;
     -moz-appearance: textfield;
   }
   .stepper-input::-webkit-outer-spin-button,
@@ -619,7 +619,7 @@
   }
 
   .checkbox {
-    @apply w-4 h-4 rounded border border-border bg-white cursor-pointer accent-primary-500;
+    @apply w-4 h-4 rounded border border-border bg-surface-background cursor-pointer accent-primary-500;
   }
 
   /* Storage row */
@@ -636,7 +636,7 @@
   }
 
   .storage-input {
-    @apply w-16 h-9 px-3 py-1 text-sm text-fg-primary bg-white border border-border rounded-sm tabular-nums outline-none;
+    @apply w-16 h-9 px-3 py-1 text-sm text-fg-primary bg-surface-background border border-border rounded-sm tabular-nums outline-none;
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     -moz-appearance: textfield;
   }
@@ -647,7 +647,7 @@
   }
 
   :global(.storage-unit-trigger) {
-    @apply flex items-center gap-2 h-9 px-4 text-sm font-medium text-fg-primary bg-white border border-border rounded-sm cursor-pointer outline-none;
+    @apply flex items-center gap-2 h-9 px-4 text-sm font-medium text-fg-primary bg-surface-background border border-border rounded-sm cursor-pointer outline-none;
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   }
   :global(.storage-unit-trigger:hover) {
@@ -659,7 +659,7 @@
 
   /* Right panel */
   .cost-panel {
-    @apply w-96 flex flex-col gap-6 bg-white border border-border rounded-lg p-6;
+    @apply w-96 shrink-0 flex flex-col gap-6 bg-surface-background border border-border rounded-lg p-6;
     box-shadow:
       0 1px 3px 0 rgba(0, 0, 0, 0.1),
       0 1px 2px -1px rgba(0, 0, 0, 0.1);
@@ -749,11 +749,11 @@
   }
 
   .you-pay-label {
-    @apply flex-1 text-base font-semibold text-primary-500 leading-none;
+    @apply flex-1 text-base font-semibold text-primary-700 leading-none;
   }
 
   .you-pay-amount {
-    @apply text-2xl font-semibold text-primary-500 tabular-nums;
+    @apply text-2xl font-semibold text-primary-700 tabular-nums;
     line-height: 36px;
   }
 
