@@ -12,13 +12,14 @@
     "http",
     "url",
     "clickhouse",
-    "source"
+    "source",
+    "connector"
   ],
 
   "json_schema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
-    "x-category": "sourceOnly",
+    "x-category": "fileStore",
 
     "properties": {
       "headers": {
@@ -26,7 +27,8 @@
         "description": "HTTP headers to include in the request",
         "x-display": "key-value",
         "x-placeholder": "Header name",
-        "x-hint": "e.g. Authorization: Bearer <token>"
+        "x-hint": "e.g. Authorization: Bearer <token>",
+        "x-step": "connector"
       },
 
       "path": {
@@ -37,7 +39,8 @@
         "errorMessage": {
           "pattern": "Must be a valid HTTP(S) URL"
         },
-        "x-placeholder": "https://example.com/data.csv"
+        "x-placeholder": "https://example.com/data.csv",
+        "x-step": "source"
       },
 
       "name": {
@@ -45,7 +48,8 @@
         "title": "Model name",
         "description": "Name for the source model",
         "pattern": "^[a-zA-Z0-9_]+$",
-        "x-placeholder": "my_model"
+        "x-placeholder": "my_model",
+        "x-step": "source"
       }
     },
 
@@ -54,9 +58,14 @@
 
   "files": [
     {
+      "name": "connector",
+      "path_template": "connectors/[[ .connector_name ]].yaml",
+      "code_template": "[[ if .config_props -]]\n# Connector YAML\n# Reference documentation: [[ .docs_url ]]\ntype: connector\ndriver: https\n[[ renderProps .config_props ]]\n[[ end -]]\n"
+    },
+    {
       "name": "model",
       "path_template": "models/[[ .model_name ]].yaml",
-      "code_template": "# Model YAML\n# Reference documentation: https://docs.rilldata.com/reference/project-files/models\n\ntype: model\nmaterialize: true\n\nconnector: clickhouse\n\nsql: |\n  SELECT * FROM url('[[ .path ]]'[[ clickhouseURLSuffix .path .props ]])\n"
+      "code_template": "# Model YAML\n# Reference documentation: https://docs.rilldata.com/reference/project-files/models\ntype: model\nmaterialize: true\nconnector: clickhouse\nsql: |[[ if .config_props ]]\n  SELECT * FROM url(rill_[[ .connector_name ]], url='[[ .path ]]')[[ else ]]\n  SELECT * FROM url('[[ .path ]]')[[ end ]]\n"
     }
   ]
 }

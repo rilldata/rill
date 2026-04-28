@@ -1,7 +1,7 @@
 {
   "name": "kafka-clickhouse",
   "display_name": "Kafka",
-  "description": "Read Kafka topics into ClickHouse using Kafka table engine",
+  "description": "Read Kafka topics into ClickHouse via a named collection",
   "docs_url": "https://clickhouse.com/docs/en/engines/table-engines/integrations/kafka",
   "driver": "kafka",
   "olap": "clickhouse",
@@ -11,7 +11,8 @@
     "kafka",
     "streaming",
     "clickhouse",
-    "source"
+    "source",
+    "connector"
   ],
   "json_schema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -22,19 +23,22 @@
         "type": "string",
         "title": "Broker List",
         "description": "Comma-separated list of Kafka brokers",
-        "x-placeholder": "broker1:9092,broker2:9092"
+        "x-placeholder": "broker1:9092,broker2:9092",
+        "x-step": "connector"
       },
       "topic": {
         "type": "string",
         "title": "Topic",
         "description": "Kafka topic to consume from",
-        "x-placeholder": "my_topic"
+        "x-placeholder": "my_topic",
+        "x-step": "source"
       },
       "group_name": {
         "type": "string",
         "title": "Consumer Group",
         "description": "Kafka consumer group name",
-        "x-placeholder": "rill_consumer_group"
+        "x-placeholder": "rill_consumer_group",
+        "x-step": "source"
       },
       "format": {
         "type": "string",
@@ -48,14 +52,16 @@
           "Parquet"
         ],
         "default": "JSONEachRow",
-        "x-display": "select"
+        "x-display": "select",
+        "x-step": "source"
       },
       "name": {
         "type": "string",
         "title": "Model name",
         "description": "Name for the source model",
         "pattern": "^[a-zA-Z0-9_]+$",
-        "x-placeholder": "my_model"
+        "x-placeholder": "my_model",
+        "x-step": "source"
       }
     },
     "required": [
@@ -68,9 +74,14 @@
   },
   "files": [
     {
+      "name": "connector",
+      "path_template": "connectors/[[ .connector_name ]].yaml",
+      "code_template": "# Connector YAML\n# Reference documentation: [[ .docs_url ]]\ntype: connector\ndriver: kafka\n[[ renderProps .config_props ]]\n"
+    },
+    {
       "name": "model",
       "path_template": "models/[[ .model_name ]].yaml",
-      "code_template": "# Model YAML\n# Reference documentation: https://docs.rilldata.com/reference/project-files/models\ntype: model\nmaterialize: true\nconnector: clickhouse\nsql: |\n  SELECT * FROM kafka(\n      '[[ .broker_list ]]',\n      '[[ .topic ]]',\n      '[[ .group_name ]]',\n      '[[ .format ]]'\n  )\n"
+      "code_template": "# Model YAML\n# Reference documentation: https://docs.rilldata.com/reference/project-files/models\ntype: model\nmaterialize: true\nconnector: clickhouse\nsql: |\n  SELECT * FROM kafka(rill_[[ .connector_name ]], kafka_topic_list='[[ .topic ]]', kafka_group_name='[[ .group_name ]]', kafka_format='[[ .format ]]')\n"
     }
   ]
 }

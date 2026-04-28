@@ -153,7 +153,7 @@
     {
       "name": "connector",
       "path_template": "connectors/[[ .connector_name ]].yaml",
-      "code_template": "# Connector YAML\n# Reference documentation: [[ .docs_url ]]\ntype: connector\ndriver: s3\n[[ renderProps .config_props ]]\n"
+      "code_template": "[[ if .config_props -]]\n# Connector YAML\n# Reference documentation: [[ .docs_url ]]\ntype: connector\ndriver: s3\n[[ renderProps .config_props ]]\n[[ end -]]\n"
     },
     {
       "name": "model",

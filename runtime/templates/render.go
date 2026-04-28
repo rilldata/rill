@@ -62,6 +62,15 @@ func Render(input *RenderInput) (*RenderOutput, error) {
 			return nil, fmt.Errorf("rendering code template for %q: %w", f.Name, err)
 		}
 
+		// Skip files that render to whitespace-only output. This lets templates
+		// emit nothing (e.g. via [[ if .config_props -]]...[[ end -]]) when an
+		// optional output isn't applicable to the current form values — such as
+		// the "Public" auth path on object-store connectors that don't need a
+		// connector YAML at all.
+		if strings.TrimSpace(blob) == "" {
+			continue
+		}
+
 		files = append(files, RenderedFile{
 			Path: strings.TrimSpace(path),
 			Blob: blob,

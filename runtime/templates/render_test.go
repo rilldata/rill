@@ -171,10 +171,14 @@ func TestRenderS3ClickHouseModel(t *testing.T) {
 	tmpl, ok := registry.Get("s3-clickhouse")
 	require.True(t, ok)
 
+	// Access-key auth: render both files. The connector YAML carries the
+	// credentials (the backend turns it into a CH named collection), and
+	// the model SQL references that collection by name.
 	result, err := Render(&RenderInput{
-		Template: tmpl,
-		Output:   "model",
+		Template:      tmpl,
+		ConnectorName: "my_s3",
 		Properties: map[string]any{
+			"auth_method":           "access_key",
 			"aws_access_key_id":     "AKIAIOSFODNN7EXAMPLE",
 			"aws_secret_access_key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
 			"path":                  "s3://my-bucket/data/events.parquet",
@@ -183,24 +187,54 @@ func TestRenderS3ClickHouseModel(t *testing.T) {
 		ExistingEnv: make(map[string]bool),
 	})
 	require.NoError(t, err)
+	require.Len(t, result.Files, 2)
+
+	connectorBlob := result.Files[0].Blob
+	require.Equal(t, "connectors/my_s3.yaml", result.Files[0].Path)
+	require.Contains(t, connectorBlob, "type: connector")
+	require.Contains(t, connectorBlob, "driver: s3")
+	require.Contains(t, connectorBlob, "{{ .env.AWS_ACCESS_KEY_ID }}")
+	require.Contains(t, connectorBlob, "{{ .env.AWS_SECRET_ACCESS_KEY }}")
+	require.NotContains(t, connectorBlob, "AKIAIOSFODNN7EXAMPLE")
+
+	modelBlob := result.Files[1].Blob
+	require.Equal(t, "models/s3_events.yaml", result.Files[1].Path)
+	require.Contains(t, modelBlob, "type: model")
+	require.Contains(t, modelBlob, "connector: clickhouse")
+	require.Contains(t, modelBlob, "materialize: true")
+	require.Contains(t, modelBlob, "FROM s3(rill_my_s3, url='https://my-bucket.s3.amazonaws.com/data/events.parquet')")
+
+	require.Equal(t, "AKIAIOSFODNN7EXAMPLE", result.EnvVars["AWS_ACCESS_KEY_ID"])
+}
+
+func TestRenderS3ClickHouseModelPublic(t *testing.T) {
+	registry, err := NewRegistry()
+	require.NoError(t, err)
+
+	tmpl, ok := registry.Get("s3-clickhouse")
+	require.True(t, ok)
+
+	// Public auth: no creds, no named collection. The connector YAML renders
+	// to whitespace and is skipped; only the model file is emitted, with an
+	// inline URL on the s3() function.
+	result, err := Render(&RenderInput{
+		Template:      tmpl,
+		ConnectorName: "my_s3",
+		Properties: map[string]any{
+			"auth_method": "public",
+			"path":        "s3://my-bucket/public/data.parquet",
+			"name":        "public_events",
+		},
+		ExistingEnv: make(map[string]bool),
+	})
+	require.NoError(t, err)
 	require.Len(t, result.Files, 1)
 
-	blob := result.Files[0].Blob
-	require.Contains(t, blob, "type: model")
-	require.Contains(t, blob, "connector: clickhouse")
-	require.Contains(t, blob, "materialize: true")
-	// SQL should show the s3() function with env var refs
-	require.Contains(t, blob, "FROM s3(")
-	require.Contains(t, blob, "https://my-bucket.s3.amazonaws.com/data/events.parquet")
-	require.Contains(t, blob, "{{ .env.AWS_ACCESS_KEY_ID }}")
-	require.Contains(t, blob, "{{ .env.AWS_SECRET_ACCESS_KEY }}")
-	// Raw secrets should NOT appear in the blob
-	require.NotContains(t, blob, "AKIAIOSFODNN7EXAMPLE")
-
-	// Env vars should be extracted
-	require.Equal(t, "AKIAIOSFODNN7EXAMPLE", result.EnvVars["AWS_ACCESS_KEY_ID"])
-
-	require.Equal(t, "models/s3_events.yaml", result.Files[0].Path)
+	modelBlob := result.Files[0].Blob
+	require.Equal(t, "models/public_events.yaml", result.Files[0].Path)
+	require.Contains(t, modelBlob, "FROM s3('https://my-bucket.s3.amazonaws.com/public/data.parquet')")
+	require.NotContains(t, modelBlob, "rill_my_s3")
+	require.Empty(t, result.EnvVars)
 }
 
 func TestRenderMySQLClickHouseModel(t *testing.T) {
@@ -210,9 +244,12 @@ func TestRenderMySQLClickHouseModel(t *testing.T) {
 	tmpl, ok := registry.Get("mysql-clickhouse")
 	require.True(t, ok)
 
+	// Renders both files: the connector YAML carries the credentials (the
+	// backend turns it into a CH named collection), and the model SQL refers
+	// to that collection by name with just the table override.
 	result, err := Render(&RenderInput{
-		Template: tmpl,
-		Output:   "model",
+		Template:      tmpl,
+		ConnectorName: "my_mysql",
 		Properties: map[string]any{
 			"host":     "db.example.com",
 			"port":     "3306",
@@ -225,17 +262,23 @@ func TestRenderMySQLClickHouseModel(t *testing.T) {
 		ExistingEnv: make(map[string]bool),
 	})
 	require.NoError(t, err)
-	require.Len(t, result.Files, 1)
+	require.Len(t, result.Files, 2)
 
-	blob := result.Files[0].Blob
-	require.Contains(t, blob, "connector: clickhouse")
-	require.Contains(t, blob, "FROM mysql(")
-	require.Contains(t, blob, "db.example.com:3306")
-	require.Contains(t, blob, "mydb")
-	require.Contains(t, blob, "events")
-	require.Contains(t, blob, "myuser")
-	require.Contains(t, blob, "{{ .env.MYSQL_PASSWORD }}")
-	require.NotContains(t, blob, "secret123")
+	connectorBlob := result.Files[0].Blob
+	require.Equal(t, "connectors/my_mysql.yaml", result.Files[0].Path)
+	require.Contains(t, connectorBlob, "type: connector")
+	require.Contains(t, connectorBlob, "driver: mysql")
+	require.Contains(t, connectorBlob, `host: "db.example.com"`)
+	require.Contains(t, connectorBlob, `database: "mydb"`)
+	require.Contains(t, connectorBlob, `user: "myuser"`)
+	require.Contains(t, connectorBlob, `password: "{{ .env.MYSQL_PASSWORD }}"`)
+	require.NotContains(t, connectorBlob, "secret123")
+
+	modelBlob := result.Files[1].Blob
+	require.Equal(t, "models/mysql_events.yaml", result.Files[1].Path)
+	require.Contains(t, modelBlob, "FROM mysql(rill_my_mysql, table='events')")
+
+	require.Equal(t, "secret123", result.EnvVars["MYSQL_PASSWORD"])
 }
 
 func TestRenderHTTPSClickHouseWithHeaders(t *testing.T) {
@@ -245,9 +288,11 @@ func TestRenderHTTPSClickHouseWithHeaders(t *testing.T) {
 	tmpl, ok := registry.Get("https-clickhouse")
 	require.True(t, ok)
 
+	// With headers: render both files. The connector YAML carries the headers
+	// (the backend turns them into a CH named collection); the model SQL
+	// references the collection by name.
 	result, err := Render(&RenderInput{
 		Template: tmpl,
-		Output:   "model",
 		Properties: map[string]any{
 			// Frontend key-value editor sends [{key, value}, ...] format
 			"headers": []any{
@@ -261,22 +306,21 @@ func TestRenderHTTPSClickHouseWithHeaders(t *testing.T) {
 		ExistingEnv:   make(map[string]bool),
 	})
 	require.NoError(t, err)
-	require.Len(t, result.Files, 1)
+	require.Len(t, result.Files, 2)
 
-	blob := result.Files[0].Blob
-	require.Contains(t, blob, "type: model")
-	require.Contains(t, blob, "connector: clickhouse")
-	require.Contains(t, blob, "url(")
-	require.Contains(t, blob, "https://example.com/data.csv")
-	require.Contains(t, blob, "CSVWithNames")
-	require.Contains(t, blob, "headers(")
-	require.Contains(t, blob, "'Authorization'=")
-	require.Contains(t, blob, "'X-API-Key'=")
-	// Raw secrets should NOT appear in the blob
-	require.NotContains(t, blob, "my-secret-token")
-	require.NotContains(t, blob, "key123")
+	connectorBlob := result.Files[0].Blob
+	require.Equal(t, "connectors/my_https.yaml", result.Files[0].Path)
+	require.Contains(t, connectorBlob, "type: connector")
+	require.Contains(t, connectorBlob, "driver: https")
+	require.Contains(t, connectorBlob, "Authorization")
+	require.Contains(t, connectorBlob, "X-API-Key")
+	require.NotContains(t, connectorBlob, "my-secret-token")
+	require.NotContains(t, connectorBlob, "key123")
 
-	// Env vars should be extracted for sensitive headers
+	modelBlob := result.Files[1].Blob
+	require.Equal(t, "models/api_data.yaml", result.Files[1].Path)
+	require.Contains(t, modelBlob, "url(rill_my_https, url='https://example.com/data.csv')")
+
 	require.Contains(t, result.EnvVars, "connector.https.authorization")
 	require.Contains(t, result.EnvVars, "connector.https.x_api_key")
 }
@@ -288,9 +332,10 @@ func TestRenderHTTPSClickHouseNoHeaders(t *testing.T) {
 	tmpl, ok := registry.Get("https-clickhouse")
 	require.True(t, ok)
 
+	// No headers: connector YAML renders to whitespace and is skipped; only
+	// the model file is emitted with an inline URL on the url() function.
 	result, err := Render(&RenderInput{
 		Template: tmpl,
-		Output:   "model",
 		Properties: map[string]any{
 			"path": "https://example.com/data.csv",
 			"name": "simple_data",
@@ -301,10 +346,10 @@ func TestRenderHTTPSClickHouseNoHeaders(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, result.Files, 1)
 
-	blob := result.Files[0].Blob
-	require.Contains(t, blob, "url('https://example.com/data.csv')")
-	// No headers() clause when no headers provided
-	require.NotContains(t, blob, "headers(")
+	modelBlob := result.Files[0].Blob
+	require.Equal(t, "models/simple_data.yaml", result.Files[0].Path)
+	require.Contains(t, modelBlob, "url('https://example.com/data.csv')")
+	require.NotContains(t, modelBlob, "rill_my_https")
 }
 
 func TestRenderEnvVarConflict(t *testing.T) {
