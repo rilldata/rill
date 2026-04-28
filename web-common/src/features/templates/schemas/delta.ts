@@ -34,7 +34,6 @@ export const deltaSchema: MultiStepFormSchema = {
         s3: "s3",
         azure: "azure",
       },
-      "x-inline-create": true,
       "x-grouped-fields": {
         gcs: ["gcs_info", "gcs_path"],
         s3: ["s3_info", "s3_path"],

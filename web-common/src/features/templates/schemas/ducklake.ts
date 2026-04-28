@@ -236,7 +236,6 @@ export const ducklakeSchema: MultiStepFormSchema = {
         gcs: "gcs",
         azure: "azure",
       },
-      "x-inline-create": true,
       "x-grouped-fields": {
         local: ["data_path_local"],
         s3: ["data_path_s3_info", "data_path_s3"],

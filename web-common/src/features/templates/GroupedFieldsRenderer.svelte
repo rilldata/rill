@@ -6,7 +6,6 @@
   import SchemaField from "./SchemaField.svelte";
   import type { JSONSchemaField } from "./schemas/types";
   import ConnectionTypeSelector from "./ConnectionTypeSelector.svelte";
-  import InlineConnectorSlot from "./inline-connector/InlineConnectorSlot.svelte";
   import {
     type EnumOption,
     isRichSelectEnum,
@@ -88,16 +87,9 @@
         bind:value={$formStore[childKey]}
         options={richOptions}
         requiredDrivers={childProp["x-required-driver"] ?? {}}
-        allowInlineCreate={!!childProp["x-inline-create"]}
         label={childProp.title ?? ""}
         onChange={(newValue) => handleSelectChange(childKey, newValue)}
       />
-      {#if childProp["x-inline-create"]}
-        <InlineConnectorSlot
-          requiredDrivers={childProp["x-required-driver"] ?? {}}
-          currentValue={$formStore[childKey]}
-        />
-      {/if}
       {#if groupedFieldsMap.get(childKey)}
         <svelte:self
           fields={getGroupedFieldsForOption(childKey, $formStore[childKey])}

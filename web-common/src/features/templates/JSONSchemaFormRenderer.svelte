@@ -6,7 +6,6 @@
   import SchemaField from "./SchemaField.svelte";
   import ConnectionTypeSelector from "./ConnectionTypeSelector.svelte";
   import GroupedFieldsRenderer from "./GroupedFieldsRenderer.svelte";
-  import InlineConnectorSlot from "./inline-connector/InlineConnectorSlot.svelte";
   import type { JSONSchemaField, MultiStepFormSchema } from "./schemas/types";
   import { slide } from "svelte/transition";
   import {
@@ -435,16 +434,9 @@
           bind:value={$form[key]}
           {options}
           requiredDrivers={prop["x-required-driver"] ?? {}}
-          allowInlineCreate={!!prop["x-inline-create"]}
           label={prop.title ?? ""}
           onChange={(newValue) => handleSelectChange(key, newValue)}
         />
-        {#if prop["x-inline-create"]}
-          <InlineConnectorSlot
-            requiredDrivers={prop["x-required-driver"] ?? {}}
-            currentValue={$form[key]}
-          />
-        {/if}
         {#if groupedFields.get(key)}
           <GroupedFieldsRenderer
             fields={getGroupedFieldsForOption(key, $form[key])}
@@ -547,18 +539,10 @@
                           bind:value={$form[childKey]}
                           options={childOptions}
                           requiredDrivers={childProp["x-required-driver"] ?? {}}
-                          allowInlineCreate={!!childProp["x-inline-create"]}
                           label={childProp.title ?? ""}
                           onChange={(newValue) =>
                             handleSelectChange(childKey, newValue)}
                         />
-                        {#if childProp["x-inline-create"]}
-                          <InlineConnectorSlot
-                            requiredDrivers={childProp["x-required-driver"] ??
-                              {}}
-                            currentValue={$form[childKey]}
-                          />
-                        {/if}
                         {#if groupedFields.get(childKey)}
                           <GroupedFieldsRenderer
                             fields={getGroupedFieldsForOption(
