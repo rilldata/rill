@@ -65,6 +65,7 @@
     {
       SPA: true,
       validators: yup(validationSchema),
+      dataType: "json",
       onUpdate({ form }) {
         if (!form.valid) return;
         const values = form.data;
