@@ -18,15 +18,10 @@ import {
 import type { RuntimeClient } from "../../../runtime-client/v2";
 import {
   compileConnectorYAML,
-  replaceOrAddEnvVariable,
   updateDotEnvWithSecrets,
   updateRillYAMLWithAiConnector,
   updateRillYAMLWithOlapConnector,
 } from "../../connectors/code-utils";
-import {
-  applyDuckLakeFormPipeline,
-  injectDuckLakeAttach,
-} from "../../templates/schemas/ducklake-utils";
 import {
   runtimeServicePutFileAndWaitForReconciliation,
   waitForResourceReconciliation,
@@ -43,7 +38,6 @@ import { AI_CONNECTORS, OLAP_ENGINES } from "./constants";
 import { sourceIngestionTracker } from "../sources-store";
 import { getConnectorSchema } from "./connector-schemas";
 import {
-  filterSchemaValuesForSubmit,
   getSchemaFieldMetaList,
   getSchemaSecretKeys,
   getSchemaStringKeys,
@@ -69,7 +63,6 @@ const connectorSubmissions = new Map<
 export async function beforeSubmitForm(
   client: RuntimeClient,
   connector?: V1ConnectorDriver,
-  schemaName?: string,
 ) {
   // Emit telemetry
   behaviourEvent?.fireSourceTriggerEvent(
@@ -82,15 +75,12 @@ export async function beforeSubmitForm(
   // If project is uninitialized, initialize an empty project
   const projectInitialized = await isProjectInitialized(client);
   if (!projectInitialized) {
-    // Determine the OLAP engine based on the connector being added. Prefer the
-    // schema name over driver name so connectors that piggy-back on another
-    // driver (e.g. DuckLake uses the duckdb driver) seed rill.yaml with their
-    // own identity rather than the underlying driver.
-    const effectiveSchemaName = schemaName ?? connector?.name ?? "";
+    // Determine the OLAP engine based on the connector being added
     let olapEngine = "duckdb"; // Default for data sources
 
-    if (connector && OLAP_ENGINES.includes(effectiveSchemaName)) {
-      olapEngine = effectiveSchemaName;
+    if (connector && OLAP_ENGINES.includes(connector.name as string)) {
+      // For OLAP engines, use the connector name as the OLAP engine
+      olapEngine = connector.name as string;
     }
 
     await runtimeServiceUnpackEmpty(client, {
@@ -173,10 +163,8 @@ async function saveConnectorWithoutTest(
   newConnectorName: string,
   client: RuntimeClient,
   existingEnvBlob?: string,
-  schemaName?: string,
 ): Promise<void> {
-  const effectiveSchemaName = schemaName ?? connector.name ?? "";
-  const schema = getConnectorSchema(effectiveSchemaName);
+  const schema = getConnectorSchema(connector.name ?? "");
   const schemaFields = schema
     ? getSchemaFieldMetaList(schema, { step: "connector" })
     : [];
@@ -199,45 +187,12 @@ async function saveConnectorWithoutTest(
   // Update .env file with secrets (keep ordering consistent with Test and Connect).
   // When existingEnvBlob is provided (e.g. Save overriding an in-flight Test and Connect),
   // use it as the baseline so env var names stay consistent and don't get _1 suffixes.
-  const envResult = await updateDotEnvWithSecrets(
-    client,
-    queryClient,
-    connector,
-    formValues,
-    {
+  const { newBlob: newEnvBlob, originalBlob: envBlobForYaml } =
+    await updateDotEnvWithSecrets(client, queryClient, connector, formValues, {
       secretKeys: schemaSecretKeys,
       schema: schema ?? undefined,
       existingEnvBlob: existingEnvBlob,
-    },
-  );
-  let newEnvBlob = envResult.newBlob;
-  const envBlobForYaml = envResult.originalBlob;
-
-  // DuckLake: compose Parameters tab into `attach`, route password fields and
-  // raw-ATTACH catalog URIs through `.env`.
-  const { transformedValues, extractedSecrets } = applyDuckLakeFormPipeline(
-    schema,
-    formValues,
-    {
-      connectorName: connector.name ?? "",
-      existingEnvBlob: envBlobForYaml ?? "",
-    },
-  );
-  for (const [envVarName, rawValue] of Object.entries(extractedSecrets)) {
-    newEnvBlob = replaceOrAddEnvVariable(newEnvBlob, envVarName, rawValue);
-  }
-
-  // Re-inject `attach` after filtering — the tab-group filter drops it when
-  // the "parameters" tab is active because `attach` belongs to the "sql" tab.
-  const filteredValues = schema
-    ? injectDuckLakeAttach(
-        schema,
-        filterSchemaValuesForSubmit(schema, transformedValues, {
-          step: "connector",
-        }),
-        transformedValues,
-      )
-    : transformedValues;
+    });
 
   await runtimeServicePutFile(client, {
     path: ".env",
@@ -249,7 +204,7 @@ async function saveConnectorWithoutTest(
   // Always create/overwrite to ensure the connector file is created immediately
   await runtimeServicePutFile(client, {
     path: newConnectorFilePath,
-    blob: compileConnectorYAML(connector, filteredValues, {
+    blob: compileConnectorYAML(connector, formValues, {
       connectorInstanceName: newConnectorName,
       orderedProperties: schemaFields,
       secretKeys: schemaSecretKeys,
@@ -264,11 +219,11 @@ async function saveConnectorWithoutTest(
     createOnly: false,
   });
 
-  if (OLAP_ENGINES.includes(effectiveSchemaName)) {
+  if (OLAP_ENGINES.includes(connector.name as string)) {
     await setOlapConnectorInRillYAML(queryClient, client, newConnectorName);
   }
 
-  if (AI_CONNECTORS.includes(effectiveSchemaName)) {
+  if (AI_CONNECTORS.includes(connector.name as string)) {
     await setAiConnectorInRillYAML(queryClient, client, newConnectorName);
   }
 
@@ -283,15 +238,9 @@ export async function submitAddConnectorForm(
   formValues: AddDataFormValues,
   saveAnyway: boolean = false,
   existingEnvBlob?: string,
-  schemaName?: string,
 ): Promise<string> {
-  // Prefer schemaName over connector.name (driver) so connectors that override
-  // the backend driver (e.g. DuckLake uses the duckdb driver) resolve their
-  // own schema, name their connector file after themselves, and route through
-  // OLAP/AI bookkeeping under the right key.
-  const effectiveSchemaName = schemaName ?? connector.name ?? "";
-  await beforeSubmitForm(client, connector, effectiveSchemaName);
-  const schema = getConnectorSchema(effectiveSchemaName);
+  await beforeSubmitForm(client, connector);
+  const schema = getConnectorSchema(connector.name ?? "");
   const schemaFields = schema
     ? getSchemaFieldMetaList(schema, { step: "connector" })
     : [];
@@ -303,10 +252,10 @@ export async function submitAddConnectorForm(
     : [];
 
   // Create a unique key for this connector submission
-  const uniqueConnectorSubmissionKey = `${client.instanceId}:${effectiveSchemaName}`;
+  const uniqueConnectorSubmissionKey = `${client.instanceId}:${connector.name}`;
 
   const newConnectorName = getName(
-    effectiveSchemaName,
+    connector.name as string,
     fileArtifacts.getNamesForKind(ResourceKind.Connector),
   );
 
@@ -335,7 +284,6 @@ export async function submitAddConnectorForm(
         newConnectorName,
         client,
         existingEnvBlob,
-        effectiveSchemaName,
       );
       return newConnectorName;
     }
@@ -378,23 +326,8 @@ export async function submitAddConnectorForm(
           schema: schema ?? undefined,
         },
       );
-      let newEnvBlob = envResult.newBlob;
+      const newEnvBlob = envResult.newBlob;
       originalEnvBlob = envResult.originalBlob;
-
-      // DuckLake: compose Parameters tab into `attach`, route password fields
-      // and raw-ATTACH catalog URIs through `.env` using the baseline blob so
-      // env-var naming stays consistent with the form-field secrets that
-      // updateDotEnvWithSecrets just processed.
-      const duckLakeResult = applyDuckLakeFormPipeline(schema, formValues, {
-        connectorName: connector.name ?? "",
-        existingEnvBlob: originalEnvBlob ?? "",
-      });
-      formValues = duckLakeResult.transformedValues;
-      for (const [envVarName, rawValue] of Object.entries(
-        duckLakeResult.extractedSecrets,
-      )) {
-        newEnvBlob = replaceOrAddEnvVariable(newEnvBlob, envVarName, rawValue);
-      }
 
       if (saveAnyway) {
         // Save: bypass reconciliation entirely via centralized helper
@@ -405,7 +338,6 @@ export async function submitAddConnectorForm(
           newConnectorName,
           client,
           existingEnvBlob,
-          effectiveSchemaName,
         );
         return newConnectorName;
       }
@@ -424,21 +356,9 @@ export async function submitAddConnectorForm(
       });
       envWritten = true;
 
-      // Re-inject `attach` after the tab-group filter, which drops it when
-      // the "parameters" tab is active (since `attach` belongs to "sql").
-      const filteredValues = schema
-        ? injectDuckLakeAttach(
-            schema,
-            filterSchemaValuesForSubmit(schema, formValues, {
-              step: "connector",
-            }),
-            formValues,
-          )
-        : formValues;
-
       await runtimeServicePutFile(client, {
         path: newConnectorFilePath,
-        blob: compileConnectorYAML(connector, filteredValues, {
+        blob: compileConnectorYAML(connector, formValues, {
           connectorInstanceName: newConnectorName,
           orderedProperties: schemaFields,
           secretKeys: schemaSecretKeys,
@@ -472,11 +392,11 @@ export async function submitAddConnectorForm(
         throw new Error(errorMessage);
       }
 
-      if (OLAP_ENGINES.includes(effectiveSchemaName)) {
+      if (OLAP_ENGINES.includes(connector.name as string)) {
         await setOlapConnectorInRillYAML(queryClient, client, newConnectorName);
       }
 
-      if (AI_CONNECTORS.includes(effectiveSchemaName)) {
+      if (AI_CONNECTORS.includes(connector.name as string)) {
         await setAiConnectorInRillYAML(queryClient, client, newConnectorName);
       }
 
