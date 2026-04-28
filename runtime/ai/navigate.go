@@ -18,6 +18,12 @@ var _ Tool[*NavigateArgs, *NavigateResult] = (*Navigate)(nil)
 type NavigateArgs struct {
 	Kind string `json:"kind" jsonschema:"The kind of navigation to perform. Supported values: 'file', 'explore', 'canvas'."`
 	Name string `json:"name" jsonschema:"The name of the item to navigate to."`
+
+	// Optional parameters for explore kind
+	Dimensions []string `json:"dimensions,omitempty" jsonschema:"Optional dimensions to preview in the explore."`
+	Measures   []string `json:"measures,omitempty" jsonschema:"Optional measures to preview in the explore."`
+	SortBy     string   `json:"sort_by,omitempty" jsonschema:"Optional measure to sort by in the explore."`
+	SortDesc   bool     `json:"sort_desc,omitempty" jsonschema:"Optional flag to sort in descending order in the explore."`
 }
 
 type NavigateResult struct{}
