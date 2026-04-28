@@ -26,6 +26,8 @@ import {
   DeleteFileRequest,
   ForkConversationRequest,
   GenerateCanvasFileRequest,
+  GenerateFileRequest,
+  GenerateFileResponse,
   GenerateMetricsViewFileRequest,
   GetAIMessageRequest,
   GetConversationRequest,
@@ -53,6 +55,8 @@ import {
   ListInstancesRequest,
   ListNotifierConnectorsRequest,
   ListResourcesRequest,
+  ListTemplatesRequest,
+  ListTemplatesResponse,
   ListToolsRequest,
   PingRequest,
   PutFileRequest,
@@ -683,6 +687,99 @@ export function createRuntimeServiceListExamples<
   queryClient?: QueryClient,
 ): CreateQueryResult<TData, ConnectError> {
   const queryOptions = getRuntimeServiceListExamplesQueryOptions(
+    client,
+    request,
+    options,
+  );
+  return createQuery(queryOptions, queryClient);
+}
+
+/**
+ * Raw RPC call: RuntimeService.ListTemplates
+ */
+export async function runtimeServiceListTemplates(
+  client: RuntimeClient,
+  request: PartialMessage<ListTemplatesRequest>,
+  options?: { signal?: AbortSignal },
+): Promise<PartialMessage<ListTemplatesResponse>> {
+  const r = await client.runtimeService.listTemplates(
+    ListTemplatesRequest.fromJson(
+      stripUndefined(request) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as PartialMessage<ListTemplatesResponse>;
+}
+
+export function getRuntimeServiceListTemplatesQueryKey(
+  instanceId: string,
+  request?: PartialMessage<ListTemplatesRequest>,
+): QueryKey {
+  return [
+    "RuntimeService",
+    "listTemplates",
+    instanceId,
+    request ?? {},
+  ] as const;
+}
+
+export function getRuntimeServiceListTemplatesQueryOptions<
+  TData = PartialMessage<ListTemplatesResponse>,
+>(
+  client: RuntimeClient,
+  request: PartialMessage<ListTemplatesRequest>,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        PartialMessage<ListTemplatesResponse>,
+        ConnectError,
+        TData
+      >
+    >;
+  },
+): CreateQueryOptions<
+  PartialMessage<ListTemplatesResponse>,
+  ConnectError,
+  TData
+> & { queryKey: QueryKey } {
+  const queryKey = getRuntimeServiceListTemplatesQueryKey(
+    client.instanceId,
+    request,
+  );
+  const queryFn: QueryFunction<PartialMessage<ListTemplatesResponse>> = ({
+    signal,
+  }) => runtimeServiceListTemplates(client, request, { signal });
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!client.instanceId,
+    ...options?.query,
+  } as CreateQueryOptions<
+    PartialMessage<ListTemplatesResponse>,
+    ConnectError,
+    TData
+  > & { queryKey: QueryKey };
+}
+
+export function createRuntimeServiceListTemplates<
+  TData = PartialMessage<ListTemplatesResponse>,
+>(
+  client: RuntimeClient,
+  request: PartialMessage<ListTemplatesRequest>,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        PartialMessage<ListTemplatesResponse>,
+        ConnectError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, ConnectError> {
+  const queryOptions = getRuntimeServiceListTemplatesQueryOptions(
     client,
     request,
     options,
@@ -2956,6 +3053,70 @@ export function createRuntimeServiceGenerateCanvasFileMutation(
   Omit<PartialMessage<GenerateCanvasFileRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceGenerateCanvasFileMutationOptions(
+    client,
+    options,
+  );
+  return createMutation(mutationOptions, queryClient);
+}
+
+/**
+ * Raw RPC call: RuntimeService.GenerateFile
+ */
+export async function runtimeServiceGenerateFile(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<GenerateFileRequest>, "instanceId">,
+  options?: { signal?: AbortSignal },
+): Promise<PartialMessage<GenerateFileResponse>> {
+  const r = await client.runtimeService.generateFile(
+    GenerateFileRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as PartialMessage<GenerateFileResponse>;
+}
+
+export function getRuntimeServiceGenerateFileMutationOptions(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      PartialMessage<GenerateFileResponse>,
+      unknown,
+      Omit<PartialMessage<GenerateFileRequest>, "instanceId">
+    >
+  >,
+): CreateMutationOptions<
+  PartialMessage<GenerateFileResponse>,
+  unknown,
+  Omit<PartialMessage<GenerateFileRequest>, "instanceId">
+> {
+  return {
+    mutationFn: (request) => runtimeServiceGenerateFile(client, request),
+    ...options,
+  };
+}
+
+export function createRuntimeServiceGenerateFileMutation(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      PartialMessage<GenerateFileResponse>,
+      unknown,
+      Omit<PartialMessage<GenerateFileRequest>, "instanceId">
+    >
+  >,
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  PartialMessage<GenerateFileResponse>,
+  unknown,
+  Omit<PartialMessage<GenerateFileRequest>, "instanceId">
+> {
+  const mutationOptions = getRuntimeServiceGenerateFileMutationOptions(
     client,
     options,
   );

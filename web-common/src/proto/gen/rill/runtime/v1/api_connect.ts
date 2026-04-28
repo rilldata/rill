@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { AnalyzeConnectorsRequest, AnalyzeConnectorsResponse, AnalyzeVariablesRequest, AnalyzeVariablesResponse, CompleteRequest, CompleteResponse, CompleteStreamingRequest, CompleteStreamingResponse, CreateDirectoryRequest, CreateDirectoryResponse, CreateInstanceRequest, CreateInstanceResponse, CreateTriggerRequest, CreateTriggerResponse, DeleteFileRequest, DeleteFileResponse, DeleteInstanceRequest, DeleteInstanceResponse, EditInstanceRequest, EditInstanceResponse, ForkConversationRequest, ForkConversationResponse, GenerateCanvasFileRequest, GenerateCanvasFileResponse, GenerateMetricsViewFileRequest, GenerateMetricsViewFileResponse, GetAIMessageRequest, GetAIMessageResponse, GetConversationRequest, GetConversationResponse, GetExploreRequest, GetExploreResponse, GetFileRequest, GetFileResponse, GetInstanceRequest, GetInstanceResponse, GetLogsRequest, GetLogsResponse, GetModelPartitionsRequest, GetModelPartitionsResponse, GetResourceRequest, GetResourceResponse, GitCommitRequest, GitCommitResponse, GitMergeToBranchRequest, GitMergeToBranchResponse, GitPullRequest, GitPullResponse, GitPushRequest, GitPushResponse, GitStatusRequest, GitStatusResponse, GitSwitchBranchRequest, GitSwitchBranchResponse, HealthRequest, HealthResponse, InstanceHealthRequest, InstanceHealthResponse, IssueDevJWTRequest, IssueDevJWTResponse, ListConnectorDriversRequest, ListConnectorDriversResponse, ListConversationsRequest, ListConversationsResponse, ListExamplesRequest, ListExamplesResponse, ListFilesRequest, ListFilesResponse, ListGitBranchesRequest, ListGitBranchesResponse, ListGitCommitsRequest, ListGitCommitsResponse, ListInstancesRequest, ListInstancesResponse, ListNotifierConnectorsRequest, ListNotifierConnectorsResponse, ListResourcesRequest, ListResourcesResponse, ListToolsRequest, ListToolsResponse, PingRequest, PingResponse, PutFileRequest, PutFileResponse, QueryResolverRequest, QueryResolverResponse, ReloadConfigRequest, ReloadConfigResponse, RenameFileRequest, RenameFileResponse, RestoreGitCommitRequest, RestoreGitCommitResponse, ShareConversationRequest, ShareConversationResponse, UnpackEmptyRequest, UnpackEmptyResponse, UnpackExampleRequest, UnpackExampleResponse, WatchFilesRequest, WatchFilesResponse, WatchLogsRequest, WatchLogsResponse, WatchResourcesRequest, WatchResourcesResponse } from "./api_pb.js";
+import { AnalyzeConnectorsRequest, AnalyzeConnectorsResponse, AnalyzeVariablesRequest, AnalyzeVariablesResponse, CompleteRequest, CompleteResponse, CompleteStreamingRequest, CompleteStreamingResponse, CreateDirectoryRequest, CreateDirectoryResponse, CreateInstanceRequest, CreateInstanceResponse, CreateTriggerRequest, CreateTriggerResponse, DeleteFileRequest, DeleteFileResponse, DeleteInstanceRequest, DeleteInstanceResponse, EditInstanceRequest, EditInstanceResponse, ForkConversationRequest, ForkConversationResponse, GenerateCanvasFileRequest, GenerateCanvasFileResponse, GenerateFileRequest, GenerateFileResponse, GenerateMetricsViewFileRequest, GenerateMetricsViewFileResponse, GetAIMessageRequest, GetAIMessageResponse, GetConversationRequest, GetConversationResponse, GetExploreRequest, GetExploreResponse, GetFileRequest, GetFileResponse, GetInstanceRequest, GetInstanceResponse, GetLogsRequest, GetLogsResponse, GetModelPartitionsRequest, GetModelPartitionsResponse, GetResourceRequest, GetResourceResponse, GitCommitRequest, GitCommitResponse, GitMergeToBranchRequest, GitMergeToBranchResponse, GitPullRequest, GitPullResponse, GitPushRequest, GitPushResponse, GitStatusRequest, GitStatusResponse, GitSwitchBranchRequest, GitSwitchBranchResponse, HealthRequest, HealthResponse, InstanceHealthRequest, InstanceHealthResponse, IssueDevJWTRequest, IssueDevJWTResponse, ListConnectorDriversRequest, ListConnectorDriversResponse, ListConversationsRequest, ListConversationsResponse, ListExamplesRequest, ListExamplesResponse, ListFilesRequest, ListFilesResponse, ListGitBranchesRequest, ListGitBranchesResponse, ListGitCommitsRequest, ListGitCommitsResponse, ListInstancesRequest, ListInstancesResponse, ListNotifierConnectorsRequest, ListNotifierConnectorsResponse, ListResourcesRequest, ListResourcesResponse, ListTemplatesRequest, ListTemplatesResponse, ListToolsRequest, ListToolsResponse, PingRequest, PingResponse, PutFileRequest, PutFileResponse, QueryResolverRequest, QueryResolverResponse, ReloadConfigRequest, ReloadConfigResponse, RenameFileRequest, RenameFileResponse, RestoreGitCommitRequest, RestoreGitCommitResponse, ShareConversationRequest, ShareConversationResponse, UnpackEmptyRequest, UnpackEmptyResponse, UnpackExampleRequest, UnpackExampleResponse, WatchFilesRequest, WatchFilesResponse, WatchLogsRequest, WatchLogsResponse, WatchResourcesRequest, WatchResourcesResponse } from "./api_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -246,6 +246,28 @@ export const RuntimeService = {
       name: "GenerateCanvasFile",
       I: GenerateCanvasFileRequest,
       O: GenerateCanvasFileResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * ListTemplates returns available template definitions for generating project files
+     *
+     * @generated from rpc rill.runtime.v1.RuntimeService.ListTemplates
+     */
+    listTemplates: {
+      name: "ListTemplates",
+      I: ListTemplatesRequest,
+      O: ListTemplatesResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * GenerateFile renders a template with properties and optionally writes the resulting files
+     *
+     * @generated from rpc rill.runtime.v1.RuntimeService.GenerateFile
+     */
+    generateFile: {
+      name: "GenerateFile",
+      I: GenerateFileRequest,
+      O: GenerateFileResponse,
       kind: MethodKind.Unary,
     },
     /**
