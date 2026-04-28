@@ -2698,7 +2698,7 @@ message CreateManagedGitRepoRequest {
   // Note: The final name will be suffixed with a random string to ensure uniqueness.
   string name = 2;
   // whether to auto initialize the repo with a commit after creation
-  bool auto_init = 3; 
+  bool auto_init = 3;
 }
 
 message CreateManagedGitRepoResponse {
