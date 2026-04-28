@@ -48,7 +48,7 @@ export class Type extends Message<Type> {
   mapType?: MapType;
 
   /**
-   * raw_type is the original database-specific type (e.g. "VARCHAR(255)") 
+   * raw_type is the original database-specific type (e.g. "VARCHAR(255)")
    *
    * @generated from field: string raw_type = 6;
    */
