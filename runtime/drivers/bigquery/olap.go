@@ -340,9 +340,10 @@ func fromBQSchema(bqSchema bigquery.Schema) (*runtimev1.StructType, error) {
 }
 
 func toPB(field *bigquery.FieldSchema) (*runtimev1.Type, error) {
-	t := &runtimev1.Type{Nullable: !field.Required}
+	t := &runtimev1.Type{Nullable: !field.Required, RawType: string(field.Type)}
 	if field.Repeated {
 		t.Code = runtimev1.Type_CODE_ARRAY
+		t.RawType = fmt.Sprintf("ARRAY<%s>", field.Type)
 		return t, nil
 	}
 	switch field.Type {

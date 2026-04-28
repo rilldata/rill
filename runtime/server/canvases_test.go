@@ -68,7 +68,7 @@ rows:
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 9, 0, 0)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	res, err := server.ResolveCanvas(testCtx(), &runtimev1.ResolveCanvasRequest{
@@ -130,7 +130,7 @@ rows:
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 7, 0, 0)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	res, err := server.ResolveCanvas(testCtx(), &runtimev1.ResolveCanvasRequest{
@@ -184,7 +184,7 @@ rows:
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 8, 0, 0)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	res, err := server.ResolveCanvas(testCtx(), &runtimev1.ResolveCanvasRequest{
@@ -221,7 +221,7 @@ rows: []
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	res, err := server.ResolveCanvas(testCtx(), &runtimev1.ResolveCanvasRequest{
@@ -264,7 +264,7 @@ rows:
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 7, 0, 0)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	res, err := server.ResolveCanvas(testCtx(), &runtimev1.ResolveCanvasRequest{
@@ -310,7 +310,7 @@ rows:
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 7, 0, 0)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	res, err := server.ResolveCanvas(testCtx(), &runtimev1.ResolveCanvasRequest{
@@ -355,7 +355,7 @@ rows:
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 5, 0, 0)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	res, err := server.ResolveCanvas(testCtx(), &runtimev1.ResolveCanvasRequest{
@@ -418,7 +418,7 @@ security:
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 5, 0, 0)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	// Check with open access.
@@ -511,7 +511,7 @@ rows:
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 5, 0, 0)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	ctx := auth.WithClaims(context.Background(), &runtime.SecurityClaims{
@@ -631,7 +631,7 @@ rows:
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 6, 0, 0)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	ctx := testCtx()

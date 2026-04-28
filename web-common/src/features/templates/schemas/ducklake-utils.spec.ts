@@ -519,11 +519,15 @@ describe("validateDuckLakeAttach", () => {
     );
   });
 
-  it("flags a leading ATTACH keyword", () => {
-    const errors = validateDuckLakeAttach("ATTACH 'ducklake:catalog.ducklake'");
-    expect(errors).toContainEqual(
-      expect.stringContaining('Remove the leading "ATTACH"'),
-    );
+  it("strips a leading ATTACH wrapper before validating", () => {
+    expect(
+      validateDuckLakeAttach("ATTACH 'ducklake:catalog.ducklake'"),
+    ).toEqual([]);
+    expect(
+      validateDuckLakeAttach(
+        "ATTACH IF NOT EXISTS 'ducklake:catalog.ducklake' AS x (TYPE ducklake);",
+      ),
+    ).toEqual([]);
   });
 
   it("flags unbalanced single quotes", () => {

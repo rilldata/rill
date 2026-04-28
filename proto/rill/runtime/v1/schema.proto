@@ -46,6 +46,8 @@ message Type {
   StructType struct_type = 4;
   // If code is CODE_MAP, map_type specifies the map's key and value types
   MapType map_type = 5;
+  // raw_type is the original database-specific type (e.g. "VARCHAR(255)")
+  string raw_type = 6;
 }
 
 // StructType is a type composed of ordered, named and typed sub-fields

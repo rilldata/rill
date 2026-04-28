@@ -343,7 +343,7 @@ func scanTables(rows *sqlx.Rows) ([]*drivers.TableInfo, error) {
 }
 
 func databaseTypeToPB(dbt string, nullable bool) *runtimev1.Type {
-	t := &runtimev1.Type{Nullable: nullable}
+	t := &runtimev1.Type{Nullable: nullable, RawType: dbt}
 	switch dbt {
 	case "BOOLEAN":
 		t.Code = runtimev1.Type_CODE_BOOL

@@ -133,7 +133,7 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 }
 
 func databaseTypeToPB(dbt string) *runtimev1.Type {
-	t := &runtimev1.Type{Nullable: true}
+	t := &runtimev1.Type{Nullable: true, RawType: dbt}
 
 	// Handle array types (prefixed with underscore)
 	if dbt != "" && dbt[0] == '_' {
