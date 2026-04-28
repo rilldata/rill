@@ -7,6 +7,7 @@ import chroma from "chroma-js";
 import merge from "deepmerge";
 import type { Config } from "vega-lite";
 import { getChroma } from "../../themes/theme-utils";
+import { OTHER_VALUE } from "./circular/constants";
 import {
   ChartSortType,
   type ChartDataResult,
@@ -175,6 +176,8 @@ export function isDomainStringArray(
     : false;
 }
 
+export const OTHER_BUCKET_COLOR = "var(--color-gray-400)";
+
 export function getColorForValues(
   colorValues: string[] | undefined,
   // if provided, use the colors for mentioned values
@@ -187,9 +190,12 @@ export function getColorForValues(
     const overrideColor = overrideColorMapping?.find(
       (mapping) => mapping.value === value,
     );
+    const isOther = value === OTHER_VALUE;
     const colorVar =
       overrideColor?.color ||
-      COMPARISON_COLORS[index % COMPARISON_COLORS.length];
+      (isOther
+        ? OTHER_BUCKET_COLOR
+        : COMPARISON_COLORS[index % COMPARISON_COLORS.length]);
 
     return {
       value,

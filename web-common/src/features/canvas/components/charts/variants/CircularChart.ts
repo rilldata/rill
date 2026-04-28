@@ -45,6 +45,10 @@ export class CircularChartComponent extends BaseChart<CircularCanvasChartSpec> {
       type: "number",
       label: "Inner Radius (%)",
     },
+    show_other: {
+      type: "boolean",
+      label: 'Show "Other" bucket',
+    },
     color: {
       type: "positional",
       label: "Color",
@@ -135,6 +139,7 @@ export class CircularChartComponent extends BaseChart<CircularCanvasChartSpec> {
     return {
       metrics_view: metricsViewName,
       innerRadius: 50,
+      show_other: true,
       color: {
         type: "nominal",
         field: randomDimension,
