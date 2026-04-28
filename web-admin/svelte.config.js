@@ -9,7 +9,18 @@ import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 dotenv({ path: resolve(__dirname, "../.env"), override: false });
 
-const dev = process.env.RILL_ADMIN_FRONTEND_URL?.includes("localhost");
+const adminFrontendURL = process.env.RILL_ADMIN_FRONTEND_URL;
+const dev = adminFrontendURL?.includes("localhost");
+
+// Derive *.rilldata.com / *.rilldata.io / *.rilldata.in from the env URL so
+// connect-src covers all subdomains in whichever environment is being built,
+// without statically listing all three TLDs.
+let rillWildcard = "https://*.rilldata.com"; // fallback for local dev
+if (adminFrontendURL && !dev) {
+  const hostname = new URL(adminFrontendURL).hostname; // e.g. "admin.rilldata.com"
+  const baseDomain = hostname.split(".").slice(1).join("."); // e.g. "rilldata.com"
+  rillWildcard = `https://*.${baseDomain}`;
+}
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -68,9 +79,7 @@ const config = {
         "base-uri": ["self"],
         "connect-src": [
           "self",
-          "https://*.rilldata.com",
-          "https://*.rilldata.io",
-          "https://*.rilldata.in",
+          rillWildcard,
           "https://apichatwidget.usepylon.com",
           "https://docs.google.com",
           "https://storage.googleapis.com",
