@@ -38,13 +38,10 @@ const config = {
         "default-src": ["self"],
         "script-src": [
           "self",
-          // Injected by the Pylon widget at runtime; exact subdomain is unknown without CSP reports.
-          "https://*.app-us1.com/",
-          // widget.usepylon.com is the confirmed entry point (initPylonWidget.ts).
-          // The remaining *.usepylon.com and *.pusher.com entries below are loaded
-          // dynamically by the Pylon widget — narrow further once CSP violation reports
-          // confirm the exact subdomains.
-          // https://support.usepylon.com/articles/5968160735-chat-widget-debugging-guide
+          // ActiveCampaign: our app loads diffuser.js which chains to prism and trackcmp.
+          "https://diffuser-cdn.app-us1.com",
+          "https://prism.app-us1.com",
+          "https://trackcmp.net",
           "https://widget.usepylon.com",
           // Pusher JS SDK is likely bundled, but kept for Pylon's dynamic script injection.
           "https://js.pusher.com",
@@ -55,7 +52,7 @@ const config = {
         ],
         // style-src keeps 'unsafe-inline': runtime style injection from
         // CodeMirror and other libraries cannot be hash-attributed.
-        "style-src": ["self", "unsafe-inline", "https://*.usepylon.com"],
+        "style-src": ["self", "unsafe-inline"],
         "img-src": [...(dev ? ["http:"] : []), "https:", "data:", "blob:"],
         "frame-src": [
           "self",
@@ -74,8 +71,6 @@ const config = {
           "https://*.rilldata.com",
           "https://*.rilldata.io",
           "https://*.rilldata.in",
-          // *.usepylon.com: Pylon widget makes internal requests to unknown subdomains.
-          "https://*.usepylon.com",
           "https://docs.google.com",
           "https://storage.googleapis.com",
           "https://cdn.prod.website-files.com",
@@ -86,7 +81,6 @@ const config = {
         "font-src": [
           "self",
           "https://fonts.gstatic.com",
-          "https://*.usepylon.com",
         ],
       },
     },
