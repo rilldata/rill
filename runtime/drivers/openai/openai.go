@@ -234,6 +234,11 @@ func (o *openaiHandle) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
+// AsInformationSchema implements drivers.Handle.
+func (o *openaiHandle) AsInformationSchema() (drivers.InformationSchema, bool) {
+	return nil, false
+}
+
 // AsObjectStore implements drivers.Handle.
 func (o *openaiHandle) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false

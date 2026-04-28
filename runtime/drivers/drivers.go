@@ -110,6 +110,10 @@ type Handle interface {
 	// NOTE: We should consider merging the OLAPStore and SQLStore interfaces.
 	AsOLAP(instanceID string) (OLAPStore, bool)
 
+	// AsInformationSchema returns a InformationSchema if the handle can serve as such, otherwise returns false.
+	// InformationSchema provides metadata about existing tables in a driver.
+	AsInformationSchema() (InformationSchema, bool)
+
 	// AsObjectStore returns an ObjectStore if the driver can serve as such, otherwise returns false.
 	// An object store can store, list and retrieve files on a remote server.
 	AsObjectStore() (ObjectStore, bool)
