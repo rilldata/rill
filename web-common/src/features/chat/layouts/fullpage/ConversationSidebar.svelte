@@ -58,6 +58,10 @@
         </Button>
       </span>
     </div>
+
+    <div class="collapsed-footer">
+      <slot name="collapsed-footer" />
+    </div>
   {:else}
     <!-- Expanded state: full sidebar -->
     <div class="conversation-sidebar-header">
@@ -134,6 +138,10 @@
 
   .collapsed-actions {
     @apply flex flex-col gap-2 p-3 items-center;
+  }
+
+  .collapsed-footer {
+    @apply flex flex-col gap-2 p-3 items-center mt-auto;
   }
 
   .conversation-sidebar-header {
