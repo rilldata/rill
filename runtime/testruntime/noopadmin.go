@@ -5,6 +5,9 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/storage"
+	"go.uber.org/zap"
 )
 
 type noopAdminService struct{}
@@ -12,12 +15,11 @@ type noopAdminService struct{}
 var (
 	_ drivers.AdminService = &noopAdminService{}
 	_ drivers.Handle       = &noopAdminService{}
+	_ drivers.Driver       = &noopAdminService{}
 )
 
 func init() {
-	drivers.Register("noop_admin", drivers.NewEmbeddedDriver(&noopAdminService{}, drivers.Spec{
-		ImplementsAdmin: true,
-	}))
+	drivers.Register("noop_admin", &noopAdminService{})
 }
 
 func (n *noopAdminService) GetAlertMetadata(ctx context.Context, alertName, ownerID string, emailRecipients []string, anonRecipients bool, annotations map[string]string, queryForUserID, queryForUserEmail string) (*drivers.AlertMetadata, error) {
@@ -38,6 +40,28 @@ func (n *noopAdminService) ProvisionConnector(ctx context.Context, name, driver 
 
 func (n *noopAdminService) ListDeployments(ctx context.Context) ([]*drivers.Deployment, error) {
 	return nil, drivers.ErrNotImplemented
+}
+
+// HasAnonymousSourceAccess implements [drivers.Driver].
+func (n *noopAdminService) HasAnonymousSourceAccess(ctx context.Context, srcProps map[string]any, logger *zap.Logger) (bool, error) {
+	return true, nil
+}
+
+// Open implements [drivers.Driver].
+func (n *noopAdminService) Open(connectorName, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+	return n, nil
+}
+
+// Spec implements [drivers.Driver].
+func (n *noopAdminService) Spec() drivers.Spec {
+	return drivers.Spec{
+		ImplementsAdmin: true,
+	}
+}
+
+// TertiarySourceConnectors implements [drivers.Driver].
+func (n *noopAdminService) TertiarySourceConnectors(ctx context.Context, srcProps map[string]any, logger *zap.Logger) ([]string, error) {
+	return nil, nil
 }
 
 // AsAI implements [drivers.Handle].

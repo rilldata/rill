@@ -8,6 +8,9 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/storage"
+	"go.uber.org/zap"
 )
 
 // localAdminService implements drivers.AdminService by using user's admin token stored locally and calling Rill's admin API.
@@ -21,14 +24,13 @@ type localAdminService struct {
 var (
 	_ drivers.AdminService = &localAdminService{}
 	_ drivers.Handle       = &localAdminService{}
+	_ drivers.Driver       = &localAdminService{}
 )
 
 var s = &localAdminService{}
 
 func initLocalAdminService(ch *cmdutil.Helper, root, environment, frontendURL string) {
-	drivers.Register("local_admin", drivers.NewEmbeddedDriver(s, drivers.Spec{
-		ImplementsAdmin: true,
-	}))
+	drivers.Register("local_admin", s)
 	s.ch = ch
 	s.root = root
 	s.environment = environment
@@ -92,6 +94,28 @@ func (l *localAdminService) ListDeployments(ctx context.Context) ([]*drivers.Dep
 	}
 
 	return res, nil
+}
+
+// HasAnonymousSourceAccess implements [drivers.Driver].
+func (l *localAdminService) HasAnonymousSourceAccess(ctx context.Context, srcProps map[string]any, logger *zap.Logger) (bool, error) {
+	return true, nil
+}
+
+// Open implements [drivers.Driver].
+func (l *localAdminService) Open(connectorName, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+	return l, nil
+}
+
+// Spec implements [drivers.Driver].
+func (l *localAdminService) Spec() drivers.Spec {
+	return drivers.Spec{
+		ImplementsAdmin: true,
+	}
+}
+
+// TertiarySourceConnectors implements [drivers.Driver].
+func (l *localAdminService) TertiarySourceConnectors(ctx context.Context, srcProps map[string]any, logger *zap.Logger) ([]string, error) {
+	return nil, nil
 }
 
 // AsAI implements [drivers.Handle].

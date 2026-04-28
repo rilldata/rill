@@ -308,6 +308,9 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	}
 
 	// init local admin service
+	// internally it registers a `local_admin` connector driver that's hard-coded to the local project config.
+	// the admin service token can't be simply passed since a user may login after the instance is created.
+	// the `local_admin` connector will read the token using the helper just like the CLI does
 	initLocalAdminService(opts.Ch, projectPath, opts.Environment, frontendURL)
 
 	// Create instance with its repo set to the project directory
