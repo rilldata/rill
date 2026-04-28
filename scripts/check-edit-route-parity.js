@@ -19,6 +19,7 @@ const REPO_ROOT = fileURLToPath(new URL("..", import.meta.url));
 const LOCAL_ROOTS = [
   "web-local/src/routes/(application)/(workspace)",
   "web-local/src/routes/(viz)",
+  "web-local/src/routes/(misc)",
 ];
 const ADMIN_ROOT = "web-admin/src/routes/[organization]/[project]/-/edit";
 
@@ -38,10 +39,25 @@ const LOCAL_ONLY_ALLOWLIST = [
   // /dashboard/[name] URLs, so there's nothing to redirect from. Permanent
   // local-only.
   "/dashboard/[name]/+page.ts",
+
+  // Deploy related stuff is not on admin
+  "/deploy/+layout.svelte",
+  "/deploy/+page.svelte",
+  "/deploy/+page.ts",
+  "/deploy/organization/create/+page.svelte",
+  "/deploy/organization/select/+page.svelte",
+  "/deploy/project/create/+page.svelte",
+  "/deploy/project/create/+page.ts",
+  "/deploy/project/github/+page.svelte",
+  "/deploy/project/github/+page.ts",
+  "/deploy/project/select/+page.svelte",
+  "/deploy/project/update/+page.svelte",
+  "/deploy/project/update/+page.ts",
 ];
 
 const ADMIN_ONLY_ALLOWLIST = [
-  // none today
+  // We have a layout at the root on rill-dev, not under subpath like (application)/(workspace)/ or (viz)/
+  "/+layout.ts",
 ];
 
 function walkRoutes(absRoot) {
