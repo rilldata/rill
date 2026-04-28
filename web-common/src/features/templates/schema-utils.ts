@@ -532,17 +532,6 @@ export function getConditionalValues(
 }
 
 /**
- * Returns the backend driver name for a schema.
- * If x-driver is specified, returns that; otherwise returns the schemaName.
- */
-export function getBackendConnectorName(
-  schema: MultiStepFormSchema | null,
-  schemaName: string,
-): string {
-  return schema?.["x-driver"] ?? schemaName;
-}
-
-/**
  * Returns custom button labels from the schema based on current form values.
  * Looks up x-button-labels[fieldKey][fieldValue] for each field in values.
  * A wildcard key "*" always matches regardless of form values.
