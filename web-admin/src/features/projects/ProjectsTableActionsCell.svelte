@@ -17,7 +17,6 @@
   } from "@rilldata/web-common/components/alert-dialog";
   import AlertDialogGuardedConfirmation from "@rilldata/web-common/components/alert-dialog/alert-dialog-guarded-confirmation.svelte";
   import { Button } from "@rilldata/web-common/components/button";
-  import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -78,10 +77,13 @@
 
 {#if hasAnyAction}
   <DropdownMenu.Root bind:open={menuOpen}>
-    <DropdownMenu.Trigger class="flex-none">
-      <IconButton rounded active={menuOpen} ariaLabel="Project actions">
-        <ThreeDot size="16px" />
-      </IconButton>
+    <DropdownMenu.Trigger
+      class="flex-none flex items-center justify-center w-7 h-7 rounded text-fg-secondary hover:bg-surface-hover hover:text-fg-primary {menuOpen
+        ? 'bg-surface-active text-fg-primary'
+        : ''}"
+      aria-label="Project actions"
+    >
+      <ThreeDot size="16px" />
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="end" class="min-w-[160px]">
       {#if canEdit}
