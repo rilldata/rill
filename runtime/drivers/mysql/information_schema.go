@@ -75,11 +75,11 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	SELECT
 		table_name,
 		CASE WHEN table_type = 'VIEW' THEN true ELSE false END AS view,
-		DATABASE() = ? AS is_default_database_schema
+		DATABASE() = table_schema AS is_default_database_schema
 	FROM information_schema.tables
 	WHERE table_schema = ?
 	`
-	args := []any{databaseSchema, databaseSchema}
+	args := []any{databaseSchema}
 	if pageToken != "" {
 		var startAfter string
 		if err := pagination.UnmarshalPageToken(pageToken, &startAfter); err != nil {

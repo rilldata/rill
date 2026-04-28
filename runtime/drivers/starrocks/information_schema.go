@@ -213,14 +213,31 @@ func (i *informationSchema) LoadDDL(ctx context.Context, table *drivers.OlapTabl
 		schema = i.c.configProp.Database
 	}
 
-	q := fmt.Sprintf("SHOW CREATE TABLE %s.%s.%s", safeSQLName(catalog), safeSQLName(schema), safeSQLName(table.Name))
-	var name, ddl string
-	err := db.QueryRowxContext(ctx, q).Scan(&name, &ddl)
+	// SHOW CREATE TABLE works for both tables and views in StarRocks.
+	// For tables it returns columns: [Table, Create Table].
+	// For views it returns columns: [View, Create View, character_set_client, collation_connection].
+	// We extract the DDL by column name to avoid depending on column order or count.
+	rows, err := db.QueryxContext(ctx, fmt.Sprintf("SHOW CREATE TABLE %s", i.c.Dialect().EscapeTable(table.Database, table.DatabaseSchema, table.Name)))
 	if err != nil {
 		return err
 	}
-	table.DDL = ddl
-	return nil
+	defer rows.Close()
+
+	if rows.Next() {
+		res := make(map[string]any)
+		if err := rows.MapScan(res); err != nil {
+			return err
+		}
+		for _, key := range []string{"Create Table", "Create View"} {
+			if v, ok := res[key]; ok && v != nil {
+				if b, ok := v.([]byte); ok {
+					table.DDL = string(b)
+				}
+				break
+			}
+		}
+	}
+	return rows.Err()
 }
 
 // ListDatabaseSchemas returns a list of database schemas in StarRocks.
@@ -305,13 +322,12 @@ func (i *informationSchema) ListTables(ctx context.Context, database, databaseSc
 				WHEN table_type = 'MATERIALIZED VIEW' THEN true
 				ELSE false
 			END AS is_view,
-			current_catalog() = ? AS is_default_database,
-			DATABASE() = ? AS is_default_database_schema
+			DATABASE() = table_schema AS is_default_database_schema
 		FROM %s.information_schema.tables
 		WHERE table_schema = ?
 	`, safeSQLName(catalog))
 
-	args := []any{catalog, dbSchema, dbSchema}
+	args := []any{dbSchema}
 
 	if pageToken != "" {
 		q += " AND table_name > ?"
@@ -333,15 +349,15 @@ func (i *informationSchema) ListTables(ctx context.Context, database, databaseSc
 	var tables []*drivers.TableInfo
 	for rows.Next() {
 		var tableName string
-		var isView, isDefaultDatabase, isDefaultDatabaseSchema bool
-		if err := rows.Scan(&tableName, &isView, &isDefaultDatabase, &isDefaultDatabaseSchema); err != nil {
+		var isView, isDefaultDatabaseSchema bool
+		if err := rows.Scan(&tableName, &isView, &isDefaultDatabaseSchema); err != nil {
 			return nil, "", err
 		}
 
 		tables = append(tables, &drivers.TableInfo{
 			Name:                    tableName,
 			View:                    isView,
-			IsDefaultDatabase:       isDefaultDatabase,
+			IsDefaultDatabase:       true,
 			IsDefaultDatabaseSchema: isDefaultDatabaseSchema,
 		})
 	}

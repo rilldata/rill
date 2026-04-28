@@ -75,7 +75,7 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	SELECT
 		table_name,
 		table_type = 'VIEW' AS is_view,
-		current_schema() = $1 AS is_default_database_schema
+		current_schema() = table_schema AS is_default_database_schema
 	FROM information_schema.tables
 	WHERE table_schema = $1
 	`

@@ -15,7 +15,7 @@ const (
 	databaseSchema = "PUBLIC"
 )
 
-var knownTestTables = []string{"all_datatypes", "bar", "baz", "foo", "foz", "model"}
+var knownTestTables = []string{"ALL_DATATYPES", "BAR", "BAZ", "FOO", "FOZ", "MODEL"}
 
 const numKnown = 6
 
@@ -54,12 +54,12 @@ func testAll(t *testing.T, ctx context.Context, infoSchema drivers.InformationSc
 	tables := filterOLAP(all)
 	require.Equal(t, numKnown, len(tables))
 
-	require.Equal(t, "all_datatypes", tables[0].Name)
-	require.Equal(t, "bar", tables[1].Name)
-	require.Equal(t, "baz", tables[2].Name)
-	require.Equal(t, "foo", tables[3].Name)
-	require.Equal(t, "foz", tables[4].Name)
-	require.Equal(t, "model", tables[5].Name)
+	require.Equal(t, "ALL_DATATYPES", tables[0].Name)
+	require.Equal(t, "BAR", tables[1].Name)
+	require.Equal(t, "BAZ", tables[2].Name)
+	require.Equal(t, "FOO", tables[3].Name)
+	require.Equal(t, "FOZ", tables[4].Name)
+	require.Equal(t, "MODEL", tables[5].Name)
 	require.True(t, tables[5].View)
 	for _, tbl := range tables[:5] {
 		require.False(t, tbl.View, "table %s should not be a view", tbl.Name)
@@ -67,24 +67,24 @@ func testAll(t *testing.T, ctx context.Context, infoSchema drivers.InformationSc
 
 	for _, tbl := range tables {
 		require.True(t, tbl.IsDefaultDatabase, "table %s: expected IsDefaultDatabase=true", tbl.Name)
-		require.False(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=false", tbl.Name)
+		require.True(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=true", tbl.Name)
 	}
 }
 
 func testLookup(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
-	bar, err := infoSchema.Lookup(ctx, database, databaseSchema, "bar")
+	bar, err := infoSchema.Lookup(ctx, database, databaseSchema, "BAR")
 	require.NoError(t, err)
-	require.Equal(t, "bar", bar.Name)
+	require.Equal(t, "BAR", bar.Name)
 	require.Equal(t, 2, len(bar.Schema.Fields))
 	fieldNames := make(map[string]bool)
 	for _, f := range bar.Schema.Fields {
 		fieldNames[f.Name] = true
 	}
-	require.True(t, fieldNames["bar"])
-	require.True(t, fieldNames["baz"])
+	require.True(t, fieldNames["BAR"])
+	require.True(t, fieldNames["BAZ"])
 	require.False(t, bar.View)
 
-	model, err := infoSchema.Lookup(ctx, database, databaseSchema, "model")
+	model, err := infoSchema.Lookup(ctx, database, databaseSchema, "MODEL")
 	require.NoError(t, err)
 	require.True(t, model.View)
 }
@@ -110,33 +110,33 @@ func testListTables(t *testing.T, ctx context.Context, infoSchema drivers.Inform
 	tables := filterTableInfos(all)
 	require.Equal(t, numKnown, len(tables))
 
-	require.Equal(t, "all_datatypes", tables[0].Name)
-	require.Equal(t, "bar", tables[1].Name)
-	require.Equal(t, "baz", tables[2].Name)
-	require.Equal(t, "foo", tables[3].Name)
-	require.Equal(t, "foz", tables[4].Name)
-	require.Equal(t, "model", tables[5].Name)
+	require.Equal(t, "ALL_DATATYPES", tables[0].Name)
+	require.Equal(t, "BAR", tables[1].Name)
+	require.Equal(t, "BAZ", tables[2].Name)
+	require.Equal(t, "FOO", tables[3].Name)
+	require.Equal(t, "FOZ", tables[4].Name)
+	require.Equal(t, "MODEL", tables[5].Name)
 	require.True(t, tables[5].View)
 
 	for _, tbl := range tables {
 		require.True(t, tbl.IsDefaultDatabase, "table %s: expected IsDefaultDatabase=true", tbl.Name)
-		require.False(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=false", tbl.Name)
+		require.True(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=true", tbl.Name)
 	}
 }
 
 func testGetTable(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
-	bar, err := infoSchema.GetTable(ctx, database, databaseSchema, "bar")
+	bar, err := infoSchema.GetTable(ctx, database, databaseSchema, "BAR")
 	require.NoError(t, err)
 	require.Equal(t, 2, len(bar.Schema))
-	require.Contains(t, bar.Schema, "bar")
-	require.Contains(t, bar.Schema, "baz")
+	require.Contains(t, bar.Schema, "BAR")
+	require.Contains(t, bar.Schema, "BAZ")
 	require.False(t, bar.View)
 
 	noTable, err := infoSchema.GetTable(ctx, database, databaseSchema, "nonexistent_table")
 	require.NoError(t, err)
 	require.Equal(t, 0, len(noTable.Schema))
 
-	model, err := infoSchema.GetTable(ctx, database, databaseSchema, "model")
+	model, err := infoSchema.GetTable(ctx, database, databaseSchema, "MODEL")
 	require.NoError(t, err)
 	require.True(t, model.View)
 }
@@ -166,13 +166,13 @@ func testListTablesPagination(t *testing.T, ctx context.Context, infoSchema driv
 }
 
 func testLoadDDL(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
-	table, err := infoSchema.Lookup(ctx, database, databaseSchema, "bar")
+	table, err := infoSchema.Lookup(ctx, database, databaseSchema, "BAR")
 	require.NoError(t, err)
 	err = infoSchema.LoadDDL(ctx, table)
 	require.NoError(t, err)
 	require.NotEmpty(t, table.DDL)
 
-	view, err := infoSchema.Lookup(ctx, database, databaseSchema, "model")
+	view, err := infoSchema.Lookup(ctx, database, databaseSchema, "MODEL")
 	require.NoError(t, err)
 	err = infoSchema.LoadDDL(ctx, view)
 	require.NoError(t, err)

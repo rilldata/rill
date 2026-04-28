@@ -75,13 +75,13 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	SELECT
 		table_name,
 		table_type,
-		current_catalog = %s AS is_default_database,
-		current_schema = %s AS is_default_database_schema
+		current_catalog = table_catalog AS is_default_database,
+		current_schema = table_schema AS is_default_database_schema
 	FROM %s.information_schema.tables
 	WHERE table_schema = %s %s
 	ORDER BY table_name
 	LIMIT %d
-	`, escapeStringValue(database), escapeStringValue(databaseSchema), sqlSafeName(database), escapeStringValue(databaseSchema), condFilter, limit+1)
+	`, sqlSafeName(database), escapeStringValue(databaseSchema), condFilter, limit+1)
 
 	client, err := c.getClient(ctx)
 	if err != nil {

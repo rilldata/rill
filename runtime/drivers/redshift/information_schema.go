@@ -152,13 +152,15 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 }
 
 func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
-	// Query to get column name and data type
 	q := fmt.Sprintf(`
 SELECT 
 	column_name, 
-	data_type
-FROM svv_all_columns
-WHERE database_name = %s AND schema_name = %s AND table_name = %s
+	data_type,
+	CASE WHEN table_type = 'VIEW' THEN true ELSE false END AS view
+FROM svv_all_columns c
+JOIN svv_all_tables t
+	ON t.database_name = c.database_name AND t.schema_name = c.schema_name AND t.table_name = c.table_name
+WHERE c.database_name = %s AND c.schema_name = %s AND c.table_name = %s
 ORDER BY ordinal_position;
 `, escapeStringValue(database), escapeStringValue(databaseSchema), escapeStringValue(table))
 
@@ -181,6 +183,7 @@ ORDER BY ordinal_position;
 	}
 
 	var column, dataType string
+	var isView bool
 	schemaMap := make(map[string]string, len(result.Records))
 	for _, record := range result.Records {
 		colField, ok := record[0].(*types.FieldMemberStringValue)
@@ -191,13 +194,19 @@ ORDER BY ordinal_position;
 		if !ok {
 			return nil, fmt.Errorf("unexpected type for data_type field")
 		}
+		viewField, ok := record[2].(*types.FieldMemberBooleanValue)
+		if !ok {
+			return nil, fmt.Errorf("unexpected type for view field")
+		}
 		column = colField.Value
 		dataType = typeField.Value
+		isView = viewField.Value
 		schemaMap[column] = dataType
 	}
 
 	return &drivers.TableMetadata{
 		Schema: schemaMap,
+		View:   isView,
 	}, nil
 }
 
