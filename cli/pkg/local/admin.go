@@ -25,13 +25,10 @@ var (
 
 var s = &localAdminService{}
 
-func init() {
+func initLocalAdminService(ch *cmdutil.Helper, root, environment, frontendURL string) {
 	drivers.Register("local_admin", drivers.NewEmbeddedDriver(s, drivers.Spec{
 		ImplementsAdmin: true,
 	}))
-}
-
-func initLocalAdminService(ch *cmdutil.Helper, root, environment, frontendURL string) {
 	s.ch = ch
 	s.root = root
 	s.environment = environment
@@ -40,7 +37,7 @@ func initLocalAdminService(ch *cmdutil.Helper, root, environment, frontendURL st
 
 // GetAlertMetadata implements drivers.AdminService.
 func (l *localAdminService) GetAlertMetadata(ctx context.Context, alertName, ownerID string, emailRecipients []string, anonRecipients bool, annotations map[string]string, queryForUserID, queryForUserEmail string) (*drivers.AlertMetadata, error) {
-	return nil, drivers.ErrAlertsNotSupported
+	return nil, drivers.ErrNotImplemented
 }
 
 // GetDeploymentConfig implements drivers.AdminService.
@@ -50,12 +47,12 @@ func (l *localAdminService) GetDeploymentConfig(ctx context.Context) (*drivers.D
 
 // GetReportMetadata implements drivers.AdminService.
 func (l *localAdminService) GetReportMetadata(ctx context.Context, reportName, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
-	return nil, drivers.ErrReportsNotSupported
+	return nil, drivers.ErrNotImplemented
 }
 
 // ProvisionConnector implements drivers.AdminService.
 func (l *localAdminService) ProvisionConnector(ctx context.Context, name, driver string, args map[string]any) (map[string]any, error) {
-	return nil, drivers.ErrProvisioningNotSupported
+	return nil, drivers.ErrNotImplemented
 }
 
 // ListDeployments implements drivers.AdminService.

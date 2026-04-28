@@ -21,7 +21,7 @@ func init() {
 }
 
 func (n *noopAdminService) GetAlertMetadata(ctx context.Context, alertName, ownerID string, emailRecipients []string, anonRecipients bool, annotations map[string]string, queryForUserID, queryForUserEmail string) (*drivers.AlertMetadata, error) {
-	return nil, drivers.ErrAlertsNotSupported
+	return nil, drivers.ErrNotImplemented
 }
 
 func (n *noopAdminService) GetDeploymentConfig(ctx context.Context) (*drivers.DeploymentConfig, error) {
@@ -29,11 +29,11 @@ func (n *noopAdminService) GetDeploymentConfig(ctx context.Context) (*drivers.De
 }
 
 func (n *noopAdminService) GetReportMetadata(ctx context.Context, reportName, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
-	return nil, drivers.ErrReportsNotSupported
+	return nil, drivers.ErrNotImplemented
 }
 
 func (n *noopAdminService) ProvisionConnector(ctx context.Context, name, driver string, args map[string]any) (map[string]any, error) {
-	return nil, drivers.ErrProvisioningNotSupported
+	return nil, drivers.ErrNotImplemented
 }
 
 func (n *noopAdminService) ListDeployments(ctx context.Context) ([]*drivers.Deployment, error) {

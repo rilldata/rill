@@ -526,7 +526,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 
 	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, ownerID, webOpenMode, emailRecipients, anonRecipients, t)
 	if err != nil {
-		if errors.Is(err, drivers.ErrReportsNotSupported) {
+		if errors.Is(err, drivers.ErrNotImplemented) {
 			r.C.Logger.Info("Skipped sending report: admin service does not support reports", zap.String("report", self.Meta.Name.Name), observability.ZapCtx(ctx))
 			return false, nil, nil
 		}

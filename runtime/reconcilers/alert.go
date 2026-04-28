@@ -540,7 +540,7 @@ func (r *AlertReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		ownerID = a.Spec.Annotations["admin_owner_user_id"]
 	}
 	adminMeta, err = admin.GetAlertMetadata(ctx, self.Meta.Name.Name, ownerID, emailRecipients, anonRecipients, a.Spec.Annotations, a.Spec.GetQueryForUserId(), a.Spec.GetQueryForUserEmail())
-	if err != nil && !errors.Is(err, drivers.ErrAlertsNotSupported) {
+	if err != nil && !errors.Is(err, drivers.ErrNotImplemented) {
 		return fmt.Errorf("failed to get alert metadata: %w", err)
 	}
 
