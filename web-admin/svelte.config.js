@@ -75,7 +75,6 @@ const config = {
           "https://docs.google.com",
           "https://storage.googleapis.com",
           "https://cdn.prod.website-files.com",
-          // Pusher cluster confirmed from HAR (ws-us3). Update if cluster changes.
           "wss://ws-us3.pusher.com",
           ...(dev ? ["http://localhost:*", "ws://localhost:*"] : []),
         ],
