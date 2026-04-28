@@ -30,6 +30,7 @@ Rill offers flexible connection strategies to fit different data architectures a
 ## OLAP Engines
 
 ### ClickHouse
+### Databricks
 ### Druid
 ### DuckDB
 ### DuckLake
@@ -46,6 +47,15 @@ Rill offers flexible connection strategies to fit different data architectures a
     link="/developers/build/connectors/olap/clickhouse"
     linkLabel="Learn more"
     referenceLink="clickhouse"
+  />
+
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-Databricks.svg" alt="Databricks" />}
+    header="Databricks"
+    content="Lakehouse platform with native support for metrics views as a live connector."
+    link="/developers/build/connectors/olap/databricks"
+    linkLabel="Learn more"
+    referenceLink="databricks"
   />
 
   <ConnectorIcon
@@ -123,6 +133,7 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
 
 ### Athena
 ### BigQuery
+### Databricks
 ### Redshift
 ### Snowflake
 
@@ -142,6 +153,15 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
     link="/developers/build/connectors/data-source/bigquery"
     linkLabel="Learn more"
     referenceLink="bigquery"
+  />
+
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-Databricks.svg" alt="Databricks" />}
+    header="Databricks"
+    content="Connect to Databricks SQL warehouses with personal access token authentication."
+    link="/developers/build/connectors/data-source/databricks"
+    linkLabel="Learn more"
+    referenceLink="databricks"
   />
 
   <ConnectorIcon
