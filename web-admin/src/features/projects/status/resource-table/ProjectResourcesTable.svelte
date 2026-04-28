@@ -8,6 +8,7 @@
     V1ReconcileStatus,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
+  import { runtimeServiceGetResource } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
   import { getStatusPriority } from "@rilldata/web-common/features/resources/resource-filter-utils";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { goto } from "$app/navigation";
@@ -35,6 +36,11 @@
   let specResourceName = "";
   let specResourceKind = "";
   let specResource: V1Resource | undefined = undefined;
+
+  // Parent tracking for back-navigation (canvas -> component)
+  let parentResourceName = "";
+  let parentResourceKind = "";
+  let parentResource: V1Resource | undefined = undefined;
 
   let isErroredPartitionsDialogOpen = false;
   let erroredPartitionsModelName = "";
@@ -69,9 +75,28 @@
     resourceKind: string,
     resource: V1Resource,
   ) => {
+    // Navigate to detail page for alerts and reports
+    if (
+      resourceKind === ResourceKind.Alert ||
+      resourceKind === ResourceKind.Report
+    ) {
+      const basePath = $page.url.pathname.replace(
+        /\/status\/resources\/?$/,
+        "",
+      );
+      const segment =
+        resourceKind === ResourceKind.Alert ? "alerts" : "reports";
+      void goto(`${basePath}/${segment}/${resourceName}`);
+      return;
+    }
+
     specResourceName = resourceName;
     specResourceKind = resourceKind;
     specResource = resource;
+    // Clear parent when opening from the table directly
+    parentResourceName = "";
+    parentResourceKind = "";
+    parentResource = undefined;
     isSpecDialogOpen = true;
   };
 
@@ -262,4 +287,36 @@
   resourceName={specResourceName}
   resourceKind={specResourceKind}
   resource={specResource}
+  {parentResourceKind}
+  {parentResource}
+  allResources={data}
+  onviewcomponent={async (componentName) => {
+    try {
+      const resp = await runtimeServiceGetResource(runtimeClient, {
+        name: { kind: ResourceKind.Component, name: componentName },
+      });
+      if (resp.resource) {
+        // Save current canvas as parent before navigating to component
+        parentResourceName = specResourceName;
+        parentResourceKind = specResourceKind;
+        parentResource = specResource;
+        specResourceName = componentName;
+        specResourceKind = ResourceKind.Component;
+        specResource = resp.resource;
+      }
+    } catch (err) {
+      console.error("Failed to load component:", err);
+    }
+  }}
+  onback={() => {
+    // Restore parent resource
+    if (parentResource) {
+      specResourceName = parentResourceName;
+      specResourceKind = parentResourceKind;
+      specResource = parentResource;
+      parentResourceName = "";
+      parentResourceKind = "";
+      parentResource = undefined;
+    }
+  }}
 />
