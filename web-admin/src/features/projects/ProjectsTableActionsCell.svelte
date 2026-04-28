@@ -85,7 +85,7 @@
     >
       <ThreeDot size="16px" />
     </DropdownMenu.Trigger>
-    <DropdownMenu.Content align="end" class="min-w-[160px]">
+    <DropdownMenu.Content align="start" class="min-w-[160px]">
       {#if canEdit}
         <DropdownMenu.Item
           href={`/${organization}/${project}/-/settings`}

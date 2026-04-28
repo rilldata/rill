@@ -68,9 +68,9 @@
     );
   }
 
-  function compareByUpdated(a: V1Project, b: V1Project, dir: SortDirection) {
-    const aTime = a.updatedOn ? new Date(a.updatedOn).getTime() : 0;
-    const bTime = b.updatedOn ? new Date(b.updatedOn).getTime() : 0;
+  function compareByCreated(a: V1Project, b: V1Project, dir: SortDirection) {
+    const aTime = a.createdOn ? new Date(a.createdOn).getTime() : 0;
+    const bTime = b.createdOn ? new Date(b.createdOn).getTime() : 0;
     return dir === "newest" ? bTime - aTime : aTime - bTime;
   }
 
@@ -80,7 +80,7 @@
         matchesSearch(p, searchText) &&
         matchesPermission(p, permissionSelected),
     )
-    .sort((a, b) => compareByUpdated(a, b, sortDirection));
+    .sort((a, b) => compareByCreated(a, b, sortDirection));
 </script>
 
 <div class="flex flex-col gap-y-2 w-full">
