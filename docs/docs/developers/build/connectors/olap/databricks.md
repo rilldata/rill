@@ -12,7 +12,7 @@ Rill supports Databricks in two distinct modes:
 
 - **OLAP (Live Connector)** — Rill queries Databricks directly at dashboard load time. No data is ingested into Rill. Use this when your data is already modeled and optimized in Databricks and you want Rill as a visual layer on top. Set `olap_connector: databricks` in `rill.yaml`.
 
-- **Data Source Connector** — Rill extracts data from Databricks and ingests it into its embedded engine (DuckDB or ClickHouse). Use this when you want Rill to manage the data pipeline, apply transformations via SQL models, or combine Databricks data with other sources. See the [Databricks data source docs](/developers/build/connectors/data-source/databricks).
+- **Data Source Connector** — Rill extracts data from Databricks and ingests it into its embedded engine (DuckDB). Use this when you want Rill to manage the data pipeline, apply transformations via SQL models, or combine Databricks data with other sources. See the [Databricks data source docs](/developers/build/connectors/data-source/databricks).
 
 In general, use the live connector if your Databricks tables are already production-ready and large. Use data source ingestion if you need to transform, join, or enrich the data before building dashboards.
 :::
@@ -27,8 +27,8 @@ For more information on supported parameters, see our [Databricks connector YAML
 type: connector
 driver: databricks
 
-host: "{{ .env.DATABRICKS_HOST }}"             # e.g. dbc-xxxxxxxx-xxxx.cloud.databricks.com
-http_path: "{{ .env.DATABRICKS_HTTP_PATH }}"   # e.g. /sql/1.0/warehouses/xxxxxxxxxxxxxxxx
+host: "dbc-xxxxxxxx-xxxx.cloud.databricks.com"
+http_path: "/sql/1.0/warehouses/xxxxxxxxxxxxxxxx"
 token: "{{ .env.DATABRICKS_TOKEN }}"
 catalog: "main"                                # optional
 schema: "default"                              # optional

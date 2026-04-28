@@ -11,7 +11,7 @@ import { TwoStepFlowIntro, EnvPullTip, DevProdSeparation, DeployToCloud } from '
 
 ## Overview
 
-[Databricks](https://docs.databricks.com) is a unified data and AI platform built on top of Apache Spark and the lakehouse architecture. Rill connects to Databricks SQL warehouses using the [Databricks SQL Go driver](https://github.com/databricks/databricks-sql-go), streaming query results in Arrow IPC format and writing them to Parquet files for fast ingestion into Rill's embedded engine.
+[Databricks](https://docs.databricks.com) is a unified data and AI platform built on top of Apache Spark and the lakehouse architecture. Rill connects to Databricks SQL warehouses using the [Databricks SQL Go driver](https://github.com/databricks/databricks-sql-go) to ingest data into Rill's embedded engine.
 
 ## Authentication
 
@@ -49,8 +49,8 @@ Create `connectors/databricks.yaml`:
 type: connector
 driver: databricks
 
-host: "{{ .env.DATABRICKS_HOST }}"
-http_path: "{{ .env.DATABRICKS_HTTP_PATH }}"
+host: "dbc-xxxxxxxx-xxxx.cloud.databricks.com"
+http_path: "/sql/1.0/warehouses/xxxxxxxxxxxxxxxx"
 token: "{{ .env.DATABRICKS_TOKEN }}"
 catalog: "main"     # optional
 schema: "default"   # optional
@@ -59,8 +59,6 @@ schema: "default"   # optional
 **Step 2: Add credentials to `.env`**
 
 ```bash
-DATABRICKS_HOST=dbc-xxxxxxxx-xxxx.cloud.databricks.com
-DATABRICKS_HTTP_PATH=/sql/1.0/warehouses/xxxxxxxxxxxxxxxx
 DATABRICKS_TOKEN=dapi...
 ```
 
