@@ -148,6 +148,19 @@
         ],
         selected: 0,
       },
+      {
+        label: "Lower is better",
+        optional: true,
+        fields: [
+          {
+            key: "lower_is_better",
+            hint: "When enabled, increases are highlighted red and decreases use the default color, instead of the other way around",
+            label: "Lower is better",
+            boolean: true,
+          },
+        ],
+        selected: 0,
+      },
     ],
     dimensions: [
       {
@@ -366,8 +379,8 @@
 
       {#if boolean}
         <div class="flex gap-x-2 items-center h-full rounded-full">
-          <Switch bind:checked={editingClone[key]} id="auto-save" medium />
-          <Label class="font-medium text-fg-secondary text-sm" for="auto-save"
+          <Switch bind:checked={editingClone[key]} id={key} medium />
+          <Label class="font-medium text-fg-secondary text-sm" for={key}
             >{label}</Label
           >
           {#if hint}

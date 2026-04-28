@@ -148,9 +148,18 @@
   $: noChange = !comparisonValue;
   $: isComparisonPositive = diff > 0;
   $: isComparisonNegative = diff < 0;
-  $: comparisonDeltaColorClass = isComparisonPositive
+  $: lowerIsBetter = measure?.lowerIsBetter ?? false;
+  // When comparisonValue < 0, dividing diff by a negative denominator flips the percentage sign,
+  // so "positive %" actually means "value went lower". We flip lowerIsBetter to compensate.
+  $: lowerIsBetterForPerc =
+    comparisonValue !== undefined && comparisonValue < 0
+      ? !lowerIsBetter
+      : lowerIsBetter;
+  $: comparisonDeltaColorClass = (
+    lowerIsBetter ? isComparisonNegative : isComparisonPositive
+  )
     ? "text-kpi-positive"
-    : isComparisonNegative
+    : (lowerIsBetter ? isComparisonPositive : isComparisonNegative)
       ? "text-kpi-negative"
       : "text-fg-secondary";
 
@@ -246,7 +255,9 @@
               <div
                 role="complementary"
                 class="w-fit max-w-full overflow-hidden text-ellipsis {comparisonDeltaColorClass}"
-                class:font-semibold={isComparisonPositive}
+                class:font-semibold={lowerIsBetter
+                  ? isComparisonNegative
+                  : isComparisonPositive}
                 onmouseenter={() => {
                   tooltipValue =
                     measureValueFormatterTooltip(diff) ?? "no data";
@@ -288,7 +299,11 @@
                   copyValue =
                     measureValueFormatterUnabridged(value) ?? "no data";
                 }}
-                class="w-fit {comparisonDeltaColorClass}"
+                class="w-fit {(
+                  lowerIsBetter ? isComparisonNegative : isComparisonPositive
+                )
+                  ? 'font-semibold'
+                  : ''} {comparisonDeltaColorClass}"
               >
                 <WithTween
                   value={comparisonPercChange}
@@ -297,6 +312,7 @@
                 >
                   <PercentageChange
                     tabularNumber={false}
+                    lowerIsBetter={lowerIsBetterForPerc}
                     value={formatMeasurePercentageDifference(output)}
                   />
                 </WithTween>

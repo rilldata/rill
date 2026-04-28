@@ -241,6 +241,7 @@ func fieldsFromQuery(spec *runtimev1.MetricsViewSpec, q *metricsview.Query) []ma
 				"format_d3_locale":       meas.FormatD3Locale.AsMap(),
 				"valid_percent_of_total": meas.ValidPercentOfTotal,
 				"treat_nulls_as":         meas.TreatNullsAs,
+				"lower_is_better":        meas.LowerIsBetter,
 			})
 		}
 	}

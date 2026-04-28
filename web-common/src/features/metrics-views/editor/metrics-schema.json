@@ -195,6 +195,10 @@
           "valid_percent_of_total": {
             "type": "boolean",
             "description": "Indicates whether percent-of-total values should be rendered for this measure."
+          },
+          "lower_is_better": {
+            "type": "boolean",
+            "description": "When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas swap their positive/negative coloring accordingly."
           }
         },
         "required": ["expression"]

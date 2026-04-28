@@ -109,9 +109,18 @@
     computedValues.delta !== null && computedValues.delta > 0;
   $: isDeltaNegative =
     computedValues.delta !== null && computedValues.delta < 0;
-  $: comparisonDeltaColorClass = isDeltaPositive
+  $: lowerIsBetter = measure?.lowerIsBetter ?? false;
+  // When comparisonVal < 0, dividing delta by a negative denominator flips the percentage sign,
+  // so "positive %" actually means "value went lower". We flip lowerIsBetter to compensate.
+  $: lowerIsBetterForPerc =
+    comparisonVal !== null && comparisonVal < 0
+      ? !lowerIsBetter
+      : lowerIsBetter;
+  $: comparisonDeltaColorClass = (
+    lowerIsBetter ? isDeltaNegative : isDeltaPositive
+  )
     ? "text-kpi-positive"
-    : isDeltaNegative
+    : (lowerIsBetter ? isDeltaPositive : isDeltaNegative)
       ? "text-kpi-negative"
       : "text-fg-secondary";
 
@@ -281,7 +290,11 @@
 
                 {#if comparisonOptions?.includes("percent_change") && computedValues.percent != null && !measureIsPercentage}
                   <span
-                    class="w-fit font-semibold {comparisonDeltaColorClass}"
+                    class="w-fit {(
+                      lowerIsBetter ? isDeltaNegative : isDeltaPositive
+                    )
+                      ? 'font-semibold'
+                      : ''} {comparisonDeltaColorClass}"
                     role="button"
                     tabindex="0"
                     onmouseover={() => handleHoverOrFocus("percent")}
@@ -293,6 +306,7 @@
                       color="text-fg-secondary"
                       showPosSign
                       tabularNumber={false}
+                      lowerIsBetter={lowerIsBetterForPerc}
                       value={formatMeasurePercentageDifference(
                         computedValues.percent,
                       )}
