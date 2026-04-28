@@ -699,6 +699,10 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		iframeQuery["state"] = req.State
 	}
 
+	if req.ExternalUserId != "" {
+		iframeQuery["external_user_id"] = req.ExternalUserId
+	}
+
 	for k, v := range req.Query {
 		iframeQuery[k] = v
 	}
