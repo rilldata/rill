@@ -687,6 +687,9 @@ paths:
               name:
                 type: string
                 description: "name of the repo to create. \nNote: The final name will be suffixed with a random string to ensure uniqueness."
+              autoInit:
+                type: boolean
+                title: whether to auto initialize the repo with a commit after creation
   /v1/orgs/{org}/create_asset:
     post:
       summary: CreateAsset returns a one time signed URL using which any asset can be uploaded.

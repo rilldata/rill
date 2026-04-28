@@ -3144,6 +3144,9 @@ paths:
                     application/json:
                         schema:
                             properties:
+                                autoInit:
+                                    title: whether to auto initialize the repo with a commit after creation
+                                    type: boolean
                                 name:
                                     description: "name of the repo to create. \nNote: The final name will be suffixed with a random string to ensure uniqueness."
                                     type: string

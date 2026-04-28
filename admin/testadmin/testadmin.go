@@ -340,7 +340,7 @@ func (m *mockGithub) InstallationTokenForOrg(ctx context.Context, org string) (s
 	return "", time.Time{}, nil
 }
 
-func (m *mockGithub) CreateManagedRepo(ctx context.Context, repoPrefix string) (*github.Repository, error) {
+func (m *mockGithub) CreateManagedRepo(ctx context.Context, repoPrefix string, autoInit bool) (*github.Repository, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 

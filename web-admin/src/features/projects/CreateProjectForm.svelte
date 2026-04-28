@@ -78,7 +78,7 @@
           const createManagedGitRepoResult =
             await $createManagedGitRepo.mutateAsync({
               org: organization,
-              data: { name: project },
+              data: { name: project, autoInit: true },
             });
           createdGitRepo = createManagedGitRepoResult.remote ?? "";
         }
