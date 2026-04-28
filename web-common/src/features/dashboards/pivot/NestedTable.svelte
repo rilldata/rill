@@ -7,9 +7,19 @@
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
-  import type { Cell, HeaderGroup, Row } from "tanstack-table-8-svelte-5";
+  import type { HeaderGroup, Row } from "tanstack-table-8-svelte-5";
   import { flexRender } from "tanstack-table-8-svelte-5";
   import { cellInspectorStore } from "../stores/cell-inspector-store";
+  import {
+    nestedCellState,
+    nestedHeaderState,
+    nestedRowState,
+  } from "./pivot-cell-classes";
+  import {
+    type PivotClickSelectionState,
+    dimKeyFromRow,
+    nestedDimKeyFromRow,
+  } from "./pivot-click-selection";
   import {
     getRowNestedLabel,
     type DimensionColumnProps,
@@ -20,6 +30,17 @@
     calculateRowDimensionWidth,
     COLUMN_WIDTH_CONSTANTS as WIDTHS,
   } from "./pivot-column-width-utils";
+  import type { PivotRowSelectionState } from "./pivot-row-selection";
+  import {
+    computeAncestorRowIds,
+    computeCellSelectedColIndices,
+    computeSelectedColIndices,
+    type HoveredColRange,
+    isHeaderInHoveredRange,
+    isHoveredHeader,
+    isInCellSelectedColRange,
+    isInSelectedColRange,
+  } from "./pivot-selection-indices";
   import { isShowMoreRow } from "./pivot-utils";
   import type { PivotDataRow } from "./types";
 
@@ -32,6 +53,9 @@
   export let measures: MeasureColumnProps;
   export let totalsRow: PivotDataRow | undefined;
   export let canShowDataViewer = false;
+  export let enableClickToFilter = false;
+  export let rowSelectionState: PivotRowSelectionState | undefined = undefined;
+  export let clickSelection: PivotClickSelectionState | undefined = undefined;
   export let activeCell: { rowId: string; columnId: string } | null | undefined;
 
   // Table props
@@ -47,8 +71,29 @@
   export let onCellClick: (e: MouseEvent) => void;
   export let onTableLeave: () => void;
   export let onCellCopy: (e: MouseEvent) => void;
+  export let onColumnHeaderClick:
+    | ((dimensionPath: Record<string, string>) => void)
+    | undefined = undefined;
 
   const HEADER_HEIGHT = 30;
+
+  // Hover state for column dimension headers
+  let hoveredColRange: HoveredColRange | null = null;
+
+  $: hasCrossSelection = clickSelection?.hasCrossSelection ?? false;
+  $: selectedColIndices = computeSelectedColIndices(
+    clickSelection,
+    headerGroups,
+  );
+  $: cellSelectedColIndices = computeCellSelectedColIndices(
+    clickSelection,
+    headerGroups,
+  );
+  $: ancestorRowIdsOfSelectedHeaders = computeAncestorRowIds(
+    clickSelection,
+    rows,
+    rowDimensionNames,
+  );
 
   let resizingMeasure = false;
   let initialMeasureIndexOnResize = 0;
@@ -59,6 +104,7 @@
   $: hasRowDimension = rowDimensions.length > 0;
   $: hasExpandableRows = rowDimensions.length > 1;
   $: hasMeasures = measures.length > 0;
+  $: rowDimensionNames = rowDimensions.map((d) => d.name);
   $: rowDimensionLabel = getRowNestedLabel(rowDimensions);
   $: rowDimensionName = rowDimensionLabel ? rowDimensionLabel : null;
 
@@ -153,11 +199,8 @@
     percentOfChangeDuringResize = (scrollLeft + offset) / totalLength;
   }
 
-  function isCellActive(cell: Cell<PivotDataRow, unknown>) {
-    return (
-      cell.row.id === activeCell?.rowId &&
-      cell.column.id === activeCell?.columnId
-    );
+  function isCellActive(rowId: string, columnId: string) {
+    return rowId === activeCell?.rowId && columnId === activeCell?.columnId;
   }
 
   function shouldShowHeaderRightBorder(header: any, index: number): boolean {
@@ -268,7 +311,10 @@
   style:width="{totalLength + rowDimensionWidth}px"
   onclick={modified({ shift: onCellCopy, click: onCellClick })}
   onmousemove={onMouseMove}
-  onmouseleave={onTableLeave}
+  onmouseleave={() => {
+    hoveredColRange = null;
+    onTableLeave();
+  }}
 >
   <colgroup>
     {#if rowDimensionName && rowDimensionWidth}
@@ -291,16 +337,84 @@
       <tr>
         {#each headerGroup.headers as header, i (header.id)}
           {@const sortDirection = header.column.getIsSorted()}
-          {@const icon = header.column.columnDef.meta?.icon}
+          {@const dimMeta = header.column.columnDef.meta}
+          {@const icon = dimMeta?.icon}
+          {@const isColDimHeader =
+            !header.isPlaceholder && !!dimMeta?.dimensionPath}
+          {@const colStart = headerGroup.headers
+            .slice(0, i)
+            .reduce((sum, h) => sum + h.colSpan, 0)}
+          {@const inHoverRange = isHeaderInHoveredRange(
+            colStart,
+            header.colSpan,
+            hoveredColRange,
+          )}
+          {@const isSelfSelected =
+            isColDimHeader &&
+            !!dimMeta.dimensionPath &&
+            (clickSelection?.isColumnHeaderSelected(dimMeta.dimensionPath) ??
+              false)}
+          {@const hs = nestedHeaderState({
+            isTheHoveredHeader:
+              inHoverRange &&
+              isHoveredHeader(colStart, header.colSpan, hoveredColRange),
+            inHoverRange,
+            isSelfSelected,
+            inSelectedRange: isInSelectedColRange(
+              colStart,
+              header.colSpan,
+              isSelfSelected,
+              selectedColIndices,
+            ),
+            inCellSelectedCol: isInCellSelectedColRange(
+              colStart,
+              header.colSpan,
+              cellSelectedColIndices,
+            ),
+            isAncestorOfSelected:
+              isColDimHeader &&
+              !isSelfSelected &&
+              !!dimMeta.dimensionPath &&
+              (clickSelection?.isAncestorOfSelectedColumnHeader(
+                dimMeta.dimensionPath,
+              ) ??
+                false),
+          })}
 
-          <th colSpan={header.colSpan}>
+          <th
+            colSpan={header.colSpan}
+            class:col-dim-hover-self={hs.colDimHoverSelf}
+            class:col-dim-hover-child={hs.colDimHoverChild}
+            class:selected-col-header={hs.selectedColHeader}
+            class:in-selected-col-range={hs.inSelectedColRange}
+            class:cell-selected-col-header={hs.cellSelectedColHeader}
+            class:ancestor-selected-col-header={hs.ancestorSelectedColHeader}
+            onmouseenter={() => {
+              if (isColDimHeader) {
+                hoveredColRange = {
+                  start: colStart,
+                  size: header.colSpan,
+                };
+              }
+            }}
+            onmouseleave={() => {
+              hoveredColRange = null;
+            }}
+          >
             <button
               class="header-cell"
-              class:cursor-pointer={header.column.getCanSort()}
+              class:cursor-pointer={header.column.getCanSort() ||
+                (isColDimHeader && !!onColumnHeaderClick)}
               class:select-none={header.column.getCanSort()}
               class:flex-row-reverse={isMeasureColumn(header, i)}
               class:border-r={shouldShowHeaderRightBorder(header, i)}
-              onclick={header.column.getToggleSortingHandler()}
+              onclick={(e) => {
+                if (isColDimHeader && onColumnHeaderClick) {
+                  onColumnHeaderClick(dimMeta.dimensionPath ?? {});
+                } else {
+                  header.column.getToggleSortingHandler()?.(e);
+                }
+              }}
             >
               {#if !header.isPlaceholder}
                 {#if icon}
@@ -329,20 +443,80 @@
     <tr style:height="{before}px"></tr>
     {#each virtualRows as row (row.index)}
       {@const cells = rows[row.index].getVisibleCells()}
-      <tr class:show-more-row={isShowMoreRow(rows[row.index])}>
+      {@const rowId = rows[row.index].id}
+      {@const rowData = rows[row.index].original}
+      {@const dk =
+        rows[row.index].depth > 0
+          ? nestedDimKeyFromRow(rows[row.index], rowDimensionNames)
+          : dimKeyFromRow(rowData, rowDimensionNames)}
+      {@const isTotalsRow = !!totalsRow && rowId === "0"}
+      {@const filterSelected =
+        rowSelectionState?.isRowSelected(
+          rowData,
+          rows[row.index].depth,
+          rows[row.index].getParentRows().map((r) => r.original),
+        ) ?? false}
+      {@const isRowHeaderSelected =
+        clickSelection?.isRowHeaderSelected(dk) ?? false}
+      {@const hasClickedCell =
+        clickSelection?.hasSelectedCellInRow(dk) ?? false}
+      {@const isSelected =
+        rows[row.index].depth > 0 && clickSelection?.hasAnySelection
+          ? filterSelected && (isRowHeaderSelected || hasClickedCell)
+          : filterSelected}
+      {@const isAncestorOfSelectedHeader =
+        ancestorRowIdsOfSelectedHeaders.has(rowId)}
+      {@const rs = nestedRowState({
+        isSelected,
+        hasSelection: rowSelectionState?.hasActiveSelection ?? false,
+        isRowHeaderSelected,
+        hasClickedCell,
+        hasCrossSelection,
+        isAncestorOfSelectedHeader,
+        isShowMore: isShowMoreRow(rows[row.index]),
+      })}
+      <tr
+        class:show-more-row={rs.showMoreRow}
+        class:selected-row={rs.selectedRow}
+        class:dimmed-row={rs.dimmedRow}
+        class:ancestor-of-selected-row={rs.ancestorOfSelectedRow}
+      >
         {#each cells as cell, i (cell.id)}
           {@const result =
             typeof cell.column.columnDef.cell === "function"
               ? cell.column.columnDef.cell(cell.getContext())
               : cell.column.columnDef.cell}
-          {@const isActive = isCellActive(cell)}
+          {@const cs = nestedCellState({
+            isActive: isCellActive(cell.row.id, cell.column.id),
+            isClicked:
+              clickSelection?.isCellSelected(dk, cell.column.id) ?? false,
+            cellIndex: i,
+            hasClickedCell,
+            inHoveredCol: isHeaderInHoveredRange(i, 1, hoveredColRange),
+            inSelectedCol: selectedColIndices.has(i),
+            isRowHeaderSelected,
+            hasCrossSelection,
+            isAncestorOfSelectedHeader,
+            isTotalsRow,
+            canShowDataViewer,
+            enableClickToFilter,
+          })}
           {@const tooltipValue = cell.column.columnDef.meta?.tooltipFormatter
             ? cell.column.columnDef.meta.tooltipFormatter(cell.getValue())
             : cell.getValue()}
           <td
             class="ui-copy-number cell truncate group/cell"
-            class:active-cell={isActive}
-            class:interactive-cell={canShowDataViewer}
+            class:active-cell={cs.activeCell}
+            class:selected-cell={cs.selectedCell}
+            class:col-dim-hover-body={cs.colDimHoverBody}
+            class:selected-col-body={cs.selectedColBody}
+            class:cell-selected-row-header={cs.cellSelectedRowHeader}
+            class:cross-intersection={cs.crossIntersection}
+            class:cross-row-arm={cs.crossRowArm}
+            class:cross-col-arm={cs.crossColArm}
+            class:partial-aggregate-cell={cs.partialAggregateCell}
+            class:cross-selected-row-header={cs.crossSelectedRowHeader}
+            class:interactive-cell={cs.interactiveCell}
             class:border-r={shouldShowRightBorder(i)}
             data-value={tooltipValue}
             data-rowid={cell.row.id}
@@ -386,7 +560,7 @@
 
   table {
     @apply p-0 m-0 border-spacing-0 border-separate w-fit;
-    @apply font-normal;
+    @apply font-normal cursor-default;
     @apply bg-surface-background table-fixed;
   }
 
@@ -468,7 +642,7 @@
 
   /* The totals row */
   .with-totals-row tbody > tr:nth-of-type(2) {
-    @apply bg-surface-muted sticky z-20;
+    @apply bg-surface-background sticky z-20;
     top: var(--total-header-height);
     height: calc(var(--row-height) + 2px);
   }
@@ -478,7 +652,7 @@
     tbody
     > tr:nth-of-type(2)
     > td:first-of-type {
-    @apply font-semibold bg-surface-muted;
+    @apply font-semibold bg-surface-background;
   }
 
   .with-expandable-rows.with-totals-row
@@ -488,12 +662,12 @@
     @apply pl-5;
   }
 
-  tr:hover,
-  tr:hover .cell {
+  tbody tr:hover,
+  tbody tr:hover .cell {
     @apply bg-surface-hover;
   }
 
-  tr:hover .active-cell {
+  tbody tr:hover .active-cell {
     @apply bg-primary-100;
   }
 
@@ -507,6 +681,88 @@
     @apply bg-primary-50;
   }
 
+  td.selected-cell.cell {
+    @apply bg-primary-50 relative z-[1];
+    box-shadow: 0 0 0 1px theme(colors.primary.400);
+  }
+  /* The sticky row header (z-10) covers the outset left shadow; add inset left border */
+  td.cell-selected-row-header + td.selected-cell.cell {
+    box-shadow:
+      0 0 0 1px theme(colors.primary.400),
+      inset 1px 0 0 0 theme(colors.primary.400);
+  }
+  /* The totals row is z-20 and covers the outset top shadow; add inset top border */
+  .with-totals-row tbody > tr:nth-of-type(3) > td.selected-cell.cell {
+    box-shadow:
+      0 0 0 1px theme(colors.primary.400),
+      inset 0 1px 0 0 theme(colors.primary.400);
+  }
+  /* Both: right after totals AND next to sticky row header */
+  .with-totals-row
+    tbody
+    > tr:nth-of-type(3)
+    > td.cell-selected-row-header
+    + td.selected-cell.cell {
+    box-shadow:
+      0 0 0 1px theme(colors.primary.400),
+      inset 1px 1px 0 0 theme(colors.primary.400);
+  }
+  td.selected-cell.cell:hover {
+    @apply bg-primary-100;
+  }
+
+  .selected-row .cell {
+    @apply bg-primary-50;
+  }
+  .selected-row:hover .cell {
+    @apply bg-primary-100;
+  }
+  .with-row-dimension .selected-row > td:first-of-type {
+    @apply bg-primary-100;
+    box-shadow:
+      0 0 0 1px theme(colors.primary.400),
+      inset 0 -1px 0 0 theme(colors.primary.400);
+  }
+  .with-row-dimension .selected-row:hover > td:first-of-type {
+    @apply bg-primary-100;
+  }
+
+  /* Cross-selection: intersection cells (both selected row + selected col) */
+  .cross-intersection.cell {
+    @apply bg-primary-50;
+  }
+  .cross-intersection.cell:hover {
+    @apply bg-primary-100;
+  }
+  tbody tr:hover .cross-intersection.cell {
+    @apply bg-primary-100;
+  }
+
+  /* Cross-selection: arm cells (muted) */
+  .cross-row-arm.cell,
+  .cross-col-arm.cell {
+    @apply bg-surface-muted;
+  }
+  tbody tr:hover .cross-row-arm.cell,
+  tbody tr:hover .cross-col-arm.cell {
+    @apply bg-surface-muted;
+  }
+
+  /* Cross-selection: row header cell for selected row (stays highlighted) */
+  .with-row-dimension tr > td.cross-selected-row-header:first-of-type {
+    @apply bg-primary-100;
+    box-shadow:
+      0 0 0 1px theme(colors.primary.400),
+      inset 0 -1px 0 0 theme(colors.primary.400);
+  }
+  .with-row-dimension tr:hover > td.cross-selected-row-header:first-of-type {
+    @apply bg-primary-100;
+  }
+
+  .dimmed-row .cell {
+    @apply text-fg-primary/50;
+  }
+
   /* Show more row styling */
   .show-more-row,
   .show-more-row .cell {
@@ -516,5 +772,67 @@
   .show-more-row:hover,
   .show-more-row:hover .cell {
     @apply bg-gray-100;
+  }
+
+  /* Column dimension header hover: the hovered header itself */
+  .col-dim-hover-self .header-cell {
+    @apply bg-primary-100;
+  }
+
+  /* Column dimension header hover: child headers below the hovered one */
+  .col-dim-hover-child .header-cell,
+  .col-dim-hover-body.cell {
+    @apply bg-primary-50;
+  }
+
+  .selected-col-header .header-cell {
+    @apply bg-primary-100;
+  }
+  .selected-col-header {
+    @apply relative z-[1];
+    box-shadow:
+      0 0 0 1px theme(colors.primary.400),
+      inset 0 -1px 0 0 theme(colors.primary.400);
+  }
+
+  .in-selected-col-range .header-cell,
+  .selected-col-body.cell {
+    @apply bg-primary-50;
+  }
+
+  /* Cross-highlights for cell click-to-filter selections */
+  .cell-selected-col-header .header-cell {
+    @apply bg-primary-50;
+  }
+  .cell-selected-col-header.col-dim-hover-self .header-cell {
+    @apply bg-primary-100;
+  }
+
+  .cell-selected-row-header.cell {
+    @apply bg-primary-50;
+  }
+  .with-row-dimension tr > td.cell-selected-row-header:first-of-type {
+    @apply bg-primary-50;
+  }
+  .with-row-dimension tr:hover > td.cell-selected-row-header:first-of-type {
+    @apply bg-primary-100;
+  }
+
+  /* Parent row header highlight when a child row header is selected */
+  .with-row-dimension .ancestor-of-selected-row > td:first-of-type {
+    @apply bg-primary-50;
+  }
+  .with-row-dimension .ancestor-of-selected-row:hover > td:first-of-type {
+    @apply bg-primary-100;
+  }
+
+  /* Grey background for data cells on parent rows that partially contain filtered data */
+  .partial-aggregate-cell.cell {
+    @apply bg-surface-muted;
+  }
+
+  /* Parent column header highlight when a child column header is selected */
+  .ancestor-selected-col-header .header-cell {
+    @apply bg-primary-50;
   }
 </style>

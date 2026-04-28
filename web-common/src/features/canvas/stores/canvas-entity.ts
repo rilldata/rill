@@ -81,6 +81,7 @@ export class CanvasEntity {
   fileArtifact: FileArtifact | undefined;
 
   selectedComponent = writable<string | null>(null);
+  activeComponent = writable<string | null>(null);
   parsedContent: Readable<ReturnType<typeof parseDocument>>;
   public specStore: CanvasSpecResponseStore;
   // Tracks whether the canvas been loaded (and rows processed) for the first time
@@ -331,10 +332,16 @@ export class CanvasEntity {
           pinnedFilters,
           filterExpressions,
         );
+        // Clears the active component when a global filter changes through
+        // FilterManager.actions.* (user-driven filter UI). Pivot click-to-filter
+        // bypasses actions and mutates FilterState directly, so it does NOT
+        // trigger this callback; see pivot-click-to-filter.ts for details.
+        this.filterManager.onFilterChange = () => this.clearActiveComponent();
       }
     } else {
       // need to find a better way to initialize this in certain contextx - bgh
       this.filterManager = new FilterManager({}, "", [], {});
+      this.filterManager.onFilterChange = () => this.clearActiveComponent();
     }
 
     this.processRows({ canvas, components, metricsViews, filePath });
@@ -735,6 +742,14 @@ export class CanvasEntity {
 
   setSelectedComponent = (id: string | null) => {
     this.selectedComponent.set(id);
+  };
+
+  setActiveComponent = (id: string) => {
+    this.activeComponent.set(id);
+  };
+
+  clearActiveComponent = () => {
+    this.activeComponent.set(null);
   };
 
   removeComponent = (componentName: string) => {

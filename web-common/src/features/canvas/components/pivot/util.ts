@@ -18,14 +18,44 @@ import {
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import type {
-  V1Expression,
-  V1MetricsViewSpec,
-  V1TimeRange,
+import {
+  V1Operation,
+  type V1Expression,
+  type V1MetricsViewSpec,
+  type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
-import { type Readable, type Writable, derived, writable } from "svelte/store";
+import {
+  type Readable,
+  type Writable,
+  derived,
+  readable,
+  writable,
+} from "svelte/store";
 import type { CanvasEntity } from "../../stores/canvas-entity";
 import type { PivotSpec, TableSpec } from "./";
+
+/**
+ * Strips filters for the pivot's own dimensions from the where filter.
+ * This lets the pivot query return all rows; selection highlighting
+ * (via rowSelectionState) shows which rows match the active filters.
+ * Same pattern as leaderboard's getFiltersForOtherDimensions but for
+ * multiple dimensions at once.
+ */
+function excludeOwnDimensionFilters(
+  where: V1Expression | undefined,
+  dimensionNames: string[],
+): V1Expression | undefined {
+  if (!where?.cond?.exprs || dimensionNames.length === 0) return where;
+  const dimSet = new Set(dimensionNames);
+  // Only exclude IN expressions whose ident matches a self-filtered dimension.
+  // Other filter types (LIKE, NIN) are never produced by click-to-filter and
+  // must be preserved even if they share a dimension name.
+  const filtered = where.cond.exprs.filter((e) => {
+    if (e.cond?.op !== V1Operation.OPERATION_IN) return true;
+    return !dimSet.has(e.cond?.exprs?.[0]?.ident ?? "");
+  });
+  return createAndExpression(filtered);
+}
 
 type CacheEntry = {
   store: ReturnType<typeof createPivotDataStore>;
@@ -62,21 +92,44 @@ export function createPivotConfig(
   tableSpecStore: Readable<PivotSpec | TableSpec>,
   pivotState: Writable<PivotState>,
   timeAndFilterStore: Readable<TimeAndFilterStore>,
+  selfFilteredDimensions?: Readable<Set<string>>,
 ): Readable<PivotDataStoreConfig> {
+  const selfFilteredStore = selfFilteredDimensions ?? readable(null);
+
   return derived(
-    [canvas.specStore, tableSpecStore, pivotState, timeAndFilterStore],
-    ([$canvasData, $tableSpec, $pivotState, $timeAndFilterStore]) => {
+    [
+      canvas.specStore,
+      tableSpecStore,
+      pivotState,
+      timeAndFilterStore,
+      selfFilteredStore,
+    ],
+    ([
+      $canvasData,
+      $tableSpec,
+      $pivotState,
+      $timeAndFilterStore,
+      $selfFiltered,
+    ]) => {
       const { timeRange, comparisonTimeRange, where } = $timeAndFilterStore;
       const metricsViewName = $tableSpec.metrics_view;
       const metricsView =
         $canvasData?.data?.metricsViews[metricsViewName]?.state?.validSpec ??
         {};
 
+      let queryWhere: V1Expression | undefined;
+      if (!$selfFiltered || $selfFiltered.size === 0) {
+        queryWhere = where;
+      } else {
+        // Only exclude dimensions the pivot itself applied via click-to-filter
+        queryWhere = excludeOwnDimensionFilters(where, [...$selfFiltered]);
+      }
+
       return "columns" in $tableSpec
         ? processFlat(
             $tableSpec,
             $pivotState,
-            where,
+            queryWhere,
             metricsView,
             $timeAndFilterStore,
             comparisonTimeRange,
@@ -86,7 +139,7 @@ export function createPivotConfig(
         : processPivot(
             $tableSpec,
             $pivotState,
-            where,
+            queryWhere,
             metricsView,
             $timeAndFilterStore,
             comparisonTimeRange,
@@ -170,6 +223,7 @@ export function processPivot(
         ...state,
         rowPage: 1,
       }));
+      config.pivot.rowPage = 1;
     }
   }
 
@@ -256,6 +310,7 @@ export function processFlat(
         ...state,
         rowPage: 1,
       }));
+      config.pivot.rowPage = 1;
     }
   }
 

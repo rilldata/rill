@@ -26,10 +26,12 @@
       _maxWidth,
       filtersEnabledStore,
       themeName,
+      activeComponent: activeComponentStore,
     },
   } = getCanvasStore(canvasName, instanceId));
 
   $: components = $componentsStore;
+  $: activeComponentId = $activeComponentStore;
 
   $: filtersEnabled = $filtersEnabledStore;
   $: maxWidth = $_maxWidth;
@@ -56,6 +58,7 @@
         {components}
         {maxWidth}
         {navigationEnabled}
+        {activeComponentId}
       />
     {:else}
       <div class="size-full flex items-center justify-center">

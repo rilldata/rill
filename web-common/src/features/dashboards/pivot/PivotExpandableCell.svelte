@@ -15,18 +15,31 @@
   $: assembledAndCanExpand = assembled && canExpand;
 
   $: needsSpacer = row.depth >= 1 || (hasNestedDimensions && !canExpand);
+
+  function handleExpandClick(e: MouseEvent) {
+    e.stopPropagation();
+    if (assembledAndCanExpand) {
+      row.getToggleExpandedHandler()();
+    }
+  }
 </script>
 
 <div
   role="presentation"
-  class="dimension-cell pointer-events-none"
+  class="dimension-cell"
   style:padding-left="{row.depth * 14}px"
-  class:cursor-pointer={assembledAndCanExpand}
 >
   {#if value === LOADING_CELL}
     <span class="loading-cell"></span>
   {:else if assembledAndCanExpand}
-    <div class="caret opacity-100 shrink-0" class:expanded>
+    <!-- svelte-ignore a11y-click-events-have-key-events -->
+    <div
+      role="button"
+      tabindex="-1"
+      class="caret opacity-100 shrink-0 cursor-pointer"
+      class:expanded
+      onclick={handleExpandClick}
+    >
       <ChevronRight size="16px" color="#9CA3AF" />
     </div>
   {:else if needsSpacer}

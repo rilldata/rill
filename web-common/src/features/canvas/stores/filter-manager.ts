@@ -1,3 +1,4 @@
+import { goto } from "$app/navigation";
 import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants";
 import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { type DimensionFilterItem } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
@@ -15,19 +16,18 @@ import {
 import {
   derived,
   get,
+  writable,
   type Readable,
   type Writable,
-  writable,
 } from "svelte/store";
-import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
-import { goto } from "$app/navigation";
-import { FilterState } from "./filter-state";
 import { getDimensionDisplayName } from "../../dashboards/filters/getDisplayName";
-import type { ParsedFilters } from "./filter-state";
 import {
   createAndExpression,
   flattenInExpressionValues,
 } from "../../dashboards/stores/filter-utils";
+import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
+import type { ParsedFilters } from "./filter-state";
+import { FilterState } from "./filter-state";
 
 export type UIFilters = {
   dimensionFilters: Map<string, DimensionFilterItem>;
@@ -62,6 +62,9 @@ export class FilterManager {
   pinnedFilterKeysStore = writable<Set<string>>(new Set());
   defaultPinnedFilterKeysStore = writable<Set<string>>(new Set());
   temporaryFilterKeysStore = writable<Map<string, boolean>>(new Map());
+
+  // Fires when a global filter mutation is committed (via actions or clearAllFilters).
+  onFilterChange?: () => void;
 
   allDimensionsStore = writable<DimensionLookup>(new Map());
   allMeasuresStore = writable<MeasureLookup>(new Map());
@@ -521,6 +524,7 @@ export class FilterManager {
       searchText: string,
       metricsViewNames: string[],
     ) => {
+      this.onFilterChange?.();
       this.checkTemporaryFilter(dimensionName, metricsViewNames);
       const map = new Map<string, string | null>();
 
@@ -540,6 +544,7 @@ export class FilterManager {
       dimensionName: string,
       metricsViewNames: string[],
     ) => {
+      this.onFilterChange?.();
       this.checkTemporaryFilter(dimensionName, metricsViewNames);
       this.checkPinnedFilter(dimensionName, metricsViewNames);
 
@@ -573,6 +578,7 @@ export class FilterManager {
       dimensionName: string,
       metricsViewNames: string[],
     ) => {
+      this.onFilterChange?.();
       this.checkTemporaryFilter(dimensionName, metricsViewNames);
 
       const map = new Map<string, string | null>();
@@ -595,6 +601,7 @@ export class FilterManager {
       values: string[],
       metricsViewNames: string[],
     ) => {
+      this.onFilterChange?.();
       this.checkTemporaryFilter(dimensionName, metricsViewNames);
       const map = new Map<string, string | null>();
 
@@ -619,6 +626,7 @@ export class FilterManager {
       keepPillVisible?: boolean,
       isExclusiveFilter?: boolean,
     ) => {
+      this.onFilterChange?.();
       this.checkTemporaryFilter(dimensionName, metricsViewNames);
 
       const newFilters = new Map<string, string | null>();
@@ -646,6 +654,7 @@ export class FilterManager {
       oldDimension: string,
       metricsViewNames: string[],
     ) => {
+      this.onFilterChange?.();
       this.checkTemporaryFilter(filter.measure, metricsViewNames);
 
       const newFilters = new Map<string, string | null>();
@@ -671,6 +680,7 @@ export class FilterManager {
       measureName: string,
       metricsViewNames: string[],
     ) => {
+      this.onFilterChange?.();
       this.checkTemporaryFilter(measureName, metricsViewNames);
       this.checkPinnedFilter(measureName, metricsViewNames);
 
@@ -743,6 +753,7 @@ export class FilterManager {
   // Unclear on what this actually should do - bgh
   // Go to defaults or truly clear all filters?
   clearAllFilters = async () => {
+    this.onFilterChange?.();
     this.temporaryFilterKeysStore.set(new Map());
     const existingParams = new URLSearchParams(window.location.search);
     const filterParamsToDelete = Array.from(existingParams.keys()).filter(

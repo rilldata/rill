@@ -31,6 +31,7 @@ export interface PivotDataState {
   reachedEndForRowData?: boolean;
   totalsRowData?: PivotDataRow;
   activeCellFilters?: PivotFilter;
+  columnDimensionAxes?: Record<string, string[]>;
 }
 
 export type PivotDataStore = Readable<PivotDataState>;
@@ -67,7 +68,7 @@ export type PivotTableMode = "flat" | "nest";
 export interface PivotDataRow {
   subRows?: PivotDataRow[];
 
-  [key: string]: string | number | PivotDataRow[] | undefined;
+  [key: string]: string | number | null | PivotDataRow[] | undefined;
 }
 
 export interface TimeFilters {

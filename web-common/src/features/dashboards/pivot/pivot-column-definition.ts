@@ -117,9 +117,17 @@ function createColumnDefinitionForDimensions(
           [dimensionNames[level]]: value,
         });
 
+        const dimensionPath = {
+          ...colValuePair,
+          [dimensionNames[level]]: value,
+        };
+
         return {
           header: sanitizeHeaderValue(displayValue),
           columns: nestedColumns,
+          meta: {
+            dimensionPath,
+          },
         };
       })
       .filter((column) => column.columns.length > 0);
@@ -312,12 +320,14 @@ function getFlatColumnDef(
         accessorFn: (row) => row[d.name],
         header: d.label || d.name,
         cell: ({ getValue }) => {
-          return formatDimensionValue(
+          const value = formatDimensionValue(
             getValue() as string,
             i,
             config.time,
             rowDimensionNames,
           );
+          if (value === null) return "null";
+          return value;
         },
       };
     },

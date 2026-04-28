@@ -2,6 +2,7 @@
   import { Button } from "@rilldata/web-common/components/button";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
+  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import AdvancedFilter from "@rilldata/web-common/features/dashboards/filters/AdvancedFilter.svelte";
   import DimensionFilter from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilter.svelte";
@@ -9,10 +10,9 @@
   import { getPanRangeForTimeRange } from "@rilldata/web-common/features/dashboards/state-managers/selectors/charts";
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
   import CanvasFilterButton from "../../dashboards/filters/CanvasFilterButton.svelte";
-  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import Metadata from "../../dashboards/time-controls/super-pill/components/Metadata.svelte";
+  import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
 
   export let readOnly = false;
   export let maxWidth: number;
@@ -130,6 +130,7 @@
 </script>
 
 <div
+  role="presentation"
   class="flex flex-col gap-y-2 size-full pointer-events-none"
   style:max-width="{maxWidth}px"
 >
