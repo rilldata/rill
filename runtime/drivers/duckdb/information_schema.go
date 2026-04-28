@@ -334,7 +334,7 @@ func scanTables(rows []*rduckdb.Table) ([]*drivers.OlapTable, error) {
 }
 
 func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
-	t := &runtimev1.Type{Nullable: nullable}
+	t := &runtimev1.Type{Nullable: nullable, RawType: dbt}
 	match := true
 	switch dbt {
 	case "INVALID":

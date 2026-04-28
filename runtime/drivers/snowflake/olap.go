@@ -230,7 +230,7 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 }
 
 func databaseTypeToPB(dbt string, scale int64, nullable bool) (*runtimev1.Type, error) {
-	t := &runtimev1.Type{Nullable: nullable}
+	t := &runtimev1.Type{Nullable: nullable, RawType: dbt}
 	switch dbt {
 	case "NUMBER", "DECIMAL", "NUMERIC":
 		t.Code = runtimev1.Type_CODE_DECIMAL
