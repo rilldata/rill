@@ -16,8 +16,9 @@ const dev = adminFrontendURL?.includes("localhost");
 // connect-src covers all subdomains in whichever environment is being built,
 // without statically listing all three TLDs.
 let rillWildcard = "https://*.rilldata.com"; // fallback for local dev
-if (adminFrontendURL && !dev) {
-  const hostname = new URL(adminFrontendURL).hostname; // e.g. "admin.rilldata.com"
+const adminURL = process.env.RILL_UI_PUBLIC_RILL_ADMIN_URL;
+if (adminURL && !dev) {
+  const hostname = new URL(adminURL).hostname; // e.g. "admin.rilldata.com"
   const baseDomain = hostname.split(".").slice(1).join("."); // e.g. "rilldata.com"
   rillWildcard = `https://*.${baseDomain}`;
 }
