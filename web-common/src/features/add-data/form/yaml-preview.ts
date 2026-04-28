@@ -6,11 +6,8 @@ import {
 } from "@rilldata/web-common/features/templates/schema-utils.ts";
 import type { MultiStepFormSchema } from "@rilldata/web-common/features/templates/schemas/types.ts";
 import {
-  applyDuckLakeFormTransform,
-  buildDuckLakeSecretRefs,
-  extractDuckLakeAttachSecrets,
+  applyDuckLakeFormPipeline,
   injectDuckLakeAttach,
-  shouldExtractDuckLakeAttachSecrets,
 } from "@rilldata/web-common/features/templates/schemas/ducklake-utils.ts";
 import { compileConnectorYAML } from "@rilldata/web-common/features/connectors/code-utils.ts";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
@@ -40,30 +37,13 @@ export function getConnectorYamlPreview({
   const schemaStringKeys = schema
     ? getSchemaStringKeys(schema, { step: "connector" })
     : [];
-  // DuckLake "parameters" tab: compose individual param fields into the
-  // single `attach` YAML key. We inject `attach` both before and after the
-  // filter pipeline — the tab-group filter would otherwise drop `attach`
-  // since it lives under the "sql" tab.
-  const duckLakeSecretRefs = buildDuckLakeSecretRefs(
-    schema,
-    connector.name ?? "",
-    existingEnvBlob ?? "",
-  );
-  let transformedValues = applyDuckLakeFormTransform(schema, formValues, {
-    secretRefs: duckLakeSecretRefs,
+  // DuckLake: mirror the submit path so the preview reflects the composed
+  // ATTACH clause and rewritten env-var refs. Discards extractedSecrets
+  // since previews don't write to `.env`.
+  const { transformedValues } = applyDuckLakeFormPipeline(schema, formValues, {
+    connectorName: connector.name ?? "",
+    existingEnvBlob: existingEnvBlob ?? "",
   });
-  // Mirror the connector-submit path so the preview reflects the rewritten
-  // attach string (raw catalog URIs replaced with `{{ .env.X }}` refs).
-  if (shouldExtractDuckLakeAttachSecrets(schema, transformedValues)) {
-    const rawAttach = transformedValues.attach;
-    if (typeof rawAttach === "string") {
-      const { rewrittenAttach, extractedSecrets } =
-        extractDuckLakeAttachSecrets(rawAttach, existingEnvBlob ?? "");
-      if (Object.keys(extractedSecrets).length > 0) {
-        transformedValues = { ...transformedValues, attach: rewrittenAttach };
-      }
-    }
-  }
   const filteredValues = schema
     ? injectDuckLakeAttach(
         schema,
