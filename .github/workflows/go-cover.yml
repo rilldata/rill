@@ -5,8 +5,7 @@ on:
 name: Go tests with coverage and race detector
 jobs:
   test:
-    runs-on:
-      labels: large-hosted
+    runs-on: ubuntu-22.04-large
     steps:
     - name: Check out code
       uses: actions/checkout@v4
