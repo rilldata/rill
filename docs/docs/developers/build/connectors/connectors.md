@@ -33,6 +33,7 @@ Rill offers flexible connection strategies to fit different data architectures a
 ### Druid
 ### DuckDB
 ### DuckLake
+### Google BigQuery
 ### MotherDuck
 ### Pinot
 ### Snowflake
@@ -65,11 +66,18 @@ Rill offers flexible connection strategies to fit different data architectures a
 
   <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-DuckLake.svg" alt="DuckLake" />}
-    header="DuckLake"
     content="Open lakehouse format built on DuckDB — catalog in SQL, data in Parquet."
     link="/developers/build/connectors/olap/ducklake"
     linkLabel="Learn more"
     referenceLink="ducklake"
+  />
+  
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-BigQuery.svg" alt="Google BigQuery" />}
+    content="Connect to Google BigQuery for analytics and data warehousing with service account authentication."
+    link="/developers/build/connectors/olap/bigquery"
+    linkLabel="Learn more"
+    referenceLink="bigquery"
   />
 
   <ConnectorIcon
