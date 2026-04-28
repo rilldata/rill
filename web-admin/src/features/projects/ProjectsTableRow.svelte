@@ -4,6 +4,7 @@
     type V1ProjectPermissions,
   } from "@rilldata/web-admin/client";
   import ProjectStatusBadge from "./ProjectStatusBadge.svelte";
+  import ProjectsTableActionsCell from "./ProjectsTableActionsCell.svelte";
 
   export let organization: string;
   export let project: string;
@@ -21,7 +22,8 @@
 
   $: deploymentStatus = $proj.data?.deployment?.status;
   $: hasDeployment = !!$proj.data?.deployment;
-  $: roleLabel = getRoleLabel($proj.data?.projectPermissions);
+  $: permissions = $proj.data?.projectPermissions;
+  $: roleLabel = getRoleLabel(permissions);
 </script>
 
 <div class="row">
@@ -40,13 +42,16 @@
   <div class="cell text-fg-primary text-sm">
     {roleLabel}
   </div>
+  <div class="cell cell-actions">
+    <ProjectsTableActionsCell {organization} {project} {permissions} />
+  </div>
 </div>
 
 <style lang="postcss">
   .row {
     @apply grid items-center w-full border-b border-border;
     @apply h-[52px];
-    grid-template-columns: minmax(0, 1fr) 200px 200px 200px;
+    grid-template-columns: minmax(0, 1fr) 200px 200px 200px 60px;
   }
 
   .cell {
@@ -55,5 +60,9 @@
 
   .cell-name {
     @apply block;
+  }
+
+  .cell-actions {
+    @apply flex items-center justify-end;
   }
 </style>

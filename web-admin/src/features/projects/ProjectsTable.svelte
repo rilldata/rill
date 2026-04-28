@@ -12,6 +12,7 @@
     <div class="cell text-fg-muted text-sm font-medium">Status</div>
     <div class="cell text-fg-muted text-sm font-medium">Permission</div>
     <div class="cell text-fg-muted text-sm font-medium">Your role</div>
+    <div class="cell" aria-hidden="true"></div>
   </div>
   {#each projects as proj (proj.name)}
     <ProjectsTableRow
@@ -25,7 +26,7 @@
 <style lang="postcss">
   .row {
     @apply grid items-center w-full border-b border-border;
-    grid-template-columns: minmax(0, 1fr) 200px 200px 200px;
+    grid-template-columns: minmax(0, 1fr) 200px 200px 200px 60px;
   }
 
   .row-head {
