@@ -421,7 +421,10 @@ describe("build-resource-graph", () => {
         },
         {
           meta: {
-            name: { kind: ResourceKind.Component, name: "canvas1--component-0-0" },
+            name: {
+              kind: ResourceKind.Component,
+              name: "canvas1--component-0-0",
+            },
             refs: [{ kind: ResourceKind.MetricsView, name: "mv1" }],
             hidden: false,
           },
