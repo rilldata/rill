@@ -65,6 +65,7 @@
     {
       SPA: true,
       validators: yup(validationSchema),
+      id: "measure",
       onUpdate({ form }) {
         if (!form.valid) return;
         const values = form.data;
@@ -146,6 +147,10 @@
     autocomplete="off"
     class="flex flex-col gap-y-3"
     id="measure"
+    onsubmit={(e) => {
+      e.preventDefault();
+      submit(e);
+    }}
   >
     <Select
       bind:value={$form["dimension"]}
