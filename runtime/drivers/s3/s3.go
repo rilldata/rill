@@ -80,6 +80,16 @@ var spec = drivers.Spec{
 			Secret:      true,
 			Description: "Optional external ID to use when assuming an AWS role for cross-account access.",
 		},
+		{
+			Key:         "aws_web_identity_token_file",
+			Type:        drivers.StringPropertyType,
+			Description: "Path to a file containing an OIDC token for AssumeRoleWithWebIdentity. Requires aws_role_arn.",
+		},
+		{
+			Key:         "gcp_workload_identity_audience",
+			Type:        drivers.StringPropertyType,
+			Description: "Audience for GKE workload identity federation with AWS. Must match the audience in the AWS IAM role trust policy. Requires aws_role_arn.",
+		},
 	},
 	SourceProperties: []*drivers.PropertySpec{
 		{
@@ -113,14 +123,16 @@ type driver struct{}
 var _ drivers.Driver = driver{}
 
 type ConfigProperties struct {
-	AccessKeyID     string `mapstructure:"aws_access_key_id"`
-	SecretAccessKey string `mapstructure:"aws_secret_access_key"`
-	SessionToken    string `mapstructure:"aws_access_token"`
-	Region          string `mapstructure:"region"`
-	Endpoint        string `mapstructure:"endpoint"`
-	RoleARN         string `mapstructure:"aws_role_arn"`
-	RoleSessionName string `mapstructure:"aws_role_session_name"`
-	ExternalID      string `mapstructure:"aws_external_id"`
+	AccessKeyID                 string `mapstructure:"aws_access_key_id"`
+	SecretAccessKey             string `mapstructure:"aws_secret_access_key"`
+	SessionToken                string `mapstructure:"aws_access_token"`
+	Region                      string `mapstructure:"region"`
+	Endpoint                    string `mapstructure:"endpoint"`
+	RoleARN                     string `mapstructure:"aws_role_arn"`
+	RoleSessionName             string `mapstructure:"aws_role_session_name"`
+	ExternalID                  string `mapstructure:"aws_external_id"`
+	WebIdentityTokenFile        string `mapstructure:"aws_web_identity_token_file"`
+	GCPWorkloadIdentityAudience string `mapstructure:"gcp_workload_identity_audience"`
 	// A list of bucket path prefixes that this connector is allowed to access.
 	// Useful when different buckets or bucket prefixes use different credentials,
 	// allowing the system to select the appropriate connector based on the bucket path.
@@ -430,7 +442,15 @@ func getAWSConfig(ctx context.Context, confProp *ConfigProperties, logger *zap.L
 
 // newCredentialsProvider returns credentials for connecting to AWS.
 func newCredentialsProvider(ctx context.Context, confProp *ConfigProperties, logger *zap.Logger) (aws.CredentialsProvider, error) {
-	// 1. If a role ARN is provided, assume it.
+	if confProp.GCPWorkloadIdentityAudience != "" && confProp.RoleARN != "" {
+		return awsutil.NewWebIdentityCredentials(ctx, confProp.RoleARN, confProp.RoleSessionName, confProp.Region,
+			awsutil.GCPMetadataTokenRetriever{Audience: confProp.GCPWorkloadIdentityAudience}, logger)
+	}
+	if confProp.WebIdentityTokenFile != "" && confProp.RoleARN != "" {
+		return awsutil.NewWebIdentityCredentials(ctx, confProp.RoleARN, confProp.RoleSessionName, confProp.Region,
+			stscreds.IdentityTokenFile(confProp.WebIdentityTokenFile), logger)
+	}
+	// If a role ARN is provided, assume it using base credentials.
 	if confProp.RoleARN != "" {
 		return assumeRole(ctx, confProp, logger)
 	}
