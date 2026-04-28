@@ -200,6 +200,21 @@
       />
     {/if}
 
-    <Button type="primary" onClick={submit}>Apply</Button>
+    <button
+      type="button"
+      style="background: red; color: white; padding: 8px;"
+      onclick={() => console.log("DEBUG: native button clicked")}
+    >
+      DEBUG native click
+    </button>
+    <Button
+      type="primary"
+      onClick={() => {
+        console.log("DEBUG: Apply Button onClick fired");
+        void submit();
+      }}
+    >
+      Apply
+    </Button>
   </form>
 </Popover.Content>
