@@ -142,10 +142,14 @@
     </div>
   {/if}
   <form
-    use:enhance
     autocomplete="off"
     class="flex flex-col gap-y-3"
     id="measure"
+    onsubmit={(e) => {
+      e.preventDefault();
+      submit(e);
+    }}
+    use:enhance
   >
     <Select
       bind:value={$form["dimension"]}
