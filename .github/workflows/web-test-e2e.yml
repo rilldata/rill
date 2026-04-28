@@ -23,7 +23,7 @@ on:
 
 jobs:
   setup:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
 
@@ -67,7 +67,7 @@ jobs:
           FILTER_LOCAL: ${{ steps.filter.outputs.local }}
 
   e2e:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: setup
     strategy:
       fail-fast: false
