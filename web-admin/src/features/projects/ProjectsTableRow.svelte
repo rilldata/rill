@@ -34,7 +34,7 @@
     {project}
   </a>
   <div class="cell">
-    <ProjectStatusBadge {deploymentStatus} {isPublic} {hasDeployment} />
+    <ProjectStatusBadge {deploymentStatus} {hasDeployment} />
   </div>
   <div class="cell text-fg-primary text-sm">
     {isPublic ? "Public" : "Private"}

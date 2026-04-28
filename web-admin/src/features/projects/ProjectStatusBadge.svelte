@@ -9,16 +9,14 @@
   import type { ComponentType } from "svelte";
 
   export let deploymentStatus: V1DeploymentStatus | undefined;
-  export let isPublic: boolean;
   export let hasDeployment: boolean;
 
-  type Variant = "ready" | "live" | "error" | "unpublished" | "pending";
+  type Variant = "ready" | "error" | "unpublished" | "pending";
 
-  $: variant = getVariant(deploymentStatus, isPublic, hasDeployment);
+  $: variant = getVariant(deploymentStatus, hasDeployment);
 
   function getVariant(
     status: V1DeploymentStatus | undefined,
-    pub: boolean,
     deployed: boolean,
   ): Variant {
     if (status === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED) return "error";
@@ -28,8 +26,7 @@
       status === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING
     )
       return "pending";
-    if (status === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING)
-      return pub ? "live" : "ready";
+    if (status === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING) return "ready";
     if (!deployed) return "unpublished";
     return "unpublished";
   }
@@ -40,11 +37,6 @@
   > = {
     ready: {
       label: "Ready",
-      icon: CheckCircle2,
-      classes: "bg-blue-50 border-blue-500 text-blue-500",
-    },
-    live: {
-      label: "Live",
       icon: CheckCircle2,
       classes: "bg-green-50 border-green-500 text-green-500",
     },
