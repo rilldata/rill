@@ -554,14 +554,9 @@ func (c *connection) reopenDB(ctx context.Context) error {
 			return err
 		}
 
-		secretDir, err := c.storage.DataDir("secrets")
-		if err != nil {
-			return err
-		}
 		dbInitQueries = append(dbInitQueries,
 			"SET GLOBAL preserve_insertion_order TO false",
 			fmt.Sprintf("SET extension_directory=%s", safeSQLString(extensionDir)),
-			fmt.Sprintf("SET secret_directory=%s", safeSQLString(secretDir)),
 		)
 	}
 
