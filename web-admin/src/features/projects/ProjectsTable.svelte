@@ -1,61 +1,38 @@
 <script lang="ts">
   import type { V1Project } from "@rilldata/web-admin/client";
-  import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
-  import ResourceListEmptyState from "@rilldata/web-admin/features/resources/ResourceListEmptyState.svelte";
-  import CloudIcon from "@rilldata/web-common/components/icons/CloudIcon.svelte";
-  import { renderComponent } from "tanstack-table-8-svelte-5";
-  import ProjectsTableCompositeCell from "./ProjectsTableCompositeCell.svelte";
+  import ProjectsTableRow from "./ProjectsTableRow.svelte";
 
   export let organization: string;
   export let projects: V1Project[];
-
-  const columns = [
-    {
-      id: "composite",
-      cell: ({ row }) => {
-        const project = row.original as V1Project;
-        return renderComponent(ProjectsTableCompositeCell, {
-          organization,
-          project: project.name ?? "",
-          description: project.description ?? "",
-          isPublic: !!project.public,
-          updatedOn: project.updatedOn,
-        });
-      },
-    },
-    {
-      id: "name",
-      accessorFn: (row: V1Project) => row.name,
-    },
-    {
-      id: "description",
-      accessorFn: (row: V1Project) => row.description ?? "",
-    },
-    {
-      id: "updatedOn",
-      accessorFn: (row: V1Project) => row.updatedOn,
-    },
-  ];
-
-  const columnVisibility = {
-    name: false,
-    description: false,
-    updatedOn: false,
-  };
-
-  const initialSorting = [{ id: "name", desc: false }];
 </script>
 
-<ResourceList
-  kind="project"
-  data={projects}
-  {columns}
-  {columnVisibility}
-  {initialSorting}
->
-  <ResourceListEmptyState
-    slot="empty"
-    icon={CloudIcon}
-    message="You don't have any projects yet"
-  />
-</ResourceList>
+<div class="w-full">
+  <div class="row row-head">
+    <div class="cell text-fg-muted text-sm font-medium">Project name</div>
+    <div class="cell text-fg-muted text-sm font-medium">Status</div>
+    <div class="cell text-fg-muted text-sm font-medium">Permission</div>
+    <div class="cell text-fg-muted text-sm font-medium">Your role</div>
+  </div>
+  {#each projects as proj (proj.name)}
+    <ProjectsTableRow
+      {organization}
+      project={proj.name ?? ""}
+      isPublic={!!proj.public}
+    />
+  {/each}
+</div>
+
+<style lang="postcss">
+  .row {
+    @apply grid items-center w-full border-b border-border;
+    grid-template-columns: minmax(0, 1fr) 200px 200px 200px;
+  }
+
+  .row-head {
+    @apply h-10;
+  }
+
+  .cell {
+    @apply px-2 min-w-0;
+  }
+</style>

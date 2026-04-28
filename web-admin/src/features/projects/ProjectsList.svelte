@@ -1,92 +1,122 @@
 <script lang="ts">
-  import { createAdminServiceListProjectsForOrganization } from "@rilldata/web-admin/client";
+  import {
+    createAdminServiceListProjectsForOrganization,
+    type V1Project,
+  } from "@rilldata/web-admin/client";
   import { Button } from "@rilldata/web-common/components/button";
+  import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
+  import type {
+    FilterGroup,
+    SortDirection,
+    ViewMode,
+  } from "@rilldata/web-common/components/table-toolbar";
   import { projectWelcomeEnabled } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { LayoutGrid, List } from "lucide-svelte";
+  import { Plus } from "lucide-svelte";
   import ProjectCards from "./ProjectCards.svelte";
   import ProjectsTable from "./ProjectsTable.svelte";
 
   export let organization: string;
 
-  type View = "grid" | "list";
-  let view: View = "grid";
+  let viewMode: ViewMode = "grid";
+  let searchText = "";
+  let sortDirection: SortDirection = "newest";
+  let permissionSelected: string[] = [];
 
   $: projs = createAdminServiceListProjectsForOrganization(organization, {
     pageSize: 1000,
   });
   $: projects = $projs.data?.projects ?? [];
+
+  $: filterGroups = [
+    {
+      label: "Permission",
+      key: "permission",
+      options: [
+        { value: "public", label: "Public" },
+        { value: "private", label: "Private" },
+      ],
+      selected: permissionSelected,
+      defaultValue: [],
+      multiSelect: true,
+    },
+  ] satisfies FilterGroup[];
+
+  function onFilterChange(key: string, selected: string | string[]) {
+    if (key === "permission") permissionSelected = selected as string[];
+  }
+
+  function onClearAllFilters() {
+    permissionSelected = [];
+    searchText = "";
+  }
+
+  function matchesSearch(p: V1Project, q: string): boolean {
+    if (!q) return true;
+    const needle = q.toLowerCase();
+    return (
+      (p.name ?? "").toLowerCase().includes(needle) ||
+      (p.description ?? "").toLowerCase().includes(needle)
+    );
+  }
+
+  function matchesPermission(p: V1Project, selected: string[]): boolean {
+    if (selected.length === 0) return true;
+    const isPublic = !!p.public;
+    return (
+      (isPublic && selected.includes("public")) ||
+      (!isPublic && selected.includes("private"))
+    );
+  }
+
+  function compareByUpdated(a: V1Project, b: V1Project, dir: SortDirection) {
+    const aTime = a.updatedOn ? new Date(a.updatedOn).getTime() : 0;
+    const bTime = b.updatedOn ? new Date(b.updatedOn).getTime() : 0;
+    return dir === "newest" ? bTime - aTime : aTime - bTime;
+  }
+
+  $: visibleProjects = projects
+    .filter(
+      (p) =>
+        matchesSearch(p, searchText) &&
+        matchesPermission(p, permissionSelected),
+    )
+    .sort((a, b) => compareByUpdated(a, b, sortDirection));
 </script>
 
-<div class="flex flex-col gap-y-4">
-  <div
-    class="flex flex-row items-center text-fg-secondary text-base font-normal leading-normal"
-  >
-    <span class="grow">Check out your projects below.</span>
-    <div class="flex items-center gap-x-2">
-      <div
-        class="flex items-center rounded-md border border-gray-200 dark:border-gray-700 p-0.5"
-        role="group"
-        aria-label="View toggle"
-      >
-        <Tooltip distance={8}>
-          <button
-            type="button"
-            class="view-toggle-btn"
-            class:active={view === "grid"}
-            aria-pressed={view === "grid"}
-            aria-label="Grid view"
-            on:click={() => (view = "grid")}
-          >
-            <LayoutGrid size="14" />
-          </button>
-          <TooltipContent slot="tooltip-content">Grid view</TooltipContent>
-        </Tooltip>
-        <Tooltip distance={8}>
-          <button
-            type="button"
-            class="view-toggle-btn"
-            class:active={view === "list"}
-            aria-pressed={view === "list"}
-            aria-label="List view"
-            on:click={() => (view = "list")}
-          >
-            <List size="14" />
-          </button>
-          <TooltipContent slot="tooltip-content">List view</TooltipContent>
-        </Tooltip>
-      </div>
-      {#if projectWelcomeEnabled}
-        <Button type="primary" href="/{organization}/-/create-project">
-          Create new
-        </Button>
-      {/if}
-    </div>
+<div class="flex flex-col gap-y-2 w-full">
+  <div class="flex items-center h-16">
+    <h2 class="grow text-2xl font-semibold text-fg-secondary leading-9">
+      Projects
+    </h2>
+    {#if projectWelcomeEnabled}
+      <Button type="secondary" href="/{organization}/-/create-project">
+        <Plus size="16" />
+        New project
+      </Button>
+    {/if}
   </div>
+
+  <TableToolbar
+    bind:searchText
+    bind:sortDirection
+    bind:viewMode
+    showViewToggle
+    {filterGroups}
+    {onFilterChange}
+    {onClearAllFilters}
+  />
 
   {#if projects.length === 0}
     <p class="text-fg-secondary text-xs">
       This organization has no projects yet.
     </p>
-  {:else if view === "grid"}
-    <ProjectCards {organization} {projects} />
+  {:else if visibleProjects.length === 0}
+    <p class="text-fg-secondary text-sm py-4">
+      No projects match your filters.
+    </p>
+  {:else if viewMode === "grid"}
+    <ProjectCards {organization} projects={visibleProjects} />
   {:else}
-    <ProjectsTable {organization} {projects} />
+    <ProjectsTable {organization} projects={visibleProjects} />
   {/if}
 </div>
-
-<style lang="postcss">
-  .view-toggle-btn {
-    @apply flex items-center justify-center px-2 py-1 rounded text-fg-secondary;
-    @apply transition-colors;
-  }
-
-  .view-toggle-btn:hover {
-    @apply bg-surface-hover text-fg-primary;
-  }
-
-  .view-toggle-btn.active {
-    @apply bg-surface-active text-fg-primary;
-  }
-</style>
