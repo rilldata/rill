@@ -1,29 +1,55 @@
 <script lang="ts">
-  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
+  import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import GraphCanvas from "../graph-canvas/GraphCanvas.svelte";
   import GraphOverlay from "./GraphOverlay.svelte";
   import {
     partitionResourcesByMetrics,
     partitionResourcesBySeeds,
+    buildResourceGraph,
     type ResourceGraphGrouping,
   } from "../graph-canvas/graph-builder";
+  import type { Edge, Node } from "@xyflow/svelte";
   import {
     coerceResourceKind,
     ResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
+  import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
   import {
+    ALLOWED_FOR_GRAPH,
     expandSeedsByKind,
     isKindToken,
+    normalizeSeed,
     tokenForKind,
     tokenForSeedString,
+    type KindToken,
   } from "../navigation/seed-parser";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
   import { copyWithAdditionalArguments } from "@rilldata/web-common/lib/url-utils";
-  import SummaryGraph from "../summary/SummaryGraph.svelte";
+  import ResourceNodeSelector from "../summary/ResourceNodeSelector.svelte";
   import { onDestroy } from "svelte";
-  import { UI_CONFIG, FIT_VIEW_CONFIG } from "../shared/config";
+  import {
+    UI_CONFIG,
+    FIT_VIEW_CONFIG,
+    PERFORMANCE_CONFIG,
+    RESOURCE_SECTION_ORDER,
+    RESOURCE_SECTION_LABELS,
+  } from "../shared/config";
+  import type {
+    ResourceNodeData,
+    ResourceStatusFilter,
+    ResourceStatusFilterValue,
+  } from "../shared/types";
+  import { getResourceStatus } from "../shared/resource-status";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
+  import Search from "@rilldata/web-common/components/search/Search.svelte";
+  import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
+  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
 
   export let resources: V1Resource[] | undefined;
   export let isLoading = false;
@@ -35,6 +61,12 @@
   export let maxGroups: number | null = null;
   export let showControls = true;
   export let enableExpansion = true;
+  export let searchQuery = "";
+  export let statusFilter: ResourceStatusFilter = [];
+  export let showNodeActions = true;
+  export let showIsolatedResources = false;
+  export let onShowIsolatedChange: ((value: boolean) => void) | null = null;
+  $: onShowIsolatedChange?.(showIsolatedResources);
 
   // New props for modularity
   export let onExpandedChange: ((id: string | null) => void) | null = null;
@@ -44,27 +76,41 @@
   export let expandedHeightMobile: string = UI_CONFIG.EXPANDED_HEIGHT_MOBILE;
   export let expandedHeightDesktop: string = UI_CONFIG.EXPANDED_HEIGHT_DESKTOP;
 
+  // Sidebar layout mode
+  export let layout: "grid" | "sidebar" = "grid";
+  export let selectedGroupId: string | null = null;
+  export let onSelectedGroupChange: ((id: string | null) => void) | null = null;
+
+  // Toolbar callbacks (sidebar layout)
+  export let onRefreshAll: (() => void) | null = null;
+  export let statusFilterOptions: {
+    label: string;
+    value: ResourceStatusFilterValue;
+  }[] = [];
+  export let onStatusToggle:
+    | ((value: ResourceStatusFilterValue) => void)
+    | null = null;
+  export let onClearFilters: (() => void) | null = null;
+  export let onSelectAll: (() => void) | null = null;
+  export let hasUrlFilters = false;
+  export let flushToolbar = false;
+  export let showTitle = true;
+
   type SummaryMemo = {
-    connectors: number;
+    connector: number;
     sources: number;
-    metrics: number;
     models: number;
+    metrics: number;
     dashboards: number;
     resources: V1Resource[];
-    activeToken:
-      | "connectors"
-      | "metrics"
-      | "sources"
-      | "models"
-      | "dashboards"
-      | null;
+    activeToken: KindToken | null;
   };
   function summaryEquals(a: SummaryMemo, b: SummaryMemo) {
     return (
-      a.connectors === b.connectors &&
+      a.connector === b.connector &&
       a.sources === b.sources &&
-      a.metrics === b.metrics &&
       a.models === b.models &&
+      a.metrics === b.metrics &&
       a.dashboards === b.dashboards &&
       a.resources === b.resources &&
       a.activeToken === b.activeToken
@@ -76,6 +122,9 @@
   export let fitViewMinZoom: number = FIT_VIEW_CONFIG.MIN_ZOOM;
   export let fitViewMaxZoom: number = FIT_VIEW_CONFIG.MAX_ZOOM;
 
+  // Track container width for dynamic multi-tree row wrapping
+  let sidebarMainWidth = 0;
+
   $: normalizedResources = resources ?? [];
   $: normalizedSeeds = expandSeedsByKind(
     seeds,
@@ -83,9 +132,19 @@
     coerceResourceKind,
   );
 
+  // Derive active resource ID for the node selector dropdown.
+  // If there's exactly one non-kind-token seed, use its fully qualified ID.
+  $: activeResourceIdForSelector = (function (): string | null {
+    if (!normalizedSeeds || normalizedSeeds.length !== 1) return null;
+    const first = normalizedSeeds[0];
+    if (typeof first === "string") return null;
+    return first.kind && first.name ? `${first.kind}:${first.name}` : null;
+  })();
+
   // Determine if we're filtering by a specific kind (e.g., ?kind=metrics)
   // This is used to filter out groups that don't contain any resource of the filtered kind
-  $: filterKind = (function (): ResourceKind | undefined {
+  // Special case: "dashboards" includes both Explore and Canvas
+  $: filterKind = (function (): ResourceKind | "dashboards" | undefined {
     const rawSeeds = seeds ?? [];
     // Only apply kind filter if all seeds are kind tokens (e.g., ["metrics"] or ["sources"])
     if (rawSeeds.length === 0) return undefined;
@@ -93,19 +152,28 @@
       const kind = isKindToken((raw || "").toLowerCase());
       if (!kind) return undefined; // Mixed seeds, no single kind filter
     }
+    // Check if it's the dashboards token (which includes both Explore and Canvas)
+    const firstSeed = (rawSeeds[0] || "").toLowerCase();
+    if (firstSeed === "dashboards" || firstSeed === "dashboard") {
+      return "dashboards"; // Special token to indicate both Explore and Canvas
+    }
     // All seeds are kind tokens - return the first one's kind
-    return isKindToken((rawSeeds[0] || "").toLowerCase());
+    return isKindToken(firstSeed);
   })();
 
   // Determine which overview node should be highlighted based on current seeds
-  $: overviewActiveToken = (function ():
-    | "connectors"
-    | "metrics"
-    | "sources"
-    | "models"
-    | "dashboards"
-    | null {
+  // For Canvas with MetricsView seeds, prioritize the Canvas token (dashboards) over MetricsView tokens
+  $: overviewActiveToken = (function (): KindToken | null {
     const rawSeeds = seeds ?? [];
+
+    // Check the first seed first - this should be the anchor resource (e.g., Canvas)
+    // This ensures Canvas/Explore tokens are prioritized over MetricsView tokens
+    if (rawSeeds.length > 0) {
+      const firstToken = tokenForSeedString(rawSeeds[0]);
+      if (firstToken) return firstToken;
+    }
+
+    // Fall back to checking all seeds if first seed didn't yield a token
     for (const raw of rawSeeds) {
       const token = tokenForSeedString(raw);
       if (token) return token;
@@ -123,23 +191,411 @@
     return null;
   })();
 
-  $: resourceGroups =
-    normalizedSeeds && normalizedSeeds.length
+  // Detect sprawl mode: seeds contain only a single kind token ("dashboards" or "metrics")
+  // and no specific resource is selected via controlled prop
+  $: sprawlSeed = (() => {
+    if (selectedGroupId) return null;
+    const rawSeeds = seeds ?? [];
+    if (rawSeeds.length !== 1) return null;
+    const s = rawSeeds[0]?.toLowerCase();
+    if (s === "dashboards" || s === "metrics") return s;
+    return null;
+  })();
+  $: isSprawlMode = !!sprawlSeed;
+
+  // Trees for sprawl mode: use seed-based (directed) partitioning so each
+  // metrics view / dashboard gets its own independent tree. This allows
+  // status filtering to hide/show individual trees correctly.
+  $: sprawlTreeGroups = (() => {
+    if (!isSprawlMode) return [];
+    const seedKind =
+      sprawlSeed === "dashboards"
+        ? ResourceKind.Explore
+        : ResourceKind.MetricsView;
+    // Build one seed per anchor resource of the relevant kind
+    const anchorSeeds: { kind: string; name: string }[] = [];
+    for (const r of normalizedResources) {
+      const kind = coerceResourceKind(r);
+      if (sprawlSeed === "dashboards") {
+        if (kind !== ResourceKind.Explore && kind !== ResourceKind.Canvas)
+          continue;
+      } else {
+        if (kind !== seedKind) continue;
+      }
+      if (r.meta?.hidden) continue;
+      const name = r.meta?.name?.name;
+      const rKind = r.meta?.name?.kind;
+      if (!name || !rKind) continue;
+      anchorSeeds.push({ kind: rKind, name });
+    }
+    // Fall back to MetricsView anchors when no dashboards exist yet
+    if (!anchorSeeds.length && sprawlSeed === "dashboards") {
+      for (const r of normalizedResources) {
+        const kind = coerceResourceKind(r);
+        if (kind !== ResourceKind.MetricsView) continue;
+        if (r.meta?.hidden) continue;
+        const name = r.meta?.name?.name;
+        const rKind = r.meta?.name?.kind;
+        if (!name || !rKind) continue;
+        anchorSeeds.push({ kind: rKind, name });
+      }
+    }
+    if (!anchorSeeds.length) return [];
+    return partitionResourcesBySeeds(normalizedResources, anchorSeeds);
+  })();
+
+  // If seeds were provided (e.g., kind filter like "models"), use seed-based partitioning.
+  // When the kind has no resources, normalizedSeeds will be empty — return [] instead of
+  // falling back to partitionResourcesByMetrics, which would show unrelated metric views.
+  $: hasExplicitSeeds = seeds && seeds.length > 0;
+  $: resourceGroups = isSprawlMode
+    ? sprawlTreeGroups
+    : normalizedSeeds && normalizedSeeds.length
       ? partitionResourcesBySeeds(
           normalizedResources,
           normalizedSeeds,
           filterKind,
         )
-      : partitionResourcesByMetrics(normalizedResources);
+      : hasExplicitSeeds
+        ? []
+        : partitionResourcesByMetrics(normalizedResources);
+
+  // Compute IDs of all resources reachable upstream from dashboard anchors.
+  // Only follows refs (dependencies), not reverse refs, so orphaned resources
+  // sharing a connector with a dashboard tree are correctly excluded.
+  $: dashboardConnectedIds = (() => {
+    const idToResource = new Map<string, V1Resource>();
+    // Fallback name index: refs may surface with `kind === undefined` while
+    // the runtime is still inferring (e.g., a metrics view's `model:` field).
+    // We resolve those by name when the name is unambiguous.
+    const nameToId = new Map<string, string | null>();
+    for (const r of normalizedResources) {
+      const name = r.meta?.name?.name;
+      if (!name) continue;
+      const id = `${r.meta?.name?.kind}:${name}`;
+      idToResource.set(id, r);
+      nameToId.set(name, nameToId.has(name) ? null : id);
+    }
+
+    const resolveRef = (ref: {
+      kind?: string;
+      name?: string;
+    }): string | undefined => {
+      if (!ref?.name) return undefined;
+      const direct = `${ref.kind}:${ref.name}`;
+      if (idToResource.has(direct)) return direct;
+      const fallback = nameToId.get(ref.name);
+      return fallback ?? undefined;
+    };
+
+    const connected = new Set<string>();
+    const queue: string[] = [];
+    for (const r of normalizedResources) {
+      const kind = coerceResourceKind(r);
+      if (
+        kind === ResourceKind.Explore ||
+        kind === ResourceKind.Canvas ||
+        kind === ResourceKind.MetricsView
+      ) {
+        queue.push(`${r.meta?.name?.kind}:${r.meta?.name?.name}`);
+      }
+    }
+
+    while (queue.length) {
+      const id = queue.pop()!;
+      if (connected.has(id)) continue;
+      connected.add(id);
+      const r = idToResource.get(id);
+      for (const ref of r?.meta?.refs ?? []) {
+        const refId = resolveRef(ref);
+        if (refId && !connected.has(refId)) queue.push(refId);
+      }
+    }
+
+    return connected;
+  })();
+
+  // Filter groups by search query and status
+  $: filteredResourceGroups = (() => {
+    let groups = resourceGroups;
+
+    // Filter by external search query (matches resource names)
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      groups = groups.filter((group) =>
+        group.resources.some((r) =>
+          r.meta?.name?.name?.toLowerCase().includes(query),
+        ),
+      );
+    }
+
+    // Filter by toolbar search (matches resource names within trees)
+    if (treeSearchQuery.trim()) {
+      const query = treeSearchQuery.toLowerCase().trim();
+      groups = groups.filter((group) =>
+        group.resources.some((r) =>
+          r.meta?.name?.name?.toLowerCase().includes(query),
+        ),
+      );
+    }
+
+    // Filter trees by status: show full tree if any resource in it matches
+    if (statusFilter.length > 0) {
+      groups = groups.filter((group) =>
+        group.resources.some((r) =>
+          statusFilter.includes(getResourceStatus(r)),
+        ),
+      );
+    }
+
+    // Hide isolated resources (not reachable from any Explore/Canvas/MetricsView)
+    if (!showIsolatedResources) {
+      groups = groups
+        .map((group) => ({
+          ...group,
+          resources: group.resources.filter((r) => {
+            const id = `${r.meta?.name?.kind}:${r.meta?.name?.name}`;
+            return dashboardConnectedIds.has(id);
+          }),
+        }))
+        .filter((group) => group.resources.length > 0);
+    }
+
+    return groups;
+  })();
+
+  // Build combined layout for sprawl mode: merge all filtered groups'
+  // resources into one graph so shared nodes (metrics views, models) appear
+  // once and naturally connect the trees together.
+  $: sprawlLayout = (() => {
+    if (!isSprawlMode || !filteredResourceGroups.length) return null;
+    const seen = new Set<string>();
+    const merged: V1Resource[] = [];
+    for (const group of filteredResourceGroups) {
+      for (const r of group.resources) {
+        const id = `${r.meta?.name?.kind}:${r.meta?.name?.name}`;
+        if (seen.has(id)) continue;
+        seen.add(id);
+        merged.push(r);
+      }
+    }
+    return buildResourceGraph(merged, {
+      positionNs: "sprawl",
+      ignoreCache: true,
+    });
+  })() as { nodes: Node<ResourceNodeData>[]; edges: Edge[] } | null;
+
   $: visibleResourceGroups =
     typeof maxGroups === "number" && maxGroups >= 0
-      ? resourceGroups.slice(0, maxGroups)
-      : resourceGroups;
+      ? filteredResourceGroups.slice(0, maxGroups)
+      : filteredResourceGroups;
   $: hasGraphs = visibleResourceGroups.length > 0;
+
+  // Whether any filters are active (URL params, status, or tree search)
+  $: hasActiveFilters =
+    hasUrlFilters ||
+    statusFilter.length > 0 ||
+    treeSearchQuery.trim().length > 0;
+
+  function handleClearFilters() {
+    treeSearchQuery = "";
+    onClearFilters?.();
+  }
+
+  // --- Sidebar selection state ---
+  function handleSearchComboBlur(e: FocusEvent) {
+    const related = e.relatedTarget as globalThis.Node | null;
+    if (!(e.currentTarget as globalThis.Node)?.contains(related)) {
+      resourceDropdownOpen = false;
+    }
+  }
+
+  let resourceDropdownOpen = false;
+  let statusDropdownOpen = false;
+  let treeSearchQuery = "";
+
+  // Sync search bar with URL-selected resource on initial navigation
+  let lastSyncedGroupId: string | null = null;
+  $: if (selectedGroupId && selectedGroupId !== lastSyncedGroupId) {
+    // Extract short name from group ID (e.g. "rill.runtime.v1.Model:orders" -> "orders")
+    const name = selectedGroupId.includes(":")
+      ? (selectedGroupId.split(":").pop() ?? selectedGroupId)
+      : selectedGroupId;
+    treeSearchQuery = name;
+    lastSyncedGroupId = selectedGroupId;
+  }
+
+  // All resources organized by kind for the tree dropdown
+  type ResourceDropdownEntry = {
+    name: string;
+    kind: ResourceKind;
+    status: "ok" | "pending" | "warning" | "errored";
+  };
+  type ResourceDropdownSection = {
+    kind: ResourceKind;
+    label: string;
+    entries: ResourceDropdownEntry[];
+  };
+
+  $: allResourceSections = (function (): ResourceDropdownSection[] {
+    const grouped = new Map<ResourceKind, ResourceDropdownEntry[]>();
+
+    for (const r of normalizedResources) {
+      const kind = coerceResourceKind(r);
+      if (!kind || !ALLOWED_FOR_GRAPH.has(kind)) continue;
+      if (r.meta?.hidden && kind !== ResourceKind.Connector) continue;
+      const name = r.meta?.name?.name;
+      if (!name) continue;
+
+      const entries = grouped.get(kind) ?? [];
+      entries.push({ name, kind, status: getResourceStatus(r) });
+      grouped.set(kind, entries);
+    }
+
+    const result: ResourceDropdownSection[] = [];
+    for (const kind of RESOURCE_SECTION_ORDER) {
+      const entries = grouped.get(kind);
+      if (!entries?.length) continue;
+      entries.sort((a, b) => a.name.localeCompare(b.name));
+      result.push({
+        kind,
+        label: RESOURCE_SECTION_LABELS[kind] ?? kind,
+        entries,
+      });
+    }
+    return result;
+  })();
+
+  function handleResourceSelect(entry: ResourceDropdownEntry) {
+    const groupId = `${entry.kind}:${entry.name}`;
+    internalSelectedGroupId = groupId;
+    onSelectedGroupChange?.(groupId);
+  }
+
+  function handleSelectAll() {
+    if (onSelectAll) {
+      onSelectAll();
+    } else {
+      // Fallback: select the first connector entry (shows full DAG)
+      const connectorSection = allResourceSections.find(
+        (s) => s.kind === ResourceKind.Connector,
+      );
+      if (connectorSection?.entries[0]) {
+        handleResourceSelect(connectorSection.entries[0]);
+      }
+    }
+  }
+
+  let internalSelectedGroupId: string | null = null;
+
+  // Resolve selectedGroupId (which may be a short name like "orders") to a
+  // fully qualified group ID (like "rill.runtime.v1.MetricsView:orders")
+  function resolveGroupId(
+    id: string | null,
+    groups: ResourceGraphGrouping[],
+  ): string | null {
+    if (!id) return null;
+    // Exact match
+    if (groups.some((g) => g.id === id)) return id;
+    // Match by name suffix (group.id = "rill.runtime.v1.Kind:name")
+    const match = groups.find((g) => g.id.endsWith(`:${id}`));
+    if (match) return match.id;
+    // Try normalizing shorthand format (e.g., "model:name" → "rill.runtime.v1.Model:name")
+    if (id.includes(":")) {
+      const normalized = normalizeSeed(id);
+      if (
+        typeof normalized !== "string" &&
+        normalized.kind &&
+        normalized.name
+      ) {
+        const fqId = `${normalized.kind}:${normalized.name}`;
+        const fqMatch = groups.find((g) => g.id === fqId);
+        if (fqMatch) return fqMatch.id;
+      }
+    }
+    // Match by label
+    const labelMatch = groups.find((g) => g.label === id);
+    return labelMatch?.id ?? null;
+  }
+
+  // Resolve controlled prop separately to avoid cyclical dependency
+  $: resolvedControlledId = resolveGroupId(
+    selectedGroupId,
+    filteredResourceGroups,
+  );
+
+  // Auto-select first group when none selected.
+  // Uses internal state only — never calls onSelectedGroupChange, so the URL
+  // stays clean until the user explicitly clicks a resource.
+  $: if (
+    layout === "sidebar" &&
+    !resolvedControlledId &&
+    !internalSelectedGroupId &&
+    filteredResourceGroups.length > 0
+  ) {
+    internalSelectedGroupId = filteredResourceGroups[0].id;
+  }
+
+  // Fallback when selected group is removed by filters
+  $: if (
+    layout === "sidebar" &&
+    (resolvedControlledId || internalSelectedGroupId) &&
+    !filteredResourceGroups.some(
+      (g) => g.id === resolvedControlledId || g.id === internalSelectedGroupId,
+    )
+  ) {
+    internalSelectedGroupId = filteredResourceGroups[0]?.id ?? null;
+  }
+
+  // Effective selected ID: controlled (URL) takes precedence, falls back to internal
+  $: effectiveSelectedGroupId = resolvedControlledId ?? internalSelectedGroupId;
+
+  $: selectedGroup =
+    layout === "sidebar"
+      ? (filteredResourceGroups.find(
+          (g) => g.id === effectiveSelectedGroupId,
+        ) ?? null)
+      : null;
+
+  $: selectedGroupIsConnector =
+    effectiveSelectedGroupId?.includes("Connector") ?? false;
 
   // Brief loading indicator when URL seeds change (e.g., via Overview node clicks)
   let seedTransitionLoading = false;
   let seedTransitionTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // Lazy rendering: only mount GraphCanvas when grid item is near the viewport.
+  // Uses IntersectionObserver with a generous rootMargin so graphs mount before
+  // the user scrolls to them, avoiding visible pop-in.
+  const LAZY_ROOT_MARGIN = "200px";
+  let visibleGroupIds = new Set<string>();
+  let prevGroupIdKey = "";
+
+  function lazyObserve(node: HTMLElement, groupId: string) {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !visibleGroupIds.has(groupId)) {
+          visibleGroupIds = new Set([...visibleGroupIds, groupId]);
+        }
+      },
+      { rootMargin: LAZY_ROOT_MARGIN },
+    );
+    observer.observe(node);
+    return {
+      destroy() {
+        observer.disconnect();
+      },
+    };
+  }
+
+  // Reset visible set only when the set of group IDs changes (not on resource-content updates)
+  $: {
+    const key = visibleResourceGroups.map((g) => g.id).join(",");
+    if (key !== prevGroupIdKey) {
+      prevGroupIdKey = key;
+      visibleGroupIds = new Set<string>();
+    }
+  }
 
   // Cleanup timer on component destroy
   onDestroy(() => {
@@ -153,7 +609,7 @@
   // We compute directly in a single pass rather than using filter().length for performance.
   // This is more efficient (O(n) instead of O(4n)) and clearer in intent.
   $: ({
-    connectorsCount,
+    connectorCount,
     sourcesCount,
     modelsCount,
     metricsCount,
@@ -165,17 +621,19 @@
       metrics = 0,
       dashboards = 0;
     for (const r of normalizedResources) {
-      if (r?.meta?.hidden) continue;
       const k = coerceResourceKind(r);
       if (!k) continue;
+      // Allow connectors even if hidden; GraphContainer pre-filters to OLAP only
+      if (r?.meta?.hidden && k !== ResourceKind.Connector) continue;
       if (k === ResourceKind.Connector) connectors++;
       else if (k === ResourceKind.Source) sources++;
       else if (k === ResourceKind.Model) models++;
       else if (k === ResourceKind.MetricsView) metrics++;
-      else if (k === ResourceKind.Explore) dashboards++;
+      else if (k === ResourceKind.Explore || k === ResourceKind.Canvas)
+        dashboards++;
     }
     return {
-      connectorsCount: connectors,
+      connectorCount: connectors,
       sourcesCount: sources,
       modelsCount: models,
       metricsCount: metrics,
@@ -184,11 +642,11 @@
   })());
 
   // Memoization wrapper for summary data to avoid Svelte reactivity issues with Set/object equality.
-  // Without this, the SummaryGraph component would re-render on every resource array change
+  // Without this, the kind selector would re-render on every resource array change
   // even if counts haven't actually changed. The summaryEquals function does shallow comparison
   // of counts while checking resources array reference equality.
   let summaryMemo: SummaryMemo = {
-    connectors: 0,
+    connector: 0,
     sources: 0,
     models: 0,
     metrics: 0,
@@ -198,10 +656,10 @@
   };
   $: {
     const nextSummary: SummaryMemo = {
-      connectors: connectorsCount,
+      connector: connectorCount,
       sources: sourcesCount,
-      metrics: metricsCount,
       models: modelsCount,
+      metrics: metricsCount,
       dashboards: dashboardsCount,
       resources: normalizedResources,
       activeToken: overviewActiveToken,
@@ -272,6 +730,9 @@
     ? $page.url.searchParams.get("expanded") || null
     : null;
 
+  // Inspect panel state is scoped per GraphCanvas instance via Svelte context.
+  // URL changes cause the graph to re-render, which naturally resets the panel.
+
   // When the page URL actually changes (e.g., navigation), clear any manual override.
   $: if (syncExpandedParam) {
     const currentUrlString = $page.url.toString();
@@ -293,15 +754,20 @@
 
   // Auto-expand logic when seeds change
   $: {
-    const signature = (seeds ?? []).join("|");
+    const signature = JSON.stringify(seeds ?? []);
     if (signature !== lastSeedsSignature) {
-      // Show a short loading state to indicate graphs are updating
-      seedTransitionLoading = true;
-      if (seedTransitionTimer) clearTimeout(seedTransitionTimer);
-      seedTransitionTimer = setTimeout(
-        () => (seedTransitionLoading = false),
-        500,
-      );
+      // Show a short loading state to indicate graphs are updating.
+      // Skip the transition on the very first render (lastSeedsSignature is "")
+      // to avoid a 500ms blank screen on initial page load.
+      const isFirstRender = lastSeedsSignature === "";
+      if (!isFirstRender) {
+        seedTransitionLoading = true;
+        if (seedTransitionTimer) clearTimeout(seedTransitionTimer);
+        seedTransitionTimer = setTimeout(
+          () => (seedTransitionLoading = false),
+          PERFORMANCE_CONFIG.SEED_TRANSITION_DELAY_MS,
+        );
+      }
 
       lastSeedsSignature = signature;
 
@@ -413,40 +879,231 @@
   class="graph-root"
   style={`--graph-expanded-height-mobile:${expandedHeightMobile};--graph-expanded-height-desktop:${expandedHeightDesktop};`}
 >
-  {#if showSummary && currentExpandedId === null}
-    <slot
-      name="summary"
-      connectors={connectorsCount}
-      sources={sourcesCount}
-      {metricsCount}
-      {modelsCount}
-      dashboards={dashboardsCount}
+  {#if layout === "sidebar"}
+    <!-- Sidebar layout: toolbar always visible, content varies -->
+    {#if showTitle}
+      <h2
+        class="graph-title"
+        class:nav-collapsed={!$navigationOpen}
+        class:flush-toolbar={flushToolbar}
+      >
+        Resource Graph (DAG)
+      </h2>
+    {/if}
+    <div
+      class="graph-toolbar-bar"
+      class:nav-collapsed={!$navigationOpen}
+      class:flush-toolbar={flushToolbar}
     >
-      <div class="top-summary">
-        <SummaryGraph
-          connectors={summaryMemo.connectors}
-          sources={summaryMemo.sources}
-          metrics={summaryMemo.metrics}
-          models={summaryMemo.models}
-          dashboards={summaryMemo.dashboards}
-          resources={summaryMemo.resources}
-          activeToken={summaryMemo.activeToken}
+      <!-- Search combo: input + resource dropdown -->
+      <div
+        class="search-combo"
+        onfocusin={() => (resourceDropdownOpen = true)}
+        onfocusout={handleSearchComboBlur}
+      >
+        <Search
+          bind:value={treeSearchQuery}
+          placeholder="Search all resources"
+          large
+          autofocus={false}
+          showBorderOnFocus={false}
+          retainValueOnMount
+          onSubmit={() => (resourceDropdownOpen = false)}
         />
+        {#if resourceDropdownOpen}
+          <div class="search-combo-dropdown">
+            <div class="tree-dropdown-list">
+              <button
+                class="combo-item {selectedGroupIsConnector
+                  ? 'font-semibold'
+                  : ''}"
+                onmousedown={(e) => e.preventDefault()}
+                onclick={() => {
+                  treeSearchQuery = "";
+                  handleSelectAll();
+                  resourceDropdownOpen = false;
+                }}
+              >
+                <span class="flex-1 truncate text-xs">All Resource Trees</span>
+              </button>
+              {#each allResourceSections as section (section.kind)}
+                <div class="combo-separator"></div>
+                <div class="section-header">
+                  <ResourceTypeBadge kind={section.kind} />
+                  <span class="text-[10px] text-fg-muted"
+                    >{section.entries.length}</span
+                  >
+                </div>
+                {#each section.entries as entry (entry.name)}
+                  {@const entryId = `${entry.kind}:${entry.name}`}
+                  <button
+                    class="combo-item {effectiveSelectedGroupId === entryId
+                      ? 'font-semibold'
+                      : ''}"
+                    onmousedown={(e) => e.preventDefault()}
+                    onclick={() => {
+                      treeSearchQuery = entry.name;
+                      handleResourceSelect(entry);
+                      resourceDropdownOpen = false;
+                    }}
+                  >
+                    <svelte:component
+                      this={resourceIconMapping[entry.kind]}
+                      size="12px"
+                    />
+                    <span class="flex-1 truncate text-xs">
+                      {entry.name}
+                    </span>
+                    <span class="status-dot {entry.status}"></span>
+                  </button>
+                {/each}
+              {/each}
+              {#if allResourceSections.length === 0}
+                <div class="px-3 py-2 text-xs text-fg-muted">
+                  No resources match.
+                </div>
+              {/if}
+            </div>
+          </div>
+        {/if}
       </div>
-      {#if hasGraphs}
-        <div class="graph-section-title">All Graphs</div>
-      {/if}
-    </slot>
-  {/if}
 
-  {#if error}
+      {#if statusFilterOptions.length > 0}
+        <DropdownMenu.Root bind:open={statusDropdownOpen}>
+          <DropdownMenu.Trigger
+            class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {statusDropdownOpen
+              ? 'bg-surface-hover'
+              : 'hover:bg-surface-hover'} px-2 py-1"
+          >
+            <span class="text-fg-secondary font-medium">
+              {#if statusFilter.length === 0}
+                All statuses
+              {:else if statusFilter.length === 1}
+                {statusFilterOptions.find((o) => o.value === statusFilter[0])
+                  ?.label ?? statusFilter[0]}
+              {:else}
+                {statusFilterOptions.find((o) => o.value === statusFilter[0])
+                  ?.label}, +{statusFilter.length - 1} other{statusFilter.length >
+                2
+                  ? "s"
+                  : ""}
+              {/if}
+            </span>
+            {#if statusDropdownOpen}
+              <CaretUpIcon size="12px" />
+            {:else}
+              <CaretDownIcon size="12px" />
+            {/if}
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content align="end" class="w-48">
+            {#each statusFilterOptions as opt (opt.value)}
+              <DropdownMenu.CheckboxItem
+                checked={statusFilter.includes(opt.value)}
+                onCheckedChange={() => onStatusToggle?.(opt.value)}
+              >
+                {opt.label}
+              </DropdownMenu.CheckboxItem>
+            {/each}
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
+      {/if}
+
+      <!-- svelte-ignore a11y-label-has-associated-control -->
+      <label
+        class="flex items-center gap-1.5 shrink-0 cursor-pointer select-none"
+      >
+        <Switch small bind:checked={showIsolatedResources} />
+        <span class="text-xs text-fg-secondary whitespace-nowrap">
+          Show isolated
+        </span>
+      </label>
+
+      {#if hasActiveFilters}
+        <button
+          class="shrink-0 text-sm text-primary-500 hover:text-primary-600 whitespace-nowrap"
+          onclick={handleClearFilters}
+        >
+          Clear
+        </button>
+      {/if}
+
+      {#if onRefreshAll}
+        <Button
+          type="secondary"
+          large
+          class="shrink-0 whitespace-nowrap"
+          onClick={onRefreshAll}
+        >
+          <span class="hidden lg:inline">Refresh all sources and models</span>
+          <span class="lg:hidden">Refresh all</span>
+        </Button>
+      {/if}
+    </div>
+    <div class="sidebar-main" bind:clientWidth={sidebarMainWidth}>
+      {#if error}
+        <div class="state error">
+          <p>{error}</p>
+        </div>
+      {:else if isLoading || seedTransitionLoading}
+        <div class="state">
+          <div class="loading-state">
+            <LoadingSpinner size="1.5rem" />
+            <p>
+              {isLoading ? "Loading project graph..." : "Updating graphs..."}
+            </p>
+          </div>
+        </div>
+      {:else if isSprawlMode && sprawlLayout}
+        <GraphCanvas
+          flowId="sprawl"
+          resources={normalizedResources}
+          precomputedNodes={sprawlLayout.nodes}
+          precomputedEdges={sprawlLayout.edges}
+          title={null}
+          titleLabel={null}
+          titleErrorCount={null}
+          anchorError={false}
+          {showControls}
+          {showNodeActions}
+          showLock={false}
+          fillParent={true}
+          enableExpand={false}
+          {fitViewPadding}
+          {fitViewMinZoom}
+          {fitViewMaxZoom}
+        />
+      {:else if selectedGroup}
+        <GraphCanvas
+          flowId={selectedGroup.id}
+          resources={selectedGroup.resources}
+          title={null}
+          titleLabel={null}
+          titleErrorCount={null}
+          anchorError={false}
+          rootNodeIds={groupRootNodeIds(selectedGroup)}
+          {showControls}
+          {showNodeActions}
+          showLock={false}
+          fillParent={true}
+          enableExpand={false}
+          {fitViewPadding}
+          {fitViewMinZoom}
+          {fitViewMaxZoom}
+        />
+      {:else}
+        <div class="state">
+          <p>No resources match the current filters.</p>
+        </div>
+      {/if}
+    </div>
+  {:else if error}
     <div class="state error">
       <p>{error}</p>
     </div>
   {:else if isLoading || seedTransitionLoading}
     <div class="state">
       <div class="loading-state">
-        <DelayedSpinner isLoading={true} size="1.5rem" />
+        <LoadingSpinner size="1.5rem" />
         <p>{isLoading ? "Loading project graph..." : "Updating graphs..."}</p>
       </div>
     </div>
@@ -458,6 +1115,25 @@
     </slot>
   {:else}
     {@const hasExpandedItem = currentExpandedId !== null}
+    <div class="graph-toolbar">
+      <div></div>
+      {#if showSummary}
+        <slot
+          name="summary"
+          connector={connectorCount}
+          sources={sourcesCount}
+          metrics={metricsCount}
+          models={modelsCount}
+          dashboards={dashboardsCount}
+        >
+          <ResourceNodeSelector
+            resources={normalizedResources}
+            activeResourceId={activeResourceIdForSelector}
+          />
+        </slot>
+      {/if}
+    </div>
+
     <div
       class="resource-graph-grid"
       class:has-expanded={hasExpandedItem}
@@ -466,10 +1142,13 @@
       {#each visibleResourceGroups as group, index (group.id)}
         {@const isExpanded = currentExpandedId === group.id}
         {@const isHidden = hasExpandedItem && !isExpanded}
+        {@const parts = groupTitleParts(group, index)}
+        {@const isVisible = isExpanded || visibleGroupIds.has(group.id)}
         <div
           class="grid-item"
           class:expanded={isExpanded}
           class:hidden={isHidden}
+          use:lazyObserve={group.id}
         >
           {#if isExpanded && overlayMode !== "inline"}
             <!-- Fullscreen or modal overlay -->
@@ -486,17 +1165,12 @@
               flowId={group.id}
               resources={group.resources}
               title={null}
-              titleLabel={showCardTitles
-                ? groupTitleParts(group, index).labelWithCount
-                : null}
-              titleErrorCount={showCardTitles
-                ? groupTitleParts(group, index).errorCount
-                : null}
-              anchorError={showCardTitles
-                ? groupTitleParts(group, index).anchorError
-                : false}
+              titleLabel={showCardTitles ? parts.labelWithCount : null}
+              titleErrorCount={showCardTitles ? parts.errorCount : null}
+              anchorError={showCardTitles ? parts.anchorError : false}
               rootNodeIds={groupRootNodeIds(group)}
               {showControls}
+              {showNodeActions}
               showLock={false}
               fillParent={true}
               enableExpand={enableExpansion}
@@ -505,26 +1179,21 @@
               {fitViewMaxZoom}
               onExpand={() => handleExpandChange(null)}
             />
-          {:else}
-            <!-- Collapsed card view -->
+          {:else if isVisible}
+            <!-- Collapsed card view (lazy-mounted when near viewport) -->
             <slot name="graph-item" {group} {index}>
               <GraphCanvas
                 flowId={group.id}
                 resources={group.resources}
                 title={null}
-                titleLabel={showCardTitles
-                  ? groupTitleParts(group, index).labelWithCount
-                  : null}
-                titleErrorCount={showCardTitles
-                  ? groupTitleParts(group, index).errorCount
-                  : null}
-                anchorError={showCardTitles
-                  ? groupTitleParts(group, index).anchorError
-                  : false}
+                titleLabel={showCardTitles ? parts.labelWithCount : null}
+                titleErrorCount={showCardTitles ? parts.errorCount : null}
+                anchorError={showCardTitles ? parts.anchorError : false}
                 rootNodeIds={groupRootNodeIds(group)}
                 showControls={false}
+                {showNodeActions}
                 showLock={true}
-                fillParent={false}
+                fillParent={true}
                 enableExpand={enableExpansion}
                 {fitViewPadding}
                 {fitViewMinZoom}
@@ -542,12 +1211,95 @@
 <style lang="postcss">
   .graph-root {
     @apply relative h-full w-full overflow-auto flex flex-col min-h-0;
-    --graph-card-height: 260px;
+  }
+
+  .graph-toolbar-bar {
+    @apply flex flex-row items-center min-h-[3rem] flex-none gap-x-4 px-4;
+    transition: padding-left 300ms ease-in-out;
+  }
+
+  .graph-toolbar-bar.nav-collapsed {
+    padding-left: 44px;
+  }
+
+  .graph-toolbar-bar.flush-toolbar {
+    @apply px-0;
+  }
+
+  .graph-title {
+    @apply text-sm font-semibold text-fg-primary flex-none px-4 pt-3 pb-1;
+    transition: padding-left 300ms ease-in-out;
+  }
+
+  .graph-title.nav-collapsed {
+    padding-left: 44px;
+  }
+
+  .graph-title.flush-toolbar {
+    @apply px-0;
+  }
+
+  .search-combo {
+    @apply relative flex-1 min-w-0 flex items-center;
+  }
+
+  .search-combo-dropdown {
+    @apply absolute top-full left-0 right-0 z-50 mt-1 rounded-md border bg-popover shadow-md;
+    min-width: 24rem;
+  }
+
+  .combo-item {
+    @apply flex w-full items-center gap-x-2 cursor-pointer rounded-sm py-1.5 px-2 text-xs text-left;
+    &:hover {
+      @apply bg-surface-hover;
+    }
+  }
+
+  .combo-separator {
+    @apply my-1 h-px bg-border;
+  }
+
+  .tree-dropdown-list {
+    @apply max-h-72 overflow-y-auto overflow-x-hidden p-1;
+  }
+
+  .section-header {
+    @apply flex items-center justify-between px-2 py-1.5;
+  }
+
+  .sidebar-main {
+    @apply flex-1 min-w-0 h-full;
+  }
+
+  .status-dot {
+    @apply flex-shrink-0;
+    width: 6px;
+    height: 6px;
+  }
+
+  .status-dot.ok {
+    @apply rounded-full bg-green-500;
+  }
+
+  .status-dot.pending {
+    @apply rounded-full border border-yellow-500;
+    background: transparent;
+  }
+
+  .status-dot.warning {
+    @apply rounded-full bg-yellow-500;
+  }
+
+  .status-dot.errored {
+    @apply bg-red-500;
+    border-radius: 1px;
+    transform: rotate(45deg);
   }
 
   .resource-graph-grid {
     @apply grid gap-4 flex-1 min-h-0;
     grid-template-columns: repeat(1, minmax(0, 1fr));
+    grid-auto-rows: 1fr;
   }
 
   @media (min-width: 1024px) {
@@ -557,7 +1309,8 @@
   }
 
   .grid-item {
-    @apply relative;
+    @apply relative h-full;
+    min-height: 200px;
   }
 
   .grid-item.hidden {
@@ -584,10 +1337,7 @@
     @apply flex items-center gap-x-3;
   }
 
-  .top-summary {
-    @apply mb-2;
-  }
-  .graph-section-title {
-    @apply text-sm font-semibold text-fg-primary mt-4 mb-2;
+  .graph-toolbar {
+    @apply flex items-end justify-between;
   }
 </style>

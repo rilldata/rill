@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import CanvasIcon from "@rilldata/web-common/components/icons/CanvasIcon.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import Import from "@rilldata/web-common/components/icons/Import.svelte";
@@ -8,7 +9,8 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
-  import { openResourceGraphQuickView } from "@rilldata/web-common/features/resource-graph/quick-view/quick-view-store";
+  import { resourceShorthandMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import {
     useIsLocalFileConnector,
     useSourceFromYaml,
@@ -67,13 +69,11 @@
   $: sourceResource = $sourceQuery.data;
 
   function viewGraph() {
-    if (!sourceResource) {
-      console.warn(
-        "[SourceMenuItems] Cannot open resource graph: resource unavailable.",
-      );
-      return;
-    }
-    openResourceGraphQuickView(sourceResource);
+    const name = sourceResource?.meta?.name?.name;
+    const kind = sourceResource?.meta?.name?.kind as ResourceKind | undefined;
+    if (!name || !kind) return;
+    const shortKind = resourceShorthandMapping[kind];
+    goto(`/graph?resource=${encodeURIComponent(`${shortKind}:${name}`)}`);
   }
 
   $: sourceFromYaml = useSourceFromYaml(runtimeClient, filePath);
@@ -188,7 +188,7 @@
 
 <NavigationMenuItem onclick={viewGraph}>
   <GitBranch slot="icon" size="14px" />
-  View DAG graph
+  View Resource Graph
 </NavigationMenuItem>
 
 <NavigationMenuItem onclick={handleCreateModel}>

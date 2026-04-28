@@ -1,19 +1,12 @@
 <script lang="ts">
-  import { Handle, Position, NodeToolbar } from "@xyflow/svelte";
-  import { displayResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import {
-    resourceIconMapping,
-    resourceShorthandMapping,
-  } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { Handle, Position, useSvelteFlow } from "@xyflow/svelte";
+  import { resourceShorthandMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
+  import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
   import type { ResourceNodeData } from "../shared/types";
+  import { TEST_FAILURE_MARKER } from "../shared/resource-status";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import {
-    getFileHref,
-    navigateToFile,
-  } from "@rilldata/web-common/layout/navigation/editor-routing";
-  import ExternalLink from "@rilldata/web-common/components/icons/ExternalLink.svelte";
+  import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
+  import { getInspectStore, openInspect } from "./inspect-store";
 
   export let id: string;
   export let type: string;
@@ -34,93 +27,78 @@
   export let positionAbsoluteX = 0;
   export let positionAbsoluteY = 0;
 
-  // XYFlow injects these props for layout, but we only need them for typing support.
-  const ensureFlowProps = (..._args: unknown[]) => {};
-  $: ensureFlowProps(
-    id,
-    type,
-    height,
-    sourcePosition,
-    targetPosition,
-    dragHandle,
-    parentId,
-    dragging,
-    zIndex,
-    selectable,
-    deletable,
-    draggable,
-    positionAbsoluteX,
-    positionAbsoluteY,
-  );
+  // XYFlow injects these props for layout; declaring them above prevents
+  // "unknown prop" warnings. The reactive reference silences the Svelte
+  // "unused export property" warning without generating meaningful work.
+  // prettier-ignore
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  $: [type, height, sourcePosition, targetPosition, dragHandle, parentId, dragging, zIndex, selectable, deletable, draggable, positionAbsoluteX, positionAbsoluteY];
 
+  const inspectStore = getInspectStore();
   const DEFAULT_COLOR = "#6B7280";
-  const DEFAULT_ICON = resourceIconMapping[ResourceKind.Model];
 
   $: kind = data?.kind;
-  $: icon =
-    kind && resourceIconMapping[kind]
-      ? resourceIconMapping[kind]
-      : DEFAULT_ICON;
   $: color =
     kind && resourceShorthandMapping[kind]
       ? `var(--${resourceShorthandMapping[kind]})`
       : DEFAULT_COLOR;
-  $: reconcileStatus = data?.resource?.meta?.reconcileStatus;
-  $: hasError = !!data?.resource?.meta?.reconcileError;
-  $: isIdle = reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_IDLE;
-  $: statusLabel =
-    reconcileStatus && !isIdle
-      ? reconcileStatus
-          ?.replace("RECONCILE_STATUS_", "")
-          ?.toLowerCase()
-          ?.replaceAll("_", " ")
-      : undefined;
-  $: effectiveStatusLabel = hasError ? "error" : statusLabel;
-  $: routeHighlighted = (data as any)?.routeHighlighted === true;
+  $: reconcileError = data?.resource?.meta?.reconcileError ?? "";
+  $: isTestOnlyError =
+    !!reconcileError && reconcileError.includes(TEST_FAILURE_MARKER);
+  $: hasError = !!reconcileError && !isTestOnlyError;
+  $: isPending =
+    data?.resource?.meta?.reconcileStatus &&
+    data.resource.meta.reconcileStatus !==
+      V1ReconcileStatus.RECONCILE_STATUS_IDLE;
+  $: routeHighlighted = data?.routeHighlighted === true;
 
-  let showError = false;
-  function handleClick() {
-    if (hasError && data?.resource?.meta?.reconcileError) {
-      showError = !showError;
-    }
+  const { fitView } = useSvelteFlow();
+
+  let nodeEl: HTMLDivElement;
+
+  function getNodeRect(): {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } {
+    if (!nodeEl) return { x: 0, y: 0, width: 0, height: 0 };
+    const nodeRect = nodeEl.getBoundingClientRect();
+    const container = nodeEl.closest(".graph-container");
+    const containerRect = container?.getBoundingClientRect() ?? nodeRect;
+    return {
+      x: nodeRect.left - containerRect.left,
+      y: nodeRect.top - containerRect.top,
+      width: nodeRect.width,
+      height: nodeRect.height,
+    };
   }
 
-  $: resourceName = data?.resource?.meta?.name?.name ?? "";
-  $: resourceKind = kind; // already normalized ResourceKind
-  $: artifact =
-    resourceName && resourceKind
-      ? fileArtifacts.findFileArtifact(resourceKind, resourceName)
-      : undefined;
+  function handleClick(e?: MouseEvent) {
+    if (e && (e.metaKey || e.ctrlKey || e.shiftKey)) return;
+    openInspect(inspectStore, data, getNodeRect());
+  }
 
-  function openFile(e?: MouseEvent) {
-    e?.stopPropagation();
-    if (!artifact?.path) return;
-
-    // Set code view preference for this file
-    try {
-      const key = artifact.path;
-      const prefs = JSON.parse(localStorage.getItem(key) || "{}");
-      localStorage.setItem(key, JSON.stringify({ ...prefs, view: "code" }));
-    } catch (error) {
-      console.warn(`Failed to save file view preference:`, error);
-    }
-
-    navigateToFile(artifact.path);
+  function handleDoubleClick() {
+    fitView({ nodes: [{ id }], duration: 300, padding: 0.5 });
   }
 </script>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-<!-- svelte-ignore a11y-no-static-element-interactions -->
 <div
+  bind:this={nodeEl}
   class="node"
   class:selected
   class:route-highlighted={routeHighlighted}
   class:error={hasError}
+  class:warned={isTestOnlyError}
+  class:pending={isPending}
   class:root={data?.isRoot}
   style:--node-accent={color}
   style:width={width ? `${width}px` : undefined}
+  style:height={height ? `${height}px` : undefined}
   data-kind={kind}
   onclick={handleClick}
+  ondblclick={handleDoubleClick}
   role="button"
   tabindex="0"
   onkeydown={(e) => {
@@ -133,98 +111,30 @@
   <Handle
     id="target"
     type="target"
-    position={Position.Top}
+    position={Position.Left}
     isConnectable={isConnectable ?? true}
   />
   <Handle
     id="source"
     type="source"
-    position={Position.Bottom}
+    position={Position.Right}
     isConnectable={isConnectable ?? true}
   />
-  <div class="icon-wrapper" style={`background:${color}20`}>
-    <svelte:component this={icon} size="20px" {color} />
-  </div>
-  <div class="details">
+
+  <div class="title-row">
+    {#if kind}<ResourceTypeBadge {kind} showLabel={false} />{/if}
     <p class="title" title={data?.label}>{data?.label}</p>
-    <p class="meta">
-      {#if kind}
-        {displayResourceKind(kind)}
-      {:else}
-        Unknown
-      {/if}
-    </p>
-    {#if effectiveStatusLabel}
-      <p
-        class="status"
-        class:error={hasError}
-        title={hasError ? data?.resource?.meta?.reconcileError : undefined}
-      >
-        {effectiveStatusLabel}
-      </p>
+    {#if isPending}
+      <LoadingSpinner size="0.7em" />
     {/if}
   </div>
-
-  <NodeToolbar
-    isVisible={selected && !hasError && !!artifact?.path}
-    position={Position.Top}
-    align="center"
-    offset={4}
-  >
-    <button
-      class="toolbar-open-btn"
-      aria-label="Open in code"
-      title={`Open ${artifact?.path}`}
-      onclick={(e) => {
-        e.stopPropagation();
-        openFile(e);
-      }}
-    >
-      <ExternalLink size="12px" />
-      <span>Open</span>
-    </button>
-  </NodeToolbar>
-
-  {#if showError && hasError}
-    <div class="error-popover" role="alert">
-      <div class="error-popover-header">
-        <span class="error-title">Error</span>
-        <div class="error-actions">
-          {#if artifact?.path}
-            <a
-              href={getFileHref(artifact.path)}
-              class="error-open"
-              onclick={(e) => {
-                e.stopPropagation();
-                openFile(e);
-              }}
-              title={`Open ${artifact.path}`}>Open YAML</a
-            >
-          {/if}
-          <button
-            class="error-close"
-            aria-label="Close error"
-            onclick={(e) => {
-              e.stopPropagation();
-              showError = false;
-            }}
-          >
-            ✕
-          </button>
-        </div>
-      </div>
-      <pre
-        class="error-message"
-        title={data?.resource?.meta?.reconcileError}>{data?.resource?.meta
-          ?.reconcileError}</pre>
-    </div>
-  {/if}
 </div>
 
 <style lang="postcss">
   .node {
-    @apply relative border flex items-center gap-x-3 rounded-lg border bg-surface-subtle px-3 py-2 cursor-pointer shadow-sm;
-    border-color: color-mix(in srgb, var(--node-accent) 60%, transparent);
+    @apply relative border flex items-center rounded-lg bg-surface-subtle px-2 py-1.5 cursor-pointer shadow overflow-hidden;
+    max-width: 320px;
+    border-color: var(--border);
     transition:
       box-shadow 120ms ease,
       border-color 120ms ease,
@@ -232,131 +142,55 @@
       background 120ms ease;
   }
 
-  .node.root {
-    border-color: color-mix(in srgb, var(--node-accent) 65%, transparent);
-    box-shadow:
-      0 0 0 2px color-mix(in srgb, var(--node-accent) 35%, transparent),
-      0 8px 18px rgba(15, 23, 42, 0.12);
+  .node.selected {
+    @apply shadow-md;
+    border-width: 2px;
     background-color: color-mix(
       in srgb,
-      var(--node-accent) 8%,
+      var(--node-accent) 14%,
+      var(--surface-background, #ffffff)
+    );
+    border-color: color-mix(in srgb, var(--node-accent) 50%, var(--border));
+  }
+
+  .node.route-highlighted {
+    border-color: color-mix(in srgb, var(--node-accent) 50%, var(--border));
+    background-color: color-mix(
+      in srgb,
+      var(--node-accent) 4%,
       var(--surface-background, #ffffff)
     );
   }
 
-  .node.selected {
-    @apply shadow border-2;
-    border-color: var(--node-accent);
-  }
-
   .node.error {
-    @apply border-red-300;
+    border-color: var(--color-red-400);
   }
 
-  .error-popover {
-    @apply absolute -top-2 left-1/2 z-20 w-[420px] max-w-[70vw] -translate-y-full -translate-x-1/2 rounded-md border border-red-300 bg-red-50 shadow-lg;
+  .node.warned {
+    border-color: var(--color-amber-400);
   }
 
-  .error-popover-header {
-    @apply flex items-center justify-between px-3 py-2 border-b border-red-200 gap-2;
+  .node.pending {
+    opacity: 0.7;
   }
 
-  .error-title {
-    @apply text-xs font-semibold text-red-700 uppercase tracking-wide;
-  }
-
-  .error-close {
-    @apply h-6 w-6 rounded border border-red-300 bg-surface-background text-xs text-red-600;
-    line-height: 1rem;
-  }
-
-  .error-close:hover {
-    @apply bg-red-50 text-red-700;
-  }
-
-  .error-actions {
-    @apply flex items-center gap-2;
-  }
-
-  .error-open {
-    @apply text-xs text-red-700 underline;
-  }
-
-  .error-open:hover {
-    @apply text-red-800;
-  }
-
-  .error-message {
-    @apply m-3 max-h-[40vh] overflow-auto whitespace-pre-wrap text-xs text-red-700;
-  }
-
-  .icon-wrapper {
-    @apply flex h-10 w-10 items-center justify-center rounded-md;
-  }
-
-  .details {
-    @apply flex flex-col gap-y-0.5 min-w-0;
+  .title-row {
+    @apply flex items-center gap-x-1.5 min-w-0;
   }
 
   .title {
-    @apply font-medium text-sm leading-snug truncate;
+    @apply font-normal text-xs leading-snug truncate flex-1 min-w-0;
   }
 
-  .meta {
-    @apply text-xs text-fg-secondary capitalize;
-  }
-
-  .status {
-    @apply text-xs text-fg-secondary italic;
-  }
-
-  .status.error {
-    @apply not-italic text-red-600;
-  }
-
-  .toolbar-open-btn {
-    @apply h-7 px-3 rounded-[2px] border flex items-center justify-center gap-x-1.5 shadow-sm transition-colors;
-    @apply text-xs font-medium;
-    @apply bg-primary-600 text-white border-primary-600;
-  }
-
-  .toolbar-open-btn:focus {
-    @apply outline-none;
-  }
-
-  .toolbar-open-btn:focus-visible {
-    @apply ring-2 ring-primary-400/60 ring-offset-1;
-  }
-
-  .toolbar-open-btn:hover {
-    @apply bg-primary-700 border-primary-700;
-  }
-
-  .toolbar-open-btn:active {
-    @apply bg-primary-800 border-primary-800;
-  }
-
-  .toolbar-open-btn :global(svg) {
-    width: 12px;
-    height: 12px;
-    display: block;
-    flex-shrink: 0;
-  }
-
-  .toolbar-open-btn :global(svg path) {
-    fill: currentColor;
-  }
-
-  /* Make handles small circular dots, tinted by the node accent */
+  /* Hide handle dots */
   :global(.svelte-flow__node[data-id]) :global(.svelte-flow__handle) {
-    width: 6px;
-    height: 6px;
-    min-width: 6px;
-    min-height: 6px;
-    border-radius: 9999px;
-    background-color: color-mix(in srgb, var(--node-accent) 18%, #ffffff);
-    border: 1px solid color-mix(in srgb, var(--node-accent) 55%, #b1b1b7);
-    box-shadow: 0 0 0 1px #ffffff;
-    opacity: 1;
+    width: 1px;
+    height: 1px;
+    min-width: 1px;
+    min-height: 1px;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    opacity: 0;
   }
 </style>

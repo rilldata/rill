@@ -68,6 +68,8 @@ export class GraphCacheManager {
    * Initialize the cache manager.
    * Call this explicitly on client-side mount to avoid SSR issues.
    */
+  private unsubscribe: (() => void) | null = null;
+
   initialize(): void {
     if (this.initialized) {
       debugLog("Cache", "Already initialized, skipping");
@@ -82,7 +84,7 @@ export class GraphCacheManager {
     debugLog("Cache", "Initializing cache manager");
 
     // Subscribe to store changes and sync to in-memory Maps
-    this.store.subscribe((cache) => {
+    this.unsubscribe = this.store.subscribe((cache) => {
       this.syncFromStore(cache);
     });
 
@@ -90,11 +92,6 @@ export class GraphCacheManager {
     this.cleanupOrphanedCaches();
 
     this.initialized = true;
-
-    // Expose on window for debugging
-    if (typeof window !== "undefined") {
-      (window as any).__RESOURCE_GRAPH_CACHE = this;
-    }
 
     debugLog("Cache", "Initialization complete");
   }
@@ -195,9 +192,18 @@ export class GraphCacheManager {
         console.warn(
           `[ResourceGraph] Cache size (${dataSize} bytes) exceeds limit (${CACHE_CONFIG.MAX_SIZE_BYTES} bytes), pruning...`,
         );
+        const sizeBefore =
+          this.positions.size + this.assignments.size + this.labels.size;
         this.pruneOldestEntries();
-        // Retry persist after pruning
-        return this.persist();
+        const sizeAfter =
+          this.positions.size + this.assignments.size + this.labels.size;
+        // Only retry if pruning actually removed entries; otherwise give up
+        // to avoid infinite recursion when the prune interval guard blocks.
+        if (sizeAfter < sizeBefore) {
+          return this.persist();
+        }
+        debugLog("Cache", "Pruning did not free entries; skipping persist");
+        return;
       }
 
       // Attempt to write to localStorage
@@ -264,16 +270,18 @@ export class GraphCacheManager {
     const initialSize =
       this.positions.size + this.assignments.size + this.labels.size;
 
-    // Prune 25% of positions (oldest positions are least likely to be reused)
-    const positionsToRemove = Math.ceil(this.positions.size * 0.25);
+    const prunePct = CACHE_CONFIG.PRUNE_PERCENTAGE;
+
+    // Prune positions first (oldest are least likely to be reused)
+    const positionsToRemove = Math.ceil(this.positions.size * prunePct);
     const positionKeys = Array.from(this.positions.keys());
     for (let i = 0; i < positionsToRemove && i < positionKeys.length; i++) {
       this.positions.delete(positionKeys[i]);
     }
 
-    // Prune 25% of assignments if positions pruning wasn't enough
+    // Prune assignments if positions pruning wasn't enough
     if (positionsToRemove < 10) {
-      const assignmentsToRemove = Math.ceil(this.assignments.size * 0.25);
+      const assignmentsToRemove = Math.ceil(this.assignments.size * prunePct);
       const assignmentKeys = Array.from(this.assignments.keys());
       for (
         let i = 0;
@@ -451,6 +459,12 @@ export class GraphCacheManager {
     // Force final persist
     if (this.dirty) {
       this.persist();
+    }
+
+    // Unsubscribe from store to prevent stacked subscriptions on re-init
+    if (this.unsubscribe) {
+      this.unsubscribe();
+      this.unsubscribe = null;
     }
 
     this.initialized = false;

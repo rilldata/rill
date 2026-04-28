@@ -1,6 +1,7 @@
 import AmazonS3Icon from "../../components/icons/connectors/AmazonS3Icon.svelte";
 import ApacheDruidIcon from "../../components/icons/connectors/ApacheDruidIcon.svelte";
 import ApachePinotIcon from "../../components/icons/connectors/ApachePinotIcon.svelte";
+import AzureBlobStorageIcon from "../../components/icons/connectors/AzureBlobStorageIcon.svelte";
 import ClaudeIcon from "../../components/icons/connectors/ClaudeIcon.svelte";
 import ClickHouseIcon from "../../components/icons/connectors/ClickHouseIcon.svelte";
 import ClickHouseCloudIcon from "../../components/icons/connectors/ClickHouseCloudIcon.svelte";
@@ -10,37 +11,38 @@ import DuckDbIcon from "../../components/icons/connectors/DuckDBIcon.svelte";
 import DuckLakeIcon from "../../components/icons/connectors/DuckLakeIcon.svelte";
 import GeminiIcon from "../../components/icons/connectors/GeminiIcon.svelte";
 import GoogleBigQueryIcon from "../../components/icons/connectors/GoogleBigQueryIcon.svelte";
+import GoogleCloudStorageIcon from "../../components/icons/connectors/GoogleCloudStorageIcon.svelte";
+import HttpsIcon from "../../components/icons/connectors/HttpsIcon.svelte";
 import AthenaIcon from "../../components/icons/connectors/AthenaIcon.svelte";
-import OpenAIIcon from "../../components/icons/connectors/OpenAIIcon.svelte";
+import LocalFileIcon from "../../components/icons/connectors/LocalFileIcon.svelte";
 import PostgresIcon from "../../components/icons/connectors/PostgresIcon.svelte";
 import MySqlIcon from "../../components/icons/connectors/MySqlIcon.svelte";
 import MotherDuckIcon from "../../components/icons/connectors/MotherDuckIcon.svelte";
+import OpenAIIcon from "../../components/icons/connectors/OpenAIIcon.svelte";
 import RedshiftIcon from "../../components/icons/connectors/RedshiftIcon.svelte";
 import SnowflakeIcon from "../../components/icons/connectors/SnowflakeIcon.svelte";
 import SalesforceIcon from "../../components/icons/connectors/SalesforceIcon.svelte";
 import StarRocksIcon from "../../components/icons/connectors/StarRocksIcon.svelte";
-import MicrosoftAzureBlobStorageIcon from "@rilldata/web-common/components/icons/connectors/MicrosoftAzureBlobStorageIcon.svelte";
+import SQLiteIcon from "../../components/icons/connectors/SQLiteIcon.svelte";
 import SupabaseIcon from "../../components/icons/connectors/SupabaseIcon.svelte";
-import { File } from "lucide-svelte";
-import GoogleCloudStorageIcon from "@rilldata/web-common/components/icons/connectors/GoogleCloudStorageIcon.svelte";
-import HTTPSIcon from "@rilldata/web-common/components/icons/connectors/HTTPSIcon.svelte";
-import SQLiteIcon from "@rilldata/web-common/components/icons/connectors/SQLiteIcon.svelte";
 
 export const connectorIconMapping = {
   athena: AthenaIcon,
-  azure: MicrosoftAzureBlobStorageIcon,
+  azure: AzureBlobStorageIcon,
   bigquery: GoogleBigQueryIcon,
   claude: ClaudeIcon,
   clickhouse: ClickHouseIcon,
   delta: DeltaLakeIcon,
   clickhousecloud: ClickHouseCloudIcon,
-  gemini: GeminiIcon,
-  motherduck: MotherDuckIcon,
   druid: ApacheDruidIcon,
   duckdb: DuckDbIcon,
   ducklake: DuckLakeIcon,
   gcs: GoogleCloudStorageIcon,
+  https: HttpsIcon,
   iceberg: ApacheIcebergIcon,
+  local_file: LocalFileIcon,
+  gemini: GeminiIcon,
+  motherduck: MotherDuckIcon,
   mysql: MySqlIcon,
   openai: OpenAIIcon,
   pinot: ApachePinotIcon,
@@ -52,8 +54,6 @@ export const connectorIconMapping = {
   sqlite: SQLiteIcon,
   starrocks: StarRocksIcon,
   supabase: SupabaseIcon,
-  local_file: File,
-  https: HTTPSIcon,
 };
 
 export const connectorClassMapping = {

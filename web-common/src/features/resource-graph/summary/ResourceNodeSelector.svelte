@@ -1,0 +1,200 @@
+<script lang="ts">
+  import { goto } from "$app/navigation";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import {
+    resourceIconMapping,
+    resourceLabelMapping,
+    resourceShorthandMapping,
+  } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
+  import {
+    coerceResourceKind,
+    ResourceKind,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
+  import type { V1Resource } from "@rilldata/web-common/runtime-client";
+  import { ALLOWED_FOR_GRAPH } from "../navigation/seed-parser";
+  import {
+    RESOURCE_SECTION_ORDER,
+    RESOURCE_SECTION_LABELS,
+  } from "../shared/config";
+  import { getGraphNavigation } from "../shared/graph-navigation-context";
+
+  const graphNav = getGraphNavigation();
+
+  export let resources: V1Resource[] = [];
+  export let activeResourceId: string | null = null;
+
+  type ResourceEntry = {
+    name: string;
+    kind: ResourceKind;
+    displayKind: ResourceKind;
+    status: "ok" | "pending" | "errored";
+    resource: V1Resource;
+  };
+
+  type ResourceSection = {
+    kind: ResourceKind;
+    label: string;
+    entries: ResourceEntry[];
+  };
+
+  function getStatus(r: V1Resource): "ok" | "pending" | "errored" {
+    if (r.meta?.reconcileError) return "errored";
+    if (
+      r.meta?.reconcileStatus &&
+      r.meta.reconcileStatus !== "RECONCILE_STATUS_IDLE"
+    )
+      return "pending";
+    return "ok";
+  }
+
+  $: sections = (function buildSections(): ResourceSection[] {
+    const grouped = new Map<ResourceKind, ResourceEntry[]>();
+
+    for (const r of resources) {
+      const coerced = coerceResourceKind(r);
+      // Allow connectors even if hidden; GraphContainer pre-filters to OLAP only
+      if (r.meta?.hidden && coerced !== ResourceKind.Connector) continue;
+      if (!coerced || !ALLOWED_FOR_GRAPH.has(coerced)) continue;
+
+      const name = r.meta?.name?.name;
+      if (!name) continue;
+
+      const entry: ResourceEntry = {
+        name,
+        kind: r.meta?.name?.kind as ResourceKind,
+        displayKind: coerced,
+        status: getStatus(r),
+        resource: r,
+      };
+
+      const existing = grouped.get(coerced) ?? [];
+      existing.push(entry);
+      grouped.set(coerced, existing);
+    }
+
+    const result: ResourceSection[] = [];
+    for (const kind of RESOURCE_SECTION_ORDER) {
+      const entries = grouped.get(kind);
+      if (!entries?.length) continue;
+      entries.sort((a, b) => a.name.localeCompare(b.name));
+      result.push({
+        kind,
+        label:
+          RESOURCE_SECTION_LABELS[kind] ??
+          resourceLabelMapping[kind] ??
+          "Unknown",
+        entries,
+      });
+    }
+    return result;
+  })();
+
+  $: totalCount = sections.reduce((sum, s) => sum + s.entries.length, 0);
+
+  $: activeLabel = (function () {
+    if (!activeResourceId) return `All Resource Trees (${totalCount})`;
+    for (const section of sections) {
+      for (const entry of section.entries) {
+        const id = `${entry.kind}:${entry.name}`;
+        if (id === activeResourceId) return entry.name;
+      }
+    }
+    return `All Resource Trees (${totalCount})`;
+  })();
+
+  function handleSelect(entry: ResourceEntry) {
+    const shortKind = resourceShorthandMapping[entry.kind];
+    if (graphNav?.viewLineage) {
+      graphNav.viewLineage(shortKind, entry.name);
+      return;
+    }
+    goto(`/graph?resource=${encodeURIComponent(`${shortKind}:${entry.name}`)}`);
+  }
+
+  function handleSelectAll() {
+    if (graphNav?.viewLineage) {
+      graphNav.viewLineage(null, "");
+      return;
+    }
+    goto("/graph");
+  }
+</script>
+
+<div class="node-selector">
+  <DropdownMenu.Root>
+    <DropdownMenu.Trigger class="selector-trigger">
+      <span class="trigger-label">{activeLabel}</span>
+      <CaretDownIcon size="10px" />
+    </DropdownMenu.Trigger>
+    <DropdownMenu.Content align="start" class="w-96">
+      <DropdownMenu.Item onclick={handleSelectAll}>
+        <span class="text-xs">All Resource Trees ({totalCount})</span>
+      </DropdownMenu.Item>
+      {#each sections as section (section.kind)}
+        <DropdownMenu.Separator />
+        <div class="section-header">
+          <ResourceTypeBadge kind={section.kind} />
+          <span class="text-[10px] text-fg-muted">{section.entries.length}</span
+          >
+        </div>
+        {#each section.entries as entry (entry.name)}
+          {@const isActive = activeResourceId === `${entry.kind}:${entry.name}`}
+          <DropdownMenu.Item
+            class="flex items-center gap-x-2 {isActive ? 'font-semibold' : ''}"
+            onclick={() => handleSelect(entry)}
+          >
+            <svelte:component
+              this={resourceIconMapping[entry.displayKind]}
+              size="12px"
+            />
+            <span class="flex-1 truncate text-xs">{entry.name}</span>
+            {#if entry.status === "errored"}
+              <span class="status-dot errored"></span>
+            {:else if entry.status === "pending"}
+              <span class="status-dot pending"></span>
+            {:else}
+              <span class="status-dot ok"></span>
+            {/if}
+          </DropdownMenu.Item>
+        {/each}
+      {/each}
+    </DropdownMenu.Content>
+  </DropdownMenu.Root>
+</div>
+
+<style lang="postcss">
+  .node-selector {
+    @apply flex items-center;
+  }
+
+  .trigger-label {
+    @apply truncate max-w-[200px];
+  }
+
+  .section-header {
+    @apply flex items-center justify-between px-2 py-1.5;
+  }
+
+  .status-dot {
+    @apply flex-shrink-0;
+    width: 6px;
+    height: 6px;
+  }
+
+  .status-dot.ok {
+    @apply rounded-full bg-green-500;
+  }
+
+  .status-dot.pending {
+    @apply rounded-full border border-yellow-500;
+    background: transparent;
+  }
+
+  .status-dot.errored {
+    @apply bg-red-500;
+    border-radius: 1px;
+    transform: rotate(45deg);
+  }
+</style>

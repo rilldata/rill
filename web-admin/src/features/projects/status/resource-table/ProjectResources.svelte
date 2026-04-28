@@ -40,6 +40,8 @@
   ]);
   filterSync.init($page.url);
 
+  export let showHeader = true;
+
   let isConfirmDialogOpen = false;
   let searchText = parseStringParam($page.url.searchParams.get("q"));
   let selectedTypes = parseArrayParam($page.url.searchParams.get("kind"));
@@ -69,9 +71,10 @@
 
   type StatusFilter = { label: string; value: string };
   const statusFilters: StatusFilter[] = [
-    { label: "Error", value: "error" },
-    { label: "Warn", value: "warn" },
     { label: "OK", value: "ok" },
+    { label: "Pending", value: "pending" },
+    { label: "Warning", value: "warning" },
+    { label: "Errored", value: "errored" },
   ];
 
   // Resource types available for filtering (excluding internal types)
@@ -167,7 +170,9 @@
 </script>
 
 <section class="flex flex-col gap-y-4">
-  <h2 class="text-lg font-medium">Resources</h2>
+  {#if showHeader}
+    <h2 class="text-lg font-medium">Resources</h2>
+  {/if}
 
   <TableToolbar
     bind:searchText

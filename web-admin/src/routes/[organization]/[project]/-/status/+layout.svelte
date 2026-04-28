@@ -6,7 +6,6 @@
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
 
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
-
   const navItems = [
     {
       label: "Overview",
@@ -22,6 +21,7 @@
       label: "Resources",
       route: "/resources",
       hasPermission: true,
+      matchPrefix: true,
     },
     {
       label: "Tables",
