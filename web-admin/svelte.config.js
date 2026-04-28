@@ -38,9 +38,14 @@ const config = {
         "default-src": ["self"],
         "script-src": [
           "self",
+          // Injected by the Pylon widget at runtime; exact subdomain is unknown without CSP reports.
           "https://*.app-us1.com/",
-          //https://support.usepylon.com/articles/5968160735-chat-widget-debugging-guide
-          "https://*.usepylon.com",
+          // widget.usepylon.com is the confirmed entry point (initPylonWidget.ts).
+          // The remaining *.usepylon.com and *.pusher.com entries below are loaded
+          // dynamically by the Pylon widget — narrow further once CSP violation reports
+          // confirm the exact subdomains.
+          // https://support.usepylon.com/articles/5968160735-chat-widget-debugging-guide
+          "https://widget.usepylon.com",
           "https://*.pusher.com",
           ...(dev ? ["http:"] : []),
           // Hash of the inline script injected by the Pylon chat widget at runtime.
