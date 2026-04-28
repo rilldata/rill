@@ -263,6 +263,7 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 
 	// Wrap mux with CORS middleware
 	handler := cors.New(corsOpts).Handler(httpMux)
+	handler = middleware.CacheControlMiddleware(handler)
 
 	return handler, nil
 }
