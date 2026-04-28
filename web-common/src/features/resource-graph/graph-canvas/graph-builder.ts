@@ -103,6 +103,54 @@ function resolveRefId(
   return fallback ?? undefined;
 }
 
+/**
+ * Synthesize Canvas → MetricsView edges in the rendered graph.
+ *
+ * The runtime DAG models Canvas → Component → MetricsView, but Components
+ * aren't surfaced as nodes in the graph (only Sources, Models, MetricsViews,
+ * Explores, Canvases, and Connectors render). Without intervention, the
+ * Canvas would appear orphaned from the metrics views it actually uses.
+ *
+ * This walks each Canvas's Component refs, pulls the Components' refs out of
+ * the full resource set, and appends them to the Canvas's refs in a copied
+ * resource. The transformation is purely visual — the underlying parser /
+ * runtime DAG is untouched, so reconcile scheduling and AI graph reporting
+ * see the original Canvas → Component → MetricsView shape.
+ */
+function expandCanvasRefs(resources: V1Resource[]): V1Resource[] {
+  const components = new Map<string, V1Resource>();
+  for (const res of resources) {
+    if (coerceResourceKind(res) !== ResourceKind.Component) continue;
+    const id = createResourceId(res.meta);
+    if (id) components.set(id, res);
+  }
+  if (!components.size) return resources;
+
+  return resources.map((res) => {
+    if (coerceResourceKind(res) !== ResourceKind.Canvas) return res;
+    const refs = res.meta?.refs ?? [];
+    const seen = new Set<string>();
+    const expanded: V1ResourceName[] = [];
+    const push = (ref: V1ResourceName) => {
+      const key = `${ref.kind ?? ""}:${ref.name ?? ""}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      expanded.push(ref);
+    };
+    for (const ref of refs) {
+      push(ref);
+      if (ref.kind !== ResourceKind.Component) continue;
+      const componentId = resourceNameToId(ref);
+      const component = componentId ? components.get(componentId) : undefined;
+      for (const sub of component?.meta?.refs ?? []) push(sub);
+    }
+    return {
+      ...res,
+      meta: { ...res.meta, refs: expanded },
+    };
+  });
+}
+
 function estimateNodeWidth(label?: string | null) {
   const text = label?.trim() ?? "";
   if (!text.length) return MIN_NODE_WIDTH;
@@ -435,6 +483,7 @@ export function buildResourceGraph(
   resources: V1Resource[],
   opts?: BuildGraphOptions,
 ) {
+  resources = expandCanvasRefs(resources);
   const positionNs = opts?.positionNs?.trim() || "global";
   const dagreGraph = new graphlib.Graph();
   dagreGraph.setGraph({
@@ -900,6 +949,7 @@ export function partitionResourcesBySeeds(
   seeds: (string | V1ResourceName)[],
   filterKind?: ResourceKind | "dashboards",
 ): ResourceGraphGrouping[] {
+  resources = expandCanvasRefs(resources);
   const resourceMap = buildVisibleResourceMap(resources);
   const { incoming, outgoing } = buildDirectedAdjacency(resourceMap);
   const normalizedSeeds = normalizeSeeds(seeds);
@@ -969,6 +1019,7 @@ export function partitionResourcesBySeeds(
 export function partitionResourcesByMetrics(
   resources: V1Resource[],
 ): ResourceGraphGrouping[] {
+  resources = expandCanvasRefs(resources);
   // NETWORK approach: build undirected adjacency and group by connected
   // components rooted at metrics views.
   const resourceMap = new Map<string, V1Resource>();
@@ -1106,6 +1157,7 @@ export function partitionResourcesByMetrics(
 export function partitionResourcesByDashboardTrees(
   resources: V1Resource[],
 ): ResourceGraphGrouping[] {
+  resources = expandCanvasRefs(resources);
   const resourceMap = buildVisibleResourceMap(resources);
   const { incoming } = buildDirectedAdjacency(resourceMap);
 

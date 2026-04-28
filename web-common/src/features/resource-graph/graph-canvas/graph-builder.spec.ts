@@ -407,6 +407,50 @@ describe("build-resource-graph", () => {
       expect(nodes[0].id).toBe("rill.runtime.v1.Model:valid");
     });
 
+    it("should synthesize Canvas → MetricsView edges through Component refs", () => {
+      // Components don't render as graph nodes, so a Canvas's Component refs
+      // would otherwise leave the Canvas appearing disconnected from the
+      // MetricsViews it actually depends on. The graph builder expands
+      // Canvas → Component refs into the Component's downstream refs.
+      const resources: V1Resource[] = [
+        {
+          meta: {
+            name: { kind: ResourceKind.MetricsView, name: "mv1" },
+            hidden: false,
+          },
+        },
+        {
+          meta: {
+            name: { kind: ResourceKind.Component, name: "canvas1--component-0-0" },
+            refs: [{ kind: ResourceKind.MetricsView, name: "mv1" }],
+            hidden: false,
+          },
+        },
+        {
+          meta: {
+            name: { kind: ResourceKind.Canvas, name: "canvas1" },
+            refs: [
+              {
+                kind: ResourceKind.Component,
+                name: "canvas1--component-0-0",
+              },
+            ],
+            hidden: false,
+          },
+        },
+      ];
+
+      const { nodes, edges } = buildResourceGraph(resources);
+
+      expect(nodes.map((n) => n.id).sort()).toEqual([
+        "rill.runtime.v1.Canvas:canvas1",
+        "rill.runtime.v1.MetricsView:mv1",
+      ]);
+      expect(edges).toHaveLength(1);
+      expect(edges[0].source).toBe("rill.runtime.v1.MetricsView:mv1");
+      expect(edges[0].target).toBe("rill.runtime.v1.Canvas:canvas1");
+    });
+
     it("should coerce model defined-as-source to Source kind", () => {
       const resources: V1Resource[] = [
         {
