@@ -63,8 +63,6 @@ type Server struct {
 	limiter  ratelimit.Limiter
 	activity *activity.Client
 	ai       *ai.Runner
-	// set for local runtimes
-	adminOverride drivers.AdminService
 }
 
 var (
@@ -75,7 +73,7 @@ var (
 
 // NewServer creates a new runtime server.
 // The provided ctx is used for the lifetime of the server for background refresh of the JWKS that is used to validate auth tokens.
-func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *zap.Logger, limiter ratelimit.Limiter, activityClient *activity.Client, adminOverride drivers.AdminService) (*Server, error) {
+func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *zap.Logger, limiter ratelimit.Limiter, activityClient *activity.Client) (*Server, error) {
 	// The runtime doesn't actually set cookies, but we use securecookie to encode/decode ephemeral tokens.
 	// If no session key pairs are provided, we generate a random one for the duration of the process.
 	var codec *securetoken.Codec
@@ -86,14 +84,13 @@ func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *
 	}
 
 	srv := &Server{
-		runtime:       rt,
-		opts:          opts,
-		logger:        logger,
-		codec:         codec,
-		limiter:       limiter,
-		activity:      activityClient,
-		ai:            ai.NewRunner(rt, activityClient),
-		adminOverride: adminOverride,
+		runtime:  rt,
+		opts:     opts,
+		logger:   logger,
+		codec:    codec,
+		limiter:  limiter,
+		activity: activityClient,
+		ai:       ai.NewRunner(rt, activityClient),
 	}
 
 	if opts.AuthEnable {
@@ -355,7 +352,7 @@ func mapGRPCError(err error) error {
 			err = status.Error(codes.AlreadyExists, err.Error())
 		} else if errors.Is(err, drivers.ErrNotFound) {
 			err = status.Error(codes.NotFound, err.Error())
-		} else if errors.Is(err, runtime.ErrAdminNotConfigured) || errors.Is(err, runtime.ErrAINotConfigured) {
+		} else if errors.Is(err, runtime.ErrAINotConfigured) {
 			err = status.Error(codes.FailedPrecondition, err.Error())
 		} else if errors.Is(err, runtime.ErrControllerClosed) {
 			err = status.Error(codes.Unavailable, err.Error())

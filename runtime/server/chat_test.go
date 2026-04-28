@@ -57,7 +57,7 @@ measures:
 	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
 
 	// Create test server
-	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
+	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	// Create test context with claims (to test conversation listings, which filter by user ID)
@@ -321,7 +321,7 @@ measures:
 
 func TestAnonymousSessionAccess(t *testing.T) {
 	rt, instanceID := testruntime.NewInstance(t)
-	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
+	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	// Claims for an anonymous and authenticated user.
@@ -395,7 +395,7 @@ func TestAgentChoiceAndContext(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		AIConnector: "openai",
 	})
-	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
+	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	// Ask a question for the analyst agent

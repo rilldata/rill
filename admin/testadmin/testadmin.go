@@ -375,7 +375,7 @@ func newRuntimeServer(ctx context.Context, t *testing.T, group *errgroup.Group, 
 	rt := testruntime.New(t, false)
 
 	// Create runtime server
-	rtSrv, err := runtimeserver.NewServer(ctx, runtimeServerOpts, rt, logger, ratelimit.NewNoop(), activity.NewNoopClient(), nil)
+	rtSrv, err := runtimeserver.NewServer(ctx, runtimeServerOpts, rt, logger, ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 	t.Cleanup(func() { rtSrv.Close() })
 
