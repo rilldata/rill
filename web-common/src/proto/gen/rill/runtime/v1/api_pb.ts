@@ -2433,6 +2433,399 @@ export class GenerateCanvasFileResponse extends Message$1<GenerateCanvasFileResp
 }
 
 /**
+ * Template describes a declarative template for generating project files.
+ *
+ * @generated from message rill.runtime.v1.Template
+ */
+export class Template extends Message$1<Template> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string display_name = 2;
+   */
+  displayName = "";
+
+  /**
+   * @generated from field: string driver = 3;
+   */
+  driver = "";
+
+  /**
+   * @generated from field: string olap = 4;
+   */
+  olap = "";
+
+  /**
+   * @generated from field: repeated string tags = 5;
+   */
+  tags: string[] = [];
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.TemplateFile files = 6;
+   */
+  files: TemplateFile[] = [];
+
+  /**
+   * JSON Schema for form generation and property metadata.
+   *
+   * @generated from field: google.protobuf.Struct json_schema = 7;
+   */
+  jsonSchema?: Struct;
+
+  /**
+   * Short description of the template.
+   *
+   * @generated from field: string description = 8;
+   */
+  description = "";
+
+  /**
+   * Link to documentation.
+   *
+   * @generated from field: string docs_url = 9;
+   */
+  docsUrl = "";
+
+  /**
+   * Icon component name for full-size display.
+   *
+   * @generated from field: string icon = 10;
+   */
+  icon = "";
+
+  /**
+   * Icon component name for small display.
+   *
+   * @generated from field: string small_icon = 11;
+   */
+  smallIcon = "";
+
+  constructor(data?: PartialMessage<Template>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.Template";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "olap", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "tags", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 6, name: "files", kind: "message", T: TemplateFile, repeated: true },
+    { no: 7, name: "json_schema", kind: "message", T: Struct },
+    { no: 8, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "docs_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "icon", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "small_icon", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Template {
+    return new Template().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Template {
+    return new Template().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Template {
+    return new Template().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Template | PlainMessage<Template> | undefined, b: Template | PlainMessage<Template> | undefined): boolean {
+    return proto3.util.equals(Template, a, b);
+  }
+}
+
+/**
+ * TemplateFile describes a single output file within a template.
+ *
+ * @generated from message rill.runtime.v1.TemplateFile
+ */
+export class TemplateFile extends Message$1<TemplateFile> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string path_pattern = 2;
+   */
+  pathPattern = "";
+
+  constructor(data?: PartialMessage<TemplateFile>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.TemplateFile";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "path_pattern", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TemplateFile {
+    return new TemplateFile().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): TemplateFile {
+    return new TemplateFile().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): TemplateFile {
+    return new TemplateFile().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: TemplateFile | PlainMessage<TemplateFile> | undefined, b: TemplateFile | PlainMessage<TemplateFile> | undefined): boolean {
+    return proto3.util.equals(TemplateFile, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ListTemplatesRequest
+ */
+export class ListTemplatesRequest extends Message$1<ListTemplatesRequest> {
+  /**
+   * Optional tag filter; only templates matching ALL tags are returned.
+   *
+   * @generated from field: repeated string tags = 1;
+   */
+  tags: string[] = [];
+
+  constructor(data?: PartialMessage<ListTemplatesRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ListTemplatesRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "tags", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListTemplatesRequest {
+    return new ListTemplatesRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListTemplatesRequest {
+    return new ListTemplatesRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListTemplatesRequest {
+    return new ListTemplatesRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListTemplatesRequest | PlainMessage<ListTemplatesRequest> | undefined, b: ListTemplatesRequest | PlainMessage<ListTemplatesRequest> | undefined): boolean {
+    return proto3.util.equals(ListTemplatesRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ListTemplatesResponse
+ */
+export class ListTemplatesResponse extends Message$1<ListTemplatesResponse> {
+  /**
+   * @generated from field: repeated rill.runtime.v1.Template templates = 1;
+   */
+  templates: Template[] = [];
+
+  constructor(data?: PartialMessage<ListTemplatesResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ListTemplatesResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "templates", kind: "message", T: Template, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListTemplatesResponse {
+    return new ListTemplatesResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListTemplatesResponse {
+    return new ListTemplatesResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListTemplatesResponse {
+    return new ListTemplatesResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListTemplatesResponse | PlainMessage<ListTemplatesResponse> | undefined, b: ListTemplatesResponse | PlainMessage<ListTemplatesResponse> | undefined): boolean {
+    return proto3.util.equals(ListTemplatesResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.GenerateFileRequest
+ */
+export class GenerateFileRequest extends Message$1<GenerateFileRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * Template name (e.g. "s3-duckdb", "iceberg-duckdb")
+   *
+   * @generated from field: string template_name = 2;
+   */
+  templateName = "";
+
+  /**
+   * Output filter: "connector", "model", or empty for all files
+   *
+   * @generated from field: string output = 3;
+   */
+  output = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct properties = 4;
+   */
+  properties?: Struct;
+
+  /**
+   * Connector name reference (for model outputs that reference a connector)
+   *
+   * @generated from field: string connector_name = 5;
+   */
+  connectorName = "";
+
+  /**
+   * If true, render without writing files (for YAML preview)
+   *
+   * @generated from field: bool preview = 6;
+   */
+  preview = false;
+
+  constructor(data?: PartialMessage<GenerateFileRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GenerateFileRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "template_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "output", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "properties", kind: "message", T: Struct },
+    { no: 5, name: "connector_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "preview", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateFileRequest {
+    return new GenerateFileRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateFileRequest {
+    return new GenerateFileRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateFileRequest {
+    return new GenerateFileRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GenerateFileRequest | PlainMessage<GenerateFileRequest> | undefined, b: GenerateFileRequest | PlainMessage<GenerateFileRequest> | undefined): boolean {
+    return proto3.util.equals(GenerateFileRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.GenerateFileResponse
+ */
+export class GenerateFileResponse extends Message$1<GenerateFileResponse> {
+  /**
+   * @generated from field: repeated rill.runtime.v1.GeneratedFile files = 1;
+   */
+  files: GeneratedFile[] = [];
+
+  /**
+   * @generated from field: map<string, string> env_vars = 2;
+   */
+  envVars: { [key: string]: string } = {};
+
+  constructor(data?: PartialMessage<GenerateFileResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GenerateFileResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "files", kind: "message", T: GeneratedFile, repeated: true },
+    { no: 2, name: "env_vars", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateFileResponse {
+    return new GenerateFileResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateFileResponse {
+    return new GenerateFileResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateFileResponse {
+    return new GenerateFileResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GenerateFileResponse | PlainMessage<GenerateFileResponse> | undefined, b: GenerateFileResponse | PlainMessage<GenerateFileResponse> | undefined): boolean {
+    return proto3.util.equals(GenerateFileResponse, a, b);
+  }
+}
+
+/**
+ * GeneratedFile is a single rendered output file.
+ *
+ * @generated from message rill.runtime.v1.GeneratedFile
+ */
+export class GeneratedFile extends Message$1<GeneratedFile> {
+  /**
+   * @generated from field: string path = 1;
+   */
+  path = "";
+
+  /**
+   * @generated from field: string blob = 2;
+   */
+  blob = "";
+
+  constructor(data?: PartialMessage<GeneratedFile>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GeneratedFile";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "blob", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GeneratedFile {
+    return new GeneratedFile().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GeneratedFile {
+    return new GeneratedFile().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GeneratedFile {
+    return new GeneratedFile().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GeneratedFile | PlainMessage<GeneratedFile> | undefined, b: GeneratedFile | PlainMessage<GeneratedFile> | undefined): boolean {
+    return proto3.util.equals(GeneratedFile, a, b);
+  }
+}
+
+/**
  * @generated from message rill.runtime.v1.QueryResolverRequest
  */
 export class QueryResolverRequest extends Message$1<QueryResolverRequest> {

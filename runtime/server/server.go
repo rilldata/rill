@@ -27,6 +27,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/securetoken"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server/auth"
+	"github.com/rilldata/rill/runtime/templates"
 	"github.com/rs/cors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.uber.org/zap"
@@ -55,14 +56,15 @@ type Server struct {
 	runtimev1.UnsafeRuntimeServiceServer
 	runtimev1.UnsafeQueryServiceServer
 	runtimev1.UnsafeConnectorServiceServer
-	runtime  *runtime.Runtime
-	opts     *Options
-	logger   *zap.Logger
-	aud      *auth.Audience
-	codec    *securetoken.Codec
-	limiter  ratelimit.Limiter
-	activity *activity.Client
-	ai       *ai.Runner
+	runtime          *runtime.Runtime
+	opts             *Options
+	logger           *zap.Logger
+	aud              *auth.Audience
+	codec            *securetoken.Codec
+	limiter          ratelimit.Limiter
+	activity         *activity.Client
+	ai               *ai.Runner
+	templateRegistry *templates.Registry
 	// set for local runtimes
 	adminOverride drivers.AdminService
 }
@@ -85,15 +87,21 @@ func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *
 		codec = securetoken.NewCodec(opts.SessionKeyPairs)
 	}
 
+	tmplRegistry, err := templates.NewRegistry()
+	if err != nil {
+		return nil, fmt.Errorf("loading template registry: %w", err)
+	}
+
 	srv := &Server{
-		runtime:       rt,
-		opts:          opts,
-		logger:        logger,
-		codec:         codec,
-		limiter:       limiter,
-		activity:      activityClient,
-		ai:            ai.NewRunner(rt, activityClient),
-		adminOverride: adminOverride,
+		runtime:          rt,
+		opts:             opts,
+		logger:           logger,
+		codec:            codec,
+		limiter:          limiter,
+		activity:         activityClient,
+		ai:               ai.NewRunner(rt, activityClient),
+		templateRegistry: tmplRegistry,
+		adminOverride:    adminOverride,
 	}
 
 	if opts.AuthEnable {
