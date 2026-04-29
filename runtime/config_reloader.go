@@ -4,10 +4,8 @@ import (
 	"context"
 	"fmt"
 	"maps"
-	"strings"
 	"time"
 
-	"github.com/joho/godotenv"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/ctxsync"
@@ -61,14 +59,7 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) (v
 
 	admin, release, err := r.rt.Admin(ctx, instanceID)
 	if err != nil {
-<<<<<<< HEAD
-		if errors.Is(err, ErrAdminNotConfigured) {
-			return 0, false, nil
-		}
 		return 0, false, err
-=======
-		return err
->>>>>>> origin/main
 	}
 	defer release()
 
@@ -174,22 +165,16 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) (v
 
 	// write variables to .env files for editable deployments. This will also trigger controller restart via repo watcher
 	var count int
-	for env, envVars := range cfg.Variables {
-		count += len(envVars)
-		var path string
-		switch env {
-		case "":
-			path = ".env"
-		default:
-			path = fmt.Sprintf(".%s.env", env)
-		}
-		contents, err := godotenv.Marshal(envVars)
+	repo, release, err := r.rt.Repo(ctx, inst.ID)
+	if err != nil {
+		return 0, false, err
+	}
+	defer release()
+	for env, vars := range cfg.Variables {
+		count += len(vars)
+		err = writeEnv(ctx, env, vars, repo)
 		if err != nil {
-			return 0, false, fmt.Errorf("failed to marshal env vars: %w", err)
-		}
-		err = r.rt.PutFile(ctx, instanceID, path, strings.NewReader(contents), true, true)
-		if err != nil {
-			return 0, false, fmt.Errorf("failed to write %s file: %w", path, err)
+			return 0, false, fmt.Errorf("failed to write env file for %q: %w", env, err)
 		}
 	}
 	return count, true, nil
