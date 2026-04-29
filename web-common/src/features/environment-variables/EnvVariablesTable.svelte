@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { ColumnDef } from "tanstack-table-8-svelte-5";
-  import { flexRender } from "tanstack-table-8-svelte-5";
+  import { renderComponent } from "tanstack-table-8-svelte-5";
   import BasicTable from "@rilldata/web-common/components/table/BasicTable.svelte";
   import KeyIcon from "@rilldata/web-common/components/icons/KeyIcon.svelte";
   import KeyCell from "./KeyCell.svelte";
@@ -17,7 +17,7 @@
       accessorKey: "key",
       header: "Key",
       cell: ({ row }: any) =>
-        flexRender(KeyCell, {
+        renderComponent(KeyCell, {
           name: row.original.key,
         }),
     },
@@ -26,7 +26,7 @@
       header: "Value",
       enableSorting: false,
       cell: ({ row }: any) =>
-        flexRender(ValueCell, {
+        renderComponent(ValueCell, {
           value: row.original.value,
         }),
     },

@@ -13,7 +13,7 @@
   import { parse as parseDotenv } from "dotenv";
   import type { EditorView } from "@codemirror/view";
   import type { ColumnDef } from "tanstack-table-8-svelte-5";
-  import { flexRender } from "tanstack-table-8-svelte-5";
+  import { renderComponent } from "tanstack-table-8-svelte-5";
   import ActionsCell from "./ActionsCell.svelte";
   import AddEnvDialog from "./AddEnvDialog.svelte";
   import PullEnvDialog from "./PullEnvDialog.svelte";
@@ -137,7 +137,7 @@
     accessorKey: "actions",
     header: "",
     cell: ({ row }: any) => {
-      return flexRender(ActionsCell, {
+      return renderComponent(ActionsCell, {
         keyName: row.original.key,
         value: row.original.value,
         existingVariables: envVariables,

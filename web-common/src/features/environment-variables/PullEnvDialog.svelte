@@ -40,8 +40,8 @@
         eventBus.emit("notification", {
           message:
             variablesCount === 0
-              ? "No cloud credentials found for this project."
-              : "Local .env file is already up to date with cloud credentials.",
+              ? "No cloud variables found for this project."
+              : "Local .env file is already up to date with cloud variables.",
         });
       } else {
         eventBus.emit("notification", {
@@ -53,7 +53,6 @@
       open = false;
       onSuccess?.();
     } catch (err) {
-      // Error is already handled by the mutation
       console.error("Failed to pull environment variables:", err);
     }
   }
@@ -69,7 +68,7 @@
       <DialogDescription>
         Merge cloud variables into your local .env files for {environment ||
           "all"} environment{environment === "" ? "s" : ""}. Shared keys will be
-        overwritten; local-only variables are preserved.
+        overwritten with cloud values; local-only variables are preserved.
       </DialogDescription>
     </DialogHeader>
 

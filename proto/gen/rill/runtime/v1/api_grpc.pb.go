@@ -72,6 +72,7 @@ const (
 	RuntimeService_GitPull_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GitPull"
 	RuntimeService_GitPush_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GitPush"
 	RuntimeService_PushEnv_FullMethodName                 = "/rill.runtime.v1.RuntimeService/PushEnv"
+	RuntimeService_PullEnv_FullMethodName                 = "/rill.runtime.v1.RuntimeService/PullEnv"
 )
 
 // RuntimeServiceClient is the client API for RuntimeService service.
@@ -197,6 +198,8 @@ type RuntimeServiceClient interface {
 	GitPush(ctx context.Context, in *GitPushRequest, opts ...grpc.CallOption) (*GitPushResponse, error)
 	// PushEnv pushes local environment variables to admin service
 	PushEnv(ctx context.Context, in *PushEnvRequest, opts ...grpc.CallOption) (*PushEnvResponse, error)
+	// PullEnv pulls cloud environment variables into local .env files
+	PullEnv(ctx context.Context, in *PullEnvRequest, opts ...grpc.CallOption) (*PullEnvResponse, error)
 }
 
 type runtimeServiceClient struct {
@@ -773,6 +776,16 @@ func (c *runtimeServiceClient) PushEnv(ctx context.Context, in *PushEnvRequest, 
 	return out, nil
 }
 
+func (c *runtimeServiceClient) PullEnv(ctx context.Context, in *PullEnvRequest, opts ...grpc.CallOption) (*PullEnvResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PullEnvResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_PullEnv_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RuntimeServiceServer is the server API for RuntimeService service.
 // All implementations must embed UnimplementedRuntimeServiceServer
 // for forward compatibility.
@@ -896,6 +909,8 @@ type RuntimeServiceServer interface {
 	GitPush(context.Context, *GitPushRequest) (*GitPushResponse, error)
 	// PushEnv pushes local environment variables to admin service
 	PushEnv(context.Context, *PushEnvRequest) (*PushEnvResponse, error)
+	// PullEnv pulls cloud environment variables into local .env files
+	PullEnv(context.Context, *PullEnvRequest) (*PullEnvResponse, error)
 	mustEmbedUnimplementedRuntimeServiceServer()
 }
 
@@ -1064,6 +1079,9 @@ func (UnimplementedRuntimeServiceServer) GitPush(context.Context, *GitPushReques
 }
 func (UnimplementedRuntimeServiceServer) PushEnv(context.Context, *PushEnvRequest) (*PushEnvResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PushEnv not implemented")
+}
+func (UnimplementedRuntimeServiceServer) PullEnv(context.Context, *PullEnvRequest) (*PullEnvResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PullEnv not implemented")
 }
 func (UnimplementedRuntimeServiceServer) mustEmbedUnimplementedRuntimeServiceServer() {}
 func (UnimplementedRuntimeServiceServer) testEmbeddedByValue()                        {}
@@ -2012,6 +2030,24 @@ func _RuntimeService_PushEnv_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_PullEnv_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PullEnvRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).PullEnv(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_PullEnv_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).PullEnv(ctx, req.(*PullEnvRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RuntimeService_ServiceDesc is the grpc.ServiceDesc for RuntimeService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -2214,6 +2250,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "PushEnv",
 			Handler:    _RuntimeService_PushEnv_Handler,
+		},
+		{
+			MethodName: "PullEnv",
+			Handler:    _RuntimeService_PullEnv_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

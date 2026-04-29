@@ -382,6 +382,14 @@ service RuntimeService {
       body: "*"
     };
   }
+
+  // PullEnv pulls cloud environment variables into local .env files
+  rpc PullEnv(PullEnvRequest) returns (PullEnvResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/env/pull",
+      body: "*"
+    };
+  }
 }
 
 // Request message for RuntimeService.Ping
@@ -1375,4 +1383,15 @@ message PushEnvResponse {
   int32 added_count = 1;
   // Number of variables changed
   int32 changed_count = 2;
+}
+
+message PullEnvRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+}
+
+message PullEnvResponse {
+  // Number of variables pulled from admin service
+  int32 variables_count = 1;
+  // Whether the .env file(s) were modified
+  bool modified = 2;
 }
