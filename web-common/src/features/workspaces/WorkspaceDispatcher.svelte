@@ -17,7 +17,7 @@
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
-  import { onMount } from "svelte";
+  import { onMount, type Snippet } from "svelte";
 
   const workspaces = new Map([
     [ResourceKind.Source, ModelWorkspace],
@@ -29,11 +29,20 @@
     [undefined, null],
   ]);
 
-  export let fileArtifact: FileArtifact;
+  let {
+    fileArtifact,
+    disableEnvEditing = false,
+    envEditDisabledMessage,
+  }: {
+    fileArtifact: FileArtifact;
+    disableEnvEditing?: boolean;
+    envEditDisabledMessage?: Snippet;
+  } = $props();
 
-  let editor: EditorView;
+  // Needed to get the correct type
+  let editor: EditorView | null = $state(null);
 
-  $: ({
+  let {
     autoSave,
     hasUnsavedChanges,
     fileName,
@@ -43,23 +52,29 @@
     getResource,
     getParseError,
     remoteContent,
-  } = fileArtifact);
+  } = $derived(fileArtifact);
 
-  $: resourceKind = <ResourceKind | undefined>$resourceName?.kind;
+  let resourceKind = $derived($resourceName?.kind as ResourceKind | undefined);
 
-  $: workspace = workspaces.get(resourceKind ?? $inferredResourceKind);
+  let WorkspaceComponent = $derived(
+    workspaces.get(resourceKind ?? $inferredResourceKind),
+  );
 
-  $: resourceQuery = getResource(queryClient);
+  let isEnvFile = $derived(path === "/.env");
+  let envFileNotEditable = $derived(isEnvFile && disableEnvEditing);
+  let editable = $derived(!envFileNotEditable);
 
-  $: resource = $resourceQuery.data;
+  let resourceQuery = $derived(getResource(queryClient));
 
-  $: extensions =
+  let resource = $derived($resourceQuery.data);
+  let extensions = $derived(
     resourceKind === ResourceKind.API
       ? [customYAMLwithJSONandSQL]
-      : getExtensionsForFile(path);
+      : getExtensionsForFile(path),
+  );
 
-  $: parseErrorQuery = getParseError(queryClient);
-  $: parseError = $parseErrorQuery;
+  let parseErrorQuery = $derived(getParseError(queryClient));
+  let parseError = $derived($parseErrorQuery);
 
   onMount(() => {
     expandDirectory(path);
@@ -83,8 +98,8 @@
   <div class="flex-1 overflow-hidden">
     {#if $generatingCanvas}
       <GeneratingMessage title="Generating your Canvas dashboard..." />
-    {:else if workspace}
-      <svelte:component this={workspace} {fileArtifact} />
+    {:else if WorkspaceComponent}
+      <WorkspaceComponent {fileArtifact} />
     {:else}
       <WorkspaceContainer inspector={false}>
         <FileWorkspaceHeader
@@ -93,6 +108,8 @@
           resourceKind={resourceKind ?? $inferredResourceKind ?? undefined}
           filePath={path}
           hasUnsavedChanges={$hasUnsavedChanges}
+          {editable}
+          nonEditableMessage={envEditDisabledMessage}
         />
         <WorkspaceEditorContainer
           slot="body"
@@ -105,6 +122,7 @@
             {extensions}
             bind:editor
             bind:autoSave={$autoSave}
+            {editable}
           />
         </WorkspaceEditorContainer>
       </WorkspaceContainer>

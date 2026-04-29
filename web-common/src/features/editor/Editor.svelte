@@ -22,9 +22,9 @@
   export let fileArtifact: FileArtifact;
   export let extensions: Extension[] = [];
   export let autoSave = true;
-  export let editor: EditorView;
+  export let editable = true;
+  export let editor: EditorView | null;
   export let forceDisableAutoSave = false;
-  export let showSaveBar = true;
   export let refetchOnWindowFocus = true;
   export let onSave: (content: string) => void = () => {};
   export let onRevert: () => void = () => {};
@@ -89,11 +89,12 @@
         {fileArtifact}
         autoSave={!forceDisableAutoSave && !disableAutoSave && autoSave}
         bind:editor
+        {editable}
       />
     {/key}
   </div>
 
-  {#if !$merging && showSaveBar}
+  {#if !$merging && editable}
     <footer>
       <div class="flex gap-x-3">
         {#if !autoSave || disableAutoSave || forceDisableAutoSave}

@@ -11,6 +11,7 @@
   export let fileArtifact: FileArtifact;
   export let extensions: Extension[] = [];
   export let editor: EditorView | null = null;
+  export let editable = true;
   export let autoSave = true;
 
   const extensionCompartment = new Compartment();
@@ -92,6 +93,7 @@
       state: EditorState.create({
         doc: $editorContent ?? "",
         extensions: [
+          ...(!editable ? [EditorState.readOnly.of(true)] : []),
           baseExtensions(),
           extensionCompartment.of([extensions]),
           EditorView.updateListener.of(listener),

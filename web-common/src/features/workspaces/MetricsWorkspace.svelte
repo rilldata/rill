@@ -92,18 +92,20 @@
     codeToggle={!hideCodeToggle}
     titleInput={fileName}
   >
-    <div class="flex gap-x-2" slot="cta">
-      {#if !inPreviewMode}
-        {#if isOldMetricsView}
-          <PreviewButton
-            href={withEditorPrefix(`/explore/${metricsViewName}`)}
-            disabled={!!parseError || !!reconcileError}
-          />
-        {:else}
-          <GoToDashboardButton {resource} />
+    {#snippet cta()}
+      <div class="flex gap-x-2">
+        {#if !inPreviewMode}
+          {#if isOldMetricsView}
+            <PreviewButton
+              href={withEditorPrefix(`/explore/${metricsViewName}`)}
+              disabled={!!parseError || !!reconcileError}
+            />
+          {:else}
+            <GoToDashboardButton {resource} />
+          {/if}
         {/if}
-      {/if}
-    </div>
+      </div>
+    {/snippet}
   </WorkspaceHeader>
 
   <svelte:fragment slot="body">

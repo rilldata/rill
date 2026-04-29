@@ -103,7 +103,7 @@
     hasUnsavedChanges={$hasUnsavedChanges}
     onTitleChange={handleNameChange}
   >
-    <svelte:fragment slot="workspace-controls">
+    {#snippet workspaceControls()}
       <p
         class="text-fg-muted line-clamp-1 mr-2 text-[11px]"
         transition:fade={{ duration: 200 }}
@@ -112,9 +112,9 @@
           Computed on {formatRefreshedOn(refreshedOn)}
         {/if}
       </p>
-    </svelte:fragment>
+    {/snippet}
 
-    <svelte:fragment slot="cta" let:width>
+    {#snippet cta(width: number)}
       {@const collapse = width < 800}
 
       <div class="flex gap-x-2 items-center">
@@ -127,7 +127,7 @@
           hasUnsavedChanges={$hasUnsavedChanges}
         />
       </div>
-    </svelte:fragment>
+    {/snippet}
   </WorkspaceHeader>
 
   <div

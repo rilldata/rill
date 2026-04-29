@@ -3,22 +3,32 @@
   import { splitFolderAndFileName } from "@rilldata/web-common/features/entity-management/file-path-utils";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-
-  const runtimeClient = useRuntimeClient();
   import { WorkspaceHeader } from "../../layout/workspace";
   import type { ResourceKind } from "../entity-management/resource-selectors";
   import { PROTECTED_FILES } from "../file-explorer/protected-paths";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
+  import type { Snippet } from "svelte";
 
-  export let filePath: string;
-  export let hasUnsavedChanges: boolean;
-  export let resourceKind: ResourceKind | undefined;
-  export let resource: V1Resource | undefined;
+  const runtimeClient = useRuntimeClient();
 
-  let fileName: string;
+  let {
+    filePath,
+    hasUnsavedChanges,
+    resourceKind,
+    resource,
+    editable = true,
+    nonEditableMessage,
+  }: {
+    filePath: string;
+    hasUnsavedChanges: boolean;
+    resourceKind: ResourceKind | undefined;
+    resource: V1Resource | undefined;
+    editable: boolean;
+    nonEditableMessage?: Snippet;
+  } = $props();
 
-  $: [, fileName] = splitFolderAndFileName(filePath);
-  $: isProtectedFile = PROTECTED_FILES.includes(filePath);
+  let [, fileName] = $derived(splitFolderAndFileName(filePath));
+  let isProtectedFile = $derived(PROTECTED_FILES.includes(filePath));
 
   const onChangeCallback = async (newTitle: string) => {
     const route = await handleEntityRename(
@@ -34,7 +44,8 @@
 <WorkspaceHeader
   {filePath}
   {resourceKind}
-  editable={!isProtectedFile}
+  editable={!isProtectedFile && editable}
+  nonEditableMessage={!editable ? nonEditableMessage : undefined}
   onTitleChange={onChangeCallback}
   {hasUnsavedChanges}
   showInspectorToggle={false}
