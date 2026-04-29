@@ -56,6 +56,25 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		return nil, fmt.Errorf("invalid model properties: %w", err)
 	}
 
+	// Auto-detect references to Rill-managed named collections in the model SQL and verify they
+	// exist on the server. This is the analog of DuckDB's `connectorsForSecrets` auto-detection
+	// branch: users don't have to list named-collection connectors explicitly; we discover them
+	// from `s3(rill_<conn>, ...)`-style references. Missing collections are reported as warnings
+	// (not errors) so a user with multiple instance/cluster setups can still iterate locally;
+	// the underlying CH error from the missing collection will surface during the actual query.
+	if refs := DetectNamedCollectionRefs(inputProps.SQL); len(refs) > 0 {
+		for _, connectorName := range refs {
+			exists, checkErr := e.c.NamedCollectionExists(ctx, connectorName)
+			if checkErr != nil {
+				warnings = append(warnings, fmt.Sprintf("could not verify named collection %q on ClickHouse: %v", NamedCollectionName(connectorName), checkErr))
+				continue
+			}
+			if !exists {
+				warnings = append(warnings, fmt.Sprintf("model references named collection %q but it does not exist on the ClickHouse server; ensure the connector resource %q has reconciled successfully", NamedCollectionName(connectorName), connectorName))
+			}
+		}
+	}
+
 	usedModelName := false
 	if outputProps.Table == "" {
 		outputProps.Table = opts.ModelName

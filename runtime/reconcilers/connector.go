@@ -10,6 +10,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers/clickhouse"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -67,6 +68,13 @@ func (r *ConnectorReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 
 	// Exit early for deletion
 	if self.Meta.DeletedOn != nil {
+		// Drop a corresponding ClickHouse named collection if applicable. We do this BEFORE
+		// removing the source connector from the instance because the drop only depends on the
+		// OLAP (ClickHouse) connector, not on the source connector — but ordering here keeps the
+		// failure mode obvious if the OLAP connection has issues.
+		if err := r.syncClickHouseNamedCollection(ctx, t.Spec.Driver, self.Meta.Name.Name, true); err != nil {
+			return runtime.ReconcileResult{Err: err}
+		}
 		err = r.C.Runtime.UpdateInstanceConnector(ctx, r.C.InstanceID, self.Meta.Name.Name, nil)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
@@ -96,6 +104,14 @@ func (r *ConnectorReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 	err = r.testConnector(ctx, self.Meta.Name.Name)
 	// update state even if test fails because the instance connectors have already been updated
 	t.State.SpecHash = specHash
+
+	// Sync the ClickHouse named collection for this connector if applicable. This runs only when
+	// the project's OLAP engine is ClickHouse and the source connector driver is one of the
+	// supported types (s3, gcs, azure, mysql, postgres). Failures here are surfaced as reconcile
+	// errors so the user gets a clear signal (e.g. missing `named_collection_admin`).
+	if err == nil {
+		err = r.syncClickHouseNamedCollection(ctx, t.Spec.Driver, self.Meta.Name.Name, false)
+	}
 
 	err = errors.Join(err, r.C.UpdateState(ctx, self.Meta.Name, self))
 	if err != nil {
@@ -157,4 +173,68 @@ func (r *ConnectorReconciler) testConnector(ctx context.Context, connectorName s
 	defer release()
 
 	return handle.Ping(ctx)
+}
+
+// syncClickHouseNamedCollection creates or drops a ClickHouse named collection that mirrors the
+// given connector's credentials, when the project's OLAP engine is ClickHouse and the connector
+// driver is one of the supported types (s3, gcs, azure, mysql, postgres).
+//
+// For drivers that don't qualify, this is a no-op. For projects whose OLAP is not ClickHouse,
+// this is also a no-op — DuckDB-as-OLAP projects use TEMPORARY SECRETS during model execution
+// instead.
+//
+// If drop is true, the collection is dropped (used during connector deletion). Otherwise it is
+// created or replaced.
+func (r *ConnectorReconciler) syncClickHouseNamedCollection(ctx context.Context, sourceDriver, connectorName string, drop bool) error {
+	if !clickhouse.IsSupportedNamedCollectionDriver(sourceDriver) {
+		return nil
+	}
+
+	inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
+	if err != nil {
+		return fmt.Errorf("failed to load instance: %w", err)
+	}
+	olapName := inst.ResolveOLAPConnector()
+	if olapName == "" {
+		return nil
+	}
+
+	// Acquire the OLAP connector handle. If it's not ClickHouse, this is a no-op.
+	olapHandle, release, err := r.C.Runtime.AcquireHandle(ctx, r.C.InstanceID, olapName)
+	if err != nil {
+		return fmt.Errorf("failed to acquire OLAP connector %q: %w", olapName, err)
+	}
+	defer release()
+	if olapHandle.Driver() != "clickhouse" {
+		return nil
+	}
+	chConn, ok := olapHandle.(*clickhouse.Connection)
+	if !ok {
+		// Defensive: the only registered driver under "clickhouse" is *clickhouse.Connection.
+		return fmt.Errorf("internal: OLAP connector %q has driver=clickhouse but unexpected handle type %T", olapName, olapHandle)
+	}
+
+	if drop {
+		return chConn.DropNamedCollection(ctx, connectorName)
+	}
+
+	// Verify the user has named-collection-admin rights up front, so we surface a clear error
+	// at connector reconcile rather than a confusing failure later during model resolution.
+	if err := chConn.CheckNamedCollectionAdmin(ctx); err != nil {
+		return err
+	}
+
+	// Resolve the source connector's config, then build the named-collection params.
+	cfg, err := r.C.Runtime.ConnectorConfig(ctx, r.C.InstanceID, connectorName)
+	if err != nil {
+		return fmt.Errorf("failed to load connector config: %w", err)
+	}
+	params, err := clickhouse.BuildNamedCollectionParams(sourceDriver, cfg.Resolve())
+	if err != nil {
+		// GCS-with-native-creds and other "no usable creds" cases are expected for some users;
+		// we surface them as warnings via the reconcile error chain rather than silent skips so
+		// the user can act on them.
+		return fmt.Errorf("connector %q: %w", connectorName, err)
+	}
+	return chConn.CreateOrReplaceNamedCollection(ctx, connectorName, params)
 }
