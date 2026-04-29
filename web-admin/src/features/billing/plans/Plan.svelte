@@ -15,7 +15,7 @@
     isProdDeployment,
   } from "@rilldata/web-admin/features/branches/deployment-utils";
   import { createQueries } from "@tanstack/svelte-query";
-  import { derived } from "svelte/store";
+  import { toStore } from "svelte/store";
   import { getErrorForMutation } from "@rilldata/web-admin/client/utils";
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
   import { needsPaymentSetup } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
@@ -154,14 +154,12 @@
   let projectsQuery = $derived(
     createAdminServiceListProjectsForOrganization(organization),
   );
-  let projects = $derived($projectsQuery.data?.projects ?? []);
-
   // Compute units = project.{prod,dev}Slots × number of running {prod,dev}
   // deployments for that project, summed across the org. We fan out one
   // ListDeployments query per project — there's no org-level endpoint.
   const deploymentsQueries = createQueries({
-    queries: derived(projectsQuery, ($pq) =>
-      ($pq.data?.projects ?? []).map((p) =>
+    queries: toStore(() =>
+      ($projectsQuery.data?.projects ?? []).map((p) =>
         getAdminServiceListDeploymentsQueryOptions(
           organization,
           p.name ?? "",
