@@ -228,7 +228,7 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 }
 
 func databaseTypeToPB(dbt string) *runtimev1.Type {
-	t := &runtimev1.Type{Nullable: true}
+	t := &runtimev1.Type{Nullable: true, RawType: dbt}
 	// Strip type parameters: e.g. "DECIMAL(18,6)" → "DECIMAL", "ARRAY<INT>" → "ARRAY"
 	upper := strings.ToUpper(dbt)
 	if i := strings.IndexAny(upper, "(<"); i != -1 {

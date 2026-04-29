@@ -925,8 +925,6 @@ If not found in `time_ranges`, it should be added to the list. */
   pivotRowLimit?: number;
   /** When true, time-series charts use a dynamic Y-axis scale that fits the visible data range. */
   chartDynamicYAxis?: boolean;
-  /** When true, time-series charts always render as line charts. */
-  chartForceLine?: boolean;
 }
 
 export type V1ExploreSortType =
@@ -2097,16 +2095,6 @@ export interface V1ProjectParserState {
   watching?: boolean;
 }
 
-export interface V1PullEnvResponse {
-  variablesCount?: number;
-  modified?: boolean;
-}
-
-export interface V1PushEnvResponse {
-  addedCount?: number;
-  changedCount?: number;
-}
-
 export interface V1PutFileResponse {
   filePath?: string;
 }
@@ -2697,8 +2685,6 @@ export interface V1WatchResourcesResponse {
   name?: V1ResourceName;
   resource?: V1Resource;
 }
-
-export type RuntimeServicePullEnvBodyBody = { [key: string]: unknown };
 
 export type ConnectorServiceListDatabaseSchemasParams = {
   instanceId?: string;
