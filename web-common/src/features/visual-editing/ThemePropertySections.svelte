@@ -12,6 +12,12 @@
 
   export let values: Record<string, string>;
   export let onPropertyChange: (key: string, value: string) => void;
+  /**
+   * When true, render the section read-only: the color swatch is not
+   * clickable and the hex input cannot be edited. Used for the "Presets"
+   * view where the YAML file is the source of truth.
+   */
+  export let readonly = false;
 
   // Track open/closed state per section
   let openSections: Record<string, boolean> = {};
@@ -62,70 +68,78 @@
             {@const colorValue = values[prop.key] ?? ""}
             {@const cs = getHsl(prop.key, colorValue)}
             <div class="property-row">
-              <Popover.Root
-                onOpenChange={(open) => {
-                  if (open) updateColorState(prop.key, colorValue);
-                }}
-              >
-                <Popover.Trigger>
-                  {#snippet child({ props: triggerProps })}
-                    <button
-                      {...triggerProps}
-                      class="swatch"
-                      class:swatch-empty={!colorValue}
-                      style:background-color={colorValue || "#e5e7eb"}
-                    ></button>
-                  {/snippet}
-                </Popover.Trigger>
-                <Popover.Content
-                  class="w-[270px] space-y-1.5"
-                  align="start"
-                  sideOffset={10}
+              {#if readonly}
+                <div
+                  class="swatch swatch-readonly"
+                  class:swatch-empty={!colorValue}
+                  style:background-color={colorValue || "#e5e7eb"}
+                ></div>
+              {:else}
+                <Popover.Root
+                  onOpenChange={(open) => {
+                    if (open) updateColorState(prop.key, colorValue);
+                  }}
                 >
-                  <div class="space-y-0.5 -mt-1">
-                    <InputLabel label="Hue" id="hue-{prop.key}" />
-                    <ColorSlider
-                      mode="hue"
-                      bind:value={cs.h}
-                      hue={cs.h}
-                      color={hslString(cs)}
-                      onChange={() => {
-                        const c = `hsl(${cs.h}, ${cs.s}%, ${cs.l}%)`;
-                        values[prop.key] = c;
-                        onPropertyChange(prop.key, c);
-                      }}
-                    />
-                  </div>
-                  <div class="space-y-0.5">
-                    <InputLabel label="Saturation" id="sat-{prop.key}" />
-                    <ColorSlider
-                      mode="saturation"
-                      bind:value={cs.s}
-                      hue={cs.h}
-                      color={hslString(cs)}
-                      onChange={() => {
-                        const c = `hsl(${cs.h}, ${cs.s}%, ${cs.l}%)`;
-                        values[prop.key] = c;
-                        onPropertyChange(prop.key, c);
-                      }}
-                    />
-                  </div>
-                  <div class="space-y-0.5">
-                    <InputLabel label="Lightness" id="light-{prop.key}" />
-                    <ColorSlider
-                      mode="lightness"
-                      bind:value={cs.l}
-                      hue={cs.h}
-                      color={hslString(cs)}
-                      onChange={() => {
-                        const c = `hsl(${cs.h}, ${cs.s}%, ${cs.l}%)`;
-                        values[prop.key] = c;
-                        onPropertyChange(prop.key, c);
-                      }}
-                    />
-                  </div>
-                </Popover.Content>
-              </Popover.Root>
+                  <Popover.Trigger>
+                    {#snippet child({ props: triggerProps })}
+                      <button
+                        {...triggerProps}
+                        class="swatch"
+                        class:swatch-empty={!colorValue}
+                        style:background-color={colorValue || "#e5e7eb"}
+                      ></button>
+                    {/snippet}
+                  </Popover.Trigger>
+                  <Popover.Content
+                    class="w-[270px] space-y-1.5"
+                    align="start"
+                    sideOffset={10}
+                  >
+                    <div class="space-y-0.5 -mt-1">
+                      <InputLabel label="Hue" id="hue-{prop.key}" />
+                      <ColorSlider
+                        mode="hue"
+                        bind:value={cs.h}
+                        hue={cs.h}
+                        color={hslString(cs)}
+                        onChange={() => {
+                          const c = `hsl(${cs.h}, ${cs.s}%, ${cs.l}%)`;
+                          values[prop.key] = c;
+                          onPropertyChange(prop.key, c);
+                        }}
+                      />
+                    </div>
+                    <div class="space-y-0.5">
+                      <InputLabel label="Saturation" id="sat-{prop.key}" />
+                      <ColorSlider
+                        mode="saturation"
+                        bind:value={cs.s}
+                        hue={cs.h}
+                        color={hslString(cs)}
+                        onChange={() => {
+                          const c = `hsl(${cs.h}, ${cs.s}%, ${cs.l}%)`;
+                          values[prop.key] = c;
+                          onPropertyChange(prop.key, c);
+                        }}
+                      />
+                    </div>
+                    <div class="space-y-0.5">
+                      <InputLabel label="Lightness" id="light-{prop.key}" />
+                      <ColorSlider
+                        mode="lightness"
+                        bind:value={cs.l}
+                        hue={cs.h}
+                        color={hslString(cs)}
+                        onChange={() => {
+                          const c = `hsl(${cs.h}, ${cs.s}%, ${cs.l}%)`;
+                          values[prop.key] = c;
+                          onPropertyChange(prop.key, c);
+                        }}
+                      />
+                    </div>
+                  </Popover.Content>
+                </Popover.Root>
+              {/if}
 
               <span class="prop-label">{prop.label}</span>
 
@@ -134,12 +148,15 @@
                 class:text-red-500={colorValue && !isValidColor(colorValue)}
                 value={colorValue}
                 placeholder=""
+                {readonly}
+                tabindex={readonly ? -1 : 0}
                 onkeydown={(e) => {
                   if (e.key === "Enter") {
                     e.currentTarget.blur();
                   }
                 }}
                 onblur={(e) => {
+                  if (readonly) return;
                   const v = e.currentTarget.value;
                   if (v) {
                     values[prop.key] = v;
@@ -176,6 +193,14 @@
 
   .swatch:hover {
     @apply ring-2 ring-black/20;
+  }
+
+  .swatch-readonly {
+    @apply cursor-default;
+  }
+
+  .swatch-readonly:hover {
+    @apply ring-1 ring-black/10;
   }
 
   .swatch-empty {

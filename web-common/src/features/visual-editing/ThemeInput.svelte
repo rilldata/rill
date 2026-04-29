@@ -2,13 +2,13 @@
   import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
+  import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
   import type { V1ThemeSpec } from "@rilldata/web-common/runtime-client";
-  import { runtimeServicePutFile } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { Pencil } from "lucide-svelte";
   import { useTheme } from "../themes/selectors";
   import { themeControl } from "../themes/theme-control";
   import { themeEditorStore } from "./theme-editor-store";
-  import { buildThemeYaml } from "./theme-yaml-utils";
   import ThemePropertySections from "./ThemePropertySections.svelte";
 
   const runtimeClient = useRuntimeClient();
@@ -40,13 +40,16 @@
   $: inlineSpec =
     theme && typeof theme === "object" ? (theme as V1ThemeSpec) : undefined;
 
-  $: displayValues = editing
-    ? themeEditorStore.getValues(isDarkMode)
-    : getSpecValues(isPresetMode ? fetchedSpec : inlineSpec, isDarkMode);
+  $: displayValues =
+    editing && editorState.mode === "custom"
+      ? themeEditorStore.getValues(isDarkMode)
+      : getSpecValues(isPresetMode ? fetchedSpec : inlineSpec, isDarkMode);
 
   $: currentSelectValue = typeof theme === "string" ? theme : "Default";
 
   $: hasTheme = !!currentThemeName || !!projectDefaultTheme || !isPresetMode;
+
+  $: themeFilePath = themeResource?.meta?.filePaths?.[0];
 
   function getSpecValues(
     spec: V1ThemeSpec | undefined,
@@ -91,17 +94,12 @@
 
   let saveTimer: ReturnType<typeof setTimeout> | undefined;
 
+  // Only the Custom view is editable; Presets is view-only and routes the
+  // user to the YAML file via `Edit theme file`.
   function handlePropertyChange(key: string, value: string) {
-    if (!editing) {
-      const spec = isPresetMode ? fetchedSpec : inlineSpec;
-      if (spec) {
-        if (isPresetMode) {
-          const themeName = currentThemeName ?? projectDefaultTheme;
-          themeEditorStore.startEditing(spec, themeName);
-        } else {
-          themeEditorStore.startCustom(spec);
-        }
-      }
+    if (isPresetMode) return;
+    if (!editing && inlineSpec) {
+      themeEditorStore.startCustom(inlineSpec);
     }
     themeEditorStore.updateProperty(key, value, isDarkMode);
     debouncedSave();
@@ -109,26 +107,15 @@
 
   function debouncedSave() {
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(autoSave, 800);
+    saveTimer = setTimeout(() => {
+      onInlineThemeChange(themeEditorStore.buildSpec());
+      themeEditorStore.markSaved();
+    }, 800);
   }
 
-  async function autoSave() {
-    const spec = themeEditorStore.buildSpec();
-
-    if (!isPresetMode || editorState.mode === "custom") {
-      onInlineThemeChange(spec);
-    } else {
-      const yamlContent = buildThemeYaml(spec);
-      const filePath = themeResource?.meta?.filePaths?.[0];
-      if (!filePath) return;
-
-      await runtimeServicePutFile(runtimeClient, {
-        path: filePath,
-        blob: yamlContent,
-      });
-    }
-
-    themeEditorStore.markSaved();
+  function handleEditThemeFile() {
+    if (!themeFilePath) return;
+    void navigateToFile(themeFilePath);
   }
 </script>
 
@@ -168,13 +155,31 @@
       <ThemePropertySections
         values={displayValues}
         onPropertyChange={handlePropertyChange}
+        readonly={isPresetMode}
       />
     </div>
+
+    {#if isPresetMode && themeFilePath}
+      <button type="button" class="edit-file-btn" onclick={handleEditThemeFile}>
+        <Pencil size="12" />
+        <span>Edit theme file</span>
+      </button>
+    {/if}
   {/if}
 </div>
 
 <style lang="postcss">
   .sections-container {
     @apply max-h-[60vh] overflow-y-auto;
+  }
+
+  .edit-file-btn {
+    @apply mt-1 inline-flex items-center gap-x-1.5 self-start;
+    @apply text-xs font-medium text-fg-secondary;
+    @apply px-2 py-1 rounded border border-border bg-surface-base;
+  }
+
+  .edit-file-btn:hover {
+    @apply bg-surface-hover text-fg-primary;
   }
 </style>
