@@ -9,6 +9,8 @@
   import ProjectAccessControls from "./ProjectAccessControls.svelte";
   import DeploymentStatusChip from "@rilldata/web-admin/features/projects/status/DeploymentStatusChip.svelte";
   import ProjectCardActions from "@rilldata/web-admin/features/projects/ProjectCardActions.svelte";
+  import GuardedDeleteProjectConfirmation from "@rilldata/web-admin/features/projects/settings/GuardedDeleteProjectConfirmation.svelte";
+  import ProjectRenameDialog from "@rilldata/web-admin/features/projects/settings/ProjectRenameDialog.svelte";
 
   let { organization, project }: { organization: string; project: string } =
     $props();
@@ -18,6 +20,8 @@
 
   let hovering = $state(false);
   let actionsOpen = $state(false);
+  let renameProjectOpen = $state(false);
+  let deleteProjectOpen = $state(false);
 
   function doesProjectNameIncludeUnderscores(project: string) {
     return project.includes("_");
@@ -43,7 +47,13 @@
     <!-- Project actions -->
     {#if hovering || actionsOpen}
       <div class="absolute top-2.5 right-2.5 text-fg-secondary">
-        <ProjectCardActions {organization} {project} bind:open={actionsOpen} />
+        <ProjectCardActions
+          {organization}
+          {project}
+          bind:open={actionsOpen}
+          onRename={() => (renameProjectOpen = true)}
+          onDelete={() => (deleteProjectOpen = true)}
+        />
       </div>
     {/if}
     <!-- Permissions tag -->
@@ -75,3 +85,12 @@
     </div>
   </Card>
 {/if}
+
+<ProjectRenameDialog {organization} {project} bind:open={renameProjectOpen} />
+
+<GuardedDeleteProjectConfirmation
+  {organization}
+  {project}
+  bind:open={deleteProjectOpen}
+  button={false}
+/>
