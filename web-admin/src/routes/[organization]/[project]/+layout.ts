@@ -1,5 +1,9 @@
 import type { RpcStatus } from "@rilldata/web-admin/client";
 import { hasBlockerIssues } from "@rilldata/web-admin/features/billing/selectors";
+import {
+  branchPathPrefix,
+  extractBranchFromPath,
+} from "@rilldata/web-admin/features/branches/branch-utils";
 import { fetchAllProjectsHibernating } from "@rilldata/web-admin/features/organizations/selectors";
 import { error, redirect } from "@sveltejs/kit";
 import { isAxiosError } from "axios";
@@ -8,10 +12,39 @@ import { isProjectWelcomePage } from "@rilldata/web-admin/features/navigation/na
 import { CreateProjectBranchName } from "@rilldata/web-admin/features/projects/publish-project.ts";
 
 export const load = async ({
+  url,
   params: { organization, project },
   route,
   parent,
 }) => {
+  // Branches are accessible only via the editor surface. Any `/@branch`
+  // URL outside of `/-/edit` (and outside of public `/-/share/` magic
+  // links) is funneled into the equivalent edit route so users can never
+  // see a branch in the production cloud view.
+  const branch = extractBranchFromPath(url.pathname);
+  if (
+    branch &&
+    !url.pathname.includes("/-/edit") &&
+    !url.pathname.includes("/-/share/")
+  ) {
+    const prefix = `/${organization}/${project}${branchPathPrefix(branch)}`;
+    const subpath = url.pathname.slice(prefix.length);
+    let editSubpath: string;
+    if (!subpath || subpath === "/") {
+      editSubpath = "/-/edit/dashboards";
+    } else if (
+      subpath.startsWith("/explore/") ||
+      subpath.startsWith("/canvas/")
+    ) {
+      editSubpath = "/-/edit" + subpath;
+    } else {
+      // Sub-pages without an editor equivalent (reports, alerts,
+      // settings, status, etc.) collapse to the preview home.
+      editSubpath = "/-/edit/dashboards";
+    }
+    throw redirect(303, prefix + editSubpath + url.search);
+  }
+
   const { organizationPermissions, issues } = await parent();
 
   if (!organizationPermissions.manageOrg) return;

@@ -4,7 +4,7 @@
   import { Button } from "@rilldata/web-common/components/button";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { DoorOpen, GitPullRequestCreateArrow } from "lucide-svelte";
+  import { GitPullRequestCreateArrow, LogOut } from "lucide-svelte";
   import CommitPopover from "./CommitPopover.svelte";
   import { isEditPreviewRoute } from "./edit-route-utils";
 
@@ -44,14 +44,13 @@
 </Tooltip>
 
 <Tooltip distance={8}>
-  <Button
-    type="secondary"
+  <a
     href={projectHomeHref}
-    class="!bg-surface-base"
+    class="flex items-center gap-x-2 px-2 py-1 rounded text-fg-primary hover:bg-surface-hover"
   >
-    <DoorOpen size="14" />
-    Exit
-  </Button>
+    <LogOut size="16" />
+    <span class="text-sm font-medium">Exit</span>
+  </a>
   <TooltipContent slot="tooltip-content" maxWidth="200px">
     <span class="text-xs">Return to project home</span>
   </TooltipContent>

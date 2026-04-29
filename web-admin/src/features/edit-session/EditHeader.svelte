@@ -11,7 +11,9 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import Header from "@rilldata/web-common/layout/header/Header.svelte";
   import HeaderLogo from "@rilldata/web-common/layout/header/HeaderLogo.svelte";
-  import { GitBranchIcon } from "lucide-svelte";
+  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { ChevronRight, GitBranchIcon } from "lucide-svelte";
   import {
     createAdminServiceGetCurrentUser,
     type V1ProjectPermissions,
@@ -26,6 +28,7 @@
   export let readProjects: boolean = false;
 
   const user = createAdminServiceGetCurrentUser();
+  const runtimeClient = useRuntimeClient();
   const { developerChat } = featureFlags;
 
   $: activeBranch = extractBranchFromPath($page.url.pathname);
@@ -37,6 +40,23 @@
   // no trial pill, no dashboard segment.
   $: pathParts = [null, { options: $projectPathsQuery.data ?? new Map() }];
   $: currentPath = [undefined, project];
+
+  // Second row: project name (display name from runtime) + sub-page chevron.
+  $: instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {});
+  $: projectDisplayName =
+    $instanceQuery.data?.instance?.projectDisplayName || project;
+
+  $: subPage = (() => {
+    const path = $page.url.pathname;
+    const editIdx = path.indexOf("/-/edit");
+    if (editIdx === -1) return undefined;
+    const subpath = path.slice(editIdx + "/-/edit".length);
+    if (subpath.startsWith("/dashboards")) return "Dashboards";
+    if (subpath.startsWith("/explore/") || subpath.startsWith("/canvas/")) {
+      return $page.params.name;
+    }
+    return undefined;
+  })();
 </script>
 
 <Header borderBottom tinted>
@@ -77,3 +97,18 @@
     {/if}
   </div>
 </Header>
+
+<div
+  class="bg-surface-base flex items-center h-10 px-3 gap-x-2 border-b border-border"
+>
+  <a
+    href={`/${organization}/${project}`}
+    class="text-fg-primary text-sm hover:underline"
+  >
+    {projectDisplayName}
+  </a>
+  <ChevronRight size="15" class="text-fg-muted" />
+  {#if subPage}
+    <span class="text-fg-muted text-sm">{subPage}</span>
+  {/if}
+</div>
