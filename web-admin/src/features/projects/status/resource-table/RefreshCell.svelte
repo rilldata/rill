@@ -24,7 +24,7 @@
       {formattedDate}
     </div>
     <TooltipContent slot="tooltip-content">
-      <span class="text-xs font-medium">
+      <span class="text-xs text-gray-50 font-medium">
         {full}
       </span>
     </TooltipContent>

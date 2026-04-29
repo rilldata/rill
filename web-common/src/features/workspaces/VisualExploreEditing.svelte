@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { beforeNavigate, replaceState } from "$app/navigation";
+  import { replaceState } from "$app/navigation";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -38,8 +38,6 @@
   import MeasureDimensionSelector from "../visual-editing/MeasureDimensionSelector.svelte";
   import MultiSelectInput from "../visual-editing/MultiSelectInput.svelte";
   import SidebarWrapper from "../visual-editing/SidebarWrapper.svelte";
-  import { themeEditorStore } from "../visual-editing/theme-editor-store";
-  import { buildInlineThemeObject } from "../visual-editing/theme-yaml-utils";
   import ThemeInput from "../visual-editing/ThemeInput.svelte";
 
   const itemTypes = ["measures", "dimensions"] as const;
@@ -63,11 +61,6 @@
     },
     dashboardStore,
   } = StateManagers;
-
-  // Clean up theme editing state on navigation
-  beforeNavigate(() => {
-    themeEditorStore.exitEditing();
-  });
 
   $: if (exploreSpec) metricsExplorerStore.sync(exploreName, exploreSpec);
 
@@ -525,8 +518,24 @@
           updateProperties({ theme: value });
         }
       }}
-      onInlineThemeChange={(spec) => {
-        updateProperties({ theme: buildInlineThemeObject(spec) });
+      onColorChange={(primary, secondary, isDarkMode) => {
+        const modeKey = isDarkMode ? "dark" : "light";
+        const altMode = isDarkMode ? "light" : "dark";
+
+        // check if theme exists for alt mode
+        const setAltMode = !parsedDocument.hasIn(["theme", altMode]);
+
+        parsedDocument.setIn(["theme", modeKey, "primary"], primary);
+        parsedDocument.setIn(["theme", modeKey, "secondary"], secondary);
+
+        if (setAltMode) {
+          parsedDocument.setIn(["theme", altMode, "primary"], primary);
+          parsedDocument.setIn(["theme", altMode, "secondary"], secondary);
+        }
+
+        killState();
+
+        updateEditorContent(parsedDocument.toString(), false, autoSave);
       }}
     />
 

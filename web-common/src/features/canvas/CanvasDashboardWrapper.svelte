@@ -5,7 +5,6 @@
   import CanvasFilters from "./filters/CanvasFilters.svelte";
   import { getCanvasStore } from "./state-managers/state-managers";
   import ThemeProvider from "../dashboards/ThemeProvider.svelte";
-  import { themePreviewOverride } from "../themes/selectors";
 
   const client = useRuntimeClient();
 
@@ -23,15 +22,13 @@
   $: ({ instanceId } = client);
 
   $: ({
-    canvasEntity: { theme: resolvedCanvasTheme },
+    canvasEntity: { theme },
   } = getCanvasStore(canvasName, instanceId));
-
-  $: effectiveTheme = $themePreviewOverride ?? $resolvedCanvasTheme;
 
   $: ({ width: clientWidth } = contentRect);
 </script>
 
-<ThemeProvider theme={effectiveTheme}>
+<ThemeProvider theme={$theme}>
   <main
     class="flex flex-col overflow-hidden"
     class:w-full={$dynamicHeight}
