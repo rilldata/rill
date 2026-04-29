@@ -21,9 +21,11 @@
 </script>
 
 <Tooltip distance={8}>
-  <Button type="secondary" href={closeHref} onClick={handleClose}>Done</Button>
+  <Button type="secondary" href={closeHref} onClick={handleClose}
+    >Preview</Button
+  >
   <TooltipContent slot="tooltip-content" maxWidth="200px">
-    <span class="text-xs">Return to project home</span>
+    <span class="text-xs">Switch to preview mode</span>
   </TooltipContent>
 </Tooltip>
 
