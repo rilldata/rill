@@ -299,6 +299,7 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 	if err != nil {
 		return err
 	}
+	// base variables are returned first followed by environment specific variables, so we can just iterate once and overlay them in order
 	v := map[string]string{}
 	for _, variable := range vars {
 		v[variable.Name] = variable.Value
