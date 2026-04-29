@@ -12,7 +12,6 @@ import { derived, get, type Readable } from "svelte/store";
 import {
   ResourceKind,
   useClientFilteredResources,
-  useFilteredResources,
 } from "../entity-management/resource-selectors";
 
 type MetricsViewsData = Readable<Record<string, V1MetricsView | undefined>>;
@@ -61,7 +60,7 @@ export class MetricsViewSelectors {
   metricsViewDimensionsMap: Readable<Record<string, Set<string>>>;
 
   allMetricsViews: ReturnType<
-    typeof useFilteredResources<Array<V1Resource | undefined>>
+    typeof useClientFilteredResources<Array<V1Resource | undefined>>
   >;
 
   constructor(client: RuntimeClient, metricsViewsData?: MetricsViewsData) {
