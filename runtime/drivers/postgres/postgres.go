@@ -401,6 +401,7 @@ func (c *connection) getDB(ctx context.Context) (*sqlx.DB, error) {
 		return nil, c.dbErr
 	}
 	c.db.SetConnMaxIdleTime(time.Minute)
+	c.db.SetMaxOpenConns(1)
 	return c.db, c.dbErr
 }
 
