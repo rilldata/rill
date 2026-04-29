@@ -231,7 +231,12 @@
           >
             <LastRefreshedDate {dashboard} />
             {#if $cloudEditing && (onMetricsExplorerPage || onCanvasDashboardPage) && projectPermissions.manageDev}
-              <EditButton {organization} {project} {activeBranch} {primaryBranch} />
+              <EditButton
+                {organization}
+                {project}
+                {activeBranch}
+                {primaryBranch}
+              />
             {/if}
             {#if $dimensionSearch && ready}
               <GlobalDimensionSearch />

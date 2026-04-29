@@ -102,9 +102,7 @@
     createError = "";
   }
 
-  $: selectedDeployment = ownDeployments.find(
-    (d) => d.id === selectedBranchId,
-  );
+  $: selectedDeployment = ownDeployments.find((d) => d.id === selectedBranchId);
 
   function editUrl(branch: string | undefined): string {
     return `/${organization}/${project}${branchPathPrefix(branch)}/-/edit`;
@@ -272,10 +270,7 @@
                     type="button"
                   >
                     <span class="select-left">
-                      <GitBranchIcon
-                        size="14"
-                        class="text-fg-muted shrink-0"
-                      />
+                      <GitBranchIcon size="14" class="text-fg-muted shrink-0" />
                       <span class="select-name">
                         {selectedDeployment?.branch ?? sourceBranch}
                       </span>
@@ -445,7 +440,9 @@
   }
 
   :global(.dark) .seg-trigger.is-active {
-    background: rgb(71 85 105); /* slate-600 — clearly lighter than the slate-800 container */
+    background: rgb(
+      71 85 105
+    ); /* slate-600 — clearly lighter than the slate-800 container */
     color: rgb(248 250 252); /* slate-50 */
     box-shadow:
       0 1px 2px rgba(0, 0, 0, 0.4),
