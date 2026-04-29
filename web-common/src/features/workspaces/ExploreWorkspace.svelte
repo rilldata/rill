@@ -21,7 +21,6 @@
   import ExplainAndFixErrorButton from "@rilldata/web-common/features/chat/ExplainAndFixErrorButton.svelte";
   import ReconcileWarningPanel from "../entity-management/ReconcileWarningPanel.svelte";
   import Spinner from "../entity-management/Spinner.svelte";
-  import PreviewButton from "../explores/PreviewButton.svelte";
   import VisualExploreEditing from "./VisualExploreEditing.svelte";
   import StateManagersProvider from "../dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardStateManager from "../dashboards/state-managers/loaders/DashboardStateManager.svelte";
@@ -106,17 +105,7 @@
         codeToggle={!hideCodeToggle}
         resourceKind={ResourceKind.Explore}
       >
-        <div class="flex gap-x-2" slot="cta">
-          {#if !inPreviewMode}
-            <PreviewButton
-              href={withEditorPrefix(`/explore/${exploreName}`)}
-              disabled={!!parseError ||
-                !!reconcileError ||
-                resourceIsReconciling}
-              reconciling={resourceIsReconciling}
-            />
-          {/if}
-        </div>
+        <div class="flex gap-x-2" slot="cta"></div>
       </WorkspaceHeader>
 
       <svelte:fragment slot="body">

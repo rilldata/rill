@@ -17,7 +17,6 @@
     useIsModelingSupportedForConnectorOLAP as useIsModelingSupportedForConnector,
     useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver,
   } from "../connectors/selectors";
-  import PreviewButton from "../explores/PreviewButton.svelte";
   import GoToDashboardButton from "../metrics-views/GoToDashboardButton.svelte";
   import ReconcileWarningPanel from "../entity-management/ReconcileWarningPanel.svelte";
   import VisualMetrics from "./VisualMetrics.svelte";
@@ -93,15 +92,8 @@
     titleInput={fileName}
   >
     <div class="flex gap-x-2" slot="cta">
-      {#if !inPreviewMode}
-        {#if isOldMetricsView}
-          <PreviewButton
-            href={withEditorPrefix(`/explore/${metricsViewName}`)}
-            disabled={!!parseError || !!reconcileError}
-          />
-        {:else}
-          <GoToDashboardButton {resource} />
-        {/if}
+      {#if !inPreviewMode && !isOldMetricsView}
+        <GoToDashboardButton {resource} />
       {/if}
     </div>
   </WorkspaceHeader>

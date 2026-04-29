@@ -191,7 +191,7 @@
   }
 </script>
 
-<Header borderBottom={!onProjectPage}>
+<Header borderBottom={!onProjectPage && !editPreviewMode}>
   <HeaderLogo href={rillLogoHref} logoUrl={organizationLogoUrl} />
   {#if editContext && activeBranch}
     <button

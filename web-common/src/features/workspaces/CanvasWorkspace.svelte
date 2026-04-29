@@ -20,7 +20,6 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import ReconcileWarningPanel from "../entity-management/ReconcileWarningPanel.svelte";
-  import PreviewButton from "../explores/PreviewButton.svelte";
   import CanvasBuilder from "../canvas/CanvasBuilder.svelte";
   import SaveDefaultsButton from "../canvas/components/SaveDefaultsButton.svelte";
   import CanvasLoadingState from "../canvas/CanvasLoadingState.svelte";
@@ -109,11 +108,6 @@
             />
           {/if}
 
-          <PreviewButton
-            href={withEditorPrefix(`/canvas/${canvasName}`)}
-            disabled={!!parseError || !!reconcileError || resourceIsReconciling}
-            reconciling={resourceIsReconciling}
-          />
         </div>
       </WorkspaceHeader>
 
