@@ -3,7 +3,7 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
   import SimpleMessage from "../../layout/inspector/SimpleMessage.svelte";
-  import { createConnectorServiceOLAPGetTable } from "../../runtime-client";
+  import { createConnectorServiceGetTable } from "../../runtime-client";
   import TableInspector from "../connectors/olap/TableInspector.svelte";
   import ReconcilingSpinner from "../entity-management/ReconcilingSpinner.svelte";
   import { fileArtifacts } from "../entity-management/file-artifacts";
@@ -29,7 +29,7 @@
   } = $resource);
   $: resourceReconcileError = resourceData?.meta?.reconcileError;
 
-  $: tableQuery = createConnectorServiceOLAPGetTable(
+  $: tableQuery = createConnectorServiceGetTable(
     runtimeClient,
     {
       connector,

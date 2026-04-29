@@ -78,7 +78,7 @@
   // Filter out temporary tables (e.g., __rill_tmp_ prefixed tables)
   $: filteredTables = filterTemporaryTables($tablesList.data?.tables);
 
-  // TODO: populate from OLAPGetTable responses when per-table metadata is available
+  // TODO: populate from GetTable responses when per-table metadata is available
   let isViewMap = new Map<string, boolean>();
   // createQuery (unlike createInfiniteQuery) handles re-creation in $: blocks safely
   $: modelResourcesQuery = useModelResources(runtimeClient);

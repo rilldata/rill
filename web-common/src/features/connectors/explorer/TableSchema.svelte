@@ -21,13 +21,17 @@
     table,
   );
 
-  // New API returns schema as { [columnName]: "type" }
-  $: columns = $newTableQuery?.data?.schema
-    ? Object.entries($newTableQuery.data.schema).map(([name, type]) => ({
-        name,
-        type: type,
-      }))
-    : [];
+  $: columns = (() => {
+    const data = $newTableQuery?.data;
+    const supported = (data?.schema?.fields ?? []).map((f) => ({
+      name: f.name ?? "",
+      type: f.type?.rawType ?? "",
+    }));
+    const unsupported = Object.entries(data?.unsupportedColumns ?? {}).map(
+      ([name, rawType]) => ({ name, type: `UNKNOWN(${rawType})` }),
+    );
+    return [...supported, ...unsupported];
+  })();
 
   $: error = $newTableQuery?.error;
   $: isError = !!$newTableQuery?.error;

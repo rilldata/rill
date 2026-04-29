@@ -20,7 +20,6 @@ import {
   ListDatabaseSchemasRequest,
   ListObjectsRequest,
   ListTablesRequest,
-  OLAPGetTableRequest,
   OLAPListTablesRequest,
 } from "../../../proto/gen/rill/runtime/v1/connectors_pb";
 import type {
@@ -29,7 +28,6 @@ import type {
   V1ListDatabaseSchemasResponse,
   V1ListObjectsResponse,
   V1ListTablesResponse,
-  V1OLAPGetTableResponse,
   V1OLAPListTablesResponse,
 } from "../../gen/index.schemas";
 import type { RuntimeClient } from "../runtime-client";
@@ -277,89 +275,6 @@ export function createConnectorServiceOLAPListTables<
   queryClient?: QueryClient,
 ): CreateQueryResult<TData, ConnectError> {
   const queryOptions = getConnectorServiceOLAPListTablesQueryOptions(
-    client,
-    request,
-    options,
-  );
-  return createQuery(queryOptions, queryClient);
-}
-
-/**
- * Raw RPC call: ConnectorService.OLAPGetTable
- */
-export async function connectorServiceOLAPGetTable(
-  client: RuntimeClient,
-  request: Omit<PartialMessage<OLAPGetTableRequest>, "instanceId">,
-  options?: { signal?: AbortSignal },
-): Promise<V1OLAPGetTableResponse> {
-  const r = await client.connectorService.oLAPGetTable(
-    OLAPGetTableRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
-    { signal: options?.signal },
-  );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as V1OLAPGetTableResponse;
-}
-
-export function getConnectorServiceOLAPGetTableQueryKey(
-  instanceId: string,
-  request?: Omit<PartialMessage<OLAPGetTableRequest>, "instanceId">,
-): QueryKey {
-  return [
-    "ConnectorService",
-    "oLAPGetTable",
-    instanceId,
-    request ?? {},
-  ] as const;
-}
-
-export function getConnectorServiceOLAPGetTableQueryOptions<
-  TData = V1OLAPGetTableResponse,
->(
-  client: RuntimeClient,
-  request: Omit<PartialMessage<OLAPGetTableRequest>, "instanceId">,
-  options?: {
-    query?: Partial<
-      CreateQueryOptions<V1OLAPGetTableResponse, ConnectError, TData>
-    >;
-  },
-): CreateQueryOptions<V1OLAPGetTableResponse, ConnectError, TData> & {
-  queryKey: QueryKey;
-} {
-  const queryKey = getConnectorServiceOLAPGetTableQueryKey(
-    client.instanceId,
-    request,
-  );
-  const queryFn: QueryFunction<V1OLAPGetTableResponse> = ({ signal }) =>
-    connectorServiceOLAPGetTable(client, request, { signal });
-  return {
-    queryKey,
-    queryFn,
-    enabled: !!client.instanceId,
-    ...options?.query,
-  } as CreateQueryOptions<V1OLAPGetTableResponse, ConnectError, TData> & {
-    queryKey: QueryKey;
-  };
-}
-
-export function createConnectorServiceOLAPGetTable<
-  TData = V1OLAPGetTableResponse,
->(
-  client: RuntimeClient,
-  request: Omit<PartialMessage<OLAPGetTableRequest>, "instanceId">,
-  options?: {
-    query?: Partial<
-      CreateQueryOptions<V1OLAPGetTableResponse, ConnectError, TData>
-    >;
-  },
-  queryClient?: QueryClient,
-): CreateQueryResult<TData, ConnectError> {
-  const queryOptions = getConnectorServiceOLAPGetTableQueryOptions(
     client,
     request,
     options,

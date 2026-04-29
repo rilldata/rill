@@ -20,7 +20,7 @@ export function filterTemporaryTables(
 
 /**
  * Determines whether a table is likely a view based on its metadata.
- * Uses the view flag from OLAPGetTable, falling back to size heuristics.
+ * Uses the view flag from GetTable, falling back to size heuristics.
  *
  * Returns `undefined` when neither signal is available (e.g., data still loading),
  * so callers can distinguish "not yet known" from a definitive classification.

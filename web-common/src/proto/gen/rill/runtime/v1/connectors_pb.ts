@@ -474,126 +474,6 @@ export class OlapTableInfo extends Message<OlapTableInfo> {
 }
 
 /**
- * @generated from message rill.runtime.v1.OLAPGetTableRequest
- */
-export class OLAPGetTableRequest extends Message<OLAPGetTableRequest> {
-  /**
-   * @generated from field: string instance_id = 1;
-   */
-  instanceId = "";
-
-  /**
-   * @generated from field: string connector = 2;
-   */
-  connector = "";
-
-  /**
-   * @generated from field: string database = 4;
-   */
-  database = "";
-
-  /**
-   * @generated from field: string database_schema = 5;
-   */
-  databaseSchema = "";
-
-  /**
-   * @generated from field: string table = 3;
-   */
-  table = "";
-
-  constructor(data?: PartialMessage<OLAPGetTableRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.OLAPGetTableRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OLAPGetTableRequest {
-    return new OLAPGetTableRequest().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): OLAPGetTableRequest {
-    return new OLAPGetTableRequest().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): OLAPGetTableRequest {
-    return new OLAPGetTableRequest().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: OLAPGetTableRequest | PlainMessage<OLAPGetTableRequest> | undefined, b: OLAPGetTableRequest | PlainMessage<OLAPGetTableRequest> | undefined): boolean {
-    return proto3.util.equals(OLAPGetTableRequest, a, b);
-  }
-}
-
-/**
- * @generated from message rill.runtime.v1.OLAPGetTableResponse
- */
-export class OLAPGetTableResponse extends Message<OLAPGetTableResponse> {
-  /**
-   * @generated from field: rill.runtime.v1.StructType schema = 1;
-   */
-  schema?: StructType;
-
-  /**
-   * unsupported_columns are columns having datatypes which are not supported by Rill
-   *
-   * @generated from field: map<string, string> unsupported_columns = 3;
-   */
-  unsupportedColumns: { [key: string]: string } = {};
-
-  /**
-   * @generated from field: bool view = 2;
-   */
-  view = false;
-
-  /**
-   * physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
-   *
-   * @generated from field: int64 physical_size_bytes = 4;
-   */
-  physicalSizeBytes = protoInt64.zero;
-
-  constructor(data?: PartialMessage<OLAPGetTableResponse>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.OLAPGetTableResponse";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "schema", kind: "message", T: StructType },
-    { no: 3, name: "unsupported_columns", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 2, name: "view", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 4, name: "physical_size_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OLAPGetTableResponse {
-    return new OLAPGetTableResponse().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): OLAPGetTableResponse {
-    return new OLAPGetTableResponse().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): OLAPGetTableResponse {
-    return new OLAPGetTableResponse().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: OLAPGetTableResponse | PlainMessage<OLAPGetTableResponse> | undefined, b: OLAPGetTableResponse | PlainMessage<OLAPGetTableResponse> | undefined): boolean {
-    return proto3.util.equals(OLAPGetTableResponse, a, b);
-  }
-}
-
-/**
  * @generated from message rill.runtime.v1.ListDatabaseSchemasRequest
  */
 export class ListDatabaseSchemasRequest extends Message<ListDatabaseSchemasRequest> {
@@ -953,9 +833,28 @@ export class GetTableRequest extends Message<GetTableRequest> {
  */
 export class GetTableResponse extends Message<GetTableResponse> {
   /**
-   * @generated from field: map<string, string> schema = 1;
+   * @generated from field: rill.runtime.v1.StructType schema = 1;
    */
-  schema: { [key: string]: string } = {};
+  schema?: StructType;
+
+  /**
+   * @generated from field: bool view = 2;
+   */
+  view = false;
+
+  /**
+   * unsupported_columns are columns having datatypes which are not supported by Rill, mapped to their raw type string
+   *
+   * @generated from field: map<string, string> unsupported_columns = 3;
+   */
+  unsupportedColumns: { [key: string]: string } = {};
+
+  /**
+   * physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
+   *
+   * @generated from field: int64 physical_size_bytes = 4;
+   */
+  physicalSizeBytes = protoInt64.zero;
 
   constructor(data?: PartialMessage<GetTableResponse>) {
     super();
@@ -965,7 +864,10 @@ export class GetTableResponse extends Message<GetTableResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.GetTableResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "schema", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 1, name: "schema", kind: "message", T: StructType },
+    { no: 2, name: "view", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "unsupported_columns", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 4, name: "physical_size_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetTableResponse {

@@ -75,7 +75,7 @@ func TablesCmd(ch *cmdutil.Helper) *cobra.Command {
 
 				// Get table information for column count
 				var columnCount string
-				tableRes, err := rt.ConnectorServiceClient().OLAPGetTable(cmd.Context(), &runtimev1.OLAPGetTableRequest{
+				tableRes, err := rt.ConnectorServiceClient().GetTable(cmd.Context(), &runtimev1.GetTableRequest{
 					InstanceId: instanceID,
 					Table:      table.Name,
 					Connector:  "", // Uses default OLAP connector

@@ -26,12 +26,7 @@ service ConnectorService {
     option (google.api.http) = {get: "/v1/olap/tables"};
   }
 
-  // OLAPGetTable returns metadata about a table or view in an OLAP
-  rpc OLAPGetTable(OLAPGetTableRequest) returns (OLAPGetTableResponse) {
-    option (google.api.http) = {get: "/v1/connectors/olap/table"};
-  }
-
-  // ListDatabaseSchemas list all schemas across databases 
+  // ListDatabaseSchemas list all schemas across databases
   rpc ListDatabaseSchemas(ListDatabaseSchemasRequest) returns (ListDatabaseSchemasResponse) {
     option (google.api.http) = {get: "/v1/connectors/database_schemas"};
   }
@@ -115,23 +110,6 @@ message OlapTableInfo {
   int64 physical_size_bytes = 7;
 }
 
-message OLAPGetTableRequest {
-  string instance_id = 1;
-  string connector = 2;
-  string database = 4;
-  string database_schema = 5;
-  string table = 3;
-}
-
-message OLAPGetTableResponse {
-  StructType schema = 1;
-  // unsupported_columns are columns having datatypes which are not supported by Rill
-  map<string, string> unsupported_columns = 3;
-  bool view = 2;
-  // physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
-  int64 physical_size_bytes = 4;
-}
-
 message ListDatabaseSchemasRequest {
   string instance_id = 1;
   string connector = 2;
@@ -177,5 +155,10 @@ message GetTableRequest {
 }
 
 message GetTableResponse {
-  map<string, string> schema = 1;
+  StructType schema = 1;
+  bool view = 2;
+  // unsupported_columns are columns having datatypes which are not supported by Rill, mapped to their raw type string
+  map<string, string> unsupported_columns = 3;
+  // physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
+  int64 physical_size_bytes = 4;
 }

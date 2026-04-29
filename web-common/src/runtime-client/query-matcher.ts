@@ -33,7 +33,7 @@ function isOlapQuery(query: Query, name: string): boolean {
   const key = query.queryKey;
   if (
     key[0] === "ConnectorService" &&
-    (key[1] === "oLAPGetTable" || key[1] === "oLAPListTables")
+    (key[1] === "getTable" || key[1] === "oLAPListTables")
   ) {
     const request = key[3];
     return (

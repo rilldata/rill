@@ -1135,10 +1135,14 @@ export interface V1GetResourceResponse {
   resource?: V1Resource;
 }
 
-export type V1GetTableResponseSchema = { [key: string]: string };
+export type V1GetTableResponseUnsupportedColumns = { [key: string]: string };
 
 export interface V1GetTableResponse {
-  schema?: V1GetTableResponseSchema;
+  schema?: V1StructType;
+  view?: boolean;
+  unsupportedColumns?: V1GetTableResponseUnsupportedColumns;
+  /** physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined. */
+  physicalSizeBytes?: string;
 }
 
 export interface V1GitBranch {
@@ -2005,18 +2009,6 @@ export interface V1NumericSummary {
   numericOutliers?: V1NumericOutliers;
 }
 
-export type V1OLAPGetTableResponseUnsupportedColumns = {
-  [key: string]: string;
-};
-
-export interface V1OLAPGetTableResponse {
-  schema?: V1StructType;
-  unsupportedColumns?: V1OLAPGetTableResponseUnsupportedColumns;
-  view?: boolean;
-  /** physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined. */
-  physicalSizeBytes?: string;
-}
-
 export interface V1OLAPListTablesResponse {
   tables?: V1OlapTableInfo[];
   nextPageToken?: string;
@@ -2691,14 +2683,6 @@ export type ConnectorServiceListDatabaseSchemasParams = {
   connector?: string;
   pageSize?: number;
   pageToken?: string;
-};
-
-export type ConnectorServiceOLAPGetTableParams = {
-  instanceId?: string;
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  table?: string;
 };
 
 export type ConnectorServiceGetTableParams = {

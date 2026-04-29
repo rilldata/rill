@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { GetTableRequest, GetTableResponse, ListBucketsRequest, ListBucketsResponse, ListDatabaseSchemasRequest, ListDatabaseSchemasResponse, ListObjectsRequest, ListObjectsResponse, ListTablesRequest, ListTablesResponse, OLAPGetTableRequest, OLAPGetTableResponse, OLAPListTablesRequest, OLAPListTablesResponse } from "./connectors_pb.js";
+import { GetTableRequest, GetTableResponse, ListBucketsRequest, ListBucketsResponse, ListDatabaseSchemasRequest, ListDatabaseSchemasResponse, ListObjectsRequest, ListObjectsResponse, ListTablesRequest, ListTablesResponse, OLAPListTablesRequest, OLAPListTablesResponse } from "./connectors_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -46,18 +46,7 @@ export const ConnectorService = {
       kind: MethodKind.Unary,
     },
     /**
-     * OLAPGetTable returns metadata about a table or view in an OLAP
-     *
-     * @generated from rpc rill.runtime.v1.ConnectorService.OLAPGetTable
-     */
-    oLAPGetTable: {
-      name: "OLAPGetTable",
-      I: OLAPGetTableRequest,
-      O: OLAPGetTableResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * ListDatabaseSchemas list all schemas across databases 
+     * ListDatabaseSchemas list all schemas across databases
      *
      * @generated from rpc rill.runtime.v1.ConnectorService.ListDatabaseSchemas
      */

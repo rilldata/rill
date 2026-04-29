@@ -223,11 +223,11 @@ export async function invalidateConnectorQueries(
   return queryClient.resetQueries({
     predicate: (query) => {
       const queryKey = query.queryKey;
-      // Format: ["QueryService", "oLAPGetTable" or "listDatabaseSchemas" or "listTables", instanceId, { connector, ... }]
+      // Format: ["ConnectorService", "getTable" or "listDatabaseSchemas" or "listTables", instanceId, { connector, ... }]
       if (queryKey[0] !== "ConnectorService" || queryKey[2] !== instanceId)
         return false;
       const isConnectorQuery =
-        queryKey[1] === "oLAPGetTable" ||
+        queryKey[1] === "getTable" ||
         queryKey[1] === "listDatabaseSchemas" ||
         queryKey[1] === "listTables";
       if (!isConnectorQuery) return false;
