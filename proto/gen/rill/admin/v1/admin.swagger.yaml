@@ -5138,10 +5138,16 @@ definitions:
     type: object
     properties:
       variables:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ProjectVariable'
+        description: Variables for the deployment.
+      variablesLegacy:
         type: object
         additionalProperties:
           type: string
-        title: Variables for the deployment (connector credentials, etc.)
+        description: 'Deprecated: Variables for the deployment. Use `variables` instead.'
       annotations:
         type: object
         additionalProperties:
@@ -5160,6 +5166,9 @@ definitions:
       duckdbConnectorConfig:
         type: object
         title: Duckdb connector config for the deployment
+      editable:
+        type: boolean
+        description: Whether the deployment is editable (dev environment with changes persisted to git repo).
   v1GetDeploymentCredentialsResponse:
     type: object
     properties:
