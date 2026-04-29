@@ -374,23 +374,28 @@
 
   /* Segmented tab control — Di's pattern (gray pill, white active) */
   .seg-list {
-    @apply mx-6 mt-5 inline-flex p-0.5 gap-0.5 self-start;
-    @apply bg-gray-100 rounded-lg w-fit;
+    @apply mx-6 mt-5 inline-flex p-1 gap-1 self-start;
+    @apply bg-slate-100 rounded-lg w-fit;
   }
 
   .seg-trigger {
-    @apply px-3.5 py-1.5 rounded-md border-0 bg-transparent;
-    @apply text-[13px] font-medium text-fg-secondary;
-    @apply transition-colors cursor-pointer;
-    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30;
+    @apply px-4 py-1.5 rounded-md border-0 bg-transparent;
+    @apply text-[13px] font-medium text-slate-500;
+    @apply transition-all cursor-pointer;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40;
   }
 
   .seg-trigger.is-active {
-    @apply bg-surface text-fg-primary shadow-sm;
+    background: #ffffff;
+    color: #0f172a;
+    font-weight: 600;
+    box-shadow:
+      0 1px 2px rgba(15, 23, 42, 0.08),
+      0 0 0 1px rgba(15, 23, 42, 0.04);
   }
 
   .seg-trigger:not(.is-active):hover {
-    @apply text-fg-primary;
+    @apply text-slate-700;
   }
 
   /* Body — locks 16px gap from tabs (or subtitle when no tabs) */
