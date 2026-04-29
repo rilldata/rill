@@ -10,20 +10,11 @@
   export let project: string;
   export let branch: string;
 
-  $: closeHref = `/${organization}/${project}${branchPathPrefix(branch)}`;
-
-  function handleClose(e: MouseEvent) {
-    // Full page navigation avoids a race where useRuntimeClient() is called
-    // before the project layout's RuntimeProvider remounts.
-    e.preventDefault();
-    window.location.href = closeHref;
-  }
+  $: previewHref = `/${organization}/${project}${branchPathPrefix(branch)}/-/edit/dashboards`;
 </script>
 
 <Tooltip distance={8}>
-  <Button type="secondary" href={closeHref} onClick={handleClose}
-    >Preview</Button
-  >
+  <Button type="secondary" href={previewHref}>Preview</Button>
   <TooltipContent slot="tooltip-content" maxWidth="200px">
     <span class="text-xs">Switch to preview mode</span>
   </TooltipContent>

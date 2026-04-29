@@ -231,7 +231,7 @@
   }
 
   function previewUrl(branch: string | undefined): string {
-    return `/${organization}/${project}${branchPathPrefix(branch)}`;
+    return `/${organization}/${project}${branchPathPrefix(branch)}/-/edit/dashboards`;
   }
 
   let openDropdownId = $state("");

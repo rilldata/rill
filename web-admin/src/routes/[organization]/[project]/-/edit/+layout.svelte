@@ -12,6 +12,7 @@
     extractBranchFromPath,
   } from "@rilldata/web-admin/features/branches/branch-utils";
   import BranchDeploymentStopped from "@rilldata/web-admin/features/branches/BranchDeploymentStopped.svelte";
+  import { isEditPreviewRoute } from "@rilldata/web-admin/features/edit-session/edit-route-utils";
   import EditSessionLoading from "@rilldata/web-admin/features/edit-session/EditSessionLoading.svelte";
   import EditSessionTimeoutBanner from "@rilldata/web-admin/features/edit-session/EditSessionTimeoutBanner.svelte";
   import ProjectHeader from "@rilldata/web-admin/features/projects/ProjectHeader.svelte";
@@ -121,7 +122,7 @@
     !isOtherOwner;
 
   $: projectUrl = `/${organization}/${project}`;
-  $: branchUrl = `/${organization}/${project}${branchPathPrefix(branch)}`;
+  $: previewMode = isEditPreviewRoute($page.url.pathname);
 
   // Invalidating this query refetches a fresh JWT; `runtimeClient.getJwt()`
   // reads the updated value on the next call. Branch must be part of the
@@ -163,9 +164,9 @@
         <h2 class="text-lg font-semibold">
           This editing session belongs to another user
         </h2>
-        <CtaMessage>You can preview this branch in read-only mode.</CtaMessage>
-        <CtaButton variant="secondary" href={branchUrl}>
-          Preview this branch
+        <CtaMessage>Return to the production view to keep working.</CtaMessage>
+        <CtaButton variant="secondary" href={projectUrl}>
+          Go to production
         </CtaButton>
       </CtaContentContainer>
     </CtaLayoutContainer>
@@ -191,13 +192,22 @@
           errorBody="Lost connection to the editing environment. Try ending the session and starting a new one."
         >
           <div class="flex flex-1 overflow-hidden">
-            <Navigation showFooterLinks={false} />
-            <section class="flex flex-1 overflow-hidden">
-              <div class="flex-1 overflow-hidden">
-                <slot />
-              </div>
-              <DeveloperChat />
-            </section>
+            {#if previewMode}
+              <section class="flex flex-1 overflow-hidden">
+                <div class="flex-1 overflow-hidden overflow-y-auto">
+                  <slot />
+                </div>
+                <DeveloperChat />
+              </section>
+            {:else}
+              <Navigation showFooterLinks={false} />
+              <section class="flex flex-1 overflow-hidden">
+                <div class="flex-1 overflow-hidden">
+                  <slot />
+                </div>
+                <DeveloperChat />
+              </section>
+            {/if}
           </div>
         </FileAndResourceWatcher>
       </RuntimeProvider>

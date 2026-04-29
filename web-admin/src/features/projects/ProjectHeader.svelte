@@ -1,14 +1,20 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import CanvasBookmarks from "@rilldata/web-admin/features/bookmarks/CanvasBookmarks.svelte";
   import ExploreBookmarks from "@rilldata/web-admin/features/bookmarks/ExploreBookmarks.svelte";
-  import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
+  import {
+    branchPathPrefix,
+    extractBranchFromPath,
+  } from "@rilldata/web-admin/features/branches/branch-utils";
   import ShareDashboardPopover from "@rilldata/web-admin/features/dashboards/share/ShareDashboardPopover.svelte";
+  import { isEditPreviewRoute } from "@rilldata/web-admin/features/edit-session/edit-route-utils";
   import EditActions from "@rilldata/web-admin/features/edit-session/EditActions.svelte";
   import EditButton from "@rilldata/web-admin/features/edit-session/EditButton.svelte";
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
+  import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
@@ -171,10 +177,32 @@
       dashboard;
 
   $: currentPath = [organization, project, dashboard, report || alert];
+
+  // Inside /-/edit, the pill swaps between Developer (file editor) and
+  // Preview (dashboards/explore/canvas/...) by changing the URL prefix.
+  // Outside /-/edit there is no toggle; cloud has only the production view
+  // and the unified edit surface.
+  $: editPreviewMode = editContext && isEditPreviewRoute($page.url.pathname);
+
+  function toggleEditMode() {
+    if (!activeBranch) return;
+    const editPrefix = `/${organization}/${project}${branchPathPrefix(activeBranch)}/-/edit`;
+    void goto(editPreviewMode ? editPrefix : `${editPrefix}/dashboards`);
+  }
 </script>
 
 <Header borderBottom={!onProjectPage}>
   <HeaderLogo href={rillLogoHref} logoUrl={organizationLogoUrl} />
+  {#if editContext && activeBranch}
+    <button
+      type="button"
+      class="contents cursor-pointer"
+      title="Switch to {editPreviewMode ? 'Developer' : 'Preview'}"
+      on:click={toggleEditMode}
+    >
+      <Tag text={editPreviewMode ? "Preview" : "Developer"} color="gray" />
+    </button>
+  {/if}
   {#if onPublicURLPage}
     <PageTitle title={publicURLDashboardTitle} />
   {:else if organization}
