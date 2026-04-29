@@ -13,13 +13,14 @@
   import { Button } from "@rilldata/web-common/components/button";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { Search } from "@rilldata/web-common/components/search";
   import {
     CheckIcon,
     ChevronDownIcon,
     GitBranchIcon,
     GitBranchPlusIcon,
   } from "lucide-svelte";
+  import { matchSorter } from "match-sorter";
   import { useDevDeployments, invalidateDeployments } from "./use-edit-session";
 
   export let organization: string;
@@ -38,6 +39,8 @@
   let currentTab: "existing" | "new" = "existing";
   let selectedBranchId = "";
   let dropdownOpen = false;
+  let branchSearch = "";
+  let createError = "";
 
   $: currentUserId = $user.data?.user?.id;
   $: deployments = $devDeployments.data?.deployments ?? [];
@@ -92,11 +95,30 @@
     branchName = "";
     currentTab = hasOwnSessions ? "existing" : "new";
     selectedBranchId = latestBranchId;
+    branchSearch = "";
+    createError = "";
+  }
+
+  // Clear the inline error when the user moves away from the New tab —
+  // the error doesn't apply elsewhere. Cleared on input via the handler
+  // (not via a reactive, which would clear it on the same keystroke).
+  $: if (currentTab !== "new") {
+    createError = "";
   }
 
   $: selectedDeployment = ownDeployments.find(
     (d) => d.id === selectedBranchId,
   );
+
+  // Type-ahead filter for the existing-branch dropdown. Uses fuzzy matching
+  // (match-sorter) to keep results forgiving — e.g. "fix-rev" matches
+  // "fix-revenue-dim". When the search is empty, return the full list in
+  // its existing recency order.
+  $: filteredDeployments = branchSearch.trim()
+    ? matchSorter(ownDeployments, branchSearch.trim(), {
+        keys: ["branch"],
+      })
+    : ownDeployments;
 
   function editUrl(branch: string | undefined): string {
     return `/${organization}/${project}${branchPathPrefix(branch)}/-/edit`;
@@ -125,10 +147,22 @@
       target.setSelectionRange(cursorPos, cursorPos);
     }
     branchName = sanitized;
+    createError = "";
   }
 
   async function handleCreate() {
     if (!branchName.trim()) return;
+    createError = "";
+    const requestedBranch = branchName.trim();
+
+    // Front-run an obvious failure case: the user typed the name of a
+    // branch they already own. Catches it before the network round-trip.
+    const collision = ownDeployments.find((d) => d.branch === requestedBranch);
+    if (collision) {
+      createError = `A branch named "${requestedBranch}" already exists.`;
+      return;
+    }
+
     try {
       const resp = await $createMutation.mutateAsync({
         org: organization,
@@ -136,7 +170,7 @@
         data: {
           environment: "dev",
           editable: true,
-          branch: branchName.trim(),
+          branch: requestedBranch,
         },
       });
       void invalidateDeployments(organization, project);
@@ -144,10 +178,7 @@
       requestSkipBranchInjection();
       await goto(editUrl(resp.deployment?.branch));
     } catch (err) {
-      eventBus.emit("notification", {
-        type: "error",
-        message: `Failed to start edit session: ${getRpcErrorMessage(err as any)}`,
-      });
+      createError = getRpcErrorMessage(err as any);
     }
   }
 
@@ -278,33 +309,45 @@
               <DropdownMenu.Content
                 align="start"
                 sameWidth
-                class="max-h-[280px] overflow-y-auto"
+                class="flex flex-col max-h-[320px] overflow-hidden p-0"
               >
-                {#each ownDeployments as deployment (deployment.id)}
-                  {@const isSelected = deployment.id === selectedBranchId}
-                  {@const isLatest = deployment.id === latestBranchId}
-                  <DropdownMenu.Item
-                    onclick={() => (selectedBranchId = deployment.id ?? "")}
-                    class="branch-option"
-                  >
-                    <GitBranchIcon
-                      size="13"
-                      class="text-fg-muted shrink-0"
-                    />
-                    <span class="font-mono text-[13px] truncate flex-1">
-                      {deployment.branch || sourceBranch}
-                    </span>
-                    {#if isLatest}
+                <div class="px-2 pt-2 pb-1">
+                  <Search
+                    bind:value={branchSearch}
+                    label="Search branches"
+                    placeholder="Search branches"
+                    showBorderOnFocus={false}
+                  />
+                </div>
+                <div class="flex-1 overflow-y-auto pb-1">
+                  {#each filteredDeployments as deployment (deployment.id)}
+                    {@const isSelected = deployment.id === selectedBranchId}
+                    {@const isLatest = deployment.id === latestBranchId}
+                    <DropdownMenu.Item
+                      onclick={() => (selectedBranchId = deployment.id ?? "")}
+                      class="branch-option"
+                    >
+                      <GitBranchIcon
+                        size="13"
+                        class="text-fg-muted shrink-0"
+                      />
+                      <span class="font-mono text-[13px] truncate flex-1">
+                        {deployment.branch || sourceBranch}
+                      </span>
+                      {#if isLatest}
                       <span class="latest-tag">latest</span>
                     {/if}
-                    {#if isSelected}
-                      <CheckIcon
-                        size="13"
-                        class="text-primary-600 shrink-0 ml-1"
-                      />
-                    {/if}
-                  </DropdownMenu.Item>
-                {/each}
+                      {#if isSelected}
+                        <CheckIcon
+                          size="13"
+                          class="text-primary-600 shrink-0 ml-1"
+                        />
+                      {/if}
+                    </DropdownMenu.Item>
+                  {:else}
+                    <div class="branch-empty">No branches match.</div>
+                  {/each}
+                </div>
               </DropdownMenu.Content>
             </DropdownMenu.Root>
           </div>
@@ -315,13 +358,19 @@
             <input
               id="new-branch-name"
               class="branch-input"
+              class:has-error={!!createError}
               type="text"
               value={branchName}
               oninput={handleBranchNameInput}
               onkeydown={handleNameKeydown}
               placeholder="branch-name"
+              aria-invalid={!!createError}
+              aria-describedby={createError ? "new-branch-error" : undefined}
               autofocus
             />
+            {#if createError}
+              <p id="new-branch-error" class="form-error">{createError}</p>
+            {/if}
           </div>
         {/if}
       {:else}
@@ -331,13 +380,19 @@
           <input
             id="new-branch-name"
             class="branch-input"
+            class:has-error={!!createError}
             type="text"
             value={branchName}
             oninput={handleBranchNameInput}
             onkeydown={handleNameKeydown}
             placeholder="branch-name"
+            aria-invalid={!!createError}
+            aria-describedby={createError ? "new-branch-error" : undefined}
             autofocus
           />
+          {#if createError}
+            <p id="new-branch-error" class="form-error">{createError}</p>
+          {/if}
         </div>
       {/if}
 
@@ -443,6 +498,15 @@
     @apply transition-shadow;
   }
 
+  .branch-input.has-error,
+  .branch-input.has-error:focus {
+    @apply border-red-500 ring-2 ring-red-500/20;
+  }
+
+  .form-error {
+    @apply mt-1.5 text-xs text-red-600 dark:text-red-400 font-normal;
+  }
+
   /* Existing-branch dropdown trigger */
   .branch-select {
     @apply flex items-center justify-between gap-2 w-full;
@@ -471,6 +535,10 @@
 
   :global(.branch-option) {
     @apply flex items-center gap-2 px-2 py-1.5 cursor-pointer;
+  }
+
+  .branch-empty {
+    @apply px-3 py-3 text-xs text-fg-muted text-center;
   }
 
   /* Footer separator and right-aligned button row */
