@@ -9,12 +9,17 @@
     requestSkipBranchInjection,
   } from "@rilldata/web-admin/features/branches/branch-utils";
   import ShareDashboardPopover from "@rilldata/web-admin/features/dashboards/share/ShareDashboardPopover.svelte";
+  import CommitPopover from "@rilldata/web-admin/features/edit-session/CommitPopover.svelte";
   import EditActions from "@rilldata/web-admin/features/edit-session/EditActions.svelte";
   import EditButton from "@rilldata/web-admin/features/edit-session/EditButton.svelte";
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
+  import { Button } from "@rilldata/web-common/components/button";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { GitPullRequestCreateArrow } from "lucide-svelte";
   import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
@@ -299,6 +304,19 @@
           createMagicAuthTokens={projectPermissions.createMagicAuthTokens}
         />
       {/if}
+    {/if}
+
+    {#if !editContext && activeBranch && $cloudEditing && projectPermissions.manageDev}
+      <CommitPopover />
+      <Tooltip distance={8}>
+        <Button type="primary" disabled>
+          <GitPullRequestCreateArrow size="14" />
+          Open PR
+        </Button>
+        <TooltipContent slot="tooltip-content" maxWidth="200px">
+          <span class="text-xs">Coming soon</span>
+        </TooltipContent>
+      </Tooltip>
     {/if}
 
     {#if $user.isSuccess}
