@@ -13,14 +13,12 @@
   import { Button } from "@rilldata/web-common/components/button";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import { Search } from "@rilldata/web-common/components/search";
   import {
     CheckIcon,
     ChevronDownIcon,
     GitBranchIcon,
     GitBranchPlusIcon,
   } from "lucide-svelte";
-  import { matchSorter } from "match-sorter";
   import { useDevDeployments, invalidateDeployments } from "./use-edit-session";
 
   export let organization: string;
@@ -39,7 +37,6 @@
   let currentTab: "existing" | "new" = "existing";
   let selectedBranchId = "";
   let dropdownOpen = false;
-  let branchSearch = "";
   let createError = "";
 
   $: currentUserId = $user.data?.user?.id;
@@ -95,7 +92,6 @@
     branchName = "";
     currentTab = hasOwnSessions ? "existing" : "new";
     selectedBranchId = latestBranchId;
-    branchSearch = "";
     createError = "";
   }
 
@@ -109,16 +105,6 @@
   $: selectedDeployment = ownDeployments.find(
     (d) => d.id === selectedBranchId,
   );
-
-  // Type-ahead filter for the existing-branch dropdown. Uses fuzzy matching
-  // (match-sorter) to keep results forgiving — e.g. "fix-rev" matches
-  // "fix-revenue-dim". When the search is empty, return the full list in
-  // its existing recency order.
-  $: filteredDeployments = branchSearch.trim()
-    ? matchSorter(ownDeployments, branchSearch.trim(), {
-        keys: ["branch"],
-      })
-    : ownDeployments;
 
   function editUrl(branch: string | undefined): string {
     return `/${organization}/${project}${branchPathPrefix(branch)}/-/edit`;
@@ -309,45 +295,30 @@
               <DropdownMenu.Content
                 align="start"
                 sameWidth
-                class="flex flex-col max-h-[320px] overflow-hidden p-0"
+                class="max-h-[280px] overflow-y-auto"
               >
-                <div class="px-2 pt-2 pb-1">
-                  <Search
-                    bind:value={branchSearch}
-                    label="Search branches"
-                    placeholder="Search branches"
-                    showBorderOnFocus={false}
-                  />
-                </div>
-                <div class="flex-1 overflow-y-auto pb-1">
-                  {#each filteredDeployments as deployment (deployment.id)}
-                    {@const isSelected = deployment.id === selectedBranchId}
-                    {@const isLatest = deployment.id === latestBranchId}
-                    <DropdownMenu.Item
-                      onclick={() => (selectedBranchId = deployment.id ?? "")}
-                      class="branch-option"
-                    >
-                      <GitBranchIcon
-                        size="13"
-                        class="text-fg-muted shrink-0"
-                      />
-                      <span class="font-mono text-[13px] truncate flex-1">
-                        {deployment.branch || sourceBranch}
-                      </span>
-                      {#if isLatest}
+                {#each ownDeployments as deployment (deployment.id)}
+                  {@const isSelected = deployment.id === selectedBranchId}
+                  {@const isLatest = deployment.id === latestBranchId}
+                  <DropdownMenu.Item
+                    onclick={() => (selectedBranchId = deployment.id ?? "")}
+                    class="branch-option"
+                  >
+                    <GitBranchIcon size="13" class="text-fg-muted shrink-0" />
+                    <span class="font-mono text-[13px] truncate flex-1">
+                      {deployment.branch || sourceBranch}
+                    </span>
+                    {#if isLatest}
                       <span class="latest-tag">latest</span>
                     {/if}
-                      {#if isSelected}
-                        <CheckIcon
-                          size="13"
-                          class="text-primary-600 shrink-0 ml-1"
-                        />
-                      {/if}
-                    </DropdownMenu.Item>
-                  {:else}
-                    <div class="branch-empty">No branches match.</div>
-                  {/each}
-                </div>
+                    {#if isSelected}
+                      <CheckIcon
+                        size="13"
+                        class="text-primary-600 shrink-0 ml-1"
+                      />
+                    {/if}
+                  </DropdownMenu.Item>
+                {/each}
               </DropdownMenu.Content>
             </DropdownMenu.Root>
           </div>
@@ -535,10 +506,6 @@
 
   :global(.branch-option) {
     @apply flex items-center gap-2 px-2 py-1.5 cursor-pointer;
-  }
-
-  .branch-empty {
-    @apply px-3 py-3 text-xs text-fg-muted text-center;
   }
 
   /* Footer separator and right-aligned button row */
