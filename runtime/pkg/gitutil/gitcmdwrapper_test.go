@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestMergeWithTheirsStrategy(t *testing.T) {
-	t.Run("successful merge without conflicts", func(t *testing.T) {
+func TestMergeWithStrategy(t *testing.T) {
+	t.Run("theirs: successful merge without conflicts", func(t *testing.T) {
 		tempDir := setupTestRepository(t)
 
 		// Create a feature branch
@@ -35,7 +35,7 @@ func TestMergeWithTheirsStrategy(t *testing.T) {
 
 		// Test merging feature branch using theirs strategy
 		err = MergeWithStrategy(tempDir, "feature", "theirs")
-		require.NoError(t, err, "MergeWithTheirsStrategy should succeed without conflicts")
+		require.NoError(t, err, "MergeWithStrategy(theirs) should succeed without conflicts")
 
 		// Verify both files exist
 		featureFile := filepath.Join(tempDir, "feature.txt")
@@ -44,7 +44,7 @@ func TestMergeWithTheirsStrategy(t *testing.T) {
 		require.FileExists(t, mainFile, "main file should exist after merge")
 	})
 
-	t.Run("merge with conflicts resolved using theirs strategy", func(t *testing.T) {
+	t.Run("theirs: merge with conflicts resolved using theirs strategy", func(t *testing.T) {
 		tempDir := setupTestRepository(t)
 
 		// Create a feature branch
@@ -64,12 +64,94 @@ func TestMergeWithTheirsStrategy(t *testing.T) {
 
 		// Test merging feature branch with conflicts using theirs strategy
 		err = MergeWithStrategy(tempDir, "feature", "theirs")
-		require.NoError(t, err, "MergeWithTheirsStrategy should resolve conflicts using theirs strategy")
+		require.NoError(t, err, "MergeWithStrategy(theirs) should resolve conflicts using theirs strategy")
 
 		// Verify the file has the feature branch content (theirs)
 		content, err := os.ReadFile(filepath.Join(tempDir, "test1.txt"))
 		require.NoError(t, err, "failed to read merged file")
 		require.Equal(t, "feature version", string(content), "file should contain feature branch content")
+	})
+
+	t.Run("ours: merge with conflicts resolved using ours strategy", func(t *testing.T) {
+		tempDir := setupTestRepository(t)
+
+		// Create a feature branch and modify test1.txt
+		cmd := exec.Command("git", "-C", tempDir, "checkout", "-b", "feature")
+		output, err := cmd.CombinedOutput()
+		require.NoError(t, err, "failed to create feature branch ", string(output))
+
+		createCommit(t, tempDir, "test1.txt", "feature version", "modify test1 in feature")
+
+		// Switch back to main and modify test1.txt differently
+		cmd = exec.Command("git", "-C", tempDir, "checkout", "main")
+		err = cmd.Run()
+		require.NoError(t, err, "failed to switch to main branch")
+
+		createCommit(t, tempDir, "test1.txt", "main version", "modify test1 in main")
+
+		// Test merging feature branch with conflicts using ours strategy
+		err = MergeWithStrategy(tempDir, "feature", "ours")
+		require.NoError(t, err, "MergeWithStrategy(ours) should resolve conflicts using ours strategy")
+
+		// Verify the file has the main branch content (ours)
+		content, err := os.ReadFile(filepath.Join(tempDir, "test1.txt"))
+		require.NoError(t, err, "failed to read merged file")
+		require.Equal(t, "main version", string(content), "file should contain main branch content")
+	})
+
+	t.Run("default: successful merge without conflicts", func(t *testing.T) {
+		tempDir := setupTestRepository(t)
+
+		// Create a feature branch with a non-conflicting change
+		cmd := exec.Command("git", "-C", tempDir, "checkout", "-b", "feature")
+		output, err := cmd.CombinedOutput()
+		require.NoError(t, err, "failed to create feature branch ", string(output))
+
+		createCommit(t, tempDir, "feature.txt", "feature content", "add feature file")
+
+		// Switch back to main and add a different file
+		cmd = exec.Command("git", "-C", tempDir, "checkout", "main")
+		output, err = cmd.CombinedOutput()
+		require.NoError(t, err, "failed to switch to main branch ", string(output))
+
+		createCommit(t, tempDir, "main.txt", "main content", "add main file")
+
+		// Test merging feature branch using the default merge strategy
+		err = MergeWithStrategy(tempDir, "feature", "")
+		require.NoError(t, err, "MergeWithStrategy(default) should succeed without conflicts")
+
+		// Verify both files exist
+		require.FileExists(t, filepath.Join(tempDir, "feature.txt"), "feature file should exist after merge")
+		require.FileExists(t, filepath.Join(tempDir, "main.txt"), "main file should exist after merge")
+	})
+
+	t.Run("default: merge with conflicts returns error", func(t *testing.T) {
+		tempDir := setupTestRepository(t)
+
+		// Create a feature branch and modify test1.txt
+		cmd := exec.Command("git", "-C", tempDir, "checkout", "-b", "feature")
+		output, err := cmd.CombinedOutput()
+		require.NoError(t, err, "failed to create feature branch ", string(output))
+
+		createCommit(t, tempDir, "test1.txt", "feature version", "modify test1 in feature")
+
+		// Switch back to main and modify test1.txt differently
+		cmd = exec.Command("git", "-C", tempDir, "checkout", "main")
+		err = cmd.Run()
+		require.NoError(t, err, "failed to switch to main branch")
+
+		createCommit(t, tempDir, "test1.txt", "main version", "modify test1 in main")
+
+		// Default merge should fail on conflicts
+		err = MergeWithStrategy(tempDir, "feature", "")
+		require.Error(t, err, "MergeWithStrategy(default) should fail on conflicts")
+	})
+
+	t.Run("unsupported strategy returns error", func(t *testing.T) {
+		tempDir := setupTestRepository(t)
+		err := MergeWithStrategy(tempDir, "main", "bogus")
+		require.Error(t, err, "MergeWithStrategy should reject unsupported strategy")
+		require.Contains(t, err.Error(), "unsupported merge strategy")
 	})
 }
 

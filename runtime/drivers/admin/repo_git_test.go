@@ -94,16 +94,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
 				// Remove the local directory to simulate no existing repo
 				require.NoError(t, os.RemoveAll(localDir))
-				return &gitRepo{
-					h:             &Handle{logger: zap.NewNop()},
-					repoDir:       localDir,
-					remoteURL:     remoteURL,
-					defaultBranch: "edit-branch",
-					editableDepl:  true,
-					primaryBranch: "main",
-					subpath:       "",
-					managedRepo:   true,
-				}
+				return newEditableGitRepo(localDir, remoteURL, "edit-branch", "main", "")
 			},
 			setupRemote: func(t *testing.T, remoteDir string) {
 				// No additional remote changes needed
@@ -152,16 +143,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 				})
 				require.NoError(t, err)
 
-				return &gitRepo{
-					h:             &Handle{logger: zap.NewNop()},
-					repoDir:       localDir,
-					remoteURL:     remoteURL,
-					defaultBranch: "edit-branch",
-					editableDepl:  true,
-					primaryBranch: "main",
-					subpath:       "",
-					managedRepo:   true,
-				}
+				return newEditableGitRepo(localDir, remoteURL, "edit-branch", "main", "")
 			},
 			setupRemote: func(t *testing.T, remoteDir string) {
 				// Create the edit branch on remote with different content
@@ -224,16 +206,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 			name: "editable mode - pushes newly created default branch to remote when it doesn't exist",
 			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
 				require.NoError(t, os.RemoveAll(localDir))
-				return &gitRepo{
-					h:             &Handle{logger: zap.NewNop()},
-					repoDir:       localDir,
-					remoteURL:     remoteURL,
-					defaultBranch: "edit-branch",
-					editableDepl:  true,
-					primaryBranch: "main",
-					subpath:       "",
-					managedRepo:   true,
-				}
+				return newEditableGitRepo(localDir, remoteURL, "edit-branch", "main", "")
 			},
 			setupRemote: func(t *testing.T, remoteDir string) {
 				// Remote only has main; edit-branch does not exist yet.
@@ -281,7 +254,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 				// Update primary branch and pull again
 				repo.primaryBranch = "rename"
 				ctx := context.Background()
-				err := repo.pullInner(ctx, false)
+				err := repo.pullInner(ctx, false, false)
 				require.NoError(t, err)
 
 				// Verify we're still on main (default branch unchanged)
@@ -289,7 +262,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 
 				// Now change default branch to rename and pull again
 				repo.defaultBranch = "rename"
-				err = repo.pullInner(ctx, false)
+				err = repo.pullInner(ctx, false, false)
 				require.NoError(t, err)
 
 				// Verify we've switched to rename branch
@@ -330,7 +303,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 				// Update primary branch and pull again
 				repo.primaryBranch = "rename"
 				ctx := context.Background()
-				err := repo.pullInner(ctx, false)
+				err := repo.pullInner(ctx, false, false)
 				require.NoError(t, err)
 
 				// Verify we're still on main (default branch unchanged)
@@ -343,7 +316,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 
 				// Now change default branch to rename and pull again
 				repo.defaultBranch = "rename"
-				err = repo.pullInner(ctx, false)
+				err = repo.pullInner(ctx, false, false)
 				require.NoError(t, err)
 
 				// Verify we've switched to rename branch
@@ -407,16 +380,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
 				// Remove the local directory to simulate no existing repo
 				require.NoError(t, os.RemoveAll(localDir))
-				return &gitRepo{
-					h:             &Handle{logger: zap.NewNop()},
-					repoDir:       localDir,
-					remoteURL:     remoteURL,
-					defaultBranch: "edit-branch",
-					primaryBranch: "main",
-					editableDepl:  true,
-					subpath:       "",
-					managedRepo:   true,
-				}
+				return newEditableGitRepo(localDir, remoteURL, "edit-branch", "main", "")
 			},
 			setupRemote: func(t *testing.T, remoteDir string) {
 				// Only main branch exists initially
@@ -434,10 +398,8 @@ func TestGitRepo_pullInner(t *testing.T) {
 				repo.primaryBranch = "new-primary"
 
 				// Second pull uses the existing-repo fetch path.
-				// The fetch only targets defaultBranch ("edit-branch"), never fetching "new-primary".
-				// The merge at the end of pullInner tries to merge "new-primary" but its refs were never fetched.
 				ctx := context.Background()
-				err := repo.pullInner(ctx, true)
+				err := repo.pullInner(ctx, false, false)
 				require.NoError(t, err, "pullInner should succeed after primary branch change")
 
 				// Verify the new primary branch content was merged into edit-branch
@@ -469,16 +431,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 				require.NoError(t, execGitCommand(exec.Command("git", "-C", localDir, "add", "test1.txt")))
 				require.NoError(t, execGitCommand(exec.Command("git", "-C", localDir, "commit", "-m", "Local edit change")))
 
-				return &gitRepo{
-					h:             &Handle{logger: zap.NewNop()},
-					repoDir:       localDir,
-					remoteURL:     remoteURL,
-					defaultBranch: "edit-branch",
-					editableDepl:  true,
-					primaryBranch: "main",
-					subpath:       "",
-					managedRepo:   true,
-				}
+				return newEditableGitRepo(localDir, remoteURL, "edit-branch", "main", "")
 			},
 			setupRemote: func(t *testing.T, remoteDir string) {
 				// Push a conflicting change to the same file on edit-branch.
@@ -510,16 +463,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 				require.NoError(t, execGitCommand(exec.Command("git", "-C", localDir, "add", "local_change.txt")))
 				require.NoError(t, execGitCommand(exec.Command("git", "-C", localDir, "commit", "-m", "Local only change")))
 
-				return &gitRepo{
-					h:             &Handle{logger: zap.NewNop()},
-					repoDir:       localDir,
-					remoteURL:     remoteURL,
-					defaultBranch: "edit-branch",
-					editableDepl:  true,
-					primaryBranch: "main",
-					subpath:       "",
-					managedRepo:   true,
-				}
+				return newEditableGitRepo(localDir, remoteURL, "edit-branch", "main", "")
 			},
 			setupRemote: func(t *testing.T, remoteDir string) {
 				// Push a non-conflicting change (different file) to edit-branch on remote.
@@ -555,7 +499,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 
 			// Execute pullInner
 			ctx := context.Background()
-			err := repo.pullInner(ctx, tt.force)
+			err := repo.pullInner(ctx, true, tt.force)
 
 			// Verify error expectation
 			if tt.expectError {
@@ -586,35 +530,8 @@ func TestGitRepo_commitAndPushToDefaultBranch(t *testing.T) {
 		{
 			name: "commit and push changes to default branch without conflicts",
 			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
-				// Clone repository and create edit branch
-				repo, err := git.PlainClone(localDir, false, &git.CloneOptions{
-					URL:           remoteURL,
-					RemoteName:    "origin",
-					ReferenceName: plumbing.ReferenceName("refs/heads/main"),
-					SingleBranch:  false,
-				})
-				require.NoError(t, err)
-				setupGitConfig(t, localDir) // Ensure git config is set up
-
-				// Create and switch to edit branch
-				worktree, err := repo.Worktree()
-				require.NoError(t, err)
-				err = worktree.Checkout(&git.CheckoutOptions{
-					Branch: plumbing.ReferenceName("refs/heads/edit-branch"),
-					Create: true,
-				})
-				require.NoError(t, err)
-
-				return &gitRepo{
-					h:             &Handle{logger: zap.NewNop()},
-					repoDir:       localDir,
-					remoteURL:     remoteURL,
-					defaultBranch: "edit-branch",
-					editableDepl:  true,
-					primaryBranch: "main",
-					subpath:       "",
-					managedRepo:   true,
-				}
+				cloneAndCreateRemoteEditBranch(t, localDir, remoteURL)
+				return newEditableGitRepo(localDir, remoteURL, "edit-branch", "main", "")
 			},
 			setupChanges: func(t *testing.T, localDir string) {
 				// Make changes in the edit branch
@@ -646,35 +563,8 @@ func TestGitRepo_commitAndPushToDefaultBranch(t *testing.T) {
 		{
 			name: "commit and push with force when there are conflicts",
 			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
-				// Clone repository and create edit branch
-				repo, err := git.PlainClone(localDir, false, &git.CloneOptions{
-					URL:           remoteURL,
-					RemoteName:    "origin",
-					ReferenceName: plumbing.ReferenceName("refs/heads/main"),
-					SingleBranch:  false,
-				})
-				require.NoError(t, err)
-				setupGitConfig(t, localDir) // Ensure git config is set up
-
-				// Create and switch to edit branch
-				worktree, err := repo.Worktree()
-				require.NoError(t, err)
-				err = worktree.Checkout(&git.CheckoutOptions{
-					Branch: plumbing.ReferenceName("refs/heads/edit-branch"),
-					Create: true,
-				})
-				require.NoError(t, err)
-
-				return &gitRepo{
-					h:             &Handle{logger: zap.NewNop()},
-					repoDir:       localDir,
-					remoteURL:     remoteURL,
-					defaultBranch: "edit-branch",
-					editableDepl:  true,
-					primaryBranch: "main",
-					subpath:       "",
-					managedRepo:   true,
-				}
+				cloneAndCreateRemoteEditBranch(t, localDir, remoteURL)
+				return newEditableGitRepo(localDir, remoteURL, "edit-branch", "main", "")
 			},
 			setupChanges: func(t *testing.T, localDir string) {
 				// Modify existing file in edit branch
@@ -709,35 +599,8 @@ func TestGitRepo_commitAndPushToDefaultBranch(t *testing.T) {
 		{
 			name: "abort merge when conflicts exist and force is false",
 			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
-				// Clone repository and create edit branch
-				repo, err := git.PlainClone(localDir, false, &git.CloneOptions{
-					URL:           remoteURL,
-					RemoteName:    "origin",
-					ReferenceName: plumbing.ReferenceName("refs/heads/main"),
-					SingleBranch:  false,
-				})
-				require.NoError(t, err)
-				setupGitConfig(t, localDir) // Ensure git config is set up
-
-				// Create and switch to edit branch
-				worktree, err := repo.Worktree()
-				require.NoError(t, err)
-				err = worktree.Checkout(&git.CheckoutOptions{
-					Branch: plumbing.ReferenceName("refs/heads/edit-branch"),
-					Create: true,
-				})
-				require.NoError(t, err)
-
-				return &gitRepo{
-					h:             &Handle{logger: zap.NewNop()},
-					repoDir:       localDir,
-					remoteURL:     remoteURL,
-					defaultBranch: "edit-branch",
-					editableDepl:  true,
-					primaryBranch: "main",
-					subpath:       "",
-					managedRepo:   true,
-				}
+				cloneAndCreateRemoteEditBranch(t, localDir, remoteURL)
+				return newEditableGitRepo(localDir, remoteURL, "edit-branch", "main", "")
 			},
 			setupChanges: func(t *testing.T, localDir string) {
 				// Modify existing file in edit branch
@@ -772,35 +635,8 @@ func TestGitRepo_commitAndPushToDefaultBranch(t *testing.T) {
 		{
 			name: "handle empty commit gracefully",
 			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
-				// Clone repository and create edit branch
-				repo, err := git.PlainClone(localDir, false, &git.CloneOptions{
-					URL:           remoteURL,
-					RemoteName:    "origin",
-					ReferenceName: plumbing.ReferenceName("refs/heads/main"),
-					SingleBranch:  false,
-				})
-				require.NoError(t, err)
-				setupGitConfig(t, localDir) // Ensure git config is set up
-
-				// Create and switch to edit branch
-				worktree, err := repo.Worktree()
-				require.NoError(t, err)
-				err = worktree.Checkout(&git.CheckoutOptions{
-					Branch: plumbing.ReferenceName("refs/heads/edit-branch"),
-					Create: true,
-				})
-				require.NoError(t, err)
-
-				return &gitRepo{
-					h:             &Handle{logger: zap.NewNop()},
-					repoDir:       localDir,
-					remoteURL:     remoteURL,
-					defaultBranch: "edit-branch",
-					editableDepl:  true,
-					primaryBranch: "main",
-					subpath:       "",
-					managedRepo:   true,
-				}
+				cloneAndCreateRemoteEditBranch(t, localDir, remoteURL)
+				return newEditableGitRepo(localDir, remoteURL, "edit-branch", "main", "")
 			},
 			setupChanges: func(t *testing.T, localDir string) {
 				// No changes made - this should result in empty commit
@@ -859,16 +695,7 @@ func TestGitRepo_commitAndPushToDefaultBranch(t *testing.T) {
 				err = os.WriteFile(filepath.Join(localDir, "local.db"), []byte("local database"), 0644)
 				require.NoError(t, err)
 
-				return &gitRepo{
-					h:             &Handle{logger: zap.NewNop()},
-					repoDir:       localDir,
-					remoteURL:     remoteURL,
-					defaultBranch: "edit-branch",
-					editableDepl:  true,
-					primaryBranch: "main",
-					subpath:       "",
-					managedRepo:   true,
-				}
+				return newEditableGitRepo(localDir, remoteURL, "edit-branch", "main", "")
 			},
 			setupChanges: func(t *testing.T, localDir string) {
 				filePath := filepath.Join(localDir, "new_feature.txt")
@@ -961,6 +788,252 @@ func TestGitRepo_commitAndPushToDefaultBranch(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGitRepo_commitToDefaultBranch(t *testing.T) {
+	tests := []struct {
+		name         string
+		setupRepo    func(t *testing.T, localDir, remoteURL string) *gitRepo
+		setupChanges func(t *testing.T, localDir string)
+		setupRemote  func(t *testing.T, remoteDir string)
+		message      string
+		force        bool
+		expectError  bool
+		validate     func(t *testing.T, repo *gitRepo, localDir, remoteDir string)
+	}{
+		{
+			name: "force=false: commit and push to default branch with no remote conflicts",
+			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
+				cloneAndCreateRemoteEditBranch(t, localDir, remoteURL)
+				return newEditableGitRepo(localDir, remoteURL, "edit-branch", "main", "")
+			},
+			setupChanges: func(t *testing.T, localDir string) {
+				require.NoError(t, os.WriteFile(filepath.Join(localDir, "new_feature.txt"), []byte("new feature content"), 0644))
+			},
+			setupRemote: func(t *testing.T, remoteDir string) {},
+			message:     "Add new feature",
+			force:       false,
+			expectError: false,
+			validate: func(t *testing.T, repo *gitRepo, localDir, remoteDir string) {
+				verifyRemoteBranchFile(t, remoteDir, "edit-branch", "new_feature.txt", "new feature content")
+			},
+		},
+		{
+			name: "force=false: non-conflicting remote changes are merged in via theirs strategy",
+			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
+				cloneAndCreateRemoteEditBranch(t, localDir, remoteURL)
+				return newEditableGitRepo(localDir, remoteURL, "edit-branch", "main", "")
+			},
+			setupChanges: func(t *testing.T, localDir string) {
+				require.NoError(t, os.WriteFile(filepath.Join(localDir, "local_only.txt"), []byte("local only"), 0644))
+			},
+			setupRemote: func(t *testing.T, remoteDir string) {
+				createRemoteCommitOnBranch(t, remoteDir, "edit-branch", "remote_only.txt", "remote only", "Remote-only change")
+			},
+			message:     "Add local only",
+			force:       false,
+			expectError: false,
+			validate: func(t *testing.T, repo *gitRepo, localDir, remoteDir string) {
+				verifyRemoteBranchFile(t, remoteDir, "edit-branch", "local_only.txt", "local only")
+				verifyRemoteBranchFile(t, remoteDir, "edit-branch", "remote_only.txt", "remote only")
+			},
+		},
+		{
+			name: "force=false: conflicting remote changes win via theirs strategy",
+			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
+				cloneAndCreateRemoteEditBranch(t, localDir, remoteURL)
+				return newEditableGitRepo(localDir, remoteURL, "edit-branch", "main", "")
+			},
+			setupChanges: func(t *testing.T, localDir string) {
+				require.NoError(t, os.WriteFile(filepath.Join(localDir, "test1.txt"), []byte("local edit"), 0644))
+			},
+			setupRemote: func(t *testing.T, remoteDir string) {
+				createRemoteCommitOnBranch(t, remoteDir, "edit-branch", "test1.txt", "remote edit", "Remote edit on same file")
+			},
+			message:     "Local edit",
+			force:       false,
+			expectError: false,
+			validate: func(t *testing.T, repo *gitRepo, localDir, remoteDir string) {
+				// theirs (remote) wins on conflicts
+				verifyRemoteBranchFile(t, remoteDir, "edit-branch", "test1.txt", "remote edit")
+			},
+		},
+		{
+			name: "force=true: conflicting remote changes are overridden via ours strategy",
+			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
+				cloneAndCreateRemoteEditBranch(t, localDir, remoteURL)
+				return newEditableGitRepo(localDir, remoteURL, "edit-branch", "main", "")
+			},
+			setupChanges: func(t *testing.T, localDir string) {
+				require.NoError(t, os.WriteFile(filepath.Join(localDir, "test1.txt"), []byte("local force edit"), 0644))
+			},
+			setupRemote: func(t *testing.T, remoteDir string) {
+				createRemoteCommitOnBranch(t, remoteDir, "edit-branch", "test1.txt", "remote edit", "Remote edit on same file")
+			},
+			message:     "Local force edit",
+			force:       true,
+			expectError: false,
+			validate: func(t *testing.T, repo *gitRepo, localDir, remoteDir string) {
+				// ours (local) wins on conflicts when force=true
+				verifyRemoteBranchFile(t, remoteDir, "edit-branch", "test1.txt", "local force edit")
+			},
+		},
+		{
+			name: "force=true with subpath: pushes successfully when no remote conflicts",
+			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
+				cloneAndCreateRemoteEditBranch(t, localDir, remoteURL)
+				require.NoError(t, os.MkdirAll(filepath.Join(localDir, "sub"), 0755))
+				return newEditableGitRepo(localDir, remoteURL, "edit-branch", "main", "sub")
+			},
+			setupChanges: func(t *testing.T, localDir string) {
+				require.NoError(t, os.WriteFile(filepath.Join(localDir, "sub", "feature.txt"), []byte("subpath content"), 0644))
+			},
+			setupRemote: func(t *testing.T, remoteDir string) {},
+			message:     "Add subpath feature",
+			force:       true,
+			expectError: false,
+			validate: func(t *testing.T, repo *gitRepo, localDir, remoteDir string) {
+				verifyRemoteBranchFile(t, remoteDir, "edit-branch", "sub/feature.txt", "subpath content")
+			},
+		},
+		{
+			name: "defaultBranch == primaryBranch: commit and push works",
+			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
+				_, err := git.PlainClone(localDir, false, &git.CloneOptions{
+					URL:           remoteURL,
+					RemoteName:    "origin",
+					ReferenceName: plumbing.ReferenceName("refs/heads/main"),
+					SingleBranch:  false,
+				})
+				require.NoError(t, err)
+				setupGitConfig(t, localDir)
+				return newEditableGitRepo(localDir, remoteURL, "main", "main", "")
+			},
+			setupChanges: func(t *testing.T, localDir string) {
+				require.NoError(t, os.WriteFile(filepath.Join(localDir, "feature.txt"), []byte("feature content"), 0644))
+			},
+			setupRemote: func(t *testing.T, remoteDir string) {},
+			message:     "Add feature",
+			force:       false,
+			expectError: false,
+			validate: func(t *testing.T, repo *gitRepo, localDir, remoteDir string) {
+				verifyRemoteBranchFile(t, remoteDir, "main", "feature.txt", "feature content")
+			},
+		},
+		{
+			name: "no changes results in no error and no remote update",
+			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
+				cloneAndCreateRemoteEditBranch(t, localDir, remoteURL)
+				return newEditableGitRepo(localDir, remoteURL, "edit-branch", "main", "")
+			},
+			setupChanges: func(t *testing.T, localDir string) {},
+			setupRemote:  func(t *testing.T, remoteDir string) {},
+			message:      "Empty commit",
+			force:        false,
+			expectError:  false,
+			validate: func(t *testing.T, repo *gitRepo, localDir, remoteDir string) {
+				// Verify no extra commits beyond the branch creation point.
+				workingDir := t.TempDir()
+				require.NoError(t, execGitCommand(exec.Command("git", "clone", "-b", "edit-branch", remoteDir, workingDir)))
+				out, err := exec.Command("git", "-C", workingDir, "rev-list", "--count", "HEAD").Output()
+				require.NoError(t, err)
+				require.Equal(t, "1\n", string(out))
+			},
+		},
+		{
+			name: "error when repository is not editable",
+			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
+				_, err := git.PlainClone(localDir, false, &git.CloneOptions{
+					URL:           remoteURL,
+					RemoteName:    "origin",
+					ReferenceName: plumbing.ReferenceName("refs/heads/main"),
+					SingleBranch:  true,
+				})
+				require.NoError(t, err)
+				setupGitConfig(t, localDir)
+				return &gitRepo{
+					h:             &Handle{logger: zap.NewNop()},
+					repoDir:       localDir,
+					remoteURL:     remoteURL,
+					defaultBranch: "main",
+					primaryBranch: "main",
+					subpath:       "",
+					managedRepo:   true,
+					// editableDepl is false: not editable
+				}
+			},
+			setupChanges: func(t *testing.T, localDir string) {
+				require.NoError(t, os.WriteFile(filepath.Join(localDir, "should_not_commit.txt"), []byte("content"), 0644))
+			},
+			setupRemote: func(t *testing.T, remoteDir string) {},
+			message:     "Should fail",
+			force:       false,
+			expectError: true,
+			validate:    nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			localDir := t.TempDir()
+			remoteDir := setupTestGitRepository(t)
+
+			repo := tt.setupRepo(t, localDir, remoteDir)
+			tt.setupChanges(t, localDir)
+			tt.setupRemote(t, remoteDir)
+
+			ctx := context.Background()
+			_, err := repo.commitToDefaultBranch(ctx, tt.message, tt.force)
+
+			if tt.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
+			if tt.validate != nil {
+				tt.validate(t, repo, localDir, remoteDir)
+			}
+		})
+	}
+}
+
+func newEditableGitRepo(localDir, remoteURL, defaultBranch, primaryBranch, subpath string) *gitRepo {
+	return &gitRepo{
+		h:             &Handle{logger: zap.NewNop()},
+		repoDir:       localDir,
+		remoteURL:     remoteURL,
+		defaultBranch: defaultBranch,
+		editableDepl:  true,
+		primaryBranch: primaryBranch,
+		subpath:       subpath,
+		managedRepo:   true,
+	}
+}
+
+// cloneAndCreateRemoteEditBranch clones the remote, creates "edit-branch" locally, and pushes it to remote.
+func cloneAndCreateRemoteEditBranch(t *testing.T, localDir, remoteURL string) {
+	t.Helper()
+	_, err := git.PlainClone(localDir, false, &git.CloneOptions{
+		URL:           remoteURL,
+		RemoteName:    "origin",
+		ReferenceName: plumbing.ReferenceName("refs/heads/main"),
+		SingleBranch:  false,
+	})
+	require.NoError(t, err)
+	setupGitConfig(t, localDir)
+	require.NoError(t, execGitCommand(exec.Command("git", "-C", localDir, "checkout", "-b", "edit-branch")))
+	require.NoError(t, execGitCommand(exec.Command("git", "-C", localDir, "push", "origin", "edit-branch")))
+}
+
+// verifyRemoteBranchFile clones the given branch from remote and verifies that the file has the expected content.
+func verifyRemoteBranchFile(t *testing.T, remoteDir, branch, relPath, expectedContent string) {
+	t.Helper()
+	workingDir := t.TempDir()
+	require.NoError(t, execGitCommand(exec.Command("git", "clone", "-b", branch, remoteDir, workingDir)))
+	content, err := os.ReadFile(filepath.Join(workingDir, relPath))
+	require.NoError(t, err, "expected file %q to exist on remote branch %q", relPath, branch)
+	require.Equal(t, expectedContent, string(content))
 }
 
 // setupTestGitRepository creates a bare Git repository with initial content for testing

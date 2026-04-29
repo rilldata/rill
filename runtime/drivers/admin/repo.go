@@ -701,7 +701,7 @@ func (r *repo) pullInner(ctx context.Context, opts *drivers.PullOptions) error {
 
 	// Push the pull into the underlying repos. These are created/updated by checkSyncHandshake.
 	if r.git != nil && opts.UserTriggered {
-		err = r.git.pull(ctx, opts.DiscardChanges)
+		err = r.git.pull(ctx, opts.UserTriggered, opts.DiscardChanges)
 		if err != nil {
 			return fmt.Errorf("git pull failed: %w", err)
 		}
