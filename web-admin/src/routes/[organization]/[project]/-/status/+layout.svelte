@@ -4,15 +4,10 @@
   import { page } from "$app/stores";
   import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
-  import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
 
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
 
-  // Branch preview mode hides admin-oriented items (Branches, Logs) so the
-  // Status page mirrors what CLI --preview exposes.
-  $: branchPreviewMode = !!extractBranchFromPath($page.url.pathname);
-
-  $: navItems = [
+  const navItems = [
     {
       label: "Overview",
       route: "",
@@ -21,7 +16,7 @@
     {
       label: "Branches",
       route: "/branches",
-      hasPermission: !branchPreviewMode,
+      hasPermission: true,
     },
     {
       label: "Resources",
@@ -36,7 +31,7 @@
     {
       label: "Logs",
       route: "/logs",
-      hasPermission: !branchPreviewMode,
+      hasPermission: true,
     },
     {
       label: "Analytics",

@@ -28,7 +28,8 @@
   import Tag from "../components/tag/Tag.svelte";
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
 
-  const { deploy, developerChat, readOnly, stickyDashboardState } = featureFlags;
+  const { deploy, developerChat, readOnly, stickyDashboardState } =
+    featureFlags;
   const runtimeClient = useRuntimeClient();
 
   export let mode: string;
@@ -60,6 +61,23 @@
   $: defaultDashboard = explores[0] ?? canvases[0] ?? null;
 
   $: hasValidDashboard = Boolean(defaultDashboard);
+
+  // When editing a dashboard YAML in /files/dashboards/[name].yaml, the
+  // Preview button jumps directly to the corresponding explore or canvas.
+  // Anywhere else in the file editor, it falls back to the dashboards
+  // listing.
+  $: previewUrl = (() => {
+    const match = $page.url.pathname.match(/^\/files\/dashboards\/(.+)\.yaml$/);
+    if (!match) return "/dashboards";
+    const name = match[1];
+    if (explores.some((e) => e.meta?.name?.name === name)) {
+      return `/explore/${name}`;
+    }
+    if (canvases.some((c) => c.meta?.name?.name === name)) {
+      return `/canvas/${name}`;
+    }
+    return "/dashboards";
+  })();
 
   $: dashboardOptions = {
     options: getBreadcrumbOptions(explores, canvases),
@@ -143,6 +161,8 @@
     {:else}
       {#if mode === "Preview" && !$readOnly}
         <Button type="secondary" href="/">Edit</Button>
+      {:else if mode === "Developer" && !$readOnly}
+        <Button type="secondary" href={previewUrl}>Preview</Button>
       {/if}
       {#if showDeveloperChat}
         <ChatToggle />

@@ -1,25 +1,14 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import CanvasBookmarks from "@rilldata/web-admin/features/bookmarks/CanvasBookmarks.svelte";
   import ExploreBookmarks from "@rilldata/web-admin/features/bookmarks/ExploreBookmarks.svelte";
-  import {
-    branchPathPrefix,
-    extractBranchFromPath,
-    requestSkipBranchInjection,
-  } from "@rilldata/web-admin/features/branches/branch-utils";
+  import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
   import ShareDashboardPopover from "@rilldata/web-admin/features/dashboards/share/ShareDashboardPopover.svelte";
-  import CommitPopover from "@rilldata/web-admin/features/edit-session/CommitPopover.svelte";
   import EditActions from "@rilldata/web-admin/features/edit-session/EditActions.svelte";
   import EditButton from "@rilldata/web-admin/features/edit-session/EditButton.svelte";
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
-  import { Button } from "@rilldata/web-common/components/button";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
-  import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { GitPullRequestCreateArrow } from "lucide-svelte";
   import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
@@ -182,32 +171,10 @@
       dashboard;
 
   $: currentPath = [organization, project, dashboard, report || alert];
-
-  // Toggle between Preview (branch view) and Developer (edit) for the active
-  // branch. The pill is only rendered when a branch is in scope, so
-  // activeBranch is guaranteed when this runs.
-  function toggleMode() {
-    if (!activeBranch) return;
-    const target = editContext
-      ? `/${organization}/${project}${branchPathPrefix(activeBranch)}`
-      : `/${organization}/${project}${branchPathPrefix(activeBranch)}/-/edit`;
-    requestSkipBranchInjection();
-    void goto(target);
-  }
 </script>
 
 <Header borderBottom={!onProjectPage}>
   <HeaderLogo href={rillLogoHref} logoUrl={organizationLogoUrl} />
-  {#if activeBranch && !onPublicURLPage}
-    <button
-      type="button"
-      class="contents cursor-pointer"
-      title="Switch to {editContext ? 'Preview' : 'Developer'}"
-      on:click={toggleMode}
-    >
-      <Tag text={editContext ? "Developer" : "Preview"} color="gray" />
-    </button>
-  {/if}
   {#if onPublicURLPage}
     <PageTitle title={publicURLDashboardTitle} />
   {:else if organization}
@@ -304,19 +271,6 @@
           createMagicAuthTokens={projectPermissions.createMagicAuthTokens}
         />
       {/if}
-    {/if}
-
-    {#if !editContext && activeBranch && $cloudEditing && projectPermissions.manageDev}
-      <CommitPopover />
-      <Tooltip distance={8}>
-        <Button type="primary" disabled>
-          <GitPullRequestCreateArrow size="14" />
-          Open PR
-        </Button>
-        <TooltipContent slot="tooltip-content" maxWidth="200px">
-          <span class="text-xs">Coming soon</span>
-        </TooltipContent>
-      </Tooltip>
     {/if}
 
     {#if $user.isSuccess}
