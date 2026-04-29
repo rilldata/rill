@@ -111,10 +111,6 @@
   let monthlyCost = $derived(prodCost + devCost + storageCost);
   let dailyCost = $derived(monthlyCost / DAYS_PER_MONTH);
 
-  // TODO: Wire to billing API when available
-  let availableCredit = $derived(100);
-  let youPay = $derived(Math.max(monthlyCost - availableCredit, 0));
-
   // Billing plan
   let subscriptionQuery = $derived(
     createAdminServiceGetBillingSubscription(organization),
@@ -454,25 +450,6 @@
           <span class="monthly-label">Monthly cost</span>
           <span class="monthly-amount">{fmtUSD(monthlyCost)}</span>
         </div>
-
-        {#if !isPro && availableCredit > 0}
-          <div class="credit-row">
-            <div class="credit-info">
-              <span class="credit-label">Available credit</span>
-              <span class="credit-desc">Applied to your first bill</span>
-            </div>
-            <span class="credit-amount">-{fmtUSD(availableCredit)}</span>
-          </div>
-
-          <div class="you-pay">
-            <span class="you-pay-label">You pay</span>
-            <span class="you-pay-amount">{fmtUSD(youPay)}</span>
-          </div>
-
-          <span class="recurring-note">
-            Then {fmtUSD(monthlyCost)}/mo at this configuration.
-          </span>
-        {/if}
       </div>
 
       <div class="cost-actions">
@@ -722,43 +699,6 @@
 
   .monthly-amount {
     @apply text-base font-semibold text-fg-secondary tabular-nums;
-  }
-
-  .credit-row {
-    @apply flex items-start gap-6;
-  }
-
-  .credit-info {
-    @apply flex-1 flex flex-col gap-1.5 min-w-0;
-  }
-
-  .credit-label {
-    @apply text-xs font-semibold text-green-700 leading-none;
-  }
-
-  .credit-desc {
-    @apply text-xs text-fg-tertiary leading-4;
-  }
-
-  .credit-amount {
-    @apply text-base font-semibold text-green-700 tabular-nums whitespace-nowrap;
-  }
-
-  .you-pay {
-    @apply flex items-center gap-6 py-2 px-4 rounded-md bg-primary-50;
-  }
-
-  .you-pay-label {
-    @apply flex-1 text-base font-semibold text-primary-700 leading-none;
-  }
-
-  .you-pay-amount {
-    @apply text-2xl font-semibold text-primary-700 tabular-nums;
-    line-height: 36px;
-  }
-
-  .recurring-note {
-    @apply text-xs text-fg-tertiary text-center leading-4;
   }
 
   .cost-actions {
