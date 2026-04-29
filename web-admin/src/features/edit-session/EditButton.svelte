@@ -10,17 +10,18 @@
     branchPathPrefix,
     requestSkipBranchInjection,
   } from "@rilldata/web-admin/features/branches/branch-utils";
-  import { getStatusDotClass } from "@rilldata/web-admin/features/projects/status/display-utils";
   import { Button } from "@rilldata/web-common/components/button";
   import * as Popover from "@rilldata/web-common/components/popover";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { PlusIcon } from "lucide-svelte";
+  import { GitBranchIcon, PlusIcon } from "lucide-svelte";
   import { useDevDeployments, invalidateDeployments } from "./use-edit-session";
 
   export let organization: string;
   export let project: string;
   /** The branch currently being viewed (from the URL), if any. */
   export let activeBranch: string | undefined = undefined;
+  /** The project's primary branch, used as the source for new branches. */
+  export let primaryBranch: string | undefined = undefined;
 
   const user = createAdminServiceGetCurrentUser();
   const devDeployments = useDevDeployments(organization, project);
@@ -33,6 +34,7 @@
   $: currentUserId = $user.data?.user?.id;
   $: deployments = $devDeployments.data?.deployments ?? [];
   $: isLoading = $devDeployments.isLoading;
+  $: sourceBranch = primaryBranch || "main";
 
   // Editable deployments owned by the current user (excludes ones being
   // torn down), sorted by most recently updated. Stopped and errored
@@ -80,12 +82,6 @@
     return `/${organization}/${project}${branchPathPrefix(branch)}/-/edit`;
   }
 
-  function statusDot(status: V1DeploymentStatus | undefined): string {
-    return getStatusDotClass(
-      status ?? V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED,
-    );
-  }
-
   // When the user owns a deployment on the active branch, the button
   // links directly to that editor (no popover).
   $: directEditHref = activeBranchDeployment
@@ -101,6 +97,24 @@
   function handleBranchClick() {
     requestSkipBranchInjection();
     open = false;
+  }
+
+  // Replaces whitespace with "-" as the user types so branch names are
+  // always valid. Space → "-" is a 1:1 swap, so cursor stays put.
+  function handleBranchNameInput(e: Event) {
+    const target = e.currentTarget as HTMLInputElement;
+    const sanitized = target.value.replace(/\s+/g, "-");
+    if (sanitized !== target.value) {
+      const cursorPos = target.selectionStart ?? sanitized.length;
+      target.value = sanitized;
+      target.setSelectionRange(cursorPos, cursorPos);
+    }
+    branchName = sanitized;
+  }
+
+  function handleCancelNewBranch() {
+    branchName = "";
+    showNewBranchInput = false;
   }
 
   async function handleCreate() {
@@ -130,6 +144,9 @@
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === "Enter") {
       void handleCreate();
+    } else if (e.key === "Escape" && hasOwnSessions) {
+      e.preventDefault();
+      handleCancelNewBranch();
     }
   }
 </script>
@@ -160,11 +177,7 @@
       {/snippet}
     </Popover.Trigger>
 
-    <Popover.Content
-      align="end"
-      padding="1.5"
-      class="w-auto min-w-[200px] max-w-[280px]"
-    >
+    <Popover.Content align="end" padding="3" class="w-[304px]">
       {#if activeBranchIsNonEditable}
         <div class="banner">
           This branch isn't editable. Start a new one below{hasOwnSessions
@@ -172,39 +185,106 @@
             : ""}.
         </div>
       {/if}
-      {#if hasOwnSessions}
-        <div class="section-label">Your branches</div>
-        {#each ownDeployments as deployment (deployment.id)}
-          <a
-            class="branch-row"
-            href={editUrl(deployment.branch)}
-            onclick={handleBranchClick}
-            data-sveltekit-preload-data="hover"
-          >
-            <span
-              class="inline-block size-1.5 rounded-full flex-none {statusDot(
-                deployment.status,
-              )}"
-            ></span>
-            <span class="font-mono truncate">
-              {deployment.branch || "main"}
+
+      <div class="pop-header">
+        {#if hasOwnSessions}
+          <div class="pop-title">Continue editing</div>
+          <div class="pop-subtitle">
+            Branched from<span class="branch-chip">
+              <GitBranchIcon size="11" />
+              {sourceBranch}
             </span>
-          </a>
-        {/each}
+          </div>
+        {:else}
+          <div class="pop-title">Start editing</div>
+          <div class="pop-subtitle">
+            Create a branch to edit from<span class="branch-chip">
+              <GitBranchIcon size="11" />
+              {sourceBranch}
+            </span>
+          </div>
+        {/if}
+      </div>
+
+      {#if hasOwnSessions}
+        <div class="branch-list">
+          {#each ownDeployments as deployment (deployment.id)}
+            <a
+              class="branch-row"
+              href={editUrl(deployment.branch)}
+              onclick={handleBranchClick}
+              data-sveltekit-preload-data="hover"
+            >
+              <span class="font-mono truncate">
+                {deployment.branch || sourceBranch}
+              </span>
+            </a>
+          {/each}
+        </div>
 
         <div class="separator"></div>
 
         {#if showNewBranchInput}
-          <div class="flex flex-col gap-y-1.5 px-2 pb-1.5 pt-0.5">
+          <div class="form">
+            <label class="form-label" for="new-branch-name">
+              New branch name
+            </label>
             <!-- svelte-ignore a11y_autofocus -->
             <input
+              id="new-branch-name"
               class="branch-input"
               type="text"
-              bind:value={branchName}
+              value={branchName}
+              oninput={handleBranchNameInput}
               onkeydown={handleKeydown}
               placeholder="branch-name"
               autofocus
             />
+            <div class="form-actions">
+              <Button
+                type="ghost"
+                small
+                disabled={isStarting}
+                onClick={handleCancelNewBranch}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="primary"
+                small
+                disabled={!branchName.trim() || isStarting}
+                loading={isStarting}
+                loadingCopy="Starting..."
+                onClick={handleCreate}
+              >
+                Create &amp; edit
+              </Button>
+            </div>
+          </div>
+        {:else}
+          <button
+            class="new-branch-btn"
+            onclick={() => (showNewBranchInput = true)}
+          >
+            <PlusIcon size="14" />
+            <span>New branch&hellip;</span>
+          </button>
+        {/if}
+      {:else}
+        <div class="form">
+          <label class="form-label" for="new-branch-name">Branch name</label>
+          <!-- svelte-ignore a11y_autofocus -->
+          <input
+            id="new-branch-name"
+            class="branch-input"
+            type="text"
+            value={branchName}
+            oninput={handleBranchNameInput}
+            onkeydown={handleKeydown}
+            placeholder="branch-name"
+            autofocus
+          />
+          <div class="form-actions">
             <Button
               type="primary"
               small
@@ -213,40 +293,9 @@
               loadingCopy="Starting..."
               onClick={handleCreate}
             >
-              Start editing
+              Create &amp; edit
             </Button>
           </div>
-        {:else}
-          <button
-            class="new-branch-btn"
-            onclick={() => (showNewBranchInput = true)}
-          >
-            <PlusIcon size="12" />
-            <span>New branch...</span>
-          </button>
-        {/if}
-      {:else}
-        <div class="section-label">Create a branch</div>
-        <div class="flex flex-col gap-y-1.5 px-2 pb-1.5 pt-0.5">
-          <!-- svelte-ignore a11y_autofocus -->
-          <input
-            class="branch-input"
-            type="text"
-            bind:value={branchName}
-            onkeydown={handleKeydown}
-            placeholder="branch-name"
-            autofocus
-          />
-          <Button
-            type="primary"
-            small
-            disabled={!branchName.trim() || isStarting}
-            loading={isStarting}
-            loadingCopy="Starting..."
-            onClick={handleCreate}
-          >
-            Start editing
-          </Button>
         </div>
       {/if}
     </Popover.Content>
@@ -254,19 +303,42 @@
 {/if}
 
 <style lang="postcss">
-  .section-label {
-    @apply px-2 py-1.5 text-xs text-fg-secondary font-semibold;
+  .pop-header {
+    @apply flex flex-col gap-y-0.5 px-1 pb-2;
+  }
+
+  .pop-title {
+    @apply text-sm font-semibold text-fg-primary;
+  }
+
+  .pop-subtitle {
+    @apply text-xs text-fg-secondary whitespace-nowrap;
+  }
+
+  .branch-chip {
+    @apply ml-1 inline-flex items-center gap-x-1 align-[-2px];
+    @apply px-1.5 py-px rounded;
+    @apply text-[11.5px] font-mono font-medium text-fg-primary;
+    @apply bg-surface-subtle border border-border;
+  }
+
+  .branch-chip :global(svg) {
+    @apply text-fg-muted shrink-0;
   }
 
   .banner {
-    @apply mx-0.5 mt-0.5 mb-1.5 rounded-sm px-2 py-1.5;
+    @apply mx-0 mb-2 rounded-sm px-2 py-1.5;
     @apply text-xs text-yellow-800 bg-yellow-50 border border-yellow-200;
+  }
+
+  .branch-list {
+    @apply flex flex-col;
   }
 
   .branch-row {
     @apply flex items-center gap-x-2 rounded-sm px-2 py-1.5 text-xs;
     @apply text-fg-primary hover:bg-surface-hover hover:text-fg-accent;
-    @apply cursor-pointer outline-none;
+    @apply cursor-pointer outline-none no-underline;
   }
 
   .separator {
@@ -274,12 +346,24 @@
   }
 
   .new-branch-btn {
-    @apply flex w-full items-center gap-x-2 rounded-sm px-2 py-1.5 text-xs;
+    @apply flex w-full items-center gap-x-2 rounded-sm px-2 py-1.5 text-xs font-medium;
     @apply text-primary-600 hover:bg-surface-hover cursor-pointer;
   }
 
+  .form {
+    @apply flex flex-col gap-y-2 px-1 pt-1 pb-0.5;
+  }
+
+  .form-label {
+    @apply text-xs font-medium text-fg-primary;
+  }
+
   .branch-input {
-    @apply w-full text-xs font-mono px-2 py-1 rounded border border-gray-300;
-    @apply focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500;
+    @apply w-full text-xs font-mono px-2.5 py-2 rounded-md border border-gray-300;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500;
+  }
+
+  .form-actions {
+    @apply flex items-center justify-end gap-x-2 mt-0.5;
   }
 </style>

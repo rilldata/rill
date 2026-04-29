@@ -208,7 +208,7 @@
         <ViewAsUserChip />
       {/if}
       {#if $cloudEditing && onProjectPage && projectPermissions.manageDev}
-        <EditButton {organization} {project} {activeBranch} />
+        <EditButton {organization} {project} {activeBranch} {primaryBranch} />
       {/if}
       {#if onProjectPage && projectPermissions.manageProjectMembers}
         <ShareProjectPopover
@@ -231,7 +231,7 @@
           >
             <LastRefreshedDate {dashboard} />
             {#if $cloudEditing && (onMetricsExplorerPage || onCanvasDashboardPage) && projectPermissions.manageDev}
-              <EditButton {organization} {project} {activeBranch} />
+              <EditButton {organization} {project} {activeBranch} {primaryBranch} />
             {/if}
             {#if $dimensionSearch && ready}
               <GlobalDimensionSearch />
@@ -260,7 +260,7 @@
 
     {#if onCanvasDashboardPage}
       {#if $cloudEditing && projectPermissions.manageDev}
-        <EditButton {organization} {project} {activeBranch} />
+        <EditButton {organization} {project} {activeBranch} {primaryBranch} />
       {/if}
       {#if $dashboardChat && !onPublicURLPage}
         <ChatToggle />
