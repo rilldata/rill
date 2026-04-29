@@ -72,7 +72,7 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Merge the current .env file with the cloud variables
 			for env, local := range current {
-				if env != "" && env != environment {
+				if environment != "" && (env != environment && env != "") {
 					ch.Printf("Skipping environment %q since it doesn't match the specified environment filter %q.\n", env, environment)
 					continue
 				}
