@@ -381,36 +381,49 @@
 
   /* Segmented tab control — Di's pattern (gray pill, lifted active) */
   .seg-list {
-    @apply mx-6 mt-5 inline-flex p-1 gap-1 self-start w-fit;
-    @apply bg-slate-100 dark:bg-slate-800/70 rounded-lg;
+    @apply mx-6 mt-5 inline-flex p-1 gap-1 self-start w-fit rounded-lg;
+    background: rgb(241 245 249); /* slate-100 */
+  }
+
+  :global(.dark) .seg-list {
+    background: rgb(30 41 59); /* slate-800 */
   }
 
   .seg-trigger {
-    @apply inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md border-0 bg-transparent;
-    @apply text-[13px] font-medium;
-    @apply text-slate-500 dark:text-slate-400;
-    @apply transition-all cursor-pointer;
+    @apply inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md border-0;
+    @apply text-[13px] font-medium transition-all cursor-pointer;
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40;
+    background: transparent;
+    color: rgb(100 116 139); /* slate-500 */
+  }
+
+  :global(.dark) .seg-trigger {
+    color: rgb(148 163 184); /* slate-400 */
+  }
+
+  .seg-trigger:not(.is-active):hover {
+    color: rgb(51 65 85); /* slate-700 */
+  }
+
+  :global(.dark) .seg-trigger:not(.is-active):hover {
+    color: rgb(226 232 240); /* slate-200 */
   }
 
   .seg-trigger.is-active {
-    @apply bg-white dark:bg-slate-700;
-    @apply text-slate-900 dark:text-slate-50;
-    @apply font-semibold;
+    background: #ffffff;
+    color: rgb(15 23 42); /* slate-900 */
+    font-weight: 600;
     box-shadow:
       0 1px 2px rgba(15, 23, 42, 0.08),
       0 0 0 1px rgba(15, 23, 42, 0.04);
   }
 
-  /* Dark-mode active pill: subtler shadow, lean on background contrast instead */
   :global(.dark) .seg-trigger.is-active {
+    background: rgb(71 85 105); /* slate-600 — clearly lighter than the slate-800 container */
+    color: rgb(248 250 252); /* slate-50 */
     box-shadow:
       0 1px 2px rgba(0, 0, 0, 0.4),
-      0 0 0 1px rgba(255, 255, 255, 0.04);
-  }
-
-  .seg-trigger:not(.is-active):hover {
-    @apply text-slate-700 dark:text-slate-200;
+      0 0 0 1px rgba(255, 255, 255, 0.06);
   }
 
   /* Body — locks 16px gap from tabs (or subtitle when no tabs) */
