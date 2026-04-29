@@ -69,7 +69,7 @@
       <ViewAsUserChip />
     {/if}
     {#if $developerChat && !previewMode}
-      <ChatToggle />
+      <ChatToggle class="!bg-surface-base" />
     {/if}
     <EditActions {organization} {project} branch={activeBranch ?? ""} />
     {#if $user.isSuccess && $user.data?.user}

@@ -3,6 +3,9 @@
   import * as Tooltip from "../../../../components/tooltip-v2";
   import { chatOpen, sidebarActions } from "./sidebar-store";
 
+  let className: string | undefined = undefined;
+  export { className as class };
+
   const isMac = window.navigator.userAgent.includes("Macintosh");
 </script>
 
@@ -24,6 +27,7 @@
         type="secondary"
         onClick={sidebarActions.toggleChat}
         active={$chatOpen}
+        class={className}
       >
         AI
       </Button>
