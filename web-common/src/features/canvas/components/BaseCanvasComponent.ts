@@ -169,11 +169,13 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         this.parent.timeManager.state.comparisonRangeStore,
         this.parent.timeManager.state.comparisonIntervalStore,
         this.parent.timeManager.state.timeZoneStore,
+        this.parent.timeManager.state.rangeStore,
         this.localTimeControls.interval,
         this.localTimeControls.comparisonIntervalStore,
         this.localTimeControls.showTimeComparisonStore,
         this.localTimeControls.grainStore,
         this.localTimeControls.comparisonRangeStore,
+        this.localTimeControls.rangeStore,
         this.parent.filterManager.metricsViewFilters,
         this.parent.specStore,
         this.parent.timeManager.hasTimeSeriesMap,
@@ -187,11 +189,13 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
           globalComparisonRange,
           globalComparisonInterval,
           timeZone,
+          globalRange,
           localInterval,
           localComparisonInterval,
           localShowTimeComparison,
           localGrainStore,
           localComparisonRange,
+          localRange,
           metricsViewFilters,
           canvasData,
           hasTimeSeriesMap,
@@ -215,7 +219,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         let timeRangeState: TimeRangeState | undefined = {
           selectedTimeRange: globalInterval
             ? {
-                name: TimeRangePreset.CUSTOM,
+                name: globalRange ?? TimeRangePreset.CUSTOM,
                 start: globalInterval.start.toJSDate(),
                 end: globalInterval.end.toJSDate(),
                 interval: globalGrainStore,
@@ -284,7 +288,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
             const localTimeRangeState: TimeRangeState = {
               selectedTimeRange: localInterval
                 ? {
-                    name: TimeRangePreset.CUSTOM,
+                    name: localRange ?? TimeRangePreset.CUSTOM,
                     start: localInterval.start.toJSDate(),
                     end: localInterval.end.toJSDate(),
                     interval: localGrainStore ?? globalGrainStore,
