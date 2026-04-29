@@ -112,9 +112,6 @@
 
   // Cost calculations
   let prodHourlyCost = $derived((prodSlots * SLOT_RATE_PER_HR).toFixed(2));
-  let devHourlyCostPerDeployment = $derived(
-    (devSlotsPerDeployment * SLOT_RATE_PER_HR).toFixed(2),
-  );
   let runningDevHourlyCost = $derived(
     (runningDevSlots * SLOT_RATE_PER_HR).toFixed(2),
   );
