@@ -285,13 +285,13 @@ export class ComboChartComponent extends BaseChart<ComboCanvasChartSpec> {
 
     if (spec.x?.field) {
       if (spec.x.type === "temporal") {
-        columns.push({
+        rows.push({
           id: timeGrain || V1TimeGrain.TIME_GRAIN_DAY,
           title: spec.x.field,
           type: PivotChipType.Time,
         });
       } else {
-        columns.push({
+        rows.push({
           id: spec.x.field,
           title: spec.x.field,
           type: PivotChipType.Dimension,
@@ -313,6 +313,17 @@ export class ComboChartComponent extends BaseChart<ComboCanvasChartSpec> {
         title: spec.y2.field,
         type: PivotChipType.Measure,
       });
+    }
+
+    const hasDimensionRows = rows.some(
+      (r) => r.type === PivotChipType.Dimension,
+    );
+    if (hasDimensionRows) {
+      const timeChips = rows.filter((r) => r.type === PivotChipType.Time);
+      const nonTimeRows = rows.filter((r) => r.type !== PivotChipType.Time);
+      columns.push(...timeChips);
+      rows.length = 0;
+      rows.push(...nonTimeRows);
     }
 
     const pivot: PivotState = {

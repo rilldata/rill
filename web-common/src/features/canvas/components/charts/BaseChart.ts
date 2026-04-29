@@ -129,10 +129,17 @@ export abstract class BaseChart<
     const timeGrain = get(this.timeAndFilterStore)?.timeGrain;
     const tddLink = getLinkStateForTimeDimensionDetail(spec, this.type);
 
+    const comparisonChartTypes = [
+      "bar_chart",
+      "stacked_bar",
+      "stacked_bar_normalized",
+    ];
+    const passComparison = comparisonChartTypes.includes(this.type);
+
     return {
       whereFilter: dimensionFilters,
       dimensionThresholdFilters,
-      showTimeComparison: false,
+      ...(passComparison ? {} : { showTimeComparison: false }),
       activePage: tddLink.canLink
         ? DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL
         : DashboardState_ActivePage.PIVOT,
