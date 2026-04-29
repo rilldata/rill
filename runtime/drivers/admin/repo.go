@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
+	"github.com/go-git/go-git/v5"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -486,7 +487,11 @@ func (r *repo) Commit(ctx context.Context, message string) (string, error) {
 	if !r.git.editable() {
 		return "", fmt.Errorf("repo is not editable")
 	}
-	return r.git.commitToDefaultBranch(ctx, message)
+	repo, err := git.PlainOpen(r.git.repoDir)
+	if err != nil {
+		return "", err
+	}
+	return r.git.commitAll(repo, message)
 }
 
 // Pull implements drivers.RepoStore.
@@ -515,9 +520,11 @@ func (r *repo) CommitAndPush(ctx context.Context, message string, force bool) er
 		return fmt.Errorf("commits are not supported for this repo type")
 	}
 
-	// TODO: This should merge to the current branch
-	// A separate merge RPC should merge to primary branch
-	return r.git.commitAndPushToPrimaryBranch(ctx, message, force)
+	_, err = r.git.commitToDefaultBranch(ctx, message, force)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // RestoreCommit implements drivers.RepoStore.
@@ -582,7 +589,7 @@ func (r *repo) close() error {
 	}
 
 	if r.git != nil && r.git.editable() {
-		_, err := r.git.commitToDefaultBranch(ctx, "Checkpoint commit")
+		_, err := r.git.commitToDefaultBranch(ctx, "Checkpoint commit", false)
 		if err != nil {
 			return fmt.Errorf("close failed: could not commit to edit branch: %w", err)
 		}

@@ -6,9 +6,21 @@ import (
 	"os/exec"
 )
 
-// MergeWithTheirsStrategy merge a branch into the current branch using the "theirs" strategy.
-func MergeWithTheirsStrategy(path, branch string) error {
-	cmd := exec.Command("git", "-C", path, "merge", "-X", "theirs", branch)
+// MergeWithStrategy merge a branch into the current branch using the specified strategy.
+func MergeWithStrategy(path, branch string, strategy string) error {
+	var args []string
+	switch strategy {
+	case "theirs":
+		args = []string{"-C", path, "merge", "-X", "theirs", branch}
+	case "ours":
+		args = []string{"-C", path, "merge", "-X", "ours", branch}
+	case "":
+		args = []string{"-C", path, "merge", branch}
+	default:
+		return fmt.Errorf("internal error: unsupported merge strategy: %s", strategy)
+	}
+
+	cmd := exec.Command("git", args...)
 	_, err := cmd.Output()
 	if err != nil {
 		var execErr *exec.ExitError

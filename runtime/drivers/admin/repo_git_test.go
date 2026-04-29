@@ -447,6 +447,99 @@ func TestGitRepo_pullInner(t *testing.T) {
 				require.Equal(t, "new content", string(content))
 			},
 		},
+		{
+			name: "editable mode - force=false - conflicting local changes returns error",
+			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
+				_, err := git.PlainClone(localDir, false, &git.CloneOptions{
+					URL:           remoteURL,
+					RemoteName:    "origin",
+					ReferenceName: plumbing.ReferenceName("refs/heads/main"),
+					SingleBranch:  false,
+				})
+				require.NoError(t, err)
+				setupGitConfig(t, localDir)
+
+				// Create edit-branch and push it to remote so the remote tracking ref exists.
+				require.NoError(t, execGitCommand(exec.Command("git", "-C", localDir, "checkout", "-b", "edit-branch")))
+				require.NoError(t, execGitCommand(exec.Command("git", "-C", localDir, "push", "origin", "edit-branch")))
+
+				// Commit a local change to test1.txt on edit-branch (do NOT push).
+				err = os.WriteFile(filepath.Join(localDir, "test1.txt"), []byte("local edit content"), 0644)
+				require.NoError(t, err)
+				require.NoError(t, execGitCommand(exec.Command("git", "-C", localDir, "add", "test1.txt")))
+				require.NoError(t, execGitCommand(exec.Command("git", "-C", localDir, "commit", "-m", "Local edit change")))
+
+				return &gitRepo{
+					h:             &Handle{logger: zap.NewNop()},
+					repoDir:       localDir,
+					remoteURL:     remoteURL,
+					defaultBranch: "edit-branch",
+					editableDepl:  true,
+					primaryBranch: "main",
+					subpath:       "",
+					managedRepo:   true,
+				}
+			},
+			setupRemote: func(t *testing.T, remoteDir string) {
+				// Push a conflicting change to the same file on edit-branch.
+				createRemoteCommitOnBranch(t, remoteDir, "edit-branch", "test1.txt", "remote edit content", "Remote edit change")
+			},
+			force:       false,
+			expectError: true,
+			validate:    nil,
+		},
+		{
+			name: "editable mode - force=false - non-conflicting local changes merged successfully",
+			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
+				_, err := git.PlainClone(localDir, false, &git.CloneOptions{
+					URL:           remoteURL,
+					RemoteName:    "origin",
+					ReferenceName: plumbing.ReferenceName("refs/heads/main"),
+					SingleBranch:  false,
+				})
+				require.NoError(t, err)
+				setupGitConfig(t, localDir)
+
+				// Create edit-branch and push it to remote.
+				require.NoError(t, execGitCommand(exec.Command("git", "-C", localDir, "checkout", "-b", "edit-branch")))
+				require.NoError(t, execGitCommand(exec.Command("git", "-C", localDir, "push", "origin", "edit-branch")))
+
+				// Commit a local change to a unique file (no overlap with remote change).
+				err = os.WriteFile(filepath.Join(localDir, "local_change.txt"), []byte("local only content"), 0644)
+				require.NoError(t, err)
+				require.NoError(t, execGitCommand(exec.Command("git", "-C", localDir, "add", "local_change.txt")))
+				require.NoError(t, execGitCommand(exec.Command("git", "-C", localDir, "commit", "-m", "Local only change")))
+
+				return &gitRepo{
+					h:             &Handle{logger: zap.NewNop()},
+					repoDir:       localDir,
+					remoteURL:     remoteURL,
+					defaultBranch: "edit-branch",
+					editableDepl:  true,
+					primaryBranch: "main",
+					subpath:       "",
+					managedRepo:   true,
+				}
+			},
+			setupRemote: func(t *testing.T, remoteDir string) {
+				// Push a non-conflicting change (different file) to edit-branch on remote.
+				createRemoteCommitOnBranch(t, remoteDir, "edit-branch", "remote_change.txt", "remote only content", "Remote only change")
+			},
+			force:       false,
+			expectError: false,
+			validate: func(t *testing.T, repo *gitRepo, localDir string) {
+				verifyCurrentBranch(t, localDir, "edit-branch")
+
+				// Both local and remote changes should be present after the merge.
+				localContent, err := os.ReadFile(filepath.Join(localDir, "local_change.txt"))
+				require.NoError(t, err)
+				require.Equal(t, "local only content", string(localContent))
+
+				remoteContent, err := os.ReadFile(filepath.Join(localDir, "remote_change.txt"))
+				require.NoError(t, err)
+				require.Equal(t, "remote only content", string(remoteContent))
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -949,6 +1042,23 @@ func createRemoteCommit(t *testing.T, remoteDir, fileName, content, commitMessag
 	cmd = exec.Command("git", "-C", workingDir, "push", "origin", "main")
 	output, err := cmd.CombinedOutput()
 	require.NoError(t, err, "failed to push commit "+string(output))
+}
+
+// createRemoteCommitOnBranch creates a new commit on an existing branch in the remote repository.
+func createRemoteCommitOnBranch(t *testing.T, remoteDir, branchName, fileName, content, commitMessage string) {
+	t.Helper()
+	workingDir := t.TempDir()
+	require.NoError(t, execGitCommand(exec.Command("git", "clone", remoteDir, workingDir)), "failed to clone repository")
+
+	setupGitConfig(t, workingDir)
+
+	require.NoError(t, execGitCommand(exec.Command("git", "-C", workingDir, "checkout", branchName)), "failed to checkout branch")
+
+	require.NoError(t, os.WriteFile(filepath.Join(workingDir, fileName), []byte(content), 0644), "failed to write file")
+
+	require.NoError(t, execGitCommand(exec.Command("git", "-C", workingDir, "add", fileName)), "failed to stage file")
+	require.NoError(t, execGitCommand(exec.Command("git", "-C", workingDir, "commit", "-m", commitMessage)), "failed to commit file")
+	require.NoError(t, execGitCommand(exec.Command("git", "-C", workingDir, "push", "origin", branchName)), "failed to push commit")
 }
 
 // createRemoteBranch creates a new branch with content in the remote repository

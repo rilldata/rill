@@ -34,7 +34,7 @@ func TestMergeWithTheirsStrategy(t *testing.T) {
 		createCommit(t, tempDir, "main.txt", "main content", "add main file")
 
 		// Test merging feature branch using theirs strategy
-		err = MergeWithTheirsStrategy(tempDir, "feature")
+		err = MergeWithStrategy(tempDir, "feature", "theirs")
 		require.NoError(t, err, "MergeWithTheirsStrategy should succeed without conflicts")
 
 		// Verify both files exist
@@ -63,7 +63,7 @@ func TestMergeWithTheirsStrategy(t *testing.T) {
 		createCommit(t, tempDir, "test1.txt", "main version", "modify test1 in main")
 
 		// Test merging feature branch with conflicts using theirs strategy
-		err = MergeWithTheirsStrategy(tempDir, "feature")
+		err = MergeWithStrategy(tempDir, "feature", "theirs")
 		require.NoError(t, err, "MergeWithTheirsStrategy should resolve conflicts using theirs strategy")
 
 		// Verify the file has the feature branch content (theirs)
