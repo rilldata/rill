@@ -227,22 +227,15 @@
           errorBody="Lost connection to the editing environment. Try ending the session and starting a new one."
         >
           <div class="flex flex-1 overflow-hidden">
-            {#if previewMode}
-              <section class="flex flex-1 overflow-hidden">
-                <div class="flex-1 overflow-hidden overflow-y-auto">
-                  <slot />
-                </div>
-                <DeveloperChat />
-              </section>
-            {:else}
+            {#if !previewMode}
               <Navigation showFooterLinks={false} />
-              <section class="flex flex-1 overflow-hidden">
-                <div class="flex-1 overflow-hidden">
-                  <slot />
-                </div>
-                <DeveloperChat />
-              </section>
             {/if}
+            <section class="flex flex-1 overflow-hidden">
+              <div class="flex-1 overflow-hidden">
+                <slot />
+              </div>
+              <DeveloperChat />
+            </section>
           </div>
         </FileAndResourceWatcher>
       </RuntimeProvider>

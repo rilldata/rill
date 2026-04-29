@@ -9,6 +9,13 @@
   export let currentPath: (string | undefined)[] = [];
 
   $: currentPage = currentPath.findLastIndex(Boolean);
+  // The leading `/` separator should only appear between two rendered
+  // breadcrumbs. When earlier depths are skipped (e.g. cloud editor
+  // hides the org breadcrumb), suppress the slash that would otherwise
+  // appear before the first visible item.
+  $: firstRenderedDepth = pathParts.findIndex(
+    (p, i) => !!currentPath[i] && !!p?.options,
+  );
 </script>
 
 <nav class="flex gap-x-2 items-center">
@@ -17,7 +24,7 @@
     {#each pathParts as pathOptions, depth (depth)}
       {@const current = currentPath[depth]}
       {#if current && pathOptions?.options}
-        {#if depth}
+        {#if depth > firstRenderedDepth}
           <Slash />
         {/if}
         <BreadcrumbItem

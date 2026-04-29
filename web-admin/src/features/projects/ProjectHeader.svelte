@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import CanvasBookmarks from "@rilldata/web-admin/features/bookmarks/CanvasBookmarks.svelte";
   import ExploreBookmarks from "@rilldata/web-admin/features/bookmarks/ExploreBookmarks.svelte";
@@ -12,9 +11,9 @@
   import EditActions from "@rilldata/web-admin/features/edit-session/EditActions.svelte";
   import EditButton from "@rilldata/web-admin/features/edit-session/EditButton.svelte";
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
+  import { Button } from "@rilldata/web-common/components/button";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
-  import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
@@ -176,32 +175,37 @@
     : $exploreQuery.data?.explore?.explore?.state?.validSpec?.displayName ||
       dashboard;
 
-  $: currentPath = [organization, project, dashboard, report || alert];
+  // Cloud editor hides the org breadcrumb (and its trial pill) so the bar
+  // collapses to "Rill / Project / Branch". Outside the editor, all
+  // breadcrumb levels render.
+  $: currentPath = editContext
+    ? [undefined, project, dashboard, report || alert]
+    : [organization, project, dashboard, report || alert];
 
-  // Inside /-/edit, the pill swaps between Developer (file editor) and
+  // Inside /-/edit the pill swaps between Developer (file editor) and
   // Preview (dashboards/explore/canvas/...) by changing the URL prefix.
-  // Outside /-/edit there is no toggle; cloud has only the production view
-  // and the unified edit surface.
+  // Outside /-/edit there is no toggle.
   $: editPreviewMode = editContext && isEditPreviewRoute($page.url.pathname);
 
-  function toggleEditMode() {
-    if (!activeBranch) return;
-    const editPrefix = `/${organization}/${project}${branchPathPrefix(activeBranch)}/-/edit`;
-    void goto(editPreviewMode ? editPrefix : `${editPrefix}/dashboards`);
-  }
+  $: editToggleHref = activeBranch
+    ? `/${organization}/${project}${branchPathPrefix(activeBranch)}/-/edit${editPreviewMode ? "" : "/dashboards"}`
+    : "";
 </script>
 
 <Header borderBottom={!onProjectPage && !editPreviewMode}>
-  <HeaderLogo href={rillLogoHref} logoUrl={organizationLogoUrl} />
-  {#if editContext && activeBranch}
-    <button
-      type="button"
-      class="contents cursor-pointer"
-      title="Switch to {editPreviewMode ? 'Developer' : 'Preview'}"
-      on:click={toggleEditMode}
+  {#if editContext}
+    <a
+      href="/{organization}/{project}"
+      class="px-3 py-1 text-base font-semibold text-fg-primary hover:text-fg-accent"
+      title="Return to project home">Rill</a
     >
-      <Tag text={editPreviewMode ? "Preview" : "Developer"} color="gray" />
-    </button>
+  {:else}
+    <HeaderLogo href={rillLogoHref} logoUrl={organizationLogoUrl} />
+  {/if}
+  {#if editContext && activeBranch}
+    <Button type="secondary" href={editToggleHref}>
+      {editPreviewMode ? "Preview" : "Developer"}
+    </Button>
   {/if}
   {#if onPublicURLPage}
     <PageTitle title={publicURLDashboardTitle} />
