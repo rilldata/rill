@@ -1769,6 +1769,7 @@ export type AdminServiceCreateManagedGitRepoBody = {
   /** name of the repo to create. 
 Note: The final name will be suffixed with a random string to ensure uniqueness. */
   name?: string;
+  autoInit?: boolean;
 };
 
 export type AdminServiceCreateAssetBody = {
