@@ -164,7 +164,7 @@
       {:else if mode === "Developer" && !$readOnly}
         <Button type="secondary" href={previewUrl}>Preview</Button>
       {/if}
-      {#if showDeveloperChat}
+      {#if showDeveloperChat && mode !== "Preview"}
         <ChatToggle />
       {/if}
     {/if}

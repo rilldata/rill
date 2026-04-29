@@ -68,7 +68,7 @@
     {#if previewMode && $viewAsUserStore}
       <ViewAsUserChip />
     {/if}
-    {#if $developerChat}
+    {#if $developerChat && !previewMode}
       <ChatToggle />
     {/if}
     <EditActions {organization} {project} branch={activeBranch ?? ""} />
