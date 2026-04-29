@@ -453,7 +453,7 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 }
 
 func databaseTypeToPB(dbt string, nullable, singleValueField bool) *runtimev1.Type {
-	t := &runtimev1.Type{Nullable: nullable, RawType: dbt}
+	t := &runtimev1.Type{Nullable: nullable}
 	if !singleValueField {
 		// currently we don't support array fields, so unreachable code
 		t.Code = runtimev1.Type_CODE_ARRAY

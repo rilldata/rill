@@ -46,14 +46,14 @@ func (s *Server) QueryResolver(ctx context.Context, req *runtimev1.QueryResolver
 		ForExport:  false,
 	})
 	if err != nil {
-		return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	defer resolver.Close()
 
 	// Query the resolver
 	res, err := resolver.ResolveInteractive(ctx)
 	if err != nil {
-		return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	defer res.Close()
 
@@ -75,7 +75,7 @@ func (s *Server) QueryResolver(ctx context.Context, req *runtimev1.QueryResolver
 		}
 		rowStruct, err := pbutil.ToStruct(row, res.Schema())
 		if err != nil {
-			return nil, err
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 		data = append(data, rowStruct)
 		count++

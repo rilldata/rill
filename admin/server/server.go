@@ -285,7 +285,6 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	// Wrap mux with final middleware and return
 	handler := s.authenticator.CookieToAuthHeader(mux) // Convert auth cookies to Authorization headers
 	handler = middleware.TraceMiddleware(handler)      // OpenTelemetry tracing
-	handler = middleware.CacheControlMiddleware(handler)
 	return handler, nil
 }
 
@@ -457,9 +456,6 @@ func mapGRPCError(err error) error {
 	}
 	if errors.Is(err, database.ErrValidation) {
 		return status.Error(codes.InvalidArgument, err.Error())
-	}
-	if errors.Is(err, admin.ErrDeploymentNotReady) {
-		return status.Error(codes.FailedPrecondition, err.Error())
 	}
 	return status.Error(codes.Internal, err.Error())
 }

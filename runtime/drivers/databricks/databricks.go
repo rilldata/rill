@@ -80,8 +80,7 @@ var spec = drivers.Spec{
 			Hint:        "Schema within the catalog (optional; defaults to the workspace default)",
 		},
 	},
-	ImplementsOLAP:      true,
-	ImplementsWarehouse: true,
+	ImplementsOLAP: true,
 }
 
 type driver struct{}
@@ -160,10 +159,9 @@ func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Cl
 	}
 
 	return &connection{
-		config:  conf,
-		storage: st,
-		logger:  logger,
-		dbMu:    semaphore.NewWeighted(1),
+		config: conf,
+		logger: logger,
+		dbMu:   semaphore.NewWeighted(1),
 	}, nil
 }
 
@@ -180,9 +178,8 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type connection struct {
-	config  *configProperties
-	storage *storage.Client
-	logger  *zap.Logger
+	config *configProperties
+	logger *zap.Logger
 
 	db    *sqlx.DB // lazily populated using getDB
 	dbErr error
@@ -285,7 +282,7 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 
 // AsWarehouse implements drivers.Handle.
 func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
-	return c, true
+	return nil, false
 }
 
 // AsNotifier implements drivers.Handle.

@@ -117,7 +117,7 @@ func (a *Authenticator) httpMiddleware(next http.Handler, lenient bool) http.Han
 			if err != nil {
 				// In lenient mode, we set anonClaims.
 				if lenient {
-					newCtx := WithClaims(r.Context(), anonClaims{})
+					newCtx := context.WithValue(r.Context(), claimsContextKey{}, anonClaims{})
 					next.ServeHTTP(w, r.WithContext(newCtx))
 					return
 				}
@@ -138,7 +138,7 @@ func (a *Authenticator) httpMiddleware(next http.Handler, lenient bool) http.Han
 			if err != nil {
 				// In lenient mode, we set anonClaims.
 				if lenient {
-					newCtx := WithClaims(r.Context(), anonClaims{})
+					newCtx := context.WithValue(r.Context(), claimsContextKey{}, anonClaims{})
 					next.ServeHTTP(w, r.WithContext(newCtx))
 					return
 				}
@@ -152,7 +152,7 @@ func (a *Authenticator) httpMiddleware(next http.Handler, lenient bool) http.Han
 		}
 
 		// No token was found. Set anonClaims.
-		newCtx := WithClaims(r.Context(), anonClaims{})
+		newCtx := context.WithValue(r.Context(), claimsContextKey{}, anonClaims{})
 		next.ServeHTTP(w, r.WithContext(newCtx))
 	})
 }
@@ -160,7 +160,7 @@ func (a *Authenticator) httpMiddleware(next http.Handler, lenient bool) http.Han
 func (a *Authenticator) parseClaimsFromBearer(ctx context.Context, authorizationHeader string) (context.Context, error) {
 	// If authorization header is not set, we set anonClaims.
 	if authorizationHeader == "" {
-		ctx = WithClaims(ctx, anonClaims{})
+		ctx = context.WithValue(ctx, claimsContextKey{}, anonClaims{})
 		return ctx, nil
 	}
 
@@ -185,7 +185,7 @@ func (a *Authenticator) parseClaimsFromToken(ctx context.Context, token string) 
 
 	// Set claims
 	claims := newAuthTokenClaims(validated, a.admin)
-	ctx = WithClaims(ctx, claims)
+	ctx = context.WithValue(ctx, claimsContextKey{}, claims)
 
 	// Set user ID in span and request log
 	if claims.OwnerType() == OwnerTypeUser {

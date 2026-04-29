@@ -542,33 +542,22 @@ func contextWithoutDeadline(parent context.Context) context.Context {
 // databaseTypeToPB converts Clickhouse types to Rill's generic schema type.
 // Refer the list of types here: https://clickhouse.com/docs/en/sql-reference/data-types
 func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
-	rawType := dbt
 	dbt = strings.ToUpper(dbt)
 
 	// For nullable the datatype is Nullable(X)
 	if strings.HasPrefix(dbt, "NULLABLE(") {
 		dbt = dbt[9 : len(dbt)-1]
-		result, err := databaseTypeToPB(dbt, true)
-		if err != nil {
-			return nil, err
-		}
-		result.RawType = rawType // e.g. "Nullable(String)"
-		return result, nil
+		return databaseTypeToPB(dbt, true)
 	}
 
 	// For LowCardinality the datatype is LowCardinality(X)
 	if strings.HasPrefix(dbt, "LOWCARDINALITY(") {
 		dbt = dbt[15 : len(dbt)-1]
-		result, err := databaseTypeToPB(dbt, nullable)
-		if err != nil {
-			return nil, err
-		}
-		result.RawType = rawType // e.g. "LowCardinality(String)"
-		return result, nil
+		return databaseTypeToPB(dbt, nullable)
 	}
 
 	match := true
-	t := &runtimev1.Type{Nullable: nullable, RawType: rawType}
+	t := &runtimev1.Type{Nullable: nullable}
 	switch dbt {
 	case "BOOL":
 		t.Code = runtimev1.Type_CODE_BOOL
@@ -630,35 +619,15 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	case "POINT":
 		t.Code = runtimev1.Type_CODE_POINT
 	case "RING":
-		result, err := databaseTypeToPB("Array(Point)", nullable)
-		if err != nil {
-			return nil, err
-		}
-		result.RawType = rawType
-		return result, nil
+		return databaseTypeToPB("Array(Point)", nullable)
 	case "LINESTRING":
-		result, err := databaseTypeToPB("Array(Point)", nullable)
-		if err != nil {
-			return nil, err
-		}
-		result.RawType = rawType
-		return result, nil
+		return databaseTypeToPB("Array(Point)", nullable)
 	case "MULTILINESTRING":
-		result, err := databaseTypeToPB("Array(LineString)", nullable)
-		if err != nil {
-			return nil, err
-		}
-		result.RawType = rawType
-		return result, nil
+		return databaseTypeToPB("Array(LineString)", nullable)
 	case "POLYGON":
 		t.Code = runtimev1.Type_CODE_POLYGON
 	case "MULTIPOLYGON":
-		result, err := databaseTypeToPB("Array(Polygon)", nullable)
-		if err != nil {
-			return nil, err
-		}
-		result.RawType = rawType
-		return result, nil
+		return databaseTypeToPB("Array(Polygon)", nullable)
 	default:
 		match = false
 	}

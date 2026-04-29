@@ -437,10 +437,6 @@ func (s *Service) CleanupSubscriptionBillingIssues(ctx context.Context, orgID st
 	return nil
 }
 
-// ErrBlockingBillingIssue is returned by CheckBlockingBillingErrors when the organization has a blocking billing issue.
-// Wraps a concrete reason via fmt.Errorf so the caller can classify it as a FailedPrecondition and surface the message.
-var ErrBlockingBillingIssue = errors.New("blocking billing issue")
-
 func (s *Service) CheckBlockingBillingErrors(ctx context.Context, orgID string) error {
 	be, err := s.DB.FindBillingIssueByTypeForOrg(ctx, orgID, database.BillingIssueTypeTrialEnded)
 	if err != nil {
@@ -450,7 +446,7 @@ func (s *Service) CheckBlockingBillingErrors(ctx context.Context, orgID string) 
 	}
 
 	if be != nil {
-		return fmt.Errorf("%w: trial has ended", ErrBlockingBillingIssue)
+		return fmt.Errorf("trial has ended")
 	}
 
 	be, err = s.DB.FindBillingIssueByTypeForOrg(ctx, orgID, database.BillingIssueTypePaymentFailed)
@@ -470,7 +466,7 @@ func (s *Service) CheckBlockingBillingErrors(ctx context.Context, orgID string) 
 		}
 
 		if earliestGracePeriodEndDate.Before(time.Now()) || earliestGracePeriodEndDate.IsZero() {
-			return fmt.Errorf("%w: payment overdue", ErrBlockingBillingIssue)
+			return fmt.Errorf("payment overdue")
 		}
 	}
 
@@ -482,7 +478,7 @@ func (s *Service) CheckBlockingBillingErrors(ctx context.Context, orgID string) 
 	}
 
 	if be != nil && be.Metadata.(*database.BillingIssueMetadataSubscriptionCancelled).EndDate.Before(time.Now()) {
-		return fmt.Errorf("%w: subscription cancelled", ErrBlockingBillingIssue)
+		return fmt.Errorf("subscription cancelled")
 	}
 
 	return nil

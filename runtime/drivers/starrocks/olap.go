@@ -181,7 +181,6 @@ func (c *connection) rowsToSchema(rows *sqlx.Rows) (*runtimev1.StructType, error
 // databaseTypeToRuntimeType converts StarRocks/MySQL types to runtime types.
 // Returns an error for unsupported types instead of falling back to string.
 func (c *connection) databaseTypeToRuntimeType(dbType string) (*runtimev1.Type, error) {
-	rawType := dbType
 	dbType = strings.ToUpper(dbType)
 
 	// Handle parameterized types
@@ -189,48 +188,46 @@ func (c *connection) databaseTypeToRuntimeType(dbType string) (*runtimev1.Type, 
 		dbType = dbType[:idx]
 	}
 
-	t := &runtimev1.Type{RawType: rawType}
 	switch dbType {
 	case "BOOLEAN", "BOOL":
-		t.Code = runtimev1.Type_CODE_BOOL
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_BOOL}, nil
 	case "TINYINT":
-		t.Code = runtimev1.Type_CODE_INT8
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_INT8}, nil
 	case "SMALLINT":
-		t.Code = runtimev1.Type_CODE_INT16
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_INT16}, nil
 	case "INT", "INTEGER":
-		t.Code = runtimev1.Type_CODE_INT32
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_INT32}, nil
 	case "BIGINT":
-		t.Code = runtimev1.Type_CODE_INT64
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_INT64}, nil
 	case "LARGEINT":
-		t.Code = runtimev1.Type_CODE_INT128
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_INT128}, nil
 	case "FLOAT":
-		t.Code = runtimev1.Type_CODE_FLOAT32
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_FLOAT32}, nil
 	case "DOUBLE":
-		t.Code = runtimev1.Type_CODE_FLOAT64
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_FLOAT64}, nil
 	case "DECIMAL":
-		t.Code = runtimev1.Type_CODE_STRING
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}, nil
 	case "CHAR", "VARCHAR", "STRING", "TEXT":
-		t.Code = runtimev1.Type_CODE_STRING
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}, nil
 	case "DATE":
-		t.Code = runtimev1.Type_CODE_DATE
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_DATE}, nil
 	case "DATETIME", "TIMESTAMP":
-		t.Code = runtimev1.Type_CODE_TIMESTAMP
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP}, nil
 	case "JSON", "JSONB":
-		t.Code = runtimev1.Type_CODE_JSON
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_JSON}, nil
 	case "ARRAY":
-		t.Code = runtimev1.Type_CODE_ARRAY
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_ARRAY}, nil
 	case "MAP":
-		t.Code = runtimev1.Type_CODE_MAP
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_MAP}, nil
 	case "STRUCT":
-		t.Code = runtimev1.Type_CODE_STRUCT
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_STRUCT}, nil
 	case "BINARY", "VARBINARY", "BLOB":
 		// Note: StarRocks doesn't have BLOB type, but MySQL driver may report VARBINARY as BLOB
 		// Use CODE_STRING like MySQL driver for consistency
-		t.Code = runtimev1.Type_CODE_STRING
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}, nil
 	default:
 		return nil, errUnsupportedType
 	}
-	return t, nil
 }
 
 // starrocksRows wraps sqlx.Rows to provide MapScan method.

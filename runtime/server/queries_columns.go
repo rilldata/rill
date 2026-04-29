@@ -9,6 +9,8 @@ import (
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func (s *Server) ColumnTopK(ctx context.Context, req *runtimev1.ColumnTopKRequest) (*runtimev1.ColumnTopKResponse, error) {
@@ -51,7 +53,7 @@ func (s *Server) ColumnTopK(ctx context.Context, req *runtimev1.ColumnTopKReques
 
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	return &runtimev1.ColumnTopKResponse{
@@ -90,7 +92,7 @@ func (s *Server) ColumnNullCount(ctx context.Context, req *runtimev1.ColumnNullC
 
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	return &runtimev1.ColumnNullCountResponse{
@@ -124,7 +126,7 @@ func (s *Server) ColumnDescriptiveStatistics(ctx context.Context, req *runtimev1
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	// ColumnDescriptiveStatistics may return an empty result
@@ -193,7 +195,7 @@ func (s *Server) ColumnTimeGrain(ctx context.Context, req *runtimev1.ColumnTimeG
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
 	return &runtimev1.ColumnTimeGrainResponse{
 		TimeGrain: q.Result,
@@ -228,7 +230,7 @@ func (s *Server) ColumnNumericHistogram(ctx context.Context, req *runtimev1.Colu
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	// NOTE: q.Result may be nil if there were no bins. The below will output it as an empty histogram.
@@ -270,7 +272,7 @@ func (s *Server) ColumnRugHistogram(ctx context.Context, req *runtimev1.ColumnRu
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
 	return &runtimev1.ColumnRugHistogramResponse{
 		NumericSummary: &runtimev1.NumericSummary{
@@ -309,7 +311,7 @@ func (s *Server) ColumnTimeRange(ctx context.Context, req *runtimev1.ColumnTimeR
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
 	return &runtimev1.ColumnTimeRangeResponse{
 		TimeRangeSummary: q.Result,

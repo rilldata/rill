@@ -37,7 +37,7 @@ explore:
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	// Check it generates a download token

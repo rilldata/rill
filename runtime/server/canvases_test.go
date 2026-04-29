@@ -35,8 +35,7 @@ model: m1
 dimensions:
 - column: country
 measures:
-- name: count
-  expression: COUNT(*)
+- expression: COUNT(*)
 `,
 			// Metrics view
 			"mv2.yaml": `
@@ -46,8 +45,7 @@ model: m2
 dimensions:
 - column: state
 measures:
-- name: count
-  expression: COUNT(*)
+- expression: COUNT(*)
 `,
 			// Canvas
 			"c1.yaml": `
@@ -56,13 +54,11 @@ rows:
 - items:
   - kpi:
       metrics_view: mv1
-      measure: count
   - kpi:
       metrics_view: mv1
-      measure: count
       foo: "{{ .args.foo }}"
       bar: "{{ .env.bar }}"
-  - custom_chart:
+  - kpi:
       metrics_sql: "SELECT state FROM mv2 WHERE state = 'PA'"
 `,
 		},
@@ -72,7 +68,7 @@ rows:
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 9, 0, 0)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	res, err := server.ResolveCanvas(testCtx(), &runtimev1.ResolveCanvasRequest{
@@ -90,11 +86,10 @@ rows:
 
 	require.Len(t, res.ResolvedComponents, 3)
 	comp0Props := res.ResolvedComponents["c1--component-0-0"].GetComponent().State.ValidSpec.RendererProperties.AsMap()
-	require.Len(t, comp0Props, 2)
+	require.Len(t, comp0Props, 1)
 	require.Equal(t, "mv1", comp0Props["metrics_view"])
-	require.Equal(t, "count", comp0Props["measure"])
 	comp1Props := res.ResolvedComponents["c1--component-0-1"].GetComponent().State.ValidSpec.RendererProperties.AsMap()
-	require.Len(t, comp1Props, 4)
+	require.Len(t, comp1Props, 3)
 	require.Equal(t, "mv1", comp1Props["metrics_view"])
 	// Templates should NOT be resolved - canvas returns raw templates
 	require.Equal(t, "{{ .args.foo }}", comp1Props["foo"])
@@ -118,8 +113,7 @@ model: m1
 dimensions:
 - column: country
 measures:
-- name: count
-  expression: COUNT(*)
+- expression: COUNT(*)
 `,
 			"c_invalid.yaml": `
 type: canvas
@@ -127,17 +121,16 @@ rows:
 - items:
   - kpi:
       metrics_view: mv1
-      measure: count
-  - custom_chart:
+  - kpi:
       metrics_sql: "INVALID SQL SYNTAX HERE"
-  - custom_chart:
+  - kpi:
       metrics_sql: "SELECT * FROM nonexistent_mv"
 `,
 		},
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 7, 0, 0)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	res, err := server.ResolveCanvas(testCtx(), &runtimev1.ResolveCanvasRequest{
@@ -164,8 +157,7 @@ model: m1
 dimensions:
 - column: country
 measures:
-- name: count
-  expression: COUNT(*)
+- expression: COUNT(*)
 `,
 			"mv2.yaml": `
 type: metrics_view
@@ -174,16 +166,15 @@ model: m2
 dimensions:
 - column: country
 measures:
-- name: count
-  expression: COUNT(*)
+- expression: COUNT(*)
 `,
 			"c_templated.yaml": `
 type: canvas
 rows:
 - items:
-  - custom_chart:
+  - kpi:
       metrics_sql: "SELECT country FROM {{ .args.metrics_view_name }}"
-  - custom_chart:
+  - kpi:
       metrics_sql: "SELECT country FROM {{ .env.default_mv }}"
 `,
 		},
@@ -193,7 +184,7 @@ rows:
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 8, 0, 0)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	res, err := server.ResolveCanvas(testCtx(), &runtimev1.ResolveCanvasRequest{
@@ -230,7 +221,7 @@ rows: []
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	res, err := server.ResolveCanvas(testCtx(), &runtimev1.ResolveCanvasRequest{
@@ -256,8 +247,7 @@ model: m1
 dimensions:
 - column: country
 measures:
-- name: count
-  expression: COUNT(*)
+- expression: COUNT(*)
 `,
 			"c_duplicate.yaml": `
 type: canvas
@@ -265,18 +255,16 @@ rows:
 - items:
   - kpi:
       metrics_view: mv1
-      measure: count
   - kpi:
       metrics_view: mv1
-      measure: count
-  - custom_chart:
+  - kpi:
       metrics_sql: "SELECT country FROM mv1"
 `,
 		},
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 7, 0, 0)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	res, err := server.ResolveCanvas(testCtx(), &runtimev1.ResolveCanvasRequest{
@@ -311,18 +299,18 @@ measures:
 type: canvas
 rows:
 - items:
-  - custom_chart:
+  - kpi:
       metrics_sql: "SELECT country, total_revenue FROM mv1 WHERE country = 'US'"
-  - custom_chart:
+  - kpi:
       metrics_sql: "SELECT COUNT(*) as count FROM mv1 GROUP BY country HAVING count > 5"
-  - custom_chart:
+  - kpi:
       metrics_sql: "SELECT country FROM mv1 ORDER BY total_revenue DESC LIMIT 10"
 `,
 		},
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 7, 0, 0)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	res, err := server.ResolveCanvas(testCtx(), &runtimev1.ResolveCanvasRequest{
@@ -337,6 +325,57 @@ rows:
 
 	comp0Props := res.ResolvedComponents["c_complex--component-0-0"].GetComponent().State.ValidSpec.RendererProperties.AsMap()
 	require.Equal(t, "SELECT country, total_revenue FROM mv1 WHERE country = 'US'", comp0Props["metrics_sql"])
+}
+
+func TestResolveCanvasWithCustomChart(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"m1.sql":    `SELECT 'Advertiser A' AS advertiser_name, 1.25 AS avg_bid_price UNION ALL SELECT 'Advertiser B', 2.50`,
+			"bids.yaml": `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- column: advertiser_name
+measures:
+- expression: AVG(avg_bid_price)
+  name: avg_bid_price
+`,
+			"c_custom_chart.yaml": `
+type: canvas
+rows:
+- items:
+  - kpi:
+      metrics_sql:
+        - select advertiser_name, avg_bid_price from bids order by advertiser_name limit 10
+        - select avg_bid_price from bids
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 5, 0, 0)
+
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
+	require.NoError(t, err)
+
+	res, err := server.ResolveCanvas(testCtx(), &runtimev1.ResolveCanvasRequest{
+		InstanceId: instanceID,
+		Canvas:     "c_custom_chart",
+	})
+	require.NoError(t, err)
+
+	// Should reference the bids metrics view from both SQL queries
+	require.Len(t, res.ReferencedMetricsViews, 1)
+	require.Contains(t, res.ReferencedMetricsViews, "bids")
+	require.Len(t, res.ResolvedComponents, 1)
+
+	comp0Props := res.ResolvedComponents["c_custom_chart--component-0-0"].GetComponent().State.ValidSpec.RendererProperties.AsMap()
+	require.Contains(t, comp0Props, "metrics_sql")
+
+	metricsSQL := comp0Props["metrics_sql"].([]any)
+	require.Len(t, metricsSQL, 2)
+	require.Equal(t, "select advertiser_name, avg_bid_price from bids order by advertiser_name limit 10", metricsSQL[0])
+	require.Equal(t, "select avg_bid_price from bids", metricsSQL[1])
 }
 
 func TestResolveCanvasWithSecurity(t *testing.T) {
@@ -371,7 +410,6 @@ rows:
 - items:
   - kpi:
       metrics_view: mv1
-      measure: count
 
 security:
   access: '{{ .user.admin }}'
@@ -380,7 +418,7 @@ security:
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 5, 0, 0)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	// Check with open access.
@@ -405,7 +443,8 @@ security:
 		InstanceId: instanceID,
 		Canvas:     "c1",
 	})
-	require.ErrorIs(t, err, runtime.ErrForbidden)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "does not have access")
 
 	// Check metrics view column-level security.
 	// The 'sum' measure should be excluded.
@@ -465,18 +504,22 @@ measures:
 type: canvas
 rows:
 - items:
-  - markdown:
-      content: The total is {{ metrics_sql "SELECT total_revenue FROM mv WHERE country = 'US'" }}
+  - kpi:
+      title: "Revenue for {{ .user.country }}"
+      metrics_sql: "SELECT total_revenue FROM mv WHERE country = '{{ .user.country }}'"
 `,
 		},
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 5, 0, 0)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	ctx := auth.WithClaims(context.Background(), &runtime.SecurityClaims{
 		SkipChecks: true,
+		UserAttributes: map[string]any{
+			"country": "US",
+		},
 	})
 
 	// Step 1: Get canvas with unresolved templates
@@ -490,20 +533,30 @@ rows:
 	// Verify component has unresolved templates
 	comp := canvasRes.ResolvedComponents["canvas--component-0-0"]
 	props := comp.GetComponent().State.ValidSpec.RendererProperties.AsMap()
-	require.Contains(t, props["content"], "{{ metrics_sql ")
+	require.Equal(t, "Revenue for {{ .user.country }}", props["title"])
+	require.Equal(t, "SELECT total_revenue FROM mv WHERE country = '{{ .user.country }}'", props["metrics_sql"])
 
-	// Use ResolveTemplatedString to resolve the content
+	// Step 2: Use ResolveTemplatedString to resolve the title
 	titleRes, err := server.ResolveTemplatedString(ctx, &runtimev1.ResolveTemplatedStringRequest{
 		InstanceId: instanceID,
-		Body:       props["content"].(string),
+		Body:       props["title"].(string),
 	})
 	require.NoError(t, err)
-	require.Equal(t, "The total is 100", titleRes.Body)
+	require.Equal(t, "Revenue for US", titleRes.Body)
+
+	// Step 3: Use ResolveTemplatedString with metrics_sql to get the actual value
+	// First resolve the template in the SQL, then execute metrics_sql
+	valueRes, err := server.ResolveTemplatedString(ctx, &runtimev1.ResolveTemplatedStringRequest{
+		InstanceId: instanceID,
+		Body:       `The total is {{ metrics_sql "SELECT total_revenue FROM mv WHERE country = 'US'" }}`,
+	})
+	require.NoError(t, err)
+	require.Equal(t, "The total is 100", valueRes.Body)
 
 	// Step 4: Get formatted value using format tokens
 	formatRes, err := server.ResolveTemplatedString(ctx, &runtimev1.ResolveTemplatedStringRequest{
 		InstanceId:      instanceID,
-		Body:            props["content"].(string),
+		Body:            `{{ metrics_sql "SELECT total_revenue FROM mv WHERE country = 'US'" }}`,
 		UseFormatTokens: true,
 	})
 	require.NoError(t, err)
@@ -579,7 +632,7 @@ rows:
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 6, 0, 0)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	ctx := testCtx()

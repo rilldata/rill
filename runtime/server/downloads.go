@@ -51,20 +51,20 @@ func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*run
 func (s *Server) ExportReport(ctx context.Context, req *runtimev1.ExportReportRequest) (*runtimev1.ExportReportResponse, error) {
 	c, err := s.runtime.Controller(ctx, req.InstanceId)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "failed to get controller: %s", err.Error())
 	}
 
 	res, err := c.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: req.Report}, false)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "failed to get report: %s", err.Error())
 	}
 
 	r, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, auth.GetClaims(ctx, req.InstanceId), res)
 	if err != nil {
-		return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	if !access {
-		return nil, ErrForbidden
+		return nil, status.Error(codes.NotFound, "resource not found")
 	}
 
 	if r.GetReport() == nil {

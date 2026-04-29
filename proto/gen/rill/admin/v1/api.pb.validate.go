@@ -31500,8 +31500,6 @@ func (m *CreateManagedGitRepoRequest) validate(all bool) error {
 
 	// no validation rules for Name
 
-	// no validation rules for AutoInit
-
 	if len(errors) > 0 {
 		return CreateManagedGitRepoRequestMultiError(errors)
 	}

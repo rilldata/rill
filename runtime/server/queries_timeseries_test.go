@@ -278,7 +278,7 @@ func getTimeseriesTestServerWithDSTForward(t *testing.T) (*server.Server, string
 
 	`)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	return server, instanceID
@@ -299,7 +299,7 @@ func getTimeseriesTestServerWithDSTBackward(t *testing.T) (*server.Server, strin
 		SELECT 1.0 AS clicks, TIMESTAMP '2023-10-29 04:00:00' AS time, 'iphone' AS device
 	`)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	return server, instanceID
@@ -314,7 +314,7 @@ func getTimeseriesTestServerWithKathmandu(t *testing.T) (*server.Server, string)
 		SELECT 1.0 AS clicks, TIMESTAMP '2023-10-29 02:15:00' AS time, 'iphone' AS device
 	`)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	return server, instanceID
@@ -327,7 +327,7 @@ func getTimeseriesTestServer(t *testing.T) (*server.Server, string) {
 		SELECT 1.0 AS clicks, 5 as imps, TIMESTAMP '2019-01-02 00:00:00' AS time, DATE '2019-01-02' as day, 'iphone' AS device, null AS publisher, 'msn.com' AS domain, NULL as latitude, NULL as country
 	`)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	return server, instanceID
@@ -338,7 +338,7 @@ func getTimeseriesTestServerWithEmptyModel(t *testing.T) (*server.Server, string
 		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-01 00:00:00' AS time, 'android' AS device, 'Google' AS publisher, 'google.com' AS domain where 1<>1
 	`)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	return server, instanceID
@@ -365,7 +365,7 @@ func getSparkTimeseriesTestServer(t *testing.T) (*server.Server, string) {
 		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-09T00:00:00Z' AS time, 'iphone' AS device
 	`)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	return server, instanceID
@@ -551,7 +551,7 @@ func getTimeseriesTestServerWithWeekGrain(t *testing.T) (*server.Server, string)
 	sql := strings.Join(selects, " UNION ALL ")
 	rt, instanceID := testruntime.NewInstanceWithModel(t, "timeseries", sql)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	return server, instanceID
@@ -568,7 +568,7 @@ func getTimeseriesTestServerWithMonthGrain(t *testing.T) (*server.Server, string
 
 	sql := strings.Join(selects, " UNION ALL ")
 	rt, instanceID := testruntime.NewInstanceWithModel(t, "timeseries", sql)
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	return server, instanceID

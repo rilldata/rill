@@ -2,10 +2,13 @@ package runtime
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"maps"
+	"strings"
 	"time"
 
+	"github.com/joho/godotenv"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/ctxsync"
@@ -45,29 +48,32 @@ func newConfigReloader(rt *Runtime) *configReloader {
 	return c
 }
 
-func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) (varsCount int, modified bool, err error) {
-	err = r.mu.Lock(ctx)
+func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) error {
+	err := r.mu.Lock(ctx)
 	if err != nil {
-		return 0, false, err
+		return err
 	}
 	defer r.mu.Unlock()
 
 	inst, err := r.rt.Instance(ctx, instanceID)
 	if err != nil {
-		return 0, false, err
+		return err
 	}
 
 	admin, release, err := r.rt.Admin(ctx, instanceID)
 	if err != nil {
-		return 0, false, err
+		if errors.Is(err, ErrAdminNotConfigured) {
+			return nil
+		}
+		return err
 	}
 	defer release()
 
-	r.rt.Logger.Debug("Reloading config for instance", zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
+	r.rt.Logger.Info("Reloading config for instance", zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 
 	cfg, err := admin.GetConfig(ctx)
 	if err != nil {
-		return 0, false, err
+		return err
 	}
 
 	// Clone for editing
@@ -104,7 +110,7 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) (v
 			if connectorConfigChanged {
 				duckdbConfig, err := structpb.NewStruct(updatedDuckdbConfig)
 				if err != nil {
-					return 0, false, err
+					return err
 				}
 				// Create a new Connector with updated config
 				connector = &runtimev1.Connector{
@@ -129,7 +135,7 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) (v
 	if !ok || cfg.UpdatedOn.After(updatedOn) {
 		repo, release, err := r.rt.Repo(ctx, inst.ID)
 		if err != nil {
-			return 0, false, err
+			return err
 		}
 		defer release()
 
@@ -146,38 +152,42 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) (v
 			// retrigger parser to pick up changes
 			ctrl, err := r.rt.Controller(ctx, instanceID)
 			if err != nil {
-				return 0, false, err
+				return err
 			}
 			err = ctrl.Reconcile(ctx, GlobalProjectParserName)
 			if err != nil {
-				return 0, false, fmt.Errorf("failed to trigger parser: %w", err)
+				return fmt.Errorf("failed to trigger parser: %w", err)
 			}
 		}
 	}
 
 	err = r.rt.EditInstance(ctx, inst, restartController)
 	if err != nil {
-		return 0, false, err
+		return err
 	}
 	if !(varsChanged && cfg.Editable) {
-		return 0, false, nil
+		return nil
 	}
 
 	// write variables to .env files for editable deployments. This will also trigger controller restart via repo watcher
-	var count int
-	repo, release, err := r.rt.Repo(ctx, inst.ID)
-	if err != nil {
-		return 0, false, err
-	}
-	defer release()
-	for env, vars := range cfg.Variables {
-		count += len(vars)
-		err = writeEnv(ctx, env, vars, repo)
+	for env, envVars := range cfg.Variables {
+		var path string
+		switch env {
+		case "":
+			path = ".env"
+		default:
+			path = fmt.Sprintf(".%s.env", env)
+		}
+		contents, err := godotenv.Marshal(envVars)
 		if err != nil {
-			return 0, false, fmt.Errorf("failed to write env file for %q: %w", env, err)
+			return fmt.Errorf("failed to marshal env vars: %w", err)
+		}
+		err = r.rt.PutFile(ctx, instanceID, path, strings.NewReader(contents), true, true)
+		if err != nil {
+			return fmt.Errorf("failed to write %s file: %w", path, err)
 		}
 	}
-	return count, true, nil
+	return nil
 }
 
 func (r *configReloader) periodicallyReloadConfigs(ctx context.Context) {
@@ -189,7 +199,7 @@ func (r *configReloader) periodicallyReloadConfigs(ctx context.Context) {
 			return
 		}
 		for _, inst := range instances {
-			_, _, err := r.reloadConfig(ctx, inst.ID)
+			err := r.reloadConfig(ctx, inst.ID)
 			if err != nil {
 				r.rt.Logger.Error("periodicallyReloadConfigs: failed to reload config", zap.String("instance_id", inst.ID), zap.Error(err))
 			}

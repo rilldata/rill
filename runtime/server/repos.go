@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -38,7 +39,7 @@ func (s *Server) ListFiles(ctx context.Context, req *runtimev1.ListFilesRequest)
 
 	files, err := s.runtime.ListFiles(ctx, req.InstanceId, glob)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
 	var entries []*runtimev1.DirEntry
@@ -115,7 +116,7 @@ func (s *Server) GetFile(ctx context.Context, req *runtimev1.GetFileRequest) (*r
 
 	blob, lastUpdated, err := s.runtime.GetFile(ctx, req.InstanceId, req.Path)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	return &runtimev1.GetFileResponse{Blob: blob, UpdatedOn: timestamppb.New(lastUpdated)}, nil
@@ -138,7 +139,7 @@ func (s *Server) PutFile(ctx context.Context, req *runtimev1.PutFileRequest) (*r
 
 	err := s.runtime.PutFile(ctx, req.InstanceId, req.Path, strings.NewReader(req.Blob), req.Create, req.CreateOnly)
 	if err != nil {
-		return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	return &runtimev1.PutFileResponse{}, nil
@@ -159,7 +160,7 @@ func (s *Server) CreateDirectory(ctx context.Context, req *runtimev1.CreateDirec
 
 	err := s.runtime.MkdirAll(ctx, req.InstanceId, req.Path)
 	if err != nil {
-		return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	return &runtimev1.CreateDirectoryResponse{}, nil
@@ -180,7 +181,7 @@ func (s *Server) DeleteFile(ctx context.Context, req *runtimev1.DeleteFileReques
 
 	err := s.runtime.DeleteFile(ctx, req.InstanceId, req.Path, req.Force)
 	if err != nil {
-		return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	return &runtimev1.DeleteFileResponse{}, nil
@@ -202,7 +203,7 @@ func (s *Server) RenameFile(ctx context.Context, req *runtimev1.RenameFileReques
 
 	err := s.runtime.RenameFile(ctx, req.InstanceId, req.FromPath, req.ToPath)
 	if err != nil {
-		return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	return &runtimev1.RenameFileResponse{}, nil

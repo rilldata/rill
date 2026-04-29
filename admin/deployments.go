@@ -23,9 +23,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-// ErrDeploymentNotReady is returned when a deployment's runtime is not yet available.
-var ErrDeploymentNotReady = errors.New("deployment not ready")
-
 type CreateDeploymentOptions struct {
 	ProjectID   string
 	OwnerUserID *string
@@ -299,11 +296,6 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 	if err != nil {
 		return err
 	}
-	// base variables are returned first followed by environment specific variables, so we can just iterate once and overlay them in order
-	v := map[string]string{}
-	for _, variable := range vars {
-		v[variable.Name] = variable.Value
-	}
 
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
@@ -314,7 +306,7 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		AdminConnector: "admin",
 		AiConnector:    "admin",
 		Connectors:     connectors,
-		Variables:      v,
+		Variables:      vars,
 		Annotations:    annotations.ToMap(),
 		FrontendUrl:    frontendURL,
 	})
@@ -502,9 +494,9 @@ func (s *Service) CheckProvisionerResource(ctx context.Context, pr *database.Pro
 func (s *Service) OpenRuntimeClient(depl *database.Deployment) (*client.Client, error) {
 	if depl.RuntimeHost == "" {
 		if depl.Status == database.DeploymentStatusErrored {
-			return nil, fmt.Errorf("%w: deployment %q has no runtime host: %s", ErrDeploymentNotReady, depl.ID, depl.StatusMessage)
+			return nil, fmt.Errorf("deployment %q has no runtime host: %s", depl.ID, depl.StatusMessage)
 		}
-		return nil, fmt.Errorf("%w: deployment %q has no runtime host", ErrDeploymentNotReady, depl.ID)
+		return nil, fmt.Errorf("deployment %q has no runtime host", depl.ID)
 	}
 
 	jwt, err := s.IssueRuntimeManagementToken(depl.RuntimeAudience)
@@ -525,7 +517,7 @@ func (s *Service) IssueRuntimeManagementToken(aud string) (string, error) {
 		AudienceURL:       aud,
 		Subject:           "admin-service",
 		TTL:               time.Hour,
-		SystemPermissions: []runtime.Permission{runtime.ManageInstances, runtime.ReadInstance, runtime.ManageInstance, runtime.EditTrigger, runtime.ReadObjects},
+		SystemPermissions: []runtime.Permission{runtime.ManageInstances, runtime.ReadInstance, runtime.EditInstance, runtime.EditTrigger, runtime.ReadObjects},
 	})
 	if err != nil {
 		return "", err

@@ -2,11 +2,10 @@ package server
 
 import (
 	"encoding/base64"
+	"fmt"
 	"time"
 
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -28,11 +27,11 @@ func unmarshalPageToken(reqToken string) (*adminv1.StringPageToken, error) {
 	if reqToken != "" {
 		in, err := base64.URLEncoding.DecodeString(reqToken)
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "failed to parse request token: %s", err.Error())
+			return nil, fmt.Errorf("Failed to parse request token: %w", err)
 		}
 
 		if err := proto.Unmarshal(in, token); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "failed to parse request token: %s", err.Error())
+			return nil, fmt.Errorf("Failed to parse request token: %w", err)
 		}
 	}
 	return token, nil
@@ -56,11 +55,11 @@ func unmarshalStringTimestampPageToken(tknStr string) (*adminv1.StringTimestampP
 	if tknStr != "" {
 		in, err := base64.URLEncoding.DecodeString(tknStr)
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "failed to parse request token: %s", err.Error())
+			return nil, fmt.Errorf("Failed to parse request token: %w", err)
 		}
 
 		if err := proto.Unmarshal(in, tkn); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "failed to parse request token: %s", err.Error())
+			return nil, fmt.Errorf("Failed to parse request token: %w", err)
 		}
 	}
 

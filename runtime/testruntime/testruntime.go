@@ -168,7 +168,6 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 		RepoConnector:    "repo",
 		AIConnector:      aiConnector,
 		CatalogConnector: "catalog",
-		AdminConnector:   "noop_admin",
 		Connectors: []*runtimev1.Connector{
 			{
 				Type:   "file",
@@ -272,7 +271,6 @@ func newInstanceHelper(t TestingT, name string, instConfig map[string]string) (*
 		OLAPConnector:    olapDriver,
 		RepoConnector:    "repo",
 		CatalogConnector: "catalog",
-		AdminConnector:   "noop_admin",
 		Connectors: []*runtimev1.Connector{
 			{
 				Type:   "file",

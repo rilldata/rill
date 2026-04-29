@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/go-git/go-git/v5/plumbing/transport"
@@ -40,7 +39,7 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 
 		downloadURL, err := s.generateSignedDownloadURL(asset)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		return &adminv1.GetRepoMetaResponse{
 			ExpiresOn:          timestamppb.New(time.Now().Add(time.Hour * 24 * 365)), // Setting to a year because it doesn't need to be refreshed
@@ -60,7 +59,7 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 		var err error
 		depl, err = s.admin.DB.FindDeployment(ctx, claims.OwnerID())
 		if err != nil {
-			return nil, err
+			return nil, status.Error(codes.NotFound, "deployment not found")
 		}
 	}
 
@@ -71,12 +70,12 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 
 	token, expiresAt, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID, repoID)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	ep, err := transport.NewEndpoint(*proj.GitRemote)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create endpoint from %q: %w", *proj.GitRemote, err)
+		return nil, status.Errorf(codes.InvalidArgument, "failed to create endpoint from %q: %s", *proj.GitRemote, err.Error())
 	}
 	ep.User = "x-access-token"
 	ep.Password = token
@@ -118,7 +117,7 @@ func (s *Server) PullVirtualRepo(ctx context.Context, req *adminv1.PullVirtualRe
 		var err error
 		depl, err = s.admin.DB.FindDeployment(ctx, claims.OwnerID())
 		if err != nil {
-			return nil, err
+			return nil, status.Error(codes.NotFound, "deployment not found")
 		}
 	}
 
@@ -180,7 +179,7 @@ func (s *Server) GetVirtualFile(ctx context.Context, req *adminv1.GetVirtualFile
 		if claims.OwnerType() == auth.OwnerTypeDeployment {
 			depl, err := s.admin.DB.FindDeployment(ctx, claims.OwnerID())
 			if err != nil {
-				return nil, err
+				return nil, status.Error(codes.NotFound, "deployment not found")
 			}
 			environment = depl.Environment
 		} else {
@@ -221,7 +220,7 @@ func (s *Server) DeleteVirtualFile(ctx context.Context, req *adminv1.DeleteVirtu
 		if claims.OwnerType() == auth.OwnerTypeDeployment {
 			depl, err := s.admin.DB.FindDeployment(ctx, claims.OwnerID())
 			if err != nil {
-				return nil, err
+				return nil, status.Error(codes.NotFound, "deployment not found")
 			}
 			environment = depl.Environment
 		} else {
@@ -232,7 +231,7 @@ func (s *Server) DeleteVirtualFile(ctx context.Context, req *adminv1.DeleteVirtu
 	// Directly mark the virtual file as deleted without parsing
 	err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, environment, req.Path)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "failed to delete virtual file: %v", err)
 	}
 
 	return &adminv1.DeleteVirtualFileResponse{}, nil
