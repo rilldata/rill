@@ -379,30 +379,38 @@
     @apply text-xs text-yellow-800 bg-yellow-50 border border-yellow-200;
   }
 
-  /* Segmented tab control — Di's pattern (gray pill, white active) */
+  /* Segmented tab control — Di's pattern (gray pill, lifted active) */
   .seg-list {
-    @apply mx-6 mt-5 inline-flex p-1 gap-1 self-start;
-    @apply bg-slate-100 rounded-lg w-fit;
+    @apply mx-6 mt-5 inline-flex p-1 gap-1 self-start w-fit;
+    @apply bg-slate-100 dark:bg-slate-800/70 rounded-lg;
   }
 
   .seg-trigger {
     @apply inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md border-0 bg-transparent;
-    @apply text-[13px] font-medium text-slate-500;
+    @apply text-[13px] font-medium;
+    @apply text-slate-500 dark:text-slate-400;
     @apply transition-all cursor-pointer;
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40;
   }
 
   .seg-trigger.is-active {
-    background: #ffffff;
-    color: #0f172a;
-    font-weight: 600;
+    @apply bg-white dark:bg-slate-700;
+    @apply text-slate-900 dark:text-slate-50;
+    @apply font-semibold;
     box-shadow:
       0 1px 2px rgba(15, 23, 42, 0.08),
       0 0 0 1px rgba(15, 23, 42, 0.04);
   }
 
+  /* Dark-mode active pill: subtler shadow, lean on background contrast instead */
+  :global(.dark) .seg-trigger.is-active {
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.4),
+      0 0 0 1px rgba(255, 255, 255, 0.04);
+  }
+
   .seg-trigger:not(.is-active):hover {
-    @apply text-slate-700;
+    @apply text-slate-700 dark:text-slate-200;
   }
 
   /* Body — locks 16px gap from tabs (or subtitle when no tabs) */
