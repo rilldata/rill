@@ -11,7 +11,7 @@
     requestSkipBranchInjection,
   } from "@rilldata/web-admin/features/branches/branch-utils";
   import { Button } from "@rilldata/web-common/components/button";
-  import * as Popover from "@rilldata/web-common/components/popover";
+  import * as Dialog from "@rilldata/web-common/components/dialog";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { GitBranchIcon, PlusIcon } from "lucide-svelte";
   import { useDevDeployments, invalidateDeployments } from "./use-edit-session";
@@ -58,7 +58,7 @@
 
   // True when the active branch has a deployment the user owns but which
   // isn't editable (e.g. created via the CLI without `--editable`). Used to
-  // show a dropdown banner explaining that the user needs a new branch.
+  // show a banner explaining that the user needs a new branch.
   $: activeBranchIsNonEditable =
     !!activeBranch &&
     !!currentUserId &&
@@ -72,7 +72,7 @@
   $: hasOwnSessions = ownDeployments.length > 0;
   $: isStarting = $createMutation.isPending;
 
-  // Reset state when popover opens
+  // Reset state when dialog opens
   $: if (open) {
     branchName = "";
     showNewBranchInput = !hasOwnSessions;
@@ -83,7 +83,7 @@
   }
 
   // When the user owns a deployment on the active branch, the button
-  // links directly to that editor (no popover).
+  // links directly to that editor (no dialog).
   $: directEditHref = activeBranchDeployment
     ? editUrl(activeBranchDeployment.branch)
     : undefined;
@@ -144,15 +144,16 @@
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === "Enter") {
       void handleCreate();
-    } else if (e.key === "Escape" && hasOwnSessions) {
+    } else if (e.key === "Escape" && hasOwnSessions && showNewBranchInput) {
       e.preventDefault();
+      e.stopPropagation();
       handleCancelNewBranch();
     }
   }
 </script>
 
 {#if directEditHref}
-  <!-- On a branch the user owns: navigate directly, no popover -->
+  <!-- On a branch the user owns: navigate directly, no dialog -->
   <Button
     type="secondary"
     href={directEditHref}
@@ -162,8 +163,8 @@
     Edit
   </Button>
 {:else}
-  <Popover.Root bind:open>
-    <Popover.Trigger>
+  <Dialog.Root bind:open>
+    <Dialog.Trigger>
       {#snippet child({ props })}
         <Button
           {...props}
@@ -175,9 +176,23 @@
           Edit
         </Button>
       {/snippet}
-    </Popover.Trigger>
+    </Dialog.Trigger>
 
-    <Popover.Content align="end" padding="3" class="w-[304px]">
+    <Dialog.Content class="max-w-md gap-0">
+      <Dialog.Header class="space-y-1">
+        <Dialog.Title class="text-base">
+          {hasOwnSessions ? "Continue editing" : "Start editing"}
+        </Dialog.Title>
+        <Dialog.Description class="dlg-subtitle">
+          {hasOwnSessions
+            ? "Branched from"
+            : "Create a branch to edit from"}<span class="branch-chip">
+            <GitBranchIcon size="11" />
+            {sourceBranch}
+          </span>
+        </Dialog.Description>
+      </Dialog.Header>
+
       {#if activeBranchIsNonEditable}
         <div class="banner">
           This branch isn't editable. Start a new one below{hasOwnSessions
@@ -185,26 +200,6 @@
             : ""}.
         </div>
       {/if}
-
-      <div class="pop-header">
-        {#if hasOwnSessions}
-          <div class="pop-title">Continue editing</div>
-          <div class="pop-subtitle">
-            Branched from<span class="branch-chip">
-              <GitBranchIcon size="11" />
-              {sourceBranch}
-            </span>
-          </div>
-        {:else}
-          <div class="pop-title">Start editing</div>
-          <div class="pop-subtitle">
-            Create a branch to edit from<span class="branch-chip">
-              <GitBranchIcon size="11" />
-              {sourceBranch}
-            </span>
-          </div>
-        {/if}
-      </div>
 
       {#if hasOwnSessions}
         <div class="branch-list">
@@ -243,7 +238,6 @@
             <div class="form-actions">
               <Button
                 type="ghost"
-                small
                 disabled={isStarting}
                 onClick={handleCancelNewBranch}
               >
@@ -251,7 +245,6 @@
               </Button>
               <Button
                 type="primary"
-                small
                 disabled={!branchName.trim() || isStarting}
                 loading={isStarting}
                 loadingCopy="Starting..."
@@ -287,7 +280,6 @@
           <div class="form-actions">
             <Button
               type="primary"
-              small
               disabled={!branchName.trim() || isStarting}
               loading={isStarting}
               loadingCopy="Starting..."
@@ -298,21 +290,15 @@
           </div>
         </div>
       {/if}
-    </Popover.Content>
-  </Popover.Root>
+    </Dialog.Content>
+  </Dialog.Root>
 {/if}
 
 <style lang="postcss">
-  .pop-header {
-    @apply flex flex-col gap-y-0.5 px-1 pb-2;
-  }
-
-  .pop-title {
-    @apply text-sm font-semibold text-fg-primary;
-  }
-
-  .pop-subtitle {
-    @apply text-xs text-fg-secondary whitespace-nowrap;
+  /* Header subtitle (Dialog.Description) — overrides muted default to read
+     as a single inline line with the source-branch chip. */
+  :global(.dlg-subtitle) {
+    @apply !text-xs !text-fg-secondary whitespace-nowrap;
   }
 
   .branch-chip {
@@ -327,31 +313,31 @@
   }
 
   .banner {
-    @apply mx-0 mb-2 rounded-sm px-2 py-1.5;
+    @apply mt-3 rounded-sm px-2.5 py-2;
     @apply text-xs text-yellow-800 bg-yellow-50 border border-yellow-200;
   }
 
   .branch-list {
-    @apply flex flex-col;
+    @apply flex flex-col mt-3 -mx-1.5;
   }
 
   .branch-row {
-    @apply flex items-center gap-x-2 rounded-sm px-2 py-1.5 text-xs;
+    @apply flex items-center gap-x-2 rounded-md px-3 py-2 text-sm;
     @apply text-fg-primary hover:bg-surface-hover hover:text-fg-accent;
     @apply cursor-pointer outline-none no-underline;
   }
 
   .separator {
-    @apply -mx-1 my-1 h-px bg-border;
+    @apply my-2 h-px bg-border;
   }
 
   .new-branch-btn {
-    @apply flex w-full items-center gap-x-2 rounded-sm px-2 py-1.5 text-xs font-medium;
-    @apply text-primary-600 hover:bg-surface-hover cursor-pointer;
+    @apply flex w-full items-center gap-x-2 rounded-md px-3 py-2 text-sm font-medium;
+    @apply -mx-1.5 text-primary-600 hover:bg-surface-hover cursor-pointer;
   }
 
   .form {
-    @apply flex flex-col gap-y-2 px-1 pt-1 pb-0.5;
+    @apply flex flex-col gap-y-2 mt-3;
   }
 
   .form-label {
@@ -359,11 +345,11 @@
   }
 
   .branch-input {
-    @apply w-full text-xs font-mono px-2.5 py-2 rounded-md border border-gray-300;
+    @apply w-full text-sm font-mono px-3 py-2 rounded-md border border-gray-300;
     @apply focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500;
   }
 
   .form-actions {
-    @apply flex items-center justify-end gap-x-2 mt-0.5;
+    @apply flex items-center justify-end gap-x-2 mt-2;
   }
 </style>
