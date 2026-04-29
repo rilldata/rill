@@ -14,7 +14,6 @@
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { Tabs as TabsPrimitive } from "bits-ui";
   import { CheckIcon, ChevronDownIcon, GitBranchIcon } from "lucide-svelte";
   import { useDevDeployments, invalidateDeployments } from "./use-edit-session";
 
@@ -212,17 +211,31 @@
       {/if}
 
       {#if hasOwnSessions}
-        <TabsPrimitive.Root bind:value={currentTab} class="contents">
-          <TabsPrimitive.List class="seg-list">
-            <TabsPrimitive.Trigger value="existing" class="seg-trigger">
-              Existing branch
-            </TabsPrimitive.Trigger>
-            <TabsPrimitive.Trigger value="new" class="seg-trigger">
-              New branch
-            </TabsPrimitive.Trigger>
-          </TabsPrimitive.List>
+        <div role="tablist" aria-label="Edit branch options" class="seg-list">
+          <button
+            role="tab"
+            type="button"
+            aria-selected={currentTab === "existing"}
+            class="seg-trigger"
+            class:is-active={currentTab === "existing"}
+            onclick={() => (currentTab = "existing")}
+          >
+            Existing branch
+          </button>
+          <button
+            role="tab"
+            type="button"
+            aria-selected={currentTab === "new"}
+            class="seg-trigger"
+            class:is-active={currentTab === "new"}
+            onclick={() => (currentTab = "new")}
+          >
+            New branch
+          </button>
+        </div>
 
-          <TabsPrimitive.Content value="existing" class="tab-body">
+        {#if currentTab === "existing"}
+          <div class="tab-body" role="tabpanel">
             <label class="form-label" for="existing-branch">Branch</label>
             <DropdownMenu.Root bind:open={dropdownOpen}>
               <DropdownMenu.Trigger>
@@ -287,9 +300,9 @@
                 {/each}
               </DropdownMenu.Content>
             </DropdownMenu.Root>
-          </TabsPrimitive.Content>
-
-          <TabsPrimitive.Content value="new" class="tab-body">
+          </div>
+        {:else}
+          <div class="tab-body" role="tabpanel">
             <label class="form-label" for="new-branch-name">Branch name</label>
             <!-- svelte-ignore a11y_autofocus -->
             <input
@@ -302,8 +315,8 @@
               placeholder="branch-name"
               autofocus
             />
-          </TabsPrimitive.Content>
-        </TabsPrimitive.Root>
+          </div>
+        {/if}
       {:else}
         <div class="tab-body" style:margin-top="20px">
           <label class="form-label" for="new-branch-name">Branch name</label>
@@ -360,23 +373,23 @@
   }
 
   /* Segmented tab control — Di's pattern (gray pill, white active) */
-  :global(.seg-list) {
+  .seg-list {
     @apply mx-6 mt-5 inline-flex p-0.5 gap-0.5 self-start;
-    @apply bg-gray-100 rounded-lg;
+    @apply bg-gray-100 rounded-lg w-fit;
   }
 
-  :global(.seg-trigger) {
-    @apply px-3.5 py-1.5 rounded-md;
+  .seg-trigger {
+    @apply px-3.5 py-1.5 rounded-md border-0 bg-transparent;
     @apply text-[13px] font-medium text-fg-secondary;
     @apply transition-colors cursor-pointer;
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30;
   }
 
-  :global(.seg-trigger[data-state="active"]) {
+  .seg-trigger.is-active {
     @apply bg-surface text-fg-primary shadow-sm;
   }
 
-  :global(.seg-trigger:not([data-state="active"]):hover) {
+  .seg-trigger:not(.is-active):hover {
     @apply text-fg-primary;
   }
 
