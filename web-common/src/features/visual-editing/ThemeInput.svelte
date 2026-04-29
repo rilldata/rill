@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
@@ -148,6 +149,15 @@
       }))}
       id="theme"
     />
+
+    {#if themeFilePath}
+      <div class="edit-file-btn-wrapper">
+        <Button type="secondary" small onClick={handleEditThemeFile}>
+          <Pencil size="12" />
+          Edit theme file
+        </Button>
+      </div>
+    {/if}
   {/if}
 
   {#if hasTheme || editing}
@@ -158,13 +168,6 @@
         readonly={isPresetMode}
       />
     </div>
-
-    {#if isPresetMode && themeFilePath}
-      <button type="button" class="edit-file-btn" onclick={handleEditThemeFile}>
-        <Pencil size="12" />
-        <span>Edit theme file</span>
-      </button>
-    {/if}
   {/if}
 </div>
 
@@ -173,13 +176,11 @@
     @apply max-h-[60vh] overflow-y-auto;
   }
 
-  .edit-file-btn {
-    @apply mt-1 inline-flex items-center gap-x-1.5 self-start;
-    @apply text-xs font-medium text-fg-secondary;
-    @apply px-2 py-1 rounded border border-border bg-surface-base;
+  .edit-file-btn-wrapper {
+    @apply w-full;
   }
 
-  .edit-file-btn:hover {
-    @apply bg-surface-hover text-fg-primary;
+  .edit-file-btn-wrapper :global(button) {
+    @apply w-full;
   }
 </style>
