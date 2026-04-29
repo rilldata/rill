@@ -16,6 +16,11 @@
 
   const { chat, reports, alerts } = featureFlags;
 
+  // Branch preview mode mirrors CLI --preview: hide Reports/Alerts/Settings,
+  // and the Status sub-nav is restricted to a CLI --preview-equivalent set
+  // (handled in the status +layout). Production view is unaffected.
+  $: branchPreviewMode = branchPrefix !== "";
+
   $: tabs = [
     {
       route: `/${organization}/${project}${branchPrefix}`,
@@ -40,12 +45,12 @@
     {
       route: `/${organization}/${project}${branchPrefix}/-/reports`,
       label: "Reports",
-      hasPermission: $reports,
+      hasPermission: $reports && !branchPreviewMode,
     },
     {
       route: `/${organization}/${project}${branchPrefix}/-/alerts`,
       label: "Alerts",
-      hasPermission: $alerts,
+      hasPermission: $alerts && !branchPreviewMode,
     },
     {
       route: `/${organization}/${project}${branchPrefix}/-/status`,
@@ -55,7 +60,7 @@
     {
       route: `/${organization}/${project}${branchPrefix}/-/settings`,
       label: "Settings",
-      hasPermission: projectPermissions.manageProject,
+      hasPermission: projectPermissions.manageProject && !branchPreviewMode,
     },
   ];
 

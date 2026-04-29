@@ -193,23 +193,21 @@
 
 <Header borderBottom={!onProjectPage}>
   <HeaderLogo href={rillLogoHref} logoUrl={organizationLogoUrl} />
+  {#if activeBranch && !onPublicURLPage}
+    <button
+      type="button"
+      class="contents cursor-pointer"
+      title="Switch to {editContext ? 'Preview' : 'Developer'}"
+      on:click={toggleMode}
+    >
+      <Tag text={editContext ? "Developer" : "Preview"} color="gray" />
+    </button>
+  {/if}
   {#if onPublicURLPage}
     <PageTitle title={publicURLDashboardTitle} />
   {:else if organization}
     <Breadcrumbs {pathParts} {currentPath}>
       <svelte:fragment slot="after-project">
-        {#if activeBranch && !onPublicURLPage}
-          <li class="flex items-center mr-2">
-            <button
-              type="button"
-              class="contents cursor-pointer"
-              title="Switch to {editContext ? 'Preview' : 'Developer'}"
-              on:click={toggleMode}
-            >
-              <Tag text={editContext ? "Developer" : "Preview"} color="gray" />
-            </button>
-          </li>
-        {/if}
         {#if editContext && activeBranch}
           <li class="flex items-center mr-2">
             <span
