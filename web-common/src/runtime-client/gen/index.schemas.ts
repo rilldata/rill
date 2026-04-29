@@ -2095,16 +2095,6 @@ export interface V1ProjectParserState {
   watching?: boolean;
 }
 
-export interface V1PullEnvResponse {
-  variablesCount?: number;
-  modified?: boolean;
-}
-
-export interface V1PushEnvResponse {
-  addedCount?: number;
-  changedCount?: number;
-}
-
 export interface V1PutFileResponse {
   filePath?: string;
 }
@@ -2695,8 +2685,6 @@ export interface V1WatchResourcesResponse {
   name?: V1ResourceName;
   resource?: V1Resource;
 }
-
-export type RuntimeServicePullEnvBodyBody = { [key: string]: unknown };
 
 export type ConnectorServiceListDatabaseSchemasParams = {
   instanceId?: string;

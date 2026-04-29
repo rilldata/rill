@@ -6,7 +6,7 @@
 #vg-tooltip-element,
 #rill-vg-tooltip {
   @apply absolute p-3 rounded-lg pointer-events-none;
-  /* @apply ui-copy-number; */
+  @apply ui-copy-number;
   border: 0 !important;
   background: var(--tooltip) !important;
   color: var(--fg-inverse) !important;
