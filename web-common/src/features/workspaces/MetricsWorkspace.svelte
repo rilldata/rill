@@ -23,7 +23,6 @@
 
   export let fileArtifact: FileArtifact;
   export let hideCodeToggle = false;
-  export let inPreviewMode = false;
 
   const runtimeClient = useRuntimeClient();
 
@@ -92,7 +91,7 @@
     titleInput={fileName}
   >
     <div class="flex gap-x-2" slot="cta">
-      {#if !inPreviewMode && !isOldMetricsView}
+      {#if !isOldMetricsView}
         <GoToDashboardButton {resource} />
       {/if}
     </div>

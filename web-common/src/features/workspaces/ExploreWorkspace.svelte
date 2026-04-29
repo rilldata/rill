@@ -28,7 +28,6 @@
 
   export let fileArtifact: FileArtifact;
   export let hideCodeToggle = false;
-  export let inPreviewMode = false;
 
   const runtimeClient = useRuntimeClient();
 
