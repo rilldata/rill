@@ -69,6 +69,7 @@
           {...props}
           type="secondary"
           disabled={!hasChanges || isCommitting}
+          class="!bg-surface-base"
         >
           Commit
         </Button>

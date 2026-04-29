@@ -23,7 +23,9 @@
 </script>
 
 <Tooltip distance={8}>
-  <Button type="secondary" href={navHref}>{navLabel}</Button>
+  <Button type="secondary" href={navHref} class="!bg-surface-base"
+    >{navLabel}</Button
+  >
   <TooltipContent slot="tooltip-content" maxWidth="200px">
     <span class="text-xs">{navTooltip}</span>
   </TooltipContent>
@@ -42,7 +44,11 @@
 </Tooltip>
 
 <Tooltip distance={8}>
-  <Button type="secondary" href={projectHomeHref}>
+  <Button
+    type="secondary"
+    href={projectHomeHref}
+    class="!bg-surface-base"
+  >
     <DoorOpen size="14" />
     Exit
   </Button>

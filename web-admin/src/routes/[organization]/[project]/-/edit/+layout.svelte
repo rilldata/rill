@@ -14,9 +14,9 @@
   } from "@rilldata/web-admin/features/branches/branch-utils";
   import BranchDeploymentStopped from "@rilldata/web-admin/features/branches/BranchDeploymentStopped.svelte";
   import { isEditPreviewRoute } from "@rilldata/web-admin/features/edit-session/edit-route-utils";
+  import EditHeader from "@rilldata/web-admin/features/edit-session/EditHeader.svelte";
   import EditSessionLoading from "@rilldata/web-admin/features/edit-session/EditSessionLoading.svelte";
   import EditSessionTimeoutBanner from "@rilldata/web-admin/features/edit-session/EditSessionTimeoutBanner.svelte";
-  import ProjectHeader from "@rilldata/web-admin/features/projects/ProjectHeader.svelte";
   import SlimProjectHeader from "@rilldata/web-admin/features/projects/SlimProjectHeader.svelte";
   import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
@@ -200,17 +200,11 @@
   {:else if isReady && deployment?.id && instanceId && runtimeHost && jwt}
     {#key `${runtimeHost}::${instanceId}`}
       <RuntimeProvider host={runtimeHost} {instanceId} {jwt}>
-        <ProjectHeader
+        <EditHeader
           {organization}
           {project}
           {projectPermissions}
-          manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
-          manageOrgMembers={organizationPermissions?.manageOrgMembers}
           readProjects={organizationPermissions?.readProjects}
-          {primaryBranch}
-          {planDisplayName}
-          {organizationLogoUrl}
-          editContext={true}
         />
         <EditSessionTimeoutBanner sessionStartedAt={deployment.createdOn} />
         <FileAndResourceWatcher

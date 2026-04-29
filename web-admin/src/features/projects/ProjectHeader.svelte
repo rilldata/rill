@@ -4,15 +4,10 @@
   import ExploreBookmarks from "@rilldata/web-admin/features/bookmarks/ExploreBookmarks.svelte";
   import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
   import ShareDashboardPopover from "@rilldata/web-admin/features/dashboards/share/ShareDashboardPopover.svelte";
-  import { isEditPreviewRoute } from "@rilldata/web-admin/features/edit-session/edit-route-utils";
-  import EditActions from "@rilldata/web-admin/features/edit-session/EditActions.svelte";
   import EditButton from "@rilldata/web-admin/features/edit-session/EditButton.svelte";
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
-  import Slash from "@rilldata/web-common/components/navigation/breadcrumbs/Slash.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
-  import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
-  import { GitBranchIcon } from "lucide-svelte";
   import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
@@ -56,14 +51,12 @@
   export let primaryBranch: string | undefined = undefined;
   export let planDisplayName: string | undefined;
   export let organizationLogoUrl: string | undefined;
-  export let editContext: boolean = false;
 
   const user = createAdminServiceGetCurrentUser();
   const runtimeClient = useRuntimeClient();
   const {
     alerts: alertsFlag,
     cloudEditing,
-    developerChat,
     dimensionSearch,
     dashboardChat,
     stickyDashboardState,
@@ -174,43 +167,17 @@
     : $exploreQuery.data?.explore?.explore?.state?.validSpec?.displayName ||
       dashboard;
 
-  // Cloud editor hides the org breadcrumb (and its trial pill) so the bar
-  // collapses to "Rill / Project / Branch". Outside the editor, all
-  // breadcrumb levels render.
-  $: currentPath = editContext
-    ? [undefined, project, dashboard, report || alert]
-    : [organization, project, dashboard, report || alert];
-
-  // Inside /-/edit, mode is a status indicator only — Preview vs Developer
-  // is reflected by the URL prefix and the pill just labels it. Toggling
-  // happens via the EditActions Preview/Edit button in the action bar.
-  $: editPreviewMode = editContext && isEditPreviewRoute($page.url.pathname);
+  $: currentPath = [organization, project, dashboard, report || alert];
 </script>
 
-<Header borderBottom={!onProjectPage} tinted={editContext}>
-  <HeaderLogo
-    href={editContext ? `/${organization}/${project}` : rillLogoHref}
-    logoUrl={editContext ? undefined : organizationLogoUrl}
-  />
-  {#if editContext && activeBranch}
-    <Tag text={editPreviewMode ? "Preview" : "Developer"} color="gray" />
-  {/if}
+<Header borderBottom={!onProjectPage}>
+  <HeaderLogo href={rillLogoHref} logoUrl={organizationLogoUrl} />
   {#if onPublicURLPage}
     <PageTitle title={publicURLDashboardTitle} />
   {:else if organization}
     <Breadcrumbs {pathParts} {currentPath}>
       <svelte:fragment slot="after-project">
-        {#if editContext && activeBranch}
-          <Slash />
-          <li class="flex items-center gap-x-1.5 px-2">
-            <GitBranchIcon size="14" class="text-fg-muted" />
-            <span class="text-fg-muted">
-              {activeBranch.length > 12
-                ? activeBranch.slice(0, 11) + "…"
-                : activeBranch}
-            </span>
-          </li>
-        {:else if !onPublicURLPage && projectPermissions?.readDev}
+        {#if !onPublicURLPage && projectPermissions?.readDev}
           <BranchSelector {organization} {project} {primaryBranch} />
         {/if}
       </svelte:fragment>
@@ -218,30 +185,20 @@
   {/if}
 
   <div class="flex gap-x-2 items-center ml-auto">
-    {#if editContext}
-      {#if editPreviewMode && $viewAsUserStore}
-        <ViewAsUserChip />
-      {/if}
-      {#if $developerChat}
-        <ChatToggle />
-      {/if}
-      <EditActions {organization} {project} branch={activeBranch ?? ""} />
-    {:else}
-      {#if $viewAsUserStore}
-        <ViewAsUserChip />
-      {/if}
-      {#if $cloudEditing && onProjectPage && projectPermissions.manageDev}
-        <EditButton {organization} {project} {activeBranch} />
-      {/if}
-      {#if onProjectPage && projectPermissions.manageProjectMembers}
-        <ShareProjectPopover
-          {organization}
-          {project}
-          manageProjectAdmins={projectPermissions.manageProjectAdmins}
-          {manageOrgAdmins}
-          {manageOrgMembers}
-        />
-      {/if}
+    {#if $viewAsUserStore}
+      <ViewAsUserChip />
+    {/if}
+    {#if $cloudEditing && onProjectPage && projectPermissions.manageDev}
+      <EditButton {organization} {project} {activeBranch} />
+    {/if}
+    {#if onProjectPage && projectPermissions.manageProjectMembers}
+      <ShareProjectPopover
+        {organization}
+        {project}
+        manageProjectAdmins={projectPermissions.manageProjectAdmins}
+        {manageOrgAdmins}
+        {manageOrgMembers}
+      />
     {/if}
 
     {#if onMetricsExplorerPage && isDashboardValid}
