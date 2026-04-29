@@ -46,10 +46,10 @@
 <Tooltip distance={8}>
   <a
     href={projectHomeHref}
-    class="flex items-center gap-x-2 px-2 py-1 rounded text-fg-primary hover:bg-surface-hover"
+    class="flex items-center gap-x-1.5 px-2 h-7 rounded text-xs font-medium text-fg-muted hover:text-fg-primary hover:bg-surface-hover"
   >
-    <LogOut size="16" />
-    <span class="text-sm font-medium">Exit</span>
+    <LogOut size="14" />
+    Exit
   </a>
   <TooltipContent slot="tooltip-content" maxWidth="200px">
     <span class="text-xs">Return to project home</span>
