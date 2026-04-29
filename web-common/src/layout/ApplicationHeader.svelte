@@ -31,6 +31,8 @@
   const runtimeClient = useRuntimeClient();
 
   export let mode: string;
+  export let onModeToggle: (() => void) | undefined = undefined;
+  export let modeLocked: boolean = false;
 
   $: ({
     params: { name: dashboardName },
@@ -102,7 +104,18 @@
   {#if !onDeployPage}
     <HeaderLogo href={mode === "Preview" ? "/dashboards" : "/"} />
 
-    <Tag text={mode} color="gray"></Tag>
+    {#if onModeToggle && !modeLocked}
+      <button
+        type="button"
+        class="contents cursor-pointer"
+        title="Switch to {mode === 'Preview' ? 'Developer' : 'Preview'}"
+        on:click={onModeToggle}
+      >
+        <Tag text={mode} color="gray"></Tag>
+      </button>
+    {:else}
+      <Tag text={mode} color="gray"></Tag>
+    {/if}
 
     {#if mode === "Preview" || onVizRoute}
       {#if $exploresQuery?.data}

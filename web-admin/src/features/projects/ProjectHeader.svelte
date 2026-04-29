@@ -1,14 +1,20 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import CanvasBookmarks from "@rilldata/web-admin/features/bookmarks/CanvasBookmarks.svelte";
   import ExploreBookmarks from "@rilldata/web-admin/features/bookmarks/ExploreBookmarks.svelte";
-  import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
+  import {
+    branchPathPrefix,
+    extractBranchFromPath,
+    requestSkipBranchInjection,
+  } from "@rilldata/web-admin/features/branches/branch-utils";
   import ShareDashboardPopover from "@rilldata/web-admin/features/dashboards/share/ShareDashboardPopover.svelte";
   import EditActions from "@rilldata/web-admin/features/edit-session/EditActions.svelte";
   import EditButton from "@rilldata/web-admin/features/edit-session/EditButton.svelte";
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
+  import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
@@ -171,6 +177,18 @@
       dashboard;
 
   $: currentPath = [organization, project, dashboard, report || alert];
+
+  // Toggle between Preview (branch view) and Developer (edit) for the active
+  // branch. The pill is only rendered when a branch is in scope, so
+  // activeBranch is guaranteed when this runs.
+  function toggleMode() {
+    if (!activeBranch) return;
+    const target = editContext
+      ? `/${organization}/${project}${branchPathPrefix(activeBranch)}`
+      : `/${organization}/${project}${branchPathPrefix(activeBranch)}/-/edit`;
+    requestSkipBranchInjection();
+    void goto(target);
+  }
 </script>
 
 <Header borderBottom={!onProjectPage}>
@@ -180,6 +198,18 @@
   {:else if organization}
     <Breadcrumbs {pathParts} {currentPath}>
       <svelte:fragment slot="after-project">
+        {#if activeBranch && !onPublicURLPage}
+          <li class="flex items-center mr-2">
+            <button
+              type="button"
+              class="contents cursor-pointer"
+              title="Switch to {editContext ? 'Preview' : 'Developer'}"
+              on:click={toggleMode}
+            >
+              <Tag text={editContext ? "Developer" : "Preview"} color="gray" />
+            </button>
+          </li>
+        {/if}
         {#if editContext && activeBranch}
           <li class="flex items-center mr-2">
             <span
