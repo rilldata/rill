@@ -26,6 +26,7 @@ import type {
   TimeAndFilterStore,
   TimeRangeState,
 } from "../../dashboards/time-controls/time-control-store";
+import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import type {
   CanvasEntity,
   ComponentPath,
@@ -212,6 +213,14 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         };
 
         let timeRangeState: TimeRangeState | undefined = {
+          selectedTimeRange: globalInterval
+            ? {
+                name: TimeRangePreset.CUSTOM,
+                start: globalInterval.start.toJSDate(),
+                end: globalInterval.end.toJSDate(),
+                interval: globalGrainStore,
+              }
+            : undefined,
           timeStart: globalInterval?.start.toISO(),
           timeEnd: globalInterval?.end.toISO(),
         };
@@ -273,6 +282,14 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
             timeGrain = localGrainStore ?? globalGrainStore;
 
             const localTimeRangeState: TimeRangeState = {
+              selectedTimeRange: localInterval
+                ? {
+                    name: TimeRangePreset.CUSTOM,
+                    start: localInterval.start.toJSDate(),
+                    end: localInterval.end.toJSDate(),
+                    interval: localGrainStore ?? globalGrainStore,
+                  }
+                : undefined,
               timeStart: localInterval?.start.toISO(),
               timeEnd: localInterval?.end.toISO(),
             };

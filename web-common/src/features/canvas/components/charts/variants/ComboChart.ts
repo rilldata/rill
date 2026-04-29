@@ -9,12 +9,21 @@ import {
   type ChartFieldsMap,
   type FieldConfig,
 } from "@rilldata/web-common/features/components/charts/types";
+import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import {
+  PivotChipType,
+  type PivotChipData,
+  type PivotState,
+} from "@rilldata/web-common/features/dashboards/pivot/types";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   MetricsViewSpecDimensionType,
   type V1MetricsViewSpec,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { get, type Readable } from "svelte/store";
 import type { ChartDataQuery } from "../../../../components/charts/types";
 import type {
@@ -262,5 +271,68 @@ export class ComboChartComponent extends BaseChart<ComboCanvasChartSpec> {
       this.parent.metricsView.getMeasuresForMetricView(metricsViewName);
     const measures = get(measuresStore);
     return this.provider.getChartDomainValues(measures);
+  }
+
+  override getExploreTransformerProperties(): Partial<ExploreState> {
+    const spec = get(this.specStore);
+    const { dimensionFilters, dimensionThresholdFilters } = splitWhereFilter(
+      this.componentFilters,
+    );
+    const timeGrain = get(this.timeAndFilterStore)?.timeGrain;
+
+    const columns: PivotChipData[] = [];
+    const rows: PivotChipData[] = [];
+
+    if (spec.x?.field) {
+      if (spec.x.type === "temporal") {
+        columns.push({
+          id: timeGrain || V1TimeGrain.TIME_GRAIN_DAY,
+          title: spec.x.field,
+          type: PivotChipType.Time,
+        });
+      } else {
+        columns.push({
+          id: spec.x.field,
+          title: spec.x.field,
+          type: PivotChipType.Dimension,
+        });
+      }
+    }
+
+    if (spec.y1?.field && spec.y1.type === "quantitative") {
+      columns.push({
+        id: spec.y1.field,
+        title: spec.y1.field,
+        type: PivotChipType.Measure,
+      });
+    }
+
+    if (spec.y2?.field && spec.y2.type === "quantitative") {
+      columns.push({
+        id: spec.y2.field,
+        title: spec.y2.field,
+        type: PivotChipType.Measure,
+      });
+    }
+
+    const pivot: PivotState = {
+      columns,
+      rows,
+      expanded: {},
+      sorting: [],
+      columnPage: 0,
+      rowPage: 0,
+      enableComparison: false,
+      tableMode: "nest",
+      activeCell: null,
+    };
+
+    return {
+      whereFilter: dimensionFilters,
+      dimensionThresholdFilters,
+      showTimeComparison: false,
+      activePage: DashboardState_ActivePage.PIVOT,
+      pivot,
+    };
   }
 }
