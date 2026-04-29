@@ -10,7 +10,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-// StarRocks Uses fully qualified names (catalog.information_schema.tables) instead of SET CATALOG/USE.
+// StarRocks Uses fully qualified names (catalog.database_schema.tables) instead of SET CATALOG/USE.
 // ListDatabaseSchemas returns a list of database schemas in StarRocks.
 // StarRocks structure: Catalog -> Database -> Table
 // We map: Database = catalog, DatabaseSchema = database
@@ -92,8 +92,7 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 				WHEN table_type = 'VIEW' THEN true
 				WHEN table_type = 'MATERIALIZED VIEW' THEN true
 				ELSE false
-			END AS is_view,
-			DATABASE() = table_schema AS is_default_database_schema
+			END AS is_view
 		FROM %s.information_schema.tables
 		WHERE table_schema = ?
 	`, safeSQLName(catalog))
@@ -120,16 +119,18 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	var tables []*drivers.TableInfo
 	for rows.Next() {
 		var tableName string
-		var isView, isDefaultDatabaseSchema bool
-		if err := rows.Scan(&tableName, &isView, &isDefaultDatabaseSchema); err != nil {
+		var isView bool
+		if err := rows.Scan(&tableName, &isView); err != nil {
 			return nil, "", err
 		}
 
 		tables = append(tables, &drivers.TableInfo{
 			Name:                    tableName,
 			View:                    isView,
-			IsDefaultDatabase:       true,
-			IsDefaultDatabaseSchema: isDefaultDatabaseSchema,
+			Database:                catalog,
+			DatabaseSchema:          dbSchema,
+			IsDefaultDatabase:       false, // Because StarRocks uses fully qualified names (catalog.database_schema.tables)
+			IsDefaultDatabaseSchema: false, // Because StarRocks uses fully qualified names (catalog.database_schema.tables)
 		})
 	}
 
@@ -202,10 +203,12 @@ func (c *connection) All(ctx context.Context, like string, pageSize uint32, page
 		}
 
 		tables = append(tables, &drivers.TableInfo{
-			Database:       catalog, // StarRocks catalog -> Rill database
-			DatabaseSchema: schema,  // StarRocks database -> Rill databaseSchema
-			Name:           name,
-			View:           isView,
+			Database:                catalog, // StarRocks catalog -> Rill database
+			DatabaseSchema:          schema,  // StarRocks database -> Rill databaseSchema
+			IsDefaultDatabase:       false,   // Because StarRocks uses fully qualified names (catalog.database_schema.tables)
+			IsDefaultDatabaseSchema: false,   // Because StarRocks uses fully qualified names (catalog.database_schema.tables)
+			Name:                    name,
+			View:                    isView,
 		})
 	}
 
@@ -249,15 +252,14 @@ func (c *connection) Lookup(ctx context.Context, database, databaseSchema, table
 				WHEN table_type = 'VIEW' THEN true
 				WHEN table_type = 'MATERIALIZED VIEW' THEN true
 				ELSE false
-			END AS is_view,
-			DATABASE() = table_schema AS is_default_database_schema
+			END AS is_view
 		FROM %s.information_schema.tables
 		WHERE table_schema = ? AND LOWER(table_name) = LOWER(?)
 	`, safeSQLName(catalog))
 
 	var tableSchema, tableName string
-	var isView, isDefaultDatabaseSchema bool
-	err := db.QueryRowxContext(ctx, tableQuery, dbSchema, table).Scan(&tableSchema, &tableName, &isView, &isDefaultDatabaseSchema)
+	var isView bool
+	err := db.QueryRowxContext(ctx, tableQuery, dbSchema, table).Scan(&tableSchema, &tableName, &isView)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, drivers.ErrNotFound
@@ -314,8 +316,8 @@ func (c *connection) Lookup(ctx context.Context, database, databaseSchema, table
 	return &drivers.TableInfo{
 		Database:                catalog,
 		DatabaseSchema:          tableSchema,
-		IsDefaultDatabase:       true,
-		IsDefaultDatabaseSchema: isDefaultDatabaseSchema,
+		IsDefaultDatabase:       false, // Because StarRocks uses fully qualified names (catalog.database_schema.tables)
+		IsDefaultDatabaseSchema: false, // Because StarRocks uses fully qualified names (catalog.database_schema.tables)
 		Name:                    tableName,
 		View:                    isView,
 		Schema:                  &runtimev1.StructType{Fields: fields},

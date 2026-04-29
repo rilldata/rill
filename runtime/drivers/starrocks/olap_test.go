@@ -1380,6 +1380,7 @@ func acquireTestStarRocks(t *testing.T) (drivers.Handle, drivers.OLAPStore) {
 	conn, err := driver{}.Open("", "default", map[string]any{
 		"dsn": dsn,
 	}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	fmt.Println(dsn)
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 

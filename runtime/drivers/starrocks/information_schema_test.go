@@ -63,8 +63,8 @@ func testAll(t *testing.T, ctx context.Context, infoSchema drivers.InformationSc
 	}
 
 	for _, tbl := range tables {
-		require.True(t, tbl.IsDefaultDatabase, "table %s: expected IsDefaultDatabase=true", tbl.Name)
-		require.True(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=true", tbl.Name)
+		require.False(t, tbl.IsDefaultDatabase, "table %s: expected IsDefaultDatabase=false", tbl.Name)
+		require.False(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=false", tbl.Name)
 	}
 }
 
@@ -119,8 +119,8 @@ func testListTables(t *testing.T, ctx context.Context, infoSchema drivers.Inform
 	require.True(t, tables[5].View)
 
 	for _, tbl := range tables {
-		require.True(t, tbl.IsDefaultDatabase, "table %s: expected IsDefaultDatabase=true", tbl.Name)
-		require.True(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=true", tbl.Name)
+		require.False(t, tbl.IsDefaultDatabase, "table %s: expected IsDefaultDatabase=false", tbl.Name)
+		require.False(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=false", tbl.Name)
 	}
 }
 
