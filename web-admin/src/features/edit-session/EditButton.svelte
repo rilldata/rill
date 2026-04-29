@@ -403,7 +403,7 @@
 
   /* Segmented tab control — Di's pattern (gray pill, lifted active) */
   .seg-list {
-    @apply mx-6 mt-5 inline-flex p-1 gap-1 self-start w-fit rounded-lg;
+    @apply mx-6 mt-5 flex p-1 gap-1 rounded-lg;
     background: rgb(241 245 249); /* slate-100 */
   }
 
@@ -412,7 +412,7 @@
   }
 
   .seg-trigger {
-    @apply inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md border-0;
+    @apply flex-1 inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-md border-0;
     @apply text-[13px] font-medium transition-all cursor-pointer;
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40;
     background: transparent;
