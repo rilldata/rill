@@ -12,8 +12,10 @@
   } from "@rilldata/web-admin/features/branches/branch-utils";
   import { Button } from "@rilldata/web-common/components/button";
   import * as Dialog from "@rilldata/web-common/components/dialog";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { GitBranchIcon, PlusIcon } from "lucide-svelte";
+  import { Tabs as TabsPrimitive } from "bits-ui";
+  import { CheckIcon, ChevronDownIcon, GitBranchIcon } from "lucide-svelte";
   import { useDevDeployments, invalidateDeployments } from "./use-edit-session";
 
   export let organization: string;
@@ -29,7 +31,9 @@
 
   let open = false;
   let branchName = "";
-  let showNewBranchInput = false;
+  let currentTab: "existing" | "new" = "existing";
+  let selectedBranchId = "";
+  let dropdownOpen = false;
 
   $: currentUserId = $user.data?.user?.id;
   $: deployments = $devDeployments.data?.deployments ?? [];
@@ -50,6 +54,11 @@
         d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED,
     )
     .sort((a, b) => (b.updatedOn ?? "").localeCompare(a.updatedOn ?? ""));
+
+  // Most-recently-updated branch — used for the "latest" tag and as the
+  // default selection in the Existing-branch dropdown.
+  $: latestDeployment = ownDeployments[0];
+  $: latestBranchId = latestDeployment?.id ?? "";
 
   // If viewing a branch the user owns, clicking the button should go straight there
   $: activeBranchDeployment = activeBranch
@@ -72,11 +81,18 @@
   $: hasOwnSessions = ownDeployments.length > 0;
   $: isStarting = $createMutation.isPending;
 
-  // Reset state when dialog opens
+  // Reset state every time the dialog opens. Default to the Existing tab
+  // when the user has branches (most users come back to resume); preselect
+  // the most-recent branch so "Continue editing" is one click away.
   $: if (open) {
     branchName = "";
-    showNewBranchInput = !hasOwnSessions;
+    currentTab = hasOwnSessions ? "existing" : "new";
+    selectedBranchId = latestBranchId;
   }
+
+  $: selectedDeployment = ownDeployments.find(
+    (d) => d.id === selectedBranchId,
+  );
 
   function editUrl(branch: string | undefined): string {
     return `/${organization}/${project}${branchPathPrefix(branch)}/-/edit`;
@@ -94,11 +110,6 @@
     void goto(directEditHref!);
   }
 
-  function handleBranchClick() {
-    requestSkipBranchInjection();
-    open = false;
-  }
-
   // Replaces whitespace with "-" as the user types so branch names are
   // always valid. Space → "-" is a 1:1 swap, so cursor stays put.
   function handleBranchNameInput(e: Event) {
@@ -110,11 +121,6 @@
       target.setSelectionRange(cursorPos, cursorPos);
     }
     branchName = sanitized;
-  }
-
-  function handleCancelNewBranch() {
-    branchName = "";
-    showNewBranchInput = false;
   }
 
   async function handleCreate() {
@@ -141,13 +147,17 @@
     }
   }
 
-  function handleKeydown(e: KeyboardEvent) {
+  function handleResume() {
+    if (!selectedDeployment) return;
+    requestSkipBranchInjection();
+    open = false;
+    void goto(editUrl(selectedDeployment.branch));
+  }
+
+  function handleNameKeydown(e: KeyboardEvent) {
     if (e.key === "Enter") {
-      void handleCreate();
-    } else if (e.key === "Escape" && hasOwnSessions && showNewBranchInput) {
       e.preventDefault();
-      e.stopPropagation();
-      handleCancelNewBranch();
+      void handleCreate();
     }
   }
 </script>
@@ -178,52 +188,109 @@
       {/snippet}
     </Dialog.Trigger>
 
-    <Dialog.Content class="max-w-md gap-0">
-      <Dialog.Header class="space-y-1">
-        <Dialog.Title class="text-base">
-          {hasOwnSessions ? "Continue editing" : "Start editing"}
+    <Dialog.Content class="!max-w-[480px] gap-0 p-0">
+      <Dialog.Header class="space-y-1 px-6 pt-6">
+        <Dialog.Title class="text-lg font-semibold tracking-tight">
+          Start editing
         </Dialog.Title>
-        <Dialog.Description class="dlg-subtitle">
-          {hasOwnSessions
-            ? "Branched from"
-            : "Create a branch to edit from"}<span class="branch-chip">
-            <GitBranchIcon size="11" />
-            {sourceBranch}
-          </span>
+        <Dialog.Description class="text-[13px] text-fg-secondary leading-snug">
+          {#if hasOwnSessions}
+            Pick up an existing branch, or create a new one from
+            <code class="dlg-code">{sourceBranch}</code>.
+          {:else}
+            We'll create a branch from
+            <code class="dlg-code">{sourceBranch}</code>
+            for your edits.
+          {/if}
         </Dialog.Description>
       </Dialog.Header>
 
       {#if activeBranchIsNonEditable}
         <div class="banner">
-          This branch isn't editable. Start a new one below{hasOwnSessions
-            ? " or switch to another"
-            : ""}.
+          This branch is read-only. Pick another branch or create a new one.
         </div>
       {/if}
 
       {#if hasOwnSessions}
-        <div class="branch-list">
-          {#each ownDeployments as deployment (deployment.id)}
-            <a
-              class="branch-row"
-              href={editUrl(deployment.branch)}
-              onclick={handleBranchClick}
-              data-sveltekit-preload-data="hover"
-            >
-              <span class="font-mono truncate">
-                {deployment.branch || sourceBranch}
-              </span>
-            </a>
-          {/each}
-        </div>
+        <TabsPrimitive.Root bind:value={currentTab} class="contents">
+          <TabsPrimitive.List class="seg-list">
+            <TabsPrimitive.Trigger value="existing" class="seg-trigger">
+              Existing branch
+            </TabsPrimitive.Trigger>
+            <TabsPrimitive.Trigger value="new" class="seg-trigger">
+              New branch
+            </TabsPrimitive.Trigger>
+          </TabsPrimitive.List>
 
-        <div class="separator"></div>
+          <TabsPrimitive.Content value="existing" class="tab-body">
+            <label class="form-label" for="existing-branch">Branch</label>
+            <DropdownMenu.Root bind:open={dropdownOpen}>
+              <DropdownMenu.Trigger>
+                {#snippet child({ props })}
+                  <button
+                    {...props}
+                    id="existing-branch"
+                    class="branch-select"
+                    class:open={dropdownOpen}
+                    type="button"
+                  >
+                    <span class="select-left">
+                      <GitBranchIcon
+                        size="14"
+                        class="text-fg-muted shrink-0"
+                      />
+                      <span class="select-name">
+                        {selectedDeployment?.branch ?? sourceBranch}
+                      </span>
+                      {#if selectedDeployment && selectedDeployment.id === latestBranchId}
+                        <span class="latest-tag">latest</span>
+                      {/if}
+                    </span>
+                    <ChevronDownIcon
+                      size="14"
+                      class="text-fg-muted shrink-0 transition-transform {dropdownOpen
+                        ? 'rotate-180'
+                        : ''}"
+                    />
+                  </button>
+                {/snippet}
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content
+                align="start"
+                sameWidth
+                class="max-h-[280px] overflow-y-auto"
+              >
+                {#each ownDeployments as deployment (deployment.id)}
+                  {@const isSelected = deployment.id === selectedBranchId}
+                  {@const isLatest = deployment.id === latestBranchId}
+                  <DropdownMenu.Item
+                    onclick={() => (selectedBranchId = deployment.id ?? "")}
+                    class="branch-option"
+                  >
+                    <GitBranchIcon
+                      size="13"
+                      class="text-fg-muted shrink-0"
+                    />
+                    <span class="font-mono text-[13px] truncate flex-1">
+                      {deployment.branch || sourceBranch}
+                    </span>
+                    {#if isLatest}
+                      <span class="latest-tag">latest</span>
+                    {/if}
+                    {#if isSelected}
+                      <CheckIcon
+                        size="13"
+                        class="text-primary-600 shrink-0 ml-1"
+                      />
+                    {/if}
+                  </DropdownMenu.Item>
+                {/each}
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
+          </TabsPrimitive.Content>
 
-        {#if showNewBranchInput}
-          <div class="form">
-            <label class="form-label" for="new-branch-name">
-              New branch name
-            </label>
+          <TabsPrimitive.Content value="new" class="tab-body">
+            <label class="form-label" for="new-branch-name">Branch name</label>
             <!-- svelte-ignore a11y_autofocus -->
             <input
               id="new-branch-name"
@@ -231,40 +298,14 @@
               type="text"
               value={branchName}
               oninput={handleBranchNameInput}
-              onkeydown={handleKeydown}
+              onkeydown={handleNameKeydown}
               placeholder="branch-name"
               autofocus
             />
-            <div class="form-actions">
-              <Button
-                type="ghost"
-                disabled={isStarting}
-                onClick={handleCancelNewBranch}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="primary"
-                disabled={!branchName.trim() || isStarting}
-                loading={isStarting}
-                loadingCopy="Starting..."
-                onClick={handleCreate}
-              >
-                Create &amp; edit
-              </Button>
-            </div>
-          </div>
-        {:else}
-          <button
-            class="new-branch-btn"
-            onclick={() => (showNewBranchInput = true)}
-          >
-            <PlusIcon size="14" />
-            <span>New branch&hellip;</span>
-          </button>
-        {/if}
+          </TabsPrimitive.Content>
+        </TabsPrimitive.Root>
       {:else}
-        <div class="form">
+        <div class="tab-body" style:margin-top="20px">
           <label class="form-label" for="new-branch-name">Branch name</label>
           <!-- svelte-ignore a11y_autofocus -->
           <input
@@ -273,83 +314,122 @@
             type="text"
             value={branchName}
             oninput={handleBranchNameInput}
-            onkeydown={handleKeydown}
+            onkeydown={handleNameKeydown}
             placeholder="branch-name"
             autofocus
           />
-          <div class="form-actions">
-            <Button
-              type="primary"
-              disabled={!branchName.trim() || isStarting}
-              loading={isStarting}
-              loadingCopy="Starting..."
-              onClick={handleCreate}
-            >
-              Create &amp; edit
-            </Button>
-          </div>
         </div>
       {/if}
+
+      <div class="dlg-footer">
+        <Button type="secondary" onClick={() => (open = false)}>Cancel</Button>
+        {#if hasOwnSessions && currentTab === "existing"}
+          <Button
+            type="primary"
+            disabled={!selectedBranchId || isStarting}
+            onClick={handleResume}
+          >
+            Continue editing
+          </Button>
+        {:else}
+          <Button
+            type="primary"
+            disabled={!branchName.trim() || isStarting}
+            loading={isStarting}
+            loadingCopy="Starting..."
+            onClick={handleCreate}
+          >
+            Create &amp; edit
+          </Button>
+        {/if}
+      </div>
     </Dialog.Content>
   </Dialog.Root>
 {/if}
 
 <style lang="postcss">
-  /* Header subtitle (Dialog.Description) — overrides muted default to read
-     as a single inline line with the source-branch chip. */
-  :global(.dlg-subtitle) {
-    @apply !text-xs !text-fg-secondary whitespace-nowrap;
+  /* Inline monospace for branch names in subtitle prose */
+  :global(.dlg-code) {
+    @apply font-mono text-[12.5px] text-fg-primary bg-transparent px-0;
   }
 
-  .branch-chip {
-    @apply ml-1 inline-flex items-center gap-x-1 align-[-2px];
-    @apply px-1.5 py-px rounded;
-    @apply text-[11.5px] font-mono font-medium text-fg-primary;
-    @apply bg-surface-subtle border border-border;
-  }
-
-  .branch-chip :global(svg) {
-    @apply text-fg-muted shrink-0;
-  }
-
+  /* Banner for non-editable active branch */
   .banner {
-    @apply mt-3 rounded-sm px-2.5 py-2;
+    @apply mx-6 mt-4 rounded-md px-3 py-2;
     @apply text-xs text-yellow-800 bg-yellow-50 border border-yellow-200;
   }
 
-  .branch-list {
-    @apply flex flex-col mt-3 -mx-1.5;
+  /* Segmented tab control — Di's pattern (gray pill, white active) */
+  :global(.seg-list) {
+    @apply mx-6 mt-5 inline-flex p-0.5 gap-0.5 self-start;
+    @apply bg-gray-100 rounded-lg;
   }
 
-  .branch-row {
-    @apply flex items-center gap-x-2 rounded-md px-3 py-2 text-sm;
-    @apply text-fg-primary hover:bg-surface-hover hover:text-fg-accent;
-    @apply cursor-pointer outline-none no-underline;
+  :global(.seg-trigger) {
+    @apply px-3.5 py-1.5 rounded-md;
+    @apply text-[13px] font-medium text-fg-secondary;
+    @apply transition-colors cursor-pointer;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30;
   }
 
-  .separator {
-    @apply my-2 h-px bg-border;
+  :global(.seg-trigger[data-state="active"]) {
+    @apply bg-surface text-fg-primary shadow-sm;
   }
 
-  .new-branch-btn {
-    @apply flex w-full items-center gap-x-2 rounded-md px-3 py-2 text-sm font-medium;
-    @apply -mx-1.5 text-primary-600 hover:bg-surface-hover cursor-pointer;
+  :global(.seg-trigger:not([data-state="active"]):hover) {
+    @apply text-fg-primary;
   }
 
-  .form {
-    @apply flex flex-col gap-y-2 mt-3;
+  /* Body — locks 16px gap from tabs (or subtitle when no tabs) */
+  :global(.tab-body) {
+    @apply px-6 pt-4 pb-1 flex flex-col gap-1.5;
   }
 
   .form-label {
-    @apply text-xs font-medium text-fg-primary;
+    @apply text-[13px] font-medium text-fg-primary mb-1;
   }
 
   .branch-input {
-    @apply w-full text-sm font-mono px-3 py-2 rounded-md border border-gray-300;
-    @apply focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500;
+    @apply w-full font-mono text-[13.5px] px-3 py-2.5;
+    @apply bg-surface border border-gray-300 rounded-lg;
+    @apply text-fg-primary placeholder:text-fg-muted;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500;
+    @apply transition-shadow;
   }
 
-  .form-actions {
-    @apply flex items-center justify-end gap-x-2 mt-2;
+  /* Existing-branch dropdown trigger */
+  .branch-select {
+    @apply flex items-center justify-between gap-2 w-full;
+    @apply px-3 py-2.5 rounded-lg;
+    @apply bg-surface border border-gray-300 text-left;
+    @apply hover:bg-surface-hover transition-colors cursor-pointer;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500;
+  }
+
+  .branch-select.open {
+    @apply ring-2 ring-primary-500/20 border-primary-500;
+  }
+
+  .select-left {
+    @apply flex items-center gap-2 min-w-0 flex-1;
+  }
+
+  .select-name {
+    @apply font-mono text-[13px] text-fg-primary truncate;
+  }
+
+  .latest-tag {
+    @apply font-sans text-[10.5px] font-medium uppercase tracking-wider;
+    @apply text-fg-muted shrink-0;
+  }
+
+  :global(.branch-option) {
+    @apply flex items-center gap-2 px-2 py-1.5 cursor-pointer;
+  }
+
+  /* Footer separator and right-aligned button row */
+  .dlg-footer {
+    @apply flex items-center justify-end gap-2;
+    @apply px-6 py-4 mt-6 border-t border-border;
   }
 </style>
