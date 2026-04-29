@@ -162,15 +162,17 @@ type driver struct {
 }
 
 type ConfigProperties struct {
-	DatabaseURL string `mapstructure:"database_url"`
-	DSN         string `mapstructure:"dsn"`
-	Host        string `mapstructure:"host"`
-	Port        string `mapstructure:"port"`
-	DBname      string `mapstructure:"dbname"`
-	User        string `mapstructure:"user"`
-	Password    string `mapstructure:"password"`
-	SSLMode     string `mapstructure:"sslmode"`
-	LogQueries  bool   `mapstructure:"log_queries"`
+	DatabaseURL     string `mapstructure:"database_url"`
+	DSN             string `mapstructure:"dsn"`
+	Host            string `mapstructure:"host"`
+	Port            string `mapstructure:"port"`
+	DBname          string `mapstructure:"dbname"`
+	User            string `mapstructure:"user"`
+	Password        string `mapstructure:"password"`
+	SSLMode         string `mapstructure:"sslmode"`
+	MaxOpenConns    int    `mapstructure:"max_open_conns"`
+	ConnMaxLifetime string `mapstructure:"conn_max_lifetime"`
+	LogQueries      bool   `mapstructure:"log_queries"`
 }
 
 func (c *ConfigProperties) Validate() error {
@@ -204,6 +206,24 @@ func (c *ConfigProperties) Validate() error {
 		return fmt.Errorf("postgres: Only one of 'dsn' or [%s] can be set", strings.Join(set, ", "))
 	}
 	return nil
+}
+
+func (c *ConfigProperties) resolveMaxOpenConns() int {
+	if c.MaxOpenConns == 0 {
+		return 1
+	}
+	return c.MaxOpenConns
+}
+
+func (c *ConfigProperties) resolveConnMaxLifetime() (time.Duration, error) {
+	if c.ConnMaxLifetime == "" {
+		return time.Minute, nil
+	}
+	d, err := time.ParseDuration(c.ConnMaxLifetime)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse conn_max_lifetime: %w", err)
+	}
+	return d, nil
 }
 
 func (c *ConfigProperties) ResolveDSN() string {
@@ -396,12 +416,19 @@ func (c *connection) getDB(ctx context.Context) (*sqlx.DB, error) {
 		return c.db, c.dbErr
 	}
 
+	connMaxLifetime, err := c.config.resolveConnMaxLifetime()
+	if err != nil {
+		c.dbErr = err
+		return nil, c.dbErr
+	}
+
 	c.db, c.dbErr = sqlx.Connect("pgx", c.config.ResolveDSN())
 	if c.dbErr != nil {
 		return nil, c.dbErr
 	}
+	c.db.SetMaxOpenConns(c.config.resolveMaxOpenConns())
+	c.db.SetConnMaxLifetime(connMaxLifetime)
 	c.db.SetConnMaxIdleTime(time.Minute)
-	c.db.SetMaxOpenConns(1)
 	return c.db, c.dbErr
 }
 
