@@ -14,7 +14,12 @@
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { CheckIcon, ChevronDownIcon, GitBranchIcon } from "lucide-svelte";
+  import {
+    CheckIcon,
+    ChevronDownIcon,
+    GitBranchIcon,
+    GitBranchPlusIcon,
+  } from "lucide-svelte";
   import { useDevDeployments, invalidateDeployments } from "./use-edit-session";
 
   export let organization: string;
@@ -220,6 +225,7 @@
             class:is-active={currentTab === "existing"}
             onclick={() => (currentTab = "existing")}
           >
+            <GitBranchIcon size="14" />
             Existing branch
           </button>
           <button
@@ -230,6 +236,7 @@
             class:is-active={currentTab === "new"}
             onclick={() => (currentTab = "new")}
           >
+            <GitBranchPlusIcon size="14" />
             New branch
           </button>
         </div>
@@ -379,7 +386,7 @@
   }
 
   .seg-trigger {
-    @apply px-4 py-1.5 rounded-md border-0 bg-transparent;
+    @apply inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md border-0 bg-transparent;
     @apply text-[13px] font-medium text-slate-500;
     @apply transition-all cursor-pointer;
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40;
