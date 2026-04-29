@@ -23,16 +23,6 @@
 </script>
 
 <Tooltip distance={8}>
-  <Button type="secondary" href={projectHomeHref}>
-    <DoorOpen size="14" />
-    Exit
-  </Button>
-  <TooltipContent slot="tooltip-content" maxWidth="200px">
-    <span class="text-xs">Return to project home</span>
-  </TooltipContent>
-</Tooltip>
-
-<Tooltip distance={8}>
   <Button type="secondary" href={navHref}>{navLabel}</Button>
   <TooltipContent slot="tooltip-content" maxWidth="200px">
     <span class="text-xs">{navTooltip}</span>
@@ -48,5 +38,15 @@
   </Button>
   <TooltipContent slot="tooltip-content" maxWidth="200px">
     <span class="text-xs">Coming soon</span>
+  </TooltipContent>
+</Tooltip>
+
+<Tooltip distance={8}>
+  <Button type="secondary" href={projectHomeHref}>
+    <DoorOpen size="14" />
+    Exit
+  </Button>
+  <TooltipContent slot="tooltip-content" maxWidth="200px">
+    <span class="text-xs">Return to project home</span>
   </TooltipContent>
 </Tooltip>

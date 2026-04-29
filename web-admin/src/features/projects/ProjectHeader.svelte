@@ -187,7 +187,7 @@
   $: editPreviewMode = editContext && isEditPreviewRoute($page.url.pathname);
 </script>
 
-<Header borderBottom={!onProjectPage}>
+<Header borderBottom={!onProjectPage} tinted={editContext}>
   <HeaderLogo
     href={editContext ? `/${organization}/${project}` : rillLogoHref}
     logoUrl={editContext ? undefined : organizationLogoUrl}
