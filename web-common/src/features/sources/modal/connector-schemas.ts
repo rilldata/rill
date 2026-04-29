@@ -8,6 +8,7 @@ import { athenaSchema } from "../../templates/schemas/athena";
 import { azureSchema } from "../../templates/schemas/azure";
 import { bigquerySchema } from "../../templates/schemas/bigquery";
 import { claudeSchema } from "../../templates/schemas/claude";
+import { databricksSchema } from "../../templates/schemas/databricks";
 import { clickhouseSchema } from "../../templates/schemas/clickhouse";
 import { gcsSchema } from "../../templates/schemas/gcs";
 import { geminiSchema } from "../../templates/schemas/gemini";
@@ -20,6 +21,7 @@ import { snowflakeSchema } from "../../templates/schemas/snowflake";
 import { sqliteSchema } from "../../templates/schemas/sqlite";
 import { localFileSchema } from "../../templates/schemas/local_file";
 import { duckdbSchema } from "../../templates/schemas/duckdb";
+import { ducklakeSchema } from "../../templates/schemas/ducklake";
 import { deltaSchema } from "../../templates/schemas/delta";
 import { httpsSchema } from "../../templates/schemas/https";
 import { icebergSchema } from "../../templates/schemas/iceberg";
@@ -44,6 +46,7 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   sqlite: sqliteSchema,
   motherduck: motherduckSchema,
   duckdb: duckdbSchema,
+  ducklake: ducklakeSchema,
   druid: druidSchema,
   pinot: pinotSchema,
   starrocks: starrocksSchema,
@@ -56,6 +59,7 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   azure: azureSchema,
   delta: deltaSchema,
   claude: claudeSchema,
+  databricks: databricksSchema,
   openai: openaiSchema,
   gemini: geminiSchema,
 };

@@ -154,6 +154,24 @@ export async function invalidateAllMetricsViews(
   });
 }
 
+export async function invalidateCanvasQueries(
+  queryClient: QueryClient,
+  instanceId: string,
+) {
+  return queryClient.invalidateQueries({
+    predicate: (query: Query) => {
+      const key = query.queryKey;
+      // Format: ["QueryService", "resolveCanvas" | "resolveComponent", instanceId, ...]
+      return (
+        key[0] === "QueryService" &&
+        typeof key[1] === "string" &&
+        (key[1] === "resolveCanvas" || key[1] === "resolveComponent") &&
+        key[2] === instanceId
+      );
+    },
+  });
+}
+
 export async function invalidateProfilingQueries(
   queryClient: QueryClient,
   name: string,

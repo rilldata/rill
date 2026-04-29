@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import {
     Bot,
@@ -9,18 +8,18 @@
     PlusCircleIcon,
     Wand,
   } from "lucide-svelte";
+  import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
   import Button from "../../../components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry.ts";
   import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
-  import { behaviourEvent } from "../../../metrics/initMetrics.ts";
+  import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes.ts";
   import {
-    BehaviourEventAction,
-    BehaviourEventMedium,
-  } from "../../../metrics/service/BehaviourEventTypes.ts";
-  import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes.ts";
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "../../../metrics/service/MetricsTypes.ts";
   import {
     createRuntimeServiceCreateDirectoryMutation,
     createRuntimeServicePutFileMutation,
@@ -49,6 +48,8 @@
   let showAiConnectorDialog = false;
   let addDataModalOpen = false;
   let addDataConnector = "";
+
+  let screenName = MetricsEventScreenName.Home;
 
   const runtimeClient = useRuntimeClient();
 
@@ -85,16 +86,10 @@
   /**
    * Open the Add Data modal
    */
-  async function handleAddData() {
+  function handleAddData() {
     addDataModalOpen = true;
     addDataConnector = "";
-
-    await behaviourEvent?.fireSourceTriggerEvent(
-      BehaviourEventAction.SourceAdd,
-      BehaviourEventMedium.Button,
-      getScreenNameFromPage(),
-      MetricsEventSpace.LeftPanel,
-    );
+    screenName = getScreenNameFromPage();
   }
 
   /**
@@ -140,7 +135,7 @@
       createOnly: true,
     });
 
-    await goto(`/files/${path}`);
+    await navigateToFile(`/${path}`);
   }
 </script>
 
@@ -325,4 +320,12 @@
 
 <GenerateSampleData type="modal" bind:open={generateDataDialog} />
 
-<AddDataModal bind:open={addDataModalOpen} connector={addDataConnector} />
+<AddDataModal
+  config={{
+    medium: BehaviourEventMedium.Menu,
+    space: MetricsEventSpace.LeftPanel,
+    screen: screenName,
+  }}
+  bind:open={addDataModalOpen}
+  connector={addDataConnector}
+/>

@@ -7,9 +7,12 @@
 // Maps ConnectRPC method names to priority weights.
 // Higher priority = dispatched first.
 const MethodPriorities: Record<string, number> = {
+  // Critical: pre-dashboard-load; must complete before other dashboard queries
+  MetricsViewTimeRange: 100,
+  MetricsViewTimeRanges: 100,
+
   // High priority: user-visible data
   MetricsViewRows: 50,
-  MetricsViewTimeRange: 50,
   ColumnProfile: 45,
 
   // Medium: charts and summaries
@@ -18,11 +21,13 @@ const MethodPriorities: Record<string, number> = {
   ColumnCardinality: 35,
   MetricsViewAggregation: 30,
   MetricsViewTimeSeries: 30,
+  MetricsViewComparison: 30,
   NumericHistogram: 30,
   MetricsViewTotals: 30,
 
   // Low: exploratory queries
   MetricsViewToplist: 10,
+  MetricsViewAnnotations: 10,
   RugHistogram: 10,
   DescriptiveStatistics: 10,
 };
@@ -40,6 +45,8 @@ export function getPriorityForMethod(methodName: string): number {
 const ColumnQueryPriorities: Record<string, number> = {
   topk: 10,
   timeseries: 30,
+  "rollup-interval": 30,
+  "smallest-time-grain": 30,
   "numeric-histogram": 30,
   "rug-histogram": 10,
   "descriptive-statistics": 10,

@@ -49,12 +49,32 @@
               }
 
               try {
-                const parsed = JSON.parse(newValue);
-                const formatted = JSON.stringify(parsed, null, 2);
+                JSON.parse(newValue);
                 error = null;
-                component.updateProperty(KEY, formatted);
+                component.updateProperty(KEY, newValue);
               } catch {
                 error = "Invalid JSON";
+              }
+            }
+
+            // Reformat on blur only, to avoid cursor jumps during typing
+            if (update.focusChanged && !update.view.hasFocus) {
+              const newValue = update.state.doc.toString();
+              if (!newValue) return;
+              try {
+                const formatted = JSON.stringify(JSON.parse(newValue), null, 2);
+                if (formatted !== newValue) {
+                  update.view.dispatch({
+                    changes: {
+                      from: 0,
+                      to: update.state.doc.length,
+                      insert: formatted,
+                    },
+                  });
+                  component.updateProperty(KEY, formatted);
+                }
+              } catch {
+                // already flagged as invalid above
               }
             }
           }),

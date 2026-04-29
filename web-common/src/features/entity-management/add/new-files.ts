@@ -1,5 +1,5 @@
-import { goto } from "$app/navigation";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
+import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils.ts";
 import {
   ResourceKind,
@@ -27,7 +27,7 @@ export async function createResourceAndNavigate(
   if (!filePath) return;
 
   const previousScreenName = getScreenNameFromPage();
-  await goto(`/files${filePath}`);
+  await navigateToFile(filePath);
   await behaviourEvent?.fireSourceTriggerEvent(
     BehaviourEventAction.Navigate,
     BehaviourEventMedium.Button,

@@ -75,7 +75,7 @@
           status:
             resource?.meta?.reconcileStatus ??
             V1ReconcileStatus.RECONCILE_STATUS_UNSPECIFIED,
-          testErrors: resource?.model?.state?.testErrors ?? [],
+          testErrors: resource?.meta?.reconcileWarnings ?? [],
         });
       },
     },

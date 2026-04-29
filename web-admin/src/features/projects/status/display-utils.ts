@@ -1,12 +1,4 @@
 import { V1DeploymentStatus } from "@rilldata/web-admin/client";
-import type { V1Connector } from "@rilldata/web-common/runtime-client";
-import { formatConnectorName } from "@rilldata/web-common/features/resources/display-utils";
-
-// Re-export shared utilities from web-common
-export {
-  formatConnectorName,
-  formatEnvironmentName,
-} from "@rilldata/web-common/features/resources/display-utils";
 
 /**
  * Returns the Tailwind CSS class for a deployment status indicator dot.
@@ -28,6 +20,18 @@ export function getStatusDotClass(status: V1DeploymentStatus): string {
     default:
       return "bg-gray-400"; // Gray - Not deployed
   }
+}
+
+/**
+ * Returns true for deployment statuses that represent in-progress transitions.
+ */
+export function isTransitoryStatus(status: V1DeploymentStatus): boolean {
+  return (
+    status === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING ||
+    status === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING ||
+    status === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING ||
+    status === V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING
+  );
 }
 
 /**
@@ -56,33 +60,6 @@ export function getStatusLabel(status: V1DeploymentStatus): string {
     default:
       return "Not deployed";
   }
-}
-
-/**
- * Returns the display label for the OLAP engine, including MotherDuck detection
- * and a management suffix (Rill-managed / Self-managed) where applicable.
- *
- * MotherDuck is detected by checking whether the connector's path starts with "md:"
- * or a token is configured — the connector name itself may be anything.
- *
- * @param connector - The OLAP connector from projectConnectors, or undefined
- * @returns Display label, e.g. "DuckDB", "MotherDuck (Self-managed)", "ClickHouse (Rill-managed)"
- */
-export function getOlapEngineLabel(connector: V1Connector | undefined): string {
-  if (!connector) return "DuckDB";
-
-  const isDuckDB = connector.type === "duckdb";
-  const isMotherDuck =
-    isDuckDB &&
-    (String(connector.config?.path ?? "").startsWith("md:") ||
-      !!connector.config?.token);
-  const name = formatConnectorName(
-    isMotherDuck ? "motherduck" : connector.type,
-  );
-
-  // Show management suffix for Rill-managed connectors
-  if (connector.provision) return `${name} (Rill-managed)`;
-  return name;
 }
 
 /**

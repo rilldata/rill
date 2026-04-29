@@ -24,11 +24,17 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { DateTime } from "luxon";
 
-  export let organization: string;
-  export let subscription: V1Subscription;
-  export let plan: V1BillingPlan;
+  let {
+    organization,
+    subscription,
+    plan,
+  }: {
+    organization: string;
+    subscription: V1Subscription;
+    plan: V1BillingPlan;
+  } = $props();
 
-  $: planCanceller = createAdminServiceCancelBillingSubscription();
+  let planCanceller = $derived(createAdminServiceCancelBillingSubscription());
   async function handleCancelPlan() {
     await $planCanceller.mutateAsync({
       org: organization,
@@ -43,16 +49,18 @@
     open = false;
   }
 
-  let open = false;
+  let open = $state(false);
 
-  $: error = getErrorForMutation($planCanceller);
-  $: currentBillingCycleEndDate = DateTime.fromJSDate(
-    new Date(subscription.currentBillingCycleEndDate),
-  ).toLocaleString(DateTime.DATE_MED);
+  let error = $derived(getErrorForMutation($planCanceller));
+  let currentBillingCycleEndDate = $derived(
+    DateTime.fromJSDate(
+      new Date(subscription.currentBillingCycleEndDate),
+    ).toLocaleString(DateTime.DATE_MED),
+  );
 </script>
 
 <SettingsContainer title={plan?.displayName}>
-  <div slot="body">
+  <div>
     Next billing cycle will start on
     <b>{getNextBillingCycleDate(subscription.currentBillingCycleEndDate)}</b>.
     <a
@@ -62,44 +70,48 @@
     >
     <PlanQuotas {organization} />
   </div>
-  <svelte:fragment slot="contact">
+  {#snippet contact()}
     <span>For any questions,</span>
     <ContactUs />
-  </svelte:fragment>
+  {/snippet}
 
-  <AlertDialog bind:open slot="action">
-    <AlertDialogTrigger>
-      {#snippet child({ props })}
-        <Button {...props} type="tertiary">Cancel plan</Button>
-      {/snippet}
-    </AlertDialogTrigger>
-    <AlertDialogContent>
-      <AlertDialogHeader>
-        <AlertDialogTitle>Are you sure you want to cancel?</AlertDialogTitle>
+  {#snippet action()}
+    <AlertDialog bind:open>
+      <AlertDialogTrigger>
+        {#snippet child({ props })}
+          <Button {...props} type="tertiary">Cancel plan</Button>
+        {/snippet}
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Cancel your Team plan?</AlertDialogTitle>
 
-        <AlertDialogDescription>
-          If you cancel your plan, you'll still be able to access your account
-          through <span class="font-semibold"
-            >{currentBillingCycleEndDate}.</span
+          <AlertDialogDescription>
+            If you cancel your plan, you'll still be able to access your account
+            through <span class="font-semibold"
+              >{currentBillingCycleEndDate}.</span
+            >
+          </AlertDialogDescription>
+
+          {#if error}
+            <div class="text-red-500 text-sm py-px">
+              {error}
+            </div>
+          {/if}
+        </AlertDialogHeader>
+        <AlertDialogFooter class="mt-3">
+          <Button
+            type="secondary"
+            onClick={handleCancelPlan}
+            loading={$planCanceller.isPending}
           >
-        </AlertDialogDescription>
-
-        {#if error}
-          <div class="text-red-500 text-sm py-px">
-            {error}
-          </div>
-        {/if}
-      </AlertDialogHeader>
-      <AlertDialogFooter class="mt-3">
-        <Button
-          type="secondary"
-          onClick={handleCancelPlan}
-          loading={$planCanceller.isPending}
-        >
-          Cancel plan
-        </Button>
-        <Button type="primary" onClick={() => (open = false)}>Keep plan</Button>
-      </AlertDialogFooter>
-    </AlertDialogContent>
-  </AlertDialog>
+            Cancel plan
+          </Button>
+          <Button type="primary" onClick={() => (open = false)}
+            >Keep plan</Button
+          >
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  {/snippet}
 </SettingsContainer>

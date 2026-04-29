@@ -23,7 +23,9 @@
   import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matcher";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import ReconcilingSpinner from "../entity-management/ReconcilingSpinner.svelte";
+  import ReconcileWarningPanel from "../entity-management/ReconcileWarningPanel.svelte";
   import { getUserFriendlyError } from "../models/error-utils";
+  import ExplainAndFixErrorButton from "@rilldata/web-common/features/chat/ExplainAndFixErrorButton.svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -138,6 +140,8 @@
       {/key}
     </WorkspaceEditorContainer>
 
+    <ReconcileWarningPanel {fileArtifact} />
+
     {#if $tableVisible}
       <WorkspaceTableContainer {filePath}>
         {#if isResourceReconciling}
@@ -157,6 +161,9 @@
                   {getUserFriendlyError(error.message ?? "")}
                 </div>
               {/each}
+              <div class="flex justify-start pt-1">
+                <ExplainAndFixErrorButton {filePath} />
+              </div>
             </div>
           {/if}
         </svelte:fragment>

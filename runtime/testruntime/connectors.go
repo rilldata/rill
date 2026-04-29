@@ -80,6 +80,14 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		require.NotEmpty(t, dsn, "RILL_RUNTIME_SNOWFLAKE_TEST_DSN not configured")
 		return map[string]string{"dsn": dsn}
 	},
+	// Databricks connector connects to a real Databricks SQL warehouse using dsn in RILL_RUNTIME_DATABRICKS_TEST_DSN.
+	// The test dataset is pre-populated with tables defined in testdata/init_data/databricks_init_data.sql.
+	"databricks": func(t TestingT) map[string]string {
+		loadDotEnv(t)
+		dsn := os.Getenv("RILL_RUNTIME_DATABRICKS_TEST_DSN")
+		require.NotEmpty(t, dsn, "RILL_RUNTIME_DATABRICKS_TEST_DSN not configured")
+		return map[string]string{"dsn": dsn}
+	},
 	"motherduck": func(t TestingT) map[string]string {
 		testmode.Expensive(t)
 		loadDotEnv(t)

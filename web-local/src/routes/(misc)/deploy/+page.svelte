@@ -3,7 +3,7 @@
   import { page } from "$app/stores";
   import CTAMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import CancelCircleInverse from "@rilldata/web-common/components/icons/CancelCircleInverse.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import LoadingSpinner from "@rilldata/web-common/components/LoadingSpinner.svelte";
   import {
     getCreateOrganizationRoute,
     getSelectOrganizationRoute,
@@ -21,7 +21,6 @@
   } from "@rilldata/web-common/runtime-client/local-service";
   import CTAHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CTANeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { onMount } from "svelte";
   import { get } from "svelte/store";
 
@@ -108,9 +107,7 @@
 </div>
 
 {#if loading}
-  <div class="h-36">
-    <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
-  </div>
+  <LoadingSpinner />
   <CTAHeader variant="bold">
     Hang tight! We're deploying your project...
   </CTAHeader>

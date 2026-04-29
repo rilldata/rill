@@ -2,6 +2,7 @@ package project
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -170,10 +171,11 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 }
 
 type resourceTableRow struct {
-	Type   string `header:"type"`
-	Name   string `header:"name"`
-	Status string `header:"status"`
-	Error  string `header:"error"`
+	Type    string `header:"type"`
+	Name    string `header:"name"`
+	Status  string `header:"status"`
+	Error   string `header:"error"`
+	Warning string `header:"warning"`
 }
 
 func newResourceTableRow(r *runtimev1.Resource) *resourceTableRow {
@@ -182,11 +184,17 @@ func newResourceTableRow(r *runtimev1.Resource) *resourceTableRow {
 		truncErr = truncErr[:80] + "..."
 	}
 
+	truncWarn := strings.Join(r.Meta.ReconcileWarnings, "; ")
+	if len(truncWarn) > 80 {
+		truncWarn = truncWarn[:80] + "..."
+	}
+
 	return &resourceTableRow{
-		Type:   runtime.PrettifyResourceKind(r.Meta.Name.Kind),
-		Name:   r.Meta.Name.Name,
-		Status: runtime.PrettifyReconcileStatus(r.Meta.ReconcileStatus),
-		Error:  truncErr,
+		Type:    runtime.PrettifyResourceKind(r.Meta.Name.Kind),
+		Name:    r.Meta.Name.Name,
+		Status:  runtime.PrettifyReconcileStatus(r.Meta.ReconcileStatus),
+		Error:   truncErr,
+		Warning: truncWarn,
 	}
 }
 

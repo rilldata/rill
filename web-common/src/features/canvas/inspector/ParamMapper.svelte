@@ -3,14 +3,18 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
+  import ChevronRight from "@rilldata/web-common/components/icons/ChevronRight.svelte";
   import { BaseChart } from "@rilldata/web-common/features/canvas/components/charts/BaseChart";
+  import VegaSpecInput from "@rilldata/web-common/features/canvas/inspector/chart/VegaSpecInput.svelte";
   import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
   import { PivotCanvasComponent } from "../components/pivot";
   import type { ComponentSpec } from "../components/types";
+  import AIGenerateButton from "./AIGenerateButton.svelte";
   import AlignmentInput from "./AlignmentInput.svelte";
   import CanvasFieldSwitcher from "./CanvasFieldSwitcher.svelte";
   import ChartTypeSelector from "./chart/ChartTypeSelector.svelte";
   import MarkSelector from "./chart/MarkSelector.svelte";
+  import MetricsSQLInput from "./chart/MetricsSQLInput.svelte";
   import PositionalFieldConfig from "./chart/PositionalFieldConfig.svelte";
   import ComparisonInput from "./ComparisonInput.svelte";
   import MultiFieldInput from "./fields/MultiFieldInput.svelte";
@@ -21,6 +25,16 @@
   import type { AllKeys, ComponentInputParam } from "./types";
 
   export let component: BaseCanvasComponent;
+
+  // Track collapsed state for collapsible sections (metrics_sql, vega_spec)
+  let collapsedSections: Record<string, boolean> = {
+    metrics_sql: false,
+    vega_spec: false,
+  };
+
+  function toggleSection(key: string) {
+    collapsedSections[key] = !collapsedSections[key];
+  }
 
   $: ({
     specStore,
@@ -61,8 +75,12 @@
         class="component-param"
         class:grouped={config.meta?.layout === "grouped"}
       >
-        <!-- TEXT, NUMBER, RILL_TIME -->
-        {#if config.type === "text" || config.type === "number" || config.type === "rill_time"}
+        <!-- AI GENERATE (opens dev agent sidebar) -->
+        {#if config.type === "ai_generate"}
+          <AIGenerateButton {component} />
+
+          <!-- TEXT, NUMBER, RILL_TIME -->
+        {:else if config.type === "text" || config.type === "number" || config.type === "rill_time"}
           <Input
             inputType={config.type === "number" ? "number" : "text"}
             capitalizeLabel={false}
@@ -135,7 +153,7 @@
           </div>
 
           <!-- TEXT AREA -->
-        {:else if config.type === "textArea"}
+        {:else if config.type === "textarea"}
           <div class="flex flex-col gap-y-2">
             <InputLabel
               hint={config?.description}
@@ -154,6 +172,49 @@
             ></textarea>
           </div>
 
+          <!-- METRICS SQL -->
+        {:else if config.type === "metrics_sql"}
+          <button class="collapsible-header" onclick={() => toggleSection(key)}>
+            <span class="chevron" class:expanded={!collapsedSections[key]}>
+              <ChevronRight size="12px" />
+            </span>
+            <span class="collapsible-label">{config.label ?? key}</span>
+            {#if Array.isArray(localParamValues[key])}
+              <span class="collapsible-badge"
+                >{localParamValues[key].length}</span
+              >
+            {/if}
+          </button>
+          {#if !collapsedSections[key]}
+            <MetricsSQLInput
+              {key}
+              label={undefined}
+              description={config?.description}
+              value={localParamValues[key]}
+              onChange={(updatedSQL) => {
+                localParamValues[key] = updatedSQL;
+                component.updateProperty(key, updatedSQL);
+              }}
+            />
+          {/if}
+
+          <!-- VEGA SPEC -->
+        {:else if config.type === "vega_spec"}
+          <button class="collapsible-header" onclick={() => toggleSection(key)}>
+            <span class="chevron" class:expanded={!collapsedSections[key]}>
+              <ChevronRight size="12px" />
+            </span>
+            <span class="collapsible-label">{config.label ?? key}</span>
+          </button>
+          {#if !collapsedSections[key]}
+            <VegaSpecInput
+              value={localParamValues[key]}
+              onChange={(updatedSpec) => {
+                localParamValues[key] = updatedSpec;
+                component.updateProperty(key, updatedSpec);
+              }}
+            />
+          {/if}
           <!-- SELECT DROPDOWN -->
         {:else if config.type === "select"}
           <Select
@@ -258,5 +319,32 @@
   .component-param.grouped {
     @apply py-0;
     @apply border-none;
+  }
+
+  .collapsible-header {
+    @apply flex items-center gap-1.5 w-full py-1 cursor-pointer;
+    @apply text-xs font-semibold text-gray-600;
+    @apply bg-transparent border-none text-left;
+  }
+
+  .collapsible-header:hover {
+    @apply text-gray-800;
+  }
+
+  .chevron {
+    @apply transition-transform duration-150;
+    @apply flex items-center;
+  }
+
+  .chevron.expanded {
+    transform: rotate(90deg);
+  }
+
+  .collapsible-label {
+    @apply flex-1;
+  }
+
+  .collapsible-badge {
+    @apply text-[10px] text-gray-400 bg-gray-100 rounded-full px-1.5 py-0.5;
   }
 </style>

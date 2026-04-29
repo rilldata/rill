@@ -1,8 +1,8 @@
 import { get, writable } from "svelte/store";
-import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
 import { sessionStorageStore } from "@rilldata/web-common/lib/store-utils/session-storage";
+import { explicitLocalStorageStore } from "@rilldata/web-common/lib/store-utils/local-storage.ts";
 
-type Theme = "light" | "dark" | "system";
+export type ThemeMode = "light" | "dark" | "system";
 
 function isEmbedEnvironment(): boolean {
   if (typeof window === "undefined") return false;
@@ -13,12 +13,15 @@ function isEmbedEnvironment(): boolean {
   }
 }
 
+const THEME_LOCAL_STORAGE_KEY = "rill:theme";
+const THEME_SESSION_STORAGE_KEY = "rill:embed:theme-mode";
+
 class ThemeControl {
   public current = writable<"light" | "dark">("light");
   private darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
   private preferenceStore = isEmbedEnvironment()
-    ? sessionStorageStore<Theme>("rill:embed:theme-mode", "light")
-    : localStorageStore<Theme>("rill:theme", "light");
+    ? sessionStorageStore<ThemeMode>(THEME_SESSION_STORAGE_KEY, "light")
+    : explicitLocalStorageStore<ThemeMode>(THEME_LOCAL_STORAGE_KEY, "light");
 
   public subscribe = this.current.subscribe;
   public preference = { subscribe: this.preferenceStore.subscribe };
@@ -48,7 +51,7 @@ class ThemeControl {
     });
   };
 
-  public set = {
+  public set: Record<ThemeMode, () => void> = {
     light: () => {
       this.preferenceStore.set("light");
       this.removeDark();
@@ -80,3 +83,17 @@ class ThemeControl {
 }
 
 export const themeControl = new ThemeControl();
+
+/**
+ * Returns true if the user needs to select a theme — i.e. no theme has been
+ * persisted to localStorage yet. Always returns false in the embed context,
+ * which manages its own ephemeral theme preference.
+ */
+export function isThemeSelectionNeeded(): boolean {
+  if (isEmbedEnvironment()) return false;
+  try {
+    return !localStorage.getItem(THEME_LOCAL_STORAGE_KEY);
+  } catch {
+    return false;
+  }
+}

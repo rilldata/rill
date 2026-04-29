@@ -69,8 +69,7 @@ echo "filters: admin=$ADMIN local=$LOCAL common=$COMMON"
 
 echo ""
 echo "== NPM Install =="
-# https://typicode.github.io/husky/how-to.html#ci-server-and-docker
-HUSKY=0 npm ci
+npm ci
 
 if [[ "$COMMON" == "true" ]]; then
   echo ""
@@ -105,6 +104,10 @@ fi
 echo ""
 echo "== type check non-svelte files (with temporary whitelist) =="
 bash ./scripts/tsc-with-whitelist.sh || exit_code=$?
+
+echo ""
+echo "== edit route parity check =="
+node ./scripts/check-edit-route-parity.js || exit_code=$?
 
 # Exit with failure if any check failed (only relevant when not in fail-fast mode)
 exit "${exit_code:-0}"

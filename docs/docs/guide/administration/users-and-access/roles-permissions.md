@@ -22,7 +22,7 @@ There are four roles available at the organization-level: **Admin**, **Editor**,
 | Permission           | Description                                          | Admin | Editor | Viewer | Guest |
 | :------------------- | :--------------------------------------------------- | ----: | -----: | -----: | ----: |
 | `read_org`           | View basic info about the organization               |     ✔ |      ✔ |      ✔ |     ✔ |
-| `manage_org`         | Change organization settings                         |     ✔ |        |        |       |
+| `manage_org`         | Change organization settings, manage service accounts and service tokens |     ✔ |        |        |       |
 | `read_projects`      | View projects you're a member of in the organization |     ✔ |      ✔ |      ✔ |     ✔ |
 | `create_projects`    | Create new projects in the organization              |     ✔ |      ✔ |        |       |
 | `manage_projects`    | Act as an admin on all projects in the organization  |     ✔ |        |        |       |
@@ -41,7 +41,10 @@ There are three roles available at the project-level: **Admin**, **Editor**, and
 | `read_prod`                    | View dashboards deployed from the production (main) branch |     ✔ |      ✔ |      ✔ |
 | `read_prod_status`             | View logs for the production deployment                    |     ✔ |      ✔ |        |
 | `manage_prod`                  | Trigger actions on the production deployment               |     ✔ |        |        |
-| `read_provisioner_resources`   | View managed resources for the project                     |     ✔ |        |        |
+| `read_dev`                     | View dev deployments                                       |     ✔ |      ✔ |      ✔ |
+| `read_dev_status`              | View logs for dev deployments                              |     ✔ |      ✔ |        |
+| `manage_dev`                   | Trigger actions on dev deployments                         |     ✔ |      ✔ |        |
+| `read_provisioner_resources`   | View managed resources for the project                     |     ✔ |      ✔ |        |
 | `manage_provisioner_resources` | Add or remove managed resources for the project            |     ✔ |        |        |
 | `read_project_members`         | View members of the project                                |     ✔ |      ✔ |        |
 | `manage_project_members`       | Add and edit non-admin project members                     |     ✔ |      ✔ |        |

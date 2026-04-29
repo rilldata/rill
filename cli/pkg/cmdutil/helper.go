@@ -694,6 +694,12 @@ func hashStr(ss ...string) string {
 }
 
 // isTerminal reports whether both stdin and stdout are connected to an interactive terminal.
+// It can be overridden by setting RILL_DOCS_GENERATE=true (used in CI for docs generation).
 func isTerminal() bool {
+	if os.Getenv("RILL_DOCS_GENERATE") == "true" {
+		// Used for generating docs with `make docs.generate`.
+		// This ensures --interactive defaults to "true", which makes the generated docs appear the way the CLI help menus appear to a real user (e.g. strips agent instructions).
+		return true
+	}
 	return term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd()))
 }

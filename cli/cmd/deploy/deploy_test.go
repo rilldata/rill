@@ -176,8 +176,9 @@ func testSelfHostedDeploy(t *testing.T, adminClient *client.Client, ghClient *gi
 	tempDir := initRillProject(t)
 
 	// create a github repo
+	repoName := "self-hosted-git-repo" + uuid.NewString()[:8]
 	repo, _, err := ghClient.Repositories.Create(t.Context(), "", &github.Repository{
-		Name:    github.Ptr("self-hosted-git-repo" + uuid.NewString()[:8]),
+		Name:    github.Ptr(repoName),
 		Private: github.Ptr(true),
 	})
 	require.NoError(t, err)
@@ -189,6 +190,9 @@ func testSelfHostedDeploy(t *testing.T, adminClient *client.Client, ghClient *gi
 		_, err = ghClient.Repositories.Delete(context.Background(), owner, ghrepo)
 		require.NoError(t, err, "failed to delete github repo %s/%s", owner, ghrepo)
 	})
+
+	// the create repo API does not wait for repo creation to be fully processed; poll until ready
+	waitForGithubRepo(t, ghClient, *repo.Owner.Login, repoName)
 
 	author := &object.Signature{
 		Name:  "Rill test user",
@@ -246,8 +250,9 @@ func testSelfHostedMonorepoDeploy(t *testing.T, adminClient *client.Client, ghCl
 	tempDir := initMonorepo(t)
 
 	// create a github repo
+	repoName := "self-hosted-monorepo" + uuid.NewString()[:8]
 	repo, _, err := ghClient.Repositories.Create(t.Context(), "", &github.Repository{
-		Name:    github.Ptr("self-hosted-monorepo" + uuid.NewString()[:8]),
+		Name:    github.Ptr(repoName),
 		Private: github.Ptr(true),
 	})
 	require.NoError(t, err)
@@ -259,6 +264,9 @@ func testSelfHostedMonorepoDeploy(t *testing.T, adminClient *client.Client, ghCl
 		_, err = ghClient.Repositories.Delete(context.Background(), owner, ghrepo)
 		require.NoError(t, err, "failed to delete github repo %s/%s", owner, ghrepo)
 	})
+
+	// the create repo API does not wait for repo creation to be fully processed; poll until ready
+	waitForGithubRepo(t, ghClient, *repo.Owner.Login, repoName)
 
 	author := &object.Signature{
 		Name:  "Rill test user",
@@ -503,4 +511,21 @@ func authGitURL(t *testing.T, repoURL, token string) string {
 	require.NoError(t, err)
 	u.User = url.UserPassword("x-access-token", token)
 	return u.String()
+}
+
+func waitForGithubRepo(t *testing.T, client *github.Client, owner, repo string) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Minute)
+	defer cancel()
+	for {
+		select {
+		case <-ctx.Done():
+			require.NoError(t, ctx.Err(), "timed out waiting for github repo %s/%s to be ready", owner, repo)
+		case <-time.After(2 * time.Second):
+		}
+		_, _, err := client.Repositories.Get(ctx, owner, repo)
+		if err == nil {
+			return
+		}
+	}
 }

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { createRuntimeServiceUnpackExampleMutation } from "../../runtime-client";
   import { useRuntimeClient } from "../../runtime-client/v2";
@@ -8,12 +7,16 @@
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { createResourceAndNavigate } from "@rilldata/web-common/features/entity-management/add/new-files.ts";
   import { EXAMPLES } from "@rilldata/web-common/features/welcome/constants.ts";
+  import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics.ts";
   import {
     BehaviourEventAction,
     BehaviourEventMedium,
   } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
-  import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes.ts";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "@rilldata/web-common/metrics/service/MetricsTypes.ts";
   import { LightbulbIcon, PresentationIcon } from "lucide-svelte";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
@@ -45,7 +48,7 @@
       });
 
       await waitUntil(() => fileArtifacts.hasFileArtifact(example.firstFile));
-      await goto(`/files${example.firstFile}`);
+      await navigateToFile(example.firstFile);
     } catch (err) {
       console.error("Failed to create example project", err);
     }
@@ -125,6 +128,11 @@
 </div>
 
 <AddDataModal
+  config={{
+    medium: BehaviourEventMedium.Card,
+    space: MetricsEventSpace.Workspace,
+    screen: MetricsEventScreenName.Home,
+  }}
   bind:open={openAddDataDialog}
   schema={selectedAddDataSchema ?? undefined}
 />

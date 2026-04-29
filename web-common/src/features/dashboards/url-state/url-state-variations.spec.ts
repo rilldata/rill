@@ -67,7 +67,7 @@ import {
   AD_BIDS_TOGGLE_LEADERBOARD_SHOW_CONTEXT_FOR_ALL_MEASURES,
   AD_BIDS_TOGGLE_PIVOT,
   AD_BIDS_SET_DYNAMIC_Y_AXIS_SCALE,
-  AD_BIDS_SET_FORCE_LINE_CHART,
+  AD_BIDS_SET_CHART_TYPE_BAR,
   applyMutationsToDashboard,
   type TestDashboardMutation,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
@@ -414,7 +414,7 @@ const TestCases: {
       "Time dimensional details with preset and has time dimensional details in state different than presets",
     mutations: [AD_BIDS_CLOSE_TDD],
     preset: AD_BIDS_TIME_DIMENSION_DETAILS_PRESET,
-    expectedSearch: "",
+    expectedSearch: "chart_type=stacked_bar",
     legacyNotSupported: true,
   },
 
@@ -532,15 +532,15 @@ const TestCases: {
     legacyNotSupported: true,
   },
   {
-    title: "Force line chart enabled",
-    mutations: [AD_BIDS_SET_FORCE_LINE_CHART],
-    expectedSearch: "line_chart=true",
+    title: "Chart type set to bar",
+    mutations: [AD_BIDS_SET_CHART_TYPE_BAR],
+    expectedSearch: "chart_type=bar",
     legacyNotSupported: true,
   },
   {
     title: "Both chart settings enabled",
-    mutations: [AD_BIDS_SET_DYNAMIC_Y_AXIS_SCALE, AD_BIDS_SET_FORCE_LINE_CHART],
-    expectedSearch: "dyn_y=true&line_chart=true",
+    mutations: [AD_BIDS_SET_DYNAMIC_Y_AXIS_SCALE, AD_BIDS_SET_CHART_TYPE_BAR],
+    expectedSearch: "dyn_y=true&chart_type=bar",
     legacyNotSupported: true,
   },
 ];

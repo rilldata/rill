@@ -7,8 +7,9 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { getSupportedTopConnectors } from "@rilldata/web-common/features/add-data/manager/selectors.ts";
 
-  export let startConnectorSelection: (name: string | null) => void;
+  export let startConnectorSelection: (name: string | null) => void = () => {};
   export let onWelcomeScreen = false;
+  export let pathPrefix = "";
 
   const runtimeClient = useRuntimeClient();
   const topConnectors = getSupportedTopConnectors(runtimeClient);
@@ -24,9 +25,12 @@
 <div
   class="container {onWelcomeScreen ? 'container-welcome' : 'container-home'}"
 >
-  <button
+  <svelte:element
+    this={onWelcomeScreen ? "a" : "button"}
+    {...onWelcomeScreen
+      ? { href: `${pathPrefix}/welcome/add-data` }
+      : { onclick: () => startConnectorSelection(null) }}
     class="all-connectors"
-    onclick={() => startConnectorSelection(null)}
     aria-label="Connect your data"
   >
     <div class="header">
@@ -43,20 +47,23 @@
         <ArrowRightIcon class="w-4 h-4" />
       </div>
     </div>
-  </button>
+  </svelte:element>
 
   <div class="primary-connectors" role="group">
     {#each $topConnectors as connector (connector)}
       {@const icon = connectorIconMapping[connector]}
       {@const label = connectorLabelMapping[connector] ?? connector}
-      <button
+      <svelte:element
+        this={onWelcomeScreen ? "a" : "button"}
         class="primary-connector-entry"
-        onclick={(e) => selectConnector(e, connector)}
+        {...onWelcomeScreen
+          ? { href: `${pathPrefix}/welcome/add-data?schema=${connector}` }
+          : { onclick: (e) => selectConnector(e, connector) }}
         aria-label={`Connect to ${connector}`}
       >
         <svelte:component this={icon} />
         <span>{label}</span>
-      </button>
+      </svelte:element>
     {/each}
   </div>
 </div>
@@ -111,7 +118,7 @@
 
   .primary-connector-entry {
     @apply flex flex-row gap-2 items-center px-3 py-2;
-    @apply text-sm bg-surface-overlay rounded-md border;
+    @apply text-sm text-fg-primary bg-surface-overlay rounded-md border;
   }
   .container-welcome .primary-connector-entry:hover {
     @apply border-accent-primary-action shadow-lg cursor-pointer;

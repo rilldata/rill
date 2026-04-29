@@ -108,7 +108,7 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
   - **`name`** - _[string]_ - a stable identifier for the measure _(required)_
 
-  - **`display_name`** - _[string]_ - the display name of your measure. _(required)_
+  - **`display_name`** - _[string]_ - the display name of your measure. 
 
   - **`label`** - _[string]_ - a label for your measure, deprecated use display_name 
 
@@ -118,7 +118,7 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
   - **`type`** - _[string]_ - Measure calculation type: "simple" for basic aggregations, "derived" for calculations using other measures, or "time_comparison" for period-over-period analysis. Defaults to "simple" unless dependencies exist. 
 
-  - **`expression`** - _[string]_ - a combination of operators and functions for aggregations _(required)_
+  - **`expression`** - _[string]_ - a combination of operators and functions for aggregations 
 
   - **`window`** - _[anyOf]_ - A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration. For more information, see the [window functions](/developers/build/metrics-view/measures/windows) documentation. 
 
@@ -250,19 +250,61 @@ _[array of object]_ - Used to define annotations that can be displayed on charts
 
   - **`connector`** - _[string]_ - Refers to the connector to use for the annotation 
 
-  - **`measures`** - _[anyOf]_ - Specifies which measures to apply the annotation to. Applies to all measures if not specified 
+  - **`measures`** - _[oneOf]_ - Specifies which measures to apply the annotation to. Applies to all measures if not specified 
 
-    - **option 1** - _[string]_ - Simple field name as a string.
+    - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
 
-    - **option 2** - _[array of anyOf]_ - List of field selectors, each can be a string or an object with detailed configuration.
+    - **option 2** - _[array of string]_ - Explicit list of fields to include in the selection
 
-      - **option 1** - _[string]_ - Shorthand field selector, interpreted as the name.
+    - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
 
-      - **option 2** - _[object]_ - Detailed field selector configuration with name and optional time grain.
+      - **`regex`** - _[string]_ - Select fields using a regular expression 
 
-        - **`name`** - _[string]_ - Name of the field to select. _(required)_
+      - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic 
 
-        - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
+      - **`exclude`** - _[object]_ - Select all fields except those listed here 
+
+### `rollups`
+
+_[array of object]_ - Pre-aggregated rollup tables that can be used to accelerate queries. When a query's dimensions, measures, time grain, and time range match a rollup, the query is automatically routed to the rollup table instead of the base table. 
+
+  - **`model`** - _[string]_ - Refers to the model or table powering the rollup (required) _(required)_
+
+  - **`database`** - _[string]_ - Refers to the database to use in the OLAP engine 
+
+  - **`database_schema`** - _[string]_ - Refers to the schema to use in the OLAP engine 
+
+  - **`time_grain`** - _[string]_ - The time grain of the rollup (required). Valid values are: millisecond, second, minute, hour, day, week, month, quarter, year _(required)_
+
+  - **`time_zone`** - _[string]_ - IANA timezone of the rollup table (e.g. America/New_York). For day+ grains, queries are only routed to the rollup if the query timezone matches. 
+
+  - **`dimensions`** - _[oneOf]_ - Optional field selectors for dimensions to include in the rollup from the base metrics view. If not specified, all dimensions are included. 
+
+    - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
+
+    - **option 2** - _[array of string]_ - Explicit list of fields to include in the selection
+
+    - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
+
+      - **`regex`** - _[string]_ - Select fields using a regular expression 
+
+      - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic 
+
+      - **`exclude`** - _[object]_ - Select all fields except those listed here 
+
+  - **`measures`** - _[oneOf]_ - Optional field selectors for measures to include in the rollup from the base metrics view. If not specified, all measures are included. 
+
+    - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
+
+    - **option 2** - _[array of string]_ - Explicit list of fields to include in the selection
+
+    - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
+
+      - **`regex`** - _[string]_ - Select fields using a regular expression 
+
+      - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic 
+
+      - **`exclude`** - _[object]_ - Select all fields except those listed here 
 
 ### `security`
 

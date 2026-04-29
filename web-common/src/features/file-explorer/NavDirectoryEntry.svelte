@@ -11,6 +11,7 @@
   import {
     type Directory,
     getDirectoryHasErrors,
+    getDirectoryHasWarnings,
   } from "@rilldata/web-common/features/file-explorer/transform-file-list";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -43,6 +44,7 @@
   $: isProtectedDirectory = PROTECTED_DIRECTORIES.includes(topLevelFolder);
 
   $: hasErrors = getDirectoryHasErrors(queryClient, instanceId, dir);
+  $: hasWarnings = getDirectoryHasWarnings(queryClient, instanceId, dir);
 
   $: currentDirectoryDirectoryNamesQuery = useDirectoryNamesInDirectory(
     runtimeClient,
@@ -94,7 +96,11 @@
     className="flex-none text-fg-muted {expanded ? '' : 'transform -rotate-90'}"
     size="14px"
   />
-  <span class="truncate w-full" class:text-red-600={$hasErrors}>
+  <span
+    class="truncate w-full"
+    class:text-red-600={$hasErrors}
+    class:text-yellow-600={$hasWarnings && !$hasErrors}
+  >
     {dir.name}
   </span>
   {#if !isProtectedDirectory}

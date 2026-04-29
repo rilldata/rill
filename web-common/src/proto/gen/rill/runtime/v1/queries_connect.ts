@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { ColumnCardinalityRequest, ColumnCardinalityResponse, ColumnDescriptiveStatisticsRequest, ColumnDescriptiveStatisticsResponse, ColumnNullCountRequest, ColumnNullCountResponse, ColumnNumericHistogramRequest, ColumnNumericHistogramResponse, ColumnRollupIntervalRequest, ColumnRollupIntervalResponse, ColumnRugHistogramRequest, ColumnRugHistogramResponse, ColumnTimeGrainRequest, ColumnTimeGrainResponse, ColumnTimeRangeRequest, ColumnTimeRangeResponse, ColumnTimeSeriesRequest, ColumnTimeSeriesResponse, ColumnTopKRequest, ColumnTopKResponse, ConvertExpressionToMetricsSQLRequest, ConvertExpressionToMetricsSQLResponse, ExportReportRequest, ExportReportResponse, ExportRequest, ExportResponse, MetricsViewAggregationRequest, MetricsViewAggregationResponse, MetricsViewAnnotationsRequest, MetricsViewAnnotationsResponse, MetricsViewComparisonRequest, MetricsViewComparisonResponse, MetricsViewRowsRequest, MetricsViewRowsResponse, MetricsViewSchemaRequest, MetricsViewSchemaResponse, MetricsViewSearchRequest, MetricsViewSearchResponse, MetricsViewTimeRangeRequest, MetricsViewTimeRangeResponse, MetricsViewTimeRangesRequest, MetricsViewTimeRangesResponse, MetricsViewTimeSeriesRequest, MetricsViewTimeSeriesResponse, MetricsViewToplistRequest, MetricsViewToplistResponse, MetricsViewTotalsRequest, MetricsViewTotalsResponse, QueryBatchRequest, QueryBatchResponse, QueryRequest, QueryResponse, ResolveCanvasRequest, ResolveCanvasResponse, ResolveComponentRequest, ResolveComponentResponse, ResolveTemplatedStringRequest, ResolveTemplatedStringResponse, TableCardinalityRequest, TableCardinalityResponse, TableColumnsRequest, TableColumnsResponse, TableRowsRequest, TableRowsResponse } from "./queries_pb.js";
+import { ColumnCardinalityRequest, ColumnCardinalityResponse, ColumnDescriptiveStatisticsRequest, ColumnDescriptiveStatisticsResponse, ColumnNullCountRequest, ColumnNullCountResponse, ColumnNumericHistogramRequest, ColumnNumericHistogramResponse, ColumnRollupIntervalRequest, ColumnRollupIntervalResponse, ColumnRugHistogramRequest, ColumnRugHistogramResponse, ColumnTimeGrainRequest, ColumnTimeGrainResponse, ColumnTimeRangeRequest, ColumnTimeRangeResponse, ColumnTimeSeriesRequest, ColumnTimeSeriesResponse, ColumnTopKRequest, ColumnTopKResponse, ConvertExpressionToMetricsSQLRequest, ConvertExpressionToMetricsSQLResponse, ExportReportRequest, ExportReportResponse, ExportRequest, ExportResponse, MetricsViewAggregationRequest, MetricsViewAggregationResponse, MetricsViewAnnotationsRequest, MetricsViewAnnotationsResponse, MetricsViewComparisonRequest, MetricsViewComparisonResponse, MetricsViewRowsRequest, MetricsViewRowsResponse, MetricsViewSchemaRequest, MetricsViewSchemaResponse, MetricsViewSearchRequest, MetricsViewSearchResponse, MetricsViewTimeRangeRequest, MetricsViewTimeRangeResponse, MetricsViewTimeRangesRequest, MetricsViewTimeRangesResponse, MetricsViewTimeSeriesRequest, MetricsViewTimeSeriesResponse, MetricsViewToplistRequest, MetricsViewToplistResponse, MetricsViewTotalsRequest, MetricsViewTotalsResponse, ProjectStorageRequest, ProjectStorageResponse, QueryBatchRequest, QueryBatchResponse, QueryRequest, QueryResponse, ResolveCanvasRequest, ResolveCanvasResponse, ResolveComponentRequest, ResolveComponentResponse, ResolveTemplatedStringRequest, ResolveTemplatedStringResponse, TableCardinalityRequest, TableCardinalityResponse, TableColumnsRequest, TableColumnsResponse, TableRowsRequest, TableRowsResponse } from "./queries_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -54,6 +54,18 @@ export const QueryService = {
       name: "ExportReport",
       I: ExportReportRequest,
       O: ExportReportResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * ProjectStorage returns storage usage information for OLAP connectors in the project.
+     * See the project_storage resolver for details.
+     *
+     * @generated from rpc rill.runtime.v1.QueryService.ProjectStorage
+     */
+    projectStorage: {
+      name: "ProjectStorage",
+      I: ProjectStorageRequest,
+      O: ProjectStorageResponse,
       kind: MethodKind.Unary,
     },
     /**

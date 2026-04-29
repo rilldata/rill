@@ -594,8 +594,7 @@
       <AlertDialog.Title>Delete widget?</AlertDialog.Title>
 
       <AlertDialog.Description>
-        Are you sure you want to delete this widget? This action cannot be
-        undone.
+        This widget and its configuration will be permanently removed.
       </AlertDialog.Description>
 
       <AlertDialog.Footer>

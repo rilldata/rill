@@ -10,20 +10,8 @@ cli-only:
 cli: cli.prepare
 	go build -o rill cli/main.go 
 
-KEEP_DIRS := rill-openrtb-prog-ads rill-github-analytics rill-cost-monitoring
-
 .PHONY: cli.prepare
-cli.prepare:
-	@set -e; \
-	rm -rf runtime/pkg/examples/embed/dist || true; \
-	mkdir -p runtime/pkg/examples/embed/dist; \
-	# Create a temp dir (GNU mktemp first, then BSD/macOS fallback)
-	TMP_CLONE_DIR=$$(mktemp -d 2>/dev/null || mktemp -d -t rill-examples); \
-	trap 'rm -rf "$$TMP_CLONE_DIR"' EXIT; \
-	git clone --quiet --depth=1 https://github.com/rilldata/rill-examples.git "$$TMP_CLONE_DIR"; \
-	for d in $(KEEP_DIRS); do \
-		cp -R "$$TMP_CLONE_DIR/$$d" runtime/pkg/examples/embed/dist/; \
-	done
+cli.prepare: runtime.examples.embed
 	npm install
 	npm run build
 	rm -rf cli/pkg/web/embed/dist || true
@@ -42,13 +30,15 @@ coverage.go:
 	go tool cover -func coverage/go.out
 
 .PHONY: docs.generate
-docs.generate:
+docs.generate: runtime.examples.embed
 	# Temporarily replaces ~/.rill/config.yaml to avoid including user-defined defaults in generated docs.
-	# Sets version to the latest tag to simulate a production build, where certain commands are hidden.
+	#
+	# Sets main.Version to a fixed tag to simulate a production build, where certain commands are hidden.
+	# Not using scripts/versiontag.sh since the actual version should not be emitted to the generated files as it would go stale on the next release.
 	rm -rf docs/docs/reference/cli/*.md docs/docs/reference/project-files/*.md
 	if [ -f ~/.rill/config.yaml ]; then mv ~/.rill/config.yaml ~/.rill/config.yaml.tmp; fi;
-	go run -ldflags="-X main.Version=$(shell scripts/versiontag.sh)" ./cli docs generate-cli docs/docs/reference/cli/
-	go run -ldflags="-X main.Version=$(shell scripts/versiontag.sh)" ./cli docs generate-project docs/docs/reference/project-files/
+	RILL_DOCS_GENERATE=true go run -ldflags="-X main.Version=1.0.0" ./cli docs generate-cli docs/docs/reference/cli/
+	RILL_DOCS_GENERATE=true go run -ldflags="-X main.Version=1.0.0" ./cli docs generate-project docs/docs/reference/project-files/
 	if [ -f ~/.rill/config.yaml.tmp ]; then mv ~/.rill/config.yaml.tmp ~/.rill/config.yaml; fi;
 
 .PHONY: proto.generate
@@ -59,12 +49,25 @@ proto.generate:
 	cd proto && buf generate --template buf.gen.runtime.yaml --path rill/runtime
 	cd proto && buf generate --template buf.gen.local.yaml --path rill/local
 	cd proto && buf generate --template buf.gen.ui.yaml
-	go run -ldflags="-X main.Version=$(shell scripts/versiontag.sh)" \
-		scripts/convert-openapi-v2-to-v3/convert.go --force \
+	go run scripts/convert-openapi-v2-to-v3/convert.go --force \
 		proto/gen/rill/admin/v1/admin.swagger.yaml proto/gen/rill/admin/v1/openapi.yaml
-	go run -ldflags="-X main.Version=$(shell scripts/versiontag.sh)" \
-		scripts/convert-openapi-v2-to-v3/convert.go --force --public-only \
+	go run scripts/convert-openapi-v2-to-v3/convert.go --force --public-only \
 		proto/gen/rill/admin/v1/admin.swagger.yaml proto/gen/rill/admin/v1/public.openapi.yaml
+	npm install
 	npm run generate:runtime-client -w web-common
 	npm run generate:client -w web-admin
-	
+
+KEEP_EXAMPLES := rill-openrtb-prog-ads rill-github-analytics rill-cost-monitoring
+
+.PHONY: runtime.examples.embed
+runtime.examples.embed:
+	@set -e; \
+	rm -rf runtime/pkg/examples/embed/dist || true; \
+	mkdir -p runtime/pkg/examples/embed/dist; \
+	# Create a temp dir (GNU mktemp first, then BSD/macOS fallback)
+	TMP_CLONE_DIR=$$(mktemp -d 2>/dev/null || mktemp -d -t rill-examples); \
+	trap 'rm -rf "$$TMP_CLONE_DIR"' EXIT; \
+	git clone --quiet --depth=1 https://github.com/rilldata/rill-examples.git "$$TMP_CLONE_DIR"; \
+	for d in $(KEEP_EXAMPLES); do \
+		cp -R "$$TMP_CLONE_DIR/$$d" runtime/pkg/examples/embed/dist/; \
+	done

@@ -312,7 +312,13 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 	if parser.HasParseErrors() {
 		parseErrsErr = ErrParserHasParseErrors
 	}
-	err = r.C.UpdateError(ctx, self.Meta.Name, parseErrsErr)
+	var warnings []string
+	for _, e := range parser.Errors {
+		if e.Warning {
+			warnings = append(warnings, fmt.Sprintf("%s: %s", e.FilePath, e.Message))
+		}
+	}
+	err = r.C.UpdateErrorAndWarning(ctx, self.Meta.Name, parseErrsErr, warnings)
 	if err != nil {
 		return err
 	}

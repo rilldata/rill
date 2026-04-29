@@ -340,7 +340,7 @@ func (m *mockGithub) InstallationTokenForOrg(ctx context.Context, org string) (s
 	return "", time.Time{}, nil
 }
 
-func (m *mockGithub) CreateManagedRepo(ctx context.Context, repoPrefix string) (*github.Repository, error) {
+func (m *mockGithub) CreateManagedRepo(ctx context.Context, repoPrefix string, autoInit bool) (*github.Repository, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
@@ -375,7 +375,7 @@ func newRuntimeServer(ctx context.Context, t *testing.T, group *errgroup.Group, 
 	rt := testruntime.New(t, false)
 
 	// Create runtime server
-	rtSrv, err := runtimeserver.NewServer(ctx, runtimeServerOpts, rt, logger, ratelimit.NewNoop(), activity.NewNoopClient(), nil)
+	rtSrv, err := runtimeserver.NewServer(ctx, runtimeServerOpts, rt, logger, ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 	t.Cleanup(func() { rtSrv.Close() })
 

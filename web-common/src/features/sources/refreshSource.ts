@@ -6,9 +6,12 @@ import {
 import { compileLocalFileSourceYAML } from "@rilldata/web-common/features/sources/sourceUtils";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import {
+  getRuntimeServiceGetInstanceQueryKey,
   runtimeServiceCreateTrigger,
+  runtimeServiceGetInstance,
   runtimeServicePutFile,
 } from "@rilldata/web-common/runtime-client";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
 export async function refreshSource(
   connector: string,
@@ -38,7 +41,14 @@ export async function replaceSourceWithUploadedFile(
     return Promise.reject();
   }
 
-  const yaml = compileLocalFileSourceYAML(dataFilePath);
+  // Get the default OLAP connector for the output block
+  const runtimeInstance = await queryClient.fetchQuery({
+    queryKey: getRuntimeServiceGetInstanceQueryKey(client.instanceId, {}),
+    queryFn: () => runtimeServiceGetInstance(client, { sensitive: false }),
+  });
+  const defaultOLAP = runtimeInstance?.instance?.olapConnector || "duckdb";
+
+  const yaml = compileLocalFileSourceYAML(dataFilePath, defaultOLAP);
 
   // Create source
   return runtimeServicePutFile(client, {

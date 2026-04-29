@@ -246,7 +246,7 @@ export class RillPeriodToGrainInterval implements RillTimeInterval {
   }
 
   public getGrain() {
-    return GrainAliasToV1TimeGrain[this.grain];
+    return getLowerOrderGrain(GrainAliasToV1TimeGrain[this.grain]);
   }
 
   public toString() {

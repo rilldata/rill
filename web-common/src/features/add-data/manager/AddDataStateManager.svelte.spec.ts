@@ -81,6 +81,7 @@ describe("AddDataStateManager", () => {
           },
           expectedStep: {
             step: AddDataStep.Import,
+            schema: ClickhouseSchema,
             importStep: ImportDataStep.Init,
             config: ClickhouseImportConfig,
           },
@@ -129,6 +130,7 @@ describe("AddDataStateManager", () => {
           },
           expectedStep: {
             step: AddDataStep.Import,
+            schema: ClickhouseSchema,
             importStep: ImportDataStep.Init,
             config: ClickhouseImportConfig,
           },
@@ -163,6 +165,7 @@ describe("AddDataStateManager", () => {
           },
           expectedStep: {
             step: AddDataStep.Import,
+            schema: ClickhouseSchema,
             importStep: ImportDataStep.Init,
             config: ClickhouseImportConfig,
           },

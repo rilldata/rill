@@ -179,5 +179,5 @@ export function removeEmbedParams(searchParams: URLSearchParams) {
   const cleanedParams = new URLSearchParams(searchParams);
   EmbedParams.forEach((param) => cleanedParams.delete(param));
   const search = cleanedParams.toString();
-  return decodeURIComponent(search);
+  return search;
 }

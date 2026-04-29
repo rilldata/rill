@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import ContextButton from "@rilldata/web-common/components/button/ContextButton.svelte";
+  import { getFileHref } from "@rilldata/web-common/layout/navigation/editor-routing";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import Alert from "@rilldata/web-common/components/icons/Alert.svelte";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
@@ -69,6 +70,7 @@
   $: isProtectedFile = PROTECTED_FILES.includes(filePath);
 
   $: hasErrors = fileArtifact.getHasErrors(queryClient);
+  $: hasWarnings = fileArtifact.getHasWarnings(queryClient);
 
   function fireTelemetry() {
     const previousScreenName = getScreenNameFromPage();
@@ -100,7 +102,7 @@
     isDotFile
       ? 'hover:text-fg-secondary text-fg-muted '
       : 'text-fg-primary hover:text-fg-primary'}"
-    href="/files{filePath}"
+    href={getFileHref(filePath)}
     {id}
     class:italic={$hasUnsavedChanges || $saving}
     onclick={fireTelemetry}
@@ -112,6 +114,8 @@
         <LoadingSpinner size="14px" />
       {:else if $error}
         <Alert size="14px" color="red" />
+      {:else if $hasWarnings && !$hasErrors}
+        <Alert size="14px" color="var(--color-warning-icon, #d97706)" />
       {:else}
         <svelte:component
           this={getIconComponent(resourceKind, filePath)}
@@ -119,7 +123,11 @@
         />
       {/if}
     </div>
-    <span class="truncate w-full" class:text-red-600={$hasErrors}>
+    <span
+      class="truncate w-full"
+      class:text-red-600={$hasErrors}
+      class:text-yellow-600={$hasWarnings && !$hasErrors}
+    >
       {fileName}
     </span>
   </a>

@@ -60,7 +60,7 @@ func (b *sqlBuilder) writeSelectWithDisplayNames(n *SelectNode) error {
 		if i > 0 {
 			b.out.WriteString(", ")
 		}
-		b.out.WriteString(b.ast.Dialect.EscapeIdentifier(f.Name))
+		b.out.WriteString(b.ast.Dialect.EscapeAlias(f.Name)) // uses alias since it selects inner from inner query
 		b.out.WriteString(" AS ")
 		b.out.WriteString(b.ast.Dialect.EscapeAlias(displayName))
 	}
@@ -74,7 +74,7 @@ func (b *sqlBuilder) writeSelectWithDisplayNames(n *SelectNode) error {
 		if i > 0 || len(n.DimFields) > 0 {
 			b.out.WriteString(", ")
 		}
-		b.out.WriteString(b.ast.Dialect.EscapeIdentifier(f.Name))
+		b.out.WriteString(b.ast.Dialect.EscapeAlias(f.Name)) // uses alias since it selects inner from inner query
 		b.out.WriteString(" AS ")
 		b.out.WriteString(b.ast.Dialect.EscapeAlias(displayName))
 	}

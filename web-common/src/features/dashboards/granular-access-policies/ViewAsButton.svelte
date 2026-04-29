@@ -12,6 +12,7 @@
   import { selectedMockUserStore } from "./stores";
   import { useMockUsers } from "./useMockUsers";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import { getFileHref } from "@rilldata/web-common/layout/navigation/editor-routing";
 
   let viewAsMenuOpen = false;
   let open = false;
@@ -35,20 +36,21 @@
           </div>
         </button>
       {:else}
-        <Chip
-          {...props}
-          removable
-          slideDuration={0}
-          active={viewAsMenuOpen}
-          removeTooltipText="Clear view"
-          onRemove={() => {
-            updateDevJWT(queryClient, client, null);
-          }}
-        >
-          <div slot="body">
-            Viewing as <b>{$selectedMockUserStore.email}</b>
-          </div>
-        </Chip>
+        <button {...props} class="appearance-none border-0 bg-transparent p-0">
+          <Chip
+            removable
+            slideDuration={0}
+            active={viewAsMenuOpen}
+            removeTooltipText="Clear view"
+            onRemove={() => {
+              updateDevJWT(queryClient, client, null);
+            }}
+          >
+            <div slot="body">
+              Viewing as <b>{$selectedMockUserStore.email}</b>
+            </div>
+          </Chip>
+        </button>
       {/if}
     {/snippet}
   </DropdownMenu.Trigger>
@@ -76,7 +78,7 @@
     {/if}
     <DropdownMenu.Separator />
     <DropdownMenu.Item
-      href={`/files/rill.yaml?addMockUser=true`}
+      href={`${getFileHref("/rill.yaml")}?addMockUser=true`}
       class="flex gap-x-2 items-center font-normal"
     >
       <Add size="16px" />

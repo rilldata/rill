@@ -68,15 +68,19 @@
           <span class="dimension-dot" style:background-color={entry.color}
           ></span>
           <span class="dimension-label">{entry.label}</span>
-          <span class="dimension-value">{formatter(entry.value)}</span>
+          <span class="dimension-value" class:italic={entry.value === null}
+            >{formatter(entry.value)}</span
+          >
         </div>
       {/each}
     </div>
   {:else if showComparison}
     <div class="time-comparison">
       <div class="period current">
-        <span class="value primary-value" aria-label="main value"
-          >{formatter(currentValue)}</span
+        <span
+          class="value primary-value"
+          aria-label="main value"
+          class:italic={currentValue === null}>{formatter(currentValue)}</span
         >
         <span class="date">
           {formatGrainBucket(currentTs, timeGranularity, interval)}</span
@@ -89,7 +93,9 @@
       </div>
 
       <div class="period comparison">
-        <span class="value">{formatter(comparisonValue)}</span>
+        <span class="value" class:italic={comparisonValue === null}
+          >{formatter(comparisonValue)}</span
+        >
         <span class="date">
           {#if comparisonTs}
             {formatGrainBucket(
@@ -117,8 +123,10 @@
     {/if}
   {:else}
     <div class="simple-tooltip">
-      <span class="simple-value" aria-label="main value"
-        >{formatter(currentValue)}</span
+      <span
+        class="simple-value"
+        aria-label="main value"
+        class:italic={currentValue === null}>{formatter(currentValue)}</span
       >
       <span class="simple-date">
         {formatGrainBucket(currentTs, timeGranularity, interval)}

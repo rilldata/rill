@@ -89,7 +89,7 @@ export async function createSourceV2(
   // wait for file chooser while clicking on upload button
   const [fileChooser] = await Promise.all([
     page.waitForEvent("filechooser"),
-    page.getByLabel("Choose file").click(),
+    page.getByLabel("Upload file").click(),
   ]);
   // input the `file` after joining with `testDataPath`
   await fileChooser.setFiles([path.join(TestDataPath, file)]);

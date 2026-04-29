@@ -2,7 +2,10 @@
   import { page } from "$app/stores";
   import CanvasBookmarks from "@rilldata/web-admin/features/bookmarks/CanvasBookmarks.svelte";
   import ExploreBookmarks from "@rilldata/web-admin/features/bookmarks/ExploreBookmarks.svelte";
+  import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
   import ShareDashboardPopover from "@rilldata/web-admin/features/dashboards/share/ShareDashboardPopover.svelte";
+  import EditActions from "@rilldata/web-admin/features/edit-session/EditActions.svelte";
+  import EditButton from "@rilldata/web-admin/features/edit-session/EditButton.svelte";
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
@@ -24,6 +27,7 @@
   import { useAlerts } from "../alerts/selectors";
   import AvatarButton from "../authentication/AvatarButton.svelte";
   import SignIn from "../authentication/SignIn.svelte";
+  import BranchSelector from "../branches/BranchSelector.svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
   import { useDashboards } from "../dashboards/listing/selectors";
   import {
@@ -45,13 +49,17 @@
   export let manageOrgAdmins: boolean;
   export let manageOrgMembers: boolean;
   export let readProjects: boolean;
+  export let primaryBranch: string | undefined = undefined;
   export let planDisplayName: string | undefined;
   export let organizationLogoUrl: string | undefined;
+  export let editContext: boolean = false;
 
   const user = createAdminServiceGetCurrentUser();
   const runtimeClient = useRuntimeClient();
   const {
     alerts: alertsFlag,
+    cloudEditing,
+    developerChat,
     dimensionSearch,
     dashboardChat,
     stickyDashboardState,
@@ -67,6 +75,8 @@
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
   $: onCanvasDashboardPage = isCanvasDashboardPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
+
+  $: activeBranch = extractBranchFromPath($page.url.pathname);
 
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
@@ -168,21 +178,47 @@
   {#if onPublicURLPage}
     <PageTitle title={publicURLDashboardTitle} />
   {:else if organization}
-    <Breadcrumbs {pathParts} {currentPath} />
+    <Breadcrumbs {pathParts} {currentPath}>
+      <svelte:fragment slot="after-project">
+        {#if editContext && activeBranch}
+          <li class="flex items-center mr-2">
+            <span
+              class="flex items-center gap-x-1 px-2 py-0 rounded-2xl border bg-primary-50 border-primary-200 text-primary-800"
+            >
+              {activeBranch.length > 12
+                ? activeBranch.slice(0, 11) + "…"
+                : activeBranch}
+            </span>
+          </li>
+        {:else if !onPublicURLPage && projectPermissions?.readDev}
+          <BranchSelector {organization} {project} {primaryBranch} />
+        {/if}
+      </svelte:fragment>
+    </Breadcrumbs>
   {/if}
 
   <div class="flex gap-x-2 items-center ml-auto">
-    {#if $viewAsUserStore}
-      <ViewAsUserChip />
-    {/if}
-    {#if onProjectPage && projectPermissions.manageProjectMembers}
-      <ShareProjectPopover
-        {organization}
-        {project}
-        manageProjectAdmins={projectPermissions.manageProjectAdmins}
-        {manageOrgAdmins}
-        {manageOrgMembers}
-      />
+    {#if editContext}
+      {#if $developerChat}
+        <ChatToggle />
+      {/if}
+      <EditActions {organization} {project} branch={activeBranch ?? ""} />
+    {:else}
+      {#if $viewAsUserStore}
+        <ViewAsUserChip />
+      {/if}
+      {#if $cloudEditing && onProjectPage && projectPermissions.manageDev}
+        <EditButton {organization} {project} {activeBranch} />
+      {/if}
+      {#if onProjectPage && projectPermissions.manageProjectMembers}
+        <ShareProjectPopover
+          {organization}
+          {project}
+          manageProjectAdmins={projectPermissions.manageProjectAdmins}
+          {manageOrgAdmins}
+          {manageOrgMembers}
+        />
+      {/if}
     {/if}
 
     {#if onMetricsExplorerPage && isDashboardValid}
@@ -194,6 +230,9 @@
             let:ready
           >
             <LastRefreshedDate {dashboard} />
+            {#if $cloudEditing && (onMetricsExplorerPage || onCanvasDashboardPage) && projectPermissions.manageDev}
+              <EditButton {organization} {project} {activeBranch} />
+            {/if}
             {#if $dimensionSearch && ready}
               <GlobalDimensionSearch />
             {/if}
@@ -220,6 +259,9 @@
     {/if}
 
     {#if onCanvasDashboardPage}
+      {#if $cloudEditing && projectPermissions.manageDev}
+        <EditButton {organization} {project} {activeBranch} />
+      {/if}
       {#if $dashboardChat && !onPublicURLPage}
         <ChatToggle />
       {/if}
@@ -233,7 +275,7 @@
 
     {#if $user.isSuccess}
       {#if $user.data?.user}
-        <AvatarButton />
+        <AvatarButton {projectPermissions} />
       {:else}
         <SignIn />
       {/if}

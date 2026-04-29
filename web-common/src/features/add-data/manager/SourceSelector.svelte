@@ -29,6 +29,8 @@
         keyword.toLowerCase().includes(searchTextLowerCase),
       ),
   );
+
+  $: pathPrefix = config.pathPrefix ?? "";
 </script>
 
 <div class="source-selector">
@@ -44,15 +46,20 @@
       {#each filteredConnectors as connector (connector.name)}
         {@const icon = connectorIconMapping[connector.name]}
         {@const className = connectorClassMapping[connector.name] ?? ""}
-        <button
+        <svelte:element
+          this={config.welcomeScreen ? "a" : "button"}
+          {...config.welcomeScreen
+            ? {
+                href: `${pathPrefix}/welcome/add-data?schema=${connector.name}`,
+              }
+            : { onclick: () => onSelect(connector.name) }}
           class="source-selector-cell"
-          onclick={() => onSelect(connector.name)}
           aria-label={`Connect to ${connector.name}`}
         >
           <svelte:component this={icon} size="24px" class={className} />
           <span class="source-label">{connector.displayName}</span>
           <ChevronRightIcon size="16px" />
-        </button>
+        </svelte:element>
       {:else}
         <div class="source-selector-no-matches">No matches found</div>
       {/each}
@@ -93,7 +100,7 @@
 
   .source-selector-cell {
     @apply flex flex-row items-center gap-x-2 p-4;
-    @apply bg-surface-overlay border rounded-lg shadow-sm;
+    @apply text-fg-primary bg-surface-overlay border rounded-lg shadow-sm;
   }
 
   .source-selector-footer {

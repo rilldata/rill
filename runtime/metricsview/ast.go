@@ -532,7 +532,7 @@ func (a *AST) ResolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 		// StarRocks returns DECIMAL for division, which gets mapped to string.
 		// Cast to DOUBLE for consistent numeric handling across all dialects.
 		expr := fmt.Sprintf("%s/%#f", a.Dialect.EscapeAlias(m.Name), *qm.Compute.PercentOfTotal.Total)
-		if a.Dialect == drivers.DialectStarRocks {
+		if a.Dialect.String() == drivers.DialectNameStarRocks {
 			expr = fmt.Sprintf("CAST(%s AS DOUBLE)", expr)
 		}
 
@@ -745,12 +745,12 @@ func (a *AST) AddTimeRange(n *SelectNode, tr *TimeRange) error {
 		panic("ast received a non-empty, unresolved time range")
 	}
 
-	timeDimExpr, err := a.getTimeDimensionExpression(tr)
+	timeDimExpr, typeCode, err := a.getTimeDimensionExpression(tr)
 	if err != nil {
 		return err
 	}
 
-	expr, args := a.sqlForTimeRange(timeDimExpr, tr.Start, tr.End)
+	expr, args := a.sqlForTimeRange(timeDimExpr, typeCode, tr.Start, tr.End)
 	n.TimeWhere = &ExprNode{
 		Expr: expr,
 		Args: args,
@@ -1277,9 +1277,9 @@ func (a *AST) findFieldForComputedTimeDimension(dims []FieldNode, baseTimeDim st
 	return FieldNode{}, false
 }
 
-// getTimeDimensionExpression returns the SQL expression for the time dimension specified in the TimeRange or the metrics view's time dimension.
+// getTimeDimensionExpression returns the SQL expression and data type code for the time dimension specified in the TimeRange or the metrics view's time dimension.
 // It looks up the time dimension definition in the metrics view or returns the escaped column name from the model.
-func (a *AST) getTimeDimensionExpression(tr *TimeRange) (string, error) {
+func (a *AST) getTimeDimensionExpression(tr *TimeRange) (string, runtimev1.Type_Code, error) {
 	timeDim := a.MetricsView.TimeDimension
 	if tr.TimeDimension != "" {
 		timeDim = tr.TimeDimension
@@ -1287,15 +1287,20 @@ func (a *AST) getTimeDimensionExpression(tr *TimeRange) (string, error) {
 
 	t, err := a.LookupDimension(timeDim, true)
 	if err != nil {
-		return "", fmt.Errorf("time dimension %q not found: %w", timeDim, err)
+		return "", runtimev1.Type_CODE_UNSPECIFIED, fmt.Errorf("time dimension %q not found: %w", timeDim, err)
 	}
 
 	expr, err := a.Dialect.MetricsViewDimensionExpression(t)
 	if err != nil {
-		return "", fmt.Errorf("failed to compile time dimension %q expression: %w", t.Name, err)
+		return "", runtimev1.Type_CODE_UNSPECIFIED, fmt.Errorf("failed to compile time dimension %q expression: %w", t.Name, err)
 	}
 
-	return expr, nil
+	var typeCode runtimev1.Type_Code
+	if t.DataType != nil {
+		typeCode = t.DataType.Code
+	}
+
+	return expr, typeCode, nil
 }
 
 // checkNameForComputedField checks that the name for a computed field does not collide with an existing dimension or measure name.
@@ -1390,17 +1395,18 @@ func (a *AST) checkRequiredDimensionsPresentInQuery(m *runtimev1.MetricsViewSpec
 }
 
 // sqlForTimeRange builds a SQL expression and query args for filtering by a time range.
-func (a *AST) sqlForTimeRange(timeDimExpr string, start, end time.Time) (string, []any) {
+func (a *AST) sqlForTimeRange(timeDimExpr string, typeCode runtimev1.Type_Code, start, end time.Time) (string, []any) {
+	param := a.Dialect.GetTimeDimensionParameter(typeCode)
 	var where string
 	var args []any
 	if !start.IsZero() && !end.IsZero() {
-		where = fmt.Sprintf("%s >= %s AND %s < %s", timeDimExpr, a.Dialect.GetTimeDimensionParameter(), timeDimExpr, a.Dialect.GetTimeDimensionParameter())
+		where = fmt.Sprintf("%s >= %s AND %s < %s", timeDimExpr, param, timeDimExpr, param)
 		args = []any{start, end}
 	} else if !start.IsZero() {
-		where = fmt.Sprintf("%s >= %s", timeDimExpr, a.Dialect.GetTimeDimensionParameter())
+		where = fmt.Sprintf("%s >= %s", timeDimExpr, param)
 		args = []any{start}
 	} else if !end.IsZero() {
-		where = fmt.Sprintf("%s < %s", timeDimExpr, a.Dialect.GetTimeDimensionParameter())
+		where = fmt.Sprintf("%s < %s", timeDimExpr, param)
 		args = []any{end}
 	} else {
 		return "", nil

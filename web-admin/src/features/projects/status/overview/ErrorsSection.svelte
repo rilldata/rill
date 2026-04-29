@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import {
     ResourceKind,
@@ -18,7 +17,7 @@
   const runtimeClient = useRuntimeClient();
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
 
-  // Parse errors
+  // Parse errors (file-level YAML/SQL errors)
   $: projectParserQuery = createRuntimeServiceGetResource(
     runtimeClient,
     {
@@ -33,6 +32,8 @@
     $projectParserQuery.data?.resource?.projectParser?.state?.parseErrors ?? [];
 
   // Resource errors grouped by kind
+  // Note: parser reconcile errors (e.g. git branch not found) are surfaced
+  // in the Deployment card, not here, to avoid redundancy.
   $: resourcesQuery = useResources(runtimeClient);
   $: allResources = ($resourcesQuery.data?.resources ?? []) as V1Resource[];
   $: erroredResources = allResources.filter((r) => !!r.meta?.reconcileError);
@@ -41,29 +42,10 @@
 
   // Total
   $: totalErrors = parseErrors.length + erroredResources.length;
-
-  function handleSectionClick(e: MouseEvent | KeyboardEvent) {
-    // Don't navigate if the click was on a chip link
-    if ((e.target as HTMLElement).closest(".error-chip")) return;
-    if (totalErrors > 0) {
-      void goto(`${basePage}/resources?status=error`);
-    }
-  }
 </script>
 
 {#if totalErrors > 0}
-  <div
-    class="section section-error section-clickable"
-    role="button"
-    tabindex="0"
-    onclick={handleSectionClick}
-    onkeydown={(e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        handleSectionClick(e);
-      }
-    }}
-  >
+  <div class="section section-error">
     <div class="section-header">
       <h3 class="section-title flex items-center gap-2">
         Errors
@@ -114,14 +96,8 @@
   .section {
     @apply block border border-border rounded-lg p-5;
   }
-  .section-clickable {
-    @apply cursor-pointer;
-  }
   .section-error {
     @apply border-red-500;
-  }
-  .section-clickable:hover {
-    @apply border-red-600;
   }
   .section-header {
     @apply flex items-center justify-between mb-4;

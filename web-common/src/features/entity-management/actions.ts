@@ -66,6 +66,7 @@ export async function waitForResourceReconciliation(
   client: RuntimeClient,
   resourceName: string,
   resourceKind: ResourceKind,
+  prevStateVersion?: string,
 ) {
   const pollInterval = 2_000; // 2 seconds
   let attempt = 0;
@@ -77,8 +78,14 @@ export async function waitForResourceReconciliation(
         name: { kind: resourceKind, name: resourceName },
       });
 
+      const newStateVersion = resource.resource?.meta?.stateVersion;
+      const newVersionArrived =
+        prevStateVersion && newStateVersion
+          ? newStateVersion > prevStateVersion
+          : true;
+
       // Check if there's a reconcile error
-      if (resource.resource?.meta?.reconcileError) {
+      if (resource.resource?.meta?.reconcileError && newVersionArrived) {
         const error = new Error("Resource configuration failed to reconcile");
         (error as any).details = resource.resource.meta.reconcileError;
         throw error;
@@ -86,7 +93,7 @@ export async function waitForResourceReconciliation(
 
       // Check the reconcile status
       const reconcileStatus = resource.resource?.meta?.reconcileStatus;
-      if (reconcileStatus === "RECONCILE_STATUS_IDLE") {
+      if (reconcileStatus === "RECONCILE_STATUS_IDLE" && newVersionArrived) {
         return; // Success!
       }
 

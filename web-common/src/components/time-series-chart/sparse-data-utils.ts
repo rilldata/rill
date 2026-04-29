@@ -1,9 +1,10 @@
 /**
  * Rendering sparse data with null gaps
  *
- * 1. Null bridging: `bridgeSmallGaps` linearly interpolates across small
- *    gaps (< MAX_BRIDGE_GAP_PX) when `connectNulls` is on. Large gaps
- *    remain as nulls and produce natural line breaks.
+ * 1. Null bridging: `bridgeSmallGaps` fills small gaps (< MAX_BRIDGE_GAP_PX)
+ *    with zeros when `connectNulls` is on, so lines route through zero
+ *    rather than connecting directly across the gap. Large gaps remain as
+ *    nulls and produce natural line breaks.
  *
  * 2. Clip paths: The primary series needs clip paths because its area
  *    fill gradient would otherwise render across gaps (`defined` only
@@ -35,7 +36,7 @@ export interface BridgeResult<T> {
   bridgedSegments: Segment[];
 }
 
-/** Default maximum gap width in pixels to bridge with linear interpolation */
+/** Default maximum gap width in pixels to bridge with zeros */
 export const MAX_BRIDGE_GAP_PX = 36;
 
 /**
@@ -62,7 +63,8 @@ export function computeSegments<T>(
 }
 
 /**
- * Linearly interpolate across small pixel-width gaps.
+ * Fill small pixel-width gaps with zeros, connecting adjacent segments
+ * through zero
  * Returns a new array with gap values filled, plus segment metadata.
  *
  * When `connectNulls` is false, no bridging is performed; the result
@@ -101,12 +103,8 @@ export function bridgeSmallGaps<T>(
     const gapPx = xPixel(next.startIndex) - xPixel(prev.endIndex);
 
     if (gapPx <= maxGapPx) {
-      const v0 = valueAccessor(data[prev.endIndex])!;
-      const v1 = valueAccessor(data[next.startIndex])!;
-      const span = next.startIndex - prev.endIndex;
       for (let j = prev.endIndex + 1; j < next.startIndex; j++) {
-        const t = (j - prev.endIndex) / span;
-        result[j] = cloneWithValue(data[j], v0 + t * (v1 - v0));
+        result[j] = cloneWithValue(data[j], 0);
       }
     }
   }

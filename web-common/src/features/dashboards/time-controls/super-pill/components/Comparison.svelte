@@ -156,6 +156,7 @@
 
           <DropdownMenu.Item
             data-range="custom"
+            closeOnSelect={false}
             onclick={() => {
               showSelector = !showSelector;
             }}

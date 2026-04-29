@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { withEditorPrefix } from "@rilldata/web-common/layout/navigation/editor-routing";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
@@ -18,6 +19,7 @@
   } from "../connectors/selectors";
   import PreviewButton from "../explores/PreviewButton.svelte";
   import GoToDashboardButton from "../metrics-views/GoToDashboardButton.svelte";
+  import ReconcileWarningPanel from "../entity-management/ReconcileWarningPanel.svelte";
   import VisualMetrics from "./VisualMetrics.svelte";
 
   export let fileArtifact: FileArtifact;
@@ -94,7 +96,7 @@
       {#if !inPreviewMode}
         {#if isOldMetricsView}
           <PreviewButton
-            href="/explore/{metricsViewName}"
+            href={withEditorPrefix(`/explore/${metricsViewName}`)}
             disabled={!!parseError || !!reconcileError}
           />
         {:else}
@@ -104,31 +106,38 @@
     </div>
   </WorkspaceHeader>
 
-  <WorkspaceEditorContainer
-    slot="body"
-    {resource}
-    {parseError}
-    remoteContent={$remoteContent}
-  >
-    {#if $selectedView === "code"}
-      <MetricsEditor
-        bind:autoSave={$autoSave}
-        {fileArtifact}
-        {filePath}
-        {parseError}
-        {metricsViewName}
-      />
-    {:else}
-      {#key fileArtifact}
-        <VisualMetrics
-          {fileArtifact}
-          switchView={() => {
-            $selectedView = "code";
-          }}
-        />
-      {/key}
-    {/if}
-  </WorkspaceEditorContainer>
+  <svelte:fragment slot="body">
+    <div class="flex flex-col h-full">
+      <div class="flex-1 overflow-hidden">
+        <WorkspaceEditorContainer
+          {resource}
+          {parseError}
+          remoteContent={$remoteContent}
+          {filePath}
+        >
+          {#if $selectedView === "code"}
+            <MetricsEditor
+              bind:autoSave={$autoSave}
+              {fileArtifact}
+              {filePath}
+              {parseError}
+              {metricsViewName}
+            />
+          {:else}
+            {#key fileArtifact}
+              <VisualMetrics
+                {fileArtifact}
+                switchView={() => {
+                  $selectedView = "code";
+                }}
+              />
+            {/key}
+          {/if}
+        </WorkspaceEditorContainer>
+      </div>
+      <ReconcileWarningPanel {fileArtifact} />
+    </div>
+  </svelte:fragment>
 
   <MetricsInspector
     {filePath}
