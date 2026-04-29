@@ -113,7 +113,7 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 					return fmt.Errorf("failed to update project variables: %w", err)
 				}
 
-				ch.Printf("Environment %q: Updated cloud env for project %q with variables from %q.\n", env, projectName, pathForEnv(env))
+				ch.Printf("Environment %q: Updated cloud env for project %q with variables from %q.\n", envForPrint(env), projectName, pathForEnv(env))
 			}
 			return nil
 		},
