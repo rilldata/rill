@@ -31,7 +31,9 @@
 
   import CanvasTabs from "./CanvasTabs.svelte";
 
-  import { goto } from "$app/navigation";
+  import { beforeNavigate, goto } from "$app/navigation";
+  import { themeEditorStore } from "@rilldata/web-common/features/visual-editing/theme-editor-store";
+  import { buildInlineThemeObject } from "@rilldata/web-common/features/visual-editing/theme-yaml-utils";
   import DefaultFilterDisplay from "./DefaultFilterDisplay.svelte";
 
   export let updateProperties: (
@@ -42,6 +44,11 @@
   export let canvasName: string;
 
   const client = useRuntimeClient();
+
+  // Clean up theme editing state on navigation
+  beforeNavigate(() => {
+    themeEditorStore.exitEditing();
+  });
 
   $: ({
     canvasEntity: { filtersEnabledStore, _embeddedTheme },
@@ -249,18 +256,8 @@
             await updateProperties({ theme: value });
           }
         }}
-        onColorChange={async (primary, secondary, isDarkMode) => {
-          // TODO: Update to support dark mode - currently always sets light mode
-          // Use new theme structure: theme.light or theme.dark
-          const modeKey = isDarkMode ? "dark" : "light";
-          await updateProperties({
-            theme: {
-              [modeKey]: {
-                primary,
-                secondary,
-              },
-            },
-          });
+        onInlineThemeChange={async (spec) => {
+          await updateProperties({ theme: buildInlineThemeObject(spec) });
         }}
       />
     </div>

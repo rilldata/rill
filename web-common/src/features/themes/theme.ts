@@ -100,6 +100,9 @@ export class Theme {
 }
 .dark .dashboard-theme-boundary {
   ${this.stringifyVars(darkColors)}
+}
+.light .dashboard-theme-boundary {
+  ${this.stringifyVars(lightColors)}
 }`.trim();
 
     return css;

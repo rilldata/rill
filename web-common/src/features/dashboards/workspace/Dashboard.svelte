@@ -18,7 +18,10 @@
   import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
   import { useRuntimeClient } from "../../../runtime-client/v2";
   import { activeDashboardTheme } from "../../themes/active-dashboard-theme";
-  import { createResolvedThemeStore } from "../../themes/selectors";
+  import {
+    createResolvedThemeStore,
+    themePreviewOverride,
+  } from "../../themes/selectors";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
   import Filters from "../filters/Filters.svelte";
@@ -131,16 +134,21 @@
   let themeSource: Readable<string | null> = urlThemeName;
   $: themeSource = isEmbedded && embedThemeName ? embedThemeName : urlThemeName;
 
-  $: theme = createResolvedThemeStore(themeSource, exploreQuery, client);
+  $: resolvedTheme = createResolvedThemeStore(
+    themeSource,
+    exploreQuery,
+    client,
+  );
+  $: theme = $themePreviewOverride ?? $resolvedTheme;
 
   // Publish the resolved theme to the shared store for external components (e.g., chat in layout)
-  $: activeDashboardTheme.set($theme);
+  $: activeDashboardTheme.set(theme);
 
   // Clear the active theme when this dashboard is destroyed
   onDestroy(() => activeDashboardTheme.set(undefined));
 </script>
 
-<ThemeProvider theme={$theme}>
+<ThemeProvider {theme}>
   <article
     class="flex flex-col overflow-y-hidden bg-surface-background"
     bind:clientWidth={exploreContainerWidth}
