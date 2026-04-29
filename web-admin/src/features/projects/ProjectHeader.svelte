@@ -227,6 +227,9 @@
 
   <div class="flex gap-x-2 items-center ml-auto">
     {#if editContext}
+      {#if editPreviewMode && $viewAsUserStore}
+        <ViewAsUserChip />
+      {/if}
       {#if $developerChat}
         <ChatToggle />
       {/if}

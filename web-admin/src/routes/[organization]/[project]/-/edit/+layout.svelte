@@ -2,6 +2,7 @@
   import { page } from "$app/stores";
   import {
     createAdminServiceGetCurrentUser,
+    createAdminServiceGetDeploymentCredentials,
     createAdminServiceGetProject,
     getAdminServiceGetProjectQueryKey,
     V1DeploymentStatus,
@@ -12,12 +13,17 @@
     extractBranchFromPath,
   } from "@rilldata/web-admin/features/branches/branch-utils";
   import BranchDeploymentStopped from "@rilldata/web-admin/features/branches/BranchDeploymentStopped.svelte";
-  import { isEditPreviewRoute } from "@rilldata/web-admin/features/edit-session/edit-route-utils";
+  import {
+    isEditPreviewRoute,
+    showEditPreviewNav,
+  } from "@rilldata/web-admin/features/edit-session/edit-route-utils";
+  import EditPreviewNav from "@rilldata/web-admin/features/edit-session/EditPreviewNav.svelte";
   import EditSessionLoading from "@rilldata/web-admin/features/edit-session/EditSessionLoading.svelte";
   import EditSessionTimeoutBanner from "@rilldata/web-admin/features/edit-session/EditSessionTimeoutBanner.svelte";
   import ProjectHeader from "@rilldata/web-admin/features/projects/ProjectHeader.svelte";
   import SlimProjectHeader from "@rilldata/web-admin/features/projects/SlimProjectHeader.svelte";
   import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
+  import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
@@ -84,9 +90,35 @@
   // Deployment data and credentials come from GetProject (no separate API needed)
   $: deployment = $projectQuery.data?.deployment;
   $: deploymentStatus = deployment?.status;
-  $: runtimeHost = deployment?.runtimeHost ?? null;
-  $: instanceId = deployment?.runtimeInstanceId ?? null;
-  $: jwt = $projectQuery.data?.jwt ?? null;
+  $: ownerRuntimeHost = deployment?.runtimeHost ?? null;
+  $: ownerInstanceId = deployment?.runtimeInstanceId ?? null;
+  $: ownerJwt = $projectQuery.data?.jwt ?? null;
+
+  // View As impersonation. Available only in preview mode (the file editor
+  // doesn't honor mock policies). When a mocked user is set, swap the
+  // RuntimeProvider over to the mocked user's deployment credentials so the
+  // dashboard renders under their permissions.
+  $: previewMode = isEditPreviewRoute($page.url.pathname);
+  $: mockedUserId = previewMode ? $viewAsUserStore?.id : undefined;
+  $: mockCredentialsQuery = createAdminServiceGetDeploymentCredentials(
+    organization,
+    project,
+    {
+      userId: mockedUserId,
+      ...(branch ? { branch } : {}),
+    },
+    { query: { enabled: !!mockedUserId } },
+  );
+  $: mockCredentials = $mockCredentialsQuery.data;
+  $: useMock = !!mockedUserId && !!mockCredentials;
+
+  $: runtimeHost = useMock
+    ? (mockCredentials?.runtimeHost ?? null)
+    : ownerRuntimeHost;
+  $: instanceId = useMock
+    ? (mockCredentials?.instanceId ?? null)
+    : ownerInstanceId;
+  $: jwt = useMock ? (mockCredentials?.accessToken ?? null) : ownerJwt;
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -122,7 +154,7 @@
     !isOtherOwner;
 
   $: projectUrl = `/${organization}/${project}`;
-  $: previewMode = isEditPreviewRoute($page.url.pathname);
+  $: previewNavVisible = showEditPreviewNav($page.url.pathname);
 
   // Invalidating this query refetches a fresh JWT; `runtimeClient.getJwt()`
   // reads the updated value on the next call. Branch must be part of the
@@ -186,6 +218,9 @@
           editContext={true}
         />
         <EditSessionTimeoutBanner sessionStartedAt={deployment.createdOn} />
+        {#if previewNavVisible}
+          <EditPreviewNav {organization} {project} branch={branch ?? ""} />
+        {/if}
         <FileAndResourceWatcher
           lifecycle="none"
           {onBeforeReconnect}

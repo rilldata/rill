@@ -70,8 +70,11 @@ export function getBranchRedirect(
   project: string,
 ): string | null {
   const prefix = `/${organization}/${project}`;
-  if (!to.pathname.startsWith(prefix + "/") && to.pathname !== prefix)
-    return null;
+  // Project root is always the production view on main; never inject a
+  // branch into it (e.g. clicking the project breadcrumb from /-/edit
+  // should leave the edit context, not bounce back into it).
+  if (to.pathname === prefix) return null;
+  if (!to.pathname.startsWith(prefix + "/")) return null;
   if (to.pathname.includes("/-/share/")) return null;
   if (extractBranchFromPath(to.pathname)) return null;
   return injectBranchIntoPath(to.pathname, activeBranch) + to.search + to.hash;

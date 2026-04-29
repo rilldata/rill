@@ -26,6 +26,7 @@
     createAdminServiceGetCurrentUser,
     type V1ProjectPermissions,
   } from "../../client";
+  import { isEditPreviewRoute } from "../edit-session/edit-route-utils";
   import ViewAsUserPopover from "../view-as-user/ViewAsUserPopover.svelte";
   import ThemeToggle from "@rilldata/web-common/features/themes/ThemeToggle.svelte";
 
@@ -79,6 +80,13 @@
 
   $: ({ params } = $page);
 
+  // View As only makes sense where the user is consuming dashboards under
+  // their own (or a mocked) policy: production view, /-/edit preview mode.
+  // Hide it in /-/edit's developer (file editor) view, where impersonation
+  // doesn't apply.
+  $: onEditPage = $page.url.pathname.includes("/-/edit");
+  $: viewAsAvailable = !onEditPage || isEditPreviewRoute($page.url.pathname);
+
   function handlePylon() {
     window.Pylon("show");
   }
@@ -90,7 +98,7 @@
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="end">
     {#if params.organization && params.project && projectPermissions}
-      {#if projectPermissions.manageProject}
+      {#if projectPermissions.manageProject && viewAsAvailable}
         <DropdownMenu.Sub bind:open={subMenuOpen}>
           <DropdownMenu.SubTrigger
             onclick={() => {
