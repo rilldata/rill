@@ -127,9 +127,15 @@
       connector,
     );
     if (analyzedConnector?.driver) {
+      // Use inferSchemaForConnector so connectors that piggy-back on another
+      // driver (e.g. DuckLake on duckdb) resolve to their own schema instead
+      // of the underlying driver name.
+      const resolvedSchema =
+        inferSchemaForConnector(analyzedConnector) ||
+        analyzedConnector.driver.name!;
       stateManager.transition({
         type: TransitionEventType.ConnectorSelected,
-        schema: analyzedConnector.driver.name!,
+        schema: resolvedSchema,
         driver: analyzedConnector.driver,
         connector,
         connectorFormValues,
