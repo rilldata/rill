@@ -259,7 +259,7 @@
 
         {#if currentTab === "existing"}
           <div class="tab-body" role="tabpanel">
-            <label class="form-label" for="existing-branch">Branch</label>
+            <span class="form-label">Branch</span>
             <DropdownMenu.Root bind:open={dropdownOpen}>
               <DropdownMenu.Trigger>
                 {#snippet child({ props })}
