@@ -12,6 +12,7 @@
   import Slash from "@rilldata/web-common/components/navigation/breadcrumbs/Slash.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
+  import { GitBranchIcon } from "lucide-svelte";
   import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
@@ -186,7 +187,7 @@
   $: editPreviewMode = editContext && isEditPreviewRoute($page.url.pathname);
 </script>
 
-<Header borderBottom={!onProjectPage && !editPreviewMode}>
+<Header borderBottom={!onProjectPage}>
   <HeaderLogo
     href={editContext ? `/${organization}/${project}` : rillLogoHref}
     logoUrl={editContext ? undefined : organizationLogoUrl}
@@ -201,7 +202,8 @@
       <svelte:fragment slot="after-project">
         {#if editContext && activeBranch}
           <Slash />
-          <li class="flex items-center gap-x-2 px-2">
+          <li class="flex items-center gap-x-1.5 px-2">
+            <GitBranchIcon size="14" class="text-fg-muted" />
             <span class="text-fg-muted">
               {activeBranch.length > 12
                 ? activeBranch.slice(0, 11) + "…"
