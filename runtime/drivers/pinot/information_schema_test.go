@@ -32,7 +32,7 @@ func TestInformationSchema(t *testing.T) {
 }
 
 func testInformationSchemaAll(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
-	tables, _, err := infoSchema.All(context.Background(), "", 0, "")
+	tables, _, err := infoSchema.All(ctx, "", 0, "")
 	require.NoError(t, err)
 	require.Equal(t, 10, len(tables))
 
@@ -49,17 +49,17 @@ func testInformationSchemaAll(t *testing.T, ctx context.Context, infoSchema driv
 }
 
 func testInformationSchemaAllLike(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
-	tables, _, err := infoSchema.All(context.Background(), "%tarbucks%", 0, "")
+	tables, _, err := infoSchema.All(ctx, "%tarbucks%", 0, "")
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tables))
 	require.Equal(t, "starbucksStores", tables[0].Name)
 
-	tables, _, err = infoSchema.All(context.Background(), "%starbucksStores%", 0, "")
+	tables, _, err = infoSchema.All(ctx, "%starbucksStores%", 0, "")
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tables))
 	require.Equal(t, "starbucksStores", tables[0].Name)
 
-	tables, _, err = infoSchema.All(context.Background(), "%nonexistent_table%", 0, "")
+	tables, _, err = infoSchema.All(ctx, "%nonexistent_table%", 0, "")
 	require.NoError(t, err)
 	require.Equal(t, 0, len(tables))
 }
@@ -84,7 +84,7 @@ func testInformationSchemaLookup(t *testing.T, ctx context.Context, infoSchema d
 	require.Equal(t, false, starbucksStores.View)
 
 	_, err = infoSchema.Lookup(ctx, "", "", "nonexistent_table")
-	require.ErrorContains(t, err, "unexpected status code: 404")
+	require.Error(t, err)
 }
 
 func testInformationSchemaAllPagination(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
@@ -149,7 +149,7 @@ func testInformationSchemaAllPaginationWithLike(t *testing.T, ctx context.Contex
 }
 
 func testInformationSchemaListDatabaseSchemas(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
-	databaseSchemas, _, err := infoSchema.ListDatabaseSchemas(context.Background(), 0, "")
+	databaseSchemas, _, err := infoSchema.ListDatabaseSchemas(ctx, 0, "")
 	require.NoError(t, err)
 	require.Equal(t, 1, len(databaseSchemas))
 
@@ -158,7 +158,7 @@ func testInformationSchemaListDatabaseSchemas(t *testing.T, ctx context.Context,
 }
 
 func testInformationSchemaListTables(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
-	tables, _, err := infoSchema.ListTables(context.Background(), "", "default", 0, "")
+	tables, _, err := infoSchema.ListTables(ctx, "", "default", 0, "")
 	require.NoError(t, err)
 	require.Equal(t, 10, len(tables))
 

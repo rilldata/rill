@@ -2,6 +2,7 @@ package starrocks
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 
@@ -146,65 +147,6 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	return tables, nextToken, nil
 }
 
-// GetTable returns metadata about a specific table.
-func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tableName string) (*drivers.TableMetadata, error) {
-	db := c.db
-
-	// StarRocks mapping: database parameter = catalog
-	catalog := database
-
-	// StarRocks mapping: databaseSchema parameter = database
-	dbSchema := databaseSchema
-
-	// Query table metadata and columns using JOIN
-	query := fmt.Sprintf(`
-		SELECT
-			CASE
-				WHEN t.table_type = 'VIEW' THEN true
-				WHEN t.table_type = 'MATERIALIZED VIEW' THEN true
-				ELSE false
-			END AS is_view,
-			c.column_name,
-			c.data_type
-		FROM %s.information_schema.tables t
-		JOIN %s.information_schema.columns c
-			ON t.table_schema = c.table_schema
-			AND t.table_name = c.table_name
-		WHERE t.table_schema = ? AND LOWER(t.table_name) = LOWER(?)
-		ORDER BY c.ordinal_position
-	`, safeSQLName(catalog), safeSQLName(catalog))
-
-	rows, err := db.QueryxContext(ctx, query, dbSchema, tableName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get table metadata: %w", err)
-	}
-	defer rows.Close()
-
-	schema := make(map[string]string)
-	var isView bool
-
-	for rows.Next() {
-		var colName, dataType string
-		if err := rows.Scan(&isView, &colName, &dataType); err != nil {
-			return nil, err
-		}
-		schema[colName] = dataType
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	if len(schema) == 0 {
-		return nil, fmt.Errorf("table not found")
-	}
-
-	return &drivers.TableMetadata{
-		View:   isView,
-		Schema: schema,
-	}, nil
-}
-
 // All returns metadata about all tables and views.
 // For StarRocks, we query from the configured catalog's information_schema.
 func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
@@ -283,7 +225,7 @@ func (c *connection) All(ctx context.Context, like string, pageSize uint32, page
 
 // Lookup returns metadata about a specific table or view.
 // database parameter = catalog, schema parameter = database in StarRocks terms.
-func (c *connection) Lookup(ctx context.Context, database, schema, name string) (*drivers.TableInfo, error) {
+func (c *connection) Lookup(ctx context.Context, database, databaseSchema, table string) (*drivers.TableInfo, error) {
 	db := c.db
 	// StarRocks mapping: database parameter = catalog
 	// If database is empty, use connector's configured catalog
@@ -291,9 +233,9 @@ func (c *connection) Lookup(ctx context.Context, database, schema, name string) 
 	if catalog == "" {
 		catalog = c.configProp.Catalog
 	}
-	// StarRocks mapping: schema parameter = database
-	// If schema is empty, use connector's configured database
-	dbSchema := schema
+	// StarRocks mapping: databaseSchema parameter = database
+	// If databaseSchema is empty, use connector's configured database
+	dbSchema := databaseSchema
 	if dbSchema == "" {
 		dbSchema = c.configProp.Database
 	}
@@ -307,15 +249,19 @@ func (c *connection) Lookup(ctx context.Context, database, schema, name string) 
 				WHEN table_type = 'VIEW' THEN true
 				WHEN table_type = 'MATERIALIZED VIEW' THEN true
 				ELSE false
-			END AS is_view
+			END AS is_view,
+			DATABASE() = table_schema AS is_default_database_schema
 		FROM %s.information_schema.tables
 		WHERE table_schema = ? AND LOWER(table_name) = LOWER(?)
 	`, safeSQLName(catalog))
 
 	var tableSchema, tableName string
-	var isView bool
-	err := db.QueryRowxContext(ctx, tableQuery, dbSchema, name).Scan(&tableSchema, &tableName, &isView)
+	var isView, isDefaultDatabaseSchema bool
+	err := db.QueryRowxContext(ctx, tableQuery, dbSchema, table).Scan(&tableSchema, &tableName, &isView, &isDefaultDatabaseSchema)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, drivers.ErrNotFound
+		}
 		return nil, fmt.Errorf("table not found: %w", err)
 	}
 
@@ -329,7 +275,7 @@ func (c *connection) Lookup(ctx context.Context, database, schema, name string) 
 		ORDER BY ordinal_position
 	`, safeSQLName(catalog))
 
-	rows, err := db.QueryxContext(ctx, columnsQuery, dbSchema, name)
+	rows, err := db.QueryxContext(ctx, columnsQuery, dbSchema, table)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get columns: %w", err)
 	}
@@ -368,8 +314,8 @@ func (c *connection) Lookup(ctx context.Context, database, schema, name string) 
 	return &drivers.TableInfo{
 		Database:                catalog,
 		DatabaseSchema:          tableSchema,
-		IsDefaultDatabase:       false,
-		IsDefaultDatabaseSchema: false,
+		IsDefaultDatabase:       true,
+		IsDefaultDatabaseSchema: isDefaultDatabaseSchema,
 		Name:                    tableName,
 		View:                    isView,
 		Schema:                  &runtimev1.StructType{Fields: fields},

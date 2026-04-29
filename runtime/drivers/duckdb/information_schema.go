@@ -139,98 +139,6 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	return res, next, nil
 }
 
-func (c *connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
-	conn, release, err := c.acquireMetaConn(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = release() }()
-
-	var args []any
-	var q string
-	if c.config.Path != "" || c.config.Attach != "" {
-		// for generic duckdb implementation, we use the current schema from the connection.
-		q = `
-        SELECT
-            t.table_type = 'VIEW' AS view,
-            c.column_name,
-            c.data_type
-        FROM information_schema.tables t
-        LEFT JOIN information_schema.columns c
-            ON t.table_schema = c.table_schema AND t.table_name = c.table_name
-        WHERE t.table_catalog = ? AND t.table_schema = ? AND t.table_name = ?
-        ORDER BY c.ordinal_position
-    	`
-		args = []any{database, databaseSchema, table}
-	} else {
-		// for rduckdb implementation, we use the current database and schema from the connection.
-		// due to external table storage the information_schema always returns table type as view
-		// so we look at attached tables to determine if it is a view or table
-		q = `
-		WITH attached AS (
-			SELECT
-				DISTINCT regexp_extract(database_name, '^(.*?)__\d+__db$', 1) AS attached_table
-			FROM duckdb_databases()
-			WHERE regexp_matches(database_name, '^.+__\d+__db$')
-		)
-		SELECT
-			CASE
-				WHEN a.attached_table IS NOT NULL THEN FALSE
-				ELSE t.table_type = 'VIEW'
-			END AS view,
-			c.column_name,
-			c.data_type
-		FROM information_schema.tables t
-		LEFT JOIN information_schema.columns c
-			ON t.table_schema = c.table_schema AND t.table_name = c.table_name
-		LEFT JOIN attached a
-			ON t.table_name = a.attached_table
-		WHERE t.table_catalog = current_database() AND t.table_schema = current_schema() AND t.table_name = ?
-		ORDER BY c.ordinal_position;
-		`
-		args = []any{table}
-	}
-	rows, err := conn.QueryxContext(ctx, q, args...)
-	if err != nil {
-		return nil, c.checkErr(err)
-	}
-	defer rows.Close()
-
-	schemaMap := make(map[string]string)
-	var view bool
-	var colName, dataType string
-	for rows.Next() {
-		if err := rows.Scan(&view, &colName, &dataType); err != nil {
-			return nil, err
-		}
-		// For views that depend on secrets, we have an inaccessible schema since
-		// the secret is only set at write time.
-		if strings.HasPrefix(colName, "error(") && dataType == "\"NULL\"" {
-			return nil, fmt.Errorf("failed to get schema (try setting `materialize: true` — this usually happens for non-materialized views): %s", colName)
-		}
-		if pbType, err := databaseTypeToPB(dataType, false); err != nil {
-			if errors.Is(err, errUnsupportedType) {
-				schemaMap[colName] = fmt.Sprintf("UNKNOWN(%s)", dataType)
-			} else {
-				return nil, err
-			}
-		} else if pbType.Code == runtimev1.Type_CODE_UNSPECIFIED {
-			schemaMap[colName] = fmt.Sprintf("UNKNOWN(%s)", dataType)
-		} else {
-			schemaMap[colName] = strings.TrimPrefix(pbType.Code.String(), "CODE_")
-		}
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return &drivers.TableMetadata{
-		Schema: schemaMap,
-		View:   view,
-	}, nil
-}
-
 func (c *connection) All(ctx context.Context, ilike string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
 	// TODO: this bypasses the acquireMetaConn call in the original implementation. Fix this.
 	db, release, err := c.acquireDB()
@@ -252,7 +160,7 @@ func (c *connection) All(ctx context.Context, ilike string, pageSize uint32, pag
 	return tables, nextToken, nil
 }
 
-func (c *connection) Lookup(ctx context.Context, _, _, name string) (*drivers.TableInfo, error) {
+func (c *connection) Lookup(ctx context.Context, database, databaseSchema, table string) (*drivers.TableInfo, error) {
 	// TODO: this bypasses the acquireMetaConn call in the original implementation. Fix this.
 	db, release, err := c.acquireDB()
 	if err != nil {
@@ -260,7 +168,7 @@ func (c *connection) Lookup(ctx context.Context, _, _, name string) (*drivers.Ta
 	}
 	defer func() { _ = release() }()
 
-	rows, _, err := db.Schema(ctx, "", name, 0, "")
+	rows, _, err := db.Schema(ctx, "", table, 0, "")
 	if err != nil {
 		return nil, c.checkErr(err)
 	}

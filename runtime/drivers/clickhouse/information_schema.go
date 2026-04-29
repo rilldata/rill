@@ -153,60 +153,6 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	return res, next, nil
 }
 
-func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
-	conn, release, err := c.acquireMetaConn(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = release() }()
-
-	q := `
-    SELECT
-        CASE WHEN match(engine, 'View') THEN true ELSE false END AS view,
-        c.name AS column_name,
-        c.type AS data_type
-    FROM system.tables t
-    LEFT JOIN system.columns c
-		ON t.database = c.database AND t.name = c.table
-    WHERE t.database = ? AND t.name = ?
-    ORDER BY c.position
-    `
-	rows, err := conn.QueryxContext(ctx, q, databaseSchema, table)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	schemaMap := make(map[string]string)
-	var view bool
-	var colName, dataType string
-	for rows.Next() {
-		if err := rows.Scan(&view, &colName, &dataType); err != nil {
-			return nil, err
-		}
-		if pbType, err := databaseTypeToPB(dataType, false); err != nil {
-			if errors.Is(err, errUnsupportedType) {
-				schemaMap[colName] = fmt.Sprintf("UNKNOWN(%s)", dataType)
-			} else {
-				return nil, err
-			}
-		} else if pbType.Code == runtimev1.Type_CODE_UNSPECIFIED {
-			schemaMap[colName] = fmt.Sprintf("UNKNOWN(%s)", dataType)
-		} else {
-			schemaMap[colName] = strings.TrimPrefix(pbType.Code.String(), "CODE_")
-		}
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return &drivers.TableMetadata{
-		Schema: schemaMap,
-		View:   view,
-	}, nil
-}
-
 func (c *Connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
 	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {
@@ -295,7 +241,7 @@ func (c *Connection) All(ctx context.Context, like string, pageSize uint32, page
 	return tables, next, nil
 }
 
-func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.TableInfo, error) {
+func (c *Connection) Lookup(ctx context.Context, database, databaseSchema, table string) (*drivers.TableInfo, error) {
 	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {
 		return nil, err
@@ -305,7 +251,7 @@ func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 	var q string
 	var args []any
 	q = `
-		SELECT 
+		SELECT
 			T.database AS SCHEMA,
 			T.database = currentDatabase() AS is_default_schema,
 			T.name AS NAME,
@@ -318,10 +264,10 @@ func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 		WHERE T.database = coalesce(?, currentDatabase()) AND T.name = ?
 		ORDER BY SCHEMA, NAME, TABLE_TYPE, ORDINAL_POSITION
 	`
-	if schema == "" {
-		args = append(args, nil, name)
+	if databaseSchema == "" {
+		args = append(args, nil, table)
 	} else {
-		args = append(args, schema, name)
+		args = append(args, databaseSchema, table)
 	}
 
 	rows, err := conn.QueryxContext(ctx, q, args...)

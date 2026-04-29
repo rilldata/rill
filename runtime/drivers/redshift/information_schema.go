@@ -151,12 +151,20 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	return res, next, nil
 }
 
-func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
+// All implements drivers.InformationSchema.
+func (c *Connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
+}
+
+// Lookup implements drivers.InformationSchema.
+func (c *Connection) Lookup(ctx context.Context, database, databaseSchema, table string) (*drivers.TableInfo, error) {
 	q := fmt.Sprintf(`
-SELECT 
-	column_name, 
+SELECT
+	column_name,
 	data_type,
-	CASE WHEN table_type = 'VIEW' THEN true ELSE false END AS view
+	CASE WHEN table_type = 'VIEW' THEN true ELSE false END AS view,
+	CASE WHEN c.database_name = current_database() THEN true ELSE false END AS is_default_database,
+	CASE WHEN c.schema_name = current_schema() THEN true ELSE false END AS is_default_database_schema
 FROM svv_all_columns c
 JOIN svv_all_tables t
 	ON t.database_name = c.database_name AND t.schema_name = c.schema_name AND t.table_name = c.table_name
@@ -173,18 +181,16 @@ ORDER BY ordinal_position;
 	if err != nil {
 		return nil, fmt.Errorf("failed to get table metadata: %w", err)
 	}
-	queryExecutionID := *out.Id
 
 	result, err := client.GetStatementResult(ctx, &redshiftdata.GetStatementResultInput{
-		Id: aws.String(queryExecutionID),
+		Id: out.Id,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get query results: %w", err)
 	}
 
-	var column, dataType string
-	var isView bool
-	schemaMap := make(map[string]string, len(result.Records))
+	var isView, isDefaultDatabase, isDefaultDatabaseSchema bool
+	var fields []*runtimev1.StructType_Field
 	for _, record := range result.Records {
 		colField, ok := record[0].(*types.FieldMemberStringValue)
 		if !ok {
@@ -198,21 +204,36 @@ ORDER BY ordinal_position;
 		if !ok {
 			return nil, fmt.Errorf("unexpected type for view field")
 		}
-		column = colField.Value
-		dataType = typeField.Value
+		isDefaultDatabaseField, ok := record[3].(*types.FieldMemberBooleanValue)
+		if !ok {
+			return nil, fmt.Errorf("unexpected type for is_default_database field")
+		}
+		isDefaultDatabaseSchemaField, ok := record[4].(*types.FieldMemberBooleanValue)
+		if !ok {
+			return nil, fmt.Errorf("unexpected type for is_default_database_schema field")
+		}
 		isView = viewField.Value
-		schemaMap[column] = dataType
+		isDefaultDatabase = isDefaultDatabaseField.Value
+		isDefaultDatabaseSchema = isDefaultDatabaseSchemaField.Value
+		fields = append(fields, &runtimev1.StructType_Field{
+			Name: colField.Value,
+			Type: redshiftTypeToRuntimeType(typeField.Value),
+		})
 	}
-
-	return &drivers.TableMetadata{
-		Schema: schemaMap,
-		View:   isView,
+	if len(fields) == 0 {
+		return nil, drivers.ErrNotFound
+	}
+	return &drivers.TableInfo{
+		Database:                database,
+		DatabaseSchema:          databaseSchema,
+		Name:                    table,
+		View:                    isView,
+		IsDefaultDatabase:       isDefaultDatabase,
+		IsDefaultDatabaseSchema: isDefaultDatabaseSchema,
+		Schema:                  &runtimev1.StructType{Fields: fields},
+		UnsupportedCols:         nil,
+		PhysicalSizeBytes:       0,
 	}, nil
-}
-
-// All implements drivers.InformationSchema.
-func (c *Connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
-	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
 }
 
 // LoadPhysicalSize implements drivers.InformationSchema.
@@ -223,32 +244,6 @@ func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Tab
 // LoadDDL implements drivers.InformationSchema.
 func (c *Connection) LoadDDL(ctx context.Context, table *drivers.TableInfo) error {
 	return nil // Not implemented
-}
-
-// Lookup implements drivers.InformationSchema.
-func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.TableInfo, error) {
-	meta, err := c.GetTable(ctx, db, schema, name)
-	if err != nil {
-		return nil, err
-	}
-	runtimeSchema := &runtimev1.StructType{
-		Fields: make([]*runtimev1.StructType_Field, 0, len(meta.Schema)),
-	}
-	for name, typ := range meta.Schema {
-		runtimeSchema.Fields = append(runtimeSchema.Fields, &runtimev1.StructType_Field{
-			Name: name,
-			Type: redshiftTypeToRuntimeType(typ),
-		})
-	}
-	return &drivers.TableInfo{
-		Database:          db,
-		DatabaseSchema:    schema,
-		Name:              name,
-		View:              meta.View,
-		Schema:            runtimeSchema,
-		UnsupportedCols:   nil,
-		PhysicalSizeBytes: 0,
-	}, nil
 }
 
 func escapeStringValue(s string) string {

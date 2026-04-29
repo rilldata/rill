@@ -16,7 +16,7 @@ type InformationSchema interface {
 	// The like argument can optionally be passed to filter the tables by name.
 	All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*TableInfo, string, error)
 	// Lookup returns metadata about a specific tables and views.
-	Lookup(ctx context.Context, db, schema, name string) (*TableInfo, error)
+	Lookup(ctx context.Context, database, databaseSchema, table string) (*TableInfo, error)
 	// LoadPhysicalSize populates the PhysicalSizeBytes field of table metadata.
 	// It should be called after All or Lookup and not on manually created tables.
 	LoadPhysicalSize(ctx context.Context, tables []*TableInfo) error
@@ -45,16 +45,23 @@ type TableInfo struct {
 	IsDefaultDatabaseSchema bool
 	Name                    string
 	View                    bool
-	// Schema is the table schema. It is only set when only single table is looked up. It is not set when listing all tables.
-	Schema            *runtimev1.StructType
-	UnsupportedCols   map[string]string
-	PhysicalSizeBytes int64
-	DDL               string
-}
 
-type TableMetadata struct {
-	View   bool // TODO: populate for other drivers
-	Schema map[string]string
+	// Schema contains the table schema.
+	// It is only populated after calling Lookup and is nil when listing tables.
+	Schema *runtimev1.StructType
+
+	// UnsupportedCols lists columns that could not be mapped to a supported runtimev1.Type.
+	// The key is the column name and the value is the original raw type.
+	// It is only populated after calling Lookup and is empty when listing tables.
+	UnsupportedCols map[string]string
+
+	// PhysicalSizeBytes is the on-disk size of the table in bytes.
+	// It is only populated after calling LoadPhysicalSize.
+	PhysicalSizeBytes int64
+
+	// DDL contains the CREATE TABLE/VIEW statement for the table/view.
+	// It is only populated after calling LoadDDL.
+	DDL string
 }
 
 // AllFromInformationSchema is a helper function that drivers implementing InformationSchema can use to implement Olap.All()
@@ -78,8 +85,8 @@ func AllFromInformationSchema(ctx context.Context, like string, pageSize uint32,
 		}
 		for _, t := range ts {
 			table := &TableInfo{
-				Database:                schema.Database,
-				DatabaseSchema:          schema.DatabaseSchema,
+				Database:                t.Database,
+				DatabaseSchema:          t.DatabaseSchema,
 				IsDefaultDatabase:       t.IsDefaultDatabase,
 				IsDefaultDatabaseSchema: t.IsDefaultDatabaseSchema,
 				Name:                    t.Name,

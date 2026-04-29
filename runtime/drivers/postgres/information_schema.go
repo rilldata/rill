@@ -132,51 +132,67 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	return res, next, rows.Err()
 }
 
-func (c *connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
+// All implements drivers.InformationSchema.
+func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
+}
+
+// Lookup implements drivers.InformationSchema.
+func (c *connection) Lookup(ctx context.Context, database, databaseSchema, table string) (*drivers.TableInfo, error) {
 	q := `
-	SELECT 
+	SELECT
 		CASE WHEN lower(t.table_type) = 'view' THEN true ELSE false END AS view,
-		c.column_name, 
+		current_schema() = c.table_schema AS is_default_database_schema,
+		c.column_name,
 		c.data_type
 	FROM information_schema.tables t JOIN information_schema.columns c ON t.table_name = c.table_name AND t.table_schema = c.table_schema
 	WHERE c.table_schema = coalesce($1, current_schema()) AND c.table_name = $2
 	ORDER BY ordinal_position
 	`
-	db, err := c.getDB(ctx)
+	pdb, err := c.getDB(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	var args []any
+	var schemaArg any
 	if databaseSchema != "" {
-		args = append(args, databaseSchema, table)
-	} else {
-		args = append(args, nil, table)
+		schemaArg = databaseSchema
 	}
-	rows, err := db.QueryContext(ctx, q, args...)
+	rows, err := pdb.QueryContext(ctx, q, schemaArg, table)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	columns := make(map[string]string)
-	var name, typ string
-	var view bool
+	var isView, isDefaultDatabaseSchema bool
+	var fields []*runtimev1.StructType_Field
 	for rows.Next() {
-		if err := rows.Scan(&view, &name, &typ); err != nil {
+		var colName, typ string
+		if err := rows.Scan(&isView, &isDefaultDatabaseSchema, &colName, &typ); err != nil {
 			return nil, err
 		}
-		columns[name] = typ
+		fields = append(fields, &runtimev1.StructType_Field{
+			Name: colName,
+			Type: databaseTypeToPB(typ),
+		})
 	}
-	return &drivers.TableMetadata{
-		View:   view,
-		Schema: columns,
-	}, rows.Err()
-}
-
-// All implements drivers.InformationSchema.
-func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
-	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if len(fields) == 0 {
+		return nil, drivers.ErrNotFound
+	}
+	return &drivers.TableInfo{
+		Database:                database,
+		DatabaseSchema:          databaseSchema,
+		Name:                    table,
+		View:                    isView,
+		IsDefaultDatabase:       true,
+		IsDefaultDatabaseSchema: isDefaultDatabaseSchema,
+		Schema:                  &runtimev1.StructType{Fields: fields},
+		UnsupportedCols:         nil,
+		PhysicalSizeBytes:       0,
+	}, nil
 }
 
 // LoadPhysicalSize implements drivers.InformationSchema.
@@ -238,30 +254,4 @@ func (c *connection) LoadDDL(ctx context.Context, table *drivers.TableInfo) erro
 	}
 	table.DDL = ddl
 	return nil
-}
-
-// Lookup implements drivers.InformationSchema.
-func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.TableInfo, error) {
-	meta, err := c.GetTable(ctx, db, schema, name)
-	if err != nil {
-		return nil, err
-	}
-
-	rtSchema := &runtimev1.StructType{}
-	for name, typ := range meta.Schema {
-		t := databaseTypeToPB(typ)
-		rtSchema.Fields = append(rtSchema.Fields, &runtimev1.StructType_Field{
-			Name: name,
-			Type: t,
-		})
-	}
-	return &drivers.TableInfo{
-		Database:          db,
-		DatabaseSchema:    schema,
-		Name:              name,
-		View:              meta.View,
-		Schema:            rtSchema,
-		UnsupportedCols:   nil,
-		PhysicalSizeBytes: 0,
-	}, nil
 }

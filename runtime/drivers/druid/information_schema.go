@@ -3,7 +3,6 @@ package druid
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -81,67 +80,6 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	return res, next, nil
 }
 
-func (c *connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
-	// Ensure Coordinator is ready.
-	// The issues is that the request
-	//	SELECT ...
-	//	FROM INFORMATION_SCHEMA.TABLES T
-	//	JOIN INFORMATION_SCHEMA.COLUMNS C ON T.TABLE_SCHEMA = C.TABLE_SCHEMA AND T.TABLE_NAME = C.TABLE_NAME
-	//	WHERE T.TABLE_SCHEMA = 'druid' AND T.TABLE_NAME = ?
-	//	ORDER BY SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
-	// returns false-negative if the Coordinator is being restarted. Retrier is a more abstract component and it doesn't check
-	// if SQL tries to retrieve the dynamic schema and the will be no error from Druid Router
-	// (because if the dynamic schema is empty - it's considered OK by the Druid cluster).
-	q := "SELECT * FROM sys.segments LIMIT 1"
-	rows, err := c.db.QueryxContext(ctx, q)
-	if err != nil {
-		return nil, err
-	}
-	rows.Close()
-
-	q = `
-    SELECT
-    	T.TABLE_TYPE = 'VIEW' AS view,
-    	C.COLUMN_NAME,
-    	C.DATA_TYPE,
-    	C.IS_NULLABLE = 'YES' AS is_nullable
-	FROM INFORMATION_SCHEMA.TABLES T
-	LEFT JOIN INFORMATION_SCHEMA.COLUMNS C 
-		ON T.TABLE_SCHEMA = C.TABLE_SCHEMA AND T.TABLE_NAME = C.TABLE_NAME
-	WHERE T.TABLE_SCHEMA = ? AND T.TABLE_NAME = ?
-	ORDER BY C.ORDINAL_POSITION
-    `
-	rows, err = c.db.QueryxContext(ctx, q, databaseSchema, table)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	schemaMap := make(map[string]string)
-	var view, nullable bool
-	var colName, dataType string
-	for rows.Next() {
-		if err := rows.Scan(&view, &colName, &dataType, &nullable); err != nil {
-			return nil, err
-		}
-		pbType := databaseTypeToPB(dataType, nullable)
-		if pbType.Code == runtimev1.Type_CODE_UNSPECIFIED {
-			schemaMap[colName] = fmt.Sprintf("UNKNOWN(%s)", dataType)
-		} else {
-			schemaMap[colName] = strings.TrimPrefix(pbType.Code.String(), "CODE_")
-		}
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return &drivers.TableMetadata{
-		Schema: schemaMap,
-		View:   view,
-	}, nil
-}
-
 func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
 	var filter string
 	var args []any
@@ -204,7 +142,7 @@ func (c *connection) All(ctx context.Context, like string, pageSize uint32, page
 	return tables, next, nil
 }
 
-func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.TableInfo, error) {
+func (c *connection) Lookup(ctx context.Context, database, databaseSchema, table string) (*drivers.TableInfo, error) {
 	// Ensure Coordinator is ready.
 	// The issues is that the request
 	//	SELECT ...
@@ -216,7 +154,7 @@ func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 	// if SQL tries to retrieve the dynamic schema and the will be no error from Druid Router
 	// (because if the dynamic schema is empty - it's considered OK by the Druid cluster).
 	q := "SELECT * FROM sys.segments LIMIT 1"
-	rows, err := c.db.QueryxContext(ctx, q, name)
+	rows, err := c.db.QueryxContext(ctx, q, table)
 	if err != nil {
 		return nil, err
 	}
@@ -226,17 +164,17 @@ func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 		SELECT
 			T.TABLE_SCHEMA AS SCHEMA,
 			T.TABLE_NAME AS NAME,
-			T.TABLE_TYPE AS TABLE_TYPE, 
+			T.TABLE_TYPE AS TABLE_TYPE,
 			C.COLUMN_NAME AS COLUMN_NAME,
 			C.DATA_TYPE AS COLUMN_TYPE,
 			C.IS_NULLABLE = 'YES' AS IS_NULLABLE
-		FROM INFORMATION_SCHEMA.TABLES T 
+		FROM INFORMATION_SCHEMA.TABLES T
 		JOIN INFORMATION_SCHEMA.COLUMNS C ON T.TABLE_SCHEMA = C.TABLE_SCHEMA AND T.TABLE_NAME = C.TABLE_NAME
 		WHERE T.TABLE_SCHEMA = 'druid' AND T.TABLE_NAME = ?
 		ORDER BY SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
 	`
 
-	rows, err = c.db.QueryxContext(ctx, q, name)
+	rows, err = c.db.QueryxContext(ctx, q, table)
 	if err != nil {
 		return nil, err
 	}
@@ -252,10 +190,6 @@ func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 	}
 
 	return tables[0], nil
-}
-
-func (c *connection) LoadDDL(ctx context.Context, table *drivers.TableInfo) error {
-	return nil // Not implemented
 }
 
 func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.TableInfo) error {
@@ -291,6 +225,10 @@ func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Tab
 		}
 	}
 	return nil
+}
+
+func (c *connection) LoadDDL(ctx context.Context, table *drivers.TableInfo) error {
+	return nil // Not implemented
 }
 
 func scanTables(rows *sqlx.Rows) ([]*drivers.TableInfo, error) {

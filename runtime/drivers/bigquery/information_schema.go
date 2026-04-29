@@ -8,6 +8,7 @@ import (
 	"cloud.google.com/go/bigquery"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pagination"
+	"google.golang.org/api/googleapi"
 	"google.golang.org/api/iterator"
 )
 
@@ -129,59 +130,48 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	return res, next, nil
 }
 
-func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
-	q := fmt.Sprintf(`
-	SELECT 
-		CASE t.table_type WHEN 'VIEW' THEN true else false END AS is_view,
-		c.column_name,
-		c.data_type
-	FROM `+"`%s.%s.INFORMATION_SCHEMA.TABLES`"+` AS t
-	JOIN `+"`%s.%s.INFORMATION_SCHEMA.COLUMNS`"+` AS c
-	ON t.table_name = c.table_name
-	WHERE c.table_name = @table
-	ORDER BY c.ordinal_position
-	`, database, databaseSchema, database, databaseSchema)
+// All implements drivers.InformationSchema.
+func (c *Connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
+}
 
+// Lookup implements drivers.InformationSchema.
+func (c *Connection) Lookup(ctx context.Context, database, databaseSchema, table string) (*drivers.TableInfo, error) {
 	client, err := c.getClient(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get BigQuery client: %w", err)
 	}
-	cq := client.Query(q)
-	cq.Parameters = []bigquery.QueryParameter{
-		{Name: "table", Value: table},
+
+	var bqTable *bigquery.Table
+	if database != "" {
+		bqTable = client.DatasetInProject(database, databaseSchema).Table(table)
+	} else {
+		bqTable = client.Dataset(databaseSchema).Table(table)
 	}
 
-	it, err := cq.Read(ctx)
+	meta, err := bqTable.Metadata(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to run INFORMATION_SCHEMA query: %w", err)
-	}
-
-	r := &drivers.TableMetadata{
-		Schema: make(map[string]string),
-	}
-	var row struct {
-		IsView     bool   `bigquery:"is_view"`
-		ColumnName string `bigquery:"column_name"`
-		DataType   string `bigquery:"data_type"`
-	}
-	for {
-		err := it.Next(&row)
-		if errors.Is(err, iterator.Done) {
-			break
+		var gErr *googleapi.Error
+		if errors.As(err, &gErr) && gErr.Code == 404 {
+			return nil, drivers.ErrNotFound
 		}
-		if err != nil {
-			return nil, fmt.Errorf("failed to iterate over schema rows: %w", err)
-		}
-		r.Schema[row.ColumnName] = row.DataType
-		r.View = row.IsView
+		return nil, fmt.Errorf("failed to get table metadata: %w", err)
 	}
-
-	return r, nil
-}
-
-// All implements drivers.InformationSchema.
-func (c *Connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
-	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
+	runtimeSchema, err := fromBQSchema(meta.Schema)
+	if err != nil {
+		return nil, err
+	}
+	return &drivers.TableInfo{
+		Database:                database,
+		DatabaseSchema:          databaseSchema,
+		Name:                    table,
+		View:                    meta.Type == bigquery.ViewTable,
+		IsDefaultDatabase:       true,
+		IsDefaultDatabaseSchema: false,
+		Schema:                  runtimeSchema,
+		UnsupportedCols:         nil, // all columns are currently being mapped though may not be as specific as in BigQuery
+		PhysicalSizeBytes:       0,
+	}, nil
 }
 
 // LoadPhysicalSize implements drivers.InformationSchema.
@@ -216,38 +206,4 @@ func (c *Connection) LoadDDL(ctx context.Context, table *drivers.TableInfo) erro
 	}
 	table.DDL = row.DDL
 	return nil
-}
-
-// Lookup implements drivers.InformationSchema.
-func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.TableInfo, error) {
-	client, err := c.getClient(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get BigQuery client: %w", err)
-	}
-
-	var table *bigquery.Table
-	if db != "" {
-		table = client.DatasetInProject(db, schema).Table(name)
-	} else {
-		table = client.Dataset(schema).Table(name)
-	}
-
-	meta, err := table.Metadata(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get table metadata: %w", err)
-	}
-	runtimeSchema, err := fromBQSchema(meta.Schema)
-	if err != nil {
-		return nil, err
-	}
-	tbl := &drivers.TableInfo{
-		Database:          db,
-		DatabaseSchema:    schema,
-		Name:              name,
-		View:              meta.Type == bigquery.ViewTable,
-		Schema:            runtimeSchema,
-		UnsupportedCols:   nil, // all columns are currently being mapped though may not be as specific as in BigQuery
-		PhysicalSizeBytes: 0,
-	}
-	return tbl, nil
 }

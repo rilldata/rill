@@ -126,10 +126,18 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	return res, next, nil
 }
 
-func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
+// All implements drivers.InformationSchema.
+func (c *Connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
+}
+
+// Lookup implements drivers.InformationSchema.
+func (c *Connection) Lookup(ctx context.Context, database, databaseSchema, table string) (*drivers.TableInfo, error) {
 	q := fmt.Sprintf(`
 SELECT
 	CASE t.table_type WHEN 'VIEW' THEN true ELSE false END AS view,
+	current_catalog = t.table_catalog AS is_default_database,
+	current_schema = t.table_schema AS is_default_database_schema,
 	column_name,
 	data_type
 FROM %s.information_schema.columns c
@@ -148,26 +156,35 @@ ORDER BY c.ordinal_position
 	}
 	defer rows.Close()
 
-	res := &drivers.TableMetadata{
-		Schema: make(map[string]string),
-	}
+	var isView, isDefaultDatabase, isDefaultDatabaseSchema bool
+	var fields []*runtimev1.StructType_Field
 	var col, typ string
 	for rows.Next() {
-		err = rows.Scan(&res.View, &col, &typ)
-		if err != nil {
+		if err := rows.Scan(&isView, &isDefaultDatabase, &isDefaultDatabaseSchema, &col, &typ); err != nil {
 			return nil, err
 		}
-		res.Schema[col] = typ
+		fields = append(fields, &runtimev1.StructType_Field{
+			Name: col,
+			Type: athenaTypeToRuntimeType(typ),
+		})
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-	return res, nil
-}
-
-// All implements drivers.InformationSchema.
-func (c *Connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
-	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
+	if len(fields) == 0 {
+		return nil, drivers.ErrNotFound
+	}
+	return &drivers.TableInfo{
+		Database:                database,
+		DatabaseSchema:          databaseSchema,
+		Name:                    table,
+		View:                    isView,
+		IsDefaultDatabase:       isDefaultDatabase,
+		IsDefaultDatabaseSchema: isDefaultDatabaseSchema,
+		Schema:                  &runtimev1.StructType{Fields: fields},
+		UnsupportedCols:         nil,
+		PhysicalSizeBytes:       0,
+	}, nil
 }
 
 // LoadPhysicalSize implements drivers.InformationSchema.
@@ -178,32 +195,6 @@ func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Tab
 // LoadDDL implements drivers.InformationSchema.
 func (c *Connection) LoadDDL(ctx context.Context, table *drivers.TableInfo) error {
 	return nil // Not implemented
-}
-
-// Lookup implements drivers.InformationSchema.
-func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.TableInfo, error) {
-	meta, err := c.GetTable(ctx, db, schema, name)
-	if err != nil {
-		return nil, err
-	}
-	runtimeSchema := &runtimev1.StructType{
-		Fields: make([]*runtimev1.StructType_Field, 0, len(meta.Schema)),
-	}
-	for name, typ := range meta.Schema {
-		runtimeSchema.Fields = append(runtimeSchema.Fields, &runtimev1.StructType_Field{
-			Name: name,
-			Type: athenaTypeToRuntimeType(typ),
-		})
-	}
-	return &drivers.TableInfo{
-		Database:          db,
-		DatabaseSchema:    schema,
-		Name:              name,
-		View:              meta.View,
-		Schema:            runtimeSchema,
-		UnsupportedCols:   nil,
-		PhysicalSizeBytes: 0,
-	}, nil
 }
 
 func (c *Connection) listCatalogs(ctx context.Context, client *athena.Client) ([]string, error) {

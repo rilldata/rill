@@ -127,72 +127,6 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	return result, next, nil
 }
 
-func (c *connection) GetTable(ctx context.Context, database, databaseSchema, name string) (*drivers.TableMetadata, error) {
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.schemaURL+"/tables/"+name+"/schema", http.NoBody)
-	for k, v := range c.headers {
-		req.Header.Set(k, v)
-	}
-	req.Header.Set("database", databaseSchema)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}
-
-	var schemaResponse pinotSchema
-	err = json.NewDecoder(resp.Body).Decode(&schemaResponse)
-	if err != nil {
-		return nil, err
-	}
-
-	schema := make(map[string]string)
-	for _, field := range schemaResponse.DateTimeFieldSpecs {
-		if field.DataType != "TIMESTAMP" && field.DataType != "LONG" {
-			schema[field.Name] = fmt.Sprintf("UNKNOWN(%s)", field.DataType+"_DATE_TIME")
-			continue
-		}
-		pbType := databaseTypeToPB(field.DataType, !field.NotNull, true)
-		if pbType.Code == runtimev1.Type_CODE_UNSPECIFIED {
-			schema[field.Name] = fmt.Sprintf("UNKNOWN(%s)", field.DataType)
-		} else {
-			schema[field.Name] = strings.TrimPrefix(pbType.Code.String(), "CODE_")
-		}
-	}
-	for _, field := range schemaResponse.DimensionFieldSpecs {
-		// Skip fields where SingleValueField is false (i.e. arrays).
-		if field.SingleValueField != nil && !*field.SingleValueField {
-			schema[field.Name] = fmt.Sprintf("UNKNOWN(%s)", field.DataType+"_ARRAY")
-			continue
-		}
-		pbType := databaseTypeToPB(field.DataType, !field.NotNull, true)
-		if pbType.Code == runtimev1.Type_CODE_UNSPECIFIED {
-			schema[field.Name] = fmt.Sprintf("UNKNOWN(%s)", field.DataType)
-		} else {
-			schema[field.Name] = strings.TrimPrefix(pbType.Code.String(), "CODE_")
-		}
-	}
-	for _, field := range schemaResponse.MetricFieldSpecs {
-		// Skip fields where SingleValueField is false (i.e. arrays).
-		if field.SingleValueField != nil && !*field.SingleValueField {
-			schema[field.Name] = fmt.Sprintf("UNKNOWN(%s)", field.DataType+"_ARRAY")
-			continue
-		}
-		pbType := databaseTypeToPB(field.DataType, !field.NotNull, true)
-		if pbType.Code == runtimev1.Type_CODE_UNSPECIFIED {
-			schema[field.Name] = fmt.Sprintf("UNKNOWN(%s)", field.DataType)
-		} else {
-			schema[field.Name] = strings.TrimPrefix(pbType.Code.String(), "CODE_")
-		}
-	}
-
-	return &drivers.TableMetadata{Schema: schema, View: false}, nil
-}
-
 func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
 	// query /tables endpoint, for each table name, query /tables/{tableName}/schema
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.schemaURL+"/tables", http.NoBody)
@@ -291,8 +225,8 @@ func (c *connection) All(ctx context.Context, like string, pageSize uint32, page
 	return tables, next, nil
 }
 
-func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.TableInfo, error) {
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.schemaURL+"/tables/"+name+"/schema", http.NoBody)
+func (c *connection) Lookup(ctx context.Context, database, databaseSchema, table string) (*drivers.TableInfo, error) {
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.schemaURL+"/tables/"+table+"/schema", http.NoBody)
 	for k, v := range c.headers {
 		req.Header.Set(k, v)
 	}
@@ -303,6 +237,9 @@ func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, drivers.ErrNotFound
+	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
@@ -347,22 +284,17 @@ func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 		schemaFields = append(schemaFields, &runtimev1.StructType_Field{Name: field.Name, Type: databaseTypeToPB(field.DataType, !field.NotNull, singleValueField)})
 	}
 
-	table := &drivers.TableInfo{
-		Database:          "",
-		DatabaseSchema:    "",
-		Name:              name,
-		View:              false,
-		Schema:            &runtimev1.StructType{Fields: schemaFields},
-		UnsupportedCols:   unsupportedCols,
-		PhysicalSizeBytes: -1,
-	}
-
-	return table, nil
-}
-
-// LoadDDL implements drivers.InformationSchema.
-func (c *connection) LoadDDL(ctx context.Context, table *drivers.TableInfo) error {
-	return nil // Not implemented
+	return &drivers.TableInfo{
+		Database:                "",
+		DatabaseSchema:          "",
+		Name:                    table,
+		View:                    false,
+		IsDefaultDatabase:       true,
+		IsDefaultDatabaseSchema: true,
+		Schema:                  &runtimev1.StructType{Fields: schemaFields},
+		UnsupportedCols:         unsupportedCols,
+		PhysicalSizeBytes:       -1,
+	}, nil
 }
 
 // LoadPhysicalSize populates the PhysicalSizeBytes field of the tables.
@@ -424,6 +356,11 @@ func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Tab
 		})
 	}
 	return wg.Wait()
+}
+
+// LoadDDL implements drivers.InformationSchema.
+func (c *connection) LoadDDL(ctx context.Context, table *drivers.TableInfo) error {
+	return nil // Not implemented
 }
 
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {

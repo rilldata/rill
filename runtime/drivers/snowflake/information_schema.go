@@ -145,54 +145,71 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	return res, next, nil
 }
 
-func (c *connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
+// All implements drivers.InformationSchema.
+func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
+}
+
+// Lookup implements drivers.InformationSchema.
+func (c *connection) Lookup(ctx context.Context, database, databaseSchema, table string) (*drivers.TableInfo, error) {
 	q := fmt.Sprintf(`
 		SELECT
 			CASE WHEN t.table_type = 'VIEW' THEN true ELSE false END as is_view,
+			CURRENT_DATABASE() = t.table_catalog AS is_default_database,
+			CURRENT_SCHEMA() = t.table_schema AS is_default_database_schema,
 			c.column_name,
 			c.data_type
 		FROM %s.INFORMATION_SCHEMA.TABLES t
 		JOIN %s.INFORMATION_SCHEMA.COLUMNS c
-		ON t.table_schema = c.table_schema AND t.table_name = c.table_name 
+		ON t.table_schema = c.table_schema AND t.table_name = c.table_name
 		WHERE t.table_schema = ? AND t.table_name = ?
 		ORDER BY c.ordinal_position
 	`, DialectSnowflake.EscapeIdentifier(database), DialectSnowflake.EscapeIdentifier(database))
 
-	db, err := c.getDB(ctx)
+	sdb, err := c.getDB(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	rows, err := db.QueryxContext(ctx, q, databaseSchema, table)
+	rows, err := sdb.QueryxContext(ctx, q, databaseSchema, table)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	t := &drivers.TableMetadata{
-		Schema: make(map[string]string),
-	}
-	var (
-		colName, colType string
-		isView           bool
-	)
+	var isView, isDefaultDatabase, isDefaultDatabaseSchema bool
+	var fields []*runtimev1.StructType_Field
 	for rows.Next() {
-		if err := rows.Scan(&isView, &colName, &colType); err != nil {
+		var colName, colType string
+		if err := rows.Scan(&isView, &isDefaultDatabase, &isDefaultDatabaseSchema, &colName, &colType); err != nil {
 			return nil, err
 		}
-		t.Schema[colName] = colType
-		t.View = isView
+		t, err := databaseTypeToPB(colType, 0, true)
+		if err != nil {
+			return nil, err
+		}
+		fields = append(fields, &runtimev1.StructType_Field{
+			Name: colName,
+			Type: t,
+		})
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-
-	return t, nil
-}
-
-// All implements drivers.InformationSchema.
-func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
-	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
+	if len(fields) == 0 {
+		return nil, drivers.ErrNotFound
+	}
+	return &drivers.TableInfo{
+		Database:                database,
+		DatabaseSchema:          databaseSchema,
+		Name:                    table,
+		View:                    isView,
+		IsDefaultDatabase:       isDefaultDatabase,
+		IsDefaultDatabaseSchema: isDefaultDatabaseSchema,
+		Schema:                  &runtimev1.StructType{Fields: fields},
+		UnsupportedCols:         nil,
+		PhysicalSizeBytes:       0,
+	}, nil
 }
 
 // LoadPhysicalSize implements drivers.InformationSchema.
@@ -223,35 +240,6 @@ func (c *connection) LoadDDL(ctx context.Context, table *drivers.TableInfo) erro
 	}
 	table.DDL = ddl
 	return nil
-}
-
-// Lookup implements drivers.InformationSchema.
-func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.TableInfo, error) {
-	meta, err := c.GetTable(ctx, db, schema, name)
-	if err != nil {
-		return nil, err
-	}
-
-	rtSchema := &runtimev1.StructType{}
-	for name, typ := range meta.Schema {
-		t, err := databaseTypeToPB(typ, 0, true) // add scale and nullability if needed
-		if err != nil {
-			return nil, err
-		}
-		rtSchema.Fields = append(rtSchema.Fields, &runtimev1.StructType_Field{
-			Name: name,
-			Type: t,
-		})
-	}
-	return &drivers.TableInfo{
-		Database:          db,
-		DatabaseSchema:    schema,
-		Name:              name,
-		View:              meta.View,
-		Schema:            rtSchema,
-		UnsupportedCols:   nil,
-		PhysicalSizeBytes: 0,
-	}, nil
 }
 
 func getCurrentDatabaseAndSchema(ctx context.Context, db *sql.DB) (string, string, error) {
