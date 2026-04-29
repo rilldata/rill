@@ -162,7 +162,8 @@
       requestSkipBranchInjection();
       await goto(editUrl(resp.deployment?.branch));
     } catch (err) {
-      createError = getRpcErrorMessage(err as any);
+      createError =
+        getRpcErrorMessage(err as any) ?? "Failed to start edit session.";
     }
   }
 
