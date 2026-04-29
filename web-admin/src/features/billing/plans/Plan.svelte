@@ -5,9 +5,17 @@
     createAdminServiceGetOrganization,
     createAdminServiceListProjectsForOrganization,
     createAdminServiceUpdateBillingSubscription,
+    getAdminServiceListDeploymentsQueryOptions,
     V1BillingIssueType,
     V1BillingPlanType,
+    type V1Deployment,
   } from "@rilldata/web-admin/client";
+  import {
+    isActiveDeployment,
+    isProdDeployment,
+  } from "@rilldata/web-admin/features/branches/deployment-utils";
+  import { createQueries } from "@tanstack/svelte-query";
+  import { derived } from "svelte/store";
   import { getErrorForMutation } from "@rilldata/web-admin/client/utils";
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
   import { needsPaymentSetup } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
@@ -148,12 +156,45 @@
   );
   let projects = $derived($projectsQuery.data?.projects ?? []);
 
-  let prodSlots = $derived(
-    projects.reduce((sum, p) => sum + Number(p.prodSlots ?? 0), 0),
-  );
-  let devSlots = $derived(
-    projects.reduce((sum, p) => sum + Number(p.devSlots ?? 0), 0),
-  );
+  // Compute units = project.{prod,dev}Slots × number of running {prod,dev}
+  // deployments for that project, summed across the org. We fan out one
+  // ListDeployments query per project — there's no org-level endpoint.
+  const deploymentsQueries = createQueries({
+    queries: derived(projectsQuery, ($pq) =>
+      ($pq.data?.projects ?? []).map((p) =>
+        getAdminServiceListDeploymentsQueryOptions(
+          organization,
+          p.name ?? "",
+          {},
+        ),
+      ),
+    ),
+  });
+
+  let prodSlots = $derived.by(() => {
+    const projs = $projectsQuery.data?.projects ?? [];
+    const results = $deploymentsQueries;
+    return projs.reduce((sum, p, i) => {
+      const deps = results[i]?.data?.deployments ?? [];
+      const slots = Number(p.prodSlots ?? 0);
+      const runningCount = deps.filter(
+        (d: V1Deployment) => isProdDeployment(d) && isActiveDeployment(d),
+      ).length;
+      return sum + slots * runningCount;
+    }, 0);
+  });
+  let devSlots = $derived.by(() => {
+    const projs = $projectsQuery.data?.projects ?? [];
+    const results = $deploymentsQueries;
+    return projs.reduce((sum, p, i) => {
+      const deps = results[i]?.data?.deployments ?? [];
+      const slots = Number(p.devSlots ?? 0);
+      const runningCount = deps.filter(
+        (d: V1Deployment) => !isProdDeployment(d) && isActiveDeployment(d),
+      ).length;
+      return sum + slots * runningCount;
+    }, 0);
+  });
 
   let usageMetrics = $derived(getOrganizationUsageMetrics(organization));
   let totalStorage = $derived(
