@@ -2,18 +2,16 @@
   import { page } from "$app/stores";
   import CanvasBookmarks from "@rilldata/web-admin/features/bookmarks/CanvasBookmarks.svelte";
   import ExploreBookmarks from "@rilldata/web-admin/features/bookmarks/ExploreBookmarks.svelte";
-  import {
-    branchPathPrefix,
-    extractBranchFromPath,
-  } from "@rilldata/web-admin/features/branches/branch-utils";
+  import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
   import ShareDashboardPopover from "@rilldata/web-admin/features/dashboards/share/ShareDashboardPopover.svelte";
   import { isEditPreviewRoute } from "@rilldata/web-admin/features/edit-session/edit-route-utils";
   import EditActions from "@rilldata/web-admin/features/edit-session/EditActions.svelte";
   import EditButton from "@rilldata/web-admin/features/edit-session/EditButton.svelte";
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
-  import { Button } from "@rilldata/web-common/components/button";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
+  import Slash from "@rilldata/web-common/components/navigation/breadcrumbs/Slash.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
+  import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
@@ -182,30 +180,19 @@
     ? [undefined, project, dashboard, report || alert]
     : [organization, project, dashboard, report || alert];
 
-  // Inside /-/edit the pill swaps between Developer (file editor) and
-  // Preview (dashboards/explore/canvas/...) by changing the URL prefix.
-  // Outside /-/edit there is no toggle.
+  // Inside /-/edit, mode is a status indicator only — Preview vs Developer
+  // is reflected by the URL prefix and the pill just labels it. Toggling
+  // happens via the EditActions Preview/Edit button in the action bar.
   $: editPreviewMode = editContext && isEditPreviewRoute($page.url.pathname);
-
-  $: editToggleHref = activeBranch
-    ? `/${organization}/${project}${branchPathPrefix(activeBranch)}/-/edit${editPreviewMode ? "" : "/dashboards"}`
-    : "";
 </script>
 
 <Header borderBottom={!onProjectPage && !editPreviewMode}>
-  {#if editContext}
-    <a
-      href="/{organization}/{project}"
-      class="px-3 py-1 text-base font-semibold text-fg-primary hover:text-fg-accent"
-      title="Return to project home">Rill</a
-    >
-  {:else}
-    <HeaderLogo href={rillLogoHref} logoUrl={organizationLogoUrl} />
-  {/if}
+  <HeaderLogo
+    href={editContext ? `/${organization}/${project}` : rillLogoHref}
+    logoUrl={editContext ? undefined : organizationLogoUrl}
+  />
   {#if editContext && activeBranch}
-    <Button type="secondary" href={editToggleHref}>
-      {editPreviewMode ? "Preview" : "Developer"}
-    </Button>
+    <Tag text={editPreviewMode ? "Preview" : "Developer"} color="gray" />
   {/if}
   {#if onPublicURLPage}
     <PageTitle title={publicURLDashboardTitle} />
@@ -213,10 +200,9 @@
     <Breadcrumbs {pathParts} {currentPath}>
       <svelte:fragment slot="after-project">
         {#if editContext && activeBranch}
-          <li class="flex items-center mr-2">
-            <span
-              class="flex items-center gap-x-1 px-2 py-0 rounded-2xl border bg-primary-50 border-primary-200 text-primary-800"
-            >
+          <Slash />
+          <li class="flex items-center gap-x-2 px-2">
+            <span class="text-fg-muted">
               {activeBranch.length > 12
                 ? activeBranch.slice(0, 11) + "…"
                 : activeBranch}
