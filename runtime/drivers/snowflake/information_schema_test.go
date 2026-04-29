@@ -5,6 +5,7 @@ import (
 	"sort"
 	"testing"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
@@ -87,6 +88,48 @@ func testLookup(t *testing.T, ctx context.Context, infoSchema drivers.Informatio
 
 	_, err = infoSchema.Lookup(ctx, database, databaseSchema, "nonexistent_table")
 	require.Error(t, err)
+
+	allDatatypes, err := infoSchema.Lookup(ctx, database, databaseSchema, "ALL_DATATYPES")
+	require.NoError(t, err)
+	require.False(t, allDatatypes.View)
+
+	type fieldSpec struct {
+		name     string
+		code     runtimev1.Type_Code
+		rawType  string
+		nullable bool
+	}
+
+	expectedFields := []fieldSpec{
+		{"ID", runtimev1.Type_CODE_DECIMAL, "NUMBER", true},
+		{"BOOLEAN_COL", runtimev1.Type_CODE_BOOL, "BOOLEAN", true},
+		{"TINYINT_COL", runtimev1.Type_CODE_DECIMAL, "NUMBER", true},
+		{"SMALLINT_COL", runtimev1.Type_CODE_DECIMAL, "NUMBER", true},
+		{"INT32_COL", runtimev1.Type_CODE_DECIMAL, "NUMBER", true},
+		{"INT64_COL", runtimev1.Type_CODE_DECIMAL, "NUMBER", true},
+		{"NUMBER_COL", runtimev1.Type_CODE_DECIMAL, "NUMBER", true},
+		{"FLOAT_COL", runtimev1.Type_CODE_FLOAT64, "FLOAT", true},
+		{"DOUBLE_COL", runtimev1.Type_CODE_FLOAT64, "FLOAT", true},
+		{"DECIMAL_COL", runtimev1.Type_CODE_DECIMAL, "NUMBER", true},
+		{"STRING_COL", runtimev1.Type_CODE_STRING, "TEXT", true},
+		{"TEXT_COL", runtimev1.Type_CODE_STRING, "TEXT", true},
+		{"DATE_COL", runtimev1.Type_CODE_DATE, "DATE", true},
+		{"TIME_COL", runtimev1.Type_CODE_TIME, "TIME", true},
+		{"TIMESTAMP_NTZ_COL", runtimev1.Type_CODE_TIMESTAMP, "TIMESTAMP_NTZ", true},
+		{"TIMESTAMP_LTZ_COL", runtimev1.Type_CODE_TIMESTAMP, "TIMESTAMP_LTZ", true},
+		{"TIMESTAMP_TZ_COL", runtimev1.Type_CODE_TIMESTAMP, "TIMESTAMP_TZ", true},
+		{"VARIANT_COL", runtimev1.Type_CODE_JSON, "VARIANT", true},
+		{"ARRAY_COL", runtimev1.Type_CODE_JSON, "ARRAY", true},
+		{"OBJECT_COL", runtimev1.Type_CODE_JSON, "OBJECT", true},
+		{"BINARY_COL", runtimev1.Type_CODE_BYTES, "BINARY", true},
+		{"GEOGRAPHY_COL", runtimev1.Type_CODE_STRING, "GEOGRAPHY", true},
+		{"GEOMETRY_COL", runtimev1.Type_CODE_STRING, "GEOMETRY", true},
+	}
+	actualFields := make([]fieldSpec, len(allDatatypes.Schema.Fields))
+	for i, f := range allDatatypes.Schema.Fields {
+		actualFields[i] = fieldSpec{f.Name, f.Type.Code, f.Type.RawType, f.Type.Nullable}
+	}
+	require.Equal(t, expectedFields, actualFields)
 }
 
 func testListDatabaseSchemas(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {

@@ -5,6 +5,7 @@ import (
 	"sort"
 	"testing"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
@@ -87,6 +88,42 @@ func testLookup(t *testing.T, ctx context.Context, infoSchema drivers.Informatio
 
 	_, err = infoSchema.Lookup(ctx, database, databaseSchema, "nonexistent_table")
 	require.Error(t, err)
+
+	allDatatypes, err := infoSchema.Lookup(ctx, database, databaseSchema, "all_datatypes")
+	require.NoError(t, err)
+	require.False(t, allDatatypes.View)
+
+	type fieldSpec struct {
+		name     string
+		code     runtimev1.Type_Code
+		rawType  string
+		nullable bool
+	}
+	expectedFields := []fieldSpec{
+		{"id", runtimev1.Type_CODE_INT32, "INT", true},
+		{"boolean_col", runtimev1.Type_CODE_BOOL, "BOOLEAN", true},
+		{"tinyint_col", runtimev1.Type_CODE_INT8, "BYTE", true},
+		{"smallint_col", runtimev1.Type_CODE_INT16, "SHORT", true},
+		{"int32_col", runtimev1.Type_CODE_INT32, "INT", true},
+		{"int64_col", runtimev1.Type_CODE_INT64, "LONG", true},
+		{"float_col", runtimev1.Type_CODE_FLOAT32, "FLOAT", true},
+		{"double_col", runtimev1.Type_CODE_FLOAT64, "DOUBLE", true},
+		{"decimal_col", runtimev1.Type_CODE_DECIMAL, "DECIMAL", true},
+		{"string_col", runtimev1.Type_CODE_STRING, "STRING", true},
+		{"varchar_col", runtimev1.Type_CODE_STRING, "STRING", true},
+		{"date_col", runtimev1.Type_CODE_DATE, "DATE", true},
+		{"timestamp_col", runtimev1.Type_CODE_TIMESTAMP, "TIMESTAMP", true},
+		{"timestamp_ntz_col", runtimev1.Type_CODE_TIMESTAMP, "TIMESTAMP_NTZ", true},
+		{"binary_col", runtimev1.Type_CODE_BYTES, "BINARY", true},
+		{"array_col", runtimev1.Type_CODE_JSON, "ARRAY", true},
+		{"map_col", runtimev1.Type_CODE_JSON, "MAP", true},
+		{"struct_col", runtimev1.Type_CODE_JSON, "STRUCT", true},
+	}
+	actualFields := make([]fieldSpec, len(allDatatypes.Schema.Fields))
+	for i, f := range allDatatypes.Schema.Fields {
+		actualFields[i] = fieldSpec{f.Name, f.Type.Code, f.Type.RawType, f.Type.Nullable}
+	}
+	require.Equal(t, expectedFields, actualFields)
 }
 
 func testListDatabaseSchemas(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {

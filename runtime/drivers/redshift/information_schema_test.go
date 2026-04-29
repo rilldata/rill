@@ -5,6 +5,7 @@ import (
 	"sort"
 	"testing"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
@@ -87,6 +88,42 @@ func testLookup(t *testing.T, ctx context.Context, infoSchema drivers.Informatio
 
 	_, err = infoSchema.Lookup(ctx, database, databaseSchema, "nonexistent_table")
 	require.Error(t, err)
+
+	allDatatypes, err := infoSchema.Lookup(ctx, database, databaseSchema, "all_datatypes")
+	require.NoError(t, err)
+	require.False(t, allDatatypes.View)
+
+	type fieldSpec struct {
+		name     string
+		code     runtimev1.Type_Code
+		rawType  string
+		nullable bool
+	}
+
+	expectedFields := []fieldSpec{
+		{"id", runtimev1.Type_CODE_INT32, "integer", false},
+		{"boolean_col", runtimev1.Type_CODE_BOOL, "boolean", false},
+		{"int32_col", runtimev1.Type_CODE_INT32, "integer", false},
+		{"int64_col", runtimev1.Type_CODE_INT64, "bigint", false},
+		{"float_col", runtimev1.Type_CODE_FLOAT32, "real", false},
+		{"double_col", runtimev1.Type_CODE_FLOAT64, "double precision", false},
+		{"string_col", runtimev1.Type_CODE_STRING, "character varying", false},
+		{"decimal_col", runtimev1.Type_CODE_STRING, "numeric", false},
+		{"date_col", runtimev1.Type_CODE_TIMESTAMP, "date", false},
+		{"timestamp_col", runtimev1.Type_CODE_UNSPECIFIED, "timestamp without time zone", false},
+		{"timestamptz_col", runtimev1.Type_CODE_UNSPECIFIED, "timestamp with time zone", false},
+		{"interval_year_month", runtimev1.Type_CODE_UNSPECIFIED, "interval year to month", false},
+		{"interval_day_second", runtimev1.Type_CODE_UNSPECIFIED, "interval day to second", false},
+		{"list_int_col", runtimev1.Type_CODE_STRING, "super", false},
+		{"list_string_col", runtimev1.Type_CODE_STRING, "super", false},
+		{"map_col", runtimev1.Type_CODE_STRING, "super", false},
+		{"struct_col", runtimev1.Type_CODE_STRING, "super", false},
+	}
+	actualFields := make([]fieldSpec, len(allDatatypes.Schema.Fields))
+	for i, f := range allDatatypes.Schema.Fields {
+		actualFields[i] = fieldSpec{f.Name, f.Type.Code, f.Type.RawType, f.Type.Nullable}
+	}
+	require.Equal(t, expectedFields, actualFields)
 }
 
 func testListDatabaseSchemas(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {

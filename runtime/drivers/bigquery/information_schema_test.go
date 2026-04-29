@@ -5,6 +5,7 @@ import (
 	"sort"
 	"testing"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
@@ -88,6 +89,58 @@ func testLookup(t *testing.T, ctx context.Context, infoSchema drivers.Informatio
 
 	_, err = infoSchema.Lookup(ctx, database, databaseSchema, "nonexistent_table")
 	require.Error(t, err)
+
+	allDatatypes, err := infoSchema.Lookup(ctx, database, databaseSchema, "all_datatypes")
+	require.NoError(t, err)
+	require.False(t, allDatatypes.View)
+
+	type fieldSpec struct {
+		name     string
+		code     runtimev1.Type_Code
+		rawType  string
+		nullable bool
+	}
+	expectedFields := []fieldSpec{
+		{"int_col", runtimev1.Type_CODE_INT64, "INTEGER", true},
+		{"float_col", runtimev1.Type_CODE_FLOAT64, "FLOAT", true},
+		{"numeric_col", runtimev1.Type_CODE_STRING, "NUMERIC", true},
+		{"bignumeric_col", runtimev1.Type_CODE_STRING, "BIGNUMERIC", true},
+		{"bool_col", runtimev1.Type_CODE_BOOL, "BOOLEAN", true},
+		{"string_col", runtimev1.Type_CODE_STRING, "STRING", true},
+		{"bytes_col", runtimev1.Type_CODE_BYTES, "BYTES", true},
+		{"date_col", runtimev1.Type_CODE_DATE, "DATE", true},
+		{"datetime_col", runtimev1.Type_CODE_TIMESTAMP, "DATETIME", true},
+		{"time_col", runtimev1.Type_CODE_STRING, "TIME", true},
+		{"timestamp_col", runtimev1.Type_CODE_TIMESTAMP, "TIMESTAMP", true},
+		{"json_col", runtimev1.Type_CODE_JSON, "JSON", true},
+		{"geography_col", runtimev1.Type_CODE_STRING, "GEOGRAPHY", true},
+		{"range_date_col", runtimev1.Type_CODE_STRING, "RANGE", true},
+		{"range_datetime_col", runtimev1.Type_CODE_STRING, "RANGE", true},
+		{"range_timestamp_col", runtimev1.Type_CODE_STRING, "RANGE", true},
+		{"array_int_col", runtimev1.Type_CODE_ARRAY, "ARRAY<INTEGER>", true},
+		{"array_float_col", runtimev1.Type_CODE_ARRAY, "ARRAY<FLOAT>", true},
+		{"array_numeric_col", runtimev1.Type_CODE_ARRAY, "ARRAY<NUMERIC>", true},
+		{"array_bignumeric_col", runtimev1.Type_CODE_ARRAY, "ARRAY<BIGNUMERIC>", true},
+		{"array_bool_col", runtimev1.Type_CODE_ARRAY, "ARRAY<BOOLEAN>", true},
+		{"array_string_col", runtimev1.Type_CODE_ARRAY, "ARRAY<STRING>", true},
+		{"array_bytes_col", runtimev1.Type_CODE_ARRAY, "ARRAY<BYTES>", true},
+		{"array_date_col", runtimev1.Type_CODE_ARRAY, "ARRAY<DATE>", true},
+		{"array_datetime_col", runtimev1.Type_CODE_ARRAY, "ARRAY<DATETIME>", true},
+		{"array_time_col", runtimev1.Type_CODE_ARRAY, "ARRAY<TIME>", true},
+		{"array_timestamp_col", runtimev1.Type_CODE_ARRAY, "ARRAY<TIMESTAMP>", true},
+		{"array_json_col", runtimev1.Type_CODE_ARRAY, "ARRAY<JSON>", true},
+		{"array_geography_col", runtimev1.Type_CODE_ARRAY, "ARRAY<GEOGRAPHY>", true},
+		{"array_range_date_col", runtimev1.Type_CODE_ARRAY, "ARRAY<RANGE>", true},
+		{"array_range_datetime_col", runtimev1.Type_CODE_ARRAY, "ARRAY<RANGE>", true},
+		{"array_range_timestamp_col", runtimev1.Type_CODE_ARRAY, "ARRAY<RANGE>", true},
+		{"array_struct_col", runtimev1.Type_CODE_ARRAY, "ARRAY<RECORD>", true},
+		{"struct_col", runtimev1.Type_CODE_JSON, "RECORD", true},
+	}
+	actualFields := make([]fieldSpec, len(allDatatypes.Schema.Fields))
+	for i, f := range allDatatypes.Schema.Fields {
+		actualFields[i] = fieldSpec{f.Name, f.Type.Code, f.Type.RawType, f.Type.Nullable}
+	}
+	require.Equal(t, expectedFields, actualFields)
 }
 
 func testListDatabaseSchemas(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {

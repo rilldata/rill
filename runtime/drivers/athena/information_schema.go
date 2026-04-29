@@ -165,7 +165,7 @@ ORDER BY c.ordinal_position
 		}
 		fields = append(fields, &runtimev1.StructType_Field{
 			Name: col,
-			Type: athenaTypeToRuntimeType(typ),
+			Type: databaseTypeToPB(typ),
 		})
 	}
 	if err := rows.Err(); err != nil {

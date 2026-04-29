@@ -5,6 +5,7 @@ import (
 	"sort"
 	"testing"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
@@ -87,6 +88,54 @@ func testLookup(t *testing.T, ctx context.Context, infoSchema drivers.Informatio
 
 	_, err = infoSchema.Lookup(ctx, database, databaseSchema, "nonexistent_table")
 	require.Error(t, err)
+
+	allDatatypes, err := infoSchema.Lookup(ctx, database, databaseSchema, "all_datatypes")
+	require.NoError(t, err)
+	require.False(t, allDatatypes.View)
+
+	type fieldSpec struct {
+		name     string
+		code     runtimev1.Type_Code
+		rawType  string
+		nullable bool
+	}
+	expectedFields := []fieldSpec{
+		{"tinyint_col", runtimev1.Type_CODE_INT8, "tinyint", true},
+		{"smallint_col", runtimev1.Type_CODE_INT16, "smallint", true},
+		{"mediumint_col", runtimev1.Type_CODE_INT32, "mediumint", true},
+		{"int_col", runtimev1.Type_CODE_INT32, "int", true},
+		{"bigint_col", runtimev1.Type_CODE_INT64, "bigint", true},
+		{"float_col", runtimev1.Type_CODE_FLOAT64, "float", true},
+		{"double_col", runtimev1.Type_CODE_FLOAT64, "double", true},
+		{"decimal_col", runtimev1.Type_CODE_STRING, "decimal", true},
+		{"char_col", runtimev1.Type_CODE_STRING, "char", true},
+		{"varchar_col", runtimev1.Type_CODE_STRING, "varchar", true},
+		{"tinytext_col", runtimev1.Type_CODE_STRING, "tinytext", true},
+		{"text_col", runtimev1.Type_CODE_STRING, "text", true},
+		{"mediumtext_col", runtimev1.Type_CODE_STRING, "mediumtext", true},
+		{"longtext_col", runtimev1.Type_CODE_STRING, "longtext", true},
+		{"binary_col", runtimev1.Type_CODE_STRING, "binary", true},
+		{"varbinary_col", runtimev1.Type_CODE_STRING, "varbinary", true},
+		{"tinyblob_col", runtimev1.Type_CODE_STRING, "tinyblob", true},
+		{"blob_col", runtimev1.Type_CODE_STRING, "blob", true},
+		{"mediumblob_col", runtimev1.Type_CODE_STRING, "mediumblob", true},
+		{"longblob_col", runtimev1.Type_CODE_STRING, "longblob", true},
+		{"enum_col", runtimev1.Type_CODE_STRING, "enum", true},
+		{"set_col", runtimev1.Type_CODE_STRING, "set", true},
+		{"date_col", runtimev1.Type_CODE_DATE, "date", true},
+		{"datetime_col", runtimev1.Type_CODE_TIMESTAMP, "datetime", true},
+		{"timestamp_col", runtimev1.Type_CODE_TIMESTAMP, "timestamp", true},
+		{"time_col", runtimev1.Type_CODE_TIME, "time", true},
+		{"year_col", runtimev1.Type_CODE_INT16, "year", true},
+		{"boolean_col", runtimev1.Type_CODE_INT8, "tinyint", true}, // BOOLEAN is alias for TINYINT(1) in MySQL info_schema
+		{"bit_col", runtimev1.Type_CODE_STRING, "bit", true},
+		{"json_col", runtimev1.Type_CODE_JSON, "json", true},
+	}
+	actualFields := make([]fieldSpec, len(allDatatypes.Schema.Fields))
+	for i, f := range allDatatypes.Schema.Fields {
+		actualFields[i] = fieldSpec{f.Name, f.Type.Code, f.Type.RawType, f.Type.Nullable}
+	}
+	require.Equal(t, expectedFields, actualFields)
 }
 
 func testListDatabaseSchemas(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {

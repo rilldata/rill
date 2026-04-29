@@ -5,6 +5,7 @@ import (
 	"sort"
 	"testing"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
@@ -87,6 +88,51 @@ func testLookup(t *testing.T, ctx context.Context, infoSchema drivers.Informatio
 
 	_, err = infoSchema.Lookup(ctx, database, databaseSchema, "nonexistent_table")
 	require.Error(t, err)
+
+	allDatatypes, err := infoSchema.Lookup(ctx, database, databaseSchema, "all_datatypes")
+	require.NoError(t, err)
+	require.False(t, allDatatypes.View)
+
+	type fieldSpec struct {
+		name     string
+		code     runtimev1.Type_Code
+		rawType  string
+		nullable bool
+	}
+	expectedFields := []fieldSpec{
+		{"id", runtimev1.Type_CODE_INT64, "integer", true},
+		{"uuid", runtimev1.Type_CODE_UUID, "uuid", true},
+		{"name", runtimev1.Type_CODE_STRING, "text", true},
+		{"age", runtimev1.Type_CODE_INT64, "integer", true},
+		{"is_married", runtimev1.Type_CODE_BOOL, "boolean", true},
+		{"date_of_birth", runtimev1.Type_CODE_DATE, "date", true},
+		{"time_of_day", runtimev1.Type_CODE_STRING, "time without time zone", true},
+		{"created_at", runtimev1.Type_CODE_TIMESTAMP, "timestamp without time zone", true},
+		{"personal_info", runtimev1.Type_CODE_JSON, "json", true},
+		{"personal_info2", runtimev1.Type_CODE_JSON, "jsonb", true},
+		{"is_alive", runtimev1.Type_CODE_STRING, "bit", true},
+		{"binary_data", runtimev1.Type_CODE_STRING, "bit varying", true},
+		{"gender", runtimev1.Type_CODE_STRING, "character", true},
+		{"gender_full", runtimev1.Type_CODE_STRING, "character varying", true},
+		{"nickname", runtimev1.Type_CODE_STRING, "character", true},
+		{"num_of_dependents", runtimev1.Type_CODE_INT64, "smallint", true},
+		{"biography", runtimev1.Type_CODE_STRING, "text", true},
+		{"last_login", runtimev1.Type_CODE_TIMESTAMP, "timestamp with time zone", true},
+		{"weight", runtimev1.Type_CODE_FLOAT64, "real", true},
+		{"height", runtimev1.Type_CODE_FLOAT64, "double precision", true},
+		{"sibling_rank", runtimev1.Type_CODE_INT64, "smallint", true},
+		{"credit_score", runtimev1.Type_CODE_INT64, "integer", true},
+		{"net_worth", runtimev1.Type_CODE_INT64, "bigint", true},
+		{"salary_history", runtimev1.Type_CODE_ARRAY, "ARRAY", true},
+		{"login_history", runtimev1.Type_CODE_ARRAY, "ARRAY", true},
+		{"emp_salary", runtimev1.Type_CODE_DECIMAL, "numeric", true},
+		{"country", runtimev1.Type_CODE_UNSPECIFIED, "USER-DEFINED", true},
+	}
+	actualFields := make([]fieldSpec, len(allDatatypes.Schema.Fields))
+	for i, f := range allDatatypes.Schema.Fields {
+		actualFields[i] = fieldSpec{f.Name, f.Type.Code, f.Type.RawType, f.Type.Nullable}
+	}
+	require.Equal(t, expectedFields, actualFields)
 }
 
 func testListDatabaseSchemas(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {

@@ -5,6 +5,7 @@ import (
 	"sort"
 	"testing"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
@@ -87,6 +88,45 @@ func testLookup(t *testing.T, ctx context.Context, infoSchema drivers.Informatio
 
 	_, err = infoSchema.Lookup(ctx, database, databaseSchema, "nonexistent_table")
 	require.Error(t, err)
+
+	allDatatypes, err := infoSchema.Lookup(ctx, database, databaseSchema, "all_datatypes")
+	require.NoError(t, err)
+	require.False(t, allDatatypes.View)
+
+	type fieldSpec struct {
+		name     string
+		code     runtimev1.Type_Code
+		rawType  string
+		nullable bool
+	}
+
+	expectedFields := []fieldSpec{
+		{"id", runtimev1.Type_CODE_INT32, "integer", false},
+		{"boolean_col", runtimev1.Type_CODE_BOOL, "boolean", false},
+		{"int32_col", runtimev1.Type_CODE_INT32, "integer", false},
+		{"int64_col", runtimev1.Type_CODE_INT64, "bigint", false},
+		{"float_col", runtimev1.Type_CODE_FLOAT32, "real", false},
+		{"double_col", runtimev1.Type_CODE_FLOAT64, "double", false},
+		{"byte_array_col", runtimev1.Type_CODE_STRING, "varbinary", false},
+		{"fixed_len_byte_array_col", runtimev1.Type_CODE_STRING, "varbinary", false},
+		{"string_col", runtimev1.Type_CODE_STRING, "varchar", false},
+		{"decimal_col", runtimev1.Type_CODE_STRING, "decimal(10,2)", false},
+		{"date_col", runtimev1.Type_CODE_TIMESTAMP, "date", false},
+		{"time_millis_col", runtimev1.Type_CODE_INT32, "integer", false},
+		{"time_micros_col", runtimev1.Type_CODE_INT64, "bigint", false},
+		{"timestamp_millis_col", runtimev1.Type_CODE_TIMESTAMP, "timestamp(3)", false},
+		{"timestamp_micros_col", runtimev1.Type_CODE_TIMESTAMP, "timestamp(3)", false},
+		{"uuid_col", runtimev1.Type_CODE_STRING, "varchar", false},
+		{"list_int_col", runtimev1.Type_CODE_STRING, "array(integer)", false},
+		{"list_string_col", runtimev1.Type_CODE_STRING, "array(varchar)", false},
+		{"map_col", runtimev1.Type_CODE_STRING, "map(varchar, integer)", false},
+		{"struct_col", runtimev1.Type_CODE_STRING, "row(field_int_col integer, field_float_col real, field_string_col varchar)", false},
+	}
+	actualFields := make([]fieldSpec, len(allDatatypes.Schema.Fields))
+	for i, f := range allDatatypes.Schema.Fields {
+		actualFields[i] = fieldSpec{f.Name, f.Type.Code, f.Type.RawType, f.Type.Nullable}
+	}
+	require.Equal(t, expectedFields, actualFields)
 }
 
 func testListDatabaseSchemas(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {

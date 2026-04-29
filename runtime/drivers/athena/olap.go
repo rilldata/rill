@@ -245,7 +245,7 @@ func (r *rows) runtimeSchema() *runtimev1.StructType {
 	for i, col := range r.columnInfo {
 		fields[i] = &runtimev1.StructType_Field{
 			Name: *col.Name,
-			Type: athenaTypeToRuntimeType(*col.Type),
+			Type: databaseTypeToPB(*col.Type),
 		}
 	}
 	res := &runtimev1.StructType{
@@ -254,9 +254,14 @@ func (r *rows) runtimeSchema() *runtimev1.StructType {
 	return res
 }
 
-func athenaTypeToRuntimeType(colType string) *runtimev1.Type {
+func databaseTypeToPB(colType string) *runtimev1.Type {
+	ct := strings.ToLower(strings.TrimSpace(colType))
+	// Extract base type (before '(')
+	if i := strings.Index(ct, "("); i != -1 {
+		ct = ct[:i]
+	}
 	t := &runtimev1.Type{RawType: colType}
-	switch strings.ToLower(colType) {
+	switch strings.ToLower(ct) {
 	case "tinyint":
 		t.Code = runtimev1.Type_CODE_INT8
 	case "smallint":
