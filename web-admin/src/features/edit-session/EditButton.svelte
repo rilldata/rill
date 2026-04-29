@@ -215,7 +215,7 @@
         </Dialog.Title>
         <Dialog.Description class="text-[13px] text-fg-secondary leading-snug">
           {#if hasOwnSessions}
-            Pick up an existing branch, or create a new one from
+            Edit an existing branch or create a new one from
             <code class="dlg-code">{sourceBranch}</code>.
           {:else}
             We'll create a branch from
