@@ -9,6 +9,7 @@
 
   export let startConnectorSelection: (name: string | null) => void = () => {};
   export let onWelcomeScreen = false;
+  export let pathPrefix = "";
 
   const runtimeClient = useRuntimeClient();
   const topConnectors = getSupportedTopConnectors(runtimeClient);
@@ -27,7 +28,7 @@
   <svelte:element
     this={onWelcomeScreen ? "a" : "button"}
     {...onWelcomeScreen
-      ? { href: "/welcome/add-data" }
+      ? { href: `${pathPrefix}/welcome/add-data` }
       : { onclick: () => startConnectorSelection(null) }}
     class="all-connectors"
     aria-label="Connect your data"
@@ -56,7 +57,7 @@
         this={onWelcomeScreen ? "a" : "button"}
         class="primary-connector-entry"
         {...onWelcomeScreen
-          ? { href: `/welcome/add-data?schema=${connector}` }
+          ? { href: `${pathPrefix}/welcome/add-data?schema=${connector}` }
           : { onclick: (e) => selectConnector(e, connector) }}
         aria-label={`Connect to ${connector}`}
       >

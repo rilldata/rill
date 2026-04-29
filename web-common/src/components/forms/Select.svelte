@@ -46,6 +46,9 @@
   export let forcedTriggerStyle = "";
   /** When true, shows an X button to clear the selection back to empty */
   export let clearable = false;
+  /** Optional icon rendered inside the trigger, before the label. */
+  export let leadingIcon: ComponentType<SvelteComponent> | undefined =
+    undefined;
   export let onChange: (value: string) => void = () => {};
 
   let searchText = "";
@@ -133,6 +136,11 @@
           : ''} {forcedTriggerStyle} {outline ? '' : 'border-0'}"
         aria-label={label || ariaLabel}
       >
+        {#if leadingIcon}
+          <span class="flex-none">
+            <svelte:component this={leadingIcon} size="14px" />
+          </span>
+        {/if}
         <span
           class="text-[{fontSize}px] {!selected
             ? 'text-fg-secondary'

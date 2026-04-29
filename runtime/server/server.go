@@ -63,8 +63,6 @@ type Server struct {
 	limiter  ratelimit.Limiter
 	activity *activity.Client
 	ai       *ai.Runner
-	// set for local runtimes
-	adminOverride drivers.AdminService
 }
 
 var (
@@ -75,7 +73,7 @@ var (
 
 // NewServer creates a new runtime server.
 // The provided ctx is used for the lifetime of the server for background refresh of the JWKS that is used to validate auth tokens.
-func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *zap.Logger, limiter ratelimit.Limiter, activityClient *activity.Client, adminOverride drivers.AdminService) (*Server, error) {
+func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *zap.Logger, limiter ratelimit.Limiter, activityClient *activity.Client) (*Server, error) {
 	// The runtime doesn't actually set cookies, but we use securecookie to encode/decode ephemeral tokens.
 	// If no session key pairs are provided, we generate a random one for the duration of the process.
 	var codec *securetoken.Codec
@@ -86,14 +84,13 @@ func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *
 	}
 
 	srv := &Server{
-		runtime:       rt,
-		opts:          opts,
-		logger:        logger,
-		codec:         codec,
-		limiter:       limiter,
-		activity:      activityClient,
-		ai:            ai.NewRunner(rt, activityClient),
-		adminOverride: adminOverride,
+		runtime:  rt,
+		opts:     opts,
+		logger:   logger,
+		codec:    codec,
+		limiter:  limiter,
+		activity: activityClient,
+		ai:       ai.NewRunner(rt, activityClient),
 	}
 
 	if opts.AuthEnable {
@@ -263,6 +260,7 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 
 	// Wrap mux with CORS middleware
 	handler := cors.New(corsOpts).Handler(httpMux)
+	handler = middleware.CacheControlMiddleware(handler)
 
 	return handler, nil
 }
@@ -331,20 +329,34 @@ func mapGRPCError(err error) error {
 	if err == nil {
 		return nil
 	}
+
 	// Extract trace data if present (will be attached after error mapping)
 	var te *traceError
 	errors.As(err, &te)
 
-	if errors.Is(err, context.DeadlineExceeded) {
-		err = status.Error(codes.DeadlineExceeded, err.Error())
-	} else if errors.Is(err, context.Canceled) {
-		err = status.Error(codes.Canceled, err.Error())
-	} else if errors.Is(err, queries.ErrForbidden) {
-		err = ErrForbidden
-	} else if errors.Is(err, runtime.ErrForbidden) {
-		err = ErrForbidden
-	} else if errors.Is(err, metricsview.ErrForbidden) {
-		err = ErrForbidden
+	// Map known non-gRPC errors to gRPC status errors
+	if _, ok := status.FromError(err); !ok {
+		if errors.Is(err, context.DeadlineExceeded) {
+			err = status.Error(codes.DeadlineExceeded, err.Error())
+		} else if errors.Is(err, context.Canceled) {
+			err = status.Error(codes.Canceled, err.Error())
+		} else if errors.Is(err, queries.ErrForbidden) {
+			err = ErrForbidden
+		} else if errors.Is(err, runtime.ErrForbidden) {
+			err = ErrForbidden
+		} else if errors.Is(err, metricsview.ErrForbidden) {
+			err = ErrForbidden
+		} else if errors.Is(err, drivers.ErrResourceNotFound) {
+			err = status.Error(codes.NotFound, err.Error())
+		} else if errors.Is(err, drivers.ErrResourceAlreadyExists) {
+			err = status.Error(codes.AlreadyExists, err.Error())
+		} else if errors.Is(err, drivers.ErrNotFound) {
+			err = status.Error(codes.NotFound, err.Error())
+		} else if errors.Is(err, runtime.ErrAINotConfigured) {
+			err = status.Error(codes.FailedPrecondition, err.Error())
+		} else if errors.Is(err, runtime.ErrControllerClosed) {
+			err = status.Error(codes.Unavailable, err.Error())
+		}
 	}
 
 	// Attach trace details to the gRPC status after error mapping
@@ -362,6 +374,21 @@ func mapGRPCError(err error) error {
 	}
 
 	return err
+}
+
+// mapGRPCErrorWithFallback maps the error using the same logic as mapGRPCError.
+// If the error type isn't recognized, it returns a gRPC error with the provided fallback code instead.
+// Use this only in handlers where the middleware's behavior of running mapGRPCError and then falling back to codes.Unknown is not acceptable.
+// (E.g. for errors which if unknown are very likely to correspond to a specific code, such as InvalidArgument.)
+func mapGRPCErrorWithFallback(err error, fallback codes.Code) error {
+	if err == nil {
+		return nil
+	}
+	mapped := mapGRPCError(err)
+	if _, ok := status.FromError(mapped); ok {
+		return mapped
+	}
+	return status.Error(fallback, err.Error())
 }
 
 func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {

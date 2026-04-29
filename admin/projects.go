@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
@@ -534,18 +536,22 @@ func (s *Service) TriggerParserAndAwaitResource(ctx context.Context, depl *datab
 
 // ResolveVariables resolves the project's variables for the given environment.
 // It fetches the variable specific to the environment plus the default variables not set exclusively for the environment.
-func (s *Service) ResolveVariables(ctx context.Context, depl *database.Deployment) (map[string]string, error) {
+// The returned list is sorted by environment name for consistent ordering, with default variables (empty environment) first.
+func (s *Service) ResolveVariables(ctx context.Context, depl *database.Deployment) ([]*database.ProjectVariable, error) {
 	vars, err := s.DB.FindProjectVariables(ctx, depl.ProjectID, &depl.Environment)
 	if err != nil {
 		return nil, err
 	}
-	res := make(map[string]string)
-	for _, v := range vars {
-		res[v.Name] = v.Value
-	}
-
-	// preset variables enforced for the instance
-	// repo should only be watched for editable deployments
-	res["rill.watch_repo"] = strconv.FormatBool(depl.Editable)
-	return res, nil
+	slices.SortFunc(vars, func(a, b *database.ProjectVariable) int {
+		return strings.Compare(a.Environment, b.Environment)
+	})
+	// Enable the file watcher for editable deployments.
+	vars = append(vars, &database.ProjectVariable{
+		Name:        "rill.watch_repo",
+		Value:       strconv.FormatBool(depl.Editable),
+		Environment: depl.Environment,
+		CreatedOn:   time.Now(),
+		UpdatedOn:   time.Now(),
+	})
+	return vars, nil
 }

@@ -4,6 +4,7 @@ import {
   type ConnectorDriverProperty,
   getRuntimeServiceGetFileQueryKey,
   runtimeServiceGetFile,
+  type V1GetFileResponse,
 } from "../../runtime-client";
 import type { RuntimeClient } from "../../runtime-client/v2";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
@@ -182,7 +183,14 @@ export function compileConnectorYAML(
           "x-env-var-name"?: string;
           default?: string | number | boolean;
           type?: string;
-          "x-yaml-value"?: string | number | boolean;
+          "x-yaml-value"?:
+            | string
+            | number
+            | boolean
+            | {
+                true?: string | number | boolean;
+                false?: string | number | boolean;
+              };
           "x-advanced"?: boolean;
         }
       >;
@@ -277,10 +285,20 @@ driver: ${driverName}`;
         return `${key}: "{{ .env.${envVarName} }}"`; // uses standard Go template syntax
       }
 
-      // For boolean fields with x-yaml-value, emit the mapped value instead of true/false
+      // For boolean fields with x-yaml-value, emit the mapped value instead of true/false.
+      // Object form maps both toggle states so each round-trips to YAML; scalar form
+      // emits only when the toggle is checked.
       const schemaPropForMap = options?.schema?.properties?.[key];
-      if (schemaPropForMap?.["x-yaml-value"] !== undefined && value === true) {
-        return `${key}: ${schemaPropForMap["x-yaml-value"]}`;
+      const yamlValueRule = schemaPropForMap?.["x-yaml-value"];
+      if (
+        yamlValueRule !== null &&
+        typeof yamlValueRule === "object" &&
+        typeof value === "boolean"
+      ) {
+        const mapped = yamlValueRule[value ? "true" : "false"];
+        if (mapped !== undefined) return `${key}: ${mapped}`;
+      } else if (yamlValueRule !== undefined && value === true) {
+        return `${key}: ${yamlValueRule}`;
       }
 
       const isStringProperty = stringPropertyKeys.includes(key);
@@ -313,12 +331,20 @@ export async function unsetResourceEnvVars(
   queryClient: QueryClient,
   yaml: string,
 ) {
-  const envBlob = await queryClient.fetchQuery({
-    queryKey: getRuntimeServiceGetFileQueryKey(runtimeClient.instanceId, {
-      path: ".env",
-    }),
-    queryFn: () => runtimeServiceGetFile(runtimeClient, { path: ".env" }),
-  });
+  let envBlob: V1GetFileResponse | undefined = undefined;
+  try {
+    envBlob = await queryClient.fetchQuery({
+      queryKey: getRuntimeServiceGetFileQueryKey(runtimeClient.instanceId, {
+        path: ".env",
+      }),
+      queryFn: () => runtimeServiceGetFile(runtimeClient, { path: ".env" }),
+    });
+  } catch (error) {
+    if (error.message?.includes("no such file or directory")) {
+      return "";
+    }
+    throw error;
+  }
 
   // Get the existing env and remove the resource's env vars
   let blob = envBlob?.blob ?? "";

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
+  import { withEditorPrefix } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { createRootCauseErrorQuery } from "@rilldata/web-common/features/entity-management/error-utils";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
@@ -108,7 +109,7 @@
         <div class="flex gap-x-2" slot="cta">
           {#if !inPreviewMode}
             <PreviewButton
-              href="/explore/{exploreName}"
+              href={withEditorPrefix(`/explore/${exploreName}`)}
               disabled={!!parseError ||
                 !!reconcileError ||
                 resourceIsReconciling}
@@ -126,6 +127,7 @@
               {parseError}
               remoteContent={$remoteContent}
               {filePath}
+              showError={selectedView === "code"}
             >
               {#if selectedView === "code"}
                 <ExploreEditor
@@ -136,17 +138,16 @@
                 />
               {:else if selectedView === "viz"}
                 {#if parseError || rootCauseReconcileError}
-                  <div class="flex flex-col items-center gap-4">
-                    <ErrorPage
-                      body={parseError?.message ??
-                        rootCauseReconcileError ??
-                        ""}
-                      fatal
-                      header="Unable to load dashboard preview"
-                      statusCode={404}
-                    />
-                    <ExplainAndFixErrorButton {filePath} large />
-                  </div>
+                  <ErrorPage
+                    body={parseError?.message ?? rootCauseReconcileError ?? ""}
+                    fatal
+                    header="Unable to load dashboard preview"
+                    statusCode={404}
+                  >
+                    <svelte:fragment slot="cta">
+                      <ExplainAndFixErrorButton {filePath} variant="cta" />
+                    </svelte:fragment>
+                  </ErrorPage>
                 {:else if exploreName && metricsViewName}
                   <DashboardStateManager {exploreName}>
                     <Dashboard {metricsViewName} {exploreName} />

@@ -5,8 +5,10 @@ import ClaudeIcon from "../../components/icons/connectors/ClaudeIcon.svelte";
 import ClickHouseIcon from "../../components/icons/connectors/ClickHouseIcon.svelte";
 import ClickHouseCloudIcon from "../../components/icons/connectors/ClickHouseCloudIcon.svelte";
 import ApacheIcebergIcon from "../../components/icons/connectors/ApacheIcebergIcon.svelte";
+import DatabricksIcon from "../../components/icons/connectors/DatabricksIcon.svelte";
 import DeltaLakeIcon from "../../components/icons/connectors/DeltaLakeIcon.svelte";
 import DuckDbIcon from "../../components/icons/connectors/DuckDBIcon.svelte";
+import DuckLakeIcon from "../../components/icons/connectors/DuckLakeIcon.svelte";
 import GeminiIcon from "../../components/icons/connectors/GeminiIcon.svelte";
 import GoogleBigQueryIcon from "../../components/icons/connectors/GoogleBigQueryIcon.svelte";
 import AthenaIcon from "../../components/icons/connectors/AthenaIcon.svelte";
@@ -29,6 +31,7 @@ export const connectorIconMapping = {
   athena: AthenaIcon,
   azure: MicrosoftAzureBlobStorageIcon,
   bigquery: GoogleBigQueryIcon,
+  databricks: DatabricksIcon,
   claude: ClaudeIcon,
   clickhouse: ClickHouseIcon,
   delta: DeltaLakeIcon,
@@ -37,6 +40,7 @@ export const connectorIconMapping = {
   motherduck: MotherDuckIcon,
   druid: ApacheDruidIcon,
   duckdb: DuckDbIcon,
+  ducklake: DuckLakeIcon,
   gcs: GoogleCloudStorageIcon,
   iceberg: ApacheIcebergIcon,
   mysql: MySqlIcon,
@@ -61,6 +65,7 @@ export const connectorClassMapping = {
 
 export const connectorLabelMapping = {
   duckdb: "DuckDB",
+  ducklake: "DuckLake",
   clickhouse: "ClickHouse",
   motherduck: "MotherDuck",
   s3: "S3",
@@ -75,11 +80,19 @@ export const connectorKeywordMapping = {
   azure: ["object storage", "cloud storage"],
   bigquery: ["google", "gcp", "data warehouse"],
   clickhouse: ["olap", "columnar", "real-time analytics"],
-  deltalake: ["databricks", "lakehouse", "spark", "parquet"],
+  databricks: ["lakehouse", "spark", "olap", "warehouse"],
+  deltalake: ["lakehouse", "spark", "parquet"],
   druid: ["apache", "olap", "time series"],
   gcs: ["bucket", "object storage"],
   iceberg: ["apache", "table format", "lakehouse", "parquet"],
   motherduck: ["duckdb", "serverless"],
+  ducklake: [
+    "duckdb",
+    "lakehouse",
+    "catalog",
+    "parquet",
+    "iceberg alternative",
+  ],
   mysql: ["relational", "rdbms", "database"],
   pinot: ["apache", "olap", "real-time analytics"],
   postgres: ["relational", "rdbms", "database"],

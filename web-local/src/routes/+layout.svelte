@@ -108,7 +108,7 @@
 <Tooltip.Provider>
   <QueryClientProvider client={queryClient}>
     <RuntimeProvider {host} {instanceId}>
-      <FileAndResourceWatcher {host} {instanceId}>
+      <FileAndResourceWatcher lifecycle="aggressive">
         <div
           class="body h-screen w-screen overflow-hidden absolute flex flex-col"
         >

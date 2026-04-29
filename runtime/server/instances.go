@@ -2,22 +2,15 @@ package server
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"path/filepath"
-	"strings"
 
-	"github.com/joho/godotenv"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/parser"
-	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
-	"golang.org/x/exp/maps"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -32,7 +25,7 @@ func (s *Server) ListInstances(ctx context.Context, req *runtimev1.ListInstances
 
 	instances, err := s.runtime.Instances(ctx)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	pbs := make([]*runtimev1.Instance, len(instances))
@@ -71,10 +64,7 @@ func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequ
 
 	inst, err := s.runtime.Instance(ctx, req.InstanceId)
 	if err != nil {
-		if errors.Is(err, drivers.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "instance not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	featureFlags, err := runtime.ResolveFeatureFlags(inst, claims.UserAttributes, true)
@@ -119,7 +109,7 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 
 	err := s.runtime.CreateInstance(ctx, inst)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	featureFlags, err := runtime.ResolveFeatureFlags(inst, claims.UserAttributes, true)
@@ -184,7 +174,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 
 	err = s.runtime.EditInstance(ctx, inst, true)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	_, err = s.runtime.ReloadConfig(ctx, req.InstanceId)
@@ -215,7 +205,7 @@ func (s *Server) DeleteInstance(ctx context.Context, req *runtimev1.DeleteInstan
 
 	err := s.runtime.DeleteInstance(ctx, req.InstanceId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	return &runtimev1.DeleteInstanceResponse{}, nil
@@ -242,7 +232,7 @@ func (s *Server) GetLogs(ctx context.Context, req *runtimev1.GetLogsRequest) (*r
 
 	logBuffer, err := s.runtime.InstanceLogs(ctx, req.InstanceId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 	return &runtimev1.GetLogsResponse{Logs: logBuffer.GetLogs(req.Ascending, int(req.Limit), lvl)}, nil
 }
@@ -269,13 +259,13 @@ func (s *Server) WatchLogs(req *runtimev1.WatchLogsRequest, srv runtimev1.Runtim
 
 	logBuffer, err := s.runtime.InstanceLogs(ctx, req.InstanceId)
 	if err != nil {
-		return status.Error(codes.InvalidArgument, err.Error())
+		return err
 	}
 	if req.Replay {
 		for _, l := range logBuffer.GetLogs(true, int(req.ReplayLimit), lvl) {
 			err := srv.Send(&runtimev1.WatchLogsResponse{Log: l})
 			if err != nil {
-				return status.Error(codes.InvalidArgument, err.Error())
+				return err
 			}
 		}
 	}
@@ -295,113 +285,18 @@ func (s *Server) ReloadConfig(ctx context.Context, req *runtimev1.ReloadConfigRe
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	claims := auth.GetClaims(ctx, req.InstanceId)
-	if !claims.Can(runtime.EditRepo) {
+	if !claims.Can(runtime.ManageInstance) {
 		return nil, ErrForbidden
 	}
 
-	ok, err := s.runtime.ReloadConfig(ctx, req.InstanceId)
+	summary, err := s.runtime.ReloadConfig(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
-	if ok {
-		// It is okay to not propgate count and modified values here since on cloud it will not be used
-		return &runtimev1.ReloadConfigResponse{}, nil
-	}
-	_, _, err = s.pullEnv(ctx, req.InstanceId)
-	if err != nil {
-		return nil, err
-	}
-	// the count and modified values will be updated here
-	return &runtimev1.ReloadConfigResponse{}, nil
-}
-
-func (s *Server) pullEnv(ctx context.Context, instanceID string) (int, bool, error) {
-	inst, err := s.runtime.Instance(ctx, instanceID)
-	if err != nil {
-		return 0, false, err
-	}
-
-	repo, release, err := s.runtime.Repo(ctx, instanceID)
-	if err != nil {
-		return 0, false, err
-	}
-	defer release()
-
-	admin, release, err := s.runtime.Admin(ctx, instanceID)
-	if err != nil {
-		if errors.Is(err, runtime.ErrAdminNotConfigured) && s.adminOverride != nil {
-			admin = s.adminOverride
-			release = func() {}
-		} else {
-			return 0, false, err
-		}
-	}
-	defer release()
-
-	// Fetch cloud variables
-	cfg, err := admin.GetConfig(ctx)
-	if err != nil && !errors.Is(err, drivers.ErrNotAuthenticated) {
-		return 0, false, fmt.Errorf("failed to get project variables: %w", err)
-	}
-	cloudPerEnv := cfg.Variables
-
-	// Parse local .env files
-	p, err := parser.Parse(ctx, repo, instanceID, inst.Environment, inst.OLAPConnector, false)
-	if err != nil {
-		return 0, false, fmt.Errorf("failed to parse project: %w", err)
-	}
-
-	localPerEnv := p.GetDotEnvPerEnvironment()
-
-	// Check if all environments are already up to date
-	equal := true
-	for env, cloudVars := range cloudPerEnv {
-		if !maps.Equal(cloudVars, localPerEnv[env]) {
-			equal = false
-			break
-		}
-	}
-
-	totalCount := 0
-	for _, vars := range cloudPerEnv {
-		totalCount += len(vars)
-	}
-
-	if equal {
-		return totalCount, false, nil
-	}
-
-	// Write merged variables per environment
-	root, err := repo.Root(ctx)
-	if err != nil {
-		return 0, false, fmt.Errorf("failed to get repo root: %w", err)
-	}
-
-	for env, cloudVars := range cloudPerEnv {
-		merged := make(map[string]string)
-		maps.Copy(merged, localPerEnv[env])
-		maps.Copy(merged, cloudVars)
-
-		var envFileName string
-		if env == "" {
-			envFileName = ".env"
-		} else {
-			envFileName = fmt.Sprintf(".%s.env", env)
-		}
-		contents, err := godotenv.Marshal(merged)
-		if err != nil {
-			return 0, false, fmt.Errorf("failed to marshal env vars: %w", err)
-		}
-		err = repo.Put(ctx, filepath.Join(root, envFileName), strings.NewReader(contents))
-		if err != nil {
-			return 0, false, fmt.Errorf("failed to write %q: %w", envFileName, err)
-		}
-		_, err = gitutil.EnsureGitignoreHas(ctx, repo, envFileName)
-		if err != nil {
-			return 0, false, fmt.Errorf("failed to update .gitignore for %q: %w", envFileName, err)
-		}
-	}
-	return totalCount, true, nil
+	return &runtimev1.ReloadConfigResponse{
+		VariablesCount: int32(summary.VarsCount),
+		Modified:       summary.VarsModified,
+	}, nil
 }
 
 func instanceToPB(inst *drivers.Instance, featureFlags map[string]bool, sensitive bool) *runtimev1.Instance {

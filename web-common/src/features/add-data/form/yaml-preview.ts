@@ -5,6 +5,10 @@ import {
   getSchemaStringKeys,
 } from "@rilldata/web-common/features/templates/schema-utils.ts";
 import type { MultiStepFormSchema } from "@rilldata/web-common/features/templates/schemas/types.ts";
+import {
+  applyDuckLakeFormPipeline,
+  injectDuckLakeAttach,
+} from "@rilldata/web-common/features/templates/schemas/ducklake-utils.ts";
 import { compileConnectorYAML } from "@rilldata/web-common/features/connectors/code-utils.ts";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import {
@@ -33,9 +37,22 @@ export function getConnectorYamlPreview({
   const schemaStringKeys = schema
     ? getSchemaStringKeys(schema, { step: "connector" })
     : [];
+  // DuckLake: mirror the submit path so the preview reflects the composed
+  // ATTACH clause and rewritten env-var refs. Discards extractedSecrets
+  // since previews don't write to `.env`.
+  const { transformedValues } = applyDuckLakeFormPipeline(schema, formValues, {
+    connectorName: connector.name ?? "",
+    existingEnvBlob: existingEnvBlob ?? "",
+  });
   const filteredValues = schema
-    ? filterSchemaValuesForSubmit(schema, formValues, { step: "connector" })
-    : formValues;
+    ? injectDuckLakeAttach(
+        schema,
+        filterSchemaValuesForSubmit(schema, transformedValues, {
+          step: "connector",
+        }),
+        transformedValues,
+      )
+    : transformedValues;
   const yamlPreview = compileConnectorYAML(connector, filteredValues, {
     fieldFilter: (property) => {
       if ("internal" in property && property.internal) return false;

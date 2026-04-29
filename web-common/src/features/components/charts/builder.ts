@@ -98,15 +98,23 @@ export function createPositionEncoding(
         ...(field.max !== undefined && { domainMax: field.max }),
       },
     }),
-    axis: {
-      ...(field.labelAngle !== undefined && { labelAngle: field.labelAngle }),
-      ...(field.axisOrient && { orient: field.axisOrient }),
-      ...(field.type === "quantitative" && {
-        formatType: sanitizeFieldName(field.field),
-      }),
-      ...(metaData && "format" in metaData && { format: metaData.format }),
-      ...(!field.showAxisTitle && { title: null }),
-    },
+    axis:
+      field.axisOrient === "none"
+        ? null
+        : {
+            ...(field.labelAngle !== undefined && {
+              labelAngle: field.labelAngle,
+            }),
+            ...(field.axisOrient && { orient: field.axisOrient }),
+            ...(field.type === "quantitative" && {
+              formatType: sanitizeFieldName(field.field),
+            }),
+            ...(metaData &&
+              "format" in metaData && {
+                format: metaData.format,
+              }),
+            ...(!field.showAxisTitle && { title: null }),
+          },
   };
 }
 

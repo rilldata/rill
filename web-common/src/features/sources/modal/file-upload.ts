@@ -1,4 +1,4 @@
-import { goto } from "$app/navigation";
+import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
 import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
@@ -69,7 +69,7 @@ export async function* uploadTableFiles(
       lastTableName,
       EntityType.Table,
     );
-    await goto(`/files${newFilePath}`);
+    await navigateToFile(newFilePath);
   }
 
   if (invalidFiles.length) {
