@@ -66,23 +66,16 @@
       return;
     }
 
-    // Tear down the dev deployment now that its changes live in production.
-    // Failures here are non-fatal: auto-hibernation and (eventually) backend
-    // GitHub-event cleanup will catch any orphans.
-    if (devDeploymentId) {
-      try {
-        await $deleteDeploymentMutation.mutateAsync({
-          deploymentId: devDeploymentId,
-        });
-      } catch (err) {
-        console.warn("Failed to delete dev deployment after merge", err);
-      }
-    }
-
-    // Full page navigation matches the Done button: avoids a race where
-    // useRuntimeClient() is called before the project layout's
-    // RuntimeProvider remounts on the production branch.
+    // First, leave the edit page. Deleting the deployment while the page is still
+    // mounted would 404 its deployment queries and flash an error.
     window.location.href = `/${organization}/${project}`;
+
+    // Second, delete the dev deployment.
+    // Note that the browser may cancel this request on page tear-down, so a better approach may be to
+    // hand off the deployment id via sessionStorage and fire the delete from the destination.
+    if (devDeploymentId) {
+      $deleteDeploymentMutation.mutate({ deploymentId: devDeploymentId });
+    }
   }
 </script>
 
