@@ -189,7 +189,7 @@
   class="bg-surface-base flex items-center h-10 px-3 gap-x-2 border-b border-border"
 >
   {#if previewMode}
-    <nav class="flex gap-x-2 items-center">
+    <nav class="flex gap-x-2 items-center shrink-0">
       <ol class="flex flex-row items-center">
         <li class="flex items-center gap-x-2 px-2">
           <a
