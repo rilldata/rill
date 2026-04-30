@@ -44,9 +44,12 @@ export function getSupportedTopConnectors(runtimeClient: RuntimeClient) {
   return derived(
     isModelingSupportedForDefaultOlapDriver,
     (isModellingSupportedResp) => {
-      return isModellingSupportedResp.data
-        ? TopConnectors
-        : TopConnectorsWithoutModeling;
+      return {
+        isPending: isModellingSupportedResp.isPending,
+        data: isModellingSupportedResp.data
+          ? TopConnectors
+          : TopConnectorsWithoutModeling,
+      };
     },
   );
 }
