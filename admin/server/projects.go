@@ -524,6 +524,11 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		userID = &tmp
 	}
 
+	devSlots := 8 // default value for older CLIs which will not pass this field
+	if req.DevSlots != 0 {
+		devSlots = int(req.DevSlots)
+	}
+
 	// Prepare the project options
 	opts := &database.InsertProjectOptions{
 		OrganizationID:       org.ID,
@@ -543,7 +548,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		ProdVersion:          req.ProdVersion,
 		ProdSlots:            int(req.ProdSlots),
 		ProdTTLSeconds:       prodTTL,
-		DevSlots:             int(req.DevSlots),
+		DevSlots:             devSlots,
 		DevTTLSeconds:        devTTL,
 	}
 
