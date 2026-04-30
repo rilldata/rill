@@ -1,10 +1,18 @@
 <script lang="ts">
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { fileAndResourceWatcher } from "./file-and-resource-watcher";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
-  import { ConnectionStatus } from "@rilldata/web-common/runtime-client/sse-connection-manager";
+  import { ConnectionStatus } from "@rilldata/web-common/runtime-client/sse";
+  import { getContext } from "svelte";
+  import { writable, type Writable } from "svelte/store";
+  import { WATCHER_CONTEXT_KEY, type WatcherContext } from "./watcher-context";
 
-  const { status: statusStore } = fileAndResourceWatcher;
+  // Context is supplied by <FileAndResourceWatcher>. If this component is
+  // rendered outside a watcher provider (e.g. a route that doesn't mount
+  // the watcher), fall back to a static CLOSED store so it still renders
+  // rather than throws.
+  const context = getContext<WatcherContext | undefined>(WATCHER_CONTEXT_KEY);
+  const statusStore: Writable<ConnectionStatus> =
+    context?.status ?? writable(ConnectionStatus.CLOSED);
 
   let showIndicator: boolean = true;
   let connectedTimer: ReturnType<typeof setTimeout>;

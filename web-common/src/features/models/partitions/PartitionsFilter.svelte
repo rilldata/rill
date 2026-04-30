@@ -1,44 +1,46 @@
 <script lang="ts">
-  import * as Select from "@rilldata/web-common/components/select";
-  import Button from "../../../components/button/Button.svelte";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
 
   export let selectedFilter: string;
   export let onChange: (value: string) => void;
 
-  let openFilterMenu = false;
+  let open = false;
 
   const options = [
-    { value: "all", label: "all" },
-    { value: "pending", label: "pending" },
-    { value: "errors", label: "errors" },
+    { value: "all", label: "All partitions" },
+    { value: "pending", label: "Pending" },
+    { value: "errors", label: "Errored" },
   ];
+
+  $: selectedLabel =
+    options.find((o) => o.value === selectedFilter)?.label ?? "All partitions";
 </script>
 
-<Select.Root
-  type="single"
-  items={options}
-  value={selectedFilter}
-  onValueChange={(val) => {
-    if (val) onChange(val);
-  }}
-  bind:open={openFilterMenu}
->
-  <Select.Trigger class="outline-none border-none w-fit px-0 gap-x-0.5">
-    <Button type="text" label="Filter partitions">
-      <span class="text-fg-primary hover:text-inherit">
-        Showing <b>{selectedFilter}</b>
-      </span>
-    </Button>
-  </Select.Trigger>
-  <Select.Content sameWidth={false} align="end">
+<DropdownMenu.Root bind:open>
+  <DropdownMenu.Trigger
+    class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {open
+      ? 'bg-gray-200'
+      : 'hover:bg-surface-hover'} px-2 py-1"
+  >
+    <span class="text-fg-secondary font-medium">{selectedLabel}</span>
+    {#if open}
+      <CaretUpIcon size="12px" />
+    {:else}
+      <CaretDownIcon size="12px" />
+    {/if}
+  </DropdownMenu.Trigger>
+  <DropdownMenu.Content align="end" class="w-48">
     {#each options as option (option.value)}
-      <Select.Item
-        value={option.value}
-        label={option.label}
-        class={`text-xs flex items-start ${
-          selectedFilter === option.value ? "font-bold" : ""
-        }`}
-      />
+      <DropdownMenu.CheckboxItem
+        checked={selectedFilter === option.value}
+        onCheckedChange={(checked) => {
+          if (checked) onChange(option.value);
+        }}
+      >
+        {option.label}
+      </DropdownMenu.CheckboxItem>
     {/each}
-  </Select.Content>
-</Select.Root>
+  </DropdownMenu.Content>
+</DropdownMenu.Root>

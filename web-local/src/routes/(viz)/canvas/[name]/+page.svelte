@@ -12,6 +12,7 @@
     isNotFoundError,
     extractErrorStatusCode,
   } from "@rilldata/web-common/lib/errors";
+  import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { PageData } from "./$types";
 
@@ -32,6 +33,8 @@
     !$canvasQuery.data &&
     $canvasQuery.isError &&
     isNotFoundError($canvasQuery.error);
+
+  $: homeHref = $previewModeStore ? "/dashboards" : "/";
 </script>
 
 {#key `${runtimeClient.instanceId}::${canvasName}`}
@@ -40,9 +43,10 @@
       statusCode={extractErrorStatusCode($canvasQuery.error)}
       header="This user can't access this dashboard"
       body="The security policy for this dashboard may make contents invisible to you. If you deploy this dashboard, {$selectedMockUserStore?.email} will see a 404."
+      href={homeHref}
     />
   {:else if isCanvasNotFound}
-    <ErrorPage statusCode={404} header="Dashboard not found" />
+    <ErrorPage statusCode={404} header="Dashboard not found" href={homeHref} />
   {:else}
     <div class="flex h-full overflow-hidden">
       <div class="flex-1 overflow-hidden">

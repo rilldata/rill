@@ -35,3 +35,38 @@ export function localStorageStore<T>(itemKey: string, defaultValue: T) {
     },
   };
 }
+
+/**
+ * Simplified version of localStorageStore that only stores value on an explicit set call.
+ * Where as localStorageStore will store the default value as well.
+ */
+export function explicitLocalStorageStore<T>(itemKey: string, defaultValue: T) {
+  let initValue: T = defaultValue;
+  if (browser) {
+    const stored = localStorage.getItem(itemKey);
+    if (stored !== null) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (parsed !== undefined) {
+          initValue = parsed;
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  const store = writable(initValue);
+
+  return {
+    ...store,
+    set: (value: T) => {
+      store.set(value);
+      try {
+        localStorage.setItem(itemKey, JSON.stringify(value));
+      } catch {
+        // no-op
+      }
+    },
+  };
+}

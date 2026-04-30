@@ -51,8 +51,8 @@ sql: >
     await expect(page.getByText("num: 1")).toBeVisible();
 
     // Filter for the errored partitions
-    await page.getByLabel("Filter partitions", { exact: true }).click();
-    await page.getByRole("option", { name: "errors" }).click();
+    await page.getByRole("button", { name: "All partitions" }).click();
+    await page.getByRole("menuitemcheckbox", { name: "Errored" }).click();
 
     // Check that the errored partition is displayed
     const errorText = page.getByText("failed to incrementally");

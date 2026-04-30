@@ -6,6 +6,7 @@
   } from "@rilldata/web-common/features/connectors/connector-metadata.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { getSupportedTopConnectors } from "@rilldata/web-common/features/add-data/manager/selectors.ts";
+  import { withEditorPrefix } from "@rilldata/web-common/layout/navigation/editor-routing.ts";
 
   export let startConnectorSelection: (name: string | null) => void = () => {};
   export let onWelcomeScreen = false;
@@ -27,7 +28,7 @@
   <svelte:element
     this={onWelcomeScreen ? "a" : "button"}
     {...onWelcomeScreen
-      ? { href: "/welcome/add-data" }
+      ? { href: withEditorPrefix("/welcome/add-data") }
       : { onclick: () => startConnectorSelection(null) }}
     class="all-connectors"
     aria-label="Connect your data"
@@ -56,7 +57,7 @@
         this={onWelcomeScreen ? "a" : "button"}
         class="primary-connector-entry"
         {...onWelcomeScreen
-          ? { href: `/welcome/add-data?schema=${connector}` }
+          ? { href: withEditorPrefix(`/welcome/add-data?schema=${connector}`) }
           : { onclick: (e) => selectConnector(e, connector) }}
         aria-label={`Connect to ${connector}`}
       >

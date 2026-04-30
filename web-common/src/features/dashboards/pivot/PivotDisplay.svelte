@@ -12,6 +12,7 @@
   import { usePivotForExplore } from "./pivot-data-store";
   import PivotEmpty from "./PivotEmpty.svelte";
   import PivotHeader from "./PivotHeader.svelte";
+  import type { PivotChipData } from "./types";
   import PivotSidebar from "./PivotSidebar.svelte";
   import PivotTable from "./PivotTable.svelte";
   import PivotToolbar from "./PivotToolbar.svelte";
@@ -22,6 +23,7 @@
   const {
     exploreName,
     dashboardStore,
+    validSpecStore,
     selectors: {
       pivot: { columns, measures, dimensions },
     },
@@ -55,6 +57,32 @@
 
   $: ({ isFetching, assembled } = $pivotDataStore);
 
+  // Build a description lookup from the metricsView so pivot chips get
+  // descriptions even when the metricsView loads after the pivot state
+  // is deserialized (e.g. public URL first load).
+  $: descriptionMap = new Map<string, string | undefined>([
+    ...($validSpecStore.data?.metricsView?.dimensions ?? []).map(
+      (d) => [d.name, d.description] as [string, string | undefined],
+    ),
+    ...($validSpecStore.data?.metricsView?.measures ?? []).map(
+      (m) => [m.name, m.description] as [string, string | undefined],
+    ),
+  ]);
+
+  function enrichDescriptions(chips: PivotChipData[]): PivotChipData[] {
+    return chips.map((chip) => {
+      if (chip.description) return chip;
+      const desc = descriptionMap.get(chip.id);
+      return desc ? { ...chip, description: desc } : chip;
+    });
+  }
+
+  $: enrichedPivotState = {
+    ...$dashboardStore.pivot,
+    rows: enrichDescriptions($dashboardStore.pivot.rows),
+    columns: enrichDescriptions($dashboardStore.pivot.columns),
+  };
+
   $: hasColumnAndNoMeasure =
     $columns.dimension.length > 0 && $columns.measure.length === 0;
 
@@ -67,7 +95,7 @@
 <div class="layout" class:h-full={!$dynamicHeight}>
   {#if showPanels}
     <PivotSidebar
-      pivotState={$dashboardStore.pivot}
+      pivotState={enrichedPivotState}
       measures={$measures}
       dimensions={$dimensions}
       {timeControlsForPillActions}
@@ -80,7 +108,7 @@
   >
     {#if showPanels}
       <PivotHeader
-        pivotState={$dashboardStore.pivot}
+        pivotState={enrichedPivotState}
         setRows={(rows) =>
           metricsExplorerStore.setPivotRows($exploreName, rows)}
         setColumns={(columns) =>
@@ -96,7 +124,7 @@
       }}
     >
       <PivotToolbar
-        pivotState={$dashboardStore.pivot}
+        pivotState={enrichedPivotState}
         setTableMode={(tableMode, rows, columns) =>
           metricsExplorerStore.setPivotTableMode(
             $exploreName,

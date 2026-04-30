@@ -7,7 +7,11 @@ sidebar_position: 0
 
 # AI Features
 
-Rill Cloud includes powerful AI capabilities to help you explore and understand your data conversationally.
+Rill includes AI capabilities across both development and data exploration.
+
+## Build Projects with AI
+
+Rill projects are defined as YAML and SQL files, which makes them a natural fit for AI coding agents. Run `rill init` to generate agent instructions for Claude Code, Cursor, or other tools, then use your AI agent to build connectors, models, metrics views, and dashboards. See the **[Agentic Quickstart](/developers/get-started/ai-quickstart)** to get started.
 
 ## AI Chat
 

@@ -2,8 +2,14 @@
   import { page } from "$app/stores";
   import {
     createAdminServiceGetProject,
+    createAdminServiceGetBillingSubscription,
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
+  import {
+    isFreePlan,
+    isProPlan,
+    isTrialPlan,
+  } from "@rilldata/web-admin/features/billing/plans/utils";
   import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
@@ -21,6 +27,8 @@
     formatEnvironmentName,
     formatConnectorName,
     getOlapEngineLabel,
+  } from "@rilldata/web-common/features/resources/display-utils";
+  import {
     getStatusDotClass,
     getStatusLabel,
     isTransitoryStatus,
@@ -30,6 +38,7 @@
   import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
   import ProjectClone from "./ProjectClone.svelte";
   import OverviewCard from "@rilldata/web-common/features/projects/status/overview/OverviewCard.svelte";
+  import ClusterSize from "./ClusterSize.svelte";
 
   export let organization: string;
   export let project: string;
@@ -105,17 +114,30 @@
   $: aiConnector = instance?.projectConnectors?.find(
     (c) => c.name === instance?.aiConnector,
   );
+
+  // Slots
+  $: currentSlots = Number(projectData?.prodSlots) || 0;
+
+  // Billing plan detection
+  $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
+  $: planName = $subscriptionQuery?.data?.subscription?.plan?.name ?? "";
+  $: showSlots =
+    isTrialPlan(planName) || isFreePlan(planName) || isProPlan(planName);
 </script>
 
 <OverviewCard title="Deployment">
-  <ProjectClone
-    slot="header-right"
-    {organization}
-    {project}
-    gitRemote={projectData?.gitRemote}
-    managedGitId={projectData?.managedGitId}
-    disabled={!!parserReconcileError}
-  />
+  <div slot="header-right" class="flex items-center gap-3">
+    <!-- TODO: re-add "Upgrade to Pro" link when ready.
+         Gate on: canManage && (isTrialPlan || isFreePlan || isTeamPlan) && !subscriptionQuery.isLoading
+    -->
+    <ProjectClone
+      {organization}
+      {project}
+      gitRemote={projectData?.gitRemote}
+      managedGitId={projectData?.managedGitId}
+      disabled={!!parserReconcileError}
+    />
+  </div>
 
   <div class="info-grid">
     <div class="info-row">
@@ -136,6 +158,15 @@
         {formatEnvironmentName(deployment?.environment)}
       </span>
     </div>
+
+    {#if !$subscriptionQuery?.isLoading && showSlots}
+      <div class="info-row">
+        <span class="info-label">Cluster Size</span>
+        <span class="info-value">
+          <ClusterSize slots={currentSlots} />
+        </span>
+      </div>
+    {/if}
 
     {#if isGithubConnected}
       <div class="info-row">
@@ -209,42 +240,20 @@
           {/if}
         </span>
       </div>
-    {/if}
 
-    {#if version}
-      <div class="info-row">
-        <span class="info-label">Runtime</span>
-        <span class="info-value">{version}</span>
-      </div>
-    {/if}
-
-    <div class="info-row">
-      <span class="info-label">OLAP Engine</span>
-      <span class="info-value">{olapEngineLabel}</span>
-    </div>
-
-    <div class="info-row">
-      <span class="info-label">AI Connector</span>
-      <span class="info-value">
-        {#if aiConnector && aiConnector.name !== "admin"}
-          {formatConnectorName(aiConnector.type)}
-          <span class="text-fg-tertiary text-xs ml-1">({aiConnector.name})</span
-          >
-        {:else}
-          Rill Managed
-        {/if}
-      </span>
-    </div>
-
-    {#if dataSizeBytes !== undefined}
-      <div class="info-row">
-        <span class="info-label">{dataLabel}</span>
-        <span class="info-value">
-          <a href="/{organization}/{project}/-/status/tables" class="repo-link">
-            {formatMemorySize(dataSizeBytes)}
-          </a>
-        </span>
-      </div>
+      {#if dataSizeBytes !== undefined}
+        <div class="info-row">
+          <span class="info-label">{dataLabel}</span>
+          <span class="info-value">
+            <a
+              href="/{organization}/{project}/-/status/tables"
+              class="repo-link"
+            >
+              {formatMemorySize(dataSizeBytes)}
+            </a>
+          </span>
+        </div>
+      {/if}
     {/if}
   </div>
 </OverviewCard>

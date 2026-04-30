@@ -56,7 +56,9 @@
       error={deleteOrgResult.error?.message}
       onConfirm={deleteOrg}
     >
-      <Button type="destructive">Delete Organization</Button>
+      <Button type="destructive" label="Delete organization">
+        Delete Organization
+      </Button>
     </AlertDialogGuardedConfirmation>
   {/snippet}
 </SettingsContainer>

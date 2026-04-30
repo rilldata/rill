@@ -535,7 +535,12 @@ export interface V1GetCurrentUserResponse {
   preferences?: V1UserPreferences;
 }
 
-export type V1GetDeploymentConfigResponseVariables = { [key: string]: string };
+/**
+ * Deprecated: Variables for the deployment. Use `variables` instead.
+ */
+export type V1GetDeploymentConfigResponseVariablesLegacy = {
+  [key: string]: string;
+};
 
 export type V1GetDeploymentConfigResponseAnnotations = {
   [key: string]: string;
@@ -546,7 +551,10 @@ export type V1GetDeploymentConfigResponseDuckdbConnectorConfig = {
 };
 
 export interface V1GetDeploymentConfigResponse {
-  variables?: V1GetDeploymentConfigResponseVariables;
+  /** Variables for the deployment. */
+  variables?: V1ProjectVariable[];
+  /** Deprecated: Variables for the deployment. Use `variables` instead. */
+  variablesLegacy?: V1GetDeploymentConfigResponseVariablesLegacy;
   annotations?: V1GetDeploymentConfigResponseAnnotations;
   /** Frontend URL for the deployment. */
   frontendUrl?: string;
@@ -555,6 +563,8 @@ export interface V1GetDeploymentConfigResponse {
   /** Whether the deployment is git based or archive based. */
   usesArchive?: boolean;
   duckdbConnectorConfig?: V1GetDeploymentConfigResponseDuckdbConnectorConfig;
+  /** Whether the deployment is editable (dev environment with changes persisted to git repo). */
+  editable?: boolean;
 }
 
 export interface V1GetDeploymentCredentialsResponse {
@@ -1769,6 +1779,7 @@ export type AdminServiceCreateManagedGitRepoBody = {
   /** name of the repo to create. 
 Note: The final name will be suffixed with a random string to ensure uniqueness. */
   name?: string;
+  autoInit?: boolean;
 };
 
 export type AdminServiceCreateAssetBody = {
@@ -1844,6 +1855,7 @@ Either git_remote or archive_asset_id should be set. */
   /** archive_asset_id is set for projects whose project files are not stored in github but are managed by rill. */
   archiveAssetId?: string;
   prodVersion?: string;
+  devSlots?: string;
   skipDeploy?: boolean;
 };
 
@@ -1884,6 +1896,7 @@ export type AdminServiceUpdateProjectBody = {
   newName?: string;
   prodTtlSeconds?: string;
   prodVersion?: string;
+  devSlots?: string;
   superuserForceAccess?: boolean;
 };
 

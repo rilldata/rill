@@ -219,17 +219,17 @@ tests:
     result:
       - dimensions:
           - data_type: CODE_TIMESTAMP
-            max_value: "2024-01-06T00:00:00Z"
+            max_value: "2024-01-08T00:00:00Z"
             min_value: "2024-01-01T00:00:00Z"
             name: event_time
           - data_type: CODE_STRING
-            example_value: Clothing
-            max_value: Home
+            example_value: Electronics
+            max_value: Electronics
             min_value: Clothing
             name: category
         time_range:
           data_type: CODE_TIMESTAMP
-          max_value: "2024-01-06T00:00:00Z"
+          max_value: "2024-01-08T00:00:00Z"
           min_value: "2024-01-01T00:00:00Z"
           name: event_time
   - name: duckdb_empty_summary

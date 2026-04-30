@@ -425,7 +425,7 @@ func (r *globResolver) transformResult(ctx context.Context, rows []map[string]an
 	err = olap.WithConnection(ctx, 0, func(wrappedCtx context.Context, ensuredCtx context.Context) error {
 		// Load the JSON file into a temporary table
 		err = olap.Exec(wrappedCtx, &drivers.Statement{
-			Query: fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (SELECT * FROM read_ndjson_auto(%s))", olap.Dialect().EscapeIdentifier(r.tmpTableName), olap.Dialect().EscapeStringValue(jsonFile)),
+			Query: fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (SELECT * FROM read_ndjson_auto(%s))", olap.Dialect().EscapeIdentifier(r.tmpTableName), drivers.EscapeStringValue(jsonFile)),
 		})
 		if err != nil {
 			return fmt.Errorf("failed to stage underlying data for pivot: %w", err)

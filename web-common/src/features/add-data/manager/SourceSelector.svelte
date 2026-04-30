@@ -9,6 +9,7 @@
   import { ChevronRightIcon } from "lucide-svelte";
   import { getSupportedConnectorInfos } from "@rilldata/web-common/features/add-data/manager/selectors.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { withEditorPrefix } from "@rilldata/web-common/layout/navigation/editor-routing.ts";
 
   export let config: AddDataConfig;
   export let onSelect: (name: string) => void;
@@ -47,7 +48,11 @@
         <svelte:element
           this={config.welcomeScreen ? "a" : "button"}
           {...config.welcomeScreen
-            ? { href: `/welcome/add-data?schema=${connector.name}` }
+            ? {
+                href: withEditorPrefix(
+                  `/welcome/add-data?schema=${connector.name}`,
+                ),
+              }
             : { onclick: () => onSelect(connector.name) }}
           class="source-selector-cell"
           aria-label={`Connect to ${connector.name}`}

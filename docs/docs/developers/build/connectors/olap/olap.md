@@ -37,8 +37,11 @@ When setting the OLAP Engine via the UI, the `olap_connector` key will automatic
 Rill supports the use of several different OLAP engines to power your dashboards, including:
 
 ### ClickHouse
+### Databricks
 ### Druid
 ### DuckDB
+### DuckLake
+### Google BigQuery
 ### MotherDuck
 ### Pinot
 ### Snowflake
@@ -51,6 +54,14 @@ Rill supports the use of several different OLAP engines to power your dashboards
     link="/developers/build/connectors/olap/clickhouse"
     linkLabel="Learn more"
     referenceLink="clickhouse"
+  />
+
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-Databricks.svg" alt="Databricks" />}
+    content="Lakehouse platform with native support for metrics views as a live connector."
+    link="/developers/build/connectors/olap/databricks"
+    linkLabel="Learn more"
+    referenceLink="databricks"
   />
 
   <ConnectorIcon
@@ -67,6 +78,22 @@ Rill supports the use of several different OLAP engines to power your dashboards
     link="/developers/build/connectors/olap/duckdb"
     linkLabel="Learn more"
     referenceLink="duckdb"
+  />
+
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-DuckLake.svg" alt="DuckLake" />}
+    content="Open lakehouse format built on DuckDB — catalog in SQL, data in Parquet."
+    link="/developers/build/connectors/olap/ducklake"
+    linkLabel="Learn more"
+    referenceLink="ducklake"
+  />
+
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-BigQuery.svg" alt="Google BigQuery" />}
+    content="Serverless cloud data warehouse with native support for metrics views as a live connector."
+    link="/developers/build/connectors/olap/bigquery"
+    linkLabel="Learn more"
+    referenceLink="bigquery"
   />
 
   <ConnectorIcon

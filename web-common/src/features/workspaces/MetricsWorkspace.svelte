@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { withEditorPrefix } from "@rilldata/web-common/layout/navigation/editor-routing";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
@@ -95,7 +96,7 @@
       {#if !inPreviewMode}
         {#if isOldMetricsView}
           <PreviewButton
-            href="/explore/{metricsViewName}"
+            href={withEditorPrefix(`/explore/${metricsViewName}`)}
             disabled={!!parseError || !!reconcileError}
           />
         {:else}
@@ -112,6 +113,7 @@
           {resource}
           {parseError}
           remoteContent={$remoteContent}
+          {filePath}
         >
           {#if $selectedView === "code"}
             <MetricsEditor

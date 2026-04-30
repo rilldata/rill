@@ -70,7 +70,7 @@
     </div>
     <UploadImagePopover
       imageUrl={organizationThumbnailUrl}
-      accept="image/png, image/jpeg, image/gif, image/svg+xml"
+      accept="image/png, image/jpeg, image/gif"
       label="thumbnail"
       {organization}
       loading={isLoading}

@@ -4,12 +4,7 @@
 
 <script lang="ts">
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import { sanitizeOrgName } from "@rilldata/web-common/features/organization/sanitizeOrgName";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import {
-    createLocalServiceCreateOrganization,
-    getLocalServiceGetCurrentUserQueryKey,
-  } from "@rilldata/web-common/runtime-client/local-service";
+  import { sanitizeSlug } from "@rilldata/web-common/lib/string-utils";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
@@ -17,7 +12,7 @@
   // We need different sizes for showing in dialog vs a full page form.
   // "lg" matches all the input sizes so we have "lg"/"xl" and not something else.
   export let size: "lg" | "xl" = "lg";
-  export let onCreate: (orgName: string) => void;
+  export let createOrg: (name: string, displayName: string) => Promise<void>;
 
   const initialValues: {
     name: string;
@@ -41,8 +36,6 @@
     }),
   );
 
-  const orgCreator = createLocalServiceCreateOrganization();
-
   const { form, errors, enhance, submit } = superForm(
     defaults(initialValues, schema),
     {
@@ -52,15 +45,7 @@
         if (!form.valid) return;
         const values = form.data;
 
-        await $orgCreator.mutateAsync({
-          name: values.name,
-          displayName: values.displayName,
-        });
-
-        await queryClient.invalidateQueries({
-          queryKey: getLocalServiceGetCurrentUserQueryKey(),
-        });
-        onCreate(values.name);
+        await createOrg(values.name, values.displayName ?? "");
       },
       onError({ result }) {
         // Mapping for backend error to a more user friendly UI error message.
@@ -81,7 +66,7 @@
   let orgNameChangedDirectly = false;
   function updateName(displayName: string) {
     if (orgNameChangedDirectly) return;
-    $form.name = sanitizeOrgName(displayName);
+    $form.name = sanitizeSlug(displayName);
   }
   $: updateName($form.displayName!);
 </script>

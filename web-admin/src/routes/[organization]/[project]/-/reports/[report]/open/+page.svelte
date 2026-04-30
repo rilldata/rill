@@ -5,8 +5,7 @@
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import LoadingSpinner from "@rilldata/web-common/components/LoadingSpinner.svelte";
   import { mapQueryToDashboard } from "@rilldata/web-common/features/explore-mappers/map-to-explore";
   import { getExplorePageUrlSearchParams } from "@rilldata/web-common/features/explore-mappers/utils";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -89,8 +88,8 @@
 <CtaLayoutContainer>
   <CtaContentContainer>
     {#if $dashboardStateForReport.isLoading}
-      <div class="h-36 mt-10">
-        <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
+      <div class="mt-10">
+        <LoadingSpinner />
       </div>
     {:else if $dashboardStateForReport.error}
       <div class="flex flex-col gap-y-2">

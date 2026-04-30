@@ -23,6 +23,7 @@
   } from "@rilldata/web-common/lib/errors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { PageData } from "./$types";
 
@@ -76,6 +77,8 @@
   $: mockUserHasNoAccess =
     $selectedMockUserStore && isNotFoundError($exploreResource.error);
 
+  $: homeHref = $previewModeStore ? "/dashboards" : "/";
+
   onNavigate(({ from, to }) => {
     const changedDashboard =
       !from || !to || from?.params?.name !== to?.params?.name;
@@ -97,9 +100,10 @@
     statusCode={extractErrorStatusCode($exploreResource.error)}
     header="This user can't access this dashboard"
     body="The security policy for this dashboard may make contents invisible to you. If you deploy this dashboard, {$selectedMockUserStore?.email} will see a 404."
+    href={homeHref}
   />
 {:else if isDashboardNotFound}
-  <ErrorPage statusCode={404} header="Dashboard not found" />
+  <ErrorPage statusCode={404} header="Dashboard not found" href={homeHref} />
 {:else if $exploreResource.isSuccess}
   {#if isExploreReconcilingForFirstTime($exploreResource.data)}
     <DashboardBuilding />
@@ -108,17 +112,20 @@
       header="Error building dashboard"
       body={$exploreResource.data?.explore?.meta?.reconcileError ??
         "An unknown error occurred while building the dashboard."}
+      href={homeHref}
     />
   {:else if dashboardFileHasParseError && dashboardFileHasParseError.length > 0}
     <ErrorPage
       header="Error parsing dashboard"
       body="Please check your dashboard's YAML file for errors."
+      href={homeHref}
     />
   {:else if measures.length === 0 && $selectedMockUserStore !== null}
     <ErrorPage
       statusCode={extractErrorStatusCode($exploreResource.error)}
       header="Error fetching dashboard"
       body="No measures available"
+      href={homeHref}
     />
   {:else if metricsViewName}
     <div class="h-full overflow-hidden">
