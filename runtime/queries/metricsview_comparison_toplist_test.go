@@ -1234,6 +1234,7 @@ func testMetricsViewsComparisonStarRocks_null_dim_values(t *testing.T, rt *runti
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
+	require.True(t, hasNullDimensionValue(q.Result.Rows), "expected at least one row with NULL dimension value")
 }
 
 // adBidsTimeRange resolves the full time range for the ad_bids table and
@@ -1309,6 +1310,17 @@ func testMetricsViewsComparison_null_dim_values(t *testing.T, rt *runtime.Runtim
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
+	require.True(t, hasNullDimensionValue(q.Result.Rows), "expected at least one row with NULL dimension value")
+}
+
+// hasNullDimensionValue reports whether any row's dimension value is NULL.
+func hasNullDimensionValue(rows []*runtimev1.MetricsViewComparisonRow) bool {
+	for _, row := range rows {
+		if _, ok := row.DimensionValue.GetKind().(*structpb.Value_NullValue); ok {
+			return true
+		}
+	}
+	return false
 }
 
 // snowflakeAdBidsTimeRange resolves the full time range for the Snowflake ad_bids table and
