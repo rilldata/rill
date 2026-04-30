@@ -40,6 +40,6 @@
       Or jump right into an example project.
     </p>
 
-    <ProjectCards />
+    <ProjectCards isLocal />
   </div>
 </div>

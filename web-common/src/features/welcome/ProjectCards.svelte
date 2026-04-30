@@ -21,6 +21,7 @@
     navigateToHome,
   } from "@rilldata/web-common/layout/navigation/editor-routing.ts";
 
+  export let isLocal = false;
   export let onSelect: () => void = () => {};
 
   const runtimeClient = useRuntimeClient();
@@ -57,11 +58,20 @@
       });
 
       onSelect();
-      const dashboard = example?.firstFile;
-      if (dashboard) {
-        void goto(getFileHref(dashboard));
+
+      // Legacy fix for rill dev for race conditions.
+      // TODO: find a better fix that the redirect here.
+      if (isLocal) {
+        setTimeout(() => {
+          window.location.assign("/?redirect=true");
+        }, 5000);
       } else {
-        void navigateToHome();
+        const dashboard = example?.firstFile;
+        if (dashboard) {
+          void goto(getFileHref(dashboard));
+        } else {
+          void navigateToHome();
+        }
       }
     } catch {
       selectedProjectName = null;
@@ -75,9 +85,7 @@
       {@const icon = connectorIconMapping[example.connector]}
       {@const loading = selectedProjectName === example.name}
       <ProjectCard
-        onclick={async () => {
-          await unpackProject(example);
-        }}
+        onclick={() => void unpackProject(example)}
         {loading}
         disabled={!!selectedProjectName}
         label={example.title}
