@@ -4,16 +4,9 @@
   import type { Snippet } from "svelte";
   import { page } from "$app/stores";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
-  import type { PageData } from "./$types";
   import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
 
-  let {
-    data: _data,
-    children,
-  }: {
-    data: PageData;
-    children: Snippet;
-  } = $props();
+  let { children }: { children: Snippet } = $props();
 
   let organization = $derived($page.params.organization);
   let basePage = $derived(`/${organization}/-/settings`);
