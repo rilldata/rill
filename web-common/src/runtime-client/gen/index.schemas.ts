@@ -1141,8 +1141,6 @@ export interface V1GetTableResponse {
   schema?: V1StructType;
   view?: boolean;
   unsupportedColumns?: V1GetTableResponseUnsupportedColumns;
-  /** physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined. */
-  physicalSizeBytes?: string;
 }
 
 export interface V1GitBranch {

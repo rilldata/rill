@@ -5427,10 +5427,6 @@ definitions:
         additionalProperties:
           type: string
         title: unsupported_columns are columns having datatypes which are not supported by Rill, mapped to their raw type string
-      physicalSizeBytes:
-        type: string
-        format: int64
-        description: physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
   v1GitBranch:
     type: object
     properties:

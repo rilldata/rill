@@ -849,13 +849,6 @@ export class GetTableResponse extends Message<GetTableResponse> {
    */
   unsupportedColumns: { [key: string]: string } = {};
 
-  /**
-   * physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
-   *
-   * @generated from field: int64 physical_size_bytes = 4;
-   */
-  physicalSizeBytes = protoInt64.zero;
-
   constructor(data?: PartialMessage<GetTableResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -867,7 +860,6 @@ export class GetTableResponse extends Message<GetTableResponse> {
     { no: 1, name: "schema", kind: "message", T: StructType },
     { no: 2, name: "view", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "unsupported_columns", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 4, name: "physical_size_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetTableResponse {

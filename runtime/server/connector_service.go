@@ -177,12 +177,10 @@ func (s *Server) GetTable(ctx context.Context, req *runtimev1.GetTableRequest) (
 	if err != nil {
 		return nil, err
 	}
-	_ = is.LoadPhysicalSize(ctx, []*drivers.TableInfo{table})
 
 	return &runtimev1.GetTableResponse{
 		Schema:             table.Schema,
 		View:               table.View,
 		UnsupportedColumns: table.UnsupportedCols,
-		PhysicalSizeBytes:  table.PhysicalSizeBytes,
 	}, nil
 }

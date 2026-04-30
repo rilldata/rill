@@ -159,6 +159,4 @@ message GetTableResponse {
   bool view = 2;
   // unsupported_columns are columns having datatypes which are not supported by Rill, mapped to their raw type string
   map<string, string> unsupported_columns = 3;
-  // physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
-  int64 physical_size_bytes = 4;
 }

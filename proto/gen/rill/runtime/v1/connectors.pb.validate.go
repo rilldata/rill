@@ -1927,8 +1927,6 @@ func (m *GetTableResponse) validate(all bool) error {
 
 	// no validation rules for UnsupportedColumns
 
-	// no validation rules for PhysicalSizeBytes
-
 	if len(errors) > 0 {
 		return GetTableResponseMultiError(errors)
 	}
