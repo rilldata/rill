@@ -51,6 +51,7 @@
   export let primaryBranch: string | undefined = undefined;
   export let planDisplayName: string | undefined;
   export let organizationLogoUrl: string | undefined;
+  export let editContext: boolean = false;
 
   const user = createAdminServiceGetCurrentUser();
   const runtimeClient = useRuntimeClient();
