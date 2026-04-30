@@ -26,13 +26,6 @@
       <ThreeDot size="16px" />
     </Dropdown.Trigger>
     <Dropdown.Content class="w-48" align="start" side="right">
-      <!-- TODO: This will have to open the project edit modal -->
-      <Dropdown.Item
-        href={`/${organization}/${project}/-/status/branches`}
-        class="text-sm"
-      >
-        <FeatherEditIcon /> Edit
-      </Dropdown.Item>
       <Dropdown.Item class="text-sm" onclick={onRename}>
         <FeatherEditIcon /> Rename
       </Dropdown.Item>

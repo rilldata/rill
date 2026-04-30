@@ -18,8 +18,8 @@
   }: {
     organization: string;
     project: string;
-    open: boolean;
-    button: boolean;
+    open?: boolean;
+    button?: boolean;
   } = $props();
 
   const deleteProjectMutation = createAdminServiceDeleteProject();
