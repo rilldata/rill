@@ -183,11 +183,10 @@
         {#if editContext && activeBranch}
           <li class="flex items-center mr-2">
             <span
-              class="flex items-center gap-x-1 px-2 py-0 rounded-2xl border bg-primary-50 border-primary-200 text-primary-800"
+              class="inline-block truncate max-w-[200px] px-2 py-0 rounded-2xl border bg-primary-50 border-primary-200 text-primary-800"
+              title={activeBranch}
             >
-              {activeBranch.length > 12
-                ? activeBranch.slice(0, 11) + "…"
-                : activeBranch}
+              {activeBranch}
             </span>
           </li>
         {:else if !onPublicURLPage && projectPermissions?.readDev}
