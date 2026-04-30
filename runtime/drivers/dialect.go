@@ -341,7 +341,9 @@ func (b *BaseDialect) SelectInlineResults(result *Result) (string, []any, []any,
 				return "", nil, nil, fmt.Errorf("select inline: failed to get argument expression: %w", err)
 			}
 			prefix += fmt.Sprintf("%s AS %s", argExpr, b.escapeAlias(result.Schema.Fields[i].Name))
-			args = append(args, argVal)
+			if argVal != nil {
+				args = append(args, argVal)
+			}
 		}
 	}
 	if err := result.Err(); err != nil {
@@ -409,6 +411,9 @@ func DoubleQuotesEscapeIdentifier(ident string) string {
 }
 
 func getArgExpr(val any, typ runtimev1.Type_Code) (string, any, error) {
+	if val == nil {
+		return "NULL", nil, nil
+	}
 	// handle bigquery non-timestamp time types separately
 	switch v := val.(type) {
 	case civil.Date:
