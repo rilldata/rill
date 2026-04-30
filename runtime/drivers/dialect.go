@@ -412,7 +412,6 @@ func DoubleQuotesEscapeIdentifier(ident string) string {
 }
 
 func getArgExpr(val any, typ runtimev1.Type_Code) (string, any, error) {
-	// Some OLAP drivers (e.g. BigQuery) reject nil parameter values; emit a SQL NULL literal instead.
 	if val == nil {
 		return "NULL", nil, nil
 	}
