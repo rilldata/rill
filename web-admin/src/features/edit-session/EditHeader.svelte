@@ -14,6 +14,7 @@
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import HomeBookmark from "@rilldata/web-common/components/icons/HomeBookmark.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
@@ -49,6 +50,7 @@
 
   const exploreCloudFeatures = [
     { label: "AI" },
+    { label: "Home bookmark", icon: HomeBookmark },
     { label: "Bookmark", icon: BookmarkIcon },
     { label: "Alert", icon: BellPlusIcon },
     { label: "Share" },
@@ -56,6 +58,7 @@
 
   const canvasCloudFeatures = [
     { label: "AI" },
+    { label: "Home bookmark", icon: HomeBookmark },
     { label: "Bookmark", icon: BookmarkIcon },
     { label: "Share" },
   ];
