@@ -101,8 +101,8 @@
         <p class="text-xs text-fg-secondary">
           Merging pushes changes from
           <span class="font-semibold text-fg-primary">"{currentBranch}"</span>
-          to production, closes the editor, and returns you to the project
-          home. Viewers will see updates as the project reconciles.
+          to production and returns you to the project home. Viewers will see updates
+          as the project reconciles.
         </p>
         {#if branchUrl}
           <a
