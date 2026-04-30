@@ -162,6 +162,10 @@ Please see our [Using Multiple OLAP Engines](/developers/build/connectors/olap/m
 
 Rill supports reading from multiple schemas in ClickHouse from within the same project in Rill Developer, and all accessible tables (given the permission set of the underlying user) should automatically be listed in the lower left-hand tab, which can then be used to [create dashboards](/developers/build/dashboards).
 
+## Caching Query Results
+
+To reduce broker load on dashboards with repeat traffic, see [Caching query results](/developers/build/metrics-view/underlying-model#caching-query-results) on live connectors.
+
 ## Additional Notes
 
 - At the moment, we do not officially support modeling with ClickHouse; however, this is available via a feature flag. If this is something you're interested in, please [contact us](/contact).

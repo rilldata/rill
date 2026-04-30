@@ -2293,6 +2293,22 @@ definitions:
               required:
                 - model
                 - time_grain
+          cache:
+            type: object
+            description: Controls query result caching for the metrics view. Caching is enabled by default for metrics views built on Rill-managed tables (where the cache is invalidated automatically on refresh) and disabled by default for metrics views built on external/live connector tables (e.g. Snowflake, BigQuery, Databricks). For external tables, configure `key_sql` and `key_ttl` to enable caching safely.
+            properties:
+              enabled:
+                type: boolean
+                description: Whether to enable result caching for the metrics view. Defaults to `true` for Rill-managed tables and `false` for external/live connector tables. When set to `true` on a live connector metrics view without `key_sql`, the cache is keyed on the max watermark of the timeseries column.
+              key_sql:
+                type: string
+                description: A SQL query that returns a single scalar value used as the cache key. When the returned value changes, the cache is invalidated. Typically returns a max watermark or table version. Evaluated against the metrics view's connector.
+              key_ttl:
+                type: string
+                description: How long a `key_sql` result is reused before being re-evaluated, as a Go duration string (e.g. `30s`, `5m`, `1h`). Lower values mean fresher results at the cost of more `key_sql` queries against the source.
+              timestamps_ttl:
+                type: string
+                description: Fallback TTL for cached timestamp metadata (min/max/watermark) when result caching is disabled. Go duration string. Defaults to `5m`.
           security:
               $ref: '#/definitions/security_policy_properties'
               description: Defines a security policy for the dashboard
