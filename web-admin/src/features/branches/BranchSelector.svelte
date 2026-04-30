@@ -2,6 +2,9 @@
   import { page } from "$app/stores";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { optimisticallySetStatus } from "./branch-actions";
   import {
     extractBranchFromPath,
     injectBranchIntoPath,
@@ -9,10 +12,14 @@
     requestSkipBranchInjection,
   } from "./branch-utils";
   import { isProdDeployment } from "./deployment-utils";
-  import { getStatusDotClass } from "../projects/status/display-utils";
+  import {
+    getStatusDotClass,
+    isTransitoryStatus,
+  } from "../projects/status/display-utils";
   import {
     V1DeploymentStatus,
     createAdminServiceListDeployments,
+    createAdminServiceStartDeployment,
     type V1Deployment,
   } from "../../client";
 
@@ -21,6 +28,9 @@
   export let primaryBranch: string | undefined = undefined;
 
   let open = false;
+  let resumingId: string | null = null;
+
+  const startMutation = createAdminServiceStartDeployment();
 
   $: activeBranch = extractBranchFromPath($page.url.pathname);
 
@@ -84,6 +94,36 @@
     open = false;
   }
 
+  function isHibernated(status: V1DeploymentStatus | undefined): boolean {
+    return (
+      status === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED ||
+      status === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING
+    );
+  }
+
+  async function handleResume(deployment: V1Deployment) {
+    const id = deployment.id;
+    if (!id || resumingId) return;
+    resumingId = id;
+    try {
+      await $startMutation.mutateAsync({ deploymentId: id, data: {} });
+      optimisticallySetStatus(
+        organization,
+        project,
+        id,
+        deployment.branch,
+        V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING,
+      );
+    } catch (err) {
+      eventBus.emit("notification", {
+        type: "error",
+        message: `Failed to resume branch: ${getRpcErrorMessage(err)}`,
+      });
+    } finally {
+      resumingId = null;
+    }
+  }
+
   function statusDot(status: V1DeploymentStatus | undefined): string {
     return getStatusDotClass(
       status ?? V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED,
@@ -115,19 +155,35 @@
           {@const isSelected = prod
             ? !isOnBranch
             : activeBranch === deployment.branch}
+          {@const hibernated = isHibernated(deployment.status)}
+          {@const isResuming =
+            resumingId === deployment.id ||
+            (deployment.id != null &&
+              isTransitoryStatus(
+                deployment.status ??
+                  V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED,
+              ))}
           <DropdownMenu.CheckboxItem
             checked={isSelected}
-            href={getDeploymentHref(deployment)}
-            onclick={() => handleClick(deployment)}
+            href={hibernated ? undefined : getDeploymentHref(deployment)}
+            onclick={(e: MouseEvent) => {
+              if (hibernated) {
+                // Block opening a hibernated branch; offer Resume in place.
+                e.preventDefault();
+                void handleResume(deployment);
+                return;
+              }
+              handleClick(deployment);
+            }}
             class="flex items-center gap-x-2"
           >
-            <div class="flex items-center gap-x-2 truncate">
+            <div class="flex items-center gap-x-2 truncate flex-1">
               <span
                 class="inline-block size-1.5 rounded-full flex-none {statusDot(
                   deployment.status,
                 )}"
               ></span>
-              <span class="truncate">
+              <span class="truncate" class:text-fg-muted={hibernated}>
                 {deployment.branch || primaryBranch || "main"}
               </span>
               {#if prod}
@@ -136,6 +192,11 @@
                 </span>
               {/if}
             </div>
+            {#if hibernated}
+              <span class="text-[10px] text-primary-700 font-medium flex-none">
+                {isResuming ? "Resuming…" : "Resume"}
+              </span>
+            {/if}
           </DropdownMenu.CheckboxItem>
         {/each}
       </DropdownMenu.Content>
