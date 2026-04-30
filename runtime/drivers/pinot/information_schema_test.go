@@ -68,6 +68,10 @@ func testInformationSchemaLookup(t *testing.T, ctx context.Context, infoSchema d
 	starbucksStores, err := infoSchema.Lookup(ctx, "", "", "starbucksStores")
 	require.NoError(t, err)
 	require.Equal(t, "starbucksStores", starbucksStores.Name)
+	require.Equal(t, "", starbucksStores.Database)
+	require.Equal(t, "default", starbucksStores.DatabaseSchema)
+	require.True(t, starbucksStores.IsDefaultDatabase)
+	require.True(t, starbucksStores.IsDefaultDatabaseSchema)
 
 	require.Equal(t, 5, len(starbucksStores.Schema.Fields))
 	require.Equal(t, "starbucksStores", starbucksStores.Name)
@@ -174,6 +178,8 @@ func testInformationSchemaListTables(t *testing.T, ctx context.Context, infoSche
 	require.Equal(t, "testUnnest", tables[9].Name)
 
 	for _, tbl := range tables {
+		require.Equal(t, "", tbl.Database)
+		require.Equal(t, "default", tbl.DatabaseSchema)
 		require.True(t, tbl.IsDefaultDatabase)
 		require.True(t, tbl.IsDefaultDatabaseSchema)
 	}

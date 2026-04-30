@@ -35,7 +35,7 @@ func TestInformationSchema(t *testing.T) {
 	ctx := t.Context()
 	t.Run("testInformationSchemaAll", func(t *testing.T) { testInformationSchemaAll(t, ctx, infoSchema) })
 	t.Run("testInformationSchemaAllLike", func(t *testing.T) { testInformationSchemaAllLike(t, ctx, infoSchema) })
-	t.Run("testInformationSchemaLookup", func(t *testing.T) { testInformationSchemaLookup(t, ctx, infoSchema) })
+	t.Run("testInformationSchemaLookup", func(t *testing.T) { testInformationSchemaLookup(t, ctx, infoSchema, database, databaseSchema) })
 	t.Run("testInformationSchemaAllPagination", func(t *testing.T) { testInformationSchemaAllPagination(t, ctx, infoSchema) })
 	t.Run("testInformationSchemaAllPaginationWithLike", func(t *testing.T) { testInformationSchemaAllPaginationWithLike(t, ctx, infoSchema) })
 	t.Run("testInformationSchemaListDatabaseSchemas", func(t *testing.T) {
@@ -79,7 +79,7 @@ schema_name: integration_test
 	ctx := t.Context()
 	t.Run("testInformationSchemaAll", func(t *testing.T) { testInformationSchemaAll(t, ctx, infoSchema) })
 	t.Run("testInformationSchemaAllLike", func(t *testing.T) { testInformationSchemaAllLike(t, ctx, infoSchema) })
-	t.Run("testInformationSchemaLookup", func(t *testing.T) { testInformationSchemaLookup(t, ctx, infoSchema) })
+	t.Run("testInformationSchemaLookup", func(t *testing.T) { testInformationSchemaLookup(t, ctx, infoSchema, database, databaseSchema) })
 	t.Run("testInformationSchemaAllPagination", func(t *testing.T) { testInformationSchemaAllPagination(t, ctx, infoSchema) })
 	t.Run("testInformationSchemaAllPaginationWithLike", func(t *testing.T) { testInformationSchemaAllPaginationWithLike(t, ctx, infoSchema) })
 	t.Run("testInformationSchemaListDatabaseSchemas", func(t *testing.T) {
@@ -131,10 +131,15 @@ func testInformationSchemaAllLike(t *testing.T, ctx context.Context, infoSchema 
 	require.Equal(t, 0, len(tables))
 }
 
-func testInformationSchemaLookup(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
+func testInformationSchemaLookup(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema, database, databaseSchema string) {
 	bar, err := infoSchema.Lookup(ctx, "", "", "bar")
 	require.NoError(t, err)
 	require.Equal(t, "bar", bar.Name)
+	require.Equal(t, database, bar.Database)
+	require.Equal(t, databaseSchema, bar.DatabaseSchema)
+	require.True(t, bar.IsDefaultDatabase)
+	require.True(t, bar.IsDefaultDatabaseSchema)
+
 	require.Equal(t, 2, len(bar.Schema.Fields))
 	require.Equal(t, "bar", bar.Schema.Fields[0].Name)
 	require.Equal(t, runtimev1.Type_CODE_STRING, bar.Schema.Fields[0].Type.Code)
@@ -236,8 +241,10 @@ func testInformationSchemaListTables(t *testing.T, ctx context.Context, infoSche
 	require.Equal(t, true, model.View)
 
 	for _, tbl := range tables {
-		require.True(t, tbl.IsDefaultDatabase)
-		require.True(t, tbl.IsDefaultDatabaseSchema)
+		require.Equal(t, database, tbl.Database, "table %s: expected Database=%s", tbl.Name, database)
+		require.Equal(t, databaseSchema, tbl.DatabaseSchema, "table %s: expected DatabaseSchema=%s", tbl.Name, databaseSchema)
+		require.True(t, tbl.IsDefaultDatabase, "table %s: expected Database=%s", tbl.Name, database)
+		require.True(t, tbl.IsDefaultDatabaseSchema, "table %s: expected DatabaseSchema=%s", tbl.Name, databaseSchema)
 	}
 }
 

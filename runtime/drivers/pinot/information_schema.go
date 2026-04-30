@@ -117,7 +117,7 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	names := tablesResp.Tables[startIndex:endIndex]
 	result := make([]*drivers.TableInfo, 0, len(names))
 	for _, n := range names {
-		result = append(result, &drivers.TableInfo{Name: n, View: false, IsDefaultDatabase: true, IsDefaultDatabaseSchema: true})
+		result = append(result, &drivers.TableInfo{Database: "", DatabaseSchema: databaseSchema, Name: n, View: false, IsDefaultDatabase: true, IsDefaultDatabaseSchema: true})
 	}
 
 	next := ""
@@ -285,8 +285,8 @@ func (c *connection) Lookup(ctx context.Context, database, databaseSchema, table
 	}
 
 	return &drivers.TableInfo{
-		Database:                "",
-		DatabaseSchema:          "",
+		Database:                database,
+		DatabaseSchema:          databaseSchema,
 		Name:                    table,
 		View:                    false,
 		IsDefaultDatabase:       true,

@@ -160,7 +160,10 @@ func testInformationSchemaLookup(t *testing.T, ctx context.Context, infoSchema d
 	table, err := infoSchema.Lookup(ctx, testSchema, "", testTable)
 	require.NoError(t, err)
 	require.Equal(t, testTable, table.Name)
+	require.Equal(t, "", table.Database)
 	require.Equal(t, testSchema, table.DatabaseSchema)
+	require.True(t, table.IsDefaultDatabase)
+	require.True(t, table.IsDefaultDatabaseSchema)
 
 	// Lookup a table that does not exist
 	_, err = infoSchema.Lookup(ctx, "", "", "nonexistent_table")
@@ -187,6 +190,8 @@ func testInformationSchemaListTables(t *testing.T, ctx context.Context, infoSche
 	// Check tables against expected, preserving order
 	for i, tbl := range tables {
 		require.Equal(t, expected[i].Name, tbl.Name)
+		require.Equal(t, "", tbl.Database)
+		require.Equal(t, "druid", tbl.DatabaseSchema)
 		require.True(t, tbl.IsDefaultDatabase)
 		require.True(t, tbl.IsDefaultDatabaseSchema)
 	}

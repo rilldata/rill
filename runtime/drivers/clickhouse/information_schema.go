@@ -134,6 +134,8 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 			return nil, "", err
 		}
 		res = append(res, &drivers.TableInfo{
+			Database:                "",
+			DatabaseSchema:          databaseSchema,
 			Name:                    name,
 			View:                    view,
 			IsDefaultDatabase:       true,
@@ -404,7 +406,9 @@ func scanTables(rows *sqlx.Rows) ([]*drivers.TableInfo, error) {
 		}
 		if t == nil {
 			t = &drivers.TableInfo{
+				Database:                "",
 				DatabaseSchema:          databaseSchema,
+				IsDefaultDatabase:       true,
 				IsDefaultDatabaseSchema: isDefaultSchema,
 				Name:                    name,
 				View:                    tableType == "VIEW",

@@ -109,6 +109,9 @@ func testInformationSchemaLookup(t *testing.T, ctx context.Context, infoSchema d
 	table, err := infoSchema.Lookup(ctx, "", "", "foo")
 	require.NoError(t, err)
 	require.Equal(t, "foo", table.Name)
+	require.Equal(t, "", table.Database)
+	require.Equal(t, "default", table.DatabaseSchema)
+	require.Equal(t, true, table.IsDefaultDatabase)
 	require.Equal(t, true, table.IsDefaultDatabaseSchema)
 
 	_, err = infoSchema.Lookup(ctx, "", "", "bad")
@@ -117,12 +120,17 @@ func testInformationSchemaLookup(t *testing.T, ctx context.Context, infoSchema d
 	table, err = infoSchema.Lookup(ctx, "", "", "model")
 	require.NoError(t, err)
 	require.Equal(t, "model", table.Name)
+	require.Equal(t, "", table.Database)
+	require.Equal(t, "default", table.DatabaseSchema)
+	require.Equal(t, true, table.IsDefaultDatabase)
 	require.Equal(t, true, table.IsDefaultDatabaseSchema)
 
 	table, err = infoSchema.Lookup(ctx, "", "other", "foo")
 	require.NoError(t, err)
 	require.Equal(t, "foo", table.Name)
+	require.Equal(t, "", table.Database)
 	require.Equal(t, "other", table.DatabaseSchema)
+	require.Equal(t, true, table.IsDefaultDatabase)
 	require.Equal(t, false, table.IsDefaultDatabaseSchema)
 }
 
@@ -216,6 +224,8 @@ func testInformationSchemaListTables(t *testing.T, ctx context.Context, infoSche
 	for _, tbl := range tables {
 		require.True(t, tbl.IsDefaultDatabase)
 		require.True(t, tbl.IsDefaultDatabaseSchema)
+		require.Equal(t, "", tbl.Database)
+		require.Equal(t, "default", tbl.DatabaseSchema)
 	}
 
 	tables, _, err = infoSchema.ListTables(ctx, "", "other", 0, "")
@@ -230,6 +240,8 @@ func testInformationSchemaListTables(t *testing.T, ctx context.Context, infoSche
 	for _, tbl := range tables {
 		require.True(t, tbl.IsDefaultDatabase)
 		require.False(t, tbl.IsDefaultDatabaseSchema)
+		require.Equal(t, "", tbl.Database)
+		require.Equal(t, "other", tbl.DatabaseSchema)
 	}
 }
 

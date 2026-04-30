@@ -73,6 +73,10 @@ func testLookup(t *testing.T, ctx context.Context, infoSchema drivers.Informatio
 	bar, err := infoSchema.Lookup(ctx, database, databaseSchema, "bar")
 	require.NoError(t, err)
 	require.Equal(t, "bar", bar.Name)
+	require.Equal(t, database, bar.Database)
+	require.Equal(t, databaseSchema, bar.DatabaseSchema)
+	require.False(t, bar.IsDefaultDatabase)
+	require.False(t, bar.IsDefaultDatabaseSchema)
 	require.Equal(t, 2, len(bar.Schema.Fields))
 	fieldNames := make(map[string]bool)
 	for _, f := range bar.Schema.Fields {
@@ -158,6 +162,8 @@ func testListTables(t *testing.T, ctx context.Context, infoSchema drivers.Inform
 	require.True(t, tables[5].View)
 
 	for _, tbl := range tables {
+		require.Equal(t, database, tbl.Database, "table %s: expected Database=%s", tbl.Name, database)
+		require.Equal(t, databaseSchema, tbl.DatabaseSchema, "table %s: expected DatabaseSchema=%s", tbl.Name, databaseSchema)
 		require.False(t, tbl.IsDefaultDatabase, "table %s: expected IsDefaultDatabase=false", tbl.Name)
 		require.False(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=false", tbl.Name)
 	}
