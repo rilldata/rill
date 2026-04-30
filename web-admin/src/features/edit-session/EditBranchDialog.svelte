@@ -7,25 +7,21 @@
   } from "@rilldata/web-admin/client";
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
   import {
-    branchPathPrefix,
+    injectBranchIntoPath,
     requestSkipBranchInjection,
   } from "@rilldata/web-admin/features/branches/branch-utils";
   import { Button } from "@rilldata/web-common/components/button";
   import * as Dialog from "@rilldata/web-common/components/dialog";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import * as Select from "@rilldata/web-common/components/select";
   import {
     Tabs,
     TabsContent,
     TabsList,
     TabsTrigger,
   } from "@rilldata/web-common/components/tabs";
-  import {
-    CheckIcon,
-    ChevronDownIcon,
-    GitBranchIcon,
-    GitBranchPlusIcon,
-  } from "lucide-svelte";
+  import { Select as SelectPrimitive } from "bits-ui";
+  import { GitBranchIcon, GitBranchPlusIcon } from "lucide-svelte";
   import { useDevDeployments, invalidateDeployments } from "./use-edit-session";
 
   export let open = false;
@@ -43,7 +39,6 @@
   let branchName = "";
   let currentTab: "existing" | "new" = "existing";
   let selectedBranchId = "";
-  let dropdownOpen = false;
   let createError = "";
 
   $: currentUserId = $user.data?.user?.id;
@@ -100,16 +95,20 @@
   }
 
   function editUrl(branch: string | undefined): string {
-    return `/${organization}/${project}${branchPathPrefix(branch)}/-/edit`;
+    const base = `/${organization}/${project}/-/edit`;
+    return branch ? injectBranchIntoPath(base, branch) : base;
   }
 
-  // Replaces whitespace with "-" as the user types so branch names are always
-  // valid. Space → "-" is a 1:1 swap, so cursor stays put.
+  // Strip the two characters that can't survive a round-trip:
+  //   - whitespace: not valid in git branch names
+  //   - "~": reserved by `encodeBranch` as the path-segment "/" replacement
+  // Everything else (including unicode, +, etc.) is handled by `encodeBranch`.
+  // Whitespace → "-" is a 1:1 swap; "~" is dropped. Both keep cursor position.
   function handleNameInput(
     newValue: string,
     e: Event & { currentTarget: EventTarget & HTMLElement },
   ) {
-    const sanitized = newValue.replace(/\s+/g, "-");
+    const sanitized = newValue.replace(/\s+/g, "-").replace(/~/g, "");
     if (sanitized !== newValue) {
       const target = e.currentTarget as HTMLInputElement;
       const cursorPos = target.selectionStart ?? sanitized.length;
@@ -211,69 +210,53 @@
 
         <TabsContent value="existing" class="mt-4 space-y-1.5">
           <span class="text-sm font-medium text-fg-primary">Branch</span>
-          <DropdownMenu.Root bind:open={dropdownOpen}>
-            <DropdownMenu.Trigger>
-              {#snippet child({ props })}
-                <button
-                  {...props}
-                  type="button"
-                  class="flex w-full items-center justify-between gap-2 rounded-lg border border-gray-300 bg-surface px-3 py-2.5 text-left transition-colors hover:bg-surface-hover focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                >
-                  <span class="flex min-w-0 flex-1 items-center gap-2">
-                    <GitBranchIcon size="14" class="shrink-0 text-fg-muted" />
-                    <span class="truncate font-mono text-sm text-fg-primary">
-                      {selectedDeployment?.branch ?? sourceBranch}
+          <SelectPrimitive.Root
+            type="single"
+            value={selectedBranchId}
+            onValueChange={(val) => {
+              if (val) selectedBranchId = val;
+            }}
+          >
+            <Select.Trigger
+              class="flex h-10 w-full items-center justify-between gap-2 rounded-lg border-gray-300 bg-surface px-3 text-left"
+            >
+              <span class="flex min-w-0 flex-1 items-center gap-2">
+                <GitBranchIcon size="14" class="shrink-0 text-fg-muted" />
+                <span class="truncate font-mono text-sm text-fg-primary">
+                  {selectedDeployment?.branch ?? sourceBranch}
+                </span>
+                {#if selectedDeployment?.id === latestBranchId}
+                  <span
+                    class="shrink-0 text-[10.5px] font-medium uppercase tracking-wider text-fg-muted"
+                  >
+                    latest
+                  </span>
+                {/if}
+              </span>
+            </Select.Trigger>
+            <Select.Content sameWidth class="max-h-[280px] overflow-y-auto">
+              {#each ownDeployments as deployment (deployment.id)}
+                <Select.Item value={deployment.id ?? ""} class="py-1.5">
+                  <div class="flex flex-1 items-center gap-2">
+                    <GitBranchIcon
+                      size="13"
+                      class="shrink-0 text-fg-muted"
+                    />
+                    <span class="flex-1 truncate font-mono text-[13px]">
+                      {deployment.branch || sourceBranch}
                     </span>
-                    {#if selectedDeployment?.id === latestBranchId}
+                    {#if deployment.id === latestBranchId}
                       <span
                         class="shrink-0 text-[10.5px] font-medium uppercase tracking-wider text-fg-muted"
                       >
                         latest
                       </span>
                     {/if}
-                  </span>
-                  <ChevronDownIcon
-                    size="14"
-                    class="shrink-0 text-fg-muted transition-transform {dropdownOpen
-                      ? 'rotate-180'
-                      : ''}"
-                  />
-                </button>
-              {/snippet}
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content
-              align="start"
-              sameWidth
-              class="max-h-[280px] overflow-y-auto"
-            >
-              {#each ownDeployments as deployment (deployment.id)}
-                {@const isSelected = deployment.id === selectedBranchId}
-                {@const isLatest = deployment.id === latestBranchId}
-                <DropdownMenu.Item
-                  onclick={() => (selectedBranchId = deployment.id ?? "")}
-                  class="flex cursor-pointer items-center gap-2 px-2 py-1.5"
-                >
-                  <GitBranchIcon size="13" class="shrink-0 text-fg-muted" />
-                  <span class="flex-1 truncate font-mono text-[13px]">
-                    {deployment.branch || sourceBranch}
-                  </span>
-                  {#if isLatest}
-                    <span
-                      class="shrink-0 text-[10.5px] font-medium uppercase tracking-wider text-fg-muted"
-                    >
-                      latest
-                    </span>
-                  {/if}
-                  {#if isSelected}
-                    <CheckIcon
-                      size="13"
-                      class="ml-1 shrink-0 text-primary-600"
-                    />
-                  {/if}
-                </DropdownMenu.Item>
+                  </div>
+                </Select.Item>
               {/each}
-            </DropdownMenu.Content>
-          </DropdownMenu.Root>
+            </Select.Content>
+          </SelectPrimitive.Root>
         </TabsContent>
 
         <TabsContent value="new" class="mt-4">

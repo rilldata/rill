@@ -5,7 +5,7 @@
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
   import {
-    branchPathPrefix,
+    injectBranchIntoPath,
     requestSkipBranchInjection,
   } from "@rilldata/web-admin/features/branches/branch-utils";
   import { Button } from "@rilldata/web-common/components/button";
@@ -42,8 +42,11 @@
         )
       : undefined;
 
-  $: directEditHref = activeBranchDeployment
-    ? `/${organization}/${project}${branchPathPrefix(activeBranchDeployment.branch)}/-/edit`
+  $: directEditHref = activeBranchDeployment?.branch
+    ? injectBranchIntoPath(
+        `/${organization}/${project}/-/edit`,
+        activeBranchDeployment.branch,
+      )
     : undefined;
 
   function handleDirectEdit(e: MouseEvent) {
