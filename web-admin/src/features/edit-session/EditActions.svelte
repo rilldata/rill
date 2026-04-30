@@ -3,7 +3,7 @@
   import { Button } from "@rilldata/web-common/components/button";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { GitPullRequestCreateArrow } from "lucide-svelte";
+  import { GitPullRequestCreateArrow, LogOut } from "lucide-svelte";
   import CommitPopover from "./CommitPopover.svelte";
 
   export let organization: string;
@@ -20,13 +20,6 @@
   }
 </script>
 
-<Tooltip distance={8}>
-  <Button type="secondary" href={closeHref} onClick={handleClose}>Done</Button>
-  <TooltipContent slot="tooltip-content" maxWidth="200px">
-    <span class="text-xs">Return to project home</span>
-  </TooltipContent>
-</Tooltip>
-
 <CommitPopover />
 
 <Tooltip distance={8}>
@@ -36,5 +29,15 @@
   </Button>
   <TooltipContent slot="tooltip-content" maxWidth="200px">
     <span class="text-xs">Coming soon</span>
+  </TooltipContent>
+</Tooltip>
+
+<Tooltip distance={8}>
+  <Button type="secondary" href={closeHref} onClick={handleClose}>
+    <LogOut size="14" />
+    Exit
+  </Button>
+  <TooltipContent slot="tooltip-content" maxWidth="200px">
+    <span class="text-xs">Return to project home</span>
   </TooltipContent>
 </Tooltip>
