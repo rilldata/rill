@@ -51,18 +51,25 @@ export async function maybeRedirectToEditableDeployment(
     (d) => d.editable,
   );
 
+  // There is an active prod deployment, so no need for redirect.
   const isActiveProdDeployment =
     prodDeployment && isActiveDeployment(prodDeployment);
   if (isActiveProdDeployment || !editableDeployment?.branch) return;
 
-  // If user is already in the editable deployment then do not do another redirect.
+  const isActiveEditableDeployment =
+    editableDeployment && isActiveDeployment(editableDeployment);
+  // Editable deployment is inactive as well, project is probably hibernating, skip redirect.
+  if (!isActiveEditableDeployment) return;
+
+  // If user is already in a specific deployment do not redirect.
+  // This method is meant as a convenience for direct links to unpublished project.
   const currentBranch = extractBranchFromPath(url.pathname);
-  if (currentBranch === editableDeployment.branch) return;
+  if (currentBranch) return;
 
   throw redirect(
     307,
     injectBranchIntoPath(
-      `/${organization}/${project}/-/edit`,
+      `/${organization}/${project}`,
       editableDeployment.branch,
     ),
   );
