@@ -22,6 +22,9 @@
   } from "@rilldata/web-common/metrics/initMetrics";
   import { isDeployPage } from "@rilldata/web-common/layout/navigation/route-utils";
   import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
+  import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
+  import { updateDevJWT } from "@rilldata/web-common/features/dashboards/granular-access-policies/updateDevJWT";
+  import { getLocalRuntimeClient } from "../lib/runtime-client";
   import { LOCAL_HOST, LOCAL_INSTANCE_ID } from "../lib/runtime-client";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import type { Query } from "@tanstack/query-core";
@@ -104,6 +107,18 @@
     isPreviewMode && showPreviewNav($page.url.pathname) && !onDeployPage;
 
   $: onWelcomePage = route.id?.startsWith("/(misc)/welcome");
+
+  // Reset View As mock-user impersonation when crossing the
+  // preview/developer boundary so a mock user from one mode doesn't
+  // persist into the other.
+  const localClient = getLocalRuntimeClient();
+  let trackedPreviewMode: boolean | undefined = undefined;
+  $: if (trackedPreviewMode !== isPreviewMode) {
+    if (trackedPreviewMode !== undefined && $selectedMockUserStore) {
+      void updateDevJWT(queryClient, localClient, null);
+    }
+    trackedPreviewMode = isPreviewMode;
+  }
 </script>
 
 <Tooltip.Provider>

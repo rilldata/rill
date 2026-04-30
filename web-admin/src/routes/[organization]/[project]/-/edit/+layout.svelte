@@ -170,13 +170,14 @@
     $editorRoutePrefix = "";
   });
 
-  // Close the AI chat sidebar whenever the user crosses the
-  // preview/developer boundary so a stale open sidebar from one mode
-  // doesn't suddenly appear in the other.
+  // Reset transient state (chat sidebar, View As impersonation) when
+  // the user crosses the preview/developer boundary so a stale view
+  // from one mode doesn't bleed into the other.
   let trackedPreviewMode: boolean | undefined = undefined;
   $: if (trackedPreviewMode !== previewMode) {
     if (trackedPreviewMode !== undefined) {
       sidebarActions.closeChat();
+      viewAsUserStore.set(null);
     }
     trackedPreviewMode = previewMode;
   }
