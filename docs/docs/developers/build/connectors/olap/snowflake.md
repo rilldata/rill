@@ -89,3 +89,44 @@ measures:
 :::note
 Rill supports metrics views directly on Snowflake as a live connector. Incremental models and partitioned ingestion are not supported in live connector mode.
 :::
+
+### Caching Query Results
+
+By default, dashboard queries against a Snowflake metrics view run live against your warehouse on every interaction. For dashboards with many concurrent users or repeated drill-downs, this can drive up warehouse compute costs and slow down the experience. Enable caching to reuse query results between users until the underlying data changes.
+
+Caching is configured under the `cache` block on the metrics view. Because Snowflake is an external/live connector, caching is **off by default** — opt in by setting `cache.key_sql` (or `cache.enabled: true`).
+
+```yaml
+type: metrics_view
+
+connector: snowflake
+database: MY_DATABASE
+database_schema: MY_SCHEMA
+model: MY_TABLE
+
+timeseries: created_at
+dimensions:
+  - column: region
+measures:
+  - name: total_revenue
+    expression: SUM(revenue)
+
+cache:
+  key_sql: SELECT MAX(created_at) FROM MY_DATABASE.MY_SCHEMA.MY_TABLE
+  key_ttl: 5m
+```
+
+Rill periodically runs `key_sql` against Snowflake (re-evaluated at most once per `key_ttl`) and uses the returned scalar value as the cache key. When the value changes — for example because a new row landed — the cache is invalidated and the next query repopulates it.
+
+**Pros**
+
+- **Lower Snowflake spend.** Repeat queries (multiple users on the same dashboard, back-and-forth filtering) are served from Rill's cache instead of hitting the warehouse.
+- **Faster dashboards.** Cached results return in milliseconds; no warehouse warm-up or queue time.
+- **Safe invalidation.** `key_sql` lets you tie cache freshness directly to your data — typically the max event timestamp or an ingest version column — so users never see stale results past your `key_ttl` window.
+
+**Cons**
+
+- **Up to `key_ttl` of staleness.** Between `key_sql` evaluations, new data in Snowflake will not appear on the dashboard. Pick a TTL that matches your data freshness SLA.
+- **`key_sql` itself runs on Snowflake.** Make sure it's a cheap query (e.g. a `MAX()` on a clustered column). A slow `key_sql` will defeat the latency benefit.
+- **Memory usage.** Cached results live in Rill's result cache; very high-cardinality dashboards with many distinct queries will evict older entries.
+- **Not suitable for sub-minute freshness.** If you need near-real-time data, leave caching disabled and rely on Snowflake's own result cache instead.
