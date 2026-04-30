@@ -73,8 +73,7 @@
         <p class="text-xs text-fg-secondary">
           Merge changes from
           <span class="font-semibold text-fg-primary">"{currentBranch}"</span>
-          to production. Viewers will see updates once the project finishes
-          reconciling.
+          to production. Viewers will see updates once the project finishes reconciling.
         </p>
         {#if branchUrl}
           <a
