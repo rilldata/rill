@@ -8,17 +8,24 @@
   import Slash from "@rilldata/web-common/components/navigation/breadcrumbs/Slash.svelte";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
+  import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
+  import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
+  import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import Header from "@rilldata/web-common/layout/header/Header.svelte";
   import HeaderLogo from "@rilldata/web-common/layout/header/HeaderLogo.svelte";
-  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { ChevronRight, GitBranchIcon } from "lucide-svelte";
+  import { GitBranchIcon } from "lucide-svelte";
   import {
     createAdminServiceGetCurrentUser,
     type V1ProjectPermissions,
   } from "../../client";
+  import CreateAlert from "../alerts/CreateAlert.svelte";
   import AvatarButton from "../authentication/AvatarButton.svelte";
+  import CanvasBookmarks from "../bookmarks/CanvasBookmarks.svelte";
+  import ExploreBookmarks from "../bookmarks/ExploreBookmarks.svelte";
+  import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
+  import ShareDashboardPopover from "../dashboards/share/ShareDashboardPopover.svelte";
   import ViewAsUserChip from "../view-as-user/ViewAsUserChip.svelte";
   import { viewAsUserStore } from "../view-as-user/viewAsUserStore";
 
@@ -29,7 +36,12 @@
 
   const user = createAdminServiceGetCurrentUser();
   const runtimeClient = useRuntimeClient();
-  const { developerChat } = featureFlags;
+  const {
+    alerts: alertsFlag,
+    dashboardChat,
+    developerChat,
+    dimensionSearch,
+  } = featureFlags;
 
   $: activeBranch = extractBranchFromPath($page.url.pathname);
   $: previewMode = isEditPreviewRoute($page.url.pathname);
@@ -41,22 +53,17 @@
   $: pathParts = [null, { options: $projectPathsQuery.data ?? new Map() }];
   $: currentPath = [undefined, project];
 
-  // Second row: project name (display name from runtime) + sub-page chevron.
-  $: instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {});
-  $: projectDisplayName =
-    $instanceQuery.data?.instance?.projectDisplayName || project;
+  // Secondary header: dashboard-specific actions for explore/canvas pages.
+  $: dashboardName = $page.params.name;
+  $: onEditExplore = $page.url.pathname.includes("/-/edit/explore/");
+  $: onEditCanvas = $page.url.pathname.includes("/-/edit/canvas/");
+  $: onDashboardPage = onEditExplore || onEditCanvas;
 
-  $: subPage = (() => {
-    const path = $page.url.pathname;
-    const editIdx = path.indexOf("/-/edit");
-    if (editIdx === -1) return undefined;
-    const subpath = path.slice(editIdx + "/-/edit".length);
-    if (subpath.startsWith("/dashboards")) return "Dashboards";
-    if (subpath.startsWith("/explore/") || subpath.startsWith("/canvas/")) {
-      return $page.params.name;
-    }
-    return undefined;
-  })();
+  $: exploreQuery = useExplore(runtimeClient, dashboardName, {
+    enabled: !!runtimeClient.instanceId && !!dashboardName && onEditExplore,
+  });
+  $: exploreSpec = $exploreQuery.data?.explore?.explore?.state?.validSpec;
+  $: hasUserAccess = $user.isSuccess && !!$user.data?.user;
 </script>
 
 <Header borderBottom tinted>
@@ -88,9 +95,6 @@
     {#if previewMode && $viewAsUserStore}
       <ViewAsUserChip />
     {/if}
-    {#if $developerChat && !previewMode}
-      <ChatToggle class="!bg-surface-base" />
-    {/if}
     <EditActions {organization} {project} branch={activeBranch ?? ""} />
     {#if $user.isSuccess && $user.data?.user}
       <AvatarButton {projectPermissions} />
@@ -101,14 +105,49 @@
 <div
   class="bg-surface-base flex items-center h-10 px-3 gap-x-2 border-b border-border"
 >
-  <a
-    href={`/${organization}/${project}`}
-    class="text-fg-primary text-sm hover:underline"
-  >
-    {projectDisplayName}
-  </a>
-  <ChevronRight size="15" class="text-fg-muted" />
-  {#if subPage}
-    <span class="text-fg-muted text-sm">{subPage}</span>
-  {/if}
+  <div class="ml-auto flex gap-x-2 items-center">
+    {#if onEditExplore && exploreSpec}
+      {#key dashboardName}
+        <StateManagersProvider
+          metricsViewName={exploreSpec.metricsView}
+          exploreName={dashboardName}
+          let:ready
+        >
+          <LastRefreshedDate dashboard={dashboardName} />
+          {#if $dimensionSearch && ready}
+            <GlobalDimensionSearch />
+          {/if}
+          {#if $dashboardChat}
+            <ChatToggle />
+          {/if}
+          {#if hasUserAccess}
+            <ExploreBookmarks
+              {organization}
+              {project}
+              metricsViewName={exploreSpec.metricsView}
+              exploreName={dashboardName}
+            />
+            {#if $alertsFlag}
+              <CreateAlert />
+            {/if}
+            <ShareDashboardPopover
+              createMagicAuthTokens={projectPermissions.createMagicAuthTokens}
+            />
+          {/if}
+        </StateManagersProvider>
+      {/key}
+    {:else if onEditCanvas}
+      {#if $dashboardChat}
+        <ChatToggle />
+      {/if}
+      {#if hasUserAccess}
+        <CanvasBookmarks {organization} {project} canvasName={dashboardName} />
+        <ShareDashboardPopover
+          createMagicAuthTokens={projectPermissions.createMagicAuthTokens}
+        />
+      {/if}
+    {:else if $developerChat && !onDashboardPage}
+      <ChatToggle />
+    {/if}
+  </div>
 </div>
