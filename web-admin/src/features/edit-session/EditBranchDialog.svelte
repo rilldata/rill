@@ -268,9 +268,9 @@
             id="new-branch-name"
             label="Branch name"
             placeholder="branch-name"
-            size="xl"
             bind:value={branchName}
             onInput={handleNameInput}
+            onEnter={() => void handleCreate()}
             errors={createError || undefined}
             alwaysShowError
             capitalizeLabel={false}
@@ -284,9 +284,9 @@
         id="new-branch-name"
         label="Branch name"
         placeholder="branch-name"
-        size="xl"
         bind:value={branchName}
         onInput={handleNameInput}
+        onEnter={() => void handleCreate()}
         errors={createError || undefined}
         alwaysShowError
         capitalizeLabel={false}
