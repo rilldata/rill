@@ -391,6 +391,9 @@ func TestGitRepo_pullInner(t *testing.T) {
 				// First pull (clone) succeeded — edit-branch created from main
 				verifyCurrentBranch(t, localDir, "edit-branch")
 
+				// Set git identity so merge commits can be created (required on CI where no global config exists).
+				setupGitConfig(t, localDir)
+
 				// Create "new-primary" branch on remote (simulates a primary branch rename)
 				createRemoteBranch(t, repo.remoteURL, "new-primary", "new_file.txt", "new content", "Create new-primary")
 
