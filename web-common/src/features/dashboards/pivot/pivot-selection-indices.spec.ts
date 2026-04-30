@@ -109,7 +109,7 @@ describe("computeAncestorRowIds", () => {
   function makeRow(
     id: string,
     depth: number,
-    originalFirstDimValue: string,
+    originalFirstDimValue: string | null,
     parents: Row<PivotDataRow>[],
   ): Row<PivotDataRow> {
     return {
@@ -131,8 +131,9 @@ describe("computeAncestorRowIds", () => {
 
   it("B header clicked with C rows visible: B's own id is NOT in ancestor set", () => {
     // Simulate a B row-header click. dk built via the same path
-    // handleCellClickToFilter uses for nested child rows.
-    const dkB = ["a_val", "b_val", ""].join("\0");
+    // handleCellClickToFilter uses for nested child rows: only includes
+    // dimensions up to the clicked row's depth.
+    const dkB = ["a_val", "b_val"].join("\0");
     const rowHeaders = new Map([
       [
         dkB,
@@ -153,16 +154,15 @@ describe("computeAncestorRowIds", () => {
     expect(ids.has("1.0")).toBe(false);
   });
 
-  it("B header clicked and a C row has a null leaf value: B is NOT in ancestor set", () => {
+  it("B header clicked and a C row has a null leaf value: keys do not collide", () => {
     // Real-world shape: some C rows have a null firstDim value (e.g., a
-    // landmark is null for a given city+agency pair). `nestedDimKeyFromRow`
-    // then produces the same dk for that C row as for its B parent, which
-    // without depth-matching would cause B's own rowId to be incorrectly
-    // added to the ancestor set and its measure cells to render as grey.
-    const c1RowNullLeaf = makeRow("1.0.0", 2, "", [aRow, bRow]);
+    // landmark is null for a given city+agency pair). The dimKey for
+    // such a child row must remain distinct from its B parent's dk so
+    // B's own selection does not bleed into a null-valued descendant.
+    const c1RowNullLeaf = makeRow("1.0.0", 2, null, [aRow, bRow]);
     const rows = [aRow, bRow, c1RowNullLeaf, c2Row];
 
-    const dkB = ["a_val", "b_val", ""].join("\0");
+    const dkB = ["a_val", "b_val"].join("\0");
     const rowHeaders = new Map([
       [
         dkB,
@@ -175,14 +175,36 @@ describe("computeAncestorRowIds", () => {
     ]);
     const selection = buildClickSelection(rowHeaders, new Map(), new Set());
 
-    // Sanity: the C row with the null leaf collides with B's dk.
-    expect(nestedDimKeyFromRow(c1RowNullLeaf, rowDimensionNames)).toBe(dkB);
+    // Keys at different depths must never collide, even when a deeper
+    // row's leaf value is null.
+    expect(nestedDimKeyFromRow(c1RowNullLeaf, rowDimensionNames)).not.toBe(dkB);
 
     const ids = computeAncestorRowIds(selection, rows, rowDimensionNames);
 
     expect(ids.has("1")).toBe(true);
-    // Depth-matching must exclude the depth-2 collider from triggering
-    // the ancestor walk; B's rowId must not end up in the set.
     expect(ids.has("1.0")).toBe(false);
+  });
+
+  it("A (depth-0) header clicked: a depth-1 child with null value is not selected", () => {
+    const bRowNull = makeRow("1.0", 1, null, [aRow]);
+
+    const dkA = nestedDimKeyFromRow(aRow, rowDimensionNames); // depth 0
+    const dkBNull = nestedDimKeyFromRow(bRowNull, rowDimensionNames); // depth 1, null
+    expect(dkA).not.toBe(dkBNull);
+
+    const rowHeaders = new Map([
+      [
+        dkA,
+        {
+          dimKey: dkA,
+          dimValues: { A: "a_val" },
+          columnId: "A",
+        },
+      ],
+    ]);
+    const selection = buildClickSelection(rowHeaders, new Map(), new Set());
+
+    expect(selection.isRowHeaderSelected(dkA)).toBe(true);
+    expect(selection.isRowHeaderSelected(dkBNull)).toBe(false);
   });
 });

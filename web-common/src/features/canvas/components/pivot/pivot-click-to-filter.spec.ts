@@ -819,7 +819,7 @@ describe("header/cell mutual exclusivity", () => {
   it("row header click evicts child cells under it", () => {
     const { result, filterClass } = setupNested();
     const dkChild = dk({ outer: "Zoom", inner: "US-East" }, dims);
-    const dkZoom = dk({ outer: "Zoom", inner: "" }, dims);
+    const dkZoom = dk({ outer: "Zoom" }, dims);
 
     result.handleCellClickToFilter("1.0", "revenue", false, childUSEast);
     expect(sel(result).isCellSelected(dkChild, "revenue")).toBe(true);
@@ -841,7 +841,7 @@ describe("header/cell mutual exclusivity", () => {
 
   it("cell click evicts ancestor row header", () => {
     const { result } = setupNested();
-    const dkZoom = dk({ outer: "Zoom", inner: "" }, dims);
+    const dkZoom = dk({ outer: "Zoom" }, dims);
     const dkChild = dk({ outer: "Zoom", inner: "US-East" }, dims);
 
     result.handleCellClickToFilter("1", "outer", true, parentZoom);
@@ -862,7 +862,7 @@ describe("header/cell mutual exclusivity", () => {
     result.handleCellClickToFilter("2.0", "revenue", false, childUSWest);
 
     expect(
-      sel(result).isRowHeaderSelected(dk({ outer: "Zoom", inner: "" }, dims)),
+      sel(result).isRowHeaderSelected(dk({ outer: "Zoom" }, dims)),
     ).toBe(true);
     expect(
       sel(result).isCellSelected(
@@ -876,7 +876,7 @@ describe("header/cell mutual exclusivity", () => {
 
   it("parent row header click evicts child row header under it", () => {
     const { result, filterClass } = setupNested();
-    const dkZoom = dk({ outer: "Zoom", inner: "" }, dims);
+    const dkZoom = dk({ outer: "Zoom" }, dims);
     const dkChild = dk({ outer: "Zoom", inner: "US-East" }, dims);
 
     // Select child row header first
@@ -903,7 +903,7 @@ describe("header/cell mutual exclusivity", () => {
 
   it("child row header click evicts ancestor row header above it", () => {
     const { result } = setupNested();
-    const dkZoom = dk({ outer: "Zoom", inner: "" }, dims);
+    const dkZoom = dk({ outer: "Zoom" }, dims);
     const dkChild = dk({ outer: "Zoom", inner: "US-East" }, dims);
 
     // Select parent first
@@ -922,7 +922,7 @@ describe("header/cell mutual exclusivity", () => {
 
   it("parent row header click keeps sibling-lineage row headers intact", () => {
     const { result } = setupNested();
-    const dkZoom = dk({ outer: "Zoom", inner: "" }, dims);
+    const dkZoom = dk({ outer: "Zoom" }, dims);
     const dkAirtableChild = dk({ outer: "Airtable", inner: "US-West" }, dims);
 
     // Select a child under a different parent first

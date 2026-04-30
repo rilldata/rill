@@ -9,9 +9,22 @@
 import type { Row } from "tanstack-table-8-svelte-5";
 import type { PivotDataRow } from "./types";
 
+// Distinct sentinel for null dimension values so a null at depth N does not
+// collide with "no value at depth N" (e.g. a depth-0 row whose deeper
+// dimensions are simply absent from rowData).
+const NULL_KEY_SENTINEL = "<NULL>";
+
+function encodeKeyValue(value: unknown): string {
+  return value === null ? NULL_KEY_SENTINEL : String(value);
+}
+
 /**
  * Produces a stable string key from a row's dimension values.
  * Uses NUL as separator since dimension values won't contain it.
+ *
+ * Truncates to the deepest dimension that is actually present in rowData,
+ * so a depth-0 row in a nested table (which only stores rowDimensionNames[0])
+ * does not collide with a deeper row whose later dimensions happen to be null.
  *
  * WARNING: In nested tables, rows only store their own value under
  * rowDimensionNames[0], so this function will NOT include parent
@@ -21,41 +34,53 @@ export function dimKeyFromRow(
   rowData: PivotDataRow,
   rowDimensionNames: string[],
 ): string {
-  return rowDimensionNames.map((d) => String(rowData[d] ?? "")).join("\0");
+  let lastIdx = rowDimensionNames.length - 1;
+  while (lastIdx >= 0 && !(rowDimensionNames[lastIdx] in rowData)) {
+    lastIdx--;
+  }
+  return rowDimensionNames
+    .slice(0, lastIdx + 1)
+    .map((d) => encodeKeyValue(rowData[d]))
+    .join("\0");
 }
 
 /**
  * Produces a stable string key from resolved dimension name→value pairs.
  * For nested tables, callers should resolve all ancestor values first
  * (e.g. via getDimensionValuesForRow) so the key is unique across
- * different parents.
+ * different parents. Truncates to the deepest dimension that is actually
+ * present in dimValues so depth-N keys do not collide with deeper rows
+ * whose later dimensions are null.
  */
 export function dimKeyFromDimValues(
   dimValues: Record<string, string | null>,
   rowDimensionNames: string[],
 ): string {
-  return rowDimensionNames.map((d) => String(dimValues[d] ?? "")).join("\0");
+  let lastIdx = rowDimensionNames.length - 1;
+  while (lastIdx >= 0 && !(rowDimensionNames[lastIdx] in dimValues)) {
+    lastIdx--;
+  }
+  return rowDimensionNames
+    .slice(0, lastIdx + 1)
+    .map((d) => encodeKeyValue(dimValues[d]))
+    .join("\0");
 }
 
 /**
  * Produces a stable dimKey for a TanStack Row in a nested table by
  * walking the parent chain. Each row at depth N stores its value under
  * rowDimensionNames[0]; the actual dimension is rowDimensionNames[depth].
- * Returns a NUL-separated key incorporating all ancestor values.
+ * Returns a NUL-separated key with one component per chain entry, so a
+ * depth-0 row produces a 1-component key and a depth-N row produces an
+ * (N+1)-component key.
  */
 export function nestedDimKeyFromRow(
   row: Row<PivotDataRow>,
   rowDimensionNames: string[],
 ): string {
   const firstDim = rowDimensionNames[0];
-  // Collect values from root to current row
-  const ancestors = row.getParentRows();
-  const chain = [...ancestors, row];
-  const values = rowDimensionNames.map((_, i) => {
-    const r = chain[i];
-    return r ? String(r.original[firstDim] ?? "") : "";
-  });
-  return values.join("\0");
+  const chain = [...row.getParentRows(), row];
+  return chain.map((r) => encodeKeyValue(r.original[firstDim])).join("\0");
 }
 
 export function cellKey(dimKey: string, columnId: string) {
