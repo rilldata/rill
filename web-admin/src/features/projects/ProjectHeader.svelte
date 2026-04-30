@@ -177,7 +177,16 @@
   {:else if organization}
     <Breadcrumbs {pathParts} {currentPath}>
       <svelte:fragment slot="after-project">
-        {#if !onPublicURLPage && projectPermissions?.readDev}
+        {#if editContext && activeBranch}
+          <li class="flex items-center mr-2">
+            <span
+              class="inline-block truncate max-w-[200px] px-2 py-0 rounded-2xl border bg-primary-50 border-primary-200 text-primary-800"
+              title={activeBranch}
+            >
+              {activeBranch}
+            </span>
+          </li>
+        {:else if !onPublicURLPage && projectPermissions?.readDev}
           <BranchSelector {organization} {project} {primaryBranch} />
         {/if}
       </svelte:fragment>
