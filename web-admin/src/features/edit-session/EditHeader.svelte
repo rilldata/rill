@@ -8,6 +8,7 @@
     type CloudFeature,
   } from "@rilldata/web-admin/features/edit-session/DisabledCloudFeatures.svelte";
   import EditActions from "@rilldata/web-admin/features/edit-session/EditActions.svelte";
+  import ModeToggle from "@rilldata/web-admin/features/edit-session/ModeToggle.svelte";
   import { isEditPreviewRoute } from "@rilldata/web-admin/features/edit-session/edit-route-utils";
   import HomeBookmark from "@rilldata/web-common/components/icons/HomeBookmark.svelte";
   import BreadcrumbItem from "@rilldata/web-common/components/navigation/breadcrumbs/BreadcrumbItem.svelte";
@@ -149,7 +150,7 @@
     {#if previewMode && $viewAsUserStore}
       <ViewAsUserChip />
     {/if}
-    <EditActions {organization} {project} branch={activeBranch ?? ""} />
+    <EditActions {organization} {project} />
     {#if $user.isSuccess && $user.data?.user}
       <AvatarButton {projectPermissions} />
     {/if}
@@ -188,6 +189,7 @@
   {/if}
 
   <div class="ml-auto flex gap-x-2 items-center">
+    <ModeToggle {organization} {project} branch={activeBranch ?? ""} />
     {#if onEditExplore && exploreSpec}
       {#key dashboardName}
         <StateManagersProvider
