@@ -224,7 +224,7 @@
       </ol>
     </nav>
   {:else}
-    <div class="px-2" data-edit-home="developer">
+    <div data-edit-home="developer">
       <InputWithConfirm
         size="md"
         bumpDown
@@ -275,7 +275,12 @@
         <Tooltip distance={8}>
           <Button type="secondary" {compact} {square} disabled {label}>
             {#if icon}
-              <svelte:component this={icon} size="16px" class="flex-none" />
+              <svelte:component
+                this={icon}
+                size="16px"
+                class="flex-none"
+                className="flex-none"
+              />
             {:else}
               {label}
             {/if}
