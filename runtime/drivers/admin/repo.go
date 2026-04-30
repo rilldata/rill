@@ -534,6 +534,25 @@ func (r *repo) RestoreCommit(ctx context.Context, commitSHA string) (string, err
 
 // MergeToBranch implements drivers.RepoStore.
 func (r *repo) MergeToBranch(ctx context.Context, branch string, force bool) error {
+	// Get a write lock.
+	// NOTE: Not using rlockEnsureReady here because we need to exclude reads while the merge is happening.
+	err := r.mu.Lock(ctx)
+	if err != nil {
+		return err
+	}
+	defer r.mu.Unlock()
+
+	if !r.ready {
+		if r.pullErr != nil {
+			return fmt.Errorf("repo is not ready: %w", r.pullErr)
+		}
+		return fmt.Errorf("repo is not ready: pull files first")
+	}
+
+	if r.git == nil {
+		return fmt.Errorf("merges are not supported for this repo type")
+	}
+
 	return r.git.mergeToBranch(ctx, branch, force)
 }
 

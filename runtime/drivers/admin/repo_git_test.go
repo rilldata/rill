@@ -565,7 +565,7 @@ func TestGitRepo_commitToDefaultBranch(t *testing.T) {
 			},
 		},
 		{
-			name: "force=false: conflicting remote changes win via theirs strategy",
+			name: "force=false: conflicting remote changes return an error",
 			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
 				cloneAndCreateRemoteEditBranch(t, localDir, remoteURL)
 				return newEditableGitRepo(localDir, remoteURL, "edit-branch", "main", "")
@@ -578,9 +578,9 @@ func TestGitRepo_commitToDefaultBranch(t *testing.T) {
 			},
 			message:     "Local edit",
 			force:       false,
-			expectError: false,
+			expectError: true,
 			validate: func(t *testing.T, repo *gitRepo, localDir, remoteDir string) {
-				// theirs (remote) wins on conflicts
+				// Remote edit-branch is unchanged: nothing was pushed.
 				verifyRemoteBranchFile(t, remoteDir, "edit-branch", "test1.txt", "remote edit")
 			},
 		},

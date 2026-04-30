@@ -60,7 +60,7 @@ func (r *gitRepo) pull(ctx context.Context, userTriggered, force bool) error {
 }
 
 // pullInner contains the actual logic of r.pull without retries.
-func (r *gitRepo) pullInner(ctx context.Context, userTriggerd, force bool) error {
+func (r *gitRepo) pullInner(ctx context.Context, userTriggered, force bool) error {
 	// If the repository is not editable, there shouldn't be any local changes, but just to be safe, we always force pull.
 	if !r.editable() {
 		force = true
@@ -172,8 +172,11 @@ func (r *gitRepo) pullInner(ctx context.Context, userTriggerd, force bool) error
 		if err != nil {
 			return err
 		}
-		if !merged && userTriggerd { // Only user triggered pulls should fail on conflicts
-			return fmt.Errorf("local is behind remote and failed to sync with remote due to conflicts")
+		if !merged { // Only user triggered pulls should fail on conflicts
+			if userTriggered {
+				return fmt.Errorf("local is behind remote and failed to sync with remote due to conflicts")
+			}
+			r.h.logger.Warn("Merge aborted due to conflicts, local changes not synced with remote", zap.String("branch", r.defaultBranch))
 		}
 	}
 
@@ -238,7 +241,7 @@ func (r *gitRepo) commitToDefaultBranch(ctx context.Context, message string, for
 	}
 
 	if !force {
-		err = gitutil.MergeWithStrategy(r.repoDir, fmt.Sprintf("%s/%s", "origin", r.defaultBranch), "theirs")
+		err = gitutil.MergeWithStrategy(r.repoDir, fmt.Sprintf("%s/%s", "origin", r.defaultBranch), "")
 		if err != nil {
 			return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
 		}
@@ -249,7 +252,7 @@ func (r *gitRepo) commitToDefaultBranch(ctx context.Context, message string, for
 		return nil
 	}
 
-	// Instead of a force push, we do a merge with favourLocal=true to ensure we don't lose history.
+	// Instead of a force push, we do a merge with 'ours' strategy to ensure we don't lose history.
 	// This is not equivalent to a force push but is safer for users.
 	if r.subpath != "" {
 		// force pushing in a monorepo can overwrite other subpaths so just try with normal push
@@ -284,10 +287,7 @@ func (r *gitRepo) mergeToBranch(ctx context.Context, branch string, force bool) 
 		return fmt.Errorf("failed to open repository: %w", err)
 	}
 	_, err = r.commitAll(repo, "Auto commit before merging to "+branch)
-	if err != nil {
-		if errors.Is(err, git.ErrEmptyCommit) {
-			return nil // No changes to commit
-		}
+	if err != nil && !errors.Is(err, git.ErrEmptyCommit) {
 		return fmt.Errorf("failed to commit changes: %w", err)
 	}
 
@@ -326,7 +326,7 @@ func (r *gitRepo) mergeToBranch(ctx context.Context, branch string, force bool) 
 		merged, err = gitutil.MergeWithBailOnConflict(r.repoDir, r.defaultBranch)
 	}
 	if err != nil {
-		return fmt.Errorf("failed to merge default branch %q into current branch %q: %w", r.defaultBranch, r.primaryBranch, err)
+		return fmt.Errorf("failed to merge default branch %q into branch %q: %w", r.defaultBranch, branch, err)
 	}
 
 	if !merged {
