@@ -11,6 +11,7 @@ import {
   type AddDataConfig,
   ImportDataStep,
 } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 
 export function getConnectorDriverForSchema(
   schemaName: string,
@@ -101,10 +102,17 @@ export function getImportStepsForConnector(
   driver: V1ConnectorDriver,
   projectOlapConnector = "",
 ) {
-  const steps = isLiveConnectorType(driver, projectOlapConnector)
-    ? NonModelSteps
-    : FullListOfSteps;
-  return config.importOnly ? [steps[0]] : steps;
+  const live = isLiveConnectorType(driver, projectOlapConnector);
+  const steps = live ? NonModelSteps : FullListOfSteps;
+  if (!config.importOnly) return steps;
+  // When the user's goal is a metrics view, run through CreateMetricsView so
+  // non-live sources also produce a metrics view (after the ingest step).
+  if (config.targetResource === ResourceKind.MetricsView) {
+    return live
+      ? [ImportDataStep.CreateMetricsView]
+      : [ImportDataStep.CreateModel, ImportDataStep.CreateMetricsView];
+  }
+  return [steps[0]];
 }
 
 export function getImportStepsForSource(config: AddDataConfig) {

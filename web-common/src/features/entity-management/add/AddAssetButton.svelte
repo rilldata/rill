@@ -48,6 +48,7 @@
   let showAiConnectorDialog = false;
   let addDataModalOpen = false;
   let addDataConnector = "";
+  let addDataTargetResource: ResourceKind | undefined;
 
   let screenName = MetricsEventScreenName.Home;
 
@@ -89,6 +90,7 @@
   function handleAddData() {
     addDataModalOpen = true;
     addDataConnector = "";
+    addDataTargetResource = undefined;
     screenName = getScreenNameFromPage();
   }
 
@@ -177,12 +179,14 @@
       onSelect={(connector) => {
         addDataModalOpen = true;
         addDataConnector = connector;
+        addDataTargetResource = ResourceKind.Model;
       }}
     />
     <AddMetricsViewSubOption
       onSelect={(connector) => {
         addDataModalOpen = true;
         addDataConnector = connector;
+        addDataTargetResource = ResourceKind.MetricsView;
       }}
     />
     <DropdownMenu.Separator />
@@ -325,6 +329,7 @@
     medium: BehaviourEventMedium.Menu,
     space: MetricsEventSpace.LeftPanel,
     screen: screenName,
+    targetResource: addDataTargetResource,
   }}
   bind:open={addDataModalOpen}
   connector={addDataConnector}
