@@ -99,9 +99,10 @@
     <Popover.Content align="end" class="!w-[320px]">
       <div class="flex flex-col gap-y-3">
         <p class="text-xs text-fg-secondary">
-          Merge changes from
+          Merging pushes changes from
           <span class="font-semibold text-fg-primary">"{currentBranch}"</span>
-          to production. Viewers will see updates once the project finishes reconciling.
+          to production, closes the editor, and returns you to the project
+          home. Viewers will see updates as the project reconciles.
         </p>
         {#if branchUrl}
           <a
