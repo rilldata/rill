@@ -5,17 +5,16 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import {
     createRuntimeServiceGitMergeToBranchMutation,
     createRuntimeServiceGitStatus,
-    getRuntimeServiceGitStatusQueryKey,
     type RpcStatus,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { ExternalLink, GitPullRequest } from "lucide-svelte";
 
+  export let organization: string;
+  export let project: string;
   export let primaryBranch: string | undefined;
 
   let open = false;
@@ -48,17 +47,12 @@
         branch: primaryBranch,
         force: false,
       });
-      void queryClient.invalidateQueries({
-        queryKey: getRuntimeServiceGitStatusQueryKey(client.instanceId, {}),
-      });
-      eventBus.emit("notification", {
-        type: "success",
-        message: "Changes merged",
-      });
-      open = false;
+      // Full page navigation matches the Done button: avoids a race where
+      // useRuntimeClient() is called before the project layout's
+      // RuntimeProvider remounts on the production branch.
+      window.location.href = `/${organization}/${project}`;
     } catch (err) {
       errorMessage = getRpcErrorMessage(err as RpcStatus) ?? "Failed to merge";
-    } finally {
       isMerging = false;
     }
   }

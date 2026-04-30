@@ -29,4 +29,4 @@
 </Tooltip>
 
 <CommitPopover />
-<MergePopover {primaryBranch} />
+<MergePopover {organization} {project} {primaryBranch} />
