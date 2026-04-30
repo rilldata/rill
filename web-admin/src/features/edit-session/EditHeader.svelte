@@ -27,7 +27,6 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import Header from "@rilldata/web-common/layout/header/Header.svelte";
-  import HeaderLogo from "@rilldata/web-common/layout/header/HeaderLogo.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
     BellPlusIcon,
@@ -133,7 +132,6 @@
 </script>
 
 <Header borderBottom tinted>
-  <HeaderLogo href={`/${organization}/${project}`} />
   {#if activeBranch}
     <span
       class="inline-flex items-center h-7 px-2.5 rounded-md border border-border bg-surface-base text-fg-secondary text-sm font-medium"
