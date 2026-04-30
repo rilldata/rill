@@ -268,6 +268,8 @@
             id="new-branch-name"
             label="Branch name"
             placeholder="branch-name"
+            size="xl"
+            additionalClass="[&_input]:!text-sm"
             bind:value={branchName}
             onInput={handleNameInput}
             onEnter={() => void handleCreate()}
@@ -284,6 +286,8 @@
         id="new-branch-name"
         label="Branch name"
         placeholder="branch-name"
+        size="xl"
+        additionalClass="[&_input]:!text-sm"
         bind:value={branchName}
         onInput={handleNameInput}
         onEnter={() => void handleCreate()}
