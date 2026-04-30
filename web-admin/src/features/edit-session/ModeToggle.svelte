@@ -4,6 +4,9 @@
   // falls back to the dashboards listing.
   const DASHBOARD_FILE_RE =
     /\/-\/edit\/files\/dashboards\/(.+)\.yaml(?:$|[/?#])/;
+  // Inverse: from `/-/edit/explore/<name>` or `/-/edit/canvas/<name>`, the
+  // Edit button jumps back to that dashboard's yaml.
+  const DASHBOARD_VIEW_RE = /\/-\/edit\/(?:explore|canvas)\/([^/?#]+)/;
 
   function getEditPreviewSubpath(
     pathname: string,
@@ -16,6 +19,12 @@
     if (resource?.explore) return `/explore/${name}`;
     if (resource?.canvas) return `/canvas/${name}`;
     return "/dashboards";
+  }
+
+  function getEditDevSubpath(pathname: string): string {
+    const match = pathname.match(DASHBOARD_VIEW_RE);
+    if (!match) return "";
+    return `/files/dashboards/${match[1]}.yaml`;
   }
 </script>
 
@@ -41,7 +50,10 @@
   $: editPrefix = `/${organization}/${project}${branchPathPrefix(branch)}/-/edit`;
   $: inPreview = isEditPreviewRoute($page.url.pathname);
   $: previewSubpath = getEditPreviewSubpath($page.url.pathname, dashboards);
-  $: navHref = inPreview ? editPrefix : `${editPrefix}${previewSubpath}`;
+  $: devSubpath = getEditDevSubpath($page.url.pathname);
+  $: navHref = inPreview
+    ? `${editPrefix}${devSubpath}`
+    : `${editPrefix}${previewSubpath}`;
   $: navLabel = inPreview ? "Edit" : "Preview";
   $: navTooltip = inPreview
     ? "Switch to developer mode"
