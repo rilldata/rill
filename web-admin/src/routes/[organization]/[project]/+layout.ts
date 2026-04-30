@@ -15,7 +15,6 @@ export const load = async ({
   params: { organization, project },
   parent,
   route,
-  url,
 }) => {
   // Branches are accessible only via the editor surface. Any `/@branch`
   // URL outside of `/-/edit` (and outside of public `/-/share/` magic
