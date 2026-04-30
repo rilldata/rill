@@ -3,6 +3,9 @@
   // explore/canvas dashboard directly; anywhere else the Preview button
   // falls back to the dashboards listing.
   const DASHBOARD_FILE_RE = /^\/files\/dashboards\/(.+)\.yaml$/;
+  // Inverse: viewing `/explore/<name>` or `/canvas/<name>` jumps the Edit
+  // button to that dashboard's yaml; anywhere else falls back to the editor home.
+  const DASHBOARD_VIEW_RE = /^\/(?:explore|canvas)\/(.+)$/;
 
   function getPreviewUrl(
     pathname: string,
@@ -19,6 +22,12 @@
       return `/canvas/${name}`;
     }
     return "/dashboards";
+  }
+
+  function getEditUrl(pathname: string): string {
+    const match = pathname.match(DASHBOARD_VIEW_RE);
+    if (!match) return "/";
+    return `/files/dashboards/${match[1]}.yaml`;
   }
 </script>
 
@@ -82,6 +91,7 @@
   $: hasValidDashboard = Boolean(defaultDashboard);
 
   $: previewUrl = getPreviewUrl($page.url.pathname, explores, canvases);
+  $: editUrl = getEditUrl($page.url.pathname);
 
   $: dashboardOptions = {
     options: getBreadcrumbOptions(explores, canvases),
@@ -126,7 +136,7 @@
     {:else}
       {#if mode === "Preview" && !$readOnly}
         <ViewAsButton />
-        <Button type="secondary" href="/">Edit</Button>
+        <Button type="secondary" href={editUrl}>Edit</Button>
       {:else if mode === "Developer" && !$readOnly}
         <Button type="secondary" href={previewUrl}>Preview</Button>
       {/if}
