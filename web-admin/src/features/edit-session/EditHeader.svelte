@@ -189,12 +189,12 @@
   class="bg-surface-base flex items-center h-10 px-3 gap-x-2 border-b border-border"
 >
   {#if previewMode}
-    <nav class="flex gap-x-2 items-center shrink-0">
+    <nav class="flex gap-x-2 items-center shrink-0" data-testid="edit-home-nav">
       <ol class="flex flex-row items-center">
         <li class="flex items-center gap-x-2 px-2">
           <a
             href={previewHomeHref}
-            class="text-fg-muted hover:text-fg-secondary flex flex-row items-center gap-x-2"
+            class="text-fg-primary hover:text-fg-accent text-sm flex flex-row items-center gap-x-2"
           >
             <span>Home</span>
           </a>

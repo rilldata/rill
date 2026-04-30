@@ -14,6 +14,7 @@
     useValidCanvases,
     useValidExplores,
   } from "@rilldata/web-common/features/dashboards/selectors.js";
+  import ViewAsButton from "@rilldata/web-common/features/dashboards/granular-access-policies/ViewAsButton.svelte";
   import DeployProjectCTA from "@rilldata/web-common/features/dashboards/workspace/DeployProjectCTA.svelte";
   import ExplorePreviewCTAs from "@rilldata/web-common/features/explores/ExplorePreviewCTAs.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
@@ -33,8 +34,6 @@
   const runtimeClient = useRuntimeClient();
 
   export let mode: string;
-  export let onModeToggle: (() => void) | undefined = undefined;
-  export let modeLocked: boolean = false;
 
   $: ({
     params: { name: dashboardName },
@@ -123,18 +122,7 @@
   {#if !onDeployPage}
     <HeaderLogo href={mode === "Preview" ? "/dashboards" : "/"} />
 
-    {#if onModeToggle && !modeLocked}
-      <button
-        type="button"
-        class="contents cursor-pointer"
-        title="Switch to {mode === 'Preview' ? 'Developer' : 'Preview'}"
-        on:click={onModeToggle}
-      >
-        <Tag text={mode} color="gray"></Tag>
-      </button>
-    {:else}
-      <Tag text={mode} color="gray"></Tag>
-    {/if}
+    <Tag text={mode} color="gray"></Tag>
 
     {#if mode === "Preview" || onVizRoute}
       {#if $exploresQuery?.data}
@@ -160,6 +148,7 @@
       <CanvasPreviewCTAs canvasName={dashboardName} />
     {:else}
       {#if mode === "Preview" && !$readOnly}
+        <ViewAsButton />
         <Button type="secondary" href="/">Edit</Button>
       {:else if mode === "Developer" && !$readOnly}
         <Button type="secondary" href={previewUrl}>Preview</Button>

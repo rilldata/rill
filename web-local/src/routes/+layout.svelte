@@ -104,27 +104,6 @@
     isPreviewMode && showPreviewNav($page.url.pathname) && !onDeployPage;
 
   $: onWelcomePage = route.id?.startsWith("/(misc)/welcome");
-
-  // Toggle between Preview and Developer modes by clicking the navbar pill.
-  // On mode-specific routes, navigate to the other mode's home; on shared
-  // routes (explore/canvas/deploy), just flip the store so the user keeps
-  // their current view.
-  function toggleMode() {
-    if (data.previewMode) return;
-    if ($previewModeStore) {
-      if (isPreviewRoute($page.url.pathname)) {
-        void goto("/");
-      } else {
-        previewModeStore.set(false);
-      }
-    } else {
-      if (isDeveloperRoute($page.url.pathname)) {
-        void goto("/dashboards");
-      } else {
-        previewModeStore.set(true);
-      }
-    }
-  }
 </script>
 
 <Tooltip.Provider>
@@ -137,11 +116,7 @@
           {#if data.initialized && !onWelcomePage}
             <BannerCenter />
             <RepresentingUserBanner />
-            <ApplicationHeader
-              {mode}
-              onModeToggle={toggleMode}
-              modeLocked={data.previewMode}
-            />
+            <ApplicationHeader {mode} />
             {#if shouldShowPreviewNav}
               <PreviewModeNav />
             {/if}
