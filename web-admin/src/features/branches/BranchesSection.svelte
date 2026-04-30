@@ -360,6 +360,10 @@
         {@const isCurrent = prod
           ? !activeBranch
           : activeBranch === deployment.branch}
+        {@const hibernated =
+          !prod &&
+          (status === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED ||
+            status === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING)}
         {@const canStart =
           !prod &&
           status === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED &&
@@ -429,7 +433,8 @@
                 {#if !prod && !!currentUserId && deployment.ownerUserId === currentUserId && deployment.editable}
                   <DropdownMenu.Item
                     class="font-normal flex items-center"
-                    href={editUrl(deployment.branch)}
+                    disabled={hibernated}
+                    href={hibernated ? undefined : editUrl(deployment.branch)}
                     onclick={requestSkipBranchInjection}
                   >
                     <div class="flex items-center">
@@ -440,9 +445,12 @@
                 {/if}
                 <DropdownMenu.Item
                   class="font-normal flex items-center"
-                  href={prod
-                    ? `/${organization}/${project}`
-                    : editPreviewUrl(deployment.branch)}
+                  disabled={hibernated}
+                  href={hibernated
+                    ? undefined
+                    : prod
+                      ? `/${organization}/${project}`
+                      : editPreviewUrl(deployment.branch)}
                   onclick={requestSkipBranchInjection}
                 >
                   <div class="flex items-center">
