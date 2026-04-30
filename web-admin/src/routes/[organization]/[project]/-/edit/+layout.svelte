@@ -217,20 +217,8 @@
   {:else if isReady && deployment?.id && instanceId && runtimeHost && jwt}
     {#key `${runtimeHost}::${instanceId}`}
       <RuntimeProvider host={runtimeHost} {instanceId} {jwt}>
-        <EditHeader {organization} {project} {projectPermissions} />
         {#if !inProjectWelcomePage}
-          <ProjectHeader
-            {organization}
-            {project}
-            {projectPermissions}
-            manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
-            manageOrgMembers={organizationPermissions?.manageOrgMembers}
-            readProjects={organizationPermissions?.readProjects}
-            {primaryBranch}
-            {planDisplayName}
-            {organizationLogoUrl}
-            editContext={true}
-          />
+          <EditHeader {organization} {project} {projectPermissions} />
           <EditSessionTimeoutBanner sessionStartedAt={deployment.createdOn} />
         {/if}
         <FileAndResourceWatcher
