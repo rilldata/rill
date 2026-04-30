@@ -1,4 +1,9 @@
 <script lang="ts">
+  import { page } from "$app/stores";
+  import {
+    branchPathPrefix,
+    extractBranchFromPath,
+  } from "@rilldata/web-admin/features/branches/branch-utils";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -19,9 +24,16 @@
   $: lastRefreshedDate = lastRefreshed ? new Date(lastRefreshed) : null;
 
   $: dashboardSlug = isMetricsExplorer ? "explore" : "canvas";
-  $: href = isEmbedded
-    ? `/-/embed/${dashboardSlug}/${name}`
-    : `/${organization}/${project}/${dashboardSlug}/${name}`;
+  // Preserve the active branch + `/-/edit` context so new-tab opens (which
+  // bypass `beforeNavigate`'s branch injection) land on the same surface.
+  $: activeBranch = extractBranchFromPath($page.url.pathname);
+  $: inEditContext = $page.url.pathname.includes("/-/edit/");
+  $: href = (() => {
+    if (isEmbedded) return `/-/embed/${dashboardSlug}/${name}`;
+    const base = `/${organization}/${project}${branchPathPrefix(activeBranch)}`;
+    const editSegment = inEditContext ? "/-/edit" : "";
+    return `${base}${editSegment}/${dashboardSlug}/${name}`;
+  })();
 
   $: resourceKind = isMetricsExplorer
     ? ResourceKind.Explore
