@@ -15,6 +15,7 @@
   import BranchDeploymentStopped from "@rilldata/web-admin/features/branches/BranchDeploymentStopped.svelte";
   import { isEditPreviewRoute } from "@rilldata/web-admin/features/edit-session/edit-route-utils";
   import EditHeader from "@rilldata/web-admin/features/edit-session/EditHeader.svelte";
+  import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
   import EditSessionLoading from "@rilldata/web-admin/features/edit-session/EditSessionLoading.svelte";
   import EditSessionTimeoutBanner from "@rilldata/web-admin/features/edit-session/EditSessionTimeoutBanner.svelte";
   import SlimProjectHeader from "@rilldata/web-admin/features/projects/SlimProjectHeader.svelte";
@@ -168,6 +169,17 @@
   onDestroy(() => {
     $editorRoutePrefix = "";
   });
+
+  // Close the AI chat sidebar whenever the user crosses the
+  // preview/developer boundary so a stale open sidebar from one mode
+  // doesn't suddenly appear in the other.
+  let trackedPreviewMode: boolean | undefined = undefined;
+  $: if (trackedPreviewMode !== previewMode) {
+    if (trackedPreviewMode !== undefined) {
+      sidebarActions.closeChat();
+    }
+    trackedPreviewMode = previewMode;
+  }
 </script>
 
 <div class="edit-session">

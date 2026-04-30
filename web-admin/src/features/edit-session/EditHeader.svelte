@@ -27,7 +27,13 @@
   import HeaderLogo from "@rilldata/web-common/layout/header/HeaderLogo.svelte";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { GitBranchIcon } from "lucide-svelte";
+  import {
+    BellPlusIcon,
+    BookmarkIcon,
+    GitBranchIcon,
+    Share2,
+    Sparkles,
+  } from "lucide-svelte";
   import { get } from "svelte/store";
   import { parseDocument } from "yaml";
   import {
@@ -39,7 +45,20 @@
   import ViewAsUserChip from "../view-as-user/ViewAsUserChip.svelte";
   import { viewAsUserStore } from "../view-as-user/viewAsUserStore";
 
-  const cloudCta = "Publish project to PROD to use rill cloud features";
+  const cloudCta = "Publish project to use this feature";
+
+  const exploreCloudFeatures = [
+    { label: "AI", icon: Sparkles },
+    { label: "Bookmark", icon: BookmarkIcon },
+    { label: "Alert", icon: BellPlusIcon },
+    { label: "Share", icon: Share2 },
+  ];
+
+  const canvasCloudFeatures = [
+    { label: "AI", icon: Sparkles },
+    { label: "Bookmark", icon: BookmarkIcon },
+    { label: "Share", icon: Share2 },
+  ];
 
   export let organization: string;
   export let project: string;
@@ -217,9 +236,11 @@
           {#if $dimensionSearch && ready}
             <GlobalDimensionSearch />
           {/if}
-          {#each ["AI", "Bookmark", "Alert", "Share"] as label (label)}
+          {#each exploreCloudFeatures as { label, icon } (label)}
             <Tooltip distance={8}>
-              <Button type="secondary" disabled>{label}</Button>
+              <Button type="secondary" disabled aria-label={label}>
+                <svelte:component this={icon} size="16" />
+              </Button>
               <TooltipContent slot="tooltip-content" maxWidth="240px">
                 <span class="text-xs">{cloudCta}</span>
               </TooltipContent>
@@ -228,15 +249,17 @@
         </StateManagersProvider>
       {/key}
     {:else if onEditCanvas}
-      {#each ["AI", "Bookmark", "Share"] as label (label)}
+      {#each canvasCloudFeatures as { label, icon } (label)}
         <Tooltip distance={8}>
-          <Button type="secondary" disabled>{label}</Button>
+          <Button type="secondary" disabled aria-label={label}>
+            <svelte:component this={icon} size="16" />
+          </Button>
           <TooltipContent slot="tooltip-content" maxWidth="240px">
             <span class="text-xs">{cloudCta}</span>
           </TooltipContent>
         </Tooltip>
       {/each}
-    {:else if $developerChat}
+    {:else if !previewMode && $developerChat}
       <ChatToggle class="!bg-surface-base" />
     {/if}
   </div>
