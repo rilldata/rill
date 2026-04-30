@@ -189,7 +189,7 @@
   class="bg-surface-base flex items-center h-10 px-3 gap-x-2 border-b border-border"
 >
   {#if previewMode}
-    <nav class="flex gap-x-2 items-center shrink-0">
+    <nav class="flex gap-x-2 items-center shrink-0" data-edit-home="preview">
       <ol class="flex flex-row items-center">
         <li class="flex items-center gap-x-2 px-2">
           <a
@@ -211,7 +211,7 @@
       </ol>
     </nav>
   {:else}
-    <div class="px-2">
+    <div class="px-2" data-edit-home="developer">
       <InputWithConfirm
         size="md"
         bumpDown
