@@ -310,7 +310,7 @@ _[array of object]_ - Pre-aggregated rollup tables that can be used to accelerat
 
 _[object]_ - Controls query result caching for the metrics view. Caching is enabled by default for metrics views built on Rill-managed tables (where the cache is invalidated automatically on refresh) and disabled by default for metrics views built on external/live connector tables (e.g. Snowflake, BigQuery). For external tables, configure `key_sql` and `key_ttl` to enable caching safely. 
 
-  - **`enabled`** - _[boolean]_ - Whether to enable result caching for the metrics view. Defaults to `true` for Rill-managed tables and `false` for external/live connector tables. Set to `true` to force caching on a live connector metrics view (requires `key_sql` to control invalidation). 
+  - **`enabled`** - _[boolean]_ - Whether to enable result caching for the metrics view. Defaults to `true` for Rill-managed tables and `false` for external/live connector tables. When set to `true` on a live connector metrics view without `key_sql`, the cache is keyed on the max watermark of the timeseries column. 
 
   - **`key_sql`** - _[string]_ - A SQL query that returns a single scalar value used as the cache key. When the returned value changes, the cache is invalidated. Typically returns a max watermark or table version. Evaluated against the metrics view's connector. 
 
