@@ -283,7 +283,10 @@ export function generateVLFunnelChartSpec(
 
   // Main bar layer
   const barLayer: UnitSpec<Field> = {
-    mark: "bar",
+    mark: {
+      type: "bar",
+      cornerRadius: 4,
+    },
     encoding: {
       x: {
         field: "funnel_width",
