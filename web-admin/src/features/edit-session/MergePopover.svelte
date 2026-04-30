@@ -1,4 +1,8 @@
 <script lang="ts">
+  import {
+    createAdminServiceDeleteDeployment,
+    createAdminServiceListDeployments,
+  } from "@rilldata/web-admin/client";
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
   import { Button } from "@rilldata/web-common/components/button";
   import * as Popover from "@rilldata/web-common/components/popover";
@@ -24,8 +28,17 @@
   const client = useRuntimeClient();
   const gitMergeMutation = createRuntimeServiceGitMergeToBranchMutation(client);
   const gitStatusQuery = createRuntimeServiceGitStatus(client, {});
+  const deploymentsQuery = createAdminServiceListDeployments(
+    organization,
+    project,
+    {},
+  );
+  const deleteDeploymentMutation = createAdminServiceDeleteDeployment();
 
   $: currentBranch = $gitStatusQuery.data?.branch ?? "";
+  $: devDeploymentId = $deploymentsQuery.data?.deployments?.find(
+    (d) => d.runtimeInstanceId === client.instanceId,
+  )?.id;
   $: branchUrl =
     $gitStatusQuery.data?.githubUrl && currentBranch
       ? `${getGitUrlFromRemote($gitStatusQuery.data.githubUrl)}/tree/${encodeURIComponent(currentBranch)}`
@@ -47,14 +60,29 @@
         branch: primaryBranch,
         force: false,
       });
-      // Full page navigation matches the Done button: avoids a race where
-      // useRuntimeClient() is called before the project layout's
-      // RuntimeProvider remounts on the production branch.
-      window.location.href = `/${organization}/${project}`;
     } catch (err) {
       errorMessage = getRpcErrorMessage(err as RpcStatus) ?? "Failed to merge";
       isMerging = false;
+      return;
     }
+
+    // Tear down the dev deployment now that its changes live in production.
+    // Failures here are non-fatal: auto-hibernation and (eventually) backend
+    // GitHub-event cleanup will catch any orphans.
+    if (devDeploymentId) {
+      try {
+        await $deleteDeploymentMutation.mutateAsync({
+          deploymentId: devDeploymentId,
+        });
+      } catch (err) {
+        console.warn("Failed to delete dev deployment after merge", err);
+      }
+    }
+
+    // Full page navigation matches the Done button: avoids a race where
+    // useRuntimeClient() is called before the project layout's
+    // RuntimeProvider remounts on the production branch.
+    window.location.href = `/${organization}/${project}`;
   }
 </script>
 
