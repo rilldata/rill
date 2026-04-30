@@ -41,7 +41,13 @@ const LOCAL_ONLY_ALLOWLIST = [
 ];
 
 const ADMIN_ONLY_ALLOWLIST = [
-  // none today
+  // The cloud edit surface renders the dashboards listing as a sub-page of
+  // the project (`/-/edit/dashboards`). In Rill Developer the dashboards
+  // listing is the top-level home (`web-local/src/routes/dashboards`),
+  // which sits outside the (application)/(workspace) and (viz) groups the
+  // parity check scans, so it can't be mirrored without colliding with the
+  // existing local route.
+  "/dashboards/+page.svelte",
 ];
 
 function walkRoutes(absRoot) {

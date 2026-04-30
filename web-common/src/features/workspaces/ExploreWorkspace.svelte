@@ -4,10 +4,7 @@
   import { createRootCauseErrorQuery } from "@rilldata/web-common/features/entity-management/error-utils";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-  import {
-    resourceIsLoading,
-    ResourceKind,
-  } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import ExploreEditor from "@rilldata/web-common/features/explores/ExploreEditor.svelte";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
@@ -49,8 +46,6 @@
 
   $: exploreResource = resources?.explore;
   $: metricsViewResource = resources?.metricsView;
-
-  $: resourceIsReconciling = resourceIsLoading(exploreResource);
 
   $: workspace = workspaces.get(filePath);
   $: selectedViewStore = workspace.view;
