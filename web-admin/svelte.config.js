@@ -9,7 +9,19 @@ import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 dotenv({ path: resolve(__dirname, "../.env"), override: false });
 
-const dev = process.env.RILL_ADMIN_FRONTEND_URL?.includes("localhost");
+const adminFrontendURL = process.env.RILL_ADMIN_FRONTEND_URL;
+const dev = adminFrontendURL?.includes("localhost");
+
+// Derive *.rilldata.com / *.rilldata.io / *.rilldata.in from the env URL so
+// connect-src covers all subdomains in whichever environment is being built,
+// without statically listing all three TLDs.
+let rillWildcard = "https://*.rilldata.com"; // fallback for local dev
+const adminURL = process.env.RILL_UI_PUBLIC_RILL_ADMIN_URL;
+if (adminURL && !dev) {
+  const hostname = new URL(adminURL).hostname; // e.g. "admin.rilldata.com"
+  const baseDomain = hostname.split(".").slice(1).join("."); // e.g. "rilldata.com"
+  rillWildcard = `https://*.${baseDomain}`;
+}
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -38,10 +50,13 @@ const config = {
         "default-src": ["self"],
         "script-src": [
           "self",
-          "unsafe-eval",
-          "https://*.app-us1.com/",
-          "https://*.usepylon.com",
-          "https://*.pusher.com",
+          // ActiveCampaign: our app loads diffuser.js which chains to prism and trackcmp.
+          "https://diffuser-cdn.app-us1.com",
+          "https://prism.app-us1.com",
+          "https://trackcmp.net",
+          "https://widget.usepylon.com",
+          // Pusher JS SDK is likely bundled, but kept for Pylon's dynamic script injection.
+          "https://js.pusher.com",
           ...(dev ? ["http:"] : []),
           // Hash of the inline script injected by the Pylon chat widget at runtime.
           // If Pylon updates their widget, this hash may need to be refreshed.
@@ -49,7 +64,7 @@ const config = {
         ],
         // style-src keeps 'unsafe-inline': runtime style injection from
         // CodeMirror and other libraries cannot be hash-attributed.
-        "style-src": ["self", "unsafe-inline", "https://*.usepylon.com"],
+        "style-src": ["self", "unsafe-inline", "https://widget.usepylon.com"],
         "img-src": [...(dev ? ["http:"] : []), "https:", "data:", "blob:"],
         "frame-src": [
           "self",
@@ -65,21 +80,18 @@ const config = {
         "base-uri": ["self"],
         "connect-src": [
           "self",
-          "https://*.rilldata.com",
-          "https://*.rilldata.io",
-          "https://*.rilldata.in",
-          "https://*.usepylon.com",
+          rillWildcard,
+          "https://apichatwidget.usepylon.com",
           "https://docs.google.com",
           "https://storage.googleapis.com",
           "https://cdn.prod.website-files.com",
-          "https://*.stripe.com",
-          "wss://*.pusher.com",
+          "wss://ws-us3.pusher.com",
           ...(dev ? ["http://localhost:*", "ws://localhost:*"] : []),
         ],
         "font-src": [
           "self",
           "https://fonts.gstatic.com",
-          "https://*.usepylon.com",
+          "https://widget.usepylon.com",
         ],
       },
     },
