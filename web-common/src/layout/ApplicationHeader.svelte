@@ -1,3 +1,27 @@
+<script context="module" lang="ts">
+  // Editing `/files/dashboards/<name>.yaml` previews the corresponding
+  // explore/canvas dashboard directly; anywhere else the Preview button
+  // falls back to the dashboards listing.
+  const DASHBOARD_FILE_RE = /^\/files\/dashboards\/(.+)\.yaml$/;
+
+  function getPreviewUrl(
+    pathname: string,
+    explores: V1Resource[],
+    canvases: V1Resource[],
+  ): string {
+    const match = pathname.match(DASHBOARD_FILE_RE);
+    if (!match) return "/dashboards";
+    const name = match[1];
+    if (explores.some((e) => e.meta?.name?.name === name)) {
+      return `/explore/${name}`;
+    }
+    if (canvases.some((c) => c.meta?.name?.name === name)) {
+      return `/canvas/${name}`;
+    }
+    return "/dashboards";
+  }
+</script>
+
 <script lang="ts">
   import { page } from "$app/stores";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
@@ -18,16 +42,14 @@
   import DeployProjectCTA from "@rilldata/web-common/features/dashboards/workspace/DeployProjectCTA.svelte";
   import ExplorePreviewCTAs from "@rilldata/web-common/features/explores/ExplorePreviewCTAs.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
+  import ProjectTitleEditor from "@rilldata/web-common/features/project/ProjectTitleEditor.svelte";
   import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
   import Header from "@rilldata/web-common/layout/header/Header.svelte";
   import HeaderLogo from "@rilldata/web-common/layout/header/HeaderLogo.svelte";
   import { isDeployPage } from "@rilldata/web-common/layout/navigation/route-utils";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { get } from "svelte/store";
-  import { parseDocument } from "yaml";
-  import InputWithConfirm from "../components/forms/InputWithConfirm.svelte";
+  import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import Tag from "../components/tag/Tag.svelte";
-  import { fileArtifacts } from "../features/entity-management/file-artifacts";
 
   const { deploy, developerChat, readOnly, stickyDashboardState } =
     featureFlags;
@@ -42,8 +64,6 @@
 
   $: onVizRoute = route.id?.includes("explore") || route.id?.includes("canvas");
 
-  $: ({ unsavedFiles } = fileArtifacts);
-  $: ({ size: unsavedFileCount } = $unsavedFiles);
   $: onDeployPage = isDeployPage($page);
   $: showDeployCTA = $deploy && !onDeployPage;
   $: showDeveloperChat = $developerChat && !onDeployPage;
@@ -61,22 +81,7 @@
 
   $: hasValidDashboard = Boolean(defaultDashboard);
 
-  // When editing a dashboard YAML in /files/dashboards/[name].yaml, the
-  // Preview button jumps directly to the corresponding explore or canvas.
-  // Anywhere else in the file editor, it falls back to the dashboards
-  // listing.
-  $: previewUrl = (() => {
-    const match = $page.url.pathname.match(/^\/files\/dashboards\/(.+)\.yaml$/);
-    if (!match) return "/dashboards";
-    const name = match[1];
-    if (explores.some((e) => e.meta?.name?.name === name)) {
-      return `/explore/${name}`;
-    }
-    if (canvases.some((c) => c.meta?.name?.name === name)) {
-      return `/canvas/${name}`;
-    }
-    return "/dashboards";
-  })();
+  $: previewUrl = getPreviewUrl($page.url.pathname, explores, canvases);
 
   $: dashboardOptions = {
     options: getBreadcrumbOptions(explores, canvases),
@@ -96,26 +101,6 @@
   ];
 
   $: currentPath = [projectTitle, dashboardName?.toLowerCase()];
-
-  async function submitTitleChange(editedTitle: string) {
-    const artifact = fileArtifacts.getFileArtifact("/rill.yaml");
-
-    let content = get(artifact.editorContent);
-
-    if (!content) {
-      await artifact.fetchContent();
-      content = get(artifact.remoteContent);
-      if (!content) {
-        return;
-      }
-    }
-    const parsed = parseDocument(content);
-
-    parsed.set("display_name", editedTitle);
-
-    artifact.updateEditorContent(parsed.toString(), true);
-    await artifact.saveLocalContent();
-  }
 </script>
 
 <Header borderBottom={!onDeployPage && mode !== "Preview"}>
@@ -129,15 +114,7 @@
         <Breadcrumbs {pathParts} {currentPath} />
       {/if}
     {:else if mode === "Developer"}
-      <InputWithConfirm
-        size="md"
-        bumpDown
-        type="Project"
-        textClass="font-medium"
-        value={projectTitle}
-        onConfirm={submitTitleChange}
-        showIndicator={unsavedFileCount > 0}
-      />
+      <ProjectTitleEditor />
     {/if}
   {/if}
 

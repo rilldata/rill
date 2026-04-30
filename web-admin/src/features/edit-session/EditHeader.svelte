@@ -4,18 +4,16 @@
     branchPathPrefix,
     extractBranchFromPath,
   } from "@rilldata/web-admin/features/branches/branch-utils";
+  import DisabledCloudFeatures, {
+    type CloudFeature,
+  } from "@rilldata/web-admin/features/edit-session/DisabledCloudFeatures.svelte";
   import EditActions from "@rilldata/web-admin/features/edit-session/EditActions.svelte";
   import { isEditPreviewRoute } from "@rilldata/web-admin/features/edit-session/edit-route-utils";
-  import { Button } from "@rilldata/web-common/components/button";
-  import InputWithConfirm from "@rilldata/web-common/components/forms/InputWithConfirm.svelte";
+  import HomeBookmark from "@rilldata/web-common/components/icons/HomeBookmark.svelte";
   import BreadcrumbItem from "@rilldata/web-common/components/navigation/breadcrumbs/BreadcrumbItem.svelte";
   import Slash from "@rilldata/web-common/components/navigation/breadcrumbs/Slash.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import HomeBookmark from "@rilldata/web-common/components/icons/HomeBookmark.svelte";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import { useDashboards } from "@rilldata/web-admin/features/dashboards/listing/selectors";
@@ -23,13 +21,11 @@
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
+  import ProjectTitleEditor from "@rilldata/web-common/features/project/ProjectTitleEditor.svelte";
   import Header from "@rilldata/web-common/layout/header/Header.svelte";
   import HeaderLogo from "@rilldata/web-common/layout/header/HeaderLogo.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { BellPlusIcon, BookmarkIcon, GitBranchIcon } from "lucide-svelte";
-  import { get } from "svelte/store";
-  import { parseDocument } from "yaml";
   import {
     createAdminServiceGetCurrentUser,
     type V1ProjectPermissions,
@@ -41,28 +37,24 @@
 
   const cloudCta = "Publish project to use this feature";
 
-  type CloudFeature = {
-    label: string;
-    icon?: typeof HomeBookmark;
-    compact?: boolean;
-    square?: boolean;
-  };
-
   // All disabled cloud-feature buttons are square 28x28 for visual
   // consistency. Share stays as a plain text button since "Share"
-  // doesn't fit a 28x28 box.
-  const exploreCloudFeatures: CloudFeature[] = [
+  // doesn't fit a 28x28 box. Alert is explore-only — canvas
+  // dashboards don't support alerts.
+  const baseCloudFeatures: CloudFeature[] = [
     { label: "AI", compact: true, square: true },
     { label: "Home bookmark", icon: HomeBookmark, compact: true, square: true },
     { label: "Bookmark", icon: BookmarkIcon, compact: true, square: true },
+  ];
+
+  const exploreCloudFeatures: CloudFeature[] = [
+    ...baseCloudFeatures,
     { label: "Alert", icon: BellPlusIcon, compact: true, square: true },
     { label: "Share" },
   ];
 
   const canvasCloudFeatures: CloudFeature[] = [
-    { label: "AI", compact: true, square: true },
-    { label: "Home bookmark", icon: HomeBookmark, compact: true, square: true },
-    { label: "Bookmark", icon: BookmarkIcon, compact: true, square: true },
+    ...baseCloudFeatures,
     { label: "Share" },
   ];
 
@@ -121,27 +113,6 @@
     enabled: !!runtimeClient.instanceId && !!dashboardName && onEditExplore,
   });
   $: exploreSpec = $exploreQuery.data?.explore?.explore?.state?.validSpec;
-
-  // Editable project title (developer side). Mirrors the rill.yaml
-  // display_name handling from web-local's ApplicationHeader.
-  $: projectTitleQuery = useProjectTitle(runtimeClient);
-  $: projectTitle = $projectTitleQuery?.data ?? "Untitled Rill Project";
-  $: ({ unsavedFiles } = fileArtifacts);
-  $: ({ size: unsavedFileCount } = $unsavedFiles);
-
-  async function submitTitleChange(editedTitle: string) {
-    const artifact = fileArtifacts.getFileArtifact("/rill.yaml");
-    let content = get(artifact.editorContent);
-    if (!content) {
-      await artifact.fetchContent();
-      content = get(artifact.remoteContent);
-      if (!content) return;
-    }
-    const parsed = parseDocument(content);
-    parsed.set("display_name", editedTitle);
-    artifact.updateEditorContent(parsed.toString(), true);
-    await artifact.saveLocalContent();
-  }
 </script>
 
 <Header borderBottom tinted>
@@ -212,15 +183,7 @@
     </nav>
   {:else}
     <div data-edit-home="developer">
-      <InputWithConfirm
-        size="md"
-        bumpDown
-        type="Project"
-        textClass="font-medium"
-        value={projectTitle}
-        onConfirm={submitTitleChange}
-        showIndicator={unsavedFileCount > 0}
-      />
+      <ProjectTitleEditor />
     </div>
   {/if}
 
@@ -236,42 +199,14 @@
           {#if $dimensionSearch && ready}
             <GlobalDimensionSearch />
           {/if}
-          {#each exploreCloudFeatures as { label, icon, compact, square } (label)}
-            <Tooltip distance={8}>
-              <Button type="secondary" {compact} {square} disabled {label}>
-                {#if icon}
-                  <svelte:component this={icon} size="16px" class="flex-none" />
-                {:else}
-                  {label}
-                {/if}
-              </Button>
-              <TooltipContent slot="tooltip-content" maxWidth="240px">
-                <span class="text-xs">{cloudCta}</span>
-              </TooltipContent>
-            </Tooltip>
-          {/each}
+          <DisabledCloudFeatures
+            features={exploreCloudFeatures}
+            cta={cloudCta}
+          />
         </StateManagersProvider>
       {/key}
     {:else if onEditCanvas}
-      {#each canvasCloudFeatures as { label, icon, compact, square } (label)}
-        <Tooltip distance={8}>
-          <Button type="secondary" {compact} {square} disabled {label}>
-            {#if icon}
-              <svelte:component
-                this={icon}
-                size="16px"
-                class="flex-none"
-                className="flex-none"
-              />
-            {:else}
-              {label}
-            {/if}
-          </Button>
-          <TooltipContent slot="tooltip-content" maxWidth="240px">
-            <span class="text-xs">{cloudCta}</span>
-          </TooltipContent>
-        </Tooltip>
-      {/each}
+      <DisabledCloudFeatures features={canvasCloudFeatures} cta={cloudCta} />
     {:else if !previewMode && $developerChat}
       <ChatToggle class="!bg-surface-base" />
     {/if}

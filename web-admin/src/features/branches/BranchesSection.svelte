@@ -230,7 +230,9 @@
     return `/${organization}/${project}${branchPathPrefix(branch)}/-/edit`;
   }
 
-  function previewUrl(branch: string | undefined): string {
+  // Branch preview lives inside the editor surface; this returns the
+  // edit-mode dashboards entry point rather than a standalone branch view.
+  function editPreviewUrl(branch: string | undefined): string {
     return `/${organization}/${project}${branchPathPrefix(branch)}/-/edit/dashboards`;
   }
 
@@ -440,7 +442,7 @@
                   class="font-normal flex items-center"
                   href={prod
                     ? `/${organization}/${project}`
-                    : previewUrl(deployment.branch)}
+                    : editPreviewUrl(deployment.branch)}
                   onclick={requestSkipBranchInjection}
                 >
                   <div class="flex items-center">

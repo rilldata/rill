@@ -44,13 +44,10 @@
 </Tooltip>
 
 <Tooltip distance={8}>
-  <a
-    href={projectHomeHref}
-    class="flex items-center gap-x-1.5 px-2 h-7 rounded text-xs font-medium text-fg-muted hover:text-fg-primary hover:bg-surface-hover"
-  >
+  <Button type="ghost" href={projectHomeHref} compact>
     <LogOut size="14" />
     Exit
-  </a>
+  </Button>
   <TooltipContent slot="tooltip-content" maxWidth="200px">
     <span class="text-xs">Return to project home</span>
   </TooltipContent>

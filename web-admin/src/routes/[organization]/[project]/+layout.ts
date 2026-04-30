@@ -41,7 +41,9 @@ export const load = async ({
         // settings, status, etc.) collapse to the preview home.
         editSubpath = "/-/edit/dashboards";
       }
-      throw redirect(303, prefix + editSubpath + url.search + url.hash);
+      // `url.hash` is unavailable in SvelteKit `load` (client-only); the
+      // browser preserves the hash across the redirect on its own.
+      throw redirect(303, prefix + editSubpath + url.search);
     }
   }
 
