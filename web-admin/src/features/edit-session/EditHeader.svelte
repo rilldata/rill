@@ -26,6 +26,7 @@
   import { Button } from "@rilldata/web-common/components/button";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import Header from "@rilldata/web-common/layout/header/Header.svelte";
   import HeaderLogo from "@rilldata/web-common/layout/header/HeaderLogo.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -82,6 +83,11 @@
   // Cloud preview = the production-style branch view at `/{org}/{project}/@{branch}`,
   // without the `/-/edit` chrome. Users share this link with viewers.
   $: cloudPreviewHref = `/${organization}/${project}${branchPathPrefix(activeBranch)}`;
+  $: cloudPreviewUrl = `${$page.url.origin}${cloudPreviewHref}`;
+
+  function shareCloudPreviewLink() {
+    copyToClipboard(cloudPreviewUrl, "Shareable URL has been copied.");
+  }
 
   // Secondary header breadcrumb: Home / dashboard-name (with dropdown to
   // switch between dashboards on this branch).
@@ -163,12 +169,18 @@
     {/if}
     {#if activeBranch}
       <Tooltip distance={8}>
-        <Button type="ghost" href={cloudPreviewHref} target="_blank" compact>
+        <Button
+          type="secondary"
+          onClick={shareCloudPreviewLink}
+          class="!bg-surface-base"
+        >
           <Share2Icon size="14" />
           Share
         </Button>
         <TooltipContent slot="tooltip-content" maxWidth="240px">
-          <span class="text-xs">Open this branch's cloud preview link</span>
+          <span class="text-xs"
+            >Copy this branch's shareable cloud preview link</span
+          >
         </TooltipContent>
       </Tooltip>
     {/if}
