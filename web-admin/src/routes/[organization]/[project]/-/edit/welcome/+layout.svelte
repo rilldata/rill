@@ -1,0 +1,34 @@
+<script lang="ts">
+  import type { Snippet } from "svelte";
+
+  let { children }: { children: Snippet } = $props();
+</script>
+
+<div class="flex size-full overflow-hidden">
+  <div class="scroll">
+    <div class="wrapper column p-10 2xl:py-16">
+      <div class="mx-auto my-auto">
+        {@render children()}
+      </div>
+    </div>
+  </div>
+</div>
+
+<style lang="postcss">
+  .scroll {
+    @apply size-full overflow-x-hidden overflow-y-auto;
+  }
+
+  .wrapper {
+    @apply w-full h-fit min-h-screen bg-no-repeat bg-cover;
+    background-image: url("/img/welcome-bg-art.jpg");
+  }
+
+  :global(.dark) .wrapper {
+    background-image: url("/img/welcome-bg-art-dark.jpg");
+  }
+
+  .column {
+    @apply flex flex-col items-center gap-y-6;
+  }
+</style>

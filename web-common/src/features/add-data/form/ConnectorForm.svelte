@@ -12,16 +12,12 @@
   } from "@rilldata/web-common/features/add-data/manager/steps/connector.ts";
   import { getLabelsForConnector } from "@rilldata/web-common/features/add-data/form/form-labels.ts";
   import { setSubmitError } from "@rilldata/web-common/features/add-data/form/errors.ts";
-  import type {
-    AddDataConfig,
-    CreateConnectorStep,
-  } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
+  import type { CreateConnectorStep } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
   import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
   import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { getConnectorDriverForSchema } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
   import type { AddDataStateManager } from "@rilldata/web-common/features/add-data/manager/AddDataStateManager.svelte.ts";
 
-  export let config: AddDataConfig;
   export let stateManager: AddDataStateManager;
   export let step: CreateConnectorStep;
   export let onSubmit: (
@@ -94,8 +90,7 @@
       existingEnvBlob: cachedEnvBlob,
     });
     onClose();
-    if (!config.skipNavigation)
-      return navigateToFile(addLeadingSlash(connectorPath));
+    return navigateToFile(addLeadingSlash(connectorPath));
   }
 
   async function cleanupAndBack() {
