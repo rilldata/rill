@@ -60,6 +60,7 @@ export class CircularChartProvider {
   otherValue: number | undefined = undefined;
 
   combinedWhere: Writable<V1Expression | undefined> = writable(undefined);
+  isTruncated: Writable<boolean> = writable(false);
 
   constructor(
     spec: Readable<CircularChartSpec>,
@@ -112,6 +113,9 @@ export class CircularChartProvider {
 
         const topNWhere = getFilterWithNullHandling(where, config.color);
 
+        // drives the "Other" UI affordance
+        const probeLimit = limit ? limit + 1 : undefined;
+
         return getQueryServiceMetricsViewAggregationQueryOptions(
           client,
           {
@@ -121,7 +125,7 @@ export class CircularChartProvider {
             sort: colorSort ? [colorSort] : undefined,
             where: topNWhere,
             timeRange,
-            limit: limit?.toString(),
+            limit: probeLimit?.toString(),
           },
           {
             query: {
@@ -178,7 +182,9 @@ export class CircularChartProvider {
         const visibleValues = customSortValues
           ? customSortValues
           : topNData
-            ? topNData.map((d) => d[colorDimensionName!] as string)
+            ? topNData
+                .slice(0, limit)
+                .map((d) => d[colorDimensionName!] as string)
             : undefined;
 
         const enabled =
@@ -252,10 +258,14 @@ export class CircularChartProvider {
         // Apply topN filter for color dimension
         if (Array.isArray(config.color?.sort)) {
           topColorValues = config.color.sort;
-        } else if (topNColorData?.length && colorDimensionName) {
-          topColorValues = topNColorData.map(
-            (d) => d[colorDimensionName] as string,
-          );
+          this.isTruncated.set(false);
+        } else if (topNColorData && colorDimensionName) {
+          // topN was queried with limit+1; if we got the extra row back,
+          // there are more values than the limit and the chart is truncated
+          this.isTruncated.set(topNColorData.length > limit);
+          topColorValues = topNColorData
+            .slice(0, limit)
+            .map((d) => d[colorDimensionName] as string);
         }
 
         if (colorDimensionName) {

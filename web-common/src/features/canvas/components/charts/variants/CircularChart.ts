@@ -29,6 +29,7 @@ export type CircularCanvasChartSpec = BaseChartConfig & CircularChartSpecBase;
 
 export class CircularChartComponent extends BaseChart<CircularCanvasChartSpec> {
   private provider: CircularChartProvider;
+  private isTruncated = false;
 
   static chartInputParams: Record<string, ComponentInputParam> = {
     measure: {
@@ -88,6 +89,10 @@ export class CircularChartComponent extends BaseChart<CircularCanvasChartSpec> {
     this.provider.combinedWhere.subscribe((where) => {
       this.componentFilters = where;
     });
+
+    this.provider.isTruncated.subscribe((value) => {
+      this.isTruncated = value;
+    });
   }
 
   getChartSpecificOptions(): Record<string, ComponentInputParam> {
@@ -97,6 +102,9 @@ export class CircularChartComponent extends BaseChart<CircularCanvasChartSpec> {
     if (colorMappingSelector) {
       colorMappingSelector.values = this.provider.customColorValues;
     }
+
+    inputParams.show_other.showInUI = this.isTruncated;
+
     return inputParams;
   }
 
