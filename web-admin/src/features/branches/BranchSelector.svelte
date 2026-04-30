@@ -60,9 +60,7 @@
   $: currentDeployment = isOnBranch
     ? deployments.find((d) => d.branch === activeBranch)
     : deployments.find(isProdDeployment);
-  $: branchLabel = isOnBranch
-    ? (activeBranch ?? "")
-    : (primaryBranch ?? "");
+  $: branchLabel = isOnBranch ? (activeBranch ?? "") : (primaryBranch ?? "");
 
   function getDeploymentHref(deployment: V1Deployment): string {
     const basePath = removeBranchFromPath($page.url.pathname);
