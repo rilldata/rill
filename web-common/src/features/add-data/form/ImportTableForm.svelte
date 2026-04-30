@@ -51,16 +51,10 @@
   $: instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {
     sensitive: true,
   });
-  $: isProjectOlapConnector =
-    !!step.connector &&
-    $instanceQuery.data?.instance?.olapConnector === step.connector;
+  $: projectOlapConnector = $instanceQuery.data?.instance?.olapConnector ?? "";
 
   $: importSteps = connectorDriver
-    ? getImportStepsForConnector(
-        config,
-        connectorDriver,
-        isProjectOlapConnector,
-      )
+    ? getImportStepsForConnector(config, connectorDriver, projectOlapConnector)
     : [];
   $: supportsModeling = importSteps[0] === ImportDataStep.CreateModel;
 

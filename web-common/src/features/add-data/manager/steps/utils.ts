@@ -80,12 +80,14 @@ export function isExplorerType(connectorDriver: V1ConnectorDriver) {
 
 export function isLiveConnectorType(
   connectorDriver: V1ConnectorDriver,
-  isProjectOlapConnector = false,
+  projectOlapConnector = "",
 ) {
-  if (isProjectOlapConnector) return true;
-  return (
-    !!connectorDriver?.implementsOlap && !connectorDriver?.implementsWarehouse
-  );
+  if (!connectorDriver?.implementsOlap) return false;
+  // OLAP-only connectors (e.g., ClickHouse, Druid, Pinot) always go live.
+  if (!connectorDriver?.implementsWarehouse) return true;
+  // Warehouses (Snowflake, BigQuery) go live when the project's OLAP is
+  // anything other than DuckDB, since cross-OLAP ingestion is not a UI flow.
+  return !!projectOlapConnector && projectOlapConnector !== "duckdb";
 }
 
 const NonModelSteps = [
@@ -97,9 +99,9 @@ const FullListOfSteps = [ImportDataStep.CreateModel, ...NonModelSteps];
 export function getImportStepsForConnector(
   config: AddDataConfig,
   driver: V1ConnectorDriver,
-  isProjectOlapConnector = false,
+  projectOlapConnector = "",
 ) {
-  const steps = isLiveConnectorType(driver, isProjectOlapConnector)
+  const steps = isLiveConnectorType(driver, projectOlapConnector)
     ? NonModelSteps
     : FullListOfSteps;
   return config.importOnly ? [steps[0]] : steps;
