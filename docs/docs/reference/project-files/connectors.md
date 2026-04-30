@@ -953,6 +953,14 @@ _[string]_ - Password for authentication
 
 _[string]_ - ssl mode options: `disable`, `allow`, `prefer` or `require`. 
 
+### `max_open_conns`
+
+_[integer]_ - Maximum number of open connections to the database (defaults to 1) 
+
+### `conn_max_lifetime`
+
+_[string]_ - Maximum time a connection may be reused, as a Go duration string (defaults to 1m) 
+
 ### `log_queries`
 
 _[boolean]_ - Controls whether to log raw SQL queries 
@@ -1017,6 +1025,14 @@ _[string]_ - Password for authentication
 ### `sslmode`
 
 _[string]_ - ssl mode options: `disable`, `allow`, `prefer` or `require`. 
+
+### `max_open_conns`
+
+_[integer]_ - Maximum number of open connections to the database (defaults to 1) 
+
+### `conn_max_lifetime`
+
+_[string]_ - Maximum time a connection may be reused, as a Go duration string (defaults to 1m) 
 
 ### `log_queries`
 
