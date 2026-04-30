@@ -199,10 +199,10 @@
           exploreName={dashboardName}
           let:ready
         >
+          <LastRefreshedDate dashboard={dashboardName} />
           {#if previewMode}
             <ModeToggle {organization} {project} branch={activeBranch ?? ""} />
           {/if}
-          <LastRefreshedDate dashboard={dashboardName} />
           {#if $dimensionSearch && ready}
             <GlobalDimensionSearch />
           {/if}
