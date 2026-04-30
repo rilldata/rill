@@ -23,10 +23,18 @@
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import ProjectTitleEditor from "@rilldata/web-common/features/project/ProjectTitleEditor.svelte";
+  import { Button } from "@rilldata/web-common/components/button";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import Header from "@rilldata/web-common/layout/header/Header.svelte";
   import HeaderLogo from "@rilldata/web-common/layout/header/HeaderLogo.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { BellPlusIcon, BookmarkIcon, GitBranchIcon } from "lucide-svelte";
+  import {
+    BellPlusIcon,
+    BookmarkIcon,
+    GitBranchIcon,
+    Share2Icon,
+  } from "lucide-svelte";
   import {
     createAdminServiceGetCurrentUser,
     type V1ProjectPermissions,
@@ -71,6 +79,9 @@
   $: previewMode = isEditPreviewRoute($page.url.pathname);
   $: editPrefix = `/${organization}/${project}${branchPathPrefix(activeBranch)}/-/edit`;
   $: previewHomeHref = `${editPrefix}/dashboards`;
+  // Cloud preview = the production-style branch view at `/{org}/{project}/@{branch}`,
+  // without the `/-/edit` chrome. Users share this link with viewers.
+  $: cloudPreviewHref = `/${organization}/${project}${branchPathPrefix(activeBranch)}`;
 
   // Secondary header breadcrumb: Home / dashboard-name (with dropdown to
   // switch between dashboards on this branch).
@@ -149,6 +160,22 @@
   <div class="flex gap-x-2 items-center ml-auto">
     {#if previewMode && $viewAsUserStore}
       <ViewAsUserChip />
+    {/if}
+    {#if activeBranch}
+      <Tooltip distance={8}>
+        <Button
+          type="ghost"
+          href={cloudPreviewHref}
+          target="_blank"
+          compact
+        >
+          <Share2Icon size="14" />
+          Share
+        </Button>
+        <TooltipContent slot="tooltip-content" maxWidth="240px">
+          <span class="text-xs">Open this branch's cloud preview link</span>
+        </TooltipContent>
+      </Tooltip>
     {/if}
     <EditActions {organization} {project} />
     {#if $user.isSuccess && $user.data?.user}
