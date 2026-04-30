@@ -227,7 +227,7 @@
           errorBody="Lost connection to the editing environment. Try ending the session and starting a new one."
         >
           <div class="flex flex-1 overflow-hidden">
-            {#if !inProjectWelcomePage || !previewMode}
+            {#if !inProjectWelcomePage && !previewMode}
               <WelcomeRedirector />
               <Navigation showFooterLinks={false} />
             {/if}
