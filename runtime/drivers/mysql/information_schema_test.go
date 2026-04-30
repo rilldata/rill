@@ -25,13 +25,6 @@ func TestInformationSchema(t *testing.T) {
 	_, olap := acquireTestMySQL(t)
 	ctx := t.Context()
 	infoSchema := olap.InformationSchema()
-
-	t.Run("testAll", func(t *testing.T) {
-		testAll(t, ctx, infoSchema)
-	})
-	t.Run("testLookup", func(t *testing.T) {
-		testLookup(t, ctx, infoSchema)
-	})
 	t.Run("testListDatabaseSchemas", func(t *testing.T) {
 		testListDatabaseSchemas(t, ctx, infoSchema)
 	})
@@ -41,13 +34,56 @@ func TestInformationSchema(t *testing.T) {
 	t.Run("testListTablesPagination", func(t *testing.T) {
 		testListTablesPagination(t, ctx, infoSchema)
 	})
+	t.Run("testListTablesForAll", func(t *testing.T) {
+		testListTablesForAll(t, ctx, infoSchema)
+	})
+	t.Run("testLookup", func(t *testing.T) {
+		testLookup(t, ctx, infoSchema)
+	})
 	t.Run("testLoadDDL", func(t *testing.T) {
 		testLoadDDL(t, ctx, infoSchema)
 	})
 }
 
-func testAll(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
-	all, _, err := infoSchema.All(ctx, "", 0, "")
+func testListDatabaseSchemas(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
+	schemas, _, err := infoSchema.ListDatabaseSchemas(ctx, 0, "")
+	require.NoError(t, err)
+	require.NotEmpty(t, schemas)
+
+	found := false
+	for _, s := range schemas {
+		if s.Database == database && s.DatabaseSchema == databaseSchema {
+			found = true
+			break
+		}
+	}
+	require.True(t, found, "expected schema %s.%s in ListDatabaseSchemas", database, databaseSchema)
+}
+
+func testListTables(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
+	all, _, err := infoSchema.ListTables(ctx, database, databaseSchema, "", 0, "")
+	require.NoError(t, err)
+	tables := filterTableInfos(all)
+	require.Equal(t, numKnown, len(tables))
+
+	require.Equal(t, "all_datatypes", tables[0].Name)
+	require.Equal(t, "bar", tables[1].Name)
+	require.Equal(t, "baz", tables[2].Name)
+	require.Equal(t, "foo", tables[3].Name)
+	require.Equal(t, "foz", tables[4].Name)
+	require.Equal(t, "model", tables[5].Name)
+	require.True(t, tables[5].View)
+
+	for _, tbl := range tables {
+		require.Equal(t, database, tbl.Database, "table %s: expected Database=%s", tbl.Name, database)
+		require.Equal(t, databaseSchema, tbl.DatabaseSchema, "table %s: expected DatabaseSchema=%s", tbl.Name, databaseSchema)
+		require.True(t, tbl.IsDefaultDatabase, "table %s: expected IsDefaultDatabase=true", tbl.Name)
+		require.True(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=true", tbl.Name)
+	}
+}
+
+func testListTablesForAll(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
+	all, _, err := infoSchema.ListTables(ctx, "", "", "", 0, "")
 	require.NoError(t, err)
 	tables := filterOLAP(all)
 	require.Equal(t, numKnown, len(tables))
@@ -142,50 +178,13 @@ func testLookup(t *testing.T, ctx context.Context, infoSchema drivers.Informatio
 	require.Equal(t, expectedFields, actualFields)
 }
 
-func testListDatabaseSchemas(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
-	schemas, _, err := infoSchema.ListDatabaseSchemas(ctx, 0, "")
-	require.NoError(t, err)
-	require.NotEmpty(t, schemas)
-
-	found := false
-	for _, s := range schemas {
-		if s.Database == database && s.DatabaseSchema == databaseSchema {
-			found = true
-			break
-		}
-	}
-	require.True(t, found, "expected schema %s.%s in ListDatabaseSchemas", database, databaseSchema)
-}
-
-func testListTables(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
-	all, _, err := infoSchema.ListTables(ctx, database, databaseSchema, 0, "")
-	require.NoError(t, err)
-	tables := filterTableInfos(all)
-	require.Equal(t, numKnown, len(tables))
-
-	require.Equal(t, "all_datatypes", tables[0].Name)
-	require.Equal(t, "bar", tables[1].Name)
-	require.Equal(t, "baz", tables[2].Name)
-	require.Equal(t, "foo", tables[3].Name)
-	require.Equal(t, "foz", tables[4].Name)
-	require.Equal(t, "model", tables[5].Name)
-	require.True(t, tables[5].View)
-
-	for _, tbl := range tables {
-		require.Equal(t, database, tbl.Database, "table %s: expected Database=%s", tbl.Name, database)
-		require.Equal(t, databaseSchema, tbl.DatabaseSchema, "table %s: expected DatabaseSchema=%s", tbl.Name, databaseSchema)
-		require.True(t, tbl.IsDefaultDatabase, "table %s: expected IsDefaultDatabase=true", tbl.Name)
-		require.True(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=true", tbl.Name)
-	}
-}
-
 func testListTablesPagination(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
 	pageSize := 2
 
 	var collectedAll []*drivers.TableInfo
 	var nextToken string
 	for {
-		tables, token, err := infoSchema.ListTables(ctx, database, databaseSchema, uint32(pageSize), nextToken)
+		tables, token, err := infoSchema.ListTables(ctx, database, databaseSchema, "", uint32(pageSize), nextToken)
 		require.NoError(t, err)
 		require.LessOrEqual(t, len(tables), pageSize)
 		collectedAll = append(collectedAll, tables...)
@@ -197,7 +196,7 @@ func testListTablesPagination(t *testing.T, ctx context.Context, infoSchema driv
 	require.Equal(t, numKnown, len(filterTableInfos(collectedAll)))
 
 	// All at once
-	tables, nextToken, err := infoSchema.ListTables(ctx, database, databaseSchema, 0, "")
+	tables, nextToken, err := infoSchema.ListTables(ctx, database, databaseSchema, "", 0, "")
 	require.NoError(t, err)
 	require.Equal(t, numKnown, len(filterTableInfos(tables)))
 	require.Empty(t, nextToken)

@@ -74,7 +74,7 @@ func (t *ListTables) Handler(ctx context.Context, args *ListTablesArgs) (*ListTa
 	}
 
 	// List tables via information schema
-	tables, nextToken, err := olap.InformationSchema().All(ctx, args.SearchPattern, uint32(pageSize), args.PageToken)
+	tables, nextToken, err := olap.InformationSchema().ListTables(ctx, "", "", args.SearchPattern, uint32(pageSize), args.PageToken)
 	if err != nil {
 		return nil, err
 	}

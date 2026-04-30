@@ -68,7 +68,7 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	return res, next, rows.Err()
 }
 
-func (c *connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+func (c *connection) ListTables(ctx context.Context, database, databaseSchema, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
 	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 
 	q := `
@@ -132,11 +132,6 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 		next = pagination.MarshalPageToken(res[len(res)-1].Name)
 	}
 	return res, next, rows.Err()
-}
-
-// All implements drivers.InformationSchema.
-func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
-	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
 }
 
 // Lookup implements drivers.InformationSchema.

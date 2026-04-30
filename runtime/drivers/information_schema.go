@@ -2,7 +2,6 @@ package drivers
 
 import (
 	"context"
-	"fmt"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
@@ -10,11 +9,12 @@ import (
 type InformationSchema interface {
 	// ListDatabaseSchemas returns all schemas across databases
 	ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*DatabaseSchemaInfo, string, error)
-	// ListTables returns all tables in a schema.
-	ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*TableInfo, string, error)
-	// All returns metadata about all tables and views.
-	// The like argument can optionally be passed to filter the tables by name.
-	All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*TableInfo, string, error)
+	// ListTables returns tables based on the provided scope.
+	// If both `database` and `databaseSchema` are empty, it lists tables across all databases.
+	// Otherwise, it lists tables within the specified database and schema.
+	// The `like` parameter is optional and filters results to tables matching the given pattern.
+	// Results are paginated using `pageSize` and `pageToken`.
+	ListTables(ctx context.Context, database, databaseSchema, like string, pageSize uint32, pageToken string) ([]*TableInfo, string, error)
 	// Lookup returns metadata about a specific tables and views.
 	Lookup(ctx context.Context, database, databaseSchema, table string) (*TableInfo, error)
 	// LoadPhysicalSize populates the PhysicalSizeBytes field of table metadata.
@@ -62,41 +62,4 @@ type TableInfo struct {
 	// DDL contains the CREATE TABLE/VIEW statement for the table/view.
 	// It is only populated after calling LoadDDL.
 	DDL string
-}
-
-// AllFromInformationSchema is a helper function that drivers implementing InformationSchema can use to implement Olap.All()
-func AllFromInformationSchema(ctx context.Context, like string, pageSize uint32, pageToken string, i InformationSchema) ([]*TableInfo, string, error) {
-	if like != "" {
-		return nil, "", fmt.Errorf("like filter not supported")
-	}
-	schemas, token, err := i.ListDatabaseSchemas(ctx, pageSize, pageToken)
-	if err != nil {
-		return nil, "", err
-	}
-	tables := make([]*TableInfo, 0)
-	for _, schema := range schemas {
-		ts, token, err := i.ListTables(ctx, schema.Database, schema.DatabaseSchema, 1000, "")
-		if err != nil {
-			return nil, "", err
-		}
-		if token != "" {
-			// we don't support pagination across multiple schemas
-			return nil, "", fmt.Errorf("schema has more than 1000 tables can not list all")
-		}
-		for _, t := range ts {
-			table := &TableInfo{
-				Database:                t.Database,
-				DatabaseSchema:          t.DatabaseSchema,
-				IsDefaultDatabase:       t.IsDefaultDatabase,
-				IsDefaultDatabaseSchema: t.IsDefaultDatabaseSchema,
-				Name:                    t.Name,
-				View:                    t.View,
-				Schema:                  nil,
-				UnsupportedCols:         nil,
-				PhysicalSizeBytes:       0,
-			}
-			tables = append(tables, table)
-		}
-	}
-	return tables, token, nil
 }

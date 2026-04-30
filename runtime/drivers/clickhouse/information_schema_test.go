@@ -27,28 +27,121 @@ func TestInformationSchema(t *testing.T) {
 	require.True(t, ok)
 
 	prepareConn(t, ctx, olap)
-	t.Run("testInformationSchemaAll", func(t *testing.T) { testInformationSchemaAll(t, ctx, infoSchema) })
-	t.Run("testInformationSchemaAllLike", func(t *testing.T) { testInformationSchemaAllLike(t, ctx, infoSchema) })
-	t.Run("testInformationSchemaSystemAllLike", func(t *testing.T) {
+	t.Run("testListDatabaseSchemas", func(t *testing.T) { testListDatabaseSchemas(t, ctx, infoSchema) })
+	t.Run("testListDatabaseSchemasPagination", func(t *testing.T) { testListDatabaseSchemasPagination(t, ctx, infoSchema) })
+	t.Run("testListTables", func(t *testing.T) { testListTables(t, ctx, infoSchema) })
+	t.Run("testListTablesPagination", func(t *testing.T) { testListTablesPagination(t, ctx, infoSchema) })
+	t.Run("testListTablesForAll", func(t *testing.T) { testListTablesForAll(t, ctx, infoSchema) })
+	t.Run("testListTablesForAllLike", func(t *testing.T) { testListTablesForAllLike(t, ctx, infoSchema) })
+	t.Run("testListTablesForAllPagination", func(t *testing.T) { testListTablesForAllPagination(t, ctx, infoSchema) })
+	t.Run("testListTablesForAllPaginationWithLike", func(t *testing.T) { testListTablesForAllPaginationWithLike(t, ctx, infoSchema) })
+	t.Run("testListTablesForAllSystemLike", func(t *testing.T) {
 		conn, err := drivers.Open("clickhouse", "", "default", map[string]any{"dsn": dsn + "/system", "mode": "readwrite"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 		require.NoError(t, err)
 		olap, ok := conn.AsOLAP("")
 		require.True(t, ok)
 		infoSchema := olap.InformationSchema()
-		testInformationSchemaSystemAllLike(t, ctx, infoSchema)
+		testListTablesForAllSystemLike(t, ctx, infoSchema)
 	})
-	t.Run("testInformationSchemaLookup", func(t *testing.T) { testInformationSchemaLookup(t, ctx, infoSchema) })
-	t.Run("testInformationSchemaAllPagination", func(t *testing.T) { testInformationSchemaAllPagination(t, ctx, infoSchema) })
-	t.Run("testInformationSchemaAllPaginationWithLike", func(t *testing.T) { testInformationSchemaAllPaginationWithLike(t, ctx, infoSchema) })
-	t.Run("testInformationSchemaListDatabaseSchemas", func(t *testing.T) { testInformationSchemaListDatabaseSchemas(t, ctx, infoSchema) })
-	t.Run("testInformationSchemaListTables", func(t *testing.T) { testInformationSchemaListTables(t, ctx, infoSchema) })
-	t.Run("testInformationSchemaListDatabaseSchemasPagination", func(t *testing.T) { testInformationSchemaListDatabaseSchemasPagination(t, ctx, infoSchema) })
-	t.Run("testInformationSchemaListTablesPagination", func(t *testing.T) { testInformationSchemaListTablesPagination(t, ctx, infoSchema) })
+	t.Run("testLookup", func(t *testing.T) { testLookup(t, ctx, infoSchema) })
 	t.Run("testLoadDDL", func(t *testing.T) { testLoadDDL(t, ctx, infoSchema) })
 }
 
-func testInformationSchemaAll(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
-	tables, _, err := infoSchema.All(ctx, "", 0, "")
+func testListDatabaseSchemas(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
+	databaseSchemaInfo, _, err := infoSchema.ListDatabaseSchemas(ctx, 0, "")
+	require.NoError(t, err)
+	require.Equal(t, 3, len(databaseSchemaInfo))
+
+	require.Equal(t, "", databaseSchemaInfo[0].Database)
+	require.Equal(t, "clickhouse", databaseSchemaInfo[0].DatabaseSchema)
+	require.Equal(t, "", databaseSchemaInfo[1].Database)
+	require.Equal(t, "default", databaseSchemaInfo[1].DatabaseSchema)
+	require.Equal(t, "", databaseSchemaInfo[2].Database)
+	require.Equal(t, "other", databaseSchemaInfo[2].DatabaseSchema)
+}
+
+func testListDatabaseSchemasPagination(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
+	pageSize := 2
+
+	// First page
+	page1, token1, err := infoSchema.ListDatabaseSchemas(ctx, uint32(pageSize), "")
+	require.NoError(t, err)
+	require.Len(t, page1, pageSize)
+	require.NotEmpty(t, token1)
+
+	// second page
+	page2, token2, err := infoSchema.ListDatabaseSchemas(ctx, uint32(pageSize), token1)
+	require.NoError(t, err)
+	require.NotEmpty(t, page2)
+	require.Empty(t, token2)
+
+	// Page size 0
+	all, token, err := infoSchema.ListDatabaseSchemas(ctx, 0, "")
+	require.NoError(t, err)
+	require.Equal(t, len(all), 3)
+	require.Empty(t, token)
+}
+
+func testListTables(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
+	tables, _, err := infoSchema.ListTables(ctx, "", "default", "", 0, "")
+	require.NoError(t, err)
+	require.Equal(t, len(tables), 3)
+
+	require.Equal(t, "bar", tables[0].Name)
+	require.Equal(t, false, tables[0].View)
+	require.Equal(t, "foo", tables[1].Name)
+	require.Equal(t, false, tables[1].View)
+	require.Equal(t, "model", tables[2].Name)
+	require.Equal(t, true, tables[2].View)
+
+	for _, tbl := range tables {
+		require.True(t, tbl.IsDefaultDatabase)
+		require.True(t, tbl.IsDefaultDatabaseSchema)
+		require.Equal(t, "", tbl.Database)
+		require.Equal(t, "default", tbl.DatabaseSchema)
+	}
+
+	tables, _, err = infoSchema.ListTables(ctx, "", "other", "", 0, "")
+	require.NoError(t, err)
+	require.Equal(t, len(tables), 2)
+
+	require.Equal(t, "bar", tables[0].Name)
+	require.Equal(t, false, tables[0].View)
+	require.Equal(t, "foo", tables[1].Name)
+	require.Equal(t, false, tables[1].View)
+
+	for _, tbl := range tables {
+		require.True(t, tbl.IsDefaultDatabase)
+		require.False(t, tbl.IsDefaultDatabaseSchema)
+		require.Equal(t, "", tbl.Database)
+		require.Equal(t, "other", tbl.DatabaseSchema)
+	}
+}
+
+func testListTablesPagination(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
+	pageSize := 2
+
+	// First page
+	page1, token1, err := infoSchema.ListTables(ctx, "", "default", "", uint32(pageSize), "")
+	require.NoError(t, err)
+	require.Len(t, page1, pageSize)
+	require.NotEmpty(t, token1)
+
+	// Second page
+	page2, token2, err := infoSchema.ListTables(ctx, "", "default", "", uint32(pageSize), token1)
+	require.NoError(t, err)
+	require.NotEmpty(t, page2)
+	require.Empty(t, token2)
+
+	// Page size 0
+	all, token, err := infoSchema.ListTables(ctx, "", "default", "", 0, "")
+	require.NoError(t, err)
+	require.GreaterOrEqual(t, len(all), 3)
+	require.Empty(t, token)
+}
+
+func testListTablesForAll(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
+	tables, _, err := infoSchema.ListTables(ctx, "", "", "", 0, "")
 	require.NoError(t, err)
 	require.Equal(t, 5, len(tables))
 
@@ -81,31 +174,93 @@ func testInformationSchemaAll(t *testing.T, ctx context.Context, infoSchema driv
 	require.Greater(t, tables[1].PhysicalSizeBytes, int64(0))
 }
 
-func testInformationSchemaAllLike(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
-	tables, _, err := infoSchema.All(ctx, "%odel", 0, "")
+func testListTablesForAllLike(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
+	tables, _, err := infoSchema.ListTables(ctx, "", "", "%odel", 0, "")
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tables))
 	require.Equal(t, "model", tables[0].Name)
 
-	tables, _, err = infoSchema.All(ctx, "other.%ar", 0, "")
+	tables, _, err = infoSchema.ListTables(ctx, "", "", "other.%ar", 0, "")
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tables))
 	require.Equal(t, "bar", tables[0].Name)
 }
 
-func testInformationSchemaSystemAllLike(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
-	tables, _, err := infoSchema.All(ctx, "query_log", 0, "")
+func testListTablesForAllPagination(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
+	pageSize := 2
+
+	// Test first page
+	tables1, nextToken1, err := infoSchema.ListTables(ctx, "", "", "", uint32(pageSize), "")
+	require.NoError(t, err)
+	require.Equal(t, pageSize, len(tables1))
+	require.NotEmpty(t, nextToken1)
+
+	// Test second page
+	tables2, nextToken2, err := infoSchema.ListTables(ctx, "", "", "", uint32(pageSize), nextToken1)
+	require.NoError(t, err)
+	require.Equal(t, pageSize, len(tables2))
+	require.NotEmpty(t, nextToken2)
+
+	// Test third page
+	tables3, nextToken3, err := infoSchema.ListTables(ctx, "", "", "", uint32(pageSize), nextToken2)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tables3))
+	require.Empty(t, nextToken3)
+
+	// Test with page size 0
+	tables, nextToken, err := infoSchema.ListTables(ctx, "", "", "", 0, "")
+	require.NoError(t, err)
+	require.Equal(t, 5, len(tables))
+	require.Empty(t, nextToken)
+
+	// Test with page size larger than total results
+	tables, nextToken, err = infoSchema.ListTables(ctx, "", "", "", 1000, "")
+	require.NoError(t, err)
+	require.Equal(t, 5, len(tables))
+	require.Empty(t, nextToken)
+}
+
+func testListTablesForAllPaginationWithLike(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
+	pageSize := 1
+
+	// Test first page
+	tables1, nextToken1, err := infoSchema.ListTables(ctx, "", "", "%ba%", uint32(pageSize), "")
+	require.NoError(t, err)
+	require.Equal(t, pageSize, len(tables1))
+	require.NotEmpty(t, nextToken1)
+
+	// Test second page
+	tables2, nextToken2, err := infoSchema.ListTables(ctx, "", "", "%ba%", uint32(pageSize), nextToken1)
+	require.NoError(t, err)
+	require.Equal(t, pageSize, len(tables2))
+	require.Empty(t, nextToken2)
+
+	// Test with page size 0
+	tables, nextToken, err := infoSchema.ListTables(ctx, "", "", "%ba%", 0, "")
+	require.NoError(t, err)
+	require.Equal(t, 2, len(tables))
+	require.Empty(t, nextToken)
+
+	// Test with page size larger than total results
+	tables, nextToken, err = infoSchema.ListTables(ctx, "", "", "%ba%", 1000, "")
+	require.NoError(t, err)
+	require.Equal(t, 2, len(tables))
+	require.Empty(t, nextToken)
+}
+
+func testListTablesForAllSystemLike(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
+	tables, _, err := infoSchema.ListTables(ctx, "", "", "query_log", 0, "")
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tables))
 	require.Equal(t, "query_log", tables[0].Name)
 
-	tables, _, err = infoSchema.All(ctx, "other.%ar", 0, "")
+	tables, _, err = infoSchema.ListTables(ctx, "", "", "other.%ar", 0, "")
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tables))
 	require.Equal(t, "bar", tables[0].Name)
 }
 
-func testInformationSchemaLookup(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
+func testLookup(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
 	table, err := infoSchema.Lookup(ctx, "", "", "foo")
 	require.NoError(t, err)
 	require.Equal(t, "foo", table.Name)
@@ -132,161 +287,6 @@ func testInformationSchemaLookup(t *testing.T, ctx context.Context, infoSchema d
 	require.Equal(t, "other", table.DatabaseSchema)
 	require.Equal(t, true, table.IsDefaultDatabase)
 	require.Equal(t, false, table.IsDefaultDatabaseSchema)
-}
-
-func testInformationSchemaAllPagination(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
-	pageSize := 2
-
-	// Test first page
-	tables1, nextToken1, err := infoSchema.All(ctx, "", uint32(pageSize), "")
-	require.NoError(t, err)
-	require.Equal(t, pageSize, len(tables1))
-	require.NotEmpty(t, nextToken1)
-
-	// Test second page
-	tables2, nextToken2, err := infoSchema.All(ctx, "", uint32(pageSize), nextToken1)
-	require.NoError(t, err)
-	require.Equal(t, pageSize, len(tables2))
-	require.NotEmpty(t, nextToken2)
-
-	// Test third page
-	tables3, nextToken3, err := infoSchema.All(ctx, "", uint32(pageSize), nextToken2)
-	require.NoError(t, err)
-	require.Equal(t, 1, len(tables3))
-	require.Empty(t, nextToken3)
-
-	// Test with page size 0
-	tables, nextToken, err := infoSchema.All(ctx, "", 0, "")
-	require.NoError(t, err)
-	require.Equal(t, 5, len(tables))
-	require.Empty(t, nextToken)
-
-	// Test with page size larger than total results
-	tables, nextToken, err = infoSchema.All(ctx, "", 1000, "")
-	require.NoError(t, err)
-	require.Equal(t, 5, len(tables))
-	require.Empty(t, nextToken)
-}
-
-func testInformationSchemaAllPaginationWithLike(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
-	pageSize := 1
-
-	// Test first page
-	tables1, nextToken1, err := infoSchema.All(ctx, "%ba%", uint32(pageSize), "")
-	require.NoError(t, err)
-	require.Equal(t, pageSize, len(tables1))
-	require.NotEmpty(t, nextToken1)
-
-	// Test second page
-	tables2, nextToken2, err := infoSchema.All(ctx, "%ba%", uint32(pageSize), nextToken1)
-	require.NoError(t, err)
-	require.Equal(t, pageSize, len(tables2))
-	require.Empty(t, nextToken2)
-
-	// Test with page size 0
-	tables, nextToken, err := infoSchema.All(ctx, "%ba%", 0, "")
-	require.NoError(t, err)
-	require.Equal(t, 2, len(tables))
-	require.Empty(t, nextToken)
-
-	// Test with page size larger than total results
-	tables, nextToken, err = infoSchema.All(ctx, "%ba%", 1000, "")
-	require.NoError(t, err)
-	require.Equal(t, 2, len(tables))
-	require.Empty(t, nextToken)
-}
-
-func testInformationSchemaListDatabaseSchemas(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
-	databaseSchemaInfo, _, err := infoSchema.ListDatabaseSchemas(ctx, 0, "")
-	require.NoError(t, err)
-	require.Equal(t, 3, len(databaseSchemaInfo))
-
-	require.Equal(t, "", databaseSchemaInfo[0].Database)
-	require.Equal(t, "clickhouse", databaseSchemaInfo[0].DatabaseSchema)
-	require.Equal(t, "", databaseSchemaInfo[1].Database)
-	require.Equal(t, "default", databaseSchemaInfo[1].DatabaseSchema)
-	require.Equal(t, "", databaseSchemaInfo[2].Database)
-	require.Equal(t, "other", databaseSchemaInfo[2].DatabaseSchema)
-}
-
-func testInformationSchemaListTables(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
-	tables, _, err := infoSchema.ListTables(ctx, "", "default", 0, "")
-	require.NoError(t, err)
-	require.Equal(t, len(tables), 3)
-
-	require.Equal(t, "bar", tables[0].Name)
-	require.Equal(t, false, tables[0].View)
-	require.Equal(t, "foo", tables[1].Name)
-	require.Equal(t, false, tables[1].View)
-	require.Equal(t, "model", tables[2].Name)
-	require.Equal(t, true, tables[2].View)
-
-	for _, tbl := range tables {
-		require.True(t, tbl.IsDefaultDatabase)
-		require.True(t, tbl.IsDefaultDatabaseSchema)
-		require.Equal(t, "", tbl.Database)
-		require.Equal(t, "default", tbl.DatabaseSchema)
-	}
-
-	tables, _, err = infoSchema.ListTables(ctx, "", "other", 0, "")
-	require.NoError(t, err)
-	require.Equal(t, len(tables), 2)
-
-	require.Equal(t, "bar", tables[0].Name)
-	require.Equal(t, false, tables[0].View)
-	require.Equal(t, "foo", tables[1].Name)
-	require.Equal(t, false, tables[1].View)
-
-	for _, tbl := range tables {
-		require.True(t, tbl.IsDefaultDatabase)
-		require.False(t, tbl.IsDefaultDatabaseSchema)
-		require.Equal(t, "", tbl.Database)
-		require.Equal(t, "other", tbl.DatabaseSchema)
-	}
-}
-
-func testInformationSchemaListDatabaseSchemasPagination(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
-	pageSize := 2
-
-	// First page
-	page1, token1, err := infoSchema.ListDatabaseSchemas(ctx, uint32(pageSize), "")
-	require.NoError(t, err)
-	require.Len(t, page1, pageSize)
-	require.NotEmpty(t, token1)
-
-	// second page
-	page2, token2, err := infoSchema.ListDatabaseSchemas(ctx, uint32(pageSize), token1)
-	require.NoError(t, err)
-	require.NotEmpty(t, page2)
-	require.Empty(t, token2)
-
-	// Page size 0
-	all, token, err := infoSchema.ListDatabaseSchemas(ctx, 0, "")
-	require.NoError(t, err)
-	require.Equal(t, len(all), 3)
-	require.Empty(t, token)
-}
-
-func testInformationSchemaListTablesPagination(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
-	pageSize := 2
-
-	// First page
-	page1, token1, err := infoSchema.ListTables(ctx, "", "default", uint32(pageSize), "")
-	require.NoError(t, err)
-	require.Len(t, page1, pageSize)
-	require.NotEmpty(t, token1)
-
-	// Second page
-	page2, token2, err := infoSchema.ListTables(ctx, "", "default", uint32(pageSize), token1)
-	require.NoError(t, err)
-	require.NotEmpty(t, page2)
-	require.Empty(t, token2)
-
-	// Page size 0
-	all, token, err := infoSchema.ListTables(ctx, "", "default", 0, "")
-	require.NoError(t, err)
-	require.GreaterOrEqual(t, len(all), 3)
-	require.Empty(t, token)
 }
 
 func testLoadDDL(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {

@@ -23,11 +23,11 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	return []*drivers.DatabaseSchemaInfo{{Database: "", DatabaseSchema: "druid"}}, "", nil
 }
 
-func (c *connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+func (c *connection) ListTables(ctx context.Context, _, _, _ string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
 	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 
 	var filter string
-	args := []any{databaseSchema}
+	args := []any{}
 	if pageToken != "" {
 		var startAfter string
 		if err := pagination.UnmarshalPageToken(pageToken, &startAfter); err != nil {
@@ -42,7 +42,7 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 		TABLE_NAME,
 		TABLE_TYPE = 'VIEW' AS view
 	FROM INFORMATION_SCHEMA.TABLES
-	WHERE TABLE_SCHEMA = ? %s
+	WHERE TABLE_SCHEMA = "druid" %s
 	ORDER BY TABLE_NAME 
 	LIMIT %d
 	`, filter, limit+1)
@@ -62,7 +62,7 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 		}
 		res = append(res, &drivers.TableInfo{
 			Database:                "",
-			DatabaseSchema:          databaseSchema,
+			DatabaseSchema:          "druid",
 			Name:                    name,
 			View:                    typ,
 			IsDefaultDatabase:       true,
@@ -82,69 +82,7 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	return res, next, nil
 }
 
-func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
-	var filter string
-	var args []any
-	if like != "" {
-		filter = " AND LOWER(T.TABLE_NAME) LIKE LOWER(?)"
-		args = []any{like}
-	}
-
-	// Add pagination clause
-	if pageToken != "" {
-		var startAfterName string
-		if err := pagination.UnmarshalPageToken(pageToken, &startAfterName); err != nil {
-			return nil, "", fmt.Errorf("invalid page token: %w", err)
-		}
-		filter += " AND T.TABLE_NAME > ?"
-		args = append(args, startAfterName)
-	}
-	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
-
-	q := fmt.Sprintf(`
-		SELECT
-			LT.TABLE_SCHEMA AS SCHEMA,
-			LT.TABLE_NAME AS NAME,
-			LT.TABLE_TYPE AS TABLE_TYPE, 
-			C.COLUMN_NAME AS COLUMNS,
-			C.DATA_TYPE AS COLUMN_TYPE,
-			C.IS_NULLABLE = 'YES' AS IS_NULLABLE
-		FROM (
-			SELECT
-				T.TABLE_SCHEMA,
-				T.TABLE_NAME,
-				T.TABLE_TYPE
-			FROM INFORMATION_SCHEMA.TABLES T
-			WHERE T.TABLE_SCHEMA = 'druid' %s
-			ORDER BY TABLE_SCHEMA, TABLE_NAME, TABLE_TYPE
-			LIMIT %d
-		) LT
-		JOIN INFORMATION_SCHEMA.COLUMNS C ON LT.TABLE_SCHEMA = C.TABLE_SCHEMA AND LT.TABLE_NAME = C.TABLE_NAME		
-		ORDER BY SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
-	`, filter, (limit + 1))
-
-	rows, err := c.db.QueryxContext(ctx, q, args...)
-	if err != nil {
-		return nil, "", err
-	}
-	defer rows.Close()
-
-	tables, err := scanTables(rows)
-	if err != nil {
-		return nil, "", err
-	}
-
-	next := ""
-	if len(tables) > limit {
-		tables = tables[:limit]
-		lastTable := tables[len(tables)-1]
-		next = pagination.MarshalPageToken(lastTable.Name)
-	}
-
-	return tables, next, nil
-}
-
-func (c *connection) Lookup(ctx context.Context, database, databaseSchema, table string) (*drivers.TableInfo, error) {
+func (c *connection) Lookup(ctx context.Context, _, _, table string) (*drivers.TableInfo, error) {
 	// Ensure Coordinator is ready.
 	// The issues is that the request
 	//	SELECT ...
@@ -164,7 +102,6 @@ func (c *connection) Lookup(ctx context.Context, database, databaseSchema, table
 
 	q = `
 		SELECT
-			T.TABLE_SCHEMA AS SCHEMA,
 			T.TABLE_NAME AS NAME,
 			T.TABLE_TYPE AS TABLE_TYPE,
 			C.COLUMN_NAME AS COLUMN_NAME,
@@ -237,14 +174,13 @@ func scanTables(rows *sqlx.Rows) ([]*drivers.TableInfo, error) {
 	var res []*drivers.TableInfo
 
 	for rows.Next() {
-		var schema string
 		var name string
 		var tableType string
 		var columnName string
 		var columnType string
 		var nullable bool
 
-		err := rows.Scan(&schema, &name, &tableType, &columnName, &columnType, &nullable)
+		err := rows.Scan(&name, &tableType, &columnName, &columnType, &nullable)
 		if err != nil {
 			return nil, err
 		}
@@ -253,13 +189,15 @@ func scanTables(rows *sqlx.Rows) ([]*drivers.TableInfo, error) {
 		var t *drivers.TableInfo
 		if len(res) > 0 {
 			t = res[len(res)-1]
-			if !(t.DatabaseSchema == schema && t.Name == name) {
+			if !(t.Name == name) {
 				t = nil
 			}
 		}
 		if t == nil {
 			t = &drivers.TableInfo{
-				DatabaseSchema:          schema,
+				Database:                "",
+				DatabaseSchema:          "druid",
+				IsDefaultDatabase:       true,
 				IsDefaultDatabaseSchema: true,
 				Name:                    name,
 				Schema:                  &runtimev1.StructType{},

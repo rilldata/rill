@@ -79,7 +79,7 @@ func (s *Server) OLAPListTables(ctx context.Context, req *runtimev1.OLAPListTabl
 	defer release()
 
 	i := olap.InformationSchema()
-	tables, next, err := i.All(ctx, req.SearchPattern, req.PageSize, req.PageToken)
+	tables, next, err := i.ListTables(ctx, "", "", req.SearchPattern, req.PageSize, req.PageToken)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +144,7 @@ func (s *Server) ListTables(ctx context.Context, req *runtimev1.ListTablesReques
 		return nil, fmt.Errorf("connector %q does not implement information schema", req.Connector)
 	}
 
-	items, next, err := is.ListTables(ctx, req.Database, req.DatabaseSchema, req.PageSize, req.PageToken)
+	items, next, err := is.ListTables(ctx, req.Database, req.DatabaseSchema, "", req.PageSize, req.PageToken)
 	if err != nil {
 		return nil, err
 	}

@@ -75,7 +75,7 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 
 // ListTables returns a list of tables in a specific database schema.
 // database parameter = catalog, databaseSchema parameter = database
-func (c *connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+func (c *connection) ListTables(ctx context.Context, database, databaseSchema, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
 	db := c.db
 
 	// StarRocks mapping: database parameter = catalog
@@ -131,84 +131,6 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 			DatabaseSchema:          dbSchema,
 			IsDefaultDatabase:       false, // Because StarRocks uses fully qualified names (catalog.database_schema.tables)
 			IsDefaultDatabaseSchema: false, // Because StarRocks uses fully qualified names (catalog.database_schema.tables)
-		})
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, "", err
-	}
-
-	// Handle pagination
-	var nextToken string
-	if pageSize > 0 && uint32(len(tables)) > pageSize {
-		tables = tables[:pageSize]
-		nextToken = tables[len(tables)-1].Name
-	}
-
-	return tables, nextToken, nil
-}
-
-// All returns metadata about all tables and views.
-// For StarRocks, we query from the configured catalog's information_schema.
-func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
-	db := c.db
-
-	catalog := c.configProp.Catalog
-
-	// Build query using fully qualified information_schema path
-	// Pattern: catalog.information_schema.tables
-	q := fmt.Sprintf(`
-		SELECT
-			table_schema,
-			table_name,
-			CASE
-				WHEN table_type = 'VIEW' THEN true
-				WHEN table_type = 'MATERIALIZED VIEW' THEN true
-				ELSE false
-			END AS is_view
-		FROM %s.information_schema.tables
-		WHERE table_schema NOT IN ('information_schema', '_statistics_', 'mysql', 'sys')
-	`, safeSQLName(catalog))
-
-	args := []any{}
-
-	if like != "" {
-		q += " AND table_name LIKE ?"
-		args = append(args, like)
-	}
-
-	if pageToken != "" {
-		q += " AND table_name > ?"
-		args = append(args, pageToken)
-	}
-
-	q += " ORDER BY table_schema, table_name"
-
-	if pageSize > 0 {
-		q += fmt.Sprintf(" LIMIT %d", pageSize+1)
-	}
-
-	rows, err := db.QueryxContext(ctx, q, args...)
-	if err != nil {
-		return nil, "", err
-	}
-	defer rows.Close()
-
-	var tables []*drivers.TableInfo
-	for rows.Next() {
-		var schema, name string
-		var isView bool
-		if err := rows.Scan(&schema, &name, &isView); err != nil {
-			return nil, "", err
-		}
-
-		tables = append(tables, &drivers.TableInfo{
-			Database:                catalog, // StarRocks catalog -> Rill database
-			DatabaseSchema:          schema,  // StarRocks database -> Rill databaseSchema
-			IsDefaultDatabase:       false,   // Because StarRocks uses fully qualified names (catalog.database_schema.tables)
-			IsDefaultDatabaseSchema: false,   // Because StarRocks uses fully qualified names (catalog.database_schema.tables)
-			Name:                    name,
-			View:                    isView,
 		})
 	}
 

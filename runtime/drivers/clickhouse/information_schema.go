@@ -88,7 +88,7 @@ func (c *Connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	return res, next, nil
 }
 
-func (c *Connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+func (c *Connection) ListTables(ctx context.Context, database, databaseSchema, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
 	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 
 	q := `
@@ -153,94 +153,6 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 		next = pagination.MarshalPageToken(res[len(res)-1].Name)
 	}
 	return res, next, nil
-}
-
-func (c *Connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
-	conn, release, err := c.acquireMetaConn(ctx)
-	if err != nil {
-		return nil, "", err
-	}
-	defer func() { _ = release() }()
-	var args []any
-	var filter string
-	if c.config.DatabaseWhitelist != "" {
-		dbs := strings.Split(c.config.DatabaseWhitelist, ",")
-		var sb strings.Builder
-		for i, db := range dbs {
-			if i > 0 {
-				sb.WriteString(", ")
-			}
-			sb.WriteString("?")
-			args = append(args, strings.TrimSpace(db))
-		}
-		filter = fmt.Sprintf("(T.database IN (%s))", sb.String())
-	} else {
-		filter = "(T.database == currentDatabase() OR lower(T.database) NOT IN ('information_schema', 'system'))"
-	}
-
-	if like != "" {
-		filter += " AND (LOWER(T.name) LIKE LOWER(?) OR CONCAT(T.database, '.', T.name) LIKE LOWER(?))"
-		args = append(args, like, like)
-	}
-
-	if pageToken != "" {
-		var startAfterSchema, startAfterName string
-		if err := pagination.UnmarshalPageToken(pageToken, &startAfterSchema, &startAfterName); err != nil {
-			return nil, "", fmt.Errorf("invalid page token: %w", err)
-		}
-		filter += " AND (T.database > ? OR (T.database = ? AND T.name > ?))"
-		args = append(args, startAfterSchema, startAfterSchema, startAfterName)
-	}
-
-	// Clickhouse does not have a concept of schemas. Both table_catalog and table_schema refer to the database where table is located.
-	// Given the usual way of querying table in clickhouse is `SELECT * FROM table_name` or `SELECT * FROM database.table_name`.
-	// We map clickhouse database to `database schema` and table_name to `table name`.
-	q := fmt.Sprintf(`
-		SELECT 
-			LT.database AS SCHEMA,
-			LT.database = currentDatabase() AS is_default_schema,
-			LT.name AS NAME,
-			if(lower(LT.engine) like '%%view%%', 'VIEW', 'TABLE') AS TABLE_TYPE,
-			C.name AS COLUMNS,
-			C.type AS COLUMN_TYPE,
-			C.position AS ORDINAL_POSITION
-		FROM (
-			SELECT 
-				T.database,
-				T.name,
-				T.engine
-			FROM system.tables T
-			-- allow fetching tables from system or information_schema if it is current database
-			WHERE %s
-			ORDER BY database, name, engine
-			LIMIT ?
-		) LT
-		JOIN system.columns C ON LT.database = C.database AND LT.name = C.table
-		ORDER BY SCHEMA, NAME, TABLE_TYPE, ORDINAL_POSITION
-	`, filter)
-
-	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
-	args = append(args, limit+1)
-
-	rows, err := conn.QueryxContext(ctx, q, args...)
-	if err != nil {
-		return nil, "", err
-	}
-	defer rows.Close()
-
-	tables, err := scanTables(rows)
-	if err != nil {
-		return nil, "", err
-	}
-
-	next := ""
-	if len(tables) > limit {
-		tables = tables[:limit]
-		lastTable := tables[len(tables)-1]
-		next = pagination.MarshalPageToken(lastTable.DatabaseSchema, lastTable.Name)
-	}
-
-	return tables, next, nil
 }
 
 func (c *Connection) Lookup(ctx context.Context, database, databaseSchema, table string) (*drivers.TableInfo, error) {

@@ -6,10 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"regexp"
 	"sort"
 	"strconv"
-	"strings"
 
 	"github.com/c2h5oh/datasize"
 	"github.com/jmoiron/sqlx"
@@ -73,7 +71,7 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	return result, next, nil
 }
 
-func (c *connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+func (c *connection) ListTables(ctx context.Context, database, databaseSchema, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.schemaURL+"/tables", http.NoBody)
 	for k, v := range c.headers {
 		req.Header.Set(k, v)
@@ -125,104 +123,6 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 		next = strconv.Itoa(endIndex)
 	}
 	return result, next, nil
-}
-
-func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
-	// query /tables endpoint, for each table name, query /tables/{tableName}/schema
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.schemaURL+"/tables", http.NoBody)
-	for k, v := range c.headers {
-		req.Header.Set(k, v)
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, "", fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}
-
-	var tablesResp pinotTables
-	err = json.NewDecoder(resp.Body).Decode(&tablesResp)
-	if err != nil {
-		return nil, "", err
-	}
-
-	// Sort the tables alphabetically required for pagination
-	sort.Strings(tablesResp.Tables)
-
-	// Poor man's conversion of a SQL ILIKE pattern to a Go regexp.
-	var likeRegexp *regexp.Regexp
-	if like != "" {
-		likeRegexp, err = regexp.Compile(fmt.Sprintf("(?i)^%s$", strings.ReplaceAll(like, "%", ".*")))
-		if err != nil {
-			return nil, "", fmt.Errorf("failed to convert like pattern to regexp: %w", err)
-		}
-	}
-
-	// Filter table names first
-	filteredTables := make([]string, 0)
-	for _, tableName := range tablesResp.Tables {
-		if likeRegexp != nil && !likeRegexp.MatchString(tableName) {
-			continue
-		}
-		filteredTables = append(filteredTables, tableName)
-	}
-
-	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
-	startIndex := 0
-
-	if pageToken != "" {
-		var err error
-		startIndex, err = strconv.Atoi(pageToken)
-		if err != nil {
-			return nil, "", fmt.Errorf("invalid page token: %w", err)
-		}
-	}
-
-	endIndex := startIndex + limit
-	if endIndex >= len(filteredTables) {
-		endIndex = len(filteredTables)
-	}
-
-	if startIndex >= len(filteredTables) {
-		return []*drivers.TableInfo{}, "", nil
-	}
-
-	paginatedTables := filteredTables[startIndex:endIndex]
-
-	tables := make([]*drivers.TableInfo, len(paginatedTables))
-	// fetch table schemas in parallel with concurrency of 5
-	g, ctx := errgroup.WithContext(ctx)
-	g.SetLimit(5)
-	for i, tableName := range paginatedTables {
-		i := i
-		tableName := tableName
-		g.Go(func() error {
-			table, err := c.Lookup(ctx, "", "", tableName)
-			if err != nil {
-				fmt.Printf("Error fetching schema for table %s: %v\n", tableName, err)
-				return nil
-			}
-			tables[i] = table
-			return nil
-		})
-	}
-	if err := g.Wait(); err != nil {
-		return nil, "", err
-	}
-	sort.Slice(tables, func(i, j int) bool {
-		return tables[i].Name < tables[j].Name
-	})
-
-	next := ""
-	if endIndex < len(filteredTables) {
-		next = strconv.Itoa(endIndex)
-	}
-
-	return tables, next, nil
 }
 
 func (c *connection) Lookup(ctx context.Context, database, databaseSchema, table string) (*drivers.TableInfo, error) {
