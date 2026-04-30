@@ -48,18 +48,28 @@
 
   const cloudCta = "Publish project to use this feature";
 
-  const exploreCloudFeatures = [
-    { label: "AI" },
-    { label: "Home bookmark", icon: HomeBookmark },
-    { label: "Bookmark", icon: BookmarkIcon },
-    { label: "Alert", icon: BellPlusIcon },
+  type CloudFeature = {
+    label: string;
+    icon?: typeof HomeBookmark;
+    compact?: boolean;
+    square?: boolean;
+  };
+
+  // All disabled cloud-feature buttons are square 28x28 for visual
+  // consistency. Share stays as a plain text button since "Share"
+  // doesn't fit a 28x28 box.
+  const exploreCloudFeatures: CloudFeature[] = [
+    { label: "AI", compact: true, square: true },
+    { label: "Home bookmark", icon: HomeBookmark, compact: true, square: true },
+    { label: "Bookmark", icon: BookmarkIcon, compact: true, square: true },
+    { label: "Alert", icon: BellPlusIcon, compact: true, square: true },
     { label: "Share" },
   ];
 
-  const canvasCloudFeatures = [
-    { label: "AI" },
-    { label: "Home bookmark", icon: HomeBookmark },
-    { label: "Bookmark", icon: BookmarkIcon },
+  const canvasCloudFeatures: CloudFeature[] = [
+    { label: "AI", compact: true, square: true },
+    { label: "Home bookmark", icon: HomeBookmark, compact: true, square: true },
+    { label: "Bookmark", icon: BookmarkIcon, compact: true, square: true },
     { label: "Share" },
   ];
 
@@ -239,15 +249,15 @@
           {#if $dimensionSearch && ready}
             <GlobalDimensionSearch />
           {/if}
-          {#each exploreCloudFeatures as { label, icon } (label)}
+          {#each exploreCloudFeatures as { label, icon, compact, square } (label)}
             <Tooltip distance={8}>
-              {#if icon}
-                <Button type="secondary" compact square disabled {label}>
-                  <svelte:component this={icon} size="16" />
-                </Button>
-              {:else}
-                <Button type="secondary" disabled>{label}</Button>
-              {/if}
+              <Button type="secondary" {compact} {square} disabled {label}>
+                {#if icon}
+                  <svelte:component this={icon} size="16px" class="flex-none" />
+                {:else}
+                  {label}
+                {/if}
+              </Button>
               <TooltipContent slot="tooltip-content" maxWidth="240px">
                 <span class="text-xs">{cloudCta}</span>
               </TooltipContent>
@@ -256,11 +266,11 @@
         </StateManagersProvider>
       {/key}
     {:else if onEditCanvas}
-      {#each canvasCloudFeatures as { label, icon } (label)}
+      {#each canvasCloudFeatures as { label, icon, compact, square } (label)}
         <Tooltip distance={8}>
-          <Button type="secondary" disabled aria-label={label}>
+          <Button type="secondary" {compact} {square} disabled {label}>
             {#if icon}
-              <svelte:component this={icon} size="16" />
+              <svelte:component this={icon} size="16px" class="flex-none" />
             {:else}
               {label}
             {/if}
