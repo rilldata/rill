@@ -520,7 +520,7 @@ func (r *repo) CommitAndPush(ctx context.Context, message string, force bool) er
 		return fmt.Errorf("commits are not supported for this repo type")
 	}
 
-	_, err = r.git.commitToDefaultBranch(ctx, message, force)
+	err = r.git.commitToDefaultBranch(ctx, message, force)
 	if err != nil {
 		return err
 	}
@@ -534,7 +534,7 @@ func (r *repo) RestoreCommit(ctx context.Context, commitSHA string) (string, err
 
 // MergeToBranch implements drivers.RepoStore.
 func (r *repo) MergeToBranch(ctx context.Context, branch string, force bool) error {
-	return drivers.ErrNotImplemented
+	return r.git.mergeToBranch(ctx, branch, force)
 }
 
 // CommitHash implements drivers.RepoStore.
@@ -589,7 +589,7 @@ func (r *repo) close() error {
 	}
 
 	if r.git != nil && r.git.editable() {
-		_, err := r.git.commitToDefaultBranch(ctx, "Checkpoint commit", false)
+		err := r.git.commitToDefaultBranch(ctx, "Checkpoint commit", false)
 		if err != nil {
 			return fmt.Errorf("close failed: could not commit to edit branch: %w", err)
 		}

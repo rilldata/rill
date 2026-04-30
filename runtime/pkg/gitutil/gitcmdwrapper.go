@@ -7,7 +7,7 @@ import (
 )
 
 // MergeWithStrategy merge a branch into the current branch using the specified strategy.
-func MergeWithStrategy(path, branch string, strategy string) error {
+func MergeWithStrategy(path, branch, strategy string) error {
 	var args []string
 	switch strategy {
 	case "theirs":
