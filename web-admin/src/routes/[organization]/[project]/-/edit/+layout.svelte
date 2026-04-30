@@ -220,7 +220,9 @@
               <div class="flex-1 overflow-hidden">
                 <slot />
               </div>
-              <DeveloperChat />
+              {#if !previewMode}
+                <DeveloperChat />
+              {/if}
             </section>
           </div>
         </FileAndResourceWatcher>
