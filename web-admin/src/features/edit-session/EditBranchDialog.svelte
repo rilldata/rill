@@ -220,7 +220,7 @@
             <Select.Trigger
               class="flex h-[30px] w-full items-center justify-between gap-2 rounded-[2px] border-gray-300 bg-input px-2 text-left"
             >
-              <span class="flex min-w-0 flex-1 items-center gap-2 leading-none">
+              <div class="flex min-w-0 flex-1 items-center gap-2">
                 <GitBranchIcon size="14" class="shrink-0 text-fg-muted" />
                 <span class="truncate font-mono text-sm text-fg-primary">
                   {selectedDeployment?.branch ?? sourceBranch}
@@ -232,7 +232,7 @@
                     latest
                   </span>
                 {/if}
-              </span>
+              </div>
             </Select.Trigger>
             <Select.Content sameWidth class="max-h-[280px] overflow-y-auto">
               {#each ownDeployments as deployment (deployment.id)}
