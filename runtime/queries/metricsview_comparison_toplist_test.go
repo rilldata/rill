@@ -1233,8 +1233,23 @@ func testMetricsViewsComparisonStarRocks_null_dim_values(t *testing.T, rt *runti
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
-	require.NotEmpty(t, q.Result)
-	require.True(t, hasNullDimensionValue(q.Result.Rows), "expected at least one row with NULL dimension value")
+	expected := []struct {
+		dim  any
+		base float64
+		cmp  float64
+	}{
+		{"Google", 3.2530, 2.5825},
+		{"Yahoo", 3.2528, 2.5814},
+		{nil, 3.0000, 3.0056},
+		{"Facebook", 2.8204, 3.1339},
+		{"Microsoft", 1.5083, 3.6072},
+	}
+	require.Len(t, q.Result.Rows, len(expected))
+	for i, want := range expected {
+		require.Equal(t, want.dim, q.Result.Rows[i].DimensionValue.AsInterface(), "row %d dimension", i)
+		require.InDelta(t, want.base, q.Result.Rows[i].MeasureValues[0].BaseValue.GetNumberValue(), 0.001, "row %d base", i)
+		require.InDelta(t, want.cmp, q.Result.Rows[i].MeasureValues[0].ComparisonValue.GetNumberValue(), 0.001, "row %d comparison", i)
+	}
 }
 
 // adBidsTimeRange resolves the full time range for the ad_bids table and
@@ -1309,18 +1324,23 @@ func testMetricsViewsComparison_null_dim_values(t *testing.T, rt *runtime.Runtim
 
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
-	require.NotEmpty(t, q.Result)
-	require.True(t, hasNullDimensionValue(q.Result.Rows), "expected at least one row with NULL dimension value")
-}
-
-// hasNullDimensionValue reports whether any row's dimension value is NULL.
-func hasNullDimensionValue(rows []*runtimev1.MetricsViewComparisonRow) bool {
-	for _, row := range rows {
-		if _, ok := row.DimensionValue.GetKind().(*structpb.Value_NullValue); ok {
-			return true
-		}
+	expected := []struct {
+		dim  any
+		base float64
+		cmp  float64
+	}{
+		{"Google", 3.2530, 2.5825},
+		{"Yahoo", 3.2528, 2.5814},
+		{nil, 3.0000, 3.0056},
+		{"Facebook", 2.8204, 3.1339},
+		{"Microsoft", 1.5083, 3.6072},
 	}
-	return false
+	require.Len(t, q.Result.Rows, len(expected))
+	for i, want := range expected {
+		require.Equal(t, want.dim, q.Result.Rows[i].DimensionValue.AsInterface(), "row %d dimension", i)
+		require.InDelta(t, want.base, q.Result.Rows[i].MeasureValues[0].BaseValue.GetNumberValue(), 0.001, "row %d base", i)
+		require.InDelta(t, want.cmp, q.Result.Rows[i].MeasureValues[0].ComparisonValue.GetNumberValue(), 0.001, "row %d comparison", i)
+	}
 }
 
 // snowflakeAdBidsTimeRange resolves the full time range for the Snowflake ad_bids table and
