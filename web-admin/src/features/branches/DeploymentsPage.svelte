@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     createAdminServiceGetProject,
+    createAdminServiceGetOrganization,
     createAdminServiceGetBillingSubscription,
     createAdminServiceListDeployments,
     type V1Deployment,
@@ -50,6 +51,23 @@
         isTeamPlan(planName) ||
         isEnterprisePlan(planName)),
   );
+
+  // Plans without per-unit billing visibility — Trial and Team get a flat
+  // allowance, so we hide cost estimates and surface the unit cap instead.
+  let hasCostVisibility = $derived(
+    !(isTrialPlan(planName) || isTeamPlan(planName)),
+  );
+
+  // Slot quotas come from the organization (set via plan defaults or sudo
+  // overrides). Negative or missing values mean no limit.
+  function quotaCap(value: number | undefined): number | undefined {
+    if (value === undefined || value < 0) return undefined;
+    return value;
+  }
+  let orgQuery = $derived(createAdminServiceGetOrganization(organization));
+  let orgQuotas = $derived($orgQuery.data?.organization?.quotas);
+  let maxSlotsPerDeployment = $derived(quotaCap(orgQuotas?.slotsPerDeployment));
+  let planTotalSlotsCap = $derived(quotaCap(orgQuotas?.slotsTotal));
 
   // Billing cycle dates
   let cycleStart = $derived(
@@ -104,6 +122,37 @@
   );
   let totalSlots = $derived(prodSlots + runningDevSlots);
 
+  // Per-modal max — clamps tier selection so the new total stays within
+  // planTotalSlotsCap. When the cap is unlimited or the dev modal has no
+  // active deployments, only the per-deployment cap applies.
+  function clampMax(
+    perDeploymentCap: number | undefined,
+    totalRemaining: number | undefined,
+  ): number | undefined {
+    if (perDeploymentCap === undefined) return totalRemaining;
+    if (totalRemaining === undefined) return perDeploymentCap;
+    return Math.max(0, Math.min(perDeploymentCap, totalRemaining));
+  }
+  let prodMaxSlots = $derived(
+    clampMax(
+      maxSlotsPerDeployment,
+      planTotalSlotsCap !== undefined
+        ? planTotalSlotsCap - runningDevSlots
+        : undefined,
+    ),
+  );
+  let devMaxSlots = $derived(
+    clampMax(
+      maxSlotsPerDeployment,
+      planTotalSlotsCap !== undefined && activeDevDeploymentCount > 0
+        ? Math.floor((planTotalSlotsCap - prodSlots) / activeDevDeploymentCount)
+        : undefined,
+    ),
+  );
+  let exceedsTotalCap = $derived(
+    planTotalSlotsCap !== undefined && totalSlots > planTotalSlotsCap,
+  );
+
   // Cluster info (split into number + unit for display)
   let prodMemory = $derived(prodSlots * 4);
   let prodCpu = $derived(prodSlots);
@@ -147,26 +196,36 @@
           <span class="text-fg-tertiary">&middot;</span>
           {runningDevSlots} development
         </span>
-      </div>
-
-      <div class="summary-divider"></div>
-
-      <div class="summary-panel">
-        <span class="summary-label">Est. hourly project cost</span>
-        <span class="summary-value text-fg-secondary"
-          >${totalHourlyCost}/hr</span
-        >
-        <span class="summary-breakdown-plain">
-          ${prodHourlyCost} prod + ${runningDevHourlyCost} dev
-        </span>
-        {#if cycleStart && cycleEnd}
-          <span class="summary-cycle">
-            Billing cycle: {formatCycleDate(cycleStart)} – {formatCycleDate(
-              cycleEnd,
-            )}
+        {#if planTotalSlotsCap !== undefined}
+          <span class="summary-cycle" class:summary-warning={exceedsTotalCap}>
+            Plan limit: {totalSlots} of {planTotalSlotsCap} units used
+            {#if exceedsTotalCap}
+              · over plan cap
+            {/if}
           </span>
         {/if}
       </div>
+
+      {#if hasCostVisibility}
+        <div class="summary-divider"></div>
+
+        <div class="summary-panel">
+          <span class="summary-label">Est. hourly project cost</span>
+          <span class="summary-value text-fg-secondary"
+            >${totalHourlyCost}/hr</span
+          >
+          <span class="summary-breakdown-plain">
+            ${prodHourlyCost} prod + ${runningDevHourlyCost} dev
+          </span>
+          {#if cycleStart && cycleEnd}
+            <span class="summary-cycle">
+              Billing cycle: {formatCycleDate(cycleStart)} – {formatCycleDate(
+                cycleEnd,
+              )}
+            </span>
+          {/if}
+        </div>
+      {/if}
     </div>
 
     <div class="section-grid">
@@ -198,10 +257,12 @@
               <span class="detail-label">Units</span>
               <span class="detail-value">{prodSlots}</span>
             </div>
-            <div class="detail-row">
-              <span class="detail-label">Est. cost</span>
-              <span class="detail-value-sm">~${prodHourlyCost}/hr</span>
-            </div>
+            {#if hasCostVisibility}
+              <div class="detail-row">
+                <span class="detail-label">Est. cost</span>
+                <span class="detail-value-sm">~${prodHourlyCost}/hr</span>
+              </div>
+            {/if}
           </div>
         </div>
       </div>
@@ -242,12 +303,14 @@
               <span class="detail-label">Active deployments</span>
               <span class="detail-value">{activeDevDeploymentCount}</span>
             </div>
-            <div class="detail-row">
-              <span class="detail-label">Est. cost</span>
-              <span class="detail-value-sm">
-                {runningDevSlots > 0 ? `~$${runningDevHourlyCost}/hr` : "—"}
-              </span>
-            </div>
+            {#if hasCostVisibility}
+              <div class="detail-row">
+                <span class="detail-label">Est. cost</span>
+                <span class="detail-value-sm">
+                  {runningDevSlots > 0 ? `~$${runningDevHourlyCost}/hr` : "—"}
+                </span>
+              </div>
+            {/if}
           </div>
           <p class="card-note">
             Changes apply to a running deployment after it is stopped and
@@ -264,6 +327,8 @@
     {project}
     currentSlots={prodSlots}
     title="Manage Prod Cluster Size"
+    maxSlots={prodMaxSlots}
+    showCost={hasCostVisibility}
   />
 
   <ManageSlotsModal
@@ -274,6 +339,8 @@
     title="Manage Dev Cluster Size"
     minSlots={0}
     slotType="dev"
+    maxSlots={devMaxSlots}
+    showCost={hasCostVisibility}
   />
 {/if}
 
@@ -313,6 +380,9 @@
   }
   .summary-cycle {
     @apply text-xs text-fg-tertiary;
+  }
+  .summary-warning {
+    @apply text-red-600 font-medium;
   }
   /* Breakdown cards */
   .section-grid {

@@ -29,7 +29,9 @@
     currentSlots,
     title = "Manage Cluster Size",
     minSlots = DEFAULT_MANAGED_SLOTS,
+    maxSlots,
     slotType = "prod",
+    showCost = true,
   }: {
     open?: boolean;
     organization: string;
@@ -37,7 +39,9 @@
     currentSlots: number;
     title?: string;
     minSlots?: number;
+    maxSlots?: number;
     slotType?: "prod" | "dev";
+    showCost?: boolean;
   } = $props();
 
   let selectedSlots = $state(0);
@@ -52,15 +56,23 @@
 
   const updateProject = createAdminServiceUpdateProject();
 
-  // Filter tiers to only show slots >= minimum
-  let availableTiers = $derived(SLOT_TIERS.filter((t) => t.slots >= minSlots));
+  // Filter tiers to only show slots within [minSlots, maxSlots].
+  let availableTiers = $derived(
+    SLOT_TIERS.filter(
+      (t) =>
+        t.slots >= minSlots && (maxSlots === undefined || t.slots <= maxSlots),
+    ),
+  );
 
   // Ensure the current slot count always appears in the popular list
   let popularSlotsWithExtras = $derived(
     (() => {
-      let slots = POPULAR_SLOTS.filter((s) => s >= minSlots);
+      let slots = POPULAR_SLOTS.filter(
+        (s) => s >= minSlots && (maxSlots === undefined || s <= maxSlots),
+      );
       if (
         currentSlots >= minSlots &&
+        (maxSlots === undefined || currentSlots <= maxSlots) &&
         !slots.includes(currentSlots) &&
         ALL_SLOTS.includes(currentSlots)
       ) {
@@ -110,9 +122,10 @@
     <Dialog.Header>
       <Dialog.Title>{title}</Dialog.Title>
       <Dialog.Description>
-        Choose the vCPU and memory allocation for your deployment. Monthly
-        estimates assume ~{HOURS_PER_MONTH} hours at ${SLOT_RATE_PER_HR}/unit/hr.{#if minSlots > 0}
-          Minimum {minSlots * 4}GiB / {minSlots}vCPU.{/if}
+        Choose the vCPU and memory allocation for your deployment.{#if showCost}
+          Monthly estimates assume ~{HOURS_PER_MONTH} hours at ${SLOT_RATE_PER_HR}/unit/hr.{/if}{#if minSlots > 0}
+          Minimum {minSlots * 4}GiB / {minSlots}vCPU.{/if}{#if maxSlots !== undefined}
+          Plan limit: up to {maxSlots * 4}GiB / {maxSlots}vCPU.{/if}
       </Dialog.Description>
     </Dialog.Header>
 
@@ -120,7 +133,9 @@
     <div class="tier-table">
       <div class="tier-header">
         <span class="tier-cell tier-cell-wide">Cluster Size</span>
-        <span class="tier-cell">Est. $/mo</span>
+        {#if showCost}
+          <span class="tier-cell">Est. $/mo</span>
+        {/if}
       </div>
       <div class="tier-list">
         {#each visibleTiers as tier}
@@ -144,8 +159,13 @@
               {#if tier.slots === minSlots}
                 <span class="min-badge">min</span>
               {/if}
+              {#if maxSlots !== undefined && tier.slots === maxSlots}
+                <span class="min-badge">max</span>
+              {/if}
             </span>
-            <span class="tier-cell">~${tier.rillBill.toLocaleString()}</span>
+            {#if showCost}
+              <span class="tier-cell">~${tier.rillBill.toLocaleString()}</span>
+            {/if}
           </button>
         {/each}
       </div>
@@ -160,18 +180,20 @@
       </p>
     {/if}
 
-    <!-- Hibernate CTA -->
-    <p class="hibernate-note">
-      Want to stop billing entirely?
-      <a
-        href="/{organization}/{project}/-/settings"
-        class="hibernate-link"
-        onclick={() => (open = false)}
-      >
-        Hibernate this project
-      </a>
-      from the project settings page.
-    </p>
+    {#if showCost}
+      <!-- Hibernate CTA -->
+      <p class="hibernate-note">
+        Want to stop billing entirely?
+        <a
+          href="/{organization}/{project}/-/settings"
+          class="hibernate-link"
+          onclick={() => (open = false)}
+        >
+          Hibernate this project
+        </a>
+        from the project settings page.
+      </p>
+    {/if}
 
     <div class="footer">
       <button class="cancel-btn" onclick={() => (open = false)}>
