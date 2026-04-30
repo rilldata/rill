@@ -405,7 +405,10 @@
             Contact us
           </button>
         {:else if currentPlan === "trial"}
-          <button class="subscribe-btn" onclick={handleUpgradeToPro}>
+          <button
+            class="subscribe-btn"
+            onclick={() => (upgradeDialogOpen = true)}
+          >
             Upgrade to Teams
           </button>
         {:else if currentPlan === "free"}
