@@ -239,13 +239,7 @@
           {#each exploreCloudFeatures as { label, icon } (label)}
             <Tooltip distance={8}>
               {#if icon}
-                <Button
-                  type="secondary"
-                  compact
-                  square
-                  disabled
-                  label={label}
-                >
+                <Button type="secondary" compact square disabled {label}>
                   <svelte:component this={icon} size="16" />
                 </Button>
               {:else}
