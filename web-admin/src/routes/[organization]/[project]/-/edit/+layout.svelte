@@ -34,6 +34,8 @@
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { onDestroy } from "svelte";
+  import { isProjectWelcomePage } from "@rilldata/web-admin/features/navigation/nav-utils.ts";
+  import WelcomeRedirector from "@rilldata/web-admin/features/welcome/project/WelcomeRedirector.svelte";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -152,6 +154,8 @@
 
   $: projectUrl = `/${organization}/${project}`;
 
+  $: inProjectWelcomePage = isProjectWelcomePage($page);
+
   // Invalidating this query refetches a fresh JWT; `runtimeClient.getJwt()`
   // reads the updated value on the next call. Branch must be part of the
   // key or the invalidation misses the branch-scoped cache entry.
@@ -214,14 +218,29 @@
     {#key `${runtimeHost}::${instanceId}`}
       <RuntimeProvider host={runtimeHost} {instanceId} {jwt}>
         <EditHeader {organization} {project} {projectPermissions} />
-        <EditSessionTimeoutBanner sessionStartedAt={deployment.createdOn} />
+        {#if !inProjectWelcomePage}
+          <ProjectHeader
+            {organization}
+            {project}
+            {projectPermissions}
+            manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
+            manageOrgMembers={organizationPermissions?.manageOrgMembers}
+            readProjects={organizationPermissions?.readProjects}
+            {primaryBranch}
+            {planDisplayName}
+            {organizationLogoUrl}
+            editContext={true}
+          />
+          <EditSessionTimeoutBanner sessionStartedAt={deployment.createdOn} />
+        {/if}
         <FileAndResourceWatcher
           lifecycle="none"
           {onBeforeReconnect}
           errorBody="Lost connection to the editing environment. Try ending the session and starting a new one."
         >
           <div class="flex flex-1 overflow-hidden">
-            {#if !previewMode}
+            {#if !inProjectWelcomePage || !previewMode}
+              <WelcomeRedirector />
               <Navigation showFooterLinks={false} />
             {/if}
             <section class="flex flex-1 overflow-hidden">

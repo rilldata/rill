@@ -213,7 +213,9 @@ func (d *dialect) SelectInlineResults(result *drivers.Result) (string, []any, []
 				return "", nil, nil, fmt.Errorf("select inline: failed to get argument expression: %w", err)
 			}
 			suffix += argExpr
-			args = append(args, argVal)
+			if argVal != nil {
+				args = append(args, argVal)
+			}
 		}
 		suffix += ")"
 		rows++
@@ -269,6 +271,9 @@ func (d *dialect) ColumnNumericHistogramBucket(db, dbSchema, table, column strin
 }
 
 func getArgExpr(val any, typ runtimev1.Type_Code) (string, any, error) {
+	if val == nil {
+		return "NULL", nil, nil
+	}
 	if typ == runtimev1.Type_CODE_DATE {
 		t, ok := val.(time.Time)
 		if !ok {

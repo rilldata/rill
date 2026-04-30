@@ -48,6 +48,16 @@ const ADMIN_ONLY_ALLOWLIST = [
   // parity check scans, so it can't be mirrored without colliding with the
   // existing local route.
   "/dashboards/+page.svelte",
+
+  // We have a layout at the root on rill-dev, not under subpath like (application)/(workspace)/ or (viz)/
+  "/+layout.ts",
+
+  // Welcome is under (misc) in local. There will be a future PR that moves them to root.
+  "/welcome/+layout.svelte",
+  "/welcome/+layout.ts",
+  "/welcome/+page.svelte",
+  "/welcome/add-data/+page.svelte",
+  "/welcome/add-data/+page.ts",
 ];
 
 function walkRoutes(absRoot) {
