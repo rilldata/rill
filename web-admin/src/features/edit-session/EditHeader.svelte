@@ -6,11 +6,14 @@
   } from "@rilldata/web-admin/features/branches/branch-utils";
   import EditActions from "@rilldata/web-admin/features/edit-session/EditActions.svelte";
   import { isEditPreviewRoute } from "@rilldata/web-admin/features/edit-session/edit-route-utils";
+  import { Button } from "@rilldata/web-common/components/button";
   import InputWithConfirm from "@rilldata/web-common/components/forms/InputWithConfirm.svelte";
   import BreadcrumbItem from "@rilldata/web-common/components/navigation/breadcrumbs/BreadcrumbItem.svelte";
   import Slash from "@rilldata/web-common/components/navigation/breadcrumbs/Slash.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
@@ -31,14 +34,12 @@
     createAdminServiceGetCurrentUser,
     type V1ProjectPermissions,
   } from "../../client";
-  import CreateAlert from "../alerts/CreateAlert.svelte";
   import AvatarButton from "../authentication/AvatarButton.svelte";
-  import CanvasBookmarks from "../bookmarks/CanvasBookmarks.svelte";
-  import ExploreBookmarks from "../bookmarks/ExploreBookmarks.svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
-  import ShareDashboardPopover from "../dashboards/share/ShareDashboardPopover.svelte";
   import ViewAsUserChip from "../view-as-user/ViewAsUserChip.svelte";
   import { viewAsUserStore } from "../view-as-user/viewAsUserStore";
+
+  const cloudCta = "Publish project to PROD to use rill cloud features";
 
   export let organization: string;
   export let project: string;
@@ -46,12 +47,7 @@
 
   const user = createAdminServiceGetCurrentUser();
   const runtimeClient = useRuntimeClient();
-  const {
-    alerts: alertsFlag,
-    dashboardChat,
-    developerChat,
-    dimensionSearch,
-  } = featureFlags;
+  const { developerChat, dimensionSearch } = featureFlags;
 
   $: activeBranch = extractBranchFromPath($page.url.pathname);
   $: previewMode = isEditPreviewRoute($page.url.pathname);
@@ -106,7 +102,6 @@
     enabled: !!runtimeClient.instanceId && !!dashboardName && onEditExplore,
   });
   $: exploreSpec = $exploreQuery.data?.explore?.explore?.state?.validSpec;
-  $: hasUserAccess = $user.isSuccess && !!$user.data?.user;
 
   // Editable project title (developer side). Mirrors the rill.yaml
   // display_name handling from web-local's ApplicationHeader.
@@ -222,37 +217,27 @@
           {#if $dimensionSearch && ready}
             <GlobalDimensionSearch />
           {/if}
-          {#if $dashboardChat}
-            <ChatToggle />
-          {/if}
-          {#if hasUserAccess}
-            <ExploreBookmarks
-              {organization}
-              {project}
-              metricsViewName={exploreSpec.metricsView}
-              exploreName={dashboardName}
-            />
-            {#if $alertsFlag}
-              <CreateAlert />
-            {/if}
-            <ShareDashboardPopover
-              createMagicAuthTokens={projectPermissions.createMagicAuthTokens}
-            />
-          {/if}
+          {#each ["AI", "Bookmark", "Alert", "Share"] as label (label)}
+            <Tooltip distance={8}>
+              <Button type="secondary" disabled>{label}</Button>
+              <TooltipContent slot="tooltip-content" maxWidth="240px">
+                <span class="text-xs">{cloudCta}</span>
+              </TooltipContent>
+            </Tooltip>
+          {/each}
         </StateManagersProvider>
       {/key}
     {:else if onEditCanvas}
-      {#if $dashboardChat}
-        <ChatToggle />
-      {/if}
-      {#if hasUserAccess}
-        <CanvasBookmarks {organization} {project} canvasName={dashboardName} />
-        <ShareDashboardPopover
-          createMagicAuthTokens={projectPermissions.createMagicAuthTokens}
-        />
-      {/if}
+      {#each ["AI", "Bookmark", "Share"] as label (label)}
+        <Tooltip distance={8}>
+          <Button type="secondary" disabled>{label}</Button>
+          <TooltipContent slot="tooltip-content" maxWidth="240px">
+            <span class="text-xs">{cloudCta}</span>
+          </TooltipContent>
+        </Tooltip>
+      {/each}
     {:else if $developerChat}
-      <ChatToggle />
+      <ChatToggle class="!bg-surface-base" />
     {/if}
   </div>
 </div>
