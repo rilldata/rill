@@ -189,12 +189,12 @@
   class="bg-surface-base flex items-center h-10 px-3 gap-x-2 border-b border-border"
 >
   {#if previewMode}
-    <nav class="flex gap-x-2 items-center shrink-0" data-testid="edit-home-nav">
+    <nav class="flex gap-x-2 items-center shrink-0">
       <ol class="flex flex-row items-center">
         <li class="flex items-center gap-x-2 px-2">
           <a
             href={previewHomeHref}
-            class="text-fg-primary hover:text-fg-accent text-sm flex flex-row items-center gap-x-2"
+            class="text-fg-muted hover:text-fg-secondary flex flex-row items-center gap-x-2"
           >
             <span>Home</span>
           </a>
@@ -238,13 +238,19 @@
           {/if}
           {#each exploreCloudFeatures as { label, icon } (label)}
             <Tooltip distance={8}>
-              <Button type="secondary" disabled aria-label={label}>
-                {#if icon}
+              {#if icon}
+                <Button
+                  type="secondary"
+                  compact
+                  square
+                  disabled
+                  label={label}
+                >
                   <svelte:component this={icon} size="16" />
-                {:else}
-                  {label}
-                {/if}
-              </Button>
+                </Button>
+              {:else}
+                <Button type="secondary" disabled>{label}</Button>
+              {/if}
               <TooltipContent slot="tooltip-content" maxWidth="240px">
                 <span class="text-xs">{cloudCta}</span>
               </TooltipContent>
