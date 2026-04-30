@@ -46,17 +46,18 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
-  import PlanCards from "@rilldata/web-admin/features/billing/plans/PlanCards.svelte";
   import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
   import { fetchPaymentsPortalURL } from "@rilldata/web-admin/features/billing/plans/selectors";
 
   let {
     organization,
     showUpgradeDialog,
+    billingPortalUrl,
     cancelOpen = $bindable(false),
   }: {
     organization: string;
     showUpgradeDialog: boolean;
+    billingPortalUrl: string | undefined;
     cancelOpen?: boolean;
   } = $props();
 
@@ -210,10 +211,20 @@
       STORAGE_RATE_PER_GB,
   );
 
-  // TODO: wire prod and dev compute accrued costs from the billing usage
-  // API once it exposes accrued dollar amounts. Today's computed projections
-  // (slots × list rate) are misleading next to real billed amounts, so the
-  // UI renders TODO placeholders until the backend data is available.
+  // Daily run-rate from the current configuration (units × list rate × 24h).
+  // Used as a placeholder until the billing usage API exposes accrued $ values.
+  const RATE_PER_UNIT_HR = 0.15;
+  const HOURS_PER_DAY = 24;
+  let prodDailyCost = $derived(prodSlots * RATE_PER_UNIT_HR * HOURS_PER_DAY);
+  let devDailyCost = $derived(devSlots * RATE_PER_UNIT_HR * HOURS_PER_DAY);
+  let dailyRunRate = $derived(prodDailyCost + devDailyCost);
+
+  // Pro plan credit + post-credit estimate. Available credit is hard-zero
+  // until the billing usage API exposes the remaining trial credit balance.
+  let proAvailableCredit = $derived(0);
+  let proEstimatedCost = $derived(
+    Math.max(dailyRunRate - proAvailableCredit, 0),
+  );
 
   // Billing cycle
   let cycleEnd = $derived(subscription?.currentBillingCycleEndDate);
@@ -239,12 +250,6 @@
       { month: "short", day: "numeric", year: "numeric" },
     );
   });
-
-  // Compare plans
-  let comparePlansOpen = $state(false);
-  let showComparePlans = $derived(
-    currentPlan !== "enterprise" && currentPlan !== "managed",
-  );
 
   // Upgrade dialog
   let upgradeDialogOpen = $state(false);
@@ -399,10 +404,32 @@
           <button class="contact-us-btn" onclick={handleContactSales}>
             Contact us
           </button>
-        {:else if currentPlan === "trial" || currentPlan === "free" || currentPlan === "team"}
+        {:else if currentPlan === "trial"}
+          <button class="subscribe-btn" onclick={handleUpgradeToPro}>
+            Upgrade to Teams
+          </button>
+        {:else if currentPlan === "free"}
           <button class="subscribe-btn" onclick={handleUpgradeToPro}>
             Upgrade to Pro
           </button>
+        {:else if (currentPlan === "pro" || currentPlan === "team") && billingPortalUrl}
+          <a
+            class="pricing-link-top"
+            href={billingPortalUrl}
+            target="_blank"
+            rel="noreferrer noopener"
+          >
+            View detailed usage
+            <svg
+              class="w-3 h-3"
+              viewBox="0 0 12 12"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+            >
+              <path d="M3 3h6v6M3 9l6-6" />
+            </svg>
+          </a>
         {/if}
       </div>
     </div>
@@ -449,6 +476,23 @@
           </span>
           <span class="text-xs text-fg-tertiary">30 days</span>
         </div>
+        <a
+          class="pricing-link"
+          href="https://www.rilldata.com/pricing"
+          target="_blank"
+          rel="noreferrer noopener"
+        >
+          See pricing details
+          <svg
+            class="w-3 h-3"
+            viewBox="0 0 12 12"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
+            <path d="M1 6h9M7.5 3l3 3-3 3" />
+          </svg>
+        </a>
       </div>
     {/if}
 
@@ -468,6 +512,23 @@
         <span class="text-xs text-fg-tertiary font-medium">
           {creditPercent}% used, projects will hibernate when credits run out.
         </span>
+        <a
+          class="pricing-link"
+          href="https://www.rilldata.com/pricing"
+          target="_blank"
+          rel="noreferrer noopener"
+        >
+          See pricing details
+          <svg
+            class="w-3 h-3"
+            viewBox="0 0 12 12"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
+            <path d="M1 6h9M7.5 3l3 3-3 3" />
+          </svg>
+        </a>
       </div>
     {/if}
 
@@ -477,14 +538,14 @@
         <div class="pro-stat-col">
           <span class="pro-stat-label">Current period estimate</span>
           <span class="pro-stat-amount text-fg-secondary"
-            >TODO: period total</span
+            >{fmtCredit(dailyRunRate)}</span
           >
           <span class="pro-stat-sub">{periodStart} – {periodEnd}</span>
         </div>
         <div class="pro-stat-col border-l pl-6">
           <span class="pro-stat-label">Available credit</span>
           <span class="pro-stat-amount text-green-700"
-            >TODO: available credit</span
+            >{fmtCredit(proAvailableCredit)}</span
           >
           <span class="credit-pill">
             <svg viewBox="0 0 12 12" fill="none" class="w-3 h-3 shrink-0">
@@ -503,7 +564,7 @@
           <span class="pro-stat-label">Estimated cost after applied credit</span
           >
           <span class="pro-stat-amount text-fg-primary"
-            >TODO: estimated cost</span
+            >{fmtCredit(proEstimatedCost)}</span
           >
           {#if dueDate}
             <span class="pro-stat-sub">Due {dueDate}</span>
@@ -512,7 +573,7 @@
       </div>
     {/if}
 
-    {#if currentPlan !== "enterprise" && currentPlan !== "managed" && currentPlan !== "team"}
+    {#if currentPlan === "free" || currentPlan === "pro"}
       <!-- Cost + usage row -->
       <!-- TODO: replace prod/dev dollar values with accrued costs once the
            billing usage API exposes them. Current values project from
@@ -521,11 +582,11 @@
       <div class="stats-row">
         <div class="flex items-center gap-4">
           <div class="stat-column">
-            <span class="stat-value">TODO: accrued prod cost</span>
+            <span class="stat-value">{fmtCredit(prodDailyCost)}</span>
             <span class="stat-label">{prodSlots} Prod Compute Units</span>
           </div>
           <div class="stat-column">
-            <span class="stat-value">TODO: accrued dev cost</span>
+            <span class="stat-value">{fmtCredit(devDailyCost)}</span>
             <span class="stat-label">{devSlots} Dev Compute Units</span>
           </div>
           <div class="stat-column">
@@ -547,54 +608,7 @@
             >
           </div>
         </div>
-        <a
-          href="/{organization}/-/settings/billing/usage"
-          class="view-usage-link"
-        >
-          View Usage
-          <svg
-            class="w-3 h-3"
-            viewBox="0 0 12 12"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.5"
-          >
-            <path d="M1 6h9M7.5 3l3 3-3 3" />
-          </svg>
-        </a>
       </div>
-    {/if}
-
-    <!-- Compare plans toggle -->
-    {#if showComparePlans}
-      <button
-        class="compare-toggle"
-        class:open={comparePlansOpen}
-        onclick={() => (comparePlansOpen = !comparePlansOpen)}
-      >
-        Compare plans
-        <svg
-          class="w-4 h-4 transition-transform"
-          class:rotate-180={!comparePlansOpen}
-          viewBox="0 0 16 16"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.5"
-        >
-          <path d="M4 10l4-4 4 4" />
-        </svg>
-      </button>
-
-      {#if comparePlansOpen}
-        <PlanCards
-          {organization}
-          {currentPlan}
-          {showUpgradeDialog}
-          {dialogType}
-          {renewEndDate}
-          onUpgradeToPro={handleUpgradeToPro}
-        />
-      {/if}
     {/if}
   </div>
 </section>
@@ -808,7 +822,7 @@
   }
 
   .trial-section {
-    @apply mt-4 pt-4 border-t;
+    @apply mt-4 pt-4 border-t flex flex-col;
   }
 
   .trial-bar-bg {
@@ -825,11 +839,21 @@
     padding: 12px 24px;
   }
 
-  .view-usage-link {
-    @apply flex items-center gap-1 text-sm font-medium text-primary-600 no-underline;
+  .pricing-link {
+    @apply mt-3 inline-flex items-center gap-1 self-end;
+    @apply text-xs font-medium text-primary-600 no-underline;
   }
 
-  .view-usage-link:hover {
+  .pricing-link:hover {
+    @apply underline;
+  }
+
+  .pricing-link-top {
+    @apply inline-flex items-center gap-1;
+    @apply text-sm font-medium text-primary-600 no-underline;
+  }
+
+  .pricing-link-top:hover {
     @apply underline;
   }
 
@@ -845,22 +869,5 @@
   .stat-label {
     @apply font-sans font-medium text-xs text-fg-tertiary;
     line-height: 100%;
-  }
-
-  .compare-toggle {
-    @apply flex items-center justify-center gap-1.5 text-sm font-medium text-fg-secondary cursor-pointer bg-transparent border-t border-l-0 border-r-0 border-b-0;
-    margin: 0 -24px -24px;
-    width: calc(100% + 48px);
-    padding: 12px 0;
-    border-radius: 0 0 12px 12px;
-  }
-
-  .compare-toggle.open {
-    margin-bottom: 0;
-    border-radius: 0;
-  }
-
-  .compare-toggle:hover {
-    @apply text-fg-primary;
   }
 </style>

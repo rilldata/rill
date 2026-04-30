@@ -22,6 +22,7 @@
 
   let organization = $derived(data.organization);
   let showUpgradeDialog = $derived(data.showUpgradeDialog);
+  let billingPortalUrl = $derived(data.billingPortalUrl);
   let subscriptionQuery = $derived(
     createAdminServiceGetBillingSubscription(organization),
   );
@@ -60,7 +61,12 @@
   <Spinner status={EntityStatus.Running} size="16px" />
 {:else}
   <div class="flex flex-col gap-8">
-    <Plan {organization} {showUpgradeDialog} bind:cancelOpen />
+    <Plan
+      {organization}
+      {showUpgradeDialog}
+      {billingPortalUrl}
+      bind:cancelOpen
+    />
     {#if !isEnterprise}
       <Payment {organization} />
     {/if}
