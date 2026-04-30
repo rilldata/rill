@@ -48,16 +48,16 @@
   const cloudCta = "Publish project to use this feature";
 
   const exploreCloudFeatures = [
-    { label: "AI", icon: Sparkles },
+    { label: "AI" },
     { label: "Bookmark", icon: BookmarkIcon },
     { label: "Alert", icon: BellPlusIcon },
-    { label: "Share", icon: Share2 },
+    { label: "Share" },
   ];
 
   const canvasCloudFeatures = [
-    { label: "AI", icon: Sparkles },
+    { label: "AI" },
     { label: "Bookmark", icon: BookmarkIcon },
-    { label: "Share", icon: Share2 },
+    { label: "Share" },
   ];
 
   export let organization: string;
@@ -239,7 +239,11 @@
           {#each exploreCloudFeatures as { label, icon } (label)}
             <Tooltip distance={8}>
               <Button type="secondary" disabled aria-label={label}>
-                <svelte:component this={icon} size="16" />
+                {#if icon}
+                  <svelte:component this={icon} size="16" />
+                {:else}
+                  {label}
+                {/if}
               </Button>
               <TooltipContent slot="tooltip-content" maxWidth="240px">
                 <span class="text-xs">{cloudCta}</span>
@@ -252,7 +256,11 @@
       {#each canvasCloudFeatures as { label, icon } (label)}
         <Tooltip distance={8}>
           <Button type="secondary" disabled aria-label={label}>
-            <svelte:component this={icon} size="16" />
+            {#if icon}
+              <svelte:component this={icon} size="16" />
+            {:else}
+              {label}
+            {/if}
           </Button>
           <TooltipContent slot="tooltip-content" maxWidth="240px">
             <span class="text-xs">{cloudCta}</span>
