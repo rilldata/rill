@@ -139,20 +139,26 @@
       class="!bg-surface-base"
     />
   {/if}
-  <div class="flex items-center gap-x-2 px-3">
-    <span class="text-fg-muted text-sm">{projectDisplayName}</span>
-    {#if activeBranch}
-      <Slash />
-      <div class="flex items-center gap-x-1.5">
-        <GitBranchIcon size="14" class="text-fg-primary" />
-        <span class="text-fg-primary text-sm font-medium">
-          {activeBranch.length > 12
-            ? activeBranch.slice(0, 11) + "…"
-            : activeBranch}
-        </span>
-      </div>
-    {/if}
-  </div>
+  <nav class="flex gap-x-2 items-center">
+    <ol class="flex flex-row items-center">
+      <li class="flex items-center gap-x-2 px-2">
+        <span class="text-fg-muted">{project}</span>
+      </li>
+      {#if activeBranch}
+        <Slash />
+        <li class="flex items-center gap-x-2 px-2">
+          <span
+            class="text-fg-primary font-medium flex flex-row items-center gap-x-2"
+          >
+            <GitBranchIcon size="14" class="text-fg-primary" />
+            {activeBranch.length > 12
+              ? activeBranch.slice(0, 11) + "…"
+              : activeBranch}
+          </span>
+        </li>
+      {/if}
+    </ol>
+  </nav>
 
   <div class="flex gap-x-2 items-center ml-auto">
     {#if previewMode && $viewAsUserStore}
