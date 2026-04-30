@@ -138,7 +138,7 @@
     <span
       class="inline-flex items-center h-7 px-2.5 rounded-md border border-border bg-surface-base text-fg-secondary text-sm font-medium"
     >
-      {previewMode ? "previewing" : "developing"}
+      {previewMode ? "Preview" : "Developer"}
     </span>
   {/if}
   <nav class="flex gap-x-2 items-center">
