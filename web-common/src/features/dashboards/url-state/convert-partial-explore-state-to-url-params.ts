@@ -300,9 +300,10 @@ function toExploreUrlParams(
     (value) => (value ? "true" : "false"),
   );
 
-  maybeSetParam(searchParams, partialExploreState, "forceLineChart", (value) =>
-    value ? "true" : "false",
-  );
+  if (partialExploreState.tdd?.chartType) {
+    const chartType = ToURLParamTDDChartMap[partialExploreState.tdd.chartType];
+    searchParams.set(ExploreStateURLParams.ChartType, chartType ?? "");
+  }
 
   return searchParams;
 }
@@ -379,10 +380,6 @@ function toTimeDimensionUrlParams(partialExploreState: Partial<ExploreState>) {
     partialExploreState,
     "dynamicYAxisScale",
     (value) => (value ? "true" : "false"),
-  );
-
-  maybeSetParam(searchParams, partialExploreState, "forceLineChart", (value) =>
-    value ? "true" : "false",
   );
 
   return searchParams;

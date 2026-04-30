@@ -106,7 +106,6 @@ export function convertPresetToExploreState(
   errors.push(...pivotErrors);
 
   partialExploreState.dynamicYAxisScale = preset.chartDynamicYAxis ?? false;
-  partialExploreState.forceLineChart = preset.chartForceLine ?? false;
 
   return { partialExploreState, errors };
 }
@@ -352,7 +351,10 @@ function fromTimeDimensionUrlParams(
       partialExploreState: {
         tdd: {
           expandedMeasureName: "",
-          chartType: TDDChart.DEFAULT,
+          chartType: preset.timeDimensionChartType
+            ? (FromURLParamTDDChartMap[preset.timeDimensionChartType] ??
+              TDDChart.DEFAULT)
+            : TDDChart.DEFAULT,
           pinIndex: -1,
         },
       },

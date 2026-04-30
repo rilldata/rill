@@ -8,7 +8,7 @@ import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
 import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
 import { getConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager.ts";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-import { goto } from "$app/navigation";
+import { navigateToHome } from "@rilldata/web-common/layout/navigation/editor-routing";
 
 export const generatingSampleData = writable(false);
 const PROJECT_INIT_TIMEOUT_MS = 10_000;
@@ -41,7 +41,7 @@ export async function generateSampleData(
       });
 
       await projectResetPromise;
-      await goto("/");
+      await navigateToHome();
       overlay.set(null);
     }
 

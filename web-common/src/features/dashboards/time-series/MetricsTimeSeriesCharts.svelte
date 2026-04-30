@@ -126,7 +126,6 @@
   $: comparisonDimension = $exploreState?.selectedComparisonDimension;
   $: showComparison = Boolean(showTimeComparison);
   $: tddChartType = $exploreState?.tdd?.chartType;
-  $: forceLineChart = $exploreState?.forceLineChart ?? false;
   $: dynamicYAxisScale = $exploreState?.dynamicYAxisScale ?? false;
 
   $: activeTimeGrain = selectedTimeRange?.interval;
@@ -259,28 +258,20 @@
 <svelte:window onclick={maybeClearMeasureSelection} />
 
 <div class="max-w-full h-fit flex flex-col max-h-full pr-2">
-  <div
-    class:mb-6={tddChartType !== TDDChart.DEFAULT}
-    class="flex items-center gap-x-1 px-2.5"
-  >
+  <div class="flex items-center gap-x-1 px-2.5">
     {#if showTimeDimensionDetail}
       <div class="flex justify-between w-full items-center py-2">
         <BackToExplore />
         <div class="flex items-center mr-4 gap-x-1">
           <ChartTypeSelector
-            hasComparison={Boolean(
-              showComparison || includedValuesForDimension.length,
-            )}
+            hasComparison={Boolean(includedValuesForDimension.length)}
             {exploreName}
             chartType={tddChartType}
           />
           <ChartSettingsMenu
             bind:connectNulls
-            {forceLineChart}
             {dynamicYAxisScale}
-            showForceLineChart={false}
-            onForceLineChartChange={(v) =>
-              metricsExplorerStore.setForceLineChart(exploreName, v)}
+            showChartTypeSelector={false}
             onDynamicYAxisScaleChange={(v) =>
               metricsExplorerStore.setDynamicYAxisScale(exploreName, v)}
           />
@@ -336,10 +327,12 @@
 
       <ChartSettingsMenu
         bind:connectNulls
-        {forceLineChart}
         {dynamicYAxisScale}
-        onForceLineChartChange={(v) =>
-          metricsExplorerStore.setForceLineChart(exploreName, v)}
+        {exploreName}
+        chartType={tddChartType}
+        hasComparison={Boolean(includedValuesForDimension.length)}
+        onChartTypeChange={(type) =>
+          metricsExplorerStore.setTDDChartType(exploreName, type)}
         onDynamicYAxisScaleChange={(v) =>
           metricsExplorerStore.setDynamicYAxisScale(exploreName, v)}
       />
@@ -403,9 +396,7 @@
             {measure}
             {scrubController}
             {connectNulls}
-            tddChartType={showTimeDimensionDetail
-              ? (tddChartType ?? TDDChart.DEFAULT)
-              : TDDChart.DEFAULT}
+            tddChartType={tddChartType ?? TDDChart.DEFAULT}
             metricsViewName={chartMetricsViewName}
             where={chartWhere}
             {timeDimension}
@@ -425,7 +416,6 @@
             onPanRight={() => handlePan("right")}
             {showComparison}
             {showTimeDimensionDetail}
-            {forceLineChart}
             dynamicYAxis={dynamicYAxisScale}
             onScrub={handleScrub}
             onScrubClear={() => {

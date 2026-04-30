@@ -172,7 +172,7 @@ interface BaseFieldConfig {
   field: string;
   type: "quantitative" | "ordinal" | "nominal" | "temporal" | "value";
   showAxisTitle?: boolean; // Default is false
-  axisOrient?: "top" | "bottom" | "left" | "right";
+  axisOrient?: "top" | "bottom" | "left" | "right" | "none";
   fields?: string[]; // To support multi metric chart variants
 }
 

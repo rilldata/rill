@@ -175,14 +175,17 @@ export function splitTablesByModel(
  */
 export function applyTableFilters(
   tables: V1OlapTableInfo[],
-  type: "all" | "table" | "view",
+  types: string[],
   viewMap: Map<string, boolean>,
 ): V1OlapTableInfo[] {
-  if (type === "all") return tables;
+  if (types.length === 0) return tables;
+  const wantTable = types.includes("table");
+  const wantView = types.includes("view");
+  if (wantTable && wantView) return tables;
   return tables.filter((t) => {
     const name = t.name ?? "";
     const likelyView = isLikelyView(viewMap.get(name), t.physicalSizeBytes);
     if (likelyView === undefined) return true;
-    return (type === "view" && likelyView) || (type === "table" && !likelyView);
+    return (wantView && likelyView) || (wantTable && !likelyView);
   });
 }

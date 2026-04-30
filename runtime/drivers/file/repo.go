@@ -705,7 +705,7 @@ func (c *connection) MergeToBranch(ctx context.Context, branch string, force boo
 		if subpath != "" {
 			return fmt.Errorf("cannot force merge in a monorepo setup")
 		}
-		return rtgitutil.MergeWithTheirsStrategy(gitPath, branch)
+		return rtgitutil.MergeWithStrategy(gitPath, branch, "theirs")
 	}
 	aborted, err := rtgitutil.MergeWithBailOnConflict(gitPath, branch)
 	if err != nil {

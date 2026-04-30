@@ -12,6 +12,7 @@
   import { selectedMockUserStore } from "./stores";
   import { useMockUsers } from "./useMockUsers";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import { getFileHref } from "@rilldata/web-common/layout/navigation/editor-routing";
 
   let viewAsMenuOpen = false;
   let open = false;
@@ -77,7 +78,7 @@
     {/if}
     <DropdownMenu.Separator />
     <DropdownMenu.Item
-      href={`/files/rill.yaml?addMockUser=true`}
+      href={`${getFileHref("/rill.yaml")}?addMockUser=true`}
       class="flex gap-x-2 items-center font-normal"
     >
       <Add size="16px" />

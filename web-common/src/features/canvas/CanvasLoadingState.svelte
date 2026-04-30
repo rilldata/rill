@@ -15,16 +15,17 @@
   {#if ready}
     <slot />
   {:else if errorMessage}
-    <div class="flex flex-col items-center gap-4">
-      <ErrorPage
-        statusCode={404}
-        header="Canvas not found"
-        body={errorMessage || "An unknown error occurred."}
-      />
-      {#if filePath}
-        <ExplainAndFixErrorButton {filePath} large />
-      {/if}
-    </div>
+    <ErrorPage
+      statusCode={404}
+      header="Canvas not found"
+      body={errorMessage || "An unknown error occurred."}
+    >
+      <svelte:fragment slot="cta">
+        {#if filePath}
+          <ExplainAndFixErrorButton {filePath} variant="cta" />
+        {/if}
+      </svelte:fragment>
+    </ErrorPage>
   {:else if isReconciling}
     <DashboardBuilding />
   {:else if isLoading}
