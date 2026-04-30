@@ -163,12 +163,7 @@
     {/if}
     {#if activeBranch}
       <Tooltip distance={8}>
-        <Button
-          type="ghost"
-          href={cloudPreviewHref}
-          target="_blank"
-          compact
-        >
+        <Button type="ghost" href={cloudPreviewHref} target="_blank" compact>
           <Share2Icon size="14" />
           Share
         </Button>
