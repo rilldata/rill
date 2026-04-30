@@ -164,7 +164,7 @@
       <div {...props} class="hidden"></div>
     {/snippet}
   </Dialog.Trigger>
-  <Dialog.Content>
+  <Dialog.Content class="max-w-md">
     <Dialog.Header>
       <Dialog.Title>Start editing</Dialog.Title>
       <Dialog.Description>
@@ -218,20 +218,22 @@
             }}
           >
             <Select.Trigger
-              class="flex h-[30px] w-full items-center justify-between gap-2 rounded-[2px] border-gray-300 bg-input px-2 text-left"
+              class="flex h-[38px] w-full items-center justify-between gap-2 rounded-[2px] border-gray-300 bg-input px-2 text-left"
             >
               <div class="flex min-w-0 flex-1 items-center gap-2">
                 <GitBranchIcon size="14" class="shrink-0 text-fg-muted" />
-                <span class="truncate font-mono text-sm text-fg-primary">
-                  {selectedDeployment?.branch ?? sourceBranch}
-                </span>
-                {#if selectedDeployment?.id === latestBranchId}
-                  <span
-                    class="shrink-0 text-[10.5px] font-medium uppercase tracking-wider text-fg-muted"
-                  >
-                    latest
+                <div class="flex min-w-0 flex-1 items-baseline gap-2">
+                  <span class="truncate font-mono text-sm text-fg-primary">
+                    {selectedDeployment?.branch ?? sourceBranch}
                   </span>
-                {/if}
+                  {#if selectedDeployment?.id === latestBranchId}
+                    <span
+                      class="shrink-0 text-[10.5px] font-medium uppercase tracking-wider text-fg-muted"
+                    >
+                      latest
+                    </span>
+                  {/if}
+                </div>
               </div>
             </Select.Trigger>
             <Select.Content sameWidth class="max-h-[280px] overflow-y-auto">
@@ -242,16 +244,18 @@
                       size="13"
                       class="shrink-0 text-fg-muted"
                     />
-                    <span class="flex-1 truncate font-mono text-[13px]">
-                      {deployment.branch || sourceBranch}
-                    </span>
-                    {#if deployment.id === latestBranchId}
-                      <span
-                        class="shrink-0 text-[10.5px] font-medium uppercase tracking-wider text-fg-muted"
-                      >
-                        latest
+                    <div class="flex min-w-0 flex-1 items-baseline gap-2">
+                      <span class="flex-1 truncate font-mono text-[13px]">
+                        {deployment.branch || sourceBranch}
                       </span>
-                    {/if}
+                      {#if deployment.id === latestBranchId}
+                        <span
+                          class="shrink-0 text-[10.5px] font-medium uppercase tracking-wider text-fg-muted"
+                        >
+                          latest
+                        </span>
+                      {/if}
+                    </div>
                   </div>
                 </Select.Item>
               {/each}
@@ -264,12 +268,12 @@
             id="new-branch-name"
             label="Branch name"
             placeholder="branch-name"
+            size="xl"
             bind:value={branchName}
             onInput={handleNameInput}
             errors={createError || undefined}
             alwaysShowError
             capitalizeLabel={false}
-            textClass="text-sm"
             fontFamily="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
             claimFocusOnMount
           />
@@ -280,12 +284,12 @@
         id="new-branch-name"
         label="Branch name"
         placeholder="branch-name"
+        size="xl"
         bind:value={branchName}
         onInput={handleNameInput}
         errors={createError || undefined}
         alwaysShowError
         capitalizeLabel={false}
-        textClass="text-sm"
         fontFamily="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
         claimFocusOnMount
       />
