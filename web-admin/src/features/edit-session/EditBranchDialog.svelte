@@ -240,10 +240,7 @@
               {#each ownDeployments as deployment (deployment.id)}
                 <Select.Item value={deployment.id ?? ""} class="py-1.5">
                   <div class="flex flex-1 items-center gap-2">
-                    <GitBranchIcon
-                      size="13"
-                      class="shrink-0 text-fg-muted"
-                    />
+                    <GitBranchIcon size="13" class="shrink-0 text-fg-muted" />
                     <div class="flex min-w-0 flex-1 items-baseline gap-2">
                       <span class="flex-1 truncate font-mono text-[13px]">
                         {deployment.branch || sourceBranch}
