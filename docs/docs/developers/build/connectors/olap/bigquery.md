@@ -102,43 +102,4 @@ In BigQuery terminology, `database` maps to the **project**, `database_schema` m
 Rill supports metrics views directly on BigQuery as a live connector. Incremental models and partitioned ingestion are not supported in live connector mode.
 :::
 
-### Caching Query Results
-
-By default, dashboard queries against a BigQuery metrics view run live against BigQuery on every interaction. Because BigQuery bills by bytes scanned, repeated dashboard activity can rack up costs quickly. Enable caching to reuse query results between users until the underlying data changes.
-
-Caching is configured under the `cache` block on the metrics view. Because BigQuery is an external/live connector, caching is **off by default** — opt in by setting `cache.key_sql` (or `cache.enabled: true`).
-
-```yaml
-type: metrics_view
-
-connector: bigquery
-database: my-gcp-project
-database_schema: my_dataset
-model: my_table
-
-timeseries: created_at
-dimensions:
-  - column: region
-measures:
-  - name: total_revenue
-    expression: SUM(revenue)
-
-cache:
-  key_sql: SELECT MAX(created_at) FROM `my-gcp-project.my_dataset.my_table`
-  key_ttl: 5m
-```
-
-Rill periodically runs `key_sql` against BigQuery (re-evaluated at most once per `key_ttl`) and uses the returned scalar value as the cache key. When the value changes — for example because a new row landed — the cache is invalidated and the next query repopulates it.
-
-**Pros**
-
-- **Lower BigQuery spend.** Repeat queries (multiple users on the same dashboard, back-and-forth filtering) are served from Rill's cache instead of scanning bytes in BigQuery.
-- **Faster dashboards.** Cached results return in milliseconds; no per-query slot allocation or job startup overhead.
-- **Pairs with `max_bytes_billed`.** Use caching alongside `max_bytes_billed` (see [Controlling Query Costs](#controlling-query-costs)) to both cap individual query cost and reduce overall query volume.
-
-**Cons**
-
-- **Up to `key_ttl` of staleness.** Between `key_sql` evaluations, new data in BigQuery will not appear on the dashboard. Pick a TTL that matches your data freshness SLA.
-- **`key_sql` itself runs on BigQuery.** Make sure it's a cheap query — ideally a `MAX()` on a partitioned/clustered column with a partition filter, or a metadata lookup against `INFORMATION_SCHEMA.PARTITIONS`. A poorly written `key_sql` can scan the whole table on every refresh.
-- **Memory usage.** Cached results live in Rill's result cache; very high-cardinality dashboards with many distinct queries will evict older entries.
-- **Not suitable for sub-minute freshness.** If you need near-real-time data, leave caching disabled and rely on BigQuery's own result cache instead.
+To reduce bytes scanned on dashboards with repeat traffic, see [Caching query results](/developers/build/metrics-view/underlying-model#caching-query-results) on live connectors. Caching pairs well with [`max_bytes_billed`](#controlling-query-costs) — use both to cap per-query cost and reduce overall query volume.

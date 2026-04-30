@@ -2299,7 +2299,7 @@ definitions:
             properties:
               enabled:
                 type: boolean
-                description: Whether to enable result caching for the metrics view. Defaults to `true` for Rill-managed tables and `false` for external/live connector tables. Set to `true` to force caching on a live connector metrics view (requires `key_sql` to control invalidation).
+                description: Whether to enable result caching for the metrics view. Defaults to `true` for Rill-managed tables and `false` for external/live connector tables. When set to `true` on a live connector metrics view without `key_sql`, the cache is keyed on the max watermark of the timeseries column.
               key_sql:
                 type: string
                 description: A SQL query that returns a single scalar value used as the cache key. When the returned value changes, the cache is invalidated. Typically returns a max watermark or table version. Evaluated against the metrics view's connector.
