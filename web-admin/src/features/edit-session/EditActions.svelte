@@ -2,7 +2,7 @@
   import { Button } from "@rilldata/web-common/components/button";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { GitPullRequestCreateArrow, LogOut } from "lucide-svelte";
+  import { GitPullRequestIcon, LogOut } from "lucide-svelte";
   import CommitPopover from "./CommitPopover.svelte";
 
   export let organization: string;
@@ -15,8 +15,8 @@
 
 <Tooltip distance={8}>
   <Button type="primary" disabled>
-    <GitPullRequestCreateArrow size="14" />
-    Open PR
+    <GitPullRequestIcon size="14" />
+    Merge PR
   </Button>
   <TooltipContent slot="tooltip-content" maxWidth="200px">
     <span class="text-xs">Coming soon</span>

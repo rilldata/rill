@@ -14,7 +14,6 @@
   import BreadcrumbItem from "@rilldata/web-common/components/navigation/breadcrumbs/BreadcrumbItem.svelte";
   import Slash from "@rilldata/web-common/components/navigation/breadcrumbs/Slash.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
-  import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import { useDashboards } from "@rilldata/web-admin/features/dashboards/listing/selectors";
@@ -34,7 +33,7 @@
     BellPlusIcon,
     BookmarkIcon,
     GitBranchIcon,
-    Share2Icon,
+    LinkIcon,
   } from "lucide-svelte";
   import {
     createAdminServiceGetCurrentUser,
@@ -136,11 +135,11 @@
 <Header borderBottom tinted>
   <HeaderLogo href={`/${organization}/${project}`} />
   {#if activeBranch}
-    <Tag
-      text={previewMode ? "Preview" : "Developer"}
-      color="gray"
-      class="!bg-surface-base"
-    />
+    <span
+      class="inline-flex items-center h-7 px-2.5 rounded-md border border-border bg-surface-base text-fg-secondary text-sm font-medium"
+    >
+      {previewMode ? "previewing" : "developing"}
+    </span>
   {/if}
   <nav class="flex gap-x-2 items-center">
     <ol class="flex flex-row items-center">
@@ -174,8 +173,8 @@
           onClick={shareCloudPreviewLink}
           class="!bg-surface-base"
         >
-          <Share2Icon size="14" />
-          Share
+          <LinkIcon size="14" />
+          Copy link
         </Button>
         <TooltipContent slot="tooltip-content" maxWidth="240px">
           <span class="text-xs"
