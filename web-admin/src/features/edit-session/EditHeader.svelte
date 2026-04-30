@@ -189,7 +189,9 @@
   {/if}
 
   <div class="ml-auto flex gap-x-2 items-center">
-    <ModeToggle {organization} {project} branch={activeBranch ?? ""} />
+    {#if !previewMode || !onDashboardPage}
+      <ModeToggle {organization} {project} branch={activeBranch ?? ""} />
+    {/if}
     {#if onEditExplore && exploreSpec}
       {#key dashboardName}
         <StateManagersProvider
@@ -197,6 +199,9 @@
           exploreName={dashboardName}
           let:ready
         >
+          {#if previewMode}
+            <ModeToggle {organization} {project} branch={activeBranch ?? ""} />
+          {/if}
           <LastRefreshedDate dashboard={dashboardName} />
           {#if $dimensionSearch && ready}
             <GlobalDimensionSearch />
@@ -208,6 +213,9 @@
         </StateManagersProvider>
       {/key}
     {:else if onEditCanvas}
+      {#if previewMode}
+        <ModeToggle {organization} {project} branch={activeBranch ?? ""} />
+      {/if}
       <DisabledCloudFeatures features={canvasCloudFeatures} cta={cloudCta} />
     {:else if !previewMode && $developerChat}
       <ChatToggle class="!bg-surface-base" />
