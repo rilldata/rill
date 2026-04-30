@@ -14,14 +14,14 @@
     isTeamPlan,
     isEnterprisePlan,
   } from "@rilldata/web-admin/features/billing/plans/utils";
-  import { isActiveDeployment, isProdDeployment } from "./deployment-utils";
+  import { isProdDeployment } from "./deployment-utils";
+  import { V1DeploymentStatus } from "@rilldata/web-admin/client";
   import { isTransitoryStatus } from "@rilldata/web-admin/features/projects/status/display-utils";
   import { SLOT_RATE_PER_HR } from "@rilldata/web-admin/features/projects/status/overview/slots-utils";
   import ManageSlotsModal from "@rilldata/web-admin/features/projects/status/overview/ManageSlotsModal.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
-  import { SlidersHorizontalIcon } from "lucide-svelte";
 
   let {
     organization,
@@ -106,9 +106,14 @@
       },
     ),
   );
+  // Only deployments that have actually allocated compute count toward the
+  // running total. Pending deployments haven't reserved units yet.
   let activeDevDeploymentCount = $derived(
     ($deploymentsQuery.data?.deployments ?? []).filter(
-      (d: V1Deployment) => !isProdDeployment(d) && isActiveDeployment(d),
+      (d: V1Deployment) =>
+        !isProdDeployment(d) &&
+        (d.status === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING ||
+          d.status === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING),
     ).length,
   );
 
@@ -237,7 +242,6 @@
             class="manage-btn"
             onclick={() => (prodSlotsModalOpen = true)}
           >
-            <SlidersHorizontalIcon size="12px" />
             Manage units
           </button>
         </div>
@@ -272,7 +276,6 @@
         <div class="breakdown-header">
           <h4 class="breakdown-title">Development</h4>
           <button class="manage-btn" onclick={() => (devSlotsModalOpen = true)}>
-            <SlidersHorizontalIcon size="12px" />
             Manage units
           </button>
         </div>
@@ -312,10 +315,6 @@
               </div>
             {/if}
           </div>
-          <p class="card-note">
-            Changes apply to a running deployment after it is stopped and
-            restarted.
-          </p>
         </div>
       </div>
     </div>
@@ -406,9 +405,6 @@
   }
   .manage-btn:hover {
     @apply bg-surface-subtle text-fg-primary;
-  }
-  .card-note {
-    @apply text-xs text-fg-tertiary italic px-6 m-0;
   }
   /* Breakdown body */
   .breakdown-body {
