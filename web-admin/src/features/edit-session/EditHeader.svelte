@@ -26,15 +26,8 @@
   import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
   import Header from "@rilldata/web-common/layout/header/Header.svelte";
   import HeaderLogo from "@rilldata/web-common/layout/header/HeaderLogo.svelte";
-  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import {
-    BellPlusIcon,
-    BookmarkIcon,
-    GitBranchIcon,
-    Share2,
-    Sparkles,
-  } from "lucide-svelte";
+  import { BellPlusIcon, BookmarkIcon, GitBranchIcon } from "lucide-svelte";
   import { get } from "svelte/store";
   import { parseDocument } from "yaml";
   import {
@@ -85,12 +78,6 @@
   $: previewMode = isEditPreviewRoute($page.url.pathname);
   $: editPrefix = `/${organization}/${project}${branchPathPrefix(activeBranch)}/-/edit`;
   $: previewHomeHref = `${editPrefix}/dashboards`;
-
-  // Top header: project name as plain (non-clickable) text. Display name
-  // comes from the runtime instance metadata when available.
-  $: instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {});
-  $: projectDisplayName =
-    $instanceQuery.data?.instance?.projectDisplayName || project;
 
   // Secondary header breadcrumb: Home / dashboard-name (with dropdown to
   // switch between dashboards on this branch).

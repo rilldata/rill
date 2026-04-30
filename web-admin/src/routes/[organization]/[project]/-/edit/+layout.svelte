@@ -213,12 +213,7 @@
   {:else if isReady && deployment?.id && instanceId && runtimeHost && jwt}
     {#key `${runtimeHost}::${instanceId}`}
       <RuntimeProvider host={runtimeHost} {instanceId} {jwt}>
-        <EditHeader
-          {organization}
-          {project}
-          {projectPermissions}
-          readProjects={organizationPermissions?.readProjects}
-        />
+        <EditHeader {organization} {project} {projectPermissions} />
         <EditSessionTimeoutBanner sessionStartedAt={deployment.createdOn} />
         <FileAndResourceWatcher
           lifecycle="none"

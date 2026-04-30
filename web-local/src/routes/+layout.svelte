@@ -22,6 +22,7 @@
   } from "@rilldata/web-common/metrics/initMetrics";
   import { isDeployPage } from "@rilldata/web-common/layout/navigation/route-utils";
   import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
+  import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
   import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
   import { updateDevJWT } from "@rilldata/web-common/features/dashboards/granular-access-policies/updateDevJWT";
   import { getLocalRuntimeClient } from "../lib/runtime-client";
@@ -33,7 +34,6 @@
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import type { LayoutData } from "./$types";
   import PreviewModeNav from "../features/preview/PreviewModeNav.svelte";
-  import { goto } from "$app/navigation";
   import {
     isPreviewRoute,
     isDeveloperRoute,
@@ -108,14 +108,18 @@
 
   $: onWelcomePage = route.id?.startsWith("/(misc)/welcome");
 
-  // Reset View As mock-user impersonation when crossing the
-  // preview/developer boundary so a mock user from one mode doesn't
-  // persist into the other.
+  // Reset transient state (chat sidebar, View As mock-user
+  // impersonation) when crossing the preview/developer boundary so a
+  // stale view from one mode doesn't bleed into the other. Mirrors the
+  // cloud editor reset in `/-/edit/+layout.svelte`.
   const localClient = getLocalRuntimeClient();
   let trackedPreviewMode: boolean | undefined = undefined;
   $: if (trackedPreviewMode !== isPreviewMode) {
-    if (trackedPreviewMode !== undefined && $selectedMockUserStore) {
-      void updateDevJWT(queryClient, localClient, null);
+    if (trackedPreviewMode !== undefined) {
+      sidebarActions.closeChat();
+      if ($selectedMockUserStore) {
+        void updateDevJWT(queryClient, localClient, null);
+      }
     }
     trackedPreviewMode = isPreviewMode;
   }
