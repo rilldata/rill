@@ -1,7 +1,8 @@
 <script lang="ts">
   export let size = "1em";
   export let color = "currentColor";
-  export let className = "";
+  let className = "";
+  export { className as class };
 </script>
 
 <svg

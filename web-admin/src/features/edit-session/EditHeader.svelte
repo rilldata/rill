@@ -240,12 +240,7 @@
             <Tooltip distance={8}>
               <Button type="secondary" {compact} {square} disabled {label}>
                 {#if icon}
-                  <svelte:component
-                    this={icon}
-                    size="16px"
-                    class="flex-none"
-                    className="flex-none"
-                  />
+                  <svelte:component this={icon} size="16px" class="flex-none" />
                 {:else}
                   {label}
                 {/if}

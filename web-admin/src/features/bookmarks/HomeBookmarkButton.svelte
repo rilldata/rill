@@ -58,7 +58,7 @@
           label="Home bookmark dropdown"
           active={open || isHomeBookmarkActive}
         >
-          <HomeBookmark size="16px" className="flex-none" />
+          <HomeBookmark size="16px" class="flex-none" />
         </Button>
       {/snippet}
     </DropdownMenuTrigger>
@@ -122,7 +122,7 @@
         >
           <HomeBookmark
             size="16px"
-            className={isHomeBookmarkActive
+            class={isHomeBookmarkActive
               ? "text-primary-600"
               : "text-primary-800"}
           />

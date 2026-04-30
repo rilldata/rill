@@ -22,27 +22,27 @@ export const load = async ({
   // links) is funneled into the equivalent edit route so users can never
   // see a branch in the production cloud view.
   const branch = extractBranchFromPath(url.pathname);
-  if (
-    branch &&
-    !url.pathname.includes("/-/edit") &&
-    !url.pathname.includes("/-/share/")
-  ) {
+  if (branch) {
     const prefix = `/${organization}/${project}${branchPathPrefix(branch)}`;
     const subpath = url.pathname.slice(prefix.length);
-    let editSubpath: string;
-    if (!subpath || subpath === "/") {
-      editSubpath = "/-/edit/dashboards";
-    } else if (
-      subpath.startsWith("/explore/") ||
-      subpath.startsWith("/canvas/")
-    ) {
-      editSubpath = "/-/edit" + subpath;
-    } else {
-      // Sub-pages without an editor equivalent (reports, alerts,
-      // settings, status, etc.) collapse to the preview home.
-      editSubpath = "/-/edit/dashboards";
+    const onEdit = subpath.startsWith("/-/edit");
+    const onShare = subpath.startsWith("/-/share/");
+    if (!onEdit && !onShare) {
+      let editSubpath: string;
+      if (!subpath || subpath === "/") {
+        editSubpath = "/-/edit/dashboards";
+      } else if (
+        subpath.startsWith("/explore/") ||
+        subpath.startsWith("/canvas/")
+      ) {
+        editSubpath = "/-/edit" + subpath;
+      } else {
+        // Sub-pages without an editor equivalent (reports, alerts,
+        // settings, status, etc.) collapse to the preview home.
+        editSubpath = "/-/edit/dashboards";
+      }
+      throw redirect(303, prefix + editSubpath + url.search + url.hash);
     }
-    throw redirect(303, prefix + editSubpath + url.search);
   }
 
   const { organizationPermissions, issues } = await parent();

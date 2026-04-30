@@ -72,8 +72,10 @@ export function getBranchRedirect(
   const prefix = `/${organization}/${project}`;
   // Project root is always the production view on main; never inject a
   // branch into it (e.g. clicking the project breadcrumb from /-/edit
-  // should leave the edit context, not bounce back into it).
-  if (to.pathname === prefix) return null;
+  // should leave the edit context, not bounce back into it). Match both
+  // the bare prefix and a trailing-slash variant so SvelteKit's URL
+  // normalization quirks don't slip through.
+  if (to.pathname === prefix || to.pathname === prefix + "/") return null;
   if (!to.pathname.startsWith(prefix + "/")) return null;
   if (to.pathname.includes("/-/share/")) return null;
   if (extractBranchFromPath(to.pathname)) return null;

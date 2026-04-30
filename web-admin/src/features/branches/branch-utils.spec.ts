@@ -207,10 +207,27 @@ describe("branch-utils", () => {
       ).toBeNull();
     });
 
-    it("handles the bare project path", () => {
-      expect(getBranchRedirect(url("/acme/analytics"), branch, org, proj)).toBe(
-        "/acme/analytics/@staging",
-      );
+    it("never injects on the bare project path so users can leave the edit context", () => {
+      expect(
+        getBranchRedirect(url("/acme/analytics"), branch, org, proj),
+      ).toBeNull();
+    });
+
+    it("never injects on the bare project path with trailing slash", () => {
+      expect(
+        getBranchRedirect(url("/acme/analytics/"), branch, org, proj),
+      ).toBeNull();
+    });
+
+    it("preserves the URL hash on branch-injected redirects", () => {
+      expect(
+        getBranchRedirect(
+          url("/acme/analytics/explore/foo#section-2"),
+          branch,
+          org,
+          proj,
+        ),
+      ).toBe("/acme/analytics/@staging/explore/foo#section-2");
     });
   });
 
