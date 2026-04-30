@@ -17,7 +17,7 @@
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
-  import { onMount, type Snippet } from "svelte";
+  import { onMount } from "svelte";
 
   const workspaces = new Map([
     [ResourceKind.Source, ModelWorkspace],
@@ -29,15 +29,7 @@
     [undefined, null],
   ]);
 
-  let {
-    fileArtifact,
-    disableEnvEditing = false,
-    envEditDisabledMessage,
-  }: {
-    fileArtifact: FileArtifact;
-    disableEnvEditing?: boolean;
-    envEditDisabledMessage?: Snippet;
-  } = $props();
+  let { fileArtifact }: { fileArtifact: FileArtifact } = $props();
 
   // Needed to get the correct type
   let editor: EditorView | null = $state(null);
@@ -59,10 +51,6 @@
   let WorkspaceComponent = $derived(
     workspaces.get(resourceKind ?? $inferredResourceKind),
   );
-
-  let isEnvFile = $derived(path === "/.env");
-  let envFileNotEditable = $derived(isEnvFile && disableEnvEditing);
-  let editable = $derived(!envFileNotEditable);
 
   let resourceQuery = $derived(getResource(queryClient));
 
@@ -108,8 +96,6 @@
           resourceKind={resourceKind ?? $inferredResourceKind ?? undefined}
           filePath={path}
           hasUnsavedChanges={$hasUnsavedChanges}
-          {editable}
-          nonEditableMessage={envEditDisabledMessage}
         />
         <WorkspaceEditorContainer
           slot="body"
@@ -122,7 +108,6 @@
             {extensions}
             bind:editor
             bind:autoSave={$autoSave}
-            {editable}
           />
         </WorkspaceEditorContainer>
       </WorkspaceContainer>

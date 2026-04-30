@@ -10,7 +10,7 @@
     resourceIsLoading,
     ResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
+  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/actions/ui-actions.ts";
   import {
     WorkspaceContainer,
     WorkspaceHeader,

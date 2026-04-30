@@ -22,7 +22,7 @@
   import { getTopLevelFolder } from "../entity-management/file-path-utils";
   import { useDirectoryNamesInDirectory } from "../entity-management/file-selectors";
   import { getName } from "../entity-management/name-utils";
-  import { PROTECTED_DIRECTORIES } from "./protected-paths";
+  import { readonlyFiles } from "@rilldata/web-common/features/entity-management/actions/readonly-files.ts";
 
   export let dir: Directory;
   export let onRename: (filePath: string, isDir: boolean) => void;
@@ -41,7 +41,7 @@
   $: padding = getPaddingFromPath(dir.path);
   $: ({ instanceId } = runtimeClient);
   $: topLevelFolder = getTopLevelFolder(dir.path);
-  $: isProtectedDirectory = PROTECTED_DIRECTORIES.includes(topLevelFolder);
+  $: isProtectedDirectory = Boolean(readonlyFiles.matchDir(topLevelFolder));
 
   $: hasErrors = getDirectoryHasErrors(queryClient, instanceId, dir);
   $: hasWarnings = getDirectoryHasWarnings(queryClient, instanceId, dir);

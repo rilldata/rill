@@ -30,6 +30,7 @@
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { onDestroy } from "svelte";
+  import { readonlyFiles } from "@rilldata/web-common/features/entity-management/actions/readonly-files.ts";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -136,6 +137,14 @@
       ),
     });
   };
+
+  $: if (organization && project) {
+    readonlyFiles.addReadonly({
+      id: "env",
+      matcher: /\/.env/,
+      messageSnippet: envEditDisabled,
+    });
+  }
 
   onDestroy(() => {
     $editorRoutePrefix = "";
@@ -256,6 +265,15 @@
     />
   {/if}
 </div>
+
+{#snippet envEditDisabled()}
+  <div class="w-fit">
+    Editing .env directly is disabled. Visit
+    <a href="/{organization}/{project}/-/settings/environment-variables">
+      settings
+    </a> to manage env variables.
+  </div>
+{/snippet}
 
 <style lang="postcss">
   .edit-session {

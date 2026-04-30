@@ -1,13 +1,12 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { splitFolderAndFileName } from "@rilldata/web-common/features/entity-management/file-path-utils";
-  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
+  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/actions/ui-actions.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { WorkspaceHeader } from "../../layout/workspace";
   import type { ResourceKind } from "../entity-management/resource-selectors";
-  import { PROTECTED_FILES } from "../file-explorer/protected-paths";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
-  import type { Snippet } from "svelte";
+  import { readonlyFiles } from "@rilldata/web-common/features/entity-management/actions/readonly-files.ts";
 
   const runtimeClient = useRuntimeClient();
 
@@ -16,19 +15,16 @@
     hasUnsavedChanges,
     resourceKind,
     resource,
-    editable = true,
-    nonEditableMessage,
   }: {
     filePath: string;
     hasUnsavedChanges: boolean;
     resourceKind: ResourceKind | undefined;
     resource: V1Resource | undefined;
-    editable: boolean;
-    nonEditableMessage?: Snippet;
   } = $props();
 
   let [, fileName] = $derived(splitFolderAndFileName(filePath));
-  let isProtectedFile = $derived(PROTECTED_FILES.includes(filePath));
+  let readonlyMatch = $derived(readonlyFiles.match(filePath));
+  let isReadonly = $derived(!!readonlyMatch);
 
   const onChangeCallback = async (newTitle: string) => {
     const route = await handleEntityRename(
@@ -44,8 +40,8 @@
 <WorkspaceHeader
   {filePath}
   {resourceKind}
-  editable={!isProtectedFile && editable}
-  nonEditableMessage={!editable ? nonEditableMessage : undefined}
+  editable={!isReadonly}
+  nonEditableMessage={readonlyMatch?.messageSnippet}
   onTitleChange={onChangeCallback}
   {hasUnsavedChanges}
   showInspectorToggle={false}

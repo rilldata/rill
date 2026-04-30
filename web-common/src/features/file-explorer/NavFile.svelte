@@ -28,14 +28,14 @@
   import CopyIcon from "../../components/icons/CopyIcon.svelte";
   import CanvasMenuItems from "../canvas/CanvasMenuItems.svelte";
   import { fileArtifacts } from "../entity-management/file-artifacts";
-  import { getTopLevelFolder } from "../entity-management/file-path-utils";
   import { getIconComponent } from "../entity-management/resource-icon-mapping";
   import { ResourceKind } from "../entity-management/resource-selectors";
   import ExploreMenuItems from "../explores/ExploreMenuItems.svelte";
   import MetricsViewMenuItems from "../metrics-views/MetricsViewMenuItems.svelte";
   import ModelMenuItems from "../models/navigation/ModelMenuItems.svelte";
   import SourceMenuItems from "../sources/navigation/SourceMenuItems.svelte";
-  import { PROTECTED_DIRECTORIES, PROTECTED_FILES } from "./protected-paths";
+  import { readonlyFiles } from "@rilldata/web-common/features/entity-management/actions/readonly-files.ts";
+  import { getTopLevelFolder } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
 
   export let filePath: string;
   export let onRename: (filePath: string, isDir: boolean) => void;
@@ -65,9 +65,9 @@
     $inferredResourceKind) as ResourceKind;
   $: padding = getPaddingFromPath(filePath);
   $: topLevelFolder = getTopLevelFolder(filePath);
-  $: isProtectedDirectory = PROTECTED_DIRECTORIES.includes(topLevelFolder);
+  $: isProtectedDirectory = Boolean(readonlyFiles.matchDir(topLevelFolder));
   $: isDotFile = fileName && fileName.startsWith(".");
-  $: isProtectedFile = PROTECTED_FILES.includes(filePath);
+  $: isProtectedFile = Boolean(readonlyFiles.match(filePath));
 
   $: hasErrors = fileArtifact.getHasErrors(queryClient);
   $: hasWarnings = fileArtifact.getHasWarnings(queryClient);
@@ -86,7 +86,7 @@
   }
 
   function handleMouseDown(e: MouseEvent) {
-    if (PROTECTED_FILES.includes(filePath)) return;
+    if (isProtectedFile) return;
     onMouseDown(e, { id, filePath, isDir: false, kind: resourceKind });
   }
 </script>

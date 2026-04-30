@@ -26,7 +26,7 @@ import {
 import {
   runtimeServicePutFileAndWaitForReconciliation,
   waitForResourceReconciliation,
-} from "../../entity-management/actions";
+} from "../../entity-management/actions/actions.ts";
 import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-mappers";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
 import { getName } from "../../entity-management/name-utils";

@@ -8,7 +8,7 @@
     ResourceKind,
     resourceIsLoading,
   } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
-  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
+  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/actions/ui-actions.ts";
   import WorkspaceInspector from "@rilldata/web-common/features/models/inspector/WorkspaceInspector.svelte";
   import ModelEditor from "@rilldata/web-common/features/models/workspace/ModelEditor.svelte";
   import ModelWorkspaceCtAs from "@rilldata/web-common/features/models/workspace/ModelWorkspaceCTAs.svelte";
