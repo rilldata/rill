@@ -40,6 +40,7 @@ import type {
   ColorDef,
   Field,
   MarkPropDef,
+  OrderFieldDef,
   PositionFieldDef,
 } from "vega-lite/types_unstable/channeldef.js";
 import type { Encoding } from "vega-lite/types_unstable/encoding.js";
@@ -232,12 +233,14 @@ export function createOpacityEncoding(paramName: string) {
   };
 }
 
-export function createOrderEncoding(field: FieldConfig | undefined) {
+export function createOrderEncoding(
+  field: FieldConfig | undefined,
+): OrderFieldDef<Field> {
   if (!field || field.type === "value") return {};
   return {
     field: sanitizeValueForVega(field.field),
     type: field.type,
-    order: "descending",
+    sort: "descending",
   };
 }
 

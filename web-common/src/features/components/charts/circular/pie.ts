@@ -18,6 +18,7 @@ import {
 import type { ChartDataResult } from "../types";
 import type { CircularChartSpec } from "./CircularChartProvider";
 import {
+  OTHER_SORT_KEY_FIELD,
   OTHER_VALUE,
   OTHER_VALUE_DOMAIN_KEY,
   PERCENT_OF_TOTAL_FIELD,
@@ -101,7 +102,15 @@ export function generateVLPieChartSpec(
 
   const theta = createPositionEncoding(config.measure, data);
   const color = createColorEncoding(config.color, data);
-  const order = createOrderEncoding(config.measure);
+  // When "Other" is in the data, order arcs by a synthetic key that pins
+  // "Other" to the end. Otherwise, fall back to ordering by the measure.
+  const order = hasOther
+    ? {
+        field: OTHER_SORT_KEY_FIELD,
+        type: "quantitative" as const,
+        sort: "descending" as const,
+      }
+    : createOrderEncoding(config.measure);
 
   const tooltip = createDefaultTooltipEncoding(
     [config.color, config.measure],
@@ -143,14 +152,22 @@ export function generateVLPieChartSpec(
     };
   }
 
+  const transforms: Transform[] = [];
   if (showPercentOfTotal && config.measure?.field) {
-    const measureFieldRaw = config.measure.field;
-    const transforms: Transform[] = [
-      {
-        calculate: `datum['${measureFieldRaw}'] / ${totalValue}`,
-        as: PERCENT_OF_TOTAL_FIELD,
-      },
-    ];
+    transforms.push({
+      calculate: `datum['${config.measure.field}'] / ${totalValue}`,
+      as: PERCENT_OF_TOTAL_FIELD,
+    });
+  }
+  if (hasOther && config.color?.field && config.measure?.field) {
+    // Pin "Other" to the end of the arc order: give it -Infinity so it always
+    // sorts last under `order: descending` regardless of its measure value.
+    transforms.push({
+      calculate: `datum['${config.color.field}'] === '${OTHER_VALUE}' ? -1/0 : datum['${config.measure.field}']`,
+      as: OTHER_SORT_KEY_FIELD,
+    });
+  }
+  if (transforms.length > 0) {
     arcLayer.transform = transforms;
   }
 
