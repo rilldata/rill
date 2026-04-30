@@ -306,6 +306,18 @@ _[array of object]_ - Pre-aggregated rollup tables that can be used to accelerat
 
       - **`exclude`** - _[object]_ - Select all fields except those listed here 
 
+### `cache`
+
+_[object]_ - Controls query result caching for the metrics view. Caching is enabled by default for metrics views built on Rill-managed tables (where the cache is invalidated automatically on refresh) and disabled by default for metrics views built on external/live connector tables (e.g. Snowflake, BigQuery). For external tables, configure `key_sql` and `key_ttl` to enable caching safely. 
+
+  - **`enabled`** - _[boolean]_ - Whether to enable result caching for the metrics view. Defaults to `true` for Rill-managed tables and `false` for external/live connector tables. Set to `true` to force caching on a live connector metrics view (requires `key_sql` to control invalidation). 
+
+  - **`key_sql`** - _[string]_ - A SQL query that returns a single scalar value used as the cache key. When the returned value changes, the cache is invalidated. Typically returns a max watermark or table version. Evaluated against the metrics view's connector. 
+
+  - **`key_ttl`** - _[string]_ - How long a `key_sql` result is reused before being re-evaluated, as a Go duration string (e.g. `30s`, `5m`, `1h`). Lower values mean fresher results at the cost of more `key_sql` queries against the source. 
+
+  - **`timestamps_ttl`** - _[string]_ - Fallback TTL for cached timestamp metadata (min/max/watermark) when result caching is disabled. Go duration string. Defaults to `5m`. 
+
 ### `security`
 
 _[object]_ - Defines [security rules and access control policies](/developers/build/metrics-view/security) for resources 
