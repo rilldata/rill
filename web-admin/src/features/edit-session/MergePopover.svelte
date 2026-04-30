@@ -4,8 +4,9 @@
     createAdminServiceDeleteDeployment,
     createAdminServiceListDeployments,
   } from "@rilldata/web-admin/client";
-  import { requestSkipBranchInjection } from "@rilldata/web-admin/features/branches/branch-utils";
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
+  import { optimisticallyRemoveDeployment } from "@rilldata/web-admin/features/branches/branch-actions";
+  import { requestSkipBranchInjection } from "@rilldata/web-admin/features/branches/branch-utils";
   import { Button } from "@rilldata/web-common/components/button";
   import * as Popover from "@rilldata/web-common/components/popover";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -80,11 +81,15 @@
     requestSkipBranchInjection();
     await goto(`/${organization}/${project}`);
 
-    // Second, delete the dev deployment.
+    // Second, delete the dev deployment. On success, drop it from the
+    // ListDeployments cache so the BranchSelector on the destination page
+    // doesn't show the now-deleted branch.
     // Note that the browser may cancel this request on page tear-down, so a better approach may be to
     // hand off the deployment id via sessionStorage and fire the delete from the destination.
     if (devDeploymentId) {
-      $deleteDeploymentMutation.mutate({ deploymentId: devDeploymentId });
+      const id = devDeploymentId;
+      $deleteDeploymentMutation.mutate({ deploymentId: id });
+      void optimisticallyRemoveDeployment(organization, project, id);
     }
   }
 </script>

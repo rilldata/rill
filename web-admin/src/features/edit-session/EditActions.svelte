@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { branchPathPrefix } from "@rilldata/web-admin/features/branches/branch-utils";
   import { Button } from "@rilldata/web-common/components/button";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -14,18 +13,13 @@
   export let primaryBranch: string | undefined = undefined;
 
   $: closeHref = `/${organization}/${project}${branchPathPrefix(branch)}`;
-
-  function handleClose(e: MouseEvent) {
-    e.preventDefault();
-    void goto(closeHref);
-  }
 </script>
 
 <CommitPopover />
 <MergePopover {organization} {project} {primaryBranch} />
 
 <Tooltip distance={8}>
-  <Button type="secondary" href={closeHref} onClick={handleClose}>
+  <Button type="secondary" href={closeHref}>
     <LogOut size="14" />
     Exit
   </Button>
