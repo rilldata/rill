@@ -48,7 +48,9 @@
     $connectorDriverQuery.data?.driver ??
     getConnectorDriverForSchema(step.schema);
 
-  $: instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {});
+  $: instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {
+    sensitive: true,
+  });
   $: isProjectOlapConnector =
     !!step.connector &&
     $instanceQuery.data?.instance?.olapConnector === step.connector;
