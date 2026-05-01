@@ -21,7 +21,10 @@
     initMetrics,
   } from "@rilldata/web-common/metrics/initMetrics";
   import { isDeployPage } from "@rilldata/web-common/layout/navigation/route-utils";
-  import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
+  import {
+    previewModeLocked,
+    previewModeStore,
+  } from "@rilldata/web-common/layout/preview-mode-store";
   import { LOCAL_HOST, LOCAL_INSTANCE_ID } from "../lib/runtime-client";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import type { Query } from "@tanstack/query-core";
@@ -59,6 +62,8 @@
       previewModeStore.set(false);
     }
   }
+
+  $: previewModeLocked.set(data.previewMode);
 
   let removeJavascriptListeners: () => void;
   onMount(async () => {

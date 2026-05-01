@@ -2,7 +2,10 @@
   import { page } from "$app/stores";
   import CanvasBookmarks from "@rilldata/web-admin/features/bookmarks/CanvasBookmarks.svelte";
   import ExploreBookmarks from "@rilldata/web-admin/features/bookmarks/ExploreBookmarks.svelte";
-  import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
+  import {
+    branchPathPrefix,
+    extractBranchFromPath,
+  } from "@rilldata/web-admin/features/branches/branch-utils";
   import ShareDashboardPopover from "@rilldata/web-admin/features/dashboards/share/ShareDashboardPopover.svelte";
   import EditActions from "@rilldata/web-admin/features/edit-session/EditActions.svelte";
   import EditButton from "@rilldata/web-admin/features/edit-session/EditButton.svelte";
@@ -18,6 +21,7 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import Header from "@rilldata/web-common/layout/header/Header.svelte";
   import HeaderLogo from "@rilldata/web-common/layout/header/HeaderLogo.svelte";
+  import PreviewModeToggleButton from "@rilldata/web-common/layout/header/PreviewModeToggleButton.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { V1ProjectPermissions } from "../../client";
   import { createAdminServiceGetCurrentUser } from "../../client";
@@ -66,8 +70,20 @@
   } = featureFlags;
 
   $: ({
-    params: { dashboard, alert, report },
+    params: { dashboard, alert, report, name },
+    route,
   } = $page);
+
+  $: editPreviewKind = route.id?.includes("/-/edit/explore/")
+    ? "explore"
+    : route.id?.includes("/-/edit/canvas/")
+      ? "canvas"
+      : null;
+
+  $: editPreviewHref =
+    editPreviewKind && name
+      ? `/${organization}/${project}${branchPathPrefix(activeBranch)}/${editPreviewKind}/${name}`
+      : `/${organization}/${project}${branchPathPrefix(activeBranch)}`;
 
   $: onAlertPage = !!alert;
   $: onReportPage = !!report;
@@ -201,6 +217,7 @@
       {#if $developerChat}
         <ChatToggle />
       {/if}
+      <PreviewModeToggleButton mode="Preview" href={editPreviewHref} />
       <EditActions
         {organization}
         {project}

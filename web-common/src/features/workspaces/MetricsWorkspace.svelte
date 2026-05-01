@@ -1,7 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { withEditorPrefix } from "@rilldata/web-common/layout/navigation/editor-routing";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
@@ -17,14 +16,12 @@
     useIsModelingSupportedForConnectorOLAP as useIsModelingSupportedForConnector,
     useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver,
   } from "../connectors/selectors";
-  import PreviewButton from "../explores/PreviewButton.svelte";
   import GoToDashboardButton from "../metrics-views/GoToDashboardButton.svelte";
   import ReconcileWarningPanel from "../entity-management/ReconcileWarningPanel.svelte";
   import VisualMetrics from "./VisualMetrics.svelte";
 
   export let fileArtifact: FileArtifact;
   export let hideCodeToggle = false;
-  export let inPreviewMode = false;
 
   const runtimeClient = useRuntimeClient();
 
@@ -93,15 +90,8 @@
     titleInput={fileName}
   >
     <div class="flex gap-x-2" slot="cta">
-      {#if !inPreviewMode}
-        {#if isOldMetricsView}
-          <PreviewButton
-            href={withEditorPrefix(`/explore/${metricsViewName}`)}
-            disabled={!!parseError || !!reconcileError}
-          />
-        {:else}
-          <GoToDashboardButton {resource} />
-        {/if}
+      {#if !isOldMetricsView}
+        <GoToDashboardButton {resource} />
       {/if}
     </div>
   </WorkspaceHeader>

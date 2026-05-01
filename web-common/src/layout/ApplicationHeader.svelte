@@ -19,7 +19,9 @@
   import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
   import Header from "@rilldata/web-common/layout/header/Header.svelte";
   import HeaderLogo from "@rilldata/web-common/layout/header/HeaderLogo.svelte";
+  import PreviewModeToggleButton from "@rilldata/web-common/layout/header/PreviewModeToggleButton.svelte";
   import { isDeployPage } from "@rilldata/web-common/layout/navigation/route-utils";
+  import { previewModeLocked } from "@rilldata/web-common/layout/preview-mode-store";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { get } from "svelte/store";
   import { parseDocument } from "yaml";
@@ -44,6 +46,8 @@
   $: onDeployPage = isDeployPage($page);
   $: showDeployCTA = $deploy && !onDeployPage;
   $: showDeveloperChat = $developerChat && !onDeployPage;
+  $: showPreviewToggle = !onDeployPage && !$previewModeLocked;
+  $: previewToggleHref = mode === "Preview" ? "/" : "/dashboards";
 
   $: exploresQuery = useValidExplores(runtimeClient);
   $: canvasQuery = useValidCanvases(runtimeClient);
@@ -128,6 +132,12 @@
       <CanvasPreviewCTAs canvasName={dashboardName} />
     {:else if showDeveloperChat}
       <ChatToggle />
+    {/if}
+    {#if showPreviewToggle}
+      <PreviewModeToggleButton
+        mode={mode === "Preview" ? "Edit" : "Preview"}
+        href={previewToggleHref}
+      />
     {/if}
     {#if showDeployCTA}
       <DeployProjectCTA {hasValidDashboard} />
