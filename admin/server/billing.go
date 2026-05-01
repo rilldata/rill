@@ -99,8 +99,8 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		}
 		return nil, err
 	}
-	// If the requested plan is one of the trial plans, dispatch to the right StartTrial flow.
-	if plan.PlanType == billing.TrailPlanType || plan.PlanType == billing.FreePlanType {
+	// If the requested plan is the credit-based trial (FreePlanType), start the credit trial. Legacy free_trial subscribe is no longer supported here; existing free_trial orgs upgrade by requesting a paid plan instead.
+	if plan.PlanType == billing.FreePlanType {
 		bi, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeNeverSubscribed)
 		if err != nil {
 			if errors.Is(err, database.ErrNotFound) {
@@ -120,36 +120,18 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 				}
 			}
 
-			var updatedOrg *database.Organization
-			var sub *billing.Subscription
-			if plan.PlanType == billing.FreePlanType {
-				updatedOrg, sub, err = s.admin.StartCreditTrial(ctx, org)
-				if err != nil {
-					return nil, err
-				}
-				if err := s.admin.Email.SendCreditTrialStarted(&email.CreditTrialStarted{
-					ToEmail:          org.BillingEmail,
-					ToName:           org.Name,
-					OrgName:          org.Name,
-					FrontendURL:      s.admin.URLs.Frontend(),
-					CreditAllocation: admin.CreditTrialAllocation,
-				}); err != nil {
-					s.logger.Named("billing").Error("failed to send credit trial started email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
-				}
-			} else {
-				updatedOrg, sub, err = s.admin.StartTrial(ctx, org)
-				if err != nil {
-					return nil, err
-				}
-				if err := s.admin.Email.SendTrialStarted(&email.TrialStarted{
-					ToEmail:      org.BillingEmail,
-					ToName:       org.Name,
-					OrgName:      org.Name,
-					FrontendURL:  s.admin.URLs.Frontend(),
-					TrialEndDate: sub.TrialEndDate,
-				}); err != nil {
-					s.logger.Named("billing").Error("failed to send trial started email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
-				}
+			updatedOrg, sub, err := s.admin.StartCreditTrial(ctx, org)
+			if err != nil {
+				return nil, err
+			}
+			if err := s.admin.Email.SendCreditTrialStarted(&email.CreditTrialStarted{
+				ToEmail:          org.BillingEmail,
+				ToName:           org.Name,
+				OrgName:          org.Name,
+				FrontendURL:      s.admin.URLs.Frontend(),
+				CreditAllocation: admin.CreditTrialAllocation,
+			}); err != nil {
+				s.logger.Named("billing").Error("failed to send credit trial started email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
 			}
 
 			return &adminv1.UpdateBillingSubscriptionResponse{

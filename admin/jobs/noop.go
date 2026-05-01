@@ -76,10 +76,6 @@ func (n *noop) RepairOrgBilling(ctx context.Context, orgID string) (*InsertResul
 	return nil, nil
 }
 
-func (n *noop) StartOrgTrial(ctx context.Context, orgID string) (*InsertResult, error) {
-	return nil, nil
-}
-
 func (n *noop) StartOrgCreditTrial(ctx context.Context, orgID string) (*InsertResult, error) {
 	return nil, nil
 }

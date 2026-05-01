@@ -82,49 +82,6 @@ func (w *RepairOrgBillingWorker) Work(ctx context.Context, job *river.Job[Repair
 	return nil
 }
 
-type StartTrialArgs struct {
-	OrgID string
-}
-
-func (StartTrialArgs) Kind() string { return "start_trial" }
-
-type StartTrialWorker struct {
-	river.WorkerDefaults[StartTrialArgs]
-	admin  *admin.Service
-	logger *zap.Logger
-}
-
-// Work This worker starts the trial for an organization
-func (w *StartTrialWorker) Work(ctx context.Context, job *river.Job[StartTrialArgs]) error {
-	org, err := w.admin.DB.FindOrganization(ctx, job.Args.OrgID)
-	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			// org got deleted, ignore
-			return nil
-		}
-		return err
-	}
-
-	trialOrg, sub, err := w.admin.StartTrial(ctx, org)
-	if err != nil {
-		return fmt.Errorf("failed to start trial for organization %s: %w", org.Name, err)
-	}
-
-	// send trial started email
-	err = w.admin.Email.SendTrialStarted(&email.TrialStarted{
-		ToEmail:      trialOrg.BillingEmail,
-		ToName:       trialOrg.Name,
-		OrgName:      trialOrg.Name,
-		FrontendURL:  w.admin.URLs.Frontend(),
-		TrialEndDate: sub.TrialEndDate,
-	})
-	if err != nil {
-		w.logger.Error("failed to send trial started email", zap.String("org_name", trialOrg.Name), zap.String("org_id", trialOrg.ID), zap.String("billing_email", trialOrg.BillingEmail), zap.Error(err))
-	}
-
-	return nil
-}
-
 type StartCreditTrialArgs struct {
 	OrgID string
 }

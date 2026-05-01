@@ -98,7 +98,6 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 	// org related workers
 	river.AddWorker(workers, &InitOrgBillingWorker{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &RepairOrgBillingWorker{admin: adm, logger: billingLogger})
-	river.AddWorker(workers, &StartTrialWorker{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &StartCreditTrialWorker{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &DeleteOrgWorker{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &HibernateInactiveOrgsWorker{admin: adm, logger: billingLogger})
@@ -530,29 +529,6 @@ func (c *Client) RepairOrgBilling(ctx context.Context, orgID string) (*jobs.Inse
 
 	if res.UniqueSkippedAsDuplicate {
 		c.logger.Debug("RepairOrgBilling job skipped as duplicate", zap.String("org_id", orgID))
-	}
-
-	return &jobs.InsertResult{
-		ID:        res.Job.ID,
-		Duplicate: res.UniqueSkippedAsDuplicate,
-	}, nil
-}
-
-func (c *Client) StartOrgTrial(ctx context.Context, orgID string) (*jobs.InsertResult, error) {
-	res, err := c.riverClient.Insert(ctx, StartTrialArgs{
-		OrgID: orgID,
-	}, &river.InsertOpts{
-		UniqueOpts: river.UniqueOpts{
-			ByArgs: true,
-		},
-		MaxAttempts: 5, // override default retries as init org billing job should complete before this if org creation and project deployment were done in single flow
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if res.UniqueSkippedAsDuplicate {
-		c.logger.Debug("StartTrial job skipped as duplicate", zap.String("org_id", orgID))
 	}
 
 	return &jobs.InsertResult{

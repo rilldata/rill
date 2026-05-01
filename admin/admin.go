@@ -33,7 +33,6 @@ type Options struct {
 	MetricsProjectName        string
 	AutoscalerCron            string
 	ScaleDownConstraint       int
-	CreditTrialEnabled        bool // enables credit-based trial instead of time-based trial
 }
 
 type Service struct {
@@ -55,7 +54,6 @@ type Service struct {
 	MetricsProjectID          string
 	AutoscalerCron            string
 	ScaleDownConstraint       int
-	CreditTrialEnabled        bool
 	Biller                    billing.Biller
 	PaymentProvider           payment.Provider
 }
@@ -140,7 +138,6 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		MetricsProjectID:          metricsProjectID,
 		AutoscalerCron:            opts.AutoscalerCron,
 		ScaleDownConstraint:       opts.ScaleDownConstraint,
-		CreditTrialEnabled:        opts.CreditTrialEnabled,
 		Biller:                    biller,
 		PaymentProvider:           p,
 	}, nil

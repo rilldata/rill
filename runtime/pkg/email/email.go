@@ -540,31 +540,6 @@ Thank you for trying Rill Cloud. We hope to see you again in the future!
 	})
 }
 
-type TrialStarted struct {
-	ToEmail      string
-	ToName       string
-	OrgName      string
-	FrontendURL  string
-	TrialEndDate time.Time
-}
-
-func (c *Client) SendTrialStarted(opts *TrialStarted) error {
-	return c.SendWelcomeToTrial(&Welcome{
-		ToEmail:     opts.ToEmail,
-		ToName:      opts.ToName,
-		Subject:     fmt.Sprintf("A 30-day free trial for %s has started", opts.OrgName),
-		FrontendURL: opts.FrontendURL,
-		WelcomeText: template.HTML(fmt.Sprintf(`
-You now have access to Rill Cloud until <b>%s</b> to explore all features including:
-<ul>
-<li>User management (RBAC)</li>
-<li>Embedded dashboards</li>
-<li>Alerts and scheduled reports</li> 
-</ul>
-`, opts.TrialEndDate.Format(dateFormat))),
-	})
-}
-
 type TrialEndingSoon struct {
 	ToEmail      string
 	ToName       string
@@ -662,7 +637,12 @@ func (c *Client) SendCreditTrialStarted(opts *CreditTrialStarted) error {
 		Subject:     fmt.Sprintf("Your Rill Cloud trial for %s has started", opts.OrgName),
 		FrontendURL: opts.FrontendURL,
 		WelcomeText: template.HTML(fmt.Sprintf(`
-You now have <b>%d Rill Cloud credits</b> to explore all features.
+You now have <b>%d Rill Cloud credits</b> to explore all features including:
+<ul>
+<li>User management (RBAC)</li>
+<li>Embedded dashboards</li>
+<li>Alerts and scheduled reports</li>
+</ul>
 We'll let you know when your balance is running low so you can upgrade whenever you're ready.
 `, opts.CreditAllocation)),
 	})
