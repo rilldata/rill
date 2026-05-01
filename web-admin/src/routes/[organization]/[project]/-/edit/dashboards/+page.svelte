@@ -10,7 +10,7 @@
 
   function getHref(name: string, isMetricsExplorer: boolean): string {
     const slug = isMetricsExplorer ? "explore" : "canvas";
-    return `/${organization}/${project}${branchPart}/${slug}/${name}`;
+    return `/${organization}/${project}${branchPart}/-/edit/${slug}/${name}`;
   }
 </script>
 

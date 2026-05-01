@@ -88,7 +88,7 @@
   $: editPreviewHref =
     editPreviewKind && name
       ? `/${organization}/${project}${branchPathPrefix(activeBranch)}/${editPreviewKind}/${name}`
-      : `/${organization}/${project}${branchPathPrefix(activeBranch)}`;
+      : `/${organization}/${project}${branchPathPrefix(activeBranch)}/-/edit/dashboards`;
 
   // Cloud editor sub-routes that should adopt a "Dev preview" chrome
   // (View-as pill + Edit-back button) rather than the editor chrome
