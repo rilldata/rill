@@ -1,15 +1,14 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import DashboardBuilding from "@rilldata/web-common/features/dashboards/DashboardBuilding.svelte";
   import { useDeployingDashboards } from "@rilldata/web-admin/features/dashboards/listing/deploying-dashboards.ts";
+  import ProjectPublishing from "@rilldata/web-admin/features/projects/ProjectPublishing.svelte";
+  import DashboardBuilding from "@rilldata/web-common/features/dashboards/DashboardBuilding.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
-  import type { PageData } from "./$types";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import type { PageData } from "./$types";
 
   export let data: PageData;
   const { organization, project, deployingDashboard, source } = data;
-
-  const variant = source === "publish" ? "publish" : "build";
 
   const runtimeClient = useRuntimeClient();
 
@@ -43,4 +42,8 @@
   }
 </script>
 
-<DashboardBuilding multipleDashboards {variant} />
+{#if source === "publish"}
+  <ProjectPublishing />
+{:else}
+  <DashboardBuilding multipleDashboards />
+{/if}

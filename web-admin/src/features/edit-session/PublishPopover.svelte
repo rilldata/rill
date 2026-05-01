@@ -5,18 +5,17 @@
     createAdminServiceCreateDeployment,
     createAdminServiceListDeployments,
   } from "@rilldata/web-admin/client";
-  import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
   import { requestSkipBranchInjection } from "@rilldata/web-admin/features/branches/branch-utils";
   import { isProdDeployment } from "@rilldata/web-admin/features/branches/deployment-utils";
   import { Button } from "@rilldata/web-common/components/button";
   import * as Popover from "@rilldata/web-common/components/popover";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import {
     createRuntimeServiceGitMergeToBranchMutation,
     createRuntimeServiceGitPushMutation,
     createRuntimeServiceGitStatus,
-    type RpcStatus,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { Rocket } from "lucide-svelte";
@@ -47,21 +46,23 @@
   // First publish only: managed-git projects are created with `skipDeploy`,
   // so on the first merge to primary we must explicitly create the prod
   // deployment. Subsequent publishes find a prod deployment and skip this.
+  $: deploymentsLoaded = $deploymentsQuery.data !== undefined;
   $: hasProdDeployment =
     $deploymentsQuery.data?.deployments?.some(isProdDeployment) ?? false;
-  // If the user is editing a dashboard, route them back to it after the first
-  // publish reconcile completes. Matches `/-/edit/explore/<name>` and
-  // `/-/edit/canvas/<name>`; undefined elsewhere (welcome flow, file editor).
-  $: currentDashboard = (() => {
-    const match = $page.url.pathname.match(
-      /\/-\/edit\/(?:explore|canvas)\/([^/?#]+)/,
-    );
-    return match ? match[1] : undefined;
-  })();
+  // Pull the dashboard name from `/-/edit/explore/<name>` or
+  // `/-/edit/canvas/<name>` so first publish can route the user back to it.
+  // Other edit paths (file editor, welcome) fall through to undefined.
+  $: currentDashboard = $page.url.pathname.match(
+    /\/-\/edit\/(?:explore|canvas)\/([^/?#]+)/,
+  )?.[1];
   $: alreadyOnPrimary =
     !!primaryBranch && !!currentBranch && currentBranch === primaryBranch;
   $: disabled =
-    !primaryBranch || !currentBranch || alreadyOnPrimary || isPublishing;
+    !primaryBranch ||
+    !currentBranch ||
+    !deploymentsLoaded ||
+    alreadyOnPrimary ||
+    isPublishing;
 
   $: if (!open) {
     errorMessage = "";
@@ -85,7 +86,14 @@
         branch: primaryBranch,
         force: false,
       });
-      if (isFirstPublish) {
+    } catch (err) {
+      errorMessage = extractErrorMessage(err) || "Failed to publish";
+      isPublishing = false;
+      return;
+    }
+
+    if (isFirstPublish) {
+      try {
         // CreateDeployment with environment "prod" intentionally omits `branch`
         // and `editable`: the API derives the branch from the project's primary
         // branch and forbids both fields for prod deployments.
@@ -94,12 +102,17 @@
           project,
           data: { environment: "prod" },
         });
+      } catch (err) {
+        // The merge succeeded but the prod deployment failed to start. Be
+        // explicit so the user knows their changes are on the primary branch
+        // and that creating the deployment is the part that needs retrying.
+        const detail = extractErrorMessage(err);
+        errorMessage = `Changes merged to production, but creating the production deployment failed${
+          detail ? `: ${detail}` : ""
+        }.`;
+        isPublishing = false;
+        return;
       }
-    } catch (err) {
-      errorMessage =
-        getRpcErrorMessage(err as RpcStatus) ?? "Failed to publish";
-      isPublishing = false;
-      return;
     }
 
     let target: string;
@@ -169,7 +182,7 @@
     <span class="text-xs">
       {#if alreadyOnPrimary}
         Already on production
-      {:else if !primaryBranch || !currentBranch}
+      {:else if !primaryBranch || !currentBranch || !deploymentsLoaded}
         Loading project...
       {:else}
         Publish your latest changes

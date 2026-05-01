@@ -4,18 +4,18 @@
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaNeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
   import LoadingSpinner from "@rilldata/web-common/components/LoadingSpinner.svelte";
-
-  export let multipleDashboards: boolean = false;
 </script>
 
 <CtaLayoutContainer>
   <CtaContentContainer>
     <LoadingSpinner />
     <CtaHeader variant="bold">
-      Hang tight! We're building your dashboard{multipleDashboards
-        ? "s"
-        : ""}...
+      Publishing your project to production...
     </CtaHeader>
+    <p class="text-sm text-fg-secondary -mt-2 max-w-md text-center">
+      Setting up your production environment for the first time. This usually
+      takes about a minute.
+    </p>
     <CtaNeedHelp />
   </CtaContentContainer>
 </CtaLayoutContainer>

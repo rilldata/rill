@@ -1,16 +1,15 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
   import { requestSkipBranchInjection } from "@rilldata/web-admin/features/branches/branch-utils";
   import { Button } from "@rilldata/web-common/components/button";
   import * as Popover from "@rilldata/web-common/components/popover";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
+  import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import {
     createRuntimeServiceGitMergeToBranchMutation,
     createRuntimeServiceGitStatus,
-    type RpcStatus,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { ExternalLink, GitPullRequest } from "lucide-svelte";
@@ -51,7 +50,7 @@
         force: false,
       });
     } catch (err) {
-      errorMessage = getRpcErrorMessage(err as RpcStatus) ?? "Failed to merge";
+      errorMessage = extractErrorMessage(err) || "Failed to merge";
       isMerging = false;
       return;
     }
