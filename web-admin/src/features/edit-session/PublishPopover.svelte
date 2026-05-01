@@ -4,6 +4,7 @@
   import {
     createAdminServiceCreateDeployment,
     createAdminServiceListDeployments,
+    getAdminServiceListDeploymentsQueryKey,
   } from "@rilldata/web-admin/client";
   import { requestSkipBranchInjection } from "@rilldata/web-admin/features/branches/branch-utils";
   import { isProdDeployment } from "@rilldata/web-admin/features/branches/deployment-utils";
@@ -12,10 +13,12 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import {
     createRuntimeServiceGitMergeToBranchMutation,
     createRuntimeServiceGitPushMutation,
     createRuntimeServiceGitStatus,
+    getRuntimeServiceGitStatusQueryKey,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { Rocket } from "lucide-svelte";
@@ -75,6 +78,13 @@
 
     const isFirstPublish = !hasProdDeployment;
 
+    // gitStatus tracks localChanges and currentBranch; the mutations below
+    // change both, so refresh once the flow finishes (success or failure).
+    const gitStatusQueryKey = getRuntimeServiceGitStatusQueryKey(
+      client.instanceId,
+      {},
+    );
+
     try {
       if (hasLocalChanges) {
         await $gitPushMutation.mutateAsync({
@@ -90,6 +100,10 @@
       errorMessage = extractErrorMessage(err) || "Failed to publish";
       isPublishing = false;
       return;
+    } finally {
+      // Either gitPush or gitMerge may have changed localChanges or
+      // currentBranch (success or partial failure). Invalidate once.
+      void queryClient.invalidateQueries({ queryKey: gitStatusQueryKey });
     }
 
     if (isFirstPublish) {
@@ -97,10 +111,22 @@
         // CreateDeployment with environment "prod" intentionally omits `branch`
         // and `editable`: the API derives the branch from the project's primary
         // branch and forbids both fields for prod deployments.
+        // TODO: detect billing/quota errors here and surface a friendly
+        // message, mirroring `getPrettyDeployError` in
+        // `web-common/src/features/project/deploy/deploy-errors.ts`.
         await $createDeploymentMutation.mutateAsync({
           org: organization,
           project,
           data: { environment: "prod" },
+        });
+        // Invalidate via the no-params base key so all deployment-list query
+        // variants for this project (BranchSelector, BranchesSection, etc.)
+        // are matched by TanStack's prefix matching.
+        await queryClient.invalidateQueries({
+          queryKey: getAdminServiceListDeploymentsQueryKey(
+            organization,
+            project,
+          ),
         });
       } catch (err) {
         // The merge succeeded but the prod deployment failed to start. Be

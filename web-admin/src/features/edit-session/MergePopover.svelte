@@ -7,9 +7,11 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import {
     createRuntimeServiceGitMergeToBranchMutation,
     createRuntimeServiceGitStatus,
+    getRuntimeServiceGitStatusQueryKey,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { ExternalLink, GitPullRequest } from "lucide-svelte";
@@ -48,6 +50,10 @@
       await $gitMergeMutation.mutateAsync({
         branch: primaryBranch,
         force: false,
+      });
+      // gitStatus tracks currentBranch; refresh so subscribers see the merge.
+      await queryClient.invalidateQueries({
+        queryKey: getRuntimeServiceGitStatusQueryKey(client.instanceId, {}),
       });
     } catch (err) {
       errorMessage = extractErrorMessage(err) || "Failed to merge";
