@@ -34,8 +34,14 @@
   import MetricsViewMenuItems from "../metrics-views/MetricsViewMenuItems.svelte";
   import ModelMenuItems from "../models/navigation/ModelMenuItems.svelte";
   import SourceMenuItems from "../sources/navigation/SourceMenuItems.svelte";
-  import { readonlyFiles } from "@rilldata/web-common/features/entity-management/actions/readonly-files.ts";
+  import {
+    getReadonlyExtras,
+    matchReadonlyDir,
+    matchReadonlyFile,
+  } from "@rilldata/web-common/features/entity-management/actions/readonly-files.ts";
   import { getTopLevelFolder } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
+
+  const readonlyExtras = getReadonlyExtras();
 
   export let filePath: string;
   export let onRename: (filePath: string, isDir: boolean) => void;
@@ -65,9 +71,9 @@
     $inferredResourceKind) as ResourceKind;
   $: padding = getPaddingFromPath(filePath);
   $: topLevelFolder = getTopLevelFolder(filePath);
-  $: isProtectedDirectory = Boolean(readonlyFiles.matchDir(topLevelFolder));
+  $: isProtectedDirectory = matchReadonlyDir(topLevelFolder);
   $: isDotFile = fileName && fileName.startsWith(".");
-  $: isProtectedFile = Boolean(readonlyFiles.match(filePath));
+  $: isProtectedFile = Boolean(matchReadonlyFile(filePath, readonlyExtras));
 
   $: hasErrors = fileArtifact.getHasErrors(queryClient);
   $: hasWarnings = fileArtifact.getHasWarnings(queryClient);

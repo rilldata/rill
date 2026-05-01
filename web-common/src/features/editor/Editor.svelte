@@ -18,7 +18,12 @@
   import Codespace from "./Codespace.svelte";
   import { FILE_SAVE_DEBOUNCE_TIME } from "./config";
   import DiffBar from "./DiffBar.svelte";
-  import { readonlyFiles } from "@rilldata/web-common/features/entity-management/actions/readonly-files.ts";
+  import {
+    getReadonlyExtras,
+    matchReadonlyFile,
+  } from "@rilldata/web-common/features/entity-management/actions/readonly-files.ts";
+
+  const readonlyExtras = getReadonlyExtras();
 
   export let fileArtifact: FileArtifact;
   export let extensions: Extension[] = [];
@@ -41,7 +46,7 @@
     saveEnabled,
   } = fileArtifact);
 
-  $: readonlyMatch = readonlyFiles.match(path);
+  $: readonlyMatch = matchReadonlyFile(path, readonlyExtras);
   $: editable = Boolean(!readonlyMatch || readonlyMatch.allowFileEdit);
 
   $: debounceSave = debounce(save, FILE_SAVE_DEBOUNCE_TIME);

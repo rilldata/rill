@@ -12,13 +12,17 @@ import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { queryClient } from "../../../lib/svelte-query/globalQueryClient.ts";
 import { getFileNamesInDirectory } from "../file-selectors.ts";
-import { readonlyFiles } from "@rilldata/web-common/features/entity-management/actions/readonly-files.ts";
+import {
+  matchReadonlyFile,
+  type ReadonlyMatcher,
+} from "@rilldata/web-common/features/entity-management/actions/readonly-files.ts";
 
 export async function handleEntityRename(
   client: RuntimeClient,
   newName: string,
   existingPath: string,
   existingName: string,
+  readonlyExtras: ReadonlyMatcher[] = [],
 ) {
   const [folder] = splitFolderAndFileName(existingPath);
 
@@ -46,7 +50,7 @@ export async function handleEntityRename(
   }
 
   const newFilePath = (folder ? `${folder}/` : "/") + newName;
-  if (readonlyFiles.match(newFilePath)) {
+  if (matchReadonlyFile(newFilePath, readonlyExtras)) {
     eventBus.emit("notification", {
       message: `Cannot rename to ${newFilePath}. It is a protected path.`,
     });

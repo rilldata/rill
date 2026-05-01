@@ -1,54 +1,43 @@
+import { getContext, setContext } from "svelte";
 import type { Snippet } from "svelte";
 
-const PROTECTED_DIRECTORIES: ReadonlyFileMatcher[] = [
-  {
-    id: "tmp",
-    matcher: /^\/tmp(\/|$)/,
-  },
-  {
-    id: "git",
-    matcher: /^\/.git(\/|$)/,
-  },
-];
-const PROTECTED_FILES: ReadonlyFileMatcher[] = [
-  {
-    id: "/rill.yaml",
-    matcher: /^\/rill.yaml$/,
-    allowFileEdit: true,
-  },
-];
-
-export class ReadonlyFiles {
-  private readonly readonlyFiles = new Map<string, ReadonlyFileMatcher>(
-    PROTECTED_FILES.map((matcher) => [matcher.id, matcher]),
-  );
-  private readonly readonlyDirs = new Map<string, ReadonlyFileMatcher>(
-    PROTECTED_DIRECTORIES.map((matcher) => [matcher.id, matcher]),
-  );
-
-  public addReadonly(matcher: ReadonlyFileMatcher) {
-    this.readonlyFiles.set(matcher.id, matcher);
-  }
-
-  public match(path: string) {
-    return this.readonlyFiles
-      .values()
-      .find((matcher) => matcher.matcher.test(path));
-  }
-
-  public matchDir(path: string) {
-    return this.readonlyDirs
-      .values()
-      .find((matcher) => matcher.matcher.test(path));
-  }
-}
-
-type ReadonlyFileMatcher = {
-  id: string;
+export type ReadonlyMatcher = {
   matcher: RegExp;
   messageSnippet?: Snippet;
   // Allows file edit but disables rename/delete
   allowFileEdit?: boolean;
 };
 
-export const readonlyFiles = new ReadonlyFiles();
+const PROTECTED_FILES: ReadonlyMatcher[] = [
+  { matcher: /^\/rill\.yaml$/, allowFileEdit: true },
+];
+
+const PROTECTED_DIRECTORIES: RegExp[] = [/^\/tmp(\/|$)/, /^\/\.git(\/|$)/];
+
+// Route subtrees publish additional readonly matchers via setContext. Scope is
+// natural: when the layout unmounts, the entries leave with it. The `.env`
+// readonly rule only applies inside the cloud edit layout, so it lives there.
+const READONLY_FILES_CONTEXT = Symbol("readonly-files");
+
+export function getReadonlyExtras(): ReadonlyMatcher[] {
+  return (
+    getContext<ReadonlyMatcher[] | undefined>(READONLY_FILES_CONTEXT) ?? []
+  );
+}
+
+export function setReadonlyExtras(matchers: ReadonlyMatcher[]) {
+  setContext(READONLY_FILES_CONTEXT, matchers);
+}
+
+export function matchReadonlyFile(
+  path: string,
+  extras: ReadonlyMatcher[] = [],
+): ReadonlyMatcher | undefined {
+  for (const m of PROTECTED_FILES) if (m.matcher.test(path)) return m;
+  for (const m of extras) if (m.matcher.test(path)) return m;
+  return undefined;
+}
+
+export function matchReadonlyDir(path: string): boolean {
+  return PROTECTED_DIRECTORIES.some((re) => re.test(path));
+}
