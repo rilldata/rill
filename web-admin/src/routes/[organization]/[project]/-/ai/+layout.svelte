@@ -31,11 +31,14 @@
       </Button>
     </svelte:fragment>
     <svelte:fragment slot="sidebar-collapsed-footer">
-      <span title="Connect your own client">
-        <Button type="secondary" square onClick={() => (mcpDialogOpen = true)}>
-          <APIIcon size="14px" className="!fill-current" />
-        </Button>
-      </span>
+      <Button
+        type="secondary"
+        square
+        label="Connect your own client"
+        onClick={() => (mcpDialogOpen = true)}
+      >
+        <APIIcon size="14px" className="!fill-current" />
+      </Button>
     </svelte:fragment>
   </ProjectChat>
 
