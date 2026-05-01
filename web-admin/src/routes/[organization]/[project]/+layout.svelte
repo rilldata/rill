@@ -29,6 +29,7 @@
   } from "@rilldata/web-admin/client";
   import {
     isEditPage,
+    isProjectInvitePage,
     isProjectPage,
     isPublicAlertPage,
     isPublicReportPage,
@@ -80,6 +81,7 @@
 
   let onProjectPage = $derived(isProjectPage(page));
   let onEditPage = $derived(isEditPage(page));
+  let onInvitePage = $derived(isProjectInvitePage(page));
   let onPublicURLPage = $derived(isPublicURLPage(page));
   let onWelcomePage = $derived(isProjectWelcomePage(page));
 
@@ -266,6 +268,22 @@
 {:else if projectData}
   {#if onEditPage}
     <!-- Edit layout manages its own runtime and header -->
+    {@render children()}
+  {:else if onInvitePage}
+    <!-- Invite is admin-server-only and doesn't depend on the runtime, so we
+         render it immediately and let users invite teammates while the
+         deployment provisions. Otherwise the layout would briefly show
+         `ProjectBuilding` here while the just-created prod deployment is
+         still PENDING. -->
+    <SlimProjectHeader
+      {organization}
+      {project}
+      readProjects={organizationPermissions?.readProjects}
+      readDev={!!runtime.projectPermissions?.readDev}
+      primaryBranch={projectData?.project?.primaryBranch}
+      {planDisplayName}
+      {organizationLogoUrl}
+    />
     {@render children()}
   {:else if isProjectAvailable && runtime.host != null && runtime.instanceId}
     <!-- Re-key on host::instanceId to force RuntimeProvider to tear down and

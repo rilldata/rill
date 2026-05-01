@@ -279,5 +279,22 @@ describe("deployment-utils", () => {
       const result = await call("/rilldata/openrtb/-/deploying");
       expect(result).toBeUndefined();
     });
+
+    it("does not redirect away from the invite page", async () => {
+      // Same redirect-eligible conditions as the deploying-page test.
+      listDeploymentsMock.mockResolvedValue({
+        deployments: [
+          makeDeployment({
+            environment: "dev",
+            editable: true,
+            branch: "edit-branch",
+            status: V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING,
+          }),
+        ],
+      });
+
+      const result = await call("/rilldata/openrtb/-/invite");
+      expect(result).toBeUndefined();
+    });
   });
 });

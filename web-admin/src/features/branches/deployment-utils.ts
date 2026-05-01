@@ -40,9 +40,13 @@ export async function maybeRedirectToEditableDeployment(
   project: string,
   url: URL,
 ) {
-  // The deploying page is a transitional progress screen for a prod deployment
-  // that is still provisioning. Do not redirect away from it.
-  if (url.pathname.endsWith("/-/deploying")) return;
+  // The deploying and invite pages are transitional screens shown while a
+  // prod deployment is still provisioning. Do not redirect away from them.
+  if (
+    url.pathname.endsWith("/-/deploying") ||
+    url.pathname.endsWith("/-/invite")
+  )
+    return;
 
   const deploymentsResp = await queryClient.fetchQuery({
     queryKey: getAdminServiceListDeploymentsQueryKey(organization, project, {}),
