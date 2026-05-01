@@ -275,7 +275,7 @@
       optimisticallyRemoveDeployment(organization, project, deploymentId);
       if (branch && branch === activeBranch) {
         requestSkipBranchInjection();
-        void goto(`/${organization}/${project}/-/status/deployments`);
+        void goto(`/${organization}/${project}/-/status/branches`);
       }
     } catch (err) {
       eventBus.emit("notification", {
@@ -289,7 +289,7 @@
 </script>
 
 <section class="flex flex-col gap-y-5">
-  <h2 class="text-lg font-medium">Branches</h2>
+  <h2 class="text-lg font-medium">Deployments</h2>
 
   <TableToolbar
     {searchText}

@@ -178,8 +178,13 @@
 
 {#if showDeploymentSection}
   <div class="page">
-    <!-- Page header -->
-    <h2 class="page-title">Deployments</h2>
+    <!-- Section header -->
+    <h2 class="page-title">Compute breakdown</h2>
+    <!--
+      Lives on the page named "Branches" (configured in
+      `routes/[organization]/[project]/-/status/+layout.svelte`). The page
+      title carries the noun, so this h2 names what's *in* the section.
+    -->
 
     <!-- Summary bar -->
     <div class="summary-bar">
