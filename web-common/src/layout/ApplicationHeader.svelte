@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type {
@@ -17,14 +16,8 @@
   import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
   import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
   import { updateDevJWT } from "@rilldata/web-common/features/dashboards/granular-access-policies/updateDevJWT";
-  import { useMockUsers } from "@rilldata/web-common/features/dashboards/granular-access-policies/useMockUsers";
   import { useRillYamlPolicyCheck } from "@rilldata/web-common/features/dashboards/granular-access-policies/useSecurityPolicyCheck";
   import ViewAsButton from "@rilldata/web-common/features/dashboards/granular-access-policies/ViewAsButton.svelte";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import Add from "@rilldata/web-common/components/icons/Add.svelte";
-  import Check from "@rilldata/web-common/components/icons/Check.svelte";
-  import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
-  import { getFileHref } from "@rilldata/web-common/layout/navigation/editor-routing";
   import DeployProjectCTA from "@rilldata/web-common/features/dashboards/workspace/DeployProjectCTA.svelte";
   import ExplorePreviewCTAs from "@rilldata/web-common/features/explores/ExplorePreviewCTAs.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
@@ -47,17 +40,16 @@
 
   export let mode: string;
 
-  // Close the AI chat panel when the user toggles between Developer and
-  // Preview. The active "View as" mock user is intentionally preserved
-  // across the toggle so a user picked from the dropdown survives the
-  // Developer → Preview navigation; clearing happens via the inline × on
-  // the "Viewing as" chip.
-  let previousMode: string | null = null;
-  $: {
-    if (previousMode !== null && previousMode !== mode) {
-      sidebarActions.closeChat();
+  // Reset session state (chat panel, mock-user impersonation) when the
+  // user explicitly clicks the Preview/Edit toggle. This is wired to the
+  // button click, not to mode changes in general — picking a user from
+  // the View-as dropdown also flips the mode, but should preserve the
+  // impersonation it just set.
+  function resetOnModeToggle() {
+    sidebarActions.closeChat();
+    if (get(selectedMockUserStore) !== null) {
+      updateDevJWT(queryClient, runtimeClient, null).catch(console.error);
     }
-    previousMode = mode;
   }
 
   $: ({
@@ -91,9 +83,6 @@
     );
   $: showProjectViewAs =
     !onVizRoute && (!!$rillYamlPolicyCheck?.data || anyDashboardHasPolicy);
-
-  $: mockUsers = useMockUsers(runtimeClient);
-  let localViewAsOpen = false;
 
   $: exploresQuery = useValidExplores(runtimeClient);
   $: canvasQuery = useValidCanvases(runtimeClient);
@@ -216,50 +205,15 @@
     {:else if showDeveloperChat}
       <ChatToggle />
     {/if}
-    {#if $selectedMockUserStore}
+    {#if showProjectViewAs}
       <ViewAsButton />
     {/if}
     {#if showPreviewToggle}
       <PreviewModeToggleButton
         mode={mode === "Preview" ? "Edit" : "Preview"}
         href={previewToggleHref}
-        showViewAs={showProjectViewAs}
-        bind:dropdownOpen={localViewAsOpen}
-      >
-        <svelte:fragment slot="dropdown">
-          {#if !$mockUsers.data || $mockUsers.data?.length === 0}
-            <DropdownMenu.Item disabled>No mock users</DropdownMenu.Item>
-          {:else}
-            {#each $mockUsers.data as user (user?.email)}
-              <DropdownMenu.Item
-                onclick={() => {
-                  updateDevJWT(queryClient, runtimeClient, user).catch(
-                    console.error,
-                  );
-                  localViewAsOpen = false;
-                  if (mode !== "Preview") void goto(previewToggleHref);
-                }}
-                class="flex gap-x-2 items-center"
-              >
-                {#if $selectedMockUserStore?.email === user?.email}
-                  <Check size="16px" />
-                {:else}
-                  <Spacer size="16px" />
-                {/if}
-                {user.email}
-              </DropdownMenu.Item>
-            {/each}
-          {/if}
-          <DropdownMenu.Separator />
-          <DropdownMenu.Item
-            href={`${getFileHref("/rill.yaml")}?addMockUser=true`}
-            class="flex gap-x-2 items-center font-normal"
-          >
-            <Add size="16px" />
-            Add mock user
-          </DropdownMenu.Item>
-        </svelte:fragment>
-      </PreviewModeToggleButton>
+        onPreviewClick={resetOnModeToggle}
+      />
     {/if}
     {#if showDeployCTA}
       <DeployProjectCTA {hasValidDashboard} />

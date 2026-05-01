@@ -230,6 +230,9 @@
         href={editPreviewHref}
         showViewAs={projectPermissions?.manageProject ?? false}
         bind:dropdownOpen={editorViewAsOpen}
+        onPreviewClick={() => {
+          if ($viewAsUserStore) viewAsUserStore.set(null);
+        }}
       >
         <svelte:fragment slot="dropdown">
           <ViewAsUserPopover

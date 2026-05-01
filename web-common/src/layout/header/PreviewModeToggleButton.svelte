@@ -9,10 +9,20 @@
   /** When true, render the trailing UserRoundSearch dropdown trigger and a
    *  `dropdown` slot for the user-list popover. */
   export let showViewAs = false;
+  /** Fires alongside navigation when the user clicks the Preview/Edit
+   *  half. Use this to reset session state (chat, impersonation, etc.)
+   *  on an explicit mode swap — distinct from picking a user from the
+   *  dropdown, which intentionally preserves impersonation. */
+  export let onPreviewClick: (() => void) | null = null;
 </script>
 
 <div class="split-button" class:disabled>
-  <a class="left" {href} aria-label={mode}>
+  <a
+    class="left"
+    {href}
+    aria-label={mode}
+    on:click={() => onPreviewClick?.()}
+  >
     {#if mode === "Preview"}
       <Play size={14} />
     {:else}
