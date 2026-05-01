@@ -2,6 +2,7 @@ package admin
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -1091,8 +1092,11 @@ func setupGitConfig(t *testing.T, repoPath string) {
 }
 
 func execCommand(cmd *exec.Cmd) error {
-	_, err := cmd.CombinedOutput()
-	return err
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("command failed: %s, output: %s", err, string(out))
+	}
+	return nil
 }
 
 // verifyCurrentBranch verifies that the repository is currently on the expected branch
