@@ -1,12 +1,10 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import {
     createAdminServiceCreateDeployment,
     createAdminServiceListDeployments,
     getAdminServiceListDeploymentsQueryKey,
   } from "@rilldata/web-admin/client";
-  import { requestSkipBranchInjection } from "@rilldata/web-admin/features/branches/branch-utils";
   import { isProdDeployment } from "@rilldata/web-admin/features/branches/deployment-utils";
   import { Button } from "@rilldata/web-common/components/button";
   import * as Popover from "@rilldata/web-common/components/popover";
@@ -76,6 +74,18 @@
     isPublishing = true;
     errorMessage = "";
 
+    // Open the destination tab synchronously so the browser ties it to the
+    // user's click gesture; otherwise pop-up blockers reject the open after
+    // the awaited mutations below. We navigate the placeholder once we know
+    // whether this is a first publish (-> /-/invite) or a subsequent one
+    // (-> /-/deploying), and close it on failure.
+    const targetWindow = window.open("about:blank", "_blank");
+    if (!targetWindow) {
+      errorMessage = "Pop-up was blocked. Please allow pop-ups and try again.";
+      isPublishing = false;
+      return;
+    }
+
     const isFirstPublish = !hasProdDeployment;
 
     // gitStatus tracks localChanges and currentBranch; the mutations below
@@ -97,6 +107,7 @@
         force: false,
       });
     } catch (err) {
+      targetWindow.close();
       errorMessage = extractErrorMessage(err) || "Failed to publish";
       isPublishing = false;
       return;
@@ -132,6 +143,7 @@
         // The merge succeeded but the prod deployment failed to start. Be
         // explicit so the user knows their changes are on the primary branch
         // and that creating the deployment is the part that needs retrying.
+        targetWindow.close();
         const detail = extractErrorMessage(err);
         errorMessage = `Changes merged to production, but creating the production deployment failed${
           detail ? `: ${detail}` : ""
@@ -141,34 +153,21 @@
       }
     }
 
-    let target: string;
-    let gotoOpts: Parameters<typeof goto>[1];
-    if (isFirstPublish) {
-      // Prod runtime is provisioning from scratch and reconciling for the first
-      // time; route through the deploying page so the user sees progress
-      // instead of an empty project home.
-      const params = new URLSearchParams({ source: "publish" });
-      if (currentDashboard) {
-        params.set("deploying_dashboard", currentDashboard);
-      }
-      target = `/${organization}/${project}/-/deploying?${params.toString()}`;
-      gotoOpts = { replaceState: true };
-    } else {
-      target = `/${organization}/${project}`;
-      gotoOpts = undefined;
+    // Mirror the local Rill Developer flow: first publish lands on /-/invite
+    // (inviting teammates is the natural next step before the runtime is
+    // ready), subsequent publishes land on /-/deploying.
+    const params = new URLSearchParams();
+    if (currentDashboard) {
+      params.set("deploying_dashboard", currentDashboard);
     }
+    const search = params.toString();
+    const path = isFirstPublish ? "/-/invite" : "/-/deploying";
+    targetWindow.location.href = `/${organization}/${project}${path}${
+      search ? `?${search}` : ""
+    }`;
 
     isPublishing = false;
     open = false;
-
-    // Defer goto to the next task. Calling it synchronously after a mutation
-    // races with TanStack's invalidation/refetch teardown, whose abort listeners
-    // can throw and silently cancel the navigation. Same workaround as
-    // welcome/organization/+page.svelte after createOrg.
-    setTimeout(() => {
-      requestSkipBranchInjection();
-      void goto(target, gotoOpts);
-    });
   }
 </script>
 
@@ -185,8 +184,13 @@
     <Popover.Content align="end" class="!w-[320px]">
       <div class="flex flex-col gap-y-3">
         <p class="text-xs text-fg-secondary">
-          Publish your changes to production and return to the project home.
-          Viewers will see updates as the project reconciles.
+          {#if !hasProdDeployment}
+            Publish your project to production. We'll open a new tab where you
+            can invite teammates while the deployment reconciles.
+          {:else}
+            Publish your changes to production. We'll open a new tab so you can
+            watch updates reconcile.
+          {/if}
         </p>
         <Button
           type="primary"
