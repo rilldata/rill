@@ -88,9 +88,6 @@
   .left.viewing {
     @apply max-w-[280px];
   }
-  .left.viewing .truncate {
-    @apply truncate;
-  }
   .right {
     @apply flex items-center justify-center px-2 bg-primary-50 border-l border-primary-500;
     @apply text-primary-600 hover:bg-primary-100 transition-colors;
