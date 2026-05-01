@@ -143,6 +143,11 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema, l
 	return res, next, nil
 }
 
+// All implements drivers.InformationSchema.
+func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
+}
+
 // Lookup implements drivers.InformationSchema.
 func (c *connection) Lookup(ctx context.Context, database, databaseSchema, table string) (*drivers.TableInfo, error) {
 	prefix := catalogPrefix(database)

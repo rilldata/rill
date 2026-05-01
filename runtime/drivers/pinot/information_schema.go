@@ -137,6 +137,74 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema, l
 	return result, next, nil
 }
 
+// All implements drivers.InformationSchema.
+func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.schemaURL+"/tables", http.NoBody)
+	for k, v := range c.headers {
+		req.Header.Set(k, v)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, "", fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	var tablesResp pinotTables
+	if err := json.NewDecoder(resp.Body).Decode(&tablesResp); err != nil {
+		return nil, "", err
+	}
+
+	sort.Strings(tablesResp.Tables)
+
+	if like != "" {
+		filtered := tablesResp.Tables[:0]
+		for _, name := range tablesResp.Tables {
+			if matchLike(name, like) {
+				filtered = append(filtered, name)
+			}
+		}
+		tablesResp.Tables = filtered
+	}
+
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+	startIndex := 0
+	if pageToken != "" {
+		startIndex, err = strconv.Atoi(pageToken)
+		if err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+	}
+
+	endIndex := startIndex + limit
+	if endIndex >= len(tablesResp.Tables) {
+		endIndex = len(tablesResp.Tables)
+	}
+	if startIndex >= len(tablesResp.Tables) {
+		return []*drivers.TableInfo{}, "", nil
+	}
+
+	tables := make([]*drivers.TableInfo, 0, endIndex-startIndex)
+	for _, name := range tablesResp.Tables[startIndex:endIndex] {
+		tables = append(tables, &drivers.TableInfo{
+			Database:       "",
+			DatabaseSchema: "",
+			Name:           name,
+		})
+	}
+
+	next := ""
+	if endIndex < len(tablesResp.Tables) {
+		next = strconv.Itoa(endIndex)
+	}
+
+	return tables, next, nil
+}
+
 func (c *connection) Lookup(ctx context.Context, database, databaseSchema, table string) (*drivers.TableInfo, error) {
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.schemaURL+"/tables/"+table+"/schema", http.NoBody)
 	for k, v := range c.headers {

@@ -79,7 +79,7 @@ func (s *Server) OLAPListTables(ctx context.Context, req *runtimev1.OLAPListTabl
 	defer release()
 
 	i := olap.InformationSchema()
-	tables, next, err := i.ListTables(ctx, "", "", req.SearchPattern, req.PageSize, req.PageToken)
+	tables, next, err := i.All(ctx, req.SearchPattern, req.PageSize, req.PageToken)
 	if err != nil {
 		return nil, err
 	}

@@ -86,6 +86,11 @@ func (c *connection) ListTables(ctx context.Context, _, _, like string, pageSize
 	return res, next, nil
 }
 
+// All implements drivers.InformationSchema.
+func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
+}
+
 func (c *connection) Lookup(ctx context.Context, _, _, table string) (*drivers.TableInfo, error) {
 	// Ensure Coordinator is ready.
 	// The issues is that the request

@@ -146,6 +146,28 @@ func (c *connection) ListTables(ctx context.Context, _, _, like string, pageSize
 	return res, next, nil
 }
 
+// All implements drivers.InformationSchema.
+func (c *connection) All(ctx context.Context, ilike string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+	// TODO: this bypasses the acquireMetaConn call in the original implementation. Fix this.
+	db, release, err := c.acquireDB()
+	if err != nil {
+		return nil, "", err
+	}
+	defer func() { _ = release() }()
+
+	rows, nextToken, err := db.Schema(ctx, ilike, "", pageSize, pageToken)
+	if err != nil {
+		return nil, "", c.checkErr(err)
+	}
+
+	tables, err := scanTables(rows)
+	if err != nil {
+		return nil, "", err
+	}
+
+	return tables, nextToken, nil
+}
+
 func (c *connection) Lookup(ctx context.Context, _, _, table string) (*drivers.TableInfo, error) {
 	// TODO: this bypasses the acquireMetaConn call in the original implementation. Fix this.
 	db, release, err := c.acquireDB()

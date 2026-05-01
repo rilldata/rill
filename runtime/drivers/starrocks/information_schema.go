@@ -159,6 +159,80 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema, l
 	return tables, nextToken, nil
 }
 
+// All implements drivers.InformationSchema.
+func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+	catalog := c.configProp.Catalog
+
+	q := fmt.Sprintf(`
+		SELECT
+			table_schema,
+			table_name,
+			CASE
+				WHEN table_type = 'VIEW' THEN true
+				WHEN table_type = 'MATERIALIZED VIEW' THEN true
+				ELSE false
+			END AS is_view
+		FROM %s.information_schema.tables
+		WHERE table_schema NOT IN ('information_schema', '_statistics_', 'mysql', 'sys')
+	`, safeSQLName(catalog))
+
+	var args []any
+	if like != "" {
+		q += " AND LOWER(table_name) LIKE LOWER(?)"
+		args = append(args, like)
+	}
+	if pageToken != "" {
+		var afterSchema, afterName string
+		if err := pagination.UnmarshalPageToken(pageToken, &afterSchema, &afterName); err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+		q += " AND (table_schema > ? OR (table_schema = ? AND table_name > ?))"
+		args = append(args, afterSchema, afterSchema, afterName)
+	}
+
+	q += " ORDER BY table_schema, table_name"
+
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+	if limit > 0 {
+		q += fmt.Sprintf(" LIMIT %d", limit+1)
+	}
+
+	rows, err := c.db.QueryxContext(ctx, q, args...)
+	if err != nil {
+		return nil, "", err
+	}
+	defer rows.Close()
+
+	var tables []*drivers.TableInfo
+	for rows.Next() {
+		var schemaName, tableName string
+		var isView bool
+		if err := rows.Scan(&schemaName, &tableName, &isView); err != nil {
+			return nil, "", err
+		}
+		tables = append(tables, &drivers.TableInfo{
+			Database:                catalog,
+			DatabaseSchema:          schemaName,
+			IsDefaultDatabase:       false,
+			IsDefaultDatabaseSchema: false,
+			Name:                    tableName,
+			View:                    isView,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, "", err
+	}
+
+	var nextToken string
+	if limit > 0 && len(tables) > limit {
+		tables = tables[:limit]
+		last := tables[len(tables)-1]
+		nextToken = pagination.MarshalPageToken(last.DatabaseSchema, last.Name)
+	}
+
+	return tables, nextToken, nil
+}
+
 // Lookup returns metadata about a specific table or view.
 // database parameter = catalog, schema parameter = database in StarRocks terms.
 func (c *connection) Lookup(ctx context.Context, database, databaseSchema, table string) (*drivers.TableInfo, error) {

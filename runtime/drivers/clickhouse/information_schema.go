@@ -164,6 +164,88 @@ func (c *Connection) ListTables(ctx context.Context, _, databaseSchema, like str
 	return res, next, nil
 }
 
+// All implements drivers.InformationSchema.
+func (c *Connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+	conn, release, err := c.acquireMetaConn(ctx)
+	if err != nil {
+		return nil, "", err
+	}
+	defer func() { _ = release() }()
+
+	var args []any
+	var filter string
+	if c.config.DatabaseWhitelist != "" {
+		dbs := strings.Split(c.config.DatabaseWhitelist, ",")
+		var sb strings.Builder
+		for i, db := range dbs {
+			if i > 0 {
+				sb.WriteString(", ")
+			}
+			sb.WriteString("?")
+			args = append(args, strings.TrimSpace(db))
+		}
+		filter = fmt.Sprintf("(T.database IN (%s))", sb.String())
+	} else {
+		filter = "(T.database == currentDatabase() OR lower(T.database) NOT IN ('information_schema', 'system'))"
+	}
+
+	if like != "" {
+		filter += " AND LOWER(T.name) LIKE LOWER(?)"
+		args = append(args, like)
+	}
+
+	if pageToken != "" {
+		var startAfterSchema, startAfterName string
+		if err := pagination.UnmarshalPageToken(pageToken, &startAfterSchema, &startAfterName); err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+		filter += " AND (T.database > ? OR (T.database = ? AND T.name > ?))"
+		args = append(args, startAfterSchema, startAfterSchema, startAfterName)
+	}
+
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+	q := fmt.Sprintf(`
+		SELECT
+			LT.database AS SCHEMA,
+			LT.database = currentDatabase() AS is_default_schema,
+			LT.name AS NAME,
+			if(lower(LT.engine) like '%%view%%', 'VIEW', 'TABLE') AS TABLE_TYPE,
+			C.name AS COLUMNS,
+			C.type AS COLUMN_TYPE,
+			C.position AS ORDINAL_POSITION
+		FROM (
+			SELECT T.database, T.name, T.engine
+			FROM system.tables T
+			WHERE %s
+			ORDER BY database, name
+			LIMIT ?
+		) LT
+		JOIN system.columns C ON LT.database = C.database AND LT.name = C.table
+		ORDER BY SCHEMA, NAME, TABLE_TYPE, ORDINAL_POSITION
+	`, filter)
+	args = append(args, limit+1)
+
+	rows, err := conn.QueryxContext(ctx, q, args...)
+	if err != nil {
+		return nil, "", err
+	}
+	defer rows.Close()
+
+	tables, err := scanTables(rows)
+	if err != nil {
+		return nil, "", err
+	}
+
+	next := ""
+	if len(tables) > limit {
+		tables = tables[:limit]
+		last := tables[len(tables)-1]
+		next = pagination.MarshalPageToken(last.DatabaseSchema, last.Name)
+	}
+
+	return tables, next, nil
+}
+
 func (c *Connection) Lookup(ctx context.Context, database, databaseSchema, table string) (*drivers.TableInfo, error) {
 	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {
