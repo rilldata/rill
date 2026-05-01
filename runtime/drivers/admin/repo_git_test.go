@@ -2,7 +2,6 @@ package admin
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -425,14 +424,14 @@ func TestGitRepo_pullInner(t *testing.T) {
 				setupGitConfig(t, localDir)
 
 				// Create edit-branch and push it to remote so the remote tracking ref exists.
-				require.NoError(t, execGitCommand(exec.Command("git", "-C", localDir, "checkout", "-b", "edit-branch")))
-				require.NoError(t, execGitCommand(exec.Command("git", "-C", localDir, "push", "origin", "edit-branch")))
+				require.NoError(t, execCommand(exec.Command("git", "-C", localDir, "checkout", "-b", "edit-branch")))
+				require.NoError(t, execCommand(exec.Command("git", "-C", localDir, "push", "origin", "edit-branch")))
 
 				// Commit a local change to test1.txt on edit-branch (do NOT push).
 				err = os.WriteFile(filepath.Join(localDir, "test1.txt"), []byte("local edit content"), 0644)
 				require.NoError(t, err)
-				require.NoError(t, execGitCommand(exec.Command("git", "-C", localDir, "add", "test1.txt")))
-				require.NoError(t, execGitCommand(exec.Command("git", "-C", localDir, "commit", "-m", "Local edit change")))
+				require.NoError(t, execCommand(exec.Command("git", "-C", localDir, "add", "test1.txt")))
+				require.NoError(t, execCommand(exec.Command("git", "-C", localDir, "commit", "-m", "Local edit change")))
 
 				return newEditableGitRepo(localDir, remoteURL, "edit-branch", "main", "")
 			},
@@ -457,14 +456,14 @@ func TestGitRepo_pullInner(t *testing.T) {
 				setupGitConfig(t, localDir)
 
 				// Create edit-branch and push it to remote.
-				require.NoError(t, execGitCommand(exec.Command("git", "-C", localDir, "checkout", "-b", "edit-branch")))
-				require.NoError(t, execGitCommand(exec.Command("git", "-C", localDir, "push", "origin", "edit-branch")))
+				require.NoError(t, execCommand(exec.Command("git", "-C", localDir, "checkout", "-b", "edit-branch")))
+				require.NoError(t, execCommand(exec.Command("git", "-C", localDir, "push", "origin", "edit-branch")))
 
 				// Commit a local change to a unique file (no overlap with remote change).
 				err = os.WriteFile(filepath.Join(localDir, "local_change.txt"), []byte("local only content"), 0644)
 				require.NoError(t, err)
-				require.NoError(t, execGitCommand(exec.Command("git", "-C", localDir, "add", "local_change.txt")))
-				require.NoError(t, execGitCommand(exec.Command("git", "-C", localDir, "commit", "-m", "Local only change")))
+				require.NoError(t, execCommand(exec.Command("git", "-C", localDir, "add", "local_change.txt")))
+				require.NoError(t, execCommand(exec.Command("git", "-C", localDir, "commit", "-m", "Local only change")))
 
 				return newEditableGitRepo(localDir, remoteURL, "edit-branch", "main", "")
 			},
@@ -663,7 +662,7 @@ func TestGitRepo_commitToDefaultBranch(t *testing.T) {
 			validate: func(t *testing.T, repo *gitRepo, localDir, remoteDir string) {
 				// Verify no extra commits beyond the branch creation point.
 				workingDir := t.TempDir()
-				require.NoError(t, execGitCommand(exec.Command("git", "clone", "-b", "edit-branch", remoteDir, workingDir)))
+				require.NoError(t, execCommand(exec.Command("git", "clone", "-b", "edit-branch", remoteDir, workingDir)))
 				out, err := exec.Command("git", "-C", workingDir, "rev-list", "--count", "HEAD").Output()
 				require.NoError(t, err)
 				require.Equal(t, "1\n", string(out))
@@ -901,6 +900,17 @@ func TestGitRepo_mergeToBranch(t *testing.T) {
 	}
 }
 
+func TestEnsureGitConfig(t *testing.T) {
+	withCleanGitEnv(t)
+
+	repo := t.TempDir()
+	require.NoError(t, execCommand(exec.Command("git", "-C", repo, "init")))
+	require.NoError(t, ensureGitConfig(repo, "user.name", "Test User"))
+	out, err := exec.Command("git", "-C", repo, "config", "--local", "--get", "user.name").CombinedOutput()
+	require.NoError(t, err)
+	require.Equal(t, "Test User\n", string(out))
+}
+
 func newEditableGitRepo(localDir, remoteURL, defaultBranch, primaryBranch, subpath string) *gitRepo {
 	return &gitRepo{
 		h:             &Handle{logger: zap.NewNop()},
@@ -925,15 +935,15 @@ func cloneAndCreateRemoteEditBranch(t *testing.T, localDir, remoteURL string) {
 	})
 	require.NoError(t, err)
 	setupGitConfig(t, localDir)
-	require.NoError(t, execGitCommand(exec.Command("git", "-C", localDir, "checkout", "-b", "edit-branch")))
-	require.NoError(t, execGitCommand(exec.Command("git", "-C", localDir, "push", "origin", "edit-branch")))
+	require.NoError(t, execCommand(exec.Command("git", "-C", localDir, "checkout", "-b", "edit-branch")))
+	require.NoError(t, execCommand(exec.Command("git", "-C", localDir, "push", "origin", "edit-branch")))
 }
 
 // verifyRemoteBranchFile clones the given branch from remote and verifies that the file has the expected content.
 func verifyRemoteBranchFile(t *testing.T, remoteDir, branch, relPath, expectedContent string) {
 	t.Helper()
 	workingDir := t.TempDir()
-	require.NoError(t, execGitCommand(exec.Command("git", "clone", "-b", branch, remoteDir, workingDir)))
+	require.NoError(t, execCommand(exec.Command("git", "clone", "-b", branch, remoteDir, workingDir)))
 	content, err := os.ReadFile(filepath.Join(workingDir, relPath))
 	require.NoError(t, err, "expected file %q to exist on remote branch %q", relPath, branch)
 	require.Equal(t, expectedContent, string(content))
@@ -1024,17 +1034,17 @@ func createRemoteCommit(t *testing.T, remoteDir, fileName, content, commitMessag
 func createRemoteCommitOnBranch(t *testing.T, remoteDir, branchName, fileName, content, commitMessage string) {
 	t.Helper()
 	workingDir := t.TempDir()
-	require.NoError(t, execGitCommand(exec.Command("git", "clone", remoteDir, workingDir)), "failed to clone repository")
+	require.NoError(t, execCommand(exec.Command("git", "clone", remoteDir, workingDir)), "failed to clone repository")
 
 	setupGitConfig(t, workingDir)
 
-	require.NoError(t, execGitCommand(exec.Command("git", "-C", workingDir, "checkout", branchName)), "failed to checkout branch")
+	require.NoError(t, execCommand(exec.Command("git", "-C", workingDir, "checkout", branchName)), "failed to checkout branch")
 
 	require.NoError(t, os.WriteFile(filepath.Join(workingDir, fileName), []byte(content), 0644), "failed to write file")
 
-	require.NoError(t, execGitCommand(exec.Command("git", "-C", workingDir, "add", fileName)), "failed to stage file")
-	require.NoError(t, execGitCommand(exec.Command("git", "-C", workingDir, "commit", "-m", commitMessage)), "failed to commit file")
-	require.NoError(t, execGitCommand(exec.Command("git", "-C", workingDir, "push", "origin", branchName)), "failed to push commit")
+	require.NoError(t, execCommand(exec.Command("git", "-C", workingDir, "add", fileName)), "failed to stage file")
+	require.NoError(t, execCommand(exec.Command("git", "-C", workingDir, "commit", "-m", commitMessage)), "failed to commit file")
+	require.NoError(t, execCommand(exec.Command("git", "-C", workingDir, "push", "origin", branchName)), "failed to push commit")
 }
 
 // createRemoteBranch creates a new branch with content in the remote repository
@@ -1076,21 +1086,13 @@ func createRemoteBranch(t *testing.T, remoteDir, branchName, fileName, content, 
 
 // setupGitConfig sets up git configuration for testing
 func setupGitConfig(t *testing.T, repoPath string) {
-	cmd := exec.Command("git", "-C", repoPath, "config", "user.name", "Test User")
-	err := execGitCommand(cmd)
-	require.NoError(t, err, "failed to set user name")
-
-	cmd = exec.Command("git", "-C", repoPath, "config", "user.email", "test@example.com")
-	err = execGitCommand(cmd)
-	require.NoError(t, err, "failed to set user email")
+	require.NoError(t, execCommand(exec.Command("git", "-C", repoPath, "config", "user.name", "Test User")))
+	require.NoError(t, execCommand(exec.Command("git", "-C", repoPath, "config", "user.email", "test@example.com")))
 }
 
-func execGitCommand(cmd *exec.Cmd) error {
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("command failed: %s, output: %s", err, string(out))
-	}
-	return nil
+func execCommand(cmd *exec.Cmd) error {
+	_, err := cmd.CombinedOutput()
+	return err
 }
 
 // verifyCurrentBranch verifies that the repository is currently on the expected branch
@@ -1102,4 +1104,15 @@ func verifyCurrentBranch(t *testing.T, repoPath, expectedBranch string) {
 	require.NoError(t, err, "failed to get HEAD")
 
 	require.Equal(t, expectedBranch, head.Name().Short(), "unexpected branch")
+}
+
+func withCleanGitEnv(t *testing.T) {
+	t.Helper()
+	empty := filepath.Join(t.TempDir(), "gitconfig")
+	if err := os.WriteFile(empty, nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("GIT_CONFIG_GLOBAL", empty)
+	t.Setenv("GIT_CONFIG_SYSTEM", empty)
+	t.Setenv("GIT_CONFIG_NOSYSTEM", "1") // belt-and-suspenders for older gits
 }

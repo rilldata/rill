@@ -513,3 +513,24 @@ func resetToRemoteTrackingBranch(repoDir, branch string) error {
 	}
 	return nil
 }
+
+// ensureGitConfig ensures that the git config key is set either globally or locally in the repo.
+// if not set then it sets the key to the given value locally in the repo
+func ensureGitConfig(repoDir, key, value string) error {
+	_, err := exec.Command("git", "-C", repoDir, "config", "--global", "--get", key).Output()
+	if err == nil {
+		return nil
+	}
+
+	// Exit code 1 means "key not set" — that's the case we want to handle.
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) || exitErr.ExitCode() != 1 {
+		return err
+	}
+
+	// set only locally
+	if err := exec.Command("git", "-C", repoDir, "config", "--local", key, value).Run(); err != nil {
+		return err
+	}
+	return nil
+}
