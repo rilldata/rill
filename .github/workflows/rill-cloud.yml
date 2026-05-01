@@ -21,7 +21,7 @@ env:
 jobs:
   validate-sequential:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || ( github.event_name == 'create' && startsWith(github.ref_name, 'release') )
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -43,9 +43,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-24.04
+          - os: ubuntu-22.04
             arch: amd64
-          - os: ubuntu-24.04-arm
+          - os: ubuntu-22.04-arm
             arch: arm64
       fail-fast: false
 
@@ -88,7 +88,7 @@ jobs:
           docker buildx build --platform linux/${{ matrix.arch }} -t ${IMAGE}:${GITHUB_SHA}-${{ matrix.arch }} . --push --provenance=false --sbom=false  
 
   docker:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     name: Create multi-arch Docker Image
     needs: build   # wait until all build jobs finish
     steps:

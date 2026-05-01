@@ -60,14 +60,7 @@
   $: currentDeployment = isOnBranch
     ? deployments.find((d) => d.branch === activeBranch)
     : deployments.find(isProdDeployment);
-  $: triggerLabel = isOnBranch
-    ? truncateBranch(activeBranch ?? "")
-    : truncateBranch(primaryBranch ?? "");
-
-  function truncateBranch(branch: string): string {
-    if (branch.length <= 20) return branch;
-    return branch.slice(0, 19) + "…";
-  }
+  $: branchLabel = isOnBranch ? (activeBranch ?? "") : (primaryBranch ?? "");
 
   function getDeploymentHref(deployment: V1Deployment): string {
     const basePath = removeBranchFromPath($page.url.pathname);
@@ -96,10 +89,10 @@
     <DropdownMenu.Root bind:open>
       <DropdownMenu.Trigger>
         {#snippet child({ props })}
-          <button {...props} class="chip">
+          <button {...props} class="chip" title={branchLabel}>
             <span class="status-dot {statusDot(currentDeployment?.status)}"
             ></span>
-            <span>{triggerLabel}</span>
+            <span class="branch-label">{branchLabel}</span>
             <span class="caret" class:open>
               <CaretDownIcon size="10px" />
             </span>
@@ -162,6 +155,10 @@
 
   .status-dot {
     @apply size-1.5 rounded-full flex-none;
+  }
+
+  .branch-label {
+    @apply truncate max-w-[200px];
   }
 
   .caret {

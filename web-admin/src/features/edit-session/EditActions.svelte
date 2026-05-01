@@ -3,38 +3,27 @@
   import { Button } from "@rilldata/web-common/components/button";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { GitPullRequestCreateArrow } from "lucide-svelte";
+  import { LogOut } from "lucide-svelte";
   import CommitPopover from "./CommitPopover.svelte";
+  import MergePopover from "./MergePopover.svelte";
 
   export let organization: string;
   export let project: string;
   export let branch: string;
+  export let primaryBranch: string | undefined = undefined;
 
   $: closeHref = `/${organization}/${project}${branchPathPrefix(branch)}`;
-
-  function handleClose(e: MouseEvent) {
-    // Full page navigation avoids a race where useRuntimeClient() is called
-    // before the project layout's RuntimeProvider remounts.
-    e.preventDefault();
-    window.location.href = closeHref;
-  }
 </script>
 
-<Tooltip distance={8}>
-  <Button type="secondary" href={closeHref} onClick={handleClose}>Done</Button>
-  <TooltipContent slot="tooltip-content" maxWidth="200px">
-    <span class="text-xs">Return to project home</span>
-  </TooltipContent>
-</Tooltip>
-
 <CommitPopover />
+<MergePopover {organization} {project} {primaryBranch} />
 
 <Tooltip distance={8}>
-  <Button type="primary" disabled>
-    <GitPullRequestCreateArrow size="14" />
-    Open PR
+  <Button type="secondary" href={closeHref}>
+    <LogOut size="14" />
+    Exit
   </Button>
   <TooltipContent slot="tooltip-content" maxWidth="200px">
-    <span class="text-xs">Coming soon</span>
+    <span class="text-xs">Return to project home</span>
   </TooltipContent>
 </Tooltip>

@@ -177,7 +177,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		return nil, err
 	}
 
-	err = s.runtime.ReloadConfig(ctx, req.InstanceId)
+	_, err = s.runtime.ReloadConfig(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
@@ -285,20 +285,24 @@ func (s *Server) ReloadConfig(ctx context.Context, req *runtimev1.ReloadConfigRe
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	claims := auth.GetClaims(ctx, req.InstanceId)
-	if !claims.Can(runtime.ManageInstances) {
+	if !claims.Can(runtime.ManageInstance) {
 		return nil, ErrForbidden
 	}
 
-	err := s.runtime.ReloadConfig(ctx, req.InstanceId)
+	summary, err := s.runtime.ReloadConfig(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
-	return &runtimev1.ReloadConfigResponse{}, nil
+	return &runtimev1.ReloadConfigResponse{
+		VariablesCount: int32(summary.VarsCount),
+		Modified:       summary.VarsModified,
+	}, nil
 }
 
 func instanceToPB(inst *drivers.Instance, featureFlags map[string]bool, sensitive bool) *runtimev1.Instance {
 	pb := &runtimev1.Instance{
 		InstanceId:         inst.ID,
+		Environment:        inst.Environment,
 		ProjectDisplayName: inst.ProjectDisplayName,
 		CreatedOn:          timestamppb.New(inst.CreatedOn),
 		UpdatedOn:          timestamppb.New(inst.UpdatedOn),
