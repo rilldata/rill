@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type {
@@ -45,16 +46,15 @@
 
   export let mode: string;
 
-  // Reset the AI chat panel and any active "View as" impersonation when the
-  // user toggles between Developer and Preview, so each mode starts from a
-  // clean slate.
+  // Close the AI chat panel when the user toggles between Developer and
+  // Preview. The active "View as" mock user is intentionally preserved
+  // across the toggle so a user picked from the dropdown survives the
+  // Developer → Preview navigation; clearing happens via the inline × on
+  // the "Viewing as" chip.
   let previousMode: string | null = null;
   $: {
     if (previousMode !== null && previousMode !== mode) {
       sidebarActions.closeChat();
-      if (get(selectedMockUserStore) !== null) {
-        updateDevJWT(queryClient, runtimeClient, null).catch(console.error);
-      }
     }
     previousMode = mode;
   }
@@ -237,6 +237,7 @@
                     console.error,
                   );
                   localViewAsOpen = false;
+                  if (mode !== "Preview") void goto(previewToggleHref);
                 }}
                 class="flex gap-x-2 items-center"
               >

@@ -76,7 +76,7 @@
 
 <style lang="postcss">
   .split-button {
-    @apply flex items-stretch h-7 rounded-sm border border-primary-500 bg-surface-base shadow-sm overflow-hidden;
+    @apply flex items-stretch h-7 border border-primary-500 bg-surface-base shadow-sm;
   }
   .split-button.disabled {
     @apply opacity-50 pointer-events-none;
@@ -89,11 +89,11 @@
     @apply max-w-[280px];
   }
   .right {
-    @apply flex items-center justify-center px-2 bg-primary-50 border-l border-primary-500;
-    @apply text-primary-600 hover:bg-primary-100 transition-colors;
+    @apply flex items-center justify-center px-2 border-l border-primary-500;
+    @apply text-primary-600 hover:bg-primary-50 transition-colors;
   }
   .right.active {
-    @apply bg-primary-100;
+    @apply bg-primary-50;
   }
   .clear-btn {
     @apply flex items-center justify-center rounded-full p-0.5 ml-1;

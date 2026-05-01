@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import CanvasBookmarks from "@rilldata/web-admin/features/bookmarks/CanvasBookmarks.svelte";
   import ExploreBookmarks from "@rilldata/web-admin/features/bookmarks/ExploreBookmarks.svelte";
@@ -235,7 +236,10 @@
           <ViewAsUserPopover
             {organization}
             {project}
-            onSelectUser={() => (editorViewAsOpen = false)}
+            onSelectUser={() => {
+              editorViewAsOpen = false;
+              void goto(editPreviewHref);
+            }}
           />
         </svelte:fragment>
       </PreviewModeToggleButton>
