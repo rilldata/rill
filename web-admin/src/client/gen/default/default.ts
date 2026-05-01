@@ -244,6 +244,8 @@ import type {
   V1SudoExtendTrialRequest,
   V1SudoExtendTrialResponse,
   V1SudoGetResourceResponse,
+  V1SudoGrantTrialCreditsRequest,
+  V1SudoGrantTrialCreditsResponse,
   V1SudoIssueRuntimeManagerTokenRequest,
   V1SudoIssueRuntimeManagerTokenResponse,
   V1SudoTriggerBillingRepairRequest,
@@ -13631,6 +13633,93 @@ export const createAdminServiceSudoExtendTrial = <
 > => {
   const mutationOptions =
     getAdminServiceSudoExtendTrialMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary SudoGrantTrialCredits grants additional trial credits to an organization on the credit-based trial plan.
+ */
+export const adminServiceSudoGrantTrialCredits = (
+  v1SudoGrantTrialCreditsRequest: V1SudoGrantTrialCreditsRequest,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1SudoGrantTrialCreditsResponse>({
+    url: `/v1/superuser/organization/trial/grant-credits`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: v1SudoGrantTrialCreditsRequest,
+    signal,
+  });
+};
+
+export const getAdminServiceSudoGrantTrialCreditsMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceSudoGrantTrialCredits>>,
+    TError,
+    { data: V1SudoGrantTrialCreditsRequest },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceSudoGrantTrialCredits>>,
+  TError,
+  { data: V1SudoGrantTrialCreditsRequest },
+  TContext
+> => {
+  const mutationKey = ["adminServiceSudoGrantTrialCredits"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceSudoGrantTrialCredits>>,
+    { data: V1SudoGrantTrialCreditsRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceSudoGrantTrialCredits(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceSudoGrantTrialCreditsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSudoGrantTrialCredits>>
+>;
+export type AdminServiceSudoGrantTrialCreditsMutationBody =
+  V1SudoGrantTrialCreditsRequest;
+export type AdminServiceSudoGrantTrialCreditsMutationError = RpcStatus;
+
+/**
+ * @summary SudoGrantTrialCredits grants additional trial credits to an organization on the credit-based trial plan.
+ */
+export const createAdminServiceSudoGrantTrialCredits = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceSudoGrantTrialCredits>>,
+      TError,
+      { data: V1SudoGrantTrialCreditsRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceSudoGrantTrialCredits>>,
+  TError,
+  { data: V1SudoGrantTrialCreditsRequest },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceSudoGrantTrialCreditsMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };

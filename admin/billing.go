@@ -43,6 +43,11 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 
 	org.BillingCustomerID = bc.ID
 
+	// Register credit-balance alerts on the Orb customer. Required for Orb to deliver credit_balance_dropped / depleted webhooks; safe to call before any subscription / credit grant exists.
+	if err := s.Biller.CreateCustomerCreditAlerts(ctx, org.BillingCustomerID, billing.CreditsCurrency, billing.CreditTrialLowBalanceThreshold); err != nil {
+		return nil, fmt.Errorf("failed to register credit balance alerts: %w", err)
+	}
+
 	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                org.Name,
 		DisplayName:                         org.DisplayName,
@@ -150,6 +155,10 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 		}
 	}
 
+	if err := s.Biller.CreateCustomerCreditAlerts(ctx, org.BillingCustomerID, billing.CreditsCurrency, billing.CreditTrialLowBalanceThreshold); err != nil {
+		return nil, nil, fmt.Errorf("failed to register credit balance alerts: %w", err)
+	}
+
 	// update billing and payment customer id
 	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                org.Name,
@@ -246,11 +255,113 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 	return updatedOrg, sub, nil
 }
 
-func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*database.Organization, *billing.Subscription, error) {
-	// get default plan
-	plan, err := s.Biller.GetDefaultPlan(ctx)
+// CreditTrialAllocation is the USD credit allocation granted to customers when StartCreditTrial subscribes them to the trial plan.
+const CreditTrialAllocation = 250
+
+// StartCreditTrial subscribes the organization to the credit-trial plan (FreePlanType) and raises a BillingIssueTypeOnCreditTrial warning. After the subscription is created, the trial credit allocation is granted via the ledger API; Orb decrements the balance as we report usage. When credits drop / deplete, Orb's webhook handlers (CreditBalanceDroppedWorker / CreditBalanceDepletedWorker) take it from there.
+func (s *Service) StartCreditTrial(ctx context.Context, org *database.Organization) (*database.Organization, *billing.Subscription, error) {
+	plan, err := s.Biller.GetPlanByType(ctx, billing.FreePlanType)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get default plan: %w", err)
+		return nil, nil, fmt.Errorf("failed to get credit trial plan: %w", err)
+	}
+
+	sub, err := s.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
+	if err != nil {
+		if !errors.Is(err, billing.ErrNotFound) {
+			if errors.Is(err, billing.ErrCustomerIDRequired) {
+				return nil, nil, fmt.Errorf("org billing not initialized yet")
+			}
+			return nil, nil, fmt.Errorf("failed to get subscriptions for customer: %w", err)
+		}
+	}
+
+	if sub != nil && sub.Plan.ID != plan.ID {
+		return nil, nil, errors.New("subscription exists with non-credit-trial plan")
+	}
+
+	if sub == nil {
+		sub, err = s.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to create subscription: %w", err)
+		}
+
+		// Grant the trial credits via the ledger API. Per Orb's recommended pattern, ledger-granted credits persist across plan changes (so a pre-depletion upgrade keeps any unused credits on the customer); per_unit_cost_basis="0.00" is set in the Orb client so the grant itself does not produce an invoice line item.
+		if err := s.Biller.GrantCustomerCredits(ctx, org.BillingCustomerID, CreditTrialAllocation, billing.CreditsCurrency, "Initial trial credits", nil); err != nil {
+			return nil, nil, fmt.Errorf("failed to grant trial credits: %w", err)
+		}
+
+		if org.CreatedByUserID != nil {
+			err = s.DB.IncrementCurrentTrialOrgCount(ctx, *org.CreatedByUserID)
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed to increment current trial org count: %w", err)
+			}
+		}
+	}
+
+	if sub.ID == "" || sub.Plan.ID == "" {
+		// noop biller
+		return org, sub, nil
+	}
+
+	s.Logger.Named("billing").Info("started credit trial for organization",
+		zap.String("org_name", org.Name),
+		zap.String("org_id", org.ID),
+		zap.String("plan_name", plan.Name),
+	)
+
+	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+		Name:                                org.Name,
+		DisplayName:                         org.DisplayName,
+		Description:                         org.Description,
+		LogoAssetID:                         org.LogoAssetID,
+		LogoDarkAssetID:                     org.LogoDarkAssetID,
+		FaviconAssetID:                      org.FaviconAssetID,
+		ThumbnailAssetID:                    org.ThumbnailAssetID,
+		CustomDomain:                        org.CustomDomain,
+		DefaultProjectRoleID:                org.DefaultProjectRoleID,
+		QuotaProjects:                       biggerOfInt(plan.Quotas.NumProjects, org.QuotaProjects),
+		QuotaDeployments:                    biggerOfInt(plan.Quotas.NumDeployments, org.QuotaDeployments),
+		QuotaSlotsTotal:                     biggerOfInt(plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
+		QuotaSlotsPerDeployment:             biggerOfInt(plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
+		QuotaOutstandingInvites:             biggerOfInt(plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
+		QuotaStorageLimitBytesPerDeployment: biggerOfInt64(plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
+		BillingCustomerID:                   org.BillingCustomerID,
+		PaymentCustomerID:                   org.PaymentCustomerID,
+		BillingEmail:                        org.BillingEmail,
+		BillingPlanName:                     &plan.Name,
+		BillingPlanDisplayName:              &plan.DisplayName,
+		CreatedByUserID:                     org.CreatedByUserID,
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to update organization: %w", err)
+	}
+
+	if err := s.CleanupSubscriptionBillingIssues(ctx, org.ID); err != nil {
+		return nil, nil, err
+	}
+
+	_, err = s.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
+		OrgID: org.ID,
+		Type:  database.BillingIssueTypeOnCreditTrial,
+		Metadata: &database.BillingIssueMetadataOnCreditTrial{
+			SubID:            sub.ID,
+			PlanID:           sub.Plan.ID,
+			CreditAllocation: CreditTrialAllocation,
+		},
+		EventTime: sub.StartDate,
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to upsert credit trial billing issue: %w", err)
+	}
+
+	return org, sub, nil
+}
+
+func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*database.Organization, *billing.Subscription, error) {
+	// resolve the legacy time-based trial plan by type to avoid relying on Orb's Default flag (which the credit-trial plan also sets).
+	plan, err := s.Biller.GetPlanByType(ctx, billing.TrailPlanType)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get trial plan: %w", err)
 	}
 
 	sub, err := s.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
@@ -399,20 +510,79 @@ func (s *Service) RaiseNewOrgBillingIssues(ctx context.Context, orgID string, cr
 	return nil
 }
 
-// CleanupTrialBillingIssues removes trial related billing issues
+// CleanupTrialBillingIssues removes trial related billing issues (both legacy time-based trial and the credit-based trial).
 func (s *Service) CleanupTrialBillingIssues(ctx context.Context, orgID string) error {
-	err := s.DB.DeleteBillingIssueByTypeForOrg(ctx, orgID, database.BillingIssueTypeTrialEnded)
-	if err != nil {
-		if !errors.Is(err, database.ErrNotFound) {
+	for _, t := range []database.BillingIssueType{
+		database.BillingIssueTypeTrialEnded,
+		database.BillingIssueTypeOnTrial,
+		database.BillingIssueTypeOnCreditTrial,
+		database.BillingIssueTypeTrialCreditsDepleted,
+	} {
+		err := s.DB.DeleteBillingIssueByTypeForOrg(ctx, orgID, t)
+		if err != nil && !errors.Is(err, database.ErrNotFound) {
 			return fmt.Errorf("failed to delete billing issue: %w", err)
 		}
 	}
+	return nil
+}
 
-	err = s.DB.DeleteBillingIssueByTypeForOrg(ctx, orgID, database.BillingIssueTypeOnTrial)
+// MaybeResumeAfterCreditTrialDepletion clears the BillingIssueTypeTrialCreditsDepleted issue and unhibernates the org's projects, but only if the org's payment method and billable address are both now in place. Safe to call from any handler that may have just resolved one of those preconditions; it no-ops when the org isn't in the depleted state.
+func (s *Service) MaybeResumeAfterCreditTrialDepletion(ctx context.Context, org *database.Organization) error {
+	depleted, err := s.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeTrialCreditsDepleted)
 	if err != nil {
-		if !errors.Is(err, database.ErrNotFound) {
-			return fmt.Errorf("failed to delete billing issue: %w", err)
+		if errors.Is(err, database.ErrNotFound) {
+			return nil
 		}
+		return fmt.Errorf("failed to find trial-credits-depleted issue: %w", err)
+	}
+	if depleted == nil {
+		return nil
+	}
+
+	// Both Stripe preconditions must be satisfied before resuming.
+	for _, t := range []database.BillingIssueType{database.BillingIssueTypeNoPaymentMethod, database.BillingIssueTypeNoBillableAddress} {
+		bi, err := s.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, t)
+		if err != nil && !errors.Is(err, database.ErrNotFound) {
+			return fmt.Errorf("failed to find billing issue: %w", err)
+		}
+		if bi != nil {
+			return nil
+		}
+	}
+
+	limit := 10
+	afterProjectName := ""
+	for {
+		projs, err := s.DB.FindProjectsForOrganization(ctx, org.ID, afterProjectName, limit)
+		if err != nil {
+			return fmt.Errorf("failed to list projects: %w", err)
+		}
+		for _, proj := range projs {
+			if proj.PrimaryDeploymentID != nil {
+				afterProjectName = proj.Name
+				continue
+			}
+			if _, err := s.RedeployProject(ctx, proj, nil); err != nil {
+				return fmt.Errorf("failed to redeploy project %q: %w", proj.Name, err)
+			}
+			afterProjectName = proj.Name
+		}
+		if len(projs) < limit {
+			break
+		}
+	}
+
+	if err := s.DB.DeleteBillingIssue(ctx, depleted.ID); err != nil {
+		return fmt.Errorf("failed to delete trial-credits-depleted issue: %w", err)
+	}
+
+	if err := s.Email.SendCreditTrialUpgraded(&email.CreditTrialUpgraded{
+		ToEmail:     org.BillingEmail,
+		ToName:      org.Name,
+		OrgName:     org.Name,
+		FrontendURL: s.URLs.Frontend(),
+	}); err != nil {
+		s.Logger.Named("billing").Error("failed to send credit trial upgraded email", zap.String("org_id", org.ID), zap.Error(err))
 	}
 
 	return nil
@@ -451,6 +621,17 @@ func (s *Service) CheckBlockingBillingErrors(ctx context.Context, orgID string) 
 
 	if be != nil {
 		return fmt.Errorf("%w: trial has ended", ErrBlockingBillingIssue)
+	}
+
+	be, err = s.DB.FindBillingIssueByTypeForOrg(ctx, orgID, database.BillingIssueTypeTrialCreditsDepleted)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return err
+		}
+	}
+
+	if be != nil {
+		return fmt.Errorf("%w: trial credits depleted", ErrBlockingBillingIssue)
 	}
 
 	be, err = s.DB.FindBillingIssueByTypeForOrg(ctx, orgID, database.BillingIssueTypePaymentFailed)

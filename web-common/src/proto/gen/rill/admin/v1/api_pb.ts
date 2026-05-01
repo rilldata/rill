@@ -6412,6 +6412,98 @@ export class SudoExtendTrialResponse extends Message<SudoExtendTrialResponse> {
 }
 
 /**
+ * @generated from message rill.admin.v1.SudoGrantTrialCreditsRequest
+ */
+export class SudoGrantTrialCreditsRequest extends Message<SudoGrantTrialCreditsRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * Amount of credits to grant in USD.
+   *
+   * @generated from field: double amount_usd = 2;
+   */
+  amountUsd = 0;
+
+  /**
+   * Optional human-readable reason for the grant; surfaced in Orb's ledger entry description.
+   *
+   * @generated from field: string description = 3;
+   */
+  description = "";
+
+  constructor(data?: PartialMessage<SudoGrantTrialCreditsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SudoGrantTrialCreditsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "amount_usd", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoGrantTrialCreditsRequest {
+    return new SudoGrantTrialCreditsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoGrantTrialCreditsRequest {
+    return new SudoGrantTrialCreditsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoGrantTrialCreditsRequest {
+    return new SudoGrantTrialCreditsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SudoGrantTrialCreditsRequest | PlainMessage<SudoGrantTrialCreditsRequest> | undefined, b: SudoGrantTrialCreditsRequest | PlainMessage<SudoGrantTrialCreditsRequest> | undefined): boolean {
+    return proto3.util.equals(SudoGrantTrialCreditsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SudoGrantTrialCreditsResponse
+ */
+export class SudoGrantTrialCreditsResponse extends Message<SudoGrantTrialCreditsResponse> {
+  /**
+   * The grant amount actually applied, in USD.
+   *
+   * @generated from field: double granted_usd = 1;
+   */
+  grantedUsd = 0;
+
+  constructor(data?: PartialMessage<SudoGrantTrialCreditsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SudoGrantTrialCreditsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "granted_usd", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoGrantTrialCreditsResponse {
+    return new SudoGrantTrialCreditsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoGrantTrialCreditsResponse {
+    return new SudoGrantTrialCreditsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoGrantTrialCreditsResponse {
+    return new SudoGrantTrialCreditsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SudoGrantTrialCreditsResponse | PlainMessage<SudoGrantTrialCreditsResponse> | undefined, b: SudoGrantTrialCreditsResponse | PlainMessage<SudoGrantTrialCreditsResponse> | undefined): boolean {
+    return proto3.util.equals(SudoGrantTrialCreditsResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.SudoUpdateOrganizationCustomDomainRequest
  */
 export class SudoUpdateOrganizationCustomDomainRequest extends Message<SudoUpdateOrganizationCustomDomainRequest> {

@@ -3877,6 +3877,25 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1SudoExtendTrialRequest'
+  /v1/superuser/organization/trial/grant-credits:
+    post:
+      summary: SudoGrantTrialCredits grants additional trial credits to an organization on the credit-based trial plan.
+      operationId: AdminService_SudoGrantTrialCredits
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoGrantTrialCreditsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoGrantTrialCreditsRequest'
   /v1/superuser/organizations/{org}/billing/issues/{type}:
     delete:
       summary: SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the organization
@@ -6463,6 +6482,25 @@ definitions:
         $ref: '#/definitions/v1Deployment'
       instance:
         $ref: '#/definitions/v1Deployment'
+  v1SudoGrantTrialCreditsRequest:
+    type: object
+    properties:
+      org:
+        type: string
+      amountUsd:
+        type: number
+        format: double
+        description: Amount of credits to grant in USD.
+      description:
+        type: string
+        description: Optional human-readable reason for the grant; surfaced in Orb's ledger entry description.
+  v1SudoGrantTrialCreditsResponse:
+    type: object
+    properties:
+      grantedUsd:
+        type: number
+        format: double
+        description: The grant amount actually applied, in USD.
   v1SudoIssueRuntimeManagerTokenRequest:
     type: object
     properties:

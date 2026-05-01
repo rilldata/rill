@@ -84,6 +84,8 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 	river.AddWorker(workers, &PaymentSuccessWorker{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &PaymentFailedGracePeriodCheckWorker{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &PlanChangedWorker{admin: adm})
+	river.AddWorker(workers, &CreditBalanceDroppedWorker{admin: adm, logger: billingLogger})
+	river.AddWorker(workers, &CreditBalanceDepletedWorker{admin: adm, logger: billingLogger})
 
 	// trial checks worker
 	river.AddWorker(workers, &TrialEndingSoonWorker{admin: adm, logger: billingLogger})
@@ -97,6 +99,7 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 	river.AddWorker(workers, &InitOrgBillingWorker{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &RepairOrgBillingWorker{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &StartTrialWorker{admin: adm, logger: billingLogger})
+	river.AddWorker(workers, &StartCreditTrialWorker{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &DeleteOrgWorker{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &HibernateInactiveOrgsWorker{admin: adm, logger: billingLogger})
 
@@ -550,6 +553,74 @@ func (c *Client) StartOrgTrial(ctx context.Context, orgID string) (*jobs.InsertR
 
 	if res.UniqueSkippedAsDuplicate {
 		c.logger.Debug("StartTrial job skipped as duplicate", zap.String("org_id", orgID))
+	}
+
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
+func (c *Client) StartOrgCreditTrial(ctx context.Context, orgID string) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, StartCreditTrialArgs{
+		OrgID: orgID,
+	}, &river.InsertOpts{
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
+		MaxAttempts: 5,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if res.UniqueSkippedAsDuplicate {
+		c.logger.Debug("StartCreditTrial job skipped as duplicate", zap.String("org_id", orgID))
+	}
+
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
+func (c *Client) CreditBalanceDropped(ctx context.Context, billingCustomerID string, balance float64) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, CreditBalanceDroppedArgs{
+		BillingCustomerID: billingCustomerID,
+		Balance:           balance,
+	}, &river.InsertOpts{
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if res.UniqueSkippedAsDuplicate {
+		c.logger.Debug("CreditBalanceDropped job skipped as duplicate", zap.String("billing_customer_id", billingCustomerID), zap.Float64("balance", balance))
+	}
+
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
+func (c *Client) CreditBalanceDepleted(ctx context.Context, billingCustomerID string) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, CreditBalanceDepletedArgs{
+		BillingCustomerID: billingCustomerID,
+	}, &river.InsertOpts{
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if res.UniqueSkippedAsDuplicate {
+		c.logger.Debug("CreditBalanceDepleted job skipped as duplicate", zap.String("billing_customer_id", billingCustomerID))
 	}
 
 	return &jobs.InsertResult{

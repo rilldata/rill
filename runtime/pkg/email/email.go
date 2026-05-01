@@ -647,6 +647,93 @@ Thank you for trying Rill Cloud. We hope to see you again in the future!
 	})
 }
 
+type CreditTrialStarted struct {
+	ToEmail          string
+	ToName           string
+	OrgName          string
+	FrontendURL      string
+	CreditAllocation int
+}
+
+func (c *Client) SendCreditTrialStarted(opts *CreditTrialStarted) error {
+	return c.SendWelcomeToTrial(&Welcome{
+		ToEmail:     opts.ToEmail,
+		ToName:      opts.ToName,
+		Subject:     fmt.Sprintf("Your Rill Cloud trial for %s has started", opts.OrgName),
+		FrontendURL: opts.FrontendURL,
+		WelcomeText: template.HTML(fmt.Sprintf(`
+You now have <b>%d Rill Cloud credits</b> to explore all features.
+We'll let you know when your balance is running low so you can add a payment method whenever you're ready.
+`, opts.CreditAllocation)),
+	})
+}
+
+type CreditTrialLow struct {
+	ToEmail          string
+	ToName           string
+	OrgName          string
+	FrontendURL      string
+	UpgradeURL       string
+	RemainingBalance float64
+}
+
+func (c *Client) SendCreditTrialLow(opts *CreditTrialLow) error {
+	return c.SendCallToAction(&CallToAction{
+		ToEmail: opts.ToEmail,
+		ToName:  opts.ToName,
+		Subject: fmt.Sprintf("Your Rill Cloud trial credits for %s are running low", opts.OrgName),
+		PreButton: template.HTML(fmt.Sprintf(`
+Your trial credit balance for <b>%s</b> has dropped to about <b>$%.2f</b>.
+<br /><br />
+Upgrade now to keep your projects online once the credits run out.
+`, opts.OrgName, opts.RemainingBalance)),
+		ButtonText: "Upgrade Now",
+		ButtonLink: opts.UpgradeURL,
+		ShowFooter: true,
+	})
+}
+
+type CreditTrialDepleted struct {
+	ToEmail     string
+	ToName      string
+	OrgName     string
+	FrontendURL string
+	UpgradeURL  string
+}
+
+func (c *Client) SendCreditTrialDepleted(opts *CreditTrialDepleted) error {
+	return c.SendCallToAction(&CallToAction{
+		ToEmail: opts.ToEmail,
+		ToName:  opts.ToName,
+		Subject: fmt.Sprintf("Your Rill Cloud trial credits for %s are depleted", opts.OrgName),
+		PreButton: template.HTML(fmt.Sprintf(`
+Your trial credits for <b>%s</b> have run out, and the org's projects are now <a href="https://docs.rilldata.com/developers/other/FAQ#what-is-project-hibernation">hibernating</a>.
+<br /><br />
+Upgrade to bring your projects back online.
+`, opts.OrgName)),
+		ButtonText: "Upgrade Now",
+		ButtonLink: opts.UpgradeURL,
+		ShowFooter: true,
+	})
+}
+
+type CreditTrialUpgraded struct {
+	ToEmail     string
+	ToName      string
+	OrgName     string
+	FrontendURL string
+}
+
+func (c *Client) SendCreditTrialUpgraded(opts *CreditTrialUpgraded) error {
+	return c.SendInformational(&Informational{
+		ToEmail:    opts.ToEmail,
+		ToName:     opts.ToName,
+		Subject:    fmt.Sprintf("%s is back online", opts.OrgName),
+		Body:       template.HTML(fmt.Sprintf("Thanks for adding a payment method. <b>%s</b> and its projects are being reactivated, and usage will be billed against your card going forward.", opts.OrgName)),
+		ShowFooter: true,
+	})
+}
+
 type TrialExtended struct {
 	ToEmail      string
 	ToName       string

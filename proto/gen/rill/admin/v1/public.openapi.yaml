@@ -1968,6 +1968,25 @@ components:
                 user:
                     $ref: '#/components/schemas/v1User'
             type: object
+        v1SudoGrantTrialCreditsRequest:
+            properties:
+                amountUsd:
+                    description: Amount of credits to grant in USD.
+                    format: double
+                    type: number
+                description:
+                    description: Optional human-readable reason for the grant; surfaced in Orb's ledger entry description.
+                    type: string
+                org:
+                    type: string
+            type: object
+        v1SudoGrantTrialCreditsResponse:
+            properties:
+                grantedUsd:
+                    description: The grant amount actually applied, in USD.
+                    format: double
+                    type: number
+            type: object
         v1SudoIssueRuntimeManagerTokenRequest:
             properties:
                 host:
@@ -3718,6 +3737,7 @@ paths:
     /v1/superuser/organization/billing/customer_id: {}
     /v1/superuser/organization/custom-domain: {}
     /v1/superuser/organization/trial/extend: {}
+    /v1/superuser/organization/trial/grant-credits: {}
     /v1/superuser/organizations/{org}/billing/issues/{type}: {}
     /v1/superuser/projects/annotations: {}
     /v1/superuser/projects/search: {}

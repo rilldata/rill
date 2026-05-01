@@ -15,6 +15,12 @@ const (
 	DefaultTimeZone = "UTC"
 )
 
+// CreditsCurrency is the Orb pricing-unit used for trial credit balance/alerts/grants. USD is shared with the paid plan's billable metrics: trial credits absorb usage at the same per-unit dollar rate that the paid plan would charge.
+const CreditsCurrency = "USD"
+
+// CreditTrialLowBalanceThreshold is the USD credit balance at which a credit_balance_dropped alert fires for credit-trial customers. Triggers a warning email; not blocking.
+const CreditTrialLowBalanceThreshold = 50
+
 var ErrNotFound = errors.New("not found")
 
 type Biller interface {
@@ -33,6 +39,8 @@ type Biller interface {
 	GetPlan(ctx context.Context, id string) (*Plan, error)
 	// GetPlanByName returns the plan with the given Rill plan name.
 	GetPlanByName(ctx context.Context, name string) (*Plan, error)
+	// GetPlanByType returns the plan with the given PlanType. Returns ErrNotFound if no plan matches.
+	GetPlanByType(ctx context.Context, planType PlanType) (*Plan, error)
 
 	// CreateCustomer creates a customer for the given organization in the billing system and returns the external customer ID.
 	CreateCustomer(ctx context.Context, organization *database.Organization, provider PaymentProvider) (*Customer, error)
@@ -40,6 +48,15 @@ type Biller interface {
 	UpdateCustomerPaymentID(ctx context.Context, customerID string, provider PaymentProvider, paymentProviderID string) error
 	UpdateCustomerEmail(ctx context.Context, customerID, email string) error
 	DeleteCustomer(ctx context.Context, customerID string) error
+
+	// CreateCustomerCreditAlerts registers credit-balance alerts (credit_balance_dropped at lowThreshold and credit_balance_depleted) for the customer in the given currency. Idempotent: returns nil if the alerts already exist.
+	CreateCustomerCreditAlerts(ctx context.Context, customerID, currency string, lowThreshold float64) error
+
+	// GrantCustomerCredits adds an `increment` credit ledger entry to the customer's balance in the given currency. Description is recorded on the ledger entry; expiryDate may be nil for credits that never expire.
+	GrantCustomerCredits(ctx context.Context, customerID string, amount float64, currency, description string, expiryDate *time.Time) error
+
+	// GetCustomerCreditBalance returns the customer's current credit balance in the given currency.
+	GetCustomerCreditBalance(ctx context.Context, customerID, currency string) (float64, error)
 
 	// CreateSubscription creates a subscription for the given organization. Subscription starts immediately.
 	CreateSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error)

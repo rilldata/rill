@@ -33,6 +33,8 @@ type Options struct {
 	MetricsProjectName        string
 	AutoscalerCron            string
 	ScaleDownConstraint       int
+	// CreditTrialEnabled routes new orgs to the credit-based trial (pro_plan + Orb credits) instead of the time-based free_trial. When false, behavior is unchanged.
+	CreditTrialEnabled bool
 }
 
 type Service struct {
@@ -54,6 +56,7 @@ type Service struct {
 	MetricsProjectID          string
 	AutoscalerCron            string
 	ScaleDownConstraint       int
+	CreditTrialEnabled        bool
 	Biller                    billing.Biller
 	PaymentProvider           payment.Provider
 }
@@ -138,6 +141,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		MetricsProjectID:          metricsProjectID,
 		AutoscalerCron:            opts.AutoscalerCron,
 		ScaleDownConstraint:       opts.ScaleDownConstraint,
+		CreditTrialEnabled:        opts.CreditTrialEnabled,
 		Biller:                    biller,
 		PaymentProvider:           p,
 	}, nil

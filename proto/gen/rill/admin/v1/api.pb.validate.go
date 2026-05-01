@@ -17137,6 +17137,238 @@ var _ interface {
 	ErrorName() string
 } = SudoExtendTrialResponseValidationError{}
 
+// Validate checks the field values on SudoGrantTrialCreditsRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SudoGrantTrialCreditsRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SudoGrantTrialCreditsRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// SudoGrantTrialCreditsRequestMultiError, or nil if none found.
+func (m *SudoGrantTrialCreditsRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SudoGrantTrialCreditsRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetOrg()) < 1 {
+		err := SudoGrantTrialCreditsRequestValidationError{
+			field:  "Org",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.GetAmountUsd() <= 0 {
+		err := SudoGrantTrialCreditsRequestValidationError{
+			field:  "AmountUsd",
+			reason: "value must be greater than 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Description
+
+	if len(errors) > 0 {
+		return SudoGrantTrialCreditsRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// SudoGrantTrialCreditsRequestMultiError is an error wrapping multiple
+// validation errors returned by SudoGrantTrialCreditsRequest.ValidateAll() if
+// the designated constraints aren't met.
+type SudoGrantTrialCreditsRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SudoGrantTrialCreditsRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SudoGrantTrialCreditsRequestMultiError) AllErrors() []error { return m }
+
+// SudoGrantTrialCreditsRequestValidationError is the validation error returned
+// by SudoGrantTrialCreditsRequest.Validate if the designated constraints
+// aren't met.
+type SudoGrantTrialCreditsRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SudoGrantTrialCreditsRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SudoGrantTrialCreditsRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SudoGrantTrialCreditsRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SudoGrantTrialCreditsRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SudoGrantTrialCreditsRequestValidationError) ErrorName() string {
+	return "SudoGrantTrialCreditsRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SudoGrantTrialCreditsRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSudoGrantTrialCreditsRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SudoGrantTrialCreditsRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SudoGrantTrialCreditsRequestValidationError{}
+
+// Validate checks the field values on SudoGrantTrialCreditsResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SudoGrantTrialCreditsResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SudoGrantTrialCreditsResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// SudoGrantTrialCreditsResponseMultiError, or nil if none found.
+func (m *SudoGrantTrialCreditsResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SudoGrantTrialCreditsResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for GrantedUsd
+
+	if len(errors) > 0 {
+		return SudoGrantTrialCreditsResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// SudoGrantTrialCreditsResponseMultiError is an error wrapping multiple
+// validation errors returned by SudoGrantTrialCreditsResponse.ValidateAll()
+// if the designated constraints aren't met.
+type SudoGrantTrialCreditsResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SudoGrantTrialCreditsResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SudoGrantTrialCreditsResponseMultiError) AllErrors() []error { return m }
+
+// SudoGrantTrialCreditsResponseValidationError is the validation error
+// returned by SudoGrantTrialCreditsResponse.Validate if the designated
+// constraints aren't met.
+type SudoGrantTrialCreditsResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SudoGrantTrialCreditsResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SudoGrantTrialCreditsResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SudoGrantTrialCreditsResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SudoGrantTrialCreditsResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SudoGrantTrialCreditsResponseValidationError) ErrorName() string {
+	return "SudoGrantTrialCreditsResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SudoGrantTrialCreditsResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSudoGrantTrialCreditsResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SudoGrantTrialCreditsResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SudoGrantTrialCreditsResponseValidationError{}
+
 // Validate checks the field values on
 // SudoUpdateOrganizationCustomDomainRequest with the rules defined in the
 // proto definition for this message. If any rules are violated, the first

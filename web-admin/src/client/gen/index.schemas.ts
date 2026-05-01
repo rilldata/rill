@@ -1396,6 +1396,19 @@ export interface V1SudoGetResourceResponse {
   instance?: V1Deployment;
 }
 
+export interface V1SudoGrantTrialCreditsRequest {
+  org?: string;
+  /** Amount of credits to grant in USD. */
+  amountUsd?: number;
+  /** Optional human-readable reason for the grant; surfaced in Orb's ledger entry description. */
+  description?: string;
+}
+
+export interface V1SudoGrantTrialCreditsResponse {
+  /** The grant amount actually applied, in USD. */
+  grantedUsd?: number;
+}
+
 export interface V1SudoIssueRuntimeManagerTokenRequest {
   host?: string;
 }

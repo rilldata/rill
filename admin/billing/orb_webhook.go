@@ -26,7 +26,16 @@ const (
 	maxBodyBytes                 = int64(65536)
 )
 
-var interestingEvents = []string{"invoice.payment_succeeded", "invoice.payment_failed", "invoice.issue_failed", "subscription.started", "subscription.ended", "subscription.plan_changed"}
+var interestingEvents = []string{
+	"invoice.payment_succeeded",
+	"invoice.payment_failed",
+	"invoice.issue_failed",
+	"subscription.started",
+	"subscription.ended",
+	"subscription.plan_changed",
+	"customer.credit_balance_dropped",
+	"customer.credit_balance_depleted",
+}
 
 type orbWebhook struct {
 	orb  *Orb
@@ -117,6 +126,26 @@ func (o *orbWebhook) handleWebhook(w http.ResponseWriter, r *http.Request) error
 		if err != nil {
 			return httputil.Errorf(http.StatusInternalServerError, "error handling event: %w", err)
 		}
+	case "customer.credit_balance_dropped":
+		var ce creditBalanceEvent
+		err = json.Unmarshal(payload, &ce)
+		if err != nil {
+			return httputil.Errorf(http.StatusBadRequest, "error parsing event data: %w", err)
+		}
+		err = o.handleCreditBalanceDropped(r.Context(), ce)
+		if err != nil {
+			return httputil.Errorf(http.StatusInternalServerError, "error handling event: %w", err)
+		}
+	case "customer.credit_balance_depleted":
+		var ce creditBalanceEvent
+		err = json.Unmarshal(payload, &ce)
+		if err != nil {
+			return httputil.Errorf(http.StatusBadRequest, "error parsing event data: %w", err)
+		}
+		err = o.handleCreditBalanceDepleted(r.Context(), ce)
+		if err != nil {
+			return httputil.Errorf(http.StatusInternalServerError, "error handling event: %w", err)
+		}
 	default:
 		// do nothing
 	}
@@ -154,6 +183,41 @@ func (o *orbWebhook) handleInvoicePaymentFailed(ctx context.Context, ie invoiceE
 	}
 	if res.Duplicate {
 		o.orb.logger.Debug("duplicate invoice payment failed event", zap.String("event_id", ie.ID))
+	}
+	return nil
+}
+
+func (o *orbWebhook) handleCreditBalanceDropped(ctx context.Context, ce creditBalanceEvent) error {
+	externalID := ce.externalCustomerID()
+	if externalID == "" {
+		o.orb.logger.Named("billing").Warn("credit_balance_dropped event missing external_customer_id; unable to identify org", zap.String("event_id", ce.ID))
+		return nil
+	}
+	balance := ce.balanceFloat()
+	res, err := o.jobs.CreditBalanceDropped(ctx, externalID, balance)
+	if err != nil {
+		o.orb.logger.Error("failed to insert credit_balance_dropped job", zap.String("billing_customer_id", externalID), zap.Error(err), observability.ZapCtx(ctx))
+		return err
+	}
+	if res.Duplicate {
+		o.orb.logger.Debug("duplicate credit_balance_dropped event", zap.String("event_id", ce.ID))
+	}
+	return nil
+}
+
+func (o *orbWebhook) handleCreditBalanceDepleted(ctx context.Context, ce creditBalanceEvent) error {
+	externalID := ce.externalCustomerID()
+	if externalID == "" {
+		o.orb.logger.Named("billing").Warn("credit_balance_depleted event missing external_customer_id; unable to identify org", zap.String("event_id", ce.ID))
+		return nil
+	}
+	res, err := o.jobs.CreditBalanceDepleted(ctx, externalID)
+	if err != nil {
+		o.orb.logger.Error("failed to insert credit_balance_depleted job", zap.String("billing_customer_id", externalID), zap.Error(err), observability.ZapCtx(ctx))
+		return err
+	}
+	if res.Duplicate {
+		o.orb.logger.Debug("duplicate credit_balance_depleted event", zap.String("event_id", ce.ID))
 	}
 	return nil
 }
@@ -245,4 +309,45 @@ type subscriptionEvent struct {
 	Type            string           `json:"type"`
 	Properties      interface{}      `json:"properties"`
 	OrbSubscription orb.Subscription `json:"subscription"`
+}
+
+// creditBalanceEvent matches Orb's customer.credit_balance_{dropped,depleted,recovered} webhook payload. The customer identifier may appear either at the top level (as `customer`, mirroring the invoice/subscription events) or inside `properties` depending on the event variant; we accept both.
+type creditBalanceEvent struct {
+	ID         string                       `json:"id"`
+	CreatedAt  time.Time                    `json:"created_at"`
+	Type       string                       `json:"type"`
+	Customer   *creditBalanceEventCustomer  `json:"customer"`
+	Properties creditBalanceEventProperties `json:"properties"`
+}
+
+type creditBalanceEventCustomer struct {
+	ID                 string `json:"id"`
+	ExternalCustomerID string `json:"external_customer_id"`
+}
+
+type creditBalanceEventProperties struct {
+	CustomerID            string `json:"customer_id"`
+	ExternalCustomerID    string `json:"external_customer_id"`
+	NewCreditBalance      string `json:"new_credit_balance"`
+	PreviousCreditBalance string `json:"previous_credit_balance"`
+	Currency              string `json:"currency"`
+}
+
+func (e creditBalanceEvent) externalCustomerID() string {
+	if e.Customer != nil && e.Customer.ExternalCustomerID != "" {
+		return e.Customer.ExternalCustomerID
+	}
+	return e.Properties.ExternalCustomerID
+}
+
+func (e creditBalanceEvent) balanceFloat() float64 {
+	if e.Properties.NewCreditBalance == "" {
+		return 0
+	}
+	var f float64
+	_, err := fmt.Sscanf(e.Properties.NewCreditBalance, "%f", &f)
+	if err != nil {
+		return 0
+	}
+	return f
 }

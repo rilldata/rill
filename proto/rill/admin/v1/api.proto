@@ -907,6 +907,14 @@ service AdminService {
     };
   }
 
+  // SudoGrantTrialCredits grants additional trial credits to an organization on the credit-based trial plan.
+  rpc SudoGrantTrialCredits(SudoGrantTrialCreditsRequest) returns (SudoGrantTrialCreditsResponse) {
+    option (google.api.http) = {
+      post: "/v1/superuser/organization/trial/grant-credits",
+      body: "*"
+    };
+  }
+
   // SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
   // It only updates the custom domain in the database, which is used to ensure correct redirects.
   // The DNS records and ingress TLS must be configured separately.
@@ -2114,6 +2122,19 @@ message SudoExtendTrialRequest {
 
 message SudoExtendTrialResponse {
   google.protobuf.Timestamp trial_end = 1;
+}
+
+message SudoGrantTrialCreditsRequest {
+  string org = 1 [(validate.rules).string.min_len = 1];
+  // Amount of credits to grant in USD.
+  double amount_usd = 2 [(validate.rules).double = {gt: 0}];
+  // Optional human-readable reason for the grant; surfaced in Orb's ledger entry description.
+  string description = 3;
+}
+
+message SudoGrantTrialCreditsResponse {
+  // The grant amount actually applied, in USD.
+  double granted_usd = 1;
 }
 
 message SudoUpdateOrganizationCustomDomainRequest {

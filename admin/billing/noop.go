@@ -45,6 +45,10 @@ func (n noop) GetPlanByName(ctx context.Context, name string) (*Plan, error) {
 	return nil, nil
 }
 
+func (n noop) GetPlanByType(ctx context.Context, planType PlanType) (*Plan, error) {
+	return nil, nil
+}
+
 func (n noop) GetPublicPlans(ctx context.Context) ([]*Plan, error) {
 	return nil, nil
 }
@@ -67,6 +71,18 @@ func (n noop) UpdateCustomerEmail(ctx context.Context, customerID, email string)
 
 func (n noop) DeleteCustomer(ctx context.Context, customerID string) error {
 	return nil
+}
+
+func (n noop) CreateCustomerCreditAlerts(ctx context.Context, customerID, currency string, lowThreshold float64) error {
+	return nil
+}
+
+func (n noop) GrantCustomerCredits(ctx context.Context, customerID string, amount float64, currency, description string, expiryDate *time.Time) error {
+	return nil
+}
+
+func (n noop) GetCustomerCreditBalance(ctx context.Context, customerID, currency string) (float64, error) {
+	return 0, nil
 }
 
 func (n noop) CreateSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error) {
