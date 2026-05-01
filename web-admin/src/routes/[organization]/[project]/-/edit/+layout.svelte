@@ -14,6 +14,7 @@
   import BranchDeploymentStopped from "@rilldata/web-admin/features/branches/BranchDeploymentStopped.svelte";
   import EditSessionLoading from "@rilldata/web-admin/features/edit-session/EditSessionLoading.svelte";
   import EditSessionTimeoutBanner from "@rilldata/web-admin/features/edit-session/EditSessionTimeoutBanner.svelte";
+  import EditDevPreviewNav from "@rilldata/web-admin/features/preview/EditDevPreviewNav.svelte";
   import ProjectHeader from "@rilldata/web-admin/features/projects/ProjectHeader.svelte";
   import SlimProjectHeader from "@rilldata/web-admin/features/projects/SlimProjectHeader.svelte";
   import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
@@ -201,6 +202,9 @@
           {onBeforeReconnect}
           errorBody="Lost connection to the editing environment. Try ending the session and starting a new one."
         >
+          {#if inEditDevPreview}
+            <EditDevPreviewNav />
+          {/if}
           <div class="flex flex-1 overflow-hidden">
             {#if !inProjectWelcomePage && !inEditDevPreview}
               <WelcomeRedirector />
