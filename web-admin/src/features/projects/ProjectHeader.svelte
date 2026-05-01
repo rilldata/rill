@@ -13,7 +13,6 @@
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
   import CloudViewAsButton from "@rilldata/web-admin/features/view-as-user/CloudViewAsButton.svelte";
   import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
-  import ViewAsButton from "@rilldata/web-common/features/dashboards/granular-access-policies/ViewAsButton.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
   import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
@@ -239,7 +238,7 @@
   <div class="flex gap-x-2 items-center ml-auto">
     {#if editContext && inEditDevPreview}
       {#if projectPermissions?.manageDev}
-        <ViewAsButton />
+        <CloudViewAsButton />
       {/if}
       <PreviewModeToggleButton
         mode="Edit"
