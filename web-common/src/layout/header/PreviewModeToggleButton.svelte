@@ -17,12 +17,7 @@
 </script>
 
 <div class="split-button" class:disabled>
-  <a
-    class="left"
-    {href}
-    aria-label={mode}
-    on:click={() => onPreviewClick?.()}
-  >
+  <a class="left" {href} aria-label={mode} on:click={() => onPreviewClick?.()}>
     {#if mode === "Preview"}
       <Play size={14} />
     {:else}
