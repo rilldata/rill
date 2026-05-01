@@ -50,7 +50,7 @@
     {
       route: `/${organization}/${project}${branchPrefix}/-/status`,
       label: "Status",
-      hasPermission: projectPermissions.manageProject,
+      hasPermission: projectPermissions.readProdStatus,
     },
     {
       route: `/${organization}/${project}${branchPrefix}/-/settings`,
