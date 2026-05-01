@@ -25,7 +25,15 @@
     previewModeLocked,
     previewModeStore,
   } from "@rilldata/web-common/layout/preview-mode-store";
-  import { LOCAL_HOST, LOCAL_INSTANCE_ID } from "../lib/runtime-client";
+  import {
+    getLocalRuntimeClient,
+    LOCAL_HOST,
+    LOCAL_INSTANCE_ID,
+  } from "../lib/runtime-client";
+  import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
+  import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
+  import { updateDevJWT } from "@rilldata/web-common/features/dashboards/granular-access-policies/updateDevJWT";
+  import { get } from "svelte/store";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import type { Query } from "@tanstack/query-core";
   import { QueryClientProvider } from "@tanstack/svelte-query";
@@ -64,6 +72,23 @@
   }
 
   $: previewModeLocked.set(data.previewMode);
+
+  // Reset View as + AI chat whenever the user crosses the local
+  // Developer ↔ Preview boundary. Each mode is a different runtime
+  // context, so a stale impersonation makes no sense across the swap.
+  let prevLocalPlatform: string | null = null;
+  $: {
+    const platform = $previewModeStore ? "local-preview" : "local-editor";
+    if (prevLocalPlatform !== null && prevLocalPlatform !== platform) {
+      sidebarActions.closeChat();
+      if (get(selectedMockUserStore) !== null) {
+        updateDevJWT(queryClient, getLocalRuntimeClient(), null).catch(
+          console.error,
+        );
+      }
+    }
+    prevLocalPlatform = platform;
+  }
 
   let removeJavascriptListeners: () => void;
   onMount(async () => {

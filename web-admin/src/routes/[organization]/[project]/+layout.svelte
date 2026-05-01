@@ -47,6 +47,7 @@
   import { cloudVersion } from "@rilldata/web-admin/features/telemetry/initCloudMetrics";
   import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
+  import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { metricsService } from "@rilldata/web-common/metrics/initMetrics";
@@ -107,6 +108,27 @@
     return () => {
       viewAsUserStore.clear();
     };
+  });
+
+  // Reset View as + AI chat whenever the user moves between cloud "platforms":
+  // editor (`/-/edit/files|explore|canvas|...`), editor dev preview
+  // (`/-/edit/dashboards|status|ai`), and cloud prod (everything else).
+  // Each is a different runtime/permission context, so a stale impersonation
+  // makes no sense across the boundary.
+  function classifyCloudPlatform(pathname: string): string {
+    if (/\/-\/edit\/(dashboards|status|ai)(\/|$)/.test(pathname))
+      return "cloud-dev-preview";
+    if (/\/-\/edit(\/|$)/.test(pathname)) return "cloud-editor";
+    return "cloud-prod";
+  }
+  let prevCloudPlatform: string | null = null;
+  $effect(() => {
+    const platform = classifyCloudPlatform(page.url.pathname);
+    if (prevCloudPlatform !== null && prevCloudPlatform !== platform) {
+      if (viewAsUserStore.get()) viewAsUserStore.set(null);
+      sidebarActions.closeChat();
+    }
+    prevCloudPlatform = platform;
   });
 
   // --- Queries (three auth strategies; cookie and token are mutually exclusive,
