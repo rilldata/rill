@@ -26,6 +26,7 @@
   import type { V1ProjectPermissions } from "../../client";
   import { createAdminServiceGetCurrentUser } from "../../client";
   import ViewAsUserChip from "../../features/view-as-user/ViewAsUserChip.svelte";
+  import ViewAsUserPopover from "../../features/view-as-user/ViewAsUserPopover.svelte";
   import { viewAsUserStore } from "../../features/view-as-user/viewAsUserStore";
   import CreateAlert from "../alerts/CreateAlert.svelte";
   import { useAlerts } from "../alerts/selectors";
@@ -84,6 +85,8 @@
     editPreviewKind && name
       ? `/${organization}/${project}${branchPathPrefix(activeBranch)}/${editPreviewKind}/${name}`
       : `/${organization}/${project}${branchPathPrefix(activeBranch)}`;
+
+  let editorViewAsOpen = false;
 
   $: onAlertPage = !!alert;
   $: onReportPage = !!report;
@@ -218,7 +221,24 @@
       {#if $developerChat}
         <ChatToggle />
       {/if}
-      <PreviewModeToggleButton mode="Preview" href={editPreviewHref} />
+      <PreviewModeToggleButton
+        mode="Preview"
+        href={editPreviewHref}
+        showViewAs={projectPermissions?.manageProject ?? false}
+        bind:dropdownOpen={editorViewAsOpen}
+        activeViewAsLabel={$viewAsUserStore?.email ?? null}
+        onClearViewAs={() => {
+          viewAsUserStore.set(null);
+        }}
+      >
+        <svelte:fragment slot="dropdown">
+          <ViewAsUserPopover
+            {organization}
+            {project}
+            onSelectUser={() => (editorViewAsOpen = false)}
+          />
+        </svelte:fragment>
+      </PreviewModeToggleButton>
       <EditActions
         {organization}
         {project}

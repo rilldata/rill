@@ -16,8 +16,13 @@
   import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
   import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
   import { updateDevJWT } from "@rilldata/web-common/features/dashboards/granular-access-policies/updateDevJWT";
-  import ViewAsButton from "@rilldata/web-common/features/dashboards/granular-access-policies/ViewAsButton.svelte";
+  import { useMockUsers } from "@rilldata/web-common/features/dashboards/granular-access-policies/useMockUsers";
   import { useRillYamlPolicyCheck } from "@rilldata/web-common/features/dashboards/granular-access-policies/useSecurityPolicyCheck";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import Add from "@rilldata/web-common/components/icons/Add.svelte";
+  import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
+  import { getFileHref } from "@rilldata/web-common/layout/navigation/editor-routing";
   import DeployProjectCTA from "@rilldata/web-common/features/dashboards/workspace/DeployProjectCTA.svelte";
   import ExplorePreviewCTAs from "@rilldata/web-common/features/explores/ExplorePreviewCTAs.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
@@ -84,9 +89,11 @@
       (c) => (c?.canvas?.state?.validSpec?.securityRules?.length ?? 0) > 0,
     );
   $: showProjectViewAs =
-    mode === "Preview" &&
     !onVizRoute &&
     (!!$rillYamlPolicyCheck?.data || anyDashboardHasPolicy);
+
+  $: mockUsers = useMockUsers(runtimeClient);
+  let localViewAsOpen = false;
 
   $: exploresQuery = useValidExplores(runtimeClient);
   $: canvasQuery = useValidCanvases(runtimeClient);
@@ -209,14 +216,50 @@
     {:else if showDeveloperChat}
       <ChatToggle />
     {/if}
-    {#if showProjectViewAs}
-      <ViewAsButton />
-    {/if}
     {#if showPreviewToggle}
       <PreviewModeToggleButton
         mode={mode === "Preview" ? "Edit" : "Preview"}
         href={previewToggleHref}
-      />
+        showViewAs={showProjectViewAs}
+        bind:dropdownOpen={localViewAsOpen}
+        activeViewAsLabel={$selectedMockUserStore?.email ?? null}
+        onClearViewAs={() => {
+          updateDevJWT(queryClient, runtimeClient, null).catch(console.error);
+        }}
+      >
+        <svelte:fragment slot="dropdown">
+          {#if !$mockUsers.data || $mockUsers.data?.length === 0}
+            <DropdownMenu.Item disabled>No mock users</DropdownMenu.Item>
+          {:else}
+            {#each $mockUsers.data as user (user?.email)}
+              <DropdownMenu.Item
+                onclick={() => {
+                  updateDevJWT(queryClient, runtimeClient, user).catch(
+                    console.error,
+                  );
+                  localViewAsOpen = false;
+                }}
+                class="flex gap-x-2 items-center"
+              >
+                {#if $selectedMockUserStore?.email === user?.email}
+                  <Check size="16px" />
+                {:else}
+                  <Spacer size="16px" />
+                {/if}
+                {user.email}
+              </DropdownMenu.Item>
+            {/each}
+          {/if}
+          <DropdownMenu.Separator />
+          <DropdownMenu.Item
+            href={`${getFileHref("/rill.yaml")}?addMockUser=true`}
+            class="flex gap-x-2 items-center font-normal"
+          >
+            <Add size="16px" />
+            Add mock user
+          </DropdownMenu.Item>
+        </svelte:fragment>
+      </PreviewModeToggleButton>
     {/if}
     {#if showDeployCTA}
       <DeployProjectCTA {hasValidDashboard} />
