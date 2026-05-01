@@ -36,6 +36,7 @@
     isProjectWelcomePage,
   } from "@rilldata/web-admin/features/navigation/nav-utils";
   import BranchDeploymentStopped from "@rilldata/web-admin/features/branches/BranchDeploymentStopped.svelte";
+  import PreviewHeader from "@rilldata/web-admin/features/cloud-preview/PreviewHeader.svelte";
   import ProjectBuilding from "@rilldata/web-admin/features/projects/ProjectBuilding.svelte";
   import ProjectHeader from "@rilldata/web-admin/features/projects/ProjectHeader.svelte";
   import ProjectTabs from "@rilldata/web-admin/features/projects/ProjectTabs.svelte";
@@ -278,29 +279,38 @@
         authContext={runtime.authContext}
       >
         {#if !onWelcomePage}
-          <ProjectHeader
-            {organization}
-            {project}
-            projectPermissions={runtime.projectPermissions}
-            manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
-            manageOrgMembers={organizationPermissions?.manageOrgMembers}
-            readProjects={organizationPermissions?.readProjects}
-            primaryBranch={projectData?.project?.primaryBranch}
-            {planDisplayName}
-            {organizationLogoUrl}
-          />
-          {#if onProjectPage && !activeBranch && deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
+          {#if activeBranch}
             <!--
-              Cloud preview (branch view) intentionally omits the production
-              tabs (Reports, Alerts, Status) — it's scoped to dashboards.
+              Cloud preview (branch view): dedicated header per the Figma,
+              no `ProjectTabs` (the surface is dashboards-only).
             -->
-            <ProjectTabs
-              projectPermissions={runtime.projectPermissions}
+            <PreviewHeader
               {organization}
-              pathname={page.url.pathname}
               {project}
-              {branchPrefix}
+              {activeBranch}
+              canManageProject={!!runtime.projectPermissions?.manageProject}
             />
+          {:else}
+            <ProjectHeader
+              {organization}
+              {project}
+              projectPermissions={runtime.projectPermissions}
+              manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
+              manageOrgMembers={organizationPermissions?.manageOrgMembers}
+              readProjects={organizationPermissions?.readProjects}
+              primaryBranch={projectData?.project?.primaryBranch}
+              {planDisplayName}
+              {organizationLogoUrl}
+            />
+            {#if onProjectPage && deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
+              <ProjectTabs
+                projectPermissions={runtime.projectPermissions}
+                {organization}
+                pathname={page.url.pathname}
+                {project}
+                {branchPrefix}
+              />
+            {/if}
           {/if}
         {/if}
         {@render children()}
