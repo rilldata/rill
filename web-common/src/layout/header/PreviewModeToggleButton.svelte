@@ -1,6 +1,6 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import { Pencil, Play, UserRoundSearch } from "lucide-svelte";
+  import { UserRoundSearch } from "lucide-svelte";
 
   export let mode: "Preview" | "Edit" = "Preview";
   export let href: string;
@@ -18,11 +18,6 @@
 
 <div class="split-button" class:disabled>
   <a class="left" {href} aria-label={mode} on:click={() => onPreviewClick?.()}>
-    {#if mode === "Preview"}
-      <Play size={14} />
-    {:else}
-      <Pencil size={14} />
-    {/if}
     <span>{mode}</span>
   </a>
 
