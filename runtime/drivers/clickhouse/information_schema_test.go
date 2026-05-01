@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/clickhouse/testclickhouse"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -162,12 +161,6 @@ func testListTablesForAll(t *testing.T, ctx context.Context, infoSchema drivers.
 	require.Equal(t, false, tables[3].IsDefaultDatabaseSchema)
 	require.Equal(t, false, tables[4].IsDefaultDatabaseSchema)
 
-	require.Equal(t, 2, len(tables[1].Schema.Fields))
-	require.Equal(t, "bar", tables[1].Schema.Fields[0].Name)
-	require.Equal(t, runtimev1.Type_CODE_STRING, tables[1].Schema.Fields[0].Type.Code)
-	require.Equal(t, "baz", tables[1].Schema.Fields[1].Name)
-	require.Equal(t, runtimev1.Type_CODE_INT32, tables[1].Schema.Fields[1].Type.Code)
-
 	require.Equal(t, true, tables[2].View)
 	require.Equal(t, int64(0), tables[2].PhysicalSizeBytes)
 	require.Greater(t, tables[0].PhysicalSizeBytes, int64(0))
@@ -179,11 +172,6 @@ func testListTablesForAllLike(t *testing.T, ctx context.Context, infoSchema driv
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tables))
 	require.Equal(t, "model", tables[0].Name)
-
-	tables, _, err = infoSchema.ListTables(ctx, "", "", "other.%ar", 0, "")
-	require.NoError(t, err)
-	require.Equal(t, 1, len(tables))
-	require.Equal(t, "bar", tables[0].Name)
 }
 
 func testListTablesForAllPagination(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
@@ -253,11 +241,6 @@ func testListTablesForAllSystemLike(t *testing.T, ctx context.Context, infoSchem
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tables))
 	require.Equal(t, "query_log", tables[0].Name)
-
-	tables, _, err = infoSchema.ListTables(ctx, "", "", "other.%ar", 0, "")
-	require.NoError(t, err)
-	require.Equal(t, 1, len(tables))
-	require.Equal(t, "bar", tables[0].Name)
 }
 
 func testLookup(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {

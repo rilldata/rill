@@ -23,11 +23,15 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	return []*drivers.DatabaseSchemaInfo{{Database: "", DatabaseSchema: "druid"}}, "", nil
 }
 
-func (c *connection) ListTables(ctx context.Context, _, _, _ string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+func (c *connection) ListTables(ctx context.Context, _, _, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
 	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 
 	var filter string
 	args := []any{}
+	if like != "" {
+		filter += " AND LOWER(TABLE_NAME) LIKE LOWER(?)"
+		args = append(args, like)
+	}
 	if pageToken != "" {
 		var startAfter string
 		if err := pagination.UnmarshalPageToken(pageToken, &startAfter); err != nil {
@@ -42,7 +46,7 @@ func (c *connection) ListTables(ctx context.Context, _, _, _ string, pageSize ui
 		TABLE_NAME,
 		TABLE_TYPE = 'VIEW' AS view
 	FROM INFORMATION_SCHEMA.TABLES
-	WHERE TABLE_SCHEMA = "druid" %s
+	WHERE TABLE_SCHEMA = 'druid' %s
 	ORDER BY TABLE_NAME 
 	LIMIT %d
 	`, filter, limit+1)
@@ -110,7 +114,7 @@ func (c *connection) Lookup(ctx context.Context, _, _, table string) (*drivers.T
 		FROM INFORMATION_SCHEMA.TABLES T
 		JOIN INFORMATION_SCHEMA.COLUMNS C ON T.TABLE_SCHEMA = C.TABLE_SCHEMA AND T.TABLE_NAME = C.TABLE_NAME
 		WHERE T.TABLE_SCHEMA = 'druid' AND T.TABLE_NAME = ?
-		ORDER BY SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
+		ORDER BY NAME, TABLE_TYPE, C.ORDINAL_POSITION
 	`
 
 	rows, err = c.db.QueryxContext(ctx, q, table)

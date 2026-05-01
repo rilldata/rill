@@ -6,8 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"path"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/c2h5oh/datasize"
 	"github.com/jmoiron/sqlx"
@@ -95,6 +97,16 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema, l
 	}
 
 	sort.Strings(tablesResp.Tables)
+
+	if like != "" {
+		filtered := tablesResp.Tables[:0]
+		for _, name := range tablesResp.Tables {
+			if matchLike(name, like) {
+				filtered = append(filtered, name)
+			}
+		}
+		tablesResp.Tables = filtered
+	}
 
 	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 	startIndex := 0
@@ -345,4 +357,26 @@ type pinotFieldSpec struct {
 	DefaultNullValue interface{} `json:"defaultNullValue"`
 	Format           string      `json:"format"`      // only for timeFieldSpec
 	Granularity      string      `json:"granularity"` // only for timeFieldSpec
+}
+
+// matchLike performs a case-insensitive SQL LIKE match where % matches any sequence and _ matches any single character.
+func matchLike(name, pattern string) bool {
+	name = strings.ToLower(name)
+	// Convert SQL LIKE pattern to glob pattern
+	var sb strings.Builder
+	for _, ch := range strings.ToLower(pattern) {
+		switch ch {
+		case '%':
+			sb.WriteRune('*')
+		case '_':
+			sb.WriteRune('?')
+		case '*', '?', '[', '\\':
+			sb.WriteRune('\\')
+			sb.WriteRune(ch)
+		default:
+			sb.WriteRune(ch)
+		}
+	}
+	matched, _ := path.Match(sb.String(), name)
+	return matched
 }

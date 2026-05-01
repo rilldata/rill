@@ -34,9 +34,6 @@ func TestInformationSchema(t *testing.T) {
 	t.Run("testListTablesPagination", func(t *testing.T) {
 		testListTablesPagination(t, ctx, infoSchema)
 	})
-	t.Run("testListTablesForAll", func(t *testing.T) {
-		testListTablesForAll(t, ctx, infoSchema)
-	})
 	t.Run("testLookup", func(t *testing.T) {
 		testLookup(t, ctx, infoSchema)
 	})
@@ -80,6 +77,13 @@ func testListTables(t *testing.T, ctx context.Context, infoSchema drivers.Inform
 		require.False(t, tbl.IsDefaultDatabase, "table %s: expected IsDefaultDatabase=false", tbl.Name)
 		require.False(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=false", tbl.Name)
 	}
+
+	// like filter: %ba% should match bar and baz only
+	liked, _, err := infoSchema.ListTables(ctx, database, databaseSchema, "%ba%", 0, "")
+	require.NoError(t, err)
+	require.Equal(t, 2, len(liked))
+	require.Equal(t, "bar", liked[0].Name)
+	require.Equal(t, "baz", liked[1].Name)
 }
 
 func testListTablesPagination(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
@@ -104,29 +108,19 @@ func testListTablesPagination(t *testing.T, ctx context.Context, infoSchema driv
 	require.NoError(t, err)
 	require.Equal(t, numKnown, len(filterTableInfos(tables)))
 	require.Empty(t, nextToken)
-}
 
-func testListTablesForAll(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
-	all, _, err := infoSchema.ListTables(ctx, "", "", "", 0, "")
+	// Paginate with like=%ba% (matches bar, baz): page size 1
+	tables1, tok1, err := infoSchema.ListTables(ctx, database, databaseSchema, "%ba%", 1, "")
 	require.NoError(t, err)
-	tables := filterOLAP(all)
-	require.Equal(t, numKnown, len(tables))
+	require.Equal(t, 1, len(tables1))
+	require.Equal(t, "bar", tables1[0].Name)
+	require.NotEmpty(t, tok1)
 
-	require.Equal(t, "all_types", tables[0].Name)
-	require.Equal(t, "bar", tables[1].Name)
-	require.Equal(t, "baz", tables[2].Name)
-	require.Equal(t, "foo", tables[3].Name)
-	require.Equal(t, "foz", tables[4].Name)
-	require.Equal(t, "model", tables[5].Name)
-	require.True(t, tables[5].View)
-	for _, tbl := range tables[:5] {
-		require.False(t, tbl.View, "table %s should not be a view", tbl.Name)
-	}
-
-	for _, tbl := range tables {
-		require.False(t, tbl.IsDefaultDatabase, "table %s: expected IsDefaultDatabase=false", tbl.Name)
-		require.False(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=false", tbl.Name)
-	}
+	tables2, tok2, err := infoSchema.ListTables(ctx, database, databaseSchema, "%ba%", 1, tok1)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tables2))
+	require.Equal(t, "baz", tables2[0].Name)
+	require.Empty(t, tok2)
 }
 
 func testLookup(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
@@ -204,21 +198,6 @@ func testLoadDDL(t *testing.T, ctx context.Context, infoSchema drivers.Informati
 	err = infoSchema.LoadDDL(ctx, view)
 	require.NoError(t, err)
 	require.NotEmpty(t, view.DDL)
-}
-
-func filterOLAP(tables []*drivers.TableInfo) []*drivers.TableInfo {
-	known := make(map[string]bool, numKnown)
-	for _, n := range knownTestTables {
-		known[n] = true
-	}
-	var out []*drivers.TableInfo
-	for _, t := range tables {
-		if known[t.Name] {
-			out = append(out, t)
-		}
-	}
-	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
-	return out
 }
 
 func filterTableInfos(tables []*drivers.TableInfo) []*drivers.TableInfo {

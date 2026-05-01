@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"cloud.google.com/go/bigquery"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -61,28 +62,28 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema, l
 		FROM `+"`%s.%s.INFORMATION_SCHEMA.TABLES`"+`
 	`, database, databaseSchema)
 
+	var whereConds []string
 	var args []bigquery.QueryParameter
+
+	if like != "" {
+		whereConds = append(whereConds, "LOWER(table_name) LIKE LOWER(@like)")
+		args = append(args, bigquery.QueryParameter{Name: "like", Value: like})
+	}
 	if pageToken != "" {
 		var startAfter string
 		if err := pagination.UnmarshalPageToken(pageToken, &startAfter); err != nil {
 			return nil, "", fmt.Errorf("invalid page token: %w", err)
 		}
-		q += `
-		WHERE table_name > @startAfter
-		ORDER BY table_name
-		LIMIT @limit
-		`
-		args = append(args,
-			bigquery.QueryParameter{Name: "startAfter", Value: startAfter},
-			bigquery.QueryParameter{Name: "limit", Value: limit + 1},
-		)
-	} else {
-		q += `
-		ORDER BY table_name
-		LIMIT @limit
-		`
-		args = append(args, bigquery.QueryParameter{Name: "limit", Value: limit + 1})
+		whereConds = append(whereConds, "table_name > @startAfter")
+		args = append(args, bigquery.QueryParameter{Name: "startAfter", Value: startAfter})
 	}
+	if len(whereConds) > 0 {
+		q += "WHERE " + strings.Join(whereConds, " AND ") + "\n"
+	}
+	q += `ORDER BY table_name
+	LIMIT @limit
+	`
+	args = append(args, bigquery.QueryParameter{Name: "limit", Value: limit + 1})
 
 	client, err := c.getClient(ctx)
 	if err != nil {

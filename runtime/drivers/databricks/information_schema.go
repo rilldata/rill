@@ -84,6 +84,10 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema, l
 	`, catalogPrefix(database))
 	var args []any
 	args = append(args, databaseSchema)
+	if like != "" {
+		q += "	AND LOWER(table_name) LIKE LOWER(?)\n"
+		args = append(args, like)
+	}
 	if pageToken != "" {
 		var startAfter string
 		if err := pagination.UnmarshalPageToken(pageToken, &startAfter); err != nil {

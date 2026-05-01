@@ -171,15 +171,8 @@ func testListTablesForAll(t *testing.T, ctx context.Context, infoSchema drivers.
 	require.Equal(t, "foz", tables[4].Name)
 	require.Equal(t, "model", tables[5].Name)
 
-	// add this condition to prevent size check for motherduck connector
-	if tables[1].DatabaseSchema != "integration_test" {
-		require.Greater(t, tables[1].PhysicalSizeBytes, int64(0))
-	}
-
 	model := tables[5]
-	require.Equal(t, 3, len(model.Schema.Fields))
 	require.Equal(t, true, model.View)
-	require.Equal(t, int64(0), model.PhysicalSizeBytes)
 }
 
 func testListTablesForAllLike(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {

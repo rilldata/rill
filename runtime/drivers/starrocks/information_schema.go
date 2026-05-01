@@ -8,6 +8,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/pagination"
 )
 
 // StarRocks Uses fully qualified names (catalog.database_schema.tables) instead of SET CATALOG/USE.
@@ -15,6 +16,7 @@ import (
 // StarRocks structure: Catalog -> Database -> Table
 // We map: Database = catalog, DatabaseSchema = database
 func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 	db := c.db
 
 	catalog := c.configProp.Catalog
@@ -35,8 +37,8 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 
 	q += " ORDER BY schema_name"
 
-	if pageSize > 0 {
-		q += fmt.Sprintf(" LIMIT %d", pageSize+1)
+	if limit > 0 {
+		q += fmt.Sprintf(" LIMIT %d", limit+1)
 	}
 
 	rows, err := db.QueryxContext(ctx, q, args...)
@@ -65,8 +67,8 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 
 	// Handle pagination
 	var nextToken string
-	if pageSize > 0 && uint32(len(schemas)) > pageSize {
-		schemas = schemas[:pageSize]
+	if limit > 0 && len(schemas) > limit {
+		schemas = schemas[:limit]
 		nextToken = schemas[len(schemas)-1].DatabaseSchema
 	}
 
@@ -74,19 +76,19 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 }
 
 // ListTables returns a list of tables in a specific database schema.
-// database parameter = catalog, databaseSchema parameter = database
+// database parameter = catalog, databaseSchema parameter = database.
+// When databaseSchema is empty, tables from all schemas are returned.
 func (c *connection) ListTables(ctx context.Context, database, databaseSchema, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 	db := c.db
-
-	// StarRocks mapping: database parameter = catalog
 	catalog := database
+	if catalog == "" {
+		catalog = c.configProp.Catalog
+	}
 
-	// StarRocks mapping: databaseSchema parameter = database
-	dbSchema := databaseSchema
-
-	// Query information_schema.tables using fully qualified path
 	q := fmt.Sprintf(`
 		SELECT
+			table_schema,
 			table_name,
 			CASE
 				WHEN table_type = 'VIEW' THEN true
@@ -94,20 +96,30 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema, l
 				ELSE false
 			END AS is_view
 		FROM %s.information_schema.tables
-		WHERE table_schema = ?
-	`, safeSQLName(catalog))
+		WHERE `, safeSQLName(catalog))
 
-	args := []any{dbSchema}
+	var args []any
+	q += " table_schema = ?"
+	args = append(args, databaseSchema)
 
-	if pageToken != "" {
-		q += " AND table_name > ?"
-		args = append(args, pageToken)
+	if like != "" {
+		q += " AND LOWER(table_name) LIKE LOWER(?)"
+		args = append(args, like)
 	}
 
-	q += " ORDER BY table_name"
+	if pageToken != "" {
+		var afterSchema, afterName string
+		if err := pagination.UnmarshalPageToken(pageToken, &afterSchema, &afterName); err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+		q += " AND (table_schema > ? OR (table_schema = ? AND table_name > ?))"
+		args = append(args, afterSchema, afterSchema, afterName)
+	}
 
-	if pageSize > 0 {
-		q += fmt.Sprintf(" LIMIT %d", pageSize+1)
+	q += " ORDER BY table_schema, table_name"
+
+	if limit > 0 {
+		q += fmt.Sprintf(" LIMIT %d", limit+1)
 	}
 
 	rows, err := db.QueryxContext(ctx, q, args...)
@@ -118,19 +130,18 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema, l
 
 	var tables []*drivers.TableInfo
 	for rows.Next() {
-		var tableName string
+		var schemaName, tableName string
 		var isView bool
-		if err := rows.Scan(&tableName, &isView); err != nil {
+		if err := rows.Scan(&schemaName, &tableName, &isView); err != nil {
 			return nil, "", err
 		}
-
 		tables = append(tables, &drivers.TableInfo{
 			Name:                    tableName,
 			View:                    isView,
 			Database:                catalog,
-			DatabaseSchema:          dbSchema,
-			IsDefaultDatabase:       false, // Because StarRocks uses fully qualified names (catalog.database_schema.tables)
-			IsDefaultDatabaseSchema: false, // Because StarRocks uses fully qualified names (catalog.database_schema.tables)
+			DatabaseSchema:          schemaName,
+			IsDefaultDatabase:       false,
+			IsDefaultDatabaseSchema: false,
 		})
 	}
 
@@ -138,11 +149,11 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema, l
 		return nil, "", err
 	}
 
-	// Handle pagination
 	var nextToken string
-	if pageSize > 0 && uint32(len(tables)) > pageSize {
-		tables = tables[:pageSize]
-		nextToken = tables[len(tables)-1].Name
+	if limit > 0 && len(tables) > limit {
+		tables = tables[:limit]
+		last := tables[len(tables)-1]
+		nextToken = pagination.MarshalPageToken(last.DatabaseSchema, last.Name)
 	}
 
 	return tables, nextToken, nil

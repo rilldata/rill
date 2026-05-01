@@ -45,22 +45,22 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	return res, "", nil
 }
 
-func (c *connection) ListTables(ctx context.Context, database, databaseSchema, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+func (c *connection) ListTables(ctx context.Context, _, _, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
 	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
-	var args []any
 	var q string
 	if c.config.Path != "" || c.config.Attach != "" {
 		// for generic duckdb implementation, we use the current schema from the connection.
 		q = `
         SELECT
+		    coalesce(t.table_catalog, current_database()) AS "database" , 
+			t.table_schema AS schema,
             t.table_name AS table_name,
             t.table_type = 'VIEW' AS view,
             t.table_catalog = current_database() AS is_default_database,
             t.table_schema = current_schema() AS is_default_database_schema
         FROM information_schema.tables t
-        WHERE t.table_catalog = ? AND t.table_schema = ?
+        WHERE database = current_database() AND t.table_schema = current_schema()
         `
-		args = append(args, database, databaseSchema)
 	} else {
 		// for rduckdb implementation, we use the current database and schema from the connection.
 		// due to external table storage the information_schema always returns table type as view
@@ -73,6 +73,8 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema, l
 			WHERE regexp_matches(database_name, '^.+__\d+__db$')
 		)
 		SELECT
+		    coalesce(t.table_catalog, current_database()) AS "database", 
+			'main' as schema,
 			t.table_name,
 			CASE WHEN a.attached_table IS NOT NULL THEN FALSE
 				ELSE (t.table_type = 'VIEW')
@@ -82,10 +84,13 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema, l
 		FROM information_schema.tables t
 		LEFT JOIN attached a
 			ON t.table_name = a.attached_table
-		WHERE
-			t.table_catalog = current_database()
-			AND t.table_schema = current_schema()
+		WHERE database = current_database() AND t.table_schema = current_schema()
 		`
+	}
+	var args []any
+	if like != "" {
+		q += " AND t.table_name ilike ?"
+		args = []any{like}
 	}
 	if pageToken != "" {
 		var startAfter string
@@ -114,10 +119,10 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema, l
 	defer rows.Close()
 
 	var res []*drivers.TableInfo
-	var name string
+	var database, databaseSchema, name string
 	var view, isDefaultDatabase, isDefaultDatabaseSchema bool
 	for rows.Next() {
-		if err := rows.Scan(&name, &view, &isDefaultDatabase, &isDefaultDatabaseSchema); err != nil {
+		if err := rows.Scan(&database, &databaseSchema, &name, &view, &isDefaultDatabase, &isDefaultDatabaseSchema); err != nil {
 			return nil, "", err
 		}
 		res = append(res, &drivers.TableInfo{
@@ -141,7 +146,7 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema, l
 	return res, next, nil
 }
 
-func (c *connection) Lookup(ctx context.Context, database, databaseSchema, table string) (*drivers.TableInfo, error) {
+func (c *connection) Lookup(ctx context.Context, _, _, table string) (*drivers.TableInfo, error) {
 	// TODO: this bypasses the acquireMetaConn call in the original implementation. Fix this.
 	db, release, err := c.acquireDB()
 	if err != nil {
@@ -167,7 +172,7 @@ func (c *connection) Lookup(ctx context.Context, database, databaseSchema, table
 }
 
 func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.TableInfo) error {
-	// already populated in All and Lookup calls
+	// already populated in Lookup calls
 	return nil
 }
 

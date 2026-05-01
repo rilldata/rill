@@ -88,28 +88,36 @@ func (c *Connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	return res, next, nil
 }
 
-func (c *Connection) ListTables(ctx context.Context, database, databaseSchema, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+func (c *Connection) ListTables(ctx context.Context, _, databaseSchema, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
 	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 
 	q := `
 	SELECT
-		name AS table_name,
+		database,
+		name,
 		CASE WHEN match(engine, 'View') THEN true ELSE false END AS view,
 		database = currentDatabase() AS is_default_database_schema
 	FROM system.tables
-	WHERE is_temporary = 0 AND database = ?
-	`
-	args := []any{databaseSchema}
+	WHERE is_temporary = 0`
+
+	var args []any
+	q += " AND database = ?"
+	args = append(args, databaseSchema)
+
+	if like != "" {
+		q += " AND LOWER(name) LIKE LOWER(?)"
+		args = append(args, like)
+	}
 	if pageToken != "" {
-		var startAfter string
-		if err := pagination.UnmarshalPageToken(pageToken, &startAfter); err != nil {
+		var afterSchema, afterName string
+		if err := pagination.UnmarshalPageToken(pageToken, &afterSchema, &afterName); err != nil {
 			return nil, "", fmt.Errorf("invalid page token: %w", err)
 		}
-		q += "	AND table_name > ?"
-		args = append(args, startAfter)
+		q += " AND (database > ? OR (database = ? AND name > ?))"
+		args = append(args, afterSchema, afterSchema, afterName)
 	}
 	q += `
-	ORDER BY table_name 
+	ORDER BY database, name
 	LIMIT ?
 	`
 	args = append(args, limit+1)
@@ -127,15 +135,15 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema, l
 	defer rows.Close()
 
 	var res []*drivers.TableInfo
-	var name string
-	var view, isDefaultDatabaseSchema bool
 	for rows.Next() {
-		if err := rows.Scan(&name, &view, &isDefaultDatabaseSchema); err != nil {
+		var schemaName, name string
+		var view, isDefaultDatabaseSchema bool
+		if err := rows.Scan(&schemaName, &name, &view, &isDefaultDatabaseSchema); err != nil {
 			return nil, "", err
 		}
 		res = append(res, &drivers.TableInfo{
 			Database:                "",
-			DatabaseSchema:          databaseSchema,
+			DatabaseSchema:          schemaName,
 			Name:                    name,
 			View:                    view,
 			IsDefaultDatabase:       true,
@@ -150,7 +158,8 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema, l
 	next := ""
 	if len(res) > limit {
 		res = res[:limit]
-		next = pagination.MarshalPageToken(res[len(res)-1].Name)
+		last := res[len(res)-1]
+		next = pagination.MarshalPageToken(last.DatabaseSchema, last.Name)
 	}
 	return res, next, nil
 }

@@ -64,12 +64,15 @@ func (c *Connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 func (c *Connection) ListTables(ctx context.Context, database, databaseSchema, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
 	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 	condFilter := ""
+	if like != "" {
+		condFilter += fmt.Sprintf(" AND LOWER(table_name) LIKE LOWER(%s)", escapeStringValue(like))
+	}
 	if pageToken != "" {
 		var startAfter string
 		if err := pagination.UnmarshalPageToken(pageToken, &startAfter); err != nil {
 			return nil, "", fmt.Errorf("invalid page token: %w", err)
 		}
-		condFilter = fmt.Sprintf("AND table_name > %s", escapeStringValue(startAfter))
+		condFilter += fmt.Sprintf(" AND table_name > %s", escapeStringValue(startAfter))
 	}
 	q := fmt.Sprintf(`
 	SELECT
