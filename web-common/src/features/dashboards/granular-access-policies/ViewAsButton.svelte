@@ -27,7 +27,7 @@
       {#if $selectedMockUserStore === null}
         <button
           {...props}
-          class="flex items-center gap-x-2 px-3 h-7 bg-primary-50 text-primary-600 text-xs font-medium hover:bg-primary-100 transition-colors"
+          class="flex items-center gap-x-2 px-3 h-7 text-primary-600 text-xs font-medium hover:bg-primary-50 transition-colors"
         >
           <UserRoundSearch size={14} />
           <span>View as</span>
