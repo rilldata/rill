@@ -1,19 +1,14 @@
 <script lang="ts">
-  import DashboardsTable from "@rilldata/web-admin/features/dashboards/listing/DashboardsTable.svelte";
   import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
-  import { page } from "$app/stores";
+  import DashboardsTable from "@rilldata/web-common/features/dashboards/listing/DashboardsTable.svelte";
+  import { useDashboards } from "@rilldata/web-common/features/dashboards/listing/selectors";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
-  $: ({
-    params: { project },
-  } = $page);
+  const runtimeClient = useRuntimeClient();
+  $: dashboardsQuery = useDashboards(runtimeClient);
+  $: ({ data: dashboardsData, isLoading, isError, error } = $dashboardsQuery);
 </script>
 
-<svelte:head>
-  <title>{project} dashboards (preview) - Rill</title>
-</svelte:head>
-
-<ContentContainer maxWidth={800} title="Project dashboards">
-  <div class="flex flex-col items-center gap-y-4">
-    <DashboardsTable />
-  </div>
+<ContentContainer title="Dashboards" maxWidth={1100}>
+  <DashboardsTable data={dashboardsData ?? []} {isLoading} {isError} {error} />
 </ContentContainer>
