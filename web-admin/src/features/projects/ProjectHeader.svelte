@@ -25,6 +25,7 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import Header from "@rilldata/web-common/layout/header/Header.svelte";
   import HeaderLogo from "@rilldata/web-common/layout/header/HeaderLogo.svelte";
+  import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import PreviewModeToggleButton from "@rilldata/web-common/layout/header/PreviewModeToggleButton.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { V1ProjectPermissions } from "../../client";
@@ -232,6 +233,9 @@
 
 <Header borderBottom={!onProjectPage && !inEditDevPreview}>
   <HeaderLogo href={rillLogoHref} logoUrl={organizationLogoUrl} />
+  {#if editContext}
+    <Tag text={inEditDevPreview ? "Preview" : "Developer"} color="gray" />
+  {/if}
   {#if onPublicURLPage}
     <PageTitle title={publicURLDashboardTitle} />
   {:else if organization}
