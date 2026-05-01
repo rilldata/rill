@@ -2,13 +2,11 @@
   import { page } from "$app/stores";
   import {
     createAdminServiceGetCurrentUser,
-    createAdminServiceGetDeploymentCredentials,
     createAdminServiceGetProject,
     getAdminServiceGetProjectQueryKey,
     V1DeploymentStatus,
     type V1Organization,
   } from "@rilldata/web-admin/client";
-  import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import {
     branchPathPrefix,
     extractBranchFromPath,
@@ -88,41 +86,9 @@
   // Deployment data and credentials come from GetProject (no separate API needed)
   $: deployment = $projectQuery.data?.deployment;
   $: deploymentStatus = deployment?.status;
-
-  // View-as: when `viewAsUserStore` is set we fetch a separate set of
-  // runtime credentials with the impersonated user's `userId` so the
-  // dev-preview surface enforces that user's security policies.
-  $: mockedUserId = $viewAsUserStore?.id;
-
-  $: mockedUserCredentialsQuery = createAdminServiceGetDeploymentCredentials(
-    organization,
-    project,
-    {
-      userId: mockedUserId,
-      ...(branch ? { branch } : {}),
-    },
-    { query: { enabled: !!mockedUserId } },
-  );
-  $: mockedUserCredentials = $mockedUserCredentialsQuery.data;
-
-  // Once a mock user is selected, route the runtime through the
-  // impersonated credentials. While the credentials query is in flight
-  // we render a loading state instead of falling back to the editor's
-  // own JWT (which would briefly leak the un-filtered view).
-  $: useImpersonatedRuntime = !!mockedUserId;
-
-  $: runtimeHost =
-    (useImpersonatedRuntime
-      ? mockedUserCredentials?.runtimeHost
-      : deployment?.runtimeHost) ?? null;
-  $: instanceId =
-    (useImpersonatedRuntime
-      ? mockedUserCredentials?.runtimeInstanceId
-      : deployment?.runtimeInstanceId) ?? null;
-  $: jwt =
-    (useImpersonatedRuntime
-      ? mockedUserCredentials?.accessToken
-      : $projectQuery.data?.jwt) ?? null;
+  $: runtimeHost = deployment?.runtimeHost ?? null;
+  $: instanceId = deployment?.runtimeInstanceId ?? null;
+  $: jwt = $projectQuery.data?.jwt ?? null;
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -214,7 +180,7 @@
       </CtaContentContainer>
     </CtaLayoutContainer>
   {:else if isReady && deployment?.id && instanceId && runtimeHost && jwt}
-    {#key `${runtimeHost}::${instanceId}::${mockedUserId ?? ""}`}
+    {#key `${runtimeHost}::${instanceId}`}
       <RuntimeProvider host={runtimeHost} {instanceId} {jwt}>
         {#if !inProjectWelcomePage}
           <ProjectHeader
