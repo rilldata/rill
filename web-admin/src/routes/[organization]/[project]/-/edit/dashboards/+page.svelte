@@ -1,14 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { branchPathPrefix } from "@rilldata/web-admin/features/branches/branch-utils";
-  import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
-  import DashboardsTable from "@rilldata/web-common/features/dashboards/listing/DashboardsTable.svelte";
-  import { useDashboards } from "@rilldata/web-common/features/dashboards/listing/selectors";
-  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-
-  const runtimeClient = useRuntimeClient();
-  $: dashboardsQuery = useDashboards(runtimeClient);
-  $: ({ data: dashboardsData, isLoading, isError, error } = $dashboardsQuery);
+  import DashboardsPage from "@rilldata/web-common/features/preview-mode/DashboardsPage.svelte";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -21,13 +14,4 @@
   }
 </script>
 
-<ContentContainer title="Dashboards" maxWidth={1100}>
-  <DashboardsTable
-    data={dashboardsData ?? []}
-    {isLoading}
-    {isError}
-    {error}
-    {getHref}
-    toolbar
-  />
-</ContentContainer>
+<DashboardsPage {getHref} />
