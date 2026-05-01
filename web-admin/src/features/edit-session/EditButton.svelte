@@ -1,10 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import {
-    createAdminServiceGetCurrentUser,
-    V1DeploymentStatus,
-  } from "@rilldata/web-admin/client";
-  import {
     injectBranchIntoPath,
     requestSkipBranchInjection,
   } from "@rilldata/web-admin/features/branches/branch-utils";
@@ -19,33 +15,19 @@
   /** The project's primary branch, used as the source for new branches. */
   export let primaryBranch: string | undefined = undefined;
 
-  const user = createAdminServiceGetCurrentUser();
   const devDeployments = useDevDeployments(organization, project);
 
   let dialogOpen = false;
 
-  $: currentUserId = $user.data?.user?.id;
-  $: deployments = $devDeployments.data?.deployments ?? [];
   $: isLoading = $devDeployments.isLoading;
 
-  // If viewing a branch the user owns, clicking the button should go straight
-  // there — no dialog.
-  $: activeBranchDeployment =
-    activeBranch && currentUserId
-      ? deployments.find(
-          (d) =>
-            d.branch === activeBranch &&
-            d.ownerUserId === currentUserId &&
-            d.editable &&
-            d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING &&
-            d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED,
-        )
-      : undefined;
-
-  $: directEditHref = activeBranchDeployment?.branch
+  // On a branch view, jump straight into edit mode for that branch.
+  // On production view, fall through to the dialog so the user can pick
+  // an existing dev branch or create a new one.
+  $: directEditHref = activeBranch
     ? injectBranchIntoPath(
         `/${organization}/${project}/-/edit`,
-        activeBranchDeployment.branch,
+        activeBranch,
       )
     : undefined;
 
