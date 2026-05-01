@@ -201,6 +201,7 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 		if opts.deployment.Editable {
 			instancePermissions = append(
 				instancePermissions,
+				runtime.ManageInstance,
 				runtime.ReadOLAP,
 				runtime.ReadProfiling,
 				runtime.ReadRepo,

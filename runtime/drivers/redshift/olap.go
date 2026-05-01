@@ -330,7 +330,7 @@ func (r *rows) runtimeSchema() *runtimev1.StructType {
 }
 
 func redshiftTypeToRuntimeType(colType string) *runtimev1.Type {
-	t := &runtimev1.Type{}
+	t := &runtimev1.Type{RawType: colType}
 	typeLower := strings.ToLower(colType)
 
 	// Handle types with parameters (e.g., "numeric(18,2)", "varchar(255)")

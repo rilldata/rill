@@ -281,7 +281,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				AuthIssuerURL:   conf.AuthIssuerURL,
 				AuthAudienceURL: conf.AuthAudienceURL,
 			}
-			s, err := server.NewServer(ctx, srvOpts, rt, logger, limiter, activityClient, nil)
+			s, err := server.NewServer(ctx, srvOpts, rt, logger, limiter, activityClient)
 			if err != nil {
 				logger.Fatal("error: could not create server", zap.Error(err))
 			}

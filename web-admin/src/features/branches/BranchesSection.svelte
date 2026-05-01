@@ -74,7 +74,7 @@
         query: {
           refetchInterval: (query) => {
             const deployments = query.state.data?.deployments;
-            if (deployments?.some((d) => isTransitoryStatus(d.status!))) {
+            if (deployments?.some((d) => isTransitoryStatus(d.status))) {
               return 2000;
             }
             return false;
@@ -239,6 +239,10 @@
   let deleteDialogOpen = $state(false);
   let pendingDelete = $state<{ id: string; branch: string } | null>(null);
 
+  function onFilterChange(key: string, selected: string[]) {
+    if (key === "status") statusFilter = selected;
+  }
+
   async function mutateDeployment(
     deploymentId: string,
     branch: string | undefined,
@@ -263,7 +267,7 @@
     } catch (err) {
       eventBus.emit("notification", {
         type: "error",
-        message: `Failed to ${actionName} branch: ${getRpcErrorMessage(err as any)}`,
+        message: `Failed to ${actionName} branch: ${getRpcErrorMessage(err)}`,
       });
     } finally {
       pendingId = "";
@@ -290,7 +294,7 @@
     } catch (err) {
       eventBus.emit("notification", {
         type: "error",
-        message: `Failed to delete branch: ${getRpcErrorMessage(err as any)}`,
+        message: `Failed to delete branch: ${getRpcErrorMessage(err)}`,
       });
     } finally {
       pendingId = "";
@@ -302,18 +306,9 @@
   <h2 class="text-lg font-medium">Branches</h2>
 
   <TableToolbar
-    {searchText}
-    onSearchChange={(text) => {
-      searchText = text;
-    }}
+    bind:searchText
     {filterGroups}
-    onFilterChange={(key, value) => {
-      if (key === "status") {
-        statusFilter = statusFilter.includes(value)
-          ? statusFilter.filter((v) => v !== value)
-          : [...statusFilter, value];
-      }
-    }}
+    {onFilterChange}
     onClearAllFilters={() => {
       statusFilter = [];
       searchText = "";

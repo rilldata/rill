@@ -1,16 +1,16 @@
-import type { RpcStatus } from "@rilldata/web-admin/client";
+import { type RpcStatus } from "@rilldata/web-admin/client";
 import { hasBlockerIssues } from "@rilldata/web-admin/features/billing/selectors";
 import { fetchAllProjectsHibernating } from "@rilldata/web-admin/features/organizations/selectors";
 import { error, redirect } from "@sveltejs/kit";
 import { isAxiosError } from "axios";
-import { projectWelcomeStatusStores } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
-import { isProjectWelcomePage } from "@rilldata/web-admin/features/navigation/nav-utils.ts";
-import { CreateProjectBranchName } from "@rilldata/web-admin/features/projects/publish-project.ts";
+import { maybeRedirectToEditableDeployment } from "@rilldata/web-admin/features/branches/deployment-utils.ts";
+import { isEditPage } from "@rilldata/web-admin/features/navigation/nav-utils.ts";
 
 export const load = async ({
   params: { organization, project },
-  route,
   parent,
+  route,
+  url,
 }) => {
   const { organizationPermissions, issues } = await parent();
 
@@ -32,13 +32,7 @@ export const load = async ({
     throw redirect(307, `/${organization}`);
   }
 
-  if (
-    projectWelcomeStatusStores.isProjectWelcomeStep(project) &&
-    !isProjectWelcomePage({ route })
-  ) {
-    throw redirect(
-      307,
-      `/${organization}/${project}/@${CreateProjectBranchName}/-/welcome`,
-    );
+  if (!isEditPage({ route })) {
+    await maybeRedirectToEditableDeployment(organization, project, url);
   }
 };

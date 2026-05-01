@@ -4,12 +4,10 @@
   import { tick } from "svelte";
 
   let {
-    searchText = "",
-    onSearchChange,
+    searchText = $bindable(""),
     disabled = false,
   }: {
     searchText?: string;
-    onSearchChange?: (text: string) => void;
     disabled?: boolean;
   } = $props();
 
@@ -25,12 +23,8 @@
   }
 
   function close() {
-    onSearchChange?.("");
+    searchText = "";
     manualExpanded = false;
-  }
-
-  function handleInput(e: Event) {
-    onSearchChange?.((e.target as HTMLInputElement).value);
   }
 
   function handleKeyDown(e: KeyboardEvent) {
@@ -47,8 +41,7 @@
     <SearchIcon size="16" className="text-fg-secondary shrink-0" />
     <input
       bind:this={inputRef}
-      value={searchText}
-      oninput={handleInput}
+      bind:value={searchText}
       type="text"
       class="outline-none bg-transparent text-sm text-fg-primary placeholder-fg-secondary flex-1 min-w-0"
       placeholder="Search..."

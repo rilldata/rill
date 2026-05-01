@@ -30,9 +30,11 @@ Rill offers flexible connection strategies to fit different data architectures a
 ## OLAP Engines
 
 ### ClickHouse
+### Databricks
 ### Druid
 ### DuckDB
 ### DuckLake
+### Google BigQuery
 ### MotherDuck
 ### Pinot
 ### Snowflake
@@ -45,6 +47,15 @@ Rill offers flexible connection strategies to fit different data architectures a
     link="/developers/build/connectors/olap/clickhouse"
     linkLabel="Learn more"
     referenceLink="clickhouse"
+  />
+
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-Databricks.svg" alt="Databricks" />}
+    header="Databricks"
+    content="Lakehouse platform with native support for metrics views as a live connector."
+    link="/developers/build/connectors/olap/databricks"
+    linkLabel="Learn more"
+    referenceLink="databricks"
   />
 
   <ConnectorIcon
@@ -65,11 +76,18 @@ Rill offers flexible connection strategies to fit different data architectures a
 
   <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-DuckLake.svg" alt="DuckLake" />}
-    header="DuckLake"
     content="Open lakehouse format built on DuckDB — catalog in SQL, data in Parquet."
     link="/developers/build/connectors/olap/ducklake"
     linkLabel="Learn more"
     referenceLink="ducklake"
+  />
+  
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-BigQuery.svg" alt="Google BigQuery" />}
+    content="Connect to Google BigQuery for analytics and data warehousing with service account authentication."
+    link="/developers/build/connectors/olap/bigquery"
+    linkLabel="Learn more"
+    referenceLink="bigquery"
   />
 
   <ConnectorIcon
@@ -115,6 +133,7 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
 
 ### Athena
 ### BigQuery
+### Databricks
 ### Redshift
 ### Snowflake
 
@@ -134,6 +153,15 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
     link="/developers/build/connectors/data-source/bigquery"
     linkLabel="Learn more"
     referenceLink="bigquery"
+  />
+
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-Databricks.svg" alt="Databricks" />}
+    header="Databricks"
+    content="Connect to Databricks SQL warehouses with personal access token authentication."
+    link="/developers/build/connectors/data-source/databricks"
+    linkLabel="Learn more"
+    referenceLink="databricks"
   />
 
   <ConnectorIcon
