@@ -219,7 +219,7 @@
       <PreviewModeToggleButton
         mode="Preview"
         href={previewToggleHref}
-        showViewAs={showProjectViewAs}
+        showViewAs={true}
         bind:dropdownOpen={localViewAsOpen}
         onPreviewClick={resetOnModeToggle}
       >
@@ -258,9 +258,7 @@
         </svelte:fragment>
       </PreviewModeToggleButton>
     {:else if showPreviewToggle && mode === "Preview"}
-      {#if showProjectViewAs}
-        <ViewAsButton />
-      {/if}
+      <ViewAsButton />
       <PreviewModeToggleButton
         mode="Edit"
         href={previewToggleHref}
