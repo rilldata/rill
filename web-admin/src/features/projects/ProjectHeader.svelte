@@ -12,6 +12,7 @@
   import EditButton from "@rilldata/web-admin/features/edit-session/EditButton.svelte";
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
   import CloudViewAsButton from "@rilldata/web-admin/features/view-as-user/CloudViewAsButton.svelte";
+  import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
   import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
@@ -98,6 +99,14 @@
   $: editBackHref = `/${organization}/${project}${branchPathPrefix(activeBranch)}/-/edit`;
 
   let editorViewAsOpen = false;
+
+  // Reset session state (View-as impersonation + AI chat panel) when the
+  // user explicitly swaps between editor and dev-preview chrome via the
+  // Preview/Edit toggle. Mirrors local's `resetOnModeToggle`.
+  function resetOnPreviewSwap() {
+    sidebarActions.closeChat();
+    if ($viewAsUserStore) viewAsUserStore.set(null);
+  }
 
   $: onAlertPage = !!alert;
   $: onReportPage = !!report;
@@ -231,7 +240,11 @@
       {#if projectPermissions?.manageDev}
         <CloudViewAsButton />
       {/if}
-      <PreviewModeToggleButton mode="Edit" href={editBackHref} />
+      <PreviewModeToggleButton
+        mode="Edit"
+        href={editBackHref}
+        onPreviewClick={resetOnPreviewSwap}
+      />
     {:else if editContext}
       {#if $developerChat}
         <ChatToggle />
@@ -244,9 +257,7 @@
         href={editPreviewHref}
         showViewAs={projectPermissions?.manageProject ?? false}
         bind:dropdownOpen={editorViewAsOpen}
-        onPreviewClick={() => {
-          if ($viewAsUserStore) viewAsUserStore.set(null);
-        }}
+        onPreviewClick={resetOnPreviewSwap}
       >
         <svelte:fragment slot="dropdown">
           <ViewAsUserPopover

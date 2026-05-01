@@ -11,6 +11,7 @@
   $: navItems = [
     { label: "Overview", route: basePath },
     { label: "Resources", route: `${basePath}/resources` },
+    { label: "Tables", route: `${basePath}/tables` },
   ];
 </script>
 
