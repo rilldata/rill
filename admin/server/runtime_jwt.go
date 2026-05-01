@@ -173,14 +173,16 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 		}
 	}
 
-	// Check if allowed to manage the deployment's environment.
+	// Check if allowed to manage the deployment's environment, or to read its status.
 	// NOTE: Only applicable for tokens issued for the claims owner (not possible to delegate to other end users).
-	var manageDepl bool
+	var manageDepl, readDeplStatus bool
 	if opts.forOwner {
 		if opts.deployment.Environment == "prod" {
 			manageDepl = opts.projectPermissions.ManageProd
+			readDeplStatus = opts.projectPermissions.ReadProdStatus
 		} else {
 			manageDepl = opts.projectPermissions.ManageDev
+			readDeplStatus = opts.projectPermissions.ReadDevStatus
 		}
 	}
 
@@ -190,6 +192,10 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 		runtime.ReadMetrics,
 		runtime.ReadObjects,
 		runtime.UseAI,
+	}
+	if readDeplStatus {
+		// Status visibility: lets non-managers (e.g. editors) view the project Status page.
+		instancePermissions = append(instancePermissions, runtime.ReadInstance)
 	}
 	if manageDepl {
 		instancePermissions = append(
