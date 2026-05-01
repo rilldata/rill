@@ -127,10 +127,13 @@
   $: branchUrl = `/${organization}/${project}${branchPathPrefix(branch)}`;
 
   $: inProjectWelcomePage = isProjectWelcomePage($page);
-  // Dev-preview sub-routes (`/-/edit/dashboards|status|ai`) render
-  // standalone, without the editor's file tree or chat sidebar.
+  // Dev-preview sub-routes render standalone, without the editor's file
+  // tree or chat sidebar. Includes the dashboard view routes
+  // (`/-/edit/{explore,canvas}/[name]`) so a click from the dashboards
+  // listing lands in a full-screen preview rather than the in-workspace
+  // edit view.
   $: inEditDevPreview = !!$page.route.id?.match(
-    /\/-\/edit\/(dashboards|status|ai)(\/|$)/,
+    /\/-\/edit\/(dashboards|status|ai|explore|canvas)(\/|$)/,
   );
 
   // Invalidating this query refetches a fresh JWT; `runtimeClient.getJwt()`

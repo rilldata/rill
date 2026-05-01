@@ -93,8 +93,11 @@
   // Cloud editor sub-routes that should adopt a "Dev preview" chrome
   // (View-as pill + Edit-back button) rather than the editor chrome
   // (split Preview button + EditActions). Mirrors local's preview mode.
+  // Includes the dashboard view routes so a click into a dashboard from
+  // the listing keeps the dev-preview chrome instead of falling back to
+  // the in-workspace editor.
   $: inEditDevPreview = !!route.id?.match(
-    /\/-\/edit\/(dashboards|status|ai)(\/|$)/,
+    /\/-\/edit\/(dashboards|status|ai|explore|canvas)(\/|$)/,
   );
 
   $: editBackHref = `/${organization}/${project}${branchPathPrefix(activeBranch)}/-/edit`;
