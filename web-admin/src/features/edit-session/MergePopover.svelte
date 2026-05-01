@@ -1,7 +1,12 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { createAdminServiceListDeployments } from "@rilldata/web-admin/client";
-  import { isProdDeployment } from "@rilldata/web-admin/features/branches/deployment-utils";
+  import {
+    createAdminServiceGetProject,
+    createAdminServiceRedeployProject,
+    getAdminServiceGetProjectQueryKey,
+    getAdminServiceListDeploymentsQueryKey,
+  } from "@rilldata/web-admin/client";
+  import { isActiveDeployment } from "@rilldata/web-admin/features/branches/deployment-utils";
   import { Button } from "@rilldata/web-common/components/button";
   import * as Popover from "@rilldata/web-common/components/popover";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -28,24 +33,24 @@
   const client = useRuntimeClient();
   const gitMergeMutation = createRuntimeServiceGitMergeToBranchMutation(client);
   const gitStatusQuery = createRuntimeServiceGitStatus(client, {});
-  // Self-managed git projects can lack a prod deployment when created via
-  // `rill project connect-github --skip-deploy` (see `cli/cmd/project/
-  // connect_github.go`), so we mirror PublishPopover's first-vs-subsequent
-  // logic and route to /-/invite vs /-/deploying accordingly.
-  const deploymentsQuery = createAdminServiceListDeployments(
-    organization,
-    project,
-    {},
-  );
+  // Query GetProject without a branch param so `data.deployment` reflects
+  // the project's primary (prod) deployment. Self-managed projects can lack
+  // a prod deployment when created via `rill project connect-github
+  // --skip-deploy` (see `cli/cmd/project/connect_github.go`), and can also
+  // sit dormant after hibernation; we mirror PublishPopover's three-state
+  // logic and route accordingly.
+  const projectQuery = createAdminServiceGetProject(organization, project);
+  const redeployProjectMutation = createAdminServiceRedeployProject();
 
   $: currentBranch = $gitStatusQuery.data?.branch ?? "";
   $: branchUrl =
     $gitStatusQuery.data?.githubUrl && currentBranch
       ? `${getGitUrlFromRemote($gitStatusQuery.data.githubUrl)}/tree/${encodeURIComponent(currentBranch)}`
       : "";
-  $: deploymentsLoaded = $deploymentsQuery.data !== undefined;
-  $: hasProdDeployment =
-    $deploymentsQuery.data?.deployments?.some(isProdDeployment) ?? false;
+  $: projectLoaded = $projectQuery.data !== undefined;
+  $: prodDeployment = $projectQuery.data?.deployment;
+  $: prodDeploymentActive =
+    !!prodDeployment && isActiveDeployment(prodDeployment);
   // Pull the dashboard name from `/-/edit/explore/<name>` or
   // `/-/edit/canvas/<name>` so the deploying page can route the user back to
   // it once the runtime is ready.
@@ -57,7 +62,7 @@
   $: disabled =
     !primaryBranch ||
     !currentBranch ||
-    !deploymentsLoaded ||
+    !projectLoaded ||
     alreadyOnPrimary ||
     isMerging;
 
@@ -80,7 +85,11 @@
       return;
     }
 
-    const isFirstMerge = !hasProdDeployment;
+    // Snapshot the prod deployment state at click time. Same three cases as
+    // PublishPopover (see comment there); RedeployProject covers both the
+    // no-deployment and dormant-deployment paths with one RPC.
+    const hadProdDeployment = !!prodDeployment;
+    const needsRedeploy = !prodDeploymentActive;
 
     try {
       await $gitMergeMutation.mutateAsync({
@@ -98,14 +107,43 @@
       return;
     }
 
-    // Mirror the local Rill Developer flow: first deployment lands on
-    // /-/invite (teammates next), subsequent ones land on /-/deploying.
+    if (needsRedeploy) {
+      try {
+        await $redeployProjectMutation.mutateAsync({
+          org: organization,
+          project,
+        });
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: getAdminServiceGetProjectQueryKey(organization, project),
+          }),
+          queryClient.invalidateQueries({
+            queryKey: getAdminServiceListDeploymentsQueryKey(
+              organization,
+              project,
+            ),
+          }),
+        ]);
+      } catch (err) {
+        targetWindow.close();
+        const detail = extractErrorMessage(err);
+        errorMessage = `Changes merged to production, but starting the production deployment failed${
+          detail ? `: ${detail}` : ""
+        }.`;
+        isMerging = false;
+        return;
+      }
+    }
+
+    // Mirror the local Rill Developer flow: a project that has never had a
+    // prod deployment lands on /-/invite, everything else lands on
+    // /-/deploying.
     const params = new URLSearchParams();
     if (currentDashboard) {
       params.set("deploying_dashboard", currentDashboard);
     }
     const search = params.toString();
-    const path = isFirstMerge ? "/-/invite" : "/-/deploying";
+    const path = hadProdDeployment ? "/-/deploying" : "/-/invite";
     targetWindow.location.href = `/${organization}/${project}${path}${
       search ? `?${search}` : ""
     }`;
@@ -128,11 +166,16 @@
     <Popover.Content align="end" class="!w-[320px]">
       <div class="flex flex-col gap-y-3">
         <p class="text-xs text-fg-secondary">
-          {#if !hasProdDeployment}
+          {#if !prodDeployment}
             Merging
             <span class="font-semibold text-fg-primary">"{currentBranch}"</span>
             sets up your production deployment. We'll open a new tab where you can
             invite teammates while it reconciles.
+          {:else if !prodDeploymentActive}
+            Merging
+            <span class="font-semibold text-fg-primary">"{currentBranch}"</span>
+            wakes your project and applies your changes. We'll open the deployment
+            in a new tab so you can watch updates reconcile.
           {:else}
             Merging pushes changes from
             <span class="font-semibold text-fg-primary">"{currentBranch}"</span>
@@ -170,7 +213,7 @@
     <span class="text-xs">
       {#if alreadyOnPrimary}
         Already on production
-      {:else if !primaryBranch || !currentBranch || !deploymentsLoaded}
+      {:else if !primaryBranch || !currentBranch || !projectLoaded}
         Loading project...
       {:else}
         Review and confirm before merging
