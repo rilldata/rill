@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { isRedirect } from "@sveltejs/kit";
 import { CreateProjectBranchName } from "@rilldata/web-admin/features/projects/publish-project";
+import { isRedirect } from "@sveltejs/kit";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { load } from "./+layout";
 
 const { isProjectWelcomeStepMock } = vi.hoisted(() => ({
@@ -37,18 +37,24 @@ describe("edit/welcome/+layout load", () => {
   it("does not redirect when the project is still in the welcome step", async () => {
     isProjectWelcomeStepMock.mockReturnValue(true);
 
-    const result = await callLoad(`/${ORG}/${PROJECT}/@${CreateProjectBranchName}/-/edit/welcome`);
+    const result = await callLoad(
+      `/${ORG}/${PROJECT}/@${CreateProjectBranchName}/-/edit/welcome`,
+    );
     expect(result).toBeUndefined();
   });
 
   it("redirects to /-/edit on the same branch when no longer in the welcome step", async () => {
     isProjectWelcomeStepMock.mockReturnValue(false);
 
-    const result = await callLoad(`/${ORG}/${PROJECT}/@${CreateProjectBranchName}/-/edit/welcome`);
+    const result = await callLoad(
+      `/${ORG}/${PROJECT}/@${CreateProjectBranchName}/-/edit/welcome`,
+    );
     expect(isRedirect(result)).toBe(true);
     if (!isRedirect(result)) return;
     expect(result.status).toBe(307);
-    expect(result.location).toBe(`/${ORG}/${PROJECT}/@${CreateProjectBranchName}/-/edit`);
+    expect(result.location).toBe(
+      `/${ORG}/${PROJECT}/@${CreateProjectBranchName}/-/edit`,
+    );
   });
 
   it("does not redirect when no branch is present in the URL", async () => {
