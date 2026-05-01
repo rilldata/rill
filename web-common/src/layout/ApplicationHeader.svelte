@@ -51,11 +51,21 @@
   $: showPreviewToggle = !onDeployPage && !$previewModeLocked && !onVizRoute;
 
   // Show "View as" alongside the project preview chrome when the project
-  // defines security policies in rill.yaml. Per-dashboard ViewAs already
-  // lives in ExplorePreviewCTAs / CanvasPreviewCTAs on viz routes.
+  // — via rill.yaml or any individual dashboard — defines a security
+  // policy. Per-dashboard ViewAs already lives in ExplorePreviewCTAs /
+  // CanvasPreviewCTAs on viz routes.
   $: rillYamlPolicyCheck = useRillYamlPolicyCheck(runtimeClient);
+  $: anyDashboardHasPolicy =
+    explores.some(
+      (e) => (e?.explore?.state?.validSpec?.securityRules?.length ?? 0) > 0,
+    ) ||
+    canvases.some(
+      (c) => (c?.canvas?.state?.validSpec?.securityRules?.length ?? 0) > 0,
+    );
   $: showProjectViewAs =
-    mode === "Preview" && !onVizRoute && !!$rillYamlPolicyCheck?.data;
+    mode === "Preview" &&
+    !onVizRoute &&
+    (!!$rillYamlPolicyCheck?.data || anyDashboardHasPolicy);
 
   $: exploresQuery = useValidExplores(runtimeClient);
   $: canvasQuery = useValidCanvases(runtimeClient);
