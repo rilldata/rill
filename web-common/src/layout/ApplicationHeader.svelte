@@ -17,7 +17,6 @@
   import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
   import { updateDevJWT } from "@rilldata/web-common/features/dashboards/granular-access-policies/updateDevJWT";
   import { useMockUsers } from "@rilldata/web-common/features/dashboards/granular-access-policies/useMockUsers";
-  import { useRillYamlPolicyCheck } from "@rilldata/web-common/features/dashboards/granular-access-policies/useSecurityPolicyCheck";
   import ViewAsButton from "@rilldata/web-common/features/dashboards/granular-access-policies/ViewAsButton.svelte";
   import { skipNextPlatformReset } from "@rilldata/web-common/features/preview-mode/platform-reset";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
@@ -79,21 +78,6 @@
   // View as is independent of the toggle: it should still be available on
   // non-viz routes even when `--preview` locks the mode.
   $: showStandaloneViewAs = !onDeployPage && !onVizRoute;
-
-  // Show "View as" alongside the project preview chrome when the project
-  // — via rill.yaml or any individual dashboard — defines a security
-  // policy. Per-dashboard ViewAs already lives in ExplorePreviewCTAs /
-  // CanvasPreviewCTAs on viz routes.
-  $: rillYamlPolicyCheck = useRillYamlPolicyCheck(runtimeClient);
-  $: anyDashboardHasPolicy =
-    explores.some(
-      (e) => (e?.explore?.state?.validSpec?.securityRules?.length ?? 0) > 0,
-    ) ||
-    canvases.some(
-      (c) => (c?.canvas?.state?.validSpec?.securityRules?.length ?? 0) > 0,
-    );
-  $: showProjectViewAs =
-    !onVizRoute && (!!$rillYamlPolicyCheck?.data || anyDashboardHasPolicy);
 
   $: mockUsers = useMockUsers(runtimeClient);
   let localViewAsOpen = false;
