@@ -1,15 +1,39 @@
+<script context="module" lang="ts">
+  // Editing `/-/edit/files/dashboards/<name>.yaml` previews the corresponding
+  // explore/canvas dashboard directly; from any other editor page, preview
+  // lands on the branch's cloud preview root.
+  const DASHBOARD_FILE_RE =
+    /\/-\/edit\/files\/dashboards\/(.+)\.yaml(?:$|[/?#])/;
+
+  function getPreviewSubpath(
+    pathname: string,
+    dashboards: V1Resource[],
+  ): string {
+    const match = pathname.match(DASHBOARD_FILE_RE);
+    if (!match) return "";
+    const name = match[1];
+    const resource = dashboards.find((r) => r.meta?.name?.name === name);
+    if (resource?.explore) return `/explore/${name}`;
+    if (resource?.canvas) return `/canvas/${name}`;
+    return "";
+  }
+</script>
+
 <script lang="ts">
   import { page } from "$app/stores";
   import {
     branchPathPrefix,
     extractBranchFromPath,
   } from "@rilldata/web-admin/features/branches/branch-utils";
+  import { useDashboards } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import EditActions from "@rilldata/web-admin/features/edit-session/EditActions.svelte";
   import Slash from "@rilldata/web-common/components/navigation/breadcrumbs/Slash.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import Header from "@rilldata/web-common/layout/header/Header.svelte";
+  import type { V1Resource } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { GitBranchIcon, PlayIcon } from "lucide-svelte";
   import {
     createAdminServiceGetCurrentUser,
@@ -22,17 +46,20 @@
   export let projectPermissions: V1ProjectPermissions;
 
   const user = createAdminServiceGetCurrentUser();
+  const runtimeClient = useRuntimeClient();
 
   $: activeBranch = extractBranchFromPath($page.url.pathname);
-  // Cloud preview = the production-style branch view at `/{org}/{project}/@{branch}`,
-  // without the `/-/edit` chrome.
-  $: cloudPreviewHref = `/${organization}/${project}${branchPathPrefix(activeBranch)}/dashboards`;
+  $: branchHref = `/${organization}/${project}${branchPathPrefix(activeBranch)}`;
+  $: dashboardsQuery = useDashboards(runtimeClient);
+  $: dashboards = $dashboardsQuery.data ?? [];
+  $: previewSubpath = getPreviewSubpath($page.url.pathname, dashboards);
+  $: cloudPreviewHref = `${branchHref}${previewSubpath}`;
 </script>
 
-<Header borderBottom tinted>
+<Header borderBottom>
   {#if activeBranch}
     <span
-      class="inline-flex items-center h-7 px-2.5 rounded-2xl border border-border bg-surface-base text-fg-primary text-sm font-medium shadow-xs"
+      class="inline-flex items-center h-7 px-2.5 rounded-2xl border border-border bg-surface-base text-fg-primary text-sm font-medium shadow-sm"
     >
       Developer
     </span>

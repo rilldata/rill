@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { branchPathPrefix } from "@rilldata/web-admin/features/branches/branch-utils";
+  import { errorStore } from "@rilldata/web-admin/components/errors/error-store";
   import { useDashboards } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import ViewAsUserPopover from "@rilldata/web-admin/features/view-as-user/ViewAsUserPopover.svelte";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
@@ -81,6 +82,14 @@
   function copyShareLink() {
     copyToClipboard(shareableUrl, "Shareable URL has been copied.");
   }
+
+  function clearViewAs(event: MouseEvent) {
+    // Stop the click from bubbling into the dropdown trigger.
+    event.stopPropagation();
+    event.preventDefault();
+    viewAsUserStore.set(null);
+    errorStore.reset();
+  }
 </script>
 
 <header class="preview-header">
@@ -116,15 +125,22 @@
       <DropdownMenu.Root bind:open={viewAsOpen}>
         <DropdownMenu.Trigger>
           {#snippet child({ props })}
-            <button {...props} class="preview-as-pill" type="button">
+            <button {...props} class="view-as-pill" type="button">
               {#if $viewAsUserStore}
-                <XIcon size="14" class="opacity-70" />
-                <span class="font-normal">Preview as</span>
+                <button
+                  type="button"
+                  class="view-as-clear"
+                  aria-label="Clear view as"
+                  onclick={clearViewAs}
+                >
+                  <XIcon size="14" />
+                </button>
+                <span class="font-normal">View as</span>
                 <span class="font-semibold text-accent-primary-action">
                   {$viewAsUserStore.email}
                 </span>
               {:else}
-                <span class="font-normal">Preview as</span>
+                <span class="font-normal">View as</span>
               {/if}
             </button>
           {/snippet}
@@ -180,14 +196,21 @@
     @apply text-fg-secondary text-sm font-medium;
   }
 
-  .preview-as-pill {
+  .view-as-pill {
     @apply inline-flex items-center gap-x-1 h-7 px-4 rounded-2xl;
     @apply border border-ring-focus bg-dimension text-fg-primary text-xs;
     @apply transition-colors;
   }
 
-  .preview-as-pill:hover {
+  .view-as-pill:hover {
     @apply bg-dimension/80;
+  }
+
+  /* Inner X button — picks up its own pointer events so clicks don't
+     just open the dropdown. */
+  .view-as-clear {
+    @apply flex items-center justify-center rounded-sm size-4 -ml-1;
+    @apply text-fg-secondary opacity-70 hover:opacity-100 hover:bg-surface-hover;
   }
 
   .share-link {
