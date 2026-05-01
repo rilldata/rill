@@ -23,7 +23,7 @@ type Client interface {
 	// biller related jobs
 	PaymentFailed(ctx context.Context, billingCustomerID, invoiceID, invoiceNumber, invoiceURL, amount, currency string, dueDate, failedAt time.Time) (*InsertResult, error)
 	PaymentSuccess(ctx context.Context, billingCustomerID, invoiceID string) (*InsertResult, error)
-	CreditBalanceDropped(ctx context.Context, billingCustomerID string, balance float64) (*InsertResult, error)
+	CreditBalanceDropped(ctx context.Context, billingCustomerID string) (*InsertResult, error)
 	CreditBalanceDepleted(ctx context.Context, billingCustomerID string) (*InsertResult, error)
 
 	// org related jobs

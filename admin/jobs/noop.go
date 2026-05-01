@@ -56,7 +56,7 @@ func (n *noop) PaymentSuccess(ctx context.Context, billingCustomerID, invoiceID 
 	return nil, nil
 }
 
-func (n *noop) CreditBalanceDropped(ctx context.Context, billingCustomerID string, balance float64) (*InsertResult, error) {
+func (n *noop) CreditBalanceDropped(ctx context.Context, billingCustomerID string) (*InsertResult, error) {
 	return nil, nil
 }
 

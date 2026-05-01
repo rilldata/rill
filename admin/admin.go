@@ -33,8 +33,7 @@ type Options struct {
 	MetricsProjectName        string
 	AutoscalerCron            string
 	ScaleDownConstraint       int
-	// CreditTrialEnabled routes new orgs to the credit-based trial (pro_plan + Orb credits) instead of the time-based free_trial. When false, behavior is unchanged.
-	CreditTrialEnabled bool
+	CreditTrialEnabled        bool // enables credit-based trial instead of time-based trial
 }
 
 type Service struct {

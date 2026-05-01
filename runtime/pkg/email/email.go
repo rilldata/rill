@@ -663,7 +663,7 @@ func (c *Client) SendCreditTrialStarted(opts *CreditTrialStarted) error {
 		FrontendURL: opts.FrontendURL,
 		WelcomeText: template.HTML(fmt.Sprintf(`
 You now have <b>%d Rill Cloud credits</b> to explore all features.
-We'll let you know when your balance is running low so you can add a payment method whenever you're ready.
+We'll let you know when your balance is running low so you can upgrade whenever you're ready.
 `, opts.CreditAllocation)),
 	})
 }
@@ -685,7 +685,7 @@ func (c *Client) SendCreditTrialLow(opts *CreditTrialLow) error {
 		PreButton: template.HTML(fmt.Sprintf(`
 Your trial credit balance for <b>%s</b> has dropped to about <b>$%.2f</b>.
 <br /><br />
-Upgrade now to keep your projects online once the credits run out.
+Upgrade now to keep your projects online before the credits run out.
 `, opts.OrgName, opts.RemainingBalance)),
 		ButtonText: "Upgrade Now",
 		ButtonLink: opts.UpgradeURL,
@@ -713,23 +713,6 @@ Upgrade to bring your projects back online.
 `, opts.OrgName)),
 		ButtonText: "Upgrade Now",
 		ButtonLink: opts.UpgradeURL,
-		ShowFooter: true,
-	})
-}
-
-type CreditTrialUpgraded struct {
-	ToEmail     string
-	ToName      string
-	OrgName     string
-	FrontendURL string
-}
-
-func (c *Client) SendCreditTrialUpgraded(opts *CreditTrialUpgraded) error {
-	return c.SendInformational(&Informational{
-		ToEmail:    opts.ToEmail,
-		ToName:     opts.ToName,
-		Subject:    fmt.Sprintf("%s is back online", opts.OrgName),
-		Body:       template.HTML(fmt.Sprintf("Thanks for adding a payment method. <b>%s</b> and its projects are being reactivated, and usage will be billed against your card going forward.", opts.OrgName)),
 		ShowFooter: true,
 	})
 }

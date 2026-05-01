@@ -584,10 +584,9 @@ func (c *Client) StartOrgCreditTrial(ctx context.Context, orgID string) (*jobs.I
 	}, nil
 }
 
-func (c *Client) CreditBalanceDropped(ctx context.Context, billingCustomerID string, balance float64) (*jobs.InsertResult, error) {
+func (c *Client) CreditBalanceDropped(ctx context.Context, billingCustomerID string) (*jobs.InsertResult, error) {
 	res, err := c.riverClient.Insert(ctx, CreditBalanceDroppedArgs{
 		BillingCustomerID: billingCustomerID,
-		Balance:           balance,
 	}, &river.InsertOpts{
 		UniqueOpts: river.UniqueOpts{
 			ByArgs: true,
@@ -598,7 +597,7 @@ func (c *Client) CreditBalanceDropped(ctx context.Context, billingCustomerID str
 	}
 
 	if res.UniqueSkippedAsDuplicate {
-		c.logger.Debug("CreditBalanceDropped job skipped as duplicate", zap.String("billing_customer_id", billingCustomerID), zap.Float64("balance", balance))
+		c.logger.Debug("CreditBalanceDropped job skipped as duplicate", zap.String("billing_customer_id", billingCustomerID))
 	}
 
 	return &jobs.InsertResult{

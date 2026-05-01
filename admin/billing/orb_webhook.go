@@ -188,13 +188,12 @@ func (o *orbWebhook) handleInvoicePaymentFailed(ctx context.Context, ie invoiceE
 }
 
 func (o *orbWebhook) handleCreditBalanceDropped(ctx context.Context, ce creditBalanceEvent) error {
-	externalID := ce.externalCustomerID()
+	externalID := ce.Customer.ExternalCustomerID
 	if externalID == "" {
 		o.orb.logger.Named("billing").Warn("credit_balance_dropped event missing external_customer_id; unable to identify org", zap.String("event_id", ce.ID))
 		return nil
 	}
-	balance := ce.balanceFloat()
-	res, err := o.jobs.CreditBalanceDropped(ctx, externalID, balance)
+	res, err := o.jobs.CreditBalanceDropped(ctx, externalID)
 	if err != nil {
 		o.orb.logger.Error("failed to insert credit_balance_dropped job", zap.String("billing_customer_id", externalID), zap.Error(err), observability.ZapCtx(ctx))
 		return err
@@ -206,7 +205,7 @@ func (o *orbWebhook) handleCreditBalanceDropped(ctx context.Context, ce creditBa
 }
 
 func (o *orbWebhook) handleCreditBalanceDepleted(ctx context.Context, ce creditBalanceEvent) error {
-	externalID := ce.externalCustomerID()
+	externalID := ce.Customer.ExternalCustomerID
 	if externalID == "" {
 		o.orb.logger.Named("billing").Warn("credit_balance_depleted event missing external_customer_id; unable to identify org", zap.String("event_id", ce.ID))
 		return nil
@@ -311,43 +310,15 @@ type subscriptionEvent struct {
 	OrbSubscription orb.Subscription `json:"subscription"`
 }
 
-// creditBalanceEvent matches Orb's customer.credit_balance_{dropped,depleted,recovered} webhook payload. The customer identifier may appear either at the top level (as `customer`, mirroring the invoice/subscription events) or inside `properties` depending on the event variant; we accept both.
+// creditBalanceEvent matches Orb's customer.credit_balance_{dropped,depleted,recovered} webhook payload. The customer block at the top level carries both the Orb internal id and the external_customer_id; properties only contain the threshold/alert metadata, not the new balance, so workers fetch the current balance from Orb when they need it.
 type creditBalanceEvent struct {
-	ID         string                       `json:"id"`
-	CreatedAt  time.Time                    `json:"created_at"`
-	Type       string                       `json:"type"`
-	Customer   *creditBalanceEventCustomer  `json:"customer"`
-	Properties creditBalanceEventProperties `json:"properties"`
+	ID        string                     `json:"id"`
+	CreatedAt time.Time                  `json:"created_at"`
+	Type      string                     `json:"type"`
+	Customer  creditBalanceEventCustomer `json:"customer"`
 }
 
 type creditBalanceEventCustomer struct {
 	ID                 string `json:"id"`
 	ExternalCustomerID string `json:"external_customer_id"`
-}
-
-type creditBalanceEventProperties struct {
-	CustomerID            string `json:"customer_id"`
-	ExternalCustomerID    string `json:"external_customer_id"`
-	NewCreditBalance      string `json:"new_credit_balance"`
-	PreviousCreditBalance string `json:"previous_credit_balance"`
-	Currency              string `json:"currency"`
-}
-
-func (e creditBalanceEvent) externalCustomerID() string {
-	if e.Customer != nil && e.Customer.ExternalCustomerID != "" {
-		return e.Customer.ExternalCustomerID
-	}
-	return e.Properties.ExternalCustomerID
-}
-
-func (e creditBalanceEvent) balanceFloat() float64 {
-	if e.Properties.NewCreditBalance == "" {
-		return 0
-	}
-	var f float64
-	_, err := fmt.Sscanf(e.Properties.NewCreditBalance, "%f", &f)
-	if err != nil {
-		return 0
-	}
-	return f
 }

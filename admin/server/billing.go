@@ -99,7 +99,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		}
 		return nil, err
 	}
-	// If the requested plan is one of the trial plans, dispatch to the right StartTrial flow. Detect by PlanType (TrailPlanType for legacy free_trial, FreePlanType for the credit-based free_plan) rather than plan.Default, since both trial plans may be marked Default in Orb.
+	// If the requested plan is one of the trial plans, dispatch to the right StartTrial flow.
 	if plan.PlanType == billing.TrailPlanType || plan.PlanType == billing.FreePlanType {
 		bi, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeNeverSubscribed)
 		if err != nil {
@@ -364,7 +364,6 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 		return nil, err
 	}
 
-	// Reject renewal to either trial plan: the legacy time-based `free_trial` (TrailPlanType) and the credit-based `free_plan` (FreePlanType). Renewing to a trial would defeat depletion gating and re-grant trial credits to a customer who's already been through a trial.
 	if plan.PlanType == billing.TrailPlanType || plan.PlanType == billing.FreePlanType {
 		return nil, status.Errorf(codes.FailedPrecondition, "cannot renew to trial plan %s", plan.Name)
 	}
@@ -443,7 +442,7 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 		return nil, err
 	}
 
-	// If this renewal is the post-depletion upgrade from the credit-based trial, also clear the TrialCreditsDepleted block. Hibernated projects are not auto-resumed here; the customer triggers redeployment as needed.
+	// If this renewal is the post-depletion upgrade clear the TrialCreditsDepleted block.
 	depleted, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeTrialCreditsDepleted)
 	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return nil, err
@@ -766,7 +765,8 @@ func (s *Server) SudoExtendTrial(ctx context.Context, req *adminv1.SudoExtendTri
 	return &adminv1.SudoExtendTrialResponse{TrialEnd: timestamppb.New(newEndDate)}, nil
 }
 
-// SudoGrantTrialCredits grants additional credits to an organization on the credit-based trial. Mirrors SudoExtendTrial but tops up Orb credits rather than extending a date. If the trial was already depleted (subscription cancelled, TrialCreditsDepleted raised), the grant also recreates a trial subscription on the FreePlanType plan and clears the depleted + cancelled billing issues so usage reporting resumes against the new credit balance.
+// SudoGrantTrialCredits grants additional credits to an organization on the credit-based trial.
+// If the trial was already depleted, also recreates a trial subscription on the FreePlanType plan so usage reporting resumes against the new credit balance.
 func (s *Server) SudoGrantTrialCredits(ctx context.Context, req *adminv1.SudoGrantTrialCreditsRequest) (*adminv1.SudoGrantTrialCreditsResponse, error) {
 	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
 	observability.AddRequestAttributes(ctx, attribute.Float64("args.amount_usd", req.AmountUsd))
