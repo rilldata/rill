@@ -206,7 +206,7 @@
               {activeBranch}
             </span>
           </li>
-        {:else if !onPublicURLPage && projectPermissions?.readDev}
+        {:else if !onPublicURLPage && projectPermissions?.manageDev}
           <BranchSelector {organization} {project} {primaryBranch} />
         {/if}
       </svelte:fragment>
