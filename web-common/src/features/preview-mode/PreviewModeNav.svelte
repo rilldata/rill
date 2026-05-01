@@ -14,30 +14,29 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { tick } from "svelte";
-  import { branchPathPrefix } from "../branches/branch-utils";
+
+  /** Base path of the preview surface. Defaults to local's flat
+   *  `/dashboards|/status|/ai` paths; cloud editor passes a branch-aware
+   *  prefix like `/{org}/{project}/@{branch}/-/edit`. */
+  export let basePath: string = "";
 
   const { chat } = featureFlags;
   const runtimeClient = useRuntimeClient();
 
-  $: organization = $page.params.organization;
-  $: project = $page.params.project;
-  $: branch = $page.url.pathname.match(/\/@([^/]+)/)?.[1];
-  $: editPrefix = `/${organization}/${project}${branchPathPrefix(branch)}/-/edit`;
-
-  $: currentPath = $page.url.pathname;
+  $: dashboardsPath = `${basePath}/dashboards`;
+  $: statusPath = `${basePath}/status`;
+  $: aiPath = `${basePath}/ai`;
 
   $: baseTabs = [
-    { id: "dashboards", label: "Dashboards", path: `${editPrefix}/dashboards` },
-    { id: "status", label: "Status", path: `${editPrefix}/status` },
+    { id: "dashboards", label: "Dashboards", path: dashboardsPath },
+    { id: "status", label: "Status", path: statusPath },
   ];
-
-  $: aiTab = { id: "ai", label: "AI", path: `${editPrefix}/ai` };
-
+  $: aiTab = { id: "ai", label: "AI", path: aiPath };
   $: tabs = $chat ? [baseTabs[0], aiTab, baseTabs[1]] : baseTabs;
 
+  $: currentPath = $page.url.pathname;
   $: activeTab =
     tabs.find((t) => currentPath.startsWith(t.path))?.id ?? "dashboards";
-
   $: selectedIndex = tabs.findIndex((t) => t.id === activeTab);
 
   let tabElements: HTMLAnchorElement[] = [];
@@ -56,7 +55,7 @@
     void tick().then(updateIndicator);
   }
 
-  // Project status indicator (mirrors local's LocalProjectStatusIndicator)
+  // Project status indicator (consolidates LocalProjectStatusIndicator).
   $: hasResourceErrorsQuery = createRuntimeServiceListResources(
     runtimeClient,
     {},

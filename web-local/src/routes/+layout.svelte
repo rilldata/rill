@@ -32,7 +32,7 @@
   import { onMount } from "svelte";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import type { LayoutData } from "./$types";
-  import PreviewModeNav from "../features/preview/PreviewModeNav.svelte";
+  import PreviewModeNav from "@rilldata/web-common/features/preview-mode/PreviewModeNav.svelte";
   import {
     isPreviewRoute,
     isDeveloperRoute,
