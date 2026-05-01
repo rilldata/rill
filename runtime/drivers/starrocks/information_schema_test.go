@@ -34,6 +34,9 @@ func TestInformationSchema(t *testing.T) {
 	t.Run("testListTablesPagination", func(t *testing.T) {
 		testListTablesPagination(t, ctx, infoSchema)
 	})
+	t.Run("testAll", func(t *testing.T) {
+		testAll(t, ctx, infoSchema)
+	})
 	t.Run("testLookup", func(t *testing.T) {
 		testLookup(t, ctx, infoSchema)
 	})
@@ -81,6 +84,7 @@ func testListTables(t *testing.T, ctx context.Context, infoSchema drivers.Inform
 	// like filter: %ba% should match bar and baz only
 	liked, _, err := infoSchema.ListTables(ctx, database, databaseSchema, "%ba%", 0, "")
 	require.NoError(t, err)
+	liked = filterTableInfos(liked)
 	require.Equal(t, 2, len(liked))
 	require.Equal(t, "bar", liked[0].Name)
 	require.Equal(t, "baz", liked[1].Name)
@@ -109,18 +113,22 @@ func testListTablesPagination(t *testing.T, ctx context.Context, infoSchema driv
 	require.Equal(t, numKnown, len(filterTableInfos(tables)))
 	require.Empty(t, nextToken)
 
-	// Paginate with like=%ba% (matches bar, baz): page size 1
-	tables1, tok1, err := infoSchema.ListTables(ctx, database, databaseSchema, "%ba%", 1, "")
-	require.NoError(t, err)
-	require.Equal(t, 1, len(tables1))
-	require.Equal(t, "bar", tables1[0].Name)
-	require.NotEmpty(t, tok1)
-
-	tables2, tok2, err := infoSchema.ListTables(ctx, database, databaseSchema, "%ba%", 1, tok1)
-	require.NoError(t, err)
-	require.Equal(t, 1, len(tables2))
-	require.Equal(t, "baz", tables2[0].Name)
-	require.Empty(t, tok2)
+	// Paginate with like=%ba% (matches bar, baz): collect all pages
+	var liked []*drivers.TableInfo
+	var likedToken string
+	for {
+		page, tok, err := infoSchema.ListTables(ctx, database, databaseSchema, "%ba%", 1, likedToken)
+		require.NoError(t, err)
+		liked = append(liked, page...)
+		likedToken = tok
+		if tok == "" {
+			break
+		}
+	}
+	liked = filterTableInfos(liked)
+	require.Equal(t, 2, len(liked))
+	require.Equal(t, "bar", liked[0].Name)
+	require.Equal(t, "baz", liked[1].Name)
 }
 
 func testLookup(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
@@ -198,6 +206,36 @@ func testLoadDDL(t *testing.T, ctx context.Context, infoSchema drivers.Informati
 	err = infoSchema.LoadDDL(ctx, view)
 	require.NoError(t, err)
 	require.NotEmpty(t, view.DDL)
+}
+
+func testAll(t *testing.T, ctx context.Context, infoSchema drivers.InformationSchema) {
+	all, _, err := infoSchema.All(ctx, "", 0, "")
+	require.NoError(t, err)
+	tables := filterTableInfos(all)
+	require.Equal(t, numKnown, len(tables))
+
+	require.Equal(t, "all_types", tables[0].Name)
+	require.Equal(t, "bar", tables[1].Name)
+	require.Equal(t, "baz", tables[2].Name)
+	require.Equal(t, "foo", tables[3].Name)
+	require.Equal(t, "foz", tables[4].Name)
+	require.Equal(t, "model", tables[5].Name)
+	require.True(t, tables[5].View)
+
+	for _, tbl := range tables {
+		require.Equal(t, database, tbl.Database, "table %s: expected Database=%s", tbl.Name, database)
+		require.Equal(t, databaseSchema, tbl.DatabaseSchema, "table %s: expected DatabaseSchema=%s", tbl.Name, databaseSchema)
+		require.False(t, tbl.IsDefaultDatabase, "table %s: expected IsDefaultDatabase=false", tbl.Name)
+		require.False(t, tbl.IsDefaultDatabaseSchema, "table %s: expected IsDefaultDatabaseSchema=false", tbl.Name)
+	}
+
+	// like filter: %ba% should match bar and baz only
+	liked, _, err := infoSchema.All(ctx, "%ba%", 0, "")
+	require.NoError(t, err)
+	liked = filterTableInfos(liked)
+	require.Equal(t, 2, len(liked))
+	require.Equal(t, "bar", liked[0].Name)
+	require.Equal(t, "baz", liked[1].Name)
 }
 
 func filterTableInfos(tables []*drivers.TableInfo) []*drivers.TableInfo {

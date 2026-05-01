@@ -140,6 +140,8 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema, l
 			return nil, "", fmt.Errorf("unexpected type for is_default_database_schema field")
 		}
 		res = append(res, &drivers.TableInfo{
+			Database:                database,
+			DatabaseSchema:          databaseSchema,
 			Name:                    nameField.Value,
 			View:                    viewField.Value,
 			IsDefaultDatabase:       isDefaultDatabaseField.Value,

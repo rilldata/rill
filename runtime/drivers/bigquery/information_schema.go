@@ -113,8 +113,10 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema, l
 			return nil, "", fmt.Errorf("failed to iterate over tables: %w", err)
 		}
 		res = append(res, &drivers.TableInfo{
-			Name: row.TableName,
-			View: row.TableType == "VIEW",
+			Database:       database,
+			DatabaseSchema: databaseSchema,
+			Name:           row.TableName,
+			View:           row.TableType == "VIEW",
 			// BigQuery uses project as the top-level container (like a database).
 			// This client is scoped to a single projectID, treated as the default.
 			IsDefaultDatabase: true,

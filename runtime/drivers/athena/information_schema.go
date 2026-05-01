@@ -115,6 +115,8 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema, l
 			isDefaultDatabaseSchema = strings.EqualFold(*row.Data[3].VarCharValue, "true")
 		}
 		res = append(res, &drivers.TableInfo{
+			Database:                database,
+			DatabaseSchema:          databaseSchema,
 			Name:                    *row.Data[0].VarCharValue,
 			View:                    strings.EqualFold(*row.Data[1].VarCharValue, "VIEW"),
 			IsDefaultDatabase:       isDefaultDatabase,
