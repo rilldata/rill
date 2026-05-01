@@ -4,10 +4,9 @@
 
   import { Chip } from "../../../components/chip";
   import Add from "../../../components/icons/Add.svelte";
-  import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import Check from "../../../components/icons/Check.svelte";
-  import EyeIcon from "../../../components/icons/EyeIcon.svelte";
   import Spacer from "../../../components/icons/Spacer.svelte";
+  import { UserRoundSearch } from "lucide-svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { selectedMockUserStore } from "./stores";
   import { useMockUsers } from "./useMockUsers";
@@ -28,12 +27,10 @@
       {#if $selectedMockUserStore === null}
         <button
           {...props}
-          class="px-3 py-1.5 rounded flex flex-row gap-x-2 hover:bg-surface-hover items-center"
+          class="flex items-center gap-x-2 px-3 h-7 bg-primary-50 text-primary-600 text-xs font-medium hover:bg-primary-100 transition-colors"
         >
-          <EyeIcon size={"16px"} />
-          <div class="flex items-center gap-x-1">
-            <span>View as</span><CaretDownIcon />
-          </div>
+          <UserRoundSearch size={14} />
+          <span>View as</span>
         </button>
       {:else}
         <button {...props} class="appearance-none border-0 bg-transparent p-0">
