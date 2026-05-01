@@ -52,7 +52,7 @@
     {
       route: `/${organization}/${project}${branchPrefix}/-/status`,
       label: "Status",
-      hasPermission: projectPermissions.readProdStatus && !isBranchView,
+      hasPermission: projectPermissions.readProdStatus,
     },
     {
       route: `/${organization}/${project}${branchPrefix}/-/settings`,
