@@ -25,10 +25,7 @@
   // On production view, fall through to the dialog so the user can pick
   // an existing dev branch or create a new one.
   $: directEditHref = activeBranch
-    ? injectBranchIntoPath(
-        `/${organization}/${project}/-/edit`,
-        activeBranch,
-      )
+    ? injectBranchIntoPath(`/${organization}/${project}/-/edit`, activeBranch)
     : undefined;
 
   function handleDirectEdit(e: MouseEvent) {
