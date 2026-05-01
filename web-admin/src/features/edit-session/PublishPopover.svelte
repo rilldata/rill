@@ -119,7 +119,7 @@
       return;
     }
 
-    await goto(`/${organization}/${project}`, { replaceState: true });
+    await goto(`/${organization}/${project}`);
   }
 </script>
 
