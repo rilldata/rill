@@ -1,8 +1,8 @@
 ---
-id: dashboards
-title: "Embed Dashboards"
-description: Embed Dashboards in your own applications
-sidebar_label: "Embed Dashboards"
+id: iframe
+title: "Embed Rill in an iframe"
+description: Embed Rill dashboards in your own applications using iframes
+sidebar_label: "Iframe Embedding"
 sidebar_position: 10
 ---
 
@@ -371,7 +371,7 @@ Your frontend should request an iframe URL from your backend API (which you set 
 The page hosting the iframe must be served over **HTTPS**. Rill's embedded dashboard sets `frame-ancestors https:` in its Content Security Policy, so framing from `http://localhost` or any other HTTP origin is blocked by the browser. For local development, use a tool like [`mkcert`](https://github.com/FiloSottile/mkcert) or your framework's HTTPS dev mode (e.g. `next dev --experimental-https`).
 :::
 
-Once the dashboard is embedded, the parent page can also read and write its UI state (selected resource, filters, time range, view type, and so on) using a `postMessage`-based API exposed by the iframe. See the [Embed Iframe API](/developers/embed/iframe-api) reference for details.
+Once the dashboard is embedded, the parent page can also read and write its UI state (selected resource, filters, time range, view type, and so on) using a `postMessage`-based API exposed by the iframe. See the [postMessage API](/developers/embed/postmessage) reference for details.
 
 ## Appendix
 
