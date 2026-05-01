@@ -230,7 +230,10 @@
     : $exploreQuery.data?.explore?.explore?.state?.validSpec?.displayName ||
       dashboard;
 
-  $: currentPath = [organization, project, dashboard, report || alert];
+  // On `/-/edit/{explore,canvas}/[name]`, the route param is `name`, not
+  // `dashboard`; fall back so the breadcrumb still surfaces the resource.
+  $: currentDashboard = dashboard || (editPreviewKind ? name : undefined);
+  $: currentPath = [organization, project, currentDashboard, report || alert];
 </script>
 
 <Header borderBottom={!onProjectPage && !inEditDevPreview}>
