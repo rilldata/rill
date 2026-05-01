@@ -56,7 +56,10 @@
       />
     {:else}
       <OrganizationHero {title} />
-      <ProjectCards organization={orgName} />
+      <ProjectCards
+        organization={orgName}
+        createProjectsPermission={organizationPermissions.createProjects}
+      />
     {/if}
   {/if}
 </ContentContainer>

@@ -15,7 +15,10 @@
   import { createQueries } from "@tanstack/svelte-query";
   import { getAdminServiceGetProjectQueryOptions } from "@rilldata/web-admin/client/index.ts";
 
-  let { organization }: { organization: string } = $props();
+  let {
+    organization,
+    createProjectsPermission,
+  }: { organization: string; createProjectsPermission: boolean } = $props();
 
   let projectsQuery = $derived(
     createAdminServiceListProjectsForOrganization(organization, {
@@ -62,6 +65,10 @@
     });
   });
 
+  let showNewProject = $derived(
+    projectWelcomeEnabled && createProjectsPermission,
+  );
+
   function onFilterChange(key: string, selected: string[]) {
     if (key === "status") statusFilter = selected;
   }
@@ -72,7 +79,7 @@
     class="flex flex-row items-center text-fg-secondary text-base font-normal leading-normal"
   >
     <span class="grow">Check out your projects below.</span>
-    {#if projectWelcomeEnabled}
+    {#if showNewProject}
       <Button type="secondary" href="/{organization}/-/create-project">
         + New project
       </Button>
