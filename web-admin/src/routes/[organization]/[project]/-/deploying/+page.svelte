@@ -7,7 +7,9 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   export let data: PageData;
-  const { organization, project, deployingDashboard } = data;
+  const { organization, project, deployingDashboard, source } = data;
+
+  const variant = source === "publish" ? "publish" : "build";
 
   const runtimeClient = useRuntimeClient();
 
@@ -41,4 +43,4 @@
   }
 </script>
 
-<DashboardBuilding multipleDashboards />
+<DashboardBuilding multipleDashboards {variant} />

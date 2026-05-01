@@ -1,12 +1,13 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { page } from "$app/stores";
   import {
-    createAdminServiceDeleteDeployment,
+    createAdminServiceCreateDeployment,
     createAdminServiceListDeployments,
   } from "@rilldata/web-admin/client";
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
-  import { optimisticallyRemoveDeployment } from "@rilldata/web-admin/features/branches/branch-actions";
   import { requestSkipBranchInjection } from "@rilldata/web-admin/features/branches/branch-utils";
+  import { isProdDeployment } from "@rilldata/web-admin/features/branches/deployment-utils";
   import { Button } from "@rilldata/web-common/components/button";
   import * as Popover from "@rilldata/web-common/components/popover";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -18,7 +19,7 @@
     type RpcStatus,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { Send } from "lucide-svelte";
+  import { Rocket } from "lucide-svelte";
 
   export let organization: string;
   export let project: string;
@@ -39,17 +40,24 @@
     project,
     {},
   );
-  const deleteDeploymentMutation = createAdminServiceDeleteDeployment();
+  const createDeploymentMutation = createAdminServiceCreateDeployment();
 
   $: currentBranch = $gitStatusQuery.data?.branch ?? "";
   $: hasLocalChanges = $gitStatusQuery.data?.localChanges ?? false;
-  $: gitStatusErrorMessage = $gitStatusQuery.isError
-    ? (getRpcErrorMessage($gitStatusQuery.error as RpcStatus) ??
-      "Couldn't load branch info")
-    : "";
-  $: devDeploymentId = $deploymentsQuery.data?.deployments?.find(
-    (d) => d.runtimeInstanceId === client.instanceId,
-  )?.id;
+  // First publish only: managed-git projects are created with `skipDeploy`,
+  // so on the first merge to primary we must explicitly create the prod
+  // deployment. Subsequent publishes find a prod deployment and skip this.
+  $: hasProdDeployment =
+    $deploymentsQuery.data?.deployments?.some(isProdDeployment) ?? false;
+  // If the user is editing a dashboard, route them back to it after the first
+  // publish reconcile completes. Matches `/-/edit/explore/<name>` and
+  // `/-/edit/canvas/<name>`; undefined elsewhere (welcome flow, file editor).
+  $: currentDashboard = (() => {
+    const match = $page.url.pathname.match(
+      /\/-\/edit\/(?:explore|canvas)\/([^/?#]+)/,
+    );
+    return match ? match[1] : undefined;
+  })();
   $: alreadyOnPrimary =
     !!primaryBranch && !!currentBranch && currentBranch === primaryBranch;
   $: disabled =
@@ -64,6 +72,8 @@
     isPublishing = true;
     errorMessage = "";
 
+    const isFirstPublish = !hasProdDeployment;
+
     try {
       if (hasLocalChanges) {
         await $gitPushMutation.mutateAsync({
@@ -75,6 +85,16 @@
         branch: primaryBranch,
         force: false,
       });
+      if (isFirstPublish) {
+        // CreateDeployment with environment "prod" intentionally omits `branch`
+        // and `editable`: the API derives the branch from the project's primary
+        // branch and forbids both fields for prod deployments.
+        await $createDeploymentMutation.mutateAsync({
+          org: organization,
+          project,
+          data: { environment: "prod" },
+        });
+      }
     } catch (err) {
       errorMessage =
         getRpcErrorMessage(err as RpcStatus) ?? "Failed to publish";
@@ -82,23 +102,24 @@
       return;
     }
 
-    // First, leave the edit page. Deleting the deployment while the page is still
-    // mounted would 404 its deployment queries and flash an error. The skip call
-    // opts out of the project layout's `beforeNavigate` branch injection so we
-    // actually land on the production project home, not back on the dev branch.
     requestSkipBranchInjection();
-    await goto(`/${organization}/${project}`);
 
-    // Second, delete the dev deployment. On success, drop it from the
-    // ListDeployments cache so the BranchSelector on the destination page
-    // doesn't show the now-deleted branch.
-    // Note that the browser may cancel this request on page tear-down, so a better approach may be to
-    // hand off the deployment id via sessionStorage and fire the delete from the destination.
-    if (devDeploymentId) {
-      const id = devDeploymentId;
-      $deleteDeploymentMutation.mutate({ deploymentId: id });
-      void optimisticallyRemoveDeployment(organization, project, id);
+    if (isFirstPublish) {
+      // Prod runtime is provisioning from scratch and reconciling for the first
+      // time; route through the deploying page so the user sees progress
+      // instead of an empty project home.
+      const params = new URLSearchParams({ source: "publish" });
+      if (currentDashboard) {
+        params.set("deploying_dashboard", currentDashboard);
+      }
+      await goto(
+        `/${organization}/${project}/-/deploying?${params.toString()}`,
+        { replaceState: true },
+      );
+      return;
     }
+
+    await goto(`/${organization}/${project}`, { replaceState: true });
   }
 </script>
 
@@ -107,21 +128,17 @@
     <Popover.Trigger>
       {#snippet child({ props })}
         <Button {...props} type="primary" {disabled}>
-          <Send size="14" />
+          <Rocket size="14" />
           Publish
         </Button>
       {/snippet}
     </Popover.Trigger>
     <Popover.Content align="end" class="!w-[320px]">
       <div class="flex flex-col gap-y-3">
-        {#if gitStatusErrorMessage}
-          <p class="text-xs text-red-600">{gitStatusErrorMessage}</p>
-        {:else}
-          <p class="text-xs text-fg-secondary">
-            Publish your changes to production and return to the project home.
-            Viewers will see updates as the project reconciles.
-          </p>
-        {/if}
+        <p class="text-xs text-fg-secondary">
+          Publish your changes to production and return to the project home.
+          Viewers will see updates as the project reconciles.
+        </p>
         <Button
           type="primary"
           small
@@ -142,8 +159,6 @@
     <span class="text-xs">
       {#if alreadyOnPrimary}
         Already on production
-      {:else if gitStatusErrorMessage}
-        {gitStatusErrorMessage}
       {:else if !primaryBranch || !currentBranch}
         Loading project...
       {:else}
