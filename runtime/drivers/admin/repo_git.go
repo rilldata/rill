@@ -514,10 +514,10 @@ func resetToRemoteTrackingBranch(repoDir, branch string) error {
 	return nil
 }
 
-// ensureGitConfig ensures that the git config key is set either globally or locally in the repo.
+// ensureGitConfig ensures that the git config key is set.
 // if not set then it sets the key to the given value locally in the repo
 func ensureGitConfig(repoDir, key, value string) error {
-	_, err := exec.Command("git", "-C", repoDir, "config", "--global", "--get", key).Output()
+	_, err := exec.Command("git", "-C", repoDir, "config", "--get", key).Output()
 	if err == nil {
 		return nil
 	}
