@@ -790,21 +790,9 @@ func (r *repo) checkHandshake(ctx context.Context, force bool) error {
 			if err != nil {
 				return fmt.Errorf("failed to get git data dir: %w", err)
 			}
-			if meta.Editable {
-				// set git config in the repo dir if it's not set already only for editable repos
-				// to ensure git commits/git merge etc pass
-				err = ensureGitConfig(repoDir, "user.name", "Rill Runtime")
-				if err != nil {
-					return fmt.Errorf("failed to set git config: %w", err)
-				}
-				err = ensureGitConfig(repoDir, "user.email", "runtime@rilldata.com")
-				if err != nil {
-					return fmt.Errorf("failed to set git config: %w", err)
-				}
-				r.git = &gitRepo{
-					h:       r.h,
-					repoDir: repoDir,
-				}
+			r.git = &gitRepo{
+				h:       r.h,
+				repoDir: repoDir,
 			}
 		}
 

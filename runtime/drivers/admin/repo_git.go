@@ -84,6 +84,17 @@ func (r *gitRepo) pullInner(ctx context.Context, userTriggered, force bool) erro
 		if err != nil {
 			return err
 		}
+		if r.editableDepl {
+			// set git config in the repo dir to ensure git commits/git merge etc pass on cloud
+			err = ensureGitConfig(r.repoDir, "user.name", "Rill Runtime")
+			if err != nil {
+				return err
+			}
+			err = ensureGitConfig(r.repoDir, "user.email", "runtime@rilldata.com")
+			if err != nil {
+				return err
+			}
+		}
 	} else {
 		// Repository exists, pull latest changes
 
@@ -529,8 +540,5 @@ func ensureGitConfig(repoDir, key, value string) error {
 	}
 
 	// set only locally
-	if err := exec.Command("git", "-C", repoDir, "config", "--local", key, value).Run(); err != nil {
-		return err
-	}
-	return nil
+	return exec.Command("git", "-C", repoDir, "config", "--local", key, value).Run()
 }
