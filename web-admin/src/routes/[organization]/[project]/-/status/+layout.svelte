@@ -16,7 +16,7 @@
     {
       label: "Branches",
       route: "/branches",
-      hasPermission: true,
+      hasPermission: false,
     },
     {
       label: "Resources",
