@@ -229,7 +229,7 @@
 
   <div class="flex gap-x-2 items-center ml-auto">
     {#if editContext && inEditDevPreview}
-      {#if projectPermissions?.manageProject}
+      {#if projectPermissions?.manageDev}
         <CloudViewAsButton />
       {/if}
       <PreviewModeToggleButton mode="Edit" href={editBackHref} />
