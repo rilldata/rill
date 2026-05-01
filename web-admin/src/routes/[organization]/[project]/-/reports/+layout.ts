@@ -5,9 +5,17 @@ import {
 import { redirect } from "@sveltejs/kit";
 import type { LayoutLoad } from "./$types";
 
-// Reports is a cloud-only feature; on a branch view send the user back to
-// the branch home. See alerts/+layout.ts for why this lives in a
-// section-scoped loader rather than the project-wide layout.
+// Reports is a cloud-only feature: schedules run against the production
+// deployment, so it doesn't make sense to expose it inside a branch view.
+// On a branch URL we redirect deep links (bookmarks, shared URLs, stale
+// tabs) back to the branch home rather than letting the user dead-end at
+// a hidden section.
+//
+// Scoped to this section's loader on purpose — putting the same check on
+// the project-wide `[organization]/[project]/+layout.ts` registers `url`
+// as a dependency of that loader, which then re-runs on every in-project
+// URL change and clobbers in-flight client-side `goto()`s such as the
+// home-bookmark URL restoration in `DashboardStateSync`.
 export const load: LayoutLoad = ({ url, params }) => {
   const activeBranch = extractBranchFromPath(url.pathname);
   if (activeBranch) {

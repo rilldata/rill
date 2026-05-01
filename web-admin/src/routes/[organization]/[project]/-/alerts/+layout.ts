@@ -5,8 +5,10 @@ import {
 import { redirect } from "@sveltejs/kit";
 import type { LayoutLoad } from "./$types";
 
-// Alerts is a cloud-only feature; on a branch view send the user back to
-// the branch home so deep links (bookmarks, share URLs, stale tabs) don't
+// Alerts is a cloud-only feature: assertions evaluate against the
+// production deployment, so it doesn't make sense to expose it inside a
+// branch view. On a branch URL we redirect deep links (bookmarks, shared
+// URLs, stale tabs) back to the branch home rather than letting the user
 // dead-end at a hidden section.
 //
 // Scoped to this section's loader on purpose — putting the same check on
