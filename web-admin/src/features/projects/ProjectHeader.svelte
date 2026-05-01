@@ -168,12 +168,22 @@
       .reduce((map, resource) => {
         const name = resource.meta.name.name;
         const isMetricsExplorer = !!resource?.explore;
+        const slug = isMetricsExplorer ? "explore" : "canvas";
+        // In the dev-preview chrome, swapping resources via the breadcrumb
+        // dropdown should keep the user inside `/-/edit/...`. Set an
+        // explicit `href` that pins the edit prefix; otherwise fall back
+        // to the production-style `${section}/${name}` path linkMaker
+        // builds from `section` alone.
+        const href = inEditDevPreview
+          ? `/${organization}/${project}${branchPathPrefix(activeBranch)}/-/edit/${slug}/${name}`
+          : undefined;
         return map.set(name.toLowerCase(), {
           label:
             (isMetricsExplorer
               ? resource?.explore?.spec?.displayName
               : resource?.canvas?.spec?.displayName) || name,
-          section: isMetricsExplorer ? "explore" : "canvas",
+          section: slug,
+          href,
           resourceKind: isMetricsExplorer
             ? ResourceKind.Explore
             : ResourceKind.Canvas,
