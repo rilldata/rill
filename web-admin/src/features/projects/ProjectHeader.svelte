@@ -108,6 +108,23 @@
     if ($viewAsUserStore) viewAsUserStore.set(null);
   }
 
+  // Belt-and-suspenders: also reset whenever we transition out of the
+  // dev-preview chrome back into the editor (e.g., browser back button,
+  // direct URL, or any path that bypasses the Edit button's onClick).
+  let prevInEditDevPreview: boolean | null = null;
+  $: {
+    const inDevPreview = editContext && inEditDevPreview;
+    if (
+      prevInEditDevPreview === true &&
+      !inDevPreview &&
+      editContext // only reset when staying inside the editor
+    ) {
+      sidebarActions.closeChat();
+      if ($viewAsUserStore) viewAsUserStore.set(null);
+    }
+    prevInEditDevPreview = inDevPreview;
+  }
+
   $: onAlertPage = !!alert;
   $: onReportPage = !!report;
   $: onProjectPage = isProjectPage($page);
