@@ -11,7 +11,7 @@ import { maybeRedirectToEditableDeployment } from "@rilldata/web-admin/features/
 import { isEditPage } from "@rilldata/web-admin/features/navigation/nav-utils.ts";
 
 // Sections hidden on branch views; visiting them redirects to the branch home.
-const BRANCH_HIDDEN_SECTIONS = /\/-\/(alerts|reports|status|settings)(\/|$)/;
+const BRANCH_HIDDEN_SECTIONS = /\/-\/(alerts|reports|settings)(\/|$)/;
 
 export const load = async ({
   params: { organization, project },
