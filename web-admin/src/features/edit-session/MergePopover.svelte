@@ -131,13 +131,12 @@
           {#if !hasProdDeployment}
             Merging
             <span class="font-semibold text-fg-primary">"{currentBranch}"</span>
-            sets up your production deployment. We'll open a new tab where you
-            can invite teammates while it reconciles.
+            sets up your production deployment. We'll open a new tab where you can
+            invite teammates while it reconciles.
           {:else}
             Merging pushes changes from
             <span class="font-semibold text-fg-primary">"{currentBranch}"</span>
-            to production. We'll open a new tab so you can watch updates
-            reconcile.
+            to production. We'll open a new tab so you can watch updates reconcile.
           {/if}
         </p>
         {#if branchUrl}
