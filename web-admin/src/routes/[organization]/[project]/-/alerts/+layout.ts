@@ -3,7 +3,6 @@ import {
   extractBranchFromPath,
 } from "@rilldata/web-admin/features/branches/branch-utils";
 import { redirect } from "@sveltejs/kit";
-import type { LayoutLoad } from "./$types";
 
 // Alerts is a cloud-only feature: assertions evaluate against the
 // production deployment, so it doesn't make sense to expose it inside a
@@ -16,12 +15,12 @@ import type { LayoutLoad } from "./$types";
 // as a dependency of that loader, which then re-runs on every in-project
 // URL change and clobbers in-flight client-side `goto()`s such as the
 // home-bookmark URL restoration in `DashboardStateSync`.
-export const load: LayoutLoad = ({ url, params }) => {
+export const load = ({ url, params: { organization, project } }) => {
   const activeBranch = extractBranchFromPath(url.pathname);
   if (activeBranch) {
     throw redirect(
       307,
-      `/${params.organization}/${params.project}${branchPathPrefix(activeBranch)}`,
+      `/${organization}/${project}${branchPathPrefix(activeBranch)}`,
     );
   }
 };
