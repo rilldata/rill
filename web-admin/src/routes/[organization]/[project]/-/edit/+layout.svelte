@@ -126,6 +126,11 @@
   $: branchUrl = `/${organization}/${project}${branchPathPrefix(branch)}`;
 
   $: inProjectWelcomePage = isProjectWelcomePage($page);
+  // Dev-preview sub-routes (`/-/edit/dashboards|status|ai`) render
+  // standalone, without the editor's file tree or chat sidebar.
+  $: inEditDevPreview = !!$page.route.id?.match(
+    /\/-\/edit\/(dashboards|status|ai)(\/|$)/,
+  );
 
   // Invalidating this query refetches a fresh JWT; `runtimeClient.getJwt()`
   // reads the updated value on the next call. Branch must be part of the
@@ -197,7 +202,7 @@
           errorBody="Lost connection to the editing environment. Try ending the session and starting a new one."
         >
           <div class="flex flex-1 overflow-hidden">
-            {#if !inProjectWelcomePage}
+            {#if !inProjectWelcomePage && !inEditDevPreview}
               <WelcomeRedirector />
               <Navigation showFooterLinks={false} />
             {/if}
@@ -205,7 +210,9 @@
               <div class="flex-1 overflow-hidden">
                 <slot />
               </div>
-              <DeveloperChat />
+              {#if !inEditDevPreview}
+                <DeveloperChat />
+              {/if}
             </section>
           </div>
         </FileAndResourceWatcher>
