@@ -3,6 +3,7 @@ import {
   V1DeploymentStatus,
   type V1Deployment,
   adminServiceListDeployments,
+  createAdminServiceGetCurrentUser,
 } from "@rilldata/web-admin/client";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { redirect } from "@sveltejs/kit";
@@ -10,6 +11,8 @@ import {
   extractBranchFromPath,
   injectBranchIntoPath,
 } from "@rilldata/web-admin/features/branches/branch-utils.ts";
+import { useDevDeployments } from "@rilldata/web-admin/features/edit-session/use-edit-session.ts";
+import { derived } from "svelte/store";
 
 /**
  * Invalidates all deployment queries for a project, triggering a refetch.
@@ -59,7 +62,7 @@ export async function maybeRedirectToEditableDeployment(
   const isActiveEditableDeployment =
     editableDeployment && isActiveDeployment(editableDeployment);
   // Editable deployment is inactive as well, project is probably hibernating, skip redirect.
-  if (!isActiveEditableDeployment) return;
+  if (!isActiveEditableDeployment && prodDeployment) return;
 
   // If user is already in a specific deployment do not redirect.
   // This method is meant as a convenience for direct links to unpublished project.
@@ -72,5 +75,31 @@ export async function maybeRedirectToEditableDeployment(
       `/${organization}/${project}`,
       editableDeployment.branch,
     ),
+  );
+}
+
+export function getSingleEditableDeploymentHref(
+  organization: string,
+  project: string,
+) {
+  const userQuery = createAdminServiceGetCurrentUser();
+  const devDeploymentsQuery = useDevDeployments(organization, project);
+  return derived(
+    [userQuery, devDeploymentsQuery],
+    ([userResp, devDeploymentsResp]) => {
+      const currentUserId = userResp.data?.user?.id;
+      const activeDeploymentsForUser =
+        devDeploymentsResp.data?.deployments?.filter(
+          (d) => d.ownerUserId === currentUserId && isActiveDeployment(d),
+        );
+      if (activeDeploymentsForUser?.length !== 1) return undefined;
+
+      const singleActiveDeployment = activeDeploymentsForUser[0];
+      if (!singleActiveDeployment?.branch) return undefined;
+      return injectBranchIntoPath(
+        `/${organization}/${project}/-/edit`,
+        singleActiveDeployment.branch,
+      );
+    },
   );
 }

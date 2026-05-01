@@ -11,20 +11,35 @@
   import ProjectCardActions from "@rilldata/web-admin/features/projects/ProjectCardActions.svelte";
   import GuardedDeleteProjectConfirmation from "@rilldata/web-admin/features/projects/settings/GuardedDeleteProjectConfirmation.svelte";
   import ProjectRenameDialog from "@rilldata/web-admin/features/projects/settings/ProjectRenameDialog.svelte";
+  import { goto } from "$app/navigation";
+  import EditBranchDialog from "@rilldata/web-admin/features/edit-session/EditBranchDialog.svelte";
+  import { getSingleEditableDeploymentHref } from "@rilldata/web-admin/features/branches/deployment-utils.ts";
 
   let { organization, project }: { organization: string; project: string } =
     $props();
 
   // Check whether project is public or private
   let proj = $derived(createAdminServiceGetProject(organization, project));
+  let primaryBranch = $derived($proj.data?.project?.primaryBranch);
+
+  let editableDeploymentHref = $derived(
+    getSingleEditableDeploymentHref(organization, project),
+  );
+  $effect(() => console.log($editableDeploymentHref));
 
   let hovering = $state(false);
   let actionsOpen = $state(false);
+  let editProjectOpen = $state(false);
   let renameProjectOpen = $state(false);
   let deleteProjectOpen = $state(false);
 
   function doesProjectNameIncludeUnderscores(project: string) {
     return project.includes("_");
+  }
+
+  function handleProjectEdit() {
+    if ($editableDeploymentHref) return goto($editableDeploymentHref);
+    editProjectOpen = true;
   }
 </script>
 
@@ -51,6 +66,7 @@
           {organization}
           {project}
           bind:open={actionsOpen}
+          onEdit={handleProjectEdit}
           onRename={() => (renameProjectOpen = true)}
           onDelete={() => (deleteProjectOpen = true)}
         />
@@ -93,4 +109,11 @@
   {project}
   bind:open={deleteProjectOpen}
   button={false}
+/>
+
+<EditBranchDialog
+  bind:open={editProjectOpen}
+  {organization}
+  {project}
+  {primaryBranch}
 />

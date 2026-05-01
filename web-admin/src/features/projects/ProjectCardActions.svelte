@@ -9,35 +9,38 @@
     organization,
     project,
     open = $bindable(false),
+    onEdit,
     onRename,
     onDelete,
   }: {
     organization: string;
     project: string;
     open?: boolean;
+    onEdit: () => void;
     onRename: () => void;
     onDelete: () => void;
   } = $props();
 </script>
 
-<div class="flex flex-row gap-2">
-  <Dropdown.Root bind:open>
-    <Dropdown.Trigger>
-      <ThreeDot size="16px" />
-    </Dropdown.Trigger>
-    <Dropdown.Content class="w-48" align="start" side="right">
-      <Dropdown.Item class="text-sm" onclick={onRename}>
-        <FeatherEditIcon /> Rename
-      </Dropdown.Item>
-      <Dropdown.Item
-        href="/{organization}/{project}/-/dashboards?share=true"
-        class="text-sm"
-      >
-        <ShareIcon size={14} /> Share
-      </Dropdown.Item>
-      <Dropdown.Item class="text-sm text-destructive" onclick={onDelete}>
-        <Trash /> Delete
-      </Dropdown.Item>
-    </Dropdown.Content>
-  </Dropdown.Root>
-</div>
+<Dropdown.Root bind:open>
+  <Dropdown.Trigger>
+    <ThreeDot size="16px" />
+  </Dropdown.Trigger>
+  <Dropdown.Content class="w-48" align="start" side="right">
+    <Dropdown.Item class="text-sm" onclick={onEdit}>
+      <FeatherEditIcon /> Edit
+    </Dropdown.Item>
+    <Dropdown.Item class="text-sm" onclick={onRename}>
+      <FeatherEditIcon /> Rename
+    </Dropdown.Item>
+    <Dropdown.Item
+      href="/{organization}/{project}/-/dashboards?share=true"
+      class="text-sm"
+    >
+      <ShareIcon size={14} /> Share
+    </Dropdown.Item>
+    <Dropdown.Item class="text-sm text-destructive" onclick={onDelete}>
+      <Trash /> Delete
+    </Dropdown.Item>
+  </Dropdown.Content>
+</Dropdown.Root>
