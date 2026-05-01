@@ -176,7 +176,7 @@
 
   .preview-pill {
     @apply inline-flex items-center h-7 px-2.5 rounded-2xl shrink-0;
-    @apply border border-border bg-surface-base shadow-xs;
+    @apply border border-border bg-surface-base shadow-sm;
     @apply text-fg-secondary text-sm font-medium;
   }
 
@@ -191,7 +191,7 @@
   }
 
   .share-link {
-    @apply inline-flex items-center gap-x-2 h-7 px-3 rounded-xs;
+    @apply inline-flex items-center gap-x-2 h-7 px-3 rounded-sm;
     @apply text-accent-primary-action text-xs font-medium;
     @apply transition-colors;
   }
