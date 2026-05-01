@@ -32,6 +32,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import Header from "@rilldata/web-common/layout/header/Header.svelte";
+  import HeaderLogo from "@rilldata/web-common/layout/header/HeaderLogo.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { GitBranchIcon, PlayIcon } from "lucide-svelte";
@@ -57,6 +58,7 @@
 </script>
 
 <Header borderBottom>
+  <HeaderLogo href={`/${organization}/${project}`} />
   {#if activeBranch}
     <span
       class="inline-flex items-center h-7 px-2.5 rounded-2xl border border-border bg-surface-base text-fg-primary text-sm font-medium shadow-sm"
