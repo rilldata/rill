@@ -47,7 +47,6 @@
   $: showDeployCTA = $deploy && !onDeployPage;
   $: showDeveloperChat = $developerChat && !onDeployPage;
   $: showPreviewToggle = !onDeployPage && !$previewModeLocked;
-  $: previewToggleHref = mode === "Preview" ? "/" : "/dashboards";
 
   $: exploresQuery = useValidExplores(runtimeClient);
   $: canvasQuery = useValidCanvases(runtimeClient);
@@ -57,6 +56,43 @@
 
   $: explores = $exploresQuery?.data ?? [];
   $: canvases = $canvasQuery?.data ?? [];
+
+  // Resolve the dashboard the user is currently editing (if any) so the
+  // Preview toggle can navigate directly to that dashboard's preview route
+  // (and back to its file in Edit mode), instead of bouncing through the
+  // /dashboards listing.
+  $: editedFilePath = $page.url.pathname.startsWith("/files")
+    ? $page.url.pathname.slice("/files".length)
+    : null;
+
+  $: editedExplore = editedFilePath
+    ? explores.find((e) => e?.meta?.filePaths?.includes(editedFilePath))
+    : null;
+  $: editedCanvas =
+    !editedExplore && editedFilePath
+      ? canvases.find((c) => c?.meta?.filePaths?.includes(editedFilePath))
+      : null;
+
+  $: viewedExplore =
+    mode === "Preview" && route.id?.includes("explore") && dashboardName
+      ? explores.find((e) => e?.meta?.name?.name === dashboardName)
+      : null;
+  $: viewedCanvas =
+    mode === "Preview" && route.id?.includes("canvas") && dashboardName
+      ? canvases.find((c) => c?.meta?.name?.name === dashboardName)
+      : null;
+
+  $: previewToggleHref = (() => {
+    if (mode === "Preview") {
+      const filePath =
+        viewedExplore?.meta?.filePaths?.[0] ??
+        viewedCanvas?.meta?.filePaths?.[0];
+      return filePath ? `/files${filePath}` : "/";
+    }
+    if (editedExplore) return `/explore/${editedExplore.meta?.name?.name}`;
+    if (editedCanvas) return `/canvas/${editedCanvas.meta?.name?.name}`;
+    return "/dashboards";
+  })();
 
   $: defaultDashboard = explores[0] ?? canvases[0] ?? null;
 
