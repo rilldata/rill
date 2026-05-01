@@ -204,7 +204,7 @@
   $: currentPath = [organization, project, dashboard, report || alert];
 </script>
 
-<Header borderBottom={!onProjectPage}>
+<Header borderBottom={!onProjectPage && !inEditDevPreview}>
   <HeaderLogo href={rillLogoHref} logoUrl={organizationLogoUrl} />
   {#if onPublicURLPage}
     <PageTitle title={publicURLDashboardTitle} />
