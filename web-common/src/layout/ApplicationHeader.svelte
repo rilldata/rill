@@ -46,7 +46,7 @@
   $: onDeployPage = isDeployPage($page);
   $: showDeployCTA = $deploy && !onDeployPage;
   $: showDeveloperChat = $developerChat && !onDeployPage;
-  $: showPreviewToggle = !onDeployPage && !$previewModeLocked;
+  $: showPreviewToggle = !onDeployPage && !$previewModeLocked && !onVizRoute;
 
   $: exploresQuery = useValidExplores(runtimeClient);
   $: canvasQuery = useValidCanvases(runtimeClient);
