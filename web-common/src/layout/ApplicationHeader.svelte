@@ -13,6 +13,9 @@
     useValidCanvases,
     useValidExplores,
   } from "@rilldata/web-common/features/dashboards/selectors.js";
+  import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
+  import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
+  import { updateDevJWT } from "@rilldata/web-common/features/dashboards/granular-access-policies/updateDevJWT";
   import ViewAsButton from "@rilldata/web-common/features/dashboards/granular-access-policies/ViewAsButton.svelte";
   import { useRillYamlPolicyCheck } from "@rilldata/web-common/features/dashboards/granular-access-policies/useSecurityPolicyCheck";
   import DeployProjectCTA from "@rilldata/web-common/features/dashboards/workspace/DeployProjectCTA.svelte";
@@ -24,6 +27,7 @@
   import PreviewModeToggleButton from "@rilldata/web-common/layout/header/PreviewModeToggleButton.svelte";
   import { isDeployPage } from "@rilldata/web-common/layout/navigation/route-utils";
   import { previewModeLocked } from "@rilldata/web-common/layout/preview-mode-store";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { get } from "svelte/store";
   import { parseDocument } from "yaml";
@@ -35,6 +39,20 @@
   const runtimeClient = useRuntimeClient();
 
   export let mode: string;
+
+  // Reset the AI chat panel and any active "View as" impersonation when the
+  // user toggles between Developer and Preview, so each mode starts from a
+  // clean slate.
+  let previousMode: string | null = null;
+  $: {
+    if (previousMode !== null && previousMode !== mode) {
+      sidebarActions.closeChat();
+      if (get(selectedMockUserStore) !== null) {
+        updateDevJWT(queryClient, runtimeClient, null).catch(console.error);
+      }
+    }
+    previousMode = mode;
+  }
 
   $: ({
     params: { name: dashboardName },
