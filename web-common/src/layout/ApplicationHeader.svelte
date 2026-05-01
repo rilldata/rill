@@ -19,6 +19,7 @@
   import { useMockUsers } from "@rilldata/web-common/features/dashboards/granular-access-policies/useMockUsers";
   import { useRillYamlPolicyCheck } from "@rilldata/web-common/features/dashboards/granular-access-policies/useSecurityPolicyCheck";
   import ViewAsButton from "@rilldata/web-common/features/dashboards/granular-access-policies/ViewAsButton.svelte";
+  import { skipNextPlatformReset } from "@rilldata/web-common/features/preview-mode/platform-reset";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
@@ -237,6 +238,9 @@
                     console.error,
                   );
                   localViewAsOpen = false;
+                  // Preserve the impersonation across the Developer →
+                  // Preview transition this navigation triggers.
+                  skipNextPlatformReset();
                   void goto(previewToggleHref);
                 }}
                 class="flex gap-x-2 items-center"

@@ -48,6 +48,7 @@
   import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
+  import { consumePlatformResetSkip } from "@rilldata/web-common/features/preview-mode/platform-reset";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { metricsService } from "@rilldata/web-common/metrics/initMetrics";
@@ -125,8 +126,13 @@
   $effect(() => {
     const platform = classifyCloudPlatform(page.url.pathname);
     if (prevCloudPlatform !== null && prevCloudPlatform !== platform) {
-      if (viewAsUserStore.get()) viewAsUserStore.set(null);
-      sidebarActions.closeChat();
+      if (consumePlatformResetSkip()) {
+        // The user just picked an impersonation from the View-as dropdown
+        // and the dropdown handler asked us to preserve it across this nav.
+      } else {
+        if (viewAsUserStore.get()) viewAsUserStore.set(null);
+        sidebarActions.closeChat();
+      }
     }
     prevCloudPlatform = platform;
   });

@@ -33,6 +33,7 @@
   import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
   import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
   import { updateDevJWT } from "@rilldata/web-common/features/dashboards/granular-access-policies/updateDevJWT";
+  import { consumePlatformResetSkip } from "@rilldata/web-common/features/preview-mode/platform-reset";
   import { get } from "svelte/store";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import type { Query } from "@tanstack/query-core";
@@ -80,11 +81,16 @@
   $: {
     const platform = $previewModeStore ? "local-preview" : "local-editor";
     if (prevLocalPlatform !== null && prevLocalPlatform !== platform) {
-      sidebarActions.closeChat();
-      if (get(selectedMockUserStore) !== null) {
-        updateDevJWT(queryClient, getLocalRuntimeClient(), null).catch(
-          console.error,
-        );
+      if (consumePlatformResetSkip()) {
+        // The user just picked an impersonation from the View-as dropdown
+        // and the dropdown handler asked us to preserve it across this nav.
+      } else {
+        sidebarActions.closeChat();
+        if (get(selectedMockUserStore) !== null) {
+          updateDevJWT(queryClient, getLocalRuntimeClient(), null).catch(
+            console.error,
+          );
+        }
       }
     }
     prevLocalPlatform = platform;

@@ -13,6 +13,7 @@
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
   import CloudViewAsButton from "@rilldata/web-admin/features/view-as-user/CloudViewAsButton.svelte";
   import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
+  import { skipNextPlatformReset } from "@rilldata/web-common/features/preview-mode/platform-reset";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
   import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
@@ -282,6 +283,9 @@
             {project}
             onSelectUser={() => {
               editorViewAsOpen = false;
+              // Preserve the impersonation across the editor → cloud-prod
+              // transition this navigation triggers.
+              skipNextPlatformReset();
               void goto(editPreviewHref);
             }}
           />
