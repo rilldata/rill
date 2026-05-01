@@ -26,7 +26,6 @@
     createAdminServiceGetCurrentUser,
     type V1ProjectPermissions,
   } from "../../client";
-  import { isEditPreviewRoute } from "../edit-session/edit-route-utils";
   import ViewAsUserPopover from "../view-as-user/ViewAsUserPopover.svelte";
   import ThemeToggle from "@rilldata/web-common/features/themes/ThemeToggle.svelte";
 
@@ -80,12 +79,10 @@
 
   $: ({ params } = $page);
 
-  // View As only makes sense where the user is consuming dashboards under
-  // their own (or a mocked) policy: production view, /-/edit preview mode.
-  // Hide it in /-/edit's developer (file editor) view, where impersonation
-  // doesn't apply.
+  // View As only applies on the consumer-facing dashboard surfaces (production
+  // and branch cloud preview); hide it in the file editor.
   $: onEditPage = $page.url.pathname.includes("/-/edit");
-  $: viewAsAvailable = !onEditPage || isEditPreviewRoute($page.url.pathname);
+  $: viewAsAvailable = !onEditPage;
 
   function handlePylon() {
     window.Pylon("show");

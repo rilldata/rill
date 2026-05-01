@@ -289,7 +289,11 @@
             {planDisplayName}
             {organizationLogoUrl}
           />
-          {#if onProjectPage && deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
+          {#if onProjectPage && !activeBranch && deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
+            <!--
+              Cloud preview (branch view) intentionally omits the production
+              tabs (Reports, Alerts, Status) — it's scoped to dashboards.
+            -->
             <ProjectTabs
               projectPermissions={runtime.projectPermissions}
               {organization}

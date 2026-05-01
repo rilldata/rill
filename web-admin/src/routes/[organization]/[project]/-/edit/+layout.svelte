@@ -2,7 +2,6 @@
   import { page } from "$app/stores";
   import {
     createAdminServiceGetCurrentUser,
-    createAdminServiceGetDeploymentCredentials,
     createAdminServiceGetProject,
     getAdminServiceGetProjectQueryKey,
     V1DeploymentStatus,
@@ -13,9 +12,7 @@
     extractBranchFromPath,
   } from "@rilldata/web-admin/features/branches/branch-utils";
   import BranchDeploymentStopped from "@rilldata/web-admin/features/branches/BranchDeploymentStopped.svelte";
-  import { isEditPreviewRoute } from "@rilldata/web-admin/features/edit-session/edit-route-utils";
   import EditHeader from "@rilldata/web-admin/features/edit-session/EditHeader.svelte";
-  import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
   import EditSessionLoading from "@rilldata/web-admin/features/edit-session/EditSessionLoading.svelte";
   import EditSessionTimeoutBanner from "@rilldata/web-admin/features/edit-session/EditSessionTimeoutBanner.svelte";
   import SlimProjectHeader from "@rilldata/web-admin/features/projects/SlimProjectHeader.svelte";
@@ -89,35 +86,9 @@
   // Deployment data and credentials come from GetProject (no separate API needed)
   $: deployment = $projectQuery.data?.deployment;
   $: deploymentStatus = deployment?.status;
-  $: ownerRuntimeHost = deployment?.runtimeHost ?? null;
-  $: ownerInstanceId = deployment?.runtimeInstanceId ?? null;
-  $: ownerJwt = $projectQuery.data?.jwt ?? null;
-
-  // View As impersonation. Available only in preview mode (the file editor
-  // doesn't honor mock policies). When a mocked user is set, swap the
-  // RuntimeProvider over to the mocked user's deployment credentials so the
-  // dashboard renders under their permissions.
-  $: previewMode = isEditPreviewRoute($page.url.pathname);
-  $: mockedUserId = previewMode ? $viewAsUserStore?.id : undefined;
-  $: mockCredentialsQuery = createAdminServiceGetDeploymentCredentials(
-    organization,
-    project,
-    {
-      userId: mockedUserId,
-      ...(branch ? { branch } : {}),
-    },
-    { query: { enabled: !!mockedUserId } },
-  );
-  $: mockCredentials = $mockCredentialsQuery.data;
-  $: useMock = !!mockedUserId && !!mockCredentials;
-
-  $: runtimeHost = useMock
-    ? (mockCredentials?.runtimeHost ?? null)
-    : ownerRuntimeHost;
-  $: instanceId = useMock
-    ? (mockCredentials?.instanceId ?? null)
-    : ownerInstanceId;
-  $: jwt = useMock ? (mockCredentials?.accessToken ?? null) : ownerJwt;
+  $: runtimeHost = deployment?.runtimeHost ?? null;
+  $: instanceId = deployment?.runtimeInstanceId ?? null;
+  $: jwt = $projectQuery.data?.jwt ?? null;
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -173,18 +144,6 @@
   onDestroy(() => {
     $editorRoutePrefix = "";
   });
-
-  // Reset transient state (chat sidebar, View As impersonation) when
-  // the user crosses the preview/developer boundary so a stale view
-  // from one mode doesn't bleed into the other.
-  let trackedPreviewMode: boolean | undefined = undefined;
-  $: if (trackedPreviewMode !== previewMode) {
-    if (trackedPreviewMode !== undefined) {
-      sidebarActions.closeChat();
-      viewAsUserStore.set(null);
-    }
-    trackedPreviewMode = previewMode;
-  }
 </script>
 
 <div class="edit-session">
@@ -227,7 +186,7 @@
           errorBody="Lost connection to the editing environment. Try ending the session and starting a new one."
         >
           <div class="flex flex-1 overflow-hidden">
-            {#if !inProjectWelcomePage && !previewMode}
+            {#if !inProjectWelcomePage}
               <WelcomeRedirector />
               <Navigation showFooterLinks={false} />
             {/if}
@@ -235,9 +194,7 @@
               <div class="flex-1 overflow-hidden">
                 <slot />
               </div>
-              {#if !previewMode}
-                <DeveloperChat />
-              {/if}
+              <DeveloperChat />
             </section>
           </div>
         </FileAndResourceWatcher>
