@@ -202,9 +202,27 @@
     }, new Map<string, PathOption>()),
   };
 
+  // In the dev-preview chrome, the project breadcrumb should keep the user
+  // inside the editor session — link each project option to its
+  // `${branch}/-/edit/dashboards` instead of the production project root.
+  $: projectOptions = (() => {
+    const raw = $projectPathsQuery.data ?? new Map<string, PathOption>();
+    if (!inEditDevPreview) return raw;
+    const branchPart = branchPathPrefix(activeBranch);
+    return new Map(
+      [...raw].map(([key, option]) => [
+        key,
+        {
+          ...option,
+          href: `/${organization}/${key}${branchPart}/-/edit/dashboards`,
+        },
+      ]),
+    );
+  })();
+
   $: pathParts = [
     { options: $orgPathsQuery.data ?? new Map() },
-    { options: $projectPathsQuery.data ?? new Map() },
+    { options: projectOptions },
     visualizationPaths,
     report ? reportPaths : alert ? alertPaths : null,
   ];

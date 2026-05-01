@@ -13,47 +13,55 @@
   export let project: string;
   export let pathname: string;
   export let branchPrefix: string = "";
+  /** When rendered inside the cloud editor's dev-preview chrome, route the
+   *  tabs to `/-/edit/{section}` so navigation stays inside the editor
+   *  session instead of dropping the user into the production project view. */
+  export let editMode: boolean = false;
 
   const { chat, reports, alerts } = featureFlags;
 
+  $: base = `/${organization}/${project}${branchPrefix}`;
+  $: sectionPrefix = editMode ? `${base}/-/edit` : `${base}/-`;
+  $: homeRoute = editMode ? `${base}/-/edit/dashboards` : base;
+
   $: tabs = [
     {
-      route: `/${organization}/${project}${branchPrefix}`,
+      route: homeRoute,
       label: "Home",
       hasPermission: true,
     },
     {
-      route: `/${organization}/${project}${branchPrefix}/-/ai`,
+      route: `${sectionPrefix}/ai`,
       label: "AI",
       hasPermission: $chat,
     },
     {
-      route: `/${organization}/${project}${branchPrefix}/-/dashboards`,
+      route: `${sectionPrefix}/dashboards`,
       label: "Dashboards",
       hasPermission: true,
     },
     {
-      route: `/${organization}/${project}${branchPrefix}/-/query`,
+      route: `${sectionPrefix}/query`,
       label: "Query",
       hasPermission: false,
     },
     {
-      route: `/${organization}/${project}${branchPrefix}/-/reports`,
+      route: `${sectionPrefix}/reports`,
       label: "Reports",
       hasPermission: $reports,
     },
     {
-      route: `/${organization}/${project}${branchPrefix}/-/alerts`,
+      route: `${sectionPrefix}/alerts`,
       label: "Alerts",
       hasPermission: $alerts,
     },
     {
-      route: `/${organization}/${project}${branchPrefix}/-/status`,
+      route: `${sectionPrefix}/status`,
       label: "Status",
       hasPermission: projectPermissions.manageProject,
     },
     {
-      route: `/${organization}/${project}${branchPrefix}/-/settings`,
+      route: `${sectionPrefix}/settings`,
       label: "Settings",
       hasPermission: projectPermissions.manageProject,
     },

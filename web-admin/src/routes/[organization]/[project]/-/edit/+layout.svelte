@@ -217,6 +217,7 @@
               {project}
               pathname={$page.url.pathname}
               branchPrefix={branchPathPrefix(branch)}
+              editMode
             />
           {/if}
           <div class="flex flex-1 overflow-hidden">
