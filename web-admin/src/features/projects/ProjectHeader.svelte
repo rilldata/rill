@@ -77,6 +77,7 @@
   $: onPublicURLPage = isPublicURLPage($page);
 
   $: activeBranch = extractBranchFromPath($page.url.pathname);
+  $: isBranchView = !!activeBranch && activeBranch !== primaryBranch;
 
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
@@ -214,7 +215,7 @@
       {#if $cloudEditing && onProjectPage && projectPermissions.manageDev}
         <EditButton {organization} {project} {activeBranch} {primaryBranch} />
       {/if}
-      {#if onProjectPage && projectPermissions.manageProjectMembers}
+      {#if onProjectPage && projectPermissions.manageProjectMembers && !isBranchView}
         <ShareProjectPopover
           {organization}
           {project}
@@ -248,7 +249,7 @@
             {#if $dashboardChat && !onPublicURLPage}
               <ChatToggle />
             {/if}
-            {#if hasUserAccess}
+            {#if hasUserAccess && !isBranchView}
               <ExploreBookmarks
                 {organization}
                 {project}
@@ -274,7 +275,7 @@
       {#if $dashboardChat && !onPublicURLPage}
         <ChatToggle />
       {/if}
-      {#if hasUserAccess}
+      {#if hasUserAccess && !isBranchView}
         <CanvasBookmarks {organization} {project} canvasName={dashboard} />
         <ShareDashboardPopover
           createMagicAuthTokens={projectPermissions.createMagicAuthTokens}
