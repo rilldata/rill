@@ -11,6 +11,7 @@
   import EditActions from "@rilldata/web-admin/features/edit-session/EditActions.svelte";
   import EditButton from "@rilldata/web-admin/features/edit-session/EditButton.svelte";
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
+  import CloudViewAsButton from "@rilldata/web-admin/features/view-as-user/CloudViewAsButton.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
   import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
@@ -86,6 +87,15 @@
     editPreviewKind && name
       ? `/${organization}/${project}${branchPathPrefix(activeBranch)}/${editPreviewKind}/${name}`
       : `/${organization}/${project}${branchPathPrefix(activeBranch)}`;
+
+  // Cloud editor sub-routes that should adopt a "Dev preview" chrome
+  // (View-as pill + Edit-back button) rather than the editor chrome
+  // (split Preview button + EditActions). Mirrors local's preview mode.
+  $: inEditDevPreview = !!route.id?.match(
+    /\/-\/edit\/(dashboards|status|ai)(\/|$)/,
+  );
+
+  $: editBackHref = `/${organization}/${project}${branchPathPrefix(activeBranch)}/-/edit`;
 
   let editorViewAsOpen = false;
 
@@ -218,7 +228,12 @@
   {/if}
 
   <div class="flex gap-x-2 items-center ml-auto">
-    {#if editContext}
+    {#if editContext && inEditDevPreview}
+      {#if projectPermissions?.manageProject}
+        <CloudViewAsButton />
+      {/if}
+      <PreviewModeToggleButton mode="Edit" href={editBackHref} />
+    {:else if editContext}
       {#if $developerChat}
         <ChatToggle />
       {/if}
