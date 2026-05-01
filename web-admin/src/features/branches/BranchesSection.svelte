@@ -289,7 +289,7 @@
 </script>
 
 <section class="flex flex-col gap-y-5">
-  <h2 class="text-lg font-medium">Deployments</h2>
+  <h2 class="text-lg font-medium">Branches</h2>
 
   <TableToolbar
     {searchText}

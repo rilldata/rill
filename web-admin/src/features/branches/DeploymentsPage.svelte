@@ -7,12 +7,10 @@
     type V1Deployment,
   } from "@rilldata/web-admin/client";
   import {
-    isTrialPlan,
     isFreePlan,
     isProPlan,
-    isManagedPlan,
     isTeamPlan,
-    isEnterprisePlan,
+    isTrialPlan,
   } from "@rilldata/web-admin/features/billing/plans/utils";
   import { isProdDeployment } from "./deployment-utils";
   import { V1DeploymentStatus } from "@rilldata/web-admin/client";
@@ -42,20 +40,27 @@
   let planName = $derived(
     $subscriptionQuery?.data?.subscription?.plan?.name ?? "",
   );
+  // Custom-contract plans (Enterprise / Managed) don't expose unit-based
+  // pricing or quotas in the UI, so the Compute breakdown is suppressed.
   let showDeploymentSection = $derived(
     planName !== "" &&
       (isTrialPlan(planName) ||
         isFreePlan(planName) ||
         isProPlan(planName) ||
-        isManagedPlan(planName) ||
-        isTeamPlan(planName) ||
-        isEnterprisePlan(planName)),
+        isTeamPlan(planName)),
   );
 
   // Plans without per-unit billing visibility — Trial and Team get a flat
   // allowance, so we hide cost estimates and surface the unit cap instead.
   let hasCostVisibility = $derived(
     !(isTrialPlan(planName) || isTeamPlan(planName)),
+  );
+
+  // Pro / Enterprise / Managed are usage-based or contract-based and have no
+  // hard slot cap to surface, even if `quota_slots_total` is populated in the
+  // org's quotas. Only capped plans (Trial, Free, Team) show "Plan limit".
+  let hasPlanLimit = $derived(
+    isTrialPlan(planName) || isFreePlan(planName) || isTeamPlan(planName),
   );
 
   // Slot quotas come from the organization (set via plan defaults or sudo
@@ -206,7 +211,7 @@
           <span class="text-fg-tertiary">&middot;</span>
           {runningDevSlots} development
         </span>
-        {#if planTotalSlotsCap !== undefined}
+        {#if hasPlanLimit && planTotalSlotsCap !== undefined}
           <span class="summary-cycle" class:summary-warning={exceedsTotalCap}>
             Plan limit: {totalSlots} of {planTotalSlotsCap} units used
             {#if exceedsTotalCap}
