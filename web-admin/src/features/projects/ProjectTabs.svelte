@@ -22,13 +22,15 @@
 
   $: base = `/${organization}/${project}${branchPrefix}`;
   $: sectionPrefix = editMode ? `${base}/-/edit` : `${base}/-`;
-  $: homeRoute = editMode ? `${base}/-/edit/dashboards` : base;
 
   $: tabs = [
     {
-      route: homeRoute,
+      route: base,
       label: "Home",
-      hasPermission: true,
+      // In dev-preview chrome there's no separate project-home page —
+      // Home would collide with Dashboards (`/-/edit/dashboards`), so
+      // drop it.
+      hasPermission: !editMode,
     },
     {
       route: `${sectionPrefix}/ai`,
