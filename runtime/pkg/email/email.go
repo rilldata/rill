@@ -748,7 +748,7 @@ func (c *Client) SendSubscriptionRenewed(opts *SubscriptionRenewed) error {
 	})
 }
 
-type TeamPlan struct {
+type PaidPlan struct {
 	ToEmail          string
 	ToName           string
 	OrgName          string
@@ -757,8 +757,8 @@ type TeamPlan struct {
 	BillingStartDate time.Time
 }
 
-// SendTeamPlanStarted sends customised plan started email for Team Plan
-func (c *Client) SendTeamPlanStarted(opts *TeamPlan) error {
+// SendPaidPlanStarted sends a customised plan-started email for a paid plan (Team or Pro).
+func (c *Client) SendPaidPlanStarted(opts *PaidPlan) error {
 	return c.SendWelcomeToTeam(&Welcome{
 		ToEmail:     opts.ToEmail,
 		ToName:      opts.ToName,
@@ -779,8 +779,8 @@ Interested inscheduling a call?
 	})
 }
 
-// SendTeamPlanRenewal sends customised plan renewed email for Team Plan
-func (c *Client) SendTeamPlanRenewal(opts *TeamPlan) error {
+// SendPaidPlanRenewal sends a customised plan-renewed email for a paid plan (Team or Pro).
+func (c *Client) SendPaidPlanRenewal(opts *PaidPlan) error {
 	return c.SendWelcomeToTeam(&Welcome{
 		ToEmail:     opts.ToEmail,
 		ToName:      opts.ToName,

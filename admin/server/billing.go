@@ -99,8 +99,8 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		}
 		return nil, err
 	}
-	// If the requested plan is the credit-based trial (FreePlanType), start the credit trial. Legacy free_trial subscribe is no longer supported here; existing free_trial orgs upgrade by requesting a paid plan instead.
-	if plan.PlanType == billing.FreePlanType {
+	// for both free and legacy trial plan, start the credit trial
+	if plan.PlanType == billing.FreePlanType || plan.PlanType == billing.TrailPlanType {
 		bi, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeNeverSubscribed)
 		if err != nil {
 			if errors.Is(err, database.ErrNotFound) {
@@ -209,8 +209,8 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 	if planChange {
 		// send plan changed email
 
-		if plan.PlanType == billing.TeamPlanType {
-			s.logger.Named("billing").Info("upgraded to team plan",
+		if plan.PlanType == billing.TeamPlanType || plan.PlanType == billing.ProPlanType {
+			s.logger.Named("billing").Info("upgraded to paid plan",
 				zap.String("org_id", org.ID),
 				zap.String("org_name", org.Name),
 				zap.String("user_email", org.BillingEmail),
@@ -218,8 +218,8 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 				zap.String("plan_name", sub.Plan.Name),
 			)
 
-			// special handling for team plan to send custom email
-			err = s.admin.Email.SendTeamPlanStarted(&email.TeamPlan{
+			// custom welcome email for paid plans (Team / Pro)
+			err = s.admin.Email.SendPaidPlanStarted(&email.PaidPlan{
 				ToEmail:          org.BillingEmail,
 				ToName:           org.Name,
 				OrgName:          org.Name,
@@ -440,7 +440,7 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 	// send subscription renewed email
 	if sub.Plan.PlanType == billing.TeamPlanType || sub.Plan.PlanType == billing.ProPlanType {
 		// custom welcome-back email for paid plans (Team / Pro)
-		err = s.admin.Email.SendTeamPlanRenewal(&email.TeamPlan{
+		err = s.admin.Email.SendPaidPlanRenewal(&email.PaidPlan{
 			ToEmail:          org.BillingEmail,
 			ToName:           org.Name,
 			OrgName:          org.Name,
@@ -658,13 +658,11 @@ func (s *Server) SudoExtendTrial(ctx context.Context, req *adminv1.SudoExtendTri
 		return nil, status.Errorf(codes.FailedPrecondition, "organization %s never subscribed to a plan", org.Name)
 	}
 
-	// find existing trial end date
+	// SudoExtendTrial only handles legacy time-based trials. Look at the time-based trial issues directly; fall back to SubscriptionCancelled only when the cancellation is not from credit-trial depletion.
 	currentEndDate := time.Time{}
 	onTrial, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeOnTrial)
-	if err != nil {
-		if !errors.Is(err, database.ErrNotFound) {
-			return nil, err
-		}
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
+		return nil, err
 	}
 	if onTrial != nil {
 		currentEndDate = onTrial.Metadata.(*database.BillingIssueMetadataOnTrial).GracePeriodEndDate
@@ -672,10 +670,8 @@ func (s *Server) SudoExtendTrial(ctx context.Context, req *adminv1.SudoExtendTri
 
 	if currentEndDate.IsZero() {
 		trialEnded, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeTrialEnded)
-		if err != nil {
-			if !errors.Is(err, database.ErrNotFound) {
-				return nil, err
-			}
+		if err != nil && !errors.Is(err, database.ErrNotFound) {
+			return nil, err
 		}
 		if trialEnded != nil {
 			currentEndDate = trialEnded.Metadata.(*database.BillingIssueMetadataTrialEnded).GracePeriodEndDate
@@ -684,14 +680,21 @@ func (s *Server) SudoExtendTrial(ctx context.Context, req *adminv1.SudoExtendTri
 
 	if currentEndDate.IsZero() {
 		subCancelled, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeSubscriptionCancelled)
-		if err != nil {
-			if !errors.Is(err, database.ErrNotFound) {
-				return nil, err
-			}
+		if err != nil && !errors.Is(err, database.ErrNotFound) {
+			return nil, err
 		}
-		if subCancelled != nil {
-			currentEndDate = subCancelled.Metadata.(*database.BillingIssueMetadataSubscriptionCancelled).EndDate
+		if subCancelled == nil {
+			return nil, status.Errorf(codes.FailedPrecondition, "organization %s is not on a time-based trial; use SudoGrantTrialCredits for credit-based trials", org.Name)
 		}
+		// SubscriptionCancelled co-existing with TrialCreditsDepleted means the cancellation came from a credit-trial depletion, not a time-based trial end.
+		depleted, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeTrialCreditsDepleted)
+		if err != nil && !errors.Is(err, database.ErrNotFound) {
+			return nil, err
+		}
+		if depleted != nil {
+			return nil, status.Errorf(codes.FailedPrecondition, "organization %s is on a credit-based trial; use SudoGrantTrialCredits to extend it", org.Name)
+		}
+		currentEndDate = subCancelled.Metadata.(*database.BillingIssueMetadataSubscriptionCancelled).EndDate
 	}
 
 	if currentEndDate.IsZero() || currentEndDate.Before(time.Now()) {
