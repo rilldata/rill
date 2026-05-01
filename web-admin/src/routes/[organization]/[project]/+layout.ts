@@ -1,10 +1,17 @@
 import { type RpcStatus } from "@rilldata/web-admin/client";
 import { hasBlockerIssues } from "@rilldata/web-admin/features/billing/selectors";
+import {
+  branchPathPrefix,
+  extractBranchFromPath,
+} from "@rilldata/web-admin/features/branches/branch-utils";
 import { fetchAllProjectsHibernating } from "@rilldata/web-admin/features/organizations/selectors";
 import { error, redirect } from "@sveltejs/kit";
 import { isAxiosError } from "axios";
 import { maybeRedirectToEditableDeployment } from "@rilldata/web-admin/features/branches/deployment-utils.ts";
 import { isEditPage } from "@rilldata/web-admin/features/navigation/nav-utils.ts";
+
+// Sections hidden on branch views; visiting them redirects to the branch home.
+const BRANCH_HIDDEN_SECTIONS = /\/-\/(alerts|reports|settings)(\/|$)/;
 
 export const load = async ({
   params: { organization, project },
@@ -12,6 +19,14 @@ export const load = async ({
   route,
   url,
 }) => {
+  const activeBranch = extractBranchFromPath(url.pathname);
+  if (activeBranch && BRANCH_HIDDEN_SECTIONS.test(url.pathname)) {
+    throw redirect(
+      307,
+      `/${organization}/${project}${branchPathPrefix(activeBranch)}`,
+    );
+  }
+
   const { organizationPermissions, issues } = await parent();
 
   if (!organizationPermissions.manageOrg) return;

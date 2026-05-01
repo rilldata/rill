@@ -2,14 +2,8 @@
   import { page } from "$app/stores";
   import {
     createAdminServiceGetProject,
-    createAdminServiceGetBillingSubscription,
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
-  import {
-    isFreePlan,
-    isProPlan,
-    isTrialPlan,
-  } from "@rilldata/web-admin/features/billing/plans/utils";
   import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
@@ -117,12 +111,6 @@
 
   // Slots
   $: currentSlots = Number(projectData?.prodSlots) || 0;
-
-  // Billing plan detection
-  $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
-  $: planName = $subscriptionQuery?.data?.subscription?.plan?.name ?? "";
-  $: showSlots =
-    isTrialPlan(planName) || isFreePlan(planName) || isProPlan(planName);
 </script>
 
 <OverviewCard title="Deployment">
@@ -159,7 +147,7 @@
       </span>
     </div>
 
-    {#if !$subscriptionQuery?.isLoading && showSlots}
+    {#if currentSlots > 0}
       <div class="info-row">
         <span class="info-label">Cluster Size</span>
         <span class="info-value">
