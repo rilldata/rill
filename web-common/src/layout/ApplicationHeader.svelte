@@ -75,6 +75,9 @@
   // Explore/CanvasPreviewCTAs.
   $: showDeveloperChat = $developerChat && !onDeployPage && mode !== "Preview";
   $: showPreviewToggle = !onDeployPage && !$previewModeLocked && !onVizRoute;
+  // View as is independent of the toggle: it should still be available on
+  // non-viz routes even when `--preview` locks the mode.
+  $: showStandaloneViewAs = !onDeployPage && !onVizRoute;
 
   // Show "View as" alongside the project preview chrome when the project
   // — via rill.yaml or any individual dashboard — defines a security
@@ -257,13 +260,17 @@
           </DropdownMenu.Item>
         </svelte:fragment>
       </PreviewModeToggleButton>
-    {:else if showPreviewToggle && mode === "Preview"}
-      <ViewAsButton />
-      <PreviewModeToggleButton
-        mode="Edit"
-        href={previewToggleHref}
-        onPreviewClick={resetOnModeToggle}
-      />
+    {:else if mode === "Preview"}
+      {#if showStandaloneViewAs}
+        <ViewAsButton />
+      {/if}
+      {#if showPreviewToggle}
+        <PreviewModeToggleButton
+          mode="Edit"
+          href={previewToggleHref}
+          onPreviewClick={resetOnModeToggle}
+        />
+      {/if}
     {/if}
     {#if showDeployCTA}
       <DeployProjectCTA {hasValidDashboard} />

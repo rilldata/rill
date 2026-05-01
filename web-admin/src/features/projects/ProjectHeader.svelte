@@ -267,8 +267,8 @@
         {primaryBranch}
       />
     {:else}
-      {#if $viewAsUserStore}
-        <ViewAsUserChip />
+      {#if projectPermissions?.manageDev}
+        <CloudViewAsButton />
       {/if}
       {#if $cloudEditing && onProjectPage && projectPermissions.manageDev}
         <EditButton {organization} {project} {activeBranch} {primaryBranch} />
