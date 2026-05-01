@@ -9,14 +9,18 @@ sidebar_position: 11
 
 # Embed Iframe API
 
-When embedding Rill inside of an `iframe`, you can communicate with it using the [`postMessage`](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage) API via a JSON-RPC 2.0-like protocol.
+Once you've [embedded a Rill dashboard](/developers/embed/dashboards) in your page, the parent page can communicate with the iframe using the [`postMessage`](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage) API via a JSON-RPC 2.0-like protocol. This communication happens entirely in the browser; no requests to Rill's servers are involved.
 
 
 ## Overview
 
-The iframe exposes an API that enables external control and monitoring of its internal state. Communication is bidirectional and supports both **requests** and **notifications** using `window.postMessage`.
+The iframe exposes two functions, `getState` and `setState`, and a notification, `stateChanged`, that lets the parent page read and update the dashboard's UI state. Communication is bidirectional: the parent sends **requests** to the iframe, and the iframe sends **notifications** back to the parent.
 
-The state of a dashboard in Rill can be found in the URL as you are browsing it. The URL is fully human-readable and will reflect whatever you are looking at on the screen.
+Dashboard state is represented using the same query strings you see in Rill Cloud URLs as you browse, for example `view=pivot&tr=PT24H&grain=hour`. 
+
+:::caution
+Wait for the `ready` notification (see [Notifications](#notifications)) before sending requests. The iframe does not process messages before it has fully loaded.
+:::
 
 
 ## Embedding and Initialization
@@ -67,11 +71,11 @@ window.addEventListener("message", (event) => {
 ## Supported Methods
 
 These methods are called **from the parent** and handled **by the iframe**.
-Note: if including an `id`, the server will respond. If you do not need a response, you can omit the `id` property.
+Note: if including an `id`, the iframe will respond with a matching `id`. If you do not need a response, you can omit the `id` property.
 
 ### `setState(state)`
 
-Sets the current state inside the iframe.
+Updates the iframe's dashboard's UI state. The `state` parameter is a URL query string, in the same format as the URL bar in Rill Cloud.
 
 ```js
 iframe.contentWindow.postMessage({
@@ -80,6 +84,9 @@ iframe.contentWindow.postMessage({
   params: "view=pivot&tr=PT24H&grain=hour",
 }, "*");
 ```
+
+**Parameters:**
+- `state` (string): A URL query string describing the dashboard view, filters, time range, etc.
 
 **Response:**
 
@@ -90,7 +97,7 @@ iframe.contentWindow.postMessage({
 
 ### `getState()`
 
-Fetches the current internal state of the iframe.
+Returns the iframe's dashboard's current UI state.
 
 ```js
 iframe.contentWindow.postMessage({
@@ -102,7 +109,7 @@ iframe.contentWindow.postMessage({
 **Response:**
 
 ```json
-{ "id": 2, "result": {"state": "<rill state string>"} }
+{ "id": 2, "result": { "state": "view=pivot&tr=PT24H&grain=hour" } }
 ```
 
 
@@ -218,7 +225,9 @@ iframe.contentWindow.postMessage({
 }
 ```
 
-**Note:** The theme name must correspond to an existing theme resource in your Rill project. Setting an invalid theme name will not cause an error, but the theme will not be applied.
+:::caution
+The theme name must correspond to an existing theme resource in your Rill project. Setting an invalid theme name will **not** return an error, but the theme will silently not be applied.
+:::
 
 ### `getAiPane()`
 
@@ -387,7 +396,7 @@ All errors follow the JSON-RPC 2.0 structure:
 const iframe = document.getElementById("my-iframe");
 
 function sendRequest(method, params) {
-  const id = Math.random().toString(36).substr(2, 9);
+  const id = Math.random().toString(36).slice(2, 11);
   return new Promise((resolve, reject) => {
     function handler(event) {
       if (event.data?.id === id) {
@@ -407,7 +416,7 @@ window.addEventListener("message", async (event) => {
 
     await sendRequest("setState", "view=pivot&tr=PT24H&grain=hour");
     const currentState = await sendRequest("getState");
-    console.log("Current state:", currentState);
+    console.log("Current state:", currentState.state);
 
     const currentThemeMode = await sendRequest("getThemeMode");
     console.log("Current theme mode:", currentThemeMode.themeMode);
