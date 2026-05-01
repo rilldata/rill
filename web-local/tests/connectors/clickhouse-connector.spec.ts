@@ -519,9 +519,7 @@ async function selectAdImpressionsAndSubmit(page: Page, connectorName: string) {
     .click();
 
   // Click the primary submit button (metrics-view-only flow).
-  await page
-    .getByRole("button", { name: "Generate metrics with AI" })
-    .click();
+  await page.getByRole("button", { name: "Generate metrics with AI" }).click();
 
   // Wait for navigation to the new file
   await page.waitForURL(/\/files\/metrics\/ad_impressions_metrics.yaml/, {
