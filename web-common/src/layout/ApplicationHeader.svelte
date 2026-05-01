@@ -19,6 +19,7 @@
   import { updateDevJWT } from "@rilldata/web-common/features/dashboards/granular-access-policies/updateDevJWT";
   import { useMockUsers } from "@rilldata/web-common/features/dashboards/granular-access-policies/useMockUsers";
   import { useRillYamlPolicyCheck } from "@rilldata/web-common/features/dashboards/granular-access-policies/useSecurityPolicyCheck";
+  import ViewAsButton from "@rilldata/web-common/features/dashboards/granular-access-policies/ViewAsButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
@@ -215,16 +216,15 @@
     {:else if showDeveloperChat}
       <ChatToggle />
     {/if}
+    {#if $selectedMockUserStore}
+      <ViewAsButton />
+    {/if}
     {#if showPreviewToggle}
       <PreviewModeToggleButton
         mode={mode === "Preview" ? "Edit" : "Preview"}
         href={previewToggleHref}
         showViewAs={showProjectViewAs}
         bind:dropdownOpen={localViewAsOpen}
-        activeViewAsLabel={$selectedMockUserStore?.email ?? null}
-        onClearViewAs={() => {
-          updateDevJWT(queryClient, runtimeClient, null).catch(console.error);
-        }}
       >
         <svelte:fragment slot="dropdown">
           {#if !$mockUsers.data || $mockUsers.data?.length === 0}

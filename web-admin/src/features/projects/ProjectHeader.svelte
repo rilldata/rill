@@ -222,15 +222,14 @@
       {#if $developerChat}
         <ChatToggle />
       {/if}
+      {#if $viewAsUserStore}
+        <ViewAsUserChip />
+      {/if}
       <PreviewModeToggleButton
         mode="Preview"
         href={editPreviewHref}
         showViewAs={projectPermissions?.manageProject ?? false}
         bind:dropdownOpen={editorViewAsOpen}
-        activeViewAsLabel={$viewAsUserStore?.email ?? null}
-        onClearViewAs={() => {
-          viewAsUserStore.set(null);
-        }}
       >
         <svelte:fragment slot="dropdown">
           <ViewAsUserPopover
