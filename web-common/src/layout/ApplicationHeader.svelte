@@ -47,7 +47,10 @@
   $: ({ size: unsavedFileCount } = $unsavedFiles);
   $: onDeployPage = isDeployPage($page);
   $: showDeployCTA = $deploy && !onDeployPage;
-  $: showDeveloperChat = $developerChat && !onDeployPage;
+  // Hide the chat toggle on the preview-only project pages (/dashboards,
+  // /ai, /status). Viz routes have their own chat affordance via
+  // Explore/CanvasPreviewCTAs.
+  $: showDeveloperChat = $developerChat && !onDeployPage && mode !== "Preview";
   $: showPreviewToggle = !onDeployPage && !$previewModeLocked && !onVizRoute;
 
   // Show "View as" alongside the project preview chrome when the project
