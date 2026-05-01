@@ -4,12 +4,9 @@ title: Iframe postMessage API
 description: Communicate with your embedded dashboards via postMessage.
 sidebar_label: postMessage API
 sidebar_position: 11
-
 ---
 
-# Iframe postMessage API
-
-Once you've [embedded a Rill dashboard](/developers/embed/iframe) in your page, the parent page can communicate with the iframe using the [`postMessage`](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage) API via a JSON-RPC 2.0-like protocol. This communication happens entirely in the browser; no requests to Rill's servers are involved.
+Once you've [embedded a Rill dashboard iframe](/developers/embed/iframe) in your page, the parent page can communicate with the iframe using the [`postMessage`](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage) API via a JSON-RPC 2.0-like protocol. This communication happens entirely in the browser; no requests to Rill's servers are involved.
 
 
 ## Overview
@@ -75,7 +72,7 @@ Note: if including an `id`, the iframe will respond with a matching `id`. If you
 
 ### `setState(state)`
 
-Updates the iframe's dashboard's UI state. The `state` parameter is a URL query string, in the same format as the URL bar in Rill Cloud.
+Updates the iframe's dashboard's UI state.
 
 ```js
 iframe.contentWindow.postMessage({
@@ -86,7 +83,7 @@ iframe.contentWindow.postMessage({
 ```
 
 **Parameters:**
-- `state` (string): A URL query string describing the dashboard view, filters, time range, etc.
+- `state` (string): A URL query string describing the dashboard view, filters, time range, etc. Uses the same format as the query strings in URLs on Rill Cloud.
 
 **Response:**
 

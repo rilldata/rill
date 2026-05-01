@@ -1,8 +1,8 @@
 ---
 id: iframe
-title: "Embed Rill in an iframe"
+title: Embed Dashboards in an Iframe
 description: Embed Rill dashboards in your own applications using iframes
-sidebar_label: "Iframe Embedding"
+sidebar_label: Iframe
 sidebar_position: 10
 ---
 
@@ -24,7 +24,7 @@ sequenceDiagram
   participant B as api.ezcommerce.com
   participant C as api.rilldata.com
   participant D as ui.rilldata.com/-/embed
-  participant E as &lt;node&gt;.runtime.rilldata.com
+  participant E as node.region.runtime.rilldata.com
   A ->> B: Get iframe URL
   B ->> B: Resolve the user's email <br />using ezcommerce's own auth
   B ->>+ C: Get iframe URL for:<br />project="ezcommerce"<br />user="john@example.com"<br/>(uses Rill service token)
@@ -74,8 +74,8 @@ curl -X POST --location 'https://api.rilldata.com/v1/orgs/<org-name>/projects/<p
 --header 'Content-Type: application/json' \
 --header 'Authorization: Bearer <rill-svc-token>' \
 --data-raw '{
-"resource": "<explore-name>",
 "type": "explore",
+"resource": "<explore-name>",
 "user_email": "<user-email>"
 }'
 ```
@@ -103,8 +103,8 @@ app.post('/api/rill/iframe', async (req, res) => {
         Authorization: `Bearer ${rillServiceToken}`,
       },
       body: JSON.stringify({
-        resource: dashboardName,
         type: 'explore',
+        resource: dashboardName,
         // Optionally include the end user's email address for security policies:
         // user_email: '<end-user-email>',
         // Optionally set theme and theme mode:
@@ -150,8 +150,8 @@ def get_rill_iframe():
                 'Authorization': 'Bearer <rill-svc-token>',
             },
             json={
-                'resource': dashboard_name,
                 'type': 'explore',
+                'resource': dashboard_name,
                 # Optionally include the end user's email address for security policies:
                 # 'user_email': '<end-user-email>',
                 # Optionally set theme and theme mode:
@@ -190,8 +190,8 @@ func getRillIframe(w http.ResponseWriter, r *http.Request) {
 	dashboardName := reqBody["resource"]
 
 	requestBody, err := json.Marshal(map[string]string{
-		"resource": dashboardName,
 		"type": "explore",
+		"resource": dashboardName,
     // Optionally include the end user's email address for security policies:
 		// "user_email": "<end-user-email>",
 	})
@@ -262,8 +262,8 @@ public class DashboardController {
         headers.set("Authorization", "Bearer <rill-svc-token>");
 
         Map<String, Object> request = new HashMap<>();
-        request.put("resource", dashboardName);
         request.put("type", "explore");
+        request.put("resource", dashboardName);
         // Optionally include the end user's email address for security policies:
         // request.put("user_email", "<end-user-email>");
 
@@ -330,6 +330,7 @@ One of the most common differences between how developers may wish to iframe Ril
 If you wish to embed a single dashboard **only**, your payload might look like:
 ```json
 {
+  "type": "explore",
   "resource": "dashboardName"
 }
 ```
@@ -337,6 +338,7 @@ If you wish to embed a single dashboard **only**, your payload might look like:
 If you wish to still embed a dashboard _but allow navigation between dashboards_, then your payload should include both parameters:
 ```json
 {
+  "type": "explore",
   "resource": "dashboardName",
   "navigation": true
 }
@@ -366,10 +368,6 @@ Your frontend should request an iframe URL from your backend API (which you set 
 ```html
 <iframe title="rill-dashboard" src="<iframeSrc>" width="100%" height="100%" />
 ```
-
-:::caution
-The page hosting the iframe must be served over **HTTPS**. Rill's embedded dashboard sets `frame-ancestors https:` in its Content Security Policy, so framing from `http://localhost` or any other HTTP origin is blocked by the browser. For local development, use a tool like [`mkcert`](https://github.com/FiloSottile/mkcert) or your framework's HTTPS dev mode (e.g. `next dev --experimental-https`).
-:::
 
 Once the dashboard is embedded, the parent page can also read and write its UI state (selected resource, filters, time range, view type, and so on) using a `postMessage`-based API exposed by the iframe. See the [postMessage API](/developers/embed/postmessage) reference for details.
 
