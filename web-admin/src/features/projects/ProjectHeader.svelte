@@ -201,12 +201,7 @@
       {#if $developerChat}
         <ChatToggle />
       {/if}
-      <EditActions
-        {organization}
-        {project}
-        branch={activeBranch ?? ""}
-        {primaryBranch}
-      />
+      <EditActions {organization} {project} {primaryBranch} />
     {:else}
       {#if $viewAsUserStore}
         <ViewAsUserChip />
