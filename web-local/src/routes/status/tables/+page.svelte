@@ -1,5 +1,5 @@
 <script lang="ts">
-  import LocalProjectTables from "../../../features/tables/LocalProjectTables.svelte";
+  import StatusTablesPage from "@rilldata/web-common/features/preview-mode/StatusTablesPage.svelte";
 </script>
 
-<LocalProjectTables />
+<StatusTablesPage />

@@ -17,7 +17,7 @@
   import { writable } from "svelte/store";
   import ModelsTable from "@rilldata/web-common/features/projects/status/tables/ModelsTable.svelte";
   import ExternalTablesTable from "@rilldata/web-common/features/projects/status/tables/ExternalTablesTable.svelte";
-  import { useInfiniteTablesList, useModelResources } from "./selectors";
+  import { useInfiniteTablesList, useModelResources } from "./tables-selectors";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import {
     filterTemporaryTables,

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { useInfiniteTablesList } from "./selectors";
+  import { useInfiniteTablesList } from "@rilldata/web-common/features/preview-mode/tables-selectors";
   import {
     filterTemporaryTables,
     isLikelyView,

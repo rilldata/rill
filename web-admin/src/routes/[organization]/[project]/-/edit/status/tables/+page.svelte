@@ -1,7 +1,5 @@
 <script lang="ts">
-  import ProjectTables from "@rilldata/web-admin/features/projects/status/tables/ProjectTables.svelte";
+  import StatusTablesPage from "@rilldata/web-common/features/preview-mode/StatusTablesPage.svelte";
 </script>
 
-<div class="flex flex-col gap-y-6 size-full">
-  <ProjectTables />
-</div>
+<StatusTablesPage />
