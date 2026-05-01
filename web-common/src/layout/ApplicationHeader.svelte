@@ -89,8 +89,7 @@
       (c) => (c?.canvas?.state?.validSpec?.securityRules?.length ?? 0) > 0,
     );
   $: showProjectViewAs =
-    !onVizRoute &&
-    (!!$rillYamlPolicyCheck?.data || anyDashboardHasPolicy);
+    !onVizRoute && (!!$rillYamlPolicyCheck?.data || anyDashboardHasPolicy);
 
   $: mockUsers = useMockUsers(runtimeClient);
   let localViewAsOpen = false;
