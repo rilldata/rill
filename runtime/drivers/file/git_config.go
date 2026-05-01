@@ -114,7 +114,7 @@ func (c *connection) gitSignature(ctx context.Context, client *client.Client, pa
 
 	if client == nil {
 		return &object.Signature{
-			Name:  "Rill Runtime",
+			Name:  "Rill",
 			Email: "noreply@rilldata.com",
 			When:  time.Now(),
 		}, nil

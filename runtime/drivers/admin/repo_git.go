@@ -86,7 +86,7 @@ func (r *gitRepo) pullInner(ctx context.Context, userTriggered, force bool) erro
 		}
 		if r.editableDepl {
 			// set git config in the repo dir to ensure git commits/git merge etc pass on cloud
-			err = ensureGitConfig(r.repoDir, "user.name", "Rill Runtime")
+			err = ensureGitConfig(r.repoDir, "user.name", "Rill")
 			if err != nil {
 				return err
 			}
