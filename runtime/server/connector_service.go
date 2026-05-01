@@ -144,15 +144,19 @@ func (s *Server) ListTables(ctx context.Context, req *runtimev1.ListTablesReques
 		return nil, fmt.Errorf("connector %q does not implement information schema", req.Connector)
 	}
 
-	items, next, err := is.ListTables(ctx, req.Database, req.DatabaseSchema, "", req.PageSize, req.PageToken)
+	items, next, err := is.ListTables(ctx, req.Database, req.DatabaseSchema, req.SearchPattern, req.PageSize, req.PageToken)
 	if err != nil {
 		return nil, err
+	}
+	if req.LoadPhysicalSize {
+		_ = is.LoadPhysicalSize(ctx, items)
 	}
 	res := make([]*runtimev1.TableInfo, len(items))
 	for i, table := range items {
 		res[i] = &runtimev1.TableInfo{
-			Name: table.Name,
-			View: table.View,
+			Name:              table.Name,
+			View:              table.View,
+			PhysicalSizeBytes: table.PhysicalSizeBytes,
 		}
 	}
 	return &runtimev1.ListTablesResponse{

@@ -134,6 +134,10 @@ message ListTablesRequest {
   string database_schema = 4;
   uint32 page_size = 5 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
   string page_token = 6;
+  // search_pattern filters table names using SQL LIKE syntax (e.g. "%" matches any sequence, "_" matches any single character).
+  string search_pattern = 7;
+  // load_physical_size controls whether physical_size_bytes is populated on each returned TableInfo. This may be expensive for some connectors.
+  bool load_physical_size = 8;
 }
 
 message ListTablesResponse {
@@ -141,9 +145,11 @@ message ListTablesResponse {
   string next_page_token = 2;
 }
 
-message TableInfo { 
+message TableInfo {
   string name = 1;
   bool view = 2;
+  // physical_size_bytes is the physical size of the table in bytes. Set to -1 if the size cannot be determined. Only populated when load_physical_size is set in the request.
+  int64 physical_size_bytes = 3;
 }
 
 message GetTableRequest {

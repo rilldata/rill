@@ -225,6 +225,7 @@ export interface Runtimev1Type {
   arrayElementType?: Runtimev1Type;
   structType?: V1StructType;
   mapType?: V1MapType;
+  rawType?: string;
 }
 
 /**

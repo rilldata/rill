@@ -648,6 +648,20 @@ export class ListTablesRequest extends Message<ListTablesRequest> {
    */
   pageToken = "";
 
+  /**
+   * search_pattern filters table names using SQL LIKE syntax (e.g. "%" matches any sequence, "_" matches any single character).
+   *
+   * @generated from field: string search_pattern = 7;
+   */
+  searchPattern = "";
+
+  /**
+   * load_physical_size controls whether physical_size_bytes is populated on each returned TableInfo. This may be expensive for some connectors.
+   *
+   * @generated from field: bool load_physical_size = 8;
+   */
+  loadPhysicalSize = false;
+
   constructor(data?: PartialMessage<ListTablesRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -662,6 +676,8 @@ export class ListTablesRequest extends Message<ListTablesRequest> {
     { no: 4, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 6, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "search_pattern", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "load_physical_size", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListTablesRequest {
@@ -738,6 +754,13 @@ export class TableInfo extends Message<TableInfo> {
    */
   view = false;
 
+  /**
+   * physical_size_bytes is the physical size of the table in bytes. Set to -1 if the size cannot be determined. Only populated when load_physical_size is set in the request.
+   *
+   * @generated from field: int64 physical_size_bytes = 3;
+   */
+  physicalSizeBytes = protoInt64.zero;
+
   constructor(data?: PartialMessage<TableInfo>) {
     super();
     proto3.util.initPartial(data, this);
@@ -748,6 +771,7 @@ export class TableInfo extends Message<TableInfo> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "view", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "physical_size_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TableInfo {

@@ -136,6 +136,16 @@ paths:
           in: query
           required: false
           type: string
+        - name: searchPattern
+          description: search_pattern filters table names using SQL LIKE syntax (e.g. "%" matches any sequence, "_" matches any single character).
+          in: query
+          required: false
+          type: string
+        - name: loadPhysicalSize
+          description: load_physical_size controls whether physical_size_bytes is populated on each returned TableInfo. This may be expensive for some connectors.
+          in: query
+          required: false
+          type: boolean
       tags:
         - ConnectorService
   /v1/dev-jwt:
@@ -7859,6 +7869,10 @@ definitions:
         type: string
       view:
         type: boolean
+      physicalSizeBytes:
+        type: string
+        format: int64
+        description: physical_size_bytes is the physical size of the table in bytes. Set to -1 if the size cannot be determined. Only populated when load_physical_size is set in the request.
   v1TableRowsRequest:
     type: object
     properties:

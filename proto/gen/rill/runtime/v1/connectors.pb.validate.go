@@ -1441,6 +1441,10 @@ func (m *ListTablesRequest) validate(all bool) error {
 
 	// no validation rules for PageToken
 
+	// no validation rules for SearchPattern
+
+	// no validation rules for LoadPhysicalSize
+
 	if len(errors) > 0 {
 		return ListTablesRequestMultiError(errors)
 	}
@@ -1684,6 +1688,8 @@ func (m *TableInfo) validate(all bool) error {
 	// no validation rules for Name
 
 	// no validation rules for View
+
+	// no validation rules for PhysicalSizeBytes
 
 	if len(errors) > 0 {
 		return TableInfoMultiError(errors)
