@@ -10,7 +10,6 @@
   import ShareDashboardPopover from "@rilldata/web-admin/features/dashboards/share/ShareDashboardPopover.svelte";
   import EditActions from "@rilldata/web-admin/features/edit-session/EditActions.svelte";
   import EditButton from "@rilldata/web-admin/features/edit-session/EditButton.svelte";
-  import MergePopover from "@rilldata/web-admin/features/edit-session/MergePopover.svelte";
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
   import CloudViewAsButton from "@rilldata/web-admin/features/view-as-user/CloudViewAsButton.svelte";
   import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
@@ -268,7 +267,6 @@
         href={editBackHref}
         onPreviewClick={resetOnPreviewSwap}
       />
-      <MergePopover {organization} {project} {primaryBranch} />
     {:else if editContext}
       {#if $developerChat}
         <ChatToggle />
