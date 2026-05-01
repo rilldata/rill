@@ -255,7 +255,7 @@ mock_users:
     region: europe
 ```
 
-See our embedded example, [here](https://rill-embedding-example.netlify.app/rowaccesspolicy/basic).
+See our embedded example, [here](https://rill-embedding-example.netlify.app/security/filter-by-user).
 
 ### Custom Attributes
 
@@ -270,7 +270,7 @@ To test embedded dashboards locally with custom attributes, add them to `mock_us
   custom_variable_2: Value_2 #this is passed at embed creation
 ```
 
-See our [Custom Attributes Embedded Dashboard](https://rill-embedding-example.netlify.app/rowaccesspolicy/custom) live!
+See our [Custom Attributes Embedded Dashboard](https://rill-embedding-example.netlify.app/security/filter-by-custom-attributes) live!
 
 Let's assume a similar setup to the above example. Within the metrics view, we define:
 
