@@ -14,8 +14,8 @@
   import BranchDeploymentStopped from "@rilldata/web-admin/features/branches/BranchDeploymentStopped.svelte";
   import EditSessionLoading from "@rilldata/web-admin/features/edit-session/EditSessionLoading.svelte";
   import EditSessionTimeoutBanner from "@rilldata/web-admin/features/edit-session/EditSessionTimeoutBanner.svelte";
-  import PreviewModeNav from "@rilldata/web-common/features/preview-mode/PreviewModeNav.svelte";
   import ProjectHeader from "@rilldata/web-admin/features/projects/ProjectHeader.svelte";
+  import ProjectTabs from "@rilldata/web-admin/features/projects/ProjectTabs.svelte";
   import SlimProjectHeader from "@rilldata/web-admin/features/projects/SlimProjectHeader.svelte";
   import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
@@ -135,6 +135,11 @@
   $: inEditDevPreview = !!$page.route.id?.match(
     /\/-\/edit\/(dashboards|status|ai|explore|canvas)(\/|$)/,
   );
+  // ProjectTabs sits above the page content, but only on the project-level
+  // surfaces — hide it on dashboard views so the dashboard fills the frame.
+  $: showProjectTabs = !!$page.route.id?.match(
+    /\/-\/edit\/(dashboards|status|ai)(\/|$)/,
+  );
 
   // Invalidating this query refetches a fresh JWT; `runtimeClient.getJwt()`
   // reads the updated value on the next call. Branch must be part of the
@@ -205,9 +210,13 @@
           {onBeforeReconnect}
           errorBody="Lost connection to the editing environment. Try ending the session and starting a new one."
         >
-          {#if inEditDevPreview}
-            <PreviewModeNav
-              basePath={`/${organization}/${project}${branchPathPrefix(branch)}/-/edit`}
+          {#if showProjectTabs}
+            <ProjectTabs
+              {projectPermissions}
+              {organization}
+              {project}
+              pathname={$page.url.pathname}
+              branchPrefix={branchPathPrefix(branch)}
             />
           {/if}
           <div class="flex flex-1 overflow-hidden">
