@@ -90,7 +90,7 @@ func (r *gitRepo) pullInner(ctx context.Context, userTriggered, force bool) erro
 			if err != nil {
 				return err
 			}
-			err = ensureGitConfig(r.repoDir, "user.email", "runtime@rilldata.com")
+			err = ensureGitConfig(r.repoDir, "user.email", "noreply@rilldata.com")
 			if err != nil {
 				return err
 			}
