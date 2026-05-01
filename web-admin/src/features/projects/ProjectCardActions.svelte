@@ -2,6 +2,7 @@
   import * as Dropdown from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import FeatherEditIcon from "@rilldata/web-common/components/icons/FeatherEditIcon.svelte";
+  import PencilIcon from "@rilldata/web-common/components/icons/PencilIcon.svelte";
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
   import { ShareIcon } from "lucide-svelte";
 
@@ -31,7 +32,7 @@
       <FeatherEditIcon /> Edit
     </Dropdown.Item>
     <Dropdown.Item class="text-sm" onclick={onRename}>
-      <FeatherEditIcon /> Rename
+      <PencilIcon /> Rename
     </Dropdown.Item>
     <Dropdown.Item
       href="/{organization}/{project}/-/dashboards?share=true"
