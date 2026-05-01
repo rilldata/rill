@@ -102,8 +102,8 @@
       return;
     }
 
-    requestSkipBranchInjection();
-
+    let target: string;
+    let gotoOpts: Parameters<typeof goto>[1];
     if (isFirstPublish) {
       // Prod runtime is provisioning from scratch and reconciling for the first
       // time; route through the deploying page so the user sees progress
@@ -112,14 +112,24 @@
       if (currentDashboard) {
         params.set("deploying_dashboard", currentDashboard);
       }
-      await goto(
-        `/${organization}/${project}/-/deploying?${params.toString()}`,
-        { replaceState: true },
-      );
-      return;
+      target = `/${organization}/${project}/-/deploying?${params.toString()}`;
+      gotoOpts = { replaceState: true };
+    } else {
+      target = `/${organization}/${project}`;
+      gotoOpts = undefined;
     }
 
-    await goto(`/${organization}/${project}`);
+    isPublishing = false;
+    open = false;
+
+    // Defer goto to the next task. Calling it synchronously after a mutation
+    // races with TanStack's invalidation/refetch teardown, whose abort listeners
+    // can throw and silently cancel the navigation. Same workaround as
+    // welcome/organization/+page.svelte after createOrg.
+    setTimeout(() => {
+      requestSkipBranchInjection();
+      void goto(target, gotoOpts);
+    });
   }
 </script>
 

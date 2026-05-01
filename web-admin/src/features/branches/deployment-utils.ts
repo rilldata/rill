@@ -40,6 +40,10 @@ export async function maybeRedirectToEditableDeployment(
   project: string,
   url: URL,
 ) {
+  // The deploying page is a transitional progress screen for a prod deployment
+  // that is still provisioning. Do not redirect away from it.
+  if (url.pathname.endsWith("/-/deploying")) return;
+
   const deploymentsResp = await queryClient.fetchQuery({
     queryKey: getAdminServiceListDeploymentsQueryKey(organization, project, {}),
     queryFn: () => adminServiceListDeployments(organization, project, {}),

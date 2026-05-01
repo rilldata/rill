@@ -56,8 +56,17 @@
       return;
     }
 
-    requestSkipBranchInjection();
-    await goto(`/${organization}/${project}`);
+    isMerging = false;
+    open = false;
+
+    // Defer goto to the next task. Calling it synchronously after a mutation
+    // races with TanStack's invalidation/refetch teardown, whose abort listeners
+    // can throw and silently cancel the navigation. Same workaround as
+    // welcome/organization/+page.svelte after createOrg.
+    setTimeout(() => {
+      requestSkipBranchInjection();
+      void goto(`/${organization}/${project}`);
+    });
   }
 </script>
 
