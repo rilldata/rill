@@ -1,8 +1,8 @@
 ---
-title: BigQuery
+title: Google BigQuery
 description: Power Rill dashboards using BigQuery
-sidebar_label: BigQuery
-sidebar_position: -5
+sidebar_label: Google BigQuery
+sidebar_position: 13
 ---
 
 [Google BigQuery](https://cloud.google.com/bigquery/docs) is a fully managed, serverless data warehouse that enables scalable and cost-effective analysis of large datasets. Rill supports connecting to BigQuery as a live connector, allowing you to build metrics views and dashboards directly on top of existing BigQuery tables — no data movement required.
