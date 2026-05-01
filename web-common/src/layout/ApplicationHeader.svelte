@@ -13,6 +13,8 @@
     useValidCanvases,
     useValidExplores,
   } from "@rilldata/web-common/features/dashboards/selectors.js";
+  import ViewAsButton from "@rilldata/web-common/features/dashboards/granular-access-policies/ViewAsButton.svelte";
+  import { useRillYamlPolicyCheck } from "@rilldata/web-common/features/dashboards/granular-access-policies/useSecurityPolicyCheck";
   import DeployProjectCTA from "@rilldata/web-common/features/dashboards/workspace/DeployProjectCTA.svelte";
   import ExplorePreviewCTAs from "@rilldata/web-common/features/explores/ExplorePreviewCTAs.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
@@ -47,6 +49,13 @@
   $: showDeployCTA = $deploy && !onDeployPage;
   $: showDeveloperChat = $developerChat && !onDeployPage;
   $: showPreviewToggle = !onDeployPage && !$previewModeLocked && !onVizRoute;
+
+  // Show "View as" alongside the project preview chrome when the project
+  // defines security policies in rill.yaml. Per-dashboard ViewAs already
+  // lives in ExplorePreviewCTAs / CanvasPreviewCTAs on viz routes.
+  $: rillYamlPolicyCheck = useRillYamlPolicyCheck(runtimeClient);
+  $: showProjectViewAs =
+    mode === "Preview" && !onVizRoute && !!$rillYamlPolicyCheck?.data;
 
   $: exploresQuery = useValidExplores(runtimeClient);
   $: canvasQuery = useValidCanvases(runtimeClient);
@@ -168,6 +177,9 @@
       <CanvasPreviewCTAs canvasName={dashboardName} />
     {:else if showDeveloperChat}
       <ChatToggle />
+    {/if}
+    {#if showProjectViewAs}
+      <ViewAsButton />
     {/if}
     {#if showPreviewToggle}
       <PreviewModeToggleButton
