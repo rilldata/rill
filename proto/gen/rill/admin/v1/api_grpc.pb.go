@@ -113,7 +113,6 @@ const (
 	AdminService_SudoUpdateUserQuotas_FullMethodName                   = "/rill.admin.v1.AdminService/SudoUpdateUserQuotas"
 	AdminService_SudoUpdateOrganizationQuotas_FullMethodName           = "/rill.admin.v1.AdminService/SudoUpdateOrganizationQuotas"
 	AdminService_SudoUpdateOrganizationBillingCustomer_FullMethodName  = "/rill.admin.v1.AdminService/SudoUpdateOrganizationBillingCustomer"
-	AdminService_SudoExtendTrial_FullMethodName                        = "/rill.admin.v1.AdminService/SudoExtendTrial"
 	AdminService_SudoGrantTrialCredits_FullMethodName                  = "/rill.admin.v1.AdminService/SudoGrantTrialCredits"
 	AdminService_SudoUpdateOrganizationCustomDomain_FullMethodName     = "/rill.admin.v1.AdminService/SudoUpdateOrganizationCustomDomain"
 	AdminService_SudoUpdateAnnotations_FullMethodName                  = "/rill.admin.v1.AdminService/SudoUpdateAnnotations"
@@ -391,8 +390,6 @@ type AdminServiceClient interface {
 	SudoUpdateOrganizationQuotas(ctx context.Context, in *SudoUpdateOrganizationQuotasRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationQuotasResponse, error)
 	// SudoUpdateOrganizationBillingCustomer update the billing customer for the organization
 	SudoUpdateOrganizationBillingCustomer(ctx context.Context, in *SudoUpdateOrganizationBillingCustomerRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationBillingCustomerResponse, error)
-	// SudoExtendTrial extends the trial period for an organization
-	SudoExtendTrial(ctx context.Context, in *SudoExtendTrialRequest, opts ...grpc.CallOption) (*SudoExtendTrialResponse, error)
 	// SudoGrantTrialCredits grants additional trial credits to an organization on the credit-based trial plan.
 	SudoGrantTrialCredits(ctx context.Context, in *SudoGrantTrialCreditsRequest, opts ...grpc.CallOption) (*SudoGrantTrialCreditsResponse, error)
 	// SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
@@ -1465,16 +1462,6 @@ func (c *adminServiceClient) SudoUpdateOrganizationBillingCustomer(ctx context.C
 	return out, nil
 }
 
-func (c *adminServiceClient) SudoExtendTrial(ctx context.Context, in *SudoExtendTrialRequest, opts ...grpc.CallOption) (*SudoExtendTrialResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SudoExtendTrialResponse)
-	err := c.cc.Invoke(ctx, AdminService_SudoExtendTrial_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *adminServiceClient) SudoGrantTrialCredits(ctx context.Context, in *SudoGrantTrialCreditsRequest, opts ...grpc.CallOption) (*SudoGrantTrialCreditsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SudoGrantTrialCreditsResponse)
@@ -2308,8 +2295,6 @@ type AdminServiceServer interface {
 	SudoUpdateOrganizationQuotas(context.Context, *SudoUpdateOrganizationQuotasRequest) (*SudoUpdateOrganizationQuotasResponse, error)
 	// SudoUpdateOrganizationBillingCustomer update the billing customer for the organization
 	SudoUpdateOrganizationBillingCustomer(context.Context, *SudoUpdateOrganizationBillingCustomerRequest) (*SudoUpdateOrganizationBillingCustomerResponse, error)
-	// SudoExtendTrial extends the trial period for an organization
-	SudoExtendTrial(context.Context, *SudoExtendTrialRequest) (*SudoExtendTrialResponse, error)
 	// SudoGrantTrialCredits grants additional trial credits to an organization on the credit-based trial plan.
 	SudoGrantTrialCredits(context.Context, *SudoGrantTrialCreditsRequest) (*SudoGrantTrialCreditsResponse, error)
 	// SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
@@ -2723,9 +2708,6 @@ func (UnimplementedAdminServiceServer) SudoUpdateOrganizationQuotas(context.Cont
 }
 func (UnimplementedAdminServiceServer) SudoUpdateOrganizationBillingCustomer(context.Context, *SudoUpdateOrganizationBillingCustomerRequest) (*SudoUpdateOrganizationBillingCustomerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateOrganizationBillingCustomer not implemented")
-}
-func (UnimplementedAdminServiceServer) SudoExtendTrial(context.Context, *SudoExtendTrialRequest) (*SudoExtendTrialResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SudoExtendTrial not implemented")
 }
 func (UnimplementedAdminServiceServer) SudoGrantTrialCredits(context.Context, *SudoGrantTrialCreditsRequest) (*SudoGrantTrialCreditsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoGrantTrialCredits not implemented")
@@ -4626,24 +4608,6 @@ func _AdminService_SudoUpdateOrganizationBillingCustomer_Handler(srv interface{}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_SudoExtendTrial_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SudoExtendTrialRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).SudoExtendTrial(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminService_SudoExtendTrial_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).SudoExtendTrial(ctx, req.(*SudoExtendTrialRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _AdminService_SudoGrantTrialCredits_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SudoGrantTrialCreditsRequest)
 	if err := dec(in); err != nil {
@@ -6142,10 +6106,6 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SudoUpdateOrganizationBillingCustomer",
 			Handler:    _AdminService_SudoUpdateOrganizationBillingCustomer_Handler,
-		},
-		{
-			MethodName: "SudoExtendTrial",
-			Handler:    _AdminService_SudoExtendTrial_Handler,
 		},
 		{
 			MethodName: "SudoGrantTrialCredits",

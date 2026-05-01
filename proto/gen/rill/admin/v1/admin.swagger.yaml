@@ -3861,25 +3861,6 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1SudoUpdateOrganizationCustomDomainRequest'
-  /v1/superuser/organization/trial/extend:
-    post:
-      summary: SudoExtendTrial extends the trial period for an organization
-      operationId: AdminService_SudoExtendTrial
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1SudoExtendTrialResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: body
-          in: body
-          required: true
-          schema:
-            $ref: '#/definitions/v1SudoExtendTrialRequest'
   /v1/superuser/organization/trial/grant-credits:
     post:
       summary: SudoGrantTrialCredits grants additional trial credits to an organization on the credit-based trial plan.
@@ -6467,20 +6448,6 @@ definitions:
         format: date-time
   v1SudoDeleteOrganizationBillingIssueResponse:
     type: object
-  v1SudoExtendTrialRequest:
-    type: object
-    properties:
-      org:
-        type: string
-      days:
-        type: integer
-        format: int32
-  v1SudoExtendTrialResponse:
-    type: object
-    properties:
-      trialEnd:
-        type: string
-        format: date-time
   v1SudoGetResourceResponse:
     type: object
     properties:

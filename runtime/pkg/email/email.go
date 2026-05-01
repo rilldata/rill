@@ -697,23 +697,6 @@ Upgrade to bring your projects back online.
 	})
 }
 
-type TrialExtended struct {
-	ToEmail      string
-	ToName       string
-	OrgName      string
-	TrialEndDate time.Time
-}
-
-func (c *Client) SendTrialExtended(opts *TrialExtended) error {
-	return c.SendInformational(&Informational{
-		ToEmail:    opts.ToEmail,
-		ToName:     opts.ToName,
-		Subject:    fmt.Sprintf("Your trial for %s has been extended", opts.OrgName),
-		Body:       template.HTML(fmt.Sprintf("Your trial for <b>%q</b> has been extended until %s.", opts.OrgName, opts.TrialEndDate.Format(dateFormat))),
-		ShowFooter: true,
-	})
-}
-
 type PlanUpdate struct {
 	ToEmail  string
 	ToName   string
