@@ -64,8 +64,6 @@
   $: parseErrorQuery = fileArtifact.getParseError(queryClient);
   $: parseError = $parseErrorQuery;
 
-  $: reconcileError = resource?.meta?.reconcileError;
-
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
       runtimeClient,
