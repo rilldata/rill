@@ -39,7 +39,6 @@
   import PreviewHeader from "@rilldata/web-admin/features/cloud-preview/PreviewHeader.svelte";
   import ProjectBuilding from "@rilldata/web-admin/features/projects/ProjectBuilding.svelte";
   import ProjectHeader from "@rilldata/web-admin/features/projects/ProjectHeader.svelte";
-  import ProjectTabs from "@rilldata/web-admin/features/projects/ProjectTabs.svelte";
   import { baseGetProjectQueryOptions } from "@rilldata/web-admin/features/projects/project-query-options";
   import { resolveRuntimeConnection } from "@rilldata/web-admin/features/projects/project-runtime";
   import RedeployProjectCta from "@rilldata/web-admin/features/projects/RedeployProjectCTA.svelte";
@@ -302,15 +301,6 @@
               {planDisplayName}
               {organizationLogoUrl}
             />
-            {#if onProjectPage && deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
-              <ProjectTabs
-                projectPermissions={runtime.projectPermissions}
-                {organization}
-                pathname={page.url.pathname}
-                {project}
-                {branchPrefix}
-              />
-            {/if}
           {/if}
         {/if}
         {@render children()}
