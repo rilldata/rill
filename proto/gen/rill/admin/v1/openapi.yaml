@@ -1983,7 +1983,7 @@ components:
                     format: double
                     type: number
                 description:
-                    description: Optional human-readable reason for the grant; surfaced in Orb's ledger entry description.
+                    description: Optional human-readable reason for the grant.
                     type: string
                 org:
                     type: string

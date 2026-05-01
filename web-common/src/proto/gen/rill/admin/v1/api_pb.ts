@@ -6444,7 +6444,7 @@ export class SudoGrantTrialCreditsRequest extends Message<SudoGrantTrialCreditsR
   amountUsd = 0;
 
   /**
-   * Optional human-readable reason for the grant; surfaced in Orb's ledger entry description.
+   * Optional human-readable reason for the grant.
    *
    * @generated from field: string description = 3;
    */

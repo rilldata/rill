@@ -6505,7 +6505,7 @@ definitions:
         description: Amount of credits to grant in USD.
       description:
         type: string
-        description: Optional human-readable reason for the grant; surfaced in Orb's ledger entry description.
+        description: Optional human-readable reason for the grant.
   v1SudoGrantTrialCreditsResponse:
     type: object
     properties:

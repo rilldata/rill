@@ -8238,7 +8238,7 @@ type SudoGrantTrialCreditsRequest struct {
 	Org string `protobuf:"bytes,1,opt,name=org,proto3" json:"org,omitempty"`
 	// Amount of credits to grant in USD.
 	AmountUsd float64 `protobuf:"fixed64,2,opt,name=amount_usd,json=amountUsd,proto3" json:"amount_usd,omitempty"`
-	// Optional human-readable reason for the grant; surfaced in Orb's ledger entry description.
+	// Optional human-readable reason for the grant.
 	Description string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
 }
 

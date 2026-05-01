@@ -1410,7 +1410,7 @@ export interface V1SudoGrantTrialCreditsRequest {
   org?: string;
   /** Amount of credits to grant in USD. */
   amountUsd?: number;
-  /** Optional human-readable reason for the grant; surfaced in Orb's ledger entry description. */
+  /** Optional human-readable reason for the grant. */
   description?: string;
 }
 
