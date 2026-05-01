@@ -15,7 +15,9 @@
   import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
   import { skipNextPlatformReset } from "@rilldata/web-common/features/preview-mode/platform-reset";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
+  import Slash from "@rilldata/web-common/components/navigation/breadcrumbs/Slash.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
+  import { GitBranch } from "lucide-svelte";
   import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
@@ -23,6 +25,7 @@
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import Header from "@rilldata/web-common/layout/header/Header.svelte";
   import HeaderLogo from "@rilldata/web-common/layout/header/HeaderLogo.svelte";
   import PreviewModeToggleButton from "@rilldata/web-common/layout/header/PreviewModeToggleButton.svelte";
@@ -264,21 +267,27 @@
   $: currentPath = [organization, project, currentDashboard, report || alert];
 </script>
 
-<Header borderBottom={!onProjectPage && !inEditDevPreview}>
+<Header
+  borderBottom={!onProjectPage && !inEditDevPreview}
+  tinted={inEditDevPreview}
+>
   <HeaderLogo href={rillLogoHref} logoUrl={organizationLogoUrl} />
+  {#if editContext}
+    <Tag text={inEditDevPreview ? "Preview" : "Developer"} color="theme" />
+  {/if}
   {#if onPublicURLPage}
     <PageTitle title={publicURLDashboardTitle} />
   {:else if organization}
     <Breadcrumbs {pathParts} {currentPath}>
       <svelte:fragment slot="after-project">
         {#if editContext && activeBranch}
-          <li class="flex items-center mr-2">
-            <span
-              class="inline-block truncate max-w-[200px] px-2 py-0 rounded-2xl border bg-primary-50 border-primary-200 text-primary-800"
-              title={activeBranch}
-            >
-              {activeBranch}
-            </span>
+          <Slash />
+          <li
+            class="flex items-center gap-x-1 px-2 text-fg-primary text-xs font-medium"
+            title={activeBranch}
+          >
+            <GitBranch size="14" />
+            <span class="truncate max-w-[200px]">{activeBranch}</span>
           </li>
         {:else if !onPublicURLPage && projectPermissions?.manageDev}
           <BranchSelector {organization} {project} {primaryBranch} />

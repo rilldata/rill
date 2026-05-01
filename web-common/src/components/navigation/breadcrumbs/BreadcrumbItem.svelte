@@ -18,6 +18,9 @@
 
   $: ({ options, carryOverSearchParams } = pathOptions);
   $: selected = options.get(current.toLowerCase());
+  $: selectedIcon = selected?.resourceKind
+    ? resourceIconMapping[selected.resourceKind]
+    : undefined;
 
   function linkMaker(
     current: (string | undefined)[],
@@ -71,9 +74,12 @@
         href={isCurrentPage
           ? "#top"
           : linkMaker(currentPath, depth, current, selected, "")}
-        class="text-fg-muted hover:text-fg-secondary flex flex-row items-center gap-x-2"
+        class="text-fg-muted hover:text-fg-secondary flex flex-row items-center gap-x-1.5"
         class:current={isCurrentPage}
       >
+        {#if selectedIcon}
+          <svelte:component this={selectedIcon} size="14px" />
+        {/if}
         <span>{selected?.label}</span>
       </a>
       {#if selected?.pill}
