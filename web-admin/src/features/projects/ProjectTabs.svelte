@@ -16,8 +16,6 @@
 
   const { chat, reports, alerts } = featureFlags;
 
-  $: isBranchView = branchPrefix !== "";
-
   $: tabs = [
     {
       route: `/${organization}/${project}${branchPrefix}`,
@@ -42,22 +40,22 @@
     {
       route: `/${organization}/${project}${branchPrefix}/-/reports`,
       label: "Reports",
-      hasPermission: $reports && !isBranchView,
+      hasPermission: $reports,
     },
     {
       route: `/${organization}/${project}${branchPrefix}/-/alerts`,
       label: "Alerts",
-      hasPermission: $alerts && !isBranchView,
+      hasPermission: $alerts,
     },
     {
       route: `/${organization}/${project}${branchPrefix}/-/status`,
       label: "Status",
-      hasPermission: projectPermissions.readProdStatus,
+      hasPermission: projectPermissions.manageProject,
     },
     {
       route: `/${organization}/${project}${branchPrefix}/-/settings`,
       label: "Settings",
-      hasPermission: projectPermissions.manageProject && !isBranchView,
+      hasPermission: projectPermissions.manageProject,
     },
   ];
 
