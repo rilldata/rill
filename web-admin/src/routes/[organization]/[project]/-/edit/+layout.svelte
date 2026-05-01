@@ -215,12 +215,7 @@
     </CtaLayoutContainer>
   {:else if isReady && deployment?.id && instanceId && runtimeHost && jwt}
     {#key `${runtimeHost}::${instanceId}::${mockedUserId ?? ""}`}
-      <RuntimeProvider
-        host={runtimeHost}
-        {instanceId}
-        {jwt}
-        authContext={useImpersonatedRuntime ? "mock" : "user"}
-      >
+      <RuntimeProvider host={runtimeHost} {instanceId} {jwt}>
         {#if !inProjectWelcomePage}
           <ProjectHeader
             {organization}
