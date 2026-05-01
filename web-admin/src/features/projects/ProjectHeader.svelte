@@ -266,6 +266,12 @@
         href={editBackHref}
         onPreviewClick={resetOnPreviewSwap}
       />
+      <EditActions
+        {organization}
+        {project}
+        branch={activeBranch ?? ""}
+        {primaryBranch}
+      />
     {:else if editContext}
       {#if $developerChat}
         <ChatToggle />
