@@ -84,7 +84,6 @@
     searchDisabled={!$projectsQuery.data?.projects?.length}
     showSort
     bind:sortDirection
-    showViewToggle
     {filterGroups}
     onFilterChange={onFilterChange}
     onClearAllFilters={() => {
@@ -93,7 +92,7 @@
     }}
   >
     {#if showNewProject}
-      <Button type="secondary" href="/{organization}/-/create-project">
+      <Button type="secondary" large href="/{organization}/-/create-project">
         + New project
       </Button>
     {/if}
