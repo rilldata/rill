@@ -1,8 +1,8 @@
 export type SortDirection = "newest" | "oldest" | "a-z" | "z-a";
 
 export const SORT_OPTIONS: { value: SortDirection; label: string }[] = [
-  { value: "a-z", label: "A-Z" },
-  { value: "z-a", label: "Z-A" },
+  { value: "a-z", label: "A → Z" },
+  { value: "z-a", label: "Z → A" },
   { value: "newest", label: "Newest" },
   { value: "oldest", label: "Oldest" },
 ];
