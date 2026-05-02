@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { ArrowUpDown } from "lucide-svelte";
-  import type { SortDirection } from "./types";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import { ArrowDownAZ } from "lucide-svelte";
+  import { SORT_OPTIONS, type SortDirection } from "./types";
 
   let {
     sortDirection = $bindable("newest"),
@@ -8,19 +9,28 @@
     sortDirection: SortDirection;
   } = $props();
 
-  const sortLabel = $derived(sortDirection === "newest" ? "Newest" : "Oldest");
-
-  function toggleSortDirection() {
-    sortDirection = sortDirection === "newest" ? "oldest" : "newest";
-  }
+  const sortLabel = $derived(
+    SORT_OPTIONS.find((o) => o.value === sortDirection)?.label ?? "Newest",
+  );
 </script>
 
-<button
-  type="button"
-  class="flex flex-row items-center gap-x-1.5 h-9 px-2 text-sm font-medium text-fg-primary hover:text-fg-secondary cursor-pointer"
-  onclick={toggleSortDirection}
-  aria-label="Sort order: {sortLabel}"
->
-  <span>{sortLabel}</span>
-  <ArrowUpDown size={14} />
-</button>
+<DropdownMenu.Root>
+  <DropdownMenu.Trigger
+    class="flex flex-row items-center gap-x-1.5 h-9 px-4 border rounded-[2px] shadow-xs bg-white text-sm font-medium text-fg-primary hover:bg-surface-hover cursor-pointer"
+    aria-label="Sort order: {sortLabel}"
+  >
+    <ArrowDownAZ size={16} />
+    <span>Sort by {sortLabel}</span>
+  </DropdownMenu.Trigger>
+  <DropdownMenu.Content align="start">
+    {#each SORT_OPTIONS as option (option.value)}
+      <DropdownMenu.CheckboxItem
+        closeOnSelect
+        checked={sortDirection === option.value}
+        onclick={() => (sortDirection = option.value)}
+      >
+        {option.label}
+      </DropdownMenu.CheckboxItem>
+    {/each}
+  </DropdownMenu.Content>
+</DropdownMenu.Root>

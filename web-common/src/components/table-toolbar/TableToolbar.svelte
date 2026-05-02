@@ -10,6 +10,7 @@
   let {
     searchText = $bindable(""),
     searchDisabled = false,
+    searchPlaceholder = "Search",
     filterGroups = [],
     onFilterChange,
     onClearAllFilters,
@@ -21,6 +22,7 @@
   }: {
     searchText?: string;
     searchDisabled?: boolean;
+    searchPlaceholder?: string;
     filterGroups?: FilterGroup[];
     onFilterChange?: (key: string, selected: string | string[]) => void;
     onClearAllFilters?: () => void;
@@ -32,19 +34,23 @@
   } = $props();
 </script>
 
-<section class="flex flex-col w-full">
-  <div class="flex flex-row items-center justify-between h-9 gap-x-4">
-    <div class="flex flex-row items-center">
+<section class="flex flex-col w-full gap-y-2">
+  <div class="flex flex-row items-center gap-x-2.5">
+    <div class="flex flex-row items-center gap-x-2.5 shrink-0">
       <TableToolbarFilterDropdown {filterGroups} {onFilterChange} />
-    </div>
-
-    <div class="flex flex-row items-center gap-x-3">
-      <TableToolbarSearch bind:searchText disabled={searchDisabled} />
 
       {#if showSort}
         <TableToolbarSort bind:sortDirection />
       {/if}
+    </div>
 
+    <TableToolbarSearch
+      bind:searchText
+      disabled={searchDisabled}
+      placeholder={searchPlaceholder}
+    />
+
+    <div class="flex flex-row items-center gap-x-2.5 shrink-0">
       {#if showViewToggle}
         <TableToolbarViewToggle bind:viewMode />
       {/if}
