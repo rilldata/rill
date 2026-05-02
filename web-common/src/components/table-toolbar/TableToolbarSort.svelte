@@ -1,6 +1,6 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import { ArrowDownAZ } from "lucide-svelte";
+  import { ArrowUpDown } from "lucide-svelte";
   import { SORT_OPTIONS, type SortDirection } from "./types";
 
   let {
@@ -19,7 +19,7 @@
     class="flex flex-row items-center gap-x-1.5 h-9 px-4 border rounded-[2px] shadow-xs bg-white text-sm font-medium text-fg-primary hover:bg-surface-hover cursor-pointer"
     aria-label="Sort order: {sortLabel}"
   >
-    <ArrowDownAZ size={16} />
+    <ArrowUpDown size={16} />
     <span>Sort by {sortLabel}</span>
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="start">
