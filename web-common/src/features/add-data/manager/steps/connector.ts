@@ -5,6 +5,7 @@ import {
   getRuntimeServiceGetResourceQueryKey,
   runtimeServiceDeleteFile,
   runtimeServiceGetFile,
+  runtimeServicePushEnv,
   runtimeServicePutFile,
   runtimeServiceUnpackEmpty,
   type V1ConnectorDriver,
@@ -150,12 +151,15 @@ export async function createConnector({
       }),
     )?.resource?.meta?.stateVersion;
 
-    await runtimeServicePutFile(runtimeClient, {
-      path: ".env",
-      blob: newEnvBlob,
-      create: true,
-      createOnly: false,
-    });
+    if (existingEnvBlob !== newEnvBlob) {
+      await runtimeServicePutFile(runtimeClient, {
+        path: ".env",
+        blob: newEnvBlob,
+        create: true,
+        createOnly: false,
+      });
+      await runtimeServicePushEnv(runtimeClient, {});
+    }
 
     await runtimeServicePutFile(runtimeClient, {
       path: newConnectorFilePath,

@@ -12,6 +12,7 @@ import {
   runtimeServiceGenerateCanvasFile,
   runtimeServiceGenerateMetricsViewFile,
   runtimeServiceGetInstance,
+  runtimeServicePushEnv,
   runtimeServicePutFile,
 } from "@rilldata/web-common/runtime-client";
 import {
@@ -248,6 +249,7 @@ async function runCreateModelStep(
       create: true,
       createOnly: false,
     });
+    await runtimeServicePushEnv(runtimeClient, {});
   }
 
   let putFile = true;
