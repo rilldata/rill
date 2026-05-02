@@ -85,7 +85,7 @@
     showSort
     bind:sortDirection
     {filterGroups}
-    onFilterChange={onFilterChange}
+    {onFilterChange}
     onClearAllFilters={() => {
       statusFilter = [];
       searchText = "";

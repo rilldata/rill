@@ -22,7 +22,7 @@
     <ArrowUpDown size={16} />
     <span>Sort by {sortLabel}</span>
   </DropdownMenu.Trigger>
-  <DropdownMenu.Content align="start">
+  <DropdownMenu.Content align="start" sameWidth>
     {#each SORT_OPTIONS as option (option.value)}
       <DropdownMenu.CheckboxItem
         closeOnSelect
