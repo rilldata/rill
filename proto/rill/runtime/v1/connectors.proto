@@ -98,7 +98,7 @@ message OLAPListTablesResponse {
   string next_page_token = 2;
 }
 
-message OlapTableInfo { 
+message OlapTableInfo {
   string database = 1;
   string database_schema = 4;
   bool is_default_database = 5;

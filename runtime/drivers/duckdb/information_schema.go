@@ -45,6 +45,9 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	return res, "", nil
 }
 
+// ListTables implements drivers.InformationSchema.
+// DuckDB connections are bound to a single active database and schema, so the database and databaseSchema
+// parameters are intentionally ignored — the query always uses current_database() and current_schema().
 func (c *connection) ListTables(ctx context.Context, _, _, like string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
 	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 	var q string

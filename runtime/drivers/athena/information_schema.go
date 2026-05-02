@@ -107,20 +107,13 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema, l
 		if len(row.Data) < 4 || row.Data[0].VarCharValue == nil || row.Data[1].VarCharValue == nil {
 			continue
 		}
-		var isDefaultDatabase, isDefaultDatabaseSchema bool
-		if row.Data[2].VarCharValue != nil {
-			isDefaultDatabase = strings.EqualFold(*row.Data[2].VarCharValue, "true")
-		}
-		if row.Data[3].VarCharValue != nil {
-			isDefaultDatabaseSchema = strings.EqualFold(*row.Data[3].VarCharValue, "true")
-		}
 		res = append(res, &drivers.TableInfo{
 			Database:                database,
 			DatabaseSchema:          databaseSchema,
 			Name:                    *row.Data[0].VarCharValue,
 			View:                    strings.EqualFold(*row.Data[1].VarCharValue, "VIEW"),
-			IsDefaultDatabase:       isDefaultDatabase,
-			IsDefaultDatabaseSchema: isDefaultDatabaseSchema,
+			IsDefaultDatabase:       strings.EqualFold(*row.Data[2].VarCharValue, "true"),
+			IsDefaultDatabaseSchema: strings.EqualFold(*row.Data[3].VarCharValue, "true"),
 		})
 	}
 	next := ""
