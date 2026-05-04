@@ -340,7 +340,8 @@ func (s *Service) StopDeploymentInner(ctx context.Context, depl *database.Deploy
 		// The runtime does checkpoint on close but because DeleteInstance removes the storage directly, the checkpoint can fail.
 		if depl.Editable {
 			_, err = rt.GitPush(ctx, &runtimev1.GitPushRequest{
-				InstanceId: depl.RuntimeInstanceID,
+				InstanceId:    depl.RuntimeInstanceID,
+				CommitMessage: "Auto checkpoint",
 			})
 			if err != nil {
 				s.Logger.Error("failed to checkpoint repo changes", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
