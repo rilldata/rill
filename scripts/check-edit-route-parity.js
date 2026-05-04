@@ -50,6 +50,18 @@ const ADMIN_ONLY_ALLOWLIST = [
   "/welcome/+page.svelte",
   "/welcome/add-data/+page.svelte",
   "/welcome/add-data/+page.ts",
+
+  // Dev-preview routes inside the cloud editor. Locally these surfaces live
+  // at the top level (`/dashboards`, `/status*`, `/ai`) since the local app
+  // toggles into Preview mode via the navbar instead of nesting it under an
+  // editor URL. Each editor page thinly wraps the same shared
+  // `web-common/features/preview-mode/*` component the local routes use.
+  "/dashboards/+page.svelte",
+  "/status/+layout.svelte",
+  "/status/+page.svelte",
+  "/status/resources/+page.svelte",
+  "/status/tables/+page.svelte",
+  "/ai/+page.svelte",
 ];
 
 function walkRoutes(absRoot) {

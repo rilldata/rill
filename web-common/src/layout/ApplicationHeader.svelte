@@ -13,13 +13,28 @@
     useValidCanvases,
     useValidExplores,
   } from "@rilldata/web-common/features/dashboards/selectors.js";
+  import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
+  import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
+  import { updateDevJWT } from "@rilldata/web-common/features/dashboards/granular-access-policies/updateDevJWT";
+  import { useMockUsers } from "@rilldata/web-common/features/dashboards/granular-access-policies/useMockUsers";
+  import ViewAsButton from "@rilldata/web-common/features/dashboards/granular-access-policies/ViewAsButton.svelte";
+  import { skipNextPlatformReset } from "@rilldata/web-common/features/preview-mode/platform-reset";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import Add from "@rilldata/web-common/components/icons/Add.svelte";
+  import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
+  import { getFileHref } from "@rilldata/web-common/layout/navigation/editor-routing";
+  import { goto } from "$app/navigation";
   import DeployProjectCTA from "@rilldata/web-common/features/dashboards/workspace/DeployProjectCTA.svelte";
   import ExplorePreviewCTAs from "@rilldata/web-common/features/explores/ExplorePreviewCTAs.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
   import Header from "@rilldata/web-common/layout/header/Header.svelte";
   import HeaderLogo from "@rilldata/web-common/layout/header/HeaderLogo.svelte";
+  import PreviewModeToggleButton from "@rilldata/web-common/layout/header/PreviewModeToggleButton.svelte";
   import { isDeployPage } from "@rilldata/web-common/layout/navigation/route-utils";
+  import { previewModeLocked } from "@rilldata/web-common/layout/preview-mode-store";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { get } from "svelte/store";
   import { parseDocument } from "yaml";
@@ -32,6 +47,18 @@
 
   export let mode: string;
 
+  // Reset session state (chat panel, mock-user impersonation) when the
+  // user explicitly clicks the Preview/Edit toggle. This is wired to the
+  // button click, not to mode changes in general — picking a user from
+  // the View-as dropdown also flips the mode, but should preserve the
+  // impersonation it just set.
+  function resetOnModeToggle() {
+    sidebarActions.closeChat();
+    if (get(selectedMockUserStore) !== null) {
+      updateDevJWT(queryClient, runtimeClient, null).catch(console.error);
+    }
+  }
+
   $: ({
     params: { name: dashboardName },
     route,
@@ -43,7 +70,17 @@
   $: ({ size: unsavedFileCount } = $unsavedFiles);
   $: onDeployPage = isDeployPage($page);
   $: showDeployCTA = $deploy && !onDeployPage;
-  $: showDeveloperChat = $developerChat && !onDeployPage;
+  // Hide the chat toggle on the preview-only project pages (/dashboards,
+  // /ai, /status). Viz routes have their own chat affordance via
+  // Explore/CanvasPreviewCTAs.
+  $: showDeveloperChat = $developerChat && !onDeployPage && mode !== "Preview";
+  $: showPreviewToggle = !onDeployPage && !$previewModeLocked && !onVizRoute;
+  // View as is independent of the toggle: it should still be available on
+  // non-viz routes even when `--preview` locks the mode.
+  $: showStandaloneViewAs = !onDeployPage && !onVizRoute;
+
+  $: mockUsers = useMockUsers(runtimeClient);
+  let localViewAsOpen = false;
 
   $: exploresQuery = useValidExplores(runtimeClient);
   $: canvasQuery = useValidCanvases(runtimeClient);
@@ -53,6 +90,43 @@
 
   $: explores = $exploresQuery?.data ?? [];
   $: canvases = $canvasQuery?.data ?? [];
+
+  // Resolve the dashboard the user is currently editing (if any) so the
+  // Preview toggle can navigate directly to that dashboard's preview route
+  // (and back to its file in Edit mode), instead of bouncing through the
+  // /dashboards listing.
+  $: editedFilePath = $page.url.pathname.startsWith("/files")
+    ? $page.url.pathname.slice("/files".length)
+    : null;
+
+  $: editedExplore = editedFilePath
+    ? explores.find((e) => e?.meta?.filePaths?.includes(editedFilePath))
+    : null;
+  $: editedCanvas =
+    !editedExplore && editedFilePath
+      ? canvases.find((c) => c?.meta?.filePaths?.includes(editedFilePath))
+      : null;
+
+  $: viewedExplore =
+    mode === "Preview" && route.id?.includes("explore") && dashboardName
+      ? explores.find((e) => e?.meta?.name?.name === dashboardName)
+      : null;
+  $: viewedCanvas =
+    mode === "Preview" && route.id?.includes("canvas") && dashboardName
+      ? canvases.find((c) => c?.meta?.name?.name === dashboardName)
+      : null;
+
+  $: previewToggleHref = (() => {
+    if (mode === "Preview") {
+      const filePath =
+        viewedExplore?.meta?.filePaths?.[0] ??
+        viewedCanvas?.meta?.filePaths?.[0];
+      return filePath ? `/files${filePath}` : "/";
+    }
+    if (editedExplore) return `/explore/${editedExplore.meta?.name?.name}`;
+    if (editedCanvas) return `/canvas/${editedCanvas.meta?.name?.name}`;
+    return "/dashboards";
+  })();
 
   $: defaultDashboard = explores[0] ?? canvases[0] ?? null;
 
@@ -67,7 +141,7 @@
     label: projectTitle,
     section: "project",
     depth: -1,
-    href: mode === "Preview" ? "/dashboards" : "/",
+    href: mode === "Preview" || onVizRoute ? "/dashboards" : "/",
   };
 
   $: pathParts = [
@@ -100,7 +174,7 @@
 
 <Header borderBottom={!onDeployPage && mode !== "Preview"}>
   {#if !onDeployPage}
-    <HeaderLogo href={mode === "Preview" ? "/dashboards" : "/"} />
+    <HeaderLogo href={mode === "Preview" || onVizRoute ? "/dashboards" : "/"} />
 
     <Tag text={mode} color="gray"></Tag>
 
@@ -128,6 +202,63 @@
       <CanvasPreviewCTAs canvasName={dashboardName} />
     {:else if showDeveloperChat}
       <ChatToggle />
+    {/if}
+    {#if showPreviewToggle && mode === "Developer"}
+      <PreviewModeToggleButton
+        mode="Preview"
+        href={previewToggleHref}
+        showViewAs={true}
+        bind:dropdownOpen={localViewAsOpen}
+        onPreviewClick={resetOnModeToggle}
+      >
+        <svelte:fragment slot="dropdown">
+          {#if !$mockUsers.data || $mockUsers.data?.length === 0}
+            <DropdownMenu.Item disabled>No mock users</DropdownMenu.Item>
+          {:else}
+            {#each $mockUsers.data as user (user?.email)}
+              <DropdownMenu.Item
+                onclick={() => {
+                  updateDevJWT(queryClient, runtimeClient, user).catch(
+                    console.error,
+                  );
+                  localViewAsOpen = false;
+                  // Preserve the impersonation across the Developer →
+                  // Preview transition this navigation triggers.
+                  skipNextPlatformReset();
+                  void goto(previewToggleHref);
+                }}
+                class="flex gap-x-2 items-center"
+              >
+                {#if $selectedMockUserStore?.email === user?.email}
+                  <Check size="16px" />
+                {:else}
+                  <Spacer size="16px" />
+                {/if}
+                {user.email}
+              </DropdownMenu.Item>
+            {/each}
+          {/if}
+          <DropdownMenu.Separator />
+          <DropdownMenu.Item
+            href={`${getFileHref("/rill.yaml")}?addMockUser=true`}
+            class="flex gap-x-2 items-center font-normal"
+          >
+            <Add size="16px" />
+            Add mock user
+          </DropdownMenu.Item>
+        </svelte:fragment>
+      </PreviewModeToggleButton>
+    {:else if mode === "Preview"}
+      {#if showStandaloneViewAs}
+        <ViewAsButton />
+      {/if}
+      {#if showPreviewToggle}
+        <PreviewModeToggleButton
+          mode="Edit"
+          href={previewToggleHref}
+          onPreviewClick={resetOnModeToggle}
+        />
+      {/if}
     {/if}
     {#if showDeployCTA}
       <DeployProjectCTA {hasValidDashboard} />

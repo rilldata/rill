@@ -26,7 +26,6 @@
     createAdminServiceGetCurrentUser,
     type V1ProjectPermissions,
   } from "../../client";
-  import ViewAsUserPopover from "../view-as-user/ViewAsUserPopover.svelte";
   import ThemeToggle from "@rilldata/web-common/features/themes/ThemeToggle.svelte";
 
   export let projectPermissions: V1ProjectPermissions | undefined = undefined;
@@ -35,7 +34,6 @@
 
   let imgContainer: HTMLElement;
   let primaryMenuOpen = false;
-  let subMenuOpen = false;
 
   onMount(() => {
     const photoUrl = $user.data?.user?.photoUrl;
@@ -90,29 +88,6 @@
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="end">
     {#if params.organization && params.project && projectPermissions}
-      {#if projectPermissions.manageProject}
-        <DropdownMenu.Sub bind:open={subMenuOpen}>
-          <DropdownMenu.SubTrigger
-            onclick={() => {
-              subMenuOpen = !subMenuOpen;
-            }}
-          >
-            View as
-          </DropdownMenu.SubTrigger>
-          <DropdownMenu.SubContent
-            class="flex flex-col min-w-[150px] max-w-[300px]"
-          >
-            <ViewAsUserPopover
-              organization={params.organization}
-              project={params.project}
-              onSelectUser={() => {
-                subMenuOpen = false;
-                primaryMenuOpen = false;
-              }}
-            />
-          </DropdownMenu.SubContent>
-        </DropdownMenu.Sub>
-      {/if}
       {#if params.dashboard}
         <DropdownMenu.Item
           href={`/${params.organization}/${params.project}/-/alerts`}

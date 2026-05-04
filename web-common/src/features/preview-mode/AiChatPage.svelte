@@ -1,10 +1,8 @@
 <script lang="ts">
   import { beforeNavigate } from "$app/navigation";
-  import { onMount, tick } from "svelte";
-  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
-    getConversationManager,
     cleanupConversationManager,
+    getConversationManager,
   } from "@rilldata/web-common/features/chat/core/conversation-manager";
   import ChatInput from "@rilldata/web-common/features/chat/core/input/ChatInput.svelte";
   import Messages from "@rilldata/web-common/features/chat/core/messages/Messages.svelte";
@@ -14,12 +12,17 @@
     toggleConversationSidebar,
   } from "@rilldata/web-common/features/chat/layouts/fullpage/fullpage-store";
   import { projectChat } from "@rilldata/web-common/features/project/chat-context";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { onMount, tick } from "svelte";
+
+  /** Base URL for the chat (e.g., `/ai` locally, `/{org}/{project}/@{branch}/-/edit/ai` in cloud editor). */
+  export let basePath: string = "/ai";
 
   const runtimeClient = useRuntimeClient();
 
   $: conversationManager = getConversationManager(runtimeClient, {
     conversationState: "url",
-    basePath: () => "/ai",
+    basePath: () => basePath,
   });
 
   let chatInputComponent: ChatInput;
@@ -28,37 +31,29 @@
     chatInputComponent?.focusInput();
   }
 
-  // Focus on mount after the component tree settles
   onMount(async () => {
     await tick();
     chatInputComponent?.focusInput();
   });
 
-  // Clean up conversation manager resources when leaving the chat context entirely
+  // Tear down chat resources only when leaving the chat surface entirely.
   beforeNavigate(({ to }) => {
-    const isChatRoute = to?.route?.id?.startsWith("/ai");
-    if (!isChatRoute) {
+    if (!to?.url.pathname.startsWith(basePath)) {
       cleanupConversationManager(runtimeClient.instanceId);
     }
   });
 </script>
 
 <div class="chat-fullpage">
-  <!-- Conversation List Sidebar -->
   <ConversationSidebar
     {conversationManager}
-    basePath="/ai"
+    {basePath}
     collapsed={$conversationSidebarCollapsed}
     onToggle={toggleConversationSidebar}
-    onConversationClick={() => {
-      chatInputComponent?.focusInput();
-    }}
-    onNewConversationClick={() => {
-      chatInputComponent?.focusInput();
-    }}
+    onConversationClick={() => chatInputComponent?.focusInput()}
+    onNewConversationClick={() => chatInputComponent?.focusInput()}
   />
 
-  <!-- Main Chat Area -->
   <div class="chat-main">
     <div class="chat-content">
       <div class="chat-messages-wrapper">
@@ -90,7 +85,6 @@
     width: 100%;
     background: var(--surface);
   }
-
   .chat-main {
     flex: 1;
     display: flex;
@@ -98,7 +92,6 @@
     overflow: hidden;
     background: var(--surface);
   }
-
   .chat-content {
     flex: 1;
     overflow: hidden;
@@ -106,7 +99,6 @@
     display: flex;
     flex-direction: column;
   }
-
   .chat-messages-wrapper {
     flex: 1;
     overflow-y: auto;
@@ -114,7 +106,6 @@
     display: flex;
     flex-direction: column;
   }
-
   .chat-input-section {
     flex-shrink: 0;
     background: var(--surface);
@@ -122,7 +113,6 @@
     display: flex;
     justify-content: center;
   }
-
   .chat-input-wrapper {
     width: 100%;
     max-width: 48rem;
@@ -137,7 +127,6 @@
       max-width: none;
       padding: 0 1rem;
     }
-
     .chat-input-section {
       padding: 1rem;
     }

@@ -1,9 +1,9 @@
 <script lang="ts">
-  import LocalFullPageChat from "../../features/chat/LocalFullPageChat.svelte";
+  import AiChatPage from "@rilldata/web-common/features/preview-mode/AiChatPage.svelte";
 </script>
 
 <div class="chat-page-wrapper">
-  <LocalFullPageChat />
+  <AiChatPage basePath="/ai" />
   <!-- This slot isn't used, but its presence avoids a SvelteKit browser console warning. -->
   <slot />
 </div>

@@ -1,15 +1,11 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import CanvasEditor from "@rilldata/web-common/features/canvas/CanvasEditor.svelte";
-  import { withEditorPrefix } from "@rilldata/web-common/layout/navigation/editor-routing";
   import VisualCanvasEditing from "@rilldata/web-common/features/canvas/inspector/VisualCanvasEditing.svelte";
   import { createRootCauseErrorQuery } from "@rilldata/web-common/features/entity-management/error-utils";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-  import {
-    resourceIsLoading,
-    ResourceKind,
-  } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import {
     WorkspaceContainer,
@@ -20,7 +16,6 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import ReconcileWarningPanel from "../entity-management/ReconcileWarningPanel.svelte";
-  import PreviewButton from "../explores/PreviewButton.svelte";
   import CanvasBuilder from "../canvas/CanvasBuilder.svelte";
   import SaveDefaultsButton from "../canvas/components/SaveDefaultsButton.svelte";
   import CanvasLoadingState from "../canvas/CanvasLoadingState.svelte";
@@ -46,8 +41,6 @@
   $: resourceQuery = getResource(queryClient);
 
   $: ({ data } = $resourceQuery);
-
-  $: resourceIsReconciling = resourceIsLoading(data);
 
   $: workspace = workspaces.get(filePath);
   $: selectedViewStore = workspace.view;
@@ -108,12 +101,6 @@
               saving={$saving}
             />
           {/if}
-
-          <PreviewButton
-            href={withEditorPrefix(`/canvas/${canvasName}`)}
-            disabled={!!parseError || !!reconcileError || resourceIsReconciling}
-            reconciling={resourceIsReconciling}
-          />
         </div>
       </WorkspaceHeader>
 
