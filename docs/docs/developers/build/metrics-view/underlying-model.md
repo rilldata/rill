@@ -75,7 +75,7 @@ cache:
   key_ttl: 5m
 ```
 
-Rill runs `key_sql` against the metrics view's connector (re-evaluated at most once per `key_ttl`) and uses the returned scalar value as the cache key. When the value changes — for example because a new row landed — the cache is invalidated and the next query repopulates it.
+Rill runs `key_sql` against the metrics view's connector (re-evaluated at most once per `key_ttl`) and uses the returned scalar value as the cache key (together with a hash of the incoming metrics query). When the value changes — for example because a new row landed — the cache is invalidated and the next query repopulates it.
 
 **Pros**
 
