@@ -1,8 +1,9 @@
 <script lang="ts">
-  import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
-  import DashboardList from "../../features/dashboards/DashboardList.svelte";
+  import DashboardsPage from "@rilldata/web-common/features/preview-mode/DashboardsPage.svelte";
 </script>
 
-<ContentContainer title="Dashboards" maxWidth={1100}>
-  <DashboardList showSearch />
-</ContentContainer>
+<DashboardsPage>
+  <span slot="empty-action">
+    Create dashboards using your code editor, then return here to preview them.
+  </span>
+</DashboardsPage>

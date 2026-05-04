@@ -8,7 +8,8 @@
     | "orange"
     | "amber"
     | "blue"
-    | "purple";
+    | "purple"
+    | "theme";
 </script>
 
 <script lang="ts">
@@ -40,6 +41,8 @@
         return "bg-primary-50 border-primary-300 text-primary-600";
       case "purple":
         return "bg-purple-50 border-purple-300 text-purple-600";
+      case "theme":
+        return "bg-surface-base border-border text-fg-secondary";
       default:
         return "bg-gray-100 border-gray-300 text-fg-secondary";
     }
