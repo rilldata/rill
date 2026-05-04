@@ -124,3 +124,9 @@ export function calculateRowDimensionWidth(
     COLUMN_WIDTH_CONSTANTS.MAX_INIT_COL_WIDTH,
   );
 }
+
+export function getNestedRowDimensionWidthKey(
+  rowDimensions: Array<{ name: string }>,
+) {
+  return rowDimensions[0]?.name;
+}
