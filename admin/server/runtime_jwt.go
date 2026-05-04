@@ -173,14 +173,16 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 		}
 	}
 
-	// Check if allowed to manage the deployment's environment.
+	// Check if has elevated permissions for the deployment's environment.
 	// NOTE: Only applicable for tokens issued for the claims owner (not possible to delegate to other end users).
-	var manageDepl bool
+	var canReadStatus, canManage bool
 	if opts.forOwner {
-		if opts.deployment.Environment == "prod" {
-			manageDepl = opts.projectPermissions.ManageProd
+		if opts.deployment.Environment == "dev" {
+			canReadStatus = opts.projectPermissions.ReadDevStatus
+			canManage = opts.projectPermissions.ManageDev
 		} else {
-			manageDepl = opts.projectPermissions.ManageDev
+			canReadStatus = opts.projectPermissions.ReadProdStatus
+			canManage = opts.projectPermissions.ManageProd
 		}
 	}
 
@@ -191,22 +193,28 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 		runtime.ReadObjects,
 		runtime.UseAI,
 	}
-	if manageDepl {
+	if canReadStatus || canManage {
 		instancePermissions = append(
 			instancePermissions,
 			runtime.ReadInstance,
 			runtime.ReadResolvers,
-			runtime.EditTrigger,
 		)
 		if opts.deployment.Editable {
-			instancePermissions = append(
-				instancePermissions,
-				runtime.ManageInstance,
+			instancePermissions = append(instancePermissions,
 				runtime.ReadOLAP,
 				runtime.ReadProfiling,
 				runtime.ReadRepo,
-				runtime.EditRepo,
 			)
+		}
+		if canManage {
+			instancePermissions = append(instancePermissions, runtime.EditTrigger)
+			if opts.deployment.Editable {
+				instancePermissions = append(
+					instancePermissions,
+					runtime.EditRepo,
+					runtime.ManageInstance,
+				)
+			}
 		}
 	}
 
