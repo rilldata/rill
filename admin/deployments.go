@@ -335,6 +335,18 @@ func (s *Service) StopDeploymentInner(ctx context.Context, depl *database.Deploy
 		s.Logger.Error("failed to open runtime client", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
 	} else {
 		defer rt.Close()
+
+		// Checkpoint repo changes if this is an editable deployment.
+		// The runtime does checkpoint on close but because DeleteInstance removes the directly the checkpoint can fail.
+		if depl.Editable {
+			_, err = rt.GitPush(ctx, &runtimev1.GitPushRequest{
+				InstanceId: depl.RuntimeInstanceID,
+			})
+			if err != nil {
+				s.Logger.Error("failed to checkpoint repo changes", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
+			}
+		}
+
 		_, err = rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
 			InstanceId: depl.RuntimeInstanceID,
 		})
