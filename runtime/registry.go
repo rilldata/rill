@@ -180,7 +180,7 @@ type instanceWithController struct {
 	readyCh   chan struct{}
 	reopen    bool
 
-	// Timestamp of the previous heartbeat emission for counter-style metrics on this instance (e.g. slot_spend). Initialized at instance registration so the first tick produces a sensible elapsed duration. Not reset across controller restarts.
+	// Timestamp of the previous heartbeat emission for counter-style metrics on this instance. Initialized at instance registration so the first tick produces a sensible elapsed duration. Not reset across controller restarts.
 	counterMetricsLastEmit time.Time
 }
 
@@ -608,7 +608,6 @@ func (r *registryCache) emitHeartbeatForInstance(inst *drivers.Instance) {
 	elapsed := now.Sub(iwc.counterMetricsLastEmit)
 	value := float64(slots) * elapsed.Seconds()
 	r.activity.RecordMetric(context.Background(), "slot_spend", value, append(attrs,
-		attribute.String("deployment_id", deploymentID),
 		attribute.Int("deployment_slots", slots),
 		attribute.Float64("deployment_duration", elapsed.Seconds()),
 	)...)
