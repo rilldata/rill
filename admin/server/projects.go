@@ -865,9 +865,18 @@ func (s *Server) GetProjectVariables(ctx context.Context, req *adminv1.GetProjec
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project variables")
+	perms := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	excludeProd := false
+	if !perms.ReadDevStatus && !perms.ReadProdStatus {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read variables")
 	}
+	if !perms.ReadProdStatus {
+		if req.Environment == "prod" {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to read variables for the prod environment")
+		}
+		excludeProd = true
+	}
+	// NOTE: Not explicitly checking ReadDevStatus for non-prod environments for simplicity; if you have ReadProdStatus, you're good to read variables for non-prod envs as well.
 
 	var vars []*database.ProjectVariable
 	if req.ForAllEnvironments {
@@ -884,6 +893,9 @@ func (s *Server) GetProjectVariables(ctx context.Context, req *adminv1.GetProjec
 		VariablesMap: make(map[string]string, len(vars)),
 	}
 	for _, v := range vars {
+		if excludeProd && v.Environment == "prod" {
+			continue
+		}
 		resp.Variables = append(resp.Variables, projectVariableToDTO(v))
 		// nolint:staticcheck // We still need to set it
 		resp.VariablesMap[v.Name] = v.Value
@@ -905,12 +917,14 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 	}
 
 	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.PermissionDenied, "only users can update project variables")
+	perms := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if !perms.ManageDev && !perms.ManageProd {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to update variables")
 	}
-	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to update project variables")
+	if req.Environment == "prod" && !perms.ManageProd {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to update variables for the prod environment")
 	}
+	// NOTE: Not explicitly checking ManageDev for non-prod environments for simplicity; if you have ManageProd, you're good to manage variables for non-prod envs as well.
 
 	var validationErr error
 	for k := range req.Variables {
