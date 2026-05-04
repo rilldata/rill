@@ -23,18 +23,16 @@
     query: { enabled: !!$org.data?.organization },
   });
   $: allProjectsHibernating = areAllProjectsHibernating(orgName);
-
-  $: title = $org.data?.organization?.displayName || orgName;
 </script>
 
 <svelte:head>
-  <title>{title} overview - Rill</title>
+  <title>Projects - Rill</title>
 </svelte:head>
 
 <ContentContainer showTitle={false} maxWidth={1300}>
   {#if $org.data && $org.data.organization && $projs.data}
     {#if $projs.data.projects?.length === 0}
-      <OrganizationHero {title} />
+      <OrganizationHero title="Projects" />
       <span>
         This organization has no projects yet. <a
           href="https://docs.rilldata.com/"
@@ -56,7 +54,7 @@
       />
     {:else}
       <div class="flex flex-col gap-y-8">
-        <OrganizationHero {title} />
+        <OrganizationHero title="Projects" />
         <ProjectCards organization={orgName} />
       </div>
     {/if}
