@@ -234,6 +234,7 @@ describe("nestedCellState", () => {
     hasClickedCell: false,
     inHoveredCol: false,
     inSelectedCol: false,
+    inCellSelectedColDimGroup: false,
     isRowHeaderSelected: false,
     hasCrossSelection: false,
     isAncestorOfSelectedHeader: false,
@@ -332,6 +333,63 @@ describe("nestedCellState", () => {
     ).toBe(true);
   });
 
+  it("returns cellSelectedColDimGroupBody for sibling measures in clicked row's col-dim group", () => {
+    const result = nestedCellState({
+      ...base,
+      hasClickedCell: true,
+      inCellSelectedColDimGroup: true,
+    });
+    expect(result.cellSelectedColDimGroupBody).toBe(true);
+  });
+
+  it("does not return cellSelectedColDimGroupBody for cells in unclicked rows", () => {
+    const result = nestedCellState({
+      ...base,
+      hasClickedCell: false,
+      inCellSelectedColDimGroup: true,
+    });
+    expect(result.cellSelectedColDimGroupBody).toBe(false);
+  });
+
+  it("does not return cellSelectedColDimGroupBody for the clicked cell itself", () => {
+    const result = nestedCellState({
+      ...base,
+      hasClickedCell: true,
+      isClicked: true,
+      inCellSelectedColDimGroup: true,
+    });
+    expect(result.cellSelectedColDimGroupBody).toBe(false);
+    expect(result.selectedCell).toBe(true);
+  });
+
+  it("returns outOfGroupRowCell for clicked-row measures outside the clicked col-dim group", () => {
+    const result = nestedCellState({
+      ...base,
+      hasClickedCell: true,
+      inCellSelectedColDimGroup: false,
+    });
+    expect(result.outOfGroupRowCell).toBe(true);
+  });
+
+  it("does not return outOfGroupRowCell for cells outside the clicked row", () => {
+    const result = nestedCellState({
+      ...base,
+      hasClickedCell: false,
+      inCellSelectedColDimGroup: false,
+    });
+    expect(result.outOfGroupRowCell).toBe(false);
+  });
+
+  it("does not return outOfGroupRowCell for the row header column", () => {
+    const result = nestedCellState({
+      ...base,
+      cellIndex: 0,
+      hasClickedCell: true,
+      inCellSelectedColDimGroup: false,
+    });
+    expect(result.outOfGroupRowCell).toBe(false);
+  });
+
   it("returns all false for a plain cell", () => {
     const result = nestedCellState(base);
     expect(result.activeCell).toBe(false);
@@ -339,6 +397,8 @@ describe("nestedCellState", () => {
     expect(result.crossIntersection).toBe(false);
     expect(result.crossRowArm).toBe(false);
     expect(result.crossColArm).toBe(false);
+    expect(result.cellSelectedColDimGroupBody).toBe(false);
+    expect(result.outOfGroupRowCell).toBe(false);
     expect(result.interactiveCell).toBe(false);
   });
 });
@@ -471,6 +531,7 @@ describe("3-dimension nested table: row header click styling by depth", () => {
       hasClickedCell: false,
       inHoveredCol: false,
       inSelectedCol: false,
+      inCellSelectedColDimGroup: false,
       isRowHeaderSelected: false,
       hasCrossSelection,
       isAncestorOfSelectedHeader,

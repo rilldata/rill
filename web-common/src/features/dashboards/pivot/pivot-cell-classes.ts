@@ -120,6 +120,8 @@ export interface NestedCellContext {
   hasClickedCell: boolean;
   inHoveredCol: boolean;
   inSelectedCol: boolean;
+  /** True when this cell shares its column-dimension group with a clicked cell */
+  inCellSelectedColDimGroup: boolean;
   isRowHeaderSelected: boolean;
   hasCrossSelection: boolean;
   isAncestorOfSelectedHeader: boolean;
@@ -136,6 +138,10 @@ export interface NestedCellState {
   cellSelectedRowHeader: boolean;
   /** Grey background for data cells on parent rows that partially contain filtered data */
   partialAggregateCell: boolean;
+  /** Blue background for sibling measure cells in the same col-dim group as a clicked cell */
+  cellSelectedColDimGroupBody: boolean;
+  /** Grey background for cells in the clicked row that fall outside the clicked cell's col-dim group */
+  outOfGroupRowCell: boolean;
   crossIntersection: boolean;
   crossRowArm: boolean;
   crossColArm: boolean;
@@ -186,6 +192,17 @@ export function nestedCellState(ctx: NestedCellContext): NestedCellState {
     cellSelectedRowHeader: ctx.cellIndex === 0 && ctx.hasClickedCell,
     partialAggregateCell:
       ctx.isAncestorOfSelectedHeader &&
+      ctx.cellIndex > 0 &&
+      !ctx.hasCrossSelection,
+    cellSelectedColDimGroupBody:
+      ctx.inCellSelectedColDimGroup &&
+      ctx.hasClickedCell &&
+      !ctx.isClicked &&
+      ctx.cellIndex > 0 &&
+      !ctx.hasCrossSelection,
+    outOfGroupRowCell:
+      ctx.hasClickedCell &&
+      !ctx.inCellSelectedColDimGroup &&
       ctx.cellIndex > 0 &&
       !ctx.hasCrossSelection,
     crossIntersection:

@@ -33,6 +33,7 @@
   import type { PivotRowSelectionState } from "./pivot-row-selection";
   import {
     computeAncestorRowIds,
+    computeCellSelectedColDimGroupIndices,
     computeCellSelectedColIndices,
     computeSelectedColIndices,
     type HoveredColRange,
@@ -88,6 +89,11 @@
   $: cellSelectedColIndices = computeCellSelectedColIndices(
     clickSelection,
     headerGroups,
+  );
+  $: cellSelectedColDimGroupIndices = computeCellSelectedColDimGroupIndices(
+    clickSelection,
+    headerGroups,
+    rowDimensionNames,
   );
   $: ancestorRowIdsOfSelectedHeaders = computeAncestorRowIds(
     clickSelection,
@@ -494,6 +500,7 @@
             hasClickedCell,
             inHoveredCol: isHeaderInHoveredRange(i, 1, hoveredColRange),
             inSelectedCol: selectedColIndices.has(i),
+            inCellSelectedColDimGroup: cellSelectedColDimGroupIndices.has(i),
             isRowHeaderSelected,
             hasCrossSelection,
             isAncestorOfSelectedHeader,
@@ -510,6 +517,8 @@
             class:selected-cell={cs.selectedCell}
             class:col-dim-hover-body={cs.colDimHoverBody}
             class:selected-col-body={cs.selectedColBody}
+            class:cell-selected-col-dim-group-body={cs.cellSelectedColDimGroupBody}
+            class:out-of-group-row-cell={cs.outOfGroupRowCell}
             class:cell-selected-row-header={cs.cellSelectedRowHeader}
             class:cross-intersection={cs.crossIntersection}
             class:cross-row-arm={cs.crossRowArm}
@@ -796,8 +805,18 @@
   }
 
   .in-selected-col-range .header-cell,
-  .selected-col-body.cell {
+  .selected-col-body.cell,
+  .cell-selected-col-dim-group-body.cell {
     @apply bg-primary-50;
+  }
+
+  /* Cells in the clicked row that fall outside the clicked cell's
+     col-dim group (e.g. other measure groups in the same row) */
+  .out-of-group-row-cell.cell {
+    @apply bg-surface-muted;
+  }
+  tbody tr:hover .out-of-group-row-cell.cell {
+    @apply bg-surface-muted;
   }
 
   /* Cross-highlights for cell click-to-filter selections */
