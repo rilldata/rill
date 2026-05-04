@@ -1,4 +1,3 @@
-<!-- Used by dashboard list/grid view toggle -->
 <script lang="ts">
   import List from "@rilldata/web-common/components/icons/List.svelte";
   import { LayoutGrid } from "lucide-svelte";
@@ -11,12 +10,13 @@
   } = $props();
 </script>
 
-<div class="flex flex-row border rounded-sm overflow-hidden">
+<div class="flex flex-row border overflow-hidden">
   <button
     type="button"
-    class="flex items-center justify-center w-8 h-8 {viewMode === 'grid'
+    class="flex items-center justify-center w-9 h-9 border-r {viewMode ===
+    'grid'
       ? 'bg-surface-hover'
-      : 'bg-input hover:bg-surface-hover'}"
+      : 'bg-white hover:bg-surface-hover'} rounded-l-[2px]"
     onclick={() => (viewMode = "grid")}
     aria-label="Grid view"
     aria-pressed={viewMode === "grid"}
@@ -25,10 +25,9 @@
   </button>
   <button
     type="button"
-    class="flex items-center justify-center w-8 h-8 border-l {viewMode ===
-    'list'
+    class="flex items-center justify-center w-9 h-9 {viewMode === 'list'
       ? 'bg-surface-hover'
-      : 'bg-input hover:bg-surface-hover'}"
+      : 'bg-white hover:bg-surface-hover'} rounded-r-[2px]"
     onclick={() => (viewMode = "list")}
     aria-label="List view"
     aria-pressed={viewMode === "list"}

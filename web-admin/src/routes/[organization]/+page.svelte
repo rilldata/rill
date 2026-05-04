@@ -57,7 +57,10 @@
     {:else}
       <div class="flex flex-col gap-y-8">
         <OrganizationHero {title} />
-        <ProjectCards organization={orgName} />
+        <ProjectCards
+          organization={orgName}
+          createProjectsPermission={organizationPermissions.createProjects}
+        />
       </div>
     {/if}
   {/if}

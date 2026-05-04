@@ -11,6 +11,19 @@
     onFilterChange?: (key: string, selected: string | string[]) => void;
   } = $props();
 
+  let hasActiveFilters = $derived(
+    filterGroups.some((g) => {
+      if (g.multiSelect && Array.isArray(g.selected)) {
+        return g.selected.length > 0;
+      }
+      return (
+        typeof g.selected === "string" &&
+        g.selected !== "" &&
+        g.selected !== g.defaultValue
+      );
+    }),
+  );
+
   function handleClick(group: FilterGroup, value: string) {
     if (group.multiSelect) {
       const current = Array.isArray(group.selected) ? group.selected : [];
@@ -27,10 +40,12 @@
 {#if filterGroups.length > 0}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger
-      class="flex flex-row items-center gap-x-1.5 h-9 px-2 text-sm font-medium text-fg-primary cursor-pointer"
+      class="flex flex-row items-center gap-x-2 h-9 px-4 border rounded-[2px] shadow-xs text-sm font-medium cursor-pointer {hasActiveFilters
+        ? 'bg-surface-hover border-border text-fg-accent'
+        : 'bg-white border-border text-fg-primary hover:bg-surface-hover'}"
       aria-label="Filter options"
     >
-      <FilterOutlined size="14" />
+      <FilterOutlined size="16" />
       <span>Filter</span>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start">

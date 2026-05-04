@@ -5,3 +5,4 @@ export type {
   SortDirection,
   ViewMode,
 } from "./types";
+export { SORT_OPTIONS } from "./types";
