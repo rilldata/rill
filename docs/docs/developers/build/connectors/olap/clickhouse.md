@@ -164,7 +164,7 @@ Rill supports reading from multiple schemas in ClickHouse from within the same p
 
 ## Caching Query Results
 
-To reduce broker load on dashboards with repeat traffic, see [Caching query results](/developers/build/metrics-view/underlying-model#caching-query-results) on live connectors.
+To reduce load on dashboards with repeat traffic, see [Caching query results](/developers/build/metrics-view/underlying-model#caching-query-results).
 
 ## Additional Notes
 
