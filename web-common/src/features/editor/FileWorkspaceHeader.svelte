@@ -7,12 +7,12 @@
   import type { ResourceKind } from "../entity-management/resource-selectors";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import {
-    getReadonlyExtras,
+    getAdditionalReadonlyFiles,
     matchReadonlyFile,
   } from "@rilldata/web-common/features/entity-management/actions/readonly-files.ts";
 
   const runtimeClient = useRuntimeClient();
-  const readonlyExtras = getReadonlyExtras();
+  const additionalReadonlyFiles = getAdditionalReadonlyFiles();
 
   let {
     filePath,
@@ -27,7 +27,9 @@
   } = $props();
 
   let [, fileName] = $derived(splitFolderAndFileName(filePath));
-  let readonlyMatch = $derived(matchReadonlyFile(filePath, readonlyExtras));
+  let readonlyMatch = $derived(
+    matchReadonlyFile(filePath, additionalReadonlyFiles),
+  );
   let isReadonly = $derived(!!readonlyMatch);
 
   const onChangeCallback = async (newTitle: string) => {
@@ -36,7 +38,7 @@
       newTitle,
       filePath,
       fileName,
-      readonlyExtras,
+      additionalReadonlyFiles,
     );
     if (route) await goto(route);
   };

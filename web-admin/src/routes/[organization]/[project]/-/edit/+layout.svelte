@@ -30,7 +30,10 @@
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { onDestroy } from "svelte";
-  import { setReadonlyExtras } from "@rilldata/web-common/features/entity-management/actions/readonly-files.ts";
+  import {
+    setAdditionalReadonlyFiles,
+    ReadonlyEnvFilesRegex,
+  } from "@rilldata/web-common/features/entity-management/actions/readonly-files.ts";
   import { isProjectWelcomePage } from "@rilldata/web-admin/features/navigation/nav-utils.ts";
   import WelcomeRedirector from "@rilldata/web-admin/features/welcome/project/WelcomeRedirector.svelte";
   import { InfoIcon } from "lucide-svelte";
@@ -143,8 +146,8 @@
     });
   };
 
-  setReadonlyExtras([
-    { matcher: /^\/\.env$/, messageSnippet: envEditDisabled },
+  setAdditionalReadonlyFiles([
+    { matcher: ReadonlyEnvFilesRegex, messageSnippet: envEditDisabled },
   ]);
 
   onDestroy(() => {

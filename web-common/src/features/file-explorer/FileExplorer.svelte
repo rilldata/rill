@@ -27,7 +27,7 @@
   import { findDirectory, transformFileList } from "./transform-file-list";
   import QuickView from "@rilldata/web-common/features/resource-graph/quick-view/QuickView.svelte";
   import {
-    getReadonlyExtras,
+    getAdditionalReadonlyFiles,
     matchReadonlyDir,
     matchReadonlyFile,
   } from "@rilldata/web-common/features/entity-management/actions/readonly-files.ts";
@@ -35,7 +35,7 @@
   export let hasUnsaved: boolean;
 
   const runtimeClient = useRuntimeClient();
-  const readonlyExtras = getReadonlyExtras();
+  const additionalReadonlyFiles = getAdditionalReadonlyFiles();
 
   $: getFileTree = createRuntimeServiceListFiles(
     runtimeClient,
@@ -143,7 +143,7 @@
         });
         return;
       }
-      if (matchReadonlyFile(newFilePath, readonlyExtras)) {
+      if (matchReadonlyFile(newFilePath, additionalReadonlyFiles)) {
         eventBus.emit("notification", {
           message: "cannot rename to a restricted file",
         });

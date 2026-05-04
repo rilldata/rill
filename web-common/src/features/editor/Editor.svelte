@@ -19,11 +19,9 @@
   import { FILE_SAVE_DEBOUNCE_TIME } from "./config";
   import DiffBar from "./DiffBar.svelte";
   import {
-    getReadonlyExtras,
+    getAdditionalReadonlyFiles,
     matchReadonlyFile,
   } from "@rilldata/web-common/features/entity-management/actions/readonly-files.ts";
-
-  const readonlyExtras = getReadonlyExtras();
 
   export let fileArtifact: FileArtifact;
   export let extensions: Extension[] = [];
@@ -46,7 +44,8 @@
     saveEnabled,
   } = fileArtifact);
 
-  $: readonlyMatch = matchReadonlyFile(path, readonlyExtras);
+  const additionalReadonlyFiles = getAdditionalReadonlyFiles();
+  $: readonlyMatch = matchReadonlyFile(path, additionalReadonlyFiles);
   $: editable = Boolean(!readonlyMatch || readonlyMatch.allowFileEdit);
 
   $: debounceSave = debounce(save, FILE_SAVE_DEBOUNCE_TIME);

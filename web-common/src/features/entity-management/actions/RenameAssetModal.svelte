@@ -27,7 +27,7 @@
     isDuplicateName,
   } from "../name-utils.ts";
   import {
-    getReadonlyExtras,
+    getAdditionalReadonlyFiles,
     matchReadonlyFile,
   } from "@rilldata/web-common/features/entity-management/actions/readonly-files.ts";
 
@@ -36,7 +36,7 @@
   export let isDir: boolean;
 
   const runtimeClient = useRuntimeClient();
-  const readonlyExtras = getReadonlyExtras();
+  const additionalReadonlyFiles = getAdditionalReadonlyFiles();
 
   let error: string;
 
@@ -97,7 +97,7 @@
       }
 
       const newPath = (folderName ? `${folderName}/` : "") + values.newName;
-      if (matchReadonlyFile(newPath, readonlyExtras)) {
+      if (matchReadonlyFile(newPath, additionalReadonlyFiles)) {
         error = `Cannot rename to ${newPath}. It is a protected path.`;
 
         return setError(form, "newName", error);

@@ -35,13 +35,11 @@
   import ModelMenuItems from "../models/navigation/ModelMenuItems.svelte";
   import SourceMenuItems from "../sources/navigation/SourceMenuItems.svelte";
   import {
-    getReadonlyExtras,
+    getAdditionalReadonlyFiles,
     matchReadonlyDir,
     matchReadonlyFile,
   } from "@rilldata/web-common/features/entity-management/actions/readonly-files.ts";
   import { getTopLevelFolder } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
-
-  const readonlyExtras = getReadonlyExtras();
 
   export let filePath: string;
   export let onRename: (filePath: string, isDir: boolean) => void;
@@ -51,6 +49,8 @@
 
   let contextMenuOpen = false;
   let resourceName: Readable<V1ResourceName | undefined>;
+
+  const additionalReadonlyFiles = getAdditionalReadonlyFiles();
 
   $: id = `${filePath}-nav-link`;
   $: fileName = filePath.split("/").pop();
@@ -73,7 +73,9 @@
   $: topLevelFolder = getTopLevelFolder(filePath);
   $: isProtectedDirectory = matchReadonlyDir(topLevelFolder);
   $: isDotFile = fileName && fileName.startsWith(".");
-  $: isProtectedFile = Boolean(matchReadonlyFile(filePath, readonlyExtras));
+  $: isProtectedFile = Boolean(
+    matchReadonlyFile(filePath, additionalReadonlyFiles),
+  );
 
   $: hasErrors = fileArtifact.getHasErrors(queryClient);
   $: hasWarnings = fileArtifact.getHasWarnings(queryClient);

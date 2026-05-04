@@ -22,7 +22,7 @@ export async function handleEntityRename(
   newName: string,
   existingPath: string,
   existingName: string,
-  readonlyExtras: ReadonlyMatcher[] = [],
+  additionalReadonlyFiles: ReadonlyMatcher[] = [],
 ) {
   const [folder] = splitFolderAndFileName(existingPath);
 
@@ -50,7 +50,7 @@ export async function handleEntityRename(
   }
 
   const newFilePath = (folder ? `${folder}/` : "/") + newName;
-  if (matchReadonlyFile(newFilePath, readonlyExtras)) {
+  if (matchReadonlyFile(newFilePath, additionalReadonlyFiles)) {
     eventBus.emit("notification", {
       message: `Cannot rename to ${newFilePath}. It is a protected path.`,
     });
