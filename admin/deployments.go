@@ -337,7 +337,7 @@ func (s *Service) StopDeploymentInner(ctx context.Context, depl *database.Deploy
 		defer rt.Close()
 
 		// Checkpoint repo changes if this is an editable deployment.
-		// The runtime does checkpoint on close but because DeleteInstance removes the directly the checkpoint can fail.
+		// The runtime does checkpoint on close but because DeleteInstance removes the storage directly, the checkpoint can fail.
 		if depl.Editable {
 			_, err = rt.GitPush(ctx, &runtimev1.GitPushRequest{
 				InstanceId: depl.RuntimeInstanceID,
