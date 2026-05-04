@@ -75,7 +75,7 @@ When deploying a MotherDuck-backed project to Rill Cloud, you have the following
 
 ## Caching Query Results
 
-To reduce compute spend on dashboards with repeat traffic, see [Caching query results](/developers/build/metrics-view/underlying-model#caching-query-results) on live connectors.
+To increase performance on dashboards with repeat traffic, see [Caching query results](/developers/build/metrics-view/underlying-model#caching-query-results) on live connectors.
 
 ## Additional Notes
 
