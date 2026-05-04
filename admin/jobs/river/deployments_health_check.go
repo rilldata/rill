@@ -247,7 +247,7 @@ func (w *DeploymentsHealthCheckWorker) annotationsForDeployment(ctx context.Cont
 	if err != nil {
 		return nil, err
 	}
-	annotations := w.admin.NewDeploymentAnnotations(org, proj, d.Environment)
+	annotations := w.admin.NewDeploymentAnnotations(org, proj, d.ID, d.Environment)
 	return &annotations, nil
 }
 

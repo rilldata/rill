@@ -179,6 +179,9 @@ type instanceWithController struct {
 	ready     bool
 	readyCh   chan struct{}
 	reopen    bool
+
+	// Timestamp of the previous heartbeat emission for counter-style metrics on this instance (e.g. slot_spend). Initialized at instance registration so the first tick produces a sensible elapsed duration. Not reset across controller restarts.
+	counterMetricsLastEmit time.Time
 }
 
 func newRegistryCache(rt *Runtime, registry drivers.RegistryStore, logger *zap.Logger, ac *activity.Client) *registryCache {
@@ -343,8 +346,9 @@ func (r *registryCache) add(inst *drivers.Instance) error {
 	}
 
 	iwc := &instanceWithController{
-		instanceID: inst.ID,
-		instance:   inst,
+		instanceID:             inst.ID,
+		instance:               inst,
+		counterMetricsLastEmit: time.Now(),
 	}
 	r.instances[inst.ID] = iwc
 
@@ -578,12 +582,37 @@ func (r *registryCache) emitHeartbeatForInstance(inst *drivers.Instance) {
 	attrs := instanceAnnotationsToAttribs(inst)
 	r.activity.RecordMetric(context.Background(), "data_dir_size_bytes", float64(sizeOfDir(dataDir)), attrs...)
 
-	// Emit slots metric for billing; environment is included via instanceAnnotationsToAttribs
-	if v, ok := inst.Annotations["slots"]; ok {
-		if slots, err := strconv.Atoi(v); err == nil {
-			r.activity.RecordMetric(context.Background(), "slots", float64(slots), attrs...)
-		}
+	// Emit slot_spend (slots × elapsed seconds since last emit) as a counter for billing. Requires `slots` and `deployment_id` annotations from admin; skip if either is missing or if the instance entry is gone.
+	slotsStr, ok := inst.Annotations["slots"]
+	if !ok {
+		return
 	}
+	slots, err := strconv.Atoi(slotsStr)
+	if err != nil {
+		r.logger.Error("failed to convert slots to int", zap.String("instance_id", inst.ID), zap.Error(err))
+		return
+	}
+	deploymentID, ok := inst.Annotations["deployment_id"]
+	if !ok || deploymentID == "" {
+		r.logger.Warn("missing deployment_id annotation for slot_spend metric; skipping", zap.String("instance_id", inst.ID))
+		return
+	}
+	r.mu.RLock()
+	iwc, ok := r.instances[inst.ID]
+	r.mu.RUnlock()
+	if !ok {
+		r.logger.Warn("instance disappeared before emitting slot_spend metric; skipping", zap.String("instance_id", inst.ID))
+		return
+	}
+	now := time.Now()
+	elapsed := now.Sub(iwc.counterMetricsLastEmit)
+	value := float64(slots) * elapsed.Seconds()
+	r.activity.RecordMetric(context.Background(), "slot_spend", value, append(attrs,
+		attribute.String("deployment_id", deploymentID),
+		attribute.Int("deployment_slots", slots),
+		attribute.Float64("deployment_duration", elapsed.Seconds()),
+	)...)
+	iwc.counterMetricsLastEmit = now
 }
 
 // updateProjectConfig updates the project config for the given instance.
