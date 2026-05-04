@@ -407,67 +407,67 @@
             {formatDate(deployment.updatedOn)}
           </div>
           <div class="pl-4 flex items-center">
-            <DropdownMenu.Root
-              open={openDropdownId === id}
-              onOpenChange={(open) => {
-                openDropdownId = open ? id : "";
-              }}
-            >
-              <DropdownMenu.Trigger class="flex-none">
-                <IconButton rounded active={openDropdownId === id} size={20}>
-                  <ThreeDot size="16px" />
-                </IconButton>
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Content align="start">
-                {#if !prod && !!currentUserId && deployment.ownerUserId === currentUserId && deployment.editable}
-                  <DropdownMenu.Item
-                    class="font-normal flex items-center"
-                    href={editUrl(deployment.branch)}
-                    onclick={requestSkipBranchInjection}
-                  >
-                    <div class="flex items-center">
-                      <PlayIcon size="12px" />
-                      <span class="ml-2">Open editor</span>
-                    </div>
-                  </DropdownMenu.Item>
-                {/if}
-                {#if canStart}
-                  <DropdownMenu.Item
-                    class="font-normal flex items-center"
-                    onclick={() =>
-                      mutateDeployment(
-                        id,
-                        deployment.branch,
-                        V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING,
-                        $startMutation.mutateAsync,
-                        "resume",
-                      )}
-                  >
-                    <div class="flex items-center">
-                      <PlayIcon size="12px" />
-                      <span class="ml-2">Resume</span>
-                    </div>
-                  </DropdownMenu.Item>
-                {/if}
-                {#if canStop}
-                  <DropdownMenu.Item
-                    class="font-normal flex items-center"
-                    onclick={() =>
-                      mutateDeployment(
-                        id,
-                        deployment.branch,
-                        V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING,
-                        $stopMutation.mutateAsync,
-                        "hibernate",
-                      )}
-                  >
-                    <div class="flex items-center">
-                      <StopCircleIcon size="12px" />
-                      <span class="ml-2">Hibernate</span>
-                    </div>
-                  </DropdownMenu.Item>
-                {/if}
-                {#if !prod}
+            {#if !prod}
+              <DropdownMenu.Root
+                open={openDropdownId === id}
+                onOpenChange={(open) => {
+                  openDropdownId = open ? id : "";
+                }}
+              >
+                <DropdownMenu.Trigger class="flex-none">
+                  <IconButton rounded active={openDropdownId === id} size={20}>
+                    <ThreeDot size="16px" />
+                  </IconButton>
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Content align="start">
+                  {#if !!currentUserId && deployment.ownerUserId === currentUserId && deployment.editable}
+                    <DropdownMenu.Item
+                      class="font-normal flex items-center"
+                      href={editUrl(deployment.branch)}
+                      onclick={requestSkipBranchInjection}
+                    >
+                      <div class="flex items-center">
+                        <PlayIcon size="12px" />
+                        <span class="ml-2">Open editor</span>
+                      </div>
+                    </DropdownMenu.Item>
+                  {/if}
+                  {#if canStart}
+                    <DropdownMenu.Item
+                      class="font-normal flex items-center"
+                      onclick={() =>
+                        mutateDeployment(
+                          id,
+                          deployment.branch,
+                          V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING,
+                          $startMutation.mutateAsync,
+                          "resume",
+                        )}
+                    >
+                      <div class="flex items-center">
+                        <PlayIcon size="12px" />
+                        <span class="ml-2">Resume</span>
+                      </div>
+                    </DropdownMenu.Item>
+                  {/if}
+                  {#if canStop}
+                    <DropdownMenu.Item
+                      class="font-normal flex items-center"
+                      onclick={() =>
+                        mutateDeployment(
+                          id,
+                          deployment.branch,
+                          V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING,
+                          $stopMutation.mutateAsync,
+                          "hibernate",
+                        )}
+                    >
+                      <div class="flex items-center">
+                        <StopCircleIcon size="12px" />
+                        <span class="ml-2">Hibernate</span>
+                      </div>
+                    </DropdownMenu.Item>
+                  {/if}
                   <DropdownMenu.Item
                     class="font-normal flex items-center"
                     disabled={isPending}
@@ -478,9 +478,9 @@
                       <span class="ml-2">Delete</span>
                     </div>
                   </DropdownMenu.Item>
-                {/if}
-              </DropdownMenu.Content>
-            </DropdownMenu.Root>
+                </DropdownMenu.Content>
+              </DropdownMenu.Root>
+            {/if}
           </div>
         </div>
       {/each}
