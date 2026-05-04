@@ -939,6 +939,393 @@ describe("header/cell mutual exclusivity", () => {
     result.destroy();
   });
 
+  it("parent row cell click evicts child row headers under it", () => {
+    const { result, filterClass } = setupNested();
+    const dkChildHeader = dk({ outer: "Zoom", inner: "US-East" }, dims);
+    const dkZoom = dk({ outer: "Zoom" }, dims);
+
+    // Select a child row header first
+    result.handleCellClickToFilter("1.0", "inner", true, childUSEast);
+    expect(sel(result).isRowHeaderSelected(dkChildHeader)).toBe(true);
+
+    // Click parent row's measure cell — child row header must be evicted
+    filterClass.toggleDimensionValueSelections.mockClear();
+    vi.mocked(getFiltersForCell).mockImplementation((_cfg, rowId) => {
+      if (rowId === "1") return filter1("outer", ["Zoom"]);
+      return EMPTY_FILTER;
+    });
+    result.handleCellClickToFilter("1", "revenue", false, parentZoom);
+
+    expect(sel(result).isCellSelected(dkZoom, "revenue")).toBe(true);
+    expect(sel(result).isRowHeaderSelected(dkChildHeader)).toBe(false);
+    expect(sel(result).rowHeaderSelections.size).toBe(0);
+    expect(filterClass.toggleDimensionValueSelections).toHaveBeenCalledWith(
+      "inner",
+      ["US-East"],
+      false,
+      false,
+    );
+
+    result.destroy();
+  });
+
+  it("child row cell click evicts ancestor parent row header", () => {
+    const { result } = setupNested();
+    const dkZoom = dk({ outer: "Zoom" }, dims);
+    const dkChild = dk({ outer: "Zoom", inner: "US-East" }, dims);
+
+    // Select parent row header first
+    result.handleCellClickToFilter("1", "outer", true, parentZoom);
+    expect(sel(result).isRowHeaderSelected(dkZoom)).toBe(true);
+
+    // Click child row's measure cell — parent row header must be evicted
+    result.handleCellClickToFilter("1.0", "revenue", false, childUSEast);
+
+    expect(sel(result).isCellSelected(dkChild, "revenue")).toBe(true);
+    expect(sel(result).isRowHeaderSelected(dkZoom)).toBe(false);
+    expect(sel(result).rowHeaderSelections.size).toBe(0);
+
+    result.destroy();
+  });
+
+  it("parent row cell click evicts child row cells under it", () => {
+    const { result, filterClass } = setupNested();
+    const dkChild = dk({ outer: "Zoom", inner: "US-East" }, dims);
+    const dkZoom = dk({ outer: "Zoom" }, dims);
+
+    // Select a child measure cell first
+    vi.mocked(getFiltersForCell).mockImplementation((_cfg, rowId) => {
+      if (rowId === "1.0")
+        return filter(
+          { name: "outer", values: ["Zoom"] },
+          { name: "inner", values: ["US-East"] },
+        );
+      return EMPTY_FILTER;
+    });
+    result.handleCellClickToFilter("1.0", "revenue", false, childUSEast);
+    expect(sel(result).isCellSelected(dkChild, "revenue")).toBe(true);
+
+    // Click the parent row's measure cell — child cell must be evicted
+    filterClass.toggleDimensionValueSelections.mockClear();
+    vi.mocked(getFiltersForCell).mockImplementation((_cfg, rowId) => {
+      if (rowId === "1") return filter1("outer", ["Zoom"]);
+      return EMPTY_FILTER;
+    });
+    result.handleCellClickToFilter("1", "revenue", false, parentZoom);
+
+    expect(sel(result).isCellSelected(dkZoom, "revenue")).toBe(true);
+    expect(sel(result).isCellSelected(dkChild, "revenue")).toBe(false);
+    expect(sel(result).cellSelections.size).toBe(1);
+    // Orphaned inner value is removed from the global filter
+    expect(filterClass.toggleDimensionValueSelections).toHaveBeenCalledWith(
+      "inner",
+      ["US-East"],
+      false,
+      false,
+    );
+
+    result.destroy();
+  });
+
+  it("parent row cell click evicts multiple child row cells under it", () => {
+    const { result } = setupNested();
+    const dkChildEast = dk({ outer: "Zoom", inner: "US-East" }, dims);
+    const dkChildExpanded = nestedData[0].subRows!;
+    // Add a second child to the Zoom parent for this test
+    const childUSWestUnderZoom = {
+      outer: "US-West",
+      inner: "US-West",
+      revenue: 25,
+    };
+    nestedData[0].subRows = [...dkChildExpanded, childUSWestUnderZoom];
+
+    vi.mocked(getFiltersForCell).mockImplementation((_cfg, rowId) => {
+      if (rowId === "1.0")
+        return filter(
+          { name: "outer", values: ["Zoom"] },
+          { name: "inner", values: ["US-East"] },
+        );
+      if (rowId === "1.1")
+        return filter(
+          { name: "outer", values: ["Zoom"] },
+          { name: "inner", values: ["US-West"] },
+        );
+      if (rowId === "1") return filter1("outer", ["Zoom"]);
+      return EMPTY_FILTER;
+    });
+
+    result.handleCellClickToFilter("1.0", "revenue", false, childUSEast);
+    result.handleCellClickToFilter(
+      "1.1",
+      "revenue",
+      false,
+      childUSWestUnderZoom,
+    );
+    expect(sel(result).cellSelections.size).toBe(2);
+
+    // Click parent row cell — both children evicted
+    result.handleCellClickToFilter("1", "revenue", false, parentZoom);
+
+    expect(
+      sel(result).isCellSelected(dk({ outer: "Zoom" }, dims), "revenue"),
+    ).toBe(true);
+    expect(sel(result).isCellSelected(dkChildEast, "revenue")).toBe(false);
+    expect(sel(result).cellSelections.size).toBe(1);
+
+    // Restore data for subsequent tests
+    nestedData[0].subRows = dkChildExpanded;
+    result.destroy();
+  });
+
+  it("child row cell click evicts ancestor parent row cell", () => {
+    const { result } = setupNested();
+    const dkZoom = dk({ outer: "Zoom" }, dims);
+    const dkChild = dk({ outer: "Zoom", inner: "US-East" }, dims);
+
+    // Select parent row cell first
+    vi.mocked(getFiltersForCell).mockImplementation((_cfg, rowId) => {
+      if (rowId === "1") return filter1("outer", ["Zoom"]);
+      if (rowId === "1.0")
+        return filter(
+          { name: "outer", values: ["Zoom"] },
+          { name: "inner", values: ["US-East"] },
+        );
+      return EMPTY_FILTER;
+    });
+    result.handleCellClickToFilter("1", "revenue", false, parentZoom);
+    expect(sel(result).isCellSelected(dkZoom, "revenue")).toBe(true);
+
+    // Click child row cell — parent cell must be evicted
+    result.handleCellClickToFilter("1.0", "revenue", false, childUSEast);
+
+    expect(sel(result).isCellSelected(dkChild, "revenue")).toBe(true);
+    expect(sel(result).isCellSelected(dkZoom, "revenue")).toBe(false);
+    expect(sel(result).cellSelections.size).toBe(1);
+
+    result.destroy();
+  });
+
+  it("parent row cell click keeps sibling-lineage cells intact", () => {
+    const { result } = setupNested();
+    const dkAirtableChild = dk({ outer: "Airtable", inner: "US-West" }, dims);
+
+    // Select a cell under Airtable parent
+    vi.mocked(getFiltersForCell).mockImplementation((_cfg, rowId) => {
+      if (rowId === "2.0")
+        return filter(
+          { name: "outer", values: ["Airtable"] },
+          { name: "inner", values: ["US-West"] },
+        );
+      if (rowId === "1") return filter1("outer", ["Zoom"]);
+      return EMPTY_FILTER;
+    });
+    result.handleCellClickToFilter("2.0", "revenue", false, childUSWest);
+    expect(sel(result).isCellSelected(dkAirtableChild, "revenue")).toBe(true);
+
+    // Click Zoom parent row cell — Airtable's child cell is a different
+    // lineage and must coexist
+    result.handleCellClickToFilter("1", "revenue", false, parentZoom);
+
+    expect(
+      sel(result).isCellSelected(dk({ outer: "Zoom" }, dims), "revenue"),
+    ).toBe(true);
+    expect(sel(result).isCellSelected(dkAirtableChild, "revenue")).toBe(true);
+    expect(sel(result).cellSelections.size).toBe(2);
+
+    result.destroy();
+  });
+
+  it("parent cell + same-row sibling-column cells coexist (not lineage)", () => {
+    const { result } = setupNested();
+    const dkZoom = dk({ outer: "Zoom" }, dims);
+
+    vi.mocked(getFiltersForCell).mockImplementation((_cfg, rowId) => {
+      if (rowId === "1") return filter1("outer", ["Zoom"]);
+      return EMPTY_FILTER;
+    });
+
+    // Two cells in the same parent row, different columns: same dimValues,
+    // not in a strict subset/superset relationship — both must coexist.
+    result.handleCellClickToFilter("1", "revenue", false, parentZoom);
+    result.handleCellClickToFilter("1", "other_measure", false, parentZoom);
+
+    expect(sel(result).isCellSelected(dkZoom, "revenue")).toBe(true);
+    expect(sel(result).isCellSelected(dkZoom, "other_measure")).toBe(true);
+    expect(sel(result).cellSelections.size).toBe(2);
+
+    result.destroy();
+  });
+
+  // Nested rows + nested columns: parent-row cell click should evict every
+  // child-row cell in that lineage regardless of which column the parent or
+  // child cells sit in. Cell-on-cell row lineage ignores column dims.
+  describe("with column dimensions", () => {
+    const nestedColConfig = makeConfig({
+      rowDimensionNames: ["outer", "inner"],
+      colDimensionNames: ["quarter", "env"],
+      measureNames: ["revenue"],
+    });
+    const colData: PivotDataRow[] = [
+      {
+        outer: "Zoom",
+        revenue: 100,
+        subRows: [
+          { outer: "US-East", inner: "US-East", revenue: 50 },
+          { outer: "US-West", inner: "US-West", revenue: 30 },
+        ],
+      },
+    ];
+    const colDims = ["outer", "inner"];
+    const parentZoomCol = colData[0];
+    const childEastCol = colData[0].subRows![0];
+    const childWestCol = colData[0].subRows![1];
+
+    function setupNestedWithCols() {
+      // Children sit at different leaf columns (Q1×Prod and Q2×Dev).
+      vi.mocked(getFiltersForCell).mockImplementation((_cfg, rowId, colId) => {
+        if (rowId === "1.0" && colId === "child_east_col")
+          return filter(
+            { name: "outer", values: ["Zoom"] },
+            { name: "inner", values: ["US-East"] },
+            { name: "quarter", values: ["Q1"] },
+            { name: "env", values: ["Prod"] },
+          );
+        if (rowId === "1.1" && colId === "child_west_col")
+          return filter(
+            { name: "outer", values: ["Zoom"] },
+            { name: "inner", values: ["US-West"] },
+            { name: "quarter", values: ["Q2"] },
+            { name: "env", values: ["Dev"] },
+          );
+        // Parent row at totals column (no col dims)
+        if (rowId === "1" && colId === "totals_col")
+          return filter1("outer", ["Zoom"]);
+        // Parent row at quarter-aggregate column (one col dim)
+        if (rowId === "1" && colId === "q1_total_col")
+          return filter(
+            { name: "outer", values: ["Zoom"] },
+            { name: "quarter", values: ["Q1"] },
+          );
+        // Parent row at quarter+env leaf column (both col dims)
+        if (rowId === "1" && colId === "q1_prod_col")
+          return filter(
+            { name: "outer", values: ["Zoom"] },
+            { name: "quarter", values: ["Q1"] },
+            { name: "env", values: ["Prod"] },
+          );
+        return EMPTY_FILTER;
+      });
+      return setup(nestedColConfig, colData);
+    }
+
+    it("parent cell at totals column evicts all child cells", () => {
+      const { result } = setupNestedWithCols();
+      const dkChildEast = dk({ outer: "Zoom", inner: "US-East" }, colDims);
+      const dkChildWest = dk({ outer: "Zoom", inner: "US-West" }, colDims);
+      const dkZoom = dk({ outer: "Zoom" }, colDims);
+
+      result.handleCellClickToFilter(
+        "1.0",
+        "child_east_col",
+        false,
+        childEastCol,
+      );
+      result.handleCellClickToFilter(
+        "1.1",
+        "child_west_col",
+        false,
+        childWestCol,
+      );
+      expect(sel(result).cellSelections.size).toBe(2);
+
+      result.handleCellClickToFilter("1", "totals_col", false, parentZoomCol);
+
+      expect(sel(result).isCellSelected(dkZoom, "totals_col")).toBe(true);
+      expect(sel(result).isCellSelected(dkChildEast, "child_east_col")).toBe(
+        false,
+      );
+      expect(sel(result).isCellSelected(dkChildWest, "child_west_col")).toBe(
+        false,
+      );
+      expect(sel(result).cellSelections.size).toBe(1);
+
+      result.destroy();
+    });
+
+    it("parent cell at quarter-aggregate column evicts all child cells across columns", () => {
+      const { result } = setupNestedWithCols();
+      const dkChildEast = dk({ outer: "Zoom", inner: "US-East" }, colDims);
+      const dkChildWest = dk({ outer: "Zoom", inner: "US-West" }, colDims);
+      const dkZoom = dk({ outer: "Zoom" }, colDims);
+
+      // Children sit at different quarters
+      result.handleCellClickToFilter(
+        "1.0",
+        "child_east_col",
+        false,
+        childEastCol,
+      );
+      result.handleCellClickToFilter(
+        "1.1",
+        "child_west_col",
+        false,
+        childWestCol,
+      );
+      expect(sel(result).cellSelections.size).toBe(2);
+
+      // Click parent's Q1-total cell — both children must be evicted even
+      // though one is at Q2.
+      result.handleCellClickToFilter("1", "q1_total_col", false, parentZoomCol);
+
+      expect(sel(result).isCellSelected(dkZoom, "q1_total_col")).toBe(true);
+      expect(sel(result).isCellSelected(dkChildEast, "child_east_col")).toBe(
+        false,
+      );
+      expect(sel(result).isCellSelected(dkChildWest, "child_west_col")).toBe(
+        false,
+      );
+      expect(sel(result).cellSelections.size).toBe(1);
+
+      result.destroy();
+    });
+
+    it("parent cell at leaf column evicts all child cells across columns", () => {
+      const { result } = setupNestedWithCols();
+      const dkChildEast = dk({ outer: "Zoom", inner: "US-East" }, colDims);
+      const dkChildWest = dk({ outer: "Zoom", inner: "US-West" }, colDims);
+      const dkZoom = dk({ outer: "Zoom" }, colDims);
+
+      result.handleCellClickToFilter(
+        "1.0",
+        "child_east_col",
+        false,
+        childEastCol,
+      );
+      result.handleCellClickToFilter(
+        "1.1",
+        "child_west_col",
+        false,
+        childWestCol,
+      );
+      expect(sel(result).cellSelections.size).toBe(2);
+
+      // Click parent's Q1×Prod leaf cell — both children must be evicted
+      // regardless of which column they sit in.
+      result.handleCellClickToFilter("1", "q1_prod_col", false, parentZoomCol);
+
+      expect(sel(result).isCellSelected(dkZoom, "q1_prod_col")).toBe(true);
+      expect(sel(result).isCellSelected(dkChildEast, "child_east_col")).toBe(
+        false,
+      );
+      expect(sel(result).isCellSelected(dkChildWest, "child_west_col")).toBe(
+        false,
+      );
+      expect(sel(result).cellSelections.size).toBe(1);
+
+      result.destroy();
+    });
+  });
+
   // Column header mutual exclusivity uses flat config with column dims
   const flatWithColConfig = makeConfig({
     rowDimensionNames: ["country"],

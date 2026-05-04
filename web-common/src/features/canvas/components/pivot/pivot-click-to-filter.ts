@@ -441,8 +441,8 @@ export function createPivotClickToFilter(
   // --- Lineage-aware mutual exclusivity helpers ---
 
   /**
-   * Check if a cell is "under" a header: the header's dimension values are
-   * a subset of the cell's dimValues.
+   * Check whether every (k, v) in `subset` is present in `superset`. Equal
+   * records also satisfy this; callers needing strictness compare key counts.
    */
   function isDimSubset(
     subset: Record<string, string | null>,
@@ -454,73 +454,53 @@ export function createPivotClickToFilter(
   }
 
   /**
-   * Find cell selection keys whose dimValues contain all of the header's
-   * dimension values (i.e., cells "under" the header).
+   * Project a dimValues record down to row dimensions only. Row-lineage is
+   * determined entirely by row dimensions; column dimensions describe which
+   * intersection was clicked, not the lineage. Row-header entries already
+   * carry row-dim-only dimValues, so this is a no-op for them.
    */
-  function findCellsUnderRowHeader(
-    selection: PivotClickSelectionState,
-    headerDimValues: Record<string, string | null>,
-  ): string[] {
-    const keys: string[] = [];
-    for (const [key, entry] of selection.cellSelections) {
-      if (isDimSubset(headerDimValues, entry.dimValues)) {
-        keys.push(key);
-      }
+  function rowDimsOnly(
+    dimValues: Record<string, string | null>,
+    rowDimensionNames: string[],
+  ): Record<string, string | null> {
+    const result: Record<string, string | null> = {};
+    for (const dim of rowDimensionNames) {
+      if (dim in dimValues) result[dim] = dimValues[dim];
     }
-    return keys;
+    return result;
   }
 
   /**
-   * Find row header dimKeys whose dimValues are a subset of the cell's dimValues
-   * (i.e., headers that are "above" the cell).
+   * Find selection entries whose row dimValues are a descendant
+   * (`direction: "descendants"`) or strict ancestor (`direction: "ancestors"`)
+   * of the clicked element's row dimValues.
+   *
+   * Ancestors are always strict (equal row dims excluded). Descendants are
+   * strict by default; pass `includeSelf` to also evict same-row entries
+   * (used by row-header clicks, which take over the row's filter scope).
+   *
+   * Works uniformly for cell selections and row-header selections because
+   * both store dimValues that are row-dim-only after projection.
    */
-  function findRowHeadersAboveCell(
-    selection: PivotClickSelectionState,
-    cellDimValues: Record<string, string | null>,
+  function findEntriesInRowLineage(
+    entries: Map<string, SelectionEntry>,
+    clickedRowDims: Record<string, string | null>,
+    rowDimensionNames: string[],
+    direction: "ancestors" | "descendants",
+    includeSelf = false,
   ): string[] {
+    const clickedSize = Object.keys(clickedRowDims).length;
     const keys: string[] = [];
-    for (const [dk, entry] of selection.rowHeaderSelections) {
-      if (isDimSubset(entry.dimValues, cellDimValues)) {
-        keys.push(dk);
-      }
-    }
-    return keys;
-  }
-
-  /**
-   * Find row header dimKeys that are descendants of the clicked header (its
-   * dimValues are a strict superset of the clicked header's dimValues).
-   * Strictness excludes the clicked header itself from the eviction set.
-   */
-  function findRowHeadersUnderRowHeader(
-    selection: PivotClickSelectionState,
-    headerDimValues: Record<string, string | null>,
-    clickedDk: string,
-  ): string[] {
-    const keys: string[] = [];
-    for (const [dk, entry] of selection.rowHeaderSelections) {
-      if (dk === clickedDk) continue;
-      if (isDimSubset(headerDimValues, entry.dimValues)) {
-        keys.push(dk);
-      }
-    }
-    return keys;
-  }
-
-  /**
-   * Find row header dimKeys that are ancestors of the clicked header (its
-   * dimValues are a strict subset of the clicked header's dimValues).
-   */
-  function findRowHeadersAboveRowHeader(
-    selection: PivotClickSelectionState,
-    headerDimValues: Record<string, string | null>,
-    clickedDk: string,
-  ): string[] {
-    const keys: string[] = [];
-    for (const [dk, entry] of selection.rowHeaderSelections) {
-      if (dk === clickedDk) continue;
-      if (isDimSubset(entry.dimValues, headerDimValues)) {
-        keys.push(dk);
+    for (const [key, entry] of entries) {
+      const entryRowDims = rowDimsOnly(entry.dimValues, rowDimensionNames);
+      const entrySize = Object.keys(entryRowDims).length;
+      if (direction === "descendants") {
+        if (entrySize < clickedSize) continue;
+        if (entrySize === clickedSize && !includeSelf) continue;
+        if (isDimSubset(clickedRowDims, entryRowDims)) keys.push(key);
+      } else {
+        if (entrySize >= clickedSize) continue;
+        if (isDimSubset(entryRowDims, clickedRowDims)) keys.push(key);
       }
     }
     return keys;
@@ -779,118 +759,113 @@ export function createPivotClickToFilter(
       return;
     }
 
-    // Mutual exclusivity: headers and cells under the same lineage cannot
-    // coexist. When adding a new selection, evict the opposite domain.
-    if (isRowHeader) {
-      // Clicking a row header: evict cells under this header, plus any row
-      // headers in the same lineage (both descendants and ancestors).
-      const cellKeysToEvict = findCellsUnderRowHeader(
-        $clickSelection,
-        dimValues,
-      );
-      const descendantHeaderKeysToEvict = findRowHeadersUnderRowHeader(
-        $clickSelection,
-        dimValues,
-        dk,
-      );
-      const ancestorHeaderKeysToEvict = findRowHeadersAboveRowHeader(
-        $clickSelection,
-        dimValues,
-        dk,
-      );
-      const rowHeaderKeysToEvict = [
-        ...descendantHeaderKeysToEvict,
-        ...ancestorHeaderKeysToEvict,
-      ];
+    // Mutual exclusivity: headers and cells in the same row lineage cannot
+    // coexist. When adding a new selection, evict every entry whose row dims
+    // are a strict ancestor or descendant of the click — across both row
+    // headers and cells. Same-row siblings (equal row dims) coexist.
+    const clickedRowDims = isRowHeader
+      ? dimValues
+      : rowDimsOnly(storedDimValues, $config.rowDimensionNames);
 
-      const evictedCellEntries = cellKeysToEvict
-        .map((k) => $clickSelection.cellSelections.get(k))
-        .filter(Boolean) as SelectionEntry[];
-      const evictedHeaderEntries = rowHeaderKeysToEvict
-        .map((k) => $clickSelection.rowHeaderSelections.get(k))
-        .filter(Boolean) as SelectionEntry[];
-      const evictedDimValues = collectRemovalsFromEntries([
-        ...evictedCellEntries,
-        ...evictedHeaderEntries,
-      ]);
+    // Cell-on-cell row lineage eviction is nested-only: flat tables handle
+    // same-row replacement via tryFlatTableCellReplacement, and cross-row
+    // flat cells don't form a parent/child lineage.
+    const evictCells = isRowHeader || isNested;
 
-      const removals: ExtractedFilter[] = [...evictedDimValues.entries()].map(
-        ([dimensionName, values]) => ({
-          dimensionName,
-          values: [...values],
-        }),
-      );
+    // Row-header clicks also evict same-row cells (header takes over row's
+    // filter scope). Cell-on-cell eviction is strict so same-row sibling
+    // cells in different columns coexist.
+    const cellKeysToEvict = evictCells
+      ? [
+          ...findEntriesInRowLineage(
+            $clickSelection.cellSelections,
+            clickedRowDims,
+            $config.rowDimensionNames,
+            "descendants",
+            isRowHeader,
+          ),
+          ...(isRowHeader
+            ? []
+            : findEntriesInRowLineage(
+                $clickSelection.cellSelections,
+                clickedRowDims,
+                $config.rowDimensionNames,
+                "ancestors",
+              )),
+        ]
+      : [];
+    const rowHeaderKeysToEvict = [
+      ...findEntriesInRowLineage(
+        $clickSelection.rowHeaderSelections,
+        clickedRowDims,
+        $config.rowDimensionNames,
+        "descendants",
+      ),
+      ...findEntriesInRowLineage(
+        $clickSelection.rowHeaderSelections,
+        clickedRowDims,
+        $config.rowDimensionNames,
+        "ancestors",
+      ),
+    ];
+    const colHeaderKeysToEvict = isRowHeader
+      ? []
+      : findColHeadersAboveCell($clickSelection, storedDimValues);
 
-      const additions = extractDimensionFiltersFromExpression(
-        cellFilters.filters,
-      );
+    const evictedCellEntries = cellKeysToEvict
+      .map((k) => $clickSelection.cellSelections.get(k))
+      .filter(Boolean) as SelectionEntry[];
+    const evictedHeaderEntries = rowHeaderKeysToEvict
+      .map((k) => $clickSelection.rowHeaderSelections.get(k))
+      .filter(Boolean) as SelectionEntry[];
+    const evictedDimValues = collectRemovalsFromEntries([
+      ...evictedCellEntries,
+      ...evictedHeaderEntries,
+    ]);
 
-      applyFilterUpdate({
-        removals,
-        additions,
-        updateSelectionSets: (nextRowHeaders, nextCells) => {
-          for (const k of cellKeysToEvict) nextCells.delete(k);
-          for (const k of rowHeaderKeysToEvict) nextRowHeaders.delete(k);
-          nextRowHeaders.set(dk, { dimKey: dk, dimValues, columnId });
-        },
-      });
-    } else {
-      // Clicking a measure cell: evict ancestor row headers and column headers
-      const rowHeaderKeysToEvict = findRowHeadersAboveCell(
-        $clickSelection,
-        storedDimValues,
-      );
-      const colHeaderKeysToEvict = findColHeadersAboveCell(
-        $clickSelection,
-        storedDimValues,
-      );
-
-      const evictedRowEntries = rowHeaderKeysToEvict
-        .map((k) => $clickSelection.rowHeaderSelections.get(k))
-        .filter(Boolean) as SelectionEntry[];
-
-      const evictedDimValues = collectRemovalsFromEntries(evictedRowEntries);
-
-      // Also collect column header dimension values for removal
-      for (const colKey of colHeaderKeysToEvict) {
-        const entries = JSON.parse(colKey) as [string, string][];
-        for (const [name, value] of entries) {
-          let set = evictedDimValues.get(name);
-          if (!set) {
-            set = new Set();
-            evictedDimValues.set(name, set);
-          }
-          set.add(value);
+    // Also collect column header dimension values for removal
+    for (const colKey of colHeaderKeysToEvict) {
+      const entries = JSON.parse(colKey) as [string, string][];
+      for (const [name, value] of entries) {
+        let set = evictedDimValues.get(name);
+        if (!set) {
+          set = new Set();
+          evictedDimValues.set(name, set);
         }
+        set.add(value);
       }
+    }
 
-      const removals: ExtractedFilter[] = [...evictedDimValues.entries()].map(
-        ([dimensionName, values]) => ({
-          dimensionName,
-          values: [...values],
-        }),
-      );
+    const removals: ExtractedFilter[] = [...evictedDimValues.entries()].map(
+      ([dimensionName, values]) => ({
+        dimensionName,
+        values: [...values],
+      }),
+    );
 
-      const additions = extractDimensionFiltersFromExpression(
-        cellFilters.filters,
-      );
+    const additions = extractDimensionFiltersFromExpression(
+      cellFilters.filters,
+    );
 
-      applyFilterUpdate({
-        removals,
-        additions,
-        updateSelectionSets: (nextRowHeaders, nextCells, nextColHeaders) => {
-          for (const k of rowHeaderKeysToEvict) nextRowHeaders.delete(k);
-          for (const k of colHeaderKeysToEvict) nextColHeaders.delete(k);
-          const key = cellKey(dk, columnId);
-          nextCells.set(key, {
+    applyFilterUpdate({
+      removals,
+      additions,
+      updateSelectionSets: (nextRowHeaders, nextCells, nextColHeaders) => {
+        for (const k of cellKeysToEvict) nextCells.delete(k);
+        for (const k of rowHeaderKeysToEvict) nextRowHeaders.delete(k);
+        for (const k of colHeaderKeysToEvict) nextColHeaders.delete(k);
+        if (isRowHeader) {
+          nextRowHeaders.set(dk, { dimKey: dk, dimValues, columnId });
+        } else {
+          nextCells.set(cellKey(dk, columnId), {
             dimKey: dk,
             dimValues: storedDimValues,
             columnId,
             dimClickIndex: upToDimensionIndex,
           });
-        },
-      });
-    }
+        }
+      },
+    });
   }
 
   function handleColumnHeaderClick(dimensionPath: Record<string, string>) {
