@@ -3,6 +3,7 @@ import { hasBlockerIssues } from "@rilldata/web-admin/features/billing/selectors
 import { fetchAllProjectsHibernating } from "@rilldata/web-admin/features/organizations/selectors";
 import { error, redirect } from "@sveltejs/kit";
 import { isAxiosError } from "axios";
+import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils.ts";
 import { maybeRedirectToEditableDeployment } from "@rilldata/web-admin/features/branches/deployment-utils.ts";
 import { isEditPage } from "@rilldata/web-admin/features/navigation/nav-utils.ts";
 
@@ -33,6 +34,12 @@ export const load = async ({
   }
 
   if (!isEditPage({ route })) {
+    // Branch deployments are only viewable from inside `/-/edit`. If a non-edit
+    // URL still carries an `@branch` segment (stale link, manual edit), 404
+    // rather than silently rendering branch-scoped data on a production route.
+    if (extractBranchFromPath(url.pathname)) {
+      throw error(404, "Branch deployments are only available from the editor.");
+    }
     await maybeRedirectToEditableDeployment(organization, project, url);
   }
 };

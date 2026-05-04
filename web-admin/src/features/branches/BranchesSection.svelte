@@ -45,7 +45,6 @@
     parseStringParam,
   } from "@rilldata/web-common/lib/url-filter-sync";
   import {
-    EyeIcon,
     GitBranchIcon,
     PlayIcon,
     StopCircleIcon,
@@ -64,7 +63,7 @@
       pageSize: 1000,
     }),
   );
-  // Uses empty params `{}` so the cache key matches BranchSelector's query.
+  // Uses empty params `{}` so the cache key matches other unscoped consumers.
   let allDeployments = $derived(
     createAdminServiceListDeployments(
       organization,
@@ -228,10 +227,6 @@
 
   function editUrl(branch: string | undefined): string {
     return `/${organization}/${project}${branchPathPrefix(branch)}/-/edit`;
-  }
-
-  function previewUrl(branch: string | undefined): string {
-    return `/${organization}/${project}${branchPathPrefix(branch)}`;
   }
 
   let openDropdownId = $state("");
@@ -436,18 +431,6 @@
                     </div>
                   </DropdownMenu.Item>
                 {/if}
-                <DropdownMenu.Item
-                  class="font-normal flex items-center"
-                  href={prod
-                    ? `/${organization}/${project}`
-                    : previewUrl(deployment.branch)}
-                  onclick={requestSkipBranchInjection}
-                >
-                  <div class="flex items-center">
-                    <EyeIcon size="12px" />
-                    <span class="ml-2">{prod ? "View" : "Preview"}</span>
-                  </div>
-                </DropdownMenu.Item>
                 {#if canStart}
                   <DropdownMenu.Item
                     class="font-normal flex items-center"

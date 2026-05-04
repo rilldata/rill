@@ -7,14 +7,14 @@ import {
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { redirect } from "@sveltejs/kit";
 import {
+  branchPathPrefix,
   extractBranchFromPath,
-  injectBranchIntoPath,
 } from "@rilldata/web-admin/features/branches/branch-utils.ts";
 
 /**
  * Invalidates all deployment queries for a project, triggering a refetch.
  * Uses the base key (no params) so it matches both dev-scoped and
- * unscoped queries (e.g., BranchSelector).
+ * unscoped queries.
  */
 export function invalidateDeployments(org: string, project: string) {
   return queryClient.invalidateQueries({
@@ -72,9 +72,6 @@ export async function maybeRedirectToEditableDeployment(
 
   throw redirect(
     307,
-    injectBranchIntoPath(
-      `/${organization}/${project}`,
-      editableDeployment.branch,
-    ),
+    `/${organization}/${project}${branchPathPrefix(editableDeployment.branch)}/-/edit`,
   );
 }
