@@ -50,7 +50,7 @@ For more information, refer to our [metrics view YAML configuration](/reference/
 
 ### Caching Query Results
 
-By default, dashboard queries against a live connector metrics view (Snowflake, BigQuery, Databricks, your own ClickHouse, Druid, MotherDuck, Pinot, etc.) run live against the source on every interaction. For dashboards with many concurrent users or repeated drill-downs, this can drive up warehouse compute or scan costs and add latency. Enable caching to reuse query results between users until the underlying data changes.
+By default, dashboard queries against metrics views backed by an external, self-managed connector (Snowflake, BigQuery, Databricks, your own ClickHouse, Druid, MotherDuck, Pinot, etc.) run live against the source on every interaction. For dashboards with many concurrent users or repeated drill-downs, this can drive up compute costs and add latency. Enable caching to reuse query results between users until the underlying data changes.
 
 Caching is configured under the `cache` block on the metrics view. Because live connectors are externally managed, caching is **off by default** — opt in by setting `cache.enabled: true`. Without `cache.key_sql`, Rill keys the cache on the max watermark of the metrics view's `timeseries` column. Setting `cache.key_sql` is recommended when you want a cheaper or more precise invalidation signal than scanning the timeseries column (for example, a metadata lookup or an ingest version column).
 
