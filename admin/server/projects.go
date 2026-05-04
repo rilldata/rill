@@ -300,13 +300,6 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 
 	var depl *database.Deployment
 	if req.Branch != "" {
-		if !permissions.ReadDev {
-			return &adminv1.GetProjectResponse{
-				Project:            s.projToDTO(proj, org.Name),
-				ProjectPermissions: permissions,
-			}, nil
-		}
-
 		depls, err := s.admin.DB.FindDeploymentsForProject(ctx, proj.ID, "", req.Branch)
 		if err != nil {
 			return nil, err
@@ -317,12 +310,8 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			return nil, status.Errorf(codes.FailedPrecondition, "multiple deployments found for branch %q. Recreate deployments to resolve", req.Branch)
 		}
 		depl = depls[0]
-
-		if !permissions.ReadDevStatus {
-			depl.StatusMessage = ""
-		}
 	} else {
-		if proj.PrimaryDeploymentID == nil || !permissions.ReadProd {
+		if proj.PrimaryDeploymentID == nil {
 			return &adminv1.GetProjectResponse{
 				Project:            s.projToDTO(proj, org.Name),
 				ProjectPermissions: permissions,
@@ -333,7 +322,19 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		if err != nil {
 			return nil, err
 		}
+	}
 
+	if depl.Environment == "dev" {
+		if !permissions.ReadDev {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to read dev deployment")
+		}
+		if !permissions.ReadDevStatus {
+			depl.StatusMessage = ""
+		}
+	} else {
+		if !permissions.ReadProd {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to read prod deployment")
+		}
 		if !permissions.ReadProdStatus {
 			depl.StatusMessage = ""
 		}
