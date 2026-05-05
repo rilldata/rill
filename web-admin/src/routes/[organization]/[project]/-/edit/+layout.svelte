@@ -273,7 +273,11 @@
 {#snippet envEditDisabled()}
   <div class="flex flex-row gap-2 items-center w-fit text-sm">
     <InfoIcon size={14} /> Manage environment variables in
-    <a href="/{organization}/{project}/-/settings/environment-variables">
+    <a
+      href="/{organization}/{project}/-/settings/environment-variables"
+      target="_blank"
+      rel="noopener"
+    >
       Settings →
     </a>
   </div>
