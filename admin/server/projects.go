@@ -937,7 +937,12 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 		return nil, status.Error(codes.InvalidArgument, validationErr.Error())
 	}
 
-	err = s.admin.UpdateProjectVariables(ctx, proj, req.Environment, req.Variables, req.UnsetVariables, claims.OwnerID())
+	var userID string
+	if claims.OwnerType() == auth.OwnerTypeUser {
+		userID = claims.OwnerID()
+	}
+
+	err = s.admin.UpdateProjectVariables(ctx, proj, req.Environment, req.Variables, req.UnsetVariables, userID)
 	if err != nil {
 		return nil, fmt.Errorf("variables updated failed with error %w", err)
 	}
