@@ -102,20 +102,26 @@
       return;
     }
 
+    // gitStatus tracks localChanges and currentBranch; the merge below changes
+    // both (commitAll runs even on partial failure), so refresh once the
+    // mutation finishes regardless of outcome.
+    const gitStatusQueryKey = getRuntimeServiceGitStatusQueryKey(
+      client.instanceId,
+      {},
+    );
+
     try {
       await $gitMergeMutation.mutateAsync({
         branch: primaryBranch,
         force: false,
-      });
-      // gitStatus tracks currentBranch; refresh so subscribers see the merge.
-      await queryClient.invalidateQueries({
-        queryKey: getRuntimeServiceGitStatusQueryKey(client.instanceId, {}),
       });
     } catch (err) {
       targetWindow.close();
       errorMessage = extractErrorMessage(err) || "Failed to merge";
       isMerging = false;
       return;
+    } finally {
+      void queryClient.invalidateQueries({ queryKey: gitStatusQueryKey });
     }
 
     if (needsRedeploy) {
