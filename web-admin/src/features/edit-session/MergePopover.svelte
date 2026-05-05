@@ -75,21 +75,32 @@
     isMerging = true;
     errorMessage = "";
 
-    // Open the destination tab synchronously so the browser ties it to the
-    // user's click gesture; otherwise pop-up blockers reject the open after
-    // the awaited merge below. Navigated on success; closed on failure.
-    const targetWindow = window.open("about:blank", "_blank");
-    if (!targetWindow) {
-      errorMessage = "Pop-up was blocked. Please allow pop-ups and try again.";
-      isMerging = false;
-      return;
-    }
-
     // Snapshot the prod deployment state at click time. Same three cases as
     // PublishPopover (see comment there); RedeployProject covers both the
     // no-deployment and dormant-deployment paths with one RPC.
     const hadProdDeployment = !!prodDeployment;
     const needsRedeploy = !prodDeploymentActive;
+
+    // Build the destination URL and open the new tab synchronously so the
+    // browser ties window.open() to the click gesture; otherwise pop-up
+    // blockers reject the open after the awaited merge below. The
+    // destination pages handle their own loading state, so no placeholder
+    // is needed.
+    const params = new URLSearchParams();
+    if (currentDashboard) {
+      params.set("deploying_dashboard", currentDashboard);
+    }
+    const search = params.toString();
+    const path = hadProdDeployment ? "/-/deploying" : "/-/invite";
+    const targetUrl = `/${organization}/${project}${path}${
+      search ? `?${search}` : ""
+    }`;
+    const targetWindow = window.open(targetUrl, "_blank");
+    if (!targetWindow) {
+      errorMessage = "Pop-up was blocked. Please allow pop-ups and try again.";
+      isMerging = false;
+      return;
+    }
 
     try {
       await $gitMergeMutation.mutateAsync({
@@ -135,19 +146,6 @@
       }
     }
 
-    // Mirror the local Rill Developer flow: a project that has never had a
-    // prod deployment lands on /-/invite, everything else lands on
-    // /-/deploying.
-    const params = new URLSearchParams();
-    if (currentDashboard) {
-      params.set("deploying_dashboard", currentDashboard);
-    }
-    const search = params.toString();
-    const path = hadProdDeployment ? "/-/deploying" : "/-/invite";
-    targetWindow.location.href = `/${organization}/${project}${path}${
-      search ? `?${search}` : ""
-    }`;
-
     isMerging = false;
     open = false;
   }
@@ -172,10 +170,10 @@
             sets up your production deployment. We'll open a new tab where you can
             invite teammates while it reconciles.
           {:else if !prodDeploymentActive}
-            Merging
+            Production is hibernated. Merging
             <span class="font-semibold text-fg-primary">"{currentBranch}"</span>
-            wakes your project and applies your changes. We'll open the deployment
-            in a new tab so you can watch updates reconcile.
+            will resume it and apply your changes. We'll open the deployment in
+            a new tab so you can watch updates reconcile.
           {:else}
             Merging pushes changes from
             <span class="font-semibold text-fg-primary">"{currentBranch}"</span>

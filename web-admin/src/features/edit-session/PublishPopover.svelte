@@ -8,9 +8,9 @@
   } from "@rilldata/web-admin/client";
   import { isActiveDeployment } from "@rilldata/web-admin/features/branches/deployment-utils";
   import { Button } from "@rilldata/web-common/components/button";
-  import * as Popover from "@rilldata/web-common/components/popover";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import {
@@ -28,9 +28,7 @@
 
   const AUTO_COMMIT_MESSAGE = "Updates from cloud editor";
 
-  let open = false;
   let isPublishing = false;
-  let errorMessage = "";
 
   const client = useRuntimeClient();
   const gitPushMutation = createRuntimeServiceGitPushMutation(client);
@@ -64,26 +62,9 @@
     alreadyOnPrimary ||
     isPublishing;
 
-  $: if (!open) {
-    errorMessage = "";
-  }
-
   async function handlePublish() {
     if (!primaryBranch || isPublishing) return;
     isPublishing = true;
-    errorMessage = "";
-
-    // Open the destination tab synchronously so the browser ties it to the
-    // user's click gesture; otherwise pop-up blockers reject the open after
-    // the awaited mutations below. We navigate the placeholder once we know
-    // whether this is a first publish (-> /-/invite) or a subsequent one
-    // (-> /-/deploying), and close it on failure.
-    const targetWindow = window.open("about:blank", "_blank");
-    if (!targetWindow) {
-      errorMessage = "Pop-up was blocked. Please allow pop-ups and try again.";
-      isPublishing = false;
-      return;
-    }
 
     // Snapshot the prod deployment state at click time. Three relevant cases:
     //   1. No prod deployment yet → first publish; route to /-/invite.
@@ -96,6 +77,30 @@
     // it provisions a fresh one and tears down the old.
     const hadProdDeployment = !!prodDeployment;
     const needsRedeploy = !prodDeploymentActive;
+
+    // Build the destination URL and open the new tab synchronously so the
+    // browser ties window.open() to the click gesture; otherwise pop-up
+    // blockers reject the open after the awaited mutations below. The
+    // destination pages handle their own loading state, so no placeholder
+    // is needed.
+    const params = new URLSearchParams();
+    if (currentDashboard) {
+      params.set("deploying_dashboard", currentDashboard);
+    }
+    const search = params.toString();
+    const path = hadProdDeployment ? "/-/deploying" : "/-/invite";
+    const targetUrl = `/${organization}/${project}${path}${
+      search ? `?${search}` : ""
+    }`;
+    const targetWindow = window.open(targetUrl, "_blank");
+    if (!targetWindow) {
+      eventBus.emit("notification", {
+        type: "error",
+        message: "Pop-up was blocked. Please allow pop-ups and try again.",
+      });
+      isPublishing = false;
+      return;
+    }
 
     // gitStatus tracks localChanges and currentBranch; the mutations below
     // change both, so refresh once the flow finishes (success or failure).
@@ -117,7 +122,10 @@
       });
     } catch (err) {
       targetWindow.close();
-      errorMessage = extractErrorMessage(err) || "Failed to publish";
+      eventBus.emit("notification", {
+        type: "error",
+        message: extractErrorMessage(err) || "Failed to publish",
+      });
       isPublishing = false;
       return;
     } finally {
@@ -155,81 +163,48 @@
         // branch and that the deployment step is what needs retrying.
         targetWindow.close();
         const detail = extractErrorMessage(err);
-        errorMessage = `Changes merged to production, but starting the production deployment failed${
-          detail ? `: ${detail}` : ""
-        }.`;
+        eventBus.emit("notification", {
+          type: "error",
+          message: `Changes merged to production, but starting the production deployment failed${
+            detail ? `: ${detail}` : ""
+          }.`,
+        });
         isPublishing = false;
         return;
       }
     }
 
-    // Mirror the local Rill Developer flow: a project that has never had a
-    // prod deployment lands on /-/invite (inviting teammates is the natural
-    // next step before the runtime is ready); everything else lands on
-    // /-/deploying.
-    const params = new URLSearchParams();
-    if (currentDashboard) {
-      params.set("deploying_dashboard", currentDashboard);
-    }
-    const search = params.toString();
-    const path = hadProdDeployment ? "/-/deploying" : "/-/invite";
-    targetWindow.location.href = `/${organization}/${project}${path}${
-      search ? `?${search}` : ""
-    }`;
-
     isPublishing = false;
-    open = false;
   }
 </script>
 
-<Tooltip distance={8} suppress={open}>
-  <Popover.Root bind:open>
-    <Popover.Trigger>
-      {#snippet child({ props })}
-        <Button {...props} type="primary" {disabled}>
-          <Rocket size="14" />
-          Publish
-        </Button>
-      {/snippet}
-    </Popover.Trigger>
-    <Popover.Content align="end" class="!w-[320px]">
-      <div class="flex flex-col gap-y-3">
-        <p class="text-xs text-fg-secondary">
-          {#if !prodDeployment}
-            Publish your project to production. We'll open a new tab where you
-            can invite teammates while the deployment reconciles.
-          {:else if !prodDeploymentActive}
-            Wake your project and publish your changes. We'll open the
-            deployment in a new tab so you can watch updates reconcile.
-          {:else}
-            Publish your changes to production. We'll open a new tab so you can
-            watch updates reconcile.
-          {/if}
-        </p>
-        <Button
-          type="primary"
-          small
-          disabled={isPublishing}
-          loading={isPublishing}
-          loadingCopy="Publishing..."
-          onClick={handlePublish}
-        >
-          Publish
-        </Button>
-        {#if errorMessage}
-          <p class="text-xs text-red-600">{errorMessage}</p>
-        {/if}
-      </div>
-    </Popover.Content>
-  </Popover.Root>
-  <TooltipContent slot="tooltip-content" maxWidth="220px">
+<Tooltip distance={8}>
+  <Button
+    type="primary"
+    {disabled}
+    loading={isPublishing}
+    loadingCopy="Publishing..."
+    onClick={handlePublish}
+  >
+    <Rocket size="14" />
+    Publish
+  </Button>
+  <TooltipContent slot="tooltip-content" maxWidth="240px">
     <span class="text-xs">
       {#if alreadyOnPrimary}
         Already on production
       {:else if !primaryBranch || !currentBranch || !projectLoaded}
         Loading project...
+      {:else if !prodDeployment}
+        Publish your project to production. We'll open a new tab where you can
+        invite teammates while the deployment reconciles.
+      {:else if !prodDeploymentActive}
+        Production is hibernated. Publishing will resume it and apply your
+        changes. We'll open the deployment in a new tab so you can watch
+        updates reconcile.
       {:else}
-        Publish your latest changes
+        Publish your changes to production. We'll open a new tab so you can
+        watch updates reconcile.
       {/if}
     </span>
   </TooltipContent>
