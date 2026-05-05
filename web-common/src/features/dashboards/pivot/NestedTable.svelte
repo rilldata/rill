@@ -27,6 +27,7 @@
 
   // State props
   export let hasColumnDimension: boolean;
+  export let widthScopeKey: string;
   export let timeDimension: string;
   export let assembled: boolean;
   export let rowDimensions: DimensionColumnProps;
@@ -63,7 +64,10 @@
   $: hasMeasures = measures.length > 0;
   $: rowDimensionLabel = getRowNestedLabel(rowDimensions);
   $: rowDimensionName = rowDimensionLabel ? rowDimensionLabel : null;
-  $: rowDimensionWidthKey = getNestedRowDimensionWidthKey(rowDimensions);
+  $: rowDimensionWidthKey = getNestedRowDimensionWidthKey(
+    widthScopeKey,
+    rowDimensions,
+  );
 
   $: if (
     hasRowDimension &&

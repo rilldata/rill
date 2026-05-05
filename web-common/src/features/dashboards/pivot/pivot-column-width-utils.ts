@@ -126,7 +126,11 @@ export function calculateRowDimensionWidth(
 }
 
 export function getNestedRowDimensionWidthKey(
+  widthScopeKey: string,
   rowDimensions: Array<{ name: string }>,
 ) {
-  return rowDimensions[0]?.name;
+  const rowDimensionName = rowDimensions[0]?.name;
+  if (!widthScopeKey || !rowDimensionName) return undefined;
+
+  return `${widthScopeKey}:${rowDimensionName}`;
 }
