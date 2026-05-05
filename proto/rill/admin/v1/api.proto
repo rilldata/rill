@@ -1469,10 +1469,9 @@ message DeleteDeploymentResponse {
 message ListProjectsForOrganizationResponse {
   repeated Project projects = 1;
   string next_page_token = 2;
-  // Indicates whether any of the projects in the returned list has an active deployment across any environment
-  // A deployment is active if is in `running`, `pending` or `updating` state.
-  // Note: this is for the returned list of projects, not the entire organization. 
-  bool has_active_deployment = 3;
+  // Indicates whether any of the projects in the returned list has an active or pending deployment across any environment
+  // Note: this is for the returned list of projects, not the entire organization
+  bool page_has_active_or_pending_deployment = 3;
 }
 
 message ListProjectsForOrganizationAndUserRequest {

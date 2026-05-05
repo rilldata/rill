@@ -5592,12 +5592,11 @@ definitions:
           $ref: '#/definitions/v1Project'
       nextPageToken:
         type: string
-      hasActiveDeployment:
+      pageHasActiveOrPendingDeployment:
         type: boolean
-        description: |-
-          Indicates whether any of the projects in the returned list has an active deployment across any environment
-          A deployment is active if is in `running`, `pending` or `updating` state.
-          Note: this is for the returned list of projects, not the entire organization.
+        title: |-
+          Indicates whether any of the projects in the returned list has an active or pending deployment across any environment
+          Note: this is for the returned list of projects, not the entire organization
   v1ListProjectsForUserByNameResponse:
     type: object
     properties:
