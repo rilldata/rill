@@ -3,10 +3,9 @@
   import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
   import OrganizationHibernating from "@rilldata/web-admin/features/organizations/hibernating/OrganizationHibernating.svelte";
   import { areAllProjectsHibernating } from "@rilldata/web-admin/features/organizations/selectors";
-  import {
-    createAdminServiceGetOrganization,
-    createAdminServiceListProjectsForOrganization,
-  } from "../../client";
+  import { createAdminServiceGetOrganization } from "../../client";
+  import { listProjectsForOrgQueryOptions } from "@rilldata/web-admin/features/projects/list-projects-query-options";
+  import { createQuery } from "@tanstack/svelte-query";
   import OrganizationHero from "../../features/organizations/OrganizationHero.svelte";
   import ProjectCards from "../../features/projects/ProjectCards.svelte";
   import { Button } from "@rilldata/web-common/components/button";
@@ -19,8 +18,9 @@
   } = $page);
 
   $: org = createAdminServiceGetOrganization(orgName);
-  $: projs = createAdminServiceListProjectsForOrganization(orgName, undefined, {
-    query: { enabled: !!$org.data?.organization },
+  $: projs = createQuery({
+    ...listProjectsForOrgQueryOptions(orgName),
+    enabled: !!$org.data?.organization,
   });
   $: allProjectsHibernating = areAllProjectsHibernating(orgName);
 

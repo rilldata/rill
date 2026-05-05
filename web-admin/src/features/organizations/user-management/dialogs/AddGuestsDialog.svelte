@@ -2,11 +2,11 @@
   import { page } from "$app/stores";
   import {
     createAdminServiceAddProjectMemberUser,
-    createAdminServiceListProjectsForOrganization,
     getAdminServiceListOrganizationInvitesQueryKey,
     getAdminServiceListOrganizationMemberUsersQueryKey,
     type V1Project,
   } from "@rilldata/web-admin/client";
+  import { listProjectsForOrgQueryOptions } from "@rilldata/web-admin/features/projects/list-projects-query-options";
   import { Button } from "@rilldata/web-common/components/button";
   import {
     Dialog,
@@ -27,7 +27,7 @@
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
   import { ORG_ROLES_OPTIONS } from "@rilldata/web-admin/features/organizations/constants";
   import { OrgUserRoles } from "@rilldata/web-common/features/users/roles";
-  import { useQueryClient } from "@tanstack/svelte-query";
+  import { createQuery, useQueryClient } from "@tanstack/svelte-query";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { array, object, string } from "yup";
@@ -56,17 +56,11 @@
   }
 
   // Projects list
-  $: projectsQuery = createAdminServiceListProjectsForOrganization(
-    organization,
-    undefined,
-    {
-      query: {
-        enabled: !!organization,
-        refetchOnMount: true,
-        refetchOnWindowFocus: true,
-      },
-    },
-  );
+  $: projectsQuery = createQuery({
+    ...listProjectsForOrgQueryOptions(organization),
+    enabled: !!organization,
+    refetchOnWindowFocus: true,
+  });
   $: projects = $projectsQuery?.data?.projects ?? ([] as V1Project[]);
   $: projectsErrorMessage =
     getRpcErrorMessage($projectsQuery?.error) ?? $projectsQuery?.error?.message;
