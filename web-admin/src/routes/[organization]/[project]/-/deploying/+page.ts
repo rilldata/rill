@@ -2,8 +2,10 @@ import { DeployingDashboardUrlParam } from "@rilldata/web-common/features/projec
 
 export const load = ({ url: { searchParams } }) => {
   const deployingDashboard = searchParams.get(DeployingDashboardUrlParam);
+  const source = searchParams.get("source");
 
   return {
     deployingDashboard,
+    source,
   };
 };

@@ -261,5 +261,23 @@ describe("deployment-utils", () => {
       const result = await call("/rilldata/openrtb");
       expect(result).toBeUndefined();
     });
+
+    it("does not redirect away from the deploying page", async () => {
+      // Conditions that would otherwise trigger a redirect:
+      // no prod deployment, an active editable dev deployment, no @branch in URL.
+      listDeploymentsMock.mockResolvedValue({
+        deployments: [
+          makeDeployment({
+            environment: "dev",
+            editable: true,
+            branch: "edit-branch",
+            status: V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING,
+          }),
+        ],
+      });
+
+      const result = await call("/rilldata/openrtb/-/deploying");
+      expect(result).toBeUndefined();
+    });
   });
 });

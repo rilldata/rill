@@ -5,12 +5,17 @@ import {
 } from "@rilldata/web-admin/client";
 import { getNeverSubscribedIssue } from "@rilldata/web-admin/features/billing/issues/getMessageForCancelledIssue";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
-import { error } from "@sveltejs/kit";
+import { error, redirect } from "@sveltejs/kit";
 import { isAxiosError } from "axios";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async ({ parent, params }) => {
-  const { issues } = await parent();
+  const { issues, organizationPermissions } = await parent();
+
+  if (!organizationPermissions?.manageOrg) {
+    throw redirect(307, `/${params.organization}`);
+  }
+
   const neverSubscribed = !!getNeverSubscribedIssue(issues);
 
   const queryKey = getAdminServiceGetBillingSubscriptionQueryKey(
