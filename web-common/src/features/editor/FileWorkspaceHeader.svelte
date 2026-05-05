@@ -1,6 +1,5 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { getReadonlyNotice } from "@rilldata/web-common/features/entity-management/actions/protected-files.ts";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/actions/ui-actions.ts";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { splitFolderAndFileName } from "@rilldata/web-common/features/entity-management/file-path-utils";
@@ -26,7 +25,6 @@
   let filePath = $derived(fileArtifact.path);
   let [, fileName] = $derived(splitFolderAndFileName(filePath));
   let editable = $derived(!fileArtifact.readonly && !fileArtifact.pinned);
-  let notice = $derived(getReadonlyNotice(filePath));
 
   const onChangeCallback = async (newTitle: string) => {
     const route = await handleEntityRename(
@@ -43,7 +41,6 @@
   {filePath}
   {resourceKind}
   {editable}
-  nonEditableMessage={notice}
   onTitleChange={onChangeCallback}
   {hasUnsavedChanges}
   showInspectorToggle={false}

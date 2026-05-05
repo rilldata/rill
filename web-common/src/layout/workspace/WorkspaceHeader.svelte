@@ -22,7 +22,6 @@
     resource = undefined,
     titleInput,
     editable = true,
-    nonEditableMessage,
     showInspectorToggle = true,
     showTableToggle = false,
     hasUnsavedChanges,
@@ -36,7 +35,6 @@
     resource?: V1Resource | undefined;
     titleInput: string;
     editable?: boolean;
-    nonEditableMessage?: Snippet<[]>;
     showInspectorToggle?: boolean;
     showTableToggle?: boolean;
     hasUnsavedChanges: boolean;
@@ -97,10 +95,6 @@
     </div>
 
     <div class="flex items-center gap-x-2 w-fit flex-none">
-      {#if !editable && nonEditableMessage}
-        {@render nonEditableMessage()}
-      {/if}
-
       {#if isConnector}
         <ConnectorRefreshButton {resource} {hasUnsavedChanges} />
         <ConnectorAddModelButton {resource} {hasUnsavedChanges} />

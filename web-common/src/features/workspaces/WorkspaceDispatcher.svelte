@@ -18,6 +18,7 @@
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
   import { onMount } from "svelte";
+  import { getReadonlyNotice } from "@rilldata/web-common/features/entity-management/actions/protected-files.ts";
 
   const workspaces = new Map([
     [ResourceKind.Source, ModelWorkspace],
@@ -41,10 +42,12 @@
     resourceName,
     inferredResourceKind,
     path,
+    readonly,
     getResource,
     getParseError,
     remoteContent,
   } = $derived(fileArtifact);
+  let notice = $derived(getReadonlyNotice(path));
 
   let resourceKind = $derived($resourceName?.kind as ResourceKind | undefined);
 
@@ -97,19 +100,26 @@
           resourceKind={resourceKind ?? $inferredResourceKind ?? undefined}
           hasUnsavedChanges={$hasUnsavedChanges}
         />
-        <WorkspaceEditorContainer
-          slot="body"
-          {resource}
-          {parseError}
-          remoteContent={$remoteContent}
-        >
-          <Editor
-            {fileArtifact}
-            {extensions}
-            bind:editor
-            bind:autoSave={$autoSave}
-          />
-        </WorkspaceEditorContainer>
+        <svelte:fragment slot="body">
+          {#if readonly && notice}
+            <div class="flex flex-col size-full items-center justify-center">
+              {@render notice()}
+            </div>
+          {:else}
+            <WorkspaceEditorContainer
+              {resource}
+              {parseError}
+              remoteContent={$remoteContent}
+            >
+              <Editor
+                {fileArtifact}
+                {extensions}
+                bind:editor
+                bind:autoSave={$autoSave}
+              />
+            </WorkspaceEditorContainer>
+          {/if}
+        </svelte:fragment>
       </WorkspaceContainer>
     {/if}
   </div>
