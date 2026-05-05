@@ -1,25 +1,23 @@
 <script lang="ts">
-  import { branchPathPrefix } from "@rilldata/web-admin/features/branches/branch-utils";
   import { Button } from "@rilldata/web-common/components/button";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import { createRuntimeServiceGitStatus } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { GitBranch, LogOut } from "lucide-svelte";
+  import { GitBranch } from "lucide-svelte";
   import CommitPopover from "./CommitPopover.svelte";
+  import ExitButton from "./ExitButton.svelte";
   import MergePopover from "./MergePopover.svelte";
   import PublishPopover from "./PublishPopover.svelte";
 
   export let organization: string;
   export let project: string;
-  export let branch: string;
   export let primaryBranch: string | undefined = undefined;
 
   const client = useRuntimeClient();
   const gitStatusQuery = createRuntimeServiceGitStatus(client, {});
 
-  $: closeHref = `/${organization}/${project}${branchPathPrefix(branch)}`;
   $: managedGit = $gitStatusQuery.data?.managedGit;
   $: gitStatusLoaded = $gitStatusQuery.data !== undefined;
   // Show the parent-level error UI only when GitStatus has never loaded.
@@ -50,12 +48,4 @@
   </Tooltip>
 {/if}
 
-<Tooltip distance={8}>
-  <Button type="secondary" href={closeHref}>
-    <LogOut size="14" />
-    Exit
-  </Button>
-  <TooltipContent slot="tooltip-content" maxWidth="200px">
-    <span class="text-xs">Return to project home</span>
-  </TooltipContent>
-</Tooltip>
+<ExitButton {organization} {project} />

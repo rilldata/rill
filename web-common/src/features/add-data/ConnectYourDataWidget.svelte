@@ -7,12 +7,15 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { getSupportedTopConnectors } from "@rilldata/web-common/features/add-data/manager/selectors.ts";
   import { withEditorPrefix } from "@rilldata/web-common/layout/navigation/editor-routing.ts";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types.ts";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
 
   export let startConnectorSelection: (name: string | null) => void = () => {};
   export let onWelcomeScreen = false;
 
   const runtimeClient = useRuntimeClient();
-  const topConnectors = getSupportedTopConnectors(runtimeClient);
+  const topConnectorsQuery = getSupportedTopConnectors(runtimeClient);
+  $: ({ data: topConnectors, isPending } = $topConnectorsQuery);
 
   function selectConnector(e: MouseEvent, connector: string) {
     e.preventDefault();
@@ -49,23 +52,34 @@
     </div>
   </svelte:element>
 
-  <div class="primary-connectors" role="group">
-    {#each $topConnectors as connector (connector)}
-      {@const icon = connectorIconMapping[connector]}
-      {@const label = connectorLabelMapping[connector] ?? connector}
-      <svelte:element
-        this={onWelcomeScreen ? "a" : "button"}
-        class="primary-connector-entry"
-        {...onWelcomeScreen
-          ? { href: withEditorPrefix(`/welcome/add-data?schema=${connector}`) }
-          : { onclick: (e) => selectConnector(e, connector) }}
-        aria-label={`Connect to ${connector}`}
-      >
-        <svelte:component this={icon} />
-        <span>{label}</span>
-      </svelte:element>
-    {/each}
-  </div>
+  {#if isPending}
+    <div class="primary-connectors-loading">
+      <div class="mx-auto w-fit">
+        <Spinner status={EntityStatus.Running} size="2rem" duration={725} />
+      </div>
+    </div>
+  {:else if topConnectors}
+    <!-- topConnectors will be defined when isPending is false. TODO: add error state -->
+    <div class="primary-connectors" role="group">
+      {#each topConnectors as connector (connector)}
+        {@const icon = connectorIconMapping[connector]}
+        {@const label = connectorLabelMapping[connector] ?? connector}
+        <svelte:element
+          this={onWelcomeScreen ? "a" : "button"}
+          class="primary-connector-entry"
+          {...onWelcomeScreen
+            ? {
+                href: withEditorPrefix(`/welcome/add-data?schema=${connector}`),
+              }
+            : { onclick: (e) => selectConnector(e, connector) }}
+          aria-label={`Connect to ${connector}`}
+        >
+          <svelte:component this={icon} />
+          <span>{label}</span>
+        </svelte:element>
+      {/each}
+    </div>
+  {/if}
 </div>
 
 <style lang="postcss">
@@ -125,6 +139,15 @@
   }
   .container-home .primary-connector-entry:hover {
     @apply bg-surface-hover;
+  }
+
+  .primary-connectors-loading {
+    @apply w-[335px];
+    /* To avoid nested interactions we overlay connectors list.
+       So to match primary-connectors we add a similar absolute layout here.
+       bottom-28 makes the spinner appear in the middle.
+    */
+    @apply absolute bottom-28 left-6;
   }
 
   .see-more-container {
