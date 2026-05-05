@@ -8,11 +8,7 @@
   import {
     isBillingUpgradePage,
     isOnboardingPage,
-    isProjectCreatePage,
-    isProjectInvitePage,
-    isProjectWelcomePage,
     isPublicReportPage,
-    isWelcomePage,
     withinOrganization,
     withinProject,
   } from "@rilldata/web-admin/features/navigation/nav-utils";
