@@ -231,7 +231,7 @@
       });
     }
 
-    // Keep BranchSelector's ListDeployments query in sync
+    // Keep the BranchesSection's ListDeployments query in sync
     void queryClient.invalidateQueries({
       queryKey: getAdminServiceListDeploymentsQueryKey(organization, project),
     });

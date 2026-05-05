@@ -152,8 +152,6 @@
       {organization}
       {project}
       readProjects={organizationPermissions?.readProjects}
-      readDev={!!projectPermissions?.readDev}
-      {primaryBranch}
       {planDisplayName}
       {organizationLogoUrl}
     />
@@ -216,8 +214,6 @@
       {organization}
       {project}
       readProjects={organizationPermissions?.readProjects}
-      readDev={!!projectPermissions?.readDev}
-      {primaryBranch}
       {planDisplayName}
       {organizationLogoUrl}
     />
@@ -232,8 +228,6 @@
       {organization}
       {project}
       readProjects={organizationPermissions?.readProjects}
-      readDev={!!projectPermissions?.readDev}
-      {primaryBranch}
       {planDisplayName}
       {organizationLogoUrl}
     />
@@ -253,8 +247,6 @@
       {organization}
       {project}
       readProjects={organizationPermissions?.readProjects}
-      readDev={!!projectPermissions?.readDev}
-      {primaryBranch}
       {planDisplayName}
       {organizationLogoUrl}
     />

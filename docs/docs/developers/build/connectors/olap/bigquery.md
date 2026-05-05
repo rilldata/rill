@@ -101,3 +101,5 @@ In BigQuery terminology, `database` maps to the **project**, `database_schema` m
 :::note
 Rill supports metrics views directly on BigQuery as a live connector. Incremental models and partitioned ingestion are not supported in live connector mode.
 :::
+
+To reduce bytes scanned on dashboards with repeat traffic, see [Caching query results](/developers/build/metrics-view/underlying-model#caching-query-results) on live connectors. Caching pairs well with [`max_bytes_billed`](#controlling-query-costs) — use both to cap per-query cost and reduce overall query volume.

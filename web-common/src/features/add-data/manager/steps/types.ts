@@ -3,6 +3,7 @@ import {
   MetricsEventSpace,
 } from "@rilldata/web-common/metrics/service/MetricsTypes.ts";
 import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
+import type { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 
 export enum AddDataStep {
   // Used purely to transition from Init to one of the other steps.
@@ -19,6 +20,10 @@ export enum AddDataStep {
 export type AddDataConfig = {
   welcomeScreen?: boolean;
   importOnly?: boolean;
+  // The resource the user is trying to create. When set, it determines how
+  // far the import flow runs (e.g. MetricsView runs ingest + metrics view
+  // for non-live sources).
+  targetResource?: ResourceKind;
 
   // Telemetry related config
   medium?: BehaviourEventMedium;
