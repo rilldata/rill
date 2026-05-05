@@ -137,9 +137,9 @@ export function isAuthPage({ route }: Pick<Page, "route">): boolean {
 export function isOnboardingPage(page: Page): boolean {
   return (
     isProjectInvitePage(page) ||
-    isProjectInvitePage(page) ||
     isWelcomePage(page) ||
-    isProjectWelcomePage(page)
+    isProjectWelcomePage(page) ||
+    isProjectCreatePage(page)
   );
 }
 
