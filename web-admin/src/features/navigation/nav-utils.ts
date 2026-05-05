@@ -129,6 +129,20 @@ export function isAuthPage({ route }: Pick<Page, "route">): boolean {
   return !!route.id?.startsWith("/-/auth");
 }
 
+/**
+ * Returns true if the page is a page that is part of the onboarding flow.
+ * Project invite page, org/project welcome page, and project create page are all onboarding pages as of now.
+ * @param page
+ */
+export function isOnboardingPage(page: Page): boolean {
+  return (
+    isProjectInvitePage(page) ||
+    isProjectInvitePage(page) ||
+    isWelcomePage(page) ||
+    isProjectWelcomePage(page)
+  );
+}
+
 export function getScreenNameFromPage(page: Page): MetricsEventScreenName {
   switch (true) {
     case isOrganizationPage(page):

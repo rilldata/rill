@@ -7,6 +7,7 @@
   import BillingBannerManager from "@rilldata/web-admin/features/billing/banner/BillingBannerManager.svelte";
   import {
     isBillingUpgradePage,
+    isOnboardingPage,
     isProjectCreatePage,
     isProjectInvitePage,
     isProjectWelcomePage,
@@ -95,24 +96,18 @@
 
   $: isEmbed = isEmbedPage($page);
 
+  // Onboarding pages like the project invite page, org/project welcome page, and project create page should hide the top bar and billing manager
+  $: onOnboardingPage = isOnboardingPage($page);
+
   $: hideTopBar =
-    // invite page shouldn't show the top bar because it is considered an onboard step
-    isProjectInvitePage($page) ||
     // upgrade callback landing page shouldn't show any rill identifications
     isBillingUpgradePage($page) ||
     // public reports are shared to external users who shouldn't be shown any rill related stuff
     isPublicReportPage($page) ||
-    // Welcome page should be a full screen experience
-    isWelcomePage($page) ||
-    // Project welcome page should not show the banner to avoid breaking the UX.
-    isProjectWelcomePage($page) ||
-    // Project create page should be a full page experience as well.
-    isProjectCreatePage($page);
+    onOnboardingPage;
   $: hideBillingManager =
     // billing manager needs organization
-    !organization ||
-    // invite page shouldn't show the banner since the illusion is that the user is not on cloud yet.
-    isProjectInvitePage($page);
+    !organization || onOnboardingPage;
 
   $: withinOnlyOrg = withinOrganization($page) && !withinProject($page);
 
