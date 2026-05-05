@@ -586,7 +586,9 @@ export function bucketYamlRanges(
   usingRillTime: boolean,
   maxQueryTimeRange?: string,
 ): RangeBuckets {
-  const maxDays = maxQueryTimeRange ? isoDurationToDays(maxQueryTimeRange) : NaN;
+  const maxDays = maxQueryTimeRange
+    ? isoDurationToDays(maxQueryTimeRange)
+    : NaN;
   const capped = !Number.isNaN(maxDays) && maxDays > 0;
 
   const showDefaults = !yamlRanges.length;
@@ -613,7 +615,9 @@ export function bucketYamlRanges(
     if (!capped) return buckets;
     return {
       ...buckets,
-      latest: buckets.latest.filter((p) => rangeWithinCap(p.toString(), maxDays)),
+      latest: buckets.latest.filter((p) =>
+        rangeWithinCap(p.toString(), maxDays),
+      ),
       allTime: false,
     };
   }
