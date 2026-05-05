@@ -21,6 +21,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { Rocket } from "lucide-svelte";
+  import { buildPostMergeUrl } from "./post-merge-url";
 
   export let organization: string;
   export let project: string;
@@ -47,12 +48,6 @@
   $: prodDeployment = $projectQuery.data?.deployment;
   $: prodDeploymentActive =
     !!prodDeployment && isActiveDeployment(prodDeployment);
-  // Pull the dashboard name from `/-/edit/explore/<name>` or
-  // `/-/edit/canvas/<name>` so first publish can route the user back to it.
-  // Other edit paths (file editor, welcome) fall through to undefined.
-  $: currentDashboard = $page.url.pathname.match(
-    /\/-\/edit\/(?:explore|canvas)\/([^/?#]+)/,
-  )?.[1];
   $: alreadyOnPrimary =
     !!primaryBranch && !!currentBranch && currentBranch === primaryBranch;
   $: disabled =
@@ -78,20 +73,16 @@
     const hadProdDeployment = !!prodDeployment;
     const needsRedeploy = !prodDeploymentActive;
 
-    // Build the destination URL and open the new tab synchronously so the
-    // browser ties window.open() to the click gesture; otherwise pop-up
-    // blockers reject the open after the awaited mutations below. The
-    // destination pages handle their own loading state, so no placeholder
-    // is needed.
-    const params = new URLSearchParams();
-    if (currentDashboard) {
-      params.set("deploying_dashboard", currentDashboard);
-    }
-    const search = params.toString();
-    const path = hadProdDeployment ? "/-/deploying" : "/-/invite";
-    const targetUrl = `/${organization}/${project}${path}${
-      search ? `?${search}` : ""
-    }`;
+    // Open the new tab synchronously so the browser ties window.open() to
+    // the click gesture; otherwise pop-up blockers reject the open after
+    // the awaited mutations below. The destination pages handle their own
+    // loading state, so no placeholder is needed.
+    const targetUrl = buildPostMergeUrl({
+      organization,
+      project,
+      pathname: $page.url.pathname,
+      hadProdDeployment,
+    });
     const targetWindow = window.open(targetUrl, "_blank");
     if (!targetWindow) {
       eventBus.emit("notification", {
