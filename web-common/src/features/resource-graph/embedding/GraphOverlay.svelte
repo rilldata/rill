@@ -71,6 +71,7 @@
         {showControls}
         showLock={false}
         enableExpand={false}
+        showNodeActions={false}
         {fitViewPadding}
         {fitViewMinZoom}
         {fitViewMaxZoom}

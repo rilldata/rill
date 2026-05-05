@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import CanvasIcon from "@rilldata/web-common/components/icons/CanvasIcon.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
@@ -7,7 +8,7 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
-  import { openResourceGraphQuickView } from "@rilldata/web-common/features/resource-graph/quick-view/quick-view-store";
+  import { resourceShorthandMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
@@ -67,13 +68,11 @@
   };
 
   function viewGraph() {
-    if (!resource) {
-      console.warn(
-        "[MetricsViewMenuItems] Cannot open resource graph: resource unavailable.",
-      );
-      return;
-    }
-    openResourceGraphQuickView(resource);
+    const name = resource?.meta?.name?.name;
+    const kind = resource?.meta?.name?.kind as ResourceKind | undefined;
+    if (!name || !kind) return;
+    const shortKind = resourceShorthandMapping[kind];
+    goto(`/graph?resource=${encodeURIComponent(`${shortKind}:${name}`)}`);
   }
 
   async function handleCreateCanvasDashboard() {
@@ -102,7 +101,7 @@
   {/if}
   <NavigationMenuItem onclick={viewGraph}>
     <GitBranch slot="icon" size="14px" />
-    View DAG graph
+    View Resource Graph
   </NavigationMenuItem>
   {#if resource}
     <NavigationMenuItem
@@ -142,6 +141,6 @@
 {:else}
   <NavigationMenuItem onclick={viewGraph}>
     <GitBranch slot="icon" size="14px" />
-    View DAG graph
+    View Resource Graph
   </NavigationMenuItem>
 {/if}

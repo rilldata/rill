@@ -1,13 +1,56 @@
 <script lang="ts">
-  import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
+  import { keepPreviousData } from "@tanstack/svelte-query";
+  import {
+    createRuntimeServiceGetInstance,
+    createRuntimeServiceListResources,
+    type V1Resource,
+  } from "@rilldata/web-common/runtime-client";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-
   const runtimeClient = useRuntimeClient();
   import ResourceGraph from "../embedding/ResourceGraph.svelte";
+  import type {
+    ResourceStatusFilter,
+    ResourceStatusFilterValue,
+  } from "../shared/types";
+  import { graphCache } from "../shared/cache/position-cache";
+  import { onMount } from "svelte";
+
   export let seeds: string[] | undefined;
+  export let searchQuery = "";
+  export let statusFilter: ResourceStatusFilter = [];
+  export let showSummary = true;
+  export let layout: "grid" | "sidebar" = "grid";
+  export let selectedGroupId: string | null = null;
+  export let onSelectedGroupChange: ((id: string | null) => void) | null = null;
+  export let onRefreshAll: (() => void) | null = null;
+  export let statusFilterOptions: {
+    label: string;
+    value: ResourceStatusFilterValue;
+  }[] = [];
+  export let onStatusToggle:
+    | ((value: ResourceStatusFilterValue) => void)
+    | null = null;
+  export let onClearFilters: (() => void) | null = null;
+  export let onSelectAll: (() => void) | null = null;
+  export let hasUrlFilters = false;
+  export let flushToolbar = false;
+  export let showTitle = true;
+  export let showIsolatedResources = false;
+  export let onShowIsolatedChange: ((value: boolean) => void) | null = null;
+
+  onMount(() => {
+    graphCache.initialize();
+  });
 
   $: ({ instanceId } = runtimeClient);
 
+  $: instanceQuery = createRuntimeServiceGetInstance(
+    runtimeClient,
+    { sensitive: true },
+    { query: { enabled: !!instanceId } },
+  );
+  $: olapConnectorName = $instanceQuery.data?.instance?.olapConnector;
   $: resourcesQuery = createRuntimeServiceListResources(
     runtimeClient,
     {},
@@ -17,11 +60,40 @@
         refetchOnMount: true,
         refetchOnWindowFocus: false,
         enabled: !!instanceId,
+        placeholderData: keepPreviousData,
       },
     },
   );
 
-  $: resources = $resourcesQuery.data?.resources ?? [];
+  // Keep all connectors so they appear in the dropdown for explicit selection.
+  // If no explicit connector resource exists for the OLAP connector, inject a
+  // synthetic one so it still appears as a node in the DAG.
+  $: resources = (function (): V1Resource[] {
+    const raw = $resourcesQuery.data?.resources ?? [];
+
+    // Ensure the OLAP connector is present; create a synthetic resource if needed
+    if (
+      olapConnectorName &&
+      !raw.some(
+        (r) =>
+          r.meta?.name?.kind === ResourceKind.Connector &&
+          r.meta?.name?.name === olapConnectorName,
+      )
+    ) {
+      const synthetic: V1Resource = {
+        meta: {
+          name: {
+            kind: ResourceKind.Connector,
+            name: olapConnectorName,
+          },
+          reconcileStatus: "RECONCILE_STATUS_IDLE",
+        },
+      };
+      return [synthetic, ...raw];
+    }
+
+    return raw;
+  })();
   $: errorMessage = $resourcesQuery.error
     ? "Failed to load project resources."
     : null;
@@ -32,4 +104,20 @@
   isLoading={$resourcesQuery.isLoading}
   error={errorMessage}
   {seeds}
+  {searchQuery}
+  {statusFilter}
+  {showSummary}
+  {layout}
+  {selectedGroupId}
+  {onSelectedGroupChange}
+  {onRefreshAll}
+  {statusFilterOptions}
+  {onStatusToggle}
+  {onClearFilters}
+  {onSelectAll}
+  {hasUrlFilters}
+  {flushToolbar}
+  {showTitle}
+  {showIsolatedResources}
+  {onShowIsolatedChange}
 />

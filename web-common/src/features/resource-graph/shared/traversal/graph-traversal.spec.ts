@@ -1,9 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  traverseUpstream,
-  traverseDownstream,
-  traverseBidirectional,
-} from "./graph-traversal";
+import { traverseUpstream, traverseDownstream } from "./graph-traversal";
 import type { Edge } from "@xyflow/svelte";
 
 describe("graph-traversal", () => {
@@ -233,98 +229,6 @@ describe("graph-traversal", () => {
 
       expect(result.visited).toEqual(new Set(["node1", "node2", "node3"]));
       expect(result.edgeIds).toEqual(new Set(["e1", "e2", "e3"]));
-    });
-  });
-
-  describe("traverseBidirectional", () => {
-    it("should find all connected nodes in both directions", () => {
-      const edges: Edge[] = [
-        { id: "e1", source: "source1", target: "model1" },
-        { id: "e2", source: "model1", target: "metrics1" },
-      ];
-
-      const result = traverseBidirectional(new Set(["model1"]), edges);
-
-      expect(result.visited).toEqual(
-        new Set(["model1", "source1", "metrics1"]),
-      );
-      expect(result.edgeIds).toEqual(new Set(["e1", "e2"]));
-    });
-
-    it("should combine upstream and downstream for complex graph", () => {
-      // source1 -> model1 -> model2 -> metrics1
-      //                   -> model3 -> metrics2
-      const edges: Edge[] = [
-        { id: "e1", source: "source1", target: "model1" },
-        { id: "e2", source: "model1", target: "model2" },
-        { id: "e3", source: "model1", target: "model3" },
-        { id: "e4", source: "model2", target: "metrics1" },
-        { id: "e5", source: "model3", target: "metrics2" },
-      ];
-
-      const result = traverseBidirectional(new Set(["model1"]), edges);
-
-      expect(result.visited).toEqual(
-        new Set([
-          "source1",
-          "model1",
-          "model2",
-          "model3",
-          "metrics1",
-          "metrics2",
-        ]),
-      );
-      expect(result.edgeIds).toEqual(new Set(["e1", "e2", "e3", "e4", "e5"]));
-    });
-
-    it("should handle isolated node", () => {
-      const edges: Edge[] = [{ id: "e1", source: "source1", target: "model1" }];
-
-      const result = traverseBidirectional(new Set(["isolated"]), edges);
-
-      expect(result.visited).toEqual(new Set(["isolated"]));
-      expect(result.edgeIds).toEqual(new Set());
-    });
-
-    it("should handle empty inputs", () => {
-      const result = traverseBidirectional(new Set([]), []);
-
-      expect(result.visited).toEqual(new Set());
-      expect(result.edgeIds).toEqual(new Set());
-    });
-
-    it("should find entire connected component", () => {
-      const edges: Edge[] = [
-        { id: "e1", source: "a", target: "b" },
-        { id: "e2", source: "b", target: "c" },
-        { id: "e3", source: "c", target: "d" },
-        { id: "e4", source: "d", target: "e" },
-      ];
-
-      // Starting from middle node should find all connected nodes
-      const result = traverseBidirectional(new Set(["c"]), edges);
-
-      expect(result.visited).toEqual(new Set(["a", "b", "c", "d", "e"]));
-      expect(result.edgeIds).toEqual(new Set(["e1", "e2", "e3", "e4"]));
-    });
-
-    it("should handle multiple starting nodes in connected component", () => {
-      const edges: Edge[] = [
-        { id: "e1", source: "source1", target: "model1" },
-        { id: "e2", source: "source2", target: "model2" },
-        { id: "e3", source: "model1", target: "metrics1" },
-        { id: "e4", source: "model2", target: "metrics1" },
-      ];
-
-      const result = traverseBidirectional(
-        new Set(["model1", "model2"]),
-        edges,
-      );
-
-      expect(result.visited).toEqual(
-        new Set(["source1", "source2", "model1", "model2", "metrics1"]),
-      );
-      expect(result.edgeIds).toEqual(new Set(["e1", "e2", "e3", "e4"]));
     });
   });
 

@@ -11,22 +11,44 @@ export interface TraversalResult {
 }
 
 /**
+ * Build adjacency index maps from an edge list for O(1) neighbor lookups.
+ * Call once per edge set, then pass the maps to traversal functions.
+ */
+function buildEdgeIndex(edges: Edge[]): {
+  byTarget: Map<string, Edge[]>;
+  bySource: Map<string, Edge[]>;
+} {
+  const byTarget = new Map<string, Edge[]>();
+  const bySource = new Map<string, Edge[]>();
+
+  for (const e of edges) {
+    const tList = byTarget.get(e.target);
+    if (tList) tList.push(e);
+    else byTarget.set(e.target, [e]);
+
+    const sList = bySource.get(e.source);
+    if (sList) sList.push(e);
+    else bySource.set(e.source, [e]);
+  }
+
+  return { byTarget, bySource };
+}
+
+/**
  * Traverse upstream (sources) from selected nodes via incoming edges only.
  * Uses breadth-first search to find all nodes that the selected nodes depend on.
+ *
+ * Complexity: O(V + E) — edges are indexed once, then each edge is visited at most once.
  *
  * @param selectedIds - Set of node IDs to start traversal from
  * @param edges - All edges in the graph
  * @returns Object containing visited node IDs and traversed edge IDs
- *
- * @example
- * const result = traverseUpstream(new Set(['model:orders']), edges);
- * // result.visited contains 'model:orders' and all its upstream sources
- * // result.edgeIds contains all edges leading to 'model:orders'
  */
 export function traverseUpstream(
   selectedIds: Set<string>,
   edges: Edge[],
 ): TraversalResult {
+  const { byTarget } = buildEdgeIndex(edges);
   const visited = new Set<string>();
   const edgeIds = new Set<string>();
   const queue: string[] = Array.from(selectedIds);
@@ -37,12 +59,11 @@ export function traverseUpstream(
     if (visited.has(curr)) continue;
     visited.add(curr);
 
-    // Find all incoming edges (edges where current node is the target)
-    for (const e of edges) {
-      if (e.target === curr) {
-        edgeIds.add(e.id);
-        if (!visited.has(e.source)) queue.push(e.source);
-      }
+    const incoming = byTarget.get(curr);
+    if (!incoming) continue;
+    for (const e of incoming) {
+      edgeIds.add(e.id);
+      if (!visited.has(e.source)) queue.push(e.source);
     }
   }
 
@@ -53,19 +74,17 @@ export function traverseUpstream(
  * Traverse downstream (dependents) from selected nodes via outgoing edges only.
  * Uses breadth-first search to find all nodes that depend on the selected nodes.
  *
+ * Complexity: O(V + E) — edges are indexed once, then each edge is visited at most once.
+ *
  * @param selectedIds - Set of node IDs to start traversal from
  * @param edges - All edges in the graph
  * @returns Object containing visited node IDs and traversed edge IDs
- *
- * @example
- * const result = traverseDownstream(new Set(['source:users']), edges);
- * // result.visited contains 'source:users' and all models/metrics that use it
- * // result.edgeIds contains all edges starting from 'source:users'
  */
 export function traverseDownstream(
   selectedIds: Set<string>,
   edges: Edge[],
 ): TraversalResult {
+  const { bySource } = buildEdgeIndex(edges);
   const visited = new Set<string>();
   const edgeIds = new Set<string>();
   const queue: string[] = Array.from(selectedIds);
@@ -76,40 +95,13 @@ export function traverseDownstream(
     if (visited.has(curr)) continue;
     visited.add(curr);
 
-    // Find all outgoing edges (edges where current node is the source)
-    for (const e of edges) {
-      if (e.source === curr) {
-        edgeIds.add(e.id);
-        if (!visited.has(e.target)) queue.push(e.target);
-      }
+    const outgoing = bySource.get(curr);
+    if (!outgoing) continue;
+    for (const e of outgoing) {
+      edgeIds.add(e.id);
+      if (!visited.has(e.target)) queue.push(e.target);
     }
   }
 
   return { visited, edgeIds };
-}
-
-/**
- * Traverse both upstream and downstream from selected nodes.
- * Combines the results of both traversal directions.
- *
- * @param selectedIds - Set of node IDs to start traversal from
- * @param edges - All edges in the graph
- * @returns Object containing all visited node IDs and traversed edge IDs
- *
- * @example
- * const result = traverseBidirectional(new Set(['model:orders']), edges);
- * // result.visited contains all nodes connected to 'model:orders'
- * // result.edgeIds contains all edges in the connected component
- */
-export function traverseBidirectional(
-  selectedIds: Set<string>,
-  edges: Edge[],
-): TraversalResult {
-  const upstream = traverseUpstream(selectedIds, edges);
-  const downstream = traverseDownstream(selectedIds, edges);
-
-  return {
-    visited: new Set([...upstream.visited, ...downstream.visited]),
-    edgeIds: new Set([...upstream.edgeIds, ...downstream.edgeIds]),
-  };
 }

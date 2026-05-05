@@ -26,7 +26,6 @@
   import { fileArtifacts } from "../entity-management/file-artifacts";
   import NavDirectory from "./NavDirectory.svelte";
   import { findDirectory, transformFileList } from "./transform-file-list";
-  import QuickView from "@rilldata/web-common/features/resource-graph/quick-view/QuickView.svelte";
 
   export let hasUnsaved: boolean;
 
@@ -206,5 +205,3 @@
 {/if}
 
 <ForceDeleteConfirmation bind:open={showForceDelete} onDelete={onForceDelete} />
-
-<QuickView />

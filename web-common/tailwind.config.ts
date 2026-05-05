@@ -120,6 +120,7 @@ export default {
         Explore: oklabString("explore"),
         Metrics: oklabString("metrics"),
         Model: oklabString("model"),
+        Source: oklabString("source"),
         API: oklabString("api"),
         Data: oklabString("data"),
         Theme: oklabString("theme"),

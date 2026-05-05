@@ -25,6 +25,11 @@
   import { parseDocument } from "yaml";
   import InputWithConfirm from "../components/forms/InputWithConfirm.svelte";
   import Tag from "../components/tag/Tag.svelte";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { GitBranch } from "lucide-svelte";
+  import { goto } from "$app/navigation";
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
 
   const { deploy, developerChat, stickyDashboardState } = featureFlags;
@@ -126,8 +131,21 @@
       <ExplorePreviewCTAs exploreName={dashboardName} />
     {:else if route.id?.includes("canvas")}
       <CanvasPreviewCTAs canvasName={dashboardName} />
-    {:else if showDeveloperChat}
-      <ChatToggle />
+    {:else if mode === "Developer"}
+      <Tooltip distance={8}>
+        <Button
+          type="tertiary"
+          square
+          onClick={() => goto("/graph")}
+          label="Open project graph"
+        >
+          <GitBranch size="14px" aria-hidden="true" />
+        </Button>
+        <TooltipContent slot="tooltip-content">Project graph</TooltipContent>
+      </Tooltip>
+      {#if showDeveloperChat}
+        <ChatToggle />
+      {/if}
     {/if}
     {#if showDeployCTA}
       <DeployProjectCTA {hasValidDashboard} />

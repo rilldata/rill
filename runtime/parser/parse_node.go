@@ -248,26 +248,26 @@ func (p *Parser) parseStem(paths []string, ymlPath, yml, sqlPath, sql string) (*
 			v, ok := v.(string)
 			if !ok {
 				err = fmt.Errorf("invalid type %T for property 'type'", v)
-				break
-			}
-			res.Kind, err = ParseResourceKind(v)
-			if err != nil {
-				break
+			} else {
+				res.Kind, err = ParseResourceKind(v)
 			}
 		case "name":
 			v, ok := v.(string)
 			if !ok {
 				err = fmt.Errorf("invalid type %T for property 'name'", v)
-				break
+			} else {
+				res.Name = v
 			}
-			res.Name = v
 		case "connector":
 			v, ok := v.(string)
 			if !ok {
 				err = fmt.Errorf("invalid type %T for property 'connector'", v)
-				break
+			} else {
+				res.Connector = v
 			}
-			res.Connector = v
+		}
+		if err != nil {
+			break
 		}
 	}
 	if err != nil {
