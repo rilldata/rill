@@ -33,7 +33,7 @@
   }: {
     organization: string;
     defaultName?: string;
-    onCreate: (projectName: string, frontendUrl: string) => void;
+    onCreate: (projectName: string) => void;
     onDeployError?: (deployError: DeployError) => void;
   } = $props();
 
@@ -117,7 +117,7 @@
           ),
         });
 
-        onCreate(project, resp.project?.frontendUrl ?? "/");
+        onCreate(project);
       },
       onError({ result }) {
         const error =

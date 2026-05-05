@@ -37,11 +37,13 @@
   let showStartTeamPlanDialog = $state(false);
   let startTeamPlanType: TeamPlanDialogTypes = $state("base");
 
-  function handleCreate(projectName: string, frontendUrl: string) {
+  function handleCreate(projectName: string) {
     projectWelcomeStatus.setProjectWelcomeStep(projectName, true);
     setTimeout(
       () =>
-        void goto(`${frontendUrl}/@${CreateProjectBranchName}/-/edit/welcome`),
+        void goto(
+          `/${organization}/${projectName}/@${CreateProjectBranchName}/-/edit/welcome`,
+        ),
     );
   }
 </script>
@@ -65,7 +67,7 @@
     {:else}
       <RillLogoSquareNegative size="36px" />
       <div class="text-2xl font-extrabold text-fg-accent text-center">
-        Create {hasProjects ? "your first" : "a new"} project
+        Create {hasProjects ? "a new" : "your first"} project
       </div>
 
       <div
@@ -73,7 +75,7 @@
       >
         <div>
           <div class="text-base font-semibold">
-            Name your {hasProjects ? "first " : ""}project
+            Name your {hasProjects ? "" : "first "}project
           </div>
           <div class="text-sm text-fg-muted">
             You can rename anytime from project settings.
