@@ -6,6 +6,17 @@ import {
 } from "@rilldata/web-common/runtime-client/local-service";
 import { derived } from "svelte/store";
 
+// TODO: Get frontend URL from the backend instead of deriving it from the admin URL.
+//       We should add an endpoint to get frontendUrl from the urls.go util on cloud.
+export function getCloudFrontendUrl(adminUrl: string): string {
+  let cloudUrl = adminUrl.replace("admin.rilldata", "ui.rilldata");
+  // hack for dev env
+  if (cloudUrl === "http://localhost:8080") {
+    cloudUrl = "http://localhost:3000";
+  }
+  return cloudUrl;
+}
+
 export function getPlanUpgradeUrl(orgName: string) {
   const metadataQuery = createLocalServiceGetMetadata();
   const orgsMetadataQuery =
@@ -24,15 +35,7 @@ export function getPlanUpgradeUrl(orgName: string) {
         !!metadataForOrg?.issues &&
         !!getNeverSubscribedIssue(metadataForOrg.issues);
 
-      // TODO: Find a better solution and get a url from backend.
-      //       We should add an endpoint to get frontendUrl from the urls.go util on cloud.
-      let cloudUrl = adminUrl.replace("admin.rilldata", "ui.rilldata");
-      // hack for dev env
-      if (cloudUrl === "http://localhost:8080") {
-        cloudUrl = "http://localhost:3000";
-      }
-
-      const url = new URL(cloudUrl);
+      const url = new URL(getCloudFrontendUrl(adminUrl));
       if (isEmptyOrg) {
         // Empty org wont have billing related options so show the general setting page in the background
         url.pathname = `/${orgName}/-/settings`;

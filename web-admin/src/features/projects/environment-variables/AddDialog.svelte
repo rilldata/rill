@@ -41,8 +41,11 @@
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
+  // The form always has variables initialized; coerce for TS
+  $: variables = $form.variables ?? [];
+
   $: hasExistingKeys = Object.keys(inputErrors).length > 0;
-  $: hasNewChanges = $form.variables.some(
+  $: hasNewChanges = variables.some(
     (variable) => variable.key !== "" || variable.value !== "",
   );
   $: hasNoEnvironment = showEnvironmentError && !isDevelopment && !isProduction;
@@ -89,7 +92,7 @@
           return;
         }
 
-        const filteredVariables = values.variables.filter(
+        const filteredVariables = (values.variables ?? []).filter(
           ({ key }) => key !== "",
         );
 
@@ -141,23 +144,23 @@
   }
 
   function handleAdd() {
-    $form.variables = [...$form.variables, { key: "", value: "" }];
+    $form.variables = [...variables, { key: "", value: "" }];
   }
 
   function handleKeyChange(index: number, event: Event) {
     const target = event.target as HTMLInputElement;
-    $form.variables[index].key = target.value;
+    $form.variables![index]!.key = target.value;
     delete inputErrors[index];
     isKeyAlreadyExists = false;
   }
 
   function handleValueChange(index: number, event: Event) {
     const target = event.target as HTMLInputElement;
-    $form.variables[index].value = target.value;
+    $form.variables![index]!.value = target.value;
   }
 
   function handleRemove(index: number) {
-    $form.variables = $form.variables.filter((_, i) => i !== index);
+    $form.variables = variables.filter((_, i) => i !== index);
     checkForExistingKeys();
   }
 
@@ -177,9 +180,9 @@
     let isDuplicateWithExisting = false;
 
     // First check for duplicates within the form
-    const formKeys = $form.variables
-      .filter((variable) => variable.key.trim() !== "")
-      .map((variable) => variable.key);
+    const formKeys = variables
+      .filter((variable) => (variable.key ?? "").trim() !== "")
+      .map((variable) => variable.key!);
 
     const formDuplicates = new Set();
     // Check for duplicates using Set
@@ -197,23 +200,19 @@
 
     // Then check against existing variables
     const existingDuplicates = new Set();
-    const existingKeys = $form.variables
-      .filter((variable) => variable.key.trim() !== "")
-      .map((variable) => {
-        return {
-          environment: getCurrentEnvironment(isDevelopment, isProduction),
-          name: variable.key,
-        };
-      });
+    const existingKeys = variables
+      .filter((variable) => (variable.key ?? "").trim() !== "")
+      .map((variable) => ({
+        environment: getCurrentEnvironment(isDevelopment, isProduction),
+        name: variable.key!,
+      }));
 
     existingKeys.forEach((key, _) => {
       const variableEnvironment = key.environment;
       const variableKey = key.name;
 
       if (isDuplicateKey(variableEnvironment, variableKey, variableNames)) {
-        const originalIndex = $form.variables.findIndex(
-          (v) => v.key === variableKey,
-        );
+        const originalIndex = variables.findIndex((v) => v.key === variableKey);
         existingDuplicates.add(originalIndex);
         isDuplicateWithExisting = true;
       }
@@ -251,9 +250,10 @@
     const parsedVariables = parseDotenv(contents);
 
     for (const [key, value] of Object.entries(parsedVariables)) {
-      const filteredVariables = $form.variables.filter(
+      const filteredVariables = variables.filter(
         (variable) =>
-          variable.key.trim() !== "" || variable.value.trim() !== "",
+          (variable.key ?? "").trim() !== "" ||
+          (variable.value ?? "").trim() !== "",
       );
 
       $form.variables = [...filteredVariables, { key, value }];
@@ -274,7 +274,7 @@
     hasExistingKeys ||
     !hasNewChanges ||
     hasNoEnvironment ||
-    Object.values($form.variables).every((v) => !v.key.trim());
+    Object.values(variables).every((v) => !(v.key ?? "").trim());
 </script>
 
 <Dialog
@@ -361,7 +361,7 @@
           <div
             class="flex flex-col gap-y-4 w-full overflow-y-auto max-h-[224px]"
           >
-            {#each $form.variables as variable, index}
+            {#each variables as variable, index}
               <div
                 class="flex flex-row items-center gap-2"
                 id={`variable-${index}`}
@@ -390,7 +390,7 @@
                 <IconButton
                   onclick={() => {
                     // Reset if there is only one variable
-                    if ($form.variables.length === 1) {
+                    if (variables.length === 1) {
                       handleReset();
                     } else {
                       handleRemove(index);
@@ -411,7 +411,7 @@
               <ul class="flex flex-col gap-y-1">
                 {#each $allErrors as error}
                   <li>
-                    <b>{$form.variables[getKeyFromError(error)].key}</b>
+                    <b>{variables[getKeyFromError(error)]?.key}</b>
                     <span class="text-xs text-red-600 font-normal">
                       {error.messages}
                     </span>

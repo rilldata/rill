@@ -92,7 +92,7 @@
         if (isKeyAlreadyExists) return;
 
         const flatVariable = {
-          [values.key]: values.value,
+          [values.key!]: values.value,
         };
 
         try {
@@ -213,7 +213,7 @@
     if (
       isDuplicateKey(
         newEnvironment,
-        $form.key,
+        $form.key ?? "",
         variableNames,
         initialValues.key,
       )

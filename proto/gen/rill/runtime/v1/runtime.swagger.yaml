@@ -793,6 +793,31 @@ paths:
           type: string
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/env/pull:
+    post:
+      summary: PullEnv pulls cloud environment variables into local .env files
+      operationId: RuntimeService_PullEnv
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1PullEnvResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/env/push:
     post:
       summary: PushEnv pushes local environment variables to admin service
@@ -7230,6 +7255,16 @@ definitions:
           Storage usage by the default OLAP connector in the project.
           If it is -1, it means the value is unknown.
           This is a convenience field derived from the entries.
+  v1PullEnvResponse:
+    type: object
+    properties:
+      variablesCount:
+        type: integer
+        format: int32
+        title: Number of variables pulled from admin service
+      modified:
+        type: boolean
+        title: Whether the .env file(s) were modified
   v1PushEnvResponse:
     type: object
     properties:

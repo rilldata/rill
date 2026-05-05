@@ -55,6 +55,8 @@ import {
   ListResourcesRequest,
   ListToolsRequest,
   PingRequest,
+  PullEnvRequest,
+  PullEnvResponse,
   PushEnvRequest,
   PushEnvResponse,
   PutFileRequest,
@@ -3656,6 +3658,70 @@ export function createRuntimeServicePushEnvMutation(
   Omit<PartialMessage<PushEnvRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServicePushEnvMutationOptions(
+    client,
+    options,
+  );
+  return createMutation(mutationOptions, queryClient);
+}
+
+/**
+ * Raw RPC call: RuntimeService.PullEnv
+ */
+export async function runtimeServicePullEnv(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<PullEnvRequest>, "instanceId">,
+  options?: { signal?: AbortSignal },
+): Promise<PartialMessage<PullEnvResponse>> {
+  const r = await client.runtimeService.pullEnv(
+    PullEnvRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as PartialMessage<PullEnvResponse>;
+}
+
+export function getRuntimeServicePullEnvMutationOptions(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      PartialMessage<PullEnvResponse>,
+      unknown,
+      Omit<PartialMessage<PullEnvRequest>, "instanceId">
+    >
+  >,
+): CreateMutationOptions<
+  PartialMessage<PullEnvResponse>,
+  unknown,
+  Omit<PartialMessage<PullEnvRequest>, "instanceId">
+> {
+  return {
+    mutationFn: (request) => runtimeServicePullEnv(client, request),
+    ...options,
+  };
+}
+
+export function createRuntimeServicePullEnvMutation(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      PartialMessage<PullEnvResponse>,
+      unknown,
+      Omit<PartialMessage<PullEnvRequest>, "instanceId">
+    >
+  >,
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  PartialMessage<PullEnvResponse>,
+  unknown,
+  Omit<PartialMessage<PullEnvRequest>, "instanceId">
+> {
+  const mutationOptions = getRuntimeServicePullEnvMutationOptions(
     client,
     options,
   );
