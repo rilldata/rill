@@ -1,15 +1,15 @@
 import {
+  adminServiceListDeployments,
   getAdminServiceListDeploymentsQueryKey,
   V1DeploymentStatus,
   type V1Deployment,
-  adminServiceListDeployments,
 } from "@rilldata/web-admin/client";
+import {
+  extractBranchFromPath,
+  injectBranchIntoPath,
+} from "@rilldata/web-admin/features/branches/branch-utils.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { redirect } from "@sveltejs/kit";
-import {
-  branchPathPrefix,
-  extractBranchFromPath,
-} from "@rilldata/web-admin/features/branches/branch-utils.ts";
 
 /**
  * Invalidates all deployment queries for a project, triggering a refetch.
@@ -82,6 +82,9 @@ export async function maybeRedirectToEditableDeployment(
 
   throw redirect(
     307,
-    `/${organization}/${project}${branchPathPrefix(editableDeployment.branch)}/-/edit`,
+    injectBranchIntoPath(
+      `/${organization}/${project}/-/edit`,
+      editableDeployment.branch,
+    ),
   );
 }
