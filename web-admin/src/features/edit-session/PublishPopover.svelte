@@ -1,18 +1,17 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import {
-    createAdminServiceCreateDeployment,
-    createAdminServiceListDeployments,
+    createAdminServiceGetProject,
+    createAdminServiceRedeployProject,
+    getAdminServiceGetProjectQueryKey,
     getAdminServiceListDeploymentsQueryKey,
   } from "@rilldata/web-admin/client";
-  import { requestSkipBranchInjection } from "@rilldata/web-admin/features/branches/branch-utils";
-  import { isProdDeployment } from "@rilldata/web-admin/features/branches/deployment-utils";
+  import { isActiveDeployment } from "@rilldata/web-admin/features/branches/deployment-utils";
   import { Button } from "@rilldata/web-common/components/button";
-  import * as Popover from "@rilldata/web-common/components/popover";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import {
     createRuntimeServiceGitMergeToBranchMutation,
@@ -22,6 +21,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { Rocket } from "lucide-svelte";
+  import { buildPostMergeUrl } from "./post-merge-url";
 
   export let organization: string;
   export let project: string;
@@ -29,54 +29,69 @@
 
   const AUTO_COMMIT_MESSAGE = "Updates from cloud editor";
 
-  let open = false;
   let isPublishing = false;
-  let errorMessage = "";
 
   const client = useRuntimeClient();
   const gitPushMutation = createRuntimeServiceGitPushMutation(client);
   const gitMergeMutation = createRuntimeServiceGitMergeToBranchMutation(client);
   const gitStatusQuery = createRuntimeServiceGitStatus(client, {});
-  const deploymentsQuery = createAdminServiceListDeployments(
-    organization,
-    project,
-    {},
-  );
-  const createDeploymentMutation = createAdminServiceCreateDeployment();
+  // Query GetProject without a branch param so `data.deployment` reflects
+  // the project's primary (prod) deployment — the same source of truth the
+  // project layout uses. ListDeployments is too loose: it includes orphan
+  // prod records whose project pointer has been cleared.
+  const projectQuery = createAdminServiceGetProject(organization, project);
+  const redeployProjectMutation = createAdminServiceRedeployProject();
 
   $: currentBranch = $gitStatusQuery.data?.branch ?? "";
   $: hasLocalChanges = $gitStatusQuery.data?.localChanges ?? false;
-  // First publish only: managed-git projects are created with `skipDeploy`,
-  // so on the first merge to primary we must explicitly create the prod
-  // deployment. Subsequent publishes find a prod deployment and skip this.
-  $: deploymentsLoaded = $deploymentsQuery.data !== undefined;
-  $: hasProdDeployment =
-    $deploymentsQuery.data?.deployments?.some(isProdDeployment) ?? false;
-  // Pull the dashboard name from `/-/edit/explore/<name>` or
-  // `/-/edit/canvas/<name>` so first publish can route the user back to it.
-  // Other edit paths (file editor, welcome) fall through to undefined.
-  $: currentDashboard = $page.url.pathname.match(
-    /\/-\/edit\/(?:explore|canvas)\/([^/?#]+)/,
-  )?.[1];
+  $: projectLoaded = $projectQuery.data !== undefined;
+  $: prodDeployment = $projectQuery.data?.deployment;
+  $: prodDeploymentActive =
+    !!prodDeployment && isActiveDeployment(prodDeployment);
   $: alreadyOnPrimary =
     !!primaryBranch && !!currentBranch && currentBranch === primaryBranch;
   $: disabled =
     !primaryBranch ||
     !currentBranch ||
-    !deploymentsLoaded ||
+    !projectLoaded ||
     alreadyOnPrimary ||
     isPublishing;
-
-  $: if (!open) {
-    errorMessage = "";
-  }
 
   async function handlePublish() {
     if (!primaryBranch || isPublishing) return;
     isPublishing = true;
-    errorMessage = "";
 
-    const isFirstPublish = !hasProdDeployment;
+    // Snapshot the prod deployment state at click time. Three relevant cases:
+    //   1. No prod deployment yet → first publish; route to /-/invite.
+    //   2. Prod deployment exists but is dormant (STOPPED/ERRORED) → wake it
+    //      via RedeployProject; route to /-/deploying.
+    //   3. Prod deployment is already active (PENDING/RUNNING/UPDATING) → the
+    //      merge alone reconciles changes; route to /-/deploying.
+    // RedeployProject (admin/projects.go:333) handles cases 1 and 2 with a
+    // single RPC: if there's no current deployment it creates one, otherwise
+    // it provisions a fresh one and tears down the old.
+    const hadProdDeployment = !!prodDeployment;
+    const needsRedeploy = !prodDeploymentActive;
+
+    // Open the new tab synchronously so the browser ties window.open() to
+    // the click gesture; otherwise pop-up blockers reject the open after
+    // the awaited mutations below. The destination pages handle their own
+    // loading state, so no placeholder is needed.
+    const targetUrl = buildPostMergeUrl({
+      organization,
+      project,
+      pathname: $page.url.pathname,
+      hadProdDeployment,
+    });
+    const targetWindow = window.open(targetUrl, "_blank");
+    if (!targetWindow) {
+      eventBus.emit("notification", {
+        type: "error",
+        message: "Pop-up was blocked. Please allow pop-ups and try again.",
+      });
+      isPublishing = false;
+      return;
+    }
 
     // gitStatus tracks localChanges and currentBranch; the mutations below
     // change both, so refresh once the flow finishes (success or failure).
@@ -97,7 +112,11 @@
         force: false,
       });
     } catch (err) {
-      errorMessage = extractErrorMessage(err) || "Failed to publish";
+      targetWindow.close();
+      eventBus.emit("notification", {
+        type: "error",
+        message: extractErrorMessage(err) || "Failed to publish",
+      });
       isPublishing = false;
       return;
     } finally {
@@ -106,112 +125,77 @@
       void queryClient.invalidateQueries({ queryKey: gitStatusQueryKey });
     }
 
-    if (isFirstPublish) {
+    if (needsRedeploy) {
       try {
-        // CreateDeployment with environment "prod" intentionally omits `branch`
-        // and `editable`: the API derives the branch from the project's primary
-        // branch and forbids both fields for prod deployments.
         // TODO: detect billing/quota errors here and surface a friendly
         // message, mirroring `getPrettyDeployError` in
         // `web-common/src/features/project/deploy/deploy-errors.ts`.
-        await $createDeploymentMutation.mutateAsync({
+        await $redeployProjectMutation.mutateAsync({
           org: organization,
           project,
-          data: { environment: "prod" },
         });
-        // Invalidate via the no-params base key so all deployment-list query
-        // variants for this project (BranchSelector, BranchesSection, etc.)
-        // are matched by TanStack's prefix matching.
-        await queryClient.invalidateQueries({
-          queryKey: getAdminServiceListDeploymentsQueryKey(
-            organization,
-            project,
-          ),
-        });
+        // Refresh the project query so the layout sees the new primary
+        // deployment pointer, and ListDeployments so subscribers like
+        // BranchSelector and BranchesSection pick up the new row.
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: getAdminServiceGetProjectQueryKey(organization, project),
+          }),
+          queryClient.invalidateQueries({
+            queryKey: getAdminServiceListDeploymentsQueryKey(
+              organization,
+              project,
+            ),
+          }),
+        ]);
       } catch (err) {
-        // The merge succeeded but the prod deployment failed to start. Be
-        // explicit so the user knows their changes are on the primary branch
-        // and that creating the deployment is the part that needs retrying.
+        // The merge succeeded but the prod deployment failed to (re)start.
+        // Be explicit so the user knows their changes are on the primary
+        // branch and that the deployment step is what needs retrying.
+        targetWindow.close();
         const detail = extractErrorMessage(err);
-        errorMessage = `Changes merged to production, but creating the production deployment failed${
-          detail ? `: ${detail}` : ""
-        }.`;
+        eventBus.emit("notification", {
+          type: "error",
+          message: `Changes merged to production, but starting the production deployment failed${
+            detail ? `: ${detail}` : ""
+          }.`,
+        });
         isPublishing = false;
         return;
       }
     }
 
-    let target: string;
-    let gotoOpts: Parameters<typeof goto>[1];
-    if (isFirstPublish) {
-      // Prod runtime is provisioning from scratch and reconciling for the first
-      // time; route through the deploying page so the user sees progress
-      // instead of an empty project home.
-      const params = new URLSearchParams({ source: "publish" });
-      if (currentDashboard) {
-        params.set("deploying_dashboard", currentDashboard);
-      }
-      target = `/${organization}/${project}/-/deploying?${params.toString()}`;
-      gotoOpts = { replaceState: true };
-    } else {
-      target = `/${organization}/${project}`;
-      gotoOpts = undefined;
-    }
-
     isPublishing = false;
-    open = false;
-
-    // Defer goto to the next task. Calling it synchronously after a mutation
-    // races with TanStack's invalidation/refetch teardown, whose abort listeners
-    // can throw and silently cancel the navigation. Same workaround as
-    // welcome/organization/+page.svelte after createOrg.
-    setTimeout(() => {
-      requestSkipBranchInjection();
-      void goto(target, gotoOpts);
-    });
   }
 </script>
 
-<Tooltip distance={8} suppress={open}>
-  <Popover.Root bind:open>
-    <Popover.Trigger>
-      {#snippet child({ props })}
-        <Button {...props} type="primary" {disabled}>
-          <Rocket size="14" />
-          Publish
-        </Button>
-      {/snippet}
-    </Popover.Trigger>
-    <Popover.Content align="end" class="!w-[320px]">
-      <div class="flex flex-col gap-y-3">
-        <p class="text-xs text-fg-secondary">
-          Publish your changes to production and return to the project home.
-          Viewers will see updates as the project reconciles.
-        </p>
-        <Button
-          type="primary"
-          small
-          disabled={isPublishing}
-          loading={isPublishing}
-          loadingCopy="Publishing..."
-          onClick={handlePublish}
-        >
-          Publish
-        </Button>
-        {#if errorMessage}
-          <p class="text-xs text-red-600">{errorMessage}</p>
-        {/if}
-      </div>
-    </Popover.Content>
-  </Popover.Root>
-  <TooltipContent slot="tooltip-content" maxWidth="220px">
+<Tooltip distance={8}>
+  <Button
+    type="primary"
+    {disabled}
+    loading={isPublishing}
+    loadingCopy="Publishing..."
+    onClick={handlePublish}
+  >
+    <Rocket size="14" />
+    Publish
+  </Button>
+  <TooltipContent slot="tooltip-content" maxWidth="240px">
     <span class="text-xs">
       {#if alreadyOnPrimary}
         Already on production
-      {:else if !primaryBranch || !currentBranch || !deploymentsLoaded}
+      {:else if !primaryBranch || !currentBranch || !projectLoaded}
         Loading project...
+      {:else if !prodDeployment}
+        Publish your project to production. We'll open a new tab where you can
+        invite teammates while the deployment reconciles.
+      {:else if !prodDeploymentActive}
+        Production is hibernated. Publishing will resume it and apply your
+        changes. We'll open the deployment in a new tab so you can watch updates
+        reconcile.
       {:else}
-        Publish your latest changes
+        Publish your changes to production. We'll open a new tab so you can
+        watch updates reconcile.
       {/if}
     </span>
   </TooltipContent>

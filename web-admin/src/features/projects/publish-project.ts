@@ -1,7 +1,7 @@
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { runtimeServiceGitPush } from "@rilldata/web-common/runtime-client";
 
-export const CreateProjectBranchName = "dev";
+export const CreateProjectBranchName = "develop";
 
 /**
  * Checkpoints the current project state. Redirect should already be handled through indiviual components.

@@ -259,6 +259,7 @@ export function useClientFilteredResources(
           ) ?? [],
       },
     },
+    queryClient,
   );
 }
 
