@@ -500,6 +500,172 @@ export class GithubRepoStatusResponse extends Message<GithubRepoStatusResponse> 
 }
 
 /**
+ * @generated from message rill.local.v1.CreateGithubPRRequest
+ */
+export class CreateGithubPRRequest extends Message<CreateGithubPRRequest> {
+  /**
+   * @generated from field: string branch = 1;
+   */
+  branch = "";
+
+  /**
+   * @generated from field: string title = 2;
+   */
+  title = "";
+
+  /**
+   * @generated from field: string body = 3;
+   */
+  body = "";
+
+  constructor(data?: PartialMessage<CreateGithubPRRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.local.v1.CreateGithubPRRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "body", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateGithubPRRequest {
+    return new CreateGithubPRRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateGithubPRRequest {
+    return new CreateGithubPRRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateGithubPRRequest {
+    return new CreateGithubPRRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateGithubPRRequest | PlainMessage<CreateGithubPRRequest> | undefined, b: CreateGithubPRRequest | PlainMessage<CreateGithubPRRequest> | undefined): boolean {
+    return proto3.util.equals(CreateGithubPRRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.local.v1.CreateGithubPRResponse
+ */
+export class CreateGithubPRResponse extends Message<CreateGithubPRResponse> {
+  /**
+   * @generated from field: string pr_url = 1;
+   */
+  prUrl = "";
+
+  constructor(data?: PartialMessage<CreateGithubPRResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.local.v1.CreateGithubPRResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "pr_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateGithubPRResponse {
+    return new CreateGithubPRResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateGithubPRResponse {
+    return new CreateGithubPRResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateGithubPRResponse {
+    return new CreateGithubPRResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateGithubPRResponse | PlainMessage<CreateGithubPRResponse> | undefined, b: CreateGithubPRResponse | PlainMessage<CreateGithubPRResponse> | undefined): boolean {
+    return proto3.util.equals(CreateGithubPRResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.local.v1.GetGithubPRRequest
+ */
+export class GetGithubPRRequest extends Message<GetGithubPRRequest> {
+  /**
+   * @generated from field: string branch = 1;
+   */
+  branch = "";
+
+  constructor(data?: PartialMessage<GetGithubPRRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.local.v1.GetGithubPRRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetGithubPRRequest {
+    return new GetGithubPRRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetGithubPRRequest {
+    return new GetGithubPRRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetGithubPRRequest {
+    return new GetGithubPRRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetGithubPRRequest | PlainMessage<GetGithubPRRequest> | undefined, b: GetGithubPRRequest | PlainMessage<GetGithubPRRequest> | undefined): boolean {
+    return proto3.util.equals(GetGithubPRRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.local.v1.GetGithubPRResponse
+ */
+export class GetGithubPRResponse extends Message<GetGithubPRResponse> {
+  /**
+   * @generated from field: string pr_url = 1;
+   */
+  prUrl = "";
+
+  /**
+   * @generated from field: bool pr_merged = 2;
+   */
+  prMerged = false;
+
+  constructor(data?: PartialMessage<GetGithubPRResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.local.v1.GetGithubPRResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "pr_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "pr_merged", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetGithubPRResponse {
+    return new GetGithubPRResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetGithubPRResponse {
+    return new GetGithubPRResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetGithubPRResponse {
+    return new GetGithubPRResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetGithubPRResponse | PlainMessage<GetGithubPRResponse> | undefined, b: GetGithubPRResponse | PlainMessage<GetGithubPRResponse> | undefined): boolean {
+    return proto3.util.equals(GetGithubPRResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.local.v1.GitPullRequest
  */
 export class GitPullRequest extends Message<GitPullRequest> {

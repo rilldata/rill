@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateOrganizationRequest, CreateOrganizationResponse, DeployProjectRequest, DeployProjectResponse, GetCurrentProjectRequest, GetCurrentProjectResponse, GetCurrentUserRequest, GetCurrentUserResponse, GetMetadataRequest, GetMetadataResponse, GetProjectRequest, GetProjectResponse, GetVersionRequest, GetVersionResponse, GithubRepoStatusRequest, GithubRepoStatusResponse, GitPullRequest, GitPullResponse, GitPushRequest, GitPushResponse, GitStatusRequest, GitStatusResponse, ListMatchingProjectsRequest, ListMatchingProjectsResponse, ListOrganizationsAndBillingMetadataRequest, ListOrganizationsAndBillingMetadataResponse, ListProjectsForOrgRequest, ListProjectsForOrgResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse, RedeployProjectRequest, RedeployProjectResponse } from "./api_pb.js";
+import { CreateGithubPRRequest, CreateGithubPRResponse, CreateOrganizationRequest, CreateOrganizationResponse, DeployProjectRequest, DeployProjectResponse, GetCurrentProjectRequest, GetCurrentProjectResponse, GetCurrentUserRequest, GetCurrentUserResponse, GetGithubPRRequest, GetGithubPRResponse, GetMetadataRequest, GetMetadataResponse, GetProjectRequest, GetProjectResponse, GetVersionRequest, GetVersionResponse, GithubRepoStatusRequest, GithubRepoStatusResponse, GitPullRequest, GitPullResponse, GitPushRequest, GitPushResponse, GitStatusRequest, GitStatusResponse, ListMatchingProjectsRequest, ListMatchingProjectsResponse, ListOrganizationsAndBillingMetadataRequest, ListOrganizationsAndBillingMetadataResponse, ListProjectsForOrgRequest, ListProjectsForOrgResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse, RedeployProjectRequest, RedeployProjectResponse } from "./api_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -65,6 +65,28 @@ export const LocalService = {
       name: "GithubRepoStatus",
       I: GithubRepoStatusRequest,
       O: GithubRepoStatusResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * CreateGithubPR creates a Github PR from the specified branch to the connected project's primary branch. Forwards to admin API of the same name.
+     *
+     * @generated from rpc rill.local.v1.LocalService.CreateGithubPR
+     */
+    createGithubPR: {
+      name: "CreateGithubPR",
+      I: CreateGithubPRRequest,
+      O: CreateGithubPRResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * GetGithubPR returns the status of the most recent Github PR for the specified branch, if any. Forwards to admin API of the same name.
+     *
+     * @generated from rpc rill.local.v1.LocalService.GetGithubPR
+     */
+    getGithubPR: {
+      name: "GetGithubPR",
+      I: GetGithubPRRequest,
+      O: GetGithubPRResponse,
       kind: MethodKind.Unary,
     },
     /**

@@ -112,6 +112,69 @@ func (s *Server) GithubRepoStatus(ctx context.Context, r *connect.Request[localv
 	}), nil
 }
 
+func (s *Server) CreateGithubPR(ctx context.Context, r *connect.Request[localv1.CreateGithubPRRequest]) (*connect.Response[localv1.CreateGithubPRResponse], error) {
+	if !s.app.ch.IsAuthenticated() {
+		return nil, errors.New("must authenticate before performing this action")
+	}
+
+	projects, err := s.app.ch.InferProjects(ctx, s.app.ch.Org, s.app.ProjectPath)
+	if err != nil {
+		return nil, err
+	}
+	project := projects[0]
+
+	c, err := s.app.ch.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.CreateGithubPR(ctx, &adminv1.CreateGithubPRRequest{
+		Org:     project.OrgName,
+		Project: project.Name,
+		Branch:  r.Msg.Branch,
+		Title:   r.Msg.Title,
+		Body:    r.Msg.Body,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return connect.NewResponse(&localv1.CreateGithubPRResponse{
+		PrUrl: resp.PrUrl,
+	}), nil
+}
+
+func (s *Server) GetGithubPR(ctx context.Context, r *connect.Request[localv1.GetGithubPRRequest]) (*connect.Response[localv1.GetGithubPRResponse], error) {
+	if !s.app.ch.IsAuthenticated() {
+		return nil, errors.New("must authenticate before performing this action")
+	}
+
+	projects, err := s.app.ch.InferProjects(ctx, s.app.ch.Org, s.app.ProjectPath)
+	if err != nil {
+		return nil, err
+	}
+	project := projects[0]
+
+	c, err := s.app.ch.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.GetGithubPR(ctx, &adminv1.GetGithubPRRequest{
+		Org:     project.OrgName,
+		Project: project.Name,
+		Branch:  r.Msg.Branch,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return connect.NewResponse(&localv1.GetGithubPRResponse{
+		PrUrl:    resp.PrUrl,
+		PrMerged: resp.PrMerged,
+	}), nil
+}
+
 func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPullRequest]) (*connect.Response[localv1.GitPullResponse], error) {
 	// Get authenticated admin client
 	if !s.app.ch.IsAuthenticated() {
