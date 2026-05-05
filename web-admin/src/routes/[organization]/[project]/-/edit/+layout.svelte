@@ -101,11 +101,10 @@
   let starting = false;
 
   $: isLoading =
-    $projectQuery.isLoading ||
-    $user.isLoading ||
+    $projectQuery.isPending ||
+    $user.isPending ||
     starting ||
-    deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING ||
-    deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING;
+    deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING;
 
   $: isErrored =
     deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED;
@@ -116,7 +115,8 @@
       deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING);
 
   $: isReady =
-    deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING &&
+    (deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING ||
+      deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING) &&
     runtimeHost !== null &&
     instanceId !== null &&
     jwt !== null &&
