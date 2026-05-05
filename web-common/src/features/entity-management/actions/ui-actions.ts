@@ -1,4 +1,8 @@
 import { renameFileArtifact } from "@rilldata/web-common/features/entity-management/actions/actions.ts";
+import {
+  isPinned,
+  isReadonly,
+} from "@rilldata/web-common/features/entity-management/actions/protected-files.ts";
 import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
 import { splitFolderAndFileName } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
 import {
@@ -12,17 +16,12 @@ import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { queryClient } from "../../../lib/svelte-query/globalQueryClient.ts";
 import { getFileNamesInDirectory } from "../file-selectors.ts";
-import {
-  matchReadonlyFile,
-  type ReadonlyMatcher,
-} from "@rilldata/web-common/features/entity-management/actions/readonly-files.ts";
 
 export async function handleEntityRename(
   client: RuntimeClient,
   newName: string,
   existingPath: string,
   existingName: string,
-  additionalReadonlyFiles: ReadonlyMatcher[] = [],
 ) {
   const [folder] = splitFolderAndFileName(existingPath);
 
@@ -50,7 +49,7 @@ export async function handleEntityRename(
   }
 
   const newFilePath = (folder ? `${folder}/` : "/") + newName;
-  if (matchReadonlyFile(newFilePath, additionalReadonlyFiles)) {
+  if (isPinned(newFilePath) || isReadonly(newFilePath)) {
     eventBus.emit("notification", {
       message: `Cannot rename to ${newFilePath}. It is a protected path.`,
     });

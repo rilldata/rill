@@ -92,9 +92,9 @@
       <WorkspaceContainer inspector={false}>
         <FileWorkspaceHeader
           slot="header"
+          {fileArtifact}
           {resource}
           resourceKind={resourceKind ?? $inferredResourceKind ?? undefined}
-          filePath={path}
           hasUnsavedChanges={$hasUnsavedChanges}
         />
         <WorkspaceEditorContainer

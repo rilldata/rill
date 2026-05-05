@@ -27,15 +27,14 @@
   import { findDirectory, transformFileList } from "./transform-file-list";
   import QuickView from "@rilldata/web-common/features/resource-graph/quick-view/QuickView.svelte";
   import {
-    getAdditionalReadonlyFiles,
-    matchReadonlyDir,
-    matchReadonlyFile,
-  } from "@rilldata/web-common/features/entity-management/actions/readonly-files.ts";
+    isPinned,
+    isProtectedDirectory,
+    isReadonly,
+  } from "@rilldata/web-common/features/entity-management/actions/protected-files.ts";
 
   export let hasUnsaved: boolean;
 
   const runtimeClient = useRuntimeClient();
-  const additionalReadonlyFiles = getAdditionalReadonlyFiles();
 
   $: getFileTree = createRuntimeServiceListFiles(
     runtimeClient,
@@ -137,13 +136,13 @@
 
     if (fromPath !== newFilePath) {
       const newTopLevelPath = getTopLevelFolder(newFilePath);
-      if (matchReadonlyDir(newTopLevelPath)) {
+      if (isProtectedDirectory(newTopLevelPath)) {
         eventBus.emit("notification", {
           message: "cannot move to restricted directories",
         });
         return;
       }
-      if (matchReadonlyFile(newFilePath, additionalReadonlyFiles)) {
+      if (isPinned(newFilePath) || isReadonly(newFilePath)) {
         eventBus.emit("notification", {
           message: "cannot rename to a restricted file",
         });

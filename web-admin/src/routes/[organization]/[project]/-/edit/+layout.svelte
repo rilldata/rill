@@ -30,10 +30,7 @@
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { onDestroy } from "svelte";
-  import {
-    setAdditionalReadonlyFiles,
-    ReadonlyEnvFilesRegex,
-  } from "@rilldata/web-common/features/entity-management/actions/readonly-files.ts";
+  import { setCloudReadonlyNotice } from "@rilldata/web-common/features/entity-management/actions/protected-files.ts";
   import { isProjectWelcomePage } from "@rilldata/web-admin/features/navigation/nav-utils.ts";
   import WelcomeRedirector from "@rilldata/web-admin/features/welcome/project/WelcomeRedirector.svelte";
   import { InfoIcon } from "lucide-svelte";
@@ -146,9 +143,7 @@
     });
   };
 
-  setAdditionalReadonlyFiles([
-    { matcher: ReadonlyEnvFilesRegex, messageSnippet: envEditDisabled },
-  ]);
+  setCloudReadonlyNotice(envEditDisabled);
 
   onDestroy(() => {
     $editorRoutePrefix = "";
@@ -279,7 +274,7 @@
   <div class="flex flex-row gap-2 items-center w-fit text-sm">
     <InfoIcon size={14} /> Read-only. Edit .env variables in
     <a href="/{organization}/{project}/-/settings/environment-variables">
-      Settings ->
+      Settings → Environment Variables
     </a>
   </div>
 {/snippet}

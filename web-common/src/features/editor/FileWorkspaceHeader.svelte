@@ -1,36 +1,32 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { splitFolderAndFileName } from "@rilldata/web-common/features/entity-management/file-path-utils";
+  import { getReadonlyNotice } from "@rilldata/web-common/features/entity-management/actions/protected-files.ts";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/actions/ui-actions.ts";
+  import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+  import { splitFolderAndFileName } from "@rilldata/web-common/features/entity-management/file-path-utils";
+  import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { WorkspaceHeader } from "../../layout/workspace";
   import type { ResourceKind } from "../entity-management/resource-selectors";
-  import type { V1Resource } from "@rilldata/web-common/runtime-client";
-  import {
-    getAdditionalReadonlyFiles,
-    matchReadonlyFile,
-  } from "@rilldata/web-common/features/entity-management/actions/readonly-files.ts";
 
   const runtimeClient = useRuntimeClient();
-  const additionalReadonlyFiles = getAdditionalReadonlyFiles();
 
   let {
-    filePath,
+    fileArtifact,
     hasUnsavedChanges,
     resourceKind,
     resource,
   }: {
-    filePath: string;
+    fileArtifact: FileArtifact;
     hasUnsavedChanges: boolean;
     resourceKind: ResourceKind | undefined;
     resource: V1Resource | undefined;
   } = $props();
 
+  let filePath = $derived(fileArtifact.path);
   let [, fileName] = $derived(splitFolderAndFileName(filePath));
-  let readonlyMatch = $derived(
-    matchReadonlyFile(filePath, additionalReadonlyFiles),
-  );
-  let isReadonly = $derived(!!readonlyMatch);
+  let editable = $derived(!fileArtifact.readonly && !fileArtifact.pinned);
+  let notice = $derived(getReadonlyNotice(filePath));
 
   const onChangeCallback = async (newTitle: string) => {
     const route = await handleEntityRename(
@@ -38,7 +34,6 @@
       newTitle,
       filePath,
       fileName,
-      additionalReadonlyFiles,
     );
     if (route) await goto(route);
   };
@@ -47,8 +42,8 @@
 <WorkspaceHeader
   {filePath}
   {resourceKind}
-  editable={!isReadonly}
-  nonEditableMessage={readonlyMatch?.messageSnippet}
+  {editable}
+  nonEditableMessage={notice}
   onTitleChange={onChangeCallback}
   {hasUnsavedChanges}
   showInspectorToggle={false}

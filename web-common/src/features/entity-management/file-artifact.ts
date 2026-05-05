@@ -1,4 +1,8 @@
 import {
+  isPinned,
+  isReadonly,
+} from "@rilldata/web-common/features/entity-management/actions/protected-files";
+import {
   extractFileExtension,
   splitFolderAndFileName,
 } from "@rilldata/web-common/features/entity-management/file-path-utils";
@@ -91,6 +95,11 @@ export class FileArtifact {
   readonly fileName: string;
   readonly disableAutoSave: boolean;
   readonly autoSave: Writable<boolean>;
+  // Path is locked: file can't be renamed or deleted, and other files can't
+  // be renamed onto this path.
+  readonly pinned: boolean;
+  // Content is locked: editor disables typing.
+  readonly readonly: boolean;
   readonly snapshot: Writable<{
     scroll?: ReturnType<EditorView["scrollSnapshot"]>;
     selection?: EditorSelection;
@@ -124,6 +133,9 @@ export class FileArtifact {
     this.fileTypeUnsupported = UNSUPPORTED_EXTENSIONS.includes(
       this.fileExtension,
     );
+
+    this.pinned = isPinned(filePath);
+    this.readonly = isReadonly(filePath);
   }
 
   /**

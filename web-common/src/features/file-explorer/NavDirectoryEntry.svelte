@@ -22,7 +22,7 @@
   import { getTopLevelFolder } from "../entity-management/file-path-utils";
   import { useDirectoryNamesInDirectory } from "../entity-management/file-selectors";
   import { getName } from "../entity-management/name-utils";
-  import { matchReadonlyDir } from "@rilldata/web-common/features/entity-management/actions/readonly-files.ts";
+  import { isProtectedDirectory } from "@rilldata/web-common/features/entity-management/actions/protected-files.ts";
 
   export let dir: Directory;
   export let onRename: (filePath: string, isDir: boolean) => void;
@@ -41,7 +41,7 @@
   $: padding = getPaddingFromPath(dir.path);
   $: ({ instanceId } = runtimeClient);
   $: topLevelFolder = getTopLevelFolder(dir.path);
-  $: isProtectedDirectory = matchReadonlyDir(topLevelFolder);
+  $: protectedDirectory = isProtectedDirectory(topLevelFolder);
 
   $: hasErrors = getDirectoryHasErrors(queryClient, instanceId, dir);
   $: hasWarnings = getDirectoryHasWarnings(queryClient, instanceId, dir);
@@ -81,7 +81,7 @@
 
 <button
   class="pr-2 w-full h-6 text-left flex justify-between group gap-x-1 items-center
-  {isProtectedDirectory
+  {protectedDirectory
     ? 'hover:text-fg-secondary text-fg-muted '
     : 'text-fg-primary hover:text-fg-primary'}
   font-medium hover:bg-surface-hover"
@@ -103,7 +103,7 @@
   >
     {dir.name}
   </span>
-  {#if !isProtectedDirectory}
+  {#if !protectedDirectory}
     <DropdownMenu.Root bind:open={contextMenuOpen}>
       <DropdownMenu.Trigger>
         {#snippet child({ props })}

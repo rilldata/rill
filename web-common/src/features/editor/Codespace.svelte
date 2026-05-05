@@ -15,6 +15,7 @@
   export let autoSave = true;
 
   const extensionCompartment = new Compartment();
+  const readOnlyCompartment = new Compartment();
 
   const {
     editorContent,
@@ -31,6 +32,7 @@
   let mergeView: MergeView | null = null;
 
   $: if (editor) updateEditorExtensions(extensions);
+  $: if (editor) updateEditorReadOnly(editable);
   $: if (fileArtifact) editor?.contentDOM.blur();
 
   $: if (parent) {
@@ -93,7 +95,7 @@
       state: EditorState.create({
         doc: $editorContent ?? "",
         extensions: [
-          ...(!editable ? [EditorState.readOnly.of(true)] : []),
+          readOnlyCompartment.of(EditorState.readOnly.of(!editable)),
           baseExtensions(),
           extensionCompartment.of([extensions]),
           EditorView.updateListener.of(listener),
@@ -125,6 +127,14 @@
     editor?.dispatch({
       effects: extensionCompartment.reconfigure(newExtensions),
       scrollIntoView: true,
+    });
+  }
+
+  function updateEditorReadOnly(newEditable: boolean) {
+    editor?.dispatch({
+      effects: readOnlyCompartment.reconfigure(
+        EditorState.readOnly.of(!newEditable),
+      ),
     });
   }
 

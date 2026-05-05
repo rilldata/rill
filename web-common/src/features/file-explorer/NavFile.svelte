@@ -34,11 +34,7 @@
   import MetricsViewMenuItems from "../metrics-views/MetricsViewMenuItems.svelte";
   import ModelMenuItems from "../models/navigation/ModelMenuItems.svelte";
   import SourceMenuItems from "../sources/navigation/SourceMenuItems.svelte";
-  import {
-    getAdditionalReadonlyFiles,
-    matchReadonlyDir,
-    matchReadonlyFile,
-  } from "@rilldata/web-common/features/entity-management/actions/readonly-files.ts";
+  import { isProtectedDirectory } from "@rilldata/web-common/features/entity-management/actions/protected-files.ts";
   import { getTopLevelFolder } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
 
   export let filePath: string;
@@ -49,8 +45,6 @@
 
   let contextMenuOpen = false;
   let resourceName: Readable<V1ResourceName | undefined>;
-
-  const additionalReadonlyFiles = getAdditionalReadonlyFiles();
 
   $: id = `${filePath}-nav-link`;
   $: fileName = filePath.split("/").pop();
@@ -71,11 +65,9 @@
     $inferredResourceKind) as ResourceKind;
   $: padding = getPaddingFromPath(filePath);
   $: topLevelFolder = getTopLevelFolder(filePath);
-  $: isProtectedDirectory = matchReadonlyDir(topLevelFolder);
+  $: protectedDirectory = isProtectedDirectory(topLevelFolder);
   $: isDotFile = fileName && fileName.startsWith(".");
-  $: isProtectedFile = Boolean(
-    matchReadonlyFile(filePath, additionalReadonlyFiles),
-  );
+  $: isProtectedFile = fileArtifact.pinned || fileArtifact.readonly;
 
   $: hasErrors = fileArtifact.getHasErrors(queryClient);
   $: hasWarnings = fileArtifact.getHasWarnings(queryClient);
@@ -106,7 +98,7 @@
   class:opacity-50={$hasUnsavedChanges || $saving}
 >
   <a
-    class="w-full truncate flex items-center gap-x-1 font-medium {isProtectedDirectory ||
+    class="w-full truncate flex items-center gap-x-1 font-medium {protectedDirectory ||
     isDotFile
       ? 'hover:text-fg-secondary text-fg-muted '
       : 'text-fg-primary hover:text-fg-primary'}"
@@ -139,7 +131,7 @@
       {fileName}
     </span>
   </a>
-  {#if !isProtectedDirectory && !isProtectedFile}
+  {#if !protectedDirectory && !isProtectedFile}
     <DropdownMenu.Root bind:open={contextMenuOpen}>
       <DropdownMenu.Trigger>
         {#snippet child({ props })}

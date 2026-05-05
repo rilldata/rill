@@ -36,7 +36,7 @@
     resource?: V1Resource | undefined;
     titleInput: string;
     editable?: boolean;
-    nonEditableMessage?: Snippet;
+    nonEditableMessage?: Snippet<[]>;
     showInspectorToggle?: boolean;
     showTableToggle?: boolean;
     hasUnsavedChanges: boolean;
