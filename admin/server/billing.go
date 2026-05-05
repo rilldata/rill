@@ -1079,6 +1079,10 @@ func billingIssueTypeToDTO(t database.BillingIssueType) adminv1.BillingIssueType
 		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
 	case database.BillingIssueTypeNeverSubscribed:
 		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
+	case database.BillingIssueTypeOnCreditTrial:
+		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL
+	case database.BillingIssueTypeTrialCreditsDepleted:
+		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED
 	default:
 		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_UNSPECIFIED
 	}
@@ -1111,6 +1115,10 @@ func dtoBillingIssueTypeToDB(t adminv1.BillingIssueType) (database.BillingIssueT
 		return database.BillingIssueTypeSubscriptionCancelled, nil
 	case adminv1.BillingIssueType_BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED:
 		return database.BillingIssueTypeNeverSubscribed, nil
+	case adminv1.BillingIssueType_BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL:
+		return database.BillingIssueTypeOnCreditTrial, nil
+	case adminv1.BillingIssueType_BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED:
+		return database.BillingIssueTypeTrialCreditsDepleted, nil
 	default:
 		return database.BillingIssueTypeUnspecified, status.Error(codes.InvalidArgument, "invalid billing error type")
 	}
@@ -1200,6 +1208,28 @@ func billingIssueMetadataToDTO(t database.BillingIssueType, m database.BillingIs
 		return &adminv1.BillingIssueMetadata{
 			Metadata: &adminv1.BillingIssueMetadata_NeverSubscribed{
 				NeverSubscribed: &adminv1.BillingIssueMetadataNeverSubscribed{},
+			},
+		}
+	case database.BillingIssueTypeOnCreditTrial:
+		md := m.(*database.BillingIssueMetadataOnCreditTrial)
+		return &adminv1.BillingIssueMetadata{
+			Metadata: &adminv1.BillingIssueMetadata_OnCreditTrial{
+				OnCreditTrial: &adminv1.BillingIssueMetadataOnCreditTrial{
+					SubscriptionId:   md.SubID,
+					PlanId:           md.PlanID,
+					CreditAllocation: md.CreditAllocation,
+				},
+			},
+		}
+	case database.BillingIssueTypeTrialCreditsDepleted:
+		md := m.(*database.BillingIssueMetadataTrialCreditsDepleted)
+		return &adminv1.BillingIssueMetadata{
+			Metadata: &adminv1.BillingIssueMetadata_TrialCreditsDepleted{
+				TrialCreditsDepleted: &adminv1.BillingIssueMetadataTrialCreditsDepleted{
+					SubscriptionId: md.SubID,
+					PlanId:         md.PlanID,
+					DepletedOn:     timestamppb.New(md.DepletedOn),
+				},
 			},
 		}
 	default:

@@ -13648,7 +13648,9 @@ export const adminServiceSudoDeleteOrganizationBillingIssue = (
     | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
     | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
     | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
-    | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED",
+    | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
+    | "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL"
+    | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED",
 ) => {
   return httpClient<V1SudoDeleteOrganizationBillingIssueResponse>({
     url: `/v1/superuser/organizations/${org}/billing/issues/${type}`,
@@ -13673,7 +13675,9 @@ export const getAdminServiceSudoDeleteOrganizationBillingIssueMutationOptions =
           | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
           | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
           | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
-          | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED";
+          | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
+          | "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL"
+          | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED";
       },
       TContext
     >;
@@ -13690,7 +13694,9 @@ export const getAdminServiceSudoDeleteOrganizationBillingIssueMutationOptions =
         | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
         | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
         | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
-        | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED";
+        | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
+        | "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL"
+        | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED";
     },
     TContext
   > => {
@@ -13717,7 +13723,9 @@ export const getAdminServiceSudoDeleteOrganizationBillingIssueMutationOptions =
           | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
           | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
           | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
-          | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED";
+          | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
+          | "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL"
+          | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED";
       }
     > = (props) => {
       const { org, type } = props ?? {};
@@ -13759,7 +13767,9 @@ export const createAdminServiceSudoDeleteOrganizationBillingIssue = <
           | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
           | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
           | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
-          | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED";
+          | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
+          | "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL"
+          | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED";
       },
       TContext
     >;
@@ -13778,7 +13788,9 @@ export const createAdminServiceSudoDeleteOrganizationBillingIssue = <
       | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
       | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
       | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
-      | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED";
+      | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
+      | "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL"
+      | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED";
   },
   TContext
 > => {

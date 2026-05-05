@@ -47121,6 +47121,88 @@ func (m *BillingIssueMetadata) validate(all bool) error {
 			}
 		}
 
+	case *BillingIssueMetadata_OnCreditTrial:
+		if v == nil {
+			err := BillingIssueMetadataValidationError{
+				field:  "Metadata",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetOnCreditTrial()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, BillingIssueMetadataValidationError{
+						field:  "OnCreditTrial",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, BillingIssueMetadataValidationError{
+						field:  "OnCreditTrial",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetOnCreditTrial()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return BillingIssueMetadataValidationError{
+					field:  "OnCreditTrial",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *BillingIssueMetadata_TrialCreditsDepleted:
+		if v == nil {
+			err := BillingIssueMetadataValidationError{
+				field:  "Metadata",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetTrialCreditsDepleted()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, BillingIssueMetadataValidationError{
+						field:  "TrialCreditsDepleted",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, BillingIssueMetadataValidationError{
+						field:  "TrialCreditsDepleted",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetTrialCreditsDepleted()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return BillingIssueMetadataValidationError{
+					field:  "TrialCreditsDepleted",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	default:
 		_ = v // ensures v is used
 	}
@@ -48317,6 +48399,256 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = BillingIssueMetadataNeverSubscribedValidationError{}
+
+// Validate checks the field values on BillingIssueMetadataOnCreditTrial with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *BillingIssueMetadataOnCreditTrial) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on BillingIssueMetadataOnCreditTrial
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// BillingIssueMetadataOnCreditTrialMultiError, or nil if none found.
+func (m *BillingIssueMetadataOnCreditTrial) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *BillingIssueMetadataOnCreditTrial) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for SubscriptionId
+
+	// no validation rules for PlanId
+
+	// no validation rules for CreditAllocation
+
+	if len(errors) > 0 {
+		return BillingIssueMetadataOnCreditTrialMultiError(errors)
+	}
+
+	return nil
+}
+
+// BillingIssueMetadataOnCreditTrialMultiError is an error wrapping multiple
+// validation errors returned by
+// BillingIssueMetadataOnCreditTrial.ValidateAll() if the designated
+// constraints aren't met.
+type BillingIssueMetadataOnCreditTrialMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m BillingIssueMetadataOnCreditTrialMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m BillingIssueMetadataOnCreditTrialMultiError) AllErrors() []error { return m }
+
+// BillingIssueMetadataOnCreditTrialValidationError is the validation error
+// returned by BillingIssueMetadataOnCreditTrial.Validate if the designated
+// constraints aren't met.
+type BillingIssueMetadataOnCreditTrialValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e BillingIssueMetadataOnCreditTrialValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e BillingIssueMetadataOnCreditTrialValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e BillingIssueMetadataOnCreditTrialValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e BillingIssueMetadataOnCreditTrialValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e BillingIssueMetadataOnCreditTrialValidationError) ErrorName() string {
+	return "BillingIssueMetadataOnCreditTrialValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e BillingIssueMetadataOnCreditTrialValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sBillingIssueMetadataOnCreditTrial.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = BillingIssueMetadataOnCreditTrialValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = BillingIssueMetadataOnCreditTrialValidationError{}
+
+// Validate checks the field values on BillingIssueMetadataTrialCreditsDepleted
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *BillingIssueMetadataTrialCreditsDepleted) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// BillingIssueMetadataTrialCreditsDepleted with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in
+// BillingIssueMetadataTrialCreditsDepletedMultiError, or nil if none found.
+func (m *BillingIssueMetadataTrialCreditsDepleted) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *BillingIssueMetadataTrialCreditsDepleted) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for SubscriptionId
+
+	// no validation rules for PlanId
+
+	if all {
+		switch v := interface{}(m.GetDepletedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, BillingIssueMetadataTrialCreditsDepletedValidationError{
+					field:  "DepletedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, BillingIssueMetadataTrialCreditsDepletedValidationError{
+					field:  "DepletedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDepletedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return BillingIssueMetadataTrialCreditsDepletedValidationError{
+				field:  "DepletedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return BillingIssueMetadataTrialCreditsDepletedMultiError(errors)
+	}
+
+	return nil
+}
+
+// BillingIssueMetadataTrialCreditsDepletedMultiError is an error wrapping
+// multiple validation errors returned by
+// BillingIssueMetadataTrialCreditsDepleted.ValidateAll() if the designated
+// constraints aren't met.
+type BillingIssueMetadataTrialCreditsDepletedMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m BillingIssueMetadataTrialCreditsDepletedMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m BillingIssueMetadataTrialCreditsDepletedMultiError) AllErrors() []error { return m }
+
+// BillingIssueMetadataTrialCreditsDepletedValidationError is the validation
+// error returned by BillingIssueMetadataTrialCreditsDepleted.Validate if the
+// designated constraints aren't met.
+type BillingIssueMetadataTrialCreditsDepletedValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e BillingIssueMetadataTrialCreditsDepletedValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e BillingIssueMetadataTrialCreditsDepletedValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e BillingIssueMetadataTrialCreditsDepletedValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e BillingIssueMetadataTrialCreditsDepletedValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e BillingIssueMetadataTrialCreditsDepletedValidationError) ErrorName() string {
+	return "BillingIssueMetadataTrialCreditsDepletedValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e BillingIssueMetadataTrialCreditsDepletedValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sBillingIssueMetadataTrialCreditsDepleted.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = BillingIssueMetadataTrialCreditsDepletedValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = BillingIssueMetadataTrialCreditsDepletedValidationError{}
 
 // Validate checks the field values on ListGithubUserReposResponse_Repo with
 // the rules defined in the proto definition for this message. If any rules

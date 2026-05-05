@@ -157,6 +157,8 @@ export interface V1BillingIssueMetadata {
   paymentFailed?: V1BillingIssueMetadataPaymentFailed;
   subscriptionCancelled?: V1BillingIssueMetadataSubscriptionCancelled;
   neverSubscribed?: V1BillingIssueMetadataNeverSubscribed;
+  onCreditTrial?: V1BillingIssueMetadataOnCreditTrial;
+  trialCreditsDepleted?: V1BillingIssueMetadataTrialCreditsDepleted;
 }
 
 export interface V1BillingIssueMetadataNeverSubscribed {
@@ -169,6 +171,12 @@ export interface V1BillingIssueMetadataNoBillableAddress {
 
 export interface V1BillingIssueMetadataNoPaymentMethod {
   [key: string]: unknown;
+}
+
+export interface V1BillingIssueMetadataOnCreditTrial {
+  subscriptionId?: string;
+  planId?: string;
+  creditAllocation?: number;
 }
 
 export interface V1BillingIssueMetadataOnTrial {
@@ -195,6 +203,12 @@ export interface V1BillingIssueMetadataSubscriptionCancelled {
   endDate?: string;
 }
 
+export interface V1BillingIssueMetadataTrialCreditsDepleted {
+  subscriptionId?: string;
+  planId?: string;
+  depletedOn?: string;
+}
+
 export interface V1BillingIssueMetadataTrialEnded {
   endDate?: string;
   gracePeriodEndDate?: string;
@@ -215,6 +229,9 @@ export const V1BillingIssueType = {
   BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED:
     "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED",
   BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED: "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED",
+  BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL: "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL",
+  BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED:
+    "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED",
 } as const;
 
 export interface V1BillingPlan {

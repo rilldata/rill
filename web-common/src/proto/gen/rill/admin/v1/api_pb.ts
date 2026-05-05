@@ -189,6 +189,16 @@ export enum BillingIssueType {
    * @generated from enum value: BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED = 7;
    */
   NEVER_SUBSCRIBED = 7,
+
+  /**
+   * @generated from enum value: BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL = 8;
+   */
+  ON_CREDIT_TRIAL = 8,
+
+  /**
+   * @generated from enum value: BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED = 9;
+   */
+  TRIAL_CREDITS_DEPLETED = 9,
 }
 // Retrieve enum metadata with: proto3.getEnumType(BillingIssueType)
 proto3.util.setEnumType(BillingIssueType, "rill.admin.v1.BillingIssueType", [
@@ -200,6 +210,8 @@ proto3.util.setEnumType(BillingIssueType, "rill.admin.v1.BillingIssueType", [
   { no: 5, name: "BILLING_ISSUE_TYPE_PAYMENT_FAILED" },
   { no: 6, name: "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED" },
   { no: 7, name: "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED" },
+  { no: 8, name: "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL" },
+  { no: 9, name: "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED" },
 ]);
 
 /**
@@ -17984,6 +17996,18 @@ export class BillingIssueMetadata extends Message<BillingIssueMetadata> {
      */
     value: BillingIssueMetadataNeverSubscribed;
     case: "neverSubscribed";
+  } | {
+    /**
+     * @generated from field: rill.admin.v1.BillingIssueMetadataOnCreditTrial on_credit_trial = 8;
+     */
+    value: BillingIssueMetadataOnCreditTrial;
+    case: "onCreditTrial";
+  } | {
+    /**
+     * @generated from field: rill.admin.v1.BillingIssueMetadataTrialCreditsDepleted trial_credits_depleted = 9;
+     */
+    value: BillingIssueMetadataTrialCreditsDepleted;
+    case: "trialCreditsDepleted";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<BillingIssueMetadata>) {
@@ -18001,6 +18025,8 @@ export class BillingIssueMetadata extends Message<BillingIssueMetadata> {
     { no: 5, name: "payment_failed", kind: "message", T: BillingIssueMetadataPaymentFailed, oneof: "metadata" },
     { no: 6, name: "subscription_cancelled", kind: "message", T: BillingIssueMetadataSubscriptionCancelled, oneof: "metadata" },
     { no: 7, name: "never_subscribed", kind: "message", T: BillingIssueMetadataNeverSubscribed, oneof: "metadata" },
+    { no: 8, name: "on_credit_trial", kind: "message", T: BillingIssueMetadataOnCreditTrial, oneof: "metadata" },
+    { no: 9, name: "trial_credits_depleted", kind: "message", T: BillingIssueMetadataTrialCreditsDepleted, oneof: "metadata" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingIssueMetadata {
@@ -18349,6 +18375,104 @@ export class BillingIssueMetadataNeverSubscribed extends Message<BillingIssueMet
 
   static equals(a: BillingIssueMetadataNeverSubscribed | PlainMessage<BillingIssueMetadataNeverSubscribed> | undefined, b: BillingIssueMetadataNeverSubscribed | PlainMessage<BillingIssueMetadataNeverSubscribed> | undefined): boolean {
     return proto3.util.equals(BillingIssueMetadataNeverSubscribed, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.BillingIssueMetadataOnCreditTrial
+ */
+export class BillingIssueMetadataOnCreditTrial extends Message<BillingIssueMetadataOnCreditTrial> {
+  /**
+   * @generated from field: string subscription_id = 1;
+   */
+  subscriptionId = "";
+
+  /**
+   * @generated from field: string plan_id = 2;
+   */
+  planId = "";
+
+  /**
+   * @generated from field: double credit_allocation = 3;
+   */
+  creditAllocation = 0;
+
+  constructor(data?: PartialMessage<BillingIssueMetadataOnCreditTrial>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.BillingIssueMetadataOnCreditTrial";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "subscription_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "plan_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "credit_allocation", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingIssueMetadataOnCreditTrial {
+    return new BillingIssueMetadataOnCreditTrial().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BillingIssueMetadataOnCreditTrial {
+    return new BillingIssueMetadataOnCreditTrial().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BillingIssueMetadataOnCreditTrial {
+    return new BillingIssueMetadataOnCreditTrial().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BillingIssueMetadataOnCreditTrial | PlainMessage<BillingIssueMetadataOnCreditTrial> | undefined, b: BillingIssueMetadataOnCreditTrial | PlainMessage<BillingIssueMetadataOnCreditTrial> | undefined): boolean {
+    return proto3.util.equals(BillingIssueMetadataOnCreditTrial, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.BillingIssueMetadataTrialCreditsDepleted
+ */
+export class BillingIssueMetadataTrialCreditsDepleted extends Message<BillingIssueMetadataTrialCreditsDepleted> {
+  /**
+   * @generated from field: string subscription_id = 1;
+   */
+  subscriptionId = "";
+
+  /**
+   * @generated from field: string plan_id = 2;
+   */
+  planId = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp depleted_on = 3;
+   */
+  depletedOn?: Timestamp;
+
+  constructor(data?: PartialMessage<BillingIssueMetadataTrialCreditsDepleted>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.BillingIssueMetadataTrialCreditsDepleted";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "subscription_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "plan_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "depleted_on", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingIssueMetadataTrialCreditsDepleted {
+    return new BillingIssueMetadataTrialCreditsDepleted().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BillingIssueMetadataTrialCreditsDepleted {
+    return new BillingIssueMetadataTrialCreditsDepleted().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BillingIssueMetadataTrialCreditsDepleted {
+    return new BillingIssueMetadataTrialCreditsDepleted().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BillingIssueMetadataTrialCreditsDepleted | PlainMessage<BillingIssueMetadataTrialCreditsDepleted> | undefined, b: BillingIssueMetadataTrialCreditsDepleted | PlainMessage<BillingIssueMetadataTrialCreditsDepleted> | undefined): boolean {
+    return proto3.util.equals(BillingIssueMetadataTrialCreditsDepleted, a, b);
   }
 }
 

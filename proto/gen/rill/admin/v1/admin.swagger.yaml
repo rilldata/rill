@@ -3911,6 +3911,8 @@ paths:
             - BILLING_ISSUE_TYPE_PAYMENT_FAILED
             - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
             - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
+            - BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL
+            - BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED
   /v1/superuser/projects/annotations:
     patch:
       summary: SudoUpdateAnnotations endpoint for superusers to update project annotations
@@ -4648,12 +4650,26 @@ definitions:
         $ref: '#/definitions/v1BillingIssueMetadataSubscriptionCancelled'
       neverSubscribed:
         $ref: '#/definitions/v1BillingIssueMetadataNeverSubscribed'
+      onCreditTrial:
+        $ref: '#/definitions/v1BillingIssueMetadataOnCreditTrial'
+      trialCreditsDepleted:
+        $ref: '#/definitions/v1BillingIssueMetadataTrialCreditsDepleted'
   v1BillingIssueMetadataNeverSubscribed:
     type: object
   v1BillingIssueMetadataNoBillableAddress:
     type: object
   v1BillingIssueMetadataNoPaymentMethod:
     type: object
+  v1BillingIssueMetadataOnCreditTrial:
+    type: object
+    properties:
+      subscriptionId:
+        type: string
+      planId:
+        type: string
+      creditAllocation:
+        type: number
+        format: double
   v1BillingIssueMetadataOnTrial:
     type: object
     properties:
@@ -4699,6 +4715,16 @@ definitions:
       endDate:
         type: string
         format: date-time
+  v1BillingIssueMetadataTrialCreditsDepleted:
+    type: object
+    properties:
+      subscriptionId:
+        type: string
+      planId:
+        type: string
+      depletedOn:
+        type: string
+        format: date-time
   v1BillingIssueMetadataTrialEnded:
     type: object
     properties:
@@ -4719,6 +4745,8 @@ definitions:
       - BILLING_ISSUE_TYPE_PAYMENT_FAILED
       - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
       - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
+      - BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL
+      - BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED
     default: BILLING_ISSUE_TYPE_UNSPECIFIED
   v1BillingPlan:
     type: object

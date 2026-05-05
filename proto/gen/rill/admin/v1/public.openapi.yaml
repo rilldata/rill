@@ -186,12 +186,16 @@ components:
                     $ref: '#/components/schemas/v1BillingIssueMetadataNoBillableAddress'
                 noPaymentMethod:
                     $ref: '#/components/schemas/v1BillingIssueMetadataNoPaymentMethod'
+                onCreditTrial:
+                    $ref: '#/components/schemas/v1BillingIssueMetadataOnCreditTrial'
                 onTrial:
                     $ref: '#/components/schemas/v1BillingIssueMetadataOnTrial'
                 paymentFailed:
                     $ref: '#/components/schemas/v1BillingIssueMetadataPaymentFailed'
                 subscriptionCancelled:
                     $ref: '#/components/schemas/v1BillingIssueMetadataSubscriptionCancelled'
+                trialCreditsDepleted:
+                    $ref: '#/components/schemas/v1BillingIssueMetadataTrialCreditsDepleted'
                 trialEnded:
                     $ref: '#/components/schemas/v1BillingIssueMetadataTrialEnded'
             type: object
@@ -200,6 +204,16 @@ components:
         v1BillingIssueMetadataNoBillableAddress:
             type: object
         v1BillingIssueMetadataNoPaymentMethod:
+            type: object
+        v1BillingIssueMetadataOnCreditTrial:
+            properties:
+                creditAllocation:
+                    format: double
+                    type: number
+                planId:
+                    type: string
+                subscriptionId:
+                    type: string
             type: object
         v1BillingIssueMetadataOnTrial:
             properties:
@@ -245,6 +259,16 @@ components:
                     format: date-time
                     type: string
             type: object
+        v1BillingIssueMetadataTrialCreditsDepleted:
+            properties:
+                depletedOn:
+                    format: date-time
+                    type: string
+                planId:
+                    type: string
+                subscriptionId:
+                    type: string
+            type: object
         v1BillingIssueMetadataTrialEnded:
             properties:
                 endDate:
@@ -265,6 +289,8 @@ components:
                 - BILLING_ISSUE_TYPE_PAYMENT_FAILED
                 - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
                 - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
+                - BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL
+                - BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED
             type: string
         v1BillingPlan:
             properties:
