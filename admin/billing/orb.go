@@ -22,6 +22,7 @@ const (
 	eventIngestBatchSize = 500
 	requestTimeout       = 10 * time.Second
 
+	anrokTaxProvider   = "anrok"
 	avalaraTaxProvider = "avalara"
 	taxJarTaxProvider  = "taxjar"
 	noneTaxProvider    = "none"
@@ -256,7 +257,21 @@ func (o *Orb) UnscheduleCancellation(ctx context.Context, subscriptionID string)
 	if err != nil {
 		return nil, err
 	}
-	return o.getBillingSubscriptionFromOrbSubscription(ctx, sub)
+	plan, err := o.getBillingPlanFromOrbPlan(ctx, &sub.Plan)
+	if err != nil {
+		return nil, err
+	}
+	return &Subscription{
+		ID:                           sub.ID,
+		Customer:                     getBillingCustomerFromOrbCustomer(&sub.Customer),
+		Plan:                         plan,
+		StartDate:                    sub.StartDate,
+		EndDate:                      sub.EndDate,
+		CurrentBillingCycleStartDate: sub.CurrentBillingPeriodStartDate,
+		CurrentBillingCycleEndDate:   sub.CurrentBillingPeriodEndDate,
+		TrialEndDate:                 sub.TrialInfo.EndDate,
+		Metadata:                     sub.Metadata,
+	}, nil
 }
 
 func (o *Orb) CancelSubscriptionsForCustomer(ctx context.Context, customerID string, cancelOption SubscriptionCancellationOption) (time.Time, error) {
@@ -324,11 +339,21 @@ func (o *Orb) IsInvoicePaid(ctx context.Context, invoice *Invoice) bool {
 
 func (o *Orb) MarkCustomerTaxExempt(ctx context.Context, customerID string) error {
 	switch o.taxProvider {
+	case anrokTaxProvider:
+		_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
+			TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAnrokConfiguration{
+				TaxExempt:   orb.F(true),
+				TaxProvider: orb.F(orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAnrokConfigurationTaxProviderAnrok),
+			}),
+		})
+		if err != nil {
+			return err
+		}
 	case avalaraTaxProvider:
 		_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
-			TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAvalaraTaxConfiguration{
+			TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.NewAvalaraTaxConfigurationParam{
 				TaxExempt:        orb.F(true),
-				TaxProvider:      orb.F(orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAvalaraTaxConfigurationTaxProviderAvalara),
+				TaxProvider:      orb.F(orb.NewAvalaraTaxConfigurationTaxProviderAvalara),
 				TaxExemptionCode: orb.F(avalaraTaxExemptionCode), // code for NON-RESIDENT
 			}),
 		})
@@ -337,9 +362,9 @@ func (o *Orb) MarkCustomerTaxExempt(ctx context.Context, customerID string) erro
 		}
 	case taxJarTaxProvider:
 		_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
-			TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewTaxJarConfiguration{
+			TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.NewTaxJarConfigurationParam{
 				TaxExempt:   orb.F(true),
-				TaxProvider: orb.F(orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewTaxJarConfigurationTaxProviderTaxjar),
+				TaxProvider: orb.F(orb.NewTaxJarConfigurationTaxProviderTaxjar),
 				// category option not available in TaxJar config
 			}),
 		})
@@ -357,11 +382,21 @@ func (o *Orb) MarkCustomerTaxExempt(ctx context.Context, customerID string) erro
 
 func (o *Orb) UnmarkCustomerTaxExempt(ctx context.Context, customerID string) error {
 	switch o.taxProvider {
+	case anrokTaxProvider:
+		_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
+			TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAnrokConfiguration{
+				TaxExempt:   orb.F(false),
+				TaxProvider: orb.F(orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAnrokConfigurationTaxProviderAnrok),
+			}),
+		})
+		if err != nil {
+			return err
+		}
 	case avalaraTaxProvider:
 		_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
-			TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAvalaraTaxConfiguration{
+			TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.NewAvalaraTaxConfigurationParam{
 				TaxExempt:   orb.F(false),
-				TaxProvider: orb.F(orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAvalaraTaxConfigurationTaxProviderAvalara),
+				TaxProvider: orb.F(orb.NewAvalaraTaxConfigurationTaxProviderAvalara),
 			}),
 		})
 		if err != nil {
@@ -369,9 +404,9 @@ func (o *Orb) UnmarkCustomerTaxExempt(ctx context.Context, customerID string) er
 		}
 	case taxJarTaxProvider:
 		_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
-			TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewTaxJarConfiguration{
+			TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.NewTaxJarConfigurationParam{
 				TaxExempt:   orb.F(false),
-				TaxProvider: orb.F(orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewTaxJarConfigurationTaxProviderTaxjar),
+				TaxProvider: orb.F(orb.NewTaxJarConfigurationTaxProviderTaxjar),
 			}),
 		})
 		if err != nil {
@@ -407,7 +442,7 @@ func (o *Orb) ReportUsage(ctx context.Context, usage []*Usage) error {
 			EventName:          orb.String(eventName),
 			IdempotencyKey:     orb.String(idempotencyKey),
 			Timestamp:          orb.F(eventTime),
-			Properties:         orb.F[any](props),
+			Properties:         orb.F(props),
 		})
 
 		if len(orbUsage) == eventIngestBatchSize {
@@ -473,7 +508,7 @@ func (o *Orb) getSubscriptions(ctx context.Context, customerID string, status or
 	}
 
 	sub, err := o.client.Subscriptions.List(ctx, orb.SubscriptionListParams{
-		ExternalCustomerID: orb.String(customerID),
+		ExternalCustomerID: orb.F([]string{customerID}),
 		Status:             orb.F(status),
 	})
 	if err != nil {
