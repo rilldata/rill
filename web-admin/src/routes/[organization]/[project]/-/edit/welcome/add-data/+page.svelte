@@ -21,8 +21,9 @@
   let project = $derived(page.params.project);
 
   // Prefetch connectors and load into cache. We will show a spinner while this is fetching.
-  let connectorsQuery = $derived(
-    createRuntimeServiceAnalyzeConnectors(runtimeClient, {}),
+  const connectorsQuery = createRuntimeServiceAnalyzeConnectors(
+    runtimeClient,
+    {},
   );
 
   async function handleDone() {
@@ -39,7 +40,8 @@
   <div class="w-fit h-fit mt-4">
     {#if $connectorsQuery.isPending}
       <Spinner status={EntityStatus.Running} size="3rem" duration={725} />
-    {:else if $connectorsQuery.data}
+    {:else}
+      <!-- TODO: add error state when connectors query errors -->
       {#key data.schema}
         <AddDataManager
           config={{

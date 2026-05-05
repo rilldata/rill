@@ -58,7 +58,8 @@
         <Spinner status={EntityStatus.Running} size="2rem" duration={725} />
       </div>
     </div>
-  {:else}
+  {:else if topConnectors}
+    <!-- topConnectors will be defined when isPending is false. TODO: add error state -->
     <div class="primary-connectors" role="group">
       {#each topConnectors as connector (connector)}
         {@const icon = connectorIconMapping[connector]}
@@ -142,6 +143,10 @@
 
   .primary-connectors-loading {
     @apply w-[335px];
+    /* To avoid nested interactions we overlay connectors list.
+       So to match primary-connectors we add a similar absolute layout here.
+       bottom-28 makes the spinner appear in the middle.
+    */
     @apply absolute bottom-28 left-6;
   }
 
