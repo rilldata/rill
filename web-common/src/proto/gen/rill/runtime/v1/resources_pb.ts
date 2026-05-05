@@ -1548,6 +1548,15 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    */
   rollups: MetricsViewSpec_Rollup[] = [];
 
+  /**
+   * Maximum time span any single query against this metrics view may cover, as an ISO 8601 duration with day-or-larger granularity (e.g. "P90D", "P3M", "P1Y").
+   * Sub-day durations (hours, minutes, seconds) are not supported. Applies to queries that take a time range, including the comparison time range.
+   * Time-range introspection RPCs are exempt. If unset, no limit is enforced.
+   *
+   * @generated from field: string max_query_time_range = 36;
+   */
+  maxQueryTimeRange = "";
+
   constructor(data?: PartialMessage<MetricsViewSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1582,6 +1591,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 35, name: "cache_timestamps_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 33, name: "query_attributes", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 34, name: "rollups", kind: "message", T: MetricsViewSpec_Rollup, repeated: true },
+    { no: 36, name: "max_query_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec {

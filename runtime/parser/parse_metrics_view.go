@@ -8,6 +8,7 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"golang.org/x/exp/maps"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -34,6 +35,7 @@ type MetricsViewYAML struct {
 	SmallestTimeGrain string           `yaml:"smallest_time_grain"`
 	FirstDayOfWeek    uint32           `yaml:"first_day_of_week"`
 	FirstMonthOfYear  uint32           `yaml:"first_month_of_year"`
+	MaxQueryTimeRange string           `yaml:"max_query_time_range"`
 	Dimensions        []*struct {
 		Name                    string
 		DisplayName             string `yaml:"display_name"`
@@ -644,6 +646,23 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		return fmt.Errorf("invalid first month of year %d, must be between 1 and 12", tmp.FirstMonthOfYear)
 	}
 
+	if tmp.MaxQueryTimeRange != "" {
+		if strings.HasPrefix(tmp.MaxQueryTimeRange, "rill-") {
+			return fmt.Errorf(`invalid "max_query_time_range" %q: only fixed ISO 8601 day-or-larger durations are allowed`, tmp.MaxQueryTimeRange)
+		}
+		if err := duration.ValidateISO8601(tmp.MaxQueryTimeRange, true, false); err != nil {
+			return fmt.Errorf(`invalid "max_query_time_range": %w`, err)
+		}
+		d, err := duration.ParseISO8601(tmp.MaxQueryTimeRange)
+		if err != nil {
+			return fmt.Errorf(`invalid "max_query_time_range": %w`, err)
+		}
+		sd, ok := d.(duration.StandardDuration)
+		if !ok || sd.Hour != 0 || sd.Minute != 0 || sd.Second != 0 {
+			return fmt.Errorf(`invalid "max_query_time_range" %q: sub-day granularity is not supported, use a duration like P1D, P30D, P3M, or P1Y`, tmp.MaxQueryTimeRange)
+		}
+	}
+
 	if tmp.Cache.TimestampsTTL != "" {
 		if _, err := time.ParseDuration(tmp.Cache.TimestampsTTL); err != nil {
 			return fmt.Errorf(`invalid "cache.timestamps_ttl": %w`, err)
@@ -867,6 +886,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	spec.SmallestTimeGrain = smallestTimeGrain
 	spec.FirstDayOfWeek = tmp.FirstDayOfWeek
 	spec.FirstMonthOfYear = tmp.FirstMonthOfYear
+	spec.MaxQueryTimeRange = tmp.MaxQueryTimeRange
 	if tmp.Cache.TimestampsTTL != "" {
 		d, _ := time.ParseDuration(tmp.Cache.TimestampsTTL) // already validated above
 		spec.CacheTimestampsTtlSeconds = int64(d.Seconds())

@@ -453,6 +453,7 @@
           {timeEnd}
           lockTimeZone={exploreSpec.lockTimeZone}
           allowCustomTimeRange={exploreSpec.allowCustomTimeRange}
+          maxQueryTimeRange={metricsViewSpec.maxQueryTimeRange}
           {activeTimeGrain}
           {activeTimeZone}
           canPanLeft={$canPanLeft}

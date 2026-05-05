@@ -6,7 +6,10 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { Settings } from "luxon";
 import { derived, get, writable, type Readable } from "svelte/store";
-import { normalizeWeekday } from "../../dashboards/time-controls/new-time-controls";
+import {
+  isoDurationToDays,
+  normalizeWeekday,
+} from "../../dashboards/time-controls/new-time-controls";
 import { type CanvasResponse } from "../selector";
 import type { CanvasEntity, SearchParamsStore } from "./canvas-entity";
 import { maybeWritable } from "@rilldata/web-common/lib/store-utils";
@@ -25,6 +28,9 @@ export class TimeManager {
   timeRangeOptionsStore = writable<V1ExploreTimeRange[]>([]);
   availableTimeZonesStore = writable<string[]>([]);
   allowCustomRangeStore = writable<boolean>(true);
+  // Smallest max_query_time_range across referenced metrics views, expressed as ISO 8601.
+  // Undefined when no referenced metrics view has a cap configured.
+  maxQueryTimeRangeStore = writable<string | undefined>(undefined);
   specInitialized = false;
   state: TimeState;
 
@@ -80,6 +86,7 @@ export class TimeManager {
     this.checkAndSetAvailableTimeZones(spec);
     this.checkIfHasTimeSeries(spec);
     this.checkAndSetFirstDayOfWeek(spec);
+    this.checkAndSetMaxQueryTimeRange(spec);
 
     if (
       defaultPreset?.comparisonMode ===
@@ -129,6 +136,29 @@ export class TimeManager {
 
     this.minTimeGrainMap.set(timeGrainMap);
     this.hasTimeSeriesMap.set(hasTimeSeriesMap);
+  }
+
+  // Picks the tightest cap across referenced metrics views — different views may have different
+  // caps and a canvas-wide picker has to honor the most restrictive one.
+  checkAndSetMaxQueryTimeRange(response: CanvasResponse) {
+    const metricsViews = response.metricsViews || {};
+    let smallestIso: string | undefined;
+    let smallestDays = Infinity;
+
+    for (const mv of Object.values(metricsViews)) {
+      const iso = mv?.state?.validSpec?.maxQueryTimeRange;
+      if (!iso) continue;
+      const days = isoDurationToDays(iso);
+      if (Number.isNaN(days) || days <= 0) continue;
+      if (days < smallestDays) {
+        smallestDays = days;
+        smallestIso = iso;
+      }
+    }
+
+    if (get(this.maxQueryTimeRangeStore) !== smallestIso) {
+      this.maxQueryTimeRangeStore.set(smallestIso);
+    }
   }
 
   checkAndSetAllowCustomRange = (response: CanvasResponse) => {

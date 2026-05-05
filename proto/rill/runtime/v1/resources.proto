@@ -372,6 +372,10 @@ message MetricsViewSpec {
   // Keys and values are stored as templates and will be resolved at query time.
   map<string, string> query_attributes = 33;
   repeated Rollup rollups = 34;
+  // Maximum time span any single query against this metrics view may cover, as an ISO 8601 duration with day-or-larger granularity (e.g. "P90D", "P3M", "P1Y").
+  // Sub-day durations (hours, minutes, seconds) are not supported. Applies to queries that take a time range, including the comparison time range.
+  // Time-range introspection RPCs are exempt. If unset, no limit is enforced.
+  string max_query_time_range = 36;
 }
 
 message SecurityRule {

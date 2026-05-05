@@ -34,6 +34,7 @@
   export let canPanRight: boolean = !hidePan;
   export let lockTimeZone = false;
   export let allowCustomTimeRange = true;
+  export let maxQueryTimeRange: string | undefined = undefined;
   export let showFullRange = true;
   export let complete: boolean;
   export let context = "dashboard";
@@ -56,7 +57,12 @@
 
   const newPicker = featureFlags.rillTime;
 
-  $: rangeBuckets = bucketYamlRanges(timeRanges, minTimeGrain, $newPicker);
+  $: rangeBuckets = bucketYamlRanges(
+    timeRanges,
+    minTimeGrain,
+    $newPicker,
+    maxQueryTimeRange,
+  );
 
   $: v2TimeString = normalizeRangeString(selectedRangeAlias);
 
@@ -86,6 +92,7 @@
       timeString={v2TimeString || selectedRangeAlias}
       {interval}
       {allowCustomTimeRange}
+      {maxQueryTimeRange}
       timeGrain={activeTimeGrain}
       zone={activeTimeZone}
       {lockTimeZone}

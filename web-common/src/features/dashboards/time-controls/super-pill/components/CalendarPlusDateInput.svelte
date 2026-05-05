@@ -2,6 +2,7 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Calendar from "@rilldata/web-common/components/date-picker/Calendar.svelte";
   import DateInput from "@rilldata/web-common/components/date-picker/DateInput.svelte";
+  import { isoDurationToDays } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
   import { DateTime, Interval, type DateTimeUnit } from "luxon";
 
   export let interval: Interval<true> | undefined;
@@ -9,6 +10,7 @@
   export let maxDate: DateTime | undefined = undefined;
   export let minTimeGrain: DateTimeUnit;
   export let zone: string;
+  export let maxQueryTimeRange: string | undefined = undefined;
   export let updateRange: (range: string) => void = () => {};
   export let onApply: (interval: Interval<true>) => void;
   export let closeMenu: () => void;
@@ -34,6 +36,15 @@
   $: adjustedMaxDate = maxDate
     ?.plus({ [minTimeGrain]: 1 })
     .startOf(minTimeGrain);
+
+  $: maxRangeDays = maxQueryTimeRange
+    ? isoDurationToDays(maxQueryTimeRange)
+    : NaN;
+  $: capActive = !Number.isNaN(maxRangeDays) && maxRangeDays > 0;
+  $: rangeDays = inputInterval?.isValid
+    ? inputInterval.end.diff(inputInterval.start, "days").days
+    : 0;
+  $: exceedsCap = capActive && rangeDays > maxRangeDays;
 
   function onValidDateInput(date: DateTime<true>, boundary?: "start" | "end") {
     let newInterval: Interval;
@@ -128,12 +139,17 @@
     />
   </div>
   <!-- {/if} -->
+  {#if exceedsCap}
+    <div class="text-red-500 text-xs px-1" role="alert">
+      Range exceeds the {maxQueryTimeRange} query limit.
+    </div>
+  {/if}
   <div class="flex justify-end w-full">
     <Button
       fit
       compact
       type="secondary"
-      disabled={!inputInterval?.isValid}
+      disabled={!inputInterval?.isValid || exceedsCap}
       onClick={() => {
         onApply(inputInterval);
 

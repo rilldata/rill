@@ -58,6 +58,7 @@
   export let smallestTimeGrain: V1TimeGrain | undefined;
   export let defaultTimeRange: NamedRange | ISODurationString | undefined;
   export let allowCustomTimeRange = true;
+  export let maxQueryTimeRange: string | undefined = undefined;
   export let availableTimeZones: string[];
   export let lockTimeZone = false;
   export let showFullRange = true;
@@ -70,7 +71,7 @@
   export let onSelectRange: (range: string) => void;
 
   let open = false;
-  let allTimeAllowed = true;
+  $: allTimeAllowed = !maxQueryTimeRange;
   let searchComponent: TimeRangeSearch;
   let filter = "";
   let parsedTime: RillTime | undefined = undefined;
@@ -480,7 +481,7 @@
       </div>
 
       {#if showCalendarPicker}
-        <div class="bg-surface-overlay border-l p-3 size-full">
+        <div class="bg-surface-overlay border-l p-3 size-full overflow-y-auto">
           <CalendarPlusDateInput
             {interval}
             {zone}
@@ -489,6 +490,7 @@
             ]}
             {minDate}
             {maxDate}
+            {maxQueryTimeRange}
             onApply={() => {
               if (searchValue) handleRangeSelect(searchValue);
             }}
