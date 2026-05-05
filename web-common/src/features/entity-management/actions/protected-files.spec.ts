@@ -1,10 +1,6 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { beforeAll, afterAll, describe, expect, it } from "vitest";
 import { setRuntimeEditEnvironment } from "../edit-environment.ts";
 import { isPinned, isProtectedDirectory, isReadonly } from "./protected-files";
-
-afterEach(() => {
-  setRuntimeEditEnvironment("local");
-});
 
 describe("isPinned", () => {
   it("matches /rill.yaml exactly", () => {
@@ -37,37 +33,39 @@ describe("isReadonly on local", () => {
 });
 
 describe("isReadonly on cloud", () => {
-  it("locks /.env at the project root", () => {
+  beforeAll(() => {
     setRuntimeEditEnvironment("cloud");
+  });
+
+  afterAll(() => {
+    setRuntimeEditEnvironment("local");
+  });
+
+  it("locks /.env at the project root", () => {
     expect(isReadonly("/.env")).toBe(true);
   });
 
   it("locks nested .env files", () => {
-    setRuntimeEditEnvironment("cloud");
     expect(isReadonly("/foo/.env")).toBe(true);
   });
 
   it("locks prefixed env files like .dev.env", () => {
-    setRuntimeEditEnvironment("cloud");
     expect(isReadonly("/.dev.env")).toBe(true);
     expect(isReadonly("/.prod.env")).toBe(true);
     expect(isReadonly("/foo/.dev.env")).toBe(true);
   });
 
   it("does not lock files that merely end in 'env'", () => {
-    setRuntimeEditEnvironment("cloud");
     expect(isReadonly("/aenv")).toBe(false);
     expect(isReadonly("/env")).toBe(false);
     expect(isReadonly("/foo.env")).toBe(false);
   });
 
   it("does not lock .envrc", () => {
-    setRuntimeEditEnvironment("cloud");
     expect(isReadonly("/.envrc")).toBe(false);
   });
 
   it("does not lock unrelated files", () => {
-    setRuntimeEditEnvironment("cloud");
     expect(isReadonly("/models/orders.sql")).toBe(false);
   });
 });
