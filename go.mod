@@ -78,7 +78,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/modelcontextprotocol/go-sdk v1.4.1
 	github.com/openai/openai-go/v3 v3.17.0
-	github.com/orbcorp/orb-go v0.74.0
+	github.com/orbcorp/orb-go v1.32.0
 	github.com/paulmach/orb v0.12.0
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20231124053542-069631e2ecfe
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2
