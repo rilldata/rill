@@ -114,10 +114,6 @@
     @apply outline-destructive;
   }
 
-  .component-card:has(.component-access-denied) {
-    @apply outline-border;
-  }
-
   .selected {
     @apply shadow-md outline-primary-400 outline-[1.5px];
 
