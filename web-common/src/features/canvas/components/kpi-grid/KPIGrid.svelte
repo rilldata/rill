@@ -1,5 +1,4 @@
 <script lang="ts">
-  import ComponentAccessDenied from "@rilldata/web-common/features/components/ComponentAccessDenied.svelte";
   import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
   import type { KPIGridComponent } from ".";
   import ComponentHeader from "../../ComponentHeader.svelte";

@@ -7,6 +7,7 @@
 </script>
 
 <script lang="ts">
+  import ComponentAccessDenied from "@rilldata/web-common/features/components/ComponentAccessDenied.svelte";
   import { get } from "svelte/store";
 
   const observer = new IntersectionObserver(
@@ -55,7 +56,10 @@
   let open = false;
   let container: HTMLElement;
 
-  $: ({ id: componentName, type: renderer } = component);
+  $: ({ id: componentName, type: renderer, parent, specStore } = component);
+  $: componentSpec = $specStore as Record<string, unknown>;
+  $: metricsViewName = componentSpec?.metrics_view as string | undefined;
+  $: isAccessDenied = parent.isMetricsViewAccessDenied(metricsViewName);
 
   $: allowBorder = !hideBorder.has(renderer);
 </script>
@@ -87,7 +91,11 @@
     on:mousedown={onMouseDown}
   >
     {#if component}
-      <svelte:component this={component.component} {component} />
+      {#if $isAccessDenied}
+        <ComponentAccessDenied />
+      {:else}
+        <svelte:component this={component.component} {component} />
+      {/if}
     {:else}
       <div class="size-full grid place-content-center">
         <LoadingSpinner size="36px" />

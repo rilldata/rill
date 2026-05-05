@@ -736,10 +736,12 @@ export class CanvasEntity {
     this.componentsStore.delete(componentName);
   };
 
-  isMetricsViewAccessDenied = (metricsViewName: string): Readable<boolean> => {
+  isMetricsViewAccessDenied = (
+    metricsViewName: string | undefined,
+  ): Readable<boolean> => {
     return derived(
       this._accessDeniedMetricsViews,
-      ($denied) => $denied.has(metricsViewName),
+      ($denied) => !!metricsViewName && $denied.has(metricsViewName),
     );
   };
 
