@@ -700,6 +700,16 @@ func (c *connection) FindDeploymentByInstanceID(ctx context.Context, instanceID 
 	return res, nil
 }
 
+func (c *connection) HasActiveDeploymentForProjects(ctx context.Context, projectIDs []string) (bool, error) {
+	var exists bool
+	query := "SELECT EXISTS (SELECT 1 FROM deployments WHERE project_id = ANY($1) AND status IN ($2, $3, $4))"
+	err := c.getDB(ctx).QueryRowxContext(ctx, query, projectIDs, database.DeploymentStatusRunning, database.DeploymentStatusUpdating, database.DeploymentStatusPending).Scan(&exists)
+	if err != nil {
+		return false, parseErr("deployments", err)
+	}
+	return exists, nil
+}
+
 func (c *connection) InsertDeployment(ctx context.Context, opts *database.InsertDeploymentOptions) (*database.Deployment, error) {
 	if err := database.Validate(opts); err != nil {
 		return nil, err

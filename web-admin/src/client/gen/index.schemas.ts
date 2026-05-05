@@ -843,6 +843,10 @@ export interface V1ListProjectsForOrganizationAndUserResponse {
 export interface V1ListProjectsForOrganizationResponse {
   projects?: V1Project[];
   nextPageToken?: string;
+  /** Indicates whether any of the projects in the returned list has an active deployment across any environment
+A deployment is active if is in `running`, `pending` or `updating` state.
+Note: this is for the returned list of projects, not the entire organization. */
+  hasActiveDeployment?: boolean;
 }
 
 export interface V1ListProjectsForUserByNameResponse {

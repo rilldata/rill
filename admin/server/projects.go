@@ -76,6 +76,16 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read projects")
 	}
 
+	// Check if any of the projects has an active deployment
+	ids := make([]string, len(projs))
+	for i, p := range projs {
+		ids[i] = p.ID
+	}
+	hasActiveDeployment, err := s.admin.DB.HasActiveDeploymentForProjects(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+
 	nextToken := ""
 	if len(projs) >= pageSize {
 		nextToken = marshalPageToken(projs[len(projs)-1].Name)
@@ -87,8 +97,9 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 	}
 
 	return &adminv1.ListProjectsForOrganizationResponse{
-		Projects:      dtos,
-		NextPageToken: nextToken,
+		Projects:            dtos,
+		NextPageToken:       nextToken,
+		HasActiveDeployment: hasActiveDeployment,
 	}, nil
 }
 

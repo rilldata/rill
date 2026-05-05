@@ -1471,6 +1471,15 @@ export class ListProjectsForOrganizationResponse extends Message<ListProjectsFor
    */
   nextPageToken = "";
 
+  /**
+   * Indicates whether any of the projects in the returned list has an active deployment across any environment
+   * A deployment is active if is in `running`, `pending` or `updating` state.
+   * Note: this is for the returned list of projects, not the entire organization. 
+   *
+   * @generated from field: bool has_active_deployment = 3;
+   */
+  hasActiveDeployment = false;
+
   constructor(data?: PartialMessage<ListProjectsForOrganizationResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1481,6 +1490,7 @@ export class ListProjectsForOrganizationResponse extends Message<ListProjectsFor
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "projects", kind: "message", T: Project, repeated: true },
     { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "has_active_deployment", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectsForOrganizationResponse {
