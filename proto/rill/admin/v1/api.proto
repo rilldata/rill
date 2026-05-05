@@ -3268,6 +3268,7 @@ message Project {
   int64 dev_slots = 25;
   string frontend_url = 16; // Note: Does NOT incorporate the parent org's custom domain.
   int64 prod_ttl_seconds = 18;
+  int64 dev_ttl_seconds = 27;
   map<string, string> annotations = 20;
   string prod_version = 21;
   google.protobuf.Timestamp created_on = 14;
@@ -3301,6 +3302,7 @@ message Deployment {
   string status_message = 8;
   google.protobuf.Timestamp created_on = 9;
   google.protobuf.Timestamp updated_on = 10;
+  google.protobuf.Timestamp used_on = 14;
 }
 
 message ProvisionerResource {

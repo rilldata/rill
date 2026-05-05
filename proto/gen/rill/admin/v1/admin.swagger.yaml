@@ -5011,6 +5011,9 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+      usedOn:
+        type: string
+        format: date-time
   v1DeploymentStatus:
     type: string
     enum:
@@ -5975,6 +5978,9 @@ definitions:
         type: string
         description: 'Note: Does NOT incorporate the parent org''s custom domain.'
       prodTtlSeconds:
+        type: string
+        format: int64
+      devTtlSeconds:
         type: string
         format: int64
       annotations:

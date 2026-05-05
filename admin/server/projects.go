@@ -2134,6 +2134,7 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		ArchiveAssetId:      safeStr(p.ArchiveAssetID),
 		PrimaryDeploymentId: safeStr(p.PrimaryDeploymentID),
 		ProdTtlSeconds:      safeInt64(p.ProdTTLSeconds),
+		DevTtlSeconds:       p.DevTTLSeconds,
 		FrontendUrl:         s.admin.URLs.Project(orgName, p.Name),
 		Annotations:         p.Annotations,
 		CreatedOn:           timestamppb.New(p.CreatedOn),
@@ -2287,6 +2288,7 @@ func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {
 		StatusMessage:     d.StatusMessage,
 		CreatedOn:         timestamppb.New(d.CreatedOn),
 		UpdatedOn:         timestamppb.New(d.UpdatedOn),
+		UsedOn:            timestamppb.New(d.UsedOn),
 	}
 }
 

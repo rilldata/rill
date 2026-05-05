@@ -425,6 +425,7 @@ export interface V1Deployment {
   statusMessage?: string;
   createdOn?: string;
   updatedOn?: string;
+  usedOn?: string;
 }
 
 export type V1DeploymentStatus =
@@ -1047,6 +1048,7 @@ export interface V1Project {
   /** Note: Does NOT incorporate the parent org's custom domain. */
   frontendUrl?: string;
   prodTtlSeconds?: string;
+  devTtlSeconds?: string;
   annotations?: V1ProjectAnnotations;
   prodVersion?: string;
   createdOn?: string;
