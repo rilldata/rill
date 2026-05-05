@@ -197,7 +197,7 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 	}
 
 	// Prepare deployment annotations
-	annotations := s.NewDeploymentAnnotations(org, proj, depl.ID, depl.Environment)
+	annotations := s.NewDeploymentAnnotations(org, proj, depl.Environment)
 
 	// Resolve slots based on environment
 	slots, err := resolveSlots(proj, depl.Environment)
@@ -405,7 +405,7 @@ func (s *Service) UpdateDeploymentInner(ctx context.Context, d *database.Deploym
 	}
 
 	// Prepare deployment annotations
-	annotations := s.NewDeploymentAnnotations(org, proj, d.ID, d.Environment)
+	annotations := s.NewDeploymentAnnotations(org, proj, d.Environment)
 
 	// Resolve slots based on environment
 	slots, err := resolveSlots(proj, d.Environment)
@@ -534,7 +534,7 @@ func (s *Service) IssueRuntimeManagementToken(aud string) (string, error) {
 	return jwt, nil
 }
 
-func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *database.Project, depID, environment string) DeploymentAnnotations {
+func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *database.Project, environment string) DeploymentAnnotations {
 	var orgBillingPlanName string
 	if org.BillingPlanName != nil {
 		orgBillingPlanName = *org.BillingPlanName
@@ -548,7 +548,6 @@ func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *dat
 		projName:           proj.Name,
 		projProvisioner:    proj.Provisioner,
 		projAnnotations:    proj.Annotations,
-		depID:              depID,
 	}
 	slots, _ := resolveSlots(proj, environment)
 	da.slots = fmt.Sprint(slots)
@@ -576,11 +575,10 @@ type DeploymentAnnotations struct {
 	slots              string
 	projProvisioner    string
 	projAnnotations    map[string]string
-	depID              string
 }
 
 func (da *DeploymentAnnotations) ToMap() map[string]string {
-	res := make(map[string]string, len(da.projAnnotations)+9)
+	res := make(map[string]string, len(da.projAnnotations)+8)
 	for k, v := range da.projAnnotations {
 		res[k] = v
 	}
@@ -592,7 +590,6 @@ func (da *DeploymentAnnotations) ToMap() map[string]string {
 	res["project_name"] = da.projName
 	res["slots"] = da.slots
 	res["project_provisioner"] = da.projProvisioner
-	res["deployment_id"] = da.depID
 	return res
 }
 

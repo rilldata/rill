@@ -80,7 +80,7 @@ func (w *BillingReporterWorker) Work(ctx context.Context, job *river.Job[Billing
 	afterTime := time.Time{}
 	afterOrgID := ""
 	afterProjectID := ""
-	afterDeploymentID := ""
+	afterInstanceID := ""
 	afterBillingService := ""
 	afterEventName := ""
 
@@ -88,7 +88,7 @@ func (w *BillingReporterWorker) Work(ctx context.Context, job *river.Job[Billing
 	maxEndTime := time.Time{}
 	// loop until all the usage data is reported
 	for !stop {
-		u, err := client.GetUsageMetrics(ctx, startTime, endTime, afterTime, afterOrgID, afterProjectID, afterDeploymentID, afterBillingService, afterEventName, sqlGrainIdentifier, limit)
+		u, err := client.GetUsageMetrics(ctx, startTime, endTime, afterTime, afterOrgID, afterProjectID, afterInstanceID, afterBillingService, afterEventName, sqlGrainIdentifier, limit)
 		if err != nil {
 			return fmt.Errorf("failed to get usage metrics: %w", err)
 		}
@@ -103,7 +103,7 @@ func (w *BillingReporterWorker) Work(ctx context.Context, job *river.Job[Billing
 			afterTime = u[len(u)-1].StartTime
 			afterOrgID = u[len(u)-1].OrgID
 			afterProjectID = u[len(u)-1].ProjectID
-			afterDeploymentID = u[len(u)-1].DeploymentID
+			afterInstanceID = u[len(u)-1].InstanceID
 			afterBillingService = u[len(u)-1].BillingService
 			afterEventName = u[len(u)-1].EventName
 		}
@@ -132,7 +132,7 @@ func (w *BillingReporterWorker) Work(ctx context.Context, job *river.Job[Billing
 				ReportingGrain: w.admin.Biller.GetReportingGranularity(),
 				StartTime:      m.StartTime,
 				EndTime:        m.EndTime,
-				Metadata:       map[string]interface{}{"org_id": m.OrgID, "project_id": m.ProjectID, "project_name": m.ProjectName, "deployment_id": m.DeploymentID, "billing_service": m.BillingService},
+				Metadata:       map[string]interface{}{"org_id": m.OrgID, "project_id": m.ProjectID, "project_name": m.ProjectName, "instance_id": m.InstanceID, "billing_service": m.BillingService},
 			})
 		}
 

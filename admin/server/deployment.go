@@ -815,7 +815,7 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 	}
 	resp.DuckdbConnectorConfig = configStructPb
 
-	annotations := s.admin.NewDeploymentAnnotations(org, proj, depl.ID, depl.Environment)
+	annotations := s.admin.NewDeploymentAnnotations(org, proj, depl.Environment)
 	resp.Annotations = annotations.ToMap()
 
 	return resp, nil

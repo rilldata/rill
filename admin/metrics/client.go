@@ -98,10 +98,10 @@ type Usage struct {
 	MaxValue          float64   `json:"max_value"`
 	SumValue          float64   `json:"sum_value"`
 	BillingService    string    `json:"billing_service"`
-	DeploymentID      string    `json:"deployment_id"`
+	InstanceID        string    `json:"instance_id"`
 }
 
-func (c *Client) GetUsageMetrics(ctx context.Context, startTime, endTime, afterTime time.Time, afterOrgID, afterProjectID, afterDeploymentID, afterBillingService, afterEventName, grain string, limit int) ([]*Usage, error) {
+func (c *Client) GetUsageMetrics(ctx context.Context, startTime, endTime, afterTime time.Time, afterOrgID, afterProjectID, afterInstanceID, afterBillingService, afterEventName, grain string, limit int) ([]*Usage, error) {
 	uri, err := url.Parse(c.RuntimeHost)
 	if err != nil {
 		return nil, err
@@ -114,7 +114,7 @@ func (c *Client) GetUsageMetrics(ctx context.Context, startTime, endTime, afterT
 	    date_trunc('{{ .args.grain }}', time) + INTERVAL 1 {{ .args.grain }} as end_time,
 	    org_id,
 	    project_id,
-	    deployment_id,
+	    instance_id,
 	    billing_service,
 	    event_name,
 	    max(value) as max_value,
@@ -126,13 +126,13 @@ func (c *Client) GetUsageMetrics(ctx context.Context, startTime, endTime, afterT
 	         start_time > '{{ .args.after_time }}'
 	      OR (start_time = '{{ .args.after_time }}' AND org_id > '{{ .args.after_org_id }}')
 	      OR (start_time = '{{ .args.after_time }}' AND org_id = '{{ .args.after_org_id }}' AND project_id > '{{ .args.after_project_id }}')
-	      OR (start_time = '{{ .args.after_time }}' AND org_id = '{{ .args.after_org_id }}' AND project_id = '{{ .args.after_project_id }}' AND deployment_id > '{{ .args.after_deployment_id }}')
-	      OR (start_time = '{{ .args.after_time }}' AND org_id = '{{ .args.after_org_id }}' AND project_id = '{{ .args.after_project_id }}' AND deployment_id = '{{ .args.after_deployment_id }}' AND billing_service > '{{ .args.after_billing_service }}')
-	      OR (start_time = '{{ .args.after_time }}' AND org_id = '{{ .args.after_org_id }}' AND project_id = '{{ .args.after_project_id }}' AND deployment_id = '{{ .args.after_deployment_id }}' AND billing_service = '{{ .args.after_billing_service }}' AND event_name > '{{ .args.after_event_name }}')
+	      OR (start_time = '{{ .args.after_time }}' AND org_id = '{{ .args.after_org_id }}' AND project_id = '{{ .args.after_project_id }}' AND instance_id > '{{ .args.after_instance_id }}')
+	      OR (start_time = '{{ .args.after_time }}' AND org_id = '{{ .args.after_org_id }}' AND project_id = '{{ .args.after_project_id }}' AND instance_id = '{{ .args.after_instance_id }}' AND billing_service > '{{ .args.after_billing_service }}')
+	      OR (start_time = '{{ .args.after_time }}' AND org_id = '{{ .args.after_org_id }}' AND project_id = '{{ .args.after_project_id }}' AND instance_id = '{{ .args.after_instance_id }}' AND billing_service = '{{ .args.after_billing_service }}' AND event_name > '{{ .args.after_event_name }}')
 	    )
 	    {{ end }}
 	  GROUP BY ALL
-	  ORDER BY start_time, org_id, project_id, deployment_id, billing_service, event_name
+	  ORDER BY start_time, org_id, project_id, instance_id, billing_service, event_name
 	  LIMIT {{ .args.limit }}
 	// time is insertion time here to prevent handling of late arriving data
 	// if we move to syncing raw events then we will not use aggregation function and UNION ALL and just insertion time as event_time instead of using two fields start_time and end_time
@@ -148,7 +148,7 @@ func (c *Client) GetUsageMetrics(ctx context.Context, startTime, endTime, afterT
 		qry.Add("after_time", afterTime.Format(time.RFC3339))
 		qry.Add("after_org_id", afterOrgID)
 		qry.Add("after_project_id", afterProjectID)
-		qry.Add("after_deployment_id", afterDeploymentID)
+		qry.Add("after_instance_id", afterInstanceID)
 		qry.Add("after_billing_service", afterBillingService)
 		qry.Add("after_event_name", afterEventName)
 	}
