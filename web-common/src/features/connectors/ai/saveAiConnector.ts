@@ -12,7 +12,6 @@ import { getName } from "../../entity-management/name-utils";
 import { ResourceKind } from "../../entity-management/resource-selectors";
 import { EntityType } from "../../entity-management/types";
 import { navigateToFile } from "../../../layout/navigation/editor-routing";
-import { beforeSubmitForm } from "../../sources/modal/submitAddDataForm";
 import {
   getConnectorSchema,
   toConnectorDriver,
@@ -22,6 +21,7 @@ import {
   getSchemaSecretKeys,
   getSchemaStringKeys,
 } from "../../templates/schema-utils";
+import { maybeInitProject } from "@rilldata/web-common/features/add-data/manager/steps/connector.ts";
 
 async function setAiConnectorInRillYAML(
   queryClient: QueryClient,
@@ -53,7 +53,7 @@ export async function saveAiConnector(
   const connector = toConnectorDriver(schemaName);
   if (!connector) throw new Error(`Unknown AI connector: ${schemaName}`);
 
-  await beforeSubmitForm(client, connector);
+  await maybeInitProject(client);
 
   const schema = getConnectorSchema(connector.name ?? "");
   const schemaFields = schema

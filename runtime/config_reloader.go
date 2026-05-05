@@ -2,7 +2,6 @@ package runtime
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"maps"
 	"time"
@@ -46,32 +45,29 @@ func newConfigReloader(rt *Runtime) *configReloader {
 	return c
 }
 
-func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) error {
-	err := r.mu.Lock(ctx)
+func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) (varsCount int, modified bool, err error) {
+	err = r.mu.Lock(ctx)
 	if err != nil {
-		return err
+		return 0, false, err
 	}
 	defer r.mu.Unlock()
 
 	inst, err := r.rt.Instance(ctx, instanceID)
 	if err != nil {
-		return err
+		return 0, false, err
 	}
 
 	admin, release, err := r.rt.Admin(ctx, instanceID)
 	if err != nil {
-		if errors.Is(err, ErrAdminNotConfigured) {
-			return nil
-		}
-		return err
+		return 0, false, err
 	}
 	defer release()
 
-	r.rt.Logger.Info("Reloading config for instance", zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
+	r.rt.Logger.Debug("Reloading config for instance", zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 
-	cfg, err := admin.GetDeploymentConfig(ctx)
+	cfg, err := admin.GetConfig(ctx)
 	if err != nil {
-		return err
+		return 0, false, err
 	}
 
 	// Clone for editing
@@ -80,10 +76,21 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 	restartController := false
 
 	// Update variables
-	varsChanged := !maps.Equal(inst.Variables, cfg.Variables)
+	vars := make(map[string]string)
+	// default first
+	for k, v := range cfg.Variables[""] {
+		vars[k] = v
+	}
+	// then overlay env specific
+	for k, v := range cfg.Variables[inst.Environment] {
+		vars[k] = v
+	}
+	varsChanged := !maps.Equal(inst.Variables, vars)
 	if varsChanged {
-		inst.Variables = cfg.Variables
-		restartController = true
+		if !cfg.Editable { // for editable deployments we will write vars to `.env` which will also trigger controller restart
+			inst.Variables = vars
+			restartController = true
+		}
 	}
 	inst.Annotations = cfg.Annotations
 
@@ -97,7 +104,7 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 			if connectorConfigChanged {
 				duckdbConfig, err := structpb.NewStruct(updatedDuckdbConfig)
 				if err != nil {
-					return err
+					return 0, false, err
 				}
 				// Create a new Connector with updated config
 				connector = &runtimev1.Connector{
@@ -122,7 +129,7 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 	if !ok || cfg.UpdatedOn.After(updatedOn) {
 		repo, release, err := r.rt.Repo(ctx, inst.ID)
 		if err != nil {
-			return err
+			return 0, false, err
 		}
 		defer release()
 
@@ -139,20 +146,38 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 			// retrigger parser to pick up changes
 			ctrl, err := r.rt.Controller(ctx, instanceID)
 			if err != nil {
-				return err
+				return 0, false, err
 			}
 			err = ctrl.Reconcile(ctx, GlobalProjectParserName)
 			if err != nil {
-				return fmt.Errorf("failed to trigger parser: %w", err)
+				return 0, false, fmt.Errorf("failed to trigger parser: %w", err)
 			}
 		}
 	}
 
 	err = r.rt.EditInstance(ctx, inst, restartController)
 	if err != nil {
-		return err
+		return 0, false, err
 	}
-	return nil
+	if !(varsChanged && cfg.Editable) {
+		return 0, false, nil
+	}
+
+	// write variables to .env files for editable deployments. This will also trigger controller restart via repo watcher
+	var count int
+	repo, release, err := r.rt.Repo(ctx, inst.ID)
+	if err != nil {
+		return 0, false, err
+	}
+	defer release()
+	for env, vars := range cfg.Variables {
+		count += len(vars)
+		err = writeEnv(ctx, env, vars, repo)
+		if err != nil {
+			return 0, false, fmt.Errorf("failed to write env file for %q: %w", env, err)
+		}
+	}
+	return count, true, nil
 }
 
 func (r *configReloader) periodicallyReloadConfigs(ctx context.Context) {
@@ -164,7 +189,7 @@ func (r *configReloader) periodicallyReloadConfigs(ctx context.Context) {
 			return
 		}
 		for _, inst := range instances {
-			err := r.reloadConfig(ctx, inst.ID)
+			_, _, err := r.reloadConfig(ctx, inst.ID)
 			if err != nil {
 				r.rt.Logger.Error("periodicallyReloadConfigs: failed to reload config", zap.String("instance_id", inst.ID), zap.Error(err))
 			}

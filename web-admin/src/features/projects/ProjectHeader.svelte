@@ -27,7 +27,6 @@
   import { useAlerts } from "../alerts/selectors";
   import AvatarButton from "../authentication/AvatarButton.svelte";
   import SignIn from "../authentication/SignIn.svelte";
-  import BranchSelector from "../branches/BranchSelector.svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
   import { useDashboards } from "../dashboards/listing/selectors";
   import {
@@ -183,15 +182,12 @@
         {#if editContext && activeBranch}
           <li class="flex items-center mr-2">
             <span
-              class="flex items-center gap-x-1 px-2 py-0 rounded-2xl border bg-primary-50 border-primary-200 text-primary-800"
+              class="inline-block truncate max-w-[200px] px-2 py-0 rounded-2xl border bg-primary-50 border-primary-200 text-primary-800"
+              title={activeBranch}
             >
-              {activeBranch.length > 12
-                ? activeBranch.slice(0, 11) + "…"
-                : activeBranch}
+              {activeBranch}
             </span>
           </li>
-        {:else if !onPublicURLPage && projectPermissions?.readDev}
-          <BranchSelector {organization} {project} {primaryBranch} />
         {/if}
       </svelte:fragment>
     </Breadcrumbs>
@@ -202,13 +198,13 @@
       {#if $developerChat}
         <ChatToggle />
       {/if}
-      <EditActions {organization} {project} branch={activeBranch ?? ""} />
+      <EditActions {organization} {project} {primaryBranch} />
     {:else}
       {#if $viewAsUserStore}
         <ViewAsUserChip />
       {/if}
       {#if $cloudEditing && onProjectPage && projectPermissions.manageDev}
-        <EditButton {organization} {project} {activeBranch} />
+        <EditButton {organization} {project} {activeBranch} {primaryBranch} />
       {/if}
       {#if onProjectPage && projectPermissions.manageProjectMembers}
         <ShareProjectPopover
@@ -231,7 +227,12 @@
           >
             <LastRefreshedDate {dashboard} />
             {#if $cloudEditing && (onMetricsExplorerPage || onCanvasDashboardPage) && projectPermissions.manageDev}
-              <EditButton {organization} {project} {activeBranch} />
+              <EditButton
+                {organization}
+                {project}
+                {activeBranch}
+                {primaryBranch}
+              />
             {/if}
             {#if $dimensionSearch && ready}
               <GlobalDimensionSearch />
@@ -260,7 +261,7 @@
 
     {#if onCanvasDashboardPage}
       {#if $cloudEditing && projectPermissions.manageDev}
-        <EditButton {organization} {project} {activeBranch} />
+        <EditButton {organization} {project} {activeBranch} {primaryBranch} />
       {/if}
       {#if $dashboardChat && !onPublicURLPage}
         <ChatToggle />

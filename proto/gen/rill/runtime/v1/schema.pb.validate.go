@@ -147,6 +147,8 @@ func (m *Type) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for RawType
+
 	if len(errors) > 0 {
 		return TypeMultiError(errors)
 	}

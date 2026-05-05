@@ -9,4 +9,5 @@
 
 /proto/                         @rilldata/applications @rilldata/platform
 /web-admin/src/client/          @rilldata/applications @rilldata/platform
+/web-common/src/proto/          @rilldata/applications @rilldata/platform
 /web-common/src/runtime-client/ @rilldata/applications @rilldata/platform

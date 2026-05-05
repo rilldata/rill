@@ -229,7 +229,7 @@
       });
     }
 
-    // Keep BranchSelector's ListDeployments query in sync
+    // Keep the BranchesSection's ListDeployments query in sync
     void queryClient.invalidateQueries({
       queryKey: getAdminServiceListDeploymentsQueryKey(organization, project),
     });
@@ -253,8 +253,6 @@
     {organization}
     {project}
     readProjects={organizationPermissions?.readProjects}
-    readDev={!!runtime.projectPermissions?.readDev}
-    primaryBranch={projectData?.project?.primaryBranch}
     {planDisplayName}
     {organizationLogoUrl}
   />
@@ -307,8 +305,6 @@
       {organization}
       {project}
       readProjects={organizationPermissions?.readProjects}
-      readDev={!!runtime.projectPermissions?.readDev}
-      primaryBranch={projectData?.project?.primaryBranch}
       {planDisplayName}
       {organizationLogoUrl}
     />

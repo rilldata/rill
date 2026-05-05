@@ -203,7 +203,7 @@ func testSelfHostedDeploy(t *testing.T, adminClient *client.Client, ghClient *gi
 	err = gitutil.CommitAndPush(t.Context(), tempDir, &gitutil.Config{
 		Remote:        authCloneURL,
 		DefaultBranch: "main",
-	}, "", author, false)
+	}, "", author)
 	require.NoError(t, err, "failed to push to github repo")
 
 	// deploy project backed by github
@@ -276,7 +276,7 @@ func testSelfHostedMonorepoDeploy(t *testing.T, adminClient *client.Client, ghCl
 	err = gitutil.CommitAndPush(t.Context(), tempDir, &gitutil.Config{
 		Remote:        authGitURL(t, *repo.CloneURL, token),
 		DefaultBranch: "main",
-	}, "", author, false)
+	}, "", author)
 	require.NoError(t, err, "failed to push to github repo")
 
 	// Clone two separate copies of the same repo to simulate independent working directories

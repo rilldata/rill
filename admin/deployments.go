@@ -299,6 +299,11 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 	if err != nil {
 		return err
 	}
+	// base variables are returned first followed by environment specific variables, so we can just iterate once and overlay them in order
+	v := map[string]string{}
+	for _, variable := range vars {
+		v[variable.Name] = variable.Value
+	}
 
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
@@ -309,7 +314,7 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		AdminConnector: "admin",
 		AiConnector:    "admin",
 		Connectors:     connectors,
-		Variables:      vars,
+		Variables:      v,
 		Annotations:    annotations.ToMap(),
 		FrontendUrl:    frontendURL,
 	})
@@ -330,6 +335,19 @@ func (s *Service) StopDeploymentInner(ctx context.Context, depl *database.Deploy
 		s.Logger.Error("failed to open runtime client", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
 	} else {
 		defer rt.Close()
+
+		// Checkpoint repo changes if this is an editable deployment.
+		// The runtime does checkpoint on close but because DeleteInstance removes the storage directly, the checkpoint can fail.
+		if depl.Editable {
+			_, err = rt.GitPush(ctx, &runtimev1.GitPushRequest{
+				InstanceId:    depl.RuntimeInstanceID,
+				CommitMessage: "Auto checkpoint",
+			})
+			if err != nil {
+				s.Logger.Error("failed to checkpoint repo changes", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
+			}
+		}
+
 		_, err = rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
 			InstanceId: depl.RuntimeInstanceID,
 		})
@@ -520,7 +538,7 @@ func (s *Service) IssueRuntimeManagementToken(aud string) (string, error) {
 		AudienceURL:       aud,
 		Subject:           "admin-service",
 		TTL:               time.Hour,
-		SystemPermissions: []runtime.Permission{runtime.ManageInstances, runtime.ReadInstance, runtime.EditInstance, runtime.EditTrigger, runtime.ReadObjects},
+		SystemPermissions: []runtime.Permission{runtime.ManageInstances, runtime.ReadInstance, runtime.ManageInstance, runtime.EditTrigger, runtime.ReadObjects},
 	})
 	if err != nil {
 		return "", err

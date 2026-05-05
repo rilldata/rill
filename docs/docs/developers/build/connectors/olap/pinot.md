@@ -87,6 +87,10 @@ Pinot does not support the unnest function, so don't set the `unnest` property t
 
 :::
 
+## Caching Query Results
+
+To reduce broker load on dashboards with repeat traffic, see [Caching query results](/developers/build/metrics-view/underlying-model#caching-query-results) on live connectors.
+
 ## Additional Notes
 
 - At the moment, we do not support modeling with Pinot. If this is something you're interested in, please [contact us](/contact).

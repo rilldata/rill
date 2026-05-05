@@ -645,13 +645,13 @@ func (c *connection) CommitAndPush(ctx context.Context, message string, force bo
 		if err != nil {
 			return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
 		}
-		return gitutil.CommitAndPush(ctx, c.root, gitConfig, message, author, false)
+		return gitutil.CommitAndPush(ctx, c.root, gitConfig, message, author)
 	}
 	err = gitutil.RunUpstreamMerge(ctx, gitConfig.RemoteName(), c.root, gitConfig.DefaultBranch, false)
 	if err != nil {
 		return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
 	}
-	return gitutil.CommitAndPush(ctx, c.root, gitConfig, message, author, false)
+	return gitutil.CommitAndPush(ctx, c.root, gitConfig, message, author)
 }
 
 func (c *connection) MergeToBranch(ctx context.Context, branch string, force bool) (resErr error) {
@@ -705,7 +705,7 @@ func (c *connection) MergeToBranch(ctx context.Context, branch string, force boo
 		if subpath != "" {
 			return fmt.Errorf("cannot force merge in a monorepo setup")
 		}
-		return rtgitutil.MergeWithTheirsStrategy(gitPath, branch)
+		return rtgitutil.MergeWithStrategy(gitPath, branch, "theirs")
 	}
 	aborted, err := rtgitutil.MergeWithBailOnConflict(gitPath, branch)
 	if err != nil {

@@ -124,7 +124,7 @@ func TestAnalystOpenRTB(t *testing.T) {
 
 		// It should make three sub-calls: query_metrics_view_summary, get_metrics_view, query_metrics_view
 		res, err := s.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.AnalystAgentArgs{
-			Prompt:    "Tell me which app_site_name has the most impressions. When calling tools, you must only make one call total to the `query_metrics_view` tool.",
+			Prompt:    "Tell me which app_site_name has the most impressions. When calling tools, you must only make one call total to the `query_metrics_view` tool, and you must not call the `create_chart` tool.",
 			Explore:   "bids_metrics",
 			TimeStart: parseTestTime(t, "2023-09-11T00:00:00Z"),
 			TimeEnd:   parseTestTime(t, "2023-09-14T00:00:00Z"),
