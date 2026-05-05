@@ -46,7 +46,7 @@ func (n noop) GetPlanByName(ctx context.Context, name string) (*Plan, error) {
 }
 
 func (n noop) GetPlanByType(ctx context.Context, planType PlanType) (*Plan, error) {
-	return nil, nil
+	return &Plan{Quotas: Quotas{}}, nil
 }
 
 func (n noop) GetPublicPlans(ctx context.Context) ([]*Plan, error) {

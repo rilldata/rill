@@ -279,12 +279,19 @@ func (s *Service) StartCreditTrial(ctx context.Context, org *database.Organizati
 		return nil, nil, errors.New("subscription exists with non-credit-trial plan")
 	}
 
-	if sub == nil {
-		// Grant the trial credits to the customer so that it persists across plan changes
+	balance, err := s.Biller.GetCustomerCreditBalance(ctx, org.BillingCustomerID, billing.CreditsCurrency)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get customer credit balance: %w", err)
+	}
+	if balance <= 0 {
+		// Only seed the initial credits if the customer does not already have a trial balance.
+		// This keeps retries idempotent when an earlier attempt granted credits before failing.
 		if err := s.Biller.GrantCustomerCredits(ctx, org.BillingCustomerID, CreditTrialAllocation, billing.CreditsCurrency, "Initial trial credits", nil); err != nil {
 			return nil, nil, fmt.Errorf("failed to grant trial credits: %w", err)
 		}
+	}
 
+	if sub == nil {
 		sub, err = s.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to create subscription: %w", err)
