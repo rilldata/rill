@@ -67,7 +67,7 @@
   $: topLevelFolder = getTopLevelFolder(filePath);
   $: protectedDirectory = isProtectedDirectory(topLevelFolder);
   $: isDotFile = fileName && fileName.startsWith(".");
-  $: isProtectedFile = fileArtifact.pinned || fileArtifact.readonly;
+  $: isProtectedFile = fileArtifact.pinned || fileArtifact.managed;
 
   $: hasErrors = fileArtifact.getHasErrors(queryClient);
   $: hasWarnings = fileArtifact.getHasWarnings(queryClient);

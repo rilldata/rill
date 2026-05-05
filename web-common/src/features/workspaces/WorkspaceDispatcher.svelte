@@ -42,7 +42,7 @@
     resourceName,
     inferredResourceKind,
     path,
-    readonly,
+    managed,
     getResource,
     getParseError,
     remoteContent,
@@ -101,7 +101,7 @@
           hasUnsavedChanges={$hasUnsavedChanges}
         />
         <svelte:fragment slot="body">
-          {#if readonly && notice}
+          {#if managed && notice}
             <div class="flex flex-col size-full items-center justify-center">
               {@render notice()}
             </div>

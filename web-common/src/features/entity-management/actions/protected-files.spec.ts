@@ -1,6 +1,6 @@
 import { beforeAll, afterAll, describe, expect, it } from "vitest";
 import { setRuntimeEditEnvironment } from "../edit-environment.ts";
-import { isPinned, isProtectedDirectory, isReadonly } from "./protected-files";
+import { isPinned, isProtectedDirectory, isManaged } from "./protected-files";
 
 describe("isPinned", () => {
   it("matches /rill.yaml exactly", () => {
@@ -22,13 +22,13 @@ describe("isPinned", () => {
 
 describe("isReadonly on local", () => {
   it("does not lock .env files", () => {
-    expect(isReadonly("/.env")).toBe(false);
-    expect(isReadonly("/foo/.env")).toBe(false);
-    expect(isReadonly("/.dev.env")).toBe(false);
+    expect(isManaged("/.env")).toBe(false);
+    expect(isManaged("/foo/.env")).toBe(false);
+    expect(isManaged("/.dev.env")).toBe(false);
   });
 
   it("does not lock arbitrary files", () => {
-    expect(isReadonly("/models/orders.sql")).toBe(false);
+    expect(isManaged("/models/orders.sql")).toBe(false);
   });
 });
 
@@ -42,31 +42,31 @@ describe("isReadonly on cloud", () => {
   });
 
   it("locks /.env at the project root", () => {
-    expect(isReadonly("/.env")).toBe(true);
+    expect(isManaged("/.env")).toBe(true);
   });
 
   it("locks nested .env files", () => {
-    expect(isReadonly("/foo/.env")).toBe(true);
+    expect(isManaged("/foo/.env")).toBe(true);
   });
 
   it("locks prefixed env files like .dev.env", () => {
-    expect(isReadonly("/.dev.env")).toBe(true);
-    expect(isReadonly("/.prod.env")).toBe(true);
-    expect(isReadonly("/foo/.dev.env")).toBe(true);
+    expect(isManaged("/.dev.env")).toBe(true);
+    expect(isManaged("/.prod.env")).toBe(true);
+    expect(isManaged("/foo/.dev.env")).toBe(true);
   });
 
   it("does not lock files that merely end in 'env'", () => {
-    expect(isReadonly("/aenv")).toBe(false);
-    expect(isReadonly("/env")).toBe(false);
-    expect(isReadonly("/foo.env")).toBe(false);
+    expect(isManaged("/aenv")).toBe(false);
+    expect(isManaged("/env")).toBe(false);
+    expect(isManaged("/foo.env")).toBe(false);
   });
 
   it("does not lock .envrc", () => {
-    expect(isReadonly("/.envrc")).toBe(false);
+    expect(isManaged("/.envrc")).toBe(false);
   });
 
   it("does not lock unrelated files", () => {
-    expect(isReadonly("/models/orders.sql")).toBe(false);
+    expect(isManaged("/models/orders.sql")).toBe(false);
   });
 });
 

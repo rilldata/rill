@@ -1,7 +1,7 @@
 import { renameFileArtifact } from "@rilldata/web-common/features/entity-management/actions/actions.ts";
 import {
   isPinned,
-  isReadonly,
+  isManaged,
 } from "@rilldata/web-common/features/entity-management/actions/protected-files.ts";
 import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
 import { splitFolderAndFileName } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
@@ -49,7 +49,7 @@ export async function handleEntityRename(
   }
 
   const newFilePath = (folder ? `${folder}/` : "/") + newName;
-  if (isPinned(newFilePath) || isReadonly(newFilePath)) {
+  if (isPinned(newFilePath) || isManaged(newFilePath)) {
     eventBus.emit("notification", {
       message: `Cannot rename to ${newFilePath}. It is a protected path.`,
     });

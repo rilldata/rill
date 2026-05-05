@@ -29,7 +29,7 @@
   import {
     isPinned,
     isProtectedDirectory,
-    isReadonly,
+    isManaged,
   } from "@rilldata/web-common/features/entity-management/actions/protected-files.ts";
 
   export let hasUnsaved: boolean;
@@ -142,7 +142,7 @@
         });
         return;
       }
-      if (isPinned(newFilePath) || isReadonly(newFilePath)) {
+      if (isPinned(newFilePath) || isManaged(newFilePath)) {
         eventBus.emit("notification", {
           message: "cannot rename to a restricted file",
         });

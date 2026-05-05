@@ -1,6 +1,6 @@
 import {
   isPinned,
-  isReadonly,
+  isManaged,
 } from "@rilldata/web-common/features/entity-management/actions/protected-files";
 import {
   extractFileExtension,
@@ -98,8 +98,9 @@ export class FileArtifact {
   // Path is locked: file can't be renamed or deleted, and other files can't
   // be renamed onto this path.
   readonly pinned: boolean;
-  // Content is locked: editor disables typing.
-  readonly readonly: boolean;
+  // Content is managed outside of editors.
+  // Currently **/.*.env files are managed from project settings page on cloud editor
+  readonly managed: boolean;
   readonly snapshot: Writable<{
     scroll?: ReturnType<EditorView["scrollSnapshot"]>;
     selection?: EditorSelection;
@@ -135,7 +136,7 @@ export class FileArtifact {
     );
 
     this.pinned = isPinned(filePath);
-    this.readonly = isReadonly(filePath);
+    this.managed = isManaged(filePath);
   }
 
   /**

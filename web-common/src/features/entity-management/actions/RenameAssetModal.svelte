@@ -28,7 +28,7 @@
   } from "../name-utils.ts";
   import {
     isPinned,
-    isReadonly,
+    isManaged,
   } from "@rilldata/web-common/features/entity-management/actions/protected-files.ts";
 
   export let closeModal: () => void;
@@ -96,7 +96,7 @@
       }
 
       const newPath = (folderName ? `${folderName}/` : "") + values.newName;
-      if (isPinned(newPath) || isReadonly(newPath)) {
+      if (isPinned(newPath) || isManaged(newPath)) {
         error = `Cannot rename to ${newPath}. It is a protected path.`;
 
         return setError(form, "newName", error);

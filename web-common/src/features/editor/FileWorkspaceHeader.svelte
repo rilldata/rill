@@ -24,7 +24,7 @@
 
   let filePath = $derived(fileArtifact.path);
   let [, fileName] = $derived(splitFolderAndFileName(filePath));
-  let editable = $derived(!fileArtifact.readonly && !fileArtifact.pinned);
+  let editable = $derived(!fileArtifact.managed && !fileArtifact.pinned);
 
   const onChangeCallback = async (newTitle: string) => {
     const route = await handleEntityRename(

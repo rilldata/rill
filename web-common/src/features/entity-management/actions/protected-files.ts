@@ -4,8 +4,8 @@ import { getRuntimeEditEnvironment } from "../edit-environment.ts";
 
 // Two distinct kinds of path protections:
 //
-// - readonly: file content is locked (editor disables typing). Renames and
-//   deletes are also blocked because you can't act on a file you can't edit.
+// - managed: file content is hidden and not editable, managed from sources outside of the editor.
+//   Renames and deletes are also blocked because you can't act on a file you can't edit.
 //   `.env` on cloud is the canonical case.
 //
 // - pinned: content is editable, but the path is locked. The file can't be
@@ -37,7 +37,7 @@ export function setCloudReadonlyNotice(notice: Snippet | undefined) {
   cloudReadonlyNotice = notice;
 }
 
-export function isReadonly(path: string): boolean {
+export function isManaged(path: string): boolean {
   if (getRuntimeEditEnvironment() === "cloud") {
     return CLOUD_READONLY.some((m) => m(path));
   }

@@ -39,7 +39,7 @@
     saveEnabled,
   } = fileArtifact);
 
-  $: editable = !fileArtifact.readonly;
+  $: editable = !fileArtifact.managed;
 
   $: debounceSave = debounce(save, FILE_SAVE_DEBOUNCE_TIME);
 
