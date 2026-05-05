@@ -83,15 +83,12 @@ export async function renameFileUsingMenu(
   await openFileNavEntryContextMenu(page, filePath);
   await clickMenuButton(page, "Rename");
 
-  // wait for rename modal to open
-  await page
-    .locator("#rill-portal h2", {
-      hasText: "Rename",
-    })
-    .waitFor();
+  // wait for rename modal to open (dialog is portaled to document.body)
+  const dialog = page.getByRole("dialog");
+  await dialog.waitFor();
 
   // type new fileName and submit
-  await page.locator("#rill-portal input").fill(toFileName);
+  await dialog.locator("input").fill(toFileName);
   await Promise.all([
     page.waitForResponse("**/rill.runtime.v1.RuntimeService/RenameFile"),
     clickModalButton(page, "Change Name"),

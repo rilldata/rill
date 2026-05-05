@@ -14,6 +14,7 @@ import {
   type ConversationSelector,
 } from "./conversation-selector";
 import { invalidateConversationsList, NEW_CONVERSATION_ID } from "./utils";
+import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
 
 export type ConversationStateType = "url" | "browserStorage";
 
@@ -28,6 +29,12 @@ export interface ConversationManagerOptions {
    * The agent to use for conversations (e.g., "analyst_agent", "developer_agent")
    */
   agent?: string;
+  /**
+   * Base path builder for URL-based conversation selectors.
+   * Only used when conversationState is "url".
+   * Defaults to `/${org}/${project}/-/ai` (web-admin pattern).
+   */
+  basePath?: () => string;
 }
 
 /**
@@ -65,10 +72,14 @@ export class ConversationManager {
 
     switch (options.conversationState) {
       case "url":
-        this.conversationSelector = new URLConversationSelector();
+        this.conversationSelector = new URLConversationSelector(
+          options.basePath,
+        );
         break;
       case "browserStorage":
-        this.conversationSelector = new BrowserStorageConversationSelector();
+        this.conversationSelector = new BrowserStorageConversationSelector(
+          EmbedStore.getInstance()?.externalUserId ?? null,
+        );
         break;
       default:
         throw new Error(

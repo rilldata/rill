@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
-import { getAvailableModelActions } from "./model-actions";
+import { getAvailableModelActions } from "@rilldata/web-common/features/projects/status/tables/model-actions";
 
 function makeModel(opts?: {
   incremental?: boolean;

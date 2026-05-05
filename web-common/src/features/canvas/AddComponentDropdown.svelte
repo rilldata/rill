@@ -1,6 +1,10 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import { CHART_TYPES } from "@rilldata/web-common/features/components/charts/config";
+  import {
+    CHART_CONFIG,
+    VISIBLE_CHART_TYPES,
+  } from "@rilldata/web-common/features/components/charts/config";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { Plus, PlusCircle } from "lucide-svelte";
   import type { ComponentType, SvelteComponent } from "svelte";
   import type { ChartType } from "../components/charts/types";
@@ -10,24 +14,15 @@
   import LeaderboardIcon from "./icons/LeaderboardIcon.svelte";
   import TableIcon from "./icons/TableIcon.svelte";
   import TextIcon from "./icons/TextIcon.svelte";
-  type MenuItem = {
-    id: CanvasComponentType;
+  type MainMenuItem = {
+    id: Exclude<CanvasComponentType, ChartType> | "chart_submenu";
     label: string;
     icon: ComponentType<SvelteComponent>;
   };
 
-  // Function to get a random chart type
-  function getRandomChartType(): ChartType {
-    const chartTypes = CHART_TYPES.filter(
-      (t) => t !== "stacked_bar_normalized",
-    );
-    const randomIndex = Math.floor(Math.random() * chartTypes.length);
-    return chartTypes[randomIndex] as ChartType;
-  }
-
   // Create menu items with a function to get random chart type when clicked
-  export const menuItems: MenuItem[] = [
-    { id: "bar_chart", label: "Chart", icon: ChartIcon }, // Default value, will be replaced with random type when clicked
+  export const menuItems: MainMenuItem[] = [
+    { id: "chart_submenu", label: "Chart", icon: ChartIcon },
     { id: "table", label: "Table", icon: TableIcon },
     { id: "markdown", label: "Text/Markdown", icon: TextIcon },
     { id: "kpi_grid", label: "KPI", icon: BigNumberIcon },
@@ -45,11 +40,11 @@
   export let onMouseEnter: () => void = () => {};
   export let onOpenChange: (isOpen: boolean) => void = () => {};
 
-  // Wrapper function to handle chart item click with randomization
-  function handleChartItemClick() {
-    const randomChartType = getRandomChartType();
-    onItemClick(randomChartType);
-  }
+  const { customCharts } = featureFlags;
+
+  const ADD_DROPDOWN_CHART_TYPES = VISIBLE_CHART_TYPES.filter((type) => {
+    return type !== "stacked_bar" && type !== "stacked_bar_normalized";
+  });
 
   function getAriaLabel(row: number | undefined, column: number | undefined) {
     return `Insert widget${row !== undefined ? ` in row ${row + 1}` : ""}${
@@ -59,67 +54,96 @@
 </script>
 
 <DropdownMenu.Root bind:open {onOpenChange}>
-  <DropdownMenu.Trigger asChild let:builder>
-    {#if componentForm}
-      <button
-        {...builder}
-        use:builder.action
-        class="pointer-events-auto shadow-sm hover:shadow-md flex bg-surface-subtle h-[84px] flex-col justify-center gap-2 items-center rounded-md border border-gray-200 w-full"
-      >
-        <PlusCircle class="w-6 h-6 text-fg-secondary" />
-        <span class="text-sm font-medium text-fg-secondary">Add widget</span>
-      </button>
-    {:else if floatingForm}
-      <button
-        {...builder}
-        use:builder.action
-        class:pr-3.5={open}
-        aria-label="Add widget"
-        class="shadow-lg flex group hover:rounded-3xl w-fit gap-x-1 p-2 hover:pr-3.5 absolute bottom-3 right-3 items-center justify-center z-50 rounded-full bg-primary-600 text-white hover:bg-primary-500"
-      >
-        <Plus size="20px" />
-
-        <span
-          class:not-sr-only={open}
-          class="sr-only group-hover:not-sr-only font-semibold w-fit"
+  <DropdownMenu.Trigger>
+    {#snippet child({ props })}
+      {#if componentForm}
+        <button
+          {...props}
+          {disabled}
+          class="pointer-events-auto shadow-sm hover:shadow-md flex bg-surface-subtle h-[84px] flex-col justify-center gap-2 items-center rounded-md border border-gray-200 w-full"
         >
-          Add widget
-        </span>
-      </button>
-    {:else}
-      <button
-        {disabled}
-        use:builder.action
-        {...builder}
-        aria-label={getAriaLabel(rowIndex, columnIndex)}
-        title="Insert widget"
-        class:bg-surface-background={open}
-        class="pointer-events-auto bg-surface-subtle active:bg-gray-100 disabled:pointer-events-none h-7 px-2 grid place-content-center z-50 hover:bg-surface-background text-fg-secondary disabled:opacity-50"
-        on:mouseenter={onMouseEnter}
-      >
-        <PlusCircle size="15px" />
-      </button>
-    {/if}
+          <PlusCircle class="w-6 h-6 text-fg-secondary" />
+          <span class="text-sm font-medium text-fg-secondary">Add widget</span>
+        </button>
+      {:else if floatingForm}
+        <button
+          {...props}
+          {disabled}
+          class:pr-3.5={open}
+          aria-label="Add widget"
+          class="shadow-lg flex group hover:rounded-3xl w-fit gap-x-1 p-2 hover:pr-3.5 absolute bottom-3 right-3 items-center justify-center z-50 rounded-full bg-primary-600 text-white hover:bg-primary-500"
+        >
+          <Plus size="20px" />
+
+          <span
+            class:not-sr-only={open}
+            class="sr-only group-hover:not-sr-only font-semibold w-fit"
+          >
+            Add widget
+          </span>
+        </button>
+      {:else}
+        <button
+          {...props}
+          {disabled}
+          aria-label={getAriaLabel(rowIndex, columnIndex)}
+          title="Insert widget"
+          class:bg-surface-background={open}
+          class="pointer-events-auto bg-surface-subtle active:bg-gray-100 disabled:pointer-events-none h-7 px-2 grid place-content-center z-50 hover:bg-surface-background text-fg-secondary disabled:opacity-50"
+          onmouseenter={onMouseEnter}
+        >
+          <PlusCircle size="15px" />
+        </button>
+      {/if}
+    {/snippet}
   </DropdownMenu.Trigger>
 
   <DropdownMenu.Content
     align={componentForm || floatingForm ? "center" : "start"}
   >
-    <div class="flex flex-col" role="presentation" on:mouseenter={onMouseEnter}>
+    <div class="flex flex-col" role="presentation" onmouseenter={onMouseEnter}>
       {#each menuItems as { id, label, icon } (id)}
-        <DropdownMenu.Item
-          class="flex flex-row gap-x-2 text-fg-primary"
-          on:click={() => {
-            if (id === "bar_chart") {
-              handleChartItemClick();
-            } else {
-              onItemClick(id);
-            }
-          }}
-        >
-          <svelte:component this={icon} color="var(--fg-muted)" />
-          {label}
-        </DropdownMenu.Item>
+        {#if id === "chart_submenu"}
+          <DropdownMenu.Sub>
+            <DropdownMenu.SubTrigger class="flex flex-row gap-x-2">
+              <svelte:component this={icon} />
+              {label}
+            </DropdownMenu.SubTrigger>
+            <DropdownMenu.SubContent class="min-w-[160px]">
+              {#each ADD_DROPDOWN_CHART_TYPES as chartType (chartType)}
+                <DropdownMenu.Item
+                  class="flex flex-row gap-x-2 text-fg-primary"
+                  onclick={() => onItemClick(chartType)}
+                >
+                  <svelte:component
+                    this={CHART_CONFIG[chartType].icon}
+                    primaryColor="#111827"
+                    secondaryColor="#9ca3af"
+                  />
+                  {CHART_CONFIG[chartType].title}
+                </DropdownMenu.Item>
+              {/each}
+              {#if $customCharts}
+                <DropdownMenu.Separator />
+                <DropdownMenu.Item
+                  class="flex flex-row gap-x-2 text-fg-primary"
+                  onclick={() => onItemClick("custom_chart")}
+                >
+                  <ChartIcon />
+                  Custom Chart
+                </DropdownMenu.Item>
+              {/if}
+            </DropdownMenu.SubContent>
+          </DropdownMenu.Sub>
+        {:else}
+          <DropdownMenu.Item
+            class="flex flex-row gap-x-2 text-fg-primary"
+            onclick={() => onItemClick(id)}
+          >
+            <svelte:component this={icon} />
+            {label}
+          </DropdownMenu.Item>
+        {/if}
       {/each}
     </div>
   </DropdownMenu.Content>

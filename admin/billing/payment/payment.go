@@ -16,8 +16,8 @@ type Provider interface {
 	FindCustomerForOrg(ctx context.Context, organization *database.Organization) (*Customer, error)
 	UpdateCustomerEmail(ctx context.Context, customerID, email string) error
 	DeleteCustomer(ctx context.Context, customerID string) error
-	// GetBillingPortalURL returns the payment portal URL to collect payment information from the customer.
-	GetBillingPortalURL(ctx context.Context, customerID, returnURL string) (string, error)
+	// GetBillingPortalURL returns the payment portal URL to collect payment information from the customer when setup is false otherwise it returns a setup page to collect payment and billing address information.
+	GetBillingPortalURL(ctx context.Context, customerID, returnURL string, setup bool) (string, error)
 
 	// WebhookHandlerFunc returns a http.HandlerFunc that can be used to handle incoming webhooks from the payment provider. Return nil if you don't want to register any webhook handlers. jobs is used to enqueue jobs for processing the webhook events.
 	WebhookHandlerFunc(ctx context.Context, jobs jobs.Client) httputil.Handler

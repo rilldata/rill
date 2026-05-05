@@ -45,11 +45,28 @@ export async function runtimeServicePutFileAndWaitForReconciliation(
   );
 }
 
+export async function waitForProjectParser(instanceId: string) {
+  let retryCount = 0;
+  while (retryCount < 5) {
+    try {
+      getProjectParserVersion(instanceId);
+      return;
+    } catch {
+      retryCount++;
+      await new Promise((resolve) =>
+        setTimeout(resolve, 300 + retryCount * 300),
+      );
+    }
+  }
+  throw new Error("Project parser version not found after 5 retries");
+}
+
 // Resource-level reconciliation
 export async function waitForResourceReconciliation(
   client: RuntimeClient,
   resourceName: string,
   resourceKind: ResourceKind,
+  prevStateVersion?: string,
 ) {
   const pollInterval = 2_000; // 2 seconds
   let attempt = 0;
@@ -61,8 +78,14 @@ export async function waitForResourceReconciliation(
         name: { kind: resourceKind, name: resourceName },
       });
 
+      const newStateVersion = resource.resource?.meta?.stateVersion;
+      const newVersionArrived =
+        prevStateVersion && newStateVersion
+          ? newStateVersion > prevStateVersion
+          : true;
+
       // Check if there's a reconcile error
-      if (resource.resource?.meta?.reconcileError) {
+      if (resource.resource?.meta?.reconcileError && newVersionArrived) {
         const error = new Error("Resource configuration failed to reconcile");
         (error as any).details = resource.resource.meta.reconcileError;
         throw error;
@@ -70,7 +93,7 @@ export async function waitForResourceReconciliation(
 
       // Check the reconcile status
       const reconcileStatus = resource.resource?.meta?.reconcileStatus;
-      if (reconcileStatus === "RECONCILE_STATUS_IDLE") {
+      if (reconcileStatus === "RECONCILE_STATUS_IDLE" && newVersionArrived) {
         return; // Success!
       }
 
@@ -216,6 +239,15 @@ export async function deleteFileArtifact(
       message: `Failed to delete ${name}: ${extractMessage(err.rawMessage ?? err.response?.data?.message ?? err.message)}`,
     });
   }
+}
+
+export async function maybeDeleteFileArtifact(
+  client: RuntimeClient,
+  filePath: string,
+  force = false,
+) {
+  if (!fileArtifacts.hasFileArtifact(filePath)) return;
+  return deleteFileArtifact(client, filePath, force);
 }
 
 function extractMessage(msg: string) {

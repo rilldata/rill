@@ -27,6 +27,12 @@ func (t *ListFiles) Spec() *mcp.Tool {
 		Name:        ListFilesName,
 		Title:       "List project files",
 		Description: "Lists all the files in the Rill project, as well as the resources they declare and the current status of those resources",
+		Annotations: &mcp.ToolAnnotations{
+			DestructiveHint: boolPtr(false),
+			IdempotentHint:  true,
+			OpenWorldHint:   boolPtr(false),
+			ReadOnlyHint:    true,
+		},
 		Meta: map[string]any{
 			"openai/toolInvocation/invoking": "List files...",
 			"openai/toolInvocation/invoked":  "Listed files",
@@ -84,10 +90,11 @@ func (t *ListFiles) Handler(ctx context.Context, args *ListFilesArgs) (*ListFile
 		resources := []map[string]any{}
 		for _, r := range resourcesByPath[file.Path] {
 			resources = append(resources, map[string]any{
-				"kind":             r.Meta.Name.Kind,
-				"name":             r.Meta.Name.Name,
-				"reconcile_status": r.Meta.ReconcileStatus.String(),
-				"reconcile_error":  r.Meta.ReconcileError,
+				"kind":               r.Meta.Name.Kind,
+				"name":               r.Meta.Name.Name,
+				"reconcile_status":   r.Meta.ReconcileStatus.String(),
+				"reconcile_error":    r.Meta.ReconcileError,
+				"reconcile_warnings": r.Meta.ReconcileWarnings,
 			})
 		}
 

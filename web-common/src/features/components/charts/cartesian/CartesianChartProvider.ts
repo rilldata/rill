@@ -24,8 +24,8 @@ import type {
   V1MetricsViewAggregationMeasure,
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
-import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { getQueryServiceMetricsViewAggregationQueryOptions } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { createQuery, keepPreviousData } from "@tanstack/svelte-query";
 import {
   derived,
@@ -46,6 +46,7 @@ export type CartesianChartSpec = {
   x?: FieldConfig<"nominal" | "time">;
   y?: FieldConfig<"quantitative">;
   color?: FieldConfig<"nominal"> | string;
+  isInteractive?: boolean;
 };
 
 export type CartesianChartDefaultOptions = {
@@ -193,6 +194,10 @@ export class CartesianChartProvider {
       dimensions = [{ name: dimensionName }];
     }
 
+    // When explicit values are provided, use them directly instead of topN
+    const hasExplicitColorValues =
+      isFieldConfig(config.color) && !!config.color.values?.length;
+
     if (isFieldConfig(config.color) && !isMultiMeasure) {
       colorDimensionName = config.color.field;
       colorLimit = config.color.limit ?? this.defaultSplitLimit;
@@ -279,13 +284,14 @@ export class CartesianChartProvider {
 
     const topNXQuery = createQuery(topNXQueryOptionsStore);
 
-    // Create topN query for color dimension
+    // Create topN query for color dimension (skipped when explicit values are provided)
     const topNColorQueryOptionsStore = derived(
       [timeAndFilterStore, visibleStore],
       ([$timeAndFilterStore, $visible]) => {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const enabled =
           $visible &&
+          !hasExplicitColorValues &&
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           hasColorDimension &&
           !!colorDimensionName &&
@@ -344,7 +350,10 @@ export class CartesianChartProvider {
           !Array.isArray(config.x?.sort)
             ? topNXData !== undefined
             : true) &&
-          (hasColorDimension && colorDimensionName && colorLimit
+          (hasColorDimension &&
+          colorDimensionName &&
+          colorLimit &&
+          !hasExplicitColorValues
             ? topNColorData !== undefined
             : true);
 
@@ -362,7 +371,7 @@ export class CartesianChartProvider {
           includedXValues = topNXData.map((d) => d[dimensionName] as string);
         }
 
-        if (dimensionName) {
+        if (dimensionName && includedXValues.length > 0) {
           this.customSortXItems = includedXValues;
           const filterForTopXValues = createInExpression(
             dimensionName,
@@ -371,8 +380,20 @@ export class CartesianChartProvider {
           combinedWhere = mergeFilters(combinedWhere, filterForTopXValues);
         }
 
-        // Apply topN filter for color dimension
-        if (topNColorData?.length && colorDimensionName) {
+        // Apply filter for color dimension values
+        if (
+          hasExplicitColorValues &&
+          colorDimensionName &&
+          isFieldConfig(config.color)
+        ) {
+          // Use explicitly provided values instead of topN query results
+          this.customColorValues = config.color.values ?? [];
+          const filterForColorValues = createInExpression(
+            colorDimensionName,
+            this.customColorValues,
+          );
+          combinedWhere = mergeFilters(combinedWhere, filterForColorValues);
+        } else if (topNColorData?.length && colorDimensionName) {
           const topColorValues = topNColorData.map(
             (d) => d[colorDimensionName] as string,
           );

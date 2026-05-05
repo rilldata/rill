@@ -274,26 +274,28 @@
 
 <Dialog
   bind:open
-  onOutsideClick={(e) => {
-    e.preventDefault();
-  }}
   onOpenChange={(open) => {
     if (!open) {
       handleClose();
     }
   }}
 >
-  <DialogTrigger asChild>
-    <div class="hidden"></div>
+  <DialogTrigger>
+    {#snippet child({ props })}
+      <div {...props} class="hidden"></div>
+    {/snippet}
   </DialogTrigger>
-  <DialogContent class="translate-y-[-200px]">
+  <DialogContent class="translate-y-[-200px]" interactOutsideBehavior="ignore">
     <DialogHeader>
       <DialogTitle>Edit group</DialogTitle>
     </DialogHeader>
     <form
       id={formId}
       class="w-full"
-      on:submit|preventDefault={submit}
+      onsubmit={(e) => {
+        e.preventDefault();
+        submit(e);
+      }}
       use:enhance
     >
       <div class="flex flex-col gap-4 w-full">
@@ -330,7 +332,7 @@
             onSelectedChange={(values) => {
               if (!values) return;
 
-              const newEmails = values.map((v) => v.value);
+              const newEmails = values;
               const currentEmails = selectedUsers.map((u) => u.userEmail);
 
               // Find emails to add (in new but not in current)

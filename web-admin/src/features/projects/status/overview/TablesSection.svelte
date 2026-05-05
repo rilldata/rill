@@ -3,9 +3,12 @@
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useInfiniteTablesList } from "../selectors";
-  import { filterTemporaryTables, isLikelyView } from "../tables/utils";
+  import {
+    filterTemporaryTables,
+    isLikelyView,
+  } from "@rilldata/web-common/features/projects/status/tables/utils";
   import { writable } from "svelte/store";
-  import OverviewCard from "./OverviewCard.svelte";
+  import OverviewCard from "@rilldata/web-common/features/projects/status/overview/OverviewCard.svelte";
 
   const runtimeClient = useRuntimeClient();
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;

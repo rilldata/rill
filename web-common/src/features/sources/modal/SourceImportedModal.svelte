@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
+  import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
   import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
@@ -30,8 +30,6 @@
 
   $: sourceName = extractFileName(sourcePath ?? "");
 
-  $: ({ instanceId } = runtimeClient);
-
   $: if (sourcePath) {
     fileArtifact = fileArtifacts.getFileArtifact(sourcePath);
     sourceQuery = fileArtifact.getResource(queryClient);
@@ -42,7 +40,6 @@
     sourcePath !== null
       ? useCreateMetricsViewWithCanvasAndExploreUIAction(
           runtimeClient,
-          instanceId,
           sinkConnector as string,
           "",
           "",
@@ -57,7 +54,7 @@
   }
 
   async function goToSource() {
-    await goto(`/files${sourcePath ?? ""}`);
+    await navigateToFile(sourcePath ?? "");
     close();
   }
 
@@ -93,26 +90,30 @@
     </AlertDialog.Description>
 
     <AlertDialog.Footer>
-      <AlertDialog.Action asChild let:builder>
-        <AlertDialog.Cancel asChild let:builder>
-          <Button builders={[builder]} onClick={goToSource} type="secondary">
-            View this source
+      <AlertDialog.Action>
+        {#snippet child({ props })}
+          <AlertDialog.Cancel>
+            {#snippet child({ props: cancelProps })}
+              <Button {...cancelProps} onClick={goToSource} type="secondary">
+                View this source
+              </Button>
+            {/snippet}
+          </AlertDialog.Cancel>
+
+          <Button
+            {...props}
+            disabled={createDashboardFromTable === null}
+            onClick={generateMetrics}
+            type="primary"
+          >
+            Generate dashboard
+
+            {#if $ai}
+              with AI
+              <WandIcon class="w-3 h-3" />
+            {/if}
           </Button>
-        </AlertDialog.Cancel>
-
-        <Button
-          builders={[builder]}
-          disabled={createDashboardFromTable === null}
-          onClick={generateMetrics}
-          type="primary"
-        >
-          Generate dashboard
-
-          {#if $ai}
-            with AI
-            <WandIcon class="w-3 h-3" />
-          {/if}
-        </Button>
+        {/snippet}
       </AlertDialog.Action>
     </AlertDialog.Footer>
   </AlertDialog.Content>

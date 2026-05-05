@@ -4,8 +4,8 @@ import type {
   Field,
   NumericMarkPropDef,
   OffsetDef,
-} from "vega-lite/build/src/channeldef";
-import type { Transform } from "vega-lite/build/src/transform";
+} from "vega-lite/types_unstable/channeldef.js";
+import type { Transform } from "vega-lite/types_unstable/transform.js";
 
 export const MeasureKeyField = "measure_key";
 export const ColorWithComparisonField = "color_with_comparison";

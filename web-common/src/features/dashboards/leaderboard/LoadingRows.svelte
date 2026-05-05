@@ -5,10 +5,10 @@
 
 {#each { length: rows } as _, i (i)}
   <tr>
-    <td />
+    <td></td>
     {#each { length: columns } as _, i (i)}
       <td>
-        <div />
+        <div></div>
       </td>
     {/each}
   </tr>

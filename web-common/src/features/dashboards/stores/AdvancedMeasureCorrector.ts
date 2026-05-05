@@ -69,23 +69,31 @@ export class AdvancedMeasureCorrector {
   }
 
   private correctLeaderboards() {
+    const validLeaderboardMeasures = this.exploreState.visibleMeasures.filter(
+      (m) => !this.measureIsValidForComponent(m, true, false),
+    );
+
     if (
       this.exploreState.leaderboardSortByMeasureName &&
-      !this.measureIsValidForComponent(
+      !validLeaderboardMeasures.includes(
         this.exploreState.leaderboardSortByMeasureName,
-        true,
-        false,
       )
     ) {
-      return;
+      this.exploreState.leaderboardSortByMeasureName =
+        validLeaderboardMeasures[0];
     }
 
-    this.exploreState.leaderboardSortByMeasureName = "";
-    for (const measure of this.metricsViewSpec.measures ?? []) {
-      if (!this.measureIsValidForComponent(measure.name ?? "", true, false)) {
-        this.exploreState.leaderboardSortByMeasureName = measure.name ?? "";
-        break;
-      }
+    this.exploreState.leaderboardMeasureNames =
+      this.exploreState.leaderboardMeasureNames.filter((lm) =>
+        validLeaderboardMeasures.includes(lm),
+      );
+    if (
+      this.exploreState.leaderboardMeasureNames.length === 0 &&
+      this.exploreState.leaderboardSortByMeasureName
+    ) {
+      this.exploreState.leaderboardMeasureNames = [
+        this.exploreState.leaderboardSortByMeasureName,
+      ];
     }
   }
 

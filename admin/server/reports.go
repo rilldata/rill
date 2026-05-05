@@ -55,7 +55,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 
 	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	delivery := make(map[string]*adminv1.GetReportMetaResponse_DeliveryMeta)
@@ -199,12 +199,12 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 
 	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	name, err := s.generateReportName(ctx, depl, req.Options.DisplayName)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	data, err := s.yamlForManagedReport(req.Options, claims.OwnerID())
@@ -256,12 +256,12 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 
 	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	spec, err := s.admin.LookupReport(ctx, depl, req.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "could not get report: %s", err.Error())
+		return nil, fmt.Errorf("could not get report: %w", err)
 	}
 	annotations := parseReportAnnotations(spec.Annotations)
 
@@ -313,12 +313,12 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 
 	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	spec, err := s.admin.LookupReport(ctx, depl, req.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "could not get report: %s", err.Error())
+		return nil, fmt.Errorf("could not get report: %w", err)
 	}
 	annotations := parseReportAnnotations(spec.Annotations)
 
@@ -343,11 +343,11 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 	if claims.OwnerType() == auth.OwnerTypeMagicAuthToken {
 		reportTkn, err := s.admin.DB.FindNotificationTokenForMagicAuthToken(ctx, claims.OwnerID())
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "failed to find notification token: %s", err.Error())
+			return nil, fmt.Errorf("failed to find notification token: %w", err)
 		}
 
 		if reportTkn.ResourceKind != runtime.ResourceKindReport || reportTkn.ResourceName != req.Name {
-			return nil, status.Error(codes.InvalidArgument, "token is not valid for this report")
+			return nil, status.Error(codes.PermissionDenied, "token is not valid for this report")
 		}
 
 		if reportTkn.RecipientEmail == "" {
@@ -395,7 +395,7 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 	}
 
 	if !found {
-		return nil, status.Error(codes.InvalidArgument, "user is not subscribed to report")
+		return nil, status.Error(codes.FailedPrecondition, "user is not subscribed to report")
 	}
 
 	if len(report.Notify.Email.Recipients) == 0 && len(report.Notify.Slack.Users) == 0 && len(report.Notify.Slack.Channels) == 0 && len(report.Notify.Slack.Webhooks) == 0 {
@@ -452,12 +452,12 @@ func (s *Server) DeleteReport(ctx context.Context, req *adminv1.DeleteReportRequ
 
 	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	spec, err := s.admin.LookupReport(ctx, depl, req.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "could not get report: %s", err.Error())
+		return nil, fmt.Errorf("could not get report: %w", err)
 	}
 	annotations := parseReportAnnotations(spec.Annotations)
 
@@ -507,12 +507,12 @@ func (s *Server) TriggerReport(ctx context.Context, req *adminv1.TriggerReportRe
 
 	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	spec, err := s.admin.LookupReport(ctx, depl, req.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "could not get report: %s", err.Error())
+		return nil, fmt.Errorf("could not get report: %w", err)
 	}
 	annotations := parseReportAnnotations(spec.Annotations)
 

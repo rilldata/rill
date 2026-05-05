@@ -1,7 +1,7 @@
 <script lang="ts">
   import { IconButton } from "@rilldata/web-common/components/button";
   import { EyeIcon, EyeOffIcon } from "lucide-svelte";
-  import { onMount } from "svelte";
+  import { onMount, type ComponentType, type SvelteComponent } from "svelte";
   import { slide } from "svelte/transition";
   import FieldSwitcher from "./FieldSwitcher.svelte";
   import InputLabel from "./InputLabel.svelte";
@@ -30,6 +30,7 @@
   export let selected: number = -1;
   export let full = false;
   export let multiline = false;
+  export let rows: number | undefined = undefined;
   export let fontFamily = "inherit";
   export let sameWidth = false;
   export let textClass = "text-xs";
@@ -42,6 +43,9 @@
   export let textInputPrefix = "";
   export let lockTooltip: string | undefined = undefined;
   export let disabledMessage = "No valid options";
+  /** Optional icon rendered inside the Select trigger when `options` is set. */
+  export let leadingIcon: ComponentType<SvelteComponent> | undefined =
+    undefined;
   export let options:
     | { value: string; label: string; type?: string }[]
     | undefined = undefined;
@@ -52,6 +56,7 @@
       currentTarget: EventTarget & HTMLElement;
     },
   ) => void = voidFunction;
+  export let oninput: ((e: Event) => void) | undefined = undefined;
   export let onChange: (newValue: string) => void = voidFunction;
   export let onBlur: (
     e: FocusEvent & {
@@ -69,7 +74,7 @@
   let hitEnter = false;
   let showPassword = false;
   let inputElement: HTMLElement | undefined;
-  let selectElement: HTMLButtonElement | undefined;
+  let selectElement: HTMLButtonElement | null = null;
   let focus = false;
 
   $: type = secret && !showPassword ? "password" : inputType;
@@ -167,18 +172,20 @@
           class="multiline-input"
           {disabled}
           {placeholder}
+          {rows}
           name={id}
           aria-label={label || title || placeholder}
           bind:this={inputElement}
           bind:value
-          on:input={(e) => {
+          oninput={(e) => {
             value = e.currentTarget.value;
             onInput(value, e);
+            oninput?.(e);
           }}
-          on:keydown={onKeydown}
-          on:blur={onElementBlur}
-          on:focus={() => (focus = true)}
-        />
+          onkeydown={onKeydown}
+          onblur={onElementBlur}
+          onfocus={() => (focus = true)}
+        ></textarea>
       {:else}
         <input
           title={label || title}
@@ -191,21 +198,23 @@
           value={value ?? (inputType === "number" ? null : "")}
           autocomplete={autocomplete ? "on" : "off"}
           bind:this={inputElement}
-          on:input={(e) => {
+          oninput={(e) => {
             if (inputType === "number") {
               if (e.currentTarget.value === "") {
                 value = undefined;
               } else {
                 value = e.currentTarget.valueAsNumber;
               }
+              oninput?.(e);
               return;
             }
             value = e.currentTarget.value;
             onInput(value, e);
+            oninput?.(e);
           }}
-          on:keydown={onKeydown}
-          on:blur={onElementBlur}
-          on:focus={() => (focus = true)}
+          onkeydown={onKeydown}
+          onblur={onElementBlur}
+          onfocus={() => (focus = true)}
         />
       {/if}
       {#if secret}
@@ -213,7 +222,7 @@
           size={20}
           disableHover
           ariaLabel={showPassword ? "Hide password" : "Show password"}
-          on:click={() => {
+          onclick={() => {
             showPassword = !showPassword;
           }}
         >
@@ -241,6 +250,7 @@
       {size}
       fontSize={size === "sm" ? 12 : 14}
       {truncate}
+      {leadingIcon}
       placeholder={disabled ? disabledMessage : placeholder}
     />
   {/if}

@@ -22,7 +22,7 @@ import {
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
-import { deepClone } from "@vitest/utils";
+import { deepClone } from "@vitest/utils/helpers";
 import { get } from "svelte/store";
 import { expect } from "vitest";
 

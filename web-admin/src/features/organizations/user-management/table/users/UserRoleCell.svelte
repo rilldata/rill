@@ -163,7 +163,7 @@
           'admin'
             ? 'bg-gray-100'
             : ''}"
-          on:click={() => handleSetRole(OrgUserRoles.Admin)}
+          onclick={() => handleSetRole(OrgUserRoles.Admin)}
         >
           <span class="text-xs font-medium text-fg-primary">Admin</span>
           <span class="text-[11px] text-fg-secondary"
@@ -176,7 +176,7 @@
         'editor'
           ? 'bg-gray-100'
           : ''}"
-        on:click={() => handleSetRole(OrgUserRoles.Editor)}
+        onclick={() => handleSetRole(OrgUserRoles.Editor)}
       >
         <span class="text-xs font-medium text-fg-primary">Editor</span>
         <span class="text-[11px] text-fg-secondary"
@@ -188,7 +188,7 @@
         'viewer'
           ? 'bg-gray-100'
           : ''}"
-        on:click={() => handleSetRole(OrgUserRoles.Viewer)}
+        onclick={() => handleSetRole(OrgUserRoles.Viewer)}
       >
         <span class="text-xs font-medium text-fg-primary">Viewer</span>
         <span class="text-[11px] text-fg-secondary"
@@ -198,7 +198,7 @@
       <DropdownMenu.Separator />
       <DropdownMenu.Item
         class="font-normal flex items-center py-2"
-        on:click={() => {
+        onclick={() => {
           if (isGuest) void handleRemove();
           else isRemoveConfirmOpen = true;
         }}

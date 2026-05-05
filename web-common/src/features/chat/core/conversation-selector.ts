@@ -58,6 +58,23 @@ export interface ConversationSelector {
  * Only handles REAL conversation IDs - optimistic state is managed by Chat class.
  */
 export class URLConversationSelector implements ConversationSelector {
+  private readonly basePath: () => string;
+
+  /**
+   * @param basePath - A function returning the base path for AI chat routes
+   *   (e.g., () => `/${org}/${project}/-/ai` for web-admin, () => "/ai" for web-local)
+   */
+  constructor(basePath?: () => string) {
+    this.basePath =
+      basePath ??
+      (() => {
+        const currentPage = get(page);
+        const organization = currentPage.params.organization;
+        const project = currentPage.params.project;
+        return `/${organization}/${project}/-/ai`;
+      });
+  }
+
   // Single reactive source of truth
   readonly currentConversationId = derived(
     page,
@@ -71,19 +88,13 @@ export class URLConversationSelector implements ConversationSelector {
   );
 
   async selectConversation(id: string): Promise<void> {
-    const currentPage = get(page);
-    const organization = currentPage.params.organization;
-    const project = currentPage.params.project;
-    await goto(`/${organization}/${project}/-/ai/${id}`, {
+    await goto(`${this.basePath()}/${id}`, {
       replaceState: true,
     });
   }
 
   async clearSelection(): Promise<void> {
-    const currentPage = get(page);
-    const organization = currentPage.params.organization;
-    const project = currentPage.params.project;
-    await goto(`/${organization}/${project}/-/ai`, {
+    await goto(this.basePath(), {
       replaceState: true,
     });
   }
@@ -97,7 +108,7 @@ export class URLConversationSelector implements ConversationSelector {
  * Manages conversation selection via browser storage (sessionStorage/localStorage)
  *
  * Used by SidebarChat where conversation selection needs to persist across page
- * navigation but doesn't use URL routing. Selection is scoped per project.
+ * navigation but doesn't use URL routing. Selection is scoped per project and optionally per user.
  */
 export class BrowserStorageConversationSelector
   implements ConversationSelector
@@ -108,14 +119,22 @@ export class BrowserStorageConversationSelector
   readonly currentConversationId: Readable<string>;
   readonly isNewConversation: Readable<boolean>;
 
-  constructor() {
+  /**
+   * @param scopeId Optional namespace for the sessionStorage key.
+   * Pass when the same browser tab may serve multiple users (e.g. embed with `external_user_id`)
+   * This prevents conversation sharing between contexts that are meant to be different.
+   *
+   * Note that this is not really a data leak issue since it will be on the same browser tab, most probably for the same end user.
+   */
+  constructor(scopeId: string | null) {
     // Create project-specific storage store based on current page params
     const currentPage = get(page);
     const organization = currentPage.params.organization || "";
     const project = currentPage.params.project || "";
 
+    const scopePart = scopeId ? "-" + scopeId : "";
     this.store = sessionStorageStore<string>(
-      `sidebar-conversation-id-${organization}-${project}`,
+      `sidebar-conversation-id-${organization}-${project}${scopePart}`,
       NEW_CONVERSATION_ID,
     );
 

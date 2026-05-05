@@ -213,6 +213,19 @@ export function convertURLToExplorePreset(
     }
   }
 
+  if (searchParams.has(ExploreStateURLParams.DynamicYAxisScale)) {
+    const raw = searchParams
+      .get(ExploreStateURLParams.DynamicYAxisScale)
+      ?.toLowerCase();
+    if (raw === "true" || raw === "1") {
+      preset.chartDynamicYAxis = true;
+    } else if (raw === "false" || raw === "0" || raw === "") {
+      preset.chartDynamicYAxis = false;
+    } else {
+      errors.push(getSingleFieldError("dynamic y-axis scale", raw ?? ""));
+    }
+  }
+
   return { preset, errors };
 }
 
@@ -519,6 +532,12 @@ function fromExploreUrlParams(
     } else {
       errors.push(getSingleFieldError("sort type", sortType));
     }
+  }
+
+  if (searchParams.has(ExploreStateURLParams.ChartType)) {
+    preset.timeDimensionChartType = searchParams.get(
+      ExploreStateURLParams.ChartType,
+    ) as string;
   }
 
   return { preset, errors };

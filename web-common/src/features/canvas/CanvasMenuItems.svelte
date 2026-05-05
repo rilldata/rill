@@ -25,7 +25,7 @@
   }
 </script>
 
-<NavigationMenuItem on:click={viewGraph}>
+<NavigationMenuItem onclick={viewGraph}>
   <GitBranch slot="icon" size="14px" />
   View DAG graph
 </NavigationMenuItem>

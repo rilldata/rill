@@ -60,7 +60,7 @@
     class:!p-0={kpis.length === 1}
     bind:clientWidth={containerWidth}
   >
-    <span class="border-overlay" />
+    <span class="border-overlay"></span>
     <div
       style:grid-template-columns="repeat({optimalColumns}, minmax(0, 1fr))"
       class="grid-wrapper gap-px overflow-hidden size-full"

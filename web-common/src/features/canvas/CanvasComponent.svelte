@@ -1,32 +1,33 @@
 <script lang="ts" context="module">
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
+  import { onMount } from "svelte";
   import Toolbar from "./Toolbar.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import { hideBorder } from "./layout-util";
-  import { onMount } from "svelte";
 </script>
 
 <script lang="ts">
   import ComponentAccessDenied from "@rilldata/web-common/features/components/ComponentAccessDenied.svelte";
   import { get } from "svelte/store";
 
-  const observer = new IntersectionObserver(
-    ([entry]) => {
-      if (entry.isIntersecting) {
-        component.visible.set(true);
-        observer.unobserve(container);
-      }
-    },
-    {
-      root: document.querySelector(".dashboard-theme-boundary"),
-      rootMargin: "120px",
-      threshold: 0,
-    },
-  );
+  let observer: IntersectionObserver;
 
   let mounted = false;
 
   onMount(() => {
+    observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          component.visible.set(true);
+          observer.unobserve(container);
+        }
+      },
+      {
+        root: container.closest(".dashboard-theme-boundary"),
+        rootMargin: "120px",
+        threshold: 0,
+      },
+    );
     mounted = true;
     observer.observe(container);
   });
@@ -88,13 +89,13 @@
   <div
     role="presentation"
     class="size-full grow flex flex-col"
-    on:mousedown={onMouseDown}
+    onmousedown={onMouseDown}
   >
     {#if component}
       {#if $isAccessDenied}
         <ComponentAccessDenied />
       {:else}
-        <svelte:component this={component.component} {component} />
+        <svelte:component this={component.component} {component} {editable} />
       {/if}
     {:else}
       <div class="size-full grid place-content-center">
@@ -109,7 +110,7 @@
     @apply shadow-md outline;
   }
 
-  .component-card:has(.component-error) {
+  .component-card:has(:global(.component-error)) {
     @apply outline-destructive;
   }
 

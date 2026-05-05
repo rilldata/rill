@@ -4,11 +4,23 @@ import { schemasafe } from "sveltekit-superforms/adapters";
 import type { ValidationAdapter } from "sveltekit-superforms/adapters";
 
 import { getFieldLabel, isStepMatch } from "../../templates/schema-utils";
+import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size.ts";
+import { validateDuckLakeAttach } from "../../templates/schemas/ducklake-utils";
 import type {
   JSONSchemaConditional,
   JSONSchemaConstraint,
   MultiStepFormSchema,
 } from "../../templates/schemas/types";
+
+/**
+ * Registry of named validators referenced via `"x-custom-validator"` on a
+ * schema field. Each validator runs against the raw field value and returns
+ * a list of user-facing error messages; an empty list means the value is
+ * structurally valid.
+ */
+const CUSTOM_VALIDATORS: Record<string, (value: unknown) => string[]> = {
+  "ducklake-attach": validateDuckLakeAttach,
+};
 
 const DEFAULT_SCHEMASAFE_OPTIONS: ValidatorOptions = {
   includeErrors: true,
@@ -90,16 +102,65 @@ export function createSchemasafeValidator(
     async validate(data: Record<string, unknown> = {}) {
       const pruned = pruneEmptyFields(data);
       const isValid = validator(pruned as any);
-      if (isValid) {
+
+      const fileSizeIssues = checkFileSizeLimits(stepSchema, data);
+      const customIssues = checkCustomValidators(stepSchema, data);
+
+      if (isValid && fileSizeIssues.length === 0 && customIssues.length === 0) {
         return { data: pruned, success: true };
       }
 
-      const issues = (validator.errors ?? []).map((error) =>
+      const schemaIssues = (validator.errors ?? []).map((error) =>
         toIssue(error, schema),
       );
-      return { success: false, issues };
+      return {
+        success: false,
+        issues: [...schemaIssues, ...fileSizeIssues, ...customIssues],
+      };
     },
   };
+}
+
+function checkCustomValidators(
+  schema: MultiStepFormSchema,
+  data: Record<string, unknown>,
+): Array<{ path: string[]; message: string }> {
+  const issues: Array<{ path: string[]; message: string }> = [];
+  for (const [key, prop] of Object.entries(schema.properties ?? {})) {
+    const validatorKey = prop["x-custom-validator"];
+    if (!validatorKey) continue;
+    const validator = CUSTOM_VALIDATORS[validatorKey];
+    if (!validator) continue;
+    const messages = validator(data[key]);
+    for (const message of messages) {
+      issues.push({ path: [key], message });
+    }
+  }
+  return issues;
+}
+
+function checkFileSizeLimits(
+  schema: MultiStepFormSchema,
+  data: Record<string, unknown>,
+): Array<{ path: string[]; message: string }> {
+  const issues: Array<{ path: string[]; message: string }> = [];
+  for (const [key, prop] of Object.entries(schema.properties ?? {})) {
+    if (prop["x-file-size-soft-limit"] === true) continue;
+    const limit = prop["x-file-size-limit"];
+    if (!limit) continue;
+    const files = data[key];
+    if (!(files instanceof FileList)) continue;
+    for (const file of Array.from(files)) {
+      if (file.size > limit) {
+        issues.push({
+          path: [key],
+          message: `File exceeds the maximum size of ${formatMemorySize(limit)}. Please choose a smaller file to continue.`,
+        });
+        break; // one error per field is enough
+      }
+    }
+  }
+  return issues;
 }
 
 function pruneEmptyFields(

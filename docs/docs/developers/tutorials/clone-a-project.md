@@ -26,7 +26,7 @@ curl https://rill.sh | sh
 
 
 ## Step 1: Clone the Repository
-Depending on whether your project is synced to GitHub or not, select the correct clone method. If you are unsure, please see the Status page in the project.
+Depending on whether your project is synced to GitHub or not, select the correct clone method. If you are unsure, please see the Settings page in the project.
 
 ### From GitHub
 ![Github Pushed Changes](/img/tutorials/rill-advanced/github-pushed-changes.png)

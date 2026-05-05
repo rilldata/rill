@@ -10,8 +10,8 @@ import (
 )
 
 // InitAgentsMD generates tool-agnostic AGENTS.md instruction files from Rill instruction files.
-// The main instructions are written to /AGENTS.md.
-// Resource-specific instructions are written as skills to /.agents/skills/<name>/SKILL.md.
+// The entry point is written to /AGENTS.md.
+// All other instructions (including development.md) are written as skills to /.agents/skills/<name>/SKILL.md.
 // MCP server config is written to /.mcp.json.
 // If force is false, it skips files that already exist.
 // If force is true, it overwrites any existing files.
@@ -53,11 +53,11 @@ func InitAgentsMD(ctx context.Context, repo drivers.RepoStore, force bool) error
 }
 
 // convertToAgentsMDFile transforms a Rill instruction to AGENTS.md format.
-// development.md becomes the main /AGENTS.md file.
-// Resource files become skills at /.agents/skills/<name>/SKILL.md.
+// AGENTS.md becomes the main /AGENTS.md file.
+// Other files become skills at /.agents/skills/<name>/SKILL.md.
 func convertToAgentsMDFile(path string, inst *Instruction) (outputPath, content string) {
-	// development.md becomes the main AGENTS.md file (no front matter needed)
-	if path == "development.md" {
+	// AGENTS.md becomes the main AGENTS.md file (no front matter needed)
+	if path == "AGENTS.md" {
 		return "/AGENTS.md", inst.Body
 	}
 

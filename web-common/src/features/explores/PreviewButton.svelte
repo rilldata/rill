@@ -11,7 +11,7 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import Play from "svelte-radix/Play.svelte";
+  import { Play } from "lucide-svelte";
 
   export let disabled: boolean;
   export let href: string | null;
@@ -51,7 +51,7 @@
     onClick={viewDashboard}
   >
     <div class="flex gap-x-1 items-center">
-      <Play size="14px" />
+      <Play size={14} />
       Preview
     </div>
   </Button>

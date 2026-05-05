@@ -23,6 +23,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/pkg/rduckdb"
+	"go.uber.org/zap"
 )
 
 type selfToSelfExecutor struct {
@@ -120,7 +121,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		var createSecretSQLs, dropSecretSQLs []string
 		for _, connector := range connectorsForSecrets {
 			// we donnot need to pass the parsedPath we are using because of s3 region detection
-			createSecretSQL, dropSecretSQL, connectorType, err := generateSecretSQL(ctx, opts, connector, parsedPath, nil)
+			createSecretSQL, dropSecretSQL, connectorType, err := generateSecretSQL(ctx, opts, connector, parsedPath, nil, e.c.logger)
 			if err != nil {
 				// Skip creating secrets when:
 				// - autoDetected: user didn't explicitly configure the secret container
@@ -545,7 +546,7 @@ func connectorsForSecrets(modelSecrets, duckdbSecrets []string, allConnectors []
 	return configuredConnectorsForSecrets, false
 }
 
-func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, connector, optionalBucketURL string, optionalAdditionalConfig map[string]any) (string, string, string, error) {
+func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, connector, optionalBucketURL string, optionalAdditionalConfig map[string]any, logger *zap.Logger) (string, string, string, error) {
 	handle, release, err := opts.Env.AcquireConnector(ctx, connector)
 	if err != nil {
 		return "", "", "", err
@@ -571,6 +572,8 @@ func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, c
 		sb.WriteString("CREATE OR REPLACE TEMPORARY SECRET ")
 		sb.WriteString(safeSecretName)
 		sb.WriteString(" (TYPE S3")
+		// workaround for issue : https://github.com/duckdb/duckdb-python/issues/398#issuecomment-4258043324
+		sb.WriteString(", URL_STYLE path")
 
 		if s3Config.AccessKeyID != "" {
 			fmt.Fprintf(&sb, ", KEY_ID %s, SECRET %s", safeSQLString(s3Config.AccessKeyID), safeSQLString(s3Config.SecretAccessKey))
@@ -592,7 +595,6 @@ func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, c
 			}
 			sb.WriteString(", ENDPOINT ")
 			sb.WriteString(safeSQLString(s3Config.Endpoint))
-			sb.WriteString(", URL_STYLE path")
 		}
 		if s3Config.Region != "" {
 			sb.WriteString(", REGION ")
@@ -603,7 +605,7 @@ func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, c
 			if err != nil {
 				return "", "", "", fmt.Errorf("failed to parse path %q: %w", optionalBucketURL, err)
 			}
-			reg, err := s3.BucketRegion(ctx, s3Config, uri.Host)
+			reg, err := s3.BucketRegion(ctx, s3Config, uri.Host, logger)
 			if err != nil {
 				return "", "", "", err
 			}

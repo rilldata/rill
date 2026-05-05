@@ -46,7 +46,7 @@
   <button
     class="text-{align} text-fg-secondary"
     style:line-height={1.1}
-    on:click={modified({
+    onclick={modified({
       shift: () => {
         if (valueWithoutOffset === undefined) return;
         const exportedValue = `TIMESTAMP '${valueWithoutOffset.toISOString()}'`;

@@ -22,7 +22,7 @@
 <div class="container">
   <button
     class="flex gap-1 w-full items-start flex-none"
-    on:click={toggleCollapse}
+    onclick={toggleCollapse}
   >
     <span class="header">{title}</span>
     <div class="transition-transform" class:-rotate-180={!collapsed}>

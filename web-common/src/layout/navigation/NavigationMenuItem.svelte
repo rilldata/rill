@@ -3,6 +3,7 @@
 
   export let disabled = false;
   export let href: string | undefined = undefined;
+  export let onclick: ((e: MouseEvent) => void) | undefined = undefined;
 </script>
 
 {#key disabled}
@@ -11,7 +12,7 @@
     class="gap-2"
     aria-disabled={disabled}
     {disabled}
-    on:click
+    {onclick}
   >
     {#if $$slots.icon}
       <div

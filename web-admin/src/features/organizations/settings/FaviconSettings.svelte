@@ -10,11 +10,16 @@
   import { Button } from "@rilldata/web-common/components/button";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
-  export let organization: string;
-  export let organizationFaviconUrl: string | undefined;
+  let {
+    organization,
+    organizationFaviconUrl,
+  }: {
+    organization: string;
+    organizationFaviconUrl: string | undefined;
+  } = $props();
 
   const orgUpdater = createAdminServiceUpdateOrganization();
-  $: ({ error, isPending: isLoading, mutateAsync } = $orgUpdater);
+  let { error, isPending: isLoading, mutateAsync } = $derived($orgUpdater);
 
   async function onSave(assetId: string) {
     await mutateAsync({
@@ -43,8 +48,22 @@
   }
 </script>
 
-<SettingsContainer title="Favicon" suppressFooter={!organizationFaviconUrl}>
-  <div slot="body" class="flex flex-col gap-y-2">
+{#snippet removeAction()}
+  <Button
+    type="secondary"
+    onClick={onRemove}
+    loading={isLoading}
+    disabled={isLoading}
+  >
+    Remove
+  </Button>
+{/snippet}
+
+<SettingsContainer
+  title="Favicon"
+  action={organizationFaviconUrl ? removeAction : undefined}
+>
+  <div class="flex flex-col gap-y-2">
     <div>
       Click to upload your favicon and customize Rill for your organization.
       Upload a square icon to get the best results.
@@ -62,16 +81,4 @@
       <img src="/favicon.png" alt="favicon" class="h-10" />
     </UploadImagePopover>
   </div>
-  <svelte:fragment slot="action">
-    {#if organizationFaviconUrl}
-      <Button
-        type="secondary"
-        onClick={onRemove}
-        loading={isLoading}
-        disabled={isLoading}
-      >
-        Remove
-      </Button>
-    {/if}
-  </svelte:fragment>
 </SettingsContainer>

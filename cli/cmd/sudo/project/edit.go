@@ -9,7 +9,7 @@ import (
 )
 
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
-	var prodSlots int
+	var prodSlots, devSlots int
 	var prodVersion string
 
 	editCmd := &cobra.Command{
@@ -38,6 +38,14 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				req.ProdVersion = &prodVersion
 				isEditRequested = true
 			}
+			if cmd.Flags().Changed("dev-slots") {
+				if devSlots <= 0 {
+					return fmt.Errorf("--dev-slots must be greater than zero")
+				}
+				devSlotsInt64 := int64(devSlots)
+				req.DevSlots = &devSlotsInt64
+				isEditRequested = true
+			}
 
 			if !isEditRequested {
 				ch.Printf("No edit requested\n")
@@ -62,6 +70,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 
 	editCmd.Flags().IntVar(&prodSlots, "prod-slots", 0, "Slots to allocate for production deployments")
+	editCmd.Flags().IntVar(&devSlots, "dev-slots", 0, "Slots to allocate for dev deployments")
 	editCmd.Flags().StringVar(&prodVersion, "prod-version", "", "Rill version for production deployment")
 	return editCmd
 }

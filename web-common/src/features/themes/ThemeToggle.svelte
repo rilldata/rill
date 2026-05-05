@@ -14,14 +14,14 @@
     <DropdownMenu.CheckboxItem
       checkRight
       checked={preferenceValue === "light"}
-      on:click={themeControl.set.light}
+      onclick={themeControl.set.light}
     >
       Light
     </DropdownMenu.CheckboxItem>
     <DropdownMenu.CheckboxItem
       checkRight
       checked={preferenceValue === "dark"}
-      on:click={themeControl.set.dark}
+      onclick={themeControl.set.dark}
     >
       <Tag text="Beta" height={16} />
       Dark
@@ -29,7 +29,7 @@
     <DropdownMenu.CheckboxItem
       checkRight
       checked={preferenceValue === "system"}
-      on:click={themeControl.set.system}
+      onclick={themeControl.set.system}
     >
       System
     </DropdownMenu.CheckboxItem>

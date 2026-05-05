@@ -10,6 +10,7 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 
 ### _OLAP Engines_
 - [**ClickHouse**](#clickhouse) - ClickHouse analytical database
+- [**Databricks**](#databricks) - Databricks SQL warehouse
 - [**Druid**](#druid) - Apache Druid
 - [**DuckDB**](#duckdb) - Embedded DuckDB engine (default)
 - [**External DuckDB**](#external-duckdb) - External DuckDB database
@@ -20,6 +21,7 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 ### _Data Warehouses_
 - [**Athena**](#athena) - Amazon Athena
 - [**BigQuery**](#bigquery) - Google BigQuery
+- [**Databricks**](#databricks) - Databricks SQL warehouse
 - [**Redshift**](#redshift) - Amazon Redshift
 - [**Snowflake**](#snowflake) - Snowflake data warehouse
 
@@ -109,7 +111,7 @@ _[string]_ - Athena workgroup to use for query execution. Defaults to 'primary' 
 
 _[string]_ - S3 URI where Athena query results should be stored (e.g., s3://your-bucket/athena/results/). Optional if the selected workgroup has a default result configuration. 
 
-### `aws_region`
+### `region`
 
 _[string]_ - AWS region where Athena and the result S3 bucket are located (e.g., us-east-1). Defaults to 'us-east-1' if not specified. 
 
@@ -129,7 +131,7 @@ role_session_name: "MySession" # Session name for STS AssumeRole
 external_id: "MyExternalID" # External ID for cross-account access
 workgroup: "primary" # Athena workgroup (defaults to 'primary')
 output_location: "s3://my-bucket/athena-output/" # S3 URI for query results
-aws_region: "us-east-1" # AWS region (defaults to 'us-east-1')
+region: "us-east-1" # AWS region (defaults to 'us-east-1')
 allow_host_access: true # Allow host environment access _(default: true)_
 ```
 
@@ -189,17 +191,17 @@ _[string]_ - Raw contents of the Google Cloud service account key (in JSON forma
 
 _[string]_ - Google Cloud project ID 
 
-### `dataset_id`
-
-_[string]_ - BigQuery dataset ID 
-
-### `location`
-
-_[string]_ - BigQuery dataset location 
-
 ### `allow_host_access`
 
 _[boolean]_ - Enable the BigQuery client to use credentials from the host environment when no service account JSON is provided. This includes Application Default Credentials from environment variables, local credential files, or the Google Compute Engine metadata server. Defaults to true, allowing seamless authentication in GCP environments. 
+
+### `log_queries`
+
+_[boolean]_ - Controls whether to log raw SQL queries 
+
+### `max_bytes_billed`
+
+_[integer]_ - Maximum number of bytes billed for a query. Queries that exceed this limit will fail with an error. This can help prevent unexpectedly high costs from large queries. It is highly recommended to set this when running on `on-demand pricing` model. The default value is 0 i.e. no limits are enforced in Rill. 
 
 ```yaml
 # Example: BigQuery connector configuration
@@ -256,6 +258,14 @@ _[boolean]_ - Indicates whether a secured SSL connection is required
 
 _[string]_ - Cluster name, required for running distributed queries 
 
+### `write_dsn`
+
+_[string]_ - Separate connection string for write operations 
+
+### `database_whitelist`
+
+_[string]_ - Comma-separated list of databases to show 
+
 ### `log_queries`
 
 _[boolean]_ - Controls whether to log raw SQL queries 
@@ -311,6 +321,57 @@ ssl: true # Enable SSL for secure connection
 cluster: "mycluster" # Cluster name
 ```
 
+## databricks
+
+### `driver`
+
+_[string]_ - Refers to the driver type and must be driver `databricks` _(required)_
+
+### `host`
+
+_[string]_ - Host where the Databricks instance is running 
+
+### `http_path`
+
+_[string]_ - HTTP path sets up the endpoint to the warehouse 
+
+### `token`
+
+_[string]_ - Token sets up the Personal Access Token 
+
+### `catalog`
+
+_[string]_ - Default catalog name. Optional. 
+
+### `schema`
+
+_[string]_ - Default schema name. Optional. 
+
+### `dsn`
+
+_[string]_ - DSN (Data Source Name) for the Databricks connection.
+
+This is intended for **advanced configuration** where you want to specify
+properties that are not explicitly defined above.  
+It can only be used when the other connection fields (host, http_path, token, catalog, schema) are **not used**.
+Refer to https://github.com/databricks/databricks-sql-go for the full list of supported DSN parameters and their formats.
+ 
+
+### `log_queries`
+
+_[boolean]_ - Controls whether to log raw SQL queries 
+
+```yaml
+# Example: Databricks connector configuration
+type: connector # Must be `connector` (required)
+driver: databricks # Must be `databricks` _(required)_
+host: "my-databricks-instance.cloud.databricks.com" # Hostname of the Databricks instance
+http_path: "/sql/1.0/endpoints/1234567890abcdef" # HTTP path for the Databricks SQL warehouse endpoint
+token: "{{ .env.DATABRICKS_TOKEN }}" # Personal Access Token for authentication
+catalog: "my_catalog" # Default catalog name (optional)
+schema: "my_schema" # Default schema name (optional)
+```
+
 ## Druid
 
 ### `driver`
@@ -319,7 +380,7 @@ _[string]_ - Refers to the driver type and must be driver `druid` _(required)_
 
 ### `dsn`
 
-_[string]_ - Data Source Name (DSN) for connecting to Druid _(required)_
+_[string]_ - Data Source Name (DSN) for connecting to Druid 
 
 ### `username`
 
@@ -614,6 +675,10 @@ _[string]_ - Password for authentication
 
 _[string]_ - ssl mode options: `disabled`, `preferred`, or `required`. 
 
+### `log_queries`
+
+_[boolean]_ - Controls whether to log raw SQL queries 
+
 ```yaml
 # Example: MySQL connector configured using individual properties
 type: connector
@@ -768,7 +833,7 @@ _[string]_ - Refers to the driver type and must be driver `pinot` _(required)_
 
 ### `dsn`
 
-_[string]_ - DSN(Data Source Name) for the Pinot connection _(required)_
+_[string]_ - DSN(Data Source Name) for the Pinot connection 
 
 ### `username`
 
@@ -780,7 +845,7 @@ _[string]_ - Password for authenticating with Pinot
 
 ### `broker_host`
 
-_[string]_ - Hostname of the Pinot broker _(required)_
+_[string]_ - Hostname of the Pinot broker 
 
 ### `broker_port`
 
@@ -788,7 +853,7 @@ _[integer]_ - Port number for the Pinot broker
 
 ### `controller_host`
 
-_[string]_ - Hostname of the Pinot controller _(required)_
+_[string]_ - Hostname of the Pinot controller 
 
 ### `controller_port`
 
@@ -864,6 +929,10 @@ _[string]_ - StarRocks database name
 
 _[boolean]_ - Enable SSL/TLS encryption 
 
+### `log_queries`
+
+_[boolean]_ - Controls whether to log raw SQL queries 
+
 ```yaml
 # Example: StarRocks connector configuration
 type: connector # Must be `connector` (required)
@@ -937,6 +1006,18 @@ _[string]_ - Password for authentication
 
 _[string]_ - ssl mode options: `disable`, `allow`, `prefer` or `require`. 
 
+### `max_open_conns`
+
+_[integer]_ - Maximum number of open connections to the database (defaults to 1) 
+
+### `conn_max_lifetime`
+
+_[string]_ - Maximum time a connection may be reused, as a Go duration string (defaults to 1m) 
+
+### `log_queries`
+
+_[boolean]_ - Controls whether to log raw SQL queries 
+
 ```yaml
 # Example: Postgres connector configured using individual properties
 type: connector
@@ -998,6 +1079,18 @@ _[string]_ - Password for authentication
 
 _[string]_ - ssl mode options: `disable`, `allow`, `prefer` or `require`. 
 
+### `max_open_conns`
+
+_[integer]_ - Maximum number of open connections to the database (defaults to 1) 
+
+### `conn_max_lifetime`
+
+_[string]_ - Maximum time a connection may be reused, as a Go duration string (defaults to 1m) 
+
+### `log_queries`
+
+_[boolean]_ - Controls whether to log raw SQL queries 
+
 ```yaml
 # Example: Supabase connector configured using individual properties
 type: connector
@@ -1050,6 +1143,14 @@ _[string]_ - Workgroup name for Redshift Serverless, in case of provisioned Reds
 ### `cluster_identifier`
 
 _[string]_ - Cluster identifier for provisioned Redshift clusters, in case of Redshift Serverless use 'workgroup' . 
+
+### `allow_host_access`
+
+_[boolean]_ - Allow access to host environment configuration 
+
+### `log_queries`
+
+_[boolean]_ - Controls whether to log raw SQL queries 
 
 ```yaml
 # Example: Redshift connector configuration
@@ -1215,6 +1316,10 @@ For details on private key generation and encoding, see the `privateKey` propert
 ### `parallel_fetch_limit`
 
 _[integer]_ - Maximum number of concurrent fetches during query execution. 
+
+### `log_queries`
+
+_[boolean]_ - Controls whether to log raw SQL queries 
 
 ```yaml
 # Example: Snowflake connector basic configuration

@@ -51,6 +51,15 @@ export function createUserFacingError(
       header: "Project not found",
       body: "The project you requested could not be found. Please check that you have provided a valid project name.",
     };
+  } else if (
+    status === 400 &&
+    message.includes("failed to find the conversation")
+  ) {
+    return {
+      statusCode: 404,
+      header: "Conversation not found",
+      body: "Please check that you have the correct link or if you have access to it.",
+    };
   } else if (status === 404 && message === "resource not found") {
     return {
       statusCode: 404,

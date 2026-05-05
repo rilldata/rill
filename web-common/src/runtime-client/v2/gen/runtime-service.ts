@@ -27,8 +27,6 @@ import {
   ForkConversationRequest,
   GenerateCanvasFileRequest,
   GenerateMetricsViewFileRequest,
-  GenerateRendererRequest,
-  GenerateResolverRequest,
   GetAIMessageRequest,
   GetConversationRequest,
   GetExploreRequest,
@@ -57,6 +55,8 @@ import {
   ListResourcesRequest,
   ListToolsRequest,
   PingRequest,
+  PushEnvRequest,
+  PushEnvResponse,
   PutFileRequest,
   QueryResolverRequest,
   ReloadConfigRequest,
@@ -76,8 +76,6 @@ import type {
   V1ForkConversationResponse,
   V1GenerateCanvasFileResponse,
   V1GenerateMetricsViewFileResponse,
-  V1GenerateRendererResponse,
-  V1GenerateResolverResponse,
   V1GetAIMessageResponse,
   V1GetConversationResponse,
   V1GetExploreResponse,
@@ -1971,6 +1969,82 @@ export function createRuntimeServiceListGitCommits<
 }
 
 /**
+ * Raw RPC call: RuntimeService.GitStatus
+ */
+export async function runtimeServiceGitStatus(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<GitStatusRequest>, "instanceId">,
+  options?: { signal?: AbortSignal },
+): Promise<V1GitStatusResponse> {
+  const r = await client.runtimeService.gitStatus(
+    GitStatusRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1GitStatusResponse;
+}
+
+export function getRuntimeServiceGitStatusQueryKey(
+  instanceId: string,
+  request?: Omit<PartialMessage<GitStatusRequest>, "instanceId">,
+): QueryKey {
+  return ["RuntimeService", "gitStatus", instanceId, request ?? {}] as const;
+}
+
+export function getRuntimeServiceGitStatusQueryOptions<
+  TData = V1GitStatusResponse,
+>(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<GitStatusRequest>, "instanceId">,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<V1GitStatusResponse, ConnectError, TData>
+    >;
+  },
+): CreateQueryOptions<V1GitStatusResponse, ConnectError, TData> & {
+  queryKey: QueryKey;
+} {
+  const queryKey = getRuntimeServiceGitStatusQueryKey(
+    client.instanceId,
+    request,
+  );
+  const queryFn: QueryFunction<V1GitStatusResponse> = ({ signal }) =>
+    runtimeServiceGitStatus(client, request, { signal });
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!client.instanceId,
+    ...options?.query,
+  } as CreateQueryOptions<V1GitStatusResponse, ConnectError, TData> & {
+    queryKey: QueryKey;
+  };
+}
+
+export function createRuntimeServiceGitStatus<TData = V1GitStatusResponse>(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<GitStatusRequest>, "instanceId">,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<V1GitStatusResponse, ConnectError, TData>
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, ConnectError> {
+  const queryOptions = getRuntimeServiceGitStatusQueryOptions(
+    client,
+    request,
+    options,
+  );
+  return createQuery(queryOptions, queryClient);
+}
+
+/**
  * Raw RPC call: RuntimeService.ListGitBranches
  */
 export async function runtimeServiceListGitBranches(
@@ -2891,134 +2965,6 @@ export function createRuntimeServiceGenerateCanvasFileMutation(
 }
 
 /**
- * Raw RPC call: RuntimeService.GenerateResolver
- */
-export async function runtimeServiceGenerateResolver(
-  client: RuntimeClient,
-  request: Omit<PartialMessage<GenerateResolverRequest>, "instanceId">,
-  options?: { signal?: AbortSignal },
-): Promise<V1GenerateResolverResponse> {
-  const r = await client.runtimeService.generateResolver(
-    GenerateResolverRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
-    { signal: options?.signal },
-  );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as V1GenerateResolverResponse;
-}
-
-export function getRuntimeServiceGenerateResolverMutationOptions(
-  client: RuntimeClient,
-  options?: Partial<
-    CreateMutationOptions<
-      V1GenerateResolverResponse,
-      unknown,
-      Omit<PartialMessage<GenerateResolverRequest>, "instanceId">
-    >
-  >,
-): CreateMutationOptions<
-  V1GenerateResolverResponse,
-  unknown,
-  Omit<PartialMessage<GenerateResolverRequest>, "instanceId">
-> {
-  return {
-    mutationFn: (request) => runtimeServiceGenerateResolver(client, request),
-    ...options,
-  };
-}
-
-export function createRuntimeServiceGenerateResolverMutation(
-  client: RuntimeClient,
-  options?: Partial<
-    CreateMutationOptions<
-      V1GenerateResolverResponse,
-      unknown,
-      Omit<PartialMessage<GenerateResolverRequest>, "instanceId">
-    >
-  >,
-  queryClient?: QueryClient,
-): CreateMutationResult<
-  V1GenerateResolverResponse,
-  unknown,
-  Omit<PartialMessage<GenerateResolverRequest>, "instanceId">
-> {
-  const mutationOptions = getRuntimeServiceGenerateResolverMutationOptions(
-    client,
-    options,
-  );
-  return createMutation(mutationOptions, queryClient);
-}
-
-/**
- * Raw RPC call: RuntimeService.GenerateRenderer
- */
-export async function runtimeServiceGenerateRenderer(
-  client: RuntimeClient,
-  request: Omit<PartialMessage<GenerateRendererRequest>, "instanceId">,
-  options?: { signal?: AbortSignal },
-): Promise<V1GenerateRendererResponse> {
-  const r = await client.runtimeService.generateRenderer(
-    GenerateRendererRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
-    { signal: options?.signal },
-  );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as V1GenerateRendererResponse;
-}
-
-export function getRuntimeServiceGenerateRendererMutationOptions(
-  client: RuntimeClient,
-  options?: Partial<
-    CreateMutationOptions<
-      V1GenerateRendererResponse,
-      unknown,
-      Omit<PartialMessage<GenerateRendererRequest>, "instanceId">
-    >
-  >,
-): CreateMutationOptions<
-  V1GenerateRendererResponse,
-  unknown,
-  Omit<PartialMessage<GenerateRendererRequest>, "instanceId">
-> {
-  return {
-    mutationFn: (request) => runtimeServiceGenerateRenderer(client, request),
-    ...options,
-  };
-}
-
-export function createRuntimeServiceGenerateRendererMutation(
-  client: RuntimeClient,
-  options?: Partial<
-    CreateMutationOptions<
-      V1GenerateRendererResponse,
-      unknown,
-      Omit<PartialMessage<GenerateRendererRequest>, "instanceId">
-    >
-  >,
-  queryClient?: QueryClient,
-): CreateMutationResult<
-  V1GenerateRendererResponse,
-  unknown,
-  Omit<PartialMessage<GenerateRendererRequest>, "instanceId">
-> {
-  const mutationOptions = getRuntimeServiceGenerateRendererMutationOptions(
-    client,
-    options,
-  );
-  return createMutation(mutationOptions, queryClient);
-}
-
-/**
  * Raw RPC call: RuntimeService.CreateTrigger
  */
 export async function runtimeServiceCreateTrigger(
@@ -3266,70 +3212,6 @@ export function createRuntimeServiceCompleteMutation(
   Omit<PartialMessage<CompleteRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceCompleteMutationOptions(
-    client,
-    options,
-  );
-  return createMutation(mutationOptions, queryClient);
-}
-
-/**
- * Raw RPC call: RuntimeService.GitStatus
- */
-export async function runtimeServiceGitStatus(
-  client: RuntimeClient,
-  request: Omit<PartialMessage<GitStatusRequest>, "instanceId">,
-  options?: { signal?: AbortSignal },
-): Promise<V1GitStatusResponse> {
-  const r = await client.runtimeService.gitStatus(
-    GitStatusRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
-    { signal: options?.signal },
-  );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as V1GitStatusResponse;
-}
-
-export function getRuntimeServiceGitStatusMutationOptions(
-  client: RuntimeClient,
-  options?: Partial<
-    CreateMutationOptions<
-      V1GitStatusResponse,
-      unknown,
-      Omit<PartialMessage<GitStatusRequest>, "instanceId">
-    >
-  >,
-): CreateMutationOptions<
-  V1GitStatusResponse,
-  unknown,
-  Omit<PartialMessage<GitStatusRequest>, "instanceId">
-> {
-  return {
-    mutationFn: (request) => runtimeServiceGitStatus(client, request),
-    ...options,
-  };
-}
-
-export function createRuntimeServiceGitStatusMutation(
-  client: RuntimeClient,
-  options?: Partial<
-    CreateMutationOptions<
-      V1GitStatusResponse,
-      unknown,
-      Omit<PartialMessage<GitStatusRequest>, "instanceId">
-    >
-  >,
-  queryClient?: QueryClient,
-): CreateMutationResult<
-  V1GitStatusResponse,
-  unknown,
-  Omit<PartialMessage<GitStatusRequest>, "instanceId">
-> {
-  const mutationOptions = getRuntimeServiceGitStatusMutationOptions(
     client,
     options,
   );
@@ -3710,6 +3592,70 @@ export function createRuntimeServiceGitPushMutation(
   Omit<PartialMessage<GitPushRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceGitPushMutationOptions(
+    client,
+    options,
+  );
+  return createMutation(mutationOptions, queryClient);
+}
+
+/**
+ * Raw RPC call: RuntimeService.PushEnv
+ */
+export async function runtimeServicePushEnv(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<PushEnvRequest>, "instanceId">,
+  options?: { signal?: AbortSignal },
+): Promise<PartialMessage<PushEnvResponse>> {
+  const r = await client.runtimeService.pushEnv(
+    PushEnvRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as PartialMessage<PushEnvResponse>;
+}
+
+export function getRuntimeServicePushEnvMutationOptions(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      PartialMessage<PushEnvResponse>,
+      unknown,
+      Omit<PartialMessage<PushEnvRequest>, "instanceId">
+    >
+  >,
+): CreateMutationOptions<
+  PartialMessage<PushEnvResponse>,
+  unknown,
+  Omit<PartialMessage<PushEnvRequest>, "instanceId">
+> {
+  return {
+    mutationFn: (request) => runtimeServicePushEnv(client, request),
+    ...options,
+  };
+}
+
+export function createRuntimeServicePushEnvMutation(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      PartialMessage<PushEnvResponse>,
+      unknown,
+      Omit<PartialMessage<PushEnvRequest>, "instanceId">
+    >
+  >,
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  PartialMessage<PushEnvResponse>,
+  unknown,
+  Omit<PartialMessage<PushEnvRequest>, "instanceId">
+> {
+  const mutationOptions = getRuntimeServicePushEnvMutationOptions(
     client,
     options,
   );

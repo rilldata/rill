@@ -1,5 +1,7 @@
+import { needsPaymentSetup } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
 import type { BillingIssueMessage } from "@rilldata/web-admin/features/billing/issues/useBillingIssueMessage";
 import { fetchPaymentsPortalURL } from "@rilldata/web-admin/features/billing/plans/selectors";
+import { fetchOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
 import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types";
 import { wakeAllProjects } from "@rilldata/web-admin/features/organizations/hibernating/wakeAllProjects";
 import {
@@ -44,12 +46,19 @@ export class BillingCTAHandler {
         this.teamPlanEndDate.set(issueMessage.cta.teamPlanEndDate ?? "");
         break;
 
-      case "payment":
+      case "payment": {
+        const issues = await fetchOrganizationBillingIssues(this.organization);
+        const setup = needsPaymentSetup(issues);
         window.open(
-          await fetchPaymentsPortalURL(this.organization, window.location.href),
+          await fetchPaymentsPortalURL(
+            this.organization,
+            window.location.href,
+            setup,
+          ),
           "_self",
         );
         break;
+      }
 
       case "contact":
         window.Pylon("show");

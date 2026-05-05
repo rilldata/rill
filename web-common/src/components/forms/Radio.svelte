@@ -32,7 +32,7 @@
           value={option.value}
           checked={value === option.value}
           {disabled}
-          on:change={() => handleValueChange(option.value)}
+          onchange={() => handleValueChange(option.value)}
           class="mt-1 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
         />
         <div class="flex-1">

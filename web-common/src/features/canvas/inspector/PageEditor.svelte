@@ -180,7 +180,7 @@
           small
           label="Filter bar"
         />
-        <Switch checked={showFilterBar} on:click={toggleFilterBar} small />
+        <Switch checked={showFilterBar} onclick={toggleFilterBar} small />
       </div>
 
       {#if showFilterBar}

@@ -4,8 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
+	"strings"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/cli/pkg/version"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -13,6 +16,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/conncache"
 	"github.com/rilldata/rill/runtime/pkg/email"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -250,16 +254,118 @@ func (r *Runtime) UpdateInstanceConnector(ctx context.Context, instanceID, name 
 	return nil
 }
 
-func (r *Runtime) ReloadConfig(ctx context.Context, instanceID string) error {
+type ReloadConfigSummary struct {
+	VarsCount    int
+	VarsModified bool
+}
+
+// ReloadConfig reloads the instance's configuration.
+func (r *Runtime) ReloadConfig(ctx context.Context, instanceID string) (ReloadConfigSummary, error) {
 	if r.configReloader != nil {
-		return r.configReloader.reloadConfig(ctx, instanceID)
+		varsCount, modified, err := r.configReloader.reloadConfig(ctx, instanceID)
+		if err != nil {
+			return ReloadConfigSummary{}, err
+		}
+		return ReloadConfigSummary{VarsCount: varsCount, VarsModified: modified}, nil
+	}
+	// For runtimes without a config reloader (rill developer), pull env from admin service and merge with local .env files
+	count, modified, err := r.pullEnv(ctx, instanceID)
+	if err != nil {
+		return ReloadConfigSummary{}, err
+	}
+	return ReloadConfigSummary{VarsCount: count, VarsModified: modified}, nil
+}
+
+func (r *Runtime) pullEnv(ctx context.Context, instanceID string) (int, bool, error) {
+	inst, err := r.Instance(ctx, instanceID)
+	if err != nil {
+		return 0, false, err
+	}
+
+	repo, release, err := r.Repo(ctx, instanceID)
+	if err != nil {
+		return 0, false, err
+	}
+	defer release()
+
+	admin, release, err := r.Admin(ctx, instanceID)
+	if err != nil {
+		return 0, false, err
+	}
+	defer release()
+
+	// Fetch cloud variables
+	cfg, err := admin.GetConfig(ctx)
+	if err != nil && !errors.Is(err, drivers.ErrNotAuthenticated) {
+		return 0, false, fmt.Errorf("failed to get project variables: %w", err)
+	}
+	var cloudPerEnv map[string]map[string]string
+	if cfg != nil {
+		cloudPerEnv = cfg.Variables
+	}
+
+	// Parse local .env files
+	p, err := parser.Parse(ctx, repo, instanceID, inst.Environment, inst.OLAPConnector, false)
+	if err != nil {
+		return 0, false, fmt.Errorf("failed to parse project: %w", err)
+	}
+
+	localPerEnv := p.GetDotEnvPerEnvironment()
+
+	// Check if all environments are already up to date
+	equal := true
+	totalCount := 0
+	for env, cloudVars := range cloudPerEnv {
+		totalCount += len(cloudVars)
+		if !maps.Equal(cloudVars, localPerEnv[env]) {
+			equal = false
+			break
+		}
+	}
+
+	if equal {
+		return totalCount, false, nil
+	}
+
+	// Write merged variables per environment
+	for env, cloudVars := range cloudPerEnv {
+		merged := make(map[string]string)
+		maps.Copy(merged, localPerEnv[env])
+		maps.Copy(merged, cloudVars)
+
+		err = writeEnv(ctx, env, merged, repo)
+		if err != nil {
+			return 0, false, fmt.Errorf("failed to write env file for %q: %w", env, err)
+		}
+	}
+	return totalCount, true, nil
+}
+
+func writeEnv(ctx context.Context, env string, vars map[string]string, repo drivers.RepoStore) error {
+	var path string
+	if env == "" {
+		path = ".env"
+	} else {
+		path = fmt.Sprintf(".%s.env", env)
+	}
+	contents, err := godotenv.Marshal(vars)
+	if err != nil {
+		return fmt.Errorf("failed to marshal env vars: %w", err)
+	}
+	err = repo.Put(ctx, path, strings.NewReader(contents))
+	if err != nil {
+		return fmt.Errorf("failed to write %q: %w", path, err)
+	}
+	_, err = gitutil.EnsureGitignoreHas(ctx, repo, path)
+	if err != nil {
+		return fmt.Errorf("failed to update .gitignore for %q: %w", path, err)
 	}
 	return nil
 }
 
 func instanceAnnotationsToAttribs(instance *drivers.Instance) []attribute.KeyValue {
-	attrs := make([]attribute.KeyValue, 0, len(instance.Annotations)+1)
-	attrs = append(attrs, attribute.String("instance_id", instance.ID))
+	attrs := make([]attribute.KeyValue, 0, len(instance.Annotations)+2)
+	attrs = append(attrs, attribute.String("instance_id", instance.ID), attribute.String("environment", instance.Environment))
 	for k, v := range instance.Annotations {
 		attrs = append(attrs, attribute.String(k, v))
 	}

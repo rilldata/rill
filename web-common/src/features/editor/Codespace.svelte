@@ -166,7 +166,7 @@
   role="textbox"
   aria-label="codemirror editor"
   tabindex="0"
-/>
+></div>
 
 <style lang="postcss">
   :global(.cm-mergeView) {

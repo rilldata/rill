@@ -195,21 +195,25 @@
 
 <Dialog
   bind:open
-  onOutsideClick={(e) => {
-    e.preventDefault();
-    open = false;
-    resetDialogState();
-  }}
   onOpenChange={(dialogOpen) => {
     if (!dialogOpen) {
       resetDialogState();
     }
   }}
 >
-  <DialogTrigger asChild>
-    <div class="hidden"></div>
+  <DialogTrigger>
+    {#snippet child({ props })}
+      <div {...props} class="hidden"></div>
+    {/snippet}
   </DialogTrigger>
-  <DialogContent class="translate-y-[-200px]">
+  <DialogContent
+    class="translate-y-[-200px]"
+    onInteractOutside={(e) => {
+      e.preventDefault();
+      open = false;
+      resetDialogState();
+    }}
+  >
     <DialogHeader>
       <DialogTitle>Add guest users</DialogTitle>
     </DialogHeader>
@@ -219,7 +223,10 @@
     </DialogDescription>
     <form
       id={formId}
-      on:submit|preventDefault={submit}
+      onsubmit={(e) => {
+        e.preventDefault();
+        submit(e);
+      }}
       class="w-full"
       use:enhance
     >
@@ -252,10 +259,7 @@
         {:else if projects.length === 0}
           <div class="text-xs text-fg-secondary">No projects</div>
         {:else}
-          <Dropdown.Root
-            bind:open={projectDropdownOpen}
-            closeOnItemClick={false}
-          >
+          <Dropdown.Root bind:open={projectDropdownOpen}>
             <Dropdown.Trigger
               class="min-w-[260px] min-h-[32px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 bg-surface-background text-sm px-3 {projectDropdownOpen
                 ? 'bg-gray-200'
@@ -273,6 +277,7 @@
             <Dropdown.Content align="start" class="w-[260px]">
               {#each projects as p (p.id)}
                 <Dropdown.CheckboxItem
+                  closeOnSelect={false}
                   class="font-normal flex items-center overflow-hidden"
                   checked={selectedProjects.includes(p.name)}
                   onCheckedChange={() => toggleProjectSelection(p.name)}

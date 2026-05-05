@@ -53,7 +53,7 @@
 
 <style lang="postcss">
   .wrapper {
-    @apply flex flex-col overflow-y-auto;
+    @apply flex flex-col flex-1 min-h-0 overflow-y-auto;
   }
 
   .message {

@@ -166,7 +166,7 @@ func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithub
 	installationID, err := s.admin.GetGithubInstallation(ctx, req.Remote)
 	if err != nil {
 		if !errors.Is(err, admin.ErrGithubInstallationNotFound) {
-			return nil, status.Errorf(codes.InvalidArgument, "failed to check Github access: %s", err.Error())
+			return nil, fmt.Errorf("failed to check Github access: %w", err)
 		}
 
 		// If no access, return instructions for granting access
@@ -261,7 +261,7 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 	// Find project
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	// Check the request is made by an authenticated user
@@ -283,7 +283,7 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 	}
 	token, err := s.createRepo(ctx, req.Remote, branch, user)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	if proj.ArchiveAssetID != nil {
@@ -331,6 +331,7 @@ func (s *Server) CreateManagedGitRepo(ctx context.Context, req *adminv1.CreateMa
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.organization", req.Org),
 		attribute.String("args.name", req.Name),
+		attribute.Bool("args.auto_init", req.AutoInit),
 	)
 
 	// Find org
@@ -344,7 +345,7 @@ func (s *Server) CreateManagedGitRepo(ctx context.Context, req *adminv1.CreateMa
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to create projects")
 	}
 
-	repo, err := s.admin.CreateManagedGitRepo(ctx, org, req.Name, claims.OwnerID())
+	repo, err := s.admin.CreateManagedGitRepo(ctx, org, req.Name, claims.OwnerID(), req.AutoInit)
 	if err != nil {
 		return nil, err
 	}
@@ -1117,7 +1118,7 @@ func (s *Server) pushAssetToGit(ctx context.Context, assetID, remote, branch, to
 
 	downloadURL, err := s.generateSignedDownloadURL(asset)
 	if err != nil {
-		return status.Error(codes.InvalidArgument, err.Error())
+		return err
 	}
 	downloadDir, err := os.MkdirTemp(os.TempDir(), "extracted_archives")
 	if err != nil {

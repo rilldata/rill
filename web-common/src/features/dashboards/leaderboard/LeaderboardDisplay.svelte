@@ -21,7 +21,12 @@
   const StateManagers = getStateManagers();
   const {
     selectors: {
-      numberFormat: { measureFormatters, activeMeasureFormatter },
+      numberFormat: {
+        measureFormatters,
+        activeMeasureFormatter,
+        measureTooltipFormatters,
+        activeMeasureTooltipFormatter,
+      },
       dimensionFilters: { isFilterExcludeMode },
       dimensions: { visibleDimensions },
       comparison: { isBeingCompared: isBeingComparedReadable },
@@ -108,6 +113,12 @@
               formatters={$leaderboardMeasures.length > 1
                 ? $measureFormatters
                 : { [$leaderboardSortByMeasureName]: $activeMeasureFormatter }}
+              tooltipFormatters={$leaderboardMeasures.length > 1
+                ? $measureTooltipFormatters
+                : {
+                    [$leaderboardSortByMeasureName]:
+                      $activeMeasureTooltipFormatter,
+                  }}
               {setPrimaryDimension}
               {toggleSort}
               {toggleDimensionValueSelection}

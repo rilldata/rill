@@ -11,6 +11,7 @@
   import {
     type Directory,
     getDirectoryHasErrors,
+    getDirectoryHasWarnings,
   } from "@rilldata/web-common/features/file-explorer/transform-file-list";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -43,6 +44,7 @@
   $: isProtectedDirectory = PROTECTED_DIRECTORIES.includes(topLevelFolder);
 
   $: hasErrors = getDirectoryHasErrors(queryClient, instanceId, dir);
+  $: hasWarnings = getDirectoryHasWarnings(queryClient, instanceId, dir);
 
   $: currentDirectoryDirectoryNamesQuery = useDirectoryNamesInDirectory(
     runtimeClient,
@@ -84,8 +86,8 @@
     : 'text-fg-primary hover:text-fg-primary'}
   font-medium hover:bg-surface-hover"
   {id}
-  on:click={() => toggleDirectory(dir)}
-  on:mousedown={(e) => onMouseDown(e, { id, filePath: dir.path, isDir: true })}
+  onclick={() => toggleDirectory(dir)}
+  onmousedown={(e) => onMouseDown(e, { id, filePath: dir.path, isDir: true })}
   style:padding-left="{padding}px"
   aria-controls={`nav-${dir.path}`}
   aria-expanded={expanded}
@@ -94,21 +96,26 @@
     className="flex-none text-fg-muted {expanded ? '' : 'transform -rotate-90'}"
     size="14px"
   />
-  <span class="truncate w-full" class:text-red-600={$hasErrors}>
+  <span
+    class="truncate w-full"
+    class:text-red-600={$hasErrors}
+    class:text-yellow-600={$hasWarnings && !$hasErrors}
+  >
     {dir.name}
   </span>
   {#if !isProtectedDirectory}
     <DropdownMenu.Root bind:open={contextMenuOpen}>
-      <DropdownMenu.Trigger asChild let:builder>
-        <ContextButton
-          builders={[builder]}
-          id="more-actions-{dir.path}"
-          label="{dir.name} actions menu trigger"
-          suppressTooltip={contextMenuOpen}
-          tooltipText="More actions"
-        >
-          <MoreHorizontal />
-        </ContextButton>
+      <DropdownMenu.Trigger>
+        {#snippet child({ props })}
+          <ContextButton
+            {...props}
+            label="{dir.name} actions menu trigger"
+            suppressTooltip={contextMenuOpen}
+            tooltipText="More actions"
+          >
+            <MoreHorizontal />
+          </ContextButton>
+        {/snippet}
       </DropdownMenu.Trigger>
       <DropdownMenu.Content
         align="start"
@@ -116,15 +123,15 @@
         side="right"
         sideOffset={16}
       >
-        <NavigationMenuItem on:click={handleAddFolder}>
+        <NavigationMenuItem onclick={handleAddFolder}>
           <Folder slot="icon" size="12px" />
           New folder
         </NavigationMenuItem>
-        <NavigationMenuItem on:click={() => onRename(dir.path, true)}>
+        <NavigationMenuItem onclick={() => onRename(dir.path, true)}>
           <EditIcon slot="icon" />
           Rename
         </NavigationMenuItem>
-        <NavigationMenuItem on:click={() => onDelete(dir.path, true)}>
+        <NavigationMenuItem onclick={() => onDelete(dir.path, true)}>
           <Cancel slot="icon" />
           Delete
         </NavigationMenuItem>

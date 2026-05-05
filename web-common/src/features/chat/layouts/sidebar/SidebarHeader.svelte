@@ -43,7 +43,7 @@
     <IconButton
       ariaLabel="New conversation"
       bgGray
-      on:click={handleNewConversation}
+      onclick={handleNewConversation}
     >
       <PlusIcon className="text-fg-muted" />
       <svelte:fragment slot="tooltip-content">New conversation</svelte:fragment>
@@ -64,7 +64,7 @@
       onSelect={handleSelectConversation}
     />
 
-    <IconButton ariaLabel="Close chat" bgGray on:click={onClose}>
+    <IconButton ariaLabel="Close chat" bgGray onclick={onClose}>
       <Close className="text-fg-muted" />
       <svelte:fragment slot="tooltip-content">Close</svelte:fragment>
     </IconButton>

@@ -29,7 +29,7 @@
   <div transition:slideRight={{}} class="flex items-center gap-x-1">
     <Search bind:value {onSubmit} />
     <button
-      on:click={_onClose}
+      onclick={_onClose}
       class="p-1.5 rounded hover:bg-surface-hover transition-colors"
     >
       <Close className="text-fg-secondary" />

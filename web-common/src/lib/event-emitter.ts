@@ -54,3 +54,22 @@ export class EventEmitter<Events extends Record<string, any>> {
     this.listeners.clear();
   }
 }
+
+/**
+ * Creates an EventEmitter plus pre-bound method handles. Classes that want
+ * to expose `on`/`once`/`emit`/`clearListeners` as public instance fields
+ * can assign from the returned object, avoiding the manual bind-and-retype
+ * boilerplate at each call site.
+ */
+export function createEventBinding<Events extends Record<string, any>>() {
+  const emitter = new EventEmitter<Events>();
+  return {
+    emitter,
+    on: emitter.on.bind(emitter) as typeof emitter.on,
+    once: emitter.once.bind(emitter) as typeof emitter.once,
+    emit: emitter.emit.bind(emitter) as typeof emitter.emit,
+    clearListeners: emitter.clearListeners.bind(
+      emitter,
+    ) as typeof emitter.clearListeners,
+  };
+}

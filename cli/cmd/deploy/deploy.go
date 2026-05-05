@@ -71,9 +71,13 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 	deployCmd.Flags().StringVar(&opts.Provisioner, "provisioner", "", "Project provisioner")
 	deployCmd.Flags().StringVar(&opts.PrimaryBranch, "primary-branch", "", "Git branch to deploy from (default: the default Git branch)")
 	deployCmd.Flags().IntVar(&opts.Slots, "prod-slots", local.DefaultProdSlots(ch), "Slots to allocate for production deployments")
+	deployCmd.Flags().IntVar(&opts.DevSlots, "dev-slots", local.DefaultDevSlots(ch), "Slots to allocate for dev deployments")
 	deployCmd.Flags().BoolVar(&opts.PushEnv, "push-env", true, "Push local .env file to Rill Cloud")
 	if !ch.IsDev() {
 		if err := deployCmd.Flags().MarkHidden("prod-slots"); err != nil {
+			panic(err)
+		}
+		if err := deployCmd.Flags().MarkHidden("dev-slots"); err != nil {
 			panic(err)
 		}
 	}

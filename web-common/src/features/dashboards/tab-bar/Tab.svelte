@@ -5,11 +5,12 @@
   export let selected = false;
   export let href: string | undefined = undefined;
   export let theme = false;
+  export let onclick: ((e: MouseEvent) => void) | undefined = undefined;
 </script>
 
 <!-- Use snippets when transitioning to Svelte 5 -->
 {#if href}
-  <a class="relative group" class:theme class:selected {href} on:click>
+  <a class="relative group" class:theme class:selected {href} {onclick}>
     <slot />
     {#if disabled}
       <div class="disabled group-hover:block">
@@ -18,7 +19,7 @@
     {/if}
   </a>
 {:else}
-  <button class="relative group" class:selected on:click>
+  <button class="relative group" class:selected {onclick}>
     <slot />
     {#if disabled}
       <div class="disabled group-hover:block">

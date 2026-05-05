@@ -21,7 +21,7 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *metricsvi
 	}
 
 	// Only apply for Druid.
-	if e.olap.Dialect() != drivers.DialectDruid {
+	if e.olap.Dialect().String() != drivers.DialectNameDruid {
 		return nil
 	}
 

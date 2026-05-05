@@ -36,7 +36,7 @@ var errUnsupportedType = errors.New("encountered unsupported clickhouse type")
 var _ drivers.OLAPStore = &Connection{}
 
 func (c *Connection) Dialect() drivers.Dialect {
-	return drivers.DialectClickHouse
+	return DialectClickhouse
 }
 
 func (c *Connection) MayBeScaledToZero(ctx context.Context) bool {
@@ -270,6 +270,27 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	return res, nil
 }
 
+func (c *Connection) Head(ctx context.Context, db, schema, table string, limit int64) (*drivers.Result, error) {
+	tbl, err := c.InformationSchema().Lookup(ctx, db, schema, table)
+	if err != nil {
+		return nil, err
+	}
+
+	var columns []string
+	for _, field := range tbl.Schema.Fields {
+		columns = append(columns, c.Dialect().EscapeIdentifier(field.Name))
+	}
+
+	limitClause := ""
+	if limit > 0 {
+		limitClause = fmt.Sprintf(" LIMIT %d", limit)
+	}
+
+	return c.Query(ctx, &drivers.Statement{
+		Query: fmt.Sprintf("SELECT %s FROM %s%s", strings.Join(columns, ", "), c.Dialect().EscapeTable(db, schema, table), limitClause),
+	})
+}
+
 func (c *Connection) QuerySchema(ctx context.Context, query string, args []any) (*runtimev1.StructType, error) {
 	// ClickHouse does not return schema with LIMIT 0, so we need to wrap query inside DESCRIBE to explicitly get the schema
 	query = fmt.Sprintf("DESCRIBE (%s)", query)
@@ -326,6 +347,22 @@ func (c *Connection) QuerySchema(ctx context.Context, query string, args []any) 
 
 func (c *Connection) InformationSchema() drivers.OLAPInformationSchema {
 	return c
+}
+
+func (c *Connection) EstimateSize(ctx context.Context) (int64, error) {
+	val, err := c.estimateSize(ctx)
+	if err != nil {
+		if errors.Is(err, ctx.Err()) {
+			return 0, ctx.Err()
+		}
+		// For managed clickhouse, we should be able to estimate the size, so we return the error.
+		// For external clickhouse, we probably don't have the requisite permissions, so we return -1 to indicate that its unknown.
+		if c.config.Managed {
+			return 0, fmt.Errorf("failed to estimate size for managed clickhouse: %w", err)
+		}
+		return -1, nil
+	}
+	return val, nil
 }
 
 // acquireMetaConn gets a connection from the pool for "meta" queries like information schema (i.e. fast queries).
@@ -505,22 +542,33 @@ func contextWithoutDeadline(parent context.Context) context.Context {
 // databaseTypeToPB converts Clickhouse types to Rill's generic schema type.
 // Refer the list of types here: https://clickhouse.com/docs/en/sql-reference/data-types
 func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
+	rawType := dbt
 	dbt = strings.ToUpper(dbt)
 
 	// For nullable the datatype is Nullable(X)
 	if strings.HasPrefix(dbt, "NULLABLE(") {
 		dbt = dbt[9 : len(dbt)-1]
-		return databaseTypeToPB(dbt, true)
+		result, err := databaseTypeToPB(dbt, true)
+		if err != nil {
+			return nil, err
+		}
+		result.RawType = rawType // e.g. "Nullable(String)"
+		return result, nil
 	}
 
 	// For LowCardinality the datatype is LowCardinality(X)
 	if strings.HasPrefix(dbt, "LOWCARDINALITY(") {
 		dbt = dbt[15 : len(dbt)-1]
-		return databaseTypeToPB(dbt, nullable)
+		result, err := databaseTypeToPB(dbt, nullable)
+		if err != nil {
+			return nil, err
+		}
+		result.RawType = rawType // e.g. "LowCardinality(String)"
+		return result, nil
 	}
 
 	match := true
-	t := &runtimev1.Type{Nullable: nullable}
+	t := &runtimev1.Type{Nullable: nullable, RawType: rawType}
 	switch dbt {
 	case "BOOL":
 		t.Code = runtimev1.Type_CODE_BOOL
@@ -582,15 +630,35 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	case "POINT":
 		t.Code = runtimev1.Type_CODE_POINT
 	case "RING":
-		return databaseTypeToPB("Array(Point)", nullable)
+		result, err := databaseTypeToPB("Array(Point)", nullable)
+		if err != nil {
+			return nil, err
+		}
+		result.RawType = rawType
+		return result, nil
 	case "LINESTRING":
-		return databaseTypeToPB("Array(Point)", nullable)
+		result, err := databaseTypeToPB("Array(Point)", nullable)
+		if err != nil {
+			return nil, err
+		}
+		result.RawType = rawType
+		return result, nil
 	case "MULTILINESTRING":
-		return databaseTypeToPB("Array(LineString)", nullable)
+		result, err := databaseTypeToPB("Array(LineString)", nullable)
+		if err != nil {
+			return nil, err
+		}
+		result.RawType = rawType
+		return result, nil
 	case "POLYGON":
 		t.Code = runtimev1.Type_CODE_POLYGON
 	case "MULTIPOLYGON":
-		return databaseTypeToPB("Array(Polygon)", nullable)
+		result, err := databaseTypeToPB("Array(Polygon)", nullable)
+		if err != nil {
+			return nil, err
+		}
+		result.RawType = rawType
+		return result, nil
 	default:
 		match = false
 	}

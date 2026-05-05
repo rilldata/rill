@@ -8,7 +8,7 @@
 {:else if assembled}
   <span class="text-fg-secondary">-</span>
 {:else}
-  <span class="loading-cell" />
+  <span class="loading-cell"></span>
 {/if}
 
 <style lang="postcss">

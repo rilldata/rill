@@ -6,6 +6,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import { cellInspectorStore } from "@rilldata/web-common/features/dashboards/stores/cell-inspector-store";
   import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config";
   import {
     copyToClipboard,
@@ -15,7 +16,6 @@
   import { STRING_LIKES } from "@rilldata/web-common/lib/duckdb-data-types";
   import { formatDataTypeAsDuckDbQueryString } from "@rilldata/web-common/lib/formatters";
   import { getContext } from "svelte";
-  import { cellInspectorStore } from "@rilldata/web-common/features/dashboards/stores/cell-inspector-store";
   import BarAndLabel from "../../BarAndLabel.svelte";
   import type { VirtualizedTableConfig } from "../types";
 
@@ -23,6 +23,9 @@
   export let column;
   export let value;
   export let formattedValue: string | null = null;
+  export let tooltipFormatter:
+    | ((value: number | string | null | undefined) => string | null | undefined)
+    | undefined = undefined;
   export let type;
   export let barValue = 0;
   export let rowActive = false;
@@ -38,6 +41,7 @@
     index: number;
     meta: boolean;
   }) => void = () => {};
+  export let onkeydown: ((e: KeyboardEvent) => void) | undefined = undefined;
 
   const config: VirtualizedTableConfig = getContext("config");
   const isDimensionTable = config.table === "DimensionTable";
@@ -48,7 +52,7 @@
   function onFocus() {
     onInspect(row.index);
     cellActive = true;
-    cellInspectorStore.updateValue(value);
+    cellInspectorStore.updateValue(value, tooltipValue);
   }
 
   function onSelect(e: MouseEvent) {
@@ -102,9 +106,11 @@
       : "ui-measure-bar-included";
 
   $: tooltipValue =
-    value && STRING_LIKES.has(type) && value.length >= TOOLTIP_STRING_LIMIT
-      ? value?.slice(0, TOOLTIP_STRING_LIMIT) + "..."
-      : value;
+    tooltipFormatter && value != null
+      ? tooltipFormatter(value)
+      : value && STRING_LIKES.has(type) && value.length >= TOOLTIP_STRING_LIMIT
+        ? value?.slice(0, TOOLTIP_STRING_LIMIT) + "..."
+        : value;
 
   $: formattedDataTypeStyle = excluded
     ? "font-normal text-fg-muted"
@@ -133,12 +139,12 @@
       {isDimensionTable ? '' : 'border-r border-b'}
       {activityStatus}
       "
-    on:blur={onBlur}
-    on:click={onSelect}
-    on:focus={onFocus}
-    on:keydown
-    on:mouseout={onBlur}
-    on:mouseover={onFocus}
+    onblur={onBlur}
+    onclick={onSelect}
+    onfocus={onFocus}
+    {onkeydown}
+    onmouseout={onBlur}
+    onmouseover={onFocus}
     role="gridcell"
     style:height="{row.size}px"
     style:left="{column.start}px"
@@ -159,7 +165,7 @@
         aria-label={label}
         class="{isTextColumn ? 'text-left' : 'text-right'} w-full truncate"
         class:px-4={!isDimensionTable}
-        on:click={modified({
+        onclick={modified({
           shift: shiftClick,
         })}
         style:height="{row.size}px"
@@ -177,7 +183,11 @@
   </div>
   <TooltipContent maxWidth="360px" slot="tooltip-content">
     <TooltipTitle>
-      <FormattedDataType slot="name" value={tooltipValue} />
+      <FormattedDataType
+        slot="name"
+        value={tooltipValue}
+        color="text-fg-inverse"
+      />
     </TooltipTitle>
     <TooltipShortcutContainer>
       <div>

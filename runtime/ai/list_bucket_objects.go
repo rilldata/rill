@@ -42,6 +42,12 @@ func (t *ListBucketObjects) Spec() *mcp.Tool {
 		Name:        ListBucketObjectsName,
 		Title:       "List Bucket Objects",
 		Description: "List objects (files and directories) in a bucket from an object store connector.",
+		Annotations: &mcp.ToolAnnotations{
+			DestructiveHint: boolPtr(false),
+			IdempotentHint:  true,
+			OpenWorldHint:   boolPtr(false),
+			ReadOnlyHint:    true,
+		},
 		Meta: map[string]any{
 			"openai/toolInvocation/invoking": "Listing bucket objects...",
 			"openai/toolInvocation/invoked":  "Listed bucket objects",

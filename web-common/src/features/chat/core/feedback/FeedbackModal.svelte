@@ -66,7 +66,6 @@
   onOpenChange={(isOpen) => {
     if (!isOpen) handleClose();
   }}
-  portal="#rill-portal"
 >
   <Dialog.Content class="max-w-lg">
     <Dialog.Header>

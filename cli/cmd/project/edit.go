@@ -12,6 +12,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	var name, description, primaryBranch, subpath, path, provisioner, gitRemote string
 	var public bool
 	var prodTTL int64
+	var prodSlots, devSlots int
 
 	editCmd := &cobra.Command{
 		Use:   "edit [<project-name>]",
@@ -66,6 +67,22 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				flagSet = true
 				req.GitRemote = &gitRemote
 			}
+			if cmd.Flags().Changed("prod-slots") {
+				if prodSlots <= 0 {
+					return fmt.Errorf("--prod-slots must be greater than zero")
+				}
+				flagSet = true
+				prodSlotsInt64 := int64(prodSlots)
+				req.ProdSlots = &prodSlotsInt64
+			}
+			if cmd.Flags().Changed("dev-slots") {
+				if devSlots <= 0 {
+					return fmt.Errorf("--dev-slots must be greater than zero")
+				}
+				flagSet = true
+				devSlotsInt64 := int64(devSlots)
+				req.DevSlots = &devSlotsInt64
+			}
 
 			if !flagSet {
 				return fmt.Errorf("must specify at least one update flag")
@@ -93,6 +110,8 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	editCmd.Flags().StringVar(&subpath, "subpath", "", "Relative path to project in the repository (for monorepos)")
 	editCmd.Flags().StringVar(&provisioner, "provisioner", "", "Project provisioner (default: current provisioner)")
 	editCmd.Flags().Int64Var(&prodTTL, "prod-ttl-seconds", 0, "Time-to-live in seconds for production deployment (0 means no expiration)")
+	editCmd.Flags().IntVar(&prodSlots, "prod-slots", 0, "Slots to allocate for production deployments")
+	editCmd.Flags().IntVar(&devSlots, "dev-slots", 0, "Slots to allocate for dev deployments")
 
 	return editCmd
 }

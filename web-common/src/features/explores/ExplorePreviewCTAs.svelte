@@ -15,6 +15,7 @@
   } from "../dashboards/granular-access-policies/useSecurityPolicyCheck";
   import StateManagersProvider from "../dashboards/state-managers/StateManagersProvider.svelte";
   import { featureFlags } from "../feature-flags";
+  import { getFileHref } from "../../layout/navigation/editor-routing";
 
   export let exploreName: string;
 
@@ -53,18 +54,20 @@
   </StateManagersProvider>
   {#if !$readOnly}
     <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild let:builder>
-        <Button type="secondary" builders={[builder]}>
-          Edit
-          <CaretDownIcon />
-        </Button>
+      <DropdownMenu.Trigger>
+        {#snippet child({ props })}
+          <Button {...props} type="secondary">
+            Edit
+            <CaretDownIcon />
+          </Button>
+        {/snippet}
       </DropdownMenu.Trigger>
       <DropdownMenu.Content align="end">
-        <DropdownMenu.Item href={`/files${exploreFilePath}`}>
+        <DropdownMenu.Item href={getFileHref(exploreFilePath)}>
           <ExploreIcon size="16px" />
           Explore dashboard
         </DropdownMenu.Item>
-        <DropdownMenu.Item href={`/files${metricsViewFilePath}`}>
+        <DropdownMenu.Item href={getFileHref(metricsViewFilePath)}>
           <MetricsViewIcon size="16px" />
           Metrics View
         </DropdownMenu.Item>

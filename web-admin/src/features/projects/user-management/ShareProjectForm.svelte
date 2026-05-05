@@ -372,7 +372,7 @@
         <span class="text-xs text-fg-secondary">Loading more…</span>
       </div>
     {/if}
-    <div class="h-px" bind:this={loadMoreTrigger} />
+    <div class="h-px" bind:this={loadMoreTrigger}></div>
   </div>
   <div class="mt-2 general-access-container bg-popover pt-2">
     <div class="text-xs text-fg-secondary font-semibold uppercase">
@@ -389,10 +389,10 @@
         tabindex="0"
         class="flex flex-row items-center gap-x-2 justify-between rounded-sm cursor-auto"
         data-hovered={isHovered}
-        on:mouseover={() => (isHovered = true)}
-        on:mouseleave={() => (isHovered = false)}
-        on:focus={() => (isHovered = true)}
-        on:blur={() => (isHovered = false)}
+        onmouseover={() => (isHovered = true)}
+        onmouseleave={() => (isHovered = false)}
+        onfocus={() => (isHovered = true)}
+        onblur={() => (isHovered = false)}
       >
         <GeneralAccessSelectorDropdown {organization} {project} />
 

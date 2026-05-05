@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import DOMPurify from "dompurify";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
@@ -21,7 +22,6 @@
   import type { Location } from "@rilldata/web-common/lib/place-element";
   import type { TopKEntry } from "@rilldata/web-common/runtime-client";
   import { format } from "d3-format";
-  import { slide } from "svelte/transition";
   import TopKListItem from "./TopKListItem.svelte";
 
   export let colorClass = "bg-primary-200";
@@ -95,7 +95,7 @@
             <button
               style:font-size="12px"
               class="text-ellipsis overflow-hidden whitespace-nowrap"
-              on:click={modified({
+              onclick={modified({
                 shift: () =>
                   copyToClipboard(
                     getCopyValue(type, item.value),
@@ -132,7 +132,7 @@
         <svelte:fragment slot="right">
           <Tooltip {...tooltipProps} suppress={!isClipboardApiSupported()}>
             <button
-              on:click={modified({
+              onclick={modified({
                 shift: () =>
                   copyToClipboard(
                     item.count,

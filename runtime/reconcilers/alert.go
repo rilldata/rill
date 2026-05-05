@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"net/url"
-	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -153,12 +152,12 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	if !trigger {
 		err = r.updateNextRunOn(ctx, self, a)
 		if err != nil {
-			return runtime.ReconcileResult{Err: err}
+			return runtime.ReconcileResult{Err: err, Warnings: latestAlertWarnings(a)}
 		}
 		if a.State.NextRunOn != nil {
-			return runtime.ReconcileResult{Retrigger: a.State.NextRunOn.AsTime()}
+			return runtime.ReconcileResult{Retrigger: a.State.NextRunOn.AsTime(), Warnings: latestAlertWarnings(a)}
 		}
-		return runtime.ReconcileResult{}
+		return runtime.ReconcileResult{Warnings: latestAlertWarnings(a)}
 	}
 
 	// If the spec hash changed, clear all alert state
@@ -218,9 +217,9 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 	// Done
 	if a.State.NextRunOn != nil {
-		return runtime.ReconcileResult{Err: executeErr, Retrigger: a.State.NextRunOn.AsTime()}
+		return runtime.ReconcileResult{Err: executeErr, Warnings: latestAlertWarnings(a), Retrigger: a.State.NextRunOn.AsTime()}
 	}
-	return runtime.ReconcileResult{Err: executeErr}
+	return runtime.ReconcileResult{Err: executeErr, Warnings: latestAlertWarnings(a)}
 }
 
 func (r *AlertReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
@@ -305,28 +304,10 @@ func (r *AlertReconciler) ResolveTransitiveAccess(ctx context.Context, claims *r
 	}
 
 	// figure out explore or canvas for the alert
-	var explore, canvas string
-	if e, ok := spec.Annotations["explore"]; ok {
-		explore = e
-	}
+	explore := exploreNameFromAnnotations(spec.Annotations, mvName)
+	var canvas string
 	if c, ok := spec.Annotations["canvas"]; ok {
 		canvas = c
-	}
-
-	if explore == "" { // backwards compatibility, try to find explore
-		if path, ok := spec.Annotations["web_open_path"]; ok {
-			// parse path, extract explore name, it will be like /explore/{explore}
-			if strings.HasPrefix(path, "/explore/") {
-				explore = path[9:]
-				if explore[len(explore)-1] == '/' {
-					explore = explore[:len(explore)-1]
-				}
-			}
-		}
-		// still not found, use mv name as explore name
-		if explore == "" {
-			explore = mvName
-		}
 	}
 
 	// add explore and canvas to access and field access rule's condition resources
@@ -538,31 +519,29 @@ func (r *AlertReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	// Get admin metadata for the alert (if an admin service is not configured, alerts will still work, the notifications just won't have open/edit links).
+	// Get admin metadata for the alert (if an admin service does not support sending alerts, alerts will still work, the notifications just won't have open/edit links).
 	var adminMeta *drivers.AlertMetadata
 	admin, release, err := r.C.Runtime.Admin(ctx, r.C.InstanceID)
-	if err != nil && !errors.Is(err, runtime.ErrAdminNotConfigured) {
+	if err != nil {
 		return fmt.Errorf("failed to get admin client: %w", err)
 	}
-	if err == nil { // Connected successfully
-		defer release()
-		anonRecipients := false
-		var emailRecipients []string
-		for _, notifier := range a.Spec.Notifiers {
-			if notifier.Connector == "email" {
-				emailRecipients = pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
-			} else {
-				anonRecipients = true
-			}
+	defer release()
+	anonRecipients := false
+	var emailRecipients []string
+	for _, notifier := range a.Spec.Notifiers {
+		if notifier.Connector == "email" {
+			emailRecipients = pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
+		} else {
+			anonRecipients = true
 		}
-		ownerID := ""
-		if a.Spec.Annotations != nil {
-			ownerID = a.Spec.Annotations["admin_owner_user_id"]
-		}
-		adminMeta, err = admin.GetAlertMetadata(ctx, self.Meta.Name.Name, ownerID, emailRecipients, anonRecipients, a.Spec.Annotations, a.Spec.GetQueryForUserId(), a.Spec.GetQueryForUserEmail())
-		if err != nil {
-			return fmt.Errorf("failed to get alert metadata: %w", err)
-		}
+	}
+	ownerID := ""
+	if a.Spec.Annotations != nil {
+		ownerID = a.Spec.Annotations["admin_owner_user_id"]
+	}
+	adminMeta, err = admin.GetAlertMetadata(ctx, self.Meta.Name.Name, ownerID, emailRecipients, anonRecipients, a.Spec.Annotations, a.Spec.GetQueryForUserId(), a.Spec.GetQueryForUserEmail())
+	if err != nil && !errors.Is(err, drivers.ErrNotImplemented) {
+		return fmt.Errorf("failed to get alert metadata: %w", err)
 	}
 
 	// Run alert queries and send notifications
@@ -741,15 +720,16 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 	}
 	defer res.Close()
 
-	if info != nil && len(info.Warnings) > 0 {
-		r.C.Logger.Warn("Alert resolver returned warnings", zap.String("name", self.Meta.Name.Name), zap.String("resolver", a.Spec.Resolver), zap.Strings("warnings", info.Warnings), zap.Time("execution_time", executionTime), observability.ZapCtx(ctx))
+	var warnings []string
+	if info != nil {
+		warnings = info.Warnings
 	}
 
 	row, err := res.Next()
 	if err != nil {
 		if errors.Is(err, io.EOF) {
 			r.C.Logger.Info("Alert passed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime), observability.ZapCtx(ctx))
-			return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_PASS}, nil
+			return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_PASS, Warnings: warnings}, nil
 		}
 		return nil, fmt.Errorf("failed to get row from alert resolver: %w", err)
 	}
@@ -761,7 +741,11 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert fail row to proto: %w", err)
 	}
-	return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL, FailRow: failRow}, nil
+	return &runtimev1.AssertionResult{
+		Status:   runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL,
+		FailRow:  failRow,
+		Warnings: warnings,
+	}, nil
 }
 
 // popCurrentExecution moves the current execution into the execution history and sends notifications if the execution matched the notification criteria.
@@ -1123,4 +1107,11 @@ type skipError struct {
 // Error implements the error interface.
 func (s skipError) Error() string {
 	return fmt.Sprintf("skipped: %s", s.reason)
+}
+
+func latestAlertWarnings(a *runtimev1.Alert) []string {
+	if a.State != nil && len(a.State.ExecutionHistory) > 0 {
+		return a.State.ExecutionHistory[len(a.State.ExecutionHistory)-1].Result.Warnings
+	}
+	return nil
 }

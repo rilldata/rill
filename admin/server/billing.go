@@ -28,7 +28,7 @@ func (s *Server) GetBillingSubscription(ctx context.Context, req *adminv1.GetBil
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -63,7 +63,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -255,7 +255,7 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -322,7 +322,7 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -468,10 +468,11 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 func (s *Server) GetPaymentsPortalURL(ctx context.Context, req *adminv1.GetPaymentsPortalURLRequest) (*adminv1.GetPaymentsPortalURLResponse, error) {
 	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
 	observability.AddRequestAttributes(ctx, attribute.String("args.return_url", req.ReturnUrl))
+	observability.AddRequestAttributes(ctx, attribute.Bool("args.setup", req.Setup))
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -489,7 +490,7 @@ func (s *Server) GetPaymentsPortalURL(ctx context.Context, req *adminv1.GetPayme
 		req.ReturnUrl = s.admin.URLs.Frontend()
 	}
 
-	url, err := s.admin.PaymentProvider.GetBillingPortalURL(ctx, org.PaymentCustomerID, req.ReturnUrl)
+	url, err := s.admin.PaymentProvider.GetBillingPortalURL(ctx, org.PaymentCustomerID, req.ReturnUrl, req.Setup)
 	if err != nil {
 		return nil, err
 	}
@@ -634,7 +635,7 @@ func (s *Server) SudoExtendTrial(ctx context.Context, req *adminv1.SudoExtendTri
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	ns, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeNeverSubscribed)
@@ -783,7 +784,7 @@ func (s *Server) GetBillingProjectCredentials(ctx context.Context, req *adminv1.
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -797,16 +798,16 @@ func (s *Server) GetBillingProjectCredentials(ctx context.Context, req *adminv1.
 
 	metricsProj, err := s.admin.DB.FindProject(ctx, s.admin.MetricsProjectID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	if metricsProj.PrimaryDeploymentID == nil {
-		return nil, status.Error(codes.InvalidArgument, "project does not have a deployment")
+		return nil, status.Error(codes.FailedPrecondition, "project does not have a deployment")
 	}
 
 	prodDepl, err := s.admin.DB.FindDeployment(ctx, *metricsProj.PrimaryDeploymentID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	// Generate JWT
@@ -842,10 +843,7 @@ func (s *Server) ListOrganizationBillingIssues(ctx context.Context, req *adminv1
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "org not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -886,7 +884,7 @@ func (s *Server) SudoDeleteOrganizationBillingIssue(ctx context.Context, req *ad
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	t, err := dtoBillingIssueTypeToDB(req.Type)
@@ -1122,6 +1120,10 @@ func planTypeToDTO(t billing.PlanType) adminv1.BillingPlanType {
 		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_MANAGED
 	case billing.EnterprisePlanType:
 		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_ENTERPRISE
+	case billing.FreePlanType:
+		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_FREE
+	case billing.ProPlanType:
+		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_PRO
 	default:
 		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_UNSPECIFIED
 	}

@@ -9,8 +9,6 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pathutil"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -228,14 +226,10 @@ func (r *CanvasReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 		}
 	}
 
-	// Now build security rules based on the collected references
-	// First, allow access to all referenced metrics views
-	// Then, for each metrics view, add field access and row filter rules as needed
-	for mv := range refs.metricsViews {
-		// allow access to the referenced metrics view
-		conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: mv})
-	}
+	// Add the discovered refs to the condition resources.
+	conditionResources = append(conditionResources, refs.result()...)
 
+	// Now build security rules based on the collected references.
 	if len(conditionKinds) > 0 || len(conditionResources) > 0 {
 		rules = append(rules, &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_Access{
@@ -308,9 +302,9 @@ func (r *CanvasReconciler) validateMetricsViewTimeConsistency(ctx context.Contex
 			} else {
 				// Compare subsequent views with the first one
 				if firstDayOfWeek != mvSpec.FirstDayOfWeek {
-					return status.Errorf(codes.InvalidArgument, "metrics views %q and %q have inconsistent first_day_of_week", firstViewName, mvName)
+					return fmt.Errorf("metrics views %q and %q have inconsistent first_day_of_week", firstViewName, mvName)
 				} else if firstMonthOfYear != mvSpec.FirstMonthOfYear {
-					return status.Errorf(codes.InvalidArgument, "metrics views %q and %q have inconsistent first_month_of_year", firstViewName, mvName)
+					return fmt.Errorf("metrics views %q and %q have inconsistent first_month_of_year", firstViewName, mvName)
 				}
 			}
 		}
@@ -328,6 +322,15 @@ type rendererRefs struct {
 	instanceID   string
 	claims       *runtime.SecurityClaims
 	metricsViews map[string]bool
+}
+
+// result returns the accumulated refs.
+func (r *rendererRefs) result() []*runtimev1.ResourceName {
+	refs := make([]*runtimev1.ResourceName, 0, len(r.metricsViews))
+	for mv := range r.metricsViews {
+		refs = append(refs, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: mv})
+	}
+	return refs
 }
 
 // populateRendererRefs discovers and tracks all metrics views referenced in the renderer properties.

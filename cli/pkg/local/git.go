@@ -35,7 +35,7 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 	// TODO: cache project inference
 	projects, err := s.app.ch.InferProjects(ctx, s.app.ch.Org, s.app.ProjectPath)
 	if err != nil {
-		if !errors.Is(err, cmdutil.ErrNoMatchingProject) {
+		if !errors.Is(err, cmdutil.ErrInferProjectFailed) {
 			return nil, err
 		}
 		// if not connected to a project do not return local/remote changes info
@@ -120,7 +120,7 @@ func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPull
 
 	projects, err := s.app.ch.InferProjects(ctx, s.app.ch.Org, s.app.ProjectPath)
 	if err != nil {
-		if !errors.Is(err, cmdutil.ErrNoMatchingProject) {
+		if !errors.Is(err, cmdutil.ErrInferProjectFailed) {
 			return nil, err
 		}
 		return nil, errors.New("repo is not connected to a project")
@@ -167,7 +167,7 @@ func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPush
 
 	projects, err := s.app.ch.InferProjects(ctx, s.app.ch.Org, s.app.ProjectPath)
 	if err != nil {
-		if !errors.Is(err, cmdutil.ErrNoMatchingProject) {
+		if !errors.Is(err, cmdutil.ErrInferProjectFailed) {
 			return nil, err
 		}
 		return nil, errors.New("repo is not connected to a project")

@@ -14,7 +14,7 @@ import {
   type V1MetricsViewSpec,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import type { Readable } from "svelte/motion";
+import type { Readable } from "svelte/store";
 import { derived, get, writable, type Writable } from "svelte/store";
 import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
 import type {
@@ -56,8 +56,10 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
   pivotState: Writable<PivotState>;
 
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
-    const type = resource.component?.state?.validSpec
-      ?.renderer as CanvasComponentType;
+    const type = (resource.component?.state?.validSpec?.renderer ??
+      (parent.allowUnvalidatedSpec
+        ? resource.component?.spec?.renderer
+        : undefined)) as CanvasComponentType;
 
     if (type !== "table" && type !== "pivot") {
       throw new Error(

@@ -1,6 +1,5 @@
 <script lang="ts">
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2/index.ts";
-  import { builderActions, getAttrs } from "bits-ui";
   import { ChevronDownIcon } from "lucide-svelte";
   import { getInlineChatContextMetadata } from "@rilldata/web-common/features/chat/core/context/metadata.ts";
   import { type InlineContext } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
@@ -69,7 +68,7 @@
   }
 </script>
 
-<svelte:window on:keydown={handleKeyDown} />
+<svelte:window onkeydown={handleKeyDown} />
 
 <span
   bind:this={chatElement}
@@ -80,21 +79,19 @@
     this={isEditable ? "button" : "div"}
     class="inline-chat-context-value"
     class:cursor-default={!isEditable}
-    on:click={toggleDropdown}
+    onclick={toggleDropdown}
     type="button"
     role="button"
     tabindex="-1"
   >
     {#if tooltip}
       <Tooltip.Root bind:open={tooltipOpen}>
-        <Tooltip.Trigger asChild let:builder>
-          <span
-            {...getAttrs([builder])}
-            use:builderActions={{ builders: [builder] }}
-            class="cursor-pointer"
-          >
-            {label}
-          </span>
+        <Tooltip.Trigger>
+          {#snippet child({ props })}
+            <span {...props} class="cursor-pointer">
+              {label}
+            </span>
+          {/snippet}
         </Tooltip.Trigger>
         <!-- TODO: we do not have the correct styles for tooltip. Update app wise in a future PR. -->
         <Tooltip.Content class="bg-black text-white">

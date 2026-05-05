@@ -1,10 +1,11 @@
 <script lang="ts">
   import type { Dialog as DialogPrimitive } from "bits-ui";
-  import type { Command as CommandPrimitive } from "cmdk-sv";
+  import type { Command as CommandPrimitive } from "bits-ui";
   import Command from "./command.svelte";
   import * as Dialog from "@rilldata/web-common/components/dialog/index.js";
 
-  type $$Props = DialogPrimitive.Props & CommandPrimitive.CommandProps;
+  type $$Props = Omit<DialogPrimitive.RootProps, "child" | "children" | "ref"> &
+    Omit<CommandPrimitive.RootProps, "child" | "children" | "ref">;
 
   export let open: $$Props["open"] = false;
   export let value: $$Props["value"] = undefined;

@@ -57,6 +57,7 @@ export function setCanvasStore(
   instanceId: string,
   response: CanvasResponse,
   runtimeClient?: RuntimeClient,
+  allowUnvalidatedSpec = false,
 ): CanvasStore {
   const id = makeCanvasId(canvasName, instanceId);
 
@@ -72,6 +73,7 @@ export function setCanvasStore(
     instanceId,
     response,
     runtimeClient!,
+    allowUnvalidatedSpec,
   );
   const store: CanvasStore = {
     runtimeClient: runtimeClient!,

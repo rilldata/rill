@@ -35,21 +35,23 @@
     }, 2500);
   }}
 >
-  {#if saving && justClickedSaveAsDefault}
-    <LoadingSpinner size="15px" />
-    <div class="flex gap-x-1 items-center">Saving default filters</div>
-  {:else if viewingDefaults}
-    {#if justClickedSaveAsDefault}
-      <CheckCircleNew size="15px" className="fill-green-600" />
-      <div class="flex gap-x-1 items-center text-green-600">
-        Saved default filters
-      </div>
+  {#snippet children()}
+    {#if saving && justClickedSaveAsDefault}
+      <LoadingSpinner size="15px" />
+      <div class="flex gap-x-1 items-center">Saving default filters</div>
+    {:else if viewingDefaults}
+      {#if justClickedSaveAsDefault}
+        <CheckCircleNew size="15px" className="fill-green-600" />
+        <div class="flex gap-x-1 items-center text-green-600">
+          Saved default filters
+        </div>
+      {:else}
+        <LeaderboardIcon size="16px" color="currentColor" />
+        <div class="flex gap-x-1 items-center">Viewing default state</div>
+      {/if}
     {:else}
       <LeaderboardIcon size="16px" color="currentColor" />
-      <div class="flex gap-x-1 items-center">Viewing default state</div>
+      <div class="flex gap-x-1 items-center">Save as default</div>
     {/if}
-  {:else}
-    <LeaderboardIcon size="16px" color="currentColor" />
-    <div class="flex gap-x-1 items-center">Save as default</div>
-  {/if}
+  {/snippet}
 </Button>

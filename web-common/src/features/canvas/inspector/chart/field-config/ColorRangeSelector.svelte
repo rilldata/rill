@@ -22,7 +22,7 @@
   import { resolveThemeColors } from "@rilldata/web-common/features/themes/theme-utils";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { slide } from "svelte/transition";
-  import type { ColorScheme } from "vega-typings";
+  import type { ColorScheme } from "vega";
 
   export let colorRange: ColorRangeMapping | undefined;
   export let onChange: (property: keyof FieldConfig, value: any) => void;

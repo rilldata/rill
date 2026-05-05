@@ -8,6 +8,6 @@
   }
 </script>
 
-<button on:click={onClick} class="text-primary-600 text-sm ml-0.5">
+<button onclick={onClick} class="text-primary-600 text-sm ml-0.5">
   {text}
 </button>

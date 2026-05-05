@@ -39,7 +39,7 @@
     <DropdownMenu.CheckboxItem
       class="font-normal flex items-center"
       checked={filterSelection === "all"}
-      on:click={() => {
+      onclick={() => {
         filterSelection = "all";
       }}
     >
@@ -49,7 +49,7 @@
       <DropdownMenu.CheckboxItem
         class="font-normal flex items-center"
         checked={filterSelection === "members"}
-        on:click={() => {
+        onclick={() => {
           filterSelection = "members";
         }}
       >
@@ -59,7 +59,7 @@
     <DropdownMenu.CheckboxItem
       class="font-normal flex items-center"
       checked={filterSelection === "pending"}
-      on:click={() => {
+      onclick={() => {
         filterSelection = "pending";
       }}
     >
@@ -85,7 +85,7 @@
         <DropdownMenu.CheckboxItem
           class="font-normal flex items-center"
           checked={roleFilter === option.value}
-          on:click={() => {
+          onclick={() => {
             roleFilter = option.value;
           }}
         >

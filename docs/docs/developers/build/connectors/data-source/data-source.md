@@ -40,6 +40,7 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
 
 ### Athena
 ### BigQuery
+### Databricks
 ### Redshift
 ### Snowflake
 
@@ -59,6 +60,15 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
     link="/developers/build/connectors/data-source/bigquery"
     linkLabel="Learn more"
     referenceLink="bigquery"
+  />
+
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-Databricks.svg" alt="Databricks" />}
+    header="Databricks"
+    content="Connect to Databricks SQL warehouses with personal access token authentication."
+    link="/developers/build/connectors/data-source/databricks"
+    linkLabel="Learn more"
+    referenceLink="databricks"
   />
 
   <ConnectorIcon
@@ -158,6 +168,7 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
 
 ## Table Formats
 ### Delta Lake
+### Apache Iceberg
 
 <div className="connector-icon-grid">
   <ConnectorIcon
@@ -166,13 +177,7 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
     content="Read Delta tables directly from object storage through compatible query engines."
     link="/developers/build/connectors/data-source/delta"
     linkLabel="Learn more"
-    referenceLink="delta"
   />
-</div>
-
-### Apache Iceberg
-
-<div className="connector-icon-grid">
   <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-Iceberg.svg" alt="Apache Iceberg" />}
     header="Apache Iceberg"
