@@ -31,13 +31,17 @@ export function sanitizeValuesForSpec(values: unknown[]) {
 }
 
 export function sanitizeFieldName(fieldName: string) {
-  const specialCharactersRemoved = sanitizeValueForVega(fieldName);
-  const sanitizedFieldName = specialCharactersRemoved.replace(" ", "__");
+  const sanitizedFieldName = Array.from(fieldName)
+    .map((char) => {
+      if (/[a-zA-Z0-9_$]/.test(char)) return char;
+      return `_u${char.codePointAt(0)?.toString(16) ?? "0"}_`;
+    })
+    .join("");
 
   /**
-   * Add a prefix to the beginning of the field
-   * name to avoid variables starting with a special
-   * character or number.
+   * Vega-Lite compiles custom formatType values as expression function calls.
+   * Keep this value to a JavaScript/Vega identifier-safe subset so measure
+   * names with spaces or operators can still be used as formatter names.
    */
-  return `rill_${sanitizedFieldName}`;
+  return `rill_${sanitizedFieldName || "field"}`;
 }
