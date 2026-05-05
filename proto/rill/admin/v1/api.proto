@@ -3671,6 +3671,7 @@ message BillingIssueMetadataOnCreditTrial {
   string subscription_id = 1;
   string plan_id = 2;
   double credit_allocation = 3;
+  bool low_credit = 4;
 }
 
 message BillingIssueMetadataTrialCreditsDepleted {

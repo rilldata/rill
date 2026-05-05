@@ -681,7 +681,20 @@ func (s *Server) SudoGrantTrialCredits(ctx context.Context, req *adminv1.SudoGra
 	)
 
 	if depleted == nil {
-		// Trial subscription is still active and credits just got topped up; nothing else to do.
+		// Trial subscription is still active and credits just got topped up. Bump the cumulative CreditAllocation on the OnCreditTrial issue so the recorded total reflects the new grant. onCreditTrial is non-nil here per the gate above.
+		md, ok := onCreditTrial.Metadata.(*database.BillingIssueMetadataOnCreditTrial)
+		if !ok {
+			return nil, fmt.Errorf("unexpected metadata type for on-credit-trial issue for org %q", org.Name)
+		}
+		md.CreditAllocation += req.AmountUsd
+		if _, err := s.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
+			OrgID:     org.ID,
+			Type:      database.BillingIssueTypeOnCreditTrial,
+			Metadata:  md,
+			EventTime: onCreditTrial.EventTime,
+		}); err != nil {
+			return nil, fmt.Errorf("failed to update on-credit-trial credit_allocation: %w", err)
+		}
 		return &adminv1.SudoGrantTrialCreditsResponse{GrantedUsd: req.AmountUsd}, nil
 	}
 
@@ -722,19 +735,17 @@ func (s *Server) SudoGrantTrialCredits(ctx context.Context, req *adminv1.SudoGra
 		}
 	}
 
-	if onCreditTrial == nil {
-		if _, err := s.admin.DB.UpsertBillingIssue(txCtx, &database.UpsertBillingIssueOptions{
-			OrgID: org.ID,
-			Type:  database.BillingIssueTypeOnCreditTrial,
-			Metadata: &database.BillingIssueMetadataOnCreditTrial{
-				SubID:            sub.ID,
-				PlanID:           sub.Plan.ID,
-				CreditAllocation: req.AmountUsd,
-			},
-			EventTime: time.Now().UTC(),
-		}); err != nil {
-			return nil, fmt.Errorf("failed to re-raise on-credit-trial issue: %w", err)
-		}
+	if _, err := s.admin.DB.UpsertBillingIssue(txCtx, &database.UpsertBillingIssueOptions{
+		OrgID: org.ID,
+		Type:  database.BillingIssueTypeOnCreditTrial,
+		Metadata: &database.BillingIssueMetadataOnCreditTrial{
+			SubID:            sub.ID,
+			PlanID:           sub.Plan.ID,
+			CreditAllocation: req.AmountUsd,
+		},
+		EventTime: time.Now().UTC(),
+	}); err != nil {
+		return nil, fmt.Errorf("failed to re-raise on-credit-trial issue: %w", err)
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -1218,6 +1229,7 @@ func billingIssueMetadataToDTO(t database.BillingIssueType, m database.BillingIs
 					SubscriptionId:   md.SubID,
 					PlanId:           md.PlanID,
 					CreditAllocation: md.CreditAllocation,
+					LowCredit:        md.LowCredit,
 				},
 			},
 		}

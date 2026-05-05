@@ -177,6 +177,7 @@ export interface V1BillingIssueMetadataOnCreditTrial {
   subscriptionId?: string;
   planId?: string;
   creditAllocation?: number;
+  lowCredit?: boolean;
 }
 
 export interface V1BillingIssueMetadataOnTrial {

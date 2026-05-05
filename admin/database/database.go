@@ -1372,6 +1372,7 @@ type BillingIssueMetadataOnCreditTrial struct {
 	SubID            string  `json:"subscription_id"`
 	PlanID           string  `json:"plan_id"`
 	CreditAllocation float64 `json:"credit_allocation"`
+	LowCredit        bool    `json:"low_credit"` // set once the customer's credit balance has dropped below the low-credit threshold.
 }
 
 type BillingIssueMetadataTrialCreditsDepleted struct {

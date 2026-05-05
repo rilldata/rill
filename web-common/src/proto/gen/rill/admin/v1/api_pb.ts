@@ -18397,6 +18397,11 @@ export class BillingIssueMetadataOnCreditTrial extends Message<BillingIssueMetad
    */
   creditAllocation = 0;
 
+  /**
+   * @generated from field: bool low_credit = 4;
+   */
+  lowCredit = false;
+
   constructor(data?: PartialMessage<BillingIssueMetadataOnCreditTrial>) {
     super();
     proto3.util.initPartial(data, this);
@@ -18408,6 +18413,7 @@ export class BillingIssueMetadataOnCreditTrial extends Message<BillingIssueMetad
     { no: 1, name: "subscription_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "plan_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "credit_allocation", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 4, name: "low_credit", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingIssueMetadataOnCreditTrial {

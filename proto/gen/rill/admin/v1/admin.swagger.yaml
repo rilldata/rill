@@ -4670,6 +4670,8 @@ definitions:
       creditAllocation:
         type: number
         format: double
+      lowCredit:
+        type: boolean
   v1BillingIssueMetadataOnTrial:
     type: object
     properties:

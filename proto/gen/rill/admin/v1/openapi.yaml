@@ -210,6 +210,8 @@ components:
                 creditAllocation:
                     format: double
                     type: number
+                lowCredit:
+                    type: boolean
                 planId:
                     type: string
                 subscriptionId:

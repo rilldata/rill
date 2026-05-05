@@ -26,7 +26,7 @@ type CreditBalanceDroppedWorker struct {
 	logger *zap.Logger
 }
 
-// Work handles a credit_balance_dropped Orb webhook: sends a "credits running low" warning email.
+// Work handles a credit_balance_dropped Orb webhook. We re-fetch the live balance to confirm it's actually below the low-credit threshold (the webhook is unordered and the customer may have topped up between trigger and delivery), send the warning email once per trial, and persist the LowCredit flag on the OnCreditTrial issue so subsequent dropped events for the same trial are no-ops.
 func (w *CreditBalanceDroppedWorker) Work(ctx context.Context, job *river.Job[CreditBalanceDroppedArgs]) error {
 	org, err := w.admin.DB.FindOrganizationForBillingCustomerID(ctx, job.Args.BillingCustomerID)
 	if err != nil {
@@ -36,7 +36,7 @@ func (w *CreditBalanceDroppedWorker) Work(ctx context.Context, job *river.Job[Cr
 		return fmt.Errorf("failed to find organization for billing customer %q: %w", job.Args.BillingCustomerID, err)
 	}
 
-	_, err = w.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeOnCreditTrial)
+	bi, err := w.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeOnCreditTrial)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			w.logger.Named("billing").Debug("credit_balance_dropped received but org is not on credit trial; ignoring", zap.String("org_id", org.ID))
@@ -44,10 +44,18 @@ func (w *CreditBalanceDroppedWorker) Work(ctx context.Context, job *river.Job[Cr
 		}
 		return fmt.Errorf("failed to find on-credit-trial issue for org %q: %w", org.Name, err)
 	}
+	md, ok := bi.Metadata.(*database.BillingIssueMetadataOnCreditTrial)
+	if !ok {
+		return fmt.Errorf("unexpected metadata type for on-credit-trial issue for org %q", org.Name)
+	}
 
 	balance, err := w.admin.Biller.GetCustomerCreditBalance(ctx, org.BillingCustomerID, billing.CreditsCurrency)
 	if err != nil {
 		return fmt.Errorf("failed to fetch credit balance for org %q: %w", org.Name, err)
+	}
+	if balance >= billing.CreditTrialLowBalanceThreshold {
+		w.logger.Named("billing").Info("credit_balance_dropped webhook ignored: balance is no longer below the low-credit threshold", zap.String("org_id", org.ID), zap.Float64("balance", balance), zap.Float64("threshold", billing.CreditTrialLowBalanceThreshold))
+		return nil
 	}
 
 	err = w.admin.Email.SendCreditTrialLow(&email.CreditTrialLow{
@@ -60,6 +68,16 @@ func (w *CreditBalanceDroppedWorker) Work(ctx context.Context, job *river.Job[Cr
 	})
 	if err != nil {
 		return fmt.Errorf("failed to send credit trial low email for org %q: %w", org.Name, err)
+	}
+
+	md.LowCredit = true
+	if _, err := w.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
+		OrgID:     org.ID,
+		Type:      database.BillingIssueTypeOnCreditTrial,
+		Metadata:  md,
+		EventTime: bi.EventTime,
+	}); err != nil {
+		return fmt.Errorf("failed to mark on-credit-trial low_credit flag for org %q: %w", org.Name, err)
 	}
 
 	return nil

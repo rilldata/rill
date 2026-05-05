@@ -48429,6 +48429,8 @@ func (m *BillingIssueMetadataOnCreditTrial) validate(all bool) error {
 
 	// no validation rules for CreditAllocation
 
+	// no validation rules for LowCredit
+
 	if len(errors) > 0 {
 		return BillingIssueMetadataOnCreditTrialMultiError(errors)
 	}
