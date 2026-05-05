@@ -1,16 +1,16 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import MetricsViewIcon from "@rilldata/web-common/components/icons/MetricsViewIcon.svelte";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import {
     V1ReconcileStatus,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
   import { useGetMetricsViewsForModel } from "../../dashboards/selectors";
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
@@ -25,15 +25,18 @@
   export let hasUnsavedChanges: boolean;
   export let connector: string;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
+
+  $: ({ instanceId } = runtimeClient);
   $: isModelIdle =
     resource?.meta?.reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_IDLE;
 
-  $: metricsViewsQuery = useGetMetricsViewsForModel(instanceId, modelName);
+  $: metricsViewsQuery = useGetMetricsViewsForModel(runtimeClient, modelName);
 
   $: availableMetricsViews = $metricsViewsQuery.data ?? [];
 
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
+    runtimeClient,
     instanceId,
     connector,
     "",
@@ -66,19 +69,20 @@
   <CreateDashboardButton {collapse} {hasResultTable} {modelName} />
 {:else}
   <DropdownMenu.Root>
-    <DropdownMenu.Trigger asChild let:builder>
-      <NavigateOrDropdown resources={availableMetricsViews} {builder} />
+    <DropdownMenu.Trigger>
+      {#snippet child({ props })}
+        <NavigateOrDropdown {...props} resources={availableMetricsViews} />
+      {/snippet}
     </DropdownMenu.Trigger>
 
     {#if availableMetricsViews.length}
       <DropdownMenu.Content align="end">
         {#each availableMetricsViews as resource (resource?.meta?.name?.name)}
           <DropdownMenu.Item
-            on:click={async () => {
-              if (resource?.meta?.filePaths?.[0]) {
-                await goto(
-                  `/files/${removeLeadingSlash(resource.meta.filePaths[0])}`,
-                );
+            onclick={async () => {
+              const filePath = resource?.meta?.filePaths?.[0];
+              if (filePath) {
+                await navigateToFile(`/${removeLeadingSlash(filePath)}`);
               }
             }}
           >
@@ -88,7 +92,7 @@
         {/each}
         <DropdownMenu.Separator />
         <DropdownMenu.Item
-          on:click={async () => {
+          onclick={async () => {
             if (!hasResultTable) return;
             await createMetricsViewFromTable();
           }}

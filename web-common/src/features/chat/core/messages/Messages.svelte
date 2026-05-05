@@ -1,9 +1,8 @@
 <script lang="ts">
   import { createQuery } from "@tanstack/svelte-query";
   import { afterUpdate } from "svelte";
-  import { derived } from "svelte/store";
   import { getRuntimeServiceListToolsQueryOptions } from "../../../../runtime-client";
-  import { runtime } from "../../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import DelayedSpinner from "../../../entity-management/DelayedSpinner.svelte";
   import type { ConversationManager } from "../conversation-manager";
   import FeedbackModal from "../feedback/FeedbackModal.svelte";
@@ -25,9 +24,12 @@
   let feedbackModalOpen = false;
   let pendingFeedbackMessageId: string | null = null;
 
+  const runtimeClient = useRuntimeClient();
+
   // Prefetch tools metadata for tool call display names
-  const listToolsQueryOptionsStore = derived(runtime, ($runtime) =>
-    getRuntimeServiceListToolsQueryOptions($runtime.instanceId),
+  const listToolsQueryOptionsStore = getRuntimeServiceListToolsQueryOptions(
+    runtimeClient,
+    {},
   );
   const listToolsQuery = createQuery(listToolsQueryOptionsStore);
   $: tools = $listToolsQuery.data?.tools;

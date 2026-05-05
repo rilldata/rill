@@ -7,8 +7,9 @@ import (
 
 func DeploymentCmd(ch *cmdutil.Helper) *cobra.Command {
 	deploymentCmd := &cobra.Command{
-		Use:   "deployment",
-		Short: "Manage project deployments",
+		Use:    "deployment",
+		Short:  "Manage project deployments",
+		Hidden: !ch.IsDev(),
 	}
 
 	deploymentCmd.AddCommand(ListCmd(ch))

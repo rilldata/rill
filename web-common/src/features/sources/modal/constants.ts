@@ -84,12 +84,14 @@ export const SOURCES = [
   "athena",
   "azure",
   "bigquery",
+  "databricks",
+  "delta",
   "gcs",
+  "iceberg",
   "mysql",
   "postgres",
   "redshift",
   "s3",
-  "salesforce",
   "snowflake",
   "sqlite",
   "supabase",
@@ -101,9 +103,12 @@ export const OLAP_ENGINES = [
   "clickhouse",
   "motherduck",
   "duckdb",
+  "ducklake",
   "druid",
   "pinot",
   "starrocks",
 ];
 
-export const ALL_CONNECTORS = [...SOURCES, ...OLAP_ENGINES];
+export const AI_CONNECTORS = ["claude", "openai", "gemini"];
+
+export const ALL_CONNECTORS = [...SOURCES, ...OLAP_ENGINES, ...AI_CONNECTORS];

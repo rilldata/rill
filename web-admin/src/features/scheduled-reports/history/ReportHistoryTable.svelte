@@ -1,18 +1,18 @@
 <script lang="ts">
-  import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
+  import ResourceList from "@rilldata/web-common/features/resources/ResourceList.svelte";
   import type { V1ReportExecution } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import type { ColumnDef } from "@tanstack/svelte-table";
-  import { flexRender } from "@tanstack/svelte-table";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import type { ColumnDef } from "tanstack-table-8-svelte-5";
+  import { renderComponent } from "tanstack-table-8-svelte-5";
   import { useReport } from "../selectors";
   import NoRunsYet from "./NoRunsYet.svelte";
   import ReportHistoryTableCompositeCell from "./ReportHistoryTableCompositeCell.svelte";
 
   export let report: string;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
-  $: reportQuery = useReport(instanceId, report);
+  $: reportQuery = useReport(runtimeClient, report);
 
   /**
    * Table column definitions.
@@ -23,7 +23,7 @@
     {
       id: "composite",
       cell: (info) =>
-        flexRender(ReportHistoryTableCompositeCell, {
+        renderComponent(ReportHistoryTableCompositeCell, {
           reportTime: info.row.original.reportTime,
           timeZone:
             $reportQuery.data.resource.report.spec.refreshSchedule.timeZone,

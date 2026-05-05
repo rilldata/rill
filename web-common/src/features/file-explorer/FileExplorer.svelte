@@ -1,7 +1,10 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
+  import {
+    navigateToFile,
+    navigateToHome,
+  } from "@rilldata/web-common/layout/navigation/editor-routing";
   import {
     deleteFileArtifact,
     duplicateFileArtifact,
@@ -18,7 +21,7 @@
   import { PROTECTED_DIRECTORIES } from "@rilldata/web-common/features/file-explorer/protected-paths";
   import { isCurrentActivePage } from "@rilldata/web-common/features/file-explorer/utils";
   import { createRuntimeServiceListFiles } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { eventBus } from "../../lib/event-bus/event-bus";
   import { fileArtifacts } from "../entity-management/file-artifacts";
   import NavDirectory from "./NavDirectory.svelte";
@@ -27,36 +30,41 @@
 
   export let hasUnsaved: boolean;
 
-  $: ({ instanceId } = $runtime);
-  $: getFileTree = createRuntimeServiceListFiles(instanceId, undefined, {
-    query: {
-      select: (data) => {
-        if (!data || !data.files?.length) return;
+  const runtimeClient = useRuntimeClient();
 
-        const files = data.files
-          // Sort alphabetically case-insensitive
-          .sort(
-            (a, b) =>
-              a.path?.localeCompare(b.path ?? "", undefined, {
-                sensitivity: "base",
-              }) ?? 0,
-          )
-          // Hide dot directories
-          .filter(
-            (file) =>
-              !(
-                file.isDir &&
-                // Check both the top-level directory and subdirectories
-                (file.path?.startsWith(".") || file.path?.includes("/."))
-              ),
-          )
-          // Hide the `tmp` directory
-          .filter((file) => !file.path?.startsWith("/tmp"));
+  $: getFileTree = createRuntimeServiceListFiles(
+    runtimeClient,
+    {},
+    {
+      query: {
+        select: (data) => {
+          if (!data || !data.files?.length) return;
 
-        return transformFileList(files);
+          const files = data.files
+            // Sort alphabetically case-insensitive
+            .sort(
+              (a, b) =>
+                a.path?.localeCompare(b.path ?? "", undefined, {
+                  sensitivity: "base",
+                }) ?? 0,
+            )
+            // Hide dot directories
+            .filter(
+              (file) =>
+                !(
+                  file.isDir &&
+                  // Check both the top-level directory and subdirectories
+                  (file.path?.startsWith(".") || file.path?.includes("/."))
+                ),
+            )
+            // Hide the `tmp` directory
+            .filter((file) => !file.path?.startsWith("/tmp"));
+
+          return transformFileList(files);
+        },
       },
     },
-  });
+  );
 
   $: ({ data: fileTree } = $getFileTree);
 
@@ -76,8 +84,8 @@
     }
 
     try {
-      const newFilePath = await duplicateFileArtifact(instanceId, filePath);
-      await goto(`/files${newFilePath}`);
+      const newFilePath = await duplicateFileArtifact(runtimeClient, filePath);
+      await navigateToFile(newFilePath);
     } catch {
       eventBus.emit("notification", {
         message: `Failed to copy ${filePath}`,
@@ -99,17 +107,17 @@
         return;
       }
     }
-    await deleteFileArtifact(instanceId, filePath);
+    await deleteFileArtifact(runtimeClient, filePath);
     if (isCurrentActivePage(filePath, isDir)) {
-      await goto("/");
+      await navigateToHome();
     }
   }
 
   async function onForceDelete() {
-    await deleteFileArtifact(instanceId, forceDeletePath, true);
+    await deleteFileArtifact(runtimeClient, forceDeletePath, true);
     // onForceDelete is only called on folders, so isDir is always true
     if (isCurrentActivePage(forceDeletePath, true)) {
-      await goto("/");
+      await navigateToHome();
     }
   }
 
@@ -130,10 +138,10 @@
         });
         return;
       }
-      await renameFileArtifact(instanceId, fromPath, newFilePath);
+      await renameFileArtifact(runtimeClient, fromPath, newFilePath);
 
       if (isCurrentFile) {
-        await goto(`/files${newFilePath}`);
+        await navigateToFile(newFilePath);
       }
     }
   }
@@ -147,7 +155,7 @@
 </script>
 
 <svelte:window
-  on:beforeunload={(event) => {
+  onbeforeunload={(event) => {
     if (hasUnsaved) {
       event.preventDefault();
       return confirm(
@@ -155,9 +163,9 @@
       );
     }
   }}
-  on:mousemove={(e) => navEntryDragDropStore.onMouseMove(e)}
-  on:mouseup={(e) => navEntryDragDropStore.onMouseUp(e, handleDropSuccess)}
-  on:keydown={saveAll}
+  onmousemove={(e) => navEntryDragDropStore.onMouseMove(e)}
+  onmouseup={(e) => navEntryDragDropStore.onMouseUp(e, handleDropSuccess)}
+  onkeydown={saveAll}
 />
 
 <!-- File tree -->
@@ -171,6 +179,17 @@
       onMouseDown={(e, dragData) =>
         navEntryDragDropStore.onMouseDown(e, dragData)}
     />
+  {:else if $getFileTree.isLoading}
+    <div class="flex flex-col gap-y-1.5 w-full px-2 py-2">
+      {#each [0.7, 0.5, 0.8, 0.6, 0.55, 0.65] as width}
+        <div
+          class="h-5 bg-gray-200 animate-pulse rounded"
+          style:width="{width * 100}%"
+        ></div>
+      {/each}
+    </div>
+  {:else if $getFileTree.isError}
+    <div class="px-2 py-3 text-xs text-fg-muted">Failed to load files</div>
   {/if}
 </ul>
 

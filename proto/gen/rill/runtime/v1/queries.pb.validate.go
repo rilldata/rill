@@ -1200,6 +1200,47 @@ func (m *Query) validate(all bool) error {
 	var errors []error
 
 	switch v := m.Query.(type) {
+	case *Query_ProjectStorageRequest:
+		if v == nil {
+			err := QueryValidationError{
+				field:  "Query",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetProjectStorageRequest()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "ProjectStorageRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "ProjectStorageRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetProjectStorageRequest()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryValidationError{
+					field:  "ProjectStorageRequest",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	case *Query_MetricsViewAggregationRequest:
 		if v == nil {
 			err := QueryValidationError{
@@ -2083,6 +2124,47 @@ func (m *QueryResult) validate(all bool) error {
 	var errors []error
 
 	switch v := m.Result.(type) {
+	case *QueryResult_ProjectStorageResponse:
+		if v == nil {
+			err := QueryResultValidationError{
+				field:  "Result",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetProjectStorageResponse()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "ProjectStorageResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "ProjectStorageResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetProjectStorageResponse()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryResultValidationError{
+					field:  "ProjectStorageResponse",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	case *QueryResult_MetricsViewAggregationResponse:
 		if v == nil {
 			err := QueryResultValidationError{
@@ -2943,6 +3025,633 @@ var _ interface {
 	ErrorName() string
 } = QueryResultValidationError{}
 
+// Validate checks the field values on Span with the rules defined in the proto
+// definition for this message. If any rules are violated, the first error
+// encountered is returned, or nil if there are no violations.
+func (m *Span) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on Span with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in SpanMultiError, or nil if none found.
+func (m *Span) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *Span) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Name
+
+	// no validation rules for SpanId
+
+	// no validation rules for ParentSpanId
+
+	if all {
+		switch v := interface{}(m.GetStartTime()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, SpanValidationError{
+					field:  "StartTime",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, SpanValidationError{
+					field:  "StartTime",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetStartTime()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return SpanValidationError{
+				field:  "StartTime",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for DurationMs
+
+	// no validation rules for Attributes
+
+	if len(errors) > 0 {
+		return SpanMultiError(errors)
+	}
+
+	return nil
+}
+
+// SpanMultiError is an error wrapping multiple validation errors returned by
+// Span.ValidateAll() if the designated constraints aren't met.
+type SpanMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SpanMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SpanMultiError) AllErrors() []error { return m }
+
+// SpanValidationError is the validation error returned by Span.Validate if the
+// designated constraints aren't met.
+type SpanValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SpanValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SpanValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SpanValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SpanValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SpanValidationError) ErrorName() string { return "SpanValidationError" }
+
+// Error satisfies the builtin error interface
+func (e SpanValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSpan.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SpanValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SpanValidationError{}
+
+// Validate checks the field values on Trace with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *Trace) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on Trace with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in TraceMultiError, or nil if none found.
+func (m *Trace) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *Trace) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetSpans() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, TraceValidationError{
+						field:  fmt.Sprintf("Spans[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, TraceValidationError{
+						field:  fmt.Sprintf("Spans[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return TraceValidationError{
+					field:  fmt.Sprintf("Spans[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return TraceMultiError(errors)
+	}
+
+	return nil
+}
+
+// TraceMultiError is an error wrapping multiple validation errors returned by
+// Trace.ValidateAll() if the designated constraints aren't met.
+type TraceMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m TraceMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m TraceMultiError) AllErrors() []error { return m }
+
+// TraceValidationError is the validation error returned by Trace.Validate if
+// the designated constraints aren't met.
+type TraceValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e TraceValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e TraceValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e TraceValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e TraceValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e TraceValidationError) ErrorName() string { return "TraceValidationError" }
+
+// Error satisfies the builtin error interface
+func (e TraceValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sTrace.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = TraceValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = TraceValidationError{}
+
+// Validate checks the field values on ProjectStorageRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ProjectStorageRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ProjectStorageRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ProjectStorageRequestMultiError, or nil if none found.
+func (m *ProjectStorageRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ProjectStorageRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	if len(errors) > 0 {
+		return ProjectStorageRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ProjectStorageRequestMultiError is an error wrapping multiple validation
+// errors returned by ProjectStorageRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ProjectStorageRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ProjectStorageRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ProjectStorageRequestMultiError) AllErrors() []error { return m }
+
+// ProjectStorageRequestValidationError is the validation error returned by
+// ProjectStorageRequest.Validate if the designated constraints aren't met.
+type ProjectStorageRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ProjectStorageRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ProjectStorageRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ProjectStorageRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ProjectStorageRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ProjectStorageRequestValidationError) ErrorName() string {
+	return "ProjectStorageRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ProjectStorageRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sProjectStorageRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ProjectStorageRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ProjectStorageRequestValidationError{}
+
+// Validate checks the field values on ProjectStorageResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ProjectStorageResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ProjectStorageResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ProjectStorageResponseMultiError, or nil if none found.
+func (m *ProjectStorageResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ProjectStorageResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetEntries() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ProjectStorageResponseValidationError{
+						field:  fmt.Sprintf("Entries[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ProjectStorageResponseValidationError{
+						field:  fmt.Sprintf("Entries[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ProjectStorageResponseValidationError{
+					field:  fmt.Sprintf("Entries[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for ManagedSizeBytes
+
+	// no validation rules for DefaultOlapSizeBytes
+
+	if len(errors) > 0 {
+		return ProjectStorageResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ProjectStorageResponseMultiError is an error wrapping multiple validation
+// errors returned by ProjectStorageResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ProjectStorageResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ProjectStorageResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ProjectStorageResponseMultiError) AllErrors() []error { return m }
+
+// ProjectStorageResponseValidationError is the validation error returned by
+// ProjectStorageResponse.Validate if the designated constraints aren't met.
+type ProjectStorageResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ProjectStorageResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ProjectStorageResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ProjectStorageResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ProjectStorageResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ProjectStorageResponseValidationError) ErrorName() string {
+	return "ProjectStorageResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ProjectStorageResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sProjectStorageResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ProjectStorageResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ProjectStorageResponseValidationError{}
+
+// Validate checks the field values on ProjectStorageEntry with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ProjectStorageEntry) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ProjectStorageEntry with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ProjectStorageEntryMultiError, or nil if none found.
+func (m *ProjectStorageEntry) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ProjectStorageEntry) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Connector
+
+	// no validation rules for Driver
+
+	// no validation rules for IsDefaultOlap
+
+	// no validation rules for Managed
+
+	// no validation rules for SizeBytes
+
+	// no validation rules for Error
+
+	if len(errors) > 0 {
+		return ProjectStorageEntryMultiError(errors)
+	}
+
+	return nil
+}
+
+// ProjectStorageEntryMultiError is an error wrapping multiple validation
+// errors returned by ProjectStorageEntry.ValidateAll() if the designated
+// constraints aren't met.
+type ProjectStorageEntryMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ProjectStorageEntryMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ProjectStorageEntryMultiError) AllErrors() []error { return m }
+
+// ProjectStorageEntryValidationError is the validation error returned by
+// ProjectStorageEntry.Validate if the designated constraints aren't met.
+type ProjectStorageEntryValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ProjectStorageEntryValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ProjectStorageEntryValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ProjectStorageEntryValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ProjectStorageEntryValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ProjectStorageEntryValidationError) ErrorName() string {
+	return "ProjectStorageEntryValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ProjectStorageEntryValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sProjectStorageEntry.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ProjectStorageEntryValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ProjectStorageEntryValidationError{}
+
 // Validate checks the field values on MetricsViewAggregationRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -3351,6 +4060,8 @@ func (m *MetricsViewAggregationRequest) validate(all bool) error {
 
 	// no validation rules for Rows
 
+	// no validation rules for Trace
+
 	if len(errors) > 0 {
 		return MetricsViewAggregationRequestMultiError(errors)
 	}
@@ -3515,6 +4226,35 @@ func (m *MetricsViewAggregationResponse) validate(all bool) error {
 			}
 		}
 
+	}
+
+	if all {
+		switch v := interface{}(m.GetTrace()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewAggregationResponseValidationError{
+					field:  "Trace",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewAggregationResponseValidationError{
+					field:  "Trace",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTrace()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewAggregationResponseValidationError{
+				field:  "Trace",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
 	}
 
 	if len(errors) > 0 {
@@ -5480,6 +6220,8 @@ func (m *MetricsViewToplistRequest) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for Trace
+
 	if len(errors) > 0 {
 		return MetricsViewToplistRequestMultiError(errors)
 	}
@@ -5648,6 +6390,35 @@ func (m *MetricsViewToplistResponse) validate(all bool) error {
 			}
 		}
 
+	}
+
+	if all {
+		switch v := interface{}(m.GetTrace()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewToplistResponseValidationError{
+					field:  "Trace",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewToplistResponseValidationError{
+					field:  "Trace",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTrace()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewToplistResponseValidationError{
+				field:  "Trace",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
 	}
 
 	if len(errors) > 0 {
@@ -6104,6 +6875,8 @@ func (m *MetricsViewComparisonRequest) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for Trace
+
 	if len(errors) > 0 {
 		return MetricsViewComparisonRequestMultiError(errors)
 	}
@@ -6239,6 +7012,35 @@ func (m *MetricsViewComparisonResponse) validate(all bool) error {
 			}
 		}
 
+	}
+
+	if all {
+		switch v := interface{}(m.GetTrace()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewComparisonResponseValidationError{
+					field:  "Trace",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewComparisonResponseValidationError{
+					field:  "Trace",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTrace()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewComparisonResponseValidationError{
+				field:  "Trace",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
 	}
 
 	if len(errors) > 0 {
@@ -7318,6 +8120,8 @@ func (m *MetricsViewTimeSeriesRequest) validate(all bool) error {
 
 	// no validation rules for TimeDimension
 
+	// no validation rules for Trace
+
 	if len(errors) > 0 {
 		return MetricsViewTimeSeriesRequestMultiError(errors)
 	}
@@ -7491,6 +8295,35 @@ func (m *MetricsViewTimeSeriesResponse) validate(all bool) error {
 			}
 		}
 
+	}
+
+	if all {
+		switch v := interface{}(m.GetTrace()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewTimeSeriesResponseValidationError{
+					field:  "Trace",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewTimeSeriesResponseValidationError{
+					field:  "Trace",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTrace()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewTimeSeriesResponseValidationError{
+				field:  "Trace",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
 	}
 
 	if len(errors) > 0 {
@@ -7742,6 +8575,8 @@ func (m *MetricsViewTotalsRequest) validate(all bool) error {
 
 	// no validation rules for TimeDimension
 
+	// no validation rules for Trace
+
 	if len(errors) > 0 {
 		return MetricsViewTotalsRequestMultiError(errors)
 	}
@@ -7901,6 +8736,35 @@ func (m *MetricsViewTotalsResponse) validate(all bool) error {
 		if err := v.Validate(); err != nil {
 			return MetricsViewTotalsResponseValidationError{
 				field:  "Data",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetTrace()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewTotalsResponseValidationError{
+					field:  "Trace",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewTotalsResponseValidationError{
+					field:  "Trace",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTrace()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewTotalsResponseValidationError{
+				field:  "Trace",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -8202,6 +9066,8 @@ func (m *MetricsViewRowsRequest) validate(all bool) error {
 
 	// no validation rules for TimeDimension
 
+	// no validation rules for Trace
+
 	if len(errors) > 0 {
 		return MetricsViewRowsRequestMultiError(errors)
 	}
@@ -8370,6 +9236,35 @@ func (m *MetricsViewRowsResponse) validate(all bool) error {
 			}
 		}
 
+	}
+
+	if all {
+		switch v := interface{}(m.GetTrace()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewRowsResponseValidationError{
+					field:  "Trace",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewRowsResponseValidationError{
+					field:  "Trace",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTrace()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewRowsResponseValidationError{
+				field:  "Trace",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
 	}
 
 	if len(errors) > 0 {
@@ -9004,6 +9899,8 @@ func (m *MetricsViewTimeRangeRequest) validate(all bool) error {
 
 	// no validation rules for TimeDimension
 
+	// no validation rules for Trace
+
 	if len(errors) > 0 {
 		return MetricsViewTimeRangeRequestMultiError(errors)
 	}
@@ -9136,6 +10033,35 @@ func (m *MetricsViewTimeRangeResponse) validate(all bool) error {
 		}
 	}
 
+	if all {
+		switch v := interface{}(m.GetTrace()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewTimeRangeResponseValidationError{
+					field:  "Trace",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewTimeRangeResponseValidationError{
+					field:  "Trace",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTrace()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewTimeRangeResponseValidationError{
+				field:  "Trace",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if len(errors) > 0 {
 		return MetricsViewTimeRangeResponseMultiError(errors)
 	}
@@ -9253,6 +10179,8 @@ func (m *MetricsViewSchemaRequest) validate(all bool) error {
 	}
 
 	// no validation rules for Priority
+
+	// no validation rules for Trace
 
 	if len(errors) > 0 {
 		return MetricsViewSchemaRequestMultiError(errors)
@@ -9379,6 +10307,35 @@ func (m *MetricsViewSchemaResponse) validate(all bool) error {
 		if err := v.Validate(); err != nil {
 			return MetricsViewSchemaResponseValidationError{
 				field:  "Schema",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetTrace()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewSchemaResponseValidationError{
+					field:  "Trace",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewSchemaResponseValidationError{
+					field:  "Trace",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTrace()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewSchemaResponseValidationError{
+				field:  "Trace",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -9602,6 +10559,8 @@ func (m *MetricsViewSearchRequest) validate(all bool) error {
 
 	// no validation rules for Priority
 
+	// no validation rules for Trace
+
 	if len(errors) > 0 {
 		return MetricsViewSearchRequestMultiError(errors)
 	}
@@ -9738,6 +10697,35 @@ func (m *MetricsViewSearchResponse) validate(all bool) error {
 
 	}
 
+	if all {
+		switch v := interface{}(m.GetTrace()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewSearchResponseValidationError{
+					field:  "Trace",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewSearchResponseValidationError{
+					field:  "Trace",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTrace()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewSearchResponseValidationError{
+				field:  "Trace",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if len(errors) > 0 {
 		return MetricsViewSearchResponseMultiError(errors)
 	}
@@ -9858,6 +10846,8 @@ func (m *MetricsViewTimeRangesRequest) validate(all bool) error {
 	// no validation rules for TimeZone
 
 	// no validation rules for TimeDimension
+
+	// no validation rules for Trace
 
 	if m.ExecutionTime != nil {
 
@@ -10090,6 +11080,35 @@ func (m *MetricsViewTimeRangesResponse) validate(all bool) error {
 			}
 		}
 
+	}
+
+	if all {
+		switch v := interface{}(m.GetTrace()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewTimeRangesResponseValidationError{
+					field:  "Trace",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewTimeRangesResponseValidationError{
+					field:  "Trace",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTrace()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewTimeRangesResponseValidationError{
+				field:  "Trace",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
 	}
 
 	if len(errors) > 0 {
@@ -10433,6 +11452,8 @@ func (m *MetricsViewAnnotationsRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for Trace
+
 	if len(errors) > 0 {
 		return MetricsViewAnnotationsRequestMultiError(errors)
 	}
@@ -10568,6 +11589,35 @@ func (m *MetricsViewAnnotationsResponse) validate(all bool) error {
 			}
 		}
 
+	}
+
+	if all {
+		switch v := interface{}(m.GetTrace()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewAnnotationsResponseValidationError{
+					field:  "Trace",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewAnnotationsResponseValidationError{
+					field:  "Trace",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTrace()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewAnnotationsResponseValidationError{
+				field:  "Trace",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
 	}
 
 	if len(errors) > 0 {
@@ -10948,6 +11998,8 @@ func (m *ResolveCanvasRequest) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for Unsafe
 
 	if len(errors) > 0 {
 		return ResolveCanvasRequestMultiError(errors)

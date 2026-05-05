@@ -4,7 +4,7 @@
     DialogTrigger,
   } from "@rilldata/web-common/components/dialog";
   import GuardedDialog from "@rilldata/web-common/components/dialog/GuardedDialog.svelte";
-  import AlertForm from "@rilldata/web-common/features/alerts/AlertForm.svelte";
+  import AlertFormDataWrapper from "@rilldata/web-common/features/alerts/AlertFormDataWrapper.svelte";
   import type { V1AlertSpec } from "@rilldata/web-common/runtime-client/gen/index.schemas";
   import Button from "web-common/src/components/button/Button.svelte";
 
@@ -19,11 +19,23 @@
   cancelLabel="Keep editing"
   let:onCancel
   let:onClose
+  let:preventClose
 >
-  <DialogTrigger asChild let:builder>
-    <Button type="secondary" builders={[builder]} {disabled}>Edit</Button>
+  <DialogTrigger>
+    {#snippet child({ props })}
+      <Button {...props} type="secondary" {disabled}>Edit</Button>
+    {/snippet}
   </DialogTrigger>
-  <DialogContent class="p-0 m-0 w-[802px] max-w-fit" noClose>
-    <AlertForm props={{ mode: "edit", alertSpec }} {onCancel} {onClose} />
+  <DialogContent
+    class="p-0 m-0 w-[802px] max-w-fit"
+    noClose
+    onEscapeKeydown={preventClose}
+    onInteractOutside={preventClose}
+  >
+    <AlertFormDataWrapper
+      props={{ mode: "edit", alertSpec }}
+      {onCancel}
+      {onClose}
+    />
   </DialogContent>
 </GuardedDialog>

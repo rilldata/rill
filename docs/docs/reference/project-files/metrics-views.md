@@ -94,13 +94,21 @@ _[array of object]_ - Relates to exploring segments or dimensions of your data a
 
   - **`uri`** - _[string, boolean]_ - enable if your dimension is a clickable URL to enable single click navigation (boolean or valid SQL expression) 
 
+  - **`lookup_table`** - _[string]_ - the name of a ClickHouse dictionary to use for query-time lookups. Use `database.dictionary_name` for dictionaries in a non-default database. All three `lookup_*` fields (`lookup_table`, `lookup_key_column`, `lookup_value_column`) must be specified together. See [Query-Time Joins](/developers/build/metrics-view/dimensions/lookup) for details 
+
+  - **`lookup_key_column`** - _[string]_ - the primary key column in the lookup dictionary that corresponds to the dimension's `column` in the fact table 
+
+  - **`lookup_value_column`** - _[string]_ - the attribute column in the lookup dictionary whose values will be displayed for this dimension 
+
+  - **`lookup_default_expression`** - _[string]_ - an optional SQL expression used as a fallback value when no match is found in the dictionary (maps to `dictGetOrDefault`) 
+
 ### `measures`
 
 _[array of object]_ - Used to define the numeric aggregates of columns from your data model 
 
   - **`name`** - _[string]_ - a stable identifier for the measure _(required)_
 
-  - **`display_name`** - _[string]_ - the display name of your measure. _(required)_
+  - **`display_name`** - _[string]_ - the display name of your measure. 
 
   - **`label`** - _[string]_ - a label for your measure, deprecated use display_name 
 
@@ -110,7 +118,7 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
   - **`type`** - _[string]_ - Measure calculation type: "simple" for basic aggregations, "derived" for calculations using other measures, or "time_comparison" for period-over-period analysis. Defaults to "simple" unless dependencies exist. 
 
-  - **`expression`** - _[string]_ - a combination of operators and functions for aggregations _(required)_
+  - **`expression`** - _[string]_ - a combination of operators and functions for aggregations 
 
   - **`window`** - _[anyOf]_ - A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration. For more information, see the [window functions](/developers/build/metrics-view/measures/windows) documentation. 
 
@@ -242,19 +250,61 @@ _[array of object]_ - Used to define annotations that can be displayed on charts
 
   - **`connector`** - _[string]_ - Refers to the connector to use for the annotation 
 
-  - **`measures`** - _[anyOf]_ - Specifies which measures to apply the annotation to. Applies to all measures if not specified 
+  - **`measures`** - _[oneOf]_ - Specifies which measures to apply the annotation to. Applies to all measures if not specified 
 
-    - **option 1** - _[string]_ - Simple field name as a string.
+    - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
 
-    - **option 2** - _[array of anyOf]_ - List of field selectors, each can be a string or an object with detailed configuration.
+    - **option 2** - _[array of string]_ - Explicit list of fields to include in the selection
 
-      - **option 1** - _[string]_ - Shorthand field selector, interpreted as the name.
+    - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
 
-      - **option 2** - _[object]_ - Detailed field selector configuration with name and optional time grain.
+      - **`regex`** - _[string]_ - Select fields using a regular expression 
 
-        - **`name`** - _[string]_ - Name of the field to select. _(required)_
+      - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic 
 
-        - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
+      - **`exclude`** - _[object]_ - Select all fields except those listed here 
+
+### `rollups`
+
+_[array of object]_ - Pre-aggregated rollup tables that can be used to accelerate queries. When a query's dimensions, measures, time grain, and time range match a rollup, the query is automatically routed to the rollup table instead of the base table. 
+
+  - **`model`** - _[string]_ - Refers to the model or table powering the rollup (required) _(required)_
+
+  - **`database`** - _[string]_ - Refers to the database to use in the OLAP engine 
+
+  - **`database_schema`** - _[string]_ - Refers to the schema to use in the OLAP engine 
+
+  - **`time_grain`** - _[string]_ - The time grain of the rollup (required). Valid values are: millisecond, second, minute, hour, day, week, month, quarter, year _(required)_
+
+  - **`time_zone`** - _[string]_ - IANA timezone of the rollup table (e.g. America/New_York). For day+ grains, queries are only routed to the rollup if the query timezone matches. 
+
+  - **`dimensions`** - _[oneOf]_ - Optional field selectors for dimensions to include in the rollup from the base metrics view. If not specified, all dimensions are included. 
+
+    - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
+
+    - **option 2** - _[array of string]_ - Explicit list of fields to include in the selection
+
+    - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
+
+      - **`regex`** - _[string]_ - Select fields using a regular expression 
+
+      - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic 
+
+      - **`exclude`** - _[object]_ - Select all fields except those listed here 
+
+  - **`measures`** - _[oneOf]_ - Optional field selectors for measures to include in the rollup from the base metrics view. If not specified, all measures are included. 
+
+    - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
+
+    - **option 2** - _[array of string]_ - Explicit list of fields to include in the selection
+
+    - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
+
+      - **`regex`** - _[string]_ - Select fields using a regular expression 
+
+      - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic 
+
+      - **`exclude`** - _[object]_ - Select all fields except those listed here 
 
 ### `security`
 
@@ -302,6 +352,21 @@ _[object]_ - Defines [security rules and access control policies](/developers/bu
 
     - **`sql`** - _[string]_ - SQL expression for row filtering (for row_filter type rules) 
 
+### `cache`
+
+_[object]_ - Enable caching of query results for metrics views backed by externally-managed tables (e.g. in Snowflake, BigQuery). These settings have no effect for metrics views backed by Rill models (where queries are automatically cached and invalidated when the model is refreshed).
+Each cache entry is keyed by a hash of the query combined with the latest result of `key_sql`. Cached results stay valid as long as `key_sql` returns the same value; when its result changes, prior results become unreachable. `key_sql` itself runs at most once per `key_ttl`, decoupling freshness checks from query traffic.
+Example: a `key_sql` of `SELECT MAX(updated_at) FROM orders` with `key_ttl: 5m` checks for new data every 5 minutes but only invalidates cached results when new data has actually landed.
+ 
+
+  - **`enabled`** - _[boolean]_ - Whether to cache query results for this metrics view. Defaults to false for metrics views backed by externally-managed tables and to true for metrics views backed by a Rill model. 
+
+  - **`key_sql`** - _[string]_ - SQL returning a single value used in the cache key, typically a max timestamp, version, or row count. Cached results are invalidated when this value changes. Optional; defaults to the metrics view's watermark expression (which itself defaults to `MAX(<time dimension>)`). 
+
+  - **`key_ttl`** - _[string]_ - How often `key_sql` is re-evaluated, as a Go duration string (e.g. `30s`, `5m`, `1h`). The previous result is reused between evaluations. Defaults to `60s`. 
+
+  - **`timestamps_ttl`** - _[string]_ - When `enabled` is false, Rill still caches the min/max timestamps that are used by the dashboard time picker. This sets a TTL for how long to cache these as a Go duration string. If `enabled` is `true`, then this setting has no effect. Defaults to `5m`. 
+
 ### `explore`
 
 _[object]_ - Defines an optional inline explore view for the metrics view. If not specified a default explore will be emitted unless `skip` is set to true. 
@@ -334,6 +399,10 @@ _[object]_ - Defines an optional inline explore view for the metrics view. If no
 
         - **`secondary`** - _[string]_ - Secondary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
 
+        - **`kpi-positive`** - _[string]_ - Color for positive KPI delta values in light theme. Defaults to fg-secondary (gray). 
+
+        - **`kpi-negative`** - _[string]_ - Color for negative KPI delta values in light theme. Defaults to red. 
+
         - **`variables`** - _[object]_ - Custom CSS variables for light theme 
 
       - **`dark`** - _[object]_ - Dark theme color configuration 
@@ -341,6 +410,10 @@ _[object]_ - Defines an optional inline explore view for the metrics view. If no
         - **`primary`** - _[string]_ - Primary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
 
         - **`secondary`** - _[string]_ - Secondary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+
+        - **`kpi-positive`** - _[string]_ - Color for positive KPI delta values in dark theme. Defaults to fg-secondary (gray). 
+
+        - **`kpi-negative`** - _[string]_ - Color for negative KPI delta values in dark theme. Defaults to red. 
 
         - **`variables`** - _[object]_ - Custom CSS variables for dark theme 
 

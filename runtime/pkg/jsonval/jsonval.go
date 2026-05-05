@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/civil"
 	"github.com/duckdb/duckdb-go/v2"
 	"github.com/google/uuid"
 	"github.com/paulmach/orb"
@@ -146,6 +147,12 @@ func ToValue(v any, t *runtimev1.Type) (any, error) {
 		return toMapCoerceKeys(v, t2)
 	case duckdb.Map:
 		return ToValue(map[any]any(v), t)
+	case duckdb.OrderedMap:
+		m := make(map[any]any, len(v.Keys()))
+		for i, k := range v.Keys() {
+			m[k] = v.Values()[i]
+		}
+		return ToValue(m, t)
 	case duckdb.Interval:
 		// Our current policy is to convert INTERVALs to milliseconds, treating one month as 30 days.
 		ms := v.Micros / 1000
@@ -236,6 +243,11 @@ func ToValue(v any, t *runtimev1.Type) (any, error) {
 			return ToValue(*v, t)
 		}
 		return nil, nil
+	// bigquery specific types
+	case civil.Date:
+		return v.String(), nil
+	case civil.DateTime:
+		return v.String(), nil
 	default:
 	}
 	if t != nil && t.ArrayElementType != nil {

@@ -9,6 +9,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/exportutil"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 )
 
 type selfToObjectStoreExecutor struct {
@@ -31,16 +32,31 @@ func (e *selfToObjectStoreExecutor) Execute(ctx context.Context, opts *drivers.M
 	}
 
 	inputProps := &ModelInputProperties{}
-	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
+	var warnings []string
+	unused, err := mapstructureutil.WeakDecodeWithWarnings(opts.InputProperties, inputProps)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
+	}
+	if len(unused) > 0 {
+		if opts.Env.StrictModelProps {
+			return nil, fmt.Errorf("undefined fields in input properties: %q", strings.Join(unused, ", "))
+		}
+		warnings = append(warnings, fmt.Sprintf("Undefined fields %q in input properties. Will be ignored.", strings.Join(unused, ", ")))
 	}
 	if err := inputProps.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid input properties: %w", err)
 	}
 
 	outputProps := &drivers.ObjectStoreModelOutputProperties{}
-	if err := mapstructure.Decode(opts.OutputProperties, outputProps); err != nil {
+	unused, err = mapstructureutil.WeakDecodeWithWarnings(opts.OutputProperties, outputProps)
+	if err != nil {
 		return nil, err
+	}
+	if len(unused) > 0 {
+		if opts.Env.StrictModelProps {
+			return nil, fmt.Errorf("undefined fields in output properties: %q", strings.Join(unused, ", "))
+		}
+		warnings = append(warnings, fmt.Sprintf("Undefined fields %q in output properties. Will be ignored.", strings.Join(unused, ", ")))
 	}
 
 	if outputProps.Format != "" && outputProps.Format != drivers.FileFormatParquet {
@@ -61,7 +77,7 @@ func (e *selfToObjectStoreExecutor) Execute(ctx context.Context, opts *drivers.M
 	var createSecretSQLs, dropSecretSQLs []string
 	for _, connector := range connectorsForSecrets {
 		// We need to pass the bucket we are using because of S3 region detection
-		createSecretSQL, dropSecretSQL, _, err := generateSecretSQL(ctx, opts, connector, bucket, nil)
+		createSecretSQL, dropSecretSQL, _, err := generateSecretSQL(ctx, opts, connector, bucket, nil, e.c.logger)
 		if err != nil {
 			// Silently ignore when auto detected connector or when using native GCS credentials (since it's not supported by DuckDB)
 			if autoDetected || errors.Is(err, errGCSUsesNativeCreds) {
@@ -102,5 +118,6 @@ func (e *selfToObjectStoreExecutor) Execute(ctx context.Context, opts *drivers.M
 	return &drivers.ModelResult{
 		Connector:  opts.OutputConnector,
 		Properties: resPropsMap,
+		Warnings:   warnings,
 	}, nil
 }

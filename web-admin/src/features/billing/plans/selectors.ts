@@ -8,7 +8,6 @@ import {
 } from "@rilldata/web-admin/client";
 import { isTeamPlan } from "@rilldata/web-admin/features/billing/plans/utils";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import { fetchWrapper } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { Page } from "@sveltejs/kit";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { DateTime } from "luxon";
@@ -30,14 +29,17 @@ export async function fetchTeamPlan() {
 export async function fetchPaymentsPortalURL(
   organization: string,
   returnUrl: string,
+  setup?: boolean,
 ) {
   const portalUrlResp = await queryClient.fetchQuery({
     queryKey: getAdminServiceGetPaymentsPortalURLQueryKey(organization, {
       returnUrl,
+      setup,
     }),
     queryFn: () =>
       adminServiceGetPaymentsPortalURL(organization, {
         returnUrl,
+        setup,
       }),
     // always refetch since the signed url will expire
     // TODO: figure out expiry time and use that instead
@@ -91,14 +93,13 @@ function usageMetrics(
 ): Promise<UsageMetricsResponse> {
   const url = new URL(runtimeHost);
   url.pathname = `/v1/instances/${instanceId}/api/usage-meter`;
-  return fetchWrapper({
-    url: url.toString(),
+  return fetch(url.toString(), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${accessToken}`,
     },
-  });
+  }).then((r) => r.json());
 }
 export function getUsageMetrics(
   runtimeHost: string,

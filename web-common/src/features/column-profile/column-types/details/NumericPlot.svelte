@@ -130,7 +130,7 @@ Otherwise, the page will jump around as the data is fetched.
 
 <div
   role="group"
-  on:mouseleave={() => {
+  onmouseleave={() => {
     focusPoint = undefined;
   }}
 >
@@ -139,7 +139,7 @@ Otherwise, the page will jump around as the data is fetched.
       active={summaryMode === "summary"}
       tooltipLocation="top"
       marginClasses=""
-      on:click={() => {
+      onclick={() => {
         summaryMode = "summary";
       }}
     >
@@ -152,7 +152,7 @@ Otherwise, the page will jump around as the data is fetched.
       tooltipLocation="top"
       active={summaryMode === "topk"}
       marginClasses=""
-      on:click={() => {
+      onclick={() => {
         summaryMode = "topk";
       }}
     >
@@ -170,10 +170,10 @@ Otherwise, the page will jump around as the data is fetched.
       class="overflow-visible"
       width={containerWidth}
       height={histHeight}
-      on:mousemove={(e) => {
+      onmousemove={(e) => {
         mouseX = e.offsetX;
       }}
-      on:mouseleave={() => {
+      onmouseleave={() => {
         mouseX = undefined;
       }}
     >

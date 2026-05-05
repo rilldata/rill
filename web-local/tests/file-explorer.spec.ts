@@ -98,8 +98,10 @@ test.describe("File Explorer", () => {
       await page.getByLabel("my-directory actions menu").click();
       await page.getByRole("menuitem", { name: "New folder" }).hover();
       const [createDirectoryResponse, getFilesResponse] = await Promise.all([
-        page.waitForResponse("**/v1/instances/default/files/dir"),
-        page.waitForResponse("**/v1/instances/default/files"),
+        page.waitForResponse(
+          "**/rill.runtime.v1.RuntimeService/CreateDirectory",
+        ),
+        page.waitForResponse("**/rill.runtime.v1.RuntimeService/ListFiles"),
         page.getByRole("menuitem", { name: "New folder" }).click(),
       ]);
 

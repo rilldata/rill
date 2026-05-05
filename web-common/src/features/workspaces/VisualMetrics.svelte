@@ -1,15 +1,12 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
-  import type { V1ParseError } from "@rilldata/web-common/runtime-client";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
-  import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Close from "@rilldata/web-common/components/icons/Close.svelte";
   import Search from "@rilldata/web-common/components/icons/Search.svelte";
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
-  import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import { TIMESTAMPS } from "@rilldata/web-common/lib/duckdb-data-types";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -25,13 +22,14 @@
     type MetricsViewSpecDimension,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client/gen/index.schemas";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { PlusIcon } from "lucide-svelte";
   import { tick } from "svelte";
-  import { slide } from "svelte/transition";
   import { parseDocument, Scalar, YAMLMap, YAMLSeq } from "yaml";
   import ConnectorExplorer from "../connectors/explorer/ConnectorExplorer.svelte";
   import { connectorExplorerStore } from "../connectors/explorer/connector-explorer-store";
+  import { connectorIconMapping } from "../connectors/connector-metadata";
+  import { getConnectorIconKey } from "../connectors/connectors-utils";
   import { useIsModelingSupportedForConnectorOLAP as useIsModelingSupportedForConnector } from "../connectors/selectors";
   import { FileArtifact } from "../entity-management/file-artifact";
   import {
@@ -73,7 +71,6 @@
   );
 
   export let fileArtifact: FileArtifact;
-  export let parseError: V1ParseError | undefined = undefined;
   export let switchView: () => void;
   export let unsavedChanges = false;
 
@@ -90,9 +87,9 @@
   };
   let storedProperties: Record<string, unknown> = {};
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
-  $: instance = createRuntimeServiceGetInstance(instanceId, {
+  $: instance = createRuntimeServiceGetInstance(runtimeClient, {
     sensitive: true,
   });
 
@@ -111,7 +108,7 @@
   };
 
   $: isModelingSupportedForConnector = olapConnector
-    ? useIsModelingSupportedForConnector(instanceId, olapConnector)
+    ? useIsModelingSupportedForConnector(runtimeClient, olapConnector)
     : null;
   $: isModelingSupported = $isModelingSupportedForConnector?.data;
 
@@ -132,9 +129,9 @@
 
   $: noTableProperties = !yamlConnector && !database && !databaseSchema;
 
-  $: modelsQuery = useModels(instanceId);
-  $: sourcesQuery = useSources(instanceId);
-  $: metricsViewQuery = getResource(queryClient, instanceId);
+  $: modelsQuery = useModels(runtimeClient);
+  $: sourcesQuery = useSources(runtimeClient);
+  $: metricsViewQuery = getResource(queryClient);
 
   $: modelNames = $modelsQuery?.data?.map(resourceToOption) ?? [];
   $: sourceNames = $sourcesQuery?.data?.map(resourceToOption) ?? [];
@@ -151,7 +148,8 @@
   $: hasValidModelOrSourceSelection = hasSourceSelected || hasModelSelected;
 
   $: hasNonDuckDBOLAPConnectorQuery = createRuntimeServiceAnalyzeConnectors(
-    instanceId,
+    runtimeClient,
+    {},
     {
       query: {
         select: (data) => {
@@ -174,6 +172,14 @@
   );
   $: hasNonDuckDBOLAPConnector = $hasNonDuckDBOLAPConnectorQuery.data;
 
+  $: analyzedConnectorsQuery = createRuntimeServiceAnalyzeConnectors(
+    runtimeClient,
+    {},
+  );
+  $: analyzedConnector = $analyzedConnectorsQuery.data?.connectors?.find(
+    (c) => c.name === connector,
+  );
+
   $: resourceKind = hasSourceSelected
     ? ResourceKind.Source
     : hasModelSelected
@@ -182,7 +188,7 @@
 
   $: resourceQuery =
     resourceKind &&
-    useResource(instanceId, modelOrSourceOrTableName, resourceKind);
+    useResource(runtimeClient, modelOrSourceOrTableName, resourceKind);
 
   $: connector =
     yamlConnector ||
@@ -192,9 +198,9 @@
     olapConnector;
 
   $: columnsQuery = createQueryServiceTableColumns(
-    instanceId,
-    modelOrSourceOrTableName,
+    runtimeClient,
     {
+      tableName: modelOrSourceOrTableName,
       connector,
       database,
       databaseSchema,
@@ -270,14 +276,23 @@
     measureNamesAndLabels.label,
   );
 
+  // When the metrics view YAML already specifies a live connector, trust the
+  // YAML fields (connector/database/database_schema/table) directly rather than
+  // walking every dataset via OLAPListTables. For warehouses like BigQuery, that
+  // enumeration issues an INFORMATION_SCHEMA.TABLES query per dataset and often
+  // never completes in projects with many datasets.
+  $: hasLiveConnectorYAML = Boolean(yamlConnector && modelOrSourceOrTableName);
+
   $: tablesQuery = createConnectorServiceOLAPListTables(
-    {
-      instanceId,
-      connector,
-    },
+    runtimeClient,
+    { connector },
     {
       query: {
-        enabled: !!instanceId && !!connector && !hasValidModelOrSourceSelection,
+        enabled:
+          !!runtimeClient.instanceId &&
+          !!connector &&
+          !hasValidModelOrSourceSelection &&
+          !hasLiveConnectorYAML,
       },
     },
   );
@@ -287,15 +302,21 @@
   $: hasValidOLAPTableSelected =
     !hasValidModelOrSourceSelection &&
     modelOrSourceOrTableName &&
-    tables.find(
-      (table) =>
-        table.name === modelOrSourceOrTableName &&
-        table.database === database &&
-        (table.databaseSchema === databaseSchema ||
-          (!databaseSchema && table.databaseSchema === "default")),
-    );
+    (hasLiveConnectorYAML ||
+      tables.find(
+        (table) =>
+          table.name === modelOrSourceOrTableName &&
+          (!database || table.database === database) &&
+          (!databaseSchema || table.databaseSchema === databaseSchema),
+      ));
 
   $: tableMode = Boolean(hasValidOLAPTableSelected);
+
+  $: showConnectorExplorer =
+    !!yamlConnector ||
+    tableMode ||
+    !isModelingSupported ||
+    modelAndSourceOptions.length === 0;
 
   function createDimensions(
     rawDimensions: YAMLSeq<YAMLMap<string, string>>,
@@ -546,13 +567,13 @@
 <div class="wrapper">
   <div class="main-area">
     <div class="flex gap-x-4 border-b pb-4">
-      {#if tableMode || !isModelingSupported}
+      {#if showConnectorExplorer}
         <div class="flex flex-col gap-y-1 w-full">
           <InputLabel label="Table" id="table">
             <svelte:fragment slot="mode-switch">
-              {#if isModelingSupported}
+              {#if isModelingSupported && !yamlConnector}
                 <button
-                  on:click={switchTableMode}
+                  onclick={switchTableMode}
                   class="ml-auto text-primary-600 font-medium text-xs"
                 >
                   Select model
@@ -561,26 +582,37 @@
             </svelte:fragment>
           </InputLabel>
           <DropdownMenu.Root bind:open={tableSelectionOpen}>
-            <DropdownMenu.Trigger asChild let:builder>
-              <button
-                use:builder.action
-                {...builder}
-                class="flex px-3 gap-x-2 h-8 max-w-full items-center text-sm border-gray-300 border rounded-[2px]
-                focus:ring-2 focus:ring-primary-100 focus:border-primary-600 break-all overflow-hidden
-               "
-              >
-                {#if !hasValidOLAPTableSelected}
-                  <span class="text-fg-muted truncate">Select table</span>
-                {:else}
-                  <span class="text-fg-secondary truncate">
-                    {modelOrSourceOrTableName}
-                  </span>
-                {/if}
-                <CaretDownIcon
-                  size="12px"
-                  className="!fill-gray-600 ml-auto flex-none"
-                />
-              </button>
+            <DropdownMenu.Trigger>
+              {#snippet child({ props })}
+                <button
+                  {...props}
+                  class="flex px-3 gap-x-2 h-8 max-w-full items-center text-sm border-gray-300 border rounded-[2px]
+                  focus:ring-2 focus:ring-primary-100 focus:border-primary-600 break-all overflow-hidden
+                 "
+                >
+                  {#if !hasValidOLAPTableSelected}
+                    <span class="text-fg-muted truncate">Select table</span>
+                  {:else}
+                    {#if analyzedConnector}
+                      <span class="flex-none">
+                        <svelte:component
+                          this={connectorIconMapping[
+                            getConnectorIconKey(analyzedConnector)
+                          ]}
+                          size="14px"
+                        />
+                      </span>
+                    {/if}
+                    <span class="text-fg-secondary truncate">
+                      {modelOrSourceOrTableName}
+                    </span>
+                  {/if}
+                  <CaretDownIcon
+                    size="12px"
+                    className="!fill-gray-600 ml-auto flex-none"
+                  />
+                </button>
+              {/snippet}
             </DropdownMenu.Trigger>
             <DropdownMenu.Content
               sameWidth
@@ -588,7 +620,11 @@
               class="!min-w-64  overflow-hidden p-1"
             >
               <div class="size-full overflow-y-auto max-h-72">
-                <ConnectorExplorer {store} olapOnly />
+                <ConnectorExplorer
+                  {store}
+                  olapOnly
+                  defaultExpanded={yamlConnector}
+                />
               </div>
             </DropdownMenu.Content>
           </DropdownMenu.Root>
@@ -603,6 +639,9 @@
             options={modelAndSourceOptions}
             placeholder="Select a model"
             label="Model"
+            leadingIcon={analyzedConnector
+              ? connectorIconMapping[getConnectorIconKey(analyzedConnector)]
+              : undefined}
             onChange={async (newModelOrSourceName) => {
               if (modelOrSourceOrTableName === newModelOrSourceName) return;
               if (!modelOrSourceOrTableName) {
@@ -623,7 +662,7 @@
             <svelte:fragment slot="mode-switch">
               {#if hasNonDuckDBOLAPConnector}
                 <button
-                  on:click={switchTableMode}
+                  onclick={switchTableMode}
                   class="ml-auto text-primary-600 font-medium text-xs"
                 >
                   Select table
@@ -691,7 +730,7 @@
             {totalSelected > 1 ? "items" : "item"} selected:
           </div>
           <button
-            on:click={() => {
+            onclick={() => {
               triggerDelete();
             }}
             class="flex gap-x-2 text-inherit items-center px-2 border-l border-slate-100 hover:bg-surface-background cursor-pointer"
@@ -701,7 +740,7 @@
           </button>
 
           <button
-            on:click={() => {
+            onclick={() => {
               selected = {
                 measures: new Set(),
                 dimensions: new Set(),
@@ -791,17 +830,6 @@
         </div>
       {/each}
     </div>
-
-    {#if parseError}
-      <div
-        role="status"
-        transition:slide={{ duration: LIST_SLIDE_DURATION }}
-        class="flex items-center gap-x-2 border border-destructive bg-destructive/15 dark:bg-destructive/30 text-fg-primary border-l-4 px-2 py-5 max-h-40 overflow-auto"
-      >
-        <CancelCircle className="text-destructive" />
-        {parseError.message}
-      </div>
-    {/if}
   </div>
 
   {#if $editingItemData !== null}

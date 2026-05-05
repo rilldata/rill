@@ -2,18 +2,26 @@ package pinot
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	oteltrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
+
+var tracer = otel.Tracer("github.com/rilldata/rill/runtime/drivers/pinot")
 
 var _ drivers.OLAPStore = &connection{}
 
 func (c *connection) Dialect() drivers.Dialect {
-	return drivers.DialectPinot
+	return DialectPinot
 }
 
 func (c *connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
@@ -31,7 +39,7 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	return res.Close()
 }
 
-func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
+func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (res *drivers.Result, outErr error) {
 	if c.logQueries {
 		fields := []zap.Field{
 			zap.String("sql", stmt.Query),
@@ -52,6 +60,24 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 
 		return nil, rows.Close()
 	}
+
+	// Start a span covering connection acquisition and query execution
+	ctx, span := tracer.Start(ctx, "olap.query", oteltrace.WithAttributes(attribute.String("driver", "pinot"), attribute.String("connector", c.connectorName)))
+
+	start := time.Now()
+	defer func() {
+		totalLatency := time.Since(start).Milliseconds()
+		cancelled := errors.Is(outErr, context.Canceled)
+		spanAttrs := []attribute.KeyValue{
+			attribute.Int64("total_latency_ms", totalLatency),
+			attribute.Bool("cancelled", cancelled),
+		}
+		if outErr != nil {
+			spanAttrs = append(spanAttrs, attribute.String("error", outErr.Error()))
+		}
+		span.SetAttributes(spanAttrs...)
+		span.End()
+	}()
 
 	var cancelFunc context.CancelFunc
 	if stmt.ExecutionTimeout != 0 {
@@ -80,15 +106,36 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 		return nil, err
 	}
 
-	r := &drivers.Result{Rows: rows, Schema: schema}
-	r.SetCleanupFunc(func() error {
+	res = &drivers.Result{Rows: rows, Schema: schema}
+	res.SetCleanupFunc(func() error {
 		if cancelFunc != nil {
 			cancelFunc()
 		}
 		return nil
 	})
 
-	return r, nil
+	return res, nil
+}
+
+func (c *connection) Head(ctx context.Context, db, schema, table string, limit int64) (*drivers.Result, error) {
+	tbl, err := c.InformationSchema().Lookup(ctx, db, schema, table)
+	if err != nil {
+		return nil, err
+	}
+
+	var columns []string
+	for _, field := range tbl.Schema.Fields {
+		columns = append(columns, c.Dialect().EscapeIdentifier(field.Name))
+	}
+
+	limitClause := ""
+	if limit > 0 {
+		limitClause = fmt.Sprintf(" LIMIT %d", limit)
+	}
+
+	return c.Query(ctx, &drivers.Statement{
+		Query: fmt.Sprintf("SELECT %s FROM %s%s", strings.Join(columns, ", "), c.Dialect().EscapeTable(db, schema, table), limitClause),
+	})
 }
 
 func (c *connection) QuerySchema(ctx context.Context, query string, args []any) (*runtimev1.StructType, error) {
@@ -109,4 +156,8 @@ func (c *connection) QuerySchema(ctx context.Context, query string, args []any) 
 
 func (c *connection) InformationSchema() drivers.OLAPInformationSchema {
 	return c
+}
+
+func (c *connection) EstimateSize(ctx context.Context) (int64, error) {
+	return -1, nil
 }

@@ -71,6 +71,12 @@ blobs:
     extra_files:
       - glob: latest.txt
       - glob: scripts/install.sh
+  - disable: "{{ .IsNightly }}"
+    provider: gs
+    bucket: prod-cdn.rilldata.com
+    extra_files_only: true
+    extra_files:
+      - glob: scripts/install.sh
 
 changelog:
   sort: asc

@@ -12,7 +12,7 @@ import {
   type V1Message,
 } from "@rilldata/web-common/runtime-client";
 import { MessageContentType, ToolName } from "./types";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { derived } from "svelte/store";
 import { createQuery } from "@tanstack/svelte-query";
 
@@ -80,13 +80,12 @@ export function invalidateConversationsList(instanceId: string) {
 /**
  * Returns the last updated conversation ID.
  */
-export function getLatestConversationQueryOptions() {
-  const listConversationsQueryOptions = derived(runtime, ({ instanceId }) =>
-    getRuntimeServiceListConversationsQueryOptions(instanceId, {
+export function getLatestConversationQueryOptions(client: RuntimeClient) {
+  const listConversationsQueryOptions =
+    getRuntimeServiceListConversationsQueryOptions(client, {
       // Filter to only show Rill client conversations, excluding MCP conversations
       userAgentPattern: "rill%",
-    }),
-  );
+    });
   const lastConversationId = derived(
     createQuery(listConversationsQueryOptions, queryClient),
     (conversationsResp) => {
@@ -97,18 +96,15 @@ export function getLatestConversationQueryOptions() {
     },
   );
 
-  return derived(
-    [lastConversationId, runtime],
-    ([lastConversationId, { instanceId }]) => {
-      return getRuntimeServiceGetConversationQueryOptions(
-        instanceId,
-        lastConversationId ?? "",
-        {
-          query: {
-            enabled: !!lastConversationId,
-          },
+  return derived([lastConversationId], ([id]) => {
+    return getRuntimeServiceGetConversationQueryOptions(
+      client,
+      { conversationId: id ?? "" },
+      {
+        query: {
+          enabled: !!id,
         },
-      );
-    },
-  );
+      },
+    );
+  });
 }

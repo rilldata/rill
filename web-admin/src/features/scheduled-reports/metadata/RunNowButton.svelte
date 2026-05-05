@@ -6,7 +6,7 @@
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { getRuntimeServiceGetResourceQueryKey } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { useReport } from "../selectors";
 
@@ -14,11 +14,10 @@
   export let project: string;
   export let report: string;
 
-  $: ({ instanceId } = $runtime);
-
+  const runtimeClient = useRuntimeClient();
   const queryClient = useQueryClient();
   const triggerReport = createAdminServiceTriggerReport();
-  const reportQuery = useReport(instanceId, report);
+  const reportQuery = useReport(runtimeClient, report);
 
   async function handleRunNow() {
     const lastExecution =
@@ -42,10 +41,12 @@
         lastExecution
     ) {
       await queryClient.invalidateQueries({
-        queryKey: getRuntimeServiceGetResourceQueryKey(instanceId, {
-          "name.name": report,
-          "name.kind": ResourceKind.Report,
-        }),
+        queryKey: getRuntimeServiceGetResourceQueryKey(
+          runtimeClient.instanceId,
+          {
+            name: { name: report, kind: ResourceKind.Report },
+          },
+        ),
       });
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }

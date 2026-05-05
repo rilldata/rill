@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { openResourceGraphQuickView } from "@rilldata/web-common/features/resource-graph/quick-view/quick-view-store";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
@@ -17,7 +17,7 @@
   import Model from "../../../components/icons/Model.svelte";
   import { behaviourEvent } from "../../../metrics/initMetrics";
   import { V1ReconcileStatus } from "../../../runtime-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
   import { createSqlModelFromTable } from "../../connectors/code-utils";
   import { getScreenNameFromPage } from "../../file-explorer/telemetry";
   import {
@@ -26,17 +26,18 @@
     useCreateMetricsViewWithCanvasUIAction,
   } from "../../metrics-views/ai-generation/generateMetricsView";
 
+  const runtimeClient = useRuntimeClient();
   const { ai, developerChat } = featureFlags;
   const queryClient = useQueryClient();
 
   export let filePath: string;
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
 
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
-  $: modelHasError = fileArtifact.getHasErrors(queryClient, instanceId);
-  $: modelQuery = fileArtifact.getResource(queryClient, instanceId);
+  $: modelHasError = fileArtifact.getHasErrors(queryClient);
+  $: modelQuery = fileArtifact.getResource(queryClient);
   $: modelResource = $modelQuery.data;
   $: connector = modelResource?.model?.spec?.outputConnector;
   $: modelIsIdle =
@@ -60,6 +61,7 @@
       const previousActiveEntity = getScreenNameFromPage();
       const addDevLimit = false; // Typically, the `dev` limit would be applied on the Source itself
       const [newModelPath, newModelName] = await createSqlModelFromTable(
+        runtimeClient,
         queryClient,
         connector as string,
         "",
@@ -68,7 +70,7 @@
         addDevLimit,
       );
 
-      await goto(`/files${newModelPath}`);
+      await navigateToFile(newModelPath);
 
       await behaviourEvent?.fireNavigationEvent(
         newModelName,
@@ -83,6 +85,7 @@
   }
 
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
+    runtimeClient,
     instanceId,
     connector as string,
     "",
@@ -94,6 +97,7 @@
   );
 
   $: createExploreFromTable = useCreateMetricsViewFromTableUIAction(
+    runtimeClient,
     instanceId,
     connector as string,
     "",
@@ -105,6 +109,7 @@
   );
 
   $: createCanvasDashboardFromTable = useCreateMetricsViewWithCanvasUIAction(
+    runtimeClient,
     instanceId,
     connector as string,
     "",
@@ -118,7 +123,7 @@
     // Use developer agent if enabled, otherwise fall back to RPC
     if ($developerChat) {
       await createCanvasDashboardFromTableWithAgent(
-        instanceId,
+        runtimeClient,
         connector as string,
         "",
         "",
@@ -130,19 +135,19 @@
   }
 </script>
 
-<NavigationMenuItem on:click={viewGraph}>
+<NavigationMenuItem onclick={viewGraph}>
   <GitBranch slot="icon" size="14px" />
   View DAG graph
 </NavigationMenuItem>
 
-<NavigationMenuItem on:click={handleCreateModel}>
+<NavigationMenuItem onclick={handleCreateModel}>
   <Model slot="icon" />
   Create new model
 </NavigationMenuItem>
 
 <NavigationMenuItem
   disabled={disableCreateDashboard}
-  on:click={createMetricsViewFromTable}
+  onclick={createMetricsViewFromTable}
 >
   <MetricsViewIcon slot="icon" />
   <div class="flex gap-x-2 items-center">
@@ -163,7 +168,7 @@
 
 <NavigationMenuItem
   disabled={disableCreateDashboard}
-  on:click={onGenerateCanvasDashboard}
+  onclick={onGenerateCanvasDashboard}
 >
   <CanvasIcon slot="icon" />
   <div class="flex gap-x-2 items-center">
@@ -184,7 +189,7 @@
 
 <NavigationMenuItem
   disabled={disableCreateDashboard}
-  on:click={createExploreFromTable}
+  onclick={createExploreFromTable}
 >
   <ExploreIcon slot="icon" />
   <div class="flex gap-x-2 items-center">

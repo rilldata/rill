@@ -4,191 +4,151 @@
     </a>
 </p>
 
-<br/>
+<h3 align="center">Agent-first, human-friendly business intelligence</h3>
+
 <p align="center">
-    <a href="LICENSE" target="_blank">
-        <img src="https://img.shields.io/github/license/rilldata/rill.svg" alt="GitHub license">
-    </a>
-    <a href="https://github.com/rilldata/rill/releases" target="_blank">
-        <img src="https://img.shields.io/github/tag/rilldata/rill.svg" alt="GitHub tag (latest SemVer)">
-    </a>
-    <a href="https://github.com/rilldata/rill/commits" target="_blank">
-        <img src="https://img.shields.io/github/commit-activity/y/rilldata/rill.svg" alt="GitHub commit activity">
-    </a>
-    <a href="https://github.com/rilldata/rill/graphs/contributors" target="_blank">
-        <img src="https://img.shields.io/github/contributors-anon/rilldata/rill.svg" alt="GitHub contributors">
-    </a>
-    <a href="https://github.com/rilldata/rill/releases" target="_blank">
-        <img src="https://img.shields.io/github/downloads/rilldata/rill/total.svg" alt="GitHub downloads">
-    </a>
-    <a href="https://github.com/rilldata/rill/actions/workflows/rill-cloud.yml" target="_blank">
-        <img src="https://github.com/rilldata/rill/actions/workflows/rill-cloud.yml/badge.svg" alt="CI/CD">
-    </a>
+  <a href="https://github.com/rilldata/rill/releases"><img src="https://img.shields.io/github/tag/rilldata/rill.svg" alt="Release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/rilldata/rill.svg" alt="License"></a>
 </p>
 
-<div align="center">
-
-[Docs](https://docs.rilldata.com/) • [Install](https://docs.rilldata.com/developers/get-started/install) • [Quickstart](https://docs.rilldata.com/developers/get-started/quickstart) • [Tutorials](https://docs.rilldata.com/developers/tutorials/) • [Reference](https://docs.rilldata.com/reference/project-files)
-
-</div>
+<p align="center">
+  <a href="https://docs.rilldata.com/">Docs</a> · <a href="https://datatalks.rilldata.com/">Data Talks</a>
+</p>
 
 ---
 
-Rill delivers the fastest path from data lake to dashboard. **For data engineers and analysts**, it provides rapid, self-service dashboards built directly on raw data lakes, eliminating traditional BI complexity. **For data consumers**, it ensures reliable, fast-loading dashboards with accurate, real-time metrics.
+<p align="center">
+  <img src="https://docs.rilldata.com/img/explore/dashboard101/multi-measure-select.png" alt="Rill dashboard" width="80%">
+</p>
 
-Download Rill to start modeling data and create fast, exploratory dashboards in minutes:
+**Rill** is the fastest BI tool for humans and agents, powered by OLAP engines like ClickHouse and DuckDB.
+
+## Get Started
 
 ```bash
-curl https://rill.sh | sh
-rill start my-rill-project
+curl https://rill.sh | sh        # install
+rill start my-project            # create a project and open the UI
 ```
 
-Unlike most BI tools, Rill comes with its own embedded in-memory database powered by DuckDB or ClickHouse. Data and compute are co-located, and queries return in milliseconds, so you can pivot, slice, and drill-down into your data instantly.
+### Scaffold a project with agent context
 
-We also support bringing your own OLAP engine as a live connector with pushdown compute capabilities.
+Use `rill init` to scaffold a project interactively:
 
-<p align="center">
-  <img src="/docs/static/img/explore/dashboard101/multi-measure-select.png" alt="Rill dashboard example" width="80%">
-</p>
+```
+➜ rill init
+? Project name my-rill-project
+? OLAP engine duckdb
+? Agent instructions claude
 
-## Table of Contents
+Created a new Rill project at ~/my-rill-project
+Added Claude instructions in .claude and .mcp.json
 
-- [Table of Contents](#table-of-contents)
-- [Rill's design principles:](#rills-design-principles)
-- [Core Concepts](#core-concepts)
-  - [BI-As-Code](#bi-as-code)
-  - [Metrics Layer](#metrics-layer)
-  - [AI Agents](#ai-agents)
-- [Learn More](#learn-more)
-- [Production Examples](#production-examples)
-  - [Programmatic Ads/OpenRTB](#programmatic-adsopenrtb)
-  - [Cost Monitoring](#cost-monitoring)
-  - [GitHub Analytics](#github-analytics)
-  - [App Engagement](#app-engagement)
-  - [Kitchen-sink example](#kitchen-sink-example)
-- [Get in touch!](#get-in-touch)
-- [Company](#company)
-- [License](#license)
+Success! Run the following command to start the project:
 
-## Rill's design principles:
+  rill start my-rill-project
+```
 
-- **Lightning Fast** - Powered by SvelteKit & DuckDB for conversationally fast performance
-- **Universal Data Support** - Works with local and remote datasets (Parquet, CSV, S3, GCS, HTTPS, local)
-- **Automatic Profiling** - Build intuition about your dataset through automatic profiling
-- **Real-time Response** - Responds to each keystroke by re-profiling the resulting dataset
-- **Interactive Dashboards** - Thoughtful, opinionated defaults for quick insights
-- **Dashboards as Code** - Version control, Git sharing, and easy project rehydration
+## Why Rill?
 
-## Core Concepts
+- **Build with agents** — BI-as-code (YAML + SQL) means coding agents like Claude Code and Cursor can author projects, dashboards, and security policies end-to-end
+- **Semantic layer** — Single source of truth for dimensions, measures, and time grains — defined in YAML, generating SQL at query time against your OLAP engine
+- **Explore with agents** — Conversational BI lets business users query metrics in natural language; the [MCP server](https://docs.rilldata.com/explore/mcp) connects AI agents directly to your semantic layer
+- **Real-time performance** — Sub-second queries at any scale; ClickHouse for billions of rows, DuckDB for smaller datasets and fast iteration
+- **Embeddable** — Dashboards, APIs, and agent interfaces you can ship in your product
 
-### BI-As-Code
+## Capabilities
 
-Rill implements BI-as-code through a combination of:
+### Rill Developer (local)
 
-1. **SQL-based Definitions**: Define your models via SQL to connect to your various sources
-2. **YAML Configuration**: Configure your metrics views, dashboards, and project settings via YAML
-3. **Git Integration**: Version control your analytics assets
-4. **CLI Tools**: Deploy and manage your analytics stack from the command line
+- [**Connectors**](https://docs.rilldata.com/build/connectors/) — S3, GCS, databases, and 20+ sources
+- [**OLAP Engines**](https://docs.rilldata.com/build/olap-engines/) — Managed ClickHouse or DuckDB included, or connect an external engine (ClickHouse Cloud, Druid, Pinot, MotherDuck)
+- [**SQL Models**](https://docs.rilldata.com/build/models/) — Transform raw data with SQL, join models together
+- [**Data Profiling**](https://docs.rilldata.com/build/models) — Instant column stats and distributions
+- [**Incremental Ingestion**](https://docs.rilldata.com/build/models/incremental-models) — Load only new data on each run to keep large datasets current without full refreshes
+- [**Semantic Layer**](https://docs.rilldata.com/build/metrics-view/) — Dimensions, measures, and time grains in YAML
+- [**Row Access Policies**](https://docs.rilldata.com/build/metrics-view/security) — Per-user, per-group data access control
+- [**Local Dashboards**](https://docs.rilldata.com/build/dashboards) — Preview and explore dashboards locally
 
-<p align="center">
-  <img src="https://docs.rilldata.com/img/concepts/metrics-view/metrics-view-components.png" alt="Rill Fundamentals" width="80%">
-</p>
+### Rill Cloud
 
-### Metrics Layer
+- [**Deploy**](https://docs.rilldata.com/deploy/deploy-dashboard/) — Git-backed, versioned deployments — push with `rill deploy` or connect a repo for automatic CI/CD
+- [**Explore & Canvas Dashboards**](https://docs.rilldata.com/build/dashboards) — Interactive dashboards, embeddable in your product
+- [**Conversational BI**](https://docs.rilldata.com/explore/ai-chat) — Ask questions in natural language
+- [**MCP Server**](https://docs.rilldata.com/explore/mcp) — Connect Claude, ChatGPT, or any AI agent to your metrics
+- [**Custom APIs & Embedding**](https://docs.rilldata.com/build/custom-apis/) — Expose metrics via REST or embed dashboards
+- [**Alerts & Reports**](https://docs.rilldata.com/build/alerts) — Threshold alerting, code-defined or UI-defined
 
-Rill's metrics layer provides a unified way to define, compute, and serve business metrics. Metrics views combine SQL models with YAML configuration to create standardized, reusable business metrics that can be consumed by dashboards, APIs, and AI systems.
+## How It Works
 
-Example Metrics View:
+Define everything in code — models, metrics, dashboards — and Rill handles the rest.
+
+**1. Connect data** — `models/events.yaml`
 
 ```yaml
-# metrics/revenue_metrics.yaml
-name: revenue_metrics
-description: Key revenue metrics by country and product
-model: revenue_model
-timeseries: date
+type: model
+connector: duckdb
+materialize: true
+
+sql: |
+  select * from read_parquet('gs://rilldata-public/auction_data.parquet')
+```
+
+**2. Define metrics** — `metrics/events_metrics.yaml`
+
+```yaml
+version: 1
+type: metrics_view
+model: events
+timeseries: timestamp
+
 dimensions:
   - name: country
     column: country
-  - name: product_category
-    column:product_category
+  - name: device
+    column: device_type
+
 measures:
-  - name: total_revenue
-    expression: sum(amount)
-    description: Total revenue amount
-  - name: order_count
+  - name: total_events
     expression: count(*)
-    description: Number of orders
-  - name: avg_order_value
-    expression: sum(amount) / count(*)
-    description: Average order value
+  - name: revenue
+    expression: sum(price * quantity)
+    description: Total revenue
 ```
 
-### AI Agents
+**3. Create a dashboard** — `dashboards/events_explore.yaml`
 
-We understand the critical importance of AI and data in modern business intelligence. Our metrics layer is designed to provide AI systems with the structured, real-time data they need to deliver quick and accurate responses. By co-locating data and compute with embedded databases like DuckDB and ClickHouse, Rill eliminates the latency that traditional BI tools introduce, ensuring AI agents can access fresh metrics instantly for precise decision-making and intelligent automation.
+```yaml
+type: explore
 
-## Learn More
+display_name: "Events Dashboard"
+metrics_view: events_metrics
 
-For visual learners, take a look at our various playlists that explains what Rill is and how to get the most out of it!
+dimensions: "*"
+measures: "*"
+```
 
-<div align="center">
+**4. Deploy**
 
-[Getting Started with Rill Developer](https://www.youtube.com/watch?v=oQSok8Dy-D0) • [Exploring Data with Rill](https://www.youtube.com/watch?v=wTP46eOzoCk&list=PL_ZoDsg2yFKgi7ud_fOOD33AH8ONWQS7I&index=1)
-• [Data Talks on the Rocks](https://www.youtube.com/playlist?list=PL_ZoDsg2yFKgr_YEc4XOY0wlRLqzyR07q)
+```bash
+rill deploy                      # push to Rill Cloud
+```
 
-</div>
+Your metrics view is immediately queryable on Rill Cloud — add YAML files to configure dashboards, alerts, and custom APIs.
 
-## Production Examples
+## Examples
 
-### Programmatic Ads/OpenRTB
+| Example              | Description                                         | Links                                                                                                                                            |
+| -------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Programmatic Ads** | Bidstream data for pricing and campaign performance | [GitHub](https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads) · [Demo](https://ui.rilldata.com/demo/rill-openrtb-prog-ads) |
+| **Cost Monitoring**  | Cloud infra merged with customer data               | [GitHub](https://github.com/rilldata/rill-examples/tree/main/rill-cost-monitoring) · [Demo](https://ui.rilldata.com/demo/rill-cost-monitoring)   |
+| **GitHub Analytics** | Contributor activity and commit patterns            | [GitHub](https://github.com/rilldata/rill-examples/tree/main/rill-github-analytics) · [Demo](https://ui.rilldata.com/demo/rill-github-analytics) |
 
-Bidstream data for programmatic advertisers to optimize pricing strategies, look for inventory opportunities, and improve campaign performance.
+Or explore a [live embedded dashboard](https://rill-embedding-example.netlify.app/).
 
-- <a href="https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads">GitHub →</a><br />
-- <a href="/guides/openrtb-analytics">Walkthrough →</a><br />
-- <a href="https://ui.rilldata.com/demo/rill-openrtb-prog-ads">Live Demo →</a>
+## Community
 
-### Cost Monitoring
+[![Discord](https://img.shields.io/badge/Discord-Join%20Chat-7289da?logo=discord&logoColor=white)](https://discord.gg/2ubRfjC7Rh) [![Twitter](https://img.shields.io/badge/Twitter-Follow-1da1f2?logo=twitter&logoColor=white)](https://twitter.com/RillData) [![GitHub Discussions](https://img.shields.io/badge/GitHub-Discussions-181717?logo=github&logoColor=white)](https://github.com/rilldata/rill/discussions)
 
-Based on Rill's own internal dashboards, cloud infrastructure data (compute, storage, pipeline statistics, etc.) merged with customer data to analyze bottlenecks and look for efficiencies.
+## Contributing
 
-- <a href="https://github.com/rilldata/rill-examples/tree/main/rill-cost-monitoring">GitHub →</a><br />
-- <a href="/guides/cost-monitoring-analytics">Walkthrough →</a><br />
-- <a href="https://ui.rilldata.com/demo/rill-cost-monitoring">Live Demo →</a>
-
-### GitHub Analytics
-
-Analyze GitHub activity to understand what parts of your codebase are most active, analyze contributor productivity, and evaluate the intersections between commits and files.
-
-- <a href="https://github.com/rilldata/rill-examples/tree/main/rill-github-analytics">GitHub →</a><br />
-- <a href="/guides/github-analytics">Walkthrough →</a><br />
-- <a href="https://ui.rilldata.com/demo/rill-github-analytics">Live Demo →</a>
-
-### App Engagement
-
-A conversion dataset used by marketers, mobile developers, or product teams to analyze funnel steps.
-
-- <a href="https://github.com/rilldata/rill-examples/tree/main/rill-app-engagement">GitHub →</a><br />
-- <a href="https://ui.rilldata.com/demo/rill-app-engagement">Live Demo →</a>
-
-### Kitchen-sink example
-
-A compilation of projects with deep dives into Rill's features using ClickHouse's GitHub commit information.
-
-- <a href="https://github.com/rilldata/rill-examples/tree/main/my-rill-tutorial">GitHub →</a><br />
-- <a href="/guides/rill-basics/launch">Walkthrough →</a><br />
-- <a href="https://ui.rilldata.com/demo/my-rill-tutorial">Live Demo →</a>
-
-## Get in touch!
-
-- **[Discord Community](https://discord.gg/2ubRfjC7Rh)** - Join discussions and get help
-- **[GitHub Issues](https://github.com/rilldata/rill/issues)** - Report bugs and request features
-- **[Rill Guru](https://gurubase.io/g/rill)** - Ask questions and get expert answers
-
-## Company
-
-Rill is developed and maintained by [Rill Data, Inc.](https://www.rilldata.com/).
-
-## License
-
-This project is licensed under the [Apache License 2.0](LICENSE) - see the [LICENSE](LICENSE) file for details.
+We welcome contributions! See our [Contributing Guide](https://docs.rilldata.com/home/contribute) to get started.

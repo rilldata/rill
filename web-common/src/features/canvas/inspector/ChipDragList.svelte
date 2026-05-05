@@ -109,14 +109,14 @@
       <div
         class="ghost h-[26px] bg-gray-100 border rounded-sm pointer-events-none"
         class:!rounded-full={dragData?.type !== PivotChipType.Measure}
-      />
+      ></div>
     {/if}
     <div
       class="drag-item"
       data-index={i}
       role="presentation"
       data-type={displayMap[item]?.type ?? "dimension"}
-      on:mousedown={(e) => handleMouseDown(e, item, i)}
+      onmousedown={(e) => handleMouseDown(e, item, i)}
     >
       <Chip
         removable
@@ -136,7 +136,7 @@
     <div
       class="ghost h-[26px] bg-gray-100 border rounded-sm pointer-events-none"
       class:!rounded-full={dragData?.type !== PivotChipType.Measure}
-    />
+    ></div>
   {/if}
 </div>
 

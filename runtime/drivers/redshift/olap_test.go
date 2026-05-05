@@ -366,7 +366,7 @@ func acquireTestRedshift(t *testing.T) (drivers.Handle, drivers.OLAPStore) {
 		cfg["database"] = "test_db"
 	}
 	cfg["workgroup"] = "integration-test-wg"
-	conn, err := drivers.Open("redshift", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open("redshift", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 

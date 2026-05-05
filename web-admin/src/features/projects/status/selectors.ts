@@ -3,23 +3,32 @@ import {
   type V1Deployment,
 } from "@rilldata/web-admin/client";
 import {
+  createRuntimeServiceGetResource,
   createRuntimeServiceListResources,
   createRuntimeServicePing,
   type V1ListResourcesResponse,
   type V1OlapTableInfo,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import { connectorServiceOLAPListTables } from "@rilldata/web-common/runtime-client/gen/connector-service/connector-service";
+import { connectorServiceOLAPListTables } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { createInfiniteQuery } from "@tanstack/svelte-query";
-import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import {
+  ResourceKind,
+  SingletonProjectParserName,
+} from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { derived, type Readable } from "svelte/store";
-import { smartRefetchIntervalFunc } from "@rilldata/web-admin/lib/refetch-interval-store";
+import { createSmartRefetchInterval } from "@rilldata/web-admin/lib/refetch-interval-store";
 
-export function useProjectDeployment(orgName: string, projName: string) {
+export function useProjectDeployment(
+  orgName: string,
+  projName: string,
+  branch?: string,
+) {
   return createAdminServiceGetProject<V1Deployment | undefined>(
     orgName,
     projName,
-    undefined,
+    branch ? { branch } : undefined,
     {
       query: {
         select: (data: { deployment?: V1Deployment }) => {
@@ -32,26 +41,55 @@ export function useProjectDeployment(orgName: string, projName: string) {
 }
 
 /**
- * Filters resources for display, removing hidden and internal resource kinds.
+ * Returns the ProjectParser's reconcileError for the current runtime.
+ * Non-empty when the project failed to load (e.g. git branch not found).
  */
-export function filterResourcesForDisplay(
-  resources: V1Resource[] | undefined,
-): V1Resource[] {
-  return (
-    resources?.filter(
-      (resource) =>
-        !resource?.meta?.hidden &&
-        resource?.meta?.name?.kind !== ResourceKind.ProjectParser &&
-        resource?.meta?.name?.kind !== ResourceKind.RefreshTrigger &&
-        resource?.meta?.name?.kind !== ResourceKind.Component &&
-        resource?.meta?.name?.kind !== ResourceKind.Migration,
-    ) ?? []
+export function useParserReconcileError(client: RuntimeClient) {
+  return createRuntimeServiceGetResource(
+    client,
+    {
+      name: {
+        kind: ResourceKind.ProjectParser,
+        name: SingletonProjectParserName,
+      },
+    },
+    {
+      query: {
+        select: (data) => data.resource?.meta?.reconcileError ?? "",
+        refetchOnMount: true,
+        refetchOnWindowFocus: true,
+      },
+    },
   );
 }
 
-export function useResources(instanceId: string) {
+/**
+ * Returns true for resources that should be shown on the status page.
+ * Excludes hidden resources and internal kinds (ProjectParser stays
+ * RUNNING indefinitely in dev/branch deployments due to repo watching;
+ * polling on its status would never stop).
+ */
+function isDisplayResource(resource: V1Resource): boolean {
+  return (
+    !resource?.meta?.hidden &&
+    resource?.meta?.name?.kind !== ResourceKind.ProjectParser &&
+    resource?.meta?.name?.kind !== ResourceKind.RefreshTrigger &&
+    resource?.meta?.name?.kind !== ResourceKind.Component &&
+    resource?.meta?.name?.kind !== ResourceKind.Migration
+  );
+}
+
+export function filterResourcesForDisplay(
+  resources: V1Resource[] | undefined,
+): V1Resource[] {
+  return resources?.filter(isDisplayResource) ?? [];
+}
+
+const statusRefetchInterval = createSmartRefetchInterval(isDisplayResource);
+
+export function useResources(client: RuntimeClient) {
   return createRuntimeServiceListResources(
-    instanceId,
+    client,
     {},
     {
       query: {
@@ -59,7 +97,7 @@ export function useResources(instanceId: string) {
           ...data,
           resources: filterResourcesForDisplay(data?.resources),
         }),
-        refetchInterval: smartRefetchIntervalFunc,
+        refetchInterval: statusRefetchInterval,
       },
     },
   );
@@ -81,7 +119,7 @@ export function useResources(instanceId: string) {
  */
 export function useInfiniteTablesList(
   params: Readable<{
-    instanceId: string;
+    client: RuntimeClient;
     connector: string;
     searchPattern?: string;
   }>,
@@ -90,18 +128,17 @@ export function useInfiniteTablesList(
     queryKey: [
       "/v1/olap/tables-infinite",
       {
-        instanceId: $p.instanceId,
+        instanceId: $p.client.instanceId,
         connector: $p.connector,
         searchPattern: $p.searchPattern,
       },
     ],
-    enabled: !!$p.instanceId && !!$p.connector,
+    enabled: !!$p.client.instanceId && !!$p.connector,
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage: { nextPageToken?: string }) =>
       lastPage?.nextPageToken || undefined,
     queryFn: ({ pageParam }: { pageParam?: string }) =>
-      connectorServiceOLAPListTables({
-        instanceId: $p.instanceId,
+      connectorServiceOLAPListTables($p.client, {
         connector: $p.connector,
         searchPattern: $p.searchPattern,
         pageToken: pageParam,
@@ -142,24 +179,28 @@ export function buildModelResourcesMap(
 /**
  * Fetches model resources and maps them by their result table name.
  */
-export function useModelResources(instanceId: string) {
+export function useModelResources(client: RuntimeClient) {
   return createRuntimeServiceListResources(
-    instanceId,
+    client,
     { kind: ResourceKind.Model },
     {
       query: {
         select: (data: V1ListResourcesResponse) =>
           buildModelResourcesMap(data.resources),
-        enabled: !!instanceId,
+        enabled: !!client.instanceId,
       },
     },
   );
 }
 
-export function useRuntimeVersion() {
-  return createRuntimeServicePing({
-    query: {
-      staleTime: 60000, // Cache for 1 minute
+export function useRuntimeVersion(client: RuntimeClient) {
+  return createRuntimeServicePing(
+    client,
+    {},
+    {
+      query: {
+        staleTime: 60000, // Cache for 1 minute
+      },
     },
-  });
+  );
 }

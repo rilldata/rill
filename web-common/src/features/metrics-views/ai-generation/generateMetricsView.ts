@@ -1,4 +1,11 @@
 import { goto } from "$app/navigation";
+import {
+  navigateToCanvas,
+  navigateToExplore,
+  navigateToFile,
+  withEditorPrefix,
+} from "@rilldata/web-common/layout/navigation/editor-routing";
+import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
 import { createCanvasDashboardWithoutNavigation } from "@rilldata/web-common/features/canvas/ai-generation/generateCanvas";
 import { pollForFileCreation } from "@rilldata/web-common/features/entity-management/actions";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
@@ -6,8 +13,10 @@ import {
   ResourceKind,
   resourceIsLoading,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { createResourceFile } from "@rilldata/web-common/features/file-explorer/new-files";
+import { createResourceFile } from "@rilldata/web-common/features/entity-management/add/new-files.ts";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
+import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
@@ -20,14 +29,15 @@ import {
   MetricsEventScreenName,
   MetricsEventSpace,
 } from "../../../metrics/service/MetricsTypes";
+import type {
+  RuntimeServiceGenerateMetricsViewFileBody,
+  V1GenerateMetricsViewFileResponse,
+  V1Resource,
+} from "../../../runtime-client";
 import {
   runtimeServiceGenerateMetricsViewFile,
   runtimeServiceGetFile,
-  type RuntimeServiceGenerateMetricsViewFileBody,
-  type V1GenerateMetricsViewFileResponse,
-  type V1Resource,
-} from "../../../runtime-client";
-import httpClient from "../../../runtime-client/http-client";
+} from "@rilldata/web-common/runtime-client";
 import { createYamlModelFromTable } from "../../connectors/code-utils";
 import { getName } from "../../entity-management/name-utils";
 import { featureFlags } from "../../feature-flags";
@@ -40,17 +50,22 @@ import OptionToCancelAIGeneration from "./OptionToCancelAIGeneration.svelte";
  * AbortSignal, which we can use to cancel the request.
  */
 const runtimeServiceGenerateMetricsViewFileWithSignal = (
-  instanceId: string,
-  runtimeServiceGenerateMetricsViewFileBody: RuntimeServiceGenerateMetricsViewFileBody,
+  client: RuntimeClient,
+  body: RuntimeServiceGenerateMetricsViewFileBody,
   signal: AbortSignal,
-) => {
-  return httpClient<V1GenerateMetricsViewFileResponse>({
-    url: `/v1/instances/${instanceId}/files/generate-metrics-view`,
-    method: "post",
-    headers: { "Content-Type": "application/json" },
-    data: runtimeServiceGenerateMetricsViewFileBody,
+): Promise<V1GenerateMetricsViewFileResponse> => {
+  const url = `${client.host}/v1/instances/${client.instanceId}/files/generate-metrics-view`;
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  const jwt = client.getJwt();
+  if (jwt) headers["Authorization"] = `Bearer ${jwt}`;
+  return fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
     signal,
-  });
+  }).then((r) => r.json());
 };
 
 /**
@@ -59,6 +74,7 @@ const runtimeServiceGenerateMetricsViewFileWithSignal = (
  * This function is to be called from all `Generate dashboard with AI` CTAs *outside* of the Metrics Editor.
  */
 export function useCreateMetricsViewFromTableUIAction(
+  client: RuntimeClient,
   instanceId: string,
   connector: string,
   database: string,
@@ -96,7 +112,7 @@ export function useCreateMetricsViewFromTableUIAction(
     try {
       // First, request an AI-generated metrics view
       void runtimeServiceGenerateMetricsViewFileWithSignal(
-        instanceId,
+        client,
         {
           connector: connector,
           database: database,
@@ -110,14 +126,14 @@ export function useCreateMetricsViewFromTableUIAction(
 
       // Poll until file creation is complete or canceled
       const fileCreated = await pollForFileCreation(
-        instanceId,
+        client,
         newMetricsViewFilePath,
         abortController.signal,
       );
 
       // If the user canceled the AI request, submit another request with `useAi=false`
       if (!fileCreated) {
-        await runtimeServiceGenerateMetricsViewFile(instanceId, {
+        await runtimeServiceGenerateMetricsViewFile(client, {
           connector: connector,
           database: database,
           databaseSchema: databaseSchema,
@@ -131,7 +147,10 @@ export function useCreateMetricsViewFromTableUIAction(
 
       // If we're not creating an Explore, navigate to the Metrics View file
       if (!createExplore) {
-        await goto(`/files${newMetricsViewFilePath}`);
+        const isPreview = get(previewModeStore);
+        await (isPreview
+          ? goto(withEditorPrefix("/dashboards"))
+          : navigateToFile(newMetricsViewFilePath));
         void behaviourEvent?.fireNavigationEvent(
           newMetricsViewName,
           behaviourEventMedium,
@@ -148,7 +167,7 @@ export function useCreateMetricsViewFromTableUIAction(
       // Get the Metrics View to use as a base for the Explore
       const metricsViewResource = fileArtifacts
         .getFileArtifact(newMetricsViewFilePath)
-        .getResource(queryClient, instanceId);
+        .getResource(queryClient);
 
       await waitUntil(() => get(metricsViewResource).data !== undefined, 5000);
 
@@ -158,13 +177,13 @@ export function useCreateMetricsViewFromTableUIAction(
       }
 
       // Create the Explore file, and navigate to it
-      await createAndPreviewExplore(queryClient, instanceId, resource);
+      await createAndPreviewExplore(client, queryClient, instanceId, resource);
     } catch (err) {
       eventBus.emit("notification", {
         message:
           `Failed to create ${createExplore ? "a dashboard" : "metrics"} for ` +
           tableName,
-        detail: err.response?.data?.message ?? err.message,
+        detail: extractErrorMessage(err),
       });
     }
 
@@ -179,7 +198,7 @@ export function useCreateMetricsViewFromTableUIAction(
  * This function is to be called from the `Generate dashboard with AI` CTA *inside* of the Metrics Editor.
  */
 export async function createDashboardFromTableInMetricsEditor(
-  instanceId: string,
+  client: RuntimeClient,
   modelName: string,
   filePath: string,
 ) {
@@ -205,7 +224,7 @@ export async function createDashboardFromTableInMetricsEditor(
   try {
     // First, request an AI-generated dashboard
     void runtimeServiceGenerateMetricsViewFileWithSignal(
-      instanceId,
+      client,
       {
         table: tableName,
         path: filePath,
@@ -219,7 +238,7 @@ export async function createDashboardFromTableInMetricsEditor(
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       try {
-        const file = await runtimeServiceGetFile(instanceId, {
+        const file = await runtimeServiceGetFile(client, {
           path: filePath,
         });
         if (file.blob !== "") {
@@ -233,7 +252,7 @@ export async function createDashboardFromTableInMetricsEditor(
 
     // If the user canceled the AI request, submit another request with `useAi=false`
     if (isAICancelled) {
-      await runtimeServiceGenerateMetricsViewFile(instanceId, {
+      await runtimeServiceGenerateMetricsViewFile(client, {
         table: tableName,
         path: filePath,
         useAi: false,
@@ -242,7 +261,7 @@ export async function createDashboardFromTableInMetricsEditor(
   } catch (err) {
     eventBus.emit("notification", {
       message: "Failed to create a dashboard for " + tableName,
-      detail: err.response?.data?.message ?? err.message,
+      detail: extractErrorMessage(err),
     });
   }
 
@@ -255,6 +274,7 @@ export async function createDashboardFromTableInMetricsEditor(
  * Handles both OLAP and non-OLAP connectors with appropriate logic for each case.
  */
 export async function generateMetricsFromTable(
+  client: RuntimeClient,
   instanceId: string,
   connector: string,
   database: string,
@@ -268,6 +288,7 @@ export async function generateMetricsFromTable(
   if (isOlapConnector) {
     // For OLAP connectors, use direct metrics view generation
     const createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
+      client,
       instanceId,
       connector,
       database,
@@ -281,6 +302,7 @@ export async function generateMetricsFromTable(
   } else {
     // For non-OLAP connectors, follow Rill architecture: Model → Metrics → (Optional) Explore
     await createModelAndMetricsAndExplore(
+      client,
       instanceId,
       connector,
       database,
@@ -299,6 +321,7 @@ export async function generateMetricsFromTable(
  * 3. Optionally create explore dashboard (on top of metrics view)
  */
 export async function createModelAndMetricsAndExplore(
+  client: RuntimeClient,
   instanceId: string,
   connector: string,
   database: string,
@@ -339,6 +362,7 @@ export async function createModelAndMetricsAndExplore(
     });
 
     const [, modelName] = await createYamlModelFromTable(
+      client,
       queryClient,
       connector,
       database,
@@ -349,7 +373,7 @@ export async function createModelAndMetricsAndExplore(
     // Step 2: Wait for model to be ready
     const modelResource = fileArtifacts
       .getFileArtifact(`/models/${modelName}.yaml`)
-      .getResource(queryClient, instanceId);
+      .getResource(queryClient);
 
     await waitUntil(() => get(modelResource).data !== undefined, 10000);
 
@@ -378,22 +402,18 @@ export async function createModelAndMetricsAndExplore(
     });
 
     // Use the backend function with the model name instead of table name
-    void runtimeServiceGenerateMetricsViewFile(
-      instanceId,
-      {
-        model: modelName, // Use model name instead of table
-        path: metricsViewFilePath,
-        useAi: get(featureFlags.ai),
-      },
-      abortController.signal,
-    );
+    void runtimeServiceGenerateMetricsViewFile(client, {
+      model: modelName, // Use model name instead of table
+      path: metricsViewFilePath,
+      useAi: get(featureFlags.ai),
+    });
 
     // Poll every second until the AI generation is complete or canceled
     while (!isAICancelled) {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       try {
-        await runtimeServiceGetFile(instanceId, {
+        await runtimeServiceGetFile(client, {
           path: metricsViewFilePath,
         });
 
@@ -406,7 +426,7 @@ export async function createModelAndMetricsAndExplore(
 
     // If the user canceled the AI request, submit another request with `useAi=false`
     if (isAICancelled) {
-      await runtimeServiceGenerateMetricsViewFile(instanceId, {
+      await runtimeServiceGenerateMetricsViewFile(client, {
         model: modelName,
         path: metricsViewFilePath,
         useAi: false,
@@ -416,7 +436,7 @@ export async function createModelAndMetricsAndExplore(
     // Step 4: Wait for metrics view to be ready
     const metricsViewResource = fileArtifacts
       .getFileArtifact(metricsViewFilePath)
-      .getResource(queryClient, instanceId);
+      .getResource(queryClient);
 
     await waitUntil(() => get(metricsViewResource).data !== undefined, 10000);
 
@@ -428,7 +448,10 @@ export async function createModelAndMetricsAndExplore(
     // If we're not creating an Explore, navigate to the Metrics View file
     if (!createExplore) {
       const previousScreenName = getScreenNameFromPage();
-      await goto(`/files${metricsViewFilePath}`);
+      const isPreview = get(previewModeStore);
+      await (isPreview
+        ? goto(withEditorPrefix("/dashboards"))
+        : navigateToFile(metricsViewFilePath));
       void behaviourEvent?.fireNavigationEvent(
         metricsViewName,
         BehaviourEventMedium.Menu,
@@ -458,7 +481,7 @@ export async function createModelAndMetricsAndExplore(
     });
 
     // Step 5: Create explore dashboard
-    await createAndPreviewExplore(queryClient, instanceId, resource);
+    await createAndPreviewExplore(client, queryClient, instanceId, resource);
   } catch (err) {
     console.error("Failed to create model and metrics view:", err);
     throw err;
@@ -473,13 +496,12 @@ export async function createModelAndMetricsAndExplore(
  * Reconciliation is complete when the status is IDLE.
  */
 async function waitForMetricsViewReconciliation(
-  instanceId: string,
   metricsViewFilePath: string,
   timeoutMs: number = 10000,
 ): Promise<void> {
   const metricsViewResource = fileArtifacts
     .getFileArtifact(metricsViewFilePath)
-    .getResource(queryClient, instanceId);
+    .getResource(queryClient);
 
   // Wait for the resource to be fully reconciled
   await waitUntil(() => {
@@ -493,7 +515,7 @@ async function waitForMetricsViewReconciliation(
  * Returns the metrics view resource after creation.
  */
 async function createMetricsViewFromTable(
-  instanceId: string,
+  client: RuntimeClient,
   connector: string,
   database: string,
   databaseSchema: string,
@@ -510,7 +532,7 @@ async function createMetricsViewFromTable(
 
   // Request an AI-generated metrics view
   void runtimeServiceGenerateMetricsViewFileWithSignal(
-    instanceId,
+    client,
     {
       connector: connector,
       database: database,
@@ -524,14 +546,14 @@ async function createMetricsViewFromTable(
 
   // Poll until file creation is complete or canceled
   const fileCreated = await pollForFileCreation(
-    instanceId,
+    client,
     newMetricsViewFilePath,
     abortController.signal,
   );
 
   // If the user canceled the AI request, submit another request with `useAi=false`
   if (!fileCreated) {
-    await runtimeServiceGenerateMetricsViewFile(instanceId, {
+    await runtimeServiceGenerateMetricsViewFile(client, {
       connector: connector,
       database: database,
       databaseSchema: databaseSchema,
@@ -544,7 +566,7 @@ async function createMetricsViewFromTable(
   // Wait for Metrics View resource to be ready
   const metricsViewResource = fileArtifacts
     .getFileArtifact(newMetricsViewFilePath)
-    .getResource(queryClient, instanceId);
+    .getResource(queryClient);
 
   await waitUntil(() => get(metricsViewResource).data !== undefined, 5000);
 
@@ -554,7 +576,7 @@ async function createMetricsViewFromTable(
   }
 
   // Wait for the metrics view to finish reconciling before returning
-  await waitForMetricsViewReconciliation(instanceId, newMetricsViewFilePath);
+  await waitForMetricsViewReconciliation(newMetricsViewFilePath);
 
   return resource;
 }
@@ -564,19 +586,21 @@ async function createMetricsViewFromTable(
  * Returns the file path of the created explore.
  */
 export async function createExploreWithoutNavigation(
+  client: RuntimeClient,
   queryClient: QueryClient,
   instanceId: string,
   metricsViewResource: V1Resource,
 ): Promise<string> {
   // Create the Explore file
   const filePath = await createResourceFile(
+    client,
     ResourceKind.Explore,
     metricsViewResource,
   );
 
   // Wait until the Explore resource is ready
   const fileArtifact = fileArtifacts.getFileArtifact(filePath);
-  const resource = fileArtifact.getResource(queryClient, instanceId);
+  const resource = fileArtifact.getResource(queryClient);
 
   await waitUntil(() => {
     return get(resource).data !== undefined;
@@ -596,6 +620,7 @@ export async function createExploreWithoutNavigation(
  * to create Canvas dashboard only (without Explore).
  */
 export function useCreateMetricsViewWithCanvasUIAction(
+  client: RuntimeClient,
   instanceId: string,
   connector: string,
   database: string,
@@ -624,7 +649,7 @@ export function useCreateMetricsViewWithCanvasUIAction(
     try {
       // Step 1: Create metrics view
       const resource = await createMetricsViewFromTable(
-        instanceId,
+        client,
         connector,
         database,
         databaseSchema,
@@ -667,13 +692,19 @@ export function useCreateMetricsViewWithCanvasUIAction(
       });
 
       const canvasFilePath = await createCanvasDashboardWithoutNavigation(
-        instanceId,
+        client,
         metricsViewName,
       );
 
       // Step 4: Navigate to Canvas dashboard
       if (canvasFilePath) {
-        await goto(`/files${canvasFilePath}`);
+        const isPreview = get(previewModeStore);
+        const canvasName = canvasFilePath
+          .replace("/dashboards/", "")
+          .replace(".yaml", "");
+        await (isPreview
+          ? navigateToCanvas(canvasName)
+          : navigateToFile(canvasFilePath));
         void behaviourEvent?.fireNavigationEvent(
           metricsViewName,
           behaviourEventMedium,
@@ -687,7 +718,7 @@ export function useCreateMetricsViewWithCanvasUIAction(
     } catch (err) {
       eventBus.emit("notification", {
         message: "Failed to create Canvas dashboard for " + tableName,
-        detail: err.response?.data?.message ?? err.message,
+        detail: extractErrorMessage(err),
       });
     }
 
@@ -703,7 +734,7 @@ export function useCreateMetricsViewWithCanvasUIAction(
  * This function is to be called from "Generate dashboard" CTA when canvas feature is enabled.
  */
 export function useCreateMetricsViewWithCanvasAndExploreUIAction(
-  instanceId: string,
+  client: RuntimeClient,
   connector: string,
   database: string,
   databaseSchema: string,
@@ -736,7 +767,7 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
     try {
       // Step 1: Create metrics view
       const resource = await createMetricsViewFromTable(
-        instanceId,
+        client,
         connector,
         database,
         databaseSchema,
@@ -779,8 +810,9 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
       });
 
       exploreFilePath = await createExploreWithoutNavigation(
+        client,
         queryClient,
-        instanceId,
+        client.instanceId,
         resource,
       );
 
@@ -798,13 +830,19 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
       });
 
       canvasFilePath = await createCanvasDashboardWithoutNavigation(
-        instanceId,
+        client,
         metricsViewName,
       );
 
       // Step 5: Navigate to Canvas if successful, otherwise Explore
+      const isPreview = get(previewModeStore);
       if (canvasFilePath) {
-        await goto(`/files${canvasFilePath}`);
+        const canvasName = canvasFilePath
+          .replace("/dashboards/", "")
+          .replace(".yaml", "");
+        await (isPreview
+          ? navigateToCanvas(canvasName)
+          : navigateToFile(canvasFilePath));
         void behaviourEvent?.fireNavigationEvent(
           metricsViewName,
           behaviourEventMedium,
@@ -813,7 +851,12 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
           MetricsEventScreenName.Canvas,
         );
       } else if (exploreFilePath) {
-        await goto(`/files${exploreFilePath}`);
+        const exploreName = exploreFilePath
+          .replace("/dashboards/", "")
+          .replace(".yaml", "");
+        await (isPreview
+          ? navigateToExplore(exploreName)
+          : navigateToFile(exploreFilePath));
         void behaviourEvent?.fireNavigationEvent(
           metricsViewName,
           behaviourEventMedium,
@@ -828,12 +871,18 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
     } catch (err) {
       eventBus.emit("notification", {
         message: "Failed to create dashboards for " + tableName,
-        detail: err.response?.data?.message ?? err.message,
+        detail: extractErrorMessage(err),
       });
 
       // If we have an explore path but canvas failed, navigate to explore
       if (exploreFilePath && metricsViewName) {
-        await goto(`/files${exploreFilePath}`);
+        const isPreview = get(previewModeStore);
+        const exploreName = exploreFilePath
+          .replace("/dashboards/", "")
+          .replace(".yaml", "");
+        await (isPreview
+          ? navigateToExplore(exploreName)
+          : navigateToFile(exploreFilePath));
         void behaviourEvent?.fireNavigationEvent(
           metricsViewName,
           behaviourEventMedium,

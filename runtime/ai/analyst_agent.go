@@ -335,7 +335,7 @@ You should:
 1. Carefully study the canvas and metrics view definition to understand the measures and dimensions available for analysis.
 2. Remember the time range of available data and use it to inform and filter your queries.
 {{ if .canvas_component }}
-The user is looking at "{{ .canvas_component }}".
+The user is looking at "{{ .canvas_component }}". Pay special attention to its definition and filters and use it to inform your analysis.
 {{ end }}
 {{ else }}
 Follow these steps in order:
@@ -543,7 +543,7 @@ func (t *AnalystAgent) getValidExploreAndMetricsView(ctx context.Context, explor
 func (t *AnalystAgent) getValidCanvasAndMetricsViews(ctx context.Context, canvasName string) (*runtimev1.Resource, map[string]*runtimev1.Resource, error) {
 	session := GetSession(ctx)
 
-	resolvedCanvas, err := t.Runtime.ResolveCanvas(ctx, session.InstanceID(), canvasName, session.Claims())
+	resolvedCanvas, err := t.Runtime.ResolveCanvas(ctx, session.InstanceID(), canvasName, session.Claims(), false)
 	if err != nil {
 		return nil, nil, err
 	}

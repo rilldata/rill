@@ -1,0 +1,96 @@
+<script lang="ts">
+  import { isErrorStoreEmpty } from "@rilldata/web-admin/components/errors/error-store";
+  import BreadcrumbItem from "@rilldata/web-common/components/navigation/breadcrumbs/BreadcrumbItem.svelte";
+  import TwoTieredBreadcrumbItem from "@rilldata/web-common/components/navigation/breadcrumbs/TwoTieredBreadcrumbItem.svelte";
+  import { useValidDashboards } from "@rilldata/web-common/features/dashboards/selectors";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import LastRefreshedDate from "@rilldata/web-admin/features/dashboards/listing/LastRefreshedDate.svelte";
+  import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
+  import type {
+    V1Resource,
+    V1ResourceName,
+  } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+
+  export let activeResource: V1ResourceName;
+  export let navigationEnabled: boolean = true;
+
+  const runtimeClient = useRuntimeClient();
+  const { twoTieredNavigation, dashboardChat } = featureFlags;
+
+  $: onProjectPage = !activeResource;
+  $: showDashboardChat = $dashboardChat && !onProjectPage;
+
+  $: shouldRender = navigationEnabled || showDashboardChat;
+
+  // Dashboard breadcrumb
+  $: dashboardsQuery = useValidDashboards(runtimeClient);
+  $: ({ data: dashboards } = $dashboardsQuery);
+  let currentResource: V1Resource;
+  $: currentResource = dashboards?.find(
+    (listing) => listing.meta.name.name === activeResource?.name,
+  );
+  $: currentResourceName = currentResource?.meta?.name?.name;
+
+  $: breadcrumbOptions = {
+    options: dashboards?.reduce((map, { meta, explore, canvas }) => {
+      const name = meta.name.name;
+      const isExplore = !!explore;
+      return map.set(name.toLowerCase(), {
+        label:
+          (isExplore
+            ? explore?.state?.validSpec?.displayName
+            : canvas?.state?.validSpec?.displayName) || name,
+        href: `/-/embed/${isExplore ? "explore" : "canvas"}/${name}`,
+        preloadData: false,
+      });
+    }, new Map()),
+  };
+</script>
+
+{#if $isErrorStoreEmpty && shouldRender}
+  <div class="flex items-center w-full">
+    {#if navigationEnabled}
+      <nav class="flex-1">
+        <ol class="flex items-center pl-4">
+          {#if !onProjectPage}
+            <div class="flex gap-x-2">
+              <a class="text-fg-muted hover:text-fg-secondary" href="/-/embed">
+                Home
+              </a>
+              <span class="text-fg-muted">/</span>
+            </div>
+          {/if}
+
+          {#if currentResource}
+            {#if $twoTieredNavigation}
+              <TwoTieredBreadcrumbItem
+                pathOptions={breadcrumbOptions}
+                current={currentResourceName}
+                isCurrentPage
+              />
+            {:else}
+              <BreadcrumbItem
+                pathOptions={breadcrumbOptions}
+                current={currentResourceName}
+                isCurrentPage
+                isEmbedded
+              />
+            {/if}
+          {/if}
+        </ol>
+      </nav>
+    {:else}
+      <div class="flex-1"></div>
+    {/if}
+
+    {#if showDashboardChat}
+      <div class="flex gap-x-4 items-center">
+        <LastRefreshedDate dashboard={activeResource?.name} />
+        <ChatToggle />
+      </div>
+    {/if}
+  </div>
+{:else}
+  <div></div>
+{/if}

@@ -17,7 +17,6 @@
   import {
     createAdminServiceCreateAlert,
     createAdminServiceEditAlert,
-    createAdminServiceGetCurrentUser,
   } from "@rilldata/web-admin/client";
   import {
     getAlertDashboardName,
@@ -33,7 +32,6 @@
   import AlertDialogCriteriaTab from "@rilldata/web-common/features/alerts/criteria-tab/AlertDialogCriteriaTab.svelte";
   import AlertDialogDataTab from "@rilldata/web-common/features/alerts/data-tab/AlertDialogDataTab.svelte";
   import AlertDialogDeliveryTab from "@rilldata/web-common/features/alerts/delivery-tab/AlertDialogDeliveryTab.svelte";
-  import { getExistingAlertInitialFormValues } from "@rilldata/web-common/features/alerts/extract-alert-form-values.ts";
   import {
     alertFormValidationSchema,
     type AlertFormValues,
@@ -59,7 +57,7 @@
     getRuntimeServiceGetResourceQueryKey,
     getRuntimeServiceListResourcesQueryKey,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { X } from "lucide-svelte";
   import { defaults, superForm } from "sveltekit-superforms";
   import Button from "web-common/src/components/button/Button.svelte";
@@ -67,63 +65,54 @@
   export let onClose: () => void;
   export let onCancel: () => void;
   export let props: CreateAlertProps | EditAlertProps;
+  export let initialValues: ReturnType<typeof getNewAlertInitialFormValues>;
 
-  const user = createAdminServiceGetCurrentUser();
+  const runtimeClient = useRuntimeClient();
 
   $: ({ organization, project, alert: alertName } = $page.params);
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
 
   // Convenience variable to be used when other fields from props are not needed.
   // Typescript won't parse the object switch if this is used in conditionals, so some statements below don't use this.
-  $: isCreateForm = props.mode === "create";
+  const isCreateForm = props.mode === "create";
 
-  $: exploreName =
+  const exploreName =
     props.mode === "create"
       ? props.exploreName
       : getAlertDashboardName(props.alertSpec);
 
-  $: validExploreSpec = useExploreValidSpec(instanceId, exploreName);
+  $: validExploreSpec = useExploreValidSpec(runtimeClient, exploreName);
   $: metricsViewSpec = $validExploreSpec.data?.metricsView ?? {};
   $: exploreSpec = $validExploreSpec.data?.explore ?? {};
   $: metricsViewName = exploreSpec.metricsView ?? "";
 
   $: allTimeRangeResp = useMetricsViewTimeRange(
-    instanceId,
+    runtimeClient,
     metricsViewName,
     undefined,
     queryClient,
   );
 
-  $: exploreState =
+  const exploreState =
     props.mode === "create"
       ? useExploreState(props.exploreName)
-      : unwrapQueryData(useAlertDashboardState(instanceId, props.alertSpec));
+      : unwrapQueryData(useAlertDashboardState(runtimeClient, props.alertSpec));
 
-  $: mutation =
+  const mutation =
     props.mode === "create"
       ? createAdminServiceCreateAlert()
       : createAdminServiceEditAlert();
 
-  $: initialValues =
-    props.mode === "create"
-      ? getNewAlertInitialFormValues(
-          metricsViewName,
-          exploreName,
-          $exploreState!,
-          $user.data?.user,
-        )
-      : getExistingAlertInitialFormValues(props.alertSpec, metricsViewName);
-
   $: ({ filters, timeControls } =
     props.mode === "create"
       ? getNewAlertInitialFiltersFormValues(
-          instanceId,
+          runtimeClient,
           metricsViewName,
           exploreName,
           $exploreState!,
         )
       : getFiltersAndTimeControlsFromAggregationRequest(
-          instanceId,
+          runtimeClient,
           metricsViewName,
           exploreName,
           JSON.parse(
@@ -137,7 +126,7 @@
         ));
   $: ({ selectedComparisonTimeRange } = timeControls);
 
-  $: superFormInstance = superForm(
+  const superFormInstance = superForm(
     defaults(initialValues, alertFormValidationSchema),
     {
       SPA: true,
@@ -152,11 +141,11 @@
       invalidateAll: false,
     },
   );
-  $: ({ form, errors, enhance, submit, submitting, tainted, validate } =
-    superFormInstance);
+  const { form, errors, enhance, submit, submitting, tainted, validate } =
+    superFormInstance;
 
-  $: formId = isCreateForm ? "create-alert-form" : "edit-alert-form";
-  $: dialogTitle = isCreateForm ? "Create Alert" : "Edit Alert";
+  const formId = isCreateForm ? "create-alert-form" : "edit-alert-form";
+  const dialogTitle = isCreateForm ? "Create Alert" : "Edit Alert";
 
   const tabs = ["Data", "Criteria", "Delivery"];
 
@@ -219,8 +208,10 @@
     if (!isCreateForm) {
       void queryClient.invalidateQueries({
         queryKey: getRuntimeServiceGetResourceQueryKey(instanceId, {
-          "name.name": alertName,
-          "name.kind": ResourceKind.Alert,
+          name: {
+            name: alertName,
+            kind: ResourceKind.Alert,
+          },
         }),
       });
     }
@@ -288,7 +279,10 @@
   autocomplete="off"
   class="flex flex-col gap-y-3"
   id={formId}
-  on:submit|preventDefault={submit}
+  onsubmit={(e) => {
+    e.preventDefault();
+    submit(e);
+  }}
   use:enhance
 >
   <DialogTitle
@@ -321,7 +315,7 @@
     </div>
   </DialogTabs.Root>
   <div class="px-6 py-3 flex items-center gap-x-2">
-    <div class="grow" />
+    <div class="grow"></div>
     {#if currentTabIndex === 0}
       <Button onClick={handleCancel} type="secondary">Cancel</Button>
     {:else}

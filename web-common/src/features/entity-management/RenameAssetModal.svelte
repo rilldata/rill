@@ -2,6 +2,10 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import {
+    getFileHref,
+    navigateToFile,
+  } from "@rilldata/web-common/layout/navigation/editor-routing";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
@@ -10,10 +14,11 @@
     useDirectoryNamesInDirectory,
     useFileNamesInDirectory,
   } from "@rilldata/web-common/features/entity-management/file-selectors";
+  import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import { defaults, setError, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../runtime-client/v2";
   import { renameFileArtifact } from "./actions";
   import { removeLeadingSlash } from "./entity-mappers";
   import {
@@ -26,7 +31,7 @@
   export let filePath: string;
   export let isDir: boolean;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
   let error: string;
 
@@ -87,35 +92,30 @@
       }
       try {
         const newPath = (folderName ? `${folderName}/` : "") + values.newName;
-        await renameFileArtifact(instanceId, filePath, newPath);
+        await renameFileArtifact(runtimeClient, filePath, newPath);
         if (isDir) {
-          if (
-            $page.url.pathname.startsWith(
-              `/files/${removeLeadingSlash(filePath)}`,
-            )
-          ) {
-            // if the file focused has the dir then replace the dir path to the new one
-            await goto(
-              $page.url.pathname.replace(
-                `/files/${removeLeadingSlash(filePath)}`,
-                `/files/${removeLeadingSlash(newPath)}`,
-              ),
-            );
+          const oldHref = getFileHref(`/${removeLeadingSlash(filePath)}`);
+          if ($page.url.pathname.startsWith(oldHref)) {
+            const newHref = getFileHref(`/${removeLeadingSlash(newPath)}`);
+            await goto($page.url.pathname.replace(oldHref, newHref));
           }
         } else {
-          await goto(`/files/${removeLeadingSlash(newPath)}`, {
+          await navigateToFile(`/${removeLeadingSlash(newPath)}`, {
             replaceState: true,
           });
         }
         closeModal();
       } catch (err) {
-        error = err.response.data?.message;
+        error = extractErrorMessage(err);
       }
     },
   });
 
-  $: existingDirectories = useDirectoryNamesInDirectory(instanceId, folderName);
-  $: fileNamesInDirectory = useFileNamesInDirectory(instanceId, folderName);
+  $: existingDirectories = useDirectoryNamesInDirectory(
+    runtimeClient,
+    folderName,
+  );
+  $: fileNamesInDirectory = useFileNamesInDirectory(runtimeClient, folderName);
 </script>
 
 <Dialog.Root
@@ -125,7 +125,6 @@
       closeModal();
     }
   }}
-  portal="#rill-portal"
 >
   <Dialog.Content>
     <Dialog.Title>Rename</Dialog.Title>
@@ -137,7 +136,10 @@
       id="rename-asset-form"
       class="flex flex-col gap-y-4"
       autocomplete="off"
-      on:submit|preventDefault={submit}
+      onsubmit={(e) => {
+        e.preventDefault();
+        submit(e);
+      }}
       use:enhance
     >
       <Input

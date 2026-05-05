@@ -22,7 +22,6 @@ import {
   getQueryServiceMetricsViewTimeRangeQueryKey,
   getRuntimeServiceGetExploreQueryKey,
   queryServiceMetricsViewAggregation,
-  type QueryServiceMetricsViewAggregationBody,
   queryServiceMetricsViewTimeRange,
   runtimeServiceGetExplore,
   type V1ExploreSpec,
@@ -32,8 +31,7 @@ import {
   type V1TimeRange,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { get } from "svelte/store";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
 // We are manually sending in duration, offset and round to grain for previous complete ranges.
 // This is to map back that split
@@ -46,6 +44,7 @@ for (const preset in PreviousCompleteRangeMap) {
 }
 
 export async function fillTimeRange(
+  client: RuntimeClient,
   exploreSpec: V1ExploreSpec,
   exploreState: ExploreState,
   reqTimeRange: V1TimeRange | undefined,
@@ -102,6 +101,7 @@ export async function fillTimeRange(
   // Resolve time range overriding ref to `executionTime` and set to custom.
   // This keeps the time range consistent regardless of when the link is opened.
   [exploreState.selectedTimeRange] = await resolveTimeRanges(
+    client,
     exploreSpec,
     [exploreState.selectedTimeRange],
     exploreState.selectedTimezone,
@@ -123,22 +123,21 @@ export function getExploreName(webOpenPath: string) {
 }
 
 export async function convertQueryFilterToToplistQuery(
-  instanceId: string,
+  client: RuntimeClient,
   metricsView: string,
   req: V1MetricsViewAggregationRequest,
   dimension: string,
 ) {
-  const params = <QueryServiceMetricsViewAggregationBody>{
+  const params = {
+    metricsViewName: metricsView,
     ...req,
   };
   const toplist = await queryClient.fetchQuery({
     queryKey: getQueryServiceMetricsViewAggregationQueryKey(
-      instanceId,
-      metricsView,
+      client.instanceId,
       params,
     ),
-    queryFn: () =>
-      queryServiceMetricsViewAggregation(instanceId, metricsView, params),
+    queryFn: () => queryServiceMetricsViewAggregation(client, params),
   });
   return createInExpression(
     dimension,
@@ -147,20 +146,20 @@ export async function convertQueryFilterToToplistQuery(
 }
 
 export async function getExplorePageUrlSearchParams(
+  client: RuntimeClient,
   exploreName: string,
   exploreState: Partial<ExploreState>,
 ): Promise<URLSearchParams> {
-  const instanceId = get(runtime).instanceId;
   const { explore, metricsView } = await queryClient.fetchQuery({
     queryFn: ({ signal }) =>
       runtimeServiceGetExplore(
-        instanceId,
+        client,
         {
           name: exploreName,
         },
-        signal,
+        { signal },
       ),
-    queryKey: getRuntimeServiceGetExploreQueryKey(instanceId, {
+    queryKey: getRuntimeServiceGetExploreQueryKey(client.instanceId, {
       name: exploreName,
     }),
     // this loader function is run for every param change in url.
@@ -179,12 +178,10 @@ export async function getExplorePageUrlSearchParams(
   ) {
     fullTimeRange = await queryClient.fetchQuery({
       queryFn: () =>
-        queryServiceMetricsViewTimeRange(instanceId, metricsViewName, {}),
-      queryKey: getQueryServiceMetricsViewTimeRangeQueryKey(
-        instanceId,
+        queryServiceMetricsViewTimeRange(client, { metricsViewName }),
+      queryKey: getQueryServiceMetricsViewTimeRangeQueryKey(client.instanceId, {
         metricsViewName,
-        {},
-      ),
+      }),
       staleTime: Infinity,
       gcTime: Infinity,
     });
@@ -211,30 +208,28 @@ export async function getExplorePageUrlSearchParams(
 /**
  * Sync method to get explore page url search params if metrics view time range is present in cache.
  * Else the map will have to happen in the `/-/open-query` route.
+ * @param instanceId
  * @param exploreState
  * @param metricsViewSpec
  * @param exploreSpec
  */
 export function maybeGetExplorePageUrlSearchParams(
+  instanceId: string,
   exploreState: Partial<ExploreState>,
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
 ) {
-  const instanceId = get(runtime).instanceId;
   const metricsViewName = exploreSpec.metricsView ?? "";
 
   const metricsViewTimeRangeQueryKey =
-    getQueryServiceMetricsViewTimeRangeQueryKey(
-      instanceId,
+    getQueryServiceMetricsViewTimeRangeQueryKey(instanceId, {
       metricsViewName,
-      {},
-    );
+    });
 
   // Get time range query from cache if present, else we will go to `/-/open-query` to fetch it.
   const queryResp = queryClient.getQueryData<V1MetricsViewTimeRangeResponse>(
     metricsViewTimeRangeQueryKey,
   );
-  if (!queryResp) return null;
 
   // This is just for an initial redirect.
   // DashboardStateDataLoader will handle compression etc. during init
@@ -246,7 +241,11 @@ export function maybeGetExplorePageUrlSearchParams(
     getTimeControlState(
       metricsViewSpec,
       exploreSpec,
-      queryResp.timeRangeSummary,
+      queryResp?.timeRangeSummary ?? {
+        min: new Date(0).toISOString(),
+        watermark: new Date().toISOString(),
+        max: new Date().toISOString(),
+      },
       exploreState,
     ),
   );

@@ -14,6 +14,7 @@ import {
   getExploreValidSpecQueryOptions,
   useExploreValidSpec,
 } from "@rilldata/web-common/features/explores/selectors";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   getComparionRangeForScrub,
@@ -245,14 +246,14 @@ export function createTimeControlStore(ctx: StateManagers) {
 }
 
 export function createTimeControlStoreFromName(
-  instanceId: string,
+  client: RuntimeClient,
   metricsViewName: string,
   exploreName: string,
 ) {
   return derived(
     [
-      useExploreValidSpec(instanceId, exploreName, undefined, queryClient),
-      useMetricsViewTimeRange(instanceId, metricsViewName, {}, queryClient),
+      useExploreValidSpec(client, exploreName, undefined, queryClient),
+      useMetricsViewTimeRange(client, metricsViewName, {}, queryClient),
       useExploreState(exploreName),
     ],
     ([validSpecResp, timeRangeSummaryResp, dashboardStore]) =>
@@ -266,14 +267,15 @@ export function createTimeControlStoreFromName(
 }
 
 export function createStableTimeControlStoreFromName(
+  client: RuntimeClient,
   exploreNameStore: Readable<string>,
 ) {
   const validSpecQuery = createQuery(
-    getExploreValidSpecQueryOptions(exploreNameStore),
+    getExploreValidSpecQueryOptions(client, exploreNameStore),
     queryClient,
   );
   const metricsViewTimeRangeQuery = createQuery(
-    getMetricsViewTimeRangeFromExploreQueryOptions(exploreNameStore),
+    getMetricsViewTimeRangeFromExploreQueryOptions(client, exploreNameStore),
     queryClient,
   );
   const exploreStore = useStableExploreState(exploreNameStore);

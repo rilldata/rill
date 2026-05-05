@@ -1,8 +1,9 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
-  import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { withEditorPrefix } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { createRootCauseErrorQuery } from "@rilldata/web-common/features/entity-management/error-utils";
+  import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import {
     resourceIsLoading,
@@ -16,7 +17,9 @@
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import ExplainAndFixErrorButton from "@rilldata/web-common/features/chat/ExplainAndFixErrorButton.svelte";
+  import ReconcileWarningPanel from "../entity-management/ReconcileWarningPanel.svelte";
   import Spinner from "../entity-management/Spinner.svelte";
   import PreviewButton from "../explores/PreviewButton.svelte";
   import VisualExploreEditing from "./VisualExploreEditing.svelte";
@@ -25,8 +28,11 @@
   import Dashboard from "../dashboards/workspace/Dashboard.svelte";
 
   export let fileArtifact: FileArtifact;
+  export let hideCodeToggle = false;
+  export let inPreviewMode = false;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
+
   $: ({
     hasUnsavedChanges,
     autoSave,
@@ -38,7 +44,9 @@
 
   $: exploreName = $resourceName?.name ?? getNameFromFile(filePath);
 
-  $: query = createRuntimeServiceGetExplore(instanceId, { name: exploreName });
+  $: query = createRuntimeServiceGetExplore(runtimeClient, {
+    name: exploreName,
+  });
 
   $: ({ data: resources } = $query);
 
@@ -55,14 +63,13 @@
   $: metricsViewName = metricsViewResource?.meta?.name?.name;
 
   // Parse error for the editor gutter and banner
-  $: parseErrorQuery = fileArtifact.getParseError(queryClient, instanceId);
+  $: parseErrorQuery = fileArtifact.getParseError(queryClient);
   $: parseError = $parseErrorQuery;
 
-  // Reconcile error resolved to root cause for the banner
   $: reconcileError = (exploreResource ?? metricsViewResource)?.meta
     ?.reconcileError;
   $: rootCauseQuery = createRootCauseErrorQuery(
-    instanceId,
+    runtimeClient,
     exploreResource ?? metricsViewResource,
     reconcileError,
   );
@@ -72,7 +79,7 @@
 
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
-      instanceId,
+      runtimeClient,
       newTitle,
       filePath,
       fileName,
@@ -96,47 +103,64 @@
         slot="header"
         titleInput={fileName}
         {filePath}
-        codeToggle
+        codeToggle={!hideCodeToggle}
         resourceKind={ResourceKind.Explore}
       >
         <div class="flex gap-x-2" slot="cta">
-          <PreviewButton
-            href="/explore/{exploreName}"
-            disabled={!!parseError || !!reconcileError || resourceIsReconciling}
-            reconciling={resourceIsReconciling}
-          />
+          {#if !inPreviewMode}
+            <PreviewButton
+              href={withEditorPrefix(`/explore/${exploreName}`)}
+              disabled={!!parseError ||
+                !!reconcileError ||
+                resourceIsReconciling}
+              reconciling={resourceIsReconciling}
+            />
+          {/if}
         </div>
       </WorkspaceHeader>
 
-      <WorkspaceEditorContainer
-        slot="body"
-        error={parseError?.message ?? rootCauseReconcileError}
-        showError={!!$remoteContent && selectedView === "code"}
-      >
-        {#if selectedView === "code"}
-          <ExploreEditor
-            bind:autoSave={$autoSave}
-            {exploreName}
-            {fileArtifact}
-            {parseError}
-          />
-        {:else if selectedView === "viz"}
-          {#if parseError || rootCauseReconcileError}
-            <ErrorPage
-              body={parseError?.message ?? rootCauseReconcileError ?? ""}
-              fatal
-              header="Unable to load dashboard preview"
-              statusCode={404}
-            />
-          {:else if exploreName && metricsViewName}
-            <DashboardStateManager {exploreName}>
-              <Dashboard {metricsViewName} {exploreName} />
-            </DashboardStateManager>
-          {:else}
-            <Spinner status={1} size="48px" />
-          {/if}
-        {/if}
-      </WorkspaceEditorContainer>
+      <svelte:fragment slot="body">
+        <div class="flex flex-col h-full">
+          <div class="flex-1 min-h-0">
+            <WorkspaceEditorContainer
+              resource={exploreResource ?? metricsViewResource}
+              {parseError}
+              remoteContent={$remoteContent}
+              {filePath}
+              showError={selectedView === "code"}
+            >
+              {#if selectedView === "code"}
+                <ExploreEditor
+                  bind:autoSave={$autoSave}
+                  {exploreName}
+                  {fileArtifact}
+                  {parseError}
+                />
+              {:else if selectedView === "viz"}
+                {#if parseError || rootCauseReconcileError}
+                  <ErrorPage
+                    body={parseError?.message ?? rootCauseReconcileError ?? ""}
+                    fatal
+                    header="Unable to load dashboard preview"
+                    statusCode={404}
+                  >
+                    <svelte:fragment slot="cta">
+                      <ExplainAndFixErrorButton {filePath} variant="cta" />
+                    </svelte:fragment>
+                  </ErrorPage>
+                {:else if exploreName && metricsViewName}
+                  <DashboardStateManager {exploreName}>
+                    <Dashboard {metricsViewName} {exploreName} />
+                  </DashboardStateManager>
+                {:else}
+                  <Spinner status={1} size="48px" />
+                {/if}
+              {/if}
+            </WorkspaceEditorContainer>
+          </div>
+          <ReconcileWarningPanel {fileArtifact} />
+        </div>
+      </svelte:fragment>
 
       <svelte:fragment slot="inspector">
         {#if ready}

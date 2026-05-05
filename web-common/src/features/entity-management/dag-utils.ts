@@ -3,12 +3,16 @@ import {
   runtimeServiceListResources,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { queryClient } from "../../lib/svelte-query/globalQueryClient";
 
-export async function isLeafResource(resource: V1Resource, instanceId: string) {
+export async function isLeafResource(
+  resource: V1Resource,
+  client: RuntimeClient,
+) {
   const allResources = await queryClient.fetchQuery({
-    queryKey: getRuntimeServiceListResourcesQueryKey(instanceId, undefined),
-    queryFn: () => runtimeServiceListResources(instanceId, undefined),
+    queryKey: getRuntimeServiceListResourcesQueryKey(client.instanceId, {}),
+    queryFn: () => runtimeServiceListResources(client, {}),
   });
 
   if (!allResources || !allResources.resources) return false;

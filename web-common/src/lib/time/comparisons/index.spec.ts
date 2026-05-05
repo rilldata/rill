@@ -90,16 +90,47 @@ const periodicComparisonTests = [
   },
 ];
 
+const invalidComparisionTests = [
+  {
+    description: "should return undefined when comparison is invalid",
+    input: {
+      start: periodStart,
+      end: periodEnd,
+      comparison: "invalid" as TimeComparisonOption,
+    },
+    output: undefined,
+  },
+  {
+    description: "should return undefined when comparison is new syntax",
+    input: {
+      start: periodStart,
+      end: periodEnd,
+      comparison: "7D as of latest/D-7D",
+    },
+    output: undefined,
+  },
+  {
+    description:
+      "should return undefined when comparison is new syntax using offset keyword",
+    input: {
+      start: periodStart,
+      end: periodEnd,
+      comparison: "7D as of latest/D offset -7D",
+    },
+    output: undefined,
+  },
+];
+
 const getComparisonIntervalTests = [
   ...contiguousAndCustomComparisonRanges,
   ...periodicComparisonTests,
+  ...invalidComparisionTests,
 ];
 
 describe("getComparisonInterval", () => {
   getComparisonIntervalTests.forEach((test) => {
     it(test.description, () => {
       const { start, end, comparison } = test.input;
-      const { start: expectedStart, end: expectedEnd } = test.output;
       const interval = Interval.fromDateTimes(
         DateTime.fromJSDate(start, { zone: "UTC" }),
         DateTime.fromJSDate(end, { zone: "UTC" }),
@@ -110,6 +141,12 @@ describe("getComparisonInterval", () => {
         comparison,
         "UTC",
       );
+      if (test.output === undefined) {
+        expect(comparisonInterval).toBeUndefined();
+        return;
+      }
+
+      const { start: expectedStart, end: expectedEnd } = test.output;
       expect(comparisonInterval?.start.toJSDate()).toEqual(expectedStart);
       expect(comparisonInterval?.end.toJSDate()).toEqual(expectedEnd);
     });

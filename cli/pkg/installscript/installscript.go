@@ -26,6 +26,7 @@ func execScript(ctx context.Context, version string, args ...string) error {
 
 	scriptArgs := append([]string{script}, args...)
 	cmd := exec.CommandContext(ctx, "/bin/sh", scriptArgs...)
+	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()

@@ -1,20 +1,21 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import DashboardBuilding from "@rilldata/web-common/features/dashboards/DashboardBuilding.svelte";
   import { useDeployingDashboards } from "@rilldata/web-admin/features/dashboards/listing/deploying-dashboards.ts";
+  import ProjectPublishing from "@rilldata/web-admin/features/projects/ProjectPublishing.svelte";
+  import DashboardBuilding from "@rilldata/web-common/features/dashboards/DashboardBuilding.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { PageData } from "./$types";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
 
   export let data: PageData;
-  const { organization, project, deployingDashboard } = data;
+  const { organization, project, deployingDashboard, source } = data;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
   // Make this reactive so that it fires once params are ready.
   // During a first deploy, runtime might not be available when deployment is still being created in the backend.
   $: deployingDashboardResp = useDeployingDashboards(
-    instanceId,
+    runtimeClient,
     organization.name,
     project.name,
     deployingDashboard,
@@ -41,4 +42,8 @@
   }
 </script>
 
-<DashboardBuilding multipleDashboards />
+{#if source === "publish"}
+  <ProjectPublishing />
+{:else}
+  <DashboardBuilding multipleDashboards />
+{/if}

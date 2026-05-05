@@ -2,7 +2,9 @@
   import { goto } from "$app/navigation";
   import { splitFolderAndFileName } from "@rilldata/web-common/features/entity-management/file-path-utils";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+
+  const runtimeClient = useRuntimeClient();
   import { WorkspaceHeader } from "../../layout/workspace";
   import type { ResourceKind } from "../entity-management/resource-selectors";
   import { PROTECTED_FILES } from "../file-explorer/protected-paths";
@@ -18,11 +20,9 @@
   $: [, fileName] = splitFolderAndFileName(filePath);
   $: isProtectedFile = PROTECTED_FILES.includes(filePath);
 
-  $: ({ instanceId } = $runtime);
-
   const onChangeCallback = async (newTitle: string) => {
     const route = await handleEntityRename(
-      instanceId,
+      runtimeClient,
       newTitle,
       filePath,
       fileName,

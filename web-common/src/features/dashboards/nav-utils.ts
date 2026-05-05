@@ -3,6 +3,7 @@ import { ResourceKind } from "@rilldata/web-common/features/entity-management/re
 import type { Page } from "@sveltejs/kit";
 import { derived } from "svelte/store";
 import { getExploreValidSpecQueryOptions } from "@rilldata/web-common/features/explores/selectors.ts";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { createQuery } from "@tanstack/svelte-query";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 
@@ -53,10 +54,10 @@ export function getCanvasNameStore() {
   });
 }
 
-export function getActiveMetricsViewNameStore() {
+export function getActiveMetricsViewNameStore(client: RuntimeClient) {
   const exploreNameStore = getExploreNameStore();
   const validSpecQuery = createQuery(
-    getExploreValidSpecQueryOptions(exploreNameStore),
+    getExploreValidSpecQueryOptions(client, exploreNameStore),
     queryClient,
   );
 

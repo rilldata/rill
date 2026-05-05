@@ -96,7 +96,7 @@ func TestResourceStatus(t *testing.T) {
 				Files: tc.files,
 			})
 
-			res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+			res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
 				InstanceID:         instanceID,
 				Resolver:           "resource_status",
 				ResolverProperties: map[string]any{"where_error": tc.whereError},

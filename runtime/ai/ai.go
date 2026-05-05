@@ -24,6 +24,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -31,7 +32,7 @@ import (
 
 // maxMessageSizeBytes is the maximum allowed size of a message's contents.
 // Exceeding it will result in an error.
-const maxMessageSizeBytes = 10 * 1024 // 10 KB
+const maxMessageSizeBytes = 100 * 1024 // 100 KB
 
 // Tracer for instrumenting requests.
 var tracer = otel.Tracer("github.com/rilldata/rill/runtime/ai")
@@ -112,10 +113,17 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 		if err != nil {
 			return nil, fmt.Errorf("failed to find session %q: %w", opts.SessionID, err)
 		}
-		retrieveUntilMessageID := session.SharedUntilMessageID
-		if session.OwnerID == opts.Claims.UserID || opts.Claims.SkipChecks {
-			// If the user owns the session or skipCheck enabled, they can see all messages.
-			retrieveUntilMessageID = ""
+
+		// Check access: you can access anonymous sessions, your own sessions, and shared sessions.
+		// For shared sessions, if you are not the owner, you can only see messages up to the SharedUntilMessageID (inclusive).
+		// For sessions without an owner (unauthenticated users using a public project), we don't check access and rely on security by obscurity (generally a decent trade-off, but specifically introduced to get citation links over MCP working for unauthenticated demos).
+		// It's important to respect SkipChecks to ensure access in Rill Developer (where auth is disabled, but SkipChecks is true).
+		var retrieveUntilMessageID string
+		if session.OwnerID != "" && session.OwnerID != opts.Claims.UserID && !opts.Claims.SkipChecks {
+			if session.SharedUntilMessageID == "" {
+				return nil, fmt.Errorf("%w: access denied to session %q", runtime.ErrForbidden, session.ID)
+			}
+			retrieveUntilMessageID = session.SharedUntilMessageID
 		}
 
 		ms, err := catalog.FindAIMessages(ctx, opts.SessionID)
@@ -155,12 +163,6 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 		if err != nil {
 			return nil, fmt.Errorf("failed to create session: %w", err)
 		}
-	}
-
-	// Check access: for now, only allow users to access their own sessions or shared sessions with trimmed messages.
-	// Checking !SkipChecks to ensure access for superusers and for Rill Developer (where auth is disabled and SkipChecks is true).
-	if opts.Claims.UserID != session.OwnerID && !opts.Claims.SkipChecks && session.SharedUntilMessageID == "" {
-		return nil, fmt.Errorf("access denied to session %q", session.ID)
 	}
 
 	// Setup logger
@@ -972,6 +974,7 @@ func (s *Session) Call(ctx context.Context, opts *CallOptions) (*CallResult, err
 			attribute.String("ai_session_id", s.id),
 			attribute.String("tool", opts.Name),
 			attribute.String("args", string(argsJSON)),
+			semconv.EnduserID(s.claims.UserID),
 		))
 		s.logger.Info("tool call started", zap.String("tool", opts.Name))
 		start := time.Now()
@@ -1313,11 +1316,14 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 						Out:  nil,
 						Args: block.ToolCall.Input.AsMap(),
 					})
-					if err != nil && toolResult.Result == nil {
+					if err != nil {
 						if ctx.Err() != nil {
 							return nil, ctx.Err()
 						}
-						return nil, fmt.Errorf("tool execution failed without producing a structured error: %w", err)
+						if toolResult == nil || toolResult.Result == nil {
+							return nil, fmt.Errorf("tool execution failed without producing a structured error: %w", err)
+						}
+						// Fall through since it's a structured error that we can capture in the messages.
 					}
 					callMessage, err := s.NewCompletionMessage(toolResult.Call)
 					if err != nil {

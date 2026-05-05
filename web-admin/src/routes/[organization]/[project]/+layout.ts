@@ -1,10 +1,17 @@
-import type { RpcStatus } from "@rilldata/web-admin/client";
+import { type RpcStatus } from "@rilldata/web-admin/client";
 import { hasBlockerIssues } from "@rilldata/web-admin/features/billing/selectors";
 import { fetchAllProjectsHibernating } from "@rilldata/web-admin/features/organizations/selectors";
 import { error, redirect } from "@sveltejs/kit";
 import { isAxiosError } from "axios";
+import { maybeRedirectToEditableDeployment } from "@rilldata/web-admin/features/branches/deployment-utils.ts";
+import { isEditPage } from "@rilldata/web-admin/features/navigation/nav-utils.ts";
 
-export const load = async ({ params: { organization }, parent }) => {
+export const load = async ({
+  params: { organization, project },
+  parent,
+  route,
+  url,
+}) => {
   const { organizationPermissions, issues } = await parent();
 
   if (!organizationPermissions.manageOrg) return;
@@ -23,5 +30,9 @@ export const load = async ({ params: { organization }, parent }) => {
   // if all projects were hibernated due to a blocker issue on org then take the user to projects page
   if (hasBlockerIssues(issues) && projectHibernating) {
     throw redirect(307, `/${organization}`);
+  }
+
+  if (!isEditPage({ route })) {
+    await maybeRedirectToEditableDeployment(organization, project, url);
   }
 };

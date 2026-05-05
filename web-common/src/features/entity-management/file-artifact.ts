@@ -4,6 +4,7 @@ import {
 } from "@rilldata/web-common/features/entity-management/file-path-utils";
 import {
   ResourceKind,
+  SingletonProjectParserName,
   useProjectParser,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
@@ -17,8 +18,11 @@ import {
   type V1ParseError,
   type V1Resource,
   type V1ResourceName,
+  getRuntimeServiceGetResourceQueryKey,
+  runtimeServiceGetResource,
+  type V1GetResourceResponse,
 } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { QueryClient, QueryFunction } from "@tanstack/svelte-query";
 import {
   derived,
@@ -36,6 +40,8 @@ import { debounce } from "@rilldata/web-common/lib/create-debouncer";
 import { AsyncSaveState } from "./async-save-state";
 import type { EditorSelection } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
+import type { PartialMessage } from "@bufbuild/protobuf";
+import type { GetResourceRequest } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb.ts";
 
 const UNSUPPORTED_EXTENSIONS = [
   // Data formats
@@ -91,15 +97,17 @@ export class FileArtifact {
   }> = writable({ scroll: undefined, selection: undefined });
 
   private editorCallback: (content: string) => void = () => {};
+  private client: RuntimeClient;
 
   // Last time the state of the resource `kind/name` was updated.
   // This is updated in watch-resources and is used there to avoid
   // unnecessary calls to GetResource API.
   lastStateUpdatedOn: string | undefined;
 
-  constructor(filePath: string) {
+  constructor(client: RuntimeClient, filePath: string) {
     const [folderName, fileName] = splitFolderAndFileName(filePath);
 
+    this.client = client;
     this.path = filePath;
     this.folderName = folderName;
     this.fileName = fileName;
@@ -118,8 +126,18 @@ export class FileArtifact {
     );
   }
 
+  /**
+   * Updates the runtime client reference. Called when the client becomes
+   * available after the artifact was created (e.g. during +page.ts load
+   * before RuntimeProvider has mounted).
+   */
+  updateClient(client: RuntimeClient) {
+    this.client = client;
+  }
+
   fetchContent = async (invalidate = false) => {
-    const instanceId = get(runtime).instanceId;
+    if (!this.client) return;
+    const instanceId = this.client.instanceId;
     const queryParams = {
       path: this.path,
     };
@@ -129,7 +147,8 @@ export class FileArtifact {
 
     const queryFn: QueryFunction<
       Awaited<ReturnType<typeof runtimeServiceGetFile>>
-    > = ({ signal }) => runtimeServiceGetFile(instanceId, queryParams, signal);
+    > = ({ signal }) =>
+      runtimeServiceGetFile(this.client, queryParams, { signal });
 
     let fetchedContent: string | undefined = undefined;
 
@@ -222,7 +241,8 @@ export class FileArtifact {
   };
 
   private saveContent = async (blob: string) => {
-    const instanceId = get(runtime).instanceId;
+    if (!this.client) return;
+    const instanceId = this.client.instanceId;
 
     // Optimistically update the query
     queryClient.setQueryData(
@@ -237,7 +257,7 @@ export class FileArtifact {
     try {
       const fileSavePromise = this.saveState.initiateSave();
 
-      await runtimeServicePutFile(instanceId, {
+      await runtimeServicePutFile(this.client, {
         path: this.path,
         blob,
       });
@@ -301,10 +321,10 @@ export class FileArtifact {
     this.lastStateUpdatedOn = undefined;
   }
 
-  getResource = (queryClient: QueryClient, instanceId: string) => {
+  getResource = (queryClient: QueryClient) => {
     return derived(this.resourceName, (name, set) =>
       useResource(
-        instanceId,
+        this.client,
         name?.name as string,
         name?.kind as ResourceKind,
         undefined,
@@ -313,33 +333,50 @@ export class FileArtifact {
     ) as ReturnType<typeof useResource<V1Resource>>;
   };
 
+  async fetchResource(queryClient: QueryClient) {
+    const resourceName = get(this.resourceName);
+    if (!resourceName) return undefined;
+
+    const req: Omit<PartialMessage<GetResourceRequest>, "instanceId"> = {
+      name: {
+        kind: resourceName.kind,
+        name: resourceName.name,
+      },
+    };
+    const resp = await queryClient.fetchQuery({
+      queryKey: getRuntimeServiceGetResourceQueryKey(
+        this.client.instanceId,
+        req,
+      ),
+      queryFn: () => runtimeServiceGetResource(this.client, req),
+      staleTime: Infinity, // Always try to get from cache
+    });
+    return resp.resource;
+  }
+
   getParseError = (
     queryClient: QueryClient,
-    instanceId: string,
   ): Readable<V1ParseError | undefined> => {
     const store = derived(
-      useProjectParser(queryClient, instanceId),
+      useProjectParser(queryClient, this.client),
       (projectParser) => {
         if (projectParser.isFetching) {
           return get(store);
         }
         return (
           projectParser.data?.projectParser?.state?.parseErrors ?? []
-        ).find((e) => e.filePath === this.path);
+        ).find((e) => e.filePath === this.path && !e.warning);
       },
       undefined as V1ParseError | undefined,
     );
     return store;
   };
 
-  getAllErrors = (
-    queryClient: QueryClient,
-    instanceId: string,
-  ): Readable<V1ParseError[]> => {
+  getAllErrors = (queryClient: QueryClient): Readable<V1ParseError[]> => {
     const store = derived(
       [
-        useProjectParser(queryClient, instanceId),
-        this.getResource(queryClient, instanceId),
+        useProjectParser(queryClient, this.client),
+        this.getResource(queryClient),
       ],
       ([projectParser, resource]) => {
         if (projectParser.isFetching || resource.isFetching) {
@@ -350,7 +387,7 @@ export class FileArtifact {
         return [
           ...(
             projectParser.data?.projectParser?.state?.parseErrors ?? []
-          ).filter((e) => e.filePath === this.path),
+          ).filter((e) => e.filePath === this.path && !e.warning),
           ...(resource.data?.meta?.reconcileError
             ? [
                 {
@@ -366,10 +403,59 @@ export class FileArtifact {
     return store;
   };
 
-  getHasErrors(queryClient: QueryClient, instanceId: string) {
+  fetchParserErrors(queryClient: QueryClient) {
+    const projectParserQuery = queryClient.getQueryData<V1GetResourceResponse>(
+      getRuntimeServiceGetResourceQueryKey(this.client.instanceId, {
+        name: {
+          kind: ResourceKind.ProjectParser,
+          name: SingletonProjectParserName,
+        },
+      }),
+    );
+    const projectParserErrors =
+      projectParserQuery?.resource?.projectParser?.state?.parseErrors ?? [];
+    return projectParserErrors.filter(
+      (e) => e.filePath === this.path && !e.warning,
+    );
+  }
+
+  getHasErrors(queryClient: QueryClient) {
     return derived(
-      this.getAllErrors(queryClient, instanceId),
+      this.getAllErrors(queryClient),
       (errors) => errors.length > 0,
+    );
+  }
+
+  getAllWarnings = (queryClient: QueryClient): Readable<V1ParseError[]> => {
+    const store = derived(
+      [
+        useProjectParser(queryClient, this.client),
+        this.getResource(queryClient),
+      ],
+      ([projectParser, resource]) => {
+        if (projectParser.isFetching || resource.isFetching) {
+          return get(store);
+        }
+
+        return [
+          ...(
+            projectParser.data?.projectParser?.state?.parseErrors ?? []
+          ).filter((e) => e.filePath === this.path && e.warning),
+          ...(resource.data?.meta?.reconcileWarnings ?? []).map((w) => ({
+            filePath: this.path,
+            message: w,
+          })),
+        ];
+      },
+      [],
+    );
+    return store;
+  };
+
+  getHasWarnings(queryClient: QueryClient) {
+    return derived(
+      this.getAllWarnings(queryClient),
+      (warnings) => warnings.length > 0,
     );
   }
 

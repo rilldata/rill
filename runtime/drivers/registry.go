@@ -123,6 +123,14 @@ type InstanceConfig struct {
 	AIRequireTimeRange bool `mapstructure:"rill.ai.require_time_range"`
 	// AIMaxTimeRangeDays is the maximum time range allowed for AI tool queries, in days. If set to 0, there is no limit.
 	AIMaxTimeRangeDays int64 `mapstructure:"rill.ai.max_time_range_days"`
+	// StrictResolverProps indicates whether to return an error when a resolver contains properties that are not recognized by the resolver implementation.
+	StrictResolverProps bool `mapstructure:"rill.strict_resolver_properties"`
+	// StrictModelProps indicates whether to return an error when a model contains unmapped properties.
+	StrictModelProps bool `mapstructure:"rill.strict_model_properties"`
+	// ModelPartitionsWarnOnFailure: when true, partition execution failures are surfaced as non-blocking warnings instead of errors.
+	ModelPartitionsWarnOnFailure bool `mapstructure:"rill.model.partitions_warn_on_failure"`
+	// ModelTestsWarnOnFailure: when true, model test failures are surfaced as non-blocking warnings instead of errors.
+	ModelTestsWarnOnFailure bool `mapstructure:"rill.model.tests_warn_on_failure"`
 }
 
 // ResolveOLAPConnector resolves the OLAP connector to default to for the instance.
@@ -174,7 +182,6 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		DownloadLimitBytes:                   int64(datasize.MB * 128),
 		InteractiveSQLRowLimit:               10_000,
 		StageChanges:                         true,
-		WatchRepo:                            i.Environment == "dev",
 		ModelDefaultMaterialize:              false,
 		ModelMaterializeDelaySeconds:         0,
 		ModelConcurrentExecutionLimit:        5,
@@ -188,6 +195,8 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		AIDefaultQueryLimit:                  25,
 		AIMaxQueryLimit:                      250,
 		AIRequireTimeRange:                   true,
+		ModelPartitionsWarnOnFailure:         i.Environment == "prod",
+		ModelTestsWarnOnFailure:              i.Environment == "prod",
 	}
 
 	// Resolve variables

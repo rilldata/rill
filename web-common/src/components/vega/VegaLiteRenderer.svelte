@@ -1,6 +1,7 @@
 <script lang="ts">
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import type { ColorMapping } from "@rilldata/web-common/features/components/charts/types";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { onDestroy } from "svelte";
   import {
     type SignalListeners,
@@ -13,6 +14,8 @@
   import { createEmbedOptions } from "./vega-embed-options";
   import { VegaLiteTooltipHandler } from "./vega-tooltip";
   import "./vega.css";
+
+  const runtimeClient = useRuntimeClient();
 
   export let data: Record<string, unknown> = {};
   export let spec: VisualizationSpec;
@@ -45,26 +48,37 @@
     void viewVL.runAsync();
   }
 
+  // Memoize colorMapping/hasComparison so they don't cause options to change
+  // (which triggers svelte-vega to recreate the entire view, losing brush state).
+  let stableColorMapping: ColorMapping = [];
+  let stableHasComparison = false;
+  $: if (JSON.stringify(colorMapping) !== JSON.stringify(stableColorMapping)) {
+    stableColorMapping = colorMapping;
+  }
+  $: if (hasComparison !== stableHasComparison) {
+    stableHasComparison = hasComparison;
+  }
+
   $: options = createEmbedOptions({
-    canvasDashboard,
+    client: runtimeClient,
     width,
     height,
     config,
     renderer,
     themeMode,
     expressionFunctions,
-    colorMapping,
-    hasComparison,
+    colorMapping: stableColorMapping,
+    hasComparison: stableHasComparison,
   });
 
   // Create a more efficient key for component remounting
   $: configKey = config ? Object.keys(config).sort().join(",") : "default";
   $: colorMappingKey =
-    colorMapping?.map((m) => `${m.value}:${m.color}`)?.join("|") ?? "";
+    stableColorMapping?.map((m) => `${m.value}:${m.color}`)?.join("|") ?? "";
   $: componentKey = `${themeMode}-${configKey}-${colorMappingKey}`;
 
-  const onError = (e: CustomEvent<{ error: Error }>) => {
-    error = e.detail.error.message;
+  const onError = (e: Error) => {
+    error = e.message;
   };
 
   const handleMouseLeave = () => {
@@ -86,7 +100,7 @@
   role="presentation"
   class:px-2={canvasDashboard}
   class="rill-vega-container overflow-y-auto overflow-x-hidden size-full flex flex-col items-center"
-  on:mouseleave={handleMouseLeave}
+  onmouseleave={handleMouseLeave}
 >
   {#if error}
     <div
@@ -103,7 +117,7 @@
         {signalListeners}
         {options}
         bind:view={viewVL}
-        on:onError={onError}
+        {onError}
       />
     {/key}
   {/if}

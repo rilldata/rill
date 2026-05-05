@@ -87,6 +87,7 @@ type ModelEnv struct {
 	RepoRoot           string
 	StageChanges       bool
 	DefaultMaterialize bool
+	StrictModelProps   bool
 	Connectors         []*runtimev1.Connector
 	AcquireConnector   func(ctx context.Context, name string) (Handle, func(), error)
 }
@@ -97,6 +98,7 @@ type ModelResult struct {
 	Properties   map[string]any
 	Table        string
 	ExecDuration time.Duration
+	Warnings     []string
 }
 
 // IncrementalStrategy is a strategy to use for incrementally inserting data into a SQL table.

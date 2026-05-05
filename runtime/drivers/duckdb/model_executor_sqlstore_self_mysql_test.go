@@ -105,10 +105,10 @@ func TestMySQLToDuckDBTransfer(t *testing.T) {
 }
 
 func mysqlToDuckDB(t *testing.T, dsn string) {
-	duckDB, err := drivers.Open("duckdb", "default", map[string]any{"data_dir": t.TempDir()}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	duckDB, err := drivers.Open("duckdb", "", "default", map[string]any{"data_dir": t.TempDir()}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
-	inputHandle, err := drivers.Open("mysql", "default", map[string]any{"dsn": dsn}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	inputHandle, err := drivers.Open("mysql", "", "default", map[string]any{"dsn": dsn}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	opts := &drivers.ModelExecutorOptions{

@@ -10,7 +10,7 @@ on:
 
 jobs:
   validate-sequential:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -24,7 +24,7 @@ jobs:
         ./scripts/check_migrations.sh runtime/drivers/sqlite/migrations
 
   validate-apply:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: validate-sequential
     services:
       postgres:

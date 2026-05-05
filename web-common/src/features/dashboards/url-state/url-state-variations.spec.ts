@@ -44,6 +44,7 @@ import {
   AD_BIDS_SET_PIVOT_ROW_LIMIT_UNLIMITED,
   AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER,
   AD_BIDS_SET_PREVIOUS_WEEK_COMPARE_TIME_RANGE_FILTER,
+  AD_BIDS_SET_PREVIOUS_WEEK_RILL_TIME_COMPARE_TIME_RANGE_FILTER,
   AD_BIDS_SET_PUBLISHER_COMPARE_DIMENSION,
   AD_BIDS_SET_TIME_DIMENSION_OFFSET,
   AD_BIDS_SET_TIME_DIMENSION_PRIMARY,
@@ -54,7 +55,9 @@ import {
   AD_BIDS_SORT_BY_VALUE,
   AD_BIDS_SORT_DESC_BY_BID_PRICE,
   AD_BIDS_SORT_DESC_BY_IMPRESSIONS,
+  AD_BIDS_SORT_PIVOT_BY_ACCESSOR_DESC,
   AD_BIDS_SORT_PIVOT_BY_IMPRESSIONS_DESC,
+  AD_BIDS_SORT_PIVOT_BY_RILL_TIME_DAY_DESC,
   AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
   AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD,
   AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
@@ -63,6 +66,8 @@ import {
   AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY,
   AD_BIDS_TOGGLE_LEADERBOARD_SHOW_CONTEXT_FOR_ALL_MEASURES,
   AD_BIDS_TOGGLE_PIVOT,
+  AD_BIDS_SET_DYNAMIC_Y_AXIS_SCALE,
+  AD_BIDS_SET_CHART_TYPE_BAR,
   applyMutationsToDashboard,
   type TestDashboardMutation,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
@@ -80,7 +85,7 @@ import {
   type V1ExplorePreset,
   type V1ExploreSpec,
 } from "@rilldata/web-common/runtime-client";
-import { deepClone } from "@vitest/utils";
+import { deepClone } from "@vitest/utils/helpers";
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ALL_TIME_RANGE_ALIAS } from "../time-controls/new-time-controls";
@@ -157,6 +162,13 @@ const TestCases: {
     preset: AD_BIDS_PRESET,
     expectedSearch:
       "tr=inf&tz=Asia%2FKathmandu&grain=day&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
+  },
+  {
+    title: "Time range with preset and ALL_TIME selected",
+    mutations: [AD_BIDS_SET_PREVIOUS_WEEK_RILL_TIME_COMPARE_TIME_RANGE_FILTER],
+    preset: AD_BIDS_PRESET,
+    expectedSearch:
+      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=7D+offset+-7D&grain=day&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
   },
 
   {
@@ -402,7 +414,7 @@ const TestCases: {
       "Time dimensional details with preset and has time dimensional details in state different than presets",
     mutations: [AD_BIDS_CLOSE_TDD],
     preset: AD_BIDS_TIME_DIMENSION_DETAILS_PRESET,
-    expectedSearch: "",
+    expectedSearch: "chart_type=stacked_bar",
     legacyNotSupported: true,
   },
 
@@ -509,6 +521,26 @@ const TestCases: {
       AD_BIDS_SET_TIME_DIMENSION_PRIMARY,
     ],
     expectedSearch: "",
+    legacyNotSupported: true,
+  },
+
+  // Chart settings tests
+  {
+    title: "Dynamic Y-axis scale enabled",
+    mutations: [AD_BIDS_SET_DYNAMIC_Y_AXIS_SCALE],
+    expectedSearch: "dyn_y=true",
+    legacyNotSupported: true,
+  },
+  {
+    title: "Chart type set to bar",
+    mutations: [AD_BIDS_SET_CHART_TYPE_BAR],
+    expectedSearch: "chart_type=bar",
+    legacyNotSupported: true,
+  },
+  {
+    title: "Both chart settings enabled",
+    mutations: [AD_BIDS_SET_DYNAMIC_Y_AXIS_SCALE, AD_BIDS_SET_CHART_TYPE_BAR],
+    expectedSearch: "dyn_y=true&chart_type=bar",
     legacyNotSupported: true,
   },
 ];
@@ -708,6 +740,112 @@ describe("Human readable URL state variations", () => {
     );
     expect(currentState.whereFilter).toEqual(AD_BIDS_LARGE_FILTER);
   });
+
+  describe("Pivot sort state roundtrip", () => {
+    function setupAndRoundtrip() {
+      const explore: V1ExploreSpec = {
+        ...AD_BIDS_EXPLORE_INIT,
+        timeZones: ["UTC", "Asia/Kathmandu"],
+      };
+      metricsExplorerStore.init(
+        AD_BIDS_EXPLORE_NAME,
+        getInitExploreStateForTest(
+          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+          explore,
+          AD_BIDS_TIME_RANGE_SUMMARY,
+        ),
+      );
+      const defaultExploreUrlSearch = getRillDefaultExploreUrlParams(
+        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+        explore,
+        AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
+      );
+      const defaultExplorePreset = getDefaultExplorePreset(
+        explore,
+        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+        AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
+      );
+      return { explore, defaultExploreUrlSearch, defaultExplorePreset };
+    }
+
+    it("should preserve time dimension sort (rill format) after URL roundtrip", async () => {
+      const { explore, defaultExploreUrlSearch, defaultExplorePreset } =
+        setupAndRoundtrip();
+
+      await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, [
+        AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
+        AD_BIDS_SORT_PIVOT_BY_RILL_TIME_DAY_DESC,
+      ]);
+
+      const stateBeforeRoundtrip = getCleanMetricsExploreForAssertion();
+      expect(stateBeforeRoundtrip.pivot?.sorting).toEqual([
+        { id: "timestamp_rill_TIME_GRAIN_DAY", desc: true },
+      ]);
+
+      // Serialize state to URL params
+      const urlParams = getCleanedUrlParamsForGoto(
+        explore,
+        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+        get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
+        getTimeControlState(
+          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+          explore,
+          AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
+          get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
+        ),
+        defaultExploreUrlSearch,
+      );
+
+      // Deserialize URL back to state (simulates page refresh)
+      const url = new URL("http://localhost");
+      url.search = urlParams.toString();
+      applyURLToExploreState(url, explore, defaultExplorePreset);
+
+      const stateAfterRoundtrip = getCleanMetricsExploreForAssertion();
+      expect(stateAfterRoundtrip.pivot?.sorting).toEqual(
+        stateBeforeRoundtrip.pivot?.sorting,
+      );
+    });
+
+    it("should preserve minimized accessor sort after URL roundtrip", async () => {
+      const { explore, defaultExploreUrlSearch, defaultExplorePreset } =
+        setupAndRoundtrip();
+
+      await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, [
+        AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
+        AD_BIDS_SORT_PIVOT_BY_ACCESSOR_DESC,
+      ]);
+
+      const stateBeforeRoundtrip = getCleanMetricsExploreForAssertion();
+      expect(stateBeforeRoundtrip.pivot?.sorting).toEqual([
+        { id: "c0v2m0", desc: true },
+      ]);
+
+      // Serialize state to URL params
+      const urlParams = getCleanedUrlParamsForGoto(
+        explore,
+        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+        get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
+        getTimeControlState(
+          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+          explore,
+          AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
+          get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
+        ),
+        defaultExploreUrlSearch,
+      );
+
+      // Deserialize URL back to state (simulates page refresh)
+      const url = new URL("http://localhost");
+      url.search = urlParams.toString();
+      applyURLToExploreState(url, explore, defaultExplorePreset);
+
+      const stateAfterRoundtrip = getCleanMetricsExploreForAssertion();
+      expect(stateAfterRoundtrip.pivot?.sorting).toEqual(
+        stateBeforeRoundtrip.pivot?.sorting,
+      );
+    });
+  });
 });
 
 export function applyURLToExploreState(
@@ -725,7 +863,6 @@ export function applyURLToExploreState(
   metricsExplorerStore.mergePartialExplorerEntity(
     AD_BIDS_EXPLORE_NAME,
     partialExploreStateDefaultUrl,
-    AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
   );
   return errors;
 }

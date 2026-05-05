@@ -5,15 +5,16 @@ import {
   runtimeServiceListFiles,
   runtimeServiceUnpackEmpty,
 } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { EMPTY_PROJECT_TITLE } from "./constants";
 
-export async function isProjectInitialized(instanceId: string) {
+export async function isProjectInitialized(client: RuntimeClient) {
   try {
     const files = await queryClient.fetchQuery<V1ListFilesResponse>({
-      queryKey: getRuntimeServiceListFilesQueryKey(instanceId, undefined),
+      queryKey: getRuntimeServiceListFilesQueryKey(client.instanceId, {}),
       queryFn: ({ signal }) => {
-        return runtimeServiceListFiles(instanceId, undefined, signal);
+        return runtimeServiceListFiles(client, {}, { signal });
       },
     });
 
@@ -24,9 +25,9 @@ export async function isProjectInitialized(instanceId: string) {
   }
 }
 
-export async function handleUninitializedProject(instanceId: string) {
+export async function handleUninitializedProject(client: RuntimeClient) {
   // If the project is not initialized, determine what page to route to dependent on the OLAP connector
-  const instance = await runtimeServiceGetInstance(instanceId, {
+  const instance = await runtimeServiceGetInstance(client, {
     sensitive: true,
   });
   const olapConnector = instance.instance?.olapConnector;
@@ -38,7 +39,7 @@ export async function handleUninitializedProject(instanceId: string) {
   // DuckDB-backed projects should head to the Welcome page for user-guided initialization
   if (olapConnector !== "duckdb") {
     // Clickhouse and Druid-backed projects should be initialized immediately
-    await runtimeServiceUnpackEmpty(instanceId, {
+    await runtimeServiceUnpackEmpty(client, {
       displayName: EMPTY_PROJECT_TITLE,
       olap: olapConnector, // Use the instance's configured OLAP connector
       force: true,

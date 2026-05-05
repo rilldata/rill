@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/rilldata/rill/runtime"
@@ -34,6 +35,12 @@ func (t *GetCanvas) Spec() *mcp.Tool {
 		Name:        GetCanvasName,
 		Title:       "Get Canvas",
 		Description: "Get the specification for a given canvas, including available components and metrics views",
+		Annotations: &mcp.ToolAnnotations{
+			DestructiveHint: boolPtr(false),
+			IdempotentHint:  true,
+			OpenWorldHint:   boolPtr(false),
+			ReadOnlyHint:    true,
+		},
 		Meta: map[string]any{
 			"openai/toolInvocation/invoking": "Getting canvas definition...",
 			"openai/toolInvocation/invoked":  "Found canvas definition",
@@ -42,14 +49,24 @@ func (t *GetCanvas) Spec() *mcp.Tool {
 }
 
 func (t *GetCanvas) CheckAccess(ctx context.Context) (bool, error) {
+	// Must be allowed to use AI and query objects
 	s := GetSession(ctx)
-	return s.Claims().Can(runtime.ReadObjects), nil
+	if !s.Claims().Can(runtime.UseAI) || !s.Claims().Can(runtime.ReadObjects) {
+		return false, nil
+	}
+
+	// Only allow for rill user agents since it's not useful in MCP contexts.
+	if !strings.HasPrefix(s.CatalogSession().UserAgent, "rill") {
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func (t *GetCanvas) Handler(ctx context.Context, args *GetCanvasArgs) (*GetCanvasResult, error) {
 	session := GetSession(ctx)
 
-	resolvedCanvas, err := t.Runtime.ResolveCanvas(ctx, session.InstanceID(), args.Canvas, session.Claims())
+	resolvedCanvas, err := t.Runtime.ResolveCanvas(ctx, session.InstanceID(), args.Canvas, session.Claims(), false)
 	if err != nil {
 		return nil, err
 	}

@@ -6,7 +6,7 @@
     useDimensionSearchResults,
   } from "@rilldata/web-common/features/dashboards/dimension-search/useDimensionSearchResults";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
     DropdownMenu,
     DropdownMenuContent,
@@ -26,7 +26,7 @@
     validSpecStore,
   } = getStateManagers();
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
 
   let results: ReturnType<typeof useDimensionSearchResults>;
   $: if (
@@ -35,7 +35,7 @@
     !!searchText
   ) {
     results = useDimensionSearchResults(
-      instanceId,
+      client,
       $metricsViewName,
       $validSpecStore.data?.metricsView,
       $timeRangeSummaryStore.data.timeRangeSummary,
@@ -56,8 +56,14 @@
   open={open && !!$results && !!searchText}
   onOpenChange={(o) => (open = o)}
 >
-  <DropdownMenuTrigger asChild let:builder>
-    <button use:builder.action {...builder} class="absolute left-32"></button>
+  <DropdownMenuTrigger>
+    {#snippet child({ props })}
+      <button
+        {...props}
+        class="absolute left-32"
+        aria-label="Dimension search results"
+      ></button>
+    {/snippet}
   </DropdownMenuTrigger>
   <DropdownMenuContent
     class="w-64 max-h-96 overflow-scroll right-2"

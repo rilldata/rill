@@ -16,6 +16,7 @@
     createQueryServiceMetricsViewAggregation,
     type V1Expression,
   } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { cellInspectorStore } from "../stores/cell-inspector-store";
   import {
     crossfade,
@@ -29,7 +30,6 @@
   export let measure: MetricsViewSpecMeasure;
   export let withTimeseries = true;
   export let isMeasureExpanded = false;
-  export let instanceId: string;
   export let metricsViewName: string;
   export let where: V1Expression | undefined = undefined;
   export let timeDimension: string | undefined = undefined;
@@ -40,18 +40,20 @@
   export let showComparison = false;
   export let ready: boolean = true;
 
+  const client = useRuntimeClient();
+
   $: measureName = measure.name ?? "";
 
   // Primary totals query
   $: primaryQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+    client,
     {
+      metricsView: metricsViewName,
       measures: [{ name: measureName }],
       where,
       timeRange: {
-        start: timeStart,
-        end: timeEnd,
+        start: timeStart as any,
+        end: timeEnd as any,
         timeDimension,
       },
     },
@@ -66,14 +68,14 @@
 
   // Comparison totals query
   $: comparisonQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+    client,
     {
+      metricsView: metricsViewName,
       measures: [{ name: measureName }],
       where,
       timeRange: {
-        start: comparisonTimeStart,
-        end: comparisonTimeEnd,
+        start: comparisonTimeStart as any,
+        end: comparisonTimeEnd as any,
         timeDimension,
       },
     },
@@ -105,8 +107,8 @@
       : EntityStatus.Idle;
 
   $: errorMessage = isError
-    ? (($primaryQuery.error as any)?.response?.data?.message ??
-      ($comparisonQuery.error as any)?.response?.data?.message ??
+    ? ($primaryQuery.error?.message ??
+      $comparisonQuery.error?.message ??
       undefined)
     : undefined;
 
@@ -144,7 +146,13 @@
       ? value - comparisonValue
       : 0;
   $: noChange = !comparisonValue;
-  $: isComparisonPositive = diff >= 0;
+  $: isComparisonPositive = diff > 0;
+  $: isComparisonNegative = diff < 0;
+  $: comparisonDeltaColorClass = isComparisonPositive
+    ? "text-kpi-positive"
+    : isComparisonNegative
+      ? "text-kpi-negative"
+      : "text-fg-secondary";
 
   $: formattedDiff = `${isComparisonPositive ? "+" : ""}${measureValueFormatter(
     diff,
@@ -174,11 +182,11 @@
   $: useDiv = isMeasureExpanded || !withTimeseries;
 
   function handleMouseOver() {
-    cellInspectorStore.updateValue(value);
+    cellInspectorStore.updateValue(value, tooltipValue);
   }
 
   function handleFocus() {
-    cellInspectorStore.updateValue(value);
+    cellInspectorStore.updateValue(value, tooltipValue);
   }
 </script>
 
@@ -201,7 +209,7 @@
     class="group big-number outline-border"
     class:shadow-grad={!useDiv}
     class:cursor-pointer={!useDiv}
-    on:click={modified({
+    onclick={modified({
       shift: () => shiftClickHandler(copyValue),
       click: () => {
         suppressTooltip = true;
@@ -224,8 +232,8 @@
       class="text-fg-secondary relative w-full h-full overflow-hidden text-ellipsis"
       style:font-size={withTimeseries ? "1.6rem" : "1.8rem"}
       style:font-weight="light"
-      on:mouseover={handleMouseOver}
-      on:focus={handleFocus}
+      onmouseover={handleMouseOver}
+      onfocus={handleFocus}
       tabindex="0"
     >
       {#if value !== null && value !== undefined && status === EntityStatus.Idle}
@@ -237,15 +245,15 @@
             {#if comparisonValue != null}
               <div
                 role="complementary"
-                class="w-fit max-w-full overflow-hidden text-ellipsis text-fg-secondary"
+                class="w-fit max-w-full overflow-hidden text-ellipsis {comparisonDeltaColorClass}"
                 class:font-semibold={isComparisonPositive}
-                on:mouseenter={() => {
+                onmouseenter={() => {
                   tooltipValue =
                     measureValueFormatterTooltip(diff) ?? "no data";
                   copyValue =
                     measureValueFormatterUnabridged(diff) ?? "no data";
                 }}
-                on:mouseleave={() => {
+                onmouseleave={() => {
                   tooltipValue =
                     measureValueFormatterTooltip(value) ?? "no data";
                   copyValue =
@@ -264,7 +272,7 @@
             {#if comparisonPercChange != null && !noChange && !measureIsPercentage}
               <div
                 role="complementary"
-                on:mouseenter={() => {
+                onmouseenter={() => {
                   tooltipValue = numberPartsToString(
                     formatMeasurePercentageDifference(
                       comparisonPercChange ?? 0,
@@ -274,14 +282,13 @@
                     measureValueFormatterUnabridged(comparisonPercChange) ??
                     "no data";
                 }}
-                on:mouseleave={() => {
+                onmouseleave={() => {
                   tooltipValue =
                     measureValueFormatterUnabridged(value) ?? "no data";
                   copyValue =
                     measureValueFormatterUnabridged(value) ?? "no data";
                 }}
-                class="w-fit text-fg-secondary"
-                class:text-red-500={!isComparisonPositive}
+                class="w-fit {comparisonDeltaColorClass}"
               >
                 <WithTween
                   value={comparisonPercChange}

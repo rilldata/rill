@@ -5,7 +5,7 @@
     V1Expression,
     V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
@@ -21,7 +21,12 @@
   const StateManagers = getStateManagers();
   const {
     selectors: {
-      numberFormat: { measureFormatters, activeMeasureFormatter },
+      numberFormat: {
+        measureFormatters,
+        activeMeasureFormatter,
+        measureTooltipFormatters,
+        activeMeasureTooltipFormatter,
+      },
       dimensionFilters: { isFilterExcludeMode },
       dimensions: { visibleDimensions },
       comparison: { isBeingCompared: isBeingComparedReadable },
@@ -43,9 +48,9 @@
     dashboardStore,
   } = StateManagers;
 
-  let parentElement: HTMLDivElement;
+  const client = useRuntimeClient();
 
-  $: ({ instanceId } = $runtime);
+  let parentElement: HTMLDivElement;
 
   // Reset column widths when the measure changes
   $: if ($leaderboardSortByMeasureName) {
@@ -86,7 +91,6 @@
               leaderboardShowContextForAllMeasures={$leaderboardShowContextForAllMeasures}
               {whereFilter}
               {dimensionThresholdFilters}
-              {instanceId}
               {tableWidth}
               {timeRange}
               {dimensionColumnWidth}
@@ -98,7 +102,7 @@
               {parentElement}
               {timeControlsReady}
               selectedValues={selectedDimensionValues(
-                $runtime.instanceId,
+                client,
                 [metricsViewName],
                 $dashboardStore.whereFilter,
                 dimension.name,
@@ -109,6 +113,12 @@
               formatters={$leaderboardMeasures.length > 1
                 ? $measureFormatters
                 : { [$leaderboardSortByMeasureName]: $activeMeasureFormatter }}
+              tooltipFormatters={$leaderboardMeasures.length > 1
+                ? $measureTooltipFormatters
+                : {
+                    [$leaderboardSortByMeasureName]:
+                      $activeMeasureTooltipFormatter,
+                  }}
               {setPrimaryDimension}
               {toggleSort}
               {toggleDimensionValueSelection}

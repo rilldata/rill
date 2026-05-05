@@ -65,7 +65,10 @@ export abstract class BaseChart<
     };
     super(resource, parent, path, baseSpec as TConfig);
 
-    this.type = resource.component?.state?.validSpec?.renderer as ChartType;
+    this.type = (resource.component?.state?.validSpec?.renderer ??
+      (parent.allowUnvalidatedSpec
+        ? resource.component?.spec?.renderer
+        : undefined)) as ChartType;
     this.chartType = writable(this.type);
   }
 
@@ -98,6 +101,7 @@ export abstract class BaseChart<
   abstract createChartDataQuery(
     ctx: CanvasStore,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
+    visible: Readable<boolean>,
   ): ChartDataQuery;
 
   abstract chartTitle(fields: ChartFieldsMap): string;

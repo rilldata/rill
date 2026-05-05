@@ -7,6 +7,7 @@ import {
   createQueryServiceTableColumns,
   createRuntimeServiceGetFile,
 } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { CreateQueryResult, QueryClient } from "@tanstack/svelte-query";
 import { type Readable, derived } from "svelte/store";
 import { parse } from "yaml";
@@ -17,9 +18,9 @@ export type SourceFromYaml = {
   path?: string;
 };
 
-export function useSources(instanceId: string) {
+export function useSources(client: RuntimeClient) {
   return useClientFilteredResources(
-    instanceId,
+    client,
     ResourceKind.Model,
     (res) =>
       res.meta?.name?.name === res.model?.state?.resultTable &&
@@ -27,9 +28,9 @@ export function useSources(instanceId: string) {
   );
 }
 
-export function useSourceFromYaml(instanceId: string, filePath: string) {
+export function useSourceFromYaml(client: RuntimeClient, filePath: string) {
   return createRuntimeServiceGetFile(
-    instanceId,
+    client,
     { path: filePath },
     {
       query: {
@@ -42,9 +43,12 @@ export function useSourceFromYaml(instanceId: string, filePath: string) {
 /**
  * This client-side YAML parsing is a rudimentary hack to check if the source is a local file.
  */
-export function useIsLocalFileConnector(instanceId: string, filePath: string) {
+export function useIsLocalFileConnector(
+  client: RuntimeClient,
+  filePath: string,
+) {
   return createRuntimeServiceGetFile(
-    instanceId,
+    client,
     { path: filePath },
     {
       query: {
@@ -72,9 +76,9 @@ export type TableColumnsWithName = {
 
 export function useAllSourceColumns(
   queryClient: QueryClient,
-  instanceId: string,
+  client: RuntimeClient,
 ): Readable<Array<TableColumnsWithName>> {
-  return derived([useSources(instanceId)], ([allSources], set) => {
+  return derived([useSources(client)], ([allSources], set) => {
     if (!allSources.data?.length) {
       set([]);
       return;
@@ -84,7 +88,7 @@ export function useAllSourceColumns(
       allSources.data.map((r) =>
         createTableColumnsWithName(
           queryClient,
-          instanceId,
+          client,
           r.source?.state?.connector ?? "",
           "",
           "",
@@ -104,16 +108,16 @@ export function useAllSourceColumns(
  */
 export function createTableColumnsWithName(
   queryClient: QueryClient,
-  instanceId: string,
+  client: RuntimeClient,
   connector: string,
   database: string,
   databaseSchema: string,
   tableName: string,
 ) {
   return createQueryServiceTableColumns(
-    instanceId,
-    tableName,
+    client,
     {
+      tableName,
       connector,
       database,
       databaseSchema,

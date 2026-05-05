@@ -4,10 +4,11 @@
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { getFileHref } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useGetExploresForMetricsView } from "../dashboards/selectors";
   import { allowPrimary } from "../dashboards/workspace/DeployProjectCTA.svelte";
   import {
@@ -19,11 +20,12 @@
 
   export let resource: V1Resource | undefined;
 
+  const runtimeClient = useRuntimeClient();
   const { ai, developerChat } = featureFlags;
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
   $: dashboardsQuery = useGetExploresForMetricsView(
-    instanceId,
+    runtimeClient,
     resource?.meta?.name?.name ?? "",
   );
   $: dashboards = $dashboardsQuery.data ?? [];
@@ -39,12 +41,12 @@
           // Use developer agent if enabled, otherwise fall back to RPC
           if ($developerChat) {
             createCanvasDashboardFromMetricsViewWithAgent(
-              instanceId,
+              runtimeClient,
               resource.meta.name.name,
             );
           } else {
             await createCanvasDashboardFromMetricsView(
-              instanceId,
+              runtimeClient,
               resource.meta.name.name,
             );
           }
@@ -58,7 +60,12 @@
       disabled={!resource}
       onClick={async () => {
         if (resource)
-          await createAndPreviewExplore(queryClient, instanceId, resource);
+          await createAndPreviewExplore(
+            runtimeClient,
+            queryClient,
+            instanceId,
+            resource,
+          );
       }}
     >
       Generate Explore Dashboard{$ai ? " with AI" : ""}
@@ -66,8 +73,10 @@
   </div>
 {:else}
   <DropdownMenu.Root>
-    <DropdownMenu.Trigger asChild let:builder>
-      <NavigateOrDropdown resources={dashboards} {builder} />
+    <DropdownMenu.Trigger>
+      {#snippet child({ props })}
+        <NavigateOrDropdown {...props} resources={dashboards} />
+      {/snippet}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="end">
       <DropdownMenu.Group>
@@ -77,7 +86,9 @@
             resource?.meta?.name?.name}
           {@const filePath = resource?.meta?.filePaths?.[0]}
           {#if label && filePath}
-            <DropdownMenu.Item href={`/files/${removeLeadingSlash(filePath)}`}>
+            <DropdownMenu.Item
+              href={getFileHref(`/${removeLeadingSlash(filePath)}`)}
+            >
               <ExploreIcon />
               {label}
             </DropdownMenu.Item>
@@ -85,17 +96,17 @@
         {/each}
         <DropdownMenu.Separator />
         <DropdownMenu.Item
-          on:click={async () => {
+          onclick={async () => {
             if (resource?.meta?.name?.name) {
               // Use developer agent if enabled, otherwise fall back to RPC
               if ($developerChat) {
                 createCanvasDashboardFromMetricsViewWithAgent(
-                  instanceId,
+                  runtimeClient,
                   resource.meta.name.name,
                 );
               } else {
                 await createCanvasDashboardFromMetricsView(
-                  instanceId,
+                  runtimeClient,
                   resource.meta.name.name,
                 );
               }
@@ -106,9 +117,14 @@
           Generate Canvas Dashboard{$ai ? " with AI" : ""}
         </DropdownMenu.Item>
         <DropdownMenu.Item
-          on:click={async () => {
+          onclick={async () => {
             if (resource)
-              await createAndPreviewExplore(queryClient, instanceId, resource);
+              await createAndPreviewExplore(
+                runtimeClient,
+                queryClient,
+                instanceId,
+                resource,
+              );
           }}
         >
           <Add />

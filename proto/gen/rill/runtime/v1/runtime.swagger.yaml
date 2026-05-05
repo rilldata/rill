@@ -793,6 +793,31 @@ paths:
           type: string
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/env/push:
+    post:
+      summary: PushEnv pushes local environment variables to admin service
+      operationId: RuntimeService_PushEnv
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1PushEnvResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/files:
     get:
       summary: |-
@@ -1161,74 +1186,6 @@ paths:
           in: query
           required: false
           type: boolean
-      tags:
-        - RuntimeService
-  /v1/instances/{instanceId}/generate/renderer:
-    post:
-      summary: GenerateRenderer generates a component renderer and renderer properties from a resolver and resolver properties
-      operationId: RuntimeService_GenerateRenderer
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GenerateRendererResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              prompt:
-                type: string
-              resolver:
-                type: string
-              resolverProperties:
-                type: object
-      tags:
-        - RuntimeService
-  /v1/instances/{instanceId}/generate/resolver:
-    post:
-      summary: GenerateResolver generates resolver and resolver properties from a table or a metrics view
-      operationId: RuntimeService_GenerateResolver
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GenerateResolverResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              prompt:
-                type: string
-              connector:
-                type: string
-                description: Both connector and table must be specified if metrics_view is not.
-              table:
-                type: string
-              metricsView:
-                type: string
-                description: table and connector should not be provided if metrics_view is provided.
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/git/branches:
@@ -1648,6 +1605,12 @@ paths:
               args:
                 type: object
                 title: Optional args for resolving templating in the component properties
+              unsafe:
+                type: boolean
+                description: |-
+                  If true, fall back to the unvalidated spec when no valid spec is available.
+                  Only for use by the visual editor in Rill Developer. Must never be sent by
+                  Rill Cloud, read-only previews, shared token access, or embedded viewers.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/column-cardinality/tables/{tableName}:
@@ -2013,6 +1976,9 @@ paths:
               rows:
                 type: boolean
                 title: Optional. Defaults to false. Used to fetch rows from underlying model
+              trace:
+                type: boolean
+                description: Optional. If true, the response will include traces of spans captured during execution.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/annotations:
@@ -2065,6 +2031,9 @@ paths:
                 type: string
                 format: int64
                 title: Optional
+              trace:
+                type: boolean
+                description: Optional. If true, the response will include traces of spans captured during execution.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
@@ -2176,6 +2145,9 @@ paths:
                 $ref: '#/definitions/v1MetricsViewFilter'
                 description: Deprecated. should be removed once UI is moved to use new filters
                 title: Optional
+              trace:
+                type: boolean
+                description: Optional. If true, the response will include traces of spans captured during execution.
             title: Request message for QueryService.MetricsViewComparison
       tags:
         - QueryService
@@ -2261,6 +2233,9 @@ paths:
               timeDimension:
                 type: string
                 title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+              trace:
+                type: boolean
+                description: Optional. If true, the response will include traces of spans captured during execution.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/schema:
@@ -2290,6 +2265,11 @@ paths:
           required: false
           type: integer
           format: int32
+        - name: trace
+          description: Optional. If true, the response will include traces of spans captured during execution.
+          in: query
+          required: false
+          type: boolean
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/search:
@@ -2342,6 +2322,9 @@ paths:
               priority:
                 type: integer
                 format: int32
+              trace:
+                type: boolean
+                description: Optional. If true, the response will include traces of spans captured during execution.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/time-range-summary:
@@ -2380,6 +2363,9 @@ paths:
               timeDimension:
                 type: string
                 title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+              trace:
+                type: boolean
+                description: Optional. If true, the response will include traces of spans captured during execution.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/time-ranges:
@@ -2429,6 +2415,9 @@ paths:
                 type: string
                 format: date-time
                 description: Optional execution time against which the time ranges needs to be resolved. Watermark, latest and now are all replaced with this if provided.
+              trace:
+                type: boolean
+                description: Optional. If true, the response will include traces of spans captured during execution.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/timeseries:
@@ -2500,6 +2489,9 @@ paths:
               timeDimension:
                 type: string
                 title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+              trace:
+                type: boolean
+                description: Optional. If true, the response will include traces of spans captured during execution.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/toplist:
@@ -2570,6 +2562,9 @@ paths:
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
                 title: Deprecated. should be removed once UI is moved to use new filters
+              trace:
+                type: boolean
+                description: Optional. If true, the response will include traces of spans captured during execution.
             title: Deprecated, use MetricsViewComparisonRequest without a comparison time range
       tags:
         - QueryService
@@ -2630,6 +2625,9 @@ paths:
               timeDimension:
                 type: string
                 title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+              trace:
+                type: boolean
+                description: Optional. If true, the response will include traces of spans captured during execution.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/null-count/tables/{tableName}:
@@ -2731,6 +2729,28 @@ paths:
           required: false
           type: integer
           format: int32
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/project-storage:
+    get:
+      summary: |-
+        ProjectStorage returns storage usage information for OLAP connectors in the project.
+        See the project_storage resolver for details.
+      operationId: QueryService_ProjectStorage
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ProjectStorageResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/resolve-templated-string:
@@ -3811,6 +3831,42 @@ definitions:
         type: string
         title: Raw SQL expression to use as the frame (starting with "ROWS ...")
     title: Window to apply to the measure calculation
+  MetricsViewSpecRollup:
+    type: object
+    properties:
+      database:
+        type: string
+      databaseSchema:
+        type: string
+      table:
+        type: string
+      model:
+        type: string
+      timeGrain:
+        $ref: '#/definitions/v1TimeGrain'
+        description: Time grain of the rollup.
+      timeZone:
+        type: string
+        title: IANA timezone the rollup was aggregated in; defaults to UTC
+      dimensions:
+        type: array
+        items:
+          type: string
+        description: Resolved list of dimensions present in the rollup. If `dimensions_selector` is set, this will only be set in `state.valid_spec`.
+      measures:
+        type: array
+        items:
+          type: string
+        description: Resolved list of measures present in the rollup. If `measures_selector` is set, this will only be set in `state.valid_spec`.
+      dimensionsSelector:
+        $ref: '#/definitions/v1FieldSelector'
+        description: Dynamic selector for `dimensions`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+      measuresSelector:
+        $ref: '#/definitions/v1FieldSelector'
+        description: Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+    description: |-
+      Pre-aggregated rollup that can be used to accelerate queries.
+      The system automatically routes queries to a rollup when the query can be satisfied from the pre-aggregated data.
   NumericHistogramBinsBin:
     type: object
     properties:
@@ -3946,6 +4002,9 @@ definitions:
       mapType:
         $ref: '#/definitions/v1MapType'
         title: If code is CODE_MAP, map_type specifies the map's key and value types
+      rawType:
+        type: string
+        title: raw_type is the original database-specific type (e.g. "VARCHAR(255)")
     title: Type represents a data type in a schema
   v1API:
     type: object
@@ -4213,6 +4272,10 @@ definitions:
         type: object
       errorMessage:
         type: string
+      warnings:
+        type: array
+        items:
+          type: string
   v1AssertionStatus:
     type: string
     enum:
@@ -5127,6 +5190,9 @@ definitions:
       pivotRowLimit:
         type: integer
         format: int32
+      chartDynamicYAxis:
+        type: boolean
+        title: Chart display settings (frontend-only; persisted in URL state)
   v1ExploreSortType:
     type: string
     enum:
@@ -5345,20 +5411,6 @@ definitions:
         type: boolean
         description: Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
     title: Response message for RuntimeService.GenerateMetricsViewFile
-  v1GenerateRendererResponse:
-    type: object
-    properties:
-      renderer:
-        type: string
-      rendererProperties:
-        type: object
-  v1GenerateResolverResponse:
-    type: object
-    properties:
-      resolver:
-        type: string
-      resolverProperties:
-        type: object
   v1GetAIMessageResponse:
     type: object
     properties:
@@ -6002,6 +6054,9 @@ definitions:
       rows:
         type: boolean
         title: Optional. Defaults to false. Used to fetch rows from underlying model
+      trace:
+        type: boolean
+        description: Optional. If true, the response will include traces of spans captured during execution.
   v1MetricsViewAggregationResponse:
     type: object
     properties:
@@ -6013,6 +6068,9 @@ definitions:
         items:
           type: object
         title: Not optional, not null
+      trace:
+        $ref: '#/definitions/v1Trace'
+        description: Traces of spans captured during request execution. Only populated if trace was set to true in the request.
   v1MetricsViewAggregationSort:
     type: object
     properties:
@@ -6030,6 +6088,9 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1MetricsViewAnnotationsResponseAnnotation'
+      trace:
+        $ref: '#/definitions/v1Trace'
+        description: Traces of spans captured during request execution. Only populated if trace was set to true in the request.
   v1MetricsViewAnnotationsResponseAnnotation:
     type: object
     properties:
@@ -6157,6 +6218,9 @@ definitions:
         $ref: '#/definitions/v1MetricsViewFilter'
         description: Deprecated. should be removed once UI is moved to use new filters
         title: Optional
+      trace:
+        type: boolean
+        description: Optional. If true, the response will include traces of spans captured during execution.
     title: Request message for QueryService.MetricsViewComparison
   v1MetricsViewComparisonResponse:
     type: object
@@ -6167,6 +6231,9 @@ definitions:
           type: object
           $ref: '#/definitions/v1MetricsViewComparisonRow'
         title: Not optional, not null
+      trace:
+        $ref: '#/definitions/v1Trace'
+        description: Traces of spans captured during request execution. Only populated if trace was set to true in the request.
     title: Response message for QueryService.MetricsViewComparison
   v1MetricsViewComparisonRow:
     type: object
@@ -6277,6 +6344,9 @@ definitions:
       timeDimension:
         type: string
         title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+      trace:
+        type: boolean
+        description: Optional. If true, the response will include traces of spans captured during execution.
   v1MetricsViewRowsResponse:
     type: object
     properties:
@@ -6291,11 +6361,17 @@ definitions:
         items:
           type: object
         title: Not optional, not null
+      trace:
+        $ref: '#/definitions/v1Trace'
+        description: Traces of spans captured during request execution. Only populated if trace was set to true in the request.
   v1MetricsViewSchemaResponse:
     type: object
     properties:
       schema:
         $ref: '#/definitions/v1StructType'
+      trace:
+        $ref: '#/definitions/v1Trace'
+        description: Traces of spans captured during request execution. Only populated if trace was set to true in the request.
   v1MetricsViewSearchResponse:
     type: object
     properties:
@@ -6304,6 +6380,9 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/MetricsViewSearchResponseSearchResult'
+      trace:
+        $ref: '#/definitions/v1Trace'
+        description: Traces of spans captured during request execution. Only populated if trace was set to true in the request.
   v1MetricsViewSort:
     type: object
     properties:
@@ -6394,12 +6473,21 @@ definitions:
         description: Month number to use as the base for time aggregations by year. Defaults to 1 (January).
       cacheEnabled:
         type: boolean
-        description: Cache controls for the metrics view.
+        description: Cache controls for the metrics view. By default, enabled for Rill managed models and disabled for streaming (externally managed) data sources.
       cacheKeySql:
         type: string
+        description: Defaults to use watermark if cache is enabled.
       cacheKeyTtlSeconds:
         type: string
         format: int64
+        description: Defaults to 60 seconds if cache is enabled.
+      cacheTimestampsTtlSeconds:
+        type: string
+        format: int64
+        description: |-
+          TTL for caching timestamp boundaries (min/max) of base and rollup tables. Defaults to 5 minutes if unset.
+          Takes effect only when mv level caching is disabled otherwise the timestamp boundaries are cached with the same TTL
+          as the rest of the query results set via `cache.timestamps_ttl` in the metrics view YAML.
       queryAttributes:
         type: object
         additionalProperties:
@@ -6407,6 +6495,11 @@ definitions:
         description: |-
           Query attributes that can be templated with user context and used by drivers (e.g., appended to SETTINGS in ClickHouse).
           Keys and values are stored as templates and will be resolved at query time.
+      rollups:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewSpecRollup'
   v1MetricsViewSpecAnnotation:
     type: object
     properties:
@@ -6469,6 +6562,9 @@ definitions:
       timeRangeSummary:
         $ref: '#/definitions/v1TimeRangeSummary'
         title: Not optional, not null
+      trace:
+        $ref: '#/definitions/v1Trace'
+        description: Traces of spans captured during request execution. Only populated if trace was set to true in the request.
   v1MetricsViewTimeRangesResponse:
     type: object
     properties:
@@ -6489,6 +6585,9 @@ definitions:
         description: |-
           The same values as resolved_time_ranges for backwards compatibility.
           Deprecated: use resolved_time_ranges instead.
+      trace:
+        $ref: '#/definitions/v1Trace'
+        description: Traces of spans captured during request execution. Only populated if trace was set to true in the request.
   v1MetricsViewTimeSeriesRequest:
     type: object
     properties:
@@ -6535,6 +6634,9 @@ definitions:
       timeDimension:
         type: string
         title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+      trace:
+        type: boolean
+        description: Optional. If true, the response will include traces of spans captured during execution.
   v1MetricsViewTimeSeriesResponse:
     type: object
     properties:
@@ -6550,6 +6652,9 @@ definitions:
           type: object
           $ref: '#/definitions/v1TimeSeriesValue'
         title: Not optional, not null
+      trace:
+        $ref: '#/definitions/v1Trace'
+        description: Traces of spans captured during request execution. Only populated if trace was set to true in the request.
   v1MetricsViewToplistRequest:
     type: object
     properties:
@@ -6594,6 +6699,9 @@ definitions:
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
         title: Deprecated. should be removed once UI is moved to use new filters
+      trace:
+        type: boolean
+        description: Optional. If true, the response will include traces of spans captured during execution.
     title: Deprecated, use MetricsViewComparisonRequest without a comparison time range
   v1MetricsViewToplistResponse:
     type: object
@@ -6609,6 +6717,9 @@ definitions:
         items:
           type: object
         title: Not optional, not null
+      trace:
+        $ref: '#/definitions/v1Trace'
+        description: Traces of spans captured during request execution. Only populated if trace was set to true in the request.
   v1MetricsViewTotalsRequest:
     type: object
     properties:
@@ -6643,6 +6754,9 @@ definitions:
       timeDimension:
         type: string
         title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+      trace:
+        type: boolean
+        description: Optional. If true, the response will include traces of spans captured during execution.
   v1MetricsViewTotalsResponse:
     type: object
     properties:
@@ -6655,6 +6769,9 @@ definitions:
       data:
         type: object
         title: Not optional, not null
+      trace:
+        $ref: '#/definitions/v1Trace'
+        description: Traces of spans captured during request execution. Only populated if trace was set to true in the request.
   v1Migration:
     type: object
     properties:
@@ -6808,6 +6925,11 @@ definitions:
         items:
           type: string
         description: test_errors contains the results of the model's tests.
+      testWarnings:
+        type: array
+        items:
+          type: string
+        description: test_warnings contains warnings from the most recent test run, stored separately from execution warnings.
       refreshedOn:
         type: string
         format: date-time
@@ -6824,6 +6946,11 @@ definitions:
       partitionsHaveErrors:
         type: boolean
         description: partitions_have_errors is true if one or more partitions failed to execute.
+      warnings:
+        type: array
+        items:
+          type: string
+        description: warnings contains any warnings generated during the model's execution.
       totalExecutionDurationMs:
         type: string
         format: int64
@@ -6835,6 +6962,14 @@ definitions:
         type: string
         format: int64
         description: latest_execution_duration_ms is the time user queries took to execute in the last successful refresh.
+      rowsTotal:
+        type: string
+        format: int64
+        description: rows_total is the total number of rows in the model's output table.
+      bytesTotal:
+        type: string
+        format: int64
+        description: bytes_total is the total size in bytes of the model's output table.
   v1ModelTest:
     type: object
     properties:
@@ -6991,6 +7126,8 @@ definitions:
         $ref: '#/definitions/v1CharLocation'
       external:
         type: boolean
+      warning:
+        type: boolean
   v1PingResponse:
     type: object
     properties:
@@ -7039,6 +7176,71 @@ definitions:
         format: date-time
       watching:
         type: boolean
+  v1ProjectStorageEntry:
+    type: object
+    properties:
+      connector:
+        type: string
+        description: Connector name.
+      driver:
+        type: string
+        description: Connector driver name.
+      isDefaultOlap:
+        type: boolean
+        description: True if the connector is the project's default OLAP.
+      managed:
+        type: boolean
+        description: 'True if the connector is managed by Rill (i.e. has `managed: true` in the connector definition).'
+      sizeBytes:
+        type: string
+        format: int64
+        description: |-
+          Storage usage in bytes.
+          If it is -1, it means the value is unknown.
+      error:
+        type: string
+        description: |-
+          Error message if the connector was unavailable.
+          This is usually empty.
+  v1ProjectStorageRequest:
+    type: object
+    properties:
+      instanceId:
+        type: string
+  v1ProjectStorageResponse:
+    type: object
+    properties:
+      entries:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ProjectStorageEntry'
+        description: Storage usage per relevant connector in the project.
+      managedSizeBytes:
+        type: string
+        format: int64
+        description: |-
+          Aggregated storage usage by managed connectors in the project.
+          If it is -1, it means the value is unknown.
+          This is a convenience field derived from the entries.
+      defaultOlapSizeBytes:
+        type: string
+        format: int64
+        description: |-
+          Storage usage by the default OLAP connector in the project.
+          If it is -1, it means the value is unknown.
+          This is a convenience field derived from the entries.
+  v1PushEnvResponse:
+    type: object
+    properties:
+      addedCount:
+        type: integer
+        format: int32
+        title: Number of variables added
+      changedCount:
+        type: integer
+        format: int32
+        title: Number of variables changed
   v1PutFileResponse:
     type: object
     properties:
@@ -7049,6 +7251,8 @@ definitions:
   v1Query:
     type: object
     properties:
+      projectStorageRequest:
+        $ref: '#/definitions/v1ProjectStorageRequest'
       metricsViewAggregationRequest:
         $ref: '#/definitions/v1MetricsViewAggregationRequest'
       metricsViewToplistRequest:
@@ -7120,6 +7324,8 @@ definitions:
   v1QueryResult:
     type: object
     properties:
+      projectStorageResponse:
+        $ref: '#/definitions/v1ProjectStorageResponse'
       metricsViewAggregationResponse:
         $ref: '#/definitions/v1MetricsViewAggregationResponse'
       metricsViewToplistResponse:
@@ -7213,6 +7419,14 @@ definitions:
     type: object
   v1ReloadConfigResponse:
     type: object
+    properties:
+      variablesCount:
+        type: integer
+        format: int32
+        title: Number of variables pulled from admin service
+      modified:
+        type: boolean
+        title: Whether the .env file(s) were modified
     title: Response message for RuntimeService.ReloadConfig
   v1RenameFileResponse:
     type: object
@@ -7231,6 +7445,10 @@ definitions:
         type: boolean
       errorMessage:
         type: string
+      warnings:
+        type: array
+        items:
+          type: string
       reportTime:
         type: string
         format: date-time
@@ -7441,6 +7659,10 @@ definitions:
         $ref: '#/definitions/v1ReconcileStatus'
       reconcileError:
         type: string
+      reconcileWarnings:
+        type: array
+        items:
+          type: string
       reconcileOn:
         type: string
         format: date-time
@@ -7619,6 +7841,27 @@ definitions:
       refreshedOn:
         type: string
         format: date-time
+  v1Span:
+    type: object
+    properties:
+      name:
+        type: string
+      spanId:
+        type: string
+      parentSpanId:
+        type: string
+      startTime:
+        type: string
+        format: date-time
+      durationMs:
+        type: string
+        format: int64
+      attributes:
+        type: object
+        additionalProperties:
+          type: string
+        description: span attributes plus driver-set attributes like "cancelled", "failed", "queue_latency_ms", "olap", etc.
+    description: Span corresponds to a single OTel span captured during a request.
   v1StringListValue:
     type: object
     properties:
@@ -7927,6 +8170,15 @@ definitions:
           type: object
           $ref: '#/definitions/TopKEntry'
         title: Not optional, not null
+  v1Trace:
+    type: object
+    properties:
+      spans:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Span'
+    description: Trace contains trace spans captured during request execution. Used both in successful responses and as gRPC error details when trace=true and the request fails.
   v1UnpackEmptyResponse:
     type: object
     title: Response message for RuntimeService.UnpackEmpty

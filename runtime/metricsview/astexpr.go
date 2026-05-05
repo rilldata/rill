@@ -100,6 +100,7 @@ func (b *sqlExprBuilder) writeSubquery(sub *Subquery) error {
 		UseDisplayNames:     false,
 		Rows:                false,
 		QueryLimits:         outer.QueryLimits,
+		UnusedFields:        nil,
 	} //exhaustruct:enforce
 
 	// Generate SQL for the subquery
@@ -296,7 +297,7 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 		if tupleStyle {
 			unnestColAlias = b.ast.Dialect.EscapeMember(unnestTableAlias, left.Name)
 		} else {
-			unnestColAlias = b.ast.Dialect.EscapeIdentifier(left.Name)
+			unnestColAlias = b.ast.Dialect.EscapeAlias(left.Name)
 		}
 
 		if !tupleStyle { // if tupleStyle, then we cannot refer to the column by table alias
@@ -430,7 +431,11 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 		if not {
 			b.writeString(" NOT ")
 		}
-		b.writeString(b.ast.Dialect.GetRegexMatchFunction())
+		regexFunc, err := b.ast.Dialect.GetRegexMatchFunction()
+		if err != nil {
+			return err
+		}
+		b.writeString(regexFunc)
 		b.writeByte('(')
 		if leftOverride != "" {
 			b.writeParenthesizedString(leftOverride)
@@ -672,8 +677,11 @@ func (b *sqlExprBuilder) writeArrayContainsCondition(leftExpr string, right *Exp
 	if not {
 		b.writeString("NOT ")
 	}
-
-	b.writeString(b.ast.Dialect.GetArrayContainsFunction())
+	arrayContainsFunc, err := b.ast.Dialect.GetArrayContainsFunction()
+	if err != nil {
+		return err
+	}
+	b.writeString(arrayContainsFunc)
 	b.writeByte('(')
 	b.writeParenthesizedString(leftExpr)
 	b.writeString(", [")

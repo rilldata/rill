@@ -1,6 +1,6 @@
 <script lang="ts">
-  import BarAndLabel from "@rilldata/web-common/components/BarAndLabel.svelte";
   import { slide } from "svelte/transition";
+  import BarAndLabel from "@rilldata/web-common/components/BarAndLabel.svelte";
 
   export let value: number; // should be between 0 and 1.
   export let color = "bg-primary-200";
@@ -19,10 +19,10 @@
 
 <button
   class="block flex flex-row w-full text-left transition-color"
-  on:blur={onLeave}
-  on:focus={onHover}
-  on:mouseleave={onLeave}
-  on:mouseover={onHover}
+  onblur={onLeave}
+  onfocus={onHover}
+  onmouseleave={onLeave}
+  onmouseover={onHover}
   transition:slide={{ duration: 200 }}
 >
   <BarAndLabel

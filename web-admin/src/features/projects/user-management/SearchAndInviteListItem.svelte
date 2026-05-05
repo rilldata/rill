@@ -25,25 +25,25 @@
   class:highlighted={resultIndex === highlightedIndex}
   class:selected={isSelected}
   class="dropdown-item"
-  on:click={(e) => {
+  onclick={(e) => {
     e.preventDefault();
     onSelect(result);
   }}
-  on:keydown={(e) => {
+  onkeydown={(e) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       onSelect(result);
     }
   }}
-  on:pointerdown={(e) => {
+  onpointerdown={(e) => {
     e.preventDefault();
   }}
-  on:pointerenter={() => {
+  onpointerenter={() => {
     if (!keyboardNavigationActive) {
       onHighlight(resultIndex);
     }
   }}
-  on:pointerleave={() => {
+  onpointerleave={() => {
     if (!keyboardNavigationActive) {
       onClearHighlight();
     }

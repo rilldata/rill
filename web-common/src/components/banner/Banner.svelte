@@ -39,13 +39,13 @@
         <a
           href={banner.cta.url}
           target={banner.cta.target}
-          on:click={clickHandler}
+          onclick={clickHandler}
           class="banner-cta"
         >
           {banner.cta.text}
         </a>
       {:else if banner.cta.type === "button"}
-        <button on:click={clickHandler} class="banner-cta" disabled={loading}>
+        <button onclick={clickHandler} class="banner-cta" disabled={loading}>
           {banner.cta.text}
         </button>
       {/if}

@@ -70,8 +70,11 @@ export function computeNiceYExtent(
     yMin = smallest < 0 ? smallest * paddingFactor : 0;
     yMax = largest > 0 ? largest * paddingFactor : 0;
   } else {
-    yMin = smallest * paddingFactor;
-    yMax = largest * paddingFactor;
+    // Use range-based padding so both ends get symmetric breathing room
+    const range = largest - smallest || Math.abs(largest) || 1;
+    const pad = range * (paddingFactor - 1);
+    yMin = smallest - pad;
+    yMax = largest + pad;
   }
 
   // Ensure minimum range if specified

@@ -33,7 +33,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { InfoIcon } from "lucide-svelte";
   import type { Interval } from "luxon";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import CanvasFilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/CanvasFilterChipsReadOnly.svelte";
   import { defaults, superForm } from "sveltekit-superforms";
@@ -51,10 +51,10 @@
   export let metricsViewNames: string[];
   export let onClose = () => {};
 
+  const runtimeClient = useRuntimeClient();
+
   let filterState: undefined | Awaited<ReturnType<typeof processUrl>> =
     undefined;
-
-  $: ({ instanceId } = $runtime);
 
   $: ({ name: resourceName, kind: resourceKind } = resource);
 
@@ -83,7 +83,12 @@
 
     try {
       const promises = metricsViewNames.map((mvName) =>
-        deriveInterval(timeRange.expression || "", mvName, timeZone),
+        deriveInterval(
+          timeRange.expression || "",
+          runtimeClient,
+          mvName,
+          timeZone,
+        ),
       );
 
       const intervals = await Promise.all(promises);
@@ -118,7 +123,7 @@
       if (resource.kind === ResourceKind.Canvas) {
         const uiFilters = getCanvasStore(
           resourceName,
-          instanceId,
+          runtimeClient.instanceId,
         ).canvasEntity.filterManager.getUIFiltersFromString(searchParams);
 
         return {
@@ -256,7 +261,10 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
       class="flex flex-col gap-4 z-50"
       id={formId}
       use:enhance
-      on:submit|preventDefault={submit}
+      onsubmit={(e) => {
+        e.preventDefault();
+        submit(e);
+      }}
     >
       <Input
         bind:value={$form["displayName"]}
@@ -375,7 +383,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
     </form>
 
     <div class="flex flex-row mt-4 gap-2">
-      <div class="grow" />
+      <div class="grow"></div>
       <Button onClick={onClose} type="secondary">Cancel</Button>
       <Button onClick={submit} type="primary">Save</Button>
     </div>

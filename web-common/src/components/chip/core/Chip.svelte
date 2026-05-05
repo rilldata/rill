@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { builderActions, getAttrs, type Builder } from "bits-ui";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import { slideRight } from "../../../lib/transitions";
@@ -19,8 +18,7 @@
   export let grab = false;
   export let compact = false;
   export let fullWidth = false;
-  export let builders: Builder[] = [];
-  export let caret = builders.length > 0;
+  export let caret = false;
   export let slideDuration = 150;
   export let supressTooltip = false;
   export let label: string | undefined = undefined;
@@ -29,6 +27,8 @@
   export let theme = false;
   export let showPinnedIcon = false;
   export let onRemove: () => void = () => {};
+  export let onclick: ((e: MouseEvent) => void) | undefined = undefined;
+  export let onmousedown: ((e: MouseEvent) => void) | undefined = undefined;
 
   const tooltipSuppression = getContext<Writable<boolean>>(
     "rill:app:childRequestedTooltipSuppression",
@@ -44,6 +44,7 @@
 
 <div in:slideRight={{ duration: slideDuration }}>
   <div
+    {...$$restProps}
     class="chip {type}"
     class:theme
     class:active
@@ -53,8 +54,6 @@
     class:compact
     class:fullWidth
     class:pointer-events-none={readOnly && !allowPointerEvents}
-    {...getAttrs(builders)}
-    use:builderActions={{ builders }}
     aria-label={label}
   >
     {#if removable && !readOnly}
@@ -66,11 +65,15 @@
         <button
           class="text-inherit mr-0.5"
           aria-label="Remove"
-          on:mouseover={focusOnRemove}
-          on:focus={focusOnRemove}
-          on:mouseleave={blurOnRemove}
-          on:blur={blurOnRemove}
-          on:click|stopPropagation={onRemove}
+          onmouseover={focusOnRemove}
+          onfocus={focusOnRemove}
+          onmouseleave={blurOnRemove}
+          onblur={blurOnRemove}
+          onpointerdown={(e) => e.stopPropagation()}
+          onclick={(e) => {
+            e.stopPropagation();
+            onRemove();
+          }}
           type="button"
         >
           <CancelCircle size="16px" />
@@ -88,8 +91,8 @@
 
     {#if $$slots.body}
       <button
-        on:click
-        on:mousedown
+        {onclick}
+        {onmousedown}
         aria-label={`Open ${label}`}
         class="text-inherit w-full select-none truncate flex items-center justify-between gap-x-1 px-0.5"
         type="button"

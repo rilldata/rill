@@ -32,6 +32,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/bigquery"
 	_ "github.com/rilldata/rill/runtime/drivers/claude"
 	_ "github.com/rilldata/rill/runtime/drivers/clickhouse"
+	_ "github.com/rilldata/rill/runtime/drivers/databricks"
 	_ "github.com/rilldata/rill/runtime/drivers/druid"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
@@ -167,6 +168,7 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 		RepoConnector:    "repo",
 		AIConnector:      aiConnector,
 		CatalogConnector: "catalog",
+		AdminConnector:   "noop_admin",
 		Connectors: []*runtimev1.Connector{
 			{
 				Type:   "file",
@@ -270,6 +272,7 @@ func newInstanceHelper(t TestingT, name string, instConfig map[string]string) (*
 		OLAPConnector:    olapDriver,
 		RepoConnector:    "repo",
 		CatalogConnector: "catalog",
+		AdminConnector:   "noop_admin",
 		Connectors: []*runtimev1.Connector{
 			{
 				Type:   "file",
@@ -279,7 +282,7 @@ func newInstanceHelper(t TestingT, name string, instConfig map[string]string) (*
 			{
 				Type:   olapDriver,
 				Name:   olapDriver,
-				Config: Must(structpb.NewStruct(map[string]any{"dsn": olapDSN})),
+				Config: Must(structpb.NewStruct(map[string]any{"dsn": olapDSN, "mode": "readwrite"})),
 			},
 			{
 				Type: "sqlite",

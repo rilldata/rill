@@ -1,6 +1,6 @@
 <script lang="ts">
   import { beforeNavigate } from "$app/navigation";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
     cleanupConversationManager,
     getConversationManager,
@@ -11,9 +11,10 @@
   export let noMargin = false;
   export let height: string | undefined = undefined;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
+  $: instanceId = runtimeClient.instanceId;
 
-  $: conversationManager = getConversationManager(instanceId, {
+  $: conversationManager = getConversationManager(runtimeClient, {
     conversationState: "url",
   });
 

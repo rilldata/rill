@@ -1,18 +1,17 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
+  import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
   import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { sourceIngestionTracker } from "@rilldata/web-common/features/sources/sources-store";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
   import { WandIcon } from "lucide-svelte";
   import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import type { V1Resource } from "../../../runtime-client";
-  import type { HTTPError } from "../../../runtime-client/fetchWrapper";
   import { extractFileName } from "../../entity-management/file-path-utils";
   import { featureFlags } from "../../feature-flags";
   import {
@@ -24,23 +23,23 @@
 
   export let sourcePath: string | null;
 
+  const runtimeClient = useRuntimeClient();
+
   let fileArtifact: FileArtifact;
-  let sourceQuery: CreateQueryResult<V1Resource, HTTPError>;
+  let sourceQuery: CreateQueryResult<V1Resource, Error>;
 
   $: sourceName = extractFileName(sourcePath ?? "");
 
-  $: ({ instanceId } = $runtime);
-
   $: if (sourcePath) {
     fileArtifact = fileArtifacts.getFileArtifact(sourcePath);
-    sourceQuery = fileArtifact.getResource(queryClient, instanceId);
+    sourceQuery = fileArtifact.getResource(queryClient);
   }
   $: sinkConnector = $sourceQuery?.data?.source?.spec?.sinkConnector;
 
   $: createDashboardFromTable =
     sourcePath !== null
       ? useCreateMetricsViewWithCanvasAndExploreUIAction(
-          instanceId,
+          runtimeClient,
           sinkConnector as string,
           "",
           "",
@@ -55,7 +54,7 @@
   }
 
   async function goToSource() {
-    await goto(`/files${sourcePath ?? ""}`);
+    await navigateToFile(sourcePath ?? "");
     close();
   }
 
@@ -69,7 +68,7 @@
     // Use developer agent if enabled, otherwise fall back to RPC
     if ($developerChat) {
       await createCanvasDashboardFromTableWithAgent(
-        instanceId,
+        runtimeClient,
         sinkConnector as string,
         "",
         "",
@@ -91,26 +90,30 @@
     </AlertDialog.Description>
 
     <AlertDialog.Footer>
-      <AlertDialog.Action asChild let:builder>
-        <AlertDialog.Cancel asChild let:builder>
-          <Button builders={[builder]} onClick={goToSource} type="secondary">
-            View this source
+      <AlertDialog.Action>
+        {#snippet child({ props })}
+          <AlertDialog.Cancel>
+            {#snippet child({ props: cancelProps })}
+              <Button {...cancelProps} onClick={goToSource} type="secondary">
+                View this source
+              </Button>
+            {/snippet}
+          </AlertDialog.Cancel>
+
+          <Button
+            {...props}
+            disabled={createDashboardFromTable === null}
+            onClick={generateMetrics}
+            type="primary"
+          >
+            Generate dashboard
+
+            {#if $ai}
+              with AI
+              <WandIcon class="w-3 h-3" />
+            {/if}
           </Button>
-        </AlertDialog.Cancel>
-
-        <Button
-          builders={[builder]}
-          disabled={createDashboardFromTable === null}
-          onClick={generateMetrics}
-          type="primary"
-        >
-          Generate dashboard
-
-          {#if $ai}
-            with AI
-            <WandIcon class="w-3 h-3" />
-          {/if}
-        </Button>
+        {/snippet}
       </AlertDialog.Action>
     </AlertDialog.Footer>
   </AlertDialog.Content>

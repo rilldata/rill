@@ -44,14 +44,6 @@ Themes support multiple color formats:
 
 For consistency and clarity, we recommend using quoted hex values with the `#` prefix.
 
-## JSON Schema
-
-Here is a full JSON schema for the theme syntax:
-
-```
-{% json_schema_for_resource "theme" %}
-```
-
 ## Recommended Theme Structure
 
 The recommended approach uses separate `light:` and `dark:` blocks to define mode-specific colors. This ensures your dashboards look great in both light and dark modes.
@@ -70,6 +62,10 @@ light:
   background: "#f8fafc"  # Page background
   surface: "#ffffff"     # Elevated surfaces, panels
   card: "#f1f5f9"        # Card backgrounds
+
+  # KPI delta colors (optional - controls comparison/change value colors)
+  # kpi-positive: "#16a34a"  # Green for positive deltas (defaults to gray)
+  # kpi-negative: "#dc2626"  # Red for negative deltas (defaults to red)
 
   # Qualitative palette for categorical data (optional, 24 colors)
   # Used for bar charts, pie charts, legend colors by category
@@ -134,6 +130,10 @@ dark:
   background: "#0f172a"  # Deep slate background
   surface: "#1e293b"     # Elevated surfaces
   card: "#334155"        # Card backgrounds
+
+  # KPI delta colors (optional)
+  # kpi-positive: "#4ade80"  # Green for positive deltas (brighter for dark mode)
+  # kpi-negative: "#f87171"  # Red for negative deltas (brighter for dark mode)
 
   # Qualitative palette (adjusted for dark mode visibility)
   color-qualitative-1: "#818cf8"
@@ -213,4 +213,12 @@ type: theme
 colors:
   primary: "#FF6A00"
   secondary: "#0F46A3"
+```
+
+## Reference documentation
+
+Here is a full JSON schema for the theme syntax:
+
+```
+{% json_schema_for_resource "theme" %}
 ```

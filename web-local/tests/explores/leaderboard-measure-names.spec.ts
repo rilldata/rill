@@ -14,12 +14,14 @@ test.describe("leaderboard measure names", () => {
   test("measure selection", async ({ page }) => {
     // Test single selection
     await page.getByTestId("leaderboard-measure-names-dropdown").click();
-    await page.getByRole("menuitem", { name: "Sum of Bid Price" }).click();
+    await page
+      .getByRole("menuitemcheckbox", { name: "Sum of Bid Price" })
+      .click();
 
     // Reopen dropdown to verify selection
     await page.getByTestId("leaderboard-measure-names-dropdown").click();
     await expect(
-      page.getByRole("menuitem", { name: "Sum of Bid Price" }),
+      page.getByRole("menuitemcheckbox", { name: "Sum of Bid Price" }),
     ).toHaveAttribute("aria-checked", "true");
 
     // Close dropdown and reopen to test multiple selection
@@ -28,10 +30,10 @@ test.describe("leaderboard measure names", () => {
 
     // Verify initial state
     await expect(
-      page.getByRole("menuitem", { name: "Sum of Bid Price" }),
+      page.getByRole("menuitemcheckbox", { name: "Sum of Bid Price" }),
     ).toHaveAttribute("aria-checked", "true");
     await expect(
-      page.getByRole("menuitem", { name: "Total records" }),
+      page.getByRole("menuitemcheckbox", { name: "Total records" }),
     ).toHaveAttribute("aria-checked", "false");
 
     // Enable multi-select
@@ -39,9 +41,9 @@ test.describe("leaderboard measure names", () => {
     await expect(page.getByTestId("multi-measure-select-switch")).toBeChecked();
 
     // Select second measure and wait for state update
-    await page.getByRole("menuitem", { name: "Total records" }).click();
+    await page.getByRole("menuitemcheckbox", { name: "Total records" }).click();
     await expect(
-      page.getByRole("menuitem", { name: "Total records" }),
+      page.getByRole("menuitemcheckbox", { name: "Total records" }),
     ).toHaveAttribute("aria-checked", "true");
 
     await page.keyboard.press("Escape");

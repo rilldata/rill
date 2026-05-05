@@ -5,7 +5,9 @@
     createQueryServiceTableColumns,
     createQueryServiceTableRows,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+
+  const runtimeClient = useRuntimeClient();
   import WorkspaceError from "../WorkspaceError.svelte";
   import type { VirtualizedTableColumns } from "../virtualized-table/types";
   import PreviewTable from "./PreviewTable.svelte";
@@ -19,9 +21,8 @@
   let columns: VirtualizedTableColumns[] | undefined;
   let rows: V1TableRowsResponseDataItem[] | undefined;
 
-  $: ({ instanceId } = $runtime);
-
-  $: columnsQuery = createQueryServiceTableColumns(instanceId, table, {
+  $: columnsQuery = createQueryServiceTableColumns(runtimeClient, {
+    tableName: table,
     connector,
     database,
     databaseSchema,
@@ -32,7 +33,8 @@
     error: columnsError,
   } = $columnsQuery);
 
-  $: rowsQuery = createQueryServiceTableRows(instanceId, table, {
+  $: rowsQuery = createQueryServiceTableRows(runtimeClient, {
+    tableName: table,
     connector,
     database,
     databaseSchema,
@@ -53,7 +55,7 @@
   <ReconcilingSpinner />
 {:else if rowsError || columnsError}
   <WorkspaceError
-    message={`Error loading table: ${rowsError?.response.data?.message || columnsError?.response.data?.message}`}
+    message={`Error loading table: ${(rowsError ?? columnsError)?.message ?? "Unknown error"}`}
   />
 {:else if rows && columns}
   <PreviewTable {rows} columnNames={columns} name={table} />

@@ -4,10 +4,12 @@ import { renameFileUsingTitle } from "./commonHelpers";
 import { waitForFileNavEntry } from "./waitHelpers";
 
 export async function createModel(page: Page, modelFileName: string) {
-  // add asset button
+  // Click add asset button
   await page.getByLabel("Add Asset").click();
-  // add model menu item
-  await page.getByLabel("Add Model").click();
+  // Hover the add model option
+  await page.getByLabel("Add Model").hover();
+  // Click add blank model
+  await page.getByLabel("Create blank model").click();
 
   // Wait for default model
   await waitForFileNavEntry(page, "/models/model.sql", true);
@@ -18,7 +20,7 @@ export async function createModel(page: Page, modelFileName: string) {
 }
 
 export async function modelHasError(page: Page, hasError: boolean, error = "") {
-  const errorLocator = page.locator(".editor-pane .error");
+  const errorLocator = page.getByLabel("Model errors");
   try {
     await errorLocator.waitFor({
       timeout: 100,

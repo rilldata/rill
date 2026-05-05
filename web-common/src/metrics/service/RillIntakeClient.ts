@@ -1,6 +1,4 @@
 import type { MetricsEvent } from "./MetricsTypes";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { get } from "svelte/store";
 
 const RillIntakeUser = import.meta.env.RILL_UI_PUBLIC_INTAKE_USER;
 const RillIntakePassword = import.meta.env.RILL_UI_PUBLIC_INTAKE_PASSWORD;
@@ -11,8 +9,10 @@ export interface TelemetryClient {
 
 export class RillIntakeClient implements TelemetryClient {
   private readonly authHeader: string;
+  private readonly host: string;
 
-  public constructor() {
+  public constructor(host: string) {
+    this.host = host;
     // this is the format rill-intake expects.
     this.authHeader =
       "Basic " + btoa(`${RillIntakeUser}:${RillIntakePassword}`);
@@ -22,7 +22,7 @@ export class RillIntakeClient implements TelemetryClient {
     if (!RillIntakeUser || !RillIntakePassword) return;
 
     try {
-      const resp = await fetch(`${get(runtime).host}/local/track`, {
+      const resp = await fetch(`${this.host}/local/track`, {
         method: "POST",
         body: JSON.stringify(event),
         headers: {

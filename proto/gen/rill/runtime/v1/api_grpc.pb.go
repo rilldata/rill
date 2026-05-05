@@ -40,8 +40,6 @@ const (
 	RuntimeService_UnpackEmpty_FullMethodName             = "/rill.runtime.v1.RuntimeService/UnpackEmpty"
 	RuntimeService_GenerateMetricsViewFile_FullMethodName = "/rill.runtime.v1.RuntimeService/GenerateMetricsViewFile"
 	RuntimeService_GenerateCanvasFile_FullMethodName      = "/rill.runtime.v1.RuntimeService/GenerateCanvasFile"
-	RuntimeService_GenerateResolver_FullMethodName        = "/rill.runtime.v1.RuntimeService/GenerateResolver"
-	RuntimeService_GenerateRenderer_FullMethodName        = "/rill.runtime.v1.RuntimeService/GenerateRenderer"
 	RuntimeService_QueryResolver_FullMethodName           = "/rill.runtime.v1.RuntimeService/QueryResolver"
 	RuntimeService_GetLogs_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GetLogs"
 	RuntimeService_WatchLogs_FullMethodName               = "/rill.runtime.v1.RuntimeService/WatchLogs"
@@ -73,6 +71,7 @@ const (
 	RuntimeService_GitSwitchBranch_FullMethodName         = "/rill.runtime.v1.RuntimeService/GitSwitchBranch"
 	RuntimeService_GitPull_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GitPull"
 	RuntimeService_GitPush_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GitPush"
+	RuntimeService_PushEnv_FullMethodName                 = "/rill.runtime.v1.RuntimeService/PushEnv"
 )
 
 // RuntimeServiceClient is the client API for RuntimeService service.
@@ -126,10 +125,6 @@ type RuntimeServiceClient interface {
 	GenerateMetricsViewFile(ctx context.Context, in *GenerateMetricsViewFileRequest, opts ...grpc.CallOption) (*GenerateMetricsViewFileResponse, error)
 	// GenerateCanvasFile generates a canvas YAML file from a metrics view
 	GenerateCanvasFile(ctx context.Context, in *GenerateCanvasFileRequest, opts ...grpc.CallOption) (*GenerateCanvasFileResponse, error)
-	// GenerateResolver generates resolver and resolver properties from a table or a metrics view
-	GenerateResolver(ctx context.Context, in *GenerateResolverRequest, opts ...grpc.CallOption) (*GenerateResolverResponse, error)
-	// GenerateRenderer generates a component renderer and renderer properties from a resolver and resolver properties
-	GenerateRenderer(ctx context.Context, in *GenerateRendererRequest, opts ...grpc.CallOption) (*GenerateRendererResponse, error)
 	// QueryResolver queries a resolver with the given properties and arguments
 	QueryResolver(ctx context.Context, in *QueryResolverRequest, opts ...grpc.CallOption) (*QueryResolverResponse, error)
 	// GetLogs returns recent logs from a controller
@@ -200,6 +195,8 @@ type RuntimeServiceClient interface {
 	// GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
 	// It only pushes the changes to the existing remote repo.
 	GitPush(ctx context.Context, in *GitPushRequest, opts ...grpc.CallOption) (*GitPushResponse, error)
+	// PushEnv pushes local environment variables to admin service
+	PushEnv(ctx context.Context, in *PushEnvRequest, opts ...grpc.CallOption) (*PushEnvResponse, error)
 }
 
 type runtimeServiceClient struct {
@@ -423,26 +420,6 @@ func (c *runtimeServiceClient) GenerateCanvasFile(ctx context.Context, in *Gener
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GenerateCanvasFileResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_GenerateCanvasFile_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *runtimeServiceClient) GenerateResolver(ctx context.Context, in *GenerateResolverRequest, opts ...grpc.CallOption) (*GenerateResolverResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GenerateResolverResponse)
-	err := c.cc.Invoke(ctx, RuntimeService_GenerateResolver_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *runtimeServiceClient) GenerateRenderer(ctx context.Context, in *GenerateRendererRequest, opts ...grpc.CallOption) (*GenerateRendererResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GenerateRendererResponse)
-	err := c.cc.Invoke(ctx, RuntimeService_GenerateRenderer_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -786,6 +763,16 @@ func (c *runtimeServiceClient) GitPush(ctx context.Context, in *GitPushRequest, 
 	return out, nil
 }
 
+func (c *runtimeServiceClient) PushEnv(ctx context.Context, in *PushEnvRequest, opts ...grpc.CallOption) (*PushEnvResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PushEnvResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_PushEnv_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RuntimeServiceServer is the server API for RuntimeService service.
 // All implementations must embed UnimplementedRuntimeServiceServer
 // for forward compatibility.
@@ -837,10 +824,6 @@ type RuntimeServiceServer interface {
 	GenerateMetricsViewFile(context.Context, *GenerateMetricsViewFileRequest) (*GenerateMetricsViewFileResponse, error)
 	// GenerateCanvasFile generates a canvas YAML file from a metrics view
 	GenerateCanvasFile(context.Context, *GenerateCanvasFileRequest) (*GenerateCanvasFileResponse, error)
-	// GenerateResolver generates resolver and resolver properties from a table or a metrics view
-	GenerateResolver(context.Context, *GenerateResolverRequest) (*GenerateResolverResponse, error)
-	// GenerateRenderer generates a component renderer and renderer properties from a resolver and resolver properties
-	GenerateRenderer(context.Context, *GenerateRendererRequest) (*GenerateRendererResponse, error)
 	// QueryResolver queries a resolver with the given properties and arguments
 	QueryResolver(context.Context, *QueryResolverRequest) (*QueryResolverResponse, error)
 	// GetLogs returns recent logs from a controller
@@ -911,6 +894,8 @@ type RuntimeServiceServer interface {
 	// GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
 	// It only pushes the changes to the existing remote repo.
 	GitPush(context.Context, *GitPushRequest) (*GitPushResponse, error)
+	// PushEnv pushes local environment variables to admin service
+	PushEnv(context.Context, *PushEnvRequest) (*PushEnvResponse, error)
 	mustEmbedUnimplementedRuntimeServiceServer()
 }
 
@@ -983,12 +968,6 @@ func (UnimplementedRuntimeServiceServer) GenerateMetricsViewFile(context.Context
 }
 func (UnimplementedRuntimeServiceServer) GenerateCanvasFile(context.Context, *GenerateCanvasFileRequest) (*GenerateCanvasFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateCanvasFile not implemented")
-}
-func (UnimplementedRuntimeServiceServer) GenerateResolver(context.Context, *GenerateResolverRequest) (*GenerateResolverResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GenerateResolver not implemented")
-}
-func (UnimplementedRuntimeServiceServer) GenerateRenderer(context.Context, *GenerateRendererRequest) (*GenerateRendererResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GenerateRenderer not implemented")
 }
 func (UnimplementedRuntimeServiceServer) QueryResolver(context.Context, *QueryResolverRequest) (*QueryResolverResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryResolver not implemented")
@@ -1082,6 +1061,9 @@ func (UnimplementedRuntimeServiceServer) GitPull(context.Context, *GitPullReques
 }
 func (UnimplementedRuntimeServiceServer) GitPush(context.Context, *GitPushRequest) (*GitPushResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GitPush not implemented")
+}
+func (UnimplementedRuntimeServiceServer) PushEnv(context.Context, *PushEnvRequest) (*PushEnvResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PushEnv not implemented")
 }
 func (UnimplementedRuntimeServiceServer) mustEmbedUnimplementedRuntimeServiceServer() {}
 func (UnimplementedRuntimeServiceServer) testEmbeddedByValue()                        {}
@@ -1471,42 +1453,6 @@ func _RuntimeService_GenerateCanvasFile_Handler(srv interface{}, ctx context.Con
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RuntimeServiceServer).GenerateCanvasFile(ctx, req.(*GenerateCanvasFileRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RuntimeService_GenerateResolver_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GenerateResolverRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).GenerateResolver(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RuntimeService_GenerateResolver_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).GenerateResolver(ctx, req.(*GenerateResolverRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RuntimeService_GenerateRenderer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GenerateRendererRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).GenerateRenderer(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RuntimeService_GenerateRenderer_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).GenerateRenderer(ctx, req.(*GenerateRendererRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2048,6 +1994,24 @@ func _RuntimeService_GitPush_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_PushEnv_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PushEnvRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).PushEnv(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_PushEnv_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).PushEnv(ctx, req.(*PushEnvRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RuntimeService_ServiceDesc is the grpc.ServiceDesc for RuntimeService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -2134,14 +2098,6 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GenerateCanvasFile",
 			Handler:    _RuntimeService_GenerateCanvasFile_Handler,
-		},
-		{
-			MethodName: "GenerateResolver",
-			Handler:    _RuntimeService_GenerateResolver_Handler,
-		},
-		{
-			MethodName: "GenerateRenderer",
-			Handler:    _RuntimeService_GenerateRenderer_Handler,
 		},
 		{
 			MethodName: "QueryResolver",
@@ -2254,6 +2210,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GitPush",
 			Handler:    _RuntimeService_GitPush_Handler,
+		},
+		{
+			MethodName: "PushEnv",
+			Handler:    _RuntimeService_PushEnv_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

@@ -603,6 +603,12 @@ export class Query extends Message<Query> {
    */
   query: {
     /**
+     * @generated from field: rill.runtime.v1.ProjectStorageRequest project_storage_request = 21;
+     */
+    value: ProjectStorageRequest;
+    case: "projectStorageRequest";
+  } | {
+    /**
      * @generated from field: rill.runtime.v1.MetricsViewAggregationRequest metrics_view_aggregation_request = 20;
      */
     value: MetricsViewAggregationRequest;
@@ -725,6 +731,7 @@ export class Query extends Message<Query> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.Query";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 21, name: "project_storage_request", kind: "message", T: ProjectStorageRequest, oneof: "query" },
     { no: 20, name: "metrics_view_aggregation_request", kind: "message", T: MetricsViewAggregationRequest, oneof: "query" },
     { no: 2, name: "metrics_view_toplist_request", kind: "message", T: MetricsViewToplistRequest, oneof: "query" },
     { no: 3, name: "metrics_view_comparison_request", kind: "message", T: MetricsViewComparisonRequest, oneof: "query" },
@@ -771,6 +778,12 @@ export class QueryResult extends Message<QueryResult> {
    * @generated from oneof rill.runtime.v1.QueryResult.result
    */
   result: {
+    /**
+     * @generated from field: rill.runtime.v1.ProjectStorageResponse project_storage_response = 22;
+     */
+    value: ProjectStorageResponse;
+    case: "projectStorageResponse";
+  } | {
     /**
      * @generated from field: rill.runtime.v1.MetricsViewAggregationResponse metrics_view_aggregation_response = 21;
      */
@@ -894,6 +907,7 @@ export class QueryResult extends Message<QueryResult> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.QueryResult";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 22, name: "project_storage_response", kind: "message", T: ProjectStorageResponse, oneof: "result" },
     { no: 21, name: "metrics_view_aggregation_response", kind: "message", T: MetricsViewAggregationResponse, oneof: "result" },
     { no: 3, name: "metrics_view_toplist_response", kind: "message", T: MetricsViewToplistResponse, oneof: "result" },
     { no: 4, name: "metrics_view_comparison_response", kind: "message", T: MetricsViewComparisonResponse, oneof: "result" },
@@ -929,6 +943,293 @@ export class QueryResult extends Message<QueryResult> {
 
   static equals(a: QueryResult | PlainMessage<QueryResult> | undefined, b: QueryResult | PlainMessage<QueryResult> | undefined): boolean {
     return proto3.util.equals(QueryResult, a, b);
+  }
+}
+
+/**
+ * Span corresponds to a single OTel span captured during a request.
+ *
+ * @generated from message rill.runtime.v1.Span
+ */
+export class Span extends Message<Span> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string span_id = 2;
+   */
+  spanId = "";
+
+  /**
+   * @generated from field: string parent_span_id = 3;
+   */
+  parentSpanId = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp start_time = 4;
+   */
+  startTime?: Timestamp;
+
+  /**
+   * @generated from field: int64 duration_ms = 5;
+   */
+  durationMs = protoInt64.zero;
+
+  /**
+   * span attributes plus driver-set attributes like "cancelled", "failed", "queue_latency_ms", "olap", etc.
+   *
+   * @generated from field: map<string, string> attributes = 6;
+   */
+  attributes: { [key: string]: string } = {};
+
+  constructor(data?: PartialMessage<Span>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.Span";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "span_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "parent_span_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "start_time", kind: "message", T: Timestamp },
+    { no: 5, name: "duration_ms", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 6, name: "attributes", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Span {
+    return new Span().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Span {
+    return new Span().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Span {
+    return new Span().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Span | PlainMessage<Span> | undefined, b: Span | PlainMessage<Span> | undefined): boolean {
+    return proto3.util.equals(Span, a, b);
+  }
+}
+
+/**
+ * Trace contains trace spans captured during request execution. Used both in successful responses and as gRPC error details when trace=true and the request fails.
+ *
+ * @generated from message rill.runtime.v1.Trace
+ */
+export class Trace extends Message<Trace> {
+  /**
+   * @generated from field: repeated rill.runtime.v1.Span spans = 1;
+   */
+  spans: Span[] = [];
+
+  constructor(data?: PartialMessage<Trace>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.Trace";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "spans", kind: "message", T: Span, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Trace {
+    return new Trace().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Trace {
+    return new Trace().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Trace {
+    return new Trace().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Trace | PlainMessage<Trace> | undefined, b: Trace | PlainMessage<Trace> | undefined): boolean {
+    return proto3.util.equals(Trace, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ProjectStorageRequest
+ */
+export class ProjectStorageRequest extends Message<ProjectStorageRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  constructor(data?: PartialMessage<ProjectStorageRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ProjectStorageRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProjectStorageRequest {
+    return new ProjectStorageRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ProjectStorageRequest {
+    return new ProjectStorageRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ProjectStorageRequest {
+    return new ProjectStorageRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ProjectStorageRequest | PlainMessage<ProjectStorageRequest> | undefined, b: ProjectStorageRequest | PlainMessage<ProjectStorageRequest> | undefined): boolean {
+    return proto3.util.equals(ProjectStorageRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ProjectStorageResponse
+ */
+export class ProjectStorageResponse extends Message<ProjectStorageResponse> {
+  /**
+   * Storage usage per relevant connector in the project.
+   *
+   * @generated from field: repeated rill.runtime.v1.ProjectStorageEntry entries = 1;
+   */
+  entries: ProjectStorageEntry[] = [];
+
+  /**
+   * Aggregated storage usage by managed connectors in the project.
+   * If it is -1, it means the value is unknown.
+   * This is a convenience field derived from the entries.
+   *
+   * @generated from field: int64 managed_size_bytes = 2;
+   */
+  managedSizeBytes = protoInt64.zero;
+
+  /**
+   * Storage usage by the default OLAP connector in the project.
+   * If it is -1, it means the value is unknown.
+   * This is a convenience field derived from the entries.
+   *
+   * @generated from field: int64 default_olap_size_bytes = 3;
+   */
+  defaultOlapSizeBytes = protoInt64.zero;
+
+  constructor(data?: PartialMessage<ProjectStorageResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ProjectStorageResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "entries", kind: "message", T: ProjectStorageEntry, repeated: true },
+    { no: 2, name: "managed_size_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 3, name: "default_olap_size_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProjectStorageResponse {
+    return new ProjectStorageResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ProjectStorageResponse {
+    return new ProjectStorageResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ProjectStorageResponse {
+    return new ProjectStorageResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ProjectStorageResponse | PlainMessage<ProjectStorageResponse> | undefined, b: ProjectStorageResponse | PlainMessage<ProjectStorageResponse> | undefined): boolean {
+    return proto3.util.equals(ProjectStorageResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ProjectStorageEntry
+ */
+export class ProjectStorageEntry extends Message<ProjectStorageEntry> {
+  /**
+   * Connector name.
+   *
+   * @generated from field: string connector = 1;
+   */
+  connector = "";
+
+  /**
+   * Connector driver name.
+   *
+   * @generated from field: string driver = 2;
+   */
+  driver = "";
+
+  /**
+   * True if the connector is the project's default OLAP.
+   *
+   * @generated from field: bool is_default_olap = 3;
+   */
+  isDefaultOlap = false;
+
+  /**
+   * True if the connector is managed by Rill (i.e. has `managed: true` in the connector definition).
+   *
+   * @generated from field: bool managed = 4;
+   */
+  managed = false;
+
+  /**
+   * Storage usage in bytes.
+   * If it is -1, it means the value is unknown.
+   *
+   * @generated from field: int64 size_bytes = 5;
+   */
+  sizeBytes = protoInt64.zero;
+
+  /**
+   * Error message if the connector was unavailable.
+   * This is usually empty.
+   *
+   * @generated from field: string error = 6;
+   */
+  error = "";
+
+  constructor(data?: PartialMessage<ProjectStorageEntry>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ProjectStorageEntry";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "is_default_olap", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "managed", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "size_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 6, name: "error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProjectStorageEntry {
+    return new ProjectStorageEntry().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ProjectStorageEntry {
+    return new ProjectStorageEntry().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ProjectStorageEntry {
+    return new ProjectStorageEntry().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ProjectStorageEntry | PlainMessage<ProjectStorageEntry> | undefined, b: ProjectStorageEntry | PlainMessage<ProjectStorageEntry> | undefined): boolean {
+    return proto3.util.equals(ProjectStorageEntry, a, b);
   }
 }
 
@@ -1086,6 +1387,13 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
    */
   rows = false;
 
+  /**
+   * Optional. If true, the response will include traces of spans captured during execution.
+   *
+   * @generated from field: bool trace = 23;
+   */
+  trace = false;
+
   constructor(data?: PartialMessage<MetricsViewAggregationRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1116,6 +1424,7 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
     { no: 17, name: "exact", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 21, name: "fill_missing", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 22, name: "rows", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 23, name: "trace", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationRequest {
@@ -1153,6 +1462,13 @@ export class MetricsViewAggregationResponse extends Message<MetricsViewAggregati
    */
   data: Struct[] = [];
 
+  /**
+   * Traces of spans captured during request execution. Only populated if trace was set to true in the request.
+   *
+   * @generated from field: rill.runtime.v1.Trace trace = 3;
+   */
+  trace?: Trace;
+
   constructor(data?: PartialMessage<MetricsViewAggregationResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1163,6 +1479,7 @@ export class MetricsViewAggregationResponse extends Message<MetricsViewAggregati
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "schema", kind: "message", T: StructType },
     { no: 2, name: "data", kind: "message", T: Struct, repeated: true },
+    { no: 3, name: "trace", kind: "message", T: Trace },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationResponse {
@@ -1787,6 +2104,13 @@ export class MetricsViewToplistRequest extends Message<MetricsViewToplistRequest
    */
   filter?: MetricsViewFilter;
 
+  /**
+   * Optional. If true, the response will include traces of spans captured during execution.
+   *
+   * @generated from field: bool trace = 17;
+   */
+  trace = false;
+
   constructor(data?: PartialMessage<MetricsViewToplistRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1810,6 +2134,7 @@ export class MetricsViewToplistRequest extends Message<MetricsViewToplistRequest
     { no: 16, name: "having_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 14, name: "filter", kind: "message", T: MetricsViewFilter },
+    { no: 17, name: "trace", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewToplistRequest {
@@ -1847,6 +2172,13 @@ export class MetricsViewToplistResponse extends Message<MetricsViewToplistRespon
    */
   data: Struct[] = [];
 
+  /**
+   * Traces of spans captured during request execution. Only populated if trace was set to true in the request.
+   *
+   * @generated from field: rill.runtime.v1.Trace trace = 3;
+   */
+  trace?: Trace;
+
   constructor(data?: PartialMessage<MetricsViewToplistResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1857,6 +2189,7 @@ export class MetricsViewToplistResponse extends Message<MetricsViewToplistRespon
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "meta", kind: "message", T: MetricsViewColumn, repeated: true },
     { no: 2, name: "data", kind: "message", T: Struct, repeated: true },
+    { no: 3, name: "trace", kind: "message", T: Trace },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewToplistResponse {
@@ -2007,6 +2340,13 @@ export class MetricsViewComparisonRequest extends Message<MetricsViewComparisonR
    */
   filter?: MetricsViewFilter;
 
+  /**
+   * Optional. If true, the response will include traces of spans captured during execution.
+   *
+   * @generated from field: bool trace = 19;
+   */
+  trace = false;
+
   constructor(data?: PartialMessage<MetricsViewComparisonRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2033,6 +2373,7 @@ export class MetricsViewComparisonRequest extends Message<MetricsViewComparisonR
     { no: 11, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 13, name: "exact", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 14, name: "filter", kind: "message", T: MetricsViewFilter },
+    { no: 19, name: "trace", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewComparisonRequest {
@@ -2065,6 +2406,13 @@ export class MetricsViewComparisonResponse extends Message<MetricsViewComparison
    */
   rows: MetricsViewComparisonRow[] = [];
 
+  /**
+   * Traces of spans captured during request execution. Only populated if trace was set to true in the request.
+   *
+   * @generated from field: rill.runtime.v1.Trace trace = 2;
+   */
+  trace?: Trace;
+
   constructor(data?: PartialMessage<MetricsViewComparisonResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2074,6 +2422,7 @@ export class MetricsViewComparisonResponse extends Message<MetricsViewComparison
   static readonly typeName = "rill.runtime.v1.MetricsViewComparisonResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "rows", kind: "message", T: MetricsViewComparisonRow, repeated: true },
+    { no: 2, name: "trace", kind: "message", T: Trace },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewComparisonResponse {
@@ -2511,6 +2860,13 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
    */
   timeDimension = "";
 
+  /**
+   * Optional. If true, the response will include traces of spans captured during execution.
+   *
+   * @generated from field: bool trace = 16;
+   */
+  trace = false;
+
   constructor(data?: PartialMessage<MetricsViewTimeSeriesRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2533,6 +2889,7 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
     { no: 8, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 12, name: "filter", kind: "message", T: MetricsViewFilter },
     { no: 15, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 16, name: "trace", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTimeSeriesRequest {
@@ -2570,6 +2927,13 @@ export class MetricsViewTimeSeriesResponse extends Message<MetricsViewTimeSeries
    */
   data: TimeSeriesValue[] = [];
 
+  /**
+   * Traces of spans captured during request execution. Only populated if trace was set to true in the request.
+   *
+   * @generated from field: rill.runtime.v1.Trace trace = 3;
+   */
+  trace?: Trace;
+
   constructor(data?: PartialMessage<MetricsViewTimeSeriesResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2580,6 +2944,7 @@ export class MetricsViewTimeSeriesResponse extends Message<MetricsViewTimeSeries
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "meta", kind: "message", T: MetricsViewColumn, repeated: true },
     { no: 2, name: "data", kind: "message", T: TimeSeriesValue, repeated: true },
+    { no: 3, name: "trace", kind: "message", T: Trace },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTimeSeriesResponse {
@@ -2665,6 +3030,13 @@ export class MetricsViewTotalsRequest extends Message<MetricsViewTotalsRequest> 
    */
   timeDimension = "";
 
+  /**
+   * Optional. If true, the response will include traces of spans captured during execution.
+   *
+   * @generated from field: bool trace = 13;
+   */
+  trace = false;
+
   constructor(data?: PartialMessage<MetricsViewTotalsRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2683,6 +3055,7 @@ export class MetricsViewTotalsRequest extends Message<MetricsViewTotalsRequest> 
     { no: 8, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 10, name: "filter", kind: "message", T: MetricsViewFilter },
     { no: 12, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "trace", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTotalsRequest {
@@ -2720,6 +3093,13 @@ export class MetricsViewTotalsResponse extends Message<MetricsViewTotalsResponse
    */
   data?: Struct;
 
+  /**
+   * Traces of spans captured during request execution. Only populated if trace was set to true in the request.
+   *
+   * @generated from field: rill.runtime.v1.Trace trace = 3;
+   */
+  trace?: Trace;
+
   constructor(data?: PartialMessage<MetricsViewTotalsResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2730,6 +3110,7 @@ export class MetricsViewTotalsResponse extends Message<MetricsViewTotalsResponse
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "meta", kind: "message", T: MetricsViewColumn, repeated: true },
     { no: 2, name: "data", kind: "message", T: Struct },
+    { no: 3, name: "trace", kind: "message", T: Trace },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTotalsResponse {
@@ -2838,6 +3219,13 @@ export class MetricsViewRowsRequest extends Message<MetricsViewRowsRequest> {
    */
   timeDimension = "";
 
+  /**
+   * Optional. If true, the response will include traces of spans captured during execution.
+   *
+   * @generated from field: bool trace = 14;
+   */
+  trace = false;
+
   constructor(data?: PartialMessage<MetricsViewRowsRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2859,6 +3247,7 @@ export class MetricsViewRowsRequest extends Message<MetricsViewRowsRequest> {
     { no: 11, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "filter", kind: "message", T: MetricsViewFilter },
     { no: 13, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 14, name: "trace", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewRowsRequest {
@@ -2896,6 +3285,13 @@ export class MetricsViewRowsResponse extends Message<MetricsViewRowsResponse> {
    */
   data: Struct[] = [];
 
+  /**
+   * Traces of spans captured during request execution. Only populated if trace was set to true in the request.
+   *
+   * @generated from field: rill.runtime.v1.Trace trace = 3;
+   */
+  trace?: Trace;
+
   constructor(data?: PartialMessage<MetricsViewRowsResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2906,6 +3302,7 @@ export class MetricsViewRowsResponse extends Message<MetricsViewRowsResponse> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "meta", kind: "message", T: MetricsViewColumn, repeated: true },
     { no: 2, name: "data", kind: "message", T: Struct, repeated: true },
+    { no: 3, name: "trace", kind: "message", T: Trace },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewRowsResponse {
@@ -3192,6 +3589,13 @@ export class MetricsViewTimeRangeRequest extends Message<MetricsViewTimeRangeReq
    */
   timeDimension = "";
 
+  /**
+   * Optional. If true, the response will include traces of spans captured during execution.
+   *
+   * @generated from field: bool trace = 5;
+   */
+  trace = false;
+
   constructor(data?: PartialMessage<MetricsViewTimeRangeRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3204,6 +3608,7 @@ export class MetricsViewTimeRangeRequest extends Message<MetricsViewTimeRangeReq
     { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 4, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "trace", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTimeRangeRequest {
@@ -3234,6 +3639,13 @@ export class MetricsViewTimeRangeResponse extends Message<MetricsViewTimeRangeRe
    */
   timeRangeSummary?: TimeRangeSummary;
 
+  /**
+   * Traces of spans captured during request execution. Only populated if trace was set to true in the request.
+   *
+   * @generated from field: rill.runtime.v1.Trace trace = 2;
+   */
+  trace?: Trace;
+
   constructor(data?: PartialMessage<MetricsViewTimeRangeResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3243,6 +3655,7 @@ export class MetricsViewTimeRangeResponse extends Message<MetricsViewTimeRangeRe
   static readonly typeName = "rill.runtime.v1.MetricsViewTimeRangeResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "time_range_summary", kind: "message", T: TimeRangeSummary },
+    { no: 2, name: "trace", kind: "message", T: Trace },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTimeRangeResponse {
@@ -3281,6 +3694,13 @@ export class MetricsViewSchemaRequest extends Message<MetricsViewSchemaRequest> 
    */
   priority = 0;
 
+  /**
+   * Optional. If true, the response will include traces of spans captured during execution.
+   *
+   * @generated from field: bool trace = 4;
+   */
+  trace = false;
+
   constructor(data?: PartialMessage<MetricsViewSchemaRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3292,6 +3712,7 @@ export class MetricsViewSchemaRequest extends Message<MetricsViewSchemaRequest> 
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 4, name: "trace", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSchemaRequest {
@@ -3320,6 +3741,13 @@ export class MetricsViewSchemaResponse extends Message<MetricsViewSchemaResponse
    */
   schema?: StructType;
 
+  /**
+   * Traces of spans captured during request execution. Only populated if trace was set to true in the request.
+   *
+   * @generated from field: rill.runtime.v1.Trace trace = 2;
+   */
+  trace?: Trace;
+
   constructor(data?: PartialMessage<MetricsViewSchemaResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3329,6 +3757,7 @@ export class MetricsViewSchemaResponse extends Message<MetricsViewSchemaResponse
   static readonly typeName = "rill.runtime.v1.MetricsViewSchemaResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "schema", kind: "message", T: StructType },
+    { no: 2, name: "trace", kind: "message", T: Trace },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSchemaResponse {
@@ -3405,6 +3834,13 @@ export class MetricsViewSearchRequest extends Message<MetricsViewSearchRequest> 
    */
   priority = 0;
 
+  /**
+   * Optional. If true, the response will include traces of spans captured during execution.
+   *
+   * @generated from field: bool trace = 10;
+   */
+  trace = false;
+
   constructor(data?: PartialMessage<MetricsViewSearchRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3422,6 +3858,7 @@ export class MetricsViewSearchRequest extends Message<MetricsViewSearchRequest> 
     { no: 7, name: "having", kind: "message", T: Expression },
     { no: 8, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 9, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 10, name: "trace", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSearchRequest {
@@ -3450,6 +3887,13 @@ export class MetricsViewSearchResponse extends Message<MetricsViewSearchResponse
    */
   results: MetricsViewSearchResponse_SearchResult[] = [];
 
+  /**
+   * Traces of spans captured during request execution. Only populated if trace was set to true in the request.
+   *
+   * @generated from field: rill.runtime.v1.Trace trace = 2;
+   */
+  trace?: Trace;
+
   constructor(data?: PartialMessage<MetricsViewSearchResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3459,6 +3903,7 @@ export class MetricsViewSearchResponse extends Message<MetricsViewSearchResponse
   static readonly typeName = "rill.runtime.v1.MetricsViewSearchResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "results", kind: "message", T: MetricsViewSearchResponse_SearchResult, repeated: true },
+    { no: 2, name: "trace", kind: "message", T: Trace },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSearchResponse {
@@ -3570,6 +4015,13 @@ export class MetricsViewTimeRangesRequest extends Message<MetricsViewTimeRangesR
    */
   executionTime?: Timestamp;
 
+  /**
+   * Optional. If true, the response will include traces of spans captured during execution.
+   *
+   * @generated from field: bool trace = 8;
+   */
+  trace = false;
+
   constructor(data?: PartialMessage<MetricsViewTimeRangesRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3585,6 +4037,7 @@ export class MetricsViewTimeRangesRequest extends Message<MetricsViewTimeRangesR
     { no: 5, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "execution_time", kind: "message", T: Timestamp, opt: true },
+    { no: 8, name: "trace", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTimeRangesRequest {
@@ -3630,6 +4083,13 @@ export class MetricsViewTimeRangesResponse extends Message<MetricsViewTimeRanges
    */
   timeRanges: TimeRange[] = [];
 
+  /**
+   * Traces of spans captured during request execution. Only populated if trace was set to true in the request.
+   *
+   * @generated from field: rill.runtime.v1.Trace trace = 4;
+   */
+  trace?: Trace;
+
   constructor(data?: PartialMessage<MetricsViewTimeRangesResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3641,6 +4101,7 @@ export class MetricsViewTimeRangesResponse extends Message<MetricsViewTimeRanges
     { no: 1, name: "full_time_range", kind: "message", T: TimeRangeSummary },
     { no: 3, name: "resolved_time_ranges", kind: "message", T: ResolvedTimeRange, repeated: true },
     { no: 2, name: "time_ranges", kind: "message", T: TimeRange, repeated: true },
+    { no: 4, name: "trace", kind: "message", T: Trace },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTimeRangesResponse {
@@ -3796,6 +4257,13 @@ export class MetricsViewAnnotationsRequest extends Message<MetricsViewAnnotation
    */
   offset = protoInt64.zero;
 
+  /**
+   * Optional. If true, the response will include traces of spans captured during execution.
+   *
+   * @generated from field: bool trace = 10;
+   */
+  trace = false;
+
   constructor(data?: PartialMessage<MetricsViewAnnotationsRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3813,6 +4281,7 @@ export class MetricsViewAnnotationsRequest extends Message<MetricsViewAnnotation
     { no: 7, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 9, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 10, name: "trace", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAnnotationsRequest {
@@ -3841,6 +4310,13 @@ export class MetricsViewAnnotationsResponse extends Message<MetricsViewAnnotatio
    */
   rows: MetricsViewAnnotationsResponse_Annotation[] = [];
 
+  /**
+   * Traces of spans captured during request execution. Only populated if trace was set to true in the request.
+   *
+   * @generated from field: rill.runtime.v1.Trace trace = 2;
+   */
+  trace?: Trace;
+
   constructor(data?: PartialMessage<MetricsViewAnnotationsResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3850,6 +4326,7 @@ export class MetricsViewAnnotationsResponse extends Message<MetricsViewAnnotatio
   static readonly typeName = "rill.runtime.v1.MetricsViewAnnotationsResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "rows", kind: "message", T: MetricsViewAnnotationsResponse_Annotation, repeated: true },
+    { no: 2, name: "trace", kind: "message", T: Trace },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAnnotationsResponse {
@@ -4055,6 +4532,15 @@ export class ResolveCanvasRequest extends Message<ResolveCanvasRequest> {
    */
   args?: Struct;
 
+  /**
+   * If true, fall back to the unvalidated spec when no valid spec is available.
+   * Only for use by the visual editor in Rill Developer. Must never be sent by
+   * Rill Cloud, read-only previews, shared token access, or embedded viewers.
+   *
+   * @generated from field: bool unsafe = 4;
+   */
+  unsafe = false;
+
   constructor(data?: PartialMessage<ResolveCanvasRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4066,6 +4552,7 @@ export class ResolveCanvasRequest extends Message<ResolveCanvasRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "canvas", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "args", kind: "message", T: Struct },
+    { no: 4, name: "unsafe", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveCanvasRequest {

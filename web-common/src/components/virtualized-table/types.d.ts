@@ -37,4 +37,7 @@ export interface VirtualizedTableColumns {
   // Leave undefined if the table is not sorted by this column.
   sorted?: SortDirection;
   format?: string;
+  tooltipFormatter?: (
+    value: number | string | null | undefined,
+  ) => string | null | undefined;
 }

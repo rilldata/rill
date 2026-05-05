@@ -1,6 +1,6 @@
 import type { EditorView } from "@codemirror/view";
 import { createLineStatusHighlighter } from "./highlighter";
-import { createLineNumberGutter } from "./line-number-gutter";
+import { createLineNumberGutter } from "./line-number-gutter.svelte";
 import { createStatusLineGutter } from "./line-status-gutter";
 import {
   type LineStatus,

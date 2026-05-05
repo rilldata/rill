@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
+	"github.com/go-git/go-git/v5"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -486,7 +487,11 @@ func (r *repo) Commit(ctx context.Context, message string) (string, error) {
 	if !r.git.editable() {
 		return "", fmt.Errorf("repo is not editable")
 	}
-	return r.git.commitToDefaultBranch(ctx, message)
+	repo, err := git.PlainOpen(r.git.repoDir)
+	if err != nil {
+		return "", err
+	}
+	return r.git.commitAll(repo, message)
 }
 
 // Pull implements drivers.RepoStore.
@@ -515,9 +520,11 @@ func (r *repo) CommitAndPush(ctx context.Context, message string, force bool) er
 		return fmt.Errorf("commits are not supported for this repo type")
 	}
 
-	// TODO: This should merge to the current branch
-	// A separate merge RPC should merge to primary branch
-	return r.git.commitAndPushToPrimaryBranch(ctx, message, force)
+	err = r.git.commitToDefaultBranch(ctx, message, force)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // RestoreCommit implements drivers.RepoStore.
@@ -527,7 +534,26 @@ func (r *repo) RestoreCommit(ctx context.Context, commitSHA string) (string, err
 
 // MergeToBranch implements drivers.RepoStore.
 func (r *repo) MergeToBranch(ctx context.Context, branch string, force bool) error {
-	return drivers.ErrNotImplemented
+	// Get a write lock.
+	// NOTE: Not using rlockEnsureReady here because we need to exclude reads while the merge is happening.
+	err := r.mu.Lock(ctx)
+	if err != nil {
+		return err
+	}
+	defer r.mu.Unlock()
+
+	if !r.ready {
+		if r.pullErr != nil {
+			return fmt.Errorf("repo is not ready: %w", r.pullErr)
+		}
+		return fmt.Errorf("repo is not ready: pull files first")
+	}
+
+	if r.git == nil {
+		return fmt.Errorf("merges are not supported for this repo type")
+	}
+
+	return r.git.mergeToBranch(ctx, branch, force)
 }
 
 // CommitHash implements drivers.RepoStore.
@@ -582,7 +608,7 @@ func (r *repo) close() error {
 	}
 
 	if r.git != nil && r.git.editable() {
-		_, err := r.git.commitToDefaultBranch(ctx, "Checkpoint commit")
+		err := r.git.commitToDefaultBranch(ctx, "Checkpoint commit", false)
 		if err != nil {
 			return fmt.Errorf("close failed: could not commit to edit branch: %w", err)
 		}
@@ -694,7 +720,7 @@ func (r *repo) pullInner(ctx context.Context, opts *drivers.PullOptions) error {
 
 	// Push the pull into the underlying repos. These are created/updated by checkSyncHandshake.
 	if r.git != nil && opts.UserTriggered {
-		err = r.git.pull(ctx, opts.DiscardChanges)
+		err = r.git.pull(ctx, opts.UserTriggered, opts.DiscardChanges)
 		if err != nil {
 			return fmt.Errorf("git pull failed: %w", err)
 		}

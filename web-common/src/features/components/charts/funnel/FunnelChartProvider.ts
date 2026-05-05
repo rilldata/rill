@@ -8,18 +8,19 @@ import {
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import {
-  getQueryServiceMetricsViewAggregationQueryOptions,
-  type V1Expression,
-  type V1MetricsViewAggregationDimension,
-  type V1MetricsViewAggregationMeasure,
-  type V1MetricsViewAggregationSort,
+import type {
+  V1Expression,
+  V1MetricsViewAggregationDimension,
+  V1MetricsViewAggregationMeasure,
+  V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
-import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import { getQueryServiceMetricsViewAggregationQueryOptions } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { createQuery, keepPreviousData } from "@tanstack/svelte-query";
 import {
   derived,
   get,
+  readable,
   writable,
   type Readable,
   type Writable,
@@ -77,9 +78,11 @@ export class FunnelChartProvider {
   }
 
   createChartDataQuery(
-    runtime: Writable<Runtime>,
+    client: RuntimeClient,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
+    visible?: Readable<boolean>,
   ): ChartDataQuery {
+    const visibleStore = visible ?? readable(true);
     const config = get(this.spec);
     const isMultiMeasure = config.breakdownMode === "measures";
 
@@ -121,11 +124,11 @@ export class FunnelChartProvider {
 
     // Create topN query for stage dimension
     const topNStageQueryOptionsStore = derived(
-      [runtime, timeAndFilterStore],
-      ([$runtime, $timeAndFilterStore]) => {
+      [timeAndFilterStore, visibleStore],
+      ([$timeAndFilterStore, $visible]) => {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
-        const instanceId = $runtime.instanceId;
         const enabled =
+          $visible &&
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!stageDimensionName &&
           !isMultiMeasure &&
@@ -134,9 +137,9 @@ export class FunnelChartProvider {
         const topNWhere = getFilterWithNullHandling(where, config.stage);
 
         return getQueryServiceMetricsViewAggregationQueryOptions(
-          instanceId,
-          config.metrics_view,
+          client,
           {
+            metricsView: config.metrics_view,
             measures,
             dimensions: [{ name: stageDimensionName }],
             sort: stageSort ? [stageSort] : undefined,
@@ -156,11 +159,12 @@ export class FunnelChartProvider {
     const topNStageQuery = createQuery(topNStageQueryOptionsStore);
 
     const queryOptionsStore = derived(
-      [runtime, timeAndFilterStore, topNStageQuery],
-      ([$runtime, $timeAndFilterStore, $topNStageQuery]) => {
+      [timeAndFilterStore, topNStageQuery, visibleStore],
+      ([$timeAndFilterStore, $topNStageQuery, $visible]) => {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const topNStageData = $topNStageQuery?.data?.data;
         const enabled =
+          $visible &&
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!measures?.length &&
           (isMultiMeasure || !!dimensions?.length) &&
@@ -204,9 +208,9 @@ export class FunnelChartProvider {
         this.combinedWhere.set(combinedWhere);
 
         const queryOptions = getQueryServiceMetricsViewAggregationQueryOptions(
-          $runtime.instanceId,
-          config.metrics_view,
+          client,
           {
+            metricsView: config.metrics_view,
             measures,
             dimensions,
             where: combinedWhere,

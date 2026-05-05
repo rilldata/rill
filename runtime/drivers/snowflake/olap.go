@@ -16,7 +16,7 @@ var _ drivers.OLAPStore = (*connection)(nil)
 
 // Dialect implements drivers.OLAPStore.
 func (c *connection) Dialect() drivers.Dialect {
-	return drivers.DialectSnowflake
+	return DialectSnowflake
 }
 
 // Exec implements drivers.OLAPStore.
@@ -34,6 +34,11 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 // InformationSchema implements drivers.OLAPStore.
 func (c *connection) InformationSchema() drivers.OLAPInformationSchema {
 	return c
+}
+
+// EstimateSize implements drivers.OLAPStore.
+func (c *connection) EstimateSize(ctx context.Context) (int64, error) {
+	return -1, nil
 }
 
 // MayBeScaledToZero implements drivers.OLAPStore.
@@ -79,9 +84,48 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 	return res, nil
 }
 
+func (c *connection) Head(ctx context.Context, db, schema, table string, limit int64) (*drivers.Result, error) {
+	tbl, err := c.InformationSchema().Lookup(ctx, db, schema, table)
+	if err != nil {
+		return nil, err
+	}
+
+	var columns []string
+	for _, field := range tbl.Schema.Fields {
+		columns = append(columns, c.Dialect().EscapeIdentifier(field.Name))
+	}
+
+	limitClause := ""
+	if limit > 0 {
+		limitClause = fmt.Sprintf(" LIMIT %d", limit)
+	}
+
+	return c.Query(ctx, &drivers.Statement{
+		Query: fmt.Sprintf("SELECT %s FROM %s%s", strings.Join(columns, ", "), c.Dialect().EscapeTable(db, schema, table), limitClause),
+	})
+}
+
 // QuerySchema implements drivers.OLAPStore.
 func (c *connection) QuerySchema(ctx context.Context, query string, args []any) (*runtimev1.StructType, error) {
-	return nil, drivers.ErrNotImplemented
+	if c.configProperties.LogQueries {
+		c.logger.Info("snowflake query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(query)), zap.Any("args", args), observability.ZapCtx(ctx))
+	}
+
+	db, err := c.getDB(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx, cancelFunc := context.WithTimeout(ctx, drivers.DefaultQuerySchemaTimeout)
+	defer cancelFunc()
+
+	rows, err := db.QueryxContext(ctx, fmt.Sprintf("SELECT * FROM (%s) LIMIT 0", query), args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	return rowsToSchema(rows)
 }
 
 // WithConnection implements drivers.OLAPStore.
@@ -108,7 +152,7 @@ func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) erro
 
 	// HACK: Since All and Lookup don't always return the correct casing, we uppercase the table name here as that's usually necessary in Snowflake.
 	// This is a workaround until we return correct casing from All and Lookup.
-	fqn := drivers.DialectSnowflake.EscapeTable(strings.ToUpper(table.Database), strings.ToUpper(table.DatabaseSchema), strings.ToUpper(table.Name))
+	fqn := c.Dialect().EscapeTable(strings.ToUpper(table.Database), strings.ToUpper(table.DatabaseSchema), strings.ToUpper(table.Name))
 
 	objectType := "TABLE"
 	if table.View {
@@ -133,7 +177,7 @@ func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 
 	rtSchema := &runtimev1.StructType{}
 	for name, typ := range meta.Schema {
-		t, err := databaseTypeToPB(typ, true)
+		t, err := databaseTypeToPB(typ, 0, true) // add scale and nullability if needed
 		if err != nil {
 			return nil, err
 		}
@@ -165,12 +209,13 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 
 	fields := make([]*runtimev1.StructType_Field, len(cts))
 	for i, ct := range cts {
+		_, scale, _ := ct.DecimalSize()
 		nullable, ok := ct.Nullable()
 		if !ok {
 			nullable = true
 		}
 
-		t, err := databaseTypeToPB(ct.DatabaseTypeName(), nullable)
+		t, err := databaseTypeToPB(ct.DatabaseTypeName(), scale, nullable)
 		if err != nil {
 			return nil, err
 		}
@@ -184,8 +229,8 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	return &runtimev1.StructType{Fields: fields}, nil
 }
 
-func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
-	t := &runtimev1.Type{Nullable: nullable}
+func databaseTypeToPB(dbt string, scale int64, nullable bool) (*runtimev1.Type, error) {
+	t := &runtimev1.Type{Nullable: nullable, RawType: dbt}
 	switch dbt {
 	case "NUMBER", "DECIMAL", "NUMERIC":
 		t.Code = runtimev1.Type_CODE_DECIMAL
@@ -196,7 +241,11 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	case "DOUBLE", "DOUBLE PRECISION", "REAL":
 		t.Code = runtimev1.Type_CODE_FLOAT64
 	case "FIXED":
-		t.Code = runtimev1.Type_CODE_STRING
+		if scale == 0 {
+			t.Code = runtimev1.Type_CODE_INT256
+		} else {
+			t.Code = runtimev1.Type_CODE_DECIMAL
+		}
 	case "VARCHAR", "STRING", "TEXT", "CHAR", "CHARACTER":
 		t.Code = runtimev1.Type_CODE_STRING
 	case "BINARY", "VARBINARY":

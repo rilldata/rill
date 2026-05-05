@@ -22,7 +22,7 @@
   <button
     type="button"
     class="p-1 border rounded-br-sm rounded-tr-sm bg-input cursor-pointer"
-    on:click={copyCommand}
+    onclick={copyCommand}
   >
     {#if copied}
       <Check size="14px" />

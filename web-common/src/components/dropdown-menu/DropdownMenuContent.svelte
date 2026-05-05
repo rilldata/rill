@@ -1,27 +1,31 @@
 <script lang="ts">
-  import { cn, flyAndScale } from "@rilldata/web-common/lib/shadcn";
+  import { cn } from "@rilldata/web-common/lib/shadcn";
   import { DropdownMenu as DropdownMenuPrimitive } from "bits-ui";
+  import type { Snippet } from "svelte";
 
-  type $$Props = DropdownMenuPrimitive.ContentProps;
-  // type $$Events = DropdownMenuPrimitive.ContentEvents;
-
-  let className: $$Props["class"] = undefined;
-  export let sideOffset: $$Props["sideOffset"] = 4;
-  export let transition: $$Props["transition"] = flyAndScale;
-  export let transitionConfig: $$Props["transitionConfig"] = undefined;
-  export { className as class };
+  // svelte-ignore custom_element_props_identifier
+  let {
+    class: className,
+    sideOffset = 4,
+    sameWidth = false,
+    children,
+    ...restProps
+  }: DropdownMenuPrimitive.ContentProps & {
+    sameWidth?: boolean;
+    children?: Snippet;
+  } = $props();
 </script>
 
-<DropdownMenuPrimitive.Content
-  {transition}
-  {transitionConfig}
-  {sideOffset}
-  class={cn(
-    "z-50 min-w-[8rem] rounded-md border bg-popover p-1.5 text-popover-foreground shadow-md focus:outline-none",
-    className,
-  )}
-  {...$$restProps}
-  on:keydown
->
-  <slot />
-</DropdownMenuPrimitive.Content>
+<DropdownMenuPrimitive.Portal>
+  <DropdownMenuPrimitive.Content
+    {sideOffset}
+    class={cn(
+      "z-50 min-w-[8rem] rounded-md border bg-popover p-1.5 text-popover-foreground shadow-md focus:outline-none",
+      sameWidth && "w-[var(--bits-floating-anchor-width)]",
+      className,
+    )}
+    {...restProps}
+  >
+    {@render children?.()}
+  </DropdownMenuPrimitive.Content>
+</DropdownMenuPrimitive.Portal>

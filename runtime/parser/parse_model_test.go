@@ -125,7 +125,51 @@ output:
 
 	ctx := context.Background()
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestModelWithExtraResolverFields(t *testing.T) {
+	files := map[string]string{
+		`rill.yaml`: ``,
+		`m1.yaml`: `
+type: model
+sql: SELECT 1
+partitions:
+  sql: SELECT range::DATE AS day FROM range('2024-01-01T00:00:00Z'::TIMESTAMPTZ, now(), INTERVAL '1 DAY')
+  concurrency: 10
+`,
+	}
+	resources := []*Resource{
+		// model m1 with an unexpected field in the resolver properties
+		{
+			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+			Paths: []string{"/m1.yaml"},
+			ModelSpec: &runtimev1.ModelSpec{
+				RefreshSchedule:    &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:     "duckdb",
+				InputProperties:    must(structpb.NewStruct(map[string]any{"sql": "SELECT 1"})),
+				PartitionsResolver: "sql",
+				PartitionsResolverProperties: must(structpb.NewStruct(map[string]any{
+					"connector": "duckdb",
+					"sql":       "SELECT range::DATE AS day FROM range('2024-01-01T00:00:00Z'::TIMESTAMPTZ, now(), INTERVAL '1 DAY')",
+				})),
+				OutputConnector: "duckdb",
+				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			},
+		},
+	}
+
+	ctx := context.Background()
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, []*runtimev1.ParseError{
+		{
+			Message:  "undefined fields in resolver properties: [\"concurrency\"], will be ignored",
+			FilePath: "/m1.yaml",
+			Warning:  true,
+		},
+	})
 }

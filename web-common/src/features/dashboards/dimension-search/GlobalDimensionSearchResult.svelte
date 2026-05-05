@@ -31,7 +31,7 @@
     {#each shownValues as value}
       <DropdownMenuItem
         class="text-xs"
-        on:click={() => onSelect(dimension, value)}
+        onclick={() => onSelect(dimension, value)}
       >
         {value}
       </DropdownMenuItem>

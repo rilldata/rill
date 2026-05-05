@@ -23,6 +23,9 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+// ErrDeploymentNotReady is returned when a deployment's runtime is not yet available.
+var ErrDeploymentNotReady = errors.New("deployment not ready")
+
 type CreateDeploymentOptions struct {
 	ProjectID   string
 	OwnerUserID *string
@@ -194,18 +197,12 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 	}
 
 	// Prepare deployment annotations
-	annotations := s.NewDeploymentAnnotations(org, proj)
+	annotations := s.NewDeploymentAnnotations(org, proj, depl.Environment)
 
 	// Resolve slots based on environment
-	var slots int
-	switch depl.Environment {
-	case "prod":
-		slots = proj.ProdSlots
-	case "dev":
-		slots = proj.DevSlots
-	default:
-		// Invalid environment
-		return errors.New("Invalid environment, must be either 'prod' or 'dev'")
+	slots, err := resolveSlots(proj, depl.Environment)
+	if err != nil {
+		return err
 	}
 
 	// Provision the runtime
@@ -298,9 +295,14 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 	frontendURL := s.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name)
 
 	// Resolve variables based on environment
-	vars, err := s.ResolveVariables(ctx, proj.ID, depl.Environment)
+	vars, err := s.ResolveVariables(ctx, depl)
 	if err != nil {
 		return err
+	}
+	// base variables are returned first followed by environment specific variables, so we can just iterate once and overlay them in order
+	v := map[string]string{}
+	for _, variable := range vars {
+		v[variable.Name] = variable.Value
 	}
 
 	// Create the instance
@@ -312,7 +314,7 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		AdminConnector: "admin",
 		AiConnector:    "admin",
 		Connectors:     connectors,
-		Variables:      vars,
+		Variables:      v,
 		Annotations:    annotations.ToMap(),
 		FrontendUrl:    frontendURL,
 	})
@@ -333,6 +335,19 @@ func (s *Service) StopDeploymentInner(ctx context.Context, depl *database.Deploy
 		s.Logger.Error("failed to open runtime client", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
 	} else {
 		defer rt.Close()
+
+		// Checkpoint repo changes if this is an editable deployment.
+		// The runtime does checkpoint on close but because DeleteInstance removes the storage directly, the checkpoint can fail.
+		if depl.Editable {
+			_, err = rt.GitPush(ctx, &runtimev1.GitPushRequest{
+				InstanceId:    depl.RuntimeInstanceID,
+				CommitMessage: "Auto checkpoint",
+			})
+			if err != nil {
+				s.Logger.Error("failed to checkpoint repo changes", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
+			}
+		}
+
 		_, err = rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
 			InstanceId: depl.RuntimeInstanceID,
 		})
@@ -403,18 +418,12 @@ func (s *Service) UpdateDeploymentInner(ctx context.Context, d *database.Deploym
 	}
 
 	// Prepare deployment annotations
-	annotations := s.NewDeploymentAnnotations(org, proj)
+	annotations := s.NewDeploymentAnnotations(org, proj, d.Environment)
 
 	// Resolve slots based on environment
-	var slots int
-	switch d.Environment {
-	case "prod":
-		slots = proj.ProdSlots
-	case "dev":
-		slots = proj.DevSlots
-	default:
-		// Invalid environment
-		return errors.New("Invalid environment, must be either 'prod' or 'dev'")
+	slots, err := resolveSlots(proj, d.Environment)
+	if err != nil {
+		return err
 	}
 
 	// Provision the runtime. This is idempotent and will (partially) update the existing provisioned runtime if the config has changed.
@@ -506,9 +515,9 @@ func (s *Service) CheckProvisionerResource(ctx context.Context, pr *database.Pro
 func (s *Service) OpenRuntimeClient(depl *database.Deployment) (*client.Client, error) {
 	if depl.RuntimeHost == "" {
 		if depl.Status == database.DeploymentStatusErrored {
-			return nil, fmt.Errorf("deployment %q has no runtime host: %s", depl.ID, depl.StatusMessage)
+			return nil, fmt.Errorf("%w: deployment %q has no runtime host: %s", ErrDeploymentNotReady, depl.ID, depl.StatusMessage)
 		}
-		return nil, fmt.Errorf("deployment %q has no runtime host", depl.ID)
+		return nil, fmt.Errorf("%w: deployment %q has no runtime host", ErrDeploymentNotReady, depl.ID)
 	}
 
 	jwt, err := s.IssueRuntimeManagementToken(depl.RuntimeAudience)
@@ -529,7 +538,7 @@ func (s *Service) IssueRuntimeManagementToken(aud string) (string, error) {
 		AudienceURL:       aud,
 		Subject:           "admin-service",
 		TTL:               time.Hour,
-		SystemPermissions: []runtime.Permission{runtime.ManageInstances, runtime.ReadInstance, runtime.EditInstance, runtime.EditTrigger, runtime.ReadObjects},
+		SystemPermissions: []runtime.Permission{runtime.ManageInstances, runtime.ReadInstance, runtime.ManageInstance, runtime.EditTrigger, runtime.ReadObjects},
 	})
 	if err != nil {
 		return "", err
@@ -538,22 +547,24 @@ func (s *Service) IssueRuntimeManagementToken(aud string) (string, error) {
 	return jwt, nil
 }
 
-func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *database.Project) DeploymentAnnotations {
+func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *database.Project, environment string) DeploymentAnnotations {
 	var orgBillingPlanName string
 	if org.BillingPlanName != nil {
 		orgBillingPlanName = *org.BillingPlanName
 	}
-	return DeploymentAnnotations{
+	da := DeploymentAnnotations{
 		orgID:              org.ID,
 		orgName:            org.Name,
 		orgBillingPlanName: orgBillingPlanName,
 		orgCustomDomain:    org.CustomDomain,
 		projID:             proj.ID,
 		projName:           proj.Name,
-		projProdSlots:      fmt.Sprint(proj.ProdSlots),
 		projProvisioner:    proj.Provisioner,
 		projAnnotations:    proj.Annotations,
 	}
+	slots, _ := resolveSlots(proj, environment)
+	da.slots = fmt.Sprint(slots)
+	return da
 }
 
 func (s *Service) FindProvisionedRuntimeResource(ctx context.Context, deploymentID string) (*database.ProvisionerResource, bool, error) {
@@ -574,24 +585,37 @@ type DeploymentAnnotations struct {
 	orgCustomDomain    string
 	projID             string
 	projName           string
-	projProdSlots      string
+	slots              string
 	projProvisioner    string
 	projAnnotations    map[string]string
 }
 
 func (da *DeploymentAnnotations) ToMap() map[string]string {
-	res := make(map[string]string, len(da.projAnnotations)+7)
+	res := make(map[string]string, len(da.projAnnotations)+8)
 	for k, v := range da.projAnnotations {
 		res[k] = v
 	}
 	res["organization_id"] = da.orgID
 	res["organization_name"] = da.orgName
 	res["organization_plan"] = da.orgBillingPlanName
+	res["organization_custom_domain"] = da.orgCustomDomain
 	res["project_id"] = da.projID
 	res["project_name"] = da.projName
-	res["project_prod_slots"] = da.projProdSlots
+	res["slots"] = da.slots
 	res["project_provisioner"] = da.projProvisioner
 	return res
+}
+
+// resolveSlots returns the appropriate slot count for the given environment.
+func resolveSlots(proj *database.Project, environment string) (int, error) {
+	switch environment {
+	case "prod":
+		return proj.ProdSlots, nil
+	case "dev":
+		return proj.DevSlots, nil
+	default:
+		return 0, fmt.Errorf("invalid environment %q; must be 'prod' or 'dev'", environment)
+	}
 }
 
 type provisionRuntimeOptions struct {

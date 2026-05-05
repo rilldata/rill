@@ -21,7 +21,7 @@
   import Input from "../../components/forms/Input.svelte";
   import Select from "../../components/forms/Select.svelte";
   import Checkbox from "../../components/forms/Checkbox.svelte";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   export let formId: string;
   export let data: Readable<ReportValues>;
@@ -45,20 +45,23 @@
       description: "Does NOT work for non-project members.",
     },
   ];
+  const runtimeClient = useRuntimeClient();
+
   $: selectedRunAsOption = RUN_AS_OPTIONS.find(
     (o) => o.value === $data["webOpenMode"],
   );
 
-  $: ({ instanceId } = $runtime);
-
-  $: hasSlackNotifier = getHasSlackConnection(instanceId);
+  $: hasSlackNotifier = getHasSlackConnection(runtimeClient);
 </script>
 
 <form
   autocomplete="off"
   class="flex flex-col gap-y-3 w-full"
   id={formId}
-  on:submit|preventDefault={submit}
+  onsubmit={(e) => {
+    e.preventDefault();
+    submit();
+  }}
   use:enhance
 >
   <span>Email recurring exports to recipients.</span>
@@ -133,7 +136,6 @@
       bind:rows={$data["rows"]}
       bind:columns={$data["columns"]}
       columnErrors={$errors["columns"]}
-      {instanceId}
       {exploreName}
     />
 

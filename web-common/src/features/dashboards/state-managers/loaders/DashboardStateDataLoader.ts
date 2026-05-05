@@ -19,10 +19,14 @@ import {
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { AfterNavigate } from "@sveltejs/kit";
 import { createQuery, type QueryClient } from "@tanstack/svelte-query";
 import { Settings } from "luxon";
+import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
 import { derived, get } from "svelte/store";
+import { correctExploreState } from "@rilldata/web-common/features/dashboards/stores/correct-explore-state.ts";
 
 /**
  * Loads data from explore and metrics view specs, along with all time range query.
@@ -55,7 +59,7 @@ export class DashboardStateDataLoader {
   >;
 
   public constructor(
-    instanceId: string,
+    private readonly client: RuntimeClient,
     private readonly exploreName: string,
     private readonly storageNamespacePrefix: string | undefined,
     private readonly bookmarkOrTokenExploreState:
@@ -63,9 +67,9 @@ export class DashboardStateDataLoader {
       | undefined,
     public readonly disableMostRecentDashboardState: boolean,
   ) {
-    this.validSpecQuery = useExploreValidSpec(instanceId, exploreName);
+    this.validSpecQuery = useExploreValidSpec(client, exploreName);
     this.fullTimeRangeQuery = this.useFullTimeRangeQuery(
-      instanceId,
+      client,
       this.validSpecQuery,
     );
 
@@ -197,7 +201,7 @@ export class DashboardStateDataLoader {
    * Does an additional validation where null min and max returned throws an error instead.
    */
   private useFullTimeRangeQuery(
-    instanceId: string,
+    client: RuntimeClient,
     validSpecQuery: ReturnType<typeof useExploreValidSpec>,
     queryClient?: QueryClient,
   ): CompoundQueryResult<V1MetricsViewTimeRangeResponse> {
@@ -216,9 +220,8 @@ export class DashboardStateDataLoader {
         };
 
         return getQueryServiceMetricsViewTimeRangeQueryOptions(
-          instanceId,
-          metricsViewName,
-          {},
+          client,
+          { metricsViewName },
           {
             query: {
               enabled: Boolean(metricsViewSpec.timeDimension),
@@ -250,17 +253,23 @@ export class DashboardStateDataLoader {
         }
 
         if (
-          fullTimeRange.data?.timeRangeSummary?.min === null &&
-          fullTimeRange.data?.timeRangeSummary?.max === null
+          !fullTimeRange.isLoading &&
+          !fullTimeRange.isFetching &&
+          fullTimeRange.data?.timeRangeSummary?.min == null &&
+          fullTimeRange.data?.timeRangeSummary?.max == null
         ) {
-          // The timeRangeSummary is null when there are 0 rows of data.
-          // Notably, this happens when a security policy fully restricts a user from reading any data.
-          // Show a different error in this case.
+          // The timeRangeSummary is null when there are 0 rows of data or all timestamp values are NULL.
+          // In Cloud (or Developer with a mock user), access policies may be restricting data.
+          // In Developer without a mock user, the issue is more likely data configuration.
+          const isCloudOrMockUser =
+            get(featureFlags.adminServer) ||
+            get(selectedMockUserStore) !== null;
+          const message = isCloudOrMockUser
+            ? "This dashboard currently has no data to display. This may be due to the data source configuration or access permissions."
+            : "This dashboard currently has no data to display. Check that your data source has rows and the time dimension column contains non-NULL values.";
           return {
             data: undefined,
-            error: new Error(
-              "This dashboard currently has no data to display. This may be due to access permissions.",
-            ),
+            error: new Error(message),
             isFetching: false,
             isLoading: false,
           };
@@ -357,6 +366,7 @@ export class DashboardStateDataLoader {
     const finalExploreState = cascadingExploreStateMerge(
       nonEmptyExploreStateOrder,
     ) as ExploreState;
+    correctExploreState(metricsViewSpec, finalExploreState);
 
     return finalExploreState;
   }

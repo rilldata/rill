@@ -8,8 +8,10 @@
   {#if value !== null && value !== undefined}
     <span
       class="pointer-events-none {value > 0
-        ? 'text-fg-secondary'
-        : 'text-destructive'}"
+        ? 'text-kpi-positive'
+        : value < 0
+          ? 'text-kpi-negative'
+          : 'text-fg-secondary'}"
     >
       {formattedValue}
     </span>
@@ -17,7 +19,7 @@
     <span class="text-fg-secondary pointer-events-none">-</span>
   {/if}
 {:else}
-  <span class="loading-cell" />
+  <span class="loading-cell"></span>
 {/if}
 
 <style lang="postcss">

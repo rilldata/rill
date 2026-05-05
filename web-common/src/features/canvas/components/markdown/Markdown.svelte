@@ -3,7 +3,9 @@
   import { marked } from "marked";
   import { createQuery } from "@tanstack/svelte-query";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { MarkdownCanvasComponent } from "./";
+  import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import {
     getPositionClasses,
     hasTemplatingSyntax,
@@ -12,6 +14,8 @@
   } from "./util";
 
   export let component: MarkdownCanvasComponent;
+
+  const runtimeClient = useRuntimeClient();
 
   $: specStore = component?.specStore;
   $: spec = specStore ? $specStore : undefined;
@@ -25,7 +29,10 @@
     ? ($parentSpecStore?.data?.metricsViews ?? {})
     : {};
 
-  const queryOptionsStore = getResolveTemplatedStringQueryOptions(component);
+  const queryOptionsStore = getResolveTemplatedStringQueryOptions(
+    component,
+    runtimeClient,
+  );
   $: resolveQuery = createQuery(queryOptionsStore, queryClient);
 
   // Store the last successfully resolved content to prevent flashing during refetches
@@ -82,12 +89,7 @@
     const error = $resolveQuery?.error;
     if (!error) return "Failed to resolve template.";
 
-    const err = error as any;
-    return (
-      err?.response?.data?.message ??
-      err?.message ??
-      "Failed to resolve template."
-    );
+    return extractErrorMessage(error);
   })();
 </script>
 

@@ -19,12 +19,15 @@
 
 <div class="container">
   {#if status === V1ReconcileStatus.RECONCILE_STATUS_PENDING || status === V1ReconcileStatus.RECONCILE_STATUS_RUNNING}
-    <LoadingSpinner size="18px" />
+    <Tooltip distance={8}>
+      <LoadingSpinner size="18px" />
+      <TooltipContent slot="tooltip-content">Reconciling</TooltipContent>
+    </Tooltip>
   {:else if hasTestErrors}
     <Tooltip distance={8}>
       <button
         class="hover:bg-surface-hover rounded p-1 active:bg-surface-active group"
-        on:click={() =>
+        onclick={() =>
           copyToClipboard(testErrorMessage, "Copied test error to clipboard")}
       >
         <CopyIcon
@@ -45,7 +48,7 @@
     <Tooltip distance={8}>
       <button
         class="hover:bg-surface-hover rounded p-1 active:bg-surface-active group"
-        on:click={() =>
+        onclick={() =>
           copyToClipboard(message, "Copied error message to clipboard")}
       >
         <CopyIcon
@@ -60,7 +63,10 @@
       </TooltipContent>
     </Tooltip>
   {:else}
-    <Check size="18px" className="text-green-500" />
+    <Tooltip distance={8}>
+      <Check size="18px" className="text-green-500" />
+      <TooltipContent slot="tooltip-content">Complete</TooltipContent>
+    </Tooltip>
   {/if}
 </div>
 

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { ColumnDef } from "@tanstack/svelte-table";
-  import { flexRender } from "@tanstack/svelte-table";
+  import type { ColumnDef } from "tanstack-table-8-svelte-5";
+  import { renderComponent } from "tanstack-table-8-svelte-5";
   import type { V1ProjectVariable } from "@rilldata/web-admin/client";
   import BasicTable from "@rilldata/web-common/components/table/BasicTable.svelte";
   import KeyIcon from "@rilldata/web-common/components/icons/KeyIcon.svelte";
@@ -19,7 +19,7 @@
       accessorKey: "name",
       header: "Key",
       cell: ({ row }) =>
-        flexRender(KeyCell, {
+        renderComponent(KeyCell, {
           name: row.original.name,
           environment: row.original.environment,
         }),
@@ -29,7 +29,7 @@
       header: "Value",
       enableSorting: false,
       cell: ({ row }) =>
-        flexRender(ValueCell, {
+        renderComponent(ValueCell, {
           value: row.original.value,
         }),
     },
@@ -38,7 +38,7 @@
       sortDescFirst: true,
       accessorFn: (row) => row.createdOn,
       cell: ({ row }) => {
-        return flexRender(ActivityCell, {
+        return renderComponent(ActivityCell, {
           updatedOn: row.original.updatedOn,
         });
       },
@@ -47,7 +47,7 @@
       accessorKey: "actions",
       header: "",
       cell: ({ row }) =>
-        flexRender(ActionsCell, {
+        renderComponent(ActionsCell, {
           id: row.original.id,
           name: row.original.name,
           value: row.original.value,

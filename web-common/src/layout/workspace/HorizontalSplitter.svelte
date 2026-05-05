@@ -1,6 +1,6 @@
 <div class="wrapper">
-  <div class="line" />
-  <span class="handle" />
+  <div class="line"></div>
+  <span class="handle"></span>
 </div>
 
 <style lang="postcss">

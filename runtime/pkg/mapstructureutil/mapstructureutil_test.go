@@ -29,3 +29,36 @@ func TestStrToTimePtr(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, ts.Equal(*out.Val))
 }
+
+func TestWeakDecodeWithWarnings(t *testing.T) {
+	type target struct {
+		Name string `mapstructure:"name"`
+		Age  int    `mapstructure:"age"`
+	}
+
+	in := map[string]any{
+		"name":    "Alice",
+		"age":     "30",
+		"unknown": "value",
+		"extra":   42,
+	}
+	out := &target{}
+	unused, err := WeakDecodeWithWarnings(in, out)
+	require.NoError(t, err)
+	require.Equal(t, "Alice", out.Name)
+	require.Equal(t, 30, out.Age) // weakly typed: string "30" -> int 30
+	require.ElementsMatch(t, []string{"unknown", "extra"}, unused)
+}
+
+func TestWeakDecodeWithWarnings_NoUnused(t *testing.T) {
+	type target struct {
+		Name string `mapstructure:"name"`
+	}
+
+	in := map[string]any{"name": "Bob"}
+	out := &target{}
+	unused, err := WeakDecodeWithWarnings(in, out)
+	require.NoError(t, err)
+	require.Equal(t, "Bob", out.Name)
+	require.Empty(t, unused)
+}

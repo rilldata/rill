@@ -1,5 +1,5 @@
 <script lang="ts">
-  export let size = "24";
+  export let size = "18px";
   export let primaryColor = "#3524C7";
   export let secondaryColor = "#9CABFF";
 </script>

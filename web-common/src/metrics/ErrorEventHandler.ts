@@ -1,19 +1,23 @@
 import { page } from "$app/stores";
-import type { RpcStatus } from "@rilldata/web-admin/client";
 import type { MetricsService } from "@rilldata/web-common/metrics/service/MetricsService";
 import type {
   CommonUserFields,
   MetricsEventScreenName,
   MetricsEventSpace,
 } from "@rilldata/web-common/metrics/service/MetricsTypes";
+import {
+  extractErrorMessage,
+  extractErrorStatusCode,
+} from "@rilldata/web-common/lib/errors";
 import type { Query } from "@tanstack/query-core";
-import type { AxiosError } from "axios";
 import { get } from "svelte/store";
 import type {
   SourceConnectionType,
   SourceErrorCodes,
   SourceFileType,
 } from "./service/SourceEventTypes";
+import { categorizeSourceError } from "@rilldata/web-common/features/sources/errors/errors.ts";
+import type { AddDataBehaviourEventFields } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
 
 export class ErrorEventHandler {
   public constructor(
@@ -25,26 +29,15 @@ export class ErrorEventHandler {
     this.commonUserMetrics = commonUserMetrics;
   }
 
-  public requestErrorEventHandler(error: AxiosError, query: Query) {
+  public requestErrorEventHandler(error: unknown, query: Query) {
     const screenName = this.screenNameGetter();
-    if (!error.response) {
-      this.fireHTTPErrorBoundaryEvent(
-        query.queryKey[0] as string,
-        error.status?.toString() ?? "",
-        error.message ?? "unknown error",
-        screenName,
-        get(page).url.toString(),
-      )?.catch(console.error);
-      return;
-    } else {
-      this.fireHTTPErrorBoundaryEvent(
-        query.queryKey[0] as string,
-        error.response?.status?.toString() ?? error.status,
-        (error.response?.data as RpcStatus)?.message ?? error.message,
-        screenName,
-        get(page).url.toString(),
-      )?.catch(console.error);
-    }
+    this.fireHTTPErrorBoundaryEvent(
+      query.queryKey[0] as string,
+      extractErrorStatusCode(error)?.toString() ?? "",
+      extractErrorMessage(error),
+      screenName,
+      get(page).url.toString(),
+    )?.catch(console.error);
   }
 
   public addJavascriptErrorListeners() {
@@ -119,6 +112,22 @@ export class ErrorEventHandler {
       connection_type,
       file_type,
       glob,
+    ]);
+  }
+
+  public fireAddDataErrorEvent(
+    space: MetricsEventSpace,
+    screen_name: MetricsEventScreenName,
+    message: string,
+    addDataFields: AddDataBehaviourEventFields,
+  ) {
+    const code = categorizeSourceError(message);
+    return this.metricsService.dispatch("addDataErrorEvent", [
+      this.commonUserMetrics,
+      space,
+      screen_name,
+      code,
+      addDataFields,
     ]);
   }
 

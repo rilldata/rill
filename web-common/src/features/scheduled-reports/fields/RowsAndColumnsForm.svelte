@@ -2,17 +2,19 @@
   import FieldList from "@rilldata/web-common/features/scheduled-reports/fields/FieldList.svelte";
   import { getFieldsForExplore } from "@rilldata/web-common/features/scheduled-reports/fields/selectors.ts";
   import type { ReportValues } from "@rilldata/web-common/features/scheduled-reports/utils.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { ValidationErrors } from "sveltekit-superforms";
 
   export let rows: string[];
   export let columns: string[];
   export let columnErrors: ValidationErrors<ReportValues>["columns"];
-  export let instanceId: string;
   export let exploreName: string;
+
+  const runtimeClient = useRuntimeClient();
 
   $: selectedFields = new Set([...rows, ...columns]);
 
-  $: fieldsForExplore = getFieldsForExplore(instanceId, exploreName);
+  $: fieldsForExplore = getFieldsForExplore(runtimeClient, exploreName);
   $: ({ displayMap, allowedRows, allowedColumns } = $fieldsForExplore ?? {});
 
   $: hasSomeRow = rows.length > 0;

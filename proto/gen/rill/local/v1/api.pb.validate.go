@@ -412,6 +412,8 @@ func (m *GetMetadataResponse) validate(all bool) error {
 
 	// no validation rules for AdminUrl
 
+	// no validation rules for PreviewMode
+
 	if len(errors) > 0 {
 		return GetMetadataResponseMultiError(errors)
 	}

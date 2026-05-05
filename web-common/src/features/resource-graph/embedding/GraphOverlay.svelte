@@ -45,7 +45,7 @@
   <div
     bind:this={overlayEl}
     class="graph-overlay graph-overlay-{mode}"
-    on:keydown={handleKeydown}
+    onkeydown={handleKeydown}
     role={mode === "inline" ? "region" : "dialog"}
     aria-modal={mode !== "inline"}
     aria-label="Expanded graph view"
@@ -55,7 +55,7 @@
       {#if showCloseButton && mode !== "inline"}
         <button
           class="close-btn"
-          on:click={handleClose}
+          onclick={handleClose}
           aria-label="Close expanded graph"
           title="Close (ESC)"
         >
@@ -81,7 +81,7 @@
       <!-- Backdrop for fullscreen/modal modes -->
       <div
         class="overlay-backdrop"
-        on:click={handleClose}
+        onclick={handleClose}
         aria-hidden="true"
       ></div>
     {/if}

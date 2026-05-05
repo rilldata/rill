@@ -69,6 +69,9 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			if len(args) > 0 {
 				preset = args[0]
 			} else {
+				if !ch.Interactive {
+					return fmt.Errorf("preset must be provided as an argument in non-interactive mode")
+				}
 				res, err := cmdutil.SelectPrompt("Select preset", presets, "cloud")
 				if err != nil {
 					return err

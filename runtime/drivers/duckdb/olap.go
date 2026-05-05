@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -13,11 +14,13 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	oteltrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
 // Create instruments
 var (
+	tracer                = otel.Tracer("github.com/rilldata/rill/runtime/drivers/duckdb")
 	meter                 = otel.Meter("github.com/rilldata/rill/runtime/drivers/duckdb")
 	queriesCounter        = observability.Must(meter.Int64Counter("queries"))
 	queueLatencyHistogram = observability.Must(meter.Int64Histogram("queue_latency", metric.WithUnit("ms")))
@@ -27,7 +30,7 @@ var (
 )
 
 func (c *connection) Dialect() drivers.Dialect {
-	return drivers.DialectDuckDB
+	return DialectDuckDB
 }
 
 func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
@@ -99,6 +102,9 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		return nil, c.checkErr(err)
 	}
 
+	// Start a span covering connection acquisition + SQL execution to capture total latency and queue latency.
+	ctx, span := tracer.Start(ctx, "olap.query", oteltrace.WithAttributes(attribute.String("driver", "duckdb"), attribute.String("connector", c.connectorName)))
+
 	// Gather metrics only for actual queries
 	var acquiredTime time.Time
 	acquired := false
@@ -107,9 +113,11 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		totalLatency := time.Since(start).Milliseconds()
 		queueLatency := acquiredTime.Sub(start).Milliseconds()
 
+		cancelled := errors.Is(outErr, context.Canceled)
+		failed := outErr != nil
 		attrs := []attribute.KeyValue{
-			attribute.Bool("cancelled", errors.Is(outErr, context.Canceled)),
-			attribute.Bool("failed", outErr != nil),
+			attribute.Bool("cancelled", cancelled),
+			attribute.Bool("failed", failed),
 			attribute.String("instance_id", c.instanceID),
 		}
 
@@ -130,6 +138,21 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 				c.activity.RecordMetric(ctx, "duckdb_query_latency_ms", float64(totalLatency-queueLatency), attrs...)
 			}
 		}
+
+		// Set attributes and end the span after all metrics are recorded.
+		spanAttrs := []attribute.KeyValue{
+			attribute.Int64("queue_latency_ms", queueLatency),
+			attribute.Int64("total_latency_ms", totalLatency),
+			attribute.Bool("cancelled", cancelled),
+		}
+		if outErr != nil {
+			spanAttrs = append(spanAttrs, attribute.String("error", outErr.Error()))
+		}
+		if acquired {
+			spanAttrs = append(spanAttrs, attribute.Int64("query_latency_ms", totalLatency-queueLatency))
+		}
+		span.SetAttributes(spanAttrs...)
+		span.End()
 	}()
 
 	// Acquire connection
@@ -185,6 +208,27 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	return res, nil
 }
 
+func (c *connection) Head(ctx context.Context, db, schema, table string, limit int64) (*drivers.Result, error) {
+	tbl, err := c.InformationSchema().Lookup(ctx, db, schema, table)
+	if err != nil {
+		return nil, err
+	}
+
+	var columns []string
+	for _, field := range tbl.Schema.Fields {
+		columns = append(columns, c.Dialect().EscapeIdentifier(field.Name))
+	}
+
+	limitClause := ""
+	if limit > 0 {
+		limitClause = fmt.Sprintf(" LIMIT %d", limit)
+	}
+
+	return c.Query(ctx, &drivers.Statement{
+		Query: fmt.Sprintf("SELECT %s FROM %s%s", strings.Join(columns, ", "), c.Dialect().EscapeTable(db, schema, table), limitClause),
+	})
+}
+
 func (c *connection) QuerySchema(ctx context.Context, query string, args []any) (*runtimev1.StructType, error) {
 	query = fmt.Sprintf("SELECT * FROM (%s) LIMIT 0", query)
 
@@ -203,6 +247,10 @@ func (c *connection) QuerySchema(ctx context.Context, query string, args []any) 
 
 func (c *connection) InformationSchema() drivers.OLAPInformationSchema {
 	return c
+}
+
+func (c *connection) EstimateSize(ctx context.Context) (int64, error) {
+	return c.estimateSize(), nil
 }
 
 func (c *connection) estimateSize() int64 {

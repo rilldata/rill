@@ -118,7 +118,7 @@ var spec = drivers.Spec{
 type driver struct{}
 
 // ConfigProperties defines the configuration for StarRocks connection.
-// NOTE: Timezone configuration is not supported for StarRocks.
+// NOTE: TimeZone configuration is not supported for StarRocks.
 // StarRocks uses server-side timezone settings and queries use UTC by default.
 // Unlike some other drivers, there is no client-side timezone parameter in the DSN.
 type ConfigProperties struct {
@@ -165,7 +165,7 @@ const (
 	defaultPort    = 9030
 )
 
-func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("starrocks driver: instance ID is required")
 	}

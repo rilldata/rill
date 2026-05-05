@@ -1,28 +1,33 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { createRootCauseErrorQuery } from "@rilldata/web-common/features/entity-management/error-utils";
+  import { withEditorPrefix } from "@rilldata/web-common/layout/navigation/editor-routing";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import MetricsInspector from "@rilldata/web-common/features/metrics-views/MetricsInspector.svelte";
   import MetricsEditor from "@rilldata/web-common/features/metrics-views/editor/MetricsEditor.svelte";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
+  import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
     useIsModelingSupportedForConnectorOLAP as useIsModelingSupportedForConnector,
     useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver,
   } from "../connectors/selectors";
   import PreviewButton from "../explores/PreviewButton.svelte";
   import GoToDashboardButton from "../metrics-views/GoToDashboardButton.svelte";
+  import ReconcileWarningPanel from "../entity-management/ReconcileWarningPanel.svelte";
   import VisualMetrics from "./VisualMetrics.svelte";
 
   export let fileArtifact: FileArtifact;
+  export let hideCodeToggle = false;
+  export let inPreviewMode = false;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
+
   $: ({
     hasUnsavedChanges,
     autoSave,
@@ -36,7 +41,7 @@
 
   $: metricsViewName = $resourceName?.name ?? getNameFromFile(filePath);
 
-  $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
+  $: resourceQuery = fileArtifact.getResource(queryClient);
   $: ({ data: resource } = $resourceQuery);
 
   $: isOldMetricsView = !$remoteContent?.includes("version: 1");
@@ -47,9 +52,9 @@
   $: table = resource?.metricsView?.state?.validSpec?.table ?? "";
 
   $: isModelingSupportedForDefaultOlapDriver =
-    useIsModelingSupportedForDefaultOlapDriver(instanceId);
+    useIsModelingSupportedForDefaultOlapDriver(runtimeClient);
   $: isModelingSupportedForConnector = useIsModelingSupportedForConnector(
-    instanceId,
+    runtimeClient,
     connector,
   );
   $: isModelingSupported = connector
@@ -59,23 +64,14 @@
   $: selectedView = workspace.view;
 
   // Parse error for the editor gutter and banner
-  $: parseErrorQuery = fileArtifact.getParseError(queryClient, instanceId);
+  $: parseErrorQuery = fileArtifact.getParseError(queryClient);
   $: parseError = $parseErrorQuery;
 
-  // Reconcile error resolved to root cause for the banner
   $: reconcileError = resource?.meta?.reconcileError;
-  $: rootCauseQuery = createRootCauseErrorQuery(
-    instanceId,
-    resource,
-    reconcileError,
-  );
-  $: rootCauseReconcileError = reconcileError
-    ? ($rootCauseQuery?.data ?? reconcileError)
-    : undefined;
 
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
-      instanceId,
+      runtimeClient,
       newTitle,
       filePath,
       fileName,
@@ -93,42 +89,54 @@
     onTitleChange={onChangeCallback}
     showInspectorToggle={$selectedView === "code" && isModelingSupported}
     slot="header"
-    codeToggle
+    codeToggle={!hideCodeToggle}
     titleInput={fileName}
   >
     <div class="flex gap-x-2" slot="cta">
-      {#if isOldMetricsView}
-        <PreviewButton
-          href="/explore/{metricsViewName}"
-          disabled={!!parseError || !!reconcileError}
-        />
-      {:else}
-        <GoToDashboardButton {resource} />
+      {#if !inPreviewMode}
+        {#if isOldMetricsView}
+          <PreviewButton
+            href={withEditorPrefix(`/explore/${metricsViewName}`)}
+            disabled={!!parseError || !!reconcileError}
+          />
+        {:else}
+          <GoToDashboardButton {resource} />
+        {/if}
       {/if}
     </div>
   </WorkspaceHeader>
 
   <svelte:fragment slot="body">
-    {#if $selectedView === "code"}
-      <MetricsEditor
-        bind:autoSave={$autoSave}
-        {rootCauseReconcileError}
-        {fileArtifact}
-        {filePath}
-        {parseError}
-        {metricsViewName}
-      />
-    {:else}
-      {#key fileArtifact}
-        <VisualMetrics
+    <div class="flex flex-col h-full">
+      <div class="flex-1 overflow-hidden">
+        <WorkspaceEditorContainer
+          {resource}
           {parseError}
-          {fileArtifact}
-          switchView={() => {
-            $selectedView = "code";
-          }}
-        />
-      {/key}
-    {/if}
+          remoteContent={$remoteContent}
+          {filePath}
+        >
+          {#if $selectedView === "code"}
+            <MetricsEditor
+              bind:autoSave={$autoSave}
+              {fileArtifact}
+              {filePath}
+              {parseError}
+              {metricsViewName}
+            />
+          {:else}
+            {#key fileArtifact}
+              <VisualMetrics
+                {fileArtifact}
+                switchView={() => {
+                  $selectedView = "code";
+                }}
+              />
+            {/key}
+          {/if}
+        </WorkspaceEditorContainer>
+      </div>
+      <ReconcileWarningPanel {fileArtifact} />
+    </div>
   </svelte:fragment>
 
   <MetricsInspector

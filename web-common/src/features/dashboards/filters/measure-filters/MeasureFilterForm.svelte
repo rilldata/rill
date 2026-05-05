@@ -60,7 +60,7 @@
     }),
   });
 
-  const { form, errors, submit, enhance } = superForm(
+  const { form, formId, errors, submit, enhance } = superForm(
     defaults(initialValues, yup(validationSchema)),
     {
       SPA: true,
@@ -112,7 +112,7 @@
 </script>
 
 <svelte:window
-  on:keydown={(e) => {
+  onkeydown={(e) => {
     if (e.key === "Enter") {
       submit();
     }
@@ -124,6 +124,7 @@
   {side}
   class="p-2 px-3 w-[250px]"
   strategy="fixed"
+  preventScroll
   id="measure-filter-popover"
 >
   {#if showPinControl}
@@ -144,12 +145,12 @@
     use:enhance
     autocomplete="off"
     class="flex flex-col gap-y-3"
-    id="measure"
+    id={$formId}
   >
     <Select
       bind:value={$form["dimension"]}
       id="dimension"
-      label="By Dimension"
+      label="By dimension"
       options={dimensionOptions}
       placeholder="Select dimension to split by"
     />
@@ -178,7 +179,7 @@
       id="value1"
       onEnter={submit}
       alwaysShowError
-      placeholder={isBetweenExpression ? "Lower Value" : "Enter a Number"}
+      placeholder={isBetweenExpression ? "Lower value" : "Enter a number"}
     />
 
     {#if isBetweenExpression}
@@ -186,12 +187,12 @@
         bind:value={$form["value2"]}
         errors={$errors["value2"]}
         id="value2"
-        placeholder="Higher Value"
+        placeholder="Higher value"
         alwaysShowError
         onEnter={submit}
       />
     {/if}
 
-    <Button submitForm type="primary" form="measure">Apply</Button>
+    <Button submitForm type="primary" form={$formId}>Apply</Button>
   </form>
 </Popover.Content>

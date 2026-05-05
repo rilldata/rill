@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import CanvasIcon from "@rilldata/web-common/components/icons/CanvasIcon.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import Import from "@rilldata/web-common/components/icons/Import.svelte";
@@ -7,6 +6,7 @@
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import { openResourceGraphQuickView } from "@rilldata/web-common/features/resource-graph/quick-view/quick-view-store";
   import {
@@ -26,7 +26,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { GitBranch, WandIcon } from "lucide-svelte";
   import MetricsViewIcon from "../../../components/icons/MetricsViewIcon.svelte";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
   import { createSqlModelFromTable } from "../../connectors/code-utils";
   import {
     createCanvasDashboardFromTableWithAgent,
@@ -40,19 +40,21 @@
 
   export let filePath: string;
 
+  const runtimeClient = useRuntimeClient();
+
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   const queryClient = useQueryClient();
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
 
   const { ai, developerChat } = featureFlags;
 
-  $: sourceQuery = fileArtifact.getResource(queryClient, instanceId);
+  $: sourceQuery = fileArtifact.getResource(queryClient);
   let source: V1Source | undefined;
   $: source = $sourceQuery.data?.source;
   $: sinkConnector = $sourceQuery.data?.source?.spec?.sinkConnector;
-  $: sourceHasError = fileArtifact.getHasErrors(queryClient, instanceId);
+  $: sourceHasError = fileArtifact.getHasErrors(queryClient);
   $: sourceIsIdle =
     $sourceQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
@@ -74,9 +76,10 @@
     openResourceGraphQuickView(sourceResource);
   }
 
-  $: sourceFromYaml = useSourceFromYaml(instanceId, filePath);
+  $: sourceFromYaml = useSourceFromYaml(runtimeClient, filePath);
 
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
+    runtimeClient,
     instanceId,
     sinkConnector as string,
     database,
@@ -88,6 +91,7 @@
   );
 
   $: createExploreFromTable = useCreateMetricsViewFromTableUIAction(
+    runtimeClient,
     instanceId,
     sinkConnector as string,
     database,
@@ -99,6 +103,7 @@
   );
 
   $: createCanvasDashboardFromTable = useCreateMetricsViewWithCanvasUIAction(
+    runtimeClient,
     instanceId,
     sinkConnector as string,
     database,
@@ -113,6 +118,7 @@
       const previousActiveEntity = getScreenNameFromPage();
       const addDevLimit = false; // Typically, the `dev` limit would be applied on the Source itself
       const [newModelPath, newModelName] = await createSqlModelFromTable(
+        runtimeClient,
         queryClient,
         connector,
         database,
@@ -120,7 +126,7 @@
         tableName,
         addDevLimit,
       );
-      await goto(`/files${newModelPath}`);
+      await navigateToFile(newModelPath);
       await behaviourEvent?.fireNavigationEvent(
         newModelName,
         BehaviourEventMedium.Menu,
@@ -146,18 +152,21 @@
         connector,
         filePath,
         $sourceQuery.data?.meta?.name?.name ?? "",
-        instanceId,
+        runtimeClient,
       );
     } catch {
       // no-op
     }
   };
 
-  $: isLocalFileConnectorQuery = useIsLocalFileConnector(instanceId, filePath);
+  $: isLocalFileConnectorQuery = useIsLocalFileConnector(
+    runtimeClient,
+    filePath,
+  );
   $: isLocalFileConnector = $isLocalFileConnectorQuery.data;
 
   async function onReplaceSource() {
-    await replaceSourceWithUploadedFile(instanceId, filePath);
+    await replaceSourceWithUploadedFile(runtimeClient, filePath);
     overlay.set(null);
   }
 
@@ -165,7 +174,7 @@
     // Use developer agent if enabled, otherwise fall back to RPC
     if ($developerChat) {
       await createCanvasDashboardFromTableWithAgent(
-        instanceId,
+        runtimeClient,
         sinkConnector as string,
         database,
         databaseSchema,
@@ -177,19 +186,19 @@
   }
 </script>
 
-<NavigationMenuItem on:click={viewGraph}>
+<NavigationMenuItem onclick={viewGraph}>
   <GitBranch slot="icon" size="14px" />
   View DAG graph
 </NavigationMenuItem>
 
-<NavigationMenuItem on:click={handleCreateModel}>
+<NavigationMenuItem onclick={handleCreateModel}>
   <Model slot="icon" />
   Create new model
 </NavigationMenuItem>
 
 <NavigationMenuItem
   disabled={disableCreateDashboard}
-  on:click={createMetricsViewFromTable}
+  onclick={createMetricsViewFromTable}
 >
   <MetricsViewIcon slot="icon" />
   <div class="flex gap-x-2 items-center">
@@ -210,7 +219,7 @@
 
 <NavigationMenuItem
   disabled={disableCreateDashboard}
-  on:click={onGenerateCanvasDashboard}
+  onclick={onGenerateCanvasDashboard}
 >
   <CanvasIcon slot="icon" />
   <div class="flex gap-x-2 items-center">
@@ -231,7 +240,7 @@
 
 <NavigationMenuItem
   disabled={disableCreateDashboard}
-  on:click={createExploreFromTable}
+  onclick={createExploreFromTable}
 >
   <ExploreIcon slot="icon" />
   <div class="flex gap-x-2 items-center">
@@ -250,13 +259,13 @@
   </svelte:fragment>
 </NavigationMenuItem>
 
-<NavigationMenuItem on:click={onRefreshSource}>
+<NavigationMenuItem onclick={onRefreshSource}>
   <RefreshIcon slot="icon" />
   Refresh source
 </NavigationMenuItem>
 
 {#if isLocalFileConnector}
-  <NavigationMenuItem on:click={onReplaceSource}>
+  <NavigationMenuItem onclick={onReplaceSource}>
     <Import slot="icon" />
     Replace source with uploaded file
   </NavigationMenuItem>

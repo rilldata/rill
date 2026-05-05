@@ -6,6 +6,7 @@ import {
   type V1MetricsViewAnnotationsResponseAnnotation,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { DateTime, Interval } from "luxon";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config.ts";
 import { keepPreviousData } from "@tanstack/svelte-query";
@@ -15,7 +16,7 @@ import { keepPreviousData } from "@tanstack/svelte-query";
  * the raw response rows into sorted Annotation objects via `select`.
  */
 export function createAnnotationsQuery(
-  instanceId: string,
+  client: RuntimeClient,
   metricsViewName: string,
   measureName: string,
   timeDimension: string | undefined,
@@ -29,11 +30,15 @@ export function createAnnotationsQuery(
   const grain = timeGranularity ?? V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
   return createQueryServiceMetricsViewAnnotations(
-    instanceId,
-    metricsViewName,
+    client,
     {
-      timeRange: { start: timeStart, end: timeEnd, timeDimension },
-      timeGrain: timeGranularity,
+      metricsViewName,
+      timeRange: {
+        start: timeStart as any,
+        end: timeEnd as any,
+        timeDimension,
+      },
+      timeGrain: timeGranularity as any,
       measures: [measureName],
     },
     {

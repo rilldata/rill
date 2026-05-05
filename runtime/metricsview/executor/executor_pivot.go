@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/duckdb"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"go.uber.org/zap"
 )
@@ -60,7 +61,7 @@ func (e *Executor) rewriteQueryForPivot(qry *metricsview.Query) (*pivotAST, bool
 	// Determine dialect for the PIVOT (in practice, this currently always becomes DuckDB because it's the only OLAP that supports pivoting)
 	dialect := e.olap.Dialect()
 	if !dialect.CanPivot() {
-		dialect = drivers.DialectDuckDB
+		dialect = duckdb.DialectDuckDB
 	}
 
 	// Build a pivotAST based on fields to apply during and after the pivot (instead of in the underlying query)
@@ -133,7 +134,7 @@ func (e *Executor) executePivotExport(ctx context.Context, ast *metricsview.AST,
 		args = nil
 
 		// Check for consistency with rewriteQueryForPivot
-		if pivot.dialect != drivers.DialectDuckDB {
+		if pivot.dialect.String() != drivers.DialectNameDuckDB {
 			return "", fmt.Errorf("cannot execute pivot: the pivot AST fell back to dialect %q, not DuckDB", pivot.dialect.String())
 		}
 	}
@@ -145,6 +146,7 @@ func (e *Executor) executePivotExport(ctx context.Context, ast *metricsview.AST,
 		return "", fmt.Errorf("failed to acquire OLAP for serving pivot: %w", err)
 	}
 	defer release()
+
 	var path string
 	err = olap.WithConnection(ctx, e.priority, func(wrappedCtx context.Context, ensuredCtx context.Context) error {
 		// Stage the underlying data in a temporary table
@@ -233,7 +235,7 @@ func (a *pivotAST) SQL(underlyingAST *metricsview.AST, underlyingAlias string) (
 			b.WriteString(a.dialect.EscapeIdentifier(f.Name))
 			if f.DisplayName != "" {
 				b.WriteString(" AS ")
-				b.WriteString(a.dialect.EscapeIdentifier(f.DisplayName))
+				b.WriteString(a.dialect.EscapeAlias(f.DisplayName))
 			}
 			b.WriteString(", ")
 		}
@@ -281,9 +283,9 @@ func (a *pivotAST) SQL(underlyingAST *metricsview.AST, underlyingAlias string) (
 			b.WriteString(")")
 			b.WriteString(" AS ")
 			if a.useDisplayNames && f.DisplayName != "" {
-				b.WriteString(a.dialect.EscapeIdentifier(f.DisplayName))
+				b.WriteString(a.dialect.EscapeAlias(f.DisplayName))
 			} else {
-				b.WriteString(a.dialect.EscapeIdentifier(f.Name))
+				b.WriteString(a.dialect.EscapeAlias(f.Name))
 			}
 		}
 	}
@@ -294,7 +296,7 @@ func (a *pivotAST) SQL(underlyingAST *metricsview.AST, underlyingAlias string) (
 			if i > 0 {
 				b.WriteString(", ")
 			}
-			b.WriteString(a.dialect.OrderByExpression(f.Name, f.Desc))
+			b.WriteString(a.dialect.OrderByAliasExpression(f.Name, f.Desc))
 		}
 	}
 

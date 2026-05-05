@@ -133,10 +133,10 @@ func (s *Server) ShareConversation(ctx context.Context, req *runtimev1.ShareConv
 	}
 	msg, ok := session.LatestMessage(preds...)
 	if !ok {
-		return nil, status.Errorf(codes.InvalidArgument, "message with id %q not found in conversation %q", req.UntilMessageId, req.ConversationId)
+		return nil, status.Errorf(codes.NotFound, "message with id %q not found in conversation %q", req.UntilMessageId, req.ConversationId)
 	}
 	if req.UntilMessageId != "" && !(msg.Tool == ai.RouterAgentName && msg.Type == ai.MessageTypeResult) {
-		return nil, status.Errorf(codes.InvalidArgument, "cannot share incomplete conversation as message with id %q is not a router agent result message", req.UntilMessageId)
+		return nil, status.Errorf(codes.FailedPrecondition, "cannot share incomplete conversation as message with id %q is not a router agent result message", req.UntilMessageId)
 	}
 
 	// now save the session with the shared until message id and flush immediately
@@ -358,6 +358,14 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	subCh := session.Subscribe()
 	defer session.Unsubscribe(subCh)
 	go func() {
+		// Handle panics (it's a separate goroutine so the middleware won't catch panics)
+		defer func() {
+			if r := recover(); r != nil {
+				s.logger.Error("panic in CompleteStreaming subscription goroutine", zap.Any("recover", r), zap.Stack("stack"))
+			}
+		}()
+
+		// Read messages until the context is done or the tool call finished.
 		for {
 			select {
 			case <-ctx.Done():
@@ -478,6 +486,13 @@ func (s *Server) CompleteStreamingHandler(w http.ResponseWriter, req *http.Reque
 	// Start goroutine that calls CompleteStreaming and publishes responses to a channel
 	events := make(chan *sseEvent)
 	go func() {
+		// Handle panics (it's a separate goroutine so the middleware won't catch panics)
+		defer func() {
+			if r := recover(); r != nil {
+				s.logger.Error("panic in CompleteStreamingHandler subscription goroutine", zap.Any("recover", r), zap.Stack("stack"))
+			}
+		}()
+
 		// We must close the events channel when done to make sure the SSE handler returns
 		defer close(events)
 
@@ -530,12 +545,12 @@ func (s *Server) GetAIMessage(ctx context.Context, req *runtimev1.GetAIMessageRe
 		Claims:     claims,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "failed to find the conversation: %q", req.ConversationId)
+		return nil, err
 	}
 
 	msg, ok := session.Message(ai.FilterByID(req.MessageId))
 	if !ok {
-		return nil, status.Errorf(codes.NotFound, "failed to find the call: %q", req.MessageId)
+		return nil, status.Errorf(codes.NotFound, "message %q not found in conversation %q", req.MessageId, req.ConversationId)
 	}
 
 	pbMsg, err := messageToPB(session, msg)

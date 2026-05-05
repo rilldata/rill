@@ -7,8 +7,11 @@
   import BillingBannerManager from "@rilldata/web-admin/features/billing/banner/BillingBannerManager.svelte";
   import {
     isBillingUpgradePage,
+    isProjectCreatePage,
     isProjectInvitePage,
+    isProjectWelcomePage,
     isPublicReportPage,
+    isWelcomePage,
     withinOrganization,
     withinProject,
   } from "@rilldata/web-admin/features/navigation/nav-utils";
@@ -23,11 +26,11 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
   import { type Query, QueryClientProvider } from "@tanstack/svelte-query";
-  import type { AxiosError } from "axios";
   import { onMount } from "svelte";
   import ErrorBoundary from "../components/errors/ErrorBoundary.svelte";
-  import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
+  import OrgHeader from "../features/organizations/OrgHeader.svelte";
   import "@rilldata/web-common/app.css";
+  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
   import type { V1Organization } from "@rilldata/web-admin/client";
@@ -35,7 +38,6 @@
   export let data;
 
   $: ({
-    projectPermissions,
     organizationPermissions,
     organization: organizationObj,
     planDisplayName,
@@ -58,7 +60,7 @@
   // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
   // - https://tkdodo.eu/blog/react-query-error-handling#the-global-callbacks
   queryClient.getQueryCache().config.onError = (
-    error: AxiosError,
+    error: unknown,
     query: Query,
   ) => {
     // Add TanStack Query errors to telemetry
@@ -67,8 +69,9 @@
     // Handle network errors
     // Note: ideally, we'd throw this in the root `+layout.ts` file, but we're blocked by
     // https://github.com/sveltejs/kit/issues/10201
-    if (isAdminServerQuery(query) && error.message === "Network Error") {
-      errorStore.set(createUserFacingError(null, error.message));
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (isAdminServerQuery(query) && errorMessage === "Network Error") {
+      errorStore.set(createUserFacingError(null, errorMessage));
     }
   };
 
@@ -98,7 +101,13 @@
     // upgrade callback landing page shouldn't show any rill identifications
     isBillingUpgradePage($page) ||
     // public reports are shared to external users who shouldn't be shown any rill related stuff
-    isPublicReportPage($page);
+    isPublicReportPage($page) ||
+    // Welcome page should be a full screen experience
+    isWelcomePage($page) ||
+    // Project welcome page should not show the banner to avoid breaking the UX.
+    isProjectWelcomePage($page) ||
+    // Project create page should be a full page experience as well.
+    isProjectCreatePage($page);
   $: hideBillingManager =
     // billing manager needs organization
     !organization ||
@@ -137,37 +146,38 @@
   {/if}
 </svelte:head>
 
-<QueryClientProvider client={queryClient}>
-  <main
-    class="flex flex-col bg-surface-base dark:bg-surface-background"
-    class:min-h-screen={!$dynamicHeight}
-    class:h-screen={!$dynamicHeight}
-    use:pageContentSizeHandler
-  >
-    <BannerCenter />
-    {#if !hideBillingManager}
-      <BillingBannerManager {organization} {organizationPermissions} />
-    {/if}
-    {#if !isEmbed && !hideTopBar}
-      <TopNavigationBar
-        createMagicAuthTokens={projectPermissions?.createMagicAuthTokens}
-        manageProjectMembers={projectPermissions?.manageProjectMembers}
-        manageProjectAdmins={projectPermissions?.manageProjectAdmins}
-        manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
-        manageOrgMembers={organizationPermissions?.manageOrgMembers}
-        readProjects={organizationPermissions?.readProjects}
-        {planDisplayName}
-        {organizationLogoUrl}
-      />
-
-      {#if withinOnlyOrg}
-        <OrganizationTabs {organization} {organizationPermissions} {pathname} />
+<Tooltip.Provider>
+  <QueryClientProvider client={queryClient}>
+    <main
+      class="flex flex-col bg-surface-base dark:bg-surface-background"
+      class:min-h-screen={!$dynamicHeight}
+      class:h-screen={!$dynamicHeight}
+      use:pageContentSizeHandler
+    >
+      <BannerCenter />
+      {#if !hideBillingManager}
+        <BillingBannerManager {organization} {organizationPermissions} />
       {/if}
-    {/if}
-    <ErrorBoundary>
-      <slot />
-    </ErrorBoundary>
-  </main>
-</QueryClientProvider>
+      {#if !isEmbed && !hideTopBar && !withinProject($page)}
+        <OrgHeader
+          readProjects={organizationPermissions?.readProjects}
+          {planDisplayName}
+          {organizationLogoUrl}
+        />
 
-<NotificationCenter />
+        {#if withinOnlyOrg}
+          <OrganizationTabs
+            {organization}
+            {organizationPermissions}
+            {pathname}
+          />
+        {/if}
+      {/if}
+      <ErrorBoundary>
+        <slot />
+      </ErrorBoundary>
+    </main>
+  </QueryClientProvider>
+
+  <NotificationCenter />
+</Tooltip.Provider>

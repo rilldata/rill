@@ -4,43 +4,54 @@ import {
   uploadFile,
 } from "@rilldata/web-common/features/sources/modal/file-upload";
 import { compileLocalFileSourceYAML } from "@rilldata/web-common/features/sources/sourceUtils";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import {
+  getRuntimeServiceGetInstanceQueryKey,
   runtimeServiceCreateTrigger,
+  runtimeServiceGetInstance,
   runtimeServicePutFile,
 } from "@rilldata/web-common/runtime-client";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
 export async function refreshSource(
   connector: string,
   filePath: string,
   sourceName: string,
-  instanceId: string,
+  client: RuntimeClient,
 ) {
   if (connector !== "local_file") {
-    return runtimeServiceCreateTrigger(instanceId, {
+    return runtimeServiceCreateTrigger(client, {
       resources: [{ kind: ResourceKind.Source, name: sourceName }],
     });
   }
 
   // different logic for the file connector
-  return replaceSourceWithUploadedFile(instanceId, filePath);
+  return replaceSourceWithUploadedFile(client, filePath);
 }
 
 export async function replaceSourceWithUploadedFile(
-  instanceId: string,
+  client: RuntimeClient,
   filePath: string,
 ) {
   const files = await openFileUploadDialog(false);
   if (!files.length) return Promise.reject();
 
-  const dataFilePath = await uploadFile(instanceId, files[0]);
+  const dataFilePath = await uploadFile(client, files[0]);
   if (dataFilePath === null || dataFilePath === undefined) {
     return Promise.reject();
   }
 
-  const yaml = compileLocalFileSourceYAML(dataFilePath);
+  // Get the default OLAP connector for the output block
+  const runtimeInstance = await queryClient.fetchQuery({
+    queryKey: getRuntimeServiceGetInstanceQueryKey(client.instanceId, {}),
+    queryFn: () => runtimeServiceGetInstance(client, { sensitive: false }),
+  });
+  const defaultOLAP = runtimeInstance?.instance?.olapConnector || "duckdb";
+
+  const yaml = compileLocalFileSourceYAML(dataFilePath, defaultOLAP);
 
   // Create source
-  return runtimeServicePutFile(instanceId, {
+  return runtimeServicePutFile(client, {
     path: filePath,
     blob: yaml,
   });

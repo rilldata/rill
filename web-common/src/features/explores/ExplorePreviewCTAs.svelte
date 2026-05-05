@@ -6,7 +6,7 @@
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { Button } from "../../components/button";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../runtime-client/v2";
   import ChatToggle from "../chat/layouts/sidebar/ChatToggle.svelte";
   import ViewAsButton from "../dashboards/granular-access-policies/ViewAsButton.svelte";
   import {
@@ -15,23 +15,27 @@
   } from "../dashboards/granular-access-policies/useSecurityPolicyCheck";
   import StateManagersProvider from "../dashboards/state-managers/StateManagersProvider.svelte";
   import { featureFlags } from "../feature-flags";
+  import { getFileHref } from "../../layout/navigation/editor-routing";
 
   export let exploreName: string;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
-  $: exploreQuery = useExplore(instanceId, exploreName);
+  $: exploreQuery = useExplore(runtimeClient, exploreName);
   $: exploreFilePath = $exploreQuery.data?.explore?.meta?.filePaths?.[0] ?? "";
   $: metricsViewFilePath =
     $exploreQuery.data?.metricsView?.meta?.filePaths?.[0] ?? "";
   $: metricsViewName = $exploreQuery.data?.metricsView?.meta?.name?.name ?? "";
 
-  $: explorePolicyCheck = useDashboardPolicyCheck(instanceId, exploreFilePath);
+  $: explorePolicyCheck = useDashboardPolicyCheck(
+    runtimeClient,
+    exploreFilePath,
+  );
   $: metricsPolicyCheck = useDashboardPolicyCheck(
-    instanceId,
+    runtimeClient,
     metricsViewFilePath,
   );
-  $: rillYamlPolicyCheck = useRillYamlPolicyCheck(instanceId);
+  $: rillYamlPolicyCheck = useRillYamlPolicyCheck(runtimeClient);
 
   const { readOnly, dashboardChat } = featureFlags;
 </script>
@@ -50,18 +54,20 @@
   </StateManagersProvider>
   {#if !$readOnly}
     <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild let:builder>
-        <Button type="secondary" builders={[builder]}>
-          Edit
-          <CaretDownIcon />
-        </Button>
+      <DropdownMenu.Trigger>
+        {#snippet child({ props })}
+          <Button {...props} type="secondary">
+            Edit
+            <CaretDownIcon />
+          </Button>
+        {/snippet}
       </DropdownMenu.Trigger>
       <DropdownMenu.Content align="end">
-        <DropdownMenu.Item href={`/files${exploreFilePath}`}>
+        <DropdownMenu.Item href={getFileHref(exploreFilePath)}>
           <ExploreIcon size="16px" />
           Explore dashboard
         </DropdownMenu.Item>
-        <DropdownMenu.Item href={`/files${metricsViewFilePath}`}>
+        <DropdownMenu.Item href={getFileHref(metricsViewFilePath)}>
           <MetricsViewIcon size="16px" />
           Metrics View
         </DropdownMenu.Item>

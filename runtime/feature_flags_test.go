@@ -43,6 +43,8 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"deploy":               true,
 				"developerAgent":       true,
 				"stickyDashboardState": false,
+				"cloudEditing":         false,
+				"customCharts":         false,
 			},
 		},
 		{
@@ -67,6 +69,8 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"deploy":               true,
 				"developerAgent":       true,
 				"stickyDashboardState": false,
+				"cloudEditing":         false,
+				"customCharts":         false,
 			},
 		},
 		{
@@ -91,6 +95,8 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"deploy":               true,
 				"developerAgent":       true,
 				"stickyDashboardState": false,
+				"cloudEditing":         false,
+				"customCharts":         false,
 			},
 		},
 		{
@@ -115,6 +121,8 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"deploy":               true,
 				"developerAgent":       true,
 				"stickyDashboardState": false,
+				"cloudEditing":         false,
+				"customCharts":         false,
 			},
 		},
 	}

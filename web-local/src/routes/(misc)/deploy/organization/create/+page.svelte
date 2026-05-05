@@ -4,14 +4,29 @@
   import CreateNewOrgForm from "@rilldata/web-common/features/organization/CreateNewOrgForm.svelte";
   import { CreateNewOrgFormId } from "@rilldata/web-common/features/organization/CreateNewOrgForm.svelte";
   import { getDeployOrGithubRouteGetter } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
+  import {
+    createLocalServiceCreateOrganization,
+    getLocalServiceGetCurrentUserQueryKey,
+  } from "@rilldata/web-common/runtime-client/local-service.ts";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 
   const deployRouteGetter = getDeployOrGithubRouteGetter();
   $: ({ isLoading, getter: deployRouteGetterFunc } = $deployRouteGetter);
 
-  function selectOrg(orgName: string) {
-    // This navigation gets cancelled if we do not have `setTimeout` here.
-    // TODO: investigate why
-    setTimeout(() => void goto(deployRouteGetterFunc(orgName)));
+  const orgCreator = createLocalServiceCreateOrganization();
+
+  async function createOrg(name: string, displayName: string) {
+    await $orgCreator.mutateAsync({
+      name,
+      displayName,
+    });
+
+    await queryClient.invalidateQueries({
+      queryKey: getLocalServiceGetCurrentUserQueryKey(),
+    });
+
+    // This navigation gets cancelled because of form submission.
+    setTimeout(() => void goto(deployRouteGetterFunc(name)));
   }
 </script>
 
@@ -24,7 +39,7 @@
 </div>
 
 <div class="text-left">
-  <CreateNewOrgForm onCreate={selectOrg} size="xl" />
+  <CreateNewOrgForm {createOrg} size="xl" />
 </div>
 <Button
   wide

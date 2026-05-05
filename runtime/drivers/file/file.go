@@ -70,7 +70,7 @@ type rillYAML struct {
 	IgnorePaths []string `yaml:"ignore_paths"`
 }
 
-func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("file driver can't be shared")
 	}

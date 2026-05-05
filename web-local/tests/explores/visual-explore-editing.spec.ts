@@ -1,5 +1,6 @@
 import { expect } from "@playwright/test";
 import { test } from "../setup/base";
+import { waitForReconciliation } from "../utils/wait-for-reconciliation";
 import { gotoNavEntry } from "../utils/waitHelpers";
 
 test.describe("visual explore editing", () => {
@@ -7,6 +8,10 @@ test.describe("visual explore editing", () => {
 
   test("visual explore editor runthrough", async ({ page }) => {
     test.setTimeout(45_000); // Note: we should make this test smaller!
+
+    // Wait for all resources (including models) to fully reconcile
+    // before interacting with the visual editor
+    await waitForReconciliation(page);
 
     await page.getByLabel("/dashboards").click();
     await page.waitForTimeout(1000);

@@ -1,46 +1,16 @@
 <script lang="ts">
   import {
-    createLineGenerator,
     createAreaGenerator,
+    createLineGenerator,
   } from "@rilldata/web-common/components/data-graphic/utils";
   import type {
-    ChartSeries,
     ChartScales,
+    ChartSeries,
   } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/types";
+  import { bridgeSmallGaps } from "./sparse-data-utils";
 
-  /**
-   * Rendering sparse data with null gaps
-   *
-   * 1. Null bridging: `bridgeSmallGaps` linearly interpolates across small
-   *    gaps (< MAX_BRIDGE_GAP_PX) when `connectNulls` is on. Large gaps
-   *    remain as nulls and produce natural line breaks.
-   *
-   * 2. Clip paths: The primary series needs clip paths because its area
-   *    fill gradient would otherwise render across gaps (`defined` only
-   *    affects line generators, not the filled path).
-   *      - `seg-clip`:   real data segments only (connectNulls off)
-   *      - `full-clip`:  real + bridged segments (connectNulls on, area fill)
-   *      - `scrub-clip`: scrub selection rect — chart draws muted, then
-   *                      re-draws with original colors inside this clip
-   *    Secondary series have no area fill, so they rely on the line
-   *    generator's `defined` callback and only use `scrub-clip`.
-   *
-   * 3. Singletons: When `connectNulls` is off, isolated points (no adjacent
-   *    non-null neighbors) are drawn as circles since there's no line
-   *    segment to render.
-   */
-
-  const MAX_BRIDGE_GAP_PX = 40;
-
-  interface Segment {
-    startIndex: number;
-    endIndex: number;
-  }
-
-  interface BridgeResult {
-    values: (number | null)[];
-    inputSegments: Segment[];
-  }
+  const numAccessor = (d: number | null) => d;
+  const numClone = (_d: number | null, v: number): number | null => v;
 
   const chartId = Math.random().toString(36).slice(2, 11);
 
@@ -67,29 +37,42 @@
   $: primarySeries = series[0];
 
   $: primaryBridgeResult = primarySeries
-    ? bridgeSmallGaps(primarySeries.values, scales.x, connectNulls)
-    : { values: [] as (number | null)[], inputSegments: [] };
+    ? bridgeSmallGaps(
+        primarySeries.values,
+        numAccessor,
+        numClone,
+        scales.x,
+        connectNulls,
+      )
+    : {
+        values: [] as (number | null)[],
+        inputSegments: [],
+        bridgedSegments: [],
+      };
   $: primaryBridged = primaryBridgeResult.values;
 
   $: primaryLinePath = primarySeries ? (lineGen(primaryBridged) ?? "") : "";
   $: primaryAreaPath = primarySeries ? (areaGen(primaryBridged) ?? "") : "";
 
   $: primaryRealSegments = primaryBridgeResult.inputSegments;
-  $: primarySegments = primarySeries ? computeSegments(primaryBridged) : [];
-  $: primarySingletons =
-    primarySeries && !connectNulls
-      ? primarySegments
-          .filter((s) => s.startIndex === s.endIndex)
-          .map((s) => s.startIndex)
-      : [];
+  $: primarySegments = primaryBridgeResult.bridgedSegments;
+  $: primarySingletons = primarySeries
+    ? primarySegments
+        .filter((s) => s.startIndex === s.endIndex)
+        .map((s) => s.startIndex)
+    : [];
 
   $: secondarySeries = series.slice(1).map((s) => {
-    const bridged = bridgeSmallGaps(s.values, scales.x, connectNulls);
-    const singletons = !connectNulls
-      ? computeSegments(bridged.values)
-          .filter((seg) => seg.startIndex === seg.endIndex)
-          .map((seg) => seg.startIndex)
-      : [];
+    const bridged = bridgeSmallGaps(
+      s.values,
+      numAccessor,
+      numClone,
+      scales.x,
+      connectNulls,
+    );
+    const singletons = bridged.bridgedSegments
+      .filter((seg) => seg.startIndex === seg.endIndex)
+      .map((seg) => seg.startIndex);
     return { ...s, bridgedValues: bridged.values, singletons };
   });
 
@@ -118,54 +101,6 @@
       ? "var(--color-gray-50)"
       : primarySeries.areaGradient.light
     : "transparent";
-
-  function computeSegments(values: (number | null)[]): Segment[] {
-    const segments: Segment[] = [];
-    let segStart = -1;
-    for (let i = 0; i < values.length; i++) {
-      if (values[i] !== null) {
-        if (segStart === -1) segStart = i;
-      } else if (segStart !== -1) {
-        segments.push({ startIndex: segStart, endIndex: i - 1 });
-        segStart = -1;
-      }
-    }
-    if (segStart !== -1)
-      segments.push({ startIndex: segStart, endIndex: values.length - 1 });
-    return segments;
-  }
-
-  function bridgeSmallGaps(
-    values: (number | null)[],
-    xScale: (i: number) => number,
-    shouldBridge: boolean,
-  ): BridgeResult {
-    const inputSegments = computeSegments(values);
-
-    if (!shouldBridge || values.length < 3 || inputSegments.length <= 1) {
-      return { values, inputSegments };
-    }
-
-    const result = [...values];
-
-    for (let i = 0; i < inputSegments.length - 1; i++) {
-      const prev = inputSegments[i];
-      const next = inputSegments[i + 1];
-      const gapPx = xScale(next.startIndex) - xScale(prev.endIndex);
-
-      if (gapPx <= MAX_BRIDGE_GAP_PX) {
-        const v0 = values[prev.endIndex]!;
-        const v1 = values[next.startIndex]!;
-        const span = next.startIndex - prev.endIndex;
-        for (let j = prev.endIndex + 1; j < next.startIndex; j++) {
-          const t = (j - prev.endIndex) / span;
-          result[j] = v0 + t * (v1 - v0);
-        }
-      }
-    }
-
-    return { values: result, inputSegments };
-  }
 </script>
 
 <defs>

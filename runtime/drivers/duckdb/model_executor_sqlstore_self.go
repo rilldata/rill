@@ -9,6 +9,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	rillmysql "github.com/rilldata/rill/runtime/drivers/mysql"
 	"github.com/rilldata/rill/runtime/drivers/postgres"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 )
 
 type sqlStoreToSelfInputProps struct {
@@ -49,8 +50,16 @@ func (e *sqlStoreToSelfExecutor) Concurrency(desired int) (int, bool) {
 
 func (e *sqlStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	inputProps := &sqlStoreToSelfInputProps{}
-	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
+	var warnings []string
+	unused, err := mapstructureutil.WeakDecodeWithWarnings(opts.InputProperties, inputProps)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
+	}
+	if len(unused) > 0 {
+		if opts.Env.StrictModelProps {
+			return nil, fmt.Errorf("undefined fields in input properties: %q", strings.Join(unused, ", "))
+		}
+		warnings = append(warnings, fmt.Sprintf("Undefined fields %q in input properties. Will be ignored.", strings.Join(unused, ", ")))
 	}
 	if err := inputProps.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid input properties: %w", err)
@@ -67,7 +76,12 @@ func (e *sqlStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mode
 
 	// execute
 	executor := &selfToSelfExecutor{c: e.c}
-	return executor.Execute(ctx, newOpts)
+	res, err := executor.Execute(ctx, newOpts)
+	if err != nil {
+		return nil, err
+	}
+	res.Warnings = append(res.Warnings, warnings...)
+	return res, nil
 }
 
 func (e *sqlStoreToSelfExecutor) modelInputProperties(modelName, inputConnector string, inputHandle drivers.Handle, inputProps *sqlStoreToSelfInputProps) (map[string]any, error) {

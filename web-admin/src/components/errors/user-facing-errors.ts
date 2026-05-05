@@ -27,6 +27,12 @@ export function createUserFacingError(
       body: "It looks like this link is no longer active. Please reach out to the sender to request a new link.",
       fatal: true,
     };
+  } else if (status === 401) {
+    return {
+      statusCode: 401,
+      header: "Authentication error",
+      body: "Try refreshing the page. If the problem persists, try signing out and back in.",
+    };
   } else if (status === 403) {
     return {
       statusCode: status,
@@ -44,6 +50,15 @@ export function createUserFacingError(
       statusCode: status,
       header: "Project not found",
       body: "The project you requested could not be found. Please check that you have provided a valid project name.",
+    };
+  } else if (
+    status === 400 &&
+    message.includes("failed to find the conversation")
+  ) {
+    return {
+      statusCode: 404,
+      header: "Conversation not found",
+      body: "Please check that you have the correct link or if you have access to it.",
     };
   } else if (status === 404 && message === "resource not found") {
     return {

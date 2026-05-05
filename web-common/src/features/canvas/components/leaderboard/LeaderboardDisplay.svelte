@@ -13,7 +13,7 @@
   import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import ComponentHeader from "../../ComponentHeader.svelte";
   import {
     getDimensionColumnWidth,
@@ -23,13 +23,15 @@
 
   export let component: LeaderboardComponent;
 
+  const runtimeClient = useRuntimeClient();
+
   let metricsViewName: string;
   let leaderboardMeasureNames: string[] = [];
   let dimensionNames: string[] = [];
   let numRows = 7;
   let leaderboardWrapperWidth = 0;
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
 
   $: ({
     specStore,
@@ -96,6 +98,13 @@
     ]),
   );
 
+  $: measureTooltipFormatters = Object.fromEntries(
+    visibleMeasures.map((m) => [
+      m.name,
+      createMeasureValueFormatter<null | undefined>(m, "tooltip"),
+    ]),
+  );
+
   // Reset column widths when the measure changes
   $: if (leaderboardMeasureNames) {
     valueColumn.reset();
@@ -158,7 +167,7 @@
     class="h-fit p-0 grow relative"
     class:!p-0={visibleDimensions.length === 1}
   >
-    <span class="border-overlay" />
+    <span class="border-overlay"></span>
     <div
       class="grid-wrapper gap-px overflow-x-auto"
       style:grid-template-columns="repeat(auto-fit, minmax({estimatedTableWidth +
@@ -174,7 +183,6 @@
               leaderboardShowContextForAllMeasures
               timeControlsReady
               slice={numRows}
-              {instanceId}
               visible={$visible}
               {isValidPercentOfTotal}
               {metricsViewName}
@@ -197,7 +205,7 @@
               allowExpandTable={false}
               allowDimensionComparison={false}
               selectedValues={selectedDimensionValues(
-                instanceId,
+                runtimeClient,
                 [metricsViewName],
                 whereFilter,
                 dimension.name,
@@ -206,6 +214,7 @@
               )}
               isBeingCompared={false}
               formatters={measureFormatters}
+              tooltipFormatters={measureTooltipFormatters}
               {toggleSort}
               toggleDimensionValueSelection={async (
                 name,

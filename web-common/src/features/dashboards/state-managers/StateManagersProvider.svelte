@@ -3,16 +3,20 @@
   import { createStateManagers, DEFAULT_STORE_KEY } from "./state-managers";
   import { useExploreState } from "../stores/dashboard-stores";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   export let metricsViewName: string | undefined;
   export let exploreName: string;
   export let visualEditing = false;
+
+  const client = useRuntimeClient();
 
   const stateManagers = metricsViewName
     ? createStateManagers({
         queryClient,
         metricsViewName,
         exploreName,
+        runtimeClient: client,
       })
     : undefined;
 

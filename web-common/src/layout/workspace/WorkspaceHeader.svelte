@@ -14,6 +14,7 @@
   import { navigationOpen } from "../navigation/Navigation.svelte";
   import { workspaces } from "./workspace-stores";
   import ConnectorRefreshButton from "@rilldata/web-common/features/connectors/ConnectorRefreshButton.svelte";
+  import ConnectorAddModelButton from "@rilldata/web-common/features/connectors/ConnectorAddModelButton.svelte";
 
   export let resourceKind: ResourceKind | undefined;
   export let titleInput: string;
@@ -35,7 +36,11 @@
   $: tableVisible = workspaceLayout.table.visible;
   $: view = workspaceLayout.view;
 
-  $: isConnector = resourceKind === ResourceKind.Connector;
+  // Check if it's a connector by resourceKind or by file path.
+  // File path fallback is needed when reconcile fails and resourceKind is unavailable.
+  $: isConnector =
+    resourceKind === ResourceKind.Connector ||
+    (filePath && filePath.startsWith("/connectors/"));
 </script>
 
 <header bind:clientWidth={width}>
@@ -71,13 +76,13 @@
       />
     </div>
 
-    {#if isConnector}
-      <ConnectorRefreshButton {resource} {hasUnsavedChanges} />
-    {/if}
-
     <div class="flex items-center gap-x-2 w-fit flex-none">
-      <slot name="workspace-controls" {width} />
+      {#if isConnector}
+        <ConnectorRefreshButton {resource} {hasUnsavedChanges} />
+        <ConnectorAddModelButton {resource} {hasUnsavedChanges} />
+      {/if}
 
+      <slot name="workspace-controls" {width} />
       <div class="flex-none">
         <slot name="cta" {width} />
       </div>

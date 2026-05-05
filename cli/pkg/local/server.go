@@ -110,6 +110,7 @@ func (s *Server) GetMetadata(ctx context.Context, r *connect.Request[localv1.Get
 		GrpcPort:         int32(s.metadata.GRPCPort),
 		LoginUrl:         s.app.localURL + "/auth",
 		AdminUrl:         s.app.ch.AdminURL(),
+		PreviewMode:      s.metadata.PreviewMode,
 	}), nil
 }
 
@@ -348,6 +349,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			Provisioner:    "",
 			ProdVersion:    "",
 			ProdSlots:      int64(DefaultProdSlots(s.app.ch)),
+			DevSlots:       int64(DefaultDevSlots(s.app.ch)),
 			Public:         false,
 			DirectoryName:  directoryName,
 			ArchiveAssetId: assetID,
@@ -370,6 +372,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			Provisioner:   "",
 			ProdVersion:   "",
 			ProdSlots:     int64(DefaultProdSlots(s.app.ch)),
+			DevSlots:      int64(DefaultDevSlots(s.app.ch)),
 			Public:        false,
 			DirectoryName: directoryName,
 			GitRemote:     ghRepo.Remote,
@@ -430,6 +433,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			Provisioner:   "",
 			ProdVersion:   "",
 			ProdSlots:     int64(DefaultProdSlots(s.app.ch)),
+			DevSlots:      int64(DefaultDevSlots(s.app.ch)),
 			Public:        false,
 			DirectoryName: directoryName,
 			GitRemote:     githubRemote,
@@ -661,7 +665,7 @@ func (s *Server) GetCurrentProject(ctx context.Context, r *connect.Request[local
 
 	projects, err := s.app.ch.InferProjects(ctx, s.app.ch.Org, s.app.ProjectPath)
 	if err != nil {
-		if errors.Is(err, cmdutil.ErrNoMatchingProject) {
+		if errors.Is(err, cmdutil.ErrInferProjectFailed) {
 			return connect.NewResponse(&localv1.GetCurrentProjectResponse{
 				LocalProjectName: localProjectName,
 			}), nil
@@ -742,7 +746,7 @@ func (s *Server) ListMatchingProjects(ctx context.Context, r *connect.Request[lo
 
 	projects, err := s.app.ch.InferProjects(ctx, "", s.app.ProjectPath)
 	if err != nil {
-		if errors.Is(err, cmdutil.ErrNoMatchingProject) {
+		if errors.Is(err, cmdutil.ErrInferProjectFailed) {
 			return connect.NewResponse(&localv1.ListMatchingProjectsResponse{
 				Projects: nil,
 			}), nil
@@ -959,6 +963,7 @@ type localMetadata struct {
 	IsDev            bool   `json:"is_dev"`
 	AnalyticsEnabled bool   `json:"analytics_enabled"`
 	Readonly         bool   `json:"readonly"`
+	PreviewMode      bool   `json:"preview_mode"`
 	GRPCPort         int    `json:"grpc_port"`
 }
 

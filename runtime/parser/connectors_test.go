@@ -82,7 +82,7 @@ region: us-west-2
 `,
 	})
 
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 
 	cs := p.AnalyzeConnectors(ctx)
@@ -181,7 +181,7 @@ notify:
 `,
 	})
 
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 
 	cs := p.AnalyzeConnectors(ctx)
@@ -225,7 +225,7 @@ managed:
 `,
 	})
 
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	require.Len(t, p.Resources, 3)
 

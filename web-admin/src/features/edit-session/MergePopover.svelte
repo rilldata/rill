@@ -1,0 +1,141 @@
+<script lang="ts">
+  import { goto } from "$app/navigation";
+  import { requestSkipBranchInjection } from "@rilldata/web-admin/features/branches/branch-utils";
+  import { Button } from "@rilldata/web-common/components/button";
+  import * as Popover from "@rilldata/web-common/components/popover";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
+  import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import {
+    createRuntimeServiceGitMergeToBranchMutation,
+    createRuntimeServiceGitStatus,
+    getRuntimeServiceGitStatusQueryKey,
+  } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { ExternalLink, GitPullRequest } from "lucide-svelte";
+
+  export let organization: string;
+  export let project: string;
+  export let primaryBranch: string | undefined;
+
+  let open = false;
+  let isMerging = false;
+  let errorMessage = "";
+
+  const client = useRuntimeClient();
+  const gitMergeMutation = createRuntimeServiceGitMergeToBranchMutation(client);
+  const gitStatusQuery = createRuntimeServiceGitStatus(client, {});
+
+  $: currentBranch = $gitStatusQuery.data?.branch ?? "";
+  $: branchUrl =
+    $gitStatusQuery.data?.githubUrl && currentBranch
+      ? `${getGitUrlFromRemote($gitStatusQuery.data.githubUrl)}/tree/${encodeURIComponent(currentBranch)}`
+      : "";
+  $: alreadyOnPrimary =
+    !!primaryBranch && !!currentBranch && currentBranch === primaryBranch;
+  $: disabled =
+    !primaryBranch || !currentBranch || alreadyOnPrimary || isMerging;
+
+  $: if (!open) {
+    errorMessage = "";
+  }
+
+  async function handleMerge() {
+    if (!primaryBranch || isMerging) return;
+    isMerging = true;
+    errorMessage = "";
+    try {
+      await $gitMergeMutation.mutateAsync({
+        branch: primaryBranch,
+        force: false,
+      });
+      // gitStatus tracks currentBranch; refresh so subscribers see the merge.
+      await queryClient.invalidateQueries({
+        queryKey: getRuntimeServiceGitStatusQueryKey(client.instanceId, {}),
+      });
+    } catch (err) {
+      errorMessage = extractErrorMessage(err) || "Failed to merge";
+      isMerging = false;
+      return;
+    }
+
+    isMerging = false;
+    open = false;
+
+    // Defer goto to the next task. Calling it synchronously after a mutation
+    // races with TanStack's invalidation/refetch teardown, whose abort listeners
+    // can throw and silently cancel the navigation. Same workaround as
+    // welcome/organization/+page.svelte after createOrg.
+    setTimeout(() => {
+      requestSkipBranchInjection();
+      void goto(`/${organization}/${project}`);
+    });
+  }
+</script>
+
+<Tooltip distance={8} suppress={open}>
+  <Popover.Root bind:open>
+    <Popover.Trigger>
+      {#snippet child({ props })}
+        <Button {...props} type="primary" {disabled}>
+          <GitPullRequest size="14" />
+          Merge to production
+        </Button>
+      {/snippet}
+    </Popover.Trigger>
+    <Popover.Content align="end" class="!w-[320px]">
+      <div class="flex flex-col gap-y-3">
+        <p class="text-xs text-fg-secondary">
+          Merging pushes changes from
+          <span class="font-semibold text-fg-primary">"{currentBranch}"</span>
+          to production and returns you to the project home. Viewers will see updates
+          as the project reconciles.
+        </p>
+        {#if branchUrl}
+          <a
+            class="github-link"
+            href={branchUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            View branch on GitHub
+            <ExternalLink size="11" />
+          </a>
+        {/if}
+        <Button
+          type="primary"
+          small
+          disabled={isMerging}
+          loading={isMerging}
+          loadingCopy="Merging..."
+          onClick={handleMerge}
+        >
+          Merge
+        </Button>
+        {#if errorMessage}
+          <p class="text-xs text-red-600">{errorMessage}</p>
+        {/if}
+      </div>
+    </Popover.Content>
+  </Popover.Root>
+  <TooltipContent slot="tooltip-content" maxWidth="220px">
+    <span class="text-xs">
+      {#if alreadyOnPrimary}
+        Already on production
+      {:else if !primaryBranch || !currentBranch}
+        Loading project...
+      {:else}
+        Review and confirm before merging
+      {/if}
+    </span>
+  </TooltipContent>
+</Tooltip>
+
+<style lang="postcss">
+  .github-link {
+    @apply inline-flex items-center gap-x-1 text-xs text-fg-secondary;
+    @apply hover:text-fg-primary hover:underline;
+  }
+</style>

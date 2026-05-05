@@ -6,12 +6,12 @@
     PopoverContent,
     PopoverTrigger,
   } from "@rilldata/web-common/components/popover";
-  import { createRuntimeServiceShareConversation } from "@rilldata/web-common/runtime-client";
-  import { isHTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+  import { createRuntimeServiceShareConversationMutation } from "@rilldata/web-common/runtime-client";
+  import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { Check, Link, Share } from "lucide-svelte";
 
   export let conversationId: string | undefined = undefined;
-  export let instanceId: string;
   export let organization: string | undefined = undefined;
   export let project: string | undefined = undefined;
   export let disabled = false;
@@ -24,7 +24,9 @@
   let isSharing = false;
   let shareError: string | null = null;
 
-  const shareConversationMutation = createRuntimeServiceShareConversation();
+  const runtimeClient = useRuntimeClient();
+  const shareConversationMutation =
+    createRuntimeServiceShareConversationMutation(runtimeClient);
 
   async function handleCreateLink() {
     if (copied || isSharing || !conversationId || !organization || !project)
@@ -36,9 +38,7 @@
     try {
       // Call the share API to set the sharing boundary
       await $shareConversationMutation.mutateAsync({
-        instanceId,
         conversationId,
-        data: {},
       });
 
       // Construct the share URL
@@ -55,9 +55,7 @@
       }, COPIED_FEEDBACK_DURATION_MS);
     } catch (error) {
       console.error("[ShareChatPopover] Share failed:", error);
-      shareError = isHTTPError(error)
-        ? error.response.data.message
-        : "Failed to create share link";
+      shareError = extractErrorMessage(error);
     } finally {
       isSharing = false;
     }

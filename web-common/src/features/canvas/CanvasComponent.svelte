@@ -1,31 +1,49 @@
 <script lang="ts" context="module">
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
+  import { onMount } from "svelte";
   import Toolbar from "./Toolbar.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import { hideBorder } from "./layout-util";
-  import { onMount } from "svelte";
 </script>
 
 <script lang="ts">
-  const observer = new IntersectionObserver(
-    ([entry]) => {
-      if (entry.isIntersecting) {
-        component.visible.set(true);
-        observer.unobserve(container);
-      }
-    },
-    {
-      root: document.querySelector(".dashboard-theme-boundary"),
-      rootMargin: "120px",
-      threshold: 0,
-    },
-  );
+  import { get } from "svelte/store";
+
+  let observer: IntersectionObserver;
+
+  let mounted = false;
 
   onMount(() => {
+    observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          component.visible.set(true);
+          observer.unobserve(container);
+        }
+      },
+      {
+        root: container.closest(".dashboard-theme-boundary"),
+        rootMargin: "120px",
+        threshold: 0,
+      },
+    );
+    mounted = true;
     observer.observe(container);
   });
 
   export let component: BaseCanvasComponent;
+
+  let prevComponent: BaseCanvasComponent | undefined;
+  $: if (mounted && component !== prevComponent) {
+    const wasVisible = prevComponent ? get(prevComponent.visible) : false;
+    prevComponent = component;
+    if (wasVisible) {
+      component.visible.set(true);
+    } else {
+      observer.unobserve(container);
+      observer.observe(container);
+    }
+  }
   export let selected = false;
   export let ghost = false;
   export let allowPointerEvents = true;
@@ -67,10 +85,10 @@
   <div
     role="presentation"
     class="size-full grow flex flex-col"
-    on:mousedown={onMouseDown}
+    onmousedown={onMouseDown}
   >
     {#if component}
-      <svelte:component this={component.component} {component} />
+      <svelte:component this={component.component} {component} {editable} />
     {:else}
       <div class="size-full grid place-content-center">
         <LoadingSpinner size="36px" />
@@ -84,7 +102,7 @@
     @apply shadow-md outline;
   }
 
-  .component-card:has(.component-error) {
+  .component-card:has(:global(.component-error)) {
     @apply outline-destructive;
   }
 

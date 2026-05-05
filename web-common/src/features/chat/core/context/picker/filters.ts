@@ -2,6 +2,7 @@ import { ContextPickerUIState } from "@rilldata/web-common/features/chat/core/co
 import { derived, type Readable } from "svelte/store";
 import { getPickerOptions } from "@rilldata/web-common/features/chat/core/context/picker/data";
 import type { PickerItem } from "@rilldata/web-common/features/chat/core/context/picker/picker-tree.ts";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
 /**
  * Creates a store that contains a list of options that match the search text.
@@ -10,11 +11,16 @@ import type { PickerItem } from "@rilldata/web-common/features/chat/core/context
  * 3. If any child options are present, retains the parent option as well.
  */
 export function getFilteredPickerItems(
+  client: RuntimeClient,
   uiState: ContextPickerUIState,
   searchTextStore: Readable<string>,
 ) {
   return derived(
-    [getPickerOptions(uiState), searchTextStore, uiState.expandedParentsStore],
+    [
+      getPickerOptions(client, uiState),
+      searchTextStore,
+      uiState.expandedParentsStore,
+    ],
     ([options, searchText, expandedParents]) => {
       const filterFunction = (label: string, value: string) =>
         searchText.length === 0 ||

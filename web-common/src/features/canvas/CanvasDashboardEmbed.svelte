@@ -2,7 +2,7 @@
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import { getCanvasStore } from "./state-managers/state-managers";
   import StaticCanvasRow from "./StaticCanvasRow.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import Spinner from "../entity-management/Spinner.svelte";
   import { EntityStatus } from "../entity-management/types";
   import { derived } from "svelte/store";
@@ -14,7 +14,9 @@
   export let canvasName: string;
   export let navigationEnabled: boolean = true;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
+
+  $: ({ instanceId } = runtimeClient);
 
   $: ({
     canvasEntity: {

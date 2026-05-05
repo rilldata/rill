@@ -4,13 +4,15 @@
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import LoadingSpinner from "@rilldata/web-common/components/LoadingSpinner.svelte";
   import { mapQueryToDashboard } from "@rilldata/web-common/features/explore-mappers/map-to-explore";
   import { getExplorePageUrlSearchParams } from "@rilldata/web-common/features/explore-mappers/utils";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { PageData } from "./$types";
 
   export let data: PageData;
+
+  const runtimeClient = useRuntimeClient();
 
   $: ({
     alert: alertResource,
@@ -34,6 +36,7 @@
     alertSpec?.queryArgsJson ??
     "";
   $: dashboardStateForAlert = mapQueryToDashboard(
+    runtimeClient,
     {
       exploreName,
       queryName,
@@ -59,6 +62,7 @@
 
   async function gotoExplorePage() {
     const exploreStateParams = await getExplorePageUrlSearchParams(
+      runtimeClient,
       $dashboardStateForAlert.data.exploreName,
       $dashboardStateForAlert.data.exploreState,
     );
@@ -81,8 +85,8 @@
 <CtaLayoutContainer>
   <CtaContentContainer>
     {#if loading}
-      <div class="h-36 mt-10">
-        <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
+      <div class="mt-10">
+        <LoadingSpinner />
       </div>
     {:else if $dashboardStateForAlert.error}
       <div class="flex flex-col gap-y-2">
