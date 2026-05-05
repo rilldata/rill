@@ -790,6 +790,19 @@ service AdminService {
     option (google.api.http) = {get: "/v1/github/user/repositories"};
   }
 
+  // CreateGithubPR creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
+  rpc CreateGithubPR(CreateGithubPRRequest) returns (CreateGithubPRResponse) {
+    option (google.api.http) = {
+      post: "/v1/orgs/{org}/projects/{project}/github/pr",
+      body: "*"
+    };
+  }
+
+  // GetGithubPR returns the status of the PR for the specified branch, if it exists.
+  rpc GetGithubPR(GetGithubPRRequest) returns (GetGithubPRResponse) {
+    option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/github/pr/{branch}"};
+  }
+
   // Connects a rill managed project to github.
   // Replaces the contents of the remote repo with the contents of the project.
   rpc ConnectProjectToGithub(ConnectProjectToGithubRequest) returns (ConnectProjectToGithubResponse) {
@@ -2686,6 +2699,32 @@ message ListGithubUserReposResponse {
     string default_branch = 5;
   }
   repeated Repo repos = 1;
+}
+
+message CreateGithubPRRequest {
+  string org = 1;
+  string project = 2;
+  // The head branch for the PR
+  string branch = 3;
+  // Optional title of the PR. If not set, a default title will be used
+  string title = 5;
+  /// Optional body of the PR
+  string body = 6;
+}
+
+message CreateGithubPRResponse {
+  string pr_url = 1;
+}
+
+message GetGithubPRRequest {
+  string org = 1;
+  string project = 2;
+  string branch = 3;
+}
+
+message GetGithubPRResponse {
+  string pr_url = 1;
+  bool pr_merged = 2;
 }
 
 message ConnectProjectToGithubRequest {

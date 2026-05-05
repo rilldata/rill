@@ -330,6 +330,10 @@ export interface V1CreateDeploymentResponse {
   deployment?: V1Deployment;
 }
 
+export interface V1CreateGithubPRResponse {
+  prUrl?: string;
+}
+
 export interface V1CreateManagedGitRepoResponse {
   remote?: string;
   username?: string;
@@ -579,6 +583,11 @@ export interface V1GetDeploymentResponse {
   instanceId?: string;
   accessToken?: string;
   ttlSeconds?: number;
+}
+
+export interface V1GetGithubPRResponse {
+  prUrl?: string;
+  prMerged?: boolean;
 }
 
 export interface V1GetGithubRepoStatusResponse {
@@ -1948,6 +1957,12 @@ Optional for `dev` deployments. */
   /** Whether the deployment is editable and the edited changes are persisted back to the git repo.
 Can't be set for `prod` deployments. */
   editable?: boolean;
+};
+
+export type AdminServiceCreateGithubPRBody = {
+  branch?: string;
+  title?: string;
+  body?: string;
 };
 
 export type AdminServiceHibernateProjectParams = {

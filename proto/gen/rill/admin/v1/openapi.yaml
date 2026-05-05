@@ -442,6 +442,11 @@ components:
                 deployment:
                     $ref: '#/components/schemas/v1Deployment'
             type: object
+        v1CreateGithubPRResponse:
+            properties:
+                prUrl:
+                    type: string
+            type: object
         v1CreateManagedGitRepoResponse:
             properties:
                 defaultBranch:
@@ -732,6 +737,13 @@ components:
                 ttlSeconds:
                     format: int64
                     type: integer
+            type: object
+        v1GetGithubPRResponse:
+            properties:
+                prMerged:
+                    type: boolean
+                prUrl:
+                    type: string
             type: object
         v1GetGithubRepoStatusResponse:
             properties:
@@ -4237,6 +4249,84 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: CreateDeployment creates a new deployment for a project.
+    /v1/orgs/{org}/projects/{project}/github/pr:
+        post:
+            operationId: AdminService_CreateGithubPR
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                body:
+                                    title: / Optional body of the PR
+                                    type: string
+                                branch:
+                                    title: The head branch for the PR
+                                    type: string
+                                title:
+                                    title: Optional title of the PR. If not set, a default title will be used
+                                    type: string
+                            type: object
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1CreateGithubPRResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: CreateGithubPR creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
+    /v1/orgs/{org}/projects/{project}/github/pr/{branch}:
+        get:
+            operationId: AdminService_GetGithubPR
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: branch
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetGithubPRResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: GetGithubPR returns the status of the PR for the specified branch, if it exists.
     /v1/orgs/{org}/projects/{project}/hibernate:
         post:
             operationId: AdminService_HibernateProject

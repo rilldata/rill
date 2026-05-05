@@ -1574,6 +1574,69 @@ paths:
                 description: |-
                   Whether the deployment is editable and the edited changes are persisted back to the git repo.
                   Can't be set for `prod` deployments.
+  /v1/orgs/{org}/projects/{project}/github/pr:
+    post:
+      summary: CreateGithubPR creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
+      operationId: AdminService_CreateGithubPR
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateGithubPRResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              branch:
+                type: string
+                title: The head branch for the PR
+              title:
+                type: string
+                title: Optional title of the PR. If not set, a default title will be used
+              body:
+                type: string
+                title: / Optional body of the PR
+  /v1/orgs/{org}/projects/{project}/github/pr/{branch}:
+    get:
+      summary: GetGithubPR returns the status of the PR for the specified branch, if it exists.
+      operationId: AdminService_GetGithubPR
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetGithubPRResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: branch
+          in: path
+          required: true
+          type: string
   /v1/orgs/{org}/projects/{project}/hibernate:
     post:
       summary: HibernateProject hibernates a project by tearing down its deployments.
@@ -4901,6 +4964,11 @@ definitions:
     properties:
       deployment:
         $ref: '#/definitions/v1Deployment'
+  v1CreateGithubPRResponse:
+    type: object
+    properties:
+      prUrl:
+        type: string
   v1CreateManagedGitRepoResponse:
     type: object
     properties:
@@ -5193,6 +5261,13 @@ definitions:
       ttlSeconds:
         type: integer
         format: int64
+  v1GetGithubPRResponse:
+    type: object
+    properties:
+      prUrl:
+        type: string
+      prMerged:
+        type: boolean
   v1GetGithubRepoStatusResponse:
     type: object
     properties:

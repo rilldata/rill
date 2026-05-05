@@ -33,6 +33,7 @@ import type {
   AdminServiceCreateAlertBodyBody,
   AdminServiceCreateAssetBody,
   AdminServiceCreateDeploymentBody,
+  AdminServiceCreateGithubPRBody,
   AdminServiceCreateManagedGitRepoBody,
   AdminServiceCreateProjectBody,
   AdminServiceCreateProjectWhitelistedDomainBodyBody,
@@ -115,6 +116,7 @@ import type {
   V1CreateBookmarkRequest,
   V1CreateBookmarkResponse,
   V1CreateDeploymentResponse,
+  V1CreateGithubPRResponse,
   V1CreateManagedGitRepoResponse,
   V1CreateOrganizationRequest,
   V1CreateOrganizationResponse,
@@ -150,6 +152,7 @@ import type {
   V1GetDeploymentConfigResponse,
   V1GetDeploymentCredentialsResponse,
   V1GetDeploymentResponse,
+  V1GetGithubPRResponse,
   V1GetGithubRepoStatusResponse,
   V1GetGithubUserStatusResponse,
   V1GetIFrameResponse,
@@ -5768,6 +5771,203 @@ export const createAdminServiceCreateDeployment = <
 
   return createMutation(mutationOptions, queryClient);
 };
+/**
+ * @summary CreateGithubPR creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
+ */
+export const adminServiceCreateGithubPR = (
+  org: string,
+  project: string,
+  adminServiceCreateGithubPRBody: AdminServiceCreateGithubPRBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1CreateGithubPRResponse>({
+    url: `/v1/orgs/${org}/projects/${project}/github/pr`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceCreateGithubPRBody,
+    signal,
+  });
+};
+
+export const getAdminServiceCreateGithubPRMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceCreateGithubPR>>,
+    TError,
+    { org: string; project: string; data: AdminServiceCreateGithubPRBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceCreateGithubPR>>,
+  TError,
+  { org: string; project: string; data: AdminServiceCreateGithubPRBody },
+  TContext
+> => {
+  const mutationKey = ["adminServiceCreateGithubPR"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceCreateGithubPR>>,
+    { org: string; project: string; data: AdminServiceCreateGithubPRBody }
+  > = (props) => {
+    const { org, project, data } = props ?? {};
+
+    return adminServiceCreateGithubPR(org, project, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceCreateGithubPRMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceCreateGithubPR>>
+>;
+export type AdminServiceCreateGithubPRMutationBody =
+  AdminServiceCreateGithubPRBody;
+export type AdminServiceCreateGithubPRMutationError = RpcStatus;
+
+/**
+ * @summary CreateGithubPR creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
+ */
+export const createAdminServiceCreateGithubPR = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceCreateGithubPR>>,
+      TError,
+      { org: string; project: string; data: AdminServiceCreateGithubPRBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceCreateGithubPR>>,
+  TError,
+  { org: string; project: string; data: AdminServiceCreateGithubPRBody },
+  TContext
+> => {
+  const mutationOptions = getAdminServiceCreateGithubPRMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary GetGithubPR returns the status of the PR for the specified branch, if it exists.
+ */
+export const adminServiceGetGithubPR = (
+  org: string,
+  project: string,
+  branch: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetGithubPRResponse>({
+    url: `/v1/orgs/${org}/projects/${project}/github/pr/${branch}`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getAdminServiceGetGithubPRQueryKey = (
+  org?: string,
+  project?: string,
+  branch?: string,
+) => {
+  return [`/v1/orgs/${org}/projects/${project}/github/pr/${branch}`] as const;
+};
+
+export const getAdminServiceGetGithubPRQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceGetGithubPR>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  project: string,
+  branch: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetGithubPR>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetGithubPRQueryKey(org, project, branch);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetGithubPR>>
+  > = ({ signal }) => adminServiceGetGithubPR(org, project, branch, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(org && project && branch),
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceGetGithubPR>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceGetGithubPRQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetGithubPR>>
+>;
+export type AdminServiceGetGithubPRQueryError = RpcStatus;
+
+/**
+ * @summary GetGithubPR returns the status of the PR for the specified branch, if it exists.
+ */
+
+export function createAdminServiceGetGithubPR<
+  TData = Awaited<ReturnType<typeof adminServiceGetGithubPR>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  project: string,
+  branch: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetGithubPR>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceGetGithubPRQueryOptions(
+    org,
+    project,
+    branch,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 /**
  * @summary HibernateProject hibernates a project by tearing down its deployments.
  */
