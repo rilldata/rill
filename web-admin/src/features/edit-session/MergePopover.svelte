@@ -172,8 +172,8 @@
           {:else if !prodDeploymentActive}
             Production is hibernated. Merging
             <span class="font-semibold text-fg-primary">"{currentBranch}"</span>
-            will resume it and apply your changes. We'll open the deployment in
-            a new tab so you can watch updates reconcile.
+            will resume it and apply your changes. We'll open the deployment in a
+            new tab so you can watch updates reconcile.
           {:else}
             Merging pushes changes from
             <span class="font-semibold text-fg-primary">"{currentBranch}"</span>

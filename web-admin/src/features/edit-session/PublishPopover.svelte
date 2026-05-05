@@ -10,8 +10,8 @@
   import { Button } from "@rilldata/web-common/components/button";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import {
     createRuntimeServiceGitMergeToBranchMutation,
@@ -200,8 +200,8 @@
         invite teammates while the deployment reconciles.
       {:else if !prodDeploymentActive}
         Production is hibernated. Publishing will resume it and apply your
-        changes. We'll open the deployment in a new tab so you can watch
-        updates reconcile.
+        changes. We'll open the deployment in a new tab so you can watch updates
+        reconcile.
       {:else}
         Publish your changes to production. We'll open a new tab so you can
         watch updates reconcile.
