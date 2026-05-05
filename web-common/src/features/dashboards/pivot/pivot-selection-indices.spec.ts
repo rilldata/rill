@@ -1,17 +1,33 @@
-import type { Row } from "tanstack-table-8-svelte-5";
+import type { HeaderGroup, Row } from "tanstack-table-8-svelte-5";
 import { describe, expect, it } from "vitest";
 import {
   buildClickSelection,
+  columnHeaderKey,
   nestedDimKeyFromRow,
 } from "./pivot-click-selection";
 import {
   computeAncestorRowIds,
+  computeSelectedColIndices,
   isHeaderInHoveredRange,
   isHoveredHeader,
   isInCellSelectedColRange,
   isInSelectedColRange,
 } from "./pivot-selection-indices";
 import type { PivotDataRow } from "./types";
+
+function header(
+  colSpan: number,
+  dimensionPath?: Record<string, string>,
+): HeaderGroup<PivotDataRow>["headers"][number] {
+  return {
+    colSpan,
+    column: {
+      columnDef: {
+        meta: dimensionPath ? { dimensionPath } : undefined,
+      },
+    },
+  } as unknown as HeaderGroup<PivotDataRow>["headers"][number];
+}
 
 // ---- isHeaderInHoveredRange ----
 
@@ -100,6 +116,55 @@ describe("isInCellSelectedColRange", () => {
 
   it("returns false with empty set", () => {
     expect(isInCellSelectedColRange(0, 3, new Set())).toBe(false);
+  });
+});
+
+describe("computeSelectedColIndices", () => {
+  const headerGroups = [
+    {
+      headers: [
+        header(1),
+        header(3, { component: "cold" }),
+        header(2, { component: "batch" }),
+      ],
+    },
+    {
+      headers: [
+        header(1),
+        header(1, { component: "cold", plan: "Standard Plan" }),
+        header(1, { component: "cold", plan: "Legacy" }),
+        header(1, { component: "cold", plan: "POC" }),
+        header(1, { component: "batch", plan: "Standard Plan" }),
+        header(1, { component: "batch", plan: "Legacy" }),
+      ],
+    },
+  ] as unknown as HeaderGroup<PivotDataRow>[];
+
+  it("includes cross-product child columns from selected column-header filters", () => {
+    const selection = buildClickSelection(
+      new Map(),
+      new Map(),
+      new Set([
+        columnHeaderKey({ component: "cold", plan: "Standard Plan" }),
+        columnHeaderKey({ component: "batch", plan: "Legacy" }),
+      ]),
+    );
+
+    expect([...computeSelectedColIndices(selection, headerGroups)]).toEqual([
+      1, 2, 4, 5,
+    ]);
+  });
+
+  it("keeps parent header selections scoped to the parent span", () => {
+    const selection = buildClickSelection(
+      new Map(),
+      new Map(),
+      new Set([columnHeaderKey({ component: "cold" })]),
+    );
+
+    expect([...computeSelectedColIndices(selection, headerGroups)]).toEqual([
+      1, 2, 3,
+    ]);
   });
 });
 

@@ -10,16 +10,58 @@ import type { PivotClickSelectionState } from "./pivot-click-selection";
 import { dimKeyFromRow, nestedDimKeyFromRow } from "./pivot-click-selection";
 import type { PivotDataRow } from "./types";
 
+function selectedColumnHeaderFilters(
+  clickSelection: PivotClickSelectionState,
+): {
+  selectedLevel: number;
+  valuesByDimension: Map<string, Set<string>>;
+} {
+  const valuesByDimension = new Map<string, Set<string>>();
+  let selectedLevel = -1;
+
+  for (const colKey of clickSelection.columnHeaderSelections) {
+    const entries = JSON.parse(colKey) as [string, string][];
+    selectedLevel = Math.max(selectedLevel, entries.length);
+
+    for (const [dimensionName, value] of entries) {
+      let values = valuesByDimension.get(dimensionName);
+      if (!values) {
+        values = new Set();
+        valuesByDimension.set(dimensionName, values);
+      }
+      values.add(value);
+    }
+  }
+
+  return { selectedLevel, valuesByDimension };
+}
+
+function dimensionPathMatchesSelectedFilters(
+  dimensionPath: Record<string, string>,
+  selectedLevel: number,
+  valuesByDimension: Map<string, Set<string>>,
+): boolean {
+  const entries = Object.entries(dimensionPath);
+  if (entries.length !== selectedLevel) return false;
+
+  return entries.every(([dimensionName, value]) =>
+    valuesByDimension.get(dimensionName)?.has(value),
+  );
+}
+
 /**
- * Compute the set of leaf column indices that fall within any
- * selected column header's span. Iterates all header groups to
- * find headers whose dimensionPath matches the selection.
+ * Compute the set of leaf column indices included by selected column-header
+ * filters. Header selections produce dimension IN-lists, so multiple child
+ * selections can include their cross-product sibling columns.
  */
 export function computeSelectedColIndices(
   clickSelection: PivotClickSelectionState | undefined,
   headerGroups: HeaderGroup<PivotDataRow>[],
 ): Set<number> {
-  if (!clickSelection?.hasAnySelection) return new Set();
+  if (!clickSelection?.columnHeaderSelections.size) return new Set();
+  const { selectedLevel, valuesByDimension } =
+    selectedColumnHeaderFilters(clickSelection);
+
   const indices = new Set<number>();
   for (const group of headerGroups) {
     let colStart = 0;
@@ -27,7 +69,11 @@ export function computeSelectedColIndices(
       const meta = header.column.columnDef.meta;
       if (
         meta?.dimensionPath &&
-        clickSelection.isColumnHeaderSelected(meta.dimensionPath)
+        dimensionPathMatchesSelectedFilters(
+          meta.dimensionPath,
+          selectedLevel,
+          valuesByDimension,
+        )
       ) {
         for (let c = colStart; c < colStart + header.colSpan; c++) {
           indices.add(c);
