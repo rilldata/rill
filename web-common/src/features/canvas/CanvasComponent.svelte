@@ -58,8 +58,8 @@
   let container: HTMLElement;
 
   $: ({ id: componentName, type: renderer, parent, specStore } = component);
-  $: componentSpec = $specStore as Record<string, unknown>;
-  $: metricsViewName = componentSpec?.metrics_view as string | undefined;
+  $: componentSpec = $specStore;
+  $: metricsViewName = componentSpec?.["metrics_view"] as string | undefined;
   $: isAccessDenied = parent.isMetricsViewAccessDenied(metricsViewName);
 
   $: allowBorder = !hideBorder.has(renderer);
