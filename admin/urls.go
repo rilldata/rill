@@ -79,6 +79,39 @@ func (u *URLs) WithCustomDomain(domain string) *URLs {
 	}
 }
 
+// IsSafeRedirectURL reports whether redirect is safe to redirect to after an auth flow.
+// A redirect is safe when it is:
+//   - empty (caller defaults to the frontend URL)
+//   - a relative path (no scheme, no host); protocol-relative "//evil.com" and
+//     scheme-only "javascript:" / "data:" forms are rejected
+//   - an absolute URL whose host matches the primary external URL host, the primary
+//     frontend URL host, or the optionally supplied additionalHost (e.g. the custom
+//     domain of the current request)
+func (u *URLs) IsSafeRedirectURL(redirect, additionalHost string) bool {
+	if redirect == "" {
+		return true
+	}
+	parsed, err := url.Parse(redirect)
+	if err != nil {
+		return false
+	}
+	// No host: safe only when there is also no scheme.
+	// This rejects javascript:, data:, mailto:, and //evil.com forms.
+	if parsed.Host == "" {
+		return parsed.Scheme == ""
+	}
+	// Absolute URL: host must match a trusted host.
+	externalURL, err := url.Parse(u.external)
+	if err == nil && strings.EqualFold(parsed.Host, externalURL.Host) {
+		return true
+	}
+	frontendURL, err := url.Parse(u.frontend)
+	if err == nil && strings.EqualFold(parsed.Host, frontendURL.Host) {
+		return true
+	}
+	return additionalHost != "" && strings.EqualFold(parsed.Host, additionalHost)
+}
+
 // WithCustomDomainFromRedirectURL attempts to infer a custom domain from a redirect URL.
 // If it succeeds, it passes the custom domain to WithCustomDomain and returns the result.
 // If it does not detect a custom domain in the redirect URL, or the redirect URL is invalid, it fails silently by returning itself unchanged.
