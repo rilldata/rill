@@ -7,7 +7,6 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { createAdminServiceGetProject } from "../../client";
   import ProjectAccessControls from "./ProjectAccessControls.svelte";
-  import DeploymentStatusChip from "@rilldata/web-admin/features/projects/status/DeploymentStatusChip.svelte";
   import ProjectCardActions from "@rilldata/web-admin/features/projects/ProjectCardActions.svelte";
   import GuardedDeleteProjectConfirmation from "@rilldata/web-admin/features/projects/settings/GuardedDeleteProjectConfirmation.svelte";
   import ProjectRenameDialog from "@rilldata/web-admin/features/projects/settings/ProjectRenameDialog.svelte";
@@ -43,10 +42,6 @@
     >
       {project}
     </h2>
-    <!-- Project deployment status -->
-    <div class="absolute top-2.5 left-2.5 text-fg-secondary">
-      <DeploymentStatusChip {organization} {project} />
-    </div>
     <!-- Project actions -->
     {#if hovering || actionsOpen}
       <div class="absolute top-2.5 right-2.5 text-fg-secondary">
