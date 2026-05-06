@@ -120,7 +120,7 @@ func (c *Client) GetUsageMetrics(ctx context.Context, startTime, endTime, afterT
 	    max(value) as max_value,
 	    sum(value) as sum_value
 	  FROM {{ ref "rill-metrics-demo" }}
-	  WHERE time >= '{{ .args.start_time }}' AND time < '{{ .args.end_time }}' AND event_name IN ('data_dir_size_bytes', 'slot_spend', ...)
+	  WHERE time >= '{{ .args.start_time }}' AND time < '{{ .args.end_time }}' AND event_name IN ('data_dir_size_bytes', 'slot_seconds_spend', ...)
 	    {{ if hasKey .args "after_time" }}
 	    AND (
 	         start_time > '{{ .args.after_time }}'
