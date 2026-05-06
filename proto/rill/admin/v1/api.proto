@@ -790,6 +790,19 @@ service AdminService {
     option (google.api.http) = {get: "/v1/github/user/repositories"};
   }
 
+  // CreateGithubPullRequest creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
+  rpc CreateGithubPullRequest(CreateGithubPullRequestRequest) returns (CreateGithubPullRequestResponse) {
+    option (google.api.http) = {
+      post: "/v1/orgs/{org}/projects/{project}/github/pr",
+      body: "*"
+    };
+  }
+
+  // GetGithubPullRequest returns the status of the PR for the specified branch, if it exists.
+  rpc GetGithubPullRequest(GetGithubPullRequestRequest) returns (GetGithubPullRequestResponse) {
+    option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/github/pr/{branch}"};
+  }
+
   // Connects a rill managed project to github.
   // Replaces the contents of the remote repo with the contents of the project.
   rpc ConnectProjectToGithub(ConnectProjectToGithubRequest) returns (ConnectProjectToGithubResponse) {
@@ -2690,6 +2703,38 @@ message ListGithubUserReposResponse {
     string default_branch = 5;
   }
   repeated Repo repos = 1;
+}
+
+message CreateGithubPullRequestRequest {
+  string org = 1;
+  string project = 2;
+  // The head branch for the PR
+  string branch = 3;
+  // Optional title of the PR. If not set, a default title will be used
+  string title = 5;
+  /// Optional body of the PR
+  string body = 6;
+}
+
+message CreateGithubPullRequestResponse {
+  string pr_url = 1;
+}
+
+message GetGithubPullRequestRequest {
+  string org = 1;
+  string project = 2;
+  string branch = 3;
+}
+
+message GetGithubPullRequestResponse {
+  string pr_url = 1;
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    STATE_OPEN = 1;
+    STATE_CLOSED_UNMERGED = 2;
+    STATE_MERGED = 3;
+  }
+  State pr_state = 2;
 }
 
 message ConnectProjectToGithubRequest {
