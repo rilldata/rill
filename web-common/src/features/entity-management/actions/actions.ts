@@ -10,7 +10,6 @@ import { isNotFoundError } from "@rilldata/web-common/lib/errors.ts";
 import {
   runtimeServiceDeleteFile,
   runtimeServiceGetFile,
-  runtimeServiceGetResource,
   runtimeServicePutFile,
   runtimeServiceRenameFile,
   type RuntimeServicePutFileBody,
@@ -26,7 +25,8 @@ import {
   getProjectParserVersion,
   waitForProjectParserVersion,
 } from "../project-parser.ts";
-import { ResourceKind } from "../resource-selectors.ts";
+import { fetchResource, ResourceKind } from "../resource-selectors.ts";
+import type { QueryClient } from "@tanstack/svelte-query";
 
 export async function runtimeServicePutFileAndWaitForReconciliation(
   client: RuntimeClient,
@@ -64,6 +64,7 @@ export async function waitForProjectParser(instanceId: string) {
 // Resource-level reconciliation
 export async function waitForResourceReconciliation(
   client: RuntimeClient,
+  queryClient: QueryClient,
   resourceName: string,
   resourceKind: ResourceKind,
   prevStateVersion?: string,
@@ -74,32 +75,35 @@ export async function waitForResourceReconciliation(
   while (true) {
     attempt++;
     try {
-      const resource = await runtimeServiceGetResource(client, {
-        name: { kind: resourceKind, name: resourceName },
-      });
+      const resource = await fetchResource(
+        client,
+        queryClient,
+        resourceName,
+        resourceKind,
+        true,
+      );
 
-      const newStateVersion = resource.resource?.meta?.stateVersion;
+      const newStateVersion = resource?.meta?.stateVersion;
       const newVersionArrived =
         prevStateVersion && newStateVersion
           ? newStateVersion > prevStateVersion
           : true;
 
       // Check if there's a reconcile error
-      if (resource.resource?.meta?.reconcileError && newVersionArrived) {
+      if (resource?.meta?.reconcileError && newVersionArrived) {
         const error = new Error("Resource configuration failed to reconcile");
-        (error as any).details = resource.resource.meta.reconcileError;
+        (error as any).details = resource.meta.reconcileError;
         throw error;
       }
 
       // Check the reconcile status
-      const reconcileStatus = resource.resource?.meta?.reconcileStatus;
+      const reconcileStatus = resource?.meta?.reconcileStatus;
       if (reconcileStatus === "RECONCILE_STATUS_IDLE" && newVersionArrived) {
         return; // Success!
       }
 
       // Still reconciling, continue polling
       await new Promise((resolve) => setTimeout(resolve, pollInterval));
-      continue;
     } catch (error) {
       // Resource not found could mean it was deleted due to reconcile failure
       if (isNotFoundError(error)) {
