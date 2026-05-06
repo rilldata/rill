@@ -18,7 +18,7 @@
 </script>
 
 <SettingsContainer title={plan?.displayName ?? "Free Trial"}>
-  <div slot="body">
+  <div>
     <div>
       You're on the Free Trial plan. Ready to get started with Rill?
       <a
@@ -29,14 +29,16 @@
     </div>
     <PlanQuotas {organization} />
   </div>
-  <svelte:fragment slot="contact">
+  {#snippet contact()}
     <span>For any questions,</span>
     <ContactUs />
-  </svelte:fragment>
+  {/snippet}
 
-  <Button type="primary" slot="action" onClick={() => (open = true)}>
-    Upgrade to Team plan
-  </Button>
+  {#snippet action()}
+    <Button type="primary" onClick={() => (open = true)}>
+      Upgrade to Team plan
+    </Button>
+  {/snippet}
 </SettingsContainer>
 
 <StartTeamPlanDialog bind:open {organization} type="base" />

@@ -12,13 +12,23 @@ export function getTrialIssue(issues: V1BillingIssue[]) {
   return issues.find(
     (i) =>
       i.type === V1BillingIssueType.BILLING_ISSUE_TYPE_ON_TRIAL ||
-      i.type === V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_ENDED,
+      i.type === V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_ENDED ||
+      i.type === V1BillingIssueType.BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL ||
+      i.type === V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED,
   );
 }
 
 export function getMessageForTrialPlan(
   trialIssue: V1BillingIssue,
 ): BillingIssueMessage {
+  if (trialIssue.type === V1BillingIssueType.BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL)
+    return getMessageForCreditsTrial(trialIssue);
+  else if (
+    trialIssue.type ===
+    V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED
+  )
+    return getMessageForCreditsDepletedIssue();
+
   const endDateStr =
     trialIssue.metadata?.onTrial?.endDate ??
     trialIssue.metadata?.trialEnded?.gracePeriodEndDate ??
@@ -71,6 +81,45 @@ export function getMessageForTrialPlan(
   }
 
   return message;
+}
+
+function getMessageForCreditsTrial(trialIssue: V1BillingIssue) {
+  const message: BillingIssueMessage = {
+    type: "default",
+    title: `Your trial has expired.`,
+    description: "Upgrade to maintain access.",
+    iconType: "alert",
+    cta: {
+      text: "Upgrade",
+      type: "upgrade",
+      teamPlanDialogType: "base",
+    },
+  };
+  const onCreditTrial = trialIssue.metadata?.onCreditTrial;
+  if (!onCreditTrial?.creditAllocation) return message;
+
+  if (onCreditTrial.lowCredit) {
+    message.type = "warning";
+    message.title = `Your org credits are running low.`;
+  } else {
+    message.type = "default";
+    message.title = `Your org has been assigned ${onCreditTrial.creditAllocation ?? 0}$ credits.`;
+  }
+  return message;
+}
+
+function getMessageForCreditsDepletedIssue() {
+  return {
+    type: "error",
+    title: `Your trial has expired and this org’s projects are now hibernating.`,
+    description: "Upgrade to wake projects and regain full access.",
+    iconType: "alert",
+    cta: {
+      text: "Upgrade",
+      type: "upgrade",
+      teamPlanDialogType: "trial-expired",
+    },
+  } satisfies BillingIssueMessage;
 }
 
 export function getTrialMessageForDays(diff: Duration) {
