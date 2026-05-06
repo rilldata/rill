@@ -84,10 +84,15 @@ export class ConversationManager {
           EmbedStore.getInstance()?.externalUserId ?? null,
         );
         break;
-      default:
+      default: {
+        // Exhaustiveness check: if a new variant is added to
+        // ConversationManagerOptions without a case, this assignment fails to
+        // compile.
+        const exhaustive: never = options;
         throw new Error(
-          `Unknown conversation storage type: ${options.conversationState}`,
+          `Unknown conversation manager options: ${JSON.stringify(exhaustive)}`,
         );
+      }
     }
   }
 
