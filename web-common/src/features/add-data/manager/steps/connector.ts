@@ -51,6 +51,7 @@ import {
   getProjectParserVersion,
   waitForProjectParserVersion,
 } from "@rilldata/web-common/features/entity-management/project-parser.ts";
+import { getRuntimeEditEnvironment } from "@rilldata/web-common/features/entity-management/edit-environment.ts";
 
 export async function createConnector({
   runtimeClient,
@@ -158,7 +159,10 @@ export async function createConnector({
         create: true,
         createOnly: false,
       });
-      await runtimeServicePushEnv(runtimeClient, {});
+      if (getRuntimeEditEnvironment() === "cloud") {
+        // Only push env on cloud for now. We will revisit this for rill-dev.
+        await runtimeServicePushEnv(runtimeClient, {});
+      }
     }
 
     await runtimeServicePutFile(runtimeClient, {
