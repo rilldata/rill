@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { featureFlags } from "../feature-flags";
+  import { useFeatureFlags } from "../feature-flags";
   import SidebarChat from "./layouts/sidebar/SidebarChat.svelte";
   import { chatOpen } from "./layouts/sidebar/sidebar-store";
   import { createDashboardChatConfig } from "@rilldata/web-common/features/dashboards/chat-context.ts";
@@ -19,7 +19,7 @@
       ? createDashboardChatConfig(runtimeClient)
       : createCanvasChatConfig(runtimeClient);
 
-  const { dashboardChat } = featureFlags;
+  const { dashboardChat } = useFeatureFlags();
 </script>
 
 {#if $dashboardChat && $chatOpen}

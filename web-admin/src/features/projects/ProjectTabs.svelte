@@ -5,7 +5,7 @@
   } from "@rilldata/web-admin//components/nav/Tab.svelte";
   import Tab from "@rilldata/web-admin/components/nav/Tab.svelte";
   import { removeBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { useFeatureFlags } from "@rilldata/web-common/features/feature-flags";
   import { type V1ProjectPermissions } from "../../client";
 
   export let projectPermissions: V1ProjectPermissions;
@@ -14,7 +14,7 @@
   export let pathname: string;
   export let branchPrefix: string = "";
 
-  const { chat, reports, alerts } = featureFlags;
+  const { chat, reports, alerts } = useFeatureFlags();
 
   $: tabs = [
     {

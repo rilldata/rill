@@ -11,7 +11,7 @@
   import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
   import Button from "../../../components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
+  import { useFeatureFlags } from "@rilldata/web-common/features/feature-flags";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry.ts";
   import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
@@ -57,7 +57,7 @@
   const createFile = createRuntimeServicePutFileMutation(runtimeClient);
   const createFolder =
     createRuntimeServiceCreateDirectoryMutation(runtimeClient);
-  const { developerChat } = featureFlags;
+  const { developerChat } = useFeatureFlags();
 
   $: currentFile = $page.params.file;
   $: currentDirectory = currentFile

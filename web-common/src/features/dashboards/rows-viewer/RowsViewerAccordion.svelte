@@ -10,12 +10,12 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import ExportMenu from "../../exports/ExportMenu.svelte";
-  import { featureFlags } from "../../feature-flags";
+  import { useFeatureFlags } from "../../feature-flags";
   import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
   import type { PivotFilter } from "../pivot/types";
   import RowsViewer from "./RowsViewer.svelte";
 
-  const { exports } = featureFlags;
+  const { exports } = useFeatureFlags();
   const timeControlsStore = useTimeControlStore(getStateManagers());
 
   export let metricsViewName: string;

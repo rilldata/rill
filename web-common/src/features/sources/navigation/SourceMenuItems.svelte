@@ -5,7 +5,7 @@
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { useFeatureFlags } from "@rilldata/web-common/features/feature-flags";
   import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import { openResourceGraphQuickView } from "@rilldata/web-common/features/resource-graph/quick-view/quick-view-store";
@@ -48,7 +48,7 @@
 
   $: ({ instanceId } = runtimeClient);
 
-  const { ai, developerChat } = featureFlags;
+  const { ai, developerChat } = useFeatureFlags();
 
   $: sourceQuery = fileArtifact.getResource(queryClient);
   let source: V1Source | undefined;

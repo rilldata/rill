@@ -5,7 +5,7 @@
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { getFileHref } from "@rilldata/web-common/layout/navigation/editor-routing";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { useFeatureFlags } from "@rilldata/web-common/features/feature-flags";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -21,7 +21,7 @@
   export let resource: V1Resource | undefined;
 
   const runtimeClient = useRuntimeClient();
-  const { ai, developerChat } = featureFlags;
+  const { ai, developerChat } = useFeatureFlags();
 
   $: ({ instanceId } = runtimeClient);
   $: dashboardsQuery = useGetExploresForMetricsView(

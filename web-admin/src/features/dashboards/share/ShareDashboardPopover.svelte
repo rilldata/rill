@@ -16,11 +16,11 @@
   } from "@rilldata/web-common/components/tabs";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { useFeatureFlags } from "@rilldata/web-common/features/feature-flags";
 
   export let createMagicAuthTokens: boolean;
 
-  const { hidePublicUrl } = featureFlags;
+  const { hidePublicUrl } = useFeatureFlags();
   let isOpen = false;
   let copied = false;
 

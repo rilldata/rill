@@ -19,7 +19,7 @@
   } from "@rilldata/web-common/features/metrics-views/ai-generation/generateMetricsView.ts";
   import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes.ts";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
+  import { useFeatureFlags } from "@rilldata/web-common/features/feature-flags";
   import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
   import {
     getFileHref,
@@ -34,7 +34,7 @@
   export let importAddDataStep: ImportAddDataStep;
   export let onDone: () => void;
 
-  const { ai, developerChat } = featureFlags;
+  const { ai, developerChat } = useFeatureFlags();
 
   const runtimeClient = useRuntimeClient();
 

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { useFeatureFlags } from "@rilldata/web-common/features/feature-flags";
   import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { openResourceGraphQuickView } from "@rilldata/web-common/features/resource-graph/quick-view/quick-view-store";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
@@ -27,7 +27,7 @@
   } from "../../metrics-views/ai-generation/generateMetricsView";
 
   const runtimeClient = useRuntimeClient();
-  const { ai, developerChat } = featureFlags;
+  const { ai, developerChat } = useFeatureFlags();
   const queryClient = useQueryClient();
 
   export let filePath: string;

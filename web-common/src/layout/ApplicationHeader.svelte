@@ -15,7 +15,7 @@
   } from "@rilldata/web-common/features/dashboards/selectors.js";
   import DeployProjectCTA from "@rilldata/web-common/features/dashboards/workspace/DeployProjectCTA.svelte";
   import ExplorePreviewCTAs from "@rilldata/web-common/features/explores/ExplorePreviewCTAs.svelte";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
+  import { useFeatureFlags } from "@rilldata/web-common/features/feature-flags";
   import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
   import Header from "@rilldata/web-common/layout/header/Header.svelte";
   import HeaderLogo from "@rilldata/web-common/layout/header/HeaderLogo.svelte";
@@ -27,7 +27,7 @@
   import Tag from "../components/tag/Tag.svelte";
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
 
-  const { deploy, developerChat, stickyDashboardState } = featureFlags;
+  const { deploy, developerChat, stickyDashboardState } = useFeatureFlags();
   const runtimeClient = useRuntimeClient();
 
   export let mode: string;

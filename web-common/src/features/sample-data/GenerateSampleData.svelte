@@ -8,14 +8,14 @@
   import { object, string } from "yup";
   import IconButton from "../../components/button/IconButton.svelte";
   import SendIcon from "@rilldata/web-common/components/icons/SendIcon.svelte";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
+  import { useFeatureFlags } from "@rilldata/web-common/features/feature-flags";
 
   export let type: "home" | "modal";
   export let open = false;
 
   const runtimeClient = useRuntimeClient();
 
-  const { developerChat } = featureFlags;
+  const { developerChat } = useFeatureFlags();
 
   const FORM_ID = "generate-sample-data-form";
 

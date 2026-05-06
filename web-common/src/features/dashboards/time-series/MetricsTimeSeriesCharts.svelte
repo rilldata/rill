@@ -38,14 +38,14 @@
   import { TIME_GRAIN } from "../../../lib/time/config";
   import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
   import Spinner from "../../entity-management/Spinner.svelte";
-  import { featureFlags } from "../../feature-flags";
+  import { useFeatureFlags } from "../../feature-flags";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
   import ChartInteractions from "./ChartInteractions.svelte";
   import MeasureChart from "./measure-chart/MeasureChart.svelte";
   import MeasureChartXAxis from "./measure-chart/MeasureChartXAxis.svelte";
   import { ScrubController } from "./measure-chart/ScrubController";
 
-  const { rillTime } = featureFlags;
+  const { rillTime } = useFeatureFlags();
 
   // Singleton scrub controller — shared across all charts
   const scrubController = new ScrubController();

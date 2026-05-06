@@ -3,7 +3,7 @@
   import BreadcrumbItem from "@rilldata/web-common/components/navigation/breadcrumbs/BreadcrumbItem.svelte";
   import TwoTieredBreadcrumbItem from "@rilldata/web-common/components/navigation/breadcrumbs/TwoTieredBreadcrumbItem.svelte";
   import { useValidDashboards } from "@rilldata/web-common/features/dashboards/selectors";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { useFeatureFlags } from "@rilldata/web-common/features/feature-flags";
   import LastRefreshedDate from "@rilldata/web-admin/features/dashboards/listing/LastRefreshedDate.svelte";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import type {
@@ -16,7 +16,7 @@
   export let navigationEnabled: boolean = true;
 
   const runtimeClient = useRuntimeClient();
-  const { twoTieredNavigation, dashboardChat } = featureFlags;
+  const { twoTieredNavigation, dashboardChat } = useFeatureFlags();
 
   $: onProjectPage = !activeResource;
   $: showDashboardChat = $dashboardChat && !onProjectPage;

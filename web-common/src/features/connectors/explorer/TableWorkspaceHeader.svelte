@@ -11,7 +11,7 @@
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import { useRuntimeClient } from "../../../runtime-client/v2";
   import { ResourceKind } from "../../entity-management/resource-selectors";
-  import { featureFlags } from "../../feature-flags";
+  import { useFeatureFlags } from "../../feature-flags";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
 
   export let connector: string;
@@ -19,7 +19,7 @@
   export let databaseSchema: string;
   export let table: string;
 
-  const { ai } = featureFlags;
+  const { ai } = useFeatureFlags();
 
   const client = useRuntimeClient();
 

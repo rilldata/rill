@@ -15,7 +15,7 @@
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { useFeatureFlags } from "@rilldata/web-common/features/feature-flags";
   import Header from "@rilldata/web-common/layout/header/Header.svelte";
   import HeaderLogo from "@rilldata/web-common/layout/header/HeaderLogo.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -62,7 +62,7 @@
     dimensionSearch,
     dashboardChat,
     stickyDashboardState,
-  } = featureFlags;
+  } = useFeatureFlags();
 
   $: ({
     params: { dashboard, alert, report },

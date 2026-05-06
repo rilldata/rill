@@ -6,7 +6,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { adminServer } from "@rilldata/web-common/features/app-flags";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { useFeatureFlags } from "@rilldata/web-common/features/feature-flags";
   import {
     createQueryServiceExportMutation,
     V1ExportFormat,
@@ -42,7 +42,7 @@
   }
 
   const exportDash = createQueryServiceExportMutation(runtimeClient);
-  const { reports, exportHeader } = featureFlags;
+  const { reports, exportHeader } = useFeatureFlags();
 
   async function handleExport(options: {
     format: V1ExportFormat;

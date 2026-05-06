@@ -9,7 +9,7 @@
   import TabBar from "@rilldata/web-common/features/dashboards/tab-bar/TabBar.svelte";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { readOnly } from "@rilldata/web-common/features/app-flags";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { useFeatureFlags } from "@rilldata/web-common/features/feature-flags";
   import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
@@ -49,7 +49,7 @@
     dashboardStore,
   } = StateManagers;
 
-  const { cloudDataViewer } = featureFlags;
+  const { cloudDataViewer } = useFeatureFlags();
 
   const timeControlsStore = useTimeControlStore(StateManagers);
 

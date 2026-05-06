@@ -10,7 +10,7 @@
   import { V1ReconcileStatus } from "../../../runtime-client";
   import { useRuntimeClient } from "../../../runtime-client/v2";
   import { allowPrimary } from "../../dashboards/workspace/DeployProjectCTA.svelte";
-  import { featureFlags } from "../../feature-flags";
+  import { useFeatureFlags } from "../../feature-flags";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { useModel } from "../selectors";
 
@@ -19,7 +19,7 @@
   export let collapse = false;
 
   const runtimeClient = useRuntimeClient();
-  const { ai } = featureFlags;
+  const { ai } = useFeatureFlags();
 
   $: ({ instanceId } = runtimeClient);
 

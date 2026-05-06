@@ -13,13 +13,13 @@
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import type { V1Resource } from "../../../runtime-client";
   import { extractFileName } from "../../entity-management/file-path-utils";
-  import { featureFlags } from "../../feature-flags";
+  import { useFeatureFlags } from "../../feature-flags";
   import {
     createCanvasDashboardFromTableWithAgent,
     useCreateMetricsViewWithCanvasAndExploreUIAction,
   } from "../../metrics-views/ai-generation/generateMetricsView";
 
-  const { ai, developerChat } = featureFlags;
+  const { ai, developerChat } = useFeatureFlags();
 
   export let sourcePath: string | null;
 

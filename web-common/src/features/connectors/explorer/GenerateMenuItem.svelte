@@ -3,12 +3,12 @@
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import MetricsViewIcon from "../../../components/icons/MetricsViewIcon.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
-  import { featureFlags } from "../../feature-flags";
+  import { useFeatureFlags } from "../../feature-flags";
 
   export let onClick: () => void;
   export let type: "metrics" | "dashboard";
 
-  const { ai } = featureFlags;
+  const { ai } = useFeatureFlags();
 
   $: icon = type === "metrics" ? MetricsViewIcon : ExploreIcon;
   $: label = type === "metrics" ? "Generate metrics" : "Generate dashboard";
