@@ -66,6 +66,7 @@
   );
   $: projectPermissions = $projectQuery.data?.projectPermissions ?? {};
   $: primaryBranch = $projectQuery.data?.project?.primaryBranch;
+  $: devTtlSeconds = $projectQuery.data?.project?.devTtlSeconds;
 
   // Deployment data and credentials come from GetProject (no separate API needed)
   $: deployment = $projectQuery.data?.deployment;
@@ -174,7 +175,10 @@
             {organizationLogoUrl}
             editContext={true}
           />
-          <EditSessionTimeoutBanner sessionStartedAt={deployment.createdOn} />
+          <EditSessionTimeoutBanner
+            usedOn={deployment.usedOn}
+            {devTtlSeconds}
+          />
         {/if}
         <FileAndResourceWatcher
           lifecycle="none"

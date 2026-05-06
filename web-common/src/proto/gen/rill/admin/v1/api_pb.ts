@@ -16043,6 +16043,11 @@ export class Project extends Message<Project> {
   prodTtlSeconds = protoInt64.zero;
 
   /**
+   * @generated from field: int64 dev_ttl_seconds = 27;
+   */
+  devTtlSeconds = protoInt64.zero;
+
+  /**
    * @generated from field: map<string, string> annotations = 20;
    */
   annotations: { [key: string]: string } = {};
@@ -16089,6 +16094,7 @@ export class Project extends Message<Project> {
     { no: 25, name: "dev_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 16, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 18, name: "prod_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 27, name: "dev_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 20, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 21, name: "prod_version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "created_on", kind: "message", T: Timestamp },
@@ -16176,6 +16182,11 @@ export class Deployment extends Message<Deployment> {
    */
   updatedOn?: Timestamp;
 
+  /**
+   * @generated from field: google.protobuf.Timestamp used_on = 14;
+   */
+  usedOn?: Timestamp;
+
   constructor(data?: PartialMessage<Deployment>) {
     super();
     proto3.util.initPartial(data, this);
@@ -16196,6 +16207,7 @@ export class Deployment extends Message<Deployment> {
     { no: 8, name: "status_message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "created_on", kind: "message", T: Timestamp },
     { no: 10, name: "updated_on", kind: "message", T: Timestamp },
+    { no: 14, name: "used_on", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Deployment {
