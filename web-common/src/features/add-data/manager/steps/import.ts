@@ -12,6 +12,7 @@ import {
   runtimeServiceGenerateCanvasFile,
   runtimeServiceGenerateMetricsViewFile,
   runtimeServiceGetInstance,
+  runtimeServicePushEnv,
   runtimeServicePutFile,
 } from "@rilldata/web-common/runtime-client";
 import {
@@ -37,6 +38,7 @@ import { unsetResourceEnvVars } from "@rilldata/web-common/features/connectors/c
 import { maybeGetConnectorDriver } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
 import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics.ts";
 import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
+import { getRuntimeEditEnvironment } from "@rilldata/web-common/features/entity-management/edit-environment.ts";
 
 export async function runImportSteps(
   runtimeClient: RuntimeClient,
@@ -248,6 +250,10 @@ async function runCreateModelStep(
       create: true,
       createOnly: false,
     });
+    if (getRuntimeEditEnvironment() === "cloud") {
+      // Only push env on cloud for now. We will revisit this for rill-dev.
+      await runtimeServicePushEnv(runtimeClient, {});
+    }
   }
 
   let putFile = true;
