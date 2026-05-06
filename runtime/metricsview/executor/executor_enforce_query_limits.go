@@ -17,10 +17,7 @@ func (e *Executor) enforceQueryLimits(qry *metricsview.Query) error {
 	if err := e.enforceMaxTimeRange(qry, qry.TimeRange); err != nil {
 		return err
 	}
-	if err := e.enforceMaxTimeRange(qry, qry.ComparisonTimeRange); err != nil {
-		return err
-	}
-	return nil
+	return e.enforceMaxTimeRange(qry, qry.ComparisonTimeRange)
 }
 
 // enforceMaxTimeRange returns nil if tr fits within the configured cap, else an error.
