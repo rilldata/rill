@@ -1,36 +1,27 @@
 import {
   adminServiceGetOrganization,
-  adminServiceListProjectsForOrganization,
-  createAdminServiceListProjectsForOrganization,
   getAdminServiceGetOrganizationQueryKey,
-  getAdminServiceListProjectsForOrganizationQueryKey,
   type V1GetOrganizationResponse,
   type V1Organization,
 } from "@rilldata/web-admin/client";
+import { listProjectsForOrgQueryOptions } from "@rilldata/web-admin/features/projects/list-projects-query-options";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import type { FetchQueryOptions } from "@tanstack/query-core";
+import { createQuery } from "@tanstack/svelte-query";
 
 export function areAllProjectsHibernating(organization: string) {
-  return createAdminServiceListProjectsForOrganization(
-    organization,
-    undefined,
-    {
-      query: {
-        enabled: !!organization,
-        select: (data) =>
-          data.projects?.length &&
-          data.projects.every((p) => !p.primaryDeploymentId),
-      },
-    },
-  );
+  return createQuery({
+    ...listProjectsForOrgQueryOptions(organization),
+    select: (data) =>
+      data.projects?.length &&
+      data.projects.every((p) => !p.primaryDeploymentId),
+  });
 }
 
 export async function fetchAllProjectsHibernating(organization: string) {
-  const projectsResp = await queryClient.fetchQuery({
-    queryKey: getAdminServiceListProjectsForOrganizationQueryKey(organization),
-    queryFn: () => adminServiceListProjectsForOrganization(organization),
-    staleTime: Infinity,
-  });
+  const projectsResp = await queryClient.fetchQuery(
+    listProjectsForOrgQueryOptions(organization),
+  );
   return projectsResp.projects?.every((p) => !p.primaryDeploymentId) ?? false;
 }
 
