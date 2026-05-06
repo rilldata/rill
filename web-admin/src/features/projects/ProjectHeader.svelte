@@ -41,6 +41,7 @@
   } from "../navigation/breadcrumb-selectors";
   import {
     isCanvasDashboardPage,
+    isEditDashboardPreviewPage,
     isMetricsExplorerPage,
     isProjectPage,
     isPublicURLPage,
@@ -81,13 +82,7 @@
   $: onCanvasDashboardPage = isCanvasDashboardPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
 
-  // Edit-mode dashboard previews live under /-/edit/(viz)/{explore,canvas}/[name].
-  // `isMetricsExplorerPage`/`isCanvasDashboardPage` only match production routes,
-  // so the editor needs its own check to swap the developer toggle for the
-  // dashboard toggle when previewing.
-  $: onEditDashboardPreview = !!$page.route?.id?.startsWith(
-    "/[organization]/[project]/-/edit/(viz)/",
-  );
+  $: onEditDashboardPreview = isEditDashboardPreviewPage($page);
 
   $: activeBranch = extractBranchFromPath($page.url.pathname);
 
@@ -254,7 +249,7 @@
             {#if $dimensionSearch && ready}
               <GlobalDimensionSearch />
             {/if}
-            {#if $dashboardChat && !onPublicURLPage}
+            {#if $dashboardChat && !onPublicURLPage && !editContext}
               <ChatToggle
                 open={dashboardChatOpen}
                 actions={dashboardChatActions}
@@ -283,7 +278,7 @@
       {#if $cloudEditing && projectPermissions.manageDev}
         <EditButton {organization} {project} {activeBranch} {primaryBranch} />
       {/if}
-      {#if $dashboardChat && !onPublicURLPage}
+      {#if $dashboardChat && !onPublicURLPage && !editContext}
         <ChatToggle open={dashboardChatOpen} actions={dashboardChatActions} />
       {/if}
       {#if hasUserAccess}

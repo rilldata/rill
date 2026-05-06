@@ -19,30 +19,25 @@ import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts"
 
 export type ConversationStateType = "url" | "browserStorage";
 
-export interface ConversationManagerOptions {
-  /**
-   * How conversation state should be managed and persisted
-   * - "url": Use URL parameters (for full-page chat with shareable URLs)
-   * - "browserStorage": Use session storage (for sidebar chat)
-   */
-  conversationState: ConversationStateType;
-  /**
-   * The agent to use for conversations (e.g., "analyst_agent", "developer_agent")
-   */
-  agent?: string;
-  /**
-   * The AI surface for sidebar chats. Required when conversationState is
-   * "browserStorage"; ignored for "url". Scopes the sessionStorage key so
-   * developer-surface conversations don't load against the dashboard surface.
-   */
-  surface?: ChatSurface;
-  /**
-   * Base path builder for URL-based conversation selectors.
-   * Only used when conversationState is "url".
-   * Defaults to `/${org}/${project}/-/ai` (web-admin pattern).
-   */
-  basePath?: () => string;
-}
+/**
+ * Discriminated by `conversationState`:
+ * - "url": full-page chat with shareable URLs. Optional `basePath` overrides
+ *   the default `/${org}/${project}/-/ai`.
+ * - "browserStorage": sidebar chat keyed in sessionStorage. `surface` is
+ *   required and scopes the storage key so developer-surface conversations
+ *   don't load against the dashboard surface.
+ */
+export type ConversationManagerOptions =
+  | {
+      conversationState: "url";
+      agent?: string;
+      basePath?: () => string;
+    }
+  | {
+      conversationState: "browserStorage";
+      agent?: string;
+      surface: ChatSurface;
+    };
 
 /**
  * Manages chat state and conversation lifecycle.
@@ -84,11 +79,6 @@ export class ConversationManager {
         );
         break;
       case "browserStorage":
-        if (!options.surface) {
-          throw new Error(
-            "ConversationManagerOptions.surface is required when conversationState is 'browserStorage'",
-          );
-        }
         this.conversationSelector = new BrowserStorageConversationSelector(
           options.surface,
           EmbedStore.getInstance()?.externalUserId ?? null,
