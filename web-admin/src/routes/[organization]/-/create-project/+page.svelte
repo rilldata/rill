@@ -37,12 +37,9 @@
   let showStartTeamPlanDialog = $state(false);
   let startTeamPlanType: TeamPlanDialogTypes = $state("base");
 
-  function handleCreate(projectName: string, frontendUrl: string) {
+  async function handleCreate(projectName: string, frontendUrl: string) {
     projectWelcomeStatus.setProjectWelcomeStep(projectName, true);
-    setTimeout(
-      () =>
-        void goto(`${frontendUrl}/@${CreateProjectBranchName}/-/edit/welcome`),
-    );
+    return goto(`${frontendUrl}/@${CreateProjectBranchName}/-/edit/welcome`);
   }
 </script>
 
