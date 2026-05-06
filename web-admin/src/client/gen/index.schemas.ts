@@ -1417,15 +1417,15 @@ export interface V1SudoGetResourceResponse {
 
 export interface V1SudoGrantTrialCreditsRequest {
   org?: string;
-  /** Amount of trial credits to grant. */
-  amount?: number;
+  /** Amount of trial credits to grant in USD. */
+  amountUsd?: number;
   /** Optional human-readable reason for the grant. */
   description?: string;
 }
 
 export interface V1SudoGrantTrialCreditsResponse {
-  /** The grant amount actually applied. */
-  granted?: number;
+  /** The grant amount actually applied, in USD. */
+  grantedUsd?: number;
 }
 
 export interface V1SudoIssueRuntimeManagerTokenRequest {

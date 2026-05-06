@@ -2113,15 +2113,15 @@ message SudoUpdateOrganizationBillingCustomerResponse {
 
 message SudoGrantTrialCreditsRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
-  // Amount of trial credits to grant.
-  double amount = 2 [(validate.rules).double = {gt: 0}];
+  // Amount of trial credits to grant in USD.
+  double amount_usd = 2 [(validate.rules).double = {gt: 0}];
   // Optional human-readable reason for the grant.
   string description = 3;
 }
 
 message SudoGrantTrialCreditsResponse {
-  // The grant amount actually applied.
-  double granted = 1;
+  // The grant amount actually applied, in USD.
+  double granted_usd = 1;
 }
 
 message SudoUpdateOrganizationCustomDomainRequest {

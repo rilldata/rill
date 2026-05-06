@@ -663,7 +663,7 @@ func (c *Client) SendCreditTrialLow(opts *CreditTrialLow) error {
 		ToName:  opts.ToName,
 		Subject: fmt.Sprintf("Your Rill Cloud trial credits for %s are running low", opts.OrgName),
 		PreButton: template.HTML(fmt.Sprintf(`
-Your trial credit balance for <b>%s</b> has dropped to about <b>%g credits</b>.
+Your trial credit balance for <b>%s</b> has dropped to about <b>$%.2f</b>.
 <br /><br />
 Upgrade now to keep your projects online before the credits run out.
 `, opts.OrgName, opts.RemainingBalance)),

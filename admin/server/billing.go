@@ -206,7 +206,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 					return nil, fmt.Errorf("failed to fetch trial credit balance for rollover: %w", err)
 				}
 				if balance > 0 {
-					if err := s.admin.Biller.GrantCustomerCredits(ctx, org.BillingCustomerID, balance, "USD", "Trial credit rollover on upgrade", nil); err != nil {
+					if err := s.admin.Biller.GrantCustomerCredits(ctx, org.BillingCustomerID, balance, billing.USDCurrency, "Trial credit rollover on upgrade", nil); err != nil {
 						return nil, fmt.Errorf("failed to grant USD rollover credits: %w", err)
 					}
 					if err := s.admin.Biller.DebitCustomerCredits(ctx, org.BillingCustomerID, balance, billing.CreditsCurrency, "Trial credit rollover on upgrade"); err != nil {
@@ -657,7 +657,7 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 // If the trial was already depleted, also recreates a trial subscription on the FreePlanType plan so usage reporting resumes against the new credit balance.
 func (s *Server) SudoGrantTrialCredits(ctx context.Context, req *adminv1.SudoGrantTrialCreditsRequest) (*adminv1.SudoGrantTrialCreditsResponse, error) {
 	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
-	observability.AddRequestAttributes(ctx, attribute.Float64("args.amount", req.Amount))
+	observability.AddRequestAttributes(ctx, attribute.Float64("args.amount_usd", req.AmountUsd))
 
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
@@ -690,14 +690,14 @@ func (s *Server) SudoGrantTrialCredits(ctx context.Context, req *adminv1.SudoGra
 		description = fmt.Sprintf("Trial credits granted by superuser %s", claims.OwnerID())
 	}
 
-	if err := s.admin.Biller.GrantCustomerCredits(ctx, org.BillingCustomerID, req.Amount, billing.CreditsCurrency, description, nil); err != nil {
+	if err := s.admin.Biller.GrantCustomerCredits(ctx, org.BillingCustomerID, req.AmountUsd, billing.CreditsCurrency, description, nil); err != nil {
 		return nil, fmt.Errorf("failed to grant credits: %w", err)
 	}
 
 	s.logger.Named("billing").Info("granted trial credits",
 		zap.String("org_id", org.ID),
 		zap.String("org_name", org.Name),
-		zap.Float64("amount", req.Amount),
+		zap.Float64("amount_usd", req.AmountUsd),
 		zap.String("description", description),
 	)
 
@@ -707,7 +707,7 @@ func (s *Server) SudoGrantTrialCredits(ctx context.Context, req *adminv1.SudoGra
 		if !ok {
 			return nil, fmt.Errorf("unexpected metadata type for on-credit-trial issue for org %q", org.Name)
 		}
-		md.CreditAllocation += req.Amount
+		md.CreditAllocation += req.AmountUsd
 		if _, err := s.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
 			OrgID:     org.ID,
 			Type:      database.BillingIssueTypeOnCreditTrial,
@@ -716,7 +716,7 @@ func (s *Server) SudoGrantTrialCredits(ctx context.Context, req *adminv1.SudoGra
 		}); err != nil {
 			return nil, fmt.Errorf("failed to update on-credit-trial credit_allocation: %w", err)
 		}
-		return &adminv1.SudoGrantTrialCreditsResponse{Granted: req.Amount}, nil
+		return &adminv1.SudoGrantTrialCreditsResponse{GrantedUsd: req.AmountUsd}, nil
 	}
 
 	// Post-depletion: trial sub was cancelled at depletion. Recreate it so usage reports resume and decrement the newly-granted balance.
@@ -762,7 +762,7 @@ func (s *Server) SudoGrantTrialCredits(ctx context.Context, req *adminv1.SudoGra
 		Metadata: &database.BillingIssueMetadataOnCreditTrial{
 			SubID:            sub.ID,
 			PlanID:           sub.Plan.ID,
-			CreditAllocation: req.Amount,
+			CreditAllocation: req.AmountUsd,
 		},
 		EventTime: time.Now().UTC(),
 	}); err != nil {
@@ -773,7 +773,7 @@ func (s *Server) SudoGrantTrialCredits(ctx context.Context, req *adminv1.SudoGra
 		return nil, fmt.Errorf("failed to commit billing issue swap: %w", err)
 	}
 
-	return &adminv1.SudoGrantTrialCreditsResponse{Granted: req.Amount}, nil
+	return &adminv1.SudoGrantTrialCreditsResponse{GrantedUsd: req.AmountUsd}, nil
 }
 
 func (s *Server) SudoTriggerBillingRepair(ctx context.Context, req *adminv1.SudoTriggerBillingRepairRequest) (*adminv1.SudoTriggerBillingRepairResponse, error) {

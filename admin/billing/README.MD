@@ -97,7 +97,7 @@ Generally following are not allowed
 but can be overridden using `rill billing subscription edit --plan <plan-name> --force` when editing plan or `rill billing subscription renew --plan <plan-name> --force` when renewing.
 
 ### Granting trial credits
-If needed, additional credits can be granted to a credit-trial org using `rill sudo billing grant-trial-credits --org <org> --amount <amount>`.
+If needed, additional credits can be granted to a credit-trial org using `rill sudo billing grant-trial-credits --org <org> --amount-usd <amount>`.
 
 ### Deleting billing issues
 If needed, billing issues can be deleted using `rill sudo billing delete-issue --org <org>`.

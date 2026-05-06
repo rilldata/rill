@@ -15,8 +15,12 @@ const (
 	DefaultTimeZone = "UTC"
 )
 
-// CreditsCurrency is the pricing-unit used for trial credit balance/alerts/grants. Configured Orb-side as a non-monetary custom pricing unit; the trial plan's billable metrics are priced in this unit so trial usage never produces USD invoice line items.
+// CreditsCurrency is the pricing-unit used for trial credit balance/alerts/grants. Its a non-monetary custom pricing unit, so trial usage never produces USD invoice line items.
+// 1 credit is equivalent to 1 USD
 const CreditsCurrency = "credits"
+
+// USDCurrency is the standard real-world currency used for paid-plan billing and the USD ledger (e.g., where trial `credits` get rolled over on upgrade).
+const USDCurrency = "USD"
 
 // CreditTrialLowBalanceThreshold is the credit balance at which we trigger a warning email.
 const CreditTrialLowBalanceThreshold = 50
