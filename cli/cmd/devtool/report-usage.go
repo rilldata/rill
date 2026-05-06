@@ -11,13 +11,14 @@ import (
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/cli/cmd/admin"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
+	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )
 
 // ReportUsageCmd posts a single usage event directly to Orb for testing purposes.
 func ReportUsageCmd(ch *cmdutil.Helper) *cobra.Command {
-	var orgID, eventName, endTimeStr string
+	var eventName, endTimeStr string
 	var amount float64
 
 	cmd := &cobra.Command{
@@ -26,8 +27,8 @@ func ReportUsageCmd(ch *cmdutil.Helper) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			if orgID == "" {
-				return errors.New("--org-id is required")
+			if ch.Org == "" {
+				return errors.New("--org is required")
 			}
 			if eventName == "" {
 				return errors.New("--event is required")
@@ -44,6 +45,18 @@ func ReportUsageCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 				endTime = t.UTC()
 			}
+
+			ch.Println("Using org", ch.Org)
+
+			adminClient, err := ch.Client()
+			if err != nil {
+				return err
+			}
+			orgResp, err := adminClient.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Org: ch.Org})
+			if err != nil {
+				return err
+			}
+			orgID := orgResp.Organization.Id
 
 			// Load .env (silently ignores missing files) and read the admin Orb config.
 			_ = godotenv.Load()
@@ -81,14 +94,14 @@ func ReportUsageCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			ch.PrintfSuccess("Reported usage event %q for org %q (amount=%g, period=%s..%s)\n",
-				eventName, orgID, amount,
+				eventName, ch.Org, amount,
 				usage.StartTime.Format(time.RFC3339), usage.EndTime.Format(time.RFC3339))
 			return nil
 		},
 	}
 
 	cmd.Flags().SortFlags = false
-	cmd.Flags().StringVar(&orgID, "org-id", "", "Org ID (used as Orb external_customer_id)")
+	cmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization Name")
 	cmd.Flags().StringVar(&eventName, "event", "", "Event/metric name (e.g. slot_seconds_spend, duckdb_estimated_size_bytes)")
 	cmd.Flags().Float64Var(&amount, "amount", 0, "Numeric amount to report")
 	cmd.Flags().StringVar(&endTimeStr, "end-time", "", "End time of the reporting window in RFC3339 (defaults to current time)")
