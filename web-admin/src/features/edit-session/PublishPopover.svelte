@@ -60,7 +60,10 @@
 
   // Prefetch prod's project parser commit SHA so the deploying page can
   // wait for prod to advance past it before redirecting to the dashboard,
-  // avoiding the stale-content race.
+  // avoiding the stale-content race. Deployment + JWT come straight from
+  // `projectQuery` rather than via a dedicated `useProdRuntimeClient`
+  // hook: the popover doesn't make other prod-runtime calls, so the
+  // wrapper wouldn't earn its place.
   $: parserShaQuery = useParserCommitSha(
     prodDeployment,
     $projectQuery.data?.jwt,

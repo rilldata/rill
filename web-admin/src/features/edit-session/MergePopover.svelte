@@ -64,7 +64,8 @@
 
   // Prefetch prod's project parser commit SHA so the deploying page can
   // wait for prod to advance past it before redirecting (see
-  // PublishPopover for the same pattern).
+  // `PublishPopover` for the same pattern, including why we read
+  // deployment + JWT directly from `projectQuery`).
   $: parserShaQuery = useParserCommitSha(
     prodDeployment,
     $projectQuery.data?.jwt,
