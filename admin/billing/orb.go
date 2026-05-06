@@ -264,6 +264,20 @@ func (o *Orb) GrantCustomerCredits(ctx context.Context, customerID string, amoun
 	return nil
 }
 
+// DebitCustomerCredits posts a `decrement` ledger entry against the customer's credit balance in Orb in the given currency. Used to expire/zero out a credit pool, e.g., to roll trial credits over to a different currency on upgrade.
+func (o *Orb) DebitCustomerCredits(ctx context.Context, customerID string, amount float64, currency, description string) error {
+	_, err := o.client.Customers.Credits.Ledger.NewEntryByExternalID(ctx, customerID, orb.CustomerCreditLedgerNewEntryByExternalIDParamsAddDecrementCreditLedgerEntryRequestParams{
+		Amount:      orb.F(amount),
+		Currency:    orb.String(currency),
+		EntryType:   orb.F(orb.CustomerCreditLedgerNewEntryByExternalIDParamsAddDecrementCreditLedgerEntryRequestParamsEntryTypeDecrement),
+		Description: orb.String(description),
+	})
+	if err != nil {
+		return fmt.Errorf("creating credit ledger decrement entry: %w", err)
+	}
+	return nil
+}
+
 // GetCustomerCreditBalance returns the customer's current credit balance in the given currency. Sums active (unexpired) blocks only.
 func (o *Orb) GetCustomerCreditBalance(ctx context.Context, customerID, currency string) (float64, error) {
 	page, err := o.client.Customers.Credits.ListByExternalID(ctx, customerID, orb.CustomerCreditListByExternalIDParams{

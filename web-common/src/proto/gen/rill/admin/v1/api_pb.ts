@@ -6369,11 +6369,11 @@ export class SudoGrantTrialCreditsRequest extends Message<SudoGrantTrialCreditsR
   org = "";
 
   /**
-   * Amount of credits to grant in USD.
+   * Amount of trial credits to grant.
    *
-   * @generated from field: double amount_usd = 2;
+   * @generated from field: double amount = 2;
    */
-  amountUsd = 0;
+  amount = 0;
 
   /**
    * Optional human-readable reason for the grant.
@@ -6391,7 +6391,7 @@ export class SudoGrantTrialCreditsRequest extends Message<SudoGrantTrialCreditsR
   static readonly typeName = "rill.admin.v1.SudoGrantTrialCreditsRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "amount_usd", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 2, name: "amount", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
@@ -6417,11 +6417,11 @@ export class SudoGrantTrialCreditsRequest extends Message<SudoGrantTrialCreditsR
  */
 export class SudoGrantTrialCreditsResponse extends Message<SudoGrantTrialCreditsResponse> {
   /**
-   * The grant amount actually applied, in USD.
+   * The grant amount actually applied.
    *
-   * @generated from field: double granted_usd = 1;
+   * @generated from field: double granted = 1;
    */
-  grantedUsd = 0;
+  granted = 0;
 
   constructor(data?: PartialMessage<SudoGrantTrialCreditsResponse>) {
     super();
@@ -6431,7 +6431,7 @@ export class SudoGrantTrialCreditsResponse extends Message<SudoGrantTrialCredits
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.SudoGrantTrialCreditsResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "granted_usd", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 1, name: "granted", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoGrantTrialCreditsResponse {

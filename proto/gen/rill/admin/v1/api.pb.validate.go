@@ -16951,9 +16951,9 @@ func (m *SudoGrantTrialCreditsRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if m.GetAmountUsd() <= 0 {
+	if m.GetAmount() <= 0 {
 		err := SudoGrantTrialCreditsRequestValidationError{
-			field:  "AmountUsd",
+			field:  "Amount",
 			reason: "value must be greater than 0",
 		}
 		if !all {
@@ -17067,7 +17067,7 @@ func (m *SudoGrantTrialCreditsResponse) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for GrantedUsd
+	// no validation rules for Granted
 
 	if len(errors) > 0 {
 		return SudoGrantTrialCreditsResponseMultiError(errors)

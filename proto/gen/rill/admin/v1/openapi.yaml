@@ -1992,8 +1992,8 @@ components:
             type: object
         v1SudoGrantTrialCreditsRequest:
             properties:
-                amountUsd:
-                    description: Amount of credits to grant in USD.
+                amount:
+                    description: Amount of trial credits to grant.
                     format: double
                     type: number
                 description:
@@ -2004,8 +2004,8 @@ components:
             type: object
         v1SudoGrantTrialCreditsResponse:
             properties:
-                grantedUsd:
-                    description: The grant amount actually applied, in USD.
+                granted:
+                    description: The grant amount actually applied.
                     format: double
                     type: number
             type: object

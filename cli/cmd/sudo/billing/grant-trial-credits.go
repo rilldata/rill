@@ -10,7 +10,7 @@ import (
 
 func GrantTrialCreditsCmd(ch *cmdutil.Helper) *cobra.Command {
 	var org, description string
-	var amountUSD float64
+	var amount float64
 	cmd := &cobra.Command{
 		Use:   "grant-trial-credits",
 		Short: "Grant additional trial credits to an organization on the credit-based trial",
@@ -21,8 +21,8 @@ func GrantTrialCreditsCmd(ch *cmdutil.Helper) *cobra.Command {
 			if org == "" {
 				return fmt.Errorf("please set --org")
 			}
-			if amountUSD <= 0 {
-				return fmt.Errorf("please set --amount-usd to a positive value")
+			if amount <= 0 {
+				return fmt.Errorf("please set --amount to a positive value")
 			}
 
 			client, err := ch.Client()
@@ -32,21 +32,21 @@ func GrantTrialCreditsCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			res, err := client.SudoGrantTrialCredits(ctx, &adminv1.SudoGrantTrialCreditsRequest{
 				Org:         org,
-				AmountUsd:   amountUSD,
+				Amount:      amount,
 				Description: description,
 			})
 			if err != nil {
 				return err
 			}
 
-			ch.PrintfSuccess("Granted $%.2f trial credits to organization %q\n", res.GrantedUsd, org)
+			ch.PrintfSuccess("Granted %g trial credits to organization %q\n", res.Granted, org)
 			return nil
 		},
 	}
 
 	cmd.Flags().SortFlags = false
 	cmd.Flags().StringVar(&org, "org", "", "Organization Name")
-	cmd.Flags().Float64Var(&amountUSD, "amount-usd", 0, "Amount of credits to grant in USD")
+	cmd.Flags().Float64Var(&amount, "amount", 0, "Amount of trial credits to grant")
 	cmd.Flags().StringVar(&description, "description", "", "Optional description for the Orb ledger entry")
 	return cmd
 }

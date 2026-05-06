@@ -582,7 +582,7 @@ func (r *registryCache) emitHeartbeatForInstance(inst *drivers.Instance, elapsed
 	attrs := instanceAnnotationsToAttribs(inst)
 	r.activity.RecordMetric(context.Background(), "data_dir_size_bytes", float64(sizeOfDir(dataDir)), attrs...)
 
-	// Emit slot_spend (slots × elapsed seconds since last tick) as a counter for billing. Skip if the slots annotation is missing or unparseable.
+	// Emit slot_seconds_spend (slots × elapsed seconds since last tick) as a counter for billing. Skip if the slots annotation is missing or unparseable.
 	slotsStr, ok := inst.Annotations["slots"]
 	if !ok {
 		return
@@ -593,7 +593,7 @@ func (r *registryCache) emitHeartbeatForInstance(inst *drivers.Instance, elapsed
 		return
 	}
 	value := float64(slots) * elapsed.Seconds()
-	r.activity.RecordMetric(context.Background(), "slot_spend", value, append(attrs,
+	r.activity.RecordMetric(context.Background(), "slot_seconds_spend", value, append(attrs,
 		attribute.Int("deployment_slots", slots),
 		attribute.Float64("deployment_duration", elapsed.Seconds()),
 	)...)

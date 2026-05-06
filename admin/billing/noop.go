@@ -81,6 +81,10 @@ func (n noop) GrantCustomerCredits(ctx context.Context, customerID string, amoun
 	return nil
 }
 
+func (n noop) DebitCustomerCredits(ctx context.Context, customerID string, amount float64, currency, description string) error {
+	return nil
+}
+
 func (n noop) GetCustomerCreditBalance(ctx context.Context, customerID, currency string) (float64, error) {
 	return 0, nil
 }

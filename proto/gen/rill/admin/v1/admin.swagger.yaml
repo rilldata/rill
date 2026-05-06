@@ -6496,20 +6496,20 @@ definitions:
     properties:
       org:
         type: string
-      amountUsd:
+      amount:
         type: number
         format: double
-        description: Amount of credits to grant in USD.
+        description: Amount of trial credits to grant.
       description:
         type: string
         description: Optional human-readable reason for the grant.
   v1SudoGrantTrialCreditsResponse:
     type: object
     properties:
-      grantedUsd:
+      granted:
         type: number
         format: double
-        description: The grant amount actually applied, in USD.
+        description: The grant amount actually applied.
   v1SudoIssueRuntimeManagerTokenRequest:
     type: object
     properties:

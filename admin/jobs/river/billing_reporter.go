@@ -12,7 +12,7 @@ import (
 )
 
 // counterMetrics are billable metrics whose period total is sum(value) rather than max(value).
-var counterMetrics = map[string]bool{"slot_spend": true}
+var counterMetrics = map[string]bool{"slot_seconds_spend": true}
 
 type BillingReporterArgs struct{}
 

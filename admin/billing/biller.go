@@ -15,10 +15,10 @@ const (
 	DefaultTimeZone = "UTC"
 )
 
-// CreditsCurrency is the pricing-unit used for trial credit balance/alerts/grants.
-const CreditsCurrency = "USD"
+// CreditsCurrency is the pricing-unit used for trial credit balance/alerts/grants. Configured Orb-side as a non-monetary custom pricing unit; the trial plan's billable metrics are priced in this unit so trial usage never produces USD invoice line items.
+const CreditsCurrency = "credits"
 
-// CreditTrialLowBalanceThreshold is the USD credit balance at which we trigger a warning email.
+// CreditTrialLowBalanceThreshold is the credit balance at which we trigger a warning email.
 const CreditTrialLowBalanceThreshold = 50
 
 var ErrNotFound = errors.New("not found")
@@ -54,6 +54,9 @@ type Biller interface {
 
 	// GrantCustomerCredits increments credit ledger entry to the customer's balance in the given currency. Description is recorded on the ledger entry; expiryDate may be nil for credits that never expire.
 	GrantCustomerCredits(ctx context.Context, customerID string, amount float64, currency, description string, expiryDate *time.Time) error
+
+	// DebitCustomerCredits posts a `decrement` ledger entry against the customer's balance in the given currency.
+	DebitCustomerCredits(ctx context.Context, customerID string, amount float64, currency, description string) error
 
 	// GetCustomerCreditBalance returns the customer's current credit balance in the given currency.
 	GetCustomerCreditBalance(ctx context.Context, customerID, currency string) (float64, error)
