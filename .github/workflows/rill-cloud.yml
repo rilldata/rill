@@ -79,6 +79,10 @@ jobs:
           
           # Embed DuckDB extensions in the Rill binary
           go run scripts/embed_duckdb_ext/main.go
+
+          # Embed Rill example projects
+          make runtime.examples.embed
+
           if [ ${RELEASE} == "true" ]; then
             go build -o rill -mod=readonly -ldflags="-s -w -X main.Version=$(scripts/versiontag.sh) -X main.Commit=${GITHUB_SHA} -X main.BuildDate=$(date +%FT%T)" cli/main.go
           else

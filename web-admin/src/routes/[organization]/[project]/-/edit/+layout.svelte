@@ -15,6 +15,7 @@
   import EditSessionLoading from "@rilldata/web-admin/features/edit-session/EditSessionLoading.svelte";
   import EditSessionTimeoutBanner from "@rilldata/web-admin/features/edit-session/EditSessionTimeoutBanner.svelte";
   import ProjectHeader from "@rilldata/web-admin/features/projects/ProjectHeader.svelte";
+  import { baseGetProjectQueryOptions } from "@rilldata/web-admin/features/projects/project-query-options";
   import SlimProjectHeader from "@rilldata/web-admin/features/projects/SlimProjectHeader.svelte";
   import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
@@ -30,8 +31,10 @@
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { onDestroy } from "svelte";
+  import { setCloudReadonlyNotice } from "@rilldata/web-common/features/entity-management/actions/protected-files.ts";
   import { isProjectWelcomePage } from "@rilldata/web-admin/features/navigation/nav-utils.ts";
   import WelcomeRedirector from "@rilldata/web-admin/features/welcome/project/WelcomeRedirector.svelte";
+  import { InfoIcon } from "lucide-svelte";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -53,31 +56,13 @@
     pageData?.organization as V1Organization | undefined,
   );
 
-  // GetProject({branch}): returns deployment status, credentials (runtimeHost,
-  // runtimeInstanceId, jwt), and project permissions. Polls at 2s while the
-  // deployment is provisioning or updating; stops once it reaches a terminal
-  // state (RUNNING, ERRORED, etc.). The parent layout skips its own polling
-  // on the edit page to avoid duplicate requests.
+  // Polling and JWT-refresh cadence are governed by `baseGetProjectQueryOptions`,
+  // shared with the parent project layout so both observers stay in sync.
   $: projectQuery = createAdminServiceGetProject(
     organization,
     project,
     branch ? { branch } : undefined,
-    {
-      query: {
-        refetchInterval: (query) => {
-          const status = query.state.data?.deployment?.status;
-          if (
-            status === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING ||
-            status === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING ||
-            status === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED ||
-            status === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING
-          ) {
-            return 2000;
-          }
-          return false;
-        },
-      },
-    },
+    { query: baseGetProjectQueryOptions },
   );
   $: projectPermissions = $projectQuery.data?.projectPermissions ?? {};
   $: primaryBranch = $projectQuery.data?.project?.primaryBranch;
@@ -101,11 +86,10 @@
   let starting = false;
 
   $: isLoading =
-    $projectQuery.isLoading ||
-    $user.isLoading ||
+    $projectQuery.isPending ||
+    $user.isPending ||
     starting ||
-    deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING ||
-    deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING;
+    deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING;
 
   $: isErrored =
     deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED;
@@ -116,7 +100,8 @@
       deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING);
 
   $: isReady =
-    deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING &&
+    (deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING ||
+      deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING) &&
     runtimeHost !== null &&
     instanceId !== null &&
     jwt !== null &&
@@ -141,6 +126,8 @@
     });
   };
 
+  setCloudReadonlyNotice(envEditDisabled);
+
   onDestroy(() => {
     $editorRoutePrefix = "";
   });
@@ -152,8 +139,6 @@
       {organization}
       {project}
       readProjects={organizationPermissions?.readProjects}
-      readDev={!!projectPermissions?.readDev}
-      {primaryBranch}
       {planDisplayName}
       {organizationLogoUrl}
     />
@@ -216,8 +201,6 @@
       {organization}
       {project}
       readProjects={organizationPermissions?.readProjects}
-      readDev={!!projectPermissions?.readDev}
-      {primaryBranch}
       {planDisplayName}
       {organizationLogoUrl}
     />
@@ -232,8 +215,6 @@
       {organization}
       {project}
       readProjects={organizationPermissions?.readProjects}
-      readDev={!!projectPermissions?.readDev}
-      {primaryBranch}
       {planDisplayName}
       {organizationLogoUrl}
     />
@@ -253,8 +234,6 @@
       {organization}
       {project}
       readProjects={organizationPermissions?.readProjects}
-      readDev={!!projectPermissions?.readDev}
-      {primaryBranch}
       {planDisplayName}
       {organizationLogoUrl}
     />
@@ -265,6 +244,19 @@
     />
   {/if}
 </div>
+
+{#snippet envEditDisabled()}
+  <div class="flex flex-row gap-2 items-center w-fit text-sm">
+    <InfoIcon size={14} /> Manage environment variables in
+    <a
+      href="/{organization}/{project}/-/settings/environment-variables"
+      target="_blank"
+      rel="noopener"
+    >
+      Settings →
+    </a>
+  </div>
+{/snippet}
 
 <style lang="postcss">
   .edit-session {

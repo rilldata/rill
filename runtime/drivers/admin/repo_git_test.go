@@ -901,6 +901,22 @@ func TestGitRepo_mergeToBranch(t *testing.T) {
 	}
 }
 
+func TestEnsureGitConfig(t *testing.T) {
+	withCleanGitEnv(t)
+
+	repo := t.TempDir()
+	require.NoError(t, execGitCommand(exec.Command("git", "-C", repo, "init")))
+	require.NoError(t, ensureGitConfig(repo, "user.name", "Test User"))
+	out, err := exec.Command("git", "-C", repo, "config", "--local", "--get", "user.name").CombinedOutput()
+	require.NoError(t, err)
+	require.Equal(t, "Test User\n", string(out))
+
+	require.NoError(t, ensureGitConfig(repo, "user.name", "Rest User"))
+	out, err = exec.Command("git", "-C", repo, "config", "--local", "--get", "user.name").CombinedOutput()
+	require.NoError(t, err)
+	require.Equal(t, "Test User\n", string(out)) // still test user since set locally
+}
+
 func newEditableGitRepo(localDir, remoteURL, defaultBranch, primaryBranch, subpath string) *gitRepo {
 	return &gitRepo{
 		h:             &Handle{logger: zap.NewNop()},
@@ -1076,13 +1092,8 @@ func createRemoteBranch(t *testing.T, remoteDir, branchName, fileName, content, 
 
 // setupGitConfig sets up git configuration for testing
 func setupGitConfig(t *testing.T, repoPath string) {
-	cmd := exec.Command("git", "-C", repoPath, "config", "user.name", "Test User")
-	err := execGitCommand(cmd)
-	require.NoError(t, err, "failed to set user name")
-
-	cmd = exec.Command("git", "-C", repoPath, "config", "user.email", "test@example.com")
-	err = execGitCommand(cmd)
-	require.NoError(t, err, "failed to set user email")
+	require.NoError(t, execGitCommand(exec.Command("git", "-C", repoPath, "config", "user.name", "Test User")))
+	require.NoError(t, execGitCommand(exec.Command("git", "-C", repoPath, "config", "user.email", "test@example.com")))
 }
 
 func execGitCommand(cmd *exec.Cmd) error {
@@ -1102,4 +1113,15 @@ func verifyCurrentBranch(t *testing.T, repoPath, expectedBranch string) {
 	require.NoError(t, err, "failed to get HEAD")
 
 	require.Equal(t, expectedBranch, head.Name().Short(), "unexpected branch")
+}
+
+func withCleanGitEnv(t *testing.T) {
+	t.Helper()
+	empty := filepath.Join(t.TempDir(), "gitconfig")
+	if err := os.WriteFile(empty, nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("GIT_CONFIG_GLOBAL", empty)
+	t.Setenv("GIT_CONFIG_SYSTEM", empty)
+	t.Setenv("GIT_CONFIG_NOSYSTEM", "1") // belt-and-suspenders for older gits
 }

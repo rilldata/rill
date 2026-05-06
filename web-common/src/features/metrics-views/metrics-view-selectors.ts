@@ -5,13 +5,12 @@ import {
   type MetricsViewSpecMeasure,
   type V1MetricsView,
   type V1MetricsViewSpec,
-  type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { derived, get, type Readable } from "svelte/store";
 import {
   ResourceKind,
-  useFilteredResources,
+  useClientFilteredResources,
 } from "../entity-management/resource-selectors";
 
 type MetricsViewsData = Readable<Record<string, V1MetricsView | undefined>>;
@@ -59,12 +58,10 @@ export class MetricsViewSelectors {
   allDimensions: Readable<MetricsViewSpecDimension[]>;
   metricsViewDimensionsMap: Readable<Record<string, Set<string>>>;
 
-  allMetricsViews: ReturnType<
-    typeof useFilteredResources<Array<V1Resource | undefined>>
-  >;
+  allMetricsViews: ReturnType<typeof useClientFilteredResources>;
 
   constructor(client: RuntimeClient, metricsViewsData?: MetricsViewsData) {
-    this.allMetricsViews = useFilteredResources(
+    this.allMetricsViews = useClientFilteredResources(
       client,
       ResourceKind.MetricsView,
     );

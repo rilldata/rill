@@ -178,19 +178,25 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 			if !permissions.ReadDev {
 				return nil, status.Error(codes.PermissionDenied, "does not have permission to read dev deployment")
 			}
+			if !permissions.ReadDevStatus {
+				depl.StatusMessage = ""
+			}
 		} else {
 			if !permissions.ReadProd {
 				return nil, status.Error(codes.PermissionDenied, "does not have permission to read prod deployment")
+			}
+			if !permissions.ReadProdStatus {
+				depl.StatusMessage = ""
 			}
 		}
 
 		if req.For != nil || req.ExternalUserId != "" {
 			if depl.Environment == "dev" {
-				if !permissions.ManageDev {
+				if !permissions.ReadDevStatus {
 					return nil, status.Error(codes.PermissionDenied, "does not have permission to manage dev deployment")
 				}
 			} else {
-				if !permissions.ManageProd {
+				if !permissions.ReadProdStatus {
 					return nil, status.Error(codes.PermissionDenied, "does not have permission to manage prod deployment")
 				}
 			}

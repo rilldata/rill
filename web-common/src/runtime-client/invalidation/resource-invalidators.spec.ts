@@ -3,6 +3,7 @@ import {
   getConnectorServiceOLAPListTablesQueryKey,
   getRuntimeServiceAnalyzeConnectorsQueryKey,
   getRuntimeServiceGetResourceQueryKey,
+  getRuntimeServiceListResourcesQueryKey,
   V1ReconcileStatus,
   type V1Resource,
   V1ResourceEvent,
@@ -179,6 +180,33 @@ describe("handleResourceEvent — setup + guards", () => {
 
     await handleResourceEvent(event, qc, fakeRuntimeClient, makeState());
     expect(qc.refetchQueries).not.toHaveBeenCalled();
+  });
+
+  it("invalidates list queries for an idle write even without a previous cached resource", async () => {
+    const qc = fakeQueryClient();
+    const event = writeEvent(ResourceKind.MetricsView, "mv", {
+      meta: baseMeta({
+        stateVersion: "2",
+        reconcileStatus: V1ReconcileStatus.RECONCILE_STATUS_IDLE,
+      }),
+    });
+
+    await handleResourceEvent(event, qc, fakeRuntimeClient, makeState());
+
+    expect(
+      containsQueryKey(
+        qc.refetchQueries,
+        getRuntimeServiceListResourcesQueryKey(INSTANCE_ID, undefined),
+      ),
+    ).toBe(true);
+    expect(
+      containsQueryKey(
+        qc.refetchQueries,
+        getRuntimeServiceListResourcesQueryKey(INSTANCE_ID, {
+          kind: ResourceKind.MetricsView,
+        }),
+      ),
+    ).toBe(true);
   });
 });
 

@@ -1,10 +1,11 @@
 import { type RpcStatus } from "@rilldata/web-admin/client";
 import { hasBlockerIssues } from "@rilldata/web-admin/features/billing/selectors";
+import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils.ts";
+import { maybeRedirectToEditableDeployment } from "@rilldata/web-admin/features/branches/deployment-utils.ts";
+import { isEditPage } from "@rilldata/web-admin/features/navigation/nav-utils.ts";
 import { fetchAllProjectsHibernating } from "@rilldata/web-admin/features/organizations/selectors";
 import { error, redirect } from "@sveltejs/kit";
 import { isAxiosError } from "axios";
-import { maybeRedirectToEditableDeployment } from "@rilldata/web-admin/features/branches/deployment-utils.ts";
-import { isEditPage } from "@rilldata/web-admin/features/navigation/nav-utils.ts";
 
 export const load = async ({
   params: { organization, project },
@@ -32,7 +33,14 @@ export const load = async ({
     throw redirect(307, `/${organization}`);
   }
 
-  if (!isEditPage({ route })) {
-    await maybeRedirectToEditableDeployment(organization, project, url);
+  // Edit pages handle their own branch routing; everything below is non-edit only.
+  if (isEditPage({ route })) return;
+
+  // Branch deployments are only viewable from inside `/-/edit`.
+  const branch = extractBranchFromPath(url.pathname);
+  if (branch) {
+    throw error(404, "Branch deployments are only available from the editor.");
   }
+
+  await maybeRedirectToEditableDeployment(organization, project, url);
 };

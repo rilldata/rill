@@ -5,6 +5,7 @@ import {
   getRuntimeServiceGetResourceQueryKey,
   runtimeServiceDeleteFile,
   runtimeServiceGetFile,
+  runtimeServicePushEnv,
   runtimeServicePutFile,
   runtimeServiceUnpackEmpty,
   type V1ConnectorDriver,
@@ -15,7 +16,7 @@ import { isProjectInitialized } from "@rilldata/web-common/features/welcome/is-p
 import {
   waitForProjectParser,
   waitForResourceReconciliation,
-} from "@rilldata/web-common/features/entity-management/actions.ts";
+} from "@rilldata/web-common/features/entity-management/actions/actions.ts";
 import { EMPTY_PROJECT_TITLE } from "@rilldata/web-common/features/welcome/constants.ts";
 import { OLAP_ENGINES } from "@rilldata/web-common/features/sources/modal/constants.ts";
 import { invalidate } from "$app/navigation";
@@ -50,6 +51,7 @@ import {
   getProjectParserVersion,
   waitForProjectParserVersion,
 } from "@rilldata/web-common/features/entity-management/project-parser.ts";
+import { getRuntimeEditEnvironment } from "@rilldata/web-common/features/entity-management/edit-environment.ts";
 
 export async function createConnector({
   runtimeClient,
@@ -150,12 +152,18 @@ export async function createConnector({
       }),
     )?.resource?.meta?.stateVersion;
 
-    await runtimeServicePutFile(runtimeClient, {
-      path: ".env",
-      blob: newEnvBlob,
-      create: true,
-      createOnly: false,
-    });
+    if (existingEnvBlob !== newEnvBlob) {
+      await runtimeServicePutFile(runtimeClient, {
+        path: ".env",
+        blob: newEnvBlob,
+        create: true,
+        createOnly: false,
+      });
+      if (getRuntimeEditEnvironment() === "cloud") {
+        // Only push env on cloud for now. We will revisit this for rill-dev.
+        await runtimeServicePushEnv(runtimeClient, {});
+      }
+    }
 
     await runtimeServicePutFile(runtimeClient, {
       path: newConnectorFilePath,

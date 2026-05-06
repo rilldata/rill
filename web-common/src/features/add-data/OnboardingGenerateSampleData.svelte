@@ -8,6 +8,7 @@
   import { Button } from "@rilldata/web-common/components/button";
 
   export let open = false;
+  export let onGenerate: () => void;
 
   const runtimeClient = useRuntimeClient();
 
@@ -29,6 +30,9 @@
       if (!form.valid) return;
       const values = form.data;
       void generateSampleData(runtimeClient, true, values.prompt);
+      // Use a timeout so that onGenerate can call goto.
+      // Using goto inside a for submission gets blocked.
+      setTimeout(() => onGenerate());
       open = false;
     },
     invalidateAll: false,
