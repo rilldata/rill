@@ -4,12 +4,9 @@ import {
   V1TimeGrain,
   type V1ExploreTimeRange,
 } from "@rilldata/web-common/runtime-client";
-import { Settings } from "luxon";
+import { Duration, Settings } from "luxon";
 import { derived, get, writable, type Readable } from "svelte/store";
-import {
-  isoDurationToDays,
-  normalizeWeekday,
-} from "../../dashboards/time-controls/new-time-controls";
+import { normalizeWeekday } from "../../dashboards/time-controls/new-time-controls";
 import { type CanvasResponse } from "../selector";
 import type { CanvasEntity, SearchParamsStore } from "./canvas-entity";
 import { maybeWritable } from "@rilldata/web-common/lib/store-utils";
@@ -28,9 +25,9 @@ export class TimeManager {
   timeRangeOptionsStore = writable<V1ExploreTimeRange[]>([]);
   availableTimeZonesStore = writable<string[]>([]);
   allowCustomRangeStore = writable<boolean>(true);
-  // Smallest max_query_time_range across referenced metrics views, expressed as ISO 8601.
+  // Smallest max_query_time_range across referenced metrics views, parsed via Luxon.
   // Undefined when no referenced metrics view has a cap configured.
-  maxQueryTimeRangeStore = writable<string | undefined>(undefined);
+  maxQueryTimeRangeStore = writable<Duration | undefined>(undefined);
   specInitialized = false;
   state: TimeState;
 
@@ -142,22 +139,26 @@ export class TimeManager {
   // caps and a canvas-wide picker has to honor the most restrictive one.
   checkAndSetMaxQueryTimeRange(response: CanvasResponse) {
     const metricsViews = response.metricsViews || {};
-    let smallestIso: string | undefined;
-    let smallestDays = Infinity;
+    let smallest: Duration | undefined;
+    let smallestMillis = Infinity;
 
     for (const mv of Object.values(metricsViews)) {
       const iso = mv?.state?.validSpec?.maxQueryTimeRange;
       if (!iso) continue;
-      const days = isoDurationToDays(iso);
-      if (Number.isNaN(days) || days <= 0) continue;
-      if (days < smallestDays) {
-        smallestDays = days;
-        smallestIso = iso;
+      const d = Duration.fromISO(iso);
+      if (!d.isValid) continue;
+      const ms = d.as("milliseconds");
+      if (ms <= 0) continue;
+      if (ms < smallestMillis) {
+        smallestMillis = ms;
+        smallest = d;
       }
     }
 
-    if (get(this.maxQueryTimeRangeStore) !== smallestIso) {
-      this.maxQueryTimeRangeStore.set(smallestIso);
+    const current = get(this.maxQueryTimeRangeStore);
+    const currentMs = current?.as("milliseconds") ?? 0;
+    if (currentMs !== (smallest?.as("milliseconds") ?? 0)) {
+      this.maxQueryTimeRangeStore.set(smallest);
     }
   }
 

@@ -2,15 +2,14 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Calendar from "@rilldata/web-common/components/date-picker/Calendar.svelte";
   import DateInput from "@rilldata/web-common/components/date-picker/DateInput.svelte";
-  import { isoDurationToDays } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
-  import { DateTime, Interval, type DateTimeUnit } from "luxon";
+  import { DateTime, Duration, Interval, type DateTimeUnit } from "luxon";
 
   export let interval: Interval<true> | undefined;
   export let minDate: DateTime | undefined = undefined;
   export let maxDate: DateTime | undefined = undefined;
   export let minTimeGrain: DateTimeUnit;
   export let zone: string;
-  export let maxQueryTimeRange: string | undefined = undefined;
+  export let maxQueryTimeRange: Duration | undefined = undefined;
   export let updateRange: (range: string) => void = () => {};
   export let onApply: (interval: Interval<true>) => void;
   export let closeMenu: () => void;
@@ -37,14 +36,15 @@
     ?.plus({ [minTimeGrain]: 1 })
     .startOf(minTimeGrain);
 
-  $: maxRangeDays = maxQueryTimeRange
-    ? isoDurationToDays(maxQueryTimeRange)
-    : NaN;
-  $: capActive = !Number.isNaN(maxRangeDays) && maxRangeDays > 0;
-  $: rangeDays = inputInterval?.isValid
-    ? inputInterval.end.diff(inputInterval.start, "days").days
+  $: capMillis = maxQueryTimeRange?.as("milliseconds") ?? 0;
+  $: capActive = capMillis > 0;
+  $: rangeMillis = inputInterval?.isValid
+    ? inputInterval.toDuration("milliseconds").as("milliseconds")
     : 0;
-  $: exceedsCap = capActive && rangeDays > maxRangeDays;
+  $: exceedsCap = capActive && rangeMillis > capMillis;
+  $: capLabel = maxQueryTimeRange
+    ? maxQueryTimeRange.shiftTo("days").toHuman({ listStyle: "long" })
+    : "";
 
   function onValidDateInput(date: DateTime<true>, boundary?: "start" | "end") {
     let newInterval: Interval;
@@ -141,7 +141,7 @@
   <!-- {/if} -->
   {#if exceedsCap}
     <div class="text-red-500 text-xs px-1" role="alert">
-      Range exceeds the {maxQueryTimeRange} query limit.
+      Range exceeds the {capLabel} query limit.
     </div>
   {/if}
   <div class="flex justify-end w-full">

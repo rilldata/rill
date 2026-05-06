@@ -396,9 +396,19 @@ func (s *Server) MetricsViewTimeRange(ctx context.Context, req *runtimev1.Metric
 		return nil, ErrForbidden
 	}
 
+	mv, _, err := resolveMVAndSecurity(ctx, s.runtime, req.InstanceId, req.MetricsViewName)
+	if err != nil {
+		return nil, err
+	}
+
 	ts, err := queries.ResolveTimestampResult(ctx, s.runtime, req.InstanceId, req.MetricsViewName, req.TimeDimension, claims, int(req.Priority))
 	if err != nil {
 		return nil, err
+	}
+
+	maxQueryTimeRange := ""
+	if mv.ValidSpec != nil {
+		maxQueryTimeRange = mv.ValidSpec.MaxQueryTimeRange
 	}
 
 	return &runtimev1.MetricsViewTimeRangeResponse{
@@ -409,6 +419,7 @@ func (s *Server) MetricsViewTimeRange(ctx context.Context, req *runtimev1.Metric
 			Max:       valOrNullTime(ts.Max),
 			Watermark: valOrNullTime(ts.Watermark),
 		},
+		MaxQueryTimeRangeMillis: metricsview.ResolveMaxQueryTimeRange(maxQueryTimeRange, time.Now()).Milliseconds(),
 	}, nil
 }
 
@@ -581,14 +592,20 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 		}
 	}
 
+	maxQueryTimeRange := ""
+	if mv.ValidSpec != nil {
+		maxQueryTimeRange = mv.ValidSpec.MaxQueryTimeRange
+	}
+
 	return &runtimev1.MetricsViewTimeRangesResponse{
 		FullTimeRange: &runtimev1.TimeRangeSummary{
 			Min:       valOrNullTime(ts.Min),
 			Max:       valOrNullTime(ts.Max),
 			Watermark: valOrNullTime(ts.Watermark),
 		},
-		ResolvedTimeRanges: timeRanges,
-		TimeRanges:         backwardsCompatibleRanges,
+		ResolvedTimeRanges:      timeRanges,
+		TimeRanges:              backwardsCompatibleRanges,
+		MaxQueryTimeRangeMillis: metricsview.ResolveMaxQueryTimeRange(maxQueryTimeRange, now).Milliseconds(),
 	}, nil
 }
 

@@ -78,12 +78,6 @@ func TestEnforceQueryLimits(t *testing.T) {
 			wantErr: "valid time_range",
 		},
 		{
-			name:    "calendar duration P1M ≈ 30 days — 31-day range exceeds",
-			spec:    "P1M",
-			query:   &metricsview.Query{TimeRange: tr(31)},
-			wantErr: "max_query_time_range",
-		},
-		{
 			name:    "spec error message names the property",
 			spec:    "P30D",
 			query:   &metricsview.Query{TimeRange: tr(60)},

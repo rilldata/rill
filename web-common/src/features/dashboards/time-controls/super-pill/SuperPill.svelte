@@ -7,7 +7,7 @@
     V1ExploreTimeRange,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
-  import { DateTime, Interval } from "luxon";
+  import { DateTime, Duration, Interval } from "luxon";
   import {
     bucketYamlRanges,
     type ISODurationString,
@@ -34,7 +34,7 @@
   export let canPanRight: boolean = !hidePan;
   export let lockTimeZone = false;
   export let allowCustomTimeRange = true;
-  export let maxQueryTimeRange: string | undefined = undefined;
+  export let maxQueryTimeRange: Duration | undefined = undefined;
   export let showFullRange = true;
   export let complete: boolean;
   export let context = "dashboard";

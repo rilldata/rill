@@ -548,33 +548,16 @@ const defaultBuckets: RangeBuckets = {
 const previousPeriodRegex =
   /-\d+[sSmMhHdDwWqQYy]\/[sSmMhHdDwWqQYy]\s+to\s+ref\/[sSmMhHdDwWqQYy]/;
 
-// isoDurationToDays approximates an ISO 8601 duration (e.g. "P90D", "P3M") in days,
-// matching the executor's StandardDuration.EstimateNative() heuristic (1 month ≈ 30 days, 1 year ≈ 365 days).
-// Returns NaN if the input cannot be parsed.
-export function isoDurationToDays(isoDuration: string): number {
-  const d = Duration.fromISO(isoDuration);
-  if (!d.isValid) return NaN;
-  return (
-    d.years * 365 +
-    d.months * 30 +
-    d.weeks * 7 +
-    d.days +
-    d.hours / 24 +
-    d.minutes / 1440 +
-    d.seconds / 86400
-  );
-}
-
-// rangeWithinCap returns true if the given yaml range string is allowed under maxRangeIso.
-// If maxRangeIso is empty / unset, every range is allowed. If the range cannot be evaluated
-// (e.g. a custom rill-time expression), it is permitted client-side; the backend will reject
-// it if it ultimately exceeds the cap.
-function rangeWithinCap(range: string, maxDays: number): boolean {
+// rangeWithinCap returns true if the given yaml range string is allowed under maxRange.
+// If maxRange is undefined or non-positive, every range is allowed. If the range cannot be sized
+// statically via Luxon (e.g. a rill-time expression), it is permitted client-side; the backend
+// will reject it if it ultimately exceeds the cap.
+function rangeWithinCap(range: string, maxRange: Duration): boolean {
   if (range === "inf") return false;
   if (range.startsWith("P") || range.startsWith("p")) {
-    const d = isoDurationToDays(range);
-    if (Number.isNaN(d)) return true;
-    return d <= maxDays;
+    const d = Duration.fromISO(range);
+    if (!d.isValid) return true;
+    return d.as("milliseconds") <= maxRange.as("milliseconds");
   }
   // rill-* and other expressions cannot be sized statically. Let the backend enforce.
   return true;
@@ -584,12 +567,11 @@ export function bucketYamlRanges(
   yamlRanges: V1ExploreTimeRange[],
   minTimeGrain: V1TimeGrain | undefined,
   usingRillTime: boolean,
-  maxQueryTimeRange?: string,
+  maxQueryTimeRange?: Duration,
 ): RangeBuckets {
-  const maxDays = maxQueryTimeRange
-    ? isoDurationToDays(maxQueryTimeRange)
-    : NaN;
-  const capped = !Number.isNaN(maxDays) && maxDays > 0;
+  const capped = maxQueryTimeRange
+    ? maxQueryTimeRange.as("milliseconds") > 0
+    : false;
 
   const showDefaults = !yamlRanges.length;
 
@@ -602,9 +584,9 @@ export function bucketYamlRanges(
       if (!capped) return defaultBuckets;
       return {
         ...defaultBuckets,
-        latest: RILL_LATEST.filter((r) => rangeWithinCap(r, maxDays)).map((r) =>
-          parseRillTime(r),
-        ),
+        latest: RILL_LATEST.filter((r) =>
+          rangeWithinCap(r, maxQueryTimeRange!),
+        ).map((r) => parseRillTime(r)),
         allTime: false,
       };
     }
@@ -616,7 +598,7 @@ export function bucketYamlRanges(
     return {
       ...buckets,
       latest: buckets.latest.filter((p) =>
-        rangeWithinCap(p.toString(), maxDays),
+        rangeWithinCap(p.toString(), maxQueryTimeRange!),
       ),
       allTime: false,
     };
@@ -638,7 +620,7 @@ export function bucketYamlRanges(
       return;
     }
 
-    if (capped && !rangeWithinCap(range, maxDays)) return;
+    if (capped && !rangeWithinCap(range, maxQueryTimeRange!)) return;
 
     try {
       const parsed = parseRillTime(range);

@@ -1,6 +1,6 @@
 <script lang="ts">
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { DateTime, Interval } from "luxon";
+  import { DateTime, Duration, Interval } from "luxon";
   import type {
     ISODurationString,
     NamedRange,
@@ -58,7 +58,7 @@
   export let smallestTimeGrain: V1TimeGrain | undefined;
   export let defaultTimeRange: NamedRange | ISODurationString | undefined;
   export let allowCustomTimeRange = true;
-  export let maxQueryTimeRange: string | undefined = undefined;
+  export let maxQueryTimeRange: Duration | undefined = undefined;
   export let availableTimeZones: string[];
   export let lockTimeZone = false;
   export let showFullRange = true;
@@ -71,7 +71,9 @@
   export let onSelectRange: (range: string) => void;
 
   let open = false;
-  $: allTimeAllowed = !maxQueryTimeRange;
+  $: allTimeAllowed = !(
+    maxQueryTimeRange && maxQueryTimeRange.as("milliseconds") > 0
+  );
   let searchComponent: TimeRangeSearch;
   let filter = "";
   let parsedTime: RillTime | undefined = undefined;
