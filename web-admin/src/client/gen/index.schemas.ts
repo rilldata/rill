@@ -11,6 +11,17 @@ export interface GetAlertMetaResponseURLs {
   unsubscribeUrl?: string;
 }
 
+export type GetGithubPullRequestResponseState =
+  (typeof GetGithubPullRequestResponseState)[keyof typeof GetGithubPullRequestResponseState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetGithubPullRequestResponseState = {
+  STATE_UNSPECIFIED: "STATE_UNSPECIFIED",
+  STATE_OPEN: "STATE_OPEN",
+  STATE_CLOSED_UNMERGED: "STATE_CLOSED_UNMERGED",
+  STATE_MERGED: "STATE_MERGED",
+} as const;
+
 export type GetReportMetaResponseDeliveryMetaUserAttrs = {
   [key: string]: unknown;
 };
@@ -330,7 +341,7 @@ export interface V1CreateDeploymentResponse {
   deployment?: V1Deployment;
 }
 
-export interface V1CreateGithubPRResponse {
+export interface V1CreateGithubPullRequestResponse {
   prUrl?: string;
 }
 
@@ -585,9 +596,9 @@ export interface V1GetDeploymentResponse {
   ttlSeconds?: number;
 }
 
-export interface V1GetGithubPRResponse {
+export interface V1GetGithubPullRequestResponse {
   prUrl?: string;
-  prMerged?: boolean;
+  prState?: GetGithubPullRequestResponseState;
 }
 
 export interface V1GetGithubRepoStatusResponse {
@@ -1959,7 +1970,7 @@ Can't be set for `prod` deployments. */
   editable?: boolean;
 };
 
-export type AdminServiceCreateGithubPRBody = {
+export type AdminServiceCreateGithubPullRequestBody = {
   branch?: string;
   title?: string;
   body?: string;

@@ -9,6 +9,14 @@ components:
                 unsubscribeUrl:
                     type: string
             type: object
+        GetGithubPullRequestResponseState:
+            default: STATE_UNSPECIFIED
+            enum:
+                - STATE_UNSPECIFIED
+                - STATE_OPEN
+                - STATE_CLOSED_UNMERGED
+                - STATE_MERGED
+            type: string
         GetReportMetaResponseDeliveryMeta:
             properties:
                 editUrl:
@@ -442,7 +450,7 @@ components:
                 deployment:
                     $ref: '#/components/schemas/v1Deployment'
             type: object
-        v1CreateGithubPRResponse:
+        v1CreateGithubPullRequestResponse:
             properties:
                 prUrl:
                     type: string
@@ -738,10 +746,10 @@ components:
                     format: int64
                     type: integer
             type: object
-        v1GetGithubPRResponse:
+        v1GetGithubPullRequestResponse:
             properties:
-                prMerged:
-                    type: boolean
+                prState:
+                    $ref: '#/components/schemas/GetGithubPullRequestResponseState'
                 prUrl:
                     type: string
             type: object
@@ -4251,7 +4259,7 @@ paths:
             summary: CreateDeployment creates a new deployment for a project.
     /v1/orgs/{org}/projects/{project}/github/pr:
         post:
-            operationId: AdminService_CreateGithubPR
+            operationId: AdminService_CreateGithubPullRequest
             parameters:
                 - in: path
                   name: org
@@ -4285,7 +4293,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/v1CreateGithubPRResponse'
+                                $ref: '#/components/schemas/v1CreateGithubPullRequestResponse'
                     description: A successful response.
                 default:
                     content:
@@ -4293,10 +4301,10 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
-            summary: CreateGithubPR creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
+            summary: CreateGithubPullRequest creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
     /v1/orgs/{org}/projects/{project}/github/pr/{branch}:
         get:
-            operationId: AdminService_GetGithubPR
+            operationId: AdminService_GetGithubPullRequest
             parameters:
                 - in: path
                   name: org
@@ -4318,7 +4326,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/v1GetGithubPRResponse'
+                                $ref: '#/components/schemas/v1GetGithubPullRequestResponse'
                     description: A successful response.
                 default:
                     content:
@@ -4326,7 +4334,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
-            summary: GetGithubPR returns the status of the PR for the specified branch, if it exists.
+            summary: GetGithubPullRequest returns the status of the PR for the specified branch, if it exists.
     /v1/orgs/{org}/projects/{project}/hibernate:
         post:
             operationId: AdminService_HibernateProject

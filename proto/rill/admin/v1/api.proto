@@ -790,16 +790,16 @@ service AdminService {
     option (google.api.http) = {get: "/v1/github/user/repositories"};
   }
 
-  // CreateGithubPR creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
-  rpc CreateGithubPR(CreateGithubPRRequest) returns (CreateGithubPRResponse) {
+  // CreateGithubPullRequest creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
+  rpc CreateGithubPullRequest(CreateGithubPullRequestRequest) returns (CreateGithubPullRequestResponse) {
     option (google.api.http) = {
       post: "/v1/orgs/{org}/projects/{project}/github/pr",
       body: "*"
     };
   }
 
-  // GetGithubPR returns the status of the PR for the specified branch, if it exists.
-  rpc GetGithubPR(GetGithubPRRequest) returns (GetGithubPRResponse) {
+  // GetGithubPullRequest returns the status of the PR for the specified branch, if it exists.
+  rpc GetGithubPullRequest(GetGithubPullRequestRequest) returns (GetGithubPullRequestResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/github/pr/{branch}"};
   }
 
@@ -2701,7 +2701,7 @@ message ListGithubUserReposResponse {
   repeated Repo repos = 1;
 }
 
-message CreateGithubPRRequest {
+message CreateGithubPullRequestRequest {
   string org = 1;
   string project = 2;
   // The head branch for the PR
@@ -2712,19 +2712,25 @@ message CreateGithubPRRequest {
   string body = 6;
 }
 
-message CreateGithubPRResponse {
+message CreateGithubPullRequestResponse {
   string pr_url = 1;
 }
 
-message GetGithubPRRequest {
+message GetGithubPullRequestRequest {
   string org = 1;
   string project = 2;
   string branch = 3;
 }
 
-message GetGithubPRResponse {
+message GetGithubPullRequestResponse {
   string pr_url = 1;
-  bool pr_merged = 2;
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    STATE_OPEN = 1;
+    STATE_CLOSED_UNMERGED = 2;
+    STATE_MERGED = 3;
+  }
+  State pr_state = 2;
 }
 
 message ConnectProjectToGithubRequest {

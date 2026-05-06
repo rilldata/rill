@@ -9,6 +9,14 @@ components:
                 unsubscribeUrl:
                     type: string
             type: object
+        GetGithubPullRequestResponseState:
+            default: STATE_UNSPECIFIED
+            enum:
+                - STATE_UNSPECIFIED
+                - STATE_OPEN
+                - STATE_CLOSED_UNMERGED
+                - STATE_MERGED
+            type: string
         GetReportMetaResponseDeliveryMeta:
             properties:
                 editUrl:
@@ -442,7 +450,7 @@ components:
                 deployment:
                     $ref: '#/components/schemas/v1Deployment'
             type: object
-        v1CreateGithubPRResponse:
+        v1CreateGithubPullRequestResponse:
             properties:
                 prUrl:
                     type: string
@@ -738,10 +746,10 @@ components:
                     format: int64
                     type: integer
             type: object
-        v1GetGithubPRResponse:
+        v1GetGithubPullRequestResponse:
             properties:
-                prMerged:
-                    type: boolean
+                prState:
+                    $ref: '#/components/schemas/GetGithubPullRequestResponseState'
                 prUrl:
                     type: string
             type: object

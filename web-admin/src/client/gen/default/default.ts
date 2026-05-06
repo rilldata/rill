@@ -33,7 +33,7 @@ import type {
   AdminServiceCreateAlertBodyBody,
   AdminServiceCreateAssetBody,
   AdminServiceCreateDeploymentBody,
-  AdminServiceCreateGithubPRBody,
+  AdminServiceCreateGithubPullRequestBody,
   AdminServiceCreateManagedGitRepoBody,
   AdminServiceCreateProjectBody,
   AdminServiceCreateProjectWhitelistedDomainBodyBody,
@@ -116,7 +116,7 @@ import type {
   V1CreateBookmarkRequest,
   V1CreateBookmarkResponse,
   V1CreateDeploymentResponse,
-  V1CreateGithubPRResponse,
+  V1CreateGithubPullRequestResponse,
   V1CreateManagedGitRepoResponse,
   V1CreateOrganizationRequest,
   V1CreateOrganizationResponse,
@@ -152,7 +152,7 @@ import type {
   V1GetDeploymentConfigResponse,
   V1GetDeploymentCredentialsResponse,
   V1GetDeploymentResponse,
-  V1GetGithubPRResponse,
+  V1GetGithubPullRequestResponse,
   V1GetGithubRepoStatusResponse,
   V1GetGithubUserStatusResponse,
   V1GetIFrameResponse,
@@ -5772,40 +5772,48 @@ export const createAdminServiceCreateDeployment = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary CreateGithubPR creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
+ * @summary CreateGithubPullRequest creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
  */
-export const adminServiceCreateGithubPR = (
+export const adminServiceCreateGithubPullRequest = (
   org: string,
   project: string,
-  adminServiceCreateGithubPRBody: AdminServiceCreateGithubPRBody,
+  adminServiceCreateGithubPullRequestBody: AdminServiceCreateGithubPullRequestBody,
   signal?: AbortSignal,
 ) => {
-  return httpClient<V1CreateGithubPRResponse>({
+  return httpClient<V1CreateGithubPullRequestResponse>({
     url: `/v1/orgs/${org}/projects/${project}/github/pr`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceCreateGithubPRBody,
+    data: adminServiceCreateGithubPullRequestBody,
     signal,
   });
 };
 
-export const getAdminServiceCreateGithubPRMutationOptions = <
+export const getAdminServiceCreateGithubPullRequestMutationOptions = <
   TError = RpcStatus,
   TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceCreateGithubPR>>,
+    Awaited<ReturnType<typeof adminServiceCreateGithubPullRequest>>,
     TError,
-    { org: string; project: string; data: AdminServiceCreateGithubPRBody },
+    {
+      org: string;
+      project: string;
+      data: AdminServiceCreateGithubPullRequestBody;
+    },
     TContext
   >;
 }): CreateMutationOptions<
-  Awaited<ReturnType<typeof adminServiceCreateGithubPR>>,
+  Awaited<ReturnType<typeof adminServiceCreateGithubPullRequest>>,
   TError,
-  { org: string; project: string; data: AdminServiceCreateGithubPRBody },
+  {
+    org: string;
+    project: string;
+    data: AdminServiceCreateGithubPullRequestBody;
+  },
   TContext
 > => {
-  const mutationKey = ["adminServiceCreateGithubPR"];
+  const mutationKey = ["adminServiceCreateGithubPullRequest"];
   const { mutation: mutationOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
@@ -5815,67 +5823,80 @@ export const getAdminServiceCreateGithubPRMutationOptions = <
     : { mutation: { mutationKey } };
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceCreateGithubPR>>,
-    { org: string; project: string; data: AdminServiceCreateGithubPRBody }
+    Awaited<ReturnType<typeof adminServiceCreateGithubPullRequest>>,
+    {
+      org: string;
+      project: string;
+      data: AdminServiceCreateGithubPullRequestBody;
+    }
   > = (props) => {
     const { org, project, data } = props ?? {};
 
-    return adminServiceCreateGithubPR(org, project, data);
+    return adminServiceCreateGithubPullRequest(org, project, data);
   };
 
   return { mutationFn, ...mutationOptions };
 };
 
-export type AdminServiceCreateGithubPRMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceCreateGithubPR>>
+export type AdminServiceCreateGithubPullRequestMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceCreateGithubPullRequest>>
 >;
-export type AdminServiceCreateGithubPRMutationBody =
-  AdminServiceCreateGithubPRBody;
-export type AdminServiceCreateGithubPRMutationError = RpcStatus;
+export type AdminServiceCreateGithubPullRequestMutationBody =
+  AdminServiceCreateGithubPullRequestBody;
+export type AdminServiceCreateGithubPullRequestMutationError = RpcStatus;
 
 /**
- * @summary CreateGithubPR creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
+ * @summary CreateGithubPullRequest creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
  */
-export const createAdminServiceCreateGithubPR = <
+export const createAdminServiceCreateGithubPullRequest = <
   TError = RpcStatus,
   TContext = unknown,
 >(
   options?: {
     mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof adminServiceCreateGithubPR>>,
+      Awaited<ReturnType<typeof adminServiceCreateGithubPullRequest>>,
       TError,
-      { org: string; project: string; data: AdminServiceCreateGithubPRBody },
+      {
+        org: string;
+        project: string;
+        data: AdminServiceCreateGithubPullRequestBody;
+      },
       TContext
     >;
   },
   queryClient?: QueryClient,
 ): CreateMutationResult<
-  Awaited<ReturnType<typeof adminServiceCreateGithubPR>>,
+  Awaited<ReturnType<typeof adminServiceCreateGithubPullRequest>>,
   TError,
-  { org: string; project: string; data: AdminServiceCreateGithubPRBody },
+  {
+    org: string;
+    project: string;
+    data: AdminServiceCreateGithubPullRequestBody;
+  },
   TContext
 > => {
-  const mutationOptions = getAdminServiceCreateGithubPRMutationOptions(options);
+  const mutationOptions =
+    getAdminServiceCreateGithubPullRequestMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary GetGithubPR returns the status of the PR for the specified branch, if it exists.
+ * @summary GetGithubPullRequest returns the status of the PR for the specified branch, if it exists.
  */
-export const adminServiceGetGithubPR = (
+export const adminServiceGetGithubPullRequest = (
   org: string,
   project: string,
   branch: string,
   signal?: AbortSignal,
 ) => {
-  return httpClient<V1GetGithubPRResponse>({
+  return httpClient<V1GetGithubPullRequestResponse>({
     url: `/v1/orgs/${org}/projects/${project}/github/pr/${branch}`,
     method: "GET",
     signal,
   });
 };
 
-export const getAdminServiceGetGithubPRQueryKey = (
+export const getAdminServiceGetGithubPullRequestQueryKey = (
   org?: string,
   project?: string,
   branch?: string,
@@ -5883,8 +5904,8 @@ export const getAdminServiceGetGithubPRQueryKey = (
   return [`/v1/orgs/${org}/projects/${project}/github/pr/${branch}`] as const;
 };
 
-export const getAdminServiceGetGithubPRQueryOptions = <
-  TData = Awaited<ReturnType<typeof adminServiceGetGithubPR>>,
+export const getAdminServiceGetGithubPullRequestQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceGetGithubPullRequest>>,
   TError = RpcStatus,
 >(
   org: string,
@@ -5893,7 +5914,7 @@ export const getAdminServiceGetGithubPRQueryOptions = <
   options?: {
     query?: Partial<
       CreateQueryOptions<
-        Awaited<ReturnType<typeof adminServiceGetGithubPR>>,
+        Awaited<ReturnType<typeof adminServiceGetGithubPullRequest>>,
         TError,
         TData
       >
@@ -5904,11 +5925,12 @@ export const getAdminServiceGetGithubPRQueryOptions = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getAdminServiceGetGithubPRQueryKey(org, project, branch);
+    getAdminServiceGetGithubPullRequestQueryKey(org, project, branch);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceGetGithubPR>>
-  > = ({ signal }) => adminServiceGetGithubPR(org, project, branch, signal);
+    Awaited<ReturnType<typeof adminServiceGetGithubPullRequest>>
+  > = ({ signal }) =>
+    adminServiceGetGithubPullRequest(org, project, branch, signal);
 
   return {
     queryKey,
@@ -5916,23 +5938,23 @@ export const getAdminServiceGetGithubPRQueryOptions = <
     enabled: !!(org && project && branch),
     ...queryOptions,
   } as CreateQueryOptions<
-    Awaited<ReturnType<typeof adminServiceGetGithubPR>>,
+    Awaited<ReturnType<typeof adminServiceGetGithubPullRequest>>,
     TError,
     TData
   > & { queryKey: DataTag<QueryKey, TData, TError> };
 };
 
-export type AdminServiceGetGithubPRQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceGetGithubPR>>
+export type AdminServiceGetGithubPullRequestQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetGithubPullRequest>>
 >;
-export type AdminServiceGetGithubPRQueryError = RpcStatus;
+export type AdminServiceGetGithubPullRequestQueryError = RpcStatus;
 
 /**
- * @summary GetGithubPR returns the status of the PR for the specified branch, if it exists.
+ * @summary GetGithubPullRequest returns the status of the PR for the specified branch, if it exists.
  */
 
-export function createAdminServiceGetGithubPR<
-  TData = Awaited<ReturnType<typeof adminServiceGetGithubPR>>,
+export function createAdminServiceGetGithubPullRequest<
+  TData = Awaited<ReturnType<typeof adminServiceGetGithubPullRequest>>,
   TError = RpcStatus,
 >(
   org: string,
@@ -5941,7 +5963,7 @@ export function createAdminServiceGetGithubPR<
   options?: {
     query?: Partial<
       CreateQueryOptions<
-        Awaited<ReturnType<typeof adminServiceGetGithubPR>>,
+        Awaited<ReturnType<typeof adminServiceGetGithubPullRequest>>,
         TError,
         TData
       >
@@ -5951,7 +5973,7 @@ export function createAdminServiceGetGithubPR<
 ): CreateQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
-  const queryOptions = getAdminServiceGetGithubPRQueryOptions(
+  const queryOptions = getAdminServiceGetGithubPullRequestQueryOptions(
     org,
     project,
     branch,

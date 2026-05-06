@@ -1576,13 +1576,13 @@ paths:
                   Can't be set for `prod` deployments.
   /v1/orgs/{org}/projects/{project}/github/pr:
     post:
-      summary: CreateGithubPR creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
-      operationId: AdminService_CreateGithubPR
+      summary: CreateGithubPullRequest creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
+      operationId: AdminService_CreateGithubPullRequest
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1CreateGithubPRResponse'
+            $ref: '#/definitions/v1CreateGithubPullRequestResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -1613,13 +1613,13 @@ paths:
                 title: / Optional body of the PR
   /v1/orgs/{org}/projects/{project}/github/pr/{branch}:
     get:
-      summary: GetGithubPR returns the status of the PR for the specified branch, if it exists.
-      operationId: AdminService_GetGithubPR
+      summary: GetGithubPullRequest returns the status of the PR for the specified branch, if it exists.
+      operationId: AdminService_GetGithubPullRequest
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1GetGithubPRResponse'
+            $ref: '#/definitions/v1GetGithubPullRequestResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -4524,6 +4524,14 @@ definitions:
         type: string
       unsubscribeUrl:
         type: string
+  GetGithubPullRequestResponseState:
+    type: string
+    enum:
+      - STATE_UNSPECIFIED
+      - STATE_OPEN
+      - STATE_CLOSED_UNMERGED
+      - STATE_MERGED
+    default: STATE_UNSPECIFIED
   GetReportMetaResponseDeliveryMeta:
     type: object
     properties:
@@ -4964,7 +4972,7 @@ definitions:
     properties:
       deployment:
         $ref: '#/definitions/v1Deployment'
-  v1CreateGithubPRResponse:
+  v1CreateGithubPullRequestResponse:
     type: object
     properties:
       prUrl:
@@ -5261,13 +5269,13 @@ definitions:
       ttlSeconds:
         type: integer
         format: int64
-  v1GetGithubPRResponse:
+  v1GetGithubPullRequestResponse:
     type: object
     properties:
       prUrl:
         type: string
-      prMerged:
-        type: boolean
+      prState:
+        $ref: '#/definitions/GetGithubPullRequestResponseState'
   v1GetGithubRepoStatusResponse:
     type: object
     properties:

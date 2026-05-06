@@ -251,8 +251,8 @@ func (s *Server) ListGithubUserRepos(ctx context.Context, req *adminv1.ListGithu
 	}, nil
 }
 
-// CreateGithubPR creates a Github PR from the specified branch to the project's primary branch.
-func (s *Server) CreateGithubPR(ctx context.Context, req *adminv1.CreateGithubPRRequest) (*adminv1.CreateGithubPRResponse, error) {
+// CreateGithubPullRequest creates a Github PR from the specified branch to the project's primary branch.
+func (s *Server) CreateGithubPullRequest(ctx context.Context, req *adminv1.CreateGithubPullRequestRequest) (*adminv1.CreateGithubPullRequestResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.organization", req.Org),
 		attribute.String("args.project", req.Project),
@@ -275,6 +275,10 @@ func (s *Server) CreateGithubPR(ctx context.Context, req *adminv1.CreateGithubPR
 
 	if proj.GitRemote == nil {
 		return nil, status.Error(codes.FailedPrecondition, "project is not connected to a github repository")
+	}
+
+	if proj.ManagedGitRepoID != nil {
+		return nil, status.Error(codes.FailedPrecondition, "cannot create github PR for a project connected to a managed git repository")
 	}
 
 	account, repo, ok := gitutil.SplitGithubRemote(*proj.GitRemote)
@@ -303,13 +307,13 @@ func (s *Server) CreateGithubPR(ctx context.Context, req *adminv1.CreateGithubPR
 		return nil, fmt.Errorf("failed to create github PR: %w", err)
 	}
 
-	return &adminv1.CreateGithubPRResponse{
+	return &adminv1.CreateGithubPullRequestResponse{
 		PrUrl: pr.GetHTMLURL(),
 	}, nil
 }
 
-// GetGithubPR returns the status of the most recent PR for the specified branch, if any.
-func (s *Server) GetGithubPR(ctx context.Context, req *adminv1.GetGithubPRRequest) (*adminv1.GetGithubPRResponse, error) {
+// GetGithubPullRequest returns the status of the most recent PR for the specified branch, if any.
+func (s *Server) GetGithubPullRequest(ctx context.Context, req *adminv1.GetGithubPullRequestRequest) (*adminv1.GetGithubPullRequestResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.organization", req.Org),
 		attribute.String("args.project", req.Project),
@@ -334,6 +338,10 @@ func (s *Server) GetGithubPR(ctx context.Context, req *adminv1.GetGithubPRReques
 		return nil, status.Error(codes.FailedPrecondition, "project is not connected to a github repository")
 	}
 
+	if proj.ManagedGitRepoID != nil {
+		return nil, status.Error(codes.FailedPrecondition, "cannot get github PR for a project connected to a managed git repository")
+	}
+
 	account, repo, ok := gitutil.SplitGithubRemote(*proj.GitRemote)
 	if !ok {
 		return nil, fmt.Errorf("invalid github url %q stored for project", *proj.GitRemote)
@@ -356,13 +364,24 @@ func (s *Server) GetGithubPR(ctx context.Context, req *adminv1.GetGithubPRReques
 		return nil, fmt.Errorf("failed to list github PRs: %w", err)
 	}
 	if len(prs) == 0 {
-		return &adminv1.GetGithubPRResponse{}, nil
+		return &adminv1.GetGithubPullRequestResponse{}, nil
 	}
 
 	pr := prs[0]
-	return &adminv1.GetGithubPRResponse{
-		PrUrl:    pr.GetHTMLURL(),
-		PrMerged: pr.MergedAt != nil,
+	state := adminv1.GetGithubPullRequestResponse_STATE_UNSPECIFIED
+	switch strings.ToLower(pr.GetState()) {
+	case "open":
+		state = adminv1.GetGithubPullRequestResponse_STATE_OPEN
+	case "closed":
+		if pr.MergedAt != nil {
+			state = adminv1.GetGithubPullRequestResponse_STATE_MERGED
+		} else {
+			state = adminv1.GetGithubPullRequestResponse_STATE_CLOSED_UNMERGED
+		}
+	}
+	return &adminv1.GetGithubPullRequestResponse{
+		PrUrl:   pr.GetHTMLURL(),
+		PrState: state,
 	}, nil
 }
 

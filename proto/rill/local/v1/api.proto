@@ -21,11 +21,11 @@ service LocalService {
   // GithubRepoStatus returns info about a Github user account based on the caller's installations. Forwards to admin API of the same name.
   rpc GithubRepoStatus(GithubRepoStatusRequest) returns (GithubRepoStatusResponse) {}
 
-  // CreateGithubPR creates a Github PR from the specified branch to the connected project's primary branch. Forwards to admin API of the same name.
-  rpc CreateGithubPR(CreateGithubPRRequest) returns (CreateGithubPRResponse) {}
+  // CreateGithubPullRequest creates a Github PR from the specified branch to the connected project's primary branch. Forwards to admin API of the same name.
+  rpc CreateGithubPullRequest(CreateGithubPullRequestRequest) returns (CreateGithubPullRequestResponse) {}
 
-  // GetGithubPR returns the status of the most recent Github PR for the specified branch, if any. Forwards to admin API of the same name.
-  rpc GetGithubPR(GetGithubPRRequest) returns (GetGithubPRResponse) {}
+  // GetGithubPullRequest returns the status of the most recent Github PR for the specified branch, if any. Forwards to admin API of the same name.
+  rpc GetGithubPullRequest(GetGithubPullRequestRequest) returns (GetGithubPullRequestResponse) {}
 
   // GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
   // If there are any merge conflicts the pull is aborted.
@@ -131,23 +131,29 @@ message GithubRepoStatusResponse {
   string default_branch = 3;
 }
 
-message CreateGithubPRRequest {
+message CreateGithubPullRequestRequest {
   string branch = 1;
   string title = 2;
   string body = 3;
 }
 
-message CreateGithubPRResponse {
+message CreateGithubPullRequestResponse {
   string pr_url = 1;
 }
 
-message GetGithubPRRequest {
+message GetGithubPullRequestRequest {
   string branch = 1;
 }
 
-message GetGithubPRResponse {
+message GetGithubPullRequestResponse {
   string pr_url = 1;
-  bool pr_merged = 2;
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    STATE_OPEN = 1;
+    STATE_CLOSED_UNMERGED = 2;
+    STATE_MERGED = 3;
+  }
+  State pr_state = 2;
 }
 
 message GitPullRequest {

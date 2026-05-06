@@ -24,8 +24,8 @@ const (
 	LocalService_GetVersion_FullMethodName                          = "/rill.local.v1.LocalService/GetVersion"
 	LocalService_GitStatus_FullMethodName                           = "/rill.local.v1.LocalService/GitStatus"
 	LocalService_GithubRepoStatus_FullMethodName                    = "/rill.local.v1.LocalService/GithubRepoStatus"
-	LocalService_CreateGithubPR_FullMethodName                      = "/rill.local.v1.LocalService/CreateGithubPR"
-	LocalService_GetGithubPR_FullMethodName                         = "/rill.local.v1.LocalService/GetGithubPR"
+	LocalService_CreateGithubPullRequest_FullMethodName             = "/rill.local.v1.LocalService/CreateGithubPullRequest"
+	LocalService_GetGithubPullRequest_FullMethodName                = "/rill.local.v1.LocalService/GetGithubPullRequest"
 	LocalService_GitPull_FullMethodName                             = "/rill.local.v1.LocalService/GitPull"
 	LocalService_GitPush_FullMethodName                             = "/rill.local.v1.LocalService/GitPush"
 	LocalService_PushToGithub_FullMethodName                        = "/rill.local.v1.LocalService/PushToGithub"
@@ -54,10 +54,10 @@ type LocalServiceClient interface {
 	GitStatus(ctx context.Context, in *GitStatusRequest, opts ...grpc.CallOption) (*GitStatusResponse, error)
 	// GithubRepoStatus returns info about a Github user account based on the caller's installations. Forwards to admin API of the same name.
 	GithubRepoStatus(ctx context.Context, in *GithubRepoStatusRequest, opts ...grpc.CallOption) (*GithubRepoStatusResponse, error)
-	// CreateGithubPR creates a Github PR from the specified branch to the connected project's primary branch. Forwards to admin API of the same name.
-	CreateGithubPR(ctx context.Context, in *CreateGithubPRRequest, opts ...grpc.CallOption) (*CreateGithubPRResponse, error)
-	// GetGithubPR returns the status of the most recent Github PR for the specified branch, if any. Forwards to admin API of the same name.
-	GetGithubPR(ctx context.Context, in *GetGithubPRRequest, opts ...grpc.CallOption) (*GetGithubPRResponse, error)
+	// CreateGithubPullRequest creates a Github PR from the specified branch to the connected project's primary branch. Forwards to admin API of the same name.
+	CreateGithubPullRequest(ctx context.Context, in *CreateGithubPullRequestRequest, opts ...grpc.CallOption) (*CreateGithubPullRequestResponse, error)
+	// GetGithubPullRequest returns the status of the most recent Github PR for the specified branch, if any. Forwards to admin API of the same name.
+	GetGithubPullRequest(ctx context.Context, in *GetGithubPullRequestRequest, opts ...grpc.CallOption) (*GetGithubPullRequestResponse, error)
 	// GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
 	// If there are any merge conflicts the pull is aborted.
 	// Force can be set to true to force the pull and overwrite any local changes.
@@ -147,20 +147,20 @@ func (c *localServiceClient) GithubRepoStatus(ctx context.Context, in *GithubRep
 	return out, nil
 }
 
-func (c *localServiceClient) CreateGithubPR(ctx context.Context, in *CreateGithubPRRequest, opts ...grpc.CallOption) (*CreateGithubPRResponse, error) {
+func (c *localServiceClient) CreateGithubPullRequest(ctx context.Context, in *CreateGithubPullRequestRequest, opts ...grpc.CallOption) (*CreateGithubPullRequestResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CreateGithubPRResponse)
-	err := c.cc.Invoke(ctx, LocalService_CreateGithubPR_FullMethodName, in, out, cOpts...)
+	out := new(CreateGithubPullRequestResponse)
+	err := c.cc.Invoke(ctx, LocalService_CreateGithubPullRequest_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *localServiceClient) GetGithubPR(ctx context.Context, in *GetGithubPRRequest, opts ...grpc.CallOption) (*GetGithubPRResponse, error) {
+func (c *localServiceClient) GetGithubPullRequest(ctx context.Context, in *GetGithubPullRequestRequest, opts ...grpc.CallOption) (*GetGithubPullRequestResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetGithubPRResponse)
-	err := c.cc.Invoke(ctx, LocalService_GetGithubPR_FullMethodName, in, out, cOpts...)
+	out := new(GetGithubPullRequestResponse)
+	err := c.cc.Invoke(ctx, LocalService_GetGithubPullRequest_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -301,10 +301,10 @@ type LocalServiceServer interface {
 	GitStatus(context.Context, *GitStatusRequest) (*GitStatusResponse, error)
 	// GithubRepoStatus returns info about a Github user account based on the caller's installations. Forwards to admin API of the same name.
 	GithubRepoStatus(context.Context, *GithubRepoStatusRequest) (*GithubRepoStatusResponse, error)
-	// CreateGithubPR creates a Github PR from the specified branch to the connected project's primary branch. Forwards to admin API of the same name.
-	CreateGithubPR(context.Context, *CreateGithubPRRequest) (*CreateGithubPRResponse, error)
-	// GetGithubPR returns the status of the most recent Github PR for the specified branch, if any. Forwards to admin API of the same name.
-	GetGithubPR(context.Context, *GetGithubPRRequest) (*GetGithubPRResponse, error)
+	// CreateGithubPullRequest creates a Github PR from the specified branch to the connected project's primary branch. Forwards to admin API of the same name.
+	CreateGithubPullRequest(context.Context, *CreateGithubPullRequestRequest) (*CreateGithubPullRequestResponse, error)
+	// GetGithubPullRequest returns the status of the most recent Github PR for the specified branch, if any. Forwards to admin API of the same name.
+	GetGithubPullRequest(context.Context, *GetGithubPullRequestRequest) (*GetGithubPullRequestResponse, error)
 	// GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
 	// If there are any merge conflicts the pull is aborted.
 	// Force can be set to true to force the pull and overwrite any local changes.
@@ -359,11 +359,11 @@ func (UnimplementedLocalServiceServer) GitStatus(context.Context, *GitStatusRequ
 func (UnimplementedLocalServiceServer) GithubRepoStatus(context.Context, *GithubRepoStatusRequest) (*GithubRepoStatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GithubRepoStatus not implemented")
 }
-func (UnimplementedLocalServiceServer) CreateGithubPR(context.Context, *CreateGithubPRRequest) (*CreateGithubPRResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateGithubPR not implemented")
+func (UnimplementedLocalServiceServer) CreateGithubPullRequest(context.Context, *CreateGithubPullRequestRequest) (*CreateGithubPullRequestResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateGithubPullRequest not implemented")
 }
-func (UnimplementedLocalServiceServer) GetGithubPR(context.Context, *GetGithubPRRequest) (*GetGithubPRResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetGithubPR not implemented")
+func (UnimplementedLocalServiceServer) GetGithubPullRequest(context.Context, *GetGithubPullRequestRequest) (*GetGithubPullRequestResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetGithubPullRequest not implemented")
 }
 func (UnimplementedLocalServiceServer) GitPull(context.Context, *GitPullRequest) (*GitPullResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GitPull not implemented")
@@ -512,38 +512,38 @@ func _LocalService_GithubRepoStatus_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
-func _LocalService_CreateGithubPR_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateGithubPRRequest)
+func _LocalService_CreateGithubPullRequest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateGithubPullRequestRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(LocalServiceServer).CreateGithubPR(ctx, in)
+		return srv.(LocalServiceServer).CreateGithubPullRequest(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: LocalService_CreateGithubPR_FullMethodName,
+		FullMethod: LocalService_CreateGithubPullRequest_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LocalServiceServer).CreateGithubPR(ctx, req.(*CreateGithubPRRequest))
+		return srv.(LocalServiceServer).CreateGithubPullRequest(ctx, req.(*CreateGithubPullRequestRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _LocalService_GetGithubPR_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetGithubPRRequest)
+func _LocalService_GetGithubPullRequest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetGithubPullRequestRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(LocalServiceServer).GetGithubPR(ctx, in)
+		return srv.(LocalServiceServer).GetGithubPullRequest(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: LocalService_GetGithubPR_FullMethodName,
+		FullMethod: LocalService_GetGithubPullRequest_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LocalServiceServer).GetGithubPR(ctx, req.(*GetGithubPRRequest))
+		return srv.(LocalServiceServer).GetGithubPullRequest(ctx, req.(*GetGithubPullRequestRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -792,12 +792,12 @@ var LocalService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _LocalService_GithubRepoStatus_Handler,
 		},
 		{
-			MethodName: "CreateGithubPR",
-			Handler:    _LocalService_CreateGithubPR_Handler,
+			MethodName: "CreateGithubPullRequest",
+			Handler:    _LocalService_CreateGithubPullRequest_Handler,
 		},
 		{
-			MethodName: "GetGithubPR",
-			Handler:    _LocalService_GetGithubPR_Handler,
+			MethodName: "GetGithubPullRequest",
+			Handler:    _LocalService_GetGithubPullRequest_Handler,
 		},
 		{
 			MethodName: "GitPull",

@@ -97,8 +97,8 @@ const (
 	AdminService_GetGithubRepoStatus_FullMethodName                    = "/rill.admin.v1.AdminService/GetGithubRepoStatus"
 	AdminService_GetGithubUserStatus_FullMethodName                    = "/rill.admin.v1.AdminService/GetGithubUserStatus"
 	AdminService_ListGithubUserRepos_FullMethodName                    = "/rill.admin.v1.AdminService/ListGithubUserRepos"
-	AdminService_CreateGithubPR_FullMethodName                         = "/rill.admin.v1.AdminService/CreateGithubPR"
-	AdminService_GetGithubPR_FullMethodName                            = "/rill.admin.v1.AdminService/GetGithubPR"
+	AdminService_CreateGithubPullRequest_FullMethodName                = "/rill.admin.v1.AdminService/CreateGithubPullRequest"
+	AdminService_GetGithubPullRequest_FullMethodName                   = "/rill.admin.v1.AdminService/GetGithubPullRequest"
 	AdminService_ConnectProjectToGithub_FullMethodName                 = "/rill.admin.v1.AdminService/ConnectProjectToGithub"
 	AdminService_CreateManagedGitRepo_FullMethodName                   = "/rill.admin.v1.AdminService/CreateManagedGitRepo"
 	AdminService_GetCloneCredentials_FullMethodName                    = "/rill.admin.v1.AdminService/GetCloneCredentials"
@@ -358,10 +358,10 @@ type AdminServiceClient interface {
 	// If we don't have access to user's personal account tokens or it is expired, instructions for granting access are returned.
 	GetGithubUserStatus(ctx context.Context, in *GetGithubUserStatusRequest, opts ...grpc.CallOption) (*GetGithubUserStatusResponse, error)
 	ListGithubUserRepos(ctx context.Context, in *ListGithubUserReposRequest, opts ...grpc.CallOption) (*ListGithubUserReposResponse, error)
-	// CreateGithubPR creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
-	CreateGithubPR(ctx context.Context, in *CreateGithubPRRequest, opts ...grpc.CallOption) (*CreateGithubPRResponse, error)
-	// GetGithubPR returns the status of the PR for the specified branch, if it exists.
-	GetGithubPR(ctx context.Context, in *GetGithubPRRequest, opts ...grpc.CallOption) (*GetGithubPRResponse, error)
+	// CreateGithubPullRequest creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
+	CreateGithubPullRequest(ctx context.Context, in *CreateGithubPullRequestRequest, opts ...grpc.CallOption) (*CreateGithubPullRequestResponse, error)
+	// GetGithubPullRequest returns the status of the PR for the specified branch, if it exists.
+	GetGithubPullRequest(ctx context.Context, in *GetGithubPullRequestRequest, opts ...grpc.CallOption) (*GetGithubPullRequestResponse, error)
 	// Connects a rill managed project to github.
 	// Replaces the contents of the remote repo with the contents of the project.
 	ConnectProjectToGithub(ctx context.Context, in *ConnectProjectToGithubRequest, opts ...grpc.CallOption) (*ConnectProjectToGithubResponse, error)
@@ -1308,20 +1308,20 @@ func (c *adminServiceClient) ListGithubUserRepos(ctx context.Context, in *ListGi
 	return out, nil
 }
 
-func (c *adminServiceClient) CreateGithubPR(ctx context.Context, in *CreateGithubPRRequest, opts ...grpc.CallOption) (*CreateGithubPRResponse, error) {
+func (c *adminServiceClient) CreateGithubPullRequest(ctx context.Context, in *CreateGithubPullRequestRequest, opts ...grpc.CallOption) (*CreateGithubPullRequestResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CreateGithubPRResponse)
-	err := c.cc.Invoke(ctx, AdminService_CreateGithubPR_FullMethodName, in, out, cOpts...)
+	out := new(CreateGithubPullRequestResponse)
+	err := c.cc.Invoke(ctx, AdminService_CreateGithubPullRequest_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *adminServiceClient) GetGithubPR(ctx context.Context, in *GetGithubPRRequest, opts ...grpc.CallOption) (*GetGithubPRResponse, error) {
+func (c *adminServiceClient) GetGithubPullRequest(ctx context.Context, in *GetGithubPullRequestRequest, opts ...grpc.CallOption) (*GetGithubPullRequestResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetGithubPRResponse)
-	err := c.cc.Invoke(ctx, AdminService_GetGithubPR_FullMethodName, in, out, cOpts...)
+	out := new(GetGithubPullRequestResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetGithubPullRequest_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2287,10 +2287,10 @@ type AdminServiceServer interface {
 	// If we don't have access to user's personal account tokens or it is expired, instructions for granting access are returned.
 	GetGithubUserStatus(context.Context, *GetGithubUserStatusRequest) (*GetGithubUserStatusResponse, error)
 	ListGithubUserRepos(context.Context, *ListGithubUserReposRequest) (*ListGithubUserReposResponse, error)
-	// CreateGithubPR creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
-	CreateGithubPR(context.Context, *CreateGithubPRRequest) (*CreateGithubPRResponse, error)
-	// GetGithubPR returns the status of the PR for the specified branch, if it exists.
-	GetGithubPR(context.Context, *GetGithubPRRequest) (*GetGithubPRResponse, error)
+	// CreateGithubPullRequest creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
+	CreateGithubPullRequest(context.Context, *CreateGithubPullRequestRequest) (*CreateGithubPullRequestResponse, error)
+	// GetGithubPullRequest returns the status of the PR for the specified branch, if it exists.
+	GetGithubPullRequest(context.Context, *GetGithubPullRequestRequest) (*GetGithubPullRequestResponse, error)
 	// Connects a rill managed project to github.
 	// Replaces the contents of the remote repo with the contents of the project.
 	ConnectProjectToGithub(context.Context, *ConnectProjectToGithubRequest) (*ConnectProjectToGithubResponse, error)
@@ -2691,11 +2691,11 @@ func (UnimplementedAdminServiceServer) GetGithubUserStatus(context.Context, *Get
 func (UnimplementedAdminServiceServer) ListGithubUserRepos(context.Context, *ListGithubUserReposRequest) (*ListGithubUserReposResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListGithubUserRepos not implemented")
 }
-func (UnimplementedAdminServiceServer) CreateGithubPR(context.Context, *CreateGithubPRRequest) (*CreateGithubPRResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateGithubPR not implemented")
+func (UnimplementedAdminServiceServer) CreateGithubPullRequest(context.Context, *CreateGithubPullRequestRequest) (*CreateGithubPullRequestResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateGithubPullRequest not implemented")
 }
-func (UnimplementedAdminServiceServer) GetGithubPR(context.Context, *GetGithubPRRequest) (*GetGithubPRResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetGithubPR not implemented")
+func (UnimplementedAdminServiceServer) GetGithubPullRequest(context.Context, *GetGithubPullRequestRequest) (*GetGithubPullRequestResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetGithubPullRequest not implemented")
 }
 func (UnimplementedAdminServiceServer) ConnectProjectToGithub(context.Context, *ConnectProjectToGithubRequest) (*ConnectProjectToGithubResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ConnectProjectToGithub not implemented")
@@ -4356,38 +4356,38 @@ func _AdminService_ListGithubUserRepos_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_CreateGithubPR_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateGithubPRRequest)
+func _AdminService_CreateGithubPullRequest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateGithubPullRequestRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).CreateGithubPR(ctx, in)
+		return srv.(AdminServiceServer).CreateGithubPullRequest(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AdminService_CreateGithubPR_FullMethodName,
+		FullMethod: AdminService_CreateGithubPullRequest_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).CreateGithubPR(ctx, req.(*CreateGithubPRRequest))
+		return srv.(AdminServiceServer).CreateGithubPullRequest(ctx, req.(*CreateGithubPullRequestRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_GetGithubPR_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetGithubPRRequest)
+func _AdminService_GetGithubPullRequest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetGithubPullRequestRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).GetGithubPR(ctx, in)
+		return srv.(AdminServiceServer).GetGithubPullRequest(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AdminService_GetGithubPR_FullMethodName,
+		FullMethod: AdminService_GetGithubPullRequest_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).GetGithubPR(ctx, req.(*GetGithubPRRequest))
+		return srv.(AdminServiceServer).GetGithubPullRequest(ctx, req.(*GetGithubPullRequestRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -6116,12 +6116,12 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_ListGithubUserRepos_Handler,
 		},
 		{
-			MethodName: "CreateGithubPR",
-			Handler:    _AdminService_CreateGithubPR_Handler,
+			MethodName: "CreateGithubPullRequest",
+			Handler:    _AdminService_CreateGithubPullRequest_Handler,
 		},
 		{
-			MethodName: "GetGithubPR",
-			Handler:    _AdminService_GetGithubPR_Handler,
+			MethodName: "GetGithubPullRequest",
+			Handler:    _AdminService_GetGithubPullRequest_Handler,
 		},
 		{
 			MethodName: "ConnectProjectToGithub",
