@@ -500,6 +500,204 @@ export class GithubRepoStatusResponse extends Message<GithubRepoStatusResponse> 
 }
 
 /**
+ * @generated from message rill.local.v1.CreateGithubPullRequestRequest
+ */
+export class CreateGithubPullRequestRequest extends Message<CreateGithubPullRequestRequest> {
+  /**
+   * @generated from field: string branch = 1;
+   */
+  branch = "";
+
+  /**
+   * @generated from field: string title = 2;
+   */
+  title = "";
+
+  /**
+   * @generated from field: string body = 3;
+   */
+  body = "";
+
+  constructor(data?: PartialMessage<CreateGithubPullRequestRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.local.v1.CreateGithubPullRequestRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "body", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateGithubPullRequestRequest {
+    return new CreateGithubPullRequestRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateGithubPullRequestRequest {
+    return new CreateGithubPullRequestRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateGithubPullRequestRequest {
+    return new CreateGithubPullRequestRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateGithubPullRequestRequest | PlainMessage<CreateGithubPullRequestRequest> | undefined, b: CreateGithubPullRequestRequest | PlainMessage<CreateGithubPullRequestRequest> | undefined): boolean {
+    return proto3.util.equals(CreateGithubPullRequestRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.local.v1.CreateGithubPullRequestResponse
+ */
+export class CreateGithubPullRequestResponse extends Message<CreateGithubPullRequestResponse> {
+  /**
+   * @generated from field: string pr_url = 1;
+   */
+  prUrl = "";
+
+  constructor(data?: PartialMessage<CreateGithubPullRequestResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.local.v1.CreateGithubPullRequestResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "pr_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateGithubPullRequestResponse {
+    return new CreateGithubPullRequestResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateGithubPullRequestResponse {
+    return new CreateGithubPullRequestResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateGithubPullRequestResponse {
+    return new CreateGithubPullRequestResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateGithubPullRequestResponse | PlainMessage<CreateGithubPullRequestResponse> | undefined, b: CreateGithubPullRequestResponse | PlainMessage<CreateGithubPullRequestResponse> | undefined): boolean {
+    return proto3.util.equals(CreateGithubPullRequestResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.local.v1.GetGithubPullRequestRequest
+ */
+export class GetGithubPullRequestRequest extends Message<GetGithubPullRequestRequest> {
+  /**
+   * @generated from field: string branch = 1;
+   */
+  branch = "";
+
+  constructor(data?: PartialMessage<GetGithubPullRequestRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.local.v1.GetGithubPullRequestRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetGithubPullRequestRequest {
+    return new GetGithubPullRequestRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetGithubPullRequestRequest {
+    return new GetGithubPullRequestRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetGithubPullRequestRequest {
+    return new GetGithubPullRequestRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetGithubPullRequestRequest | PlainMessage<GetGithubPullRequestRequest> | undefined, b: GetGithubPullRequestRequest | PlainMessage<GetGithubPullRequestRequest> | undefined): boolean {
+    return proto3.util.equals(GetGithubPullRequestRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.local.v1.GetGithubPullRequestResponse
+ */
+export class GetGithubPullRequestResponse extends Message<GetGithubPullRequestResponse> {
+  /**
+   * @generated from field: string pr_url = 1;
+   */
+  prUrl = "";
+
+  /**
+   * @generated from field: rill.local.v1.GetGithubPullRequestResponse.State pr_state = 2;
+   */
+  prState = GetGithubPullRequestResponse_State.UNSPECIFIED;
+
+  constructor(data?: PartialMessage<GetGithubPullRequestResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.local.v1.GetGithubPullRequestResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "pr_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "pr_state", kind: "enum", T: proto3.getEnumType(GetGithubPullRequestResponse_State) },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetGithubPullRequestResponse {
+    return new GetGithubPullRequestResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetGithubPullRequestResponse {
+    return new GetGithubPullRequestResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetGithubPullRequestResponse {
+    return new GetGithubPullRequestResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetGithubPullRequestResponse | PlainMessage<GetGithubPullRequestResponse> | undefined, b: GetGithubPullRequestResponse | PlainMessage<GetGithubPullRequestResponse> | undefined): boolean {
+    return proto3.util.equals(GetGithubPullRequestResponse, a, b);
+  }
+}
+
+/**
+ * @generated from enum rill.local.v1.GetGithubPullRequestResponse.State
+ */
+export enum GetGithubPullRequestResponse_State {
+  /**
+   * @generated from enum value: STATE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: STATE_OPEN = 1;
+   */
+  OPEN = 1,
+
+  /**
+   * @generated from enum value: STATE_CLOSED_UNMERGED = 2;
+   */
+  CLOSED_UNMERGED = 2,
+
+  /**
+   * @generated from enum value: STATE_MERGED = 3;
+   */
+  MERGED = 3,
+}
+// Retrieve enum metadata with: proto3.getEnumType(GetGithubPullRequestResponse_State)
+proto3.util.setEnumType(GetGithubPullRequestResponse_State, "rill.local.v1.GetGithubPullRequestResponse.State", [
+  { no: 0, name: "STATE_UNSPECIFIED" },
+  { no: 1, name: "STATE_OPEN" },
+  { no: 2, name: "STATE_CLOSED_UNMERGED" },
+  { no: 3, name: "STATE_MERGED" },
+]);
+
+/**
  * @generated from message rill.local.v1.GitPullRequest
  */
 export class GitPullRequest extends Message<GitPullRequest> {

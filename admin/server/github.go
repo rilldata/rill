@@ -251,6 +251,140 @@ func (s *Server) ListGithubUserRepos(ctx context.Context, req *adminv1.ListGithu
 	}, nil
 }
 
+// CreateGithubPullRequest creates a Github PR from the specified branch to the project's primary branch.
+func (s *Server) CreateGithubPullRequest(ctx context.Context, req *adminv1.CreateGithubPullRequestRequest) (*adminv1.CreateGithubPullRequestResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.organization", req.Org),
+		attribute.String("args.project", req.Project),
+		attribute.String("args.branch", req.Branch),
+	)
+
+	if req.Branch == "" {
+		return nil, status.Error(codes.InvalidArgument, "branch must be specified")
+	}
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
+	if err != nil {
+		return nil, err
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageDev {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to create a github PR")
+	}
+
+	if proj.GitRemote == nil {
+		return nil, status.Error(codes.FailedPrecondition, "project is not connected to a github repository")
+	}
+
+	if proj.ManagedGitRepoID != nil {
+		return nil, status.Error(codes.FailedPrecondition, "cannot create github PR for a project connected to a managed git repository")
+	}
+
+	account, repo, ok := gitutil.SplitGithubRemote(*proj.GitRemote)
+	if !ok {
+		return nil, fmt.Errorf("invalid github url %q stored for project", *proj.GitRemote)
+	}
+
+	repoID, err := s.githubRepoIDForProject(ctx, proj)
+	if err != nil {
+		return nil, err
+	}
+	client := s.admin.Github.InstallationClient(*proj.GithubInstallationID, &repoID)
+
+	title := req.Title
+	if title == "" {
+		title = fmt.Sprintf("Update from %s", req.Branch)
+	}
+
+	pr, _, err := client.PullRequests.Create(ctx, account, repo, &github.NewPullRequest{
+		Title: github.Ptr(title),
+		Head:  github.Ptr(req.Branch),
+		Base:  github.Ptr(proj.PrimaryBranch),
+		Body:  github.Ptr(req.Body),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create github PR: %w", err)
+	}
+
+	return &adminv1.CreateGithubPullRequestResponse{
+		PrUrl: pr.GetHTMLURL(),
+	}, nil
+}
+
+// GetGithubPullRequest returns the status of the most recent PR for the specified branch, if any.
+func (s *Server) GetGithubPullRequest(ctx context.Context, req *adminv1.GetGithubPullRequestRequest) (*adminv1.GetGithubPullRequestResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.organization", req.Org),
+		attribute.String("args.project", req.Project),
+		attribute.String("args.branch", req.Branch),
+	)
+
+	if req.Branch == "" {
+		return nil, status.Error(codes.InvalidArgument, "branch must be specified")
+	}
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
+	if err != nil {
+		return nil, err
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ReadDev {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read github PR")
+	}
+
+	if proj.GitRemote == nil {
+		return nil, status.Error(codes.FailedPrecondition, "project is not connected to a github repository")
+	}
+
+	if proj.ManagedGitRepoID != nil {
+		return nil, status.Error(codes.FailedPrecondition, "cannot get github PR for a project connected to a managed git repository")
+	}
+
+	account, repo, ok := gitutil.SplitGithubRemote(*proj.GitRemote)
+	if !ok {
+		return nil, fmt.Errorf("invalid github url %q stored for project", *proj.GitRemote)
+	}
+
+	repoID, err := s.githubRepoIDForProject(ctx, proj)
+	if err != nil {
+		return nil, err
+	}
+	client := s.admin.Github.InstallationClient(*proj.GithubInstallationID, &repoID)
+
+	prs, _, err := client.PullRequests.List(ctx, account, repo, &github.PullRequestListOptions{
+		Head:        fmt.Sprintf("%s:%s", account, req.Branch),
+		State:       "all",
+		Sort:        "created",
+		Direction:   "desc",
+		ListOptions: github.ListOptions{PerPage: 1},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list github PRs: %w", err)
+	}
+	if len(prs) == 0 {
+		return &adminv1.GetGithubPullRequestResponse{}, nil
+	}
+
+	pr := prs[0]
+	state := adminv1.GetGithubPullRequestResponse_STATE_UNSPECIFIED
+	switch strings.ToLower(pr.GetState()) {
+	case "open":
+		state = adminv1.GetGithubPullRequestResponse_STATE_OPEN
+	case "closed":
+		if pr.MergedAt != nil {
+			state = adminv1.GetGithubPullRequestResponse_STATE_MERGED
+		} else {
+			state = adminv1.GetGithubPullRequestResponse_STATE_CLOSED_UNMERGED
+		}
+	}
+	return &adminv1.GetGithubPullRequestResponse{
+		PrUrl:   pr.GetHTMLURL(),
+		PrState: state,
+	}, nil
+}
+
 func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.ConnectProjectToGithubRequest) (*adminv1.ConnectProjectToGithubResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.organization", req.Org),

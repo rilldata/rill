@@ -409,7 +409,9 @@ func (r *gitRepo) commitAll(repo *git.Repository, message string) (string, error
 	hash, err := worktree.Commit(message, &git.CommitOptions{
 		All: true, // Commit all changes
 		Author: &object.Signature{
-			When: time.Now(),
+			Name:  "Rill",
+			Email: "noreply@rilldata.com",
+			When:  time.Now(),
 		},
 	})
 	if err != nil {
