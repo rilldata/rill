@@ -364,7 +364,7 @@ service RuntimeService {
     };
   }
   
-  // GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
+  // GitPush commits and pushes the local changes to the remote git repo equivalent to `git commit -am` followed by `git push` command.
   // It only pushes the changes to the existing remote repo.
   rpc GitPush(GitPushRequest) returns (GitPushResponse) {
     option (google.api.http) = {
@@ -1335,8 +1335,8 @@ message GitMergeToBranchRequest {
 }
 
 message GitMergeToBranchResponse {
-  // The output of the git merge command. Only set for unsuccessful merges.
-  string output = 1;
+  // hash of the merge commit created by this merge operation
+  string merge_commit_sha = 1;
 }
 
 message GitSwitchBranchRequest {
@@ -1364,7 +1364,9 @@ message GitPushRequest {
   bool force = 3;
 }
 
-message GitPushResponse {}
+message GitPushResponse {
+  string new_commit_sha = 1;
+}
 
 message PushEnvRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];

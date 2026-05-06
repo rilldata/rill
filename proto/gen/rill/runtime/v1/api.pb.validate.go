@@ -15113,7 +15113,7 @@ func (m *GitMergeToBranchResponse) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Output
+	// no validation rules for MergeCommitSha
 
 	if len(errors) > 0 {
 		return GitMergeToBranchResponseMultiError(errors)
@@ -15773,6 +15773,8 @@ func (m *GitPushResponse) validate(all bool) error {
 	}
 
 	var errors []error
+
+	// no validation rules for NewCommitSha
 
 	if len(errors) > 0 {
 		return GitPushResponseMultiError(errors)

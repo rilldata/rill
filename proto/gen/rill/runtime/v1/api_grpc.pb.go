@@ -192,7 +192,7 @@ type RuntimeServiceClient interface {
 	// If there are any merge conflicts the pull is aborted.
 	// Force can be set to true to force the pull and overwrite any local changes.
 	GitPull(ctx context.Context, in *GitPullRequest, opts ...grpc.CallOption) (*GitPullResponse, error)
-	// GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
+	// GitPush commits and pushes the local changes to the remote git repo equivalent to `git commit -am` followed by `git push` command.
 	// It only pushes the changes to the existing remote repo.
 	GitPush(ctx context.Context, in *GitPushRequest, opts ...grpc.CallOption) (*GitPushResponse, error)
 	// PushEnv pushes local environment variables to admin service
@@ -891,7 +891,7 @@ type RuntimeServiceServer interface {
 	// If there are any merge conflicts the pull is aborted.
 	// Force can be set to true to force the pull and overwrite any local changes.
 	GitPull(context.Context, *GitPullRequest) (*GitPullResponse, error)
-	// GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
+	// GitPush commits and pushes the local changes to the remote git repo equivalent to `git commit -am` followed by `git push` command.
 	// It only pushes the changes to the existing remote repo.
 	GitPush(context.Context, *GitPushRequest) (*GitPushResponse, error)
 	// PushEnv pushes local environment variables to admin service

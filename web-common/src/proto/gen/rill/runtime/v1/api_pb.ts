@@ -6185,11 +6185,11 @@ export class GitMergeToBranchRequest extends Message$1<GitMergeToBranchRequest> 
  */
 export class GitMergeToBranchResponse extends Message$1<GitMergeToBranchResponse> {
   /**
-   * The output of the git merge command. Only set for unsuccessful merges.
+   * hash of the merge commit created by this merge operation
    *
-   * @generated from field: string output = 1;
+   * @generated from field: string merge_commit_sha = 1;
    */
-  output = "";
+  mergeCommitSha = "";
 
   constructor(data?: PartialMessage<GitMergeToBranchResponse>) {
     super();
@@ -6199,7 +6199,7 @@ export class GitMergeToBranchResponse extends Message$1<GitMergeToBranchResponse
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.GitMergeToBranchResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "output", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "merge_commit_sha", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitMergeToBranchResponse {
@@ -6440,6 +6440,11 @@ export class GitPushRequest extends Message$1<GitPushRequest> {
  * @generated from message rill.runtime.v1.GitPushResponse
  */
 export class GitPushResponse extends Message$1<GitPushResponse> {
+  /**
+   * @generated from field: string new_commit_sha = 1;
+   */
+  newCommitSha = "";
+
   constructor(data?: PartialMessage<GitPushResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -6448,6 +6453,7 @@ export class GitPushResponse extends Message$1<GitPushResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.GitPushResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "new_commit_sha", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitPushResponse {

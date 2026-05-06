@@ -887,7 +887,7 @@ func TestGitRepo_mergeToBranch(t *testing.T) {
 			tt.setupRemote(t, remoteDir)
 
 			ctx := context.Background()
-			err := repo.mergeToBranch(ctx, tt.branch, tt.force)
+			_, err := repo.mergeToBranch(ctx, tt.branch, tt.force)
 			if tt.expectError {
 				require.Error(t, err)
 			} else {

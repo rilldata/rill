@@ -54,7 +54,8 @@ type RepoStore interface {
 	// Commit commits local changes to the git repository (equivalent to git commit -am <message>).
 	Commit(ctx context.Context, message string) (string, error)
 	// CommitAndPush commits local changes to the remote repository and pushes them.
-	CommitAndPush(ctx context.Context, message string, force bool) error
+	// It returns the commit SHA of the new commit
+	CommitAndPush(ctx context.Context, message string, force bool) (string, error)
 	// RestoreCommit creates a new commit that restores the state of the repo to the specified commit SHA.
 	RestoreCommit(ctx context.Context, commitSHA string) (string, error)
 	// CommitHash returns a unique ID for the state of the remote files currently served (does not change on uncommitted local changes).
@@ -67,7 +68,8 @@ type RepoStore interface {
 	SwitchBranch(ctx context.Context, branch string, createIfNotExists, ignoreLocalChanges bool) error
 	// MergeToBranch merges the current branch to the specified branch.
 	// In case of merge conflicts, prefer current changes if force is true else return an error without merging.
-	MergeToBranch(ctx context.Context, branch string, force bool) error
+	// It returns the commit SHA of the new merge commit if the merge is successful.
+	MergeToBranch(ctx context.Context, branch string, force bool) (string, error)
 }
 
 // FileInfo contains metadata about a file.

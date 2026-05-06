@@ -500,31 +500,31 @@ func (r *repo) Pull(ctx context.Context, opts *drivers.PullOptions) error {
 }
 
 // CommitAndPush implements drivers.RepoStore.
-func (r *repo) CommitAndPush(ctx context.Context, message string, force bool) error {
+func (r *repo) CommitAndPush(ctx context.Context, message string, force bool) (string, error) {
 	// Get a write lock.
 	// NOTE: Not using rlockEnsureReady here because we need to exclude reads while the commit is happening.
 	err := r.mu.Lock(ctx)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer r.mu.Unlock()
 
 	if !r.ready {
 		if r.pullErr != nil {
-			return fmt.Errorf("repo is not ready: %w", r.pullErr)
+			return "", fmt.Errorf("repo is not ready: %w", r.pullErr)
 		}
-		return fmt.Errorf("repo is not ready: pull files first")
+		return "", fmt.Errorf("repo is not ready: pull files first")
 	}
 
 	if r.git == nil {
-		return fmt.Errorf("commits are not supported for this repo type")
+		return "", fmt.Errorf("commits are not supported for this repo type")
 	}
 
 	err = r.git.commitToDefaultBranch(ctx, message, force)
 	if err != nil {
-		return err
+		return "", err
 	}
-	return nil
+	return r.git.commitHash()
 }
 
 // RestoreCommit implements drivers.RepoStore.
@@ -533,24 +533,24 @@ func (r *repo) RestoreCommit(ctx context.Context, commitSHA string) (string, err
 }
 
 // MergeToBranch implements drivers.RepoStore.
-func (r *repo) MergeToBranch(ctx context.Context, branch string, force bool) error {
+func (r *repo) MergeToBranch(ctx context.Context, branch string, force bool) (string, error) {
 	// Get a write lock.
 	// NOTE: Not using rlockEnsureReady here because we need to exclude reads while the merge is happening.
 	err := r.mu.Lock(ctx)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer r.mu.Unlock()
 
 	if !r.ready {
 		if r.pullErr != nil {
-			return fmt.Errorf("repo is not ready: %w", r.pullErr)
+			return "", fmt.Errorf("repo is not ready: %w", r.pullErr)
 		}
-		return fmt.Errorf("repo is not ready: pull files first")
+		return "", fmt.Errorf("repo is not ready: pull files first")
 	}
 
 	if r.git == nil {
-		return fmt.Errorf("merges are not supported for this repo type")
+		return "", fmt.Errorf("merges are not supported for this repo type")
 	}
 
 	return r.git.mergeToBranch(ctx, branch, force)

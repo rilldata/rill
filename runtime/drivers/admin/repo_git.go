@@ -287,25 +287,25 @@ func (r *gitRepo) commitToDefaultBranch(ctx context.Context, message string, for
 }
 
 // mergeToBranch commits changes to the repository and merges them into the specified branch.
-func (r *gitRepo) mergeToBranch(ctx context.Context, branch string, force bool) (resErr error) {
+func (r *gitRepo) mergeToBranch(ctx context.Context, branch string, force bool) (hash string, resErr error) {
 	if !r.editable() {
-		return fmt.Errorf("cannot commit to this repository because it is not marked editable")
+		return "", fmt.Errorf("cannot commit to this repository because it is not marked editable")
 	}
 
 	r.h.logger.Info("mergeToBranch", zap.String("branch", branch), zap.Bool("force", force), observability.ZapCtx(ctx))
 	repo, err := git.PlainOpen(r.repoDir)
 	if err != nil {
-		return fmt.Errorf("failed to open repository: %w", err)
+		return "", fmt.Errorf("failed to open repository: %w", err)
 	}
 	_, err = r.commitAll(repo, "Auto commit before merging to "+branch)
 	if err != nil && !errors.Is(err, git.ErrEmptyCommit) {
-		return fmt.Errorf("failed to commit changes: %w", err)
+		return "", fmt.Errorf("failed to commit changes: %w", err)
 	}
 
 	// Fetch the branch to ensure we are up-to-date
 	err = r.fetchBranch(ctx, repo, branch)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if r.defaultBranch != branch {
@@ -321,11 +321,11 @@ func (r *gitRepo) mergeToBranch(ctx context.Context, branch string, force bool) 
 		// Hard reset is safe here because local changes were already committed above.
 		err = gitCheckout(r.repoDir, branch, true, false, "")
 		if err != nil {
-			return fmt.Errorf("failed to checkout branch %q: %w", branch, err)
+			return "", fmt.Errorf("failed to checkout branch %q: %w", branch, err)
 		}
 		err = resetToRemoteTrackingBranch(r.repoDir, branch)
 		if err != nil {
-			return fmt.Errorf("failed to reset to remote tracking branch %q: %w", branch, err)
+			return "", fmt.Errorf("failed to reset to remote tracking branch %q: %w", branch, err)
 		}
 	}
 
@@ -337,13 +337,12 @@ func (r *gitRepo) mergeToBranch(ctx context.Context, branch string, force bool) 
 		merged, err = gitutil.MergeWithBailOnConflict(r.repoDir, r.defaultBranch)
 	}
 	if err != nil {
-		return fmt.Errorf("failed to merge default branch %q into branch %q: %w", r.defaultBranch, branch, err)
+		return "", fmt.Errorf("failed to merge default branch %q into branch %q: %w", r.defaultBranch, branch, err)
 	}
 
 	if !merged {
 		// If the merge was aborted no need to push the changes
-		r.h.logger.Warn("Merge aborted due to conflicts, not pushing changes", zap.String("branch", branch), zap.String("defaultBranch", r.defaultBranch))
-		return nil
+		return "", fmt.Errorf("merge aborted due to merge conflicts")
 	}
 
 	// Push the changes
@@ -351,7 +350,15 @@ func (r *gitRepo) mergeToBranch(ctx context.Context, branch string, force bool) 
 	if r.defaultBranch != branch {
 		branches = append(branches, r.defaultBranch)
 	}
-	return r.pushBranch(ctx, branches...)
+	err = r.pushBranch(ctx, branches...)
+	if err != nil {
+		return "", err
+	}
+	hash, err = r.commitHash()
+	if err != nil {
+		return "", err
+	}
+	return hash, nil
 }
 
 // commitHash returns the current commit hash of the repository.

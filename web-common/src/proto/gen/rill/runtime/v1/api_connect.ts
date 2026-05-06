@@ -583,7 +583,7 @@ export const RuntimeService = {
       kind: MethodKind.Unary,
     },
     /**
-     * GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
+     * GitPush commits and pushes the local changes to the remote git repo equivalent to `git commit -am` followed by `git push` command.
      * It only pushes the changes to the existing remote repo.
      *
      * @generated from rpc rill.runtime.v1.RuntimeService.GitPush

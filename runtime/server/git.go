@@ -198,11 +198,13 @@ func (s *Server) GitMergeToBranch(ctx context.Context, req *runtimev1.GitMergeTo
 	}
 	defer release()
 
-	err = repo.MergeToBranch(ctx, req.Branch, req.Force)
+	hash, err := repo.MergeToBranch(ctx, req.Branch, req.Force)
 	if err != nil {
 		return nil, fmt.Errorf("failed to merge: %w", err)
 	}
-	return &runtimev1.GitMergeToBranchResponse{}, nil
+	return &runtimev1.GitMergeToBranchResponse{
+		MergeCommitSha: hash,
+	}, nil
 }
 
 // GitPull implements RuntimeService.
@@ -237,12 +239,14 @@ func (s *Server) GitPush(ctx context.Context, req *runtimev1.GitPushRequest) (*r
 	}
 	defer release()
 
-	err = repo.CommitAndPush(ctx, req.CommitMessage, req.Force)
+	hash, err := repo.CommitAndPush(ctx, req.CommitMessage, req.Force)
 	if err != nil {
 		if errors.Is(err, drivers.ErrRemoteAhead) {
 			return nil, status.Error(codes.FailedPrecondition, "remote repository has changes that are not in local state, please pull first")
 		}
 		return nil, fmt.Errorf("failed to push: %w", err)
 	}
-	return &runtimev1.GitPushResponse{}, nil
+	return &runtimev1.GitPushResponse{
+		NewCommitSha: hash,
+	}, nil
 }
