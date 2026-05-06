@@ -158,6 +158,39 @@
         </CtaButton>
       </CtaContentContainer>
     </CtaLayoutContainer>
+  {:else if isLoading}
+    <EditSessionLoading status={deploymentStatus} href={`/${organization}`} />
+  {:else if isErrored}
+    <SlimProjectHeader
+      {organization}
+      {project}
+      readProjects={organizationPermissions?.readProjects}
+      {planDisplayName}
+      {organizationLogoUrl}
+    />
+    <ErrorPage
+      statusCode={500}
+      header="Edit session failed"
+      body={deployment?.statusMessage ||
+        "The editing environment encountered an error. Please try again."}
+    />
+  {:else if isStopped && deployment?.id}
+    <SlimProjectHeader
+      {organization}
+      {project}
+      readProjects={organizationPermissions?.readProjects}
+      {planDisplayName}
+      {organizationLogoUrl}
+    />
+    <BranchDeploymentStopped
+      {organization}
+      {project}
+      deploymentId={deployment.id}
+      status={deploymentStatus}
+      canManage={!!projectPermissions?.manageDev}
+      {branch}
+      onStarted={() => (starting = true)}
+    />
   {:else if isReady && deployment?.id && instanceId && runtimeHost && jwt}
     {#key `${runtimeHost}::${instanceId}`}
       <RuntimeProvider host={runtimeHost} {instanceId} {jwt}>
@@ -199,39 +232,6 @@
         </FileAndResourceWatcher>
       </RuntimeProvider>
     {/key}
-  {:else if isErrored}
-    <SlimProjectHeader
-      {organization}
-      {project}
-      readProjects={organizationPermissions?.readProjects}
-      {planDisplayName}
-      {organizationLogoUrl}
-    />
-    <ErrorPage
-      statusCode={500}
-      header="Edit session failed"
-      body={deployment?.statusMessage ||
-        "The editing environment encountered an error. Please try again."}
-    />
-  {:else if isStopped && deployment?.id}
-    <SlimProjectHeader
-      {organization}
-      {project}
-      readProjects={organizationPermissions?.readProjects}
-      {planDisplayName}
-      {organizationLogoUrl}
-    />
-    <BranchDeploymentStopped
-      {organization}
-      {project}
-      deploymentId={deployment.id}
-      status={deploymentStatus}
-      canManage={!!projectPermissions?.manageDev}
-      {branch}
-      onStarted={() => (starting = true)}
-    />
-  {:else if isLoading}
-    <EditSessionLoading status={deploymentStatus} href={`/${organization}`} />
   {:else}
     <SlimProjectHeader
       {organization}
