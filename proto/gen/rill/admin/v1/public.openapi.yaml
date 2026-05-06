@@ -9,6 +9,14 @@ components:
                 unsubscribeUrl:
                     type: string
             type: object
+        GetGithubPullRequestResponseState:
+            default: STATE_UNSPECIFIED
+            enum:
+                - STATE_UNSPECIFIED
+                - STATE_OPEN
+                - STATE_CLOSED_UNMERGED
+                - STATE_MERGED
+            type: string
         GetReportMetaResponseDeliveryMeta:
             properties:
                 editUrl:
@@ -186,12 +194,16 @@ components:
                     $ref: '#/components/schemas/v1BillingIssueMetadataNoBillableAddress'
                 noPaymentMethod:
                     $ref: '#/components/schemas/v1BillingIssueMetadataNoPaymentMethod'
+                onCreditTrial:
+                    $ref: '#/components/schemas/v1BillingIssueMetadataOnCreditTrial'
                 onTrial:
                     $ref: '#/components/schemas/v1BillingIssueMetadataOnTrial'
                 paymentFailed:
                     $ref: '#/components/schemas/v1BillingIssueMetadataPaymentFailed'
                 subscriptionCancelled:
                     $ref: '#/components/schemas/v1BillingIssueMetadataSubscriptionCancelled'
+                trialCreditsDepleted:
+                    $ref: '#/components/schemas/v1BillingIssueMetadataTrialCreditsDepleted'
                 trialEnded:
                     $ref: '#/components/schemas/v1BillingIssueMetadataTrialEnded'
             type: object
@@ -200,6 +212,18 @@ components:
         v1BillingIssueMetadataNoBillableAddress:
             type: object
         v1BillingIssueMetadataNoPaymentMethod:
+            type: object
+        v1BillingIssueMetadataOnCreditTrial:
+            properties:
+                creditAllocation:
+                    format: double
+                    type: number
+                lowCredit:
+                    type: boolean
+                planId:
+                    type: string
+                subscriptionId:
+                    type: string
             type: object
         v1BillingIssueMetadataOnTrial:
             properties:
@@ -245,6 +269,16 @@ components:
                     format: date-time
                     type: string
             type: object
+        v1BillingIssueMetadataTrialCreditsDepleted:
+            properties:
+                depletedOn:
+                    format: date-time
+                    type: string
+                planId:
+                    type: string
+                subscriptionId:
+                    type: string
+            type: object
         v1BillingIssueMetadataTrialEnded:
             properties:
                 endDate:
@@ -265,6 +299,8 @@ components:
                 - BILLING_ISSUE_TYPE_PAYMENT_FAILED
                 - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
                 - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
+                - BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL
+                - BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED
             type: string
         v1BillingPlan:
             properties:
@@ -441,6 +477,11 @@ components:
             properties:
                 deployment:
                     $ref: '#/components/schemas/v1Deployment'
+            type: object
+        v1CreateGithubPullRequestResponse:
+            properties:
+                prUrl:
+                    type: string
             type: object
         v1CreateManagedGitRepoResponse:
             properties:
@@ -735,6 +776,13 @@ components:
                 ttlSeconds:
                     format: int64
                     type: integer
+            type: object
+        v1GetGithubPullRequestResponse:
+            properties:
+                prState:
+                    $ref: '#/components/schemas/GetGithubPullRequestResponseState'
+                prUrl:
+                    type: string
             type: object
         v1GetGithubRepoStatusResponse:
             properties:
@@ -1955,20 +2003,6 @@ components:
             type: object
         v1SudoDeleteOrganizationBillingIssueResponse:
             type: object
-        v1SudoExtendTrialRequest:
-            properties:
-                days:
-                    format: int32
-                    type: integer
-                org:
-                    type: string
-            type: object
-        v1SudoExtendTrialResponse:
-            properties:
-                trialEnd:
-                    format: date-time
-                    type: string
-            type: object
         v1SudoGetResourceResponse:
             properties:
                 deployment:
@@ -1981,6 +2015,25 @@ components:
                     $ref: '#/components/schemas/v1Project'
                 user:
                     $ref: '#/components/schemas/v1User'
+            type: object
+        v1SudoGrantTrialCreditsRequest:
+            properties:
+                amountUsd:
+                    description: Amount of trial credits to grant in USD.
+                    format: double
+                    type: number
+                description:
+                    description: Optional human-readable reason for the grant.
+                    type: string
+                org:
+                    type: string
+            type: object
+        v1SudoGrantTrialCreditsResponse:
+            properties:
+                grantedUsd:
+                    description: The grant amount actually applied, in USD.
+                    format: double
+                    type: number
             type: object
         v1SudoIssueRuntimeManagerTokenRequest:
             properties:
@@ -2920,6 +2973,8 @@ paths:
     /v1/orgs/{org}/projects/{project}/connect-to-github: {}
     /v1/orgs/{org}/projects/{project}/credentials: {}
     /v1/orgs/{org}/projects/{project}/deployments: {}
+    /v1/orgs/{org}/projects/{project}/github/pr: {}
+    /v1/orgs/{org}/projects/{project}/github/pr/{branch}: {}
     /v1/orgs/{org}/projects/{project}/hibernate: {}
     /v1/orgs/{org}/projects/{project}/iframe: {}
     /v1/orgs/{org}/projects/{project}/invites:
@@ -3731,7 +3786,7 @@ paths:
     /v1/superuser/members: {}
     /v1/superuser/organization/billing/customer_id: {}
     /v1/superuser/organization/custom-domain: {}
-    /v1/superuser/organization/trial/extend: {}
+    /v1/superuser/organization/trial/grant-credits: {}
     /v1/superuser/organizations/{org}/billing/issues/{type}: {}
     /v1/superuser/projects/annotations: {}
     /v1/superuser/projects/search: {}
