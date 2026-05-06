@@ -16,6 +16,13 @@ const ROUTE_FILE_PATTERN = /^\+(page|layout|server)\.(svelte|ts)$/;
 
 const REPO_ROOT = fileURLToPath(new URL("..", import.meta.url));
 
+// The roots cover the two halves of an active edit session: the file-editor
+// workspace and the dashboard-preview viz tree. Onboarding/deploy flows live
+// outside these roots on both sides and are intentionally not parity-checked:
+//   - web-local: `(misc)/welcome`, `(misc)/deploy`
+//   - web-admin: `/-/edit/welcome`
+// They render distinct UIs that don't share the editor's component composition,
+// so divergence is expected.
 const LOCAL_ROOTS = [
   "web-local/src/routes/(application)/(workspace)",
   "web-local/src/routes/(viz)",
@@ -43,6 +50,9 @@ const LOCAL_ONLY_ALLOWLIST = [
   "/dashboard/[name]/+page.ts",
 ];
 
+// Empty today: every route under ADMIN_ROOTS has a web-local counterpart.
+// Add an entry (with a reason comment) if cloud ever needs an editor route
+// that has no local equivalent.
 const ADMIN_ONLY_ALLOWLIST = [];
 
 function walkRoutes(absRoot) {
