@@ -1,3 +1,8 @@
+import {
+  DeployingDashboardUrlParam,
+  PreCommitShaUrlParam,
+} from "@rilldata/web-common/features/project/deploy/utils";
+
 // /-/invite for the first deploy; /-/deploying when prod already exists.
 // If the user was editing a dashboard, pass its name through so the
 // destination page can route back once reconciliation completes.
@@ -27,10 +32,10 @@ export function buildPostMergeUrl({
     window.location.origin,
   );
   if (dashboard) {
-    url.searchParams.set("deploying_dashboard", dashboard);
+    url.searchParams.set(DeployingDashboardUrlParam, dashboard);
   }
   if (preCommitSha) {
-    url.searchParams.set("pre_commit_sha", preCommitSha);
+    url.searchParams.set(PreCommitShaUrlParam, preCommitSha);
   }
   return `${url.pathname}${url.search}`;
 }

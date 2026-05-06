@@ -1,4 +1,8 @@
-import type { QueryFunction, QueryKey } from "@tanstack/svelte-query";
+import {
+  createQuery,
+  type QueryFunction,
+  type QueryKey,
+} from "@tanstack/svelte-query";
 import {
   adminServiceGetProject,
   createAdminServiceGetProject,
@@ -157,36 +161,45 @@ export async function fetchProjectDeploymentDetails(
 }
 
 /**
- * Reads `currentCommitSha` from a runtime deployment's project parser.
+ * Reactive query for a runtime deployment's project parser commit SHA.
  * Used by Publish/Merge to capture prod's pre-merge state so the
  * deploying page can wait for the parser to advance past it before
- * redirecting. Returns undefined if the deployment is missing or
- * unreachable; callers should treat that as "skip the SHA gate."
+ * redirecting. Disabled until the deployment's runtime info is
+ * available; on transport errors, logs and resolves to undefined so
+ * callers can fall back to the "skip the SHA gate" behavior rather
+ * than show a query-error state.
  */
-export async function fetchProdParserCommitSha(
+export function useParserCommitSha(
   deployment: V1Deployment | undefined,
   jwt: string | undefined,
-): Promise<string | undefined> {
-  if (!deployment?.runtimeHost || !deployment?.runtimeInstanceId) {
-    return undefined;
-  }
-  try {
-    const client = getRuntimeClient({
-      host: deployment.runtimeHost,
-      instanceId: deployment.runtimeInstanceId,
-      jwt,
-      authContext: "user",
-    });
-    const resource = await fetchResource(
-      queryClient,
-      client,
-      SingletonProjectParserName,
-      ResourceKind.ProjectParser,
-    );
-    return resource?.projectParser?.state?.currentCommitSha || undefined;
-  } catch {
-    return undefined;
-  }
+) {
+  const host = deployment?.runtimeHost;
+  const instanceId = deployment?.runtimeInstanceId;
+  return createQuery({
+    queryKey: ["parserCommitSha", host ?? "", instanceId ?? ""],
+    queryFn: async () => {
+      if (!host || !instanceId) return undefined;
+      try {
+        const client = getRuntimeClient({
+          host,
+          instanceId,
+          jwt,
+          authContext: "user",
+        });
+        const resource = await fetchResource(
+          queryClient,
+          client,
+          SingletonProjectParserName,
+          ResourceKind.ProjectParser,
+        );
+        return resource?.projectParser?.state?.currentCommitSha || undefined;
+      } catch (err) {
+        console.warn("Failed to fetch parser commit SHA:", err);
+        return undefined;
+      }
+    },
+    enabled: !!host && !!instanceId,
+  });
 }
 
 export function useGithubLastSynced(client: RuntimeClient) {

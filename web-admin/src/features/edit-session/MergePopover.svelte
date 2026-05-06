@@ -7,7 +7,7 @@
     getAdminServiceListDeploymentsQueryKey,
   } from "@rilldata/web-admin/client";
   import { isActiveDeployment } from "@rilldata/web-admin/features/branches/deployment-utils";
-  import { fetchProdParserCommitSha } from "@rilldata/web-admin/features/projects/selectors";
+  import { useParserCommitSha } from "@rilldata/web-admin/features/projects/selectors";
   import { Button } from "@rilldata/web-common/components/button";
   import * as Popover from "@rilldata/web-common/components/popover";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -65,16 +65,10 @@
   // Prefetch prod's project parser commit SHA so the deploying page can
   // wait for prod to advance past it before redirecting (see
   // PublishPopover for the same pattern).
-  let prodParserSha: string | undefined;
-  let prodParserShaPrefetched = false;
-  $: if (!prodParserShaPrefetched && prodDeployment) {
-    prodParserShaPrefetched = true;
-    void fetchProdParserCommitSha(prodDeployment, $projectQuery.data?.jwt).then(
-      (sha) => {
-        prodParserSha = sha;
-      },
-    );
-  }
+  $: parserShaQuery = useParserCommitSha(
+    prodDeployment,
+    $projectQuery.data?.jwt,
+  );
 
   $: if (!open) {
     errorMessage = "";
@@ -100,7 +94,7 @@
       project,
       pathname: $page.url.pathname,
       hadProdDeployment,
-      preCommitSha: prodParserSha,
+      preCommitSha: $parserShaQuery.data,
     });
     const targetWindow = window.open(targetUrl, "_blank");
     if (!targetWindow) {
