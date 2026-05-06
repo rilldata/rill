@@ -81,6 +81,14 @@
   $: onCanvasDashboardPage = isCanvasDashboardPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
 
+  // Edit-mode dashboard previews live under /-/edit/(viz)/{explore,canvas}/[name].
+  // `isMetricsExplorerPage`/`isCanvasDashboardPage` only match production routes,
+  // so the editor needs its own check to swap the developer toggle for the
+  // dashboard toggle when previewing.
+  $: onEditDashboardPreview = !!$page.route?.id?.startsWith(
+    "/[organization]/[project]/-/edit/(viz)/",
+  );
+
   $: activeBranch = extractBranchFromPath($page.url.pathname);
 
   $: loggedIn = !!$user.data?.user;
@@ -201,8 +209,11 @@
 
   <div class="flex gap-x-2 items-center ml-auto">
     {#if editContext}
-      {#if $developerChat && !onMetricsExplorerPage && !onCanvasDashboardPage}
+      {#if $developerChat && !onEditDashboardPreview}
         <ChatToggle open={developerChatOpen} actions={developerChatActions} />
+      {/if}
+      {#if $dashboardChat && onEditDashboardPreview}
+        <ChatToggle open={dashboardChatOpen} actions={dashboardChatActions} />
       {/if}
       <EditActions {organization} {project} {primaryBranch} />
     {:else}
