@@ -9,7 +9,7 @@
     resourceIsLoading,
     ResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
+  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/actions/ui-actions.ts";
   import ExploreEditor from "@rilldata/web-common/features/explores/ExploreEditor.svelte";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
@@ -106,17 +106,19 @@
         codeToggle={!hideCodeToggle}
         resourceKind={ResourceKind.Explore}
       >
-        <div class="flex gap-x-2" slot="cta">
-          {#if !inPreviewMode}
-            <PreviewButton
-              href={withEditorPrefix(`/explore/${exploreName}`)}
-              disabled={!!parseError ||
-                !!reconcileError ||
-                resourceIsReconciling}
-              reconciling={resourceIsReconciling}
-            />
-          {/if}
-        </div>
+        {#snippet cta()}
+          <div class="flex gap-x-2">
+            {#if !inPreviewMode}
+              <PreviewButton
+                href={withEditorPrefix(`/explore/${exploreName}`)}
+                disabled={!!parseError ||
+                  !!reconcileError ||
+                  resourceIsReconciling}
+                reconciling={resourceIsReconciling}
+              />
+            {/if}
+          </div>
+        {/snippet}
       </WorkspaceHeader>
 
       <svelte:fragment slot="body">

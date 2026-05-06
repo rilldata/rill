@@ -1,7 +1,7 @@
 import { getConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager";
 import { ToolName } from "@rilldata/web-common/features/chat/core/types";
 import { developerChatActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
-import { pollForFileCreation } from "@rilldata/web-common/features/entity-management/actions";
+import { pollForFileCreation } from "@rilldata/web-common/features/entity-management/actions/actions.ts";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
