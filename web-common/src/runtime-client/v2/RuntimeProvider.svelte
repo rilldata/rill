@@ -1,7 +1,6 @@
 <script lang="ts">
   import { useQueryClient } from "@tanstack/svelte-query";
   import { onDestroy, setContext } from "svelte";
-  import { featureFlags } from "../../features/feature-flags";
   import { invalidateRuntimeQueries } from "../invalidation";
   import {
     getRuntimeClient,
@@ -21,7 +20,6 @@
   // If host/instanceId change, the parent's {#key} re-mounts us.
   const client = getRuntimeClient({ host, instanceId, jwt, authContext });
   setContext(RUNTIME_CONTEXT_KEY, client);
-  featureFlags.setRuntimeClient(client);
 
   // Handle JWT-only changes (15-min refresh, View As with same host)
   $: {
@@ -31,7 +29,6 @@
   }
 
   onDestroy(() => {
-    featureFlags.clearRuntimeClient();
     evictRuntimeClient(client);
     client.dispose();
   });
