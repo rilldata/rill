@@ -20,7 +20,6 @@ import {
   getAdminServiceGetProjectWithBearerTokenQueryKey,
 } from "@rilldata/web-admin/features/public-urls/get-project-with-bearer-token";
 import {
-  fetchResource,
   ResourceKind,
   SingletonProjectParserName,
   useResourceV2,
@@ -165,9 +164,7 @@ export async function fetchProjectDeploymentDetails(
  * Used by Publish/Merge to capture prod's pre-merge state so the
  * deploying page can wait for the parser to advance past it before
  * redirecting. Disabled until the deployment's runtime info is
- * available; on transport errors, logs and resolves to undefined so
- * callers can fall back to the "skip the SHA gate" behavior rather
- * than show a query-error state.
+ * available.
  *
  * Refetches every 5 minutes so the cached value the popover reads at
  * click time stays reasonably current — without this, an editor
@@ -181,32 +178,33 @@ export function useParserCommitSha(
 ) {
   const host = deployment?.runtimeHost;
   const instanceId = deployment?.runtimeInstanceId;
-  return createQuery({
-    queryKey: ["parserCommitSha", host ?? "", instanceId ?? ""],
-    queryFn: async () => {
-      if (!host || !instanceId) return undefined;
-      try {
-        const client = getRuntimeClient({
-          host,
-          instanceId,
-          jwt,
-          authContext: "user",
-        });
-        const resource = await fetchResource(
-          queryClient,
-          client,
-          SingletonProjectParserName,
-          ResourceKind.ProjectParser,
-        );
-        return resource?.projectParser?.state?.currentCommitSha || undefined;
-      } catch (err) {
-        console.warn("Failed to fetch parser commit SHA:", err);
-        return undefined;
-      }
-    },
-    enabled: !!host && !!instanceId,
-    refetchInterval: PARSER_SHA_REFETCH_INTERVAL_MS,
+  // `RuntimeClient`'s constructor rejects an empty `instanceId`, so
+  // construct only when the deployment is ready and return a disabled
+  // placeholder otherwise. The caller's `$:` re-runs once the project
+  // query resolves and we get a real client.
+  if (!host || !instanceId) {
+    return createQuery({
+      queryKey: ["parserCommitSha", "disabled"],
+      queryFn: () => Promise.resolve(undefined as string | undefined),
+      enabled: false,
+    });
+  }
+  const client = getRuntimeClient({
+    host,
+    instanceId,
+    jwt,
+    authContext: "user",
   });
+  return useResourceV2<string | undefined>(
+    client,
+    SingletonProjectParserName,
+    ResourceKind.ProjectParser,
+    {
+      select: (data) =>
+        data?.resource?.projectParser?.state?.currentCommitSha || undefined,
+      refetchInterval: PARSER_SHA_REFETCH_INTERVAL_MS,
+    },
+  );
 }
 
 export function useGithubLastSynced(client: RuntimeClient) {
