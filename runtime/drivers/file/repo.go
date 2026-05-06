@@ -589,10 +589,10 @@ func (c *connection) RestoreCommit(ctx context.Context, commitSHA string) (strin
 }
 
 // CommitAndPush commits local changes to the remote repository and pushes them.
-func (c *connection) CommitAndPush(ctx context.Context, message string, force bool) error {
+func (c *connection) CommitAndPush(ctx context.Context, message string, force bool) (string, error) {
 	// If its a Git repository, commit and push the changes with the given message to the current branch.
 	if !c.isGitRepo() {
-		return errors.New("not a git repository")
+		return "", errors.New("not a git repository")
 	}
 
 	c.gitMu.Lock()
@@ -601,35 +601,35 @@ func (c *connection) CommitAndPush(ctx context.Context, message string, force bo
 	gitPath, subpath, err := gitutil.InferRepoRootAndSubpath(c.root)
 	if err != nil {
 		// Not a git repo - checked above
-		return err
+		return "", err
 	}
 
 	gitConfig, err := c.loadGitConfig(ctx)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if gitConfig.Subpath != subpath {
 		// should not happen
-		return errors.New("detected subpath within git repo does not match project subpath")
+		return "", errors.New("detected subpath within git repo does not match project subpath")
 	}
 
 	client, err := c.getAdminClient()
 	if err != nil {
-		return err
+		return "", err
 	}
 	author, err := c.gitSignature(ctx, client, gitPath)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// fetch the status
 	gs, err := gitutil.RunGitStatus(gitPath, subpath, gitConfig.RemoteName())
 	if err != nil {
-		return err
+		return "", err
 	}
 	if gs.RemoteCommits > 0 && !force {
-		return drivers.ErrRemoteAhead
+		return "", drivers.ErrRemoteAhead
 	}
 
 	if force {
@@ -639,25 +639,33 @@ func (c *connection) CommitAndPush(ctx context.Context, message string, force bo
 			// force pushing in a monorepo can overwrite other subpaths
 			// we can check for changes in other subpaths but it is tricky and error prone
 			// monorepo setups are advanced use cases and we can require users to manually resolve remote changes
-			return fmt.Errorf("cannot overwrite remote changes in a monorepo setup. Merge remote changes manually")
+			return "", fmt.Errorf("cannot overwrite remote changes in a monorepo setup. Merge remote changes manually")
 		}
 		err := gitutil.RunUpstreamMerge(ctx, gitConfig.RemoteName(), c.root, gitConfig.DefaultBranch, true)
 		if err != nil {
-			return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
+			return "", fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
 		}
-		return gitutil.CommitAndPush(ctx, c.root, gitConfig, message, author)
+		err = gitutil.CommitAndPush(ctx, c.root, gitConfig, message, author)
+		if err != nil {
+			return "", err
+		}
+		return c.CommitHash(ctx)
 	}
 	err = gitutil.RunUpstreamMerge(ctx, gitConfig.RemoteName(), c.root, gitConfig.DefaultBranch, false)
 	if err != nil {
-		return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
+		return "", fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
 	}
-	return gitutil.CommitAndPush(ctx, c.root, gitConfig, message, author)
+	err = gitutil.CommitAndPush(ctx, c.root, gitConfig, message, author)
+	if err != nil {
+		return "", err
+	}
+	return c.CommitHash(ctx)
 }
 
-func (c *connection) MergeToBranch(ctx context.Context, branch string, force bool) (resErr error) {
+func (c *connection) MergeToBranch(ctx context.Context, branch string, force bool) (hash string, resErr error) {
 	// If its a Git repository, merge the current branch to the specified branch.
 	if !c.isGitRepo() {
-		return errors.New("not a git repository")
+		return "", errors.New("not a git repository")
 	}
 
 	c.gitMu.Lock()
@@ -665,31 +673,31 @@ func (c *connection) MergeToBranch(ctx context.Context, branch string, force boo
 
 	gitPath, subpath, err := gitutil.InferRepoRootAndSubpath(c.root)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	repo, err := git.PlainOpen(gitPath)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// Get the current branch
 	head, err := repo.Head()
 	if err != nil {
-		return err
+		return "", err
 	}
 	currentBranch := head.Name().Short()
 
 	// Switch to the target branch
 	w, err := repo.Worktree()
 	if err != nil {
-		return err
+		return "", err
 	}
 	err = w.Checkout(&git.CheckoutOptions{
 		Branch: plumbing.NewBranchReferenceName(branch),
 	})
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer func() {
 		// Switch back to the original branch
@@ -703,23 +711,42 @@ func (c *connection) MergeToBranch(ctx context.Context, branch string, force boo
 
 	if force {
 		if subpath != "" {
-			return fmt.Errorf("cannot force merge in a monorepo setup")
+			return "", fmt.Errorf("cannot force merge in a monorepo setup")
 		}
-		return rtgitutil.MergeWithStrategy(gitPath, branch, "theirs")
+		err := rtgitutil.MergeWithStrategy(gitPath, branch, "theirs")
+		if err != nil {
+			return "", err
+		}
 	}
 	aborted, err := rtgitutil.MergeWithBailOnConflict(gitPath, branch)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if aborted {
-		return fmt.Errorf("merge conflicts detected while merging to branch %s", branch)
+		return "", fmt.Errorf("merge conflicts detected while merging to branch %s", branch)
 	}
-	return nil
+	return c.CommitHash(ctx)
 }
 
 // CommitHash implements drivers.RepoStore.
 func (c *connection) CommitHash(ctx context.Context) (string, error) {
-	return "", nil
+	if !c.isGitRepo() {
+		return "", nil
+	}
+
+	repo, err := git.PlainOpen(c.root)
+	if err != nil {
+		return "", err
+	}
+	head, err := repo.Head()
+	if err != nil {
+		return "", err
+	}
+	if head.Hash().IsZero() {
+		return "", nil
+	}
+
+	return head.Hash().String(), nil
 }
 
 // CommitTimestamp implements drivers.RepoStore.

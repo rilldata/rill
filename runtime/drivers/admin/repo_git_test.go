@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -735,7 +736,7 @@ func TestGitRepo_mergeToBranch(t *testing.T) {
 		branch       string
 		force        bool
 		expectError  bool
-		validate     func(t *testing.T, repo *gitRepo, localDir, remoteDir string)
+		validate     func(t *testing.T, repo *gitRepo, localDir, remoteDir, hash string)
 	}{
 		{
 			name: "error when repository is not editable",
@@ -775,8 +776,9 @@ func TestGitRepo_mergeToBranch(t *testing.T) {
 			branch:       "main",
 			force:        false,
 			expectError:  false,
-			validate: func(t *testing.T, repo *gitRepo, localDir, remoteDir string) {
+			validate: func(t *testing.T, repo *gitRepo, localDir, remoteDir, hash string) {
 				verifyCurrentBranch(t, localDir, "edit-branch")
+				require.Equal(t, getRemoteBranchHead(t, remoteDir, "main"), hash)
 			},
 		},
 		{
@@ -799,8 +801,9 @@ func TestGitRepo_mergeToBranch(t *testing.T) {
 			branch:      "main",
 			force:       false,
 			expectError: false,
-			validate: func(t *testing.T, repo *gitRepo, localDir, remoteDir string) {
+			validate: func(t *testing.T, repo *gitRepo, localDir, remoteDir, hash string) {
 				verifyRemoteBranchFile(t, remoteDir, "main", "new_feature.txt", "new feature content")
+				require.Equal(t, getRemoteBranchHead(t, remoteDir, "main"), hash)
 			},
 		},
 		{
@@ -816,14 +819,15 @@ func TestGitRepo_mergeToBranch(t *testing.T) {
 			branch:      "main",
 			force:       false,
 			expectError: false,
-			validate: func(t *testing.T, repo *gitRepo, localDir, remoteDir string) {
+			validate: func(t *testing.T, repo *gitRepo, localDir, remoteDir, hash string) {
 				verifyRemoteBranchFile(t, remoteDir, "main", "feature.txt", "feature content")
 				verifyRemoteBranchFile(t, remoteDir, "edit-branch", "feature.txt", "feature content")
 				verifyCurrentBranch(t, localDir, "edit-branch")
+				require.Equal(t, getRemoteBranchHead(t, remoteDir, "main"), hash)
 			},
 		},
 		{
-			name: "merge to different branch, force=false, with conflicts: merge aborted, nothing pushed",
+			name: "merge to different branch, force=false, with conflicts: merge aborted, returns error",
 			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
 				cloneAndCreateRemoteEditBranch(t, localDir, remoteURL)
 				return newEditableGitRepo(localDir, remoteURL, "edit-branch", "main", "")
@@ -836,8 +840,8 @@ func TestGitRepo_mergeToBranch(t *testing.T) {
 			},
 			branch:      "main",
 			force:       false,
-			expectError: false,
-			validate: func(t *testing.T, repo *gitRepo, localDir, remoteDir string) {
+			expectError: true,
+			validate: func(t *testing.T, repo *gitRepo, localDir, remoteDir, hash string) {
 				// Remote main is unchanged: no push happened.
 				verifyRemoteBranchFile(t, remoteDir, "main", "test1.txt", "remote content")
 
@@ -869,10 +873,11 @@ func TestGitRepo_mergeToBranch(t *testing.T) {
 			branch:      "main",
 			force:       true,
 			expectError: false,
-			validate: func(t *testing.T, repo *gitRepo, localDir, remoteDir string) {
+			validate: func(t *testing.T, repo *gitRepo, localDir, remoteDir, hash string) {
 				// "theirs" = incoming branch (edit-branch) wins
 				verifyRemoteBranchFile(t, remoteDir, "main", "test1.txt", "local force content")
 				verifyCurrentBranch(t, localDir, "edit-branch")
+				require.Equal(t, getRemoteBranchHead(t, remoteDir, "main"), hash)
 			},
 		},
 	}
@@ -887,15 +892,17 @@ func TestGitRepo_mergeToBranch(t *testing.T) {
 			tt.setupRemote(t, remoteDir)
 
 			ctx := context.Background()
-			_, err := repo.mergeToBranch(ctx, tt.branch, tt.force)
+			hash, err := repo.mergeToBranch(ctx, tt.branch, tt.force)
 			if tt.expectError {
 				require.Error(t, err)
+				require.Empty(t, hash, "expected empty hash on error")
 			} else {
 				require.NoError(t, err)
+				require.NotEmpty(t, hash, "expected non-empty hash on successful merge")
 			}
 
 			if tt.validate != nil {
-				tt.validate(t, repo, localDir, remoteDir)
+				tt.validate(t, repo, localDir, remoteDir, hash)
 			}
 		})
 	}
@@ -953,6 +960,14 @@ func verifyRemoteBranchFile(t *testing.T, remoteDir, branch, relPath, expectedCo
 	content, err := os.ReadFile(filepath.Join(workingDir, relPath))
 	require.NoError(t, err, "expected file %q to exist on remote branch %q", relPath, branch)
 	require.Equal(t, expectedContent, string(content))
+}
+
+// getRemoteBranchHead returns the HEAD commit SHA of a branch on the remote repo.
+func getRemoteBranchHead(t *testing.T, remoteDir, branch string) string {
+	t.Helper()
+	out, err := exec.Command("git", "-C", remoteDir, "rev-parse", "refs/heads/"+branch).Output()
+	require.NoError(t, err, "failed to read HEAD of branch %q on remote", branch)
+	return strings.TrimSpace(string(out))
 }
 
 // setupTestGitRepository creates a bare Git repository with initial content for testing

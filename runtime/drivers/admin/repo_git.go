@@ -342,7 +342,7 @@ func (r *gitRepo) mergeToBranch(ctx context.Context, branch string, force bool) 
 
 	if !merged {
 		// If the merge was aborted no need to push the changes
-		return "", fmt.Errorf("merge aborted due to merge conflicts")
+		return "", fmt.Errorf("merge aborted: conflicts merging %q into %q", r.defaultBranch, branch)
 	}
 
 	// Push the changes
