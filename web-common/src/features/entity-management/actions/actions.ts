@@ -1,12 +1,12 @@
-import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
 import {
   extractFileName,
   getTopLevelFolder,
   splitFolderFileNameAndExtension,
-} from "@rilldata/web-common/features/entity-management/file-path-utils";
-import { fileIsMainEntity } from "@rilldata/web-common/features/entity-management/file-selectors";
-import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-import { isNotFoundError } from "@rilldata/web-common/lib/errors";
+} from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
+import { fileIsMainEntity } from "@rilldata/web-common/features/entity-management/file-selectors.ts";
+import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+import { isNotFoundError } from "@rilldata/web-common/lib/errors.ts";
 import {
   runtimeServiceDeleteFile,
   runtimeServiceGetFile,
@@ -21,12 +21,12 @@ import {
   FolderNameToResourceKind,
   addLeadingSlash,
   removeLeadingSlash,
-} from "./entity-mappers";
+} from "../entity-mappers.ts";
 import {
   getProjectParserVersion,
   waitForProjectParserVersion,
-} from "./project-parser";
-import { ResourceKind } from "./resource-selectors";
+} from "../project-parser.ts";
+import { ResourceKind } from "../resource-selectors.ts";
 
 export async function runtimeServicePutFileAndWaitForReconciliation(
   client: RuntimeClient,

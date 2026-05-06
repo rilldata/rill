@@ -1,24 +1,30 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/actions/ui-actions.ts";
+  import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { splitFolderAndFileName } from "@rilldata/web-common/features/entity-management/file-path-utils";
-  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
+  import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-
-  const runtimeClient = useRuntimeClient();
   import { WorkspaceHeader } from "../../layout/workspace";
   import type { ResourceKind } from "../entity-management/resource-selectors";
-  import { PROTECTED_FILES } from "../file-explorer/protected-paths";
-  import type { V1Resource } from "@rilldata/web-common/runtime-client";
 
-  export let filePath: string;
-  export let hasUnsavedChanges: boolean;
-  export let resourceKind: ResourceKind | undefined;
-  export let resource: V1Resource | undefined;
+  const runtimeClient = useRuntimeClient();
 
-  let fileName: string;
+  let {
+    fileArtifact,
+    hasUnsavedChanges,
+    resourceKind,
+    resource,
+  }: {
+    fileArtifact: FileArtifact;
+    hasUnsavedChanges: boolean;
+    resourceKind: ResourceKind | undefined;
+    resource: V1Resource | undefined;
+  } = $props();
 
-  $: [, fileName] = splitFolderAndFileName(filePath);
-  $: isProtectedFile = PROTECTED_FILES.includes(filePath);
+  let filePath = $derived(fileArtifact.path);
+  let [, fileName] = $derived(splitFolderAndFileName(filePath));
+  let editable = $derived(!fileArtifact.managed && !fileArtifact.pinned);
 
   const onChangeCallback = async (newTitle: string) => {
     const route = await handleEntityRename(
@@ -34,7 +40,7 @@
 <WorkspaceHeader
   {filePath}
   {resourceKind}
-  editable={!isProtectedFile}
+  {editable}
   onTitleChange={onChangeCallback}
   {hasUnsavedChanges}
   showInspectorToggle={false}
