@@ -1,10 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import {
-    createAdminServiceCreateDeployment,
-    createAdminServiceGetCurrentUser,
-    V1DeploymentStatus,
-  } from "@rilldata/web-admin/client";
+  import { createAdminServiceCreateDeployment } from "@rilldata/web-admin/client";
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
   import {
     injectBranchIntoPath,
@@ -22,7 +18,11 @@
   } from "@rilldata/web-common/components/tabs";
   import { Select as SelectPrimitive } from "bits-ui";
   import { GitBranchIcon, GitBranchPlusIcon } from "lucide-svelte";
-  import { useDevDeployments, invalidateDeployments } from "./use-edit-session";
+  import {
+    invalidateDeployments,
+    useDevDeployments,
+    useOwnDevDeployments,
+  } from "./use-edit-session";
 
   export let open = false;
   export let organization: string;
@@ -31,8 +31,14 @@
   export let activeBranch: string | undefined = undefined;
   /** The project's primary branch, used as the source for new branches. */
   export let primaryBranch: string | undefined = undefined;
+  /**
+   * Pre-fills the "new branch" tab with this name. Used by EditButton when an
+   * auto-create attempt collides with an existing branch and we fall back to
+   * letting the user pick a different name.
+   */
+  export let initialBranchName: string | undefined = undefined;
 
-  const user = createAdminServiceGetCurrentUser();
+  const ownQuery = useOwnDevDeployments(organization, project);
   const devDeployments = useDevDeployments(organization, project);
   const createMutation = createAdminServiceCreateDeployment();
 
@@ -41,31 +47,19 @@
   let selectedBranchId = "";
   let createError = "";
 
-  $: currentUserId = $user.data?.user?.id;
-  $: deployments = $devDeployments.data?.deployments ?? [];
+  $: ({ ownDeployments, currentUserId } = $ownQuery);
   $: sourceBranch = primaryBranch || "main";
-
-  // Editable deployments owned by the current user, sorted by most recently
-  // updated. Stopped/errored branches show so the user can resume or retry.
-  $: ownDeployments = deployments
-    .filter(
-      (d) =>
-        d.ownerUserId === currentUserId &&
-        d.editable &&
-        d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING &&
-        d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED,
-    )
-    .sort((a, b) => (b.updatedOn ?? "").localeCompare(a.updatedOn ?? ""));
 
   $: latestBranchId = ownDeployments[0]?.id ?? "";
   $: hasOwnSessions = ownDeployments.length > 0;
   $: isStarting = $createMutation.isPending;
 
-  // Banner condition: active branch is owned but not editable
+  // Banner condition: active branch is owned but not editable. `ownDeployments`
+  // already excludes the non-editable case, so we read the unfiltered dev list.
   $: activeBranchIsNonEditable =
     !!activeBranch &&
     !!currentUserId &&
-    deployments.some(
+    ($devDeployments.data?.deployments ?? []).some(
       (d) =>
         d.branch === activeBranch &&
         d.ownerUserId === currentUserId &&
@@ -80,9 +74,11 @@
   $: selectedDeployment = ownDeployments.find((d) => d.id === selectedBranchId);
 
   function resetState() {
-    branchName = "";
+    // initialBranchName seeds the "new" tab when the caller is recovering from
+    // a name collision (e.g. EditButton's auto-create returned AlreadyExists).
+    branchName = initialBranchName ?? "";
     selectedBranchId = latestBranchId;
-    currentTab = hasOwnSessions ? "existing" : "new";
+    currentTab = initialBranchName || !hasOwnSessions ? "new" : "existing";
     createError = "";
   }
 

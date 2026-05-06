@@ -1,8 +1,13 @@
 import {
   createAdminServiceListDeployments,
+  getAdminServiceGetCurrentUserQueryOptions,
   getAdminServiceListDeploymentsQueryKey,
+  getAdminServiceListDeploymentsQueryOptions,
+  V1DeploymentStatus,
+  type V1Deployment,
 } from "@rilldata/web-admin/client";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { createQueries } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 
 /**
@@ -37,6 +42,42 @@ export function useDevDeployments(org: string, project: string) {
         }
       : $query.data,
   }));
+}
+
+/**
+ * Lists the current user's editable dev deployments for a project. Combines
+ * the deployment list and current-user queries so callers get a single store
+ * with the filtered, sorted slice plus the current user's id.
+ *
+ * Stopped/errored deployments are included so the user can resume or retry;
+ * deleting/deleted deployments are filtered out.
+ */
+export function useOwnDevDeployments(org: string, project: string) {
+  return createQueries({
+    queries: [
+      getAdminServiceListDeploymentsQueryOptions(org, project, {}),
+      getAdminServiceGetCurrentUserQueryOptions(),
+    ],
+    combine: ([deploymentsQuery, userQuery]) => {
+      const currentUserId = userQuery.data?.user?.id;
+      const all = deploymentsQuery.data?.deployments ?? [];
+      const ownDeployments: V1Deployment[] = all
+        .filter(
+          (d) =>
+            d.environment === "dev" &&
+            d.ownerUserId === currentUserId &&
+            d.editable &&
+            d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING &&
+            d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED,
+        )
+        .sort((a, b) => (b.updatedOn ?? "").localeCompare(a.updatedOn ?? ""));
+      return {
+        ownDeployments,
+        currentUserId,
+        isLoading: deploymentsQuery.isLoading || userQuery.isLoading,
+      };
+    },
+  });
 }
 
 /**

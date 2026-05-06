@@ -9,6 +9,7 @@ import {
   consumeSkipBranchInjection,
   getBranchRedirect,
   handleBranchNavigation,
+  deriveDefaultBranchName,
 } from "./branch-utils";
 
 // Shared test data: every entry exercises extract, inject, and remove together.
@@ -306,6 +307,56 @@ describe("branch-utils", () => {
       handleBranchNavigation(nav, branch, org, proj, navigateFn);
       expect(nav.cancel).not.toHaveBeenCalled();
       expect(navigateFn).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("deriveDefaultBranchName", () => {
+    it("returns the bare local part when there are no special characters", () => {
+      expect(deriveDefaultBranchName("adrian@rilldata.com")).toBe("adrian");
+    });
+
+    it("replaces periods in the local part with hyphens", () => {
+      expect(deriveDefaultBranchName("eric.green@rilldata.com")).toBe(
+        "eric-green",
+      );
+      expect(deriveDefaultBranchName("john.smith@company.com")).toBe(
+        "john-smith",
+      );
+    });
+
+    it("lowercases the result for cross-platform safety", () => {
+      expect(deriveDefaultBranchName("Eric.Green@rilldata.com")).toBe(
+        "eric-green",
+      );
+    });
+
+    it("replaces whitespace with hyphens", () => {
+      expect(deriveDefaultBranchName("eric green@rilldata.com")).toBe(
+        "eric-green",
+      );
+    });
+
+    it("drops ~ characters", () => {
+      expect(deriveDefaultBranchName("eric~green@rilldata.com")).toBe(
+        "ericgreen",
+      );
+    });
+
+    it("strips leading and trailing periods or slashes", () => {
+      // Local parts can't actually start with "." per RFC, but the sanitizer
+      // should defend against any path-like residue regardless.
+      expect(deriveDefaultBranchName(".eric.@rilldata.com")).toBe("eric");
+      expect(deriveDefaultBranchName("/eric/@rilldata.com")).toBe("eric");
+    });
+
+    it("returns empty string for missing input", () => {
+      expect(deriveDefaultBranchName(undefined)).toBe("");
+      expect(deriveDefaultBranchName("")).toBe("");
+    });
+
+    it("returns empty string when sanitization removes all characters", () => {
+      expect(deriveDefaultBranchName("...@rilldata.com")).toBe("");
+      expect(deriveDefaultBranchName("~~~@rilldata.com")).toBe("");
     });
   });
 

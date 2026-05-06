@@ -109,6 +109,29 @@ export function handleBranchNavigation(
 }
 
 /**
+ * Derive a default dev-branch name from an email's local part.
+ *
+ * Lowercased so the same email always produces the same branch name across
+ * platforms (git is case-sensitive on Linux, case-insensitive on macOS/Windows
+ * filesystems — preserving case here invites cross-platform collisions).
+ *
+ * Periods are valid in git branch names but read awkwardly as a separator,
+ * so they're replaced with "-". Whitespace is also replaced with "-" and
+ * "~" is dropped (reserved by `encodeBranch` as the path-segment "/" replacement).
+ * Returns "" if the input is missing or sanitization yields no usable name.
+ */
+export function deriveDefaultBranchName(email: string | undefined): string {
+  if (!email) return "";
+  const local = email.split("@")[0] ?? "";
+  const sanitized = local
+    .toLowerCase()
+    .replace(/\./g, "-")
+    .replace(/\s+/g, "-")
+    .replace(/~/g, "");
+  return sanitized.replace(/^[-./]+|[-./]+$/g, "");
+}
+
+/**
  * Shared flag: when set, the next `beforeNavigate` call in the project layout
  * will skip `@branch` injection. Callers set this before navigating to a URL
  * that intentionally lacks a branch segment, to prevent the layout from
