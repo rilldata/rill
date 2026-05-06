@@ -6,7 +6,10 @@ import {
 } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
 import { fileIsMainEntity } from "@rilldata/web-common/features/entity-management/file-selectors.ts";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
-import { isNotFoundError } from "@rilldata/web-common/lib/errors.ts";
+import {
+  isControllerClosedError,
+  isNotFoundError,
+} from "@rilldata/web-common/lib/errors.ts";
 import {
   runtimeServiceDeleteFile,
   runtimeServiceGetFile,
@@ -25,7 +28,11 @@ import {
   getProjectParserVersion,
   waitForProjectParserVersion,
 } from "../project-parser.ts";
-import { fetchResource, ResourceKind } from "../resource-selectors.ts";
+import {
+  fetchProjectParser,
+  fetchResource,
+  ResourceKind,
+} from "../resource-selectors.ts";
 import type { QueryClient } from "@tanstack/svelte-query";
 
 export async function runtimeServicePutFileAndWaitForReconciliation(
@@ -118,7 +125,15 @@ export async function waitForResourceReconciliation(
         await new Promise((resolve) => setTimeout(resolve, pollInterval));
         continue;
       }
+      // Controller closed error could mean the controller is being restarted because there was env change
+      if (isControllerClosedError(error) && attempt <= 3) {
+        console.log(`Controller closed for ${resourceName}, retrying...`);
+        // Wait and try again if the controller is closed
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+        continue;
+      }
 
+      console.log("waitForResource", error);
       // Re-throw other errors
       throw error;
     }
@@ -252,6 +267,27 @@ export async function maybeDeleteFileArtifact(
 ) {
   if (!fileArtifacts.hasFileArtifact(filePath)) return;
   return deleteFileArtifact(client, filePath, force);
+}
+
+export async function waitForControllerRestart(
+  client: RuntimeClient,
+  queryClient: QueryClient,
+) {
+  const pollInterval = 2_000; // 2 seconds
+  let attempt = 0;
+
+  while (attempt < 5) {
+    attempt++;
+
+    try {
+      await fetchProjectParser(client, queryClient, true);
+      return;
+    } catch (e) {
+      console.log("Fetch errored", e);
+      // No-op
+    }
+    await new Promise((resolve) => setTimeout(resolve, pollInterval));
+  }
 }
 
 function extractMessage(msg: string) {

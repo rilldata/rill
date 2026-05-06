@@ -83,6 +83,7 @@ export function createConnectorForm(args: {
     },
     resetForm: false,
     validationMethod: "onsubmit",
+    invalidateAll: false,
   });
   return form;
 }

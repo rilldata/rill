@@ -312,6 +312,20 @@ export async function fetchResource(
   return resp.resource;
 }
 
+export function fetchProjectParser(
+  client: RuntimeClient,
+  queryClient: QueryClient,
+  refetch = false,
+) {
+  return fetchResource(
+    client,
+    queryClient,
+    SingletonProjectParserName,
+    ResourceKind.ProjectParser,
+    refetch,
+  );
+}
+
 export async function fetchResources(
   queryClient: QueryClient,
   client: RuntimeClient,
