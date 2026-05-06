@@ -34,7 +34,11 @@
   import { setCloudReadonlyNotice } from "@rilldata/web-common/features/entity-management/actions/protected-files.ts";
   import { isProjectWelcomePage } from "@rilldata/web-admin/features/navigation/nav-utils.ts";
   import WelcomeRedirector from "@rilldata/web-admin/features/welcome/project/WelcomeRedirector.svelte";
+<<<<<<< Updated upstream
   import { InfoIcon } from "lucide-svelte";
+=======
+  import RemoteProjectManager from "@rilldata/web-common/features/project/RemoteProjectManager.svelte";
+>>>>>>> Stashed changes
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -175,6 +179,7 @@
             editContext={true}
           />
           <EditSessionTimeoutBanner sessionStartedAt={deployment.createdOn} />
+          <RemoteProjectManager />
         {/if}
         <FileAndResourceWatcher
           lifecycle="none"

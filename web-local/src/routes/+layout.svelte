@@ -103,6 +103,7 @@
     isPreviewMode && showPreviewNav($page.url.pathname) && !onDeployPage;
 
   $: onWelcomePage = route.id?.startsWith("/(misc)/welcome");
+  $: onDeployPage = route.id?.startsWith("/(misc)/deploy");
 </script>
 
 <Tooltip.Provider>
@@ -119,7 +120,7 @@
             {#if shouldShowPreviewNav}
               <PreviewModeNav />
             {/if}
-            {#if $deploy}
+            {#if $deploy && !onDeployPage}
               <RemoteProjectManager />
             {/if}
           {/if}
