@@ -17,6 +17,7 @@
   } from "@rilldata/web-common/lib/time/types";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import ExportMenu from "../../exports/ExportMenu.svelte";
+  import { adminServer } from "../../app-flags";
   import { featureFlags } from "../../feature-flags";
   import { PivotChipType } from "../pivot/types";
   import { useTimeControlStore } from "../time-controls/time-control-store";
@@ -39,7 +40,7 @@
   export let onToggleSearchItems: () => void;
   export let hideStartPivotButton = false;
 
-  const { adminServer, exports } = featureFlags;
+  const { exports } = featureFlags;
   const stateManagers = getStateManagers();
 
   const {

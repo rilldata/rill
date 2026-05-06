@@ -14,6 +14,7 @@
     useRillYamlPolicyCheck,
   } from "../dashboards/granular-access-policies/useSecurityPolicyCheck";
   import StateManagersProvider from "../dashboards/state-managers/StateManagersProvider.svelte";
+  import { readOnly } from "../app-flags";
   import { featureFlags } from "../feature-flags";
   import { getFileHref } from "../../layout/navigation/editor-routing";
 
@@ -37,7 +38,7 @@
   );
   $: rillYamlPolicyCheck = useRillYamlPolicyCheck(runtimeClient);
 
-  const { readOnly, dashboardChat } = featureFlags;
+  const { dashboardChat } = featureFlags;
 </script>
 
 <div class="flex gap-2 flex-shrink-0 ml-auto">

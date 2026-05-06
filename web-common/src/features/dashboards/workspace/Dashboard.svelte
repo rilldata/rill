@@ -8,6 +8,7 @@
   import PivotDisplay from "@rilldata/web-common/features/dashboards/pivot/PivotDisplay.svelte";
   import TabBar from "@rilldata/web-common/features/dashboards/tab-bar/TabBar.svelte";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
+  import { readOnly } from "@rilldata/web-common/features/app-flags";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
@@ -48,7 +49,7 @@
     dashboardStore,
   } = StateManagers;
 
-  const { cloudDataViewer, readOnly } = featureFlags;
+  const { cloudDataViewer } = featureFlags;
 
   const timeControlsStore = useTimeControlStore(StateManagers);
 

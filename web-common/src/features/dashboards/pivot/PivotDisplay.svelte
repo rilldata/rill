@@ -4,6 +4,10 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import ExportMenu from "@rilldata/web-common/features/exports/ExportMenu.svelte";
+  import {
+    adminServer,
+    readOnly,
+  } from "@rilldata/web-common/features/app-flags";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import { derived } from "svelte/store";
@@ -30,7 +34,7 @@
     timeRangeSummaryStore,
   } = stateManagers;
 
-  const { adminServer, exports } = featureFlags;
+  const { exports } = featureFlags;
 
   const timeControlsStore = useTimeControlStore(stateManagers);
   $: timeControlsForPillActions = {
@@ -41,7 +45,7 @@
 
   $: exploreHasTimeDimension = !!$timeRangeSummaryStore.data;
 
-  const { cloudDataViewer, readOnly } = featureFlags;
+  const { cloudDataViewer } = featureFlags;
 
   $: isRillDeveloper = $readOnly === false;
   $: canShowDataViewer = Boolean($cloudDataViewer || isRillDeveloper);

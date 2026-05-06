@@ -3,7 +3,7 @@
   import IconButton from "../../../../components/button/IconButton.svelte";
   import Close from "../../../../components/icons/Close.svelte";
   import PlusIcon from "../../../../components/icons/PlusIcon.svelte";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { adminServer } from "@rilldata/web-common/features/app-flags";
   import { type V1Conversation } from "../../../../runtime-client";
   import type { ConversationManager } from "../../core/conversation-manager";
   import ShareChatPopover from "../../share/ShareChatPopover.svelte";
@@ -12,8 +12,6 @@
   export let conversationManager: ConversationManager;
   export let onNewConversation: () => void;
   export let onClose: () => void;
-
-  const { adminServer } = featureFlags;
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;

@@ -10,6 +10,7 @@
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { VegaLiteTooltipHandler } from "@rilldata/web-common/components/vega/vega-tooltip.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+  import { adminServer } from "@rilldata/web-common/features/app-flags";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import DashboardChat from "@rilldata/web-common/features/chat/DashboardChat.svelte";
   import ThemeProvider from "@rilldata/web-common/features/dashboards/ThemeProvider.svelte";
@@ -36,7 +37,7 @@
 
   // Embedded dashboards communicate directly with the project runtime and do not communicate with the admin server.
   // One by-product of this is that they have no access to control plane features like alerts, bookmarks, and scheduled reports.
-  featureFlags.set(false, "adminServer");
+  adminServer.set(false);
 
   // Extract active resource info from current route
   // Falls back to Canvas if route doesn't match a dashboard pattern (e.g., project page)

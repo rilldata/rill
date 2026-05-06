@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { ConnectError } from "@connectrpc/connect";
   import LoadingSpinner from "@rilldata/web-common/components/LoadingSpinner.svelte";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
+  import { legacyArchiveDeploy } from "@rilldata/web-common/features/app-flags";
   import {
     getIsOrgOnTrial,
     getPlanUpgradeUrl,
@@ -31,8 +31,6 @@
   const deployMutation = createLocalServiceDeploy();
   const gitStatusQuery = createLocalServiceGitStatus();
   const gitRepoStatusQuery = getLocalGitRepoStatus();
-
-  $: ({ legacyArchiveDeploy } = featureFlags);
 
   $: deploymentState = derived(
     [gitStatusQuery, gitRepoStatusQuery, projectQuery, deployMutation],

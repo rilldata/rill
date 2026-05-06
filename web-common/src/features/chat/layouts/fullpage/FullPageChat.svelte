@@ -1,7 +1,7 @@
 <script lang="ts">
   import { beforeNavigate } from "$app/navigation";
   import { page } from "$app/stores";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { adminServer } from "@rilldata/web-common/features/app-flags";
   import { projectChat } from "@rilldata/web-common/features/project/chat-context.ts";
   import { onMount } from "svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -17,8 +17,6 @@
     conversationSidebarCollapsed,
     toggleConversationSidebar,
   } from "./fullpage-store";
-
-  const { adminServer } = featureFlags;
 
   const runtimeClient = useRuntimeClient();
   $: instanceId = runtimeClient.instanceId;

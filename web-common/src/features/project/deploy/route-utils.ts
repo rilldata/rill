@@ -10,7 +10,7 @@ import type { Page } from "@sveltejs/kit";
 import { derived, readable } from "svelte/store";
 import { getLocalGitRepoStatus } from "../selectors";
 import { page } from "$app/stores";
-import { featureFlags } from "../../feature-flags";
+import { legacyArchiveDeploy } from "../../app-flags";
 import type { V1ResourceName } from "@rilldata/web-common/runtime-client";
 
 /**
@@ -113,13 +113,13 @@ export function getDeployingPageUrl(frontendUrl: string, isInvite: boolean) {
  */
 export function getDeployOrGithubRouteGetter() {
   return derived(
-    [createLocalServiceGitStatus(), featureFlags.legacyArchiveDeploy],
-    ([$gitStatus, legacyArchiveDeploy]) => {
+    [createLocalServiceGitStatus(), legacyArchiveDeploy],
+    ([$gitStatus, $legacyArchiveDeploy]) => {
       const hasLocalGitRepo = Boolean(
         $gitStatus.data?.githubUrl && !$gitStatus.data?.managedGit,
       );
       // For E2E we cannot use github just yet. So do not show the git path for that case.
-      const shouldUseGit = !legacyArchiveDeploy && hasLocalGitRepo;
+      const shouldUseGit = !$legacyArchiveDeploy && hasLocalGitRepo;
       return {
         isLoading: $gitStatus.isPending,
         getter: shouldUseGit

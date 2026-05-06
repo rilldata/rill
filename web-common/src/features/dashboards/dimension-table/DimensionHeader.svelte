@@ -6,6 +6,7 @@
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { adminServer } from "@rilldata/web-common/features/app-flags";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { onDestroy } from "svelte";
   import ExportMenu from "../../exports/ExportMenu.svelte";
@@ -43,7 +44,7 @@
     exploreName,
   } = stateManagers;
 
-  const { adminServer, exports } = featureFlags;
+  const { exports } = featureFlags;
 
   $: exploreHasTimeDimension = !!$timeRangeSummaryStore.data;
 

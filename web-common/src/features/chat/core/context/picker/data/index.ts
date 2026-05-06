@@ -1,5 +1,5 @@
 import { derived, get, readable, type Readable } from "svelte/store";
-import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
+import { adminServer } from "@rilldata/web-common/features/app-flags.ts";
 import { getMetricsViewPickerOptions } from "@rilldata/web-common/features/chat/core/context/picker/data/metrics-views.ts";
 import { getModelsPickerOptions } from "@rilldata/web-common/features/chat/core/context/picker/data/models.ts";
 import { ContextPickerUIState } from "@rilldata/web-common/features/chat/core/context/picker/ui-state.ts";
@@ -21,7 +21,7 @@ export function getPickerOptions(
   client: RuntimeClient,
   uiState: ContextPickerUIState,
 ): Readable<PickerItem[]> {
-  const isRillDev = !get(featureFlags.adminServer);
+  const isRillDev = !get(adminServer);
 
   return derived(
     [

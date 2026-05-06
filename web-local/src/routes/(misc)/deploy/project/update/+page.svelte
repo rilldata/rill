@@ -1,6 +1,6 @@
 <script lang="ts">
   import LoadingSpinner from "@rilldata/web-common/components/LoadingSpinner.svelte";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
+  import { legacyArchiveDeploy } from "@rilldata/web-common/features/app-flags";
   import {
     getIsOrgOnTrial,
     getPlanUpgradeUrl,
@@ -25,8 +25,6 @@
   $: projectQuery = createLocalServiceGetProjectRequest(orgName, projectName);
 
   const redeployMutation = createLocalServiceRedeploy();
-
-  $: ({ legacyArchiveDeploy } = featureFlags);
 
   $: planUpgradeUrl = getPlanUpgradeUrl(orgName ?? "");
   $: isOrgOnTrial = getIsOrgOnTrial(orgName ?? "");

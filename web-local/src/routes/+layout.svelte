@@ -5,6 +5,10 @@
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import RepresentingUserBanner from "@rilldata/web-common/features/authentication/RepresentingUserBanner.svelte";
   import FileAndResourceWatcher from "@rilldata/web-common/features/entity-management/FileAndResourceWatcher.svelte";
+  import {
+    adminServer,
+    readOnly,
+  } from "@rilldata/web-common/features/app-flags";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { initPylonWidget } from "@rilldata/web-common/features/help/initPylonWidget";
   import RemoteProjectManager from "@rilldata/web-common/features/project/RemoteProjectManager.svelte";
@@ -78,8 +82,8 @@
         errorEventHandler.addJavascriptErrorListeners();
     }
 
-    featureFlags.set(false, "adminServer");
-    featureFlags.set(config.readonly || data.previewMode, "readOnly");
+    adminServer.set(false);
+    readOnly.set(config.readonly || data.previewMode);
   });
 
   /**

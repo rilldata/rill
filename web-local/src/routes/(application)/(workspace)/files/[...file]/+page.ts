@@ -1,6 +1,6 @@
 import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.js";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.js";
-import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+import { readOnly as readOnlyStore } from "@rilldata/web-common/features/app-flags";
 import { error, redirect } from "@sveltejs/kit";
 import { get } from "svelte/store";
 
@@ -11,7 +11,7 @@ export const load = async ({ params: { file }, parent }) => {
     throw redirect(303, "/");
   }
 
-  const readOnly = get(featureFlags.readOnly);
+  const readOnly = get(readOnlyStore);
   const path = addLeadingSlash(file);
 
   if (readOnly) {

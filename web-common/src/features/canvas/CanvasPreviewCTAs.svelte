@@ -2,6 +2,7 @@
   import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
   import { Button } from "../../components/button";
   import { useRuntimeClient } from "../../runtime-client/v2";
+  import { readOnly } from "../app-flags";
   import { featureFlags } from "../feature-flags";
   import { getFileHref } from "../../layout/navigation/editor-routing";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
@@ -31,7 +32,7 @@
     $rillYamlPolicyCheck.data ||
     referencedMetricsViewsHavePolicy;
 
-  const { dashboardChat, readOnly } = featureFlags;
+  const { dashboardChat } = featureFlags;
 
   $: hasAnyContent = hasSecurityPolicy || $dashboardChat || !$readOnly;
 </script>
