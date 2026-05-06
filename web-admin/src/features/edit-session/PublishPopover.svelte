@@ -7,6 +7,7 @@
     getAdminServiceListDeploymentsQueryKey,
   } from "@rilldata/web-admin/client";
   import { isActiveDeployment } from "@rilldata/web-admin/features/branches/deployment-utils";
+  import { fetchProdParserCommitSha } from "@rilldata/web-admin/features/projects/selectors";
   import { Button } from "@rilldata/web-common/components/button";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -57,6 +58,21 @@
     alreadyOnPrimary ||
     isPublishing;
 
+  // Prefetch prod's project parser commit SHA once the deployment info is
+  // available, so we can pass it to the deploying page at click time. The
+  // page uses it to wait for the parser to advance past this point before
+  // redirecting to the dashboard, avoiding the stale-content race.
+  let prodParserSha: string | undefined;
+  let prodParserShaPrefetched = false;
+  $: if (!prodParserShaPrefetched && prodDeployment) {
+    prodParserShaPrefetched = true;
+    void fetchProdParserCommitSha(prodDeployment, $projectQuery.data?.jwt).then(
+      (sha) => {
+        prodParserSha = sha;
+      },
+    );
+  }
+
   async function handlePublish() {
     if (!primaryBranch || isPublishing) return;
     isPublishing = true;
@@ -82,6 +98,7 @@
       project,
       pathname: $page.url.pathname,
       hadProdDeployment,
+      preCommitSha: prodParserSha,
     });
     const targetWindow = window.open(targetUrl, "_blank");
     if (!targetWindow) {

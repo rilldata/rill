@@ -5,6 +5,7 @@ import {
   createAdminServiceListProjectMemberUsers,
   getAdminServiceGetProjectQueryKey,
   getAdminServiceGetProjectQueryOptions,
+  type V1Deployment,
 } from "@rilldata/web-admin/client";
 import {
   adminServiceGetMagicAuthToken,
@@ -15,12 +16,16 @@ import {
   getAdminServiceGetProjectWithBearerTokenQueryKey,
 } from "@rilldata/web-admin/features/public-urls/get-project-with-bearer-token";
 import {
+  fetchResource,
   ResourceKind,
   SingletonProjectParserName,
   useResourceV2,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import {
+  getRuntimeClient,
+  type RuntimeClient,
+} from "@rilldata/web-common/runtime-client/v2";
 import { derived, type Readable } from "svelte/store";
 
 export function getProjectPermissions(orgName: string, projName: string) {
@@ -149,6 +154,39 @@ export async function fetchProjectDeploymentDetails(
         : undefined,
     },
   };
+}
+
+/**
+ * Reads `currentCommitSha` from a runtime deployment's project parser.
+ * Used by Publish/Merge to capture prod's pre-merge state so the
+ * deploying page can wait for the parser to advance past it before
+ * redirecting. Returns undefined if the deployment is missing or
+ * unreachable; callers should treat that as "skip the SHA gate."
+ */
+export async function fetchProdParserCommitSha(
+  deployment: V1Deployment | undefined,
+  jwt: string | undefined,
+): Promise<string | undefined> {
+  if (!deployment?.runtimeHost || !deployment?.runtimeInstanceId) {
+    return undefined;
+  }
+  try {
+    const client = getRuntimeClient({
+      host: deployment.runtimeHost,
+      instanceId: deployment.runtimeInstanceId,
+      jwt,
+      authContext: "user",
+    });
+    const resource = await fetchResource(
+      queryClient,
+      client,
+      SingletonProjectParserName,
+      ResourceKind.ProjectParser,
+    );
+    return resource?.projectParser?.state?.currentCommitSha || undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export function useGithubLastSynced(client: RuntimeClient) {
