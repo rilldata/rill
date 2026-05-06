@@ -168,7 +168,13 @@ export async function fetchProjectDeploymentDetails(
  * available; on transport errors, logs and resolves to undefined so
  * callers can fall back to the "skip the SHA gate" behavior rather
  * than show a query-error state.
+ *
+ * Refetches every 5 minutes so the cached value the popover reads at
+ * click time stays reasonably current — without this, an editor
+ * session left open for an hour while another commit lands on primary
+ * could pass a stale SHA and trigger a false-early redirect.
  */
+const PARSER_SHA_REFETCH_INTERVAL_MS = 5 * 60 * 1000;
 export function useParserCommitSha(
   deployment: V1Deployment | undefined,
   jwt: string | undefined,
@@ -199,6 +205,7 @@ export function useParserCommitSha(
       }
     },
     enabled: !!host && !!instanceId,
+    refetchInterval: PARSER_SHA_REFETCH_INTERVAL_MS,
   });
 }
 
