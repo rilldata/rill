@@ -108,7 +108,6 @@
     jwt !== null &&
     !isOtherOwner;
 
-  $: projectUrl = `/${organization}/${project}`;
   $: branchUrl = `/${organization}/${project}${branchPathPrefix(branch)}`;
 
   $: inProjectWelcomePage = isProjectWelcomePage($page);
@@ -232,7 +231,7 @@
       onStarted={() => (starting = true)}
     />
   {:else if isLoading}
-    <EditSessionLoading status={deploymentStatus} cancelHref={projectUrl} />
+    <EditSessionLoading status={deploymentStatus} href={`/${organization}`} />
   {:else}
     <SlimProjectHeader
       {organization}
