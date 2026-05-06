@@ -63,6 +63,7 @@ type Dialect interface {
 	DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain runtimev1.TimeGrain, tz string, firstDayOfWeek, firstMonthOfYear int) (string, error)
 	DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string, error)
 	IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.TimeGrain) (string, error)
+	TimeFloorDisplayName(baseName string, grain string) string
 	SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string, tz *time.Location, firstDay, firstMonth int) (string, []any, error)
 	SelectInlineResults(result *Result) (string, []any, []any, error)
 	LookupSelectExpr(lookupTable, lookupKeyColumn string) (string, error)
@@ -297,6 +298,10 @@ func (b *BaseDialect) DateDiff(_ runtimev1.TimeGrain, _, _ time.Time) (string, e
 
 func (b *BaseDialect) IntervalSubtract(_, _ string, _ runtimev1.TimeGrain) (string, error) {
 	return "", fmt.Errorf("IntervalSubtract not implemented for %s dialect", b.String())
+}
+
+func (b *BaseDialect) TimeFloorDisplayName(baseName string, grain string) string {
+	return fmt.Sprintf("%s (%s)", baseName, grain)
 }
 
 func (b *BaseDialect) SelectTimeRangeBins(_, _ time.Time, _ runtimev1.TimeGrain, _ string, _ *time.Location, _, _ int) (string, []any, error) {

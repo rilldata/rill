@@ -124,6 +124,10 @@ func (d *dialect) IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.Time
 	return fmt.Sprintf("TIMESTAMP(DATETIME_SUB(DATETIME(%s, 'UTC'), INTERVAL (%s) %s), 'UTC')", tsExpr, unitExpr, d.ConvertToDateTruncSpecifier(grain)), nil
 }
 
+func (b *dialect) TimeFloorDisplayName(baseName string, grain string) string {
+	return fmt.Sprintf("%s_%s", baseName, grain) // BigQuery doesn't allow parentheses in column aliases, so use underscore instead
+}
+
 func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string, tz *time.Location, firstDay, firstMonth int) (string, []any, error) {
 	g := timeutil.TimeGrainFromAPI(grain)
 	start = timeutil.TruncateTime(start, g, tz, firstDay, firstMonth)
