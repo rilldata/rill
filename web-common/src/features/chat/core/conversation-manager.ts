@@ -13,6 +13,7 @@ import {
   URLConversationSelector,
   type ConversationSelector,
 } from "./conversation-selector";
+import type { ChatSurface } from "./types";
 import { invalidateConversationsList, NEW_CONVERSATION_ID } from "./utils";
 import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
 
@@ -29,6 +30,12 @@ export interface ConversationManagerOptions {
    * The agent to use for conversations (e.g., "analyst_agent", "developer_agent")
    */
   agent?: string;
+  /**
+   * The AI surface for sidebar chats. Required when conversationState is
+   * "browserStorage"; ignored for "url". Scopes the sessionStorage key so
+   * developer-surface conversations don't load against the dashboard surface.
+   */
+  surface?: ChatSurface;
   /**
    * Base path builder for URL-based conversation selectors.
    * Only used when conversationState is "url".
@@ -77,7 +84,13 @@ export class ConversationManager {
         );
         break;
       case "browserStorage":
+        if (!options.surface) {
+          throw new Error(
+            "ConversationManagerOptions.surface is required when conversationState is 'browserStorage'",
+          );
+        }
         this.conversationSelector = new BrowserStorageConversationSelector(
+          options.surface,
           EmbedStore.getInstance()?.externalUserId ?? null,
         );
         break;

@@ -10,6 +10,7 @@ import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import { derived, get, type Readable, type Writable } from "svelte/store";
 import { sessionStorageStore } from "../../../lib/store-utils/session-storage";
+import type { ChatSurface } from "./types";
 import { NEW_CONVERSATION_ID } from "./utils";
 
 // =============================================================================
@@ -120,13 +121,17 @@ export class BrowserStorageConversationSelector
   readonly isNewConversation: Readable<boolean>;
 
   /**
+   * @param surface The AI surface ("developer" or "dashboard"). Scopes the
+   * sessionStorage key so a developer-surface conversation ID does not get
+   * loaded against the dashboard surface (e.g. when a publish-spawned tab
+   * inherits sessionStorage from the editing tab).
    * @param scopeId Optional namespace for the sessionStorage key.
    * Pass when the same browser tab may serve multiple users (e.g. embed with `external_user_id`)
    * This prevents conversation sharing between contexts that are meant to be different.
    *
    * Note that this is not really a data leak issue since it will be on the same browser tab, most probably for the same end user.
    */
-  constructor(scopeId: string | null) {
+  constructor(surface: ChatSurface, scopeId: string | null) {
     // Create project-specific storage store based on current page params
     const currentPage = get(page);
     const organization = currentPage.params.organization || "";
@@ -134,7 +139,7 @@ export class BrowserStorageConversationSelector
 
     const scopePart = scopeId ? "-" + scopeId : "";
     this.store = sessionStorageStore<string>(
-      `sidebar-conversation-id-${organization}-${project}${scopePart}`,
+      `sidebar-conversation-id-${surface}-${organization}-${project}${scopePart}`,
       NEW_CONVERSATION_ID,
     );
 

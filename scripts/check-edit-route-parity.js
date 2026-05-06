@@ -38,6 +38,12 @@ const LOCAL_ONLY_ALLOWLIST = [
   // /dashboard/[name] URLs, so there's nothing to redirect from. Permanent
   // local-only.
   "/dashboard/[name]/+page.ts",
+
+  // The explore layout in web-local mounts <DashboardChat /> alongside the
+  // dashboard preview. In Cloud Rill Developer (`/-/edit/...`) we render
+  // DeveloperChat at the root edit layout and intentionally do not mount
+  // DashboardChat: only one AI surface in the editor context.
+  "/explore/[name]/+layout.svelte",
 ];
 
 const ADMIN_ONLY_ALLOWLIST = [
