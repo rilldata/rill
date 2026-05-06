@@ -227,7 +227,7 @@ func (o *Orb) CreateCustomerCreditAlerts(ctx context.Context, customerID, curren
 	_, err := o.client.Alerts.NewForExternalCustomer(ctx, customerID, orb.AlertNewForExternalCustomerParams{
 		Currency: orb.String(currency),
 		Type:     orb.F(orb.AlertNewForExternalCustomerParamsTypeCreditBalanceDropped),
-		Thresholds: orb.F([]orb.AlertNewForExternalCustomerParamsThreshold{
+		Thresholds: orb.F([]orb.ThresholdParam{
 			{Value: orb.F(lowThreshold)},
 		}),
 	})
