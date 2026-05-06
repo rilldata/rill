@@ -11,6 +11,7 @@
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { useRuntimeClient } from "../../../runtime-client/v2";
+  import { useFeatureFlags } from "../../feature-flags";
   import { generateMetricsFromTable } from "../../metrics-views/ai-generation/generateMetricsView";
   import {
     createSqlModelFromTable,
@@ -28,6 +29,7 @@
   export let isOlapConnector: boolean = false;
 
   const client = useRuntimeClient();
+  const { ai } = useFeatureFlags();
   $: ({ instanceId } = client);
 
   async function handleCreateModel(
@@ -85,6 +87,7 @@
       table,
       false, // Don't create explore dashboard
       isOlapConnector,
+      $ai,
     );
   }
 
@@ -98,6 +101,7 @@
       table,
       true, // Create explore dashboard
       isOlapConnector,
+      $ai,
     );
   }
 </script>

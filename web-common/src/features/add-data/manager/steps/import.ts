@@ -23,13 +23,11 @@ import {
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
-import { get } from "svelte/store";
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import {
   compileSourceYAML,
   inferModelNameFromSQL,
 } from "@rilldata/web-common/features/sources/sourceUtils.ts";
-import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
 import { generateBlobForNewResourceFile } from "@rilldata/web-common/features/entity-management/add/new-files.ts";
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils.ts";
 import type { QueryClient } from "@tanstack/svelte-query";
@@ -46,6 +44,7 @@ export async function runImportSteps(
     step: ImportDataStep,
     currentFilePath: string | undefined,
   ) => void,
+  isAiEnabled: boolean,
 ) {
   for (const step of addDataStep.config.importSteps) {
     fireImportStepEvent(addDataConfig, addDataStep, step);
@@ -56,13 +55,21 @@ export async function runImportSteps(
         break;
       case ImportDataStep.CreateMetricsView:
         onProgress(step, addDataStep.config.importTo.metricsViewPath);
-        await runCreateMetricsViewStep(runtimeClient, addDataStep.config);
+        await runCreateMetricsViewStep(
+          runtimeClient,
+          addDataStep.config,
+          isAiEnabled,
+        );
         break;
       case ImportDataStep.CreateDashboard:
         onProgress(step, addDataStep.config.importTo.explorePath);
         await runCreateExploreStep(runtimeClient, addDataStep.config);
         onProgress(step, addDataStep.config.importTo.canvasPath);
-        await runCreateCanvasStep(runtimeClient, addDataStep.config);
+        await runCreateCanvasStep(
+          runtimeClient,
+          addDataStep.config,
+          isAiEnabled,
+        );
         break;
     }
   }
@@ -286,6 +293,7 @@ async function runCreateModelStep(
 async function runCreateMetricsViewStep(
   runtimeClient: RuntimeClient,
   config: ImportStepConfig,
+  isAiEnabled: boolean,
 ) {
   // Validate metrics view name and path are generated upstream
   const importToConfig = config.importTo;
@@ -330,7 +338,7 @@ async function runCreateMetricsViewStep(
     database,
     databaseSchema,
     path: importToConfig.metricsViewPath,
-    useAi: get(featureFlags.ai),
+    useAi: isAiEnabled,
   });
   // Wait for the metrics view to successfully reconcile
   await waitForResourceReconciliation(
@@ -385,6 +393,7 @@ async function runCreateExploreStep(
 async function runCreateCanvasStep(
   runtimeClient: RuntimeClient,
   config: ImportStepConfig,
+  isAiEnabled: boolean,
 ) {
   // Validate canvas name and path are generated upstream
   const importToConfig = config.importTo;
@@ -395,7 +404,7 @@ async function runCreateCanvasStep(
   await runtimeServiceGenerateCanvasFile(runtimeClient, {
     metricsViewName: importToConfig.metricsViewName,
     path: importToConfig.canvasPath,
-    useAi: get(featureFlags.ai),
+    useAi: isAiEnabled,
   });
 
   // Wait for canvas to reconcile

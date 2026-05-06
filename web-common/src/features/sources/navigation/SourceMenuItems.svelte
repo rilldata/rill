@@ -88,6 +88,7 @@
     false,
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
+    $ai,
   );
 
   $: createExploreFromTable = useCreateMetricsViewFromTableUIAction(
@@ -100,6 +101,7 @@
     true,
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
+    $ai,
   );
 
   $: createCanvasDashboardFromTable = useCreateMetricsViewWithCanvasUIAction(
@@ -111,6 +113,7 @@
     tableName,
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
+    $ai,
   );
 
   const handleCreateModel = async () => {
@@ -179,6 +182,7 @@
         database,
         databaseSchema,
         tableName,
+        $ai,
       );
     } else {
       await createCanvasDashboardFromTable();

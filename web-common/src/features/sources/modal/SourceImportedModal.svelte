@@ -46,6 +46,7 @@
           sourceName,
           BehaviourEventMedium.Button,
           MetricsEventSpace.Modal,
+          $ai,
         )
       : null;
 
@@ -73,6 +74,7 @@
         "",
         "",
         sourceName,
+        $ai,
       );
     } else {
       await createDashboardFromTable();

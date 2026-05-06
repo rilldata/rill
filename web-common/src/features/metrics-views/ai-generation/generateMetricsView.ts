@@ -40,7 +40,6 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { createYamlModelFromTable } from "../../connectors/code-utils";
 import { getName } from "../../entity-management/name-utils";
-import { featureFlags } from "../../feature-flags";
 import { createAndPreviewExplore } from "../create-and-preview-explore";
 import OptionToCancelAIGeneration from "./OptionToCancelAIGeneration.svelte";
 
@@ -83,9 +82,8 @@ export function useCreateMetricsViewFromTableUIAction(
   createExplore: boolean,
   behaviourEventMedium: BehaviourEventMedium,
   metricsEventSpace: MetricsEventSpace,
+  isAiEnabled: boolean,
 ) {
-  const isAiEnabled = get(featureFlags.ai);
-
   // Return a function that can be called to create a dashboard from a table
   return async () => {
     const abortController = new AbortController();
@@ -201,9 +199,8 @@ export async function createDashboardFromTableInMetricsEditor(
   client: RuntimeClient,
   modelName: string,
   filePath: string,
+  isAiEnabled: boolean,
 ) {
-  const isAiEnabled = get(featureFlags.ai);
-
   const tableName = modelName;
   let isAICancelled = false;
   const abortController = new AbortController();
@@ -282,6 +279,7 @@ export async function generateMetricsFromTable(
   table: string,
   createExplore: boolean,
   isOlapConnector: boolean,
+  isAiEnabled: boolean,
   behaviourEventMedium: BehaviourEventMedium = BehaviourEventMedium.Menu,
   metricsEventSpace: MetricsEventSpace = MetricsEventSpace.LeftPanel,
 ) {
@@ -297,6 +295,7 @@ export async function generateMetricsFromTable(
       createExplore,
       behaviourEventMedium,
       metricsEventSpace,
+      isAiEnabled,
     );
     await createMetricsViewFromTable();
   } else {
@@ -309,6 +308,7 @@ export async function generateMetricsFromTable(
       databaseSchema,
       table,
       createExplore,
+      isAiEnabled,
     );
   }
 }
@@ -328,11 +328,11 @@ export async function createModelAndMetricsAndExplore(
   databaseSchema: string,
   table: string,
   createExplore: boolean = true,
+  isAiEnabled: boolean = true,
 ) {
   let isAICancelled = false;
   const abortController = new AbortController();
 
-  const isAiEnabled = get(featureFlags.ai);
   overlay.set({
     title: `Creating your ${createExplore ? "metrics and dashboard" : "metrics"}${isAiEnabled ? " with AI" : ""}...`,
     detail: {
@@ -405,7 +405,7 @@ export async function createModelAndMetricsAndExplore(
     void runtimeServiceGenerateMetricsViewFile(client, {
       model: modelName, // Use model name instead of table
       path: metricsViewFilePath,
-      useAi: get(featureFlags.ai),
+      useAi: isAiEnabled,
     });
 
     // Poll every second until the AI generation is complete or canceled
@@ -521,9 +521,8 @@ async function createMetricsViewFromTable(
   databaseSchema: string,
   tableName: string,
   abortController: AbortController,
+  isAiEnabled: boolean,
 ): Promise<V1Resource> {
-  const isAiEnabled = get(featureFlags.ai);
-
   const newMetricsViewName = getName(
     `${tableName}_metrics`,
     fileArtifacts.getNamesForKind(ResourceKind.MetricsView),
@@ -628,9 +627,8 @@ export function useCreateMetricsViewWithCanvasUIAction(
   tableName: string,
   behaviourEventMedium: BehaviourEventMedium,
   metricsEventSpace: MetricsEventSpace,
+  isAiEnabled: boolean,
 ) {
-  const isAiEnabled = get(featureFlags.ai);
-
   return async () => {
     const abortController = new AbortController();
 
@@ -655,6 +653,7 @@ export function useCreateMetricsViewWithCanvasUIAction(
         databaseSchema,
         tableName,
         abortController,
+        isAiEnabled,
       );
 
       const metricsViewName = resource.meta?.name?.name;
@@ -694,6 +693,7 @@ export function useCreateMetricsViewWithCanvasUIAction(
       const canvasFilePath = await createCanvasDashboardWithoutNavigation(
         client,
         metricsViewName,
+        isAiEnabled,
       );
 
       // Step 4: Navigate to Canvas dashboard
@@ -741,9 +741,8 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
   tableName: string,
   behaviourEventMedium: BehaviourEventMedium,
   metricsEventSpace: MetricsEventSpace,
+  isAiEnabled: boolean,
 ) {
-  const isAiEnabled = get(featureFlags.ai);
-
   // Return a function that can be called to create dashboards from a table
   return async () => {
     const abortController = new AbortController();
@@ -773,6 +772,7 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
         databaseSchema,
         tableName,
         abortController,
+        isAiEnabled,
       );
 
       metricsViewName = resource.meta?.name?.name;
@@ -832,6 +832,7 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
       canvasFilePath = await createCanvasDashboardWithoutNavigation(
         client,
         metricsViewName,
+        isAiEnabled,
       );
 
       // Step 5: Navigate to Canvas if successful, otherwise Explore

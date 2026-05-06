@@ -55,6 +55,7 @@
       sourceName,
       BehaviourEventMedium.Button,
       MetricsEventSpace.Modal,
+      $ai,
     );
 
   async function runImport() {
@@ -73,6 +74,7 @@
             }
           }
         },
+        $ai,
       );
     } catch (e) {
       error = e?.response?.data?.message ?? e?.message ?? "Unknown error";
@@ -89,6 +91,7 @@
         "",
         "",
         sourceName,
+        $ai,
       );
     } else {
       await createDashboardFromTable();

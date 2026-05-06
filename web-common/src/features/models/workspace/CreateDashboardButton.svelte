@@ -39,6 +39,7 @@
     false,
     BehaviourEventMedium.Button,
     MetricsEventSpace.RightPanel,
+    $ai,
   );
 </script>
 

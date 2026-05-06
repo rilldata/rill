@@ -94,6 +94,7 @@
     false,
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
+    $ai,
   );
 
   $: createExploreFromTable = useCreateMetricsViewFromTableUIAction(
@@ -106,6 +107,7 @@
     true,
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
+    $ai,
   );
 
   $: createCanvasDashboardFromTable = useCreateMetricsViewWithCanvasUIAction(
@@ -117,6 +119,7 @@
     tableName,
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
+    $ai,
   );
 
   async function onGenerateCanvasDashboard() {
@@ -128,6 +131,7 @@
         "",
         "",
         tableName,
+        $ai,
       );
     } else {
       await createCanvasDashboardFromTable();

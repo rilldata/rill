@@ -18,6 +18,7 @@
   } from "@rilldata/web-common/features/add-data/manager/steps/import.ts";
   import { onMount } from "svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { useFeatureFlags } from "@rilldata/web-common/features/feature-flags";
   import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import {
@@ -35,6 +36,7 @@
   export let onDone: () => void;
 
   const runtimeClient = useRuntimeClient();
+  const { ai } = useFeatureFlags();
   const initialAddDataStep = { ...importAddDataStep };
 
   const StepLabels = [
@@ -98,6 +100,7 @@
             }
           }
         },
+        $ai,
       );
       onDone();
       return goto(currentFileRoute);

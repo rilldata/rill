@@ -9,6 +9,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../../connectors/selectors";
+  import { useFeatureFlags } from "../../feature-flags";
   import { createDashboardFromTableInMetricsEditor } from "../ai-generation/generateMetricsView";
 
   export let metricsName: string;
@@ -16,6 +17,7 @@
   export let view: EditorView | undefined = undefined;
 
   const runtimeClient = useRuntimeClient();
+  const { ai } = useFeatureFlags();
 
   $: isModelingSupportedForDefaultOlapDriver =
     useIsModelingSupportedForDefaultOlapDriver(runtimeClient);
@@ -30,6 +32,7 @@
       runtimeClient,
       modelRes?.model?.state?.resultTable ?? "",
       filePath,
+      $ai,
     );
   }
 

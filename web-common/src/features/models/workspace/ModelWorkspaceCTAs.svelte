@@ -13,6 +13,7 @@
   import { useRuntimeClient } from "../../../runtime-client/v2";
   import { useGetMetricsViewsForModel } from "../../dashboards/selectors";
   import ExportMenu from "../../exports/ExportMenu.svelte";
+  import { useFeatureFlags } from "../../feature-flags";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import NavigateOrDropdown from "../../metrics-views/NavigateOrDropdown.svelte";
   import ModelRefreshButton from "../incremental/ModelRefreshButton.svelte";
@@ -26,6 +27,7 @@
   export let connector: string;
 
   const runtimeClient = useRuntimeClient();
+  const { ai } = useFeatureFlags();
 
   $: ({ instanceId } = runtimeClient);
   $: isModelIdle =
@@ -45,6 +47,7 @@
     false,
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
+    $ai,
   );
 </script>
 

@@ -33,6 +33,7 @@
     false,
     BehaviourEventMedium.Button,
     MetricsEventSpace.RightPanel,
+    $ai,
   );
 
   function isHeaderWidthSmall(width: number) {

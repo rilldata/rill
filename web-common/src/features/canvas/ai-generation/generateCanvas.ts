@@ -18,7 +18,6 @@ import { get, writable } from "svelte/store";
 import { overlay } from "../../../layout/overlay-store";
 import { queryClient } from "../../../lib/svelte-query/globalQueryClient";
 import { getName } from "../../entity-management/name-utils";
-import { featureFlags } from "../../feature-flags";
 import OptionToCancelAIGeneration from "../../metrics-views/ai-generation/OptionToCancelAIGeneration.svelte";
 
 export const generatingCanvas = writable(false);
@@ -34,9 +33,8 @@ async function createMetricsViewFromTable(
   databaseSchema: string,
   tableName: string,
   abortController: AbortController,
+  isAiEnabled: boolean,
 ): Promise<V1Resource> {
-  const isAiEnabled = get(featureFlags.ai);
-
   const newMetricsViewName = getName(
     `${tableName}_metrics`,
     fileArtifacts.getNamesForKind(ResourceKind.MetricsView),
@@ -94,8 +92,8 @@ async function createMetricsViewFromTable(
 export async function createCanvasDashboardFromMetricsView(
   client: RuntimeClient,
   metricsViewName: string,
+  isAiEnabled: boolean,
 ) {
-  const isAiEnabled = get(featureFlags.ai);
   const abortController = new AbortController();
 
   overlay.set({
@@ -219,8 +217,8 @@ export async function createCanvasDashboardFromTableWithAgent(
   database: string,
   databaseSchema: string,
   tableName: string,
+  isAiEnabled: boolean,
 ): Promise<void> {
-  const isAiEnabled = get(featureFlags.ai);
   const abortController = new AbortController();
 
   // Show overlay while creating metrics view
@@ -245,6 +243,7 @@ export async function createCanvasDashboardFromTableWithAgent(
       databaseSchema,
       tableName,
       abortController,
+      isAiEnabled,
     );
 
     const metricsViewName = resource.meta?.name?.name;
@@ -276,8 +275,8 @@ export async function createCanvasDashboardFromTableWithAgent(
 export async function createCanvasDashboardWithoutNavigation(
   client: RuntimeClient,
   metricsViewName: string,
+  isAiEnabled: boolean,
 ): Promise<string | null> {
-  const isAiEnabled = get(featureFlags.ai);
   const abortController = new AbortController();
 
   // Get a unique name for the canvas dashboard
