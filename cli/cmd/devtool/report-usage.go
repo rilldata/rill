@@ -89,7 +89,7 @@ func ReportUsageCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	cmd.Flags().SortFlags = false
 	cmd.Flags().StringVar(&orgID, "org-id", "", "Org ID (used as Orb external_customer_id)")
-	cmd.Flags().StringVar(&eventName, "event", "", "Event/metric name (e.g. slot_seconds_spend, data_dir_size_bytes)")
+	cmd.Flags().StringVar(&eventName, "event", "", "Event/metric name (e.g. slot_seconds_spend, duckdb_estimated_size_bytes)")
 	cmd.Flags().Float64Var(&amount, "amount", 0, "Numeric amount to report")
 	cmd.Flags().StringVar(&endTimeStr, "end-time", "", "End time of the reporting window in RFC3339 (defaults to current time)")
 	return cmd
