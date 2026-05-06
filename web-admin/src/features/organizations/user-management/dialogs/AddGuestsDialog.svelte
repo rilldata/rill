@@ -6,6 +6,8 @@
     getAdminServiceListOrganizationMemberUsersQueryKey,
     type V1Project,
   } from "@rilldata/web-admin/client";
+  import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
+  import { ORG_ROLES_OPTIONS } from "@rilldata/web-admin/features/organizations/constants";
   import { listProjectsForOrgQueryOptions } from "@rilldata/web-admin/features/projects/list-projects-query-options";
   import { Button } from "@rilldata/web-common/components/button";
   import {
@@ -17,16 +19,14 @@
     DialogTitle,
     DialogTrigger,
   } from "@rilldata/web-common/components/dialog";
+  import * as Dropdown from "@rilldata/web-common/components/dropdown-menu";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import { RFC5322EmailRegex } from "@rilldata/web-common/components/forms/validation";
-  import * as Dropdown from "@rilldata/web-common/components/dropdown-menu";
-  import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
-  import { ORG_ROLES_OPTIONS } from "@rilldata/web-admin/features/organizations/constants";
   import { OrgUserRoles } from "@rilldata/web-common/features/users/roles";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { createQuery, useQueryClient } from "@tanstack/svelte-query";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
@@ -58,7 +58,6 @@
   // Projects list
   $: projectsQuery = createQuery({
     ...listProjectsForOrgQueryOptions(organization),
-    enabled: !!organization,
     refetchOnWindowFocus: true,
   });
   $: projects = $projectsQuery?.data?.projects ?? ([] as V1Project[]);

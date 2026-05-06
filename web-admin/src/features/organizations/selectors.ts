@@ -6,13 +6,12 @@ import {
 } from "@rilldata/web-admin/client";
 import { listProjectsForOrgQueryOptions } from "@rilldata/web-admin/features/projects/list-projects-query-options";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import { createQuery } from "@tanstack/svelte-query";
 import type { FetchQueryOptions } from "@tanstack/query-core";
+import { createQuery } from "@tanstack/svelte-query";
 
 export function areAllProjectsHibernating(organization: string) {
   return createQuery({
     ...listProjectsForOrgQueryOptions(organization),
-    enabled: !!organization,
     select: (data) =>
       data.projects?.length &&
       data.projects.every((p) => !p.primaryDeploymentId),
