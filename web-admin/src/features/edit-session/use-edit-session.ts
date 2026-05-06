@@ -9,13 +9,12 @@ import { derived } from "svelte/store";
  * Lists all deployments for a project (no polling).
  *
  * Uses an empty params object (`{}`) so the TanStack Query cache key matches
- * the BranchSelector's query. This avoids duplicate ListDeployments requests
- * when both components are mounted on the same page; callers filter to dev
+ * the BranchesSection query. This avoids duplicate ListDeployments requests
+ * when both consumers are mounted on the same page; callers filter to dev
  * deployments client-side.
  *
- * Freshness is maintained by:
- * - BranchSelector polling at 2s while its dropdown is open
- * - invalidateDeployments() called after create/delete mutations
+ * Freshness is maintained by invalidateDeployments() after create/delete
+ * mutations and the BranchesSection's transitory-status polling.
  */
 export function useAllDeployments(org: string, project: string) {
   return createAdminServiceListDeployments(org, project, {});
@@ -23,7 +22,7 @@ export function useAllDeployments(org: string, project: string) {
 
 /**
  * Lists dev deployments for a project. Shares the same underlying query as
- * useAllDeployments (and BranchSelector) to avoid duplicate network requests.
+ * useAllDeployments to avoid duplicate network requests.
  */
 export function useDevDeployments(org: string, project: string) {
   const allQuery = useAllDeployments(org, project);
@@ -43,7 +42,7 @@ export function useDevDeployments(org: string, project: string) {
 /**
  * Invalidates all deployment queries for a project, triggering a refetch.
  * Uses the base key (no params) so it matches both dev-scoped and
- * unscoped queries (e.g., BranchSelector).
+ * unscoped queries.
  */
 export function invalidateDeployments(org: string, project: string) {
   return queryClient.invalidateQueries({

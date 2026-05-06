@@ -8,14 +8,11 @@
     useBreadcrumbProjectPaths,
   } from "../navigation/breadcrumb-selectors";
   import AvatarButton from "../authentication/AvatarButton.svelte";
-  import BranchSelector from "../branches/BranchSelector.svelte";
   import SignIn from "../authentication/SignIn.svelte";
 
   export let organization: string;
   export let project: string;
   export let readProjects: boolean;
-  export let readDev: boolean = false;
-  export let primaryBranch: string | undefined = undefined;
   export let planDisplayName: string | undefined;
   export let organizationLogoUrl: string | undefined;
 
@@ -40,13 +37,7 @@
 
 <Header borderBottom>
   <HeaderLogo href={rillLogoHref} logoUrl={organizationLogoUrl} />
-  <Breadcrumbs {pathParts} {currentPath}>
-    <svelte:fragment slot="after-project">
-      {#if readDev}
-        <BranchSelector {organization} {project} {primaryBranch} />
-      {/if}
-    </svelte:fragment>
-  </Breadcrumbs>
+  <Breadcrumbs {pathParts} {currentPath} />
 
   <div class="flex gap-x-2 items-center ml-auto">
     {#if $user.isSuccess}

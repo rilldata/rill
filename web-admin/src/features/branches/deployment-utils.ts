@@ -1,20 +1,20 @@
 import {
+  adminServiceListDeployments,
   getAdminServiceListDeploymentsQueryKey,
   V1DeploymentStatus,
   type V1Deployment,
-  adminServiceListDeployments,
 } from "@rilldata/web-admin/client";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import { redirect } from "@sveltejs/kit";
 import {
   extractBranchFromPath,
   injectBranchIntoPath,
 } from "@rilldata/web-admin/features/branches/branch-utils.ts";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { redirect } from "@sveltejs/kit";
 
 /**
  * Invalidates all deployment queries for a project, triggering a refetch.
  * Uses the base key (no params) so it matches both dev-scoped and
- * unscoped queries (e.g., BranchSelector).
+ * unscoped queries.
  */
 export function invalidateDeployments(org: string, project: string) {
   return queryClient.invalidateQueries({
@@ -35,14 +35,28 @@ export function isProdDeployment(d: V1Deployment): boolean {
   return d.environment === "prod";
 }
 
+/**
+ * If the project has no active prod deployment but does have an active
+ * editable branch deployment, redirect into `/-/edit` for that branch.
+ *
+ * This is a convenience for direct links to unpublished projects so users
+ * land somewhere usable instead of an empty/hibernating prod page. No-ops
+ * when prod is healthy, when there's no editable branch to fall back to,
+ * when the user is already on a branch URL, or on the `/-/deploying` or
+ * `/-/invite` transitional screens.
+ */
 export async function maybeRedirectToEditableDeployment(
   organization: string,
   project: string,
   url: URL,
 ) {
-  // The deploying page is a transitional progress screen for a prod deployment
-  // that is still provisioning. Do not redirect away from it.
-  if (url.pathname.endsWith("/-/deploying")) return;
+  // The deploying and invite pages are transitional screens shown while a
+  // prod deployment is still provisioning. Do not redirect away from them.
+  if (
+    url.pathname.endsWith("/-/deploying") ||
+    url.pathname.endsWith("/-/invite")
+  )
+    return;
 
   const deploymentsResp = await queryClient.fetchQuery({
     queryKey: getAdminServiceListDeploymentsQueryKey(organization, project, {}),
@@ -73,7 +87,7 @@ export async function maybeRedirectToEditableDeployment(
   throw redirect(
     307,
     injectBranchIntoPath(
-      `/${organization}/${project}`,
+      `/${organization}/${project}/-/edit`,
       editableDeployment.branch,
     ),
   );
