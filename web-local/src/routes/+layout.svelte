@@ -9,7 +9,6 @@
     adminServer,
     readOnly,
   } from "@rilldata/web-common/features/app-flags";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { initPylonWidget } from "@rilldata/web-common/features/help/initPylonWidget";
   import RemoteProjectManager from "@rilldata/web-common/features/project/RemoteProjectManager.svelte";
   import ApplicationHeader from "@rilldata/web-common/layout/ApplicationHeader.svelte";
@@ -42,8 +41,6 @@
   import "@rilldata/web-common/app.css";
 
   export let data: LayoutData;
-
-  const { deploy } = featureFlags;
 
   queryClient.getQueryCache().config.onError = (error: unknown, query: Query) =>
     errorEventHandler?.requestErrorEventHandler(error, query);
@@ -123,9 +120,7 @@
             {#if shouldShowPreviewNav}
               <PreviewModeNav />
             {/if}
-            {#if $deploy}
-              <RemoteProjectManager />
-            {/if}
+            <RemoteProjectManager />
           {/if}
 
           <slot />

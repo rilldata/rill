@@ -5,16 +5,12 @@
     getDashboardFromEmbedRoute,
     isDifferentDashboard,
   } from "@rilldata/web-admin/features/embeds/embed-route-utils.ts";
+  import EmbedShell from "@rilldata/web-admin/features/embeds/EmbedShell.svelte";
   import initEmbedPublicAPI from "@rilldata/web-admin/features/embeds/init-embed-public-api.ts";
-  import EmbedHeader from "@rilldata/web-admin/features/embeds/EmbedHeader.svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { VegaLiteTooltipHandler } from "@rilldata/web-common/components/vega/vega-tooltip.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { adminServer } from "@rilldata/web-common/features/app-flags";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import DashboardChat from "@rilldata/web-common/features/chat/DashboardChat.svelte";
-  import ThemeProvider from "@rilldata/web-common/features/dashboards/ThemeProvider.svelte";
-  import { activeDashboardTheme } from "@rilldata/web-common/features/themes/active-dashboard-theme";
   import {
     createIframeRPCHandler,
     emitNotification,
@@ -33,8 +29,6 @@
     accessToken,
   } = data;
 
-  const { dashboardChat } = featureFlags;
-
   // Embedded dashboards communicate directly with the project runtime and do not communicate with the admin server.
   // One by-product of this is that they have no access to control plane features like alerts, bookmarks, and scheduled reports.
   adminServer.set(false);
@@ -50,18 +44,6 @@
   };
 
   $: onProjectPage = !activeResource;
-
-  $: showDashboardChat = $dashboardChat && !onProjectPage;
-  // Resource kind can be metrics view in some cases. But internally to render it will have to have an equivalent explore.
-  $: correctedKindForChat =
-    activeResource?.kind === ResourceKind.MetricsView
-      ? ResourceKind.Explore
-      : (activeResource?.kind as
-          | ResourceKind.Explore
-          | ResourceKind.Canvas
-          | undefined);
-
-  $: showTopBar = navigationEnabled || showDashboardChat;
 
   // Suppress browser back/forward
   beforeNavigate((nav) => {
@@ -136,24 +118,8 @@
     jwt={accessToken}
     authContext="embed"
   >
-    {#if showTopBar}
-      <ThemeProvider theme={$activeDashboardTheme} applyLayout={false}>
-        <div
-          class="flex items-center w-full pr-4 py-1 min-h-[2.5rem] bg-surface-subtle"
-          class:border-b={!onProjectPage}
-        >
-          <EmbedHeader {activeResource} {navigationEnabled} />
-        </div>
-      </ThemeProvider>
-    {/if}
-
-    <div class="flex h-full overflow-hidden">
-      <div class="flex-1 overflow-hidden">
-        <slot />
-      </div>
-      {#if showDashboardChat && correctedKindForChat}
-        <DashboardChat kind={correctedKindForChat} />
-      {/if}
-    </div>
+    <EmbedShell {activeResource} {navigationEnabled} {onProjectPage}>
+      <slot />
+    </EmbedShell>
   </RuntimeProvider>
 {/if}

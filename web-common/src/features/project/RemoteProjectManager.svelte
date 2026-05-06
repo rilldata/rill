@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import type { ConnectError } from "@connectrpc/connect";
+  import { useFeatureFlags } from "@rilldata/web-common/features/feature-flags";
   import { isMergeConflictError } from "@rilldata/web-common/features/project/deploy/github-utils.ts";
   import MergeConflictResolutionDialog from "@rilldata/web-common/features/project/MergeConflictResolutionDialog.svelte";
   import ProjectContainsRemoteChangesDialog from "@rilldata/web-common/features/project/ProjectContainsRemoteChangesDialog.svelte";
@@ -13,6 +14,7 @@
     getLocalServiceGitStatusQueryKey,
   } from "@rilldata/web-common/runtime-client/local-service";
 
+  const { deploy } = useFeatureFlags();
   const gitStatusQuery = createLocalServiceGitStatus();
   const gitPullMutation = createLocalServiceGitPull();
 
@@ -101,16 +103,18 @@
   }
 </script>
 
-<ProjectContainsRemoteChangesDialog
-  bind:open={remoteChangeDialog}
-  loading={githubPullPending}
-  {error}
-  onFetchAndMerge={handleFetchRemoteCommits}
-/>
+{#if $deploy}
+  <ProjectContainsRemoteChangesDialog
+    bind:open={remoteChangeDialog}
+    loading={githubPullPending}
+    {error}
+    onFetchAndMerge={handleFetchRemoteCommits}
+  />
 
-<MergeConflictResolutionDialog
-  bind:open={mergeConflictResolutionDialog}
-  loading={githubPullPending}
-  {error}
-  onUseLatestVersion={handleForceFetchRemoteCommits}
-/>
+  <MergeConflictResolutionDialog
+    bind:open={mergeConflictResolutionDialog}
+    loading={githubPullPending}
+    {error}
+    onUseLatestVersion={handleForceFetchRemoteCommits}
+  />
+{/if}
