@@ -1,31 +1,35 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import Button from "../../../components/button/Button.svelte";
   import {
     getFileHref,
     navigateToFile,
-  } from "@rilldata/web-common/layout/navigation/editor-routing";
+  } from "@rilldata/web-common/layout/navigation/editor-routing.ts";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
-  import { splitFolderAndFileName } from "@rilldata/web-common/features/entity-management/file-path-utils";
+  import { splitFolderAndFileName } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
   import {
     useDirectoryNamesInDirectory,
     useFileNamesInDirectory,
-  } from "@rilldata/web-common/features/entity-management/file-selectors";
-  import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
+  } from "@rilldata/web-common/features/entity-management/file-selectors.ts";
+  import { extractErrorMessage } from "@rilldata/web-common/lib/errors.ts";
   import { defaults, setError, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
-  import { useRuntimeClient } from "../../runtime-client/v2";
-  import { renameFileArtifact } from "./actions";
-  import { removeLeadingSlash } from "./entity-mappers";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
+  import { renameFileArtifact } from "./actions.ts";
+  import { removeLeadingSlash } from "../entity-mappers.ts";
   import {
     INVALID_NAME_MESSAGE,
     VALID_NAME_PATTERN,
     isDuplicateName,
-  } from "./name-utils";
+  } from "../name-utils.ts";
+  import {
+    isPinned,
+    isManaged,
+  } from "@rilldata/web-common/features/entity-management/actions/protected-files.ts";
 
   export let closeModal: () => void;
   export let filePath: string;
@@ -90,8 +94,15 @@
 
         return setError(form, "newName", error);
       }
+
+      const newPath = (folderName ? `${folderName}/` : "") + values.newName;
+      if (isPinned(newPath) || isManaged(newPath)) {
+        error = `Cannot rename to ${newPath}. It is a protected path.`;
+
+        return setError(form, "newName", error);
+      }
+
       try {
-        const newPath = (folderName ? `${folderName}/` : "") + values.newName;
         await renameFileArtifact(runtimeClient, filePath, newPath);
         if (isDir) {
           const oldHref = getFileHref(`/${removeLeadingSlash(filePath)}`);

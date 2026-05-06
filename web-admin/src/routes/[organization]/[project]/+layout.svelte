@@ -120,16 +120,13 @@
    * `GetProject` with default cookie-based auth.
    * When `activeBranch` is set, the branch param is passed so the API
    * returns the branch deployment instead of production.
-   *
-   * On the edit page, the edit layout manages its own readiness detection,
-   * so we skip aggressive polling here to avoid unnecessary requests.
    */
   let cookieProjectQuery = $derived(
     createAdminServiceGetProject(
       organization,
       project,
       activeBranch ? { branch: activeBranch } : undefined,
-      { query: onEditPage ? {} : baseGetProjectQueryOptions },
+      { query: baseGetProjectQueryOptions },
     ),
   );
 
