@@ -5,12 +5,12 @@
   const BANNER_ID = "edit-session-timeout";
   const BANNER_PRIORITY = 0; // Highest priority; session loss is urgent
 
-  /** Session timeout duration in milliseconds (1 hour) */
-  export let timeoutMs = 60 * 60 * 1000;
   /** When to start showing the warning (10 minutes before timeout) */
   export let warningMs = 10 * 60 * 1000;
-  /** Session start time */
-  export let sessionStartedAt: string | undefined;
+  /** Last time the deployment was used; bumped server-side on every GetProject. */
+  export let usedOn: string | undefined;
+  /** TTL after which an idle dev deployment hibernates. Stringified int64 from the API. */
+  export let devTtlSeconds: string | undefined;
 
   let showing = false;
   let interval: ReturnType<typeof setInterval>;
@@ -26,11 +26,12 @@
   });
 
   function checkTimeout() {
-    if (!sessionStartedAt) return;
+    if (!usedOn || !devTtlSeconds) return;
+    const ttlSeconds = Number(devTtlSeconds);
+    if (!ttlSeconds) return;
 
-    const startTime = new Date(sessionStartedAt).getTime();
-    const elapsed = Date.now() - startTime;
-    const remaining = timeoutMs - elapsed;
+    const expiresAt = new Date(usedOn).getTime() + ttlSeconds * 1000;
+    const remaining = expiresAt - Date.now();
 
     const minutesRemaining = Math.max(0, Math.ceil(remaining / 60_000));
     const shouldShow = remaining > 0 && remaining <= warningMs;
