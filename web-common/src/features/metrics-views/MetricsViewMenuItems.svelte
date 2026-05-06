@@ -88,6 +88,7 @@
       await createCanvasDashboardFromMetricsView(
         runtimeClient,
         metricsViewName,
+        $ai,
       );
     }
   }

@@ -48,6 +48,7 @@
             await createCanvasDashboardFromMetricsView(
               runtimeClient,
               resource.meta.name.name,
+              $ai,
             );
           }
         }
@@ -108,6 +109,7 @@
                 await createCanvasDashboardFromMetricsView(
                   runtimeClient,
                   resource.meta.name.name,
+                  $ai,
                 );
               }
             }
