@@ -81,6 +81,7 @@ export class ConversationManager {
       case "browserStorage":
         this.conversationSelector = new BrowserStorageConversationSelector(
           options.surface,
+          client.instanceId,
           EmbedStore.getInstance()?.externalUserId ?? null,
         );
         break;
