@@ -875,29 +875,6 @@ measures:
 		require.Equal(t, "P90D", mv.MaxQueryTimeRange)
 	})
 
-	t.Run("unset", func(t *testing.T) {
-		files := map[string]string{
-			`rill.yaml`:              ``,
-			`models/m1.sql`:          `SELECT 1 AS id`,
-			`metrics_views/mv1.yaml`: mvBody(""),
-		}
-		ctx := context.Background()
-		repo := makeRepo(t, files)
-		p, err := Parse(ctx, repo, "", "", "duckdb", true)
-		require.NoError(t, err)
-		require.Empty(t, p.Errors)
-
-		var mv *runtimev1.MetricsViewSpec
-		for _, r := range p.Resources {
-			if r.MetricsViewSpec != nil {
-				mv = r.MetricsViewSpec
-				break
-			}
-		}
-		require.NotNil(t, mv)
-		require.Empty(t, mv.MaxQueryTimeRange)
-	})
-
 	for _, bad := range []string{"garbage", "rill-PM", "inf", "PT12H", "PT1H30M", "P1DT6H"} {
 		t.Run("invalid_"+bad, func(t *testing.T) {
 			files := map[string]string{

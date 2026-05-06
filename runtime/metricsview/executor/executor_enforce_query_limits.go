@@ -23,9 +23,9 @@ func (e *Executor) enforceQueryLimits(qry *metricsview.Query) error {
 	return nil
 }
 
-// enforceMaxTimeRange returns nil if tr fits within the configured cap, else an error naming the source of the cap.
-// An explicit caller-provided QueryLimits.MaxTimeRangeDays takes precedence over the metrics view's max_query_time_range
-// spec property — this matters for the AI tool path which tightens the cap via the rill.ai.max_time_range_days env var.
+// enforceMaxTimeRange returns nil if tr fits within the configured cap, else an error.
+// A caller-provided QueryLimits.MaxTimeRangeDays takes precedence over the metrics view's max_query_time_range,
+// so the AI path's rill.ai.max_time_range_days env var can tighten (but not loosen) the spec value.
 func (e *Executor) enforceMaxTimeRange(qry *metricsview.Query, tr *metricsview.TimeRange) error {
 	if tr == nil || tr.IsZero() {
 		return nil

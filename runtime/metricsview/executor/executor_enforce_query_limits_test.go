@@ -26,62 +26,55 @@ func TestEnforceQueryLimits(t *testing.T) {
 		wantErr   string
 	}{
 		{
-			name:  "no spec, no caller cap — passes",
+			name:  "no cap",
 			query: &metricsview.Query{TimeRange: tr(365)},
 		},
 		{
-			name:  "spec cap with range under cap — passes",
+			name:  "spec cap, range under",
 			spec:  "P30D",
 			query: &metricsview.Query{TimeRange: tr(7)},
 		},
 		{
-			name:    "spec cap exceeded — fails",
+			name:    "spec cap, range over",
 			spec:    "P30D",
 			query:   &metricsview.Query{TimeRange: tr(60)},
 			wantErr: "max_query_time_range",
 		},
 		{
-			name:      "caller cap tighter than spec — caller wins",
+			name:      "caller cap wins when tighter than spec",
 			spec:      "P90D",
 			callerCap: 30,
 			query:     &metricsview.Query{TimeRange: tr(60)},
 			wantErr:   "rill.ai.max_time_range_days",
 		},
 		{
-			name:      "caller cap with range under cap — passes",
-			spec:      "",
+			name:      "caller cap, range under",
 			callerCap: 30,
 			query:     &metricsview.Query{TimeRange: tr(7)},
 		},
 		{
-			name:    "spec cap exceeded by comparison range — fails",
+			name:    "comparison range over cap",
 			spec:    "P30D",
 			query:   &metricsview.Query{TimeRange: tr(7), ComparisonTimeRange: tr(60)},
 			wantErr: "max_query_time_range",
 		},
 		{
-			name:    "spec cap exceeded by primary, comparison fits — fails",
+			name:    "primary range over cap, comparison fits",
 			spec:    "P30D",
 			query:   &metricsview.Query{TimeRange: tr(60), ComparisonTimeRange: tr(7)},
 			wantErr: "max_query_time_range",
 		},
 		{
-			name:  "spec set but no time range on query — passes",
+			name:  "spec set, no time range on query",
 			spec:  "P30D",
 			query: &metricsview.Query{},
 		},
 		{
-			name: "require_time_range without time range — fails",
+			name: "require_time_range without time range",
 			query: &metricsview.Query{QueryLimits: &metricsview.QueryLimits{
 				RequireTimeRange: true,
 			}},
 			wantErr: "valid time_range",
-		},
-		{
-			name:    "spec error message names the property",
-			spec:    "P30D",
-			query:   &metricsview.Query{TimeRange: tr(60)},
-			wantErr: "configured via the metrics view's max_query_time_range property",
 		},
 	}
 

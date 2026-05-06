@@ -36,15 +36,14 @@
     ?.plus({ [minTimeGrain]: 1 })
     .startOf(minTimeGrain);
 
-  $: capMillis = maxQueryTimeRange?.as("milliseconds") ?? 0;
-  $: capActive = capMillis > 0;
-  $: rangeMillis = inputInterval?.isValid
-    ? inputInterval.toDuration("milliseconds").as("milliseconds")
-    : 0;
-  $: exceedsCap = capActive && rangeMillis > capMillis;
+  $: capMs = maxQueryTimeRange?.as("milliseconds") ?? 0;
+  $: exceedsCap =
+    capMs > 0 &&
+    !!inputInterval?.isValid &&
+    inputInterval.toDuration("milliseconds").as("milliseconds") > capMs;
   $: capLabel = maxQueryTimeRange
-    ? maxQueryTimeRange.shiftTo("days").toHuman({ listStyle: "long" })
-    : "";
+    ?.shiftTo("days")
+    .toHuman({ listStyle: "long" });
 
   function onValidDateInput(date: DateTime<true>, boundary?: "start" | "end") {
     let newInterval: Interval;

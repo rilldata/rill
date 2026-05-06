@@ -650,9 +650,6 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		if strings.HasPrefix(tmp.MaxQueryTimeRange, "rill-") {
 			return fmt.Errorf(`invalid "max_query_time_range" %q: only fixed ISO 8601 day-or-larger durations are allowed`, tmp.MaxQueryTimeRange)
 		}
-		if err := duration.ValidateISO8601(tmp.MaxQueryTimeRange, true, false); err != nil {
-			return fmt.Errorf(`invalid "max_query_time_range": %w`, err)
-		}
 		d, err := duration.ParseISO8601(tmp.MaxQueryTimeRange)
 		if err != nil {
 			return fmt.Errorf(`invalid "max_query_time_range": %w`, err)

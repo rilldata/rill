@@ -548,19 +548,14 @@ const defaultBuckets: RangeBuckets = {
 const previousPeriodRegex =
   /-\d+[sSmMhHdDwWqQYy]\/[sSmMhHdDwWqQYy]\s+to\s+ref\/[sSmMhHdDwWqQYy]/;
 
-// rangeWithinCap returns true if the given yaml range string is allowed under maxRange.
-// If maxRange is undefined or non-positive, every range is allowed. If the range cannot be sized
-// statically via Luxon (e.g. a rill-time expression), it is permitted client-side; the backend
-// will reject it if it ultimately exceeds the cap.
+// rangeWithinCap returns true unless the range can be statically sized to more than maxRange.
+// rill-time expressions and unparseable inputs pass through; the backend has the final say.
 function rangeWithinCap(range: string, maxRange: Duration): boolean {
   if (range === "inf") return false;
-  if (range.startsWith("P") || range.startsWith("p")) {
-    const d = Duration.fromISO(range);
-    if (!d.isValid) return true;
-    return d.as("milliseconds") <= maxRange.as("milliseconds");
-  }
-  // rill-* and other expressions cannot be sized statically. Let the backend enforce.
-  return true;
+  if (!range.startsWith("P") && !range.startsWith("p")) return true;
+  const d = Duration.fromISO(range);
+  if (!d.isValid) return true;
+  return d.as("milliseconds") <= maxRange.as("milliseconds");
 }
 
 export function bucketYamlRanges(

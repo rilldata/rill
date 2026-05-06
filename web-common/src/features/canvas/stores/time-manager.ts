@@ -25,8 +25,7 @@ export class TimeManager {
   timeRangeOptionsStore = writable<V1ExploreTimeRange[]>([]);
   availableTimeZonesStore = writable<string[]>([]);
   allowCustomRangeStore = writable<boolean>(true);
-  // Smallest max_query_time_range across referenced metrics views, parsed via Luxon.
-  // Undefined when no referenced metrics view has a cap configured.
+  // Tightest max_query_time_range across referenced metrics views.
   maxQueryTimeRangeStore = writable<Duration | undefined>(undefined);
   specInitialized = false;
   state: TimeState;
@@ -135,8 +134,6 @@ export class TimeManager {
     this.hasTimeSeriesMap.set(hasTimeSeriesMap);
   }
 
-  // Picks the tightest cap across referenced metrics views — different views may have different
-  // caps and a canvas-wide picker has to honor the most restrictive one.
   checkAndSetMaxQueryTimeRange(response: CanvasResponse) {
     const metricsViews = response.metricsViews || {};
     let smallest: Duration | undefined;
