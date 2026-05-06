@@ -20,7 +20,7 @@ import {
   maybeDeleteFileArtifact,
   runtimeServicePutFileAndWaitForReconciliation,
   waitForResourceReconciliation,
-} from "@rilldata/web-common/features/entity-management/actions.ts";
+} from "@rilldata/web-common/features/entity-management/actions/actions.ts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";

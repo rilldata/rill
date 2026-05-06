@@ -7,7 +7,7 @@ import {
 } from "@rilldata/web-common/layout/navigation/editor-routing";
 import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
 import { createCanvasDashboardWithoutNavigation } from "@rilldata/web-common/features/canvas/ai-generation/generateCanvas";
-import { pollForFileCreation } from "@rilldata/web-common/features/entity-management/actions";
+import { pollForFileCreation } from "@rilldata/web-common/features/entity-management/actions/actions.ts";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import {
   ResourceKind,

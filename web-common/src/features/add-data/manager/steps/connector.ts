@@ -16,7 +16,7 @@ import { isProjectInitialized } from "@rilldata/web-common/features/welcome/is-p
 import {
   waitForProjectParser,
   waitForResourceReconciliation,
-} from "@rilldata/web-common/features/entity-management/actions.ts";
+} from "@rilldata/web-common/features/entity-management/actions/actions.ts";
 import { EMPTY_PROJECT_TITLE } from "@rilldata/web-common/features/welcome/constants.ts";
 import { OLAP_ENGINES } from "@rilldata/web-common/features/sources/modal/constants.ts";
 import { invalidate } from "$app/navigation";

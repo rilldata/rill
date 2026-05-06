@@ -18,6 +18,7 @@
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
   import { onMount } from "svelte";
+  import { getReadonlyNotice } from "@rilldata/web-common/features/entity-management/actions/protected-files.ts";
 
   const workspaces = new Map([
     [ResourceKind.Source, ModelWorkspace],
@@ -29,37 +30,42 @@
     [undefined, null],
   ]);
 
-  export let fileArtifact: FileArtifact;
+  let { fileArtifact }: { fileArtifact: FileArtifact } = $props();
 
-  let editor: EditorView;
+  // Needed to get the correct type
+  let editor: EditorView | null = $state(null);
 
-  $: ({
+  let {
     autoSave,
     hasUnsavedChanges,
     fileName,
     resourceName,
     inferredResourceKind,
     path,
+    managed,
     getResource,
     getParseError,
     remoteContent,
-  } = fileArtifact);
+  } = $derived(fileArtifact);
+  let notice = $derived(getReadonlyNotice(path));
 
-  $: resourceKind = <ResourceKind | undefined>$resourceName?.kind;
+  let resourceKind = $derived($resourceName?.kind as ResourceKind | undefined);
 
-  $: workspace = workspaces.get(resourceKind ?? $inferredResourceKind);
+  let WorkspaceComponent = $derived(
+    workspaces.get(resourceKind ?? $inferredResourceKind),
+  );
 
-  $: resourceQuery = getResource(queryClient);
+  let resourceQuery = $derived(getResource(queryClient));
 
-  $: resource = $resourceQuery.data;
-
-  $: extensions =
+  let resource = $derived($resourceQuery.data);
+  let extensions = $derived(
     resourceKind === ResourceKind.API
       ? [customYAMLwithJSONandSQL]
-      : getExtensionsForFile(path);
+      : getExtensionsForFile(path),
+  );
 
-  $: parseErrorQuery = getParseError(queryClient);
-  $: parseError = $parseErrorQuery;
+  let parseErrorQuery = $derived(getParseError(queryClient));
+  let parseError = $derived($parseErrorQuery);
 
   onMount(() => {
     expandDirectory(path);
@@ -83,30 +89,37 @@
   <div class="flex-1 overflow-hidden">
     {#if $generatingCanvas}
       <GeneratingMessage title="Generating your Canvas dashboard..." />
-    {:else if workspace}
-      <svelte:component this={workspace} {fileArtifact} />
+    {:else if WorkspaceComponent}
+      <WorkspaceComponent {fileArtifact} />
     {:else}
       <WorkspaceContainer inspector={false}>
         <FileWorkspaceHeader
           slot="header"
+          {fileArtifact}
           {resource}
           resourceKind={resourceKind ?? $inferredResourceKind ?? undefined}
-          filePath={path}
           hasUnsavedChanges={$hasUnsavedChanges}
         />
-        <WorkspaceEditorContainer
-          slot="body"
-          {resource}
-          {parseError}
-          remoteContent={$remoteContent}
-        >
-          <Editor
-            {fileArtifact}
-            {extensions}
-            bind:editor
-            bind:autoSave={$autoSave}
-          />
-        </WorkspaceEditorContainer>
+        <svelte:fragment slot="body">
+          {#if managed && notice}
+            <div class="flex flex-col size-full items-center justify-center">
+              {@render notice()}
+            </div>
+          {:else}
+            <WorkspaceEditorContainer
+              {resource}
+              {parseError}
+              remoteContent={$remoteContent}
+            >
+              <Editor
+                {fileArtifact}
+                {extensions}
+                bind:editor
+                bind:autoSave={$autoSave}
+              />
+            </WorkspaceEditorContainer>
+          {/if}
+        </svelte:fragment>
       </WorkspaceContainer>
     {/if}
   </div>
