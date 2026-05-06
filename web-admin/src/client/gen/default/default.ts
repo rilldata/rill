@@ -244,9 +244,9 @@ import type {
   V1StartDeploymentResponse,
   V1StopDeploymentResponse,
   V1SudoDeleteOrganizationBillingIssueResponse,
-  V1SudoExtendTrialRequest,
-  V1SudoExtendTrialResponse,
   V1SudoGetResourceResponse,
+  V1SudoGrantTrialCreditsRequest,
+  V1SudoGrantTrialCreditsResponse,
   V1SudoIssueRuntimeManagerTokenRequest,
   V1SudoIssueRuntimeManagerTokenResponse,
   V1SudoTriggerBillingRepairRequest,
@@ -13771,38 +13771,38 @@ export const createAdminServiceSudoUpdateOrganizationCustomDomain = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary SudoExtendTrial extends the trial period for an organization
+ * @summary SudoGrantTrialCredits grants additional trial credits to an organization on the credit-based trial plan.
  */
-export const adminServiceSudoExtendTrial = (
-  v1SudoExtendTrialRequest: V1SudoExtendTrialRequest,
+export const adminServiceSudoGrantTrialCredits = (
+  v1SudoGrantTrialCreditsRequest: V1SudoGrantTrialCreditsRequest,
   signal?: AbortSignal,
 ) => {
-  return httpClient<V1SudoExtendTrialResponse>({
-    url: `/v1/superuser/organization/trial/extend`,
+  return httpClient<V1SudoGrantTrialCreditsResponse>({
+    url: `/v1/superuser/organization/trial/grant-credits`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    data: v1SudoExtendTrialRequest,
+    data: v1SudoGrantTrialCreditsRequest,
     signal,
   });
 };
 
-export const getAdminServiceSudoExtendTrialMutationOptions = <
+export const getAdminServiceSudoGrantTrialCreditsMutationOptions = <
   TError = RpcStatus,
   TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceSudoExtendTrial>>,
+    Awaited<ReturnType<typeof adminServiceSudoGrantTrialCredits>>,
     TError,
-    { data: V1SudoExtendTrialRequest },
+    { data: V1SudoGrantTrialCreditsRequest },
     TContext
   >;
 }): CreateMutationOptions<
-  Awaited<ReturnType<typeof adminServiceSudoExtendTrial>>,
+  Awaited<ReturnType<typeof adminServiceSudoGrantTrialCredits>>,
   TError,
-  { data: V1SudoExtendTrialRequest },
+  { data: V1SudoGrantTrialCreditsRequest },
   TContext
 > => {
-  const mutationKey = ["adminServiceSudoExtendTrial"];
+  const mutationKey = ["adminServiceSudoGrantTrialCredits"];
   const { mutation: mutationOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
@@ -13812,47 +13812,48 @@ export const getAdminServiceSudoExtendTrialMutationOptions = <
     : { mutation: { mutationKey } };
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceSudoExtendTrial>>,
-    { data: V1SudoExtendTrialRequest }
+    Awaited<ReturnType<typeof adminServiceSudoGrantTrialCredits>>,
+    { data: V1SudoGrantTrialCreditsRequest }
   > = (props) => {
     const { data } = props ?? {};
 
-    return adminServiceSudoExtendTrial(data);
+    return adminServiceSudoGrantTrialCredits(data);
   };
 
   return { mutationFn, ...mutationOptions };
 };
 
-export type AdminServiceSudoExtendTrialMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceSudoExtendTrial>>
+export type AdminServiceSudoGrantTrialCreditsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSudoGrantTrialCredits>>
 >;
-export type AdminServiceSudoExtendTrialMutationBody = V1SudoExtendTrialRequest;
-export type AdminServiceSudoExtendTrialMutationError = RpcStatus;
+export type AdminServiceSudoGrantTrialCreditsMutationBody =
+  V1SudoGrantTrialCreditsRequest;
+export type AdminServiceSudoGrantTrialCreditsMutationError = RpcStatus;
 
 /**
- * @summary SudoExtendTrial extends the trial period for an organization
+ * @summary SudoGrantTrialCredits grants additional trial credits to an organization on the credit-based trial plan.
  */
-export const createAdminServiceSudoExtendTrial = <
+export const createAdminServiceSudoGrantTrialCredits = <
   TError = RpcStatus,
   TContext = unknown,
 >(
   options?: {
     mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof adminServiceSudoExtendTrial>>,
+      Awaited<ReturnType<typeof adminServiceSudoGrantTrialCredits>>,
       TError,
-      { data: V1SudoExtendTrialRequest },
+      { data: V1SudoGrantTrialCreditsRequest },
       TContext
     >;
   },
   queryClient?: QueryClient,
 ): CreateMutationResult<
-  Awaited<ReturnType<typeof adminServiceSudoExtendTrial>>,
+  Awaited<ReturnType<typeof adminServiceSudoGrantTrialCredits>>,
   TError,
-  { data: V1SudoExtendTrialRequest },
+  { data: V1SudoGrantTrialCreditsRequest },
   TContext
 > => {
   const mutationOptions =
-    getAdminServiceSudoExtendTrialMutationOptions(options);
+    getAdminServiceSudoGrantTrialCreditsMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };
@@ -13869,7 +13870,9 @@ export const adminServiceSudoDeleteOrganizationBillingIssue = (
     | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
     | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
     | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
-    | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED",
+    | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
+    | "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL"
+    | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED",
 ) => {
   return httpClient<V1SudoDeleteOrganizationBillingIssueResponse>({
     url: `/v1/superuser/organizations/${org}/billing/issues/${type}`,
@@ -13894,7 +13897,9 @@ export const getAdminServiceSudoDeleteOrganizationBillingIssueMutationOptions =
           | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
           | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
           | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
-          | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED";
+          | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
+          | "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL"
+          | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED";
       },
       TContext
     >;
@@ -13911,7 +13916,9 @@ export const getAdminServiceSudoDeleteOrganizationBillingIssueMutationOptions =
         | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
         | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
         | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
-        | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED";
+        | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
+        | "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL"
+        | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED";
     },
     TContext
   > => {
@@ -13938,7 +13945,9 @@ export const getAdminServiceSudoDeleteOrganizationBillingIssueMutationOptions =
           | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
           | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
           | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
-          | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED";
+          | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
+          | "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL"
+          | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED";
       }
     > = (props) => {
       const { org, type } = props ?? {};
@@ -13980,7 +13989,9 @@ export const createAdminServiceSudoDeleteOrganizationBillingIssue = <
           | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
           | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
           | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
-          | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED";
+          | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
+          | "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL"
+          | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED";
       },
       TContext
     >;
@@ -13999,7 +14010,9 @@ export const createAdminServiceSudoDeleteOrganizationBillingIssue = <
       | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
       | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
       | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
-      | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED";
+      | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
+      | "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL"
+      | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED";
   },
   TContext
 > => {

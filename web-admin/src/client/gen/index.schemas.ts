@@ -168,6 +168,8 @@ export interface V1BillingIssueMetadata {
   paymentFailed?: V1BillingIssueMetadataPaymentFailed;
   subscriptionCancelled?: V1BillingIssueMetadataSubscriptionCancelled;
   neverSubscribed?: V1BillingIssueMetadataNeverSubscribed;
+  onCreditTrial?: V1BillingIssueMetadataOnCreditTrial;
+  trialCreditsDepleted?: V1BillingIssueMetadataTrialCreditsDepleted;
 }
 
 export interface V1BillingIssueMetadataNeverSubscribed {
@@ -180,6 +182,13 @@ export interface V1BillingIssueMetadataNoBillableAddress {
 
 export interface V1BillingIssueMetadataNoPaymentMethod {
   [key: string]: unknown;
+}
+
+export interface V1BillingIssueMetadataOnCreditTrial {
+  subscriptionId?: string;
+  planId?: string;
+  creditAllocation?: number;
+  lowCredit?: boolean;
 }
 
 export interface V1BillingIssueMetadataOnTrial {
@@ -206,6 +215,12 @@ export interface V1BillingIssueMetadataSubscriptionCancelled {
   endDate?: string;
 }
 
+export interface V1BillingIssueMetadataTrialCreditsDepleted {
+  subscriptionId?: string;
+  planId?: string;
+  depletedOn?: string;
+}
+
 export interface V1BillingIssueMetadataTrialEnded {
   endDate?: string;
   gracePeriodEndDate?: string;
@@ -226,6 +241,9 @@ export const V1BillingIssueType = {
   BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED:
     "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED",
   BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED: "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED",
+  BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL: "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL",
+  BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED:
+    "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED",
 } as const;
 
 export interface V1BillingPlan {
@@ -1409,21 +1427,25 @@ export interface V1SudoDeleteOrganizationBillingIssueResponse {
   [key: string]: unknown;
 }
 
-export interface V1SudoExtendTrialRequest {
-  org?: string;
-  days?: number;
-}
-
-export interface V1SudoExtendTrialResponse {
-  trialEnd?: string;
-}
-
 export interface V1SudoGetResourceResponse {
   user?: V1User;
   org?: V1Organization;
   project?: V1Project;
   deployment?: V1Deployment;
   instance?: V1Deployment;
+}
+
+export interface V1SudoGrantTrialCreditsRequest {
+  org?: string;
+  /** Amount of trial credits to grant in USD. */
+  amountUsd?: number;
+  /** Optional human-readable reason for the grant. */
+  description?: string;
+}
+
+export interface V1SudoGrantTrialCreditsResponse {
+  /** The grant amount actually applied, in USD. */
+  grantedUsd?: number;
 }
 
 export interface V1SudoIssueRuntimeManagerTokenRequest {

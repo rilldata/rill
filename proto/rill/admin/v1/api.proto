@@ -912,10 +912,10 @@ service AdminService {
     };
   }
 
-  // SudoExtendTrial extends the trial period for an organization
-  rpc SudoExtendTrial(SudoExtendTrialRequest) returns (SudoExtendTrialResponse) {
+  // SudoGrantTrialCredits grants additional trial credits to an organization on the credit-based trial plan.
+  rpc SudoGrantTrialCredits(SudoGrantTrialCreditsRequest) returns (SudoGrantTrialCreditsResponse) {
     option (google.api.http) = {
-      post: "/v1/superuser/organization/trial/extend",
+      post: "/v1/superuser/organization/trial/grant-credits",
       body: "*"
     };
   }
@@ -2124,13 +2124,17 @@ message SudoUpdateOrganizationBillingCustomerResponse {
   Subscription subscription = 2;
 }
 
-message SudoExtendTrialRequest {
+message SudoGrantTrialCreditsRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
-  int32 days = 2 [(validate.rules).int32 = {gt: 0, lte: 30}];
+  // Amount of trial credits to grant in USD.
+  double amount_usd = 2 [(validate.rules).double = {gt: 0}];
+  // Optional human-readable reason for the grant.
+  string description = 3;
 }
 
-message SudoExtendTrialResponse {
-  google.protobuf.Timestamp trial_end = 1;
+message SudoGrantTrialCreditsResponse {
+  // The grant amount actually applied, in USD.
+  double granted_usd = 1;
 }
 
 message SudoUpdateOrganizationCustomDomainRequest {
@@ -3640,6 +3644,8 @@ enum BillingIssueType {
   BILLING_ISSUE_TYPE_PAYMENT_FAILED = 5;
   BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED = 6;
   BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED = 7;
+  BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL = 8;
+  BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED = 9;
 }
 
 enum BillingIssueLevel {
@@ -3666,6 +3672,8 @@ message BillingIssueMetadata {
     BillingIssueMetadataPaymentFailed payment_failed = 5;
     BillingIssueMetadataSubscriptionCancelled subscription_cancelled = 6;
     BillingIssueMetadataNeverSubscribed never_subscribed = 7;
+    BillingIssueMetadataOnCreditTrial on_credit_trial = 8;
+    BillingIssueMetadataTrialCreditsDepleted trial_credits_depleted = 9;
   }
 }
 
@@ -3703,3 +3711,16 @@ message BillingIssueMetadataSubscriptionCancelled {
 }
 
 message BillingIssueMetadataNeverSubscribed {}
+
+message BillingIssueMetadataOnCreditTrial {
+  string subscription_id = 1;
+  string plan_id = 2;
+  double credit_allocation = 3;
+  bool low_credit = 4;
+}
+
+message BillingIssueMetadataTrialCreditsDepleted {
+  string subscription_id = 1;
+  string plan_id = 2;
+  google.protobuf.Timestamp depleted_on = 3;
+}

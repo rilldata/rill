@@ -550,16 +550,20 @@ func (r *registryCache) emitHeartbeats() {
 	ticker := time.NewTicker(instanceHeartbeatInterval)
 	defer ticker.Stop()
 
+	lastTick := time.Now()
 	for {
 		select {
-		case <-ticker.C:
+		case t := <-ticker.C:
+			elapsed := t.Sub(lastTick)
+			lastTick = t
+
 			instances, err := r.list()
 			if err != nil {
 				r.logger.Error("failed to send instance heartbeat event, instance listing failed", zap.Error(err))
 				continue
 			}
 			for _, instance := range instances {
-				r.emitHeartbeatForInstance(instance)
+				r.emitHeartbeatForInstance(instance, elapsed)
 			}
 		case <-r.baseCtx.Done():
 			return
@@ -567,7 +571,7 @@ func (r *registryCache) emitHeartbeats() {
 	}
 }
 
-func (r *registryCache) emitHeartbeatForInstance(inst *drivers.Instance) {
+func (r *registryCache) emitHeartbeatForInstance(inst *drivers.Instance, elapsed time.Duration) {
 	dataDir, err := r.rt.storage.WithPrefix(inst.ID).DataDir()
 	if err != nil {
 		r.logger.Error("failed to send instance heartbeat event, could not get data directory", zap.String("instance_id", inst.ID), zap.Error(err))
@@ -578,12 +582,21 @@ func (r *registryCache) emitHeartbeatForInstance(inst *drivers.Instance) {
 	attrs := instanceAnnotationsToAttribs(inst)
 	r.activity.RecordMetric(context.Background(), "data_dir_size_bytes", float64(sizeOfDir(dataDir)), attrs...)
 
-	// Emit slots metric for billing; environment is included via instanceAnnotationsToAttribs
-	if v, ok := inst.Annotations["slots"]; ok {
-		if slots, err := strconv.Atoi(v); err == nil {
-			r.activity.RecordMetric(context.Background(), "slots", float64(slots), attrs...)
-		}
+	// Emit slot_seconds_spend (slots × elapsed seconds since last tick) as a counter for billing. Skip if the slots annotation is missing or unparseable.
+	slotsStr, ok := inst.Annotations["slots"]
+	if !ok {
+		return
 	}
+	slots, err := strconv.Atoi(slotsStr)
+	if err != nil {
+		r.logger.Error("failed to convert slots to int", zap.String("instance_id", inst.ID), zap.Error(err))
+		return
+	}
+	value := float64(slots) * elapsed.Seconds()
+	r.activity.RecordMetric(context.Background(), "slot_seconds_spend", value, append(attrs,
+		attribute.Int("deployment_slots", slots),
+		attribute.Float64("deployment_duration", elapsed.Seconds()),
+	)...)
 }
 
 // updateProjectConfig updates the project config for the given instance.

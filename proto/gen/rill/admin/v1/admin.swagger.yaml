@@ -3924,15 +3924,15 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1SudoUpdateOrganizationCustomDomainRequest'
-  /v1/superuser/organization/trial/extend:
+  /v1/superuser/organization/trial/grant-credits:
     post:
-      summary: SudoExtendTrial extends the trial period for an organization
-      operationId: AdminService_SudoExtendTrial
+      summary: SudoGrantTrialCredits grants additional trial credits to an organization on the credit-based trial plan.
+      operationId: AdminService_SudoGrantTrialCredits
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1SudoExtendTrialResponse'
+            $ref: '#/definitions/v1SudoGrantTrialCreditsResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -3942,7 +3942,7 @@ paths:
           in: body
           required: true
           schema:
-            $ref: '#/definitions/v1SudoExtendTrialRequest'
+            $ref: '#/definitions/v1SudoGrantTrialCreditsRequest'
   /v1/superuser/organizations/{org}/billing/issues/{type}:
     delete:
       summary: SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the organization
@@ -3974,6 +3974,8 @@ paths:
             - BILLING_ISSUE_TYPE_PAYMENT_FAILED
             - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
             - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
+            - BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL
+            - BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED
   /v1/superuser/projects/annotations:
     patch:
       summary: SudoUpdateAnnotations endpoint for superusers to update project annotations
@@ -4719,12 +4721,28 @@ definitions:
         $ref: '#/definitions/v1BillingIssueMetadataSubscriptionCancelled'
       neverSubscribed:
         $ref: '#/definitions/v1BillingIssueMetadataNeverSubscribed'
+      onCreditTrial:
+        $ref: '#/definitions/v1BillingIssueMetadataOnCreditTrial'
+      trialCreditsDepleted:
+        $ref: '#/definitions/v1BillingIssueMetadataTrialCreditsDepleted'
   v1BillingIssueMetadataNeverSubscribed:
     type: object
   v1BillingIssueMetadataNoBillableAddress:
     type: object
   v1BillingIssueMetadataNoPaymentMethod:
     type: object
+  v1BillingIssueMetadataOnCreditTrial:
+    type: object
+    properties:
+      subscriptionId:
+        type: string
+      planId:
+        type: string
+      creditAllocation:
+        type: number
+        format: double
+      lowCredit:
+        type: boolean
   v1BillingIssueMetadataOnTrial:
     type: object
     properties:
@@ -4770,6 +4788,16 @@ definitions:
       endDate:
         type: string
         format: date-time
+  v1BillingIssueMetadataTrialCreditsDepleted:
+    type: object
+    properties:
+      subscriptionId:
+        type: string
+      planId:
+        type: string
+      depletedOn:
+        type: string
+        format: date-time
   v1BillingIssueMetadataTrialEnded:
     type: object
     properties:
@@ -4790,6 +4818,8 @@ definitions:
       - BILLING_ISSUE_TYPE_PAYMENT_FAILED
       - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
       - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
+      - BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL
+      - BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED
     default: BILLING_ISSUE_TYPE_UNSPECIFIED
   v1BillingPlan:
     type: object
@@ -6531,20 +6561,6 @@ definitions:
         format: date-time
   v1SudoDeleteOrganizationBillingIssueResponse:
     type: object
-  v1SudoExtendTrialRequest:
-    type: object
-    properties:
-      org:
-        type: string
-      days:
-        type: integer
-        format: int32
-  v1SudoExtendTrialResponse:
-    type: object
-    properties:
-      trialEnd:
-        type: string
-        format: date-time
   v1SudoGetResourceResponse:
     type: object
     properties:
@@ -6558,6 +6574,25 @@ definitions:
         $ref: '#/definitions/v1Deployment'
       instance:
         $ref: '#/definitions/v1Deployment'
+  v1SudoGrantTrialCreditsRequest:
+    type: object
+    properties:
+      org:
+        type: string
+      amountUsd:
+        type: number
+        format: double
+        description: Amount of trial credits to grant in USD.
+      description:
+        type: string
+        description: Optional human-readable reason for the grant.
+  v1SudoGrantTrialCreditsResponse:
+    type: object
+    properties:
+      grantedUsd:
+        type: number
+        format: double
+        description: The grant amount actually applied, in USD.
   v1SudoIssueRuntimeManagerTokenRequest:
     type: object
     properties:

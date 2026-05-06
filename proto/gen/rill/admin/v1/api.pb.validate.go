@@ -16918,22 +16918,22 @@ var _ interface {
 	ErrorName() string
 } = SudoUpdateOrganizationBillingCustomerResponseValidationError{}
 
-// Validate checks the field values on SudoExtendTrialRequest with the rules
-// defined in the proto definition for this message. If any rules are
+// Validate checks the field values on SudoGrantTrialCreditsRequest with the
+// rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *SudoExtendTrialRequest) Validate() error {
+func (m *SudoGrantTrialCreditsRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on SudoExtendTrialRequest with the rules
-// defined in the proto definition for this message. If any rules are
+// ValidateAll checks the field values on SudoGrantTrialCreditsRequest with the
+// rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// SudoExtendTrialRequestMultiError, or nil if none found.
-func (m *SudoExtendTrialRequest) ValidateAll() error {
+// SudoGrantTrialCreditsRequestMultiError, or nil if none found.
+func (m *SudoGrantTrialCreditsRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *SudoExtendTrialRequest) validate(all bool) error {
+func (m *SudoGrantTrialCreditsRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -16941,7 +16941,7 @@ func (m *SudoExtendTrialRequest) validate(all bool) error {
 	var errors []error
 
 	if utf8.RuneCountInString(m.GetOrg()) < 1 {
-		err := SudoExtendTrialRequestValidationError{
+		err := SudoGrantTrialCreditsRequestValidationError{
 			field:  "Org",
 			reason: "value length must be at least 1 runes",
 		}
@@ -16951,10 +16951,10 @@ func (m *SudoExtendTrialRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if val := m.GetDays(); val <= 0 || val > 30 {
-		err := SudoExtendTrialRequestValidationError{
-			field:  "Days",
-			reason: "value must be inside range (0, 30]",
+	if m.GetAmountUsd() <= 0 {
+		err := SudoGrantTrialCreditsRequestValidationError{
+			field:  "AmountUsd",
+			reason: "value must be greater than 0",
 		}
 		if !all {
 			return err
@@ -16962,20 +16962,22 @@ func (m *SudoExtendTrialRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for Description
+
 	if len(errors) > 0 {
-		return SudoExtendTrialRequestMultiError(errors)
+		return SudoGrantTrialCreditsRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// SudoExtendTrialRequestMultiError is an error wrapping multiple validation
-// errors returned by SudoExtendTrialRequest.ValidateAll() if the designated
-// constraints aren't met.
-type SudoExtendTrialRequestMultiError []error
+// SudoGrantTrialCreditsRequestMultiError is an error wrapping multiple
+// validation errors returned by SudoGrantTrialCreditsRequest.ValidateAll() if
+// the designated constraints aren't met.
+type SudoGrantTrialCreditsRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m SudoExtendTrialRequestMultiError) Error() string {
+func (m SudoGrantTrialCreditsRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -16984,11 +16986,12 @@ func (m SudoExtendTrialRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m SudoExtendTrialRequestMultiError) AllErrors() []error { return m }
+func (m SudoGrantTrialCreditsRequestMultiError) AllErrors() []error { return m }
 
-// SudoExtendTrialRequestValidationError is the validation error returned by
-// SudoExtendTrialRequest.Validate if the designated constraints aren't met.
-type SudoExtendTrialRequestValidationError struct {
+// SudoGrantTrialCreditsRequestValidationError is the validation error returned
+// by SudoGrantTrialCreditsRequest.Validate if the designated constraints
+// aren't met.
+type SudoGrantTrialCreditsRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -16996,24 +16999,24 @@ type SudoExtendTrialRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e SudoExtendTrialRequestValidationError) Field() string { return e.field }
+func (e SudoGrantTrialCreditsRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e SudoExtendTrialRequestValidationError) Reason() string { return e.reason }
+func (e SudoGrantTrialCreditsRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e SudoExtendTrialRequestValidationError) Cause() error { return e.cause }
+func (e SudoGrantTrialCreditsRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e SudoExtendTrialRequestValidationError) Key() bool { return e.key }
+func (e SudoGrantTrialCreditsRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e SudoExtendTrialRequestValidationError) ErrorName() string {
-	return "SudoExtendTrialRequestValidationError"
+func (e SudoGrantTrialCreditsRequestValidationError) ErrorName() string {
+	return "SudoGrantTrialCreditsRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e SudoExtendTrialRequestValidationError) Error() string {
+func (e SudoGrantTrialCreditsRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -17025,14 +17028,14 @@ func (e SudoExtendTrialRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sSudoExtendTrialRequest.%s: %s%s",
+		"invalid %sSudoGrantTrialCreditsRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = SudoExtendTrialRequestValidationError{}
+var _ error = SudoGrantTrialCreditsRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -17040,73 +17043,46 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = SudoExtendTrialRequestValidationError{}
+} = SudoGrantTrialCreditsRequestValidationError{}
 
-// Validate checks the field values on SudoExtendTrialResponse with the rules
-// defined in the proto definition for this message. If any rules are
+// Validate checks the field values on SudoGrantTrialCreditsResponse with the
+// rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *SudoExtendTrialResponse) Validate() error {
+func (m *SudoGrantTrialCreditsResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on SudoExtendTrialResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// SudoExtendTrialResponseMultiError, or nil if none found.
-func (m *SudoExtendTrialResponse) ValidateAll() error {
+// ValidateAll checks the field values on SudoGrantTrialCreditsResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// SudoGrantTrialCreditsResponseMultiError, or nil if none found.
+func (m *SudoGrantTrialCreditsResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *SudoExtendTrialResponse) validate(all bool) error {
+func (m *SudoGrantTrialCreditsResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
 	var errors []error
 
-	if all {
-		switch v := interface{}(m.GetTrialEnd()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, SudoExtendTrialResponseValidationError{
-					field:  "TrialEnd",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, SudoExtendTrialResponseValidationError{
-					field:  "TrialEnd",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetTrialEnd()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return SudoExtendTrialResponseValidationError{
-				field:  "TrialEnd",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
+	// no validation rules for GrantedUsd
 
 	if len(errors) > 0 {
-		return SudoExtendTrialResponseMultiError(errors)
+		return SudoGrantTrialCreditsResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// SudoExtendTrialResponseMultiError is an error wrapping multiple validation
-// errors returned by SudoExtendTrialResponse.ValidateAll() if the designated
-// constraints aren't met.
-type SudoExtendTrialResponseMultiError []error
+// SudoGrantTrialCreditsResponseMultiError is an error wrapping multiple
+// validation errors returned by SudoGrantTrialCreditsResponse.ValidateAll()
+// if the designated constraints aren't met.
+type SudoGrantTrialCreditsResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m SudoExtendTrialResponseMultiError) Error() string {
+func (m SudoGrantTrialCreditsResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -17115,11 +17091,12 @@ func (m SudoExtendTrialResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m SudoExtendTrialResponseMultiError) AllErrors() []error { return m }
+func (m SudoGrantTrialCreditsResponseMultiError) AllErrors() []error { return m }
 
-// SudoExtendTrialResponseValidationError is the validation error returned by
-// SudoExtendTrialResponse.Validate if the designated constraints aren't met.
-type SudoExtendTrialResponseValidationError struct {
+// SudoGrantTrialCreditsResponseValidationError is the validation error
+// returned by SudoGrantTrialCreditsResponse.Validate if the designated
+// constraints aren't met.
+type SudoGrantTrialCreditsResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -17127,24 +17104,24 @@ type SudoExtendTrialResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e SudoExtendTrialResponseValidationError) Field() string { return e.field }
+func (e SudoGrantTrialCreditsResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e SudoExtendTrialResponseValidationError) Reason() string { return e.reason }
+func (e SudoGrantTrialCreditsResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e SudoExtendTrialResponseValidationError) Cause() error { return e.cause }
+func (e SudoGrantTrialCreditsResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e SudoExtendTrialResponseValidationError) Key() bool { return e.key }
+func (e SudoGrantTrialCreditsResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e SudoExtendTrialResponseValidationError) ErrorName() string {
-	return "SudoExtendTrialResponseValidationError"
+func (e SudoGrantTrialCreditsResponseValidationError) ErrorName() string {
+	return "SudoGrantTrialCreditsResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e SudoExtendTrialResponseValidationError) Error() string {
+func (e SudoGrantTrialCreditsResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -17156,14 +17133,14 @@ func (e SudoExtendTrialResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sSudoExtendTrialResponse.%s: %s%s",
+		"invalid %sSudoGrantTrialCreditsResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = SudoExtendTrialResponseValidationError{}
+var _ error = SudoGrantTrialCreditsResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -17171,7 +17148,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = SudoExtendTrialResponseValidationError{}
+} = SudoGrantTrialCreditsResponseValidationError{}
 
 // Validate checks the field values on
 // SudoUpdateOrganizationCustomDomainRequest with the rules defined in the
@@ -47578,6 +47555,88 @@ func (m *BillingIssueMetadata) validate(all bool) error {
 			}
 		}
 
+	case *BillingIssueMetadata_OnCreditTrial:
+		if v == nil {
+			err := BillingIssueMetadataValidationError{
+				field:  "Metadata",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetOnCreditTrial()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, BillingIssueMetadataValidationError{
+						field:  "OnCreditTrial",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, BillingIssueMetadataValidationError{
+						field:  "OnCreditTrial",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetOnCreditTrial()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return BillingIssueMetadataValidationError{
+					field:  "OnCreditTrial",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *BillingIssueMetadata_TrialCreditsDepleted:
+		if v == nil {
+			err := BillingIssueMetadataValidationError{
+				field:  "Metadata",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetTrialCreditsDepleted()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, BillingIssueMetadataValidationError{
+						field:  "TrialCreditsDepleted",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, BillingIssueMetadataValidationError{
+						field:  "TrialCreditsDepleted",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetTrialCreditsDepleted()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return BillingIssueMetadataValidationError{
+					field:  "TrialCreditsDepleted",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	default:
 		_ = v // ensures v is used
 	}
@@ -48774,6 +48833,258 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = BillingIssueMetadataNeverSubscribedValidationError{}
+
+// Validate checks the field values on BillingIssueMetadataOnCreditTrial with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *BillingIssueMetadataOnCreditTrial) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on BillingIssueMetadataOnCreditTrial
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// BillingIssueMetadataOnCreditTrialMultiError, or nil if none found.
+func (m *BillingIssueMetadataOnCreditTrial) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *BillingIssueMetadataOnCreditTrial) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for SubscriptionId
+
+	// no validation rules for PlanId
+
+	// no validation rules for CreditAllocation
+
+	// no validation rules for LowCredit
+
+	if len(errors) > 0 {
+		return BillingIssueMetadataOnCreditTrialMultiError(errors)
+	}
+
+	return nil
+}
+
+// BillingIssueMetadataOnCreditTrialMultiError is an error wrapping multiple
+// validation errors returned by
+// BillingIssueMetadataOnCreditTrial.ValidateAll() if the designated
+// constraints aren't met.
+type BillingIssueMetadataOnCreditTrialMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m BillingIssueMetadataOnCreditTrialMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m BillingIssueMetadataOnCreditTrialMultiError) AllErrors() []error { return m }
+
+// BillingIssueMetadataOnCreditTrialValidationError is the validation error
+// returned by BillingIssueMetadataOnCreditTrial.Validate if the designated
+// constraints aren't met.
+type BillingIssueMetadataOnCreditTrialValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e BillingIssueMetadataOnCreditTrialValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e BillingIssueMetadataOnCreditTrialValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e BillingIssueMetadataOnCreditTrialValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e BillingIssueMetadataOnCreditTrialValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e BillingIssueMetadataOnCreditTrialValidationError) ErrorName() string {
+	return "BillingIssueMetadataOnCreditTrialValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e BillingIssueMetadataOnCreditTrialValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sBillingIssueMetadataOnCreditTrial.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = BillingIssueMetadataOnCreditTrialValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = BillingIssueMetadataOnCreditTrialValidationError{}
+
+// Validate checks the field values on BillingIssueMetadataTrialCreditsDepleted
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *BillingIssueMetadataTrialCreditsDepleted) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// BillingIssueMetadataTrialCreditsDepleted with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in
+// BillingIssueMetadataTrialCreditsDepletedMultiError, or nil if none found.
+func (m *BillingIssueMetadataTrialCreditsDepleted) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *BillingIssueMetadataTrialCreditsDepleted) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for SubscriptionId
+
+	// no validation rules for PlanId
+
+	if all {
+		switch v := interface{}(m.GetDepletedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, BillingIssueMetadataTrialCreditsDepletedValidationError{
+					field:  "DepletedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, BillingIssueMetadataTrialCreditsDepletedValidationError{
+					field:  "DepletedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDepletedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return BillingIssueMetadataTrialCreditsDepletedValidationError{
+				field:  "DepletedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return BillingIssueMetadataTrialCreditsDepletedMultiError(errors)
+	}
+
+	return nil
+}
+
+// BillingIssueMetadataTrialCreditsDepletedMultiError is an error wrapping
+// multiple validation errors returned by
+// BillingIssueMetadataTrialCreditsDepleted.ValidateAll() if the designated
+// constraints aren't met.
+type BillingIssueMetadataTrialCreditsDepletedMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m BillingIssueMetadataTrialCreditsDepletedMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m BillingIssueMetadataTrialCreditsDepletedMultiError) AllErrors() []error { return m }
+
+// BillingIssueMetadataTrialCreditsDepletedValidationError is the validation
+// error returned by BillingIssueMetadataTrialCreditsDepleted.Validate if the
+// designated constraints aren't met.
+type BillingIssueMetadataTrialCreditsDepletedValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e BillingIssueMetadataTrialCreditsDepletedValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e BillingIssueMetadataTrialCreditsDepletedValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e BillingIssueMetadataTrialCreditsDepletedValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e BillingIssueMetadataTrialCreditsDepletedValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e BillingIssueMetadataTrialCreditsDepletedValidationError) ErrorName() string {
+	return "BillingIssueMetadataTrialCreditsDepletedValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e BillingIssueMetadataTrialCreditsDepletedValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sBillingIssueMetadataTrialCreditsDepleted.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = BillingIssueMetadataTrialCreditsDepletedValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = BillingIssueMetadataTrialCreditsDepletedValidationError{}
 
 // Validate checks the field values on ListGithubUserReposResponse_Repo with
 // the rules defined in the proto definition for this message. If any rules
