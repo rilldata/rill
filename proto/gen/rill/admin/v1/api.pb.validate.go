@@ -31262,6 +31262,440 @@ var _ interface {
 	ErrorName() string
 } = ListGithubUserReposResponseValidationError{}
 
+// Validate checks the field values on CreateGithubPullRequestRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CreateGithubPullRequestRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CreateGithubPullRequestRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// CreateGithubPullRequestRequestMultiError, or nil if none found.
+func (m *CreateGithubPullRequestRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CreateGithubPullRequestRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Org
+
+	// no validation rules for Project
+
+	// no validation rules for Branch
+
+	// no validation rules for Title
+
+	// no validation rules for Body
+
+	if len(errors) > 0 {
+		return CreateGithubPullRequestRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// CreateGithubPullRequestRequestMultiError is an error wrapping multiple
+// validation errors returned by CreateGithubPullRequestRequest.ValidateAll()
+// if the designated constraints aren't met.
+type CreateGithubPullRequestRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CreateGithubPullRequestRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CreateGithubPullRequestRequestMultiError) AllErrors() []error { return m }
+
+// CreateGithubPullRequestRequestValidationError is the validation error
+// returned by CreateGithubPullRequestRequest.Validate if the designated
+// constraints aren't met.
+type CreateGithubPullRequestRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CreateGithubPullRequestRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CreateGithubPullRequestRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CreateGithubPullRequestRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CreateGithubPullRequestRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CreateGithubPullRequestRequestValidationError) ErrorName() string {
+	return "CreateGithubPullRequestRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CreateGithubPullRequestRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCreateGithubPullRequestRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CreateGithubPullRequestRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CreateGithubPullRequestRequestValidationError{}
+
+// Validate checks the field values on CreateGithubPullRequestResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CreateGithubPullRequestResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CreateGithubPullRequestResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// CreateGithubPullRequestResponseMultiError, or nil if none found.
+func (m *CreateGithubPullRequestResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CreateGithubPullRequestResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for PrUrl
+
+	if len(errors) > 0 {
+		return CreateGithubPullRequestResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// CreateGithubPullRequestResponseMultiError is an error wrapping multiple
+// validation errors returned by CreateGithubPullRequestResponse.ValidateAll()
+// if the designated constraints aren't met.
+type CreateGithubPullRequestResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CreateGithubPullRequestResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CreateGithubPullRequestResponseMultiError) AllErrors() []error { return m }
+
+// CreateGithubPullRequestResponseValidationError is the validation error
+// returned by CreateGithubPullRequestResponse.Validate if the designated
+// constraints aren't met.
+type CreateGithubPullRequestResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CreateGithubPullRequestResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CreateGithubPullRequestResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CreateGithubPullRequestResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CreateGithubPullRequestResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CreateGithubPullRequestResponseValidationError) ErrorName() string {
+	return "CreateGithubPullRequestResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CreateGithubPullRequestResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCreateGithubPullRequestResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CreateGithubPullRequestResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CreateGithubPullRequestResponseValidationError{}
+
+// Validate checks the field values on GetGithubPullRequestRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetGithubPullRequestRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetGithubPullRequestRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetGithubPullRequestRequestMultiError, or nil if none found.
+func (m *GetGithubPullRequestRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetGithubPullRequestRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Org
+
+	// no validation rules for Project
+
+	// no validation rules for Branch
+
+	if len(errors) > 0 {
+		return GetGithubPullRequestRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetGithubPullRequestRequestMultiError is an error wrapping multiple
+// validation errors returned by GetGithubPullRequestRequest.ValidateAll() if
+// the designated constraints aren't met.
+type GetGithubPullRequestRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetGithubPullRequestRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetGithubPullRequestRequestMultiError) AllErrors() []error { return m }
+
+// GetGithubPullRequestRequestValidationError is the validation error returned
+// by GetGithubPullRequestRequest.Validate if the designated constraints
+// aren't met.
+type GetGithubPullRequestRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetGithubPullRequestRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetGithubPullRequestRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetGithubPullRequestRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetGithubPullRequestRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetGithubPullRequestRequestValidationError) ErrorName() string {
+	return "GetGithubPullRequestRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetGithubPullRequestRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetGithubPullRequestRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetGithubPullRequestRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetGithubPullRequestRequestValidationError{}
+
+// Validate checks the field values on GetGithubPullRequestResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetGithubPullRequestResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetGithubPullRequestResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetGithubPullRequestResponseMultiError, or nil if none found.
+func (m *GetGithubPullRequestResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetGithubPullRequestResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for PrUrl
+
+	// no validation rules for PrState
+
+	if len(errors) > 0 {
+		return GetGithubPullRequestResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetGithubPullRequestResponseMultiError is an error wrapping multiple
+// validation errors returned by GetGithubPullRequestResponse.ValidateAll() if
+// the designated constraints aren't met.
+type GetGithubPullRequestResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetGithubPullRequestResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetGithubPullRequestResponseMultiError) AllErrors() []error { return m }
+
+// GetGithubPullRequestResponseValidationError is the validation error returned
+// by GetGithubPullRequestResponse.Validate if the designated constraints
+// aren't met.
+type GetGithubPullRequestResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetGithubPullRequestResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetGithubPullRequestResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetGithubPullRequestResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetGithubPullRequestResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetGithubPullRequestResponseValidationError) ErrorName() string {
+	return "GetGithubPullRequestResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetGithubPullRequestResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetGithubPullRequestResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetGithubPullRequestResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetGithubPullRequestResponseValidationError{}
+
 // Validate checks the field values on ConnectProjectToGithubRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
