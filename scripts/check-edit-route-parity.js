@@ -20,7 +20,10 @@ const LOCAL_ROOTS = [
   "web-local/src/routes/(application)/(workspace)",
   "web-local/src/routes/(viz)",
 ];
-const ADMIN_ROOT = "web-admin/src/routes/[organization]/[project]/-/edit";
+const ADMIN_ROOTS = [
+  "web-admin/src/routes/[organization]/[project]/-/edit/(workspace)",
+  "web-admin/src/routes/[organization]/[project]/-/edit/(viz)",
+];
 
 // Logical paths that exist only in web-local by design. Keep a short reason
 // comment on each entry so a future contributor can judge whether it's still
@@ -28,7 +31,7 @@ const ADMIN_ROOT = "web-admin/src/routes/[organization]/[project]/-/edit";
 const LOCAL_ONLY_ALLOWLIST = [
   // Citation URL routes
   // TODO: ensure citations within the edit session get routed to the developer
-  // preview dashboards _within_ the edit session, not to the branch preview 
+  // preview dashboards _within_ the edit session, not to the branch preview
   // dashboards _outside_ the edit session.
   "/-/ai/[conversationId]/message/[messageId]/+layout.ts",
   "/-/ai/[conversationId]/message/[messageId]/-/open/+page.ts",
@@ -38,25 +41,9 @@ const LOCAL_ONLY_ALLOWLIST = [
   // /dashboard/[name] URLs, so there's nothing to redirect from. Permanent
   // local-only.
   "/dashboard/[name]/+page.ts",
-
-  // The explore layout in web-local mounts <DashboardChat /> alongside the
-  // dashboard preview. In Cloud Rill Developer (`/-/edit/...`) we render
-  // DeveloperChat at the root edit layout and intentionally do not mount
-  // DashboardChat: only one AI surface in the editor context.
-  "/explore/[name]/+layout.svelte",
 ];
 
-const ADMIN_ONLY_ALLOWLIST = [
-  // We have a layout at the root on rill-dev, not under subpath like (application)/(workspace)/ or (viz)/
-  "/+layout.ts",
-
-  // Welcome is under (misc) in local. There will be a future PR that moves them to root.
-  "/welcome/+layout.svelte",
-  "/welcome/+layout.ts",
-  "/welcome/+page.svelte",
-  "/welcome/add-data/+page.svelte",
-  "/welcome/add-data/+page.ts",
-];
+const ADMIN_ONLY_ALLOWLIST = [];
 
 function walkRoutes(absRoot) {
   const results = [];
@@ -107,7 +94,7 @@ function staleAllowlistEntries(allowlist, shouldExistIn) {
 
 function main() {
   const localRoutes = collect(LOCAL_ROOTS);
-  const adminRoutes = collect([ADMIN_ROOT]);
+  const adminRoutes = collect(ADMIN_ROOTS);
 
   const missingInAdmin = diff(localRoutes, adminRoutes, LOCAL_ONLY_ALLOWLIST);
   const missingInLocal = diff(adminRoutes, localRoutes, ADMIN_ONLY_ALLOWLIST);
@@ -132,7 +119,7 @@ function main() {
     );
     for (const p of missingInAdmin) console.error(`  ${p}`);
     console.error(
-      `\nFix: either mirror each route under ${ADMIN_ROOT}/, or add the path to LOCAL_ONLY_ALLOWLIST in scripts/check-edit-route-parity.js with a reason.`,
+      `\nFix: either mirror each route under web-admin/src/routes/[organization]/[project]/-/edit/(workspace)/ or (viz)/, or add the path to LOCAL_ONLY_ALLOWLIST in scripts/check-edit-route-parity.js with a reason.`,
     );
   }
 

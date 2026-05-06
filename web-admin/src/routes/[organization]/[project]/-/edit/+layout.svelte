@@ -22,11 +22,9 @@
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
-  import DeveloperChat from "@rilldata/web-common/features/chat/DeveloperChat.svelte";
   import FileAndResourceWatcher from "@rilldata/web-common/features/entity-management/FileAndResourceWatcher.svelte";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { editorRoutePrefix } from "@rilldata/web-common/layout/navigation/editor-routing";
-  import Navigation from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { onDestroy } from "svelte";
@@ -194,18 +192,10 @@
           {onBeforeReconnect}
           errorBody="Lost connection to the editing environment. Try ending the session and starting a new one."
         >
-          <div class="flex flex-1 overflow-hidden">
-            {#if !inProjectWelcomePage}
-              <WelcomeRedirector />
-              <Navigation showFooterLinks={false} />
-            {/if}
-            <section class="flex flex-1 overflow-hidden">
-              <div class="flex-1 overflow-hidden">
-                <slot />
-              </div>
-              <DeveloperChat />
-            </section>
-          </div>
+          {#if !inProjectWelcomePage}
+            <WelcomeRedirector />
+          {/if}
+          <slot />
         </FileAndResourceWatcher>
       </RuntimeProvider>
     {/key}

@@ -201,7 +201,7 @@
 
   <div class="flex gap-x-2 items-center ml-auto">
     {#if editContext}
-      {#if $developerChat}
+      {#if $developerChat && !onMetricsExplorerPage && !onCanvasDashboardPage}
         <ChatToggle open={developerChatOpen} actions={developerChatActions} />
       {/if}
       <EditActions {organization} {project} {primaryBranch} />
@@ -243,7 +243,7 @@
             {#if $dimensionSearch && ready}
               <GlobalDimensionSearch />
             {/if}
-            {#if $dashboardChat && !onPublicURLPage && !editContext}
+            {#if $dashboardChat && !onPublicURLPage}
               <ChatToggle
                 open={dashboardChatOpen}
                 actions={dashboardChatActions}
@@ -272,7 +272,7 @@
       {#if $cloudEditing && projectPermissions.manageDev}
         <EditButton {organization} {project} {activeBranch} {primaryBranch} />
       {/if}
-      {#if $dashboardChat && !onPublicURLPage && !editContext}
+      {#if $dashboardChat && !onPublicURLPage}
         <ChatToggle open={dashboardChatOpen} actions={dashboardChatActions} />
       {/if}
       {#if hasUserAccess}
