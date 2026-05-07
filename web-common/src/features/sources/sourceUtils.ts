@@ -3,7 +3,6 @@ import type {
   V1ConnectorDriver,
   V1Source,
 } from "@rilldata/web-common/runtime-client";
-import { makeEnvVarKey } from "../connectors/code-utils";
 import { sanitizeEntityName } from "../entity-management/name-utils";
 import { getConnectorSchema } from "./modal/connector-schemas";
 import {
@@ -11,6 +10,8 @@ import {
   getSchemaSecretKeys,
   getSchemaStringKeys,
 } from "../templates/schema-utils";
+import type { EnvEditSession } from "@rilldata/web-common/features/env-management/env-edit-session.ts";
+import { getGenericEnvVarName } from "@rilldata/web-common/features/connectors/env-utils.ts";
 
 // Helper text that we put at the top of every Model YAML file
 function sourceModelFileTop(driverName: string) {
@@ -24,12 +25,12 @@ materialize: true`;
 export function compileSourceYAML(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
+  envEditSession: EnvEditSession,
   opts?: {
     secretKeys?: string[];
     stringKeys?: string[];
     connectorInstanceName?: string;
     originalDriverName?: string;
-    existingEnvBlob?: string;
     outputConnector?: string;
   },
 ) {
@@ -39,6 +40,7 @@ export function compileSourceYAML(
   const secretPropertyKeys =
     opts?.secretKeys ??
     (schema ? getSchemaSecretKeys(schema, { step: "source" }) : []);
+  envEditSession.startEdit();
 
   // Get the string property keys
   const stringPropertyKeys =
@@ -70,13 +72,18 @@ export function compileSourceYAML(
 
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
-        // For source files, we include secret properties
-        return `${key}: "{{ .env.${makeEnvVarKey(
+        const envVarName = getGenericEnvVarName(
           connector.name as string,
           key,
-          opts?.existingEnvBlob,
           schema ?? undefined,
-        )} }}"`; // uses standard Go template syntax
+        );
+        const entry = envEditSession.acquire(
+          key,
+          (value as any).toString?.() ?? "",
+          envVarName,
+        );
+        // For source files, we include secret properties
+        return `${key}: "{{ .env.${entry.mappedEnvVarName} }}"`; // uses standard Go template syntax
       }
 
       if (key === "sql") {

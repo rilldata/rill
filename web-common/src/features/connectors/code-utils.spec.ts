@@ -5,7 +5,6 @@ import {
   replaceAiConnectorInYAML,
   replaceOlapConnectorInYAML,
   replaceOrAddEnvVariable,
-  getGenericEnvVarName,
   envVarExists,
   findAvailableEnvVarName,
   makeEnvVarKey,
@@ -15,6 +14,12 @@ import {
   getEnvVarsFromConnectorYAML,
   maybeUnsetOlapConnectorInYaml,
 } from "./code-utils";
+import {
+  envMappedVarsAndValuesToObject,
+  makeTestEnvEditSession,
+} from "@rilldata/web-common/features/env-management/test/test-env-store.ts";
+import { getGenericEnvVarName } from "@rilldata/web-common/features/connectors/env-utils.ts";
+import type { JSONSchemaObject } from "@rilldata/web-common/features/templates/schemas/types.ts";
 
 // Import the template for testing
 const YAML_MODEL_TEMPLATE = `type: model
@@ -688,7 +693,8 @@ describe("formatHeadersAsYamlMap", () => {
 });
 
 describe("compileConnectorYAML", () => {
-  it("should produce basic connector YAML", () => {
+  it("should produce basic connector YAML", async () => {
+    const { envEditSession } = await makeTestEnvEditSession();
     const connector: V1ConnectorDriver = {
       name: "clickhouse",
       docsUrl:
@@ -697,6 +703,7 @@ describe("compileConnectorYAML", () => {
     const result = compileConnectorYAML(
       connector,
       { host: "ch.example.com" },
+      envEditSession,
       {
         orderedProperties: [{ key: "host" }],
       },
@@ -707,11 +714,13 @@ describe("compileConnectorYAML", () => {
     expect(result).toContain("host: ch.example.com");
   });
 
-  it("should preserve property ordering from orderedProperties", () => {
+  it("should preserve property ordering from orderedProperties", async () => {
+    const { envEditSession } = await makeTestEnvEditSession();
     const connector: V1ConnectorDriver = { name: "clickhouse" };
     const result = compileConnectorYAML(
       connector,
       { host: "ch.example.com", port: 9000, database: "default" },
+      envEditSession,
       {
         orderedProperties: [
           { key: "database" },
@@ -727,16 +736,19 @@ describe("compileConnectorYAML", () => {
     expect(hostIdx).toBeLessThan(portIdx);
   });
 
-  it("should replace secret properties with env var placeholders", () => {
+  it("should replace secret properties with env var placeholders", async () => {
     const connector: V1ConnectorDriver = { name: "clickhouse" };
     const schema = {
+      type: "object",
       properties: {
         password: { "x-env-var-name": "CLICKHOUSE_PASSWORD" },
       },
-    };
+    } satisfies JSONSchemaObject;
+    const { testEnvs, envEditSession } = await makeTestEnvEditSession();
     const result = compileConnectorYAML(
       connector,
       { password: "super_secret" },
+      envEditSession,
       {
         orderedProperties: [{ key: "password", secret: true }],
         secretKeys: ["password"],
@@ -745,13 +757,85 @@ describe("compileConnectorYAML", () => {
     );
     expect(result).toContain("{{ .env.CLICKHOUSE_PASSWORD }}");
     expect(result).not.toContain("super_secret");
+    expect(envEditSession.entries.get("password")?.mappedEnvVarName).toEqual(
+      "CLICKHOUSE_PASSWORD",
+    );
+
+    // Value is saved in env only after a flush
+    expect(testEnvs).toEqual({});
+    await envEditSession.commit();
+    expect(testEnvs).toEqual({
+      CLICKHOUSE_PASSWORD: "super_secret",
+    });
   });
 
-  it("should quote string properties", () => {
+  it("should handle env var conflict resolution with env edit session", async () => {
+    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const schema = {
+      type: "object",
+      properties: {
+        password: { "x-env-var-name": "CLICKHOUSE_PASSWORD" },
+      },
+    } satisfies JSONSchemaObject;
+    const { testEnvs, envEditSession } = await makeTestEnvEditSession(
+      {},
+      {
+        CLICKHOUSE_PASSWORD: "abc",
+      },
+    );
+    const result = compileConnectorYAML(
+      connector,
+      { password: "secret" },
+      envEditSession,
+      {
+        orderedProperties: [{ key: "password", secret: true }],
+        secretKeys: ["password"],
+        schema,
+      },
+    );
+    expect(result).toContain("CLICKHOUSE_PASSWORD_1");
+
+    // Value is saved in env only after a flush
+    expect(testEnvs).toEqual({
+      CLICKHOUSE_PASSWORD: "abc",
+    });
+    expect(envMappedVarsAndValuesToObject(envEditSession.entries)).toEqual({
+      CLICKHOUSE_PASSWORD_1: "secret",
+    });
+
+    // Calling compile again should not create new variable.
+    const newResult = compileConnectorYAML(
+      connector,
+      { password: "secret_new" },
+      envEditSession,
+      {
+        orderedProperties: [{ key: "password", secret: true }],
+        secretKeys: ["password"],
+        schema,
+      },
+    );
+    expect(newResult).toContain("CLICKHOUSE_PASSWORD_1");
+
+    expect(testEnvs).toEqual({
+      CLICKHOUSE_PASSWORD: "abc",
+    });
+    expect(envMappedVarsAndValuesToObject(envEditSession.entries)).toEqual({
+      CLICKHOUSE_PASSWORD_1: "secret_new",
+    });
+    await envEditSession.commit();
+    expect(testEnvs).toEqual({
+      CLICKHOUSE_PASSWORD: "abc",
+      CLICKHOUSE_PASSWORD_1: "secret_new",
+    });
+  });
+
+  it("should quote string properties", async () => {
+    const { envEditSession } = await makeTestEnvEditSession();
     const connector: V1ConnectorDriver = { name: "clickhouse" };
     const result = compileConnectorYAML(
       connector,
       { host: "ch.example.com" },
+      envEditSession,
       {
         orderedProperties: [{ key: "host" }],
         stringKeys: ["host"],
@@ -760,84 +844,100 @@ describe("compileConnectorYAML", () => {
     expect(result).toContain('host: "ch.example.com"');
   });
 
-  it("should not quote non-string properties", () => {
+  it("should not quote non-string properties", async () => {
+    const { envEditSession } = await makeTestEnvEditSession();
     const connector: V1ConnectorDriver = { name: "clickhouse" };
     const result = compileConnectorYAML(
       connector,
       { port: 9000 },
+      envEditSession,
       { orderedProperties: [{ key: "port" }] },
     );
     expect(result).toContain("port: 9000");
     expect(result).not.toContain('"9000"');
   });
 
-  it("should filter out empty string values", () => {
+  it("should filter out empty string values", async () => {
+    const { envEditSession } = await makeTestEnvEditSession();
     const connector: V1ConnectorDriver = { name: "clickhouse" };
     const result = compileConnectorYAML(
       connector,
       { host: "ch.example.com", database: "" },
+      envEditSession,
       { orderedProperties: [{ key: "host" }, { key: "database" }] },
     );
     expect(result).toContain("host:");
     expect(result).not.toContain("database:");
   });
 
-  it("should filter out undefined values", () => {
+  it("should filter out undefined values", async () => {
+    const { envEditSession } = await makeTestEnvEditSession();
     const connector: V1ConnectorDriver = { name: "clickhouse" };
     const result = compileConnectorYAML(
       connector,
       { host: "ch.example.com", database: undefined },
+      envEditSession,
       { orderedProperties: [{ key: "host" }, { key: "database" }] },
     );
     expect(result).not.toContain("database:");
   });
 
-  it("should filter out empty arrays", () => {
+  it("should filter out empty arrays", async () => {
+    const { envEditSession } = await makeTestEnvEditSession();
     const connector: V1ConnectorDriver = { name: "https" };
     const result = compileConnectorYAML(
       connector,
       { url: "https://example.com", headers: [] },
+      envEditSession,
       { orderedProperties: [{ key: "url" }, { key: "headers" }] },
     );
     expect(result).not.toContain("headers:");
   });
 
-  it("should exclude clickhouse managed: false", () => {
+  it("should exclude clickhouse managed: false", async () => {
+    const { envEditSession } = await makeTestEnvEditSession();
     const connector: V1ConnectorDriver = { name: "clickhouse" };
     const result = compileConnectorYAML(
       connector,
       { host: "ch.example.com", managed: false },
+      envEditSession,
       { orderedProperties: [{ key: "host" }, { key: "managed" }] },
     );
     expect(result).not.toContain("managed");
   });
 
-  it("should include clickhouse managed: true", () => {
+  it("should include clickhouse managed: true", async () => {
+    const { envEditSession } = await makeTestEnvEditSession();
     const connector: V1ConnectorDriver = { name: "clickhouse" };
     const result = compileConnectorYAML(
       connector,
       { host: "ch.example.com", managed: true },
+      envEditSession,
       { orderedProperties: [{ key: "host" }, { key: "managed" }] },
     );
     expect(result).toContain("managed: true");
   });
 
-  it("should output driver as duckdb for motherduck", () => {
+  it("should output driver as duckdb for motherduck", async () => {
+    const { envEditSession } = await makeTestEnvEditSession();
     const connector: V1ConnectorDriver = { name: "motherduck" };
     const result = compileConnectorYAML(
       connector,
       { path: "md:my_db" },
+      envEditSession,
       { orderedProperties: [{ key: "path" }] },
     );
     expect(result).toContain("driver: duckdb");
     expect(result).not.toContain("driver: motherduck");
   });
 
-  it("should apply fieldFilter to exclude internal properties", () => {
+  it("should apply fieldFilter to exclude internal properties", async () => {
+    const { envEditSession } = await makeTestEnvEditSession();
     const connector: V1ConnectorDriver = { name: "clickhouse" };
     const result = compileConnectorYAML(
       connector,
       { host: "ch.example.com", managed: true },
+      envEditSession,
       {
         orderedProperties: [
           { key: "host" },
@@ -850,29 +950,14 @@ describe("compileConnectorYAML", () => {
     expect(result).not.toContain("managed:");
   });
 
-  it("should handle env var conflict resolution with existingEnvBlob", () => {
+  it("should produce no property lines when orderedProperties is empty", async () => {
+    const { envEditSession } = await makeTestEnvEditSession();
     const connector: V1ConnectorDriver = { name: "clickhouse" };
-    const schema = {
-      properties: {
-        password: { "x-env-var-name": "CLICKHOUSE_PASSWORD" },
-      },
-    };
     const result = compileConnectorYAML(
       connector,
-      { password: "secret" },
-      {
-        orderedProperties: [{ key: "password", secret: true }],
-        secretKeys: ["password"],
-        schema,
-        existingEnvBlob: "CLICKHOUSE_PASSWORD=old_value",
-      },
+      { host: "ch.example.com" },
+      envEditSession,
     );
-    expect(result).toContain("CLICKHOUSE_PASSWORD_1");
-  });
-
-  it("should produce no property lines when orderedProperties is empty", () => {
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
-    const result = compileConnectorYAML(connector, { host: "ch.example.com" });
     expect(result).toContain("type: connector");
     expect(result).toContain("driver: clickhouse");
     expect(result).not.toContain("host:");

@@ -4,6 +4,8 @@
   import { onMount } from "svelte";
   import ConnectorForm from "@rilldata/web-common/features/add-data/form/ConnectorForm.svelte";
   import type { AddDataStateManager } from "@rilldata/web-common/features/add-data/manager/AddDataStateManager.svelte.ts";
+  import { getEnvFileStore } from "@rilldata/web-common/features/env-management/env-file-store.ts";
+  import { EnvEditSession } from "@rilldata/web-common/features/env-management/env-edit-session.ts";
 
   // Wrapper to initialize the ConnectorForm with cached data.
   // Has async logic to fetch the .env file. So to ensure we load the form on init, we use this wrapper.
@@ -17,19 +19,23 @@
   export let onBack: () => void;
   export let onClose: () => void;
 
+  const envStore = getEnvFileStore();
+
   let connectorName: string | null = null;
-  let cachedEnvBlob: string | null = null;
+  let envEditSession: EnvEditSession | null = null;
   let cachedFormValues: Record<string, unknown> | null = null;
   onMount(async () => {
-    const { name, formValues, existingEnvBlob } =
-      await connectorFormCache.getOrCreate(step.schema, step.connectorId);
+    const { name, formValues } = await connectorFormCache.getOrCreate(
+      step.schema,
+      step.connectorId,
+    );
     connectorName = name;
-    cachedEnvBlob = existingEnvBlob;
     cachedFormValues = formValues;
+    envEditSession = new EnvEditSession(envStore);
   });
 </script>
 
-{#if connectorName != null && cachedEnvBlob != null && cachedFormValues != null}
+{#if connectorName != null && envEditSession != null && cachedFormValues != null}
   <ConnectorForm
     {stateManager}
     {step}
@@ -38,6 +44,6 @@
     {onClose}
     {connectorName}
     {cachedFormValues}
-    {cachedEnvBlob}
+    {envEditSession}
   />
 {/if}

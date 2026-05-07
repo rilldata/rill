@@ -9,6 +9,7 @@
     RUNTIME_CONTEXT_KEY,
   } from "./context";
   import type { AuthContext } from "./runtime-client";
+  import { createEnvFileStore } from "@rilldata/web-common/features/env-management/env-file-store.ts";
 
   const queryClient = useQueryClient();
 
@@ -22,6 +23,8 @@
   const client = getRuntimeClient({ host, instanceId, jwt, authContext });
   setContext(RUNTIME_CONTEXT_KEY, client);
   featureFlags.setRuntimeClient(client);
+
+  createEnvFileStore(client);
 
   // Handle JWT-only changes (15-min refresh, View As with same host)
   $: {

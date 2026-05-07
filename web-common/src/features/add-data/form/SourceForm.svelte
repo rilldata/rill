@@ -1,7 +1,6 @@
 <script lang="ts">
   import { createConnectorForm } from "@rilldata/web-common/features/sources/modal/FormValidation.ts";
   import {
-    runtimeServiceGetFile,
     runtimeServiceGetInstance,
     getRuntimeServiceGetInstanceQueryKey,
   } from "@rilldata/web-common/runtime-client";
@@ -12,7 +11,6 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { prepareSourceFormData } from "@rilldata/web-common/features/sources/sourceUtils.ts";
   import { getSchemaSecretKeys } from "@rilldata/web-common/features/templates/schema-utils.ts";
-  import { updateDotEnvWithSecrets } from "@rilldata/web-common/features/connectors/code-utils.ts";
   import {
     type AddDataConfig,
     type CreateModelStep,
@@ -33,6 +31,8 @@
     getImportStepsForSource,
   } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
   import { maybeInitProject } from "@rilldata/web-common/features/add-data/manager/steps/connector.ts";
+  import { getEnvFileStore } from "@rilldata/web-common/features/env-management/env-file-store.ts";
+  import { EnvEditSession } from "@rilldata/web-common/features/env-management/env-edit-session.ts";
 
   export let config: AddDataConfig;
   export let step: CreateModelStep;
@@ -48,23 +48,16 @@
     $connectorDriverQuery.data?.driver ??
     getConnectorDriverForSchema(step.schema);
 
+  const envStore = getEnvFileStore();
+  const envEditSession = new EnvEditSession(envStore);
+
   const importSteps = getImportStepsForSource(config);
 
   // Capture .env blob ONCE on mount for consistent conflict detection in YAML preview.
   // This prevents the preview from updating when Test and Connect writes to .env.
   // Use null to indicate "not yet loaded" vs "" for "loaded but empty"
-  let existingEnvBlob: string | null = null;
   let defaultOLAP = "duckdb";
   onMount(async () => {
-    try {
-      const envFile = await runtimeServiceGetFile(runtimeClient, {
-        path: ".env",
-      });
-      existingEnvBlob = envFile.blob ?? "";
-    } catch {
-      // .env doesn't exist yet
-      existingEnvBlob = "";
-    }
     try {
       const runtimeInstance = await queryClient.fetchQuery({
         queryKey: getRuntimeServiceGetInstanceQueryKey(
@@ -99,7 +92,7 @@
         connector: connectorDriver,
         formValues: $form,
         schema,
-        existingEnvBlob,
+        envEditSession,
         outputConnector: defaultOLAP,
       })
     : "";
@@ -112,27 +105,6 @@
     }
 
     await maybeInitProject(runtimeClient);
-
-    const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
-      connectorDriver,
-      formValues,
-      { connectorInstanceName: step.connector },
-    );
-    const schema = getConnectorSchema(rewrittenConnector.name ?? "");
-    const schemaSecretKeys = schema
-      ? getSchemaSecretKeys(schema, { step: "source" })
-      : [];
-
-    // Create or update the `.env` file
-    const { newBlob } = await updateDotEnvWithSecrets(
-      runtimeClient,
-      queryClient,
-      rewrittenConnector,
-      rewrittenFormValues,
-      {
-        secretKeys: schemaSecretKeys,
-      },
-    );
 
     if (formValues.file) {
       // TODO: support multiple files upload
@@ -147,12 +119,20 @@
         );
       }
     }
+
+    const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
+      connectorDriver,
+      formValues,
+      { connectorInstanceName: step.connector },
+    );
+    const schema = getConnectorSchema(rewrittenConnector.name ?? "");
+
     const yaml = getSourceYamlPreview({
       connectorName: step.connector,
       connector: connectorDriver,
-      formValues,
+      formValues: rewrittenFormValues,
       schema,
-      existingEnvBlob,
+      envEditSession,
       outputConnector: defaultOLAP,
     });
 
@@ -165,8 +145,8 @@
       importSteps,
       connector: rewrittenConnector.name!,
       importFrom,
-      importTo: generateImportToConfig(importFrom, formValues.name),
-      envBlob: newBlob,
+      importTo: generateImportToConfig(importFrom, rewrittenFormValues.name),
+      envEditSession,
     } satisfies ImportStepConfig;
 
     onSubmit(importConfig);

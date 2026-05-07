@@ -1,9 +1,14 @@
 import { QueryClient } from "@tanstack/svelte-query";
 import {
-  type V1ConnectorDriver,
   type ConnectorDriverProperty,
+  getRuntimeServiceAnalyzeConnectorsQueryKey,
   getRuntimeServiceGetFileQueryKey,
+  getRuntimeServiceGetInstanceQueryKey,
+  runtimeServiceAnalyzeConnectors,
   runtimeServiceGetFile,
+  runtimeServiceGetInstance,
+  runtimeServicePutFile,
+  type V1ConnectorDriver,
   type V1GetFileResponse,
 } from "../../runtime-client";
 import type { RuntimeClient } from "../../runtime-client/v2";
@@ -16,17 +21,18 @@ import {
   isNonStandardIdentifier,
 } from "@rilldata/web-common/features/entity-management/name-utils";
 import {
-  getRuntimeServiceAnalyzeConnectorsQueryKey,
-  getRuntimeServiceGetInstanceQueryKey,
-  runtimeServiceAnalyzeConnectors,
-  runtimeServiceGetInstance,
-  runtimeServicePutFile,
-} from "../../runtime-client";
-import {
   getDriverNameForConnector,
   makeSufficientlyQualifiedTableName,
 } from "./connectors-utils";
 import { getDocsCategory } from "../sources/modal/connector-schemas";
+import type { EnvEditSession } from "@rilldata/web-common/features/env-management/env-edit-session.ts";
+import { getGenericEnvVarName } from "@rilldata/web-common/features/connectors/env-utils.ts";
+import {
+  applyDuckLakeFormPipeline,
+  injectDuckLakeAttach,
+} from "@rilldata/web-common/features/templates/schemas/ducklake-utils.ts";
+import { filterSchemaValuesForSubmit } from "@rilldata/web-common/features/templates/schema-utils.ts";
+import type { MultiStepFormSchema } from "@rilldata/web-common/features/templates/schemas/types.ts";
 
 function yamlModelTemplate(driverName: string) {
   return `# Model YAML
@@ -163,6 +169,7 @@ export function formatHeadersAsYamlMap(
 export function compileConnectorYAML(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
+  envEditSession: EnvEditSession,
   options?: {
     fieldFilter?: (
       property:
@@ -176,26 +183,7 @@ export function compileConnectorYAML(
     connectorInstanceName?: string;
     secretKeys?: string[];
     stringKeys?: string[];
-    schema?: {
-      properties?: Record<
-        string,
-        {
-          "x-env-var-name"?: string;
-          default?: string | number | boolean;
-          type?: string;
-          "x-yaml-value"?:
-            | string
-            | number
-            | boolean
-            | {
-                true?: string | number | boolean;
-                false?: string | number | boolean;
-              };
-          "x-advanced"?: boolean;
-        }
-      >;
-    };
-    existingEnvBlob?: string;
+    schema?: MultiStepFormSchema;
   },
 ) {
   // Add instructions to the top of the file
@@ -222,6 +210,22 @@ driver: ${driverName}`;
 
   // Get the secret property keys
   const secretPropertyKeys = options?.secretKeys ?? [];
+  envEditSession.startEdit();
+
+  // Apply ducklake transforms
+  formValues = applyDuckLakeFormPipeline(options?.schema, formValues, {
+    connectorName: connector.name ?? "",
+    envEditSession,
+  });
+  formValues = options?.schema
+    ? injectDuckLakeAttach(
+        options.schema,
+        filterSchemaValuesForSubmit(options.schema, formValues, {
+          step: "connector",
+        }),
+        formValues,
+      )
+    : formValues;
 
   // Get the string property keys
   const stringPropertyKeys = options?.stringKeys ?? [];
@@ -250,7 +254,8 @@ driver: ${driverName}`;
         const typeDefault =
           schemaProp.type === "boolean"
             ? false
-            : schemaProp.type === "number" || schemaProp.type === "integer"
+            : schemaProp.type === "number" ||
+                (schemaProp.type as any) === "integer"
               ? 0
               : schemaProp.type === "string"
                 ? ""
@@ -276,13 +281,17 @@ driver: ${driverName}`;
 
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
-        const envVarName = makeEnvVarKey(
+        const envVarName = getGenericEnvVarName(
           connector.name as string,
           key,
-          options?.existingEnvBlob,
           options?.schema,
         );
-        return `${key}: "{{ .env.${envVarName} }}"`; // uses standard Go template syntax
+        const entry = envEditSession.acquire(
+          key,
+          (value as any).toString?.() ?? "",
+          envVarName,
+        );
+        return `${key}: "{{ .env.${entry.mappedEnvVarName} }}"`; // uses standard Go template syntax
       }
 
       // For boolean fields with x-yaml-value, emit the mapped value instead of true/false.
@@ -499,46 +508,6 @@ export function deleteEnvVariable(
     .trim();
 
   return newBlob;
-}
-
-/**
- * Get a generic ALL_CAPS environment variable name for a connector property.
- * If schema provides x-env-var-name, use it directly.
- * Otherwise uses DRIVER_NAME_PROPERTY_KEY format.
- *
- * @param driverName - The connector driver name (e.g., "clickhouse", "s3")
- * @param propertyKey - The property key (e.g., "password", "aws_access_key_id")
- * @param schema - Optional schema with x-env-var-name annotations
- * @returns The environment variable name in SCREAMING_SNAKE_CASE
- *
- * @example
- * getGenericEnvVarName("clickhouse", "password") // "CLICKHOUSE_PASSWORD"
- * getGenericEnvVarName("s3", "aws_access_key_id", s3Schema) // "AWS_ACCESS_KEY_ID" (from x-env-var-name)
- */
-export function getGenericEnvVarName(
-  driverName: string,
-  propertyKey: string,
-  schema?: { properties?: Record<string, { "x-env-var-name"?: string }> },
-): string {
-  // If schema provides explicit env var name, use it
-  const field = schema?.properties?.[propertyKey];
-  if (field?.["x-env-var-name"]) {
-    return field["x-env-var-name"];
-  }
-
-  // Convert property key to SCREAMING_SNAKE_CASE
-  const propertyKeyUpper = propertyKey
-    .replace(/([a-z])([A-Z])/g, "$1_$2")
-    .replace(/[._-]+/g, "_")
-    .toUpperCase();
-
-  // Otherwise, use DriverName_PropertyKey format
-  const driverNameUpper = driverName
-    .replace(/([a-z])([A-Z])/g, "$1_$2")
-    .replace(/[._-]+/g, "_")
-    .toUpperCase();
-
-  return `${driverNameUpper}_${propertyKeyUpper}`;
 }
 
 /**

@@ -17,7 +17,6 @@ import {
 import {
   deleteFileArtifact,
   maybeDeleteFileArtifact,
-  runtimeServicePutFileAndWaitForReconciliation,
   waitForResourceReconciliation,
 } from "@rilldata/web-common/features/entity-management/actions.ts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
@@ -211,6 +210,7 @@ async function runCreateModelStep(
           name: importToConfig.modelName,
           sql: importFromConfig.sql,
         },
+        config.envEditSession,
         {
           connectorInstanceName: config.connector,
           outputConnector: defaultOLAP,
@@ -231,6 +231,7 @@ async function runCreateModelStep(
           name: importToConfig.modelName,
           sql: sql,
         },
+        config.envEditSession,
         {
           connectorInstanceName: config.connector,
           outputConnector: defaultOLAP,
@@ -240,15 +241,7 @@ async function runCreateModelStep(
     }
   }
 
-  if (config.envBlob) {
-    // Make sure the file has reconciled before testing the connection
-    await runtimeServicePutFileAndWaitForReconciliation(runtimeClient, {
-      path: ".env",
-      blob: config.envBlob,
-      create: true,
-      createOnly: false,
-    });
-  }
+  await config.envEditSession.commit();
 
   let putFile = true;
   // Determine if the model file already exists and has the same content as the generated YAML.

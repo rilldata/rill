@@ -1,21 +1,8 @@
-import {
-  findAvailableEnvVarName,
-  makeEnvVarKey,
-  replaceOrAddEnvVariable,
-} from "@rilldata/web-common/features/connectors/code-utils";
 import { ducklakeSchema } from "./ducklake";
 import type { MultiStepFormSchema } from "./types";
-
-/**
- * Maps DuckLake password field keys (e.g. `catalog_postgres_password`) to the
- * resolved `.env` variable name used in the generated YAML. When present, the
- * composer emits `password={{ .env.<name> }}` instead of the raw value.
- */
-export type DuckLakeSecretRefs = Record<string, string>;
-
-export interface ComposeDuckLakeAttachOptions {
-  secretRefs?: DuckLakeSecretRefs;
-}
+import type { EnvEditSession } from "@rilldata/web-common/features/env-management/env-edit-session.ts";
+import { getGenericEnvVarName } from "@rilldata/web-common/features/connectors/env-utils.ts";
+import { getName } from "@rilldata/web-common/features/entity-management/name-utils.ts";
 
 /**
  * Compose a DuckDB `ATTACH` clause string (without the leading `ATTACH`
@@ -26,9 +13,9 @@ export interface ComposeDuckLakeAttachOptions {
  */
 export function composeDuckLakeAttach(
   values: Record<string, unknown>,
-  opts?: ComposeDuckLakeAttachOptions,
+  envEditSession: EnvEditSession,
 ): string {
-  const identifier = composeCatalogIdentifier(values, opts?.secretRefs);
+  const identifier = composeCatalogIdentifier(values, envEditSession);
   if (!identifier) return "";
 
   const alias = stringValue(values.alias);
@@ -92,7 +79,7 @@ export function composeDuckLakeAttach(
  */
 function composeCatalogIdentifier(
   values: Record<string, unknown>,
-  secretRefs?: DuckLakeSecretRefs,
+  envEditSession: EnvEditSession,
 ): string {
   const type = stringValue(values.catalog_type) || "duckdb";
 
@@ -114,7 +101,13 @@ function composeCatalogIdentifier(
           ["user", values.catalog_postgres_user],
           ["password", values.catalog_postgres_password],
         ],
-        { password: fieldSecretRef(secretRefs, "catalog_postgres_password") },
+        {
+          password: fieldSecretRef(
+            envEditSession,
+            "catalog_postgres_password",
+            values.catalog_postgres_password,
+          ),
+        },
       );
       return kv ? `postgres:${kv}` : "";
     }
@@ -128,7 +121,13 @@ function composeCatalogIdentifier(
           ["user", values.catalog_mysql_user],
           ["password", values.catalog_mysql_password],
         ],
-        { password: fieldSecretRef(secretRefs, "catalog_mysql_password") },
+        {
+          password: fieldSecretRef(
+            envEditSession,
+            "catalog_mysql_password",
+            values.catalog_mysql_password,
+          ),
+        },
       );
       return kv ? `mysql:${kv}` : "";
     }
@@ -139,12 +138,18 @@ function composeCatalogIdentifier(
 }
 
 function fieldSecretRef(
-  secretRefs: DuckLakeSecretRefs | undefined,
+  envEditSession: EnvEditSession,
   fieldKey: string,
+  value: unknown,
 ): string | undefined {
-  const envVarName = secretRefs?.[fieldKey];
-  if (!envVarName) return undefined;
-  return `{{ .env.${envVarName} }}`;
+  if (!value) return undefined;
+  const varName = getGenericEnvVarName("ducklake", fieldKey, undefined);
+  const entry = envEditSession.acquire(
+    varName,
+    (value as any).toString?.() ?? "",
+    varName,
+  );
+  return `{{ .env.${entry.mappedEnvVarName} }}`;
 }
 
 /**
@@ -191,11 +196,11 @@ function keyValuePairs(
 export function applyDuckLakeFormTransform(
   schema: MultiStepFormSchema | null | undefined,
   values: Record<string, unknown>,
-  opts?: ComposeDuckLakeAttachOptions,
+  envEditSession: EnvEditSession,
 ): Record<string, unknown> {
   if (schema !== ducklakeSchema) return values;
   if (values.connection_mode === "parameters") {
-    const attach = composeDuckLakeAttach(values, opts);
+    const attach = composeDuckLakeAttach(values, envEditSession);
     return { ...values, attach };
   }
   // SQL mode: keep the user-typed value visible in the textarea, but strip
@@ -234,25 +239,6 @@ export const DUCKLAKE_SECRET_FIELD_KEYS = [
   "catalog_mysql_password",
 ] as const;
 
-/**
- * Resolve the `.env` variable names for DuckLake password fields, matching
- * the name `makeEnvVarKey` will use when writing secrets and compiling YAML.
- * Returns an empty object for non-DuckLake schemas so callers can pass the
- * result through unconditionally.
- */
-export function buildDuckLakeSecretRefs(
-  schema: MultiStepFormSchema | null | undefined,
-  driverName: string,
-  existingEnvBlob: string,
-): DuckLakeSecretRefs {
-  if (schema !== ducklakeSchema) return {};
-  const refs: DuckLakeSecretRefs = {};
-  for (const key of DUCKLAKE_SECRET_FIELD_KEYS) {
-    refs[key] = makeEnvVarKey(driverName, key, existingEnvBlob, schema);
-  }
-  return refs;
-}
-
 function stringValue(v: unknown): string {
   if (typeof v !== "string") return "";
   return v.trim();
@@ -286,13 +272,6 @@ const DUCKLAKE_CATALOG_URI_PATTERN = /'ducklake:(postgres|mysql|md):([^']*)'/g;
 
 const ENV_TEMPLATE_ONLY_PATTERN = /^{{\s*\.env\.[^{}\s]+\s*}}$/;
 
-export interface DuckLakeAttachExtraction {
-  /** The attach string with raw catalog bodies replaced by `{{ .env.X }}` refs. */
-  rewrittenAttach: string;
-  /** Map of allocated env var name to the raw catalog body to persist in `.env`. */
-  extractedSecrets: Record<string, string>;
-}
-
 /**
  * Extract credential-bearing catalog URIs from a raw DuckLake ATTACH string.
  *
@@ -308,14 +287,11 @@ export interface DuckLakeAttachExtraction {
  */
 export function extractDuckLakeAttachSecrets(
   attach: string,
-  existingEnvBlob: string,
-): DuckLakeAttachExtraction {
-  if (!attach) return { rewrittenAttach: attach, extractedSecrets: {} };
-  const extractedSecrets: Record<string, string> = {};
-  // Track allocations across multiple matches in a single attach so two
-  // postgres catalogs in one string don't collide on the same env var name.
-  let reservedBlob = existingEnvBlob;
+  envEditSession: EnvEditSession,
+): string {
+  if (!attach) return attach;
 
+  const varNames: string[] = [];
   const rewrittenAttach = attach.replace(
     DUCKLAKE_CATALOG_URI_PATTERN,
     (_match, driver: string, body: string) => {
@@ -324,14 +300,17 @@ export function extractDuckLakeAttachSecrets(
       if (ENV_TEMPLATE_ONLY_PATTERN.test(trimmed)) {
         return `'ducklake:${driver}:${body}'`;
       }
+
       const base = DUCKLAKE_CATALOG_ENV_VAR_BASE[driver];
-      const envVarName = findAvailableEnvVarName(reservedBlob, base);
-      extractedSecrets[envVarName] = trimmed;
-      reservedBlob = replaceOrAddEnvVariable(reservedBlob, envVarName, trimmed);
-      return `'ducklake:${driver}:{{ .env.${envVarName} }}'`;
+      const envName = getName(base, varNames);
+      varNames.push(base);
+
+      const entry = envEditSession.acquire(envName, trimmed, envName);
+      return `'ducklake:${driver}:{{ .env.${entry.mappedEnvVarName} }}'`;
     },
   );
-  return { rewrittenAttach, extractedSecrets };
+
+  return rewrittenAttach;
 }
 
 /**
@@ -347,19 +326,6 @@ export function shouldExtractDuckLakeAttachSecrets(
   return values.connection_mode !== "parameters";
 }
 
-export interface DuckLakePipelineResult {
-  /**
-   * Form values after Parameters-tab composition and SQL-tab catalog secret
-   * extraction. Use these as the source of truth for YAML emission.
-   */
-  transformedValues: Record<string, unknown>;
-  /**
-   * Catalog secrets newly extracted from a raw `attach` string. Submit paths
-   * append these to the `.env` blob; preview paths discard them.
-   */
-  extractedSecrets: Record<string, string>;
-}
-
 /**
  * Run the full DuckLake form-value pipeline: compose Parameters fields into
  * `attach`, route password fields through env-var refs, and extract catalog
@@ -372,40 +338,36 @@ export interface DuckLakePipelineResult {
 export function applyDuckLakeFormPipeline(
   schema: MultiStepFormSchema | null | undefined,
   formValues: Record<string, unknown>,
-  opts: { connectorName: string; existingEnvBlob: string },
-): DuckLakePipelineResult {
+  opts: {
+    connectorName: string;
+    envEditSession: EnvEditSession;
+  },
+): Record<string, unknown> {
   if (schema !== ducklakeSchema) {
-    return { transformedValues: formValues, extractedSecrets: {} };
+    return formValues;
   }
 
-  const secretRefs = buildDuckLakeSecretRefs(
+  let transformedValues = applyDuckLakeFormTransform(
     schema,
-    opts.connectorName,
-    opts.existingEnvBlob,
+    formValues,
+    opts.envEditSession,
   );
-  let transformedValues = applyDuckLakeFormTransform(schema, formValues, {
-    secretRefs,
-  });
 
-  let extractedSecrets: Record<string, string> = {};
   if (shouldExtractDuckLakeAttachSecrets(schema, transformedValues)) {
     const rawAttach = transformedValues.attach;
     if (typeof rawAttach === "string") {
-      const result = extractDuckLakeAttachSecrets(
+      const rewrittenAttach = extractDuckLakeAttachSecrets(
         rawAttach,
-        opts.existingEnvBlob,
+        opts.envEditSession,
       );
-      if (Object.keys(result.extractedSecrets).length > 0) {
-        transformedValues = {
-          ...transformedValues,
-          attach: result.rewrittenAttach,
-        };
-        extractedSecrets = result.extractedSecrets;
-      }
+      transformedValues = {
+        ...transformedValues,
+        attach: rewrittenAttach,
+      };
     }
   }
 
-  return { transformedValues, extractedSecrets };
+  return transformedValues;
 }
 
 const DUCKLAKE_KNOWN_CATALOG_SCHEMES = new Set([
