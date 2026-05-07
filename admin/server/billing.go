@@ -776,6 +776,60 @@ func (s *Server) SudoGrantTrialCredits(ctx context.Context, req *adminv1.SudoGra
 	return &adminv1.SudoGrantTrialCreditsResponse{GrantedUsd: req.AmountUsd}, nil
 }
 
+// SudoReportUsage reports a mock usage event for an organization.
+func (s *Server) SudoReportUsage(ctx context.Context, req *adminv1.SudoReportUsageRequest) (*adminv1.SudoReportUsageResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
+	observability.AddRequestAttributes(ctx, attribute.String("args.event_name", req.EventName))
+	observability.AddRequestAttributes(ctx, attribute.Float64("args.amount", req.Amount))
+
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can report mock usage")
+	}
+
+	if !s.admin.AllowMockUsage {
+		return nil, status.Error(codes.PermissionDenied, "mock usage reporting is disabled")
+	}
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
+	if err != nil {
+		return nil, err
+	}
+
+	endTime := time.Now().UTC()
+	if req.EndTime != nil {
+		endTime = req.EndTime.AsTime().UTC()
+	}
+
+	usage := &billing.Usage{
+		CustomerID:     org.ID,
+		MetricName:     req.EventName,
+		Value:          req.Amount,
+		ReportingGrain: s.admin.Biller.GetReportingGranularity(),
+		StartTime:      endTime.Add(-time.Second),
+		EndTime:        endTime,
+		Metadata: map[string]interface{}{
+			"org_id":       org.ID,
+			"project_id":   "mock-usage-project-id", // actual project and instance ids are not relevant for mock usage as it does not affect the final amount but just helps in attributing cost to individual projects
+			"project_name": "mock-usage-project",
+			"instance_id":  "mock-usage-instance-id",
+			"mock":         true,
+		},
+	}
+
+	if err := s.admin.Biller.ReportUsage(ctx, []*billing.Usage{usage}); err != nil {
+		return nil, fmt.Errorf("failed to report usage: %w", err)
+	}
+
+	return &adminv1.SudoReportUsageResponse{
+		CustomerId: org.ID,
+		EventName:  req.EventName,
+		Amount:     req.Amount,
+		StartTime:  timestamppb.New(usage.StartTime),
+		EndTime:    timestamppb.New(usage.EndTime),
+	}, nil
+}
+
 func (s *Server) SudoTriggerBillingRepair(ctx context.Context, req *adminv1.SudoTriggerBillingRepairRequest) (*adminv1.SudoTriggerBillingRepairResponse, error) {
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {

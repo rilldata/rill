@@ -2039,6 +2039,36 @@ components:
                 token:
                     type: string
             type: object
+        v1SudoReportUsageRequest:
+            properties:
+                amount:
+                    format: double
+                    type: number
+                endTime:
+                    description: Optional end time of the reporting window. Defaults to the current server time.
+                    format: date-time
+                    type: string
+                eventName:
+                    type: string
+                org:
+                    type: string
+            type: object
+        v1SudoReportUsageResponse:
+            properties:
+                amount:
+                    format: double
+                    type: number
+                customerId:
+                    type: string
+                endTime:
+                    format: date-time
+                    type: string
+                eventName:
+                    type: string
+                startTime:
+                    format: date-time
+                    type: string
+            type: object
         v1SudoTriggerBillingRepairRequest:
             type: object
         v1SudoTriggerBillingRepairResponse:
@@ -3779,6 +3809,7 @@ paths:
     /v1/superuser/deployments/manager-token: {}
     /v1/superuser/members: {}
     /v1/superuser/organization/billing/customer_id: {}
+    /v1/superuser/organization/billing/report-usage: {}
     /v1/superuser/organization/custom-domain: {}
     /v1/superuser/organization/trial/grant-credits: {}
     /v1/superuser/organizations/{org}/billing/issues/{type}: {}

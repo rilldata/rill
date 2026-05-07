@@ -1456,6 +1456,22 @@ export interface V1SudoIssueRuntimeManagerTokenResponse {
   token?: string;
 }
 
+export interface V1SudoReportUsageRequest {
+  org?: string;
+  eventName?: string;
+  amount?: number;
+  /** Optional end time of the reporting window. Defaults to the current server time. */
+  endTime?: string;
+}
+
+export interface V1SudoReportUsageResponse {
+  customerId?: string;
+  eventName?: string;
+  amount?: number;
+  startTime?: string;
+  endTime?: string;
+}
+
 export interface V1SudoTriggerBillingRepairRequest {
   [key: string]: unknown;
 }

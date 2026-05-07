@@ -6452,6 +6452,124 @@ export class SudoGrantTrialCreditsResponse extends Message<SudoGrantTrialCredits
 }
 
 /**
+ * @generated from message rill.admin.v1.SudoReportUsageRequest
+ */
+export class SudoReportUsageRequest extends Message<SudoReportUsageRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * @generated from field: string event_name = 2;
+   */
+  eventName = "";
+
+  /**
+   * @generated from field: double amount = 3;
+   */
+  amount = 0;
+
+  /**
+   * Optional end time of the reporting window. Defaults to the current server time.
+   *
+   * @generated from field: google.protobuf.Timestamp end_time = 4;
+   */
+  endTime?: Timestamp;
+
+  constructor(data?: PartialMessage<SudoReportUsageRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SudoReportUsageRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "event_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "amount", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 4, name: "end_time", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoReportUsageRequest {
+    return new SudoReportUsageRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoReportUsageRequest {
+    return new SudoReportUsageRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoReportUsageRequest {
+    return new SudoReportUsageRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SudoReportUsageRequest | PlainMessage<SudoReportUsageRequest> | undefined, b: SudoReportUsageRequest | PlainMessage<SudoReportUsageRequest> | undefined): boolean {
+    return proto3.util.equals(SudoReportUsageRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SudoReportUsageResponse
+ */
+export class SudoReportUsageResponse extends Message<SudoReportUsageResponse> {
+  /**
+   * @generated from field: string customer_id = 1;
+   */
+  customerId = "";
+
+  /**
+   * @generated from field: string event_name = 2;
+   */
+  eventName = "";
+
+  /**
+   * @generated from field: double amount = 3;
+   */
+  amount = 0;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp start_time = 4;
+   */
+  startTime?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp end_time = 5;
+   */
+  endTime?: Timestamp;
+
+  constructor(data?: PartialMessage<SudoReportUsageResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SudoReportUsageResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "event_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "amount", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 4, name: "start_time", kind: "message", T: Timestamp },
+    { no: 5, name: "end_time", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoReportUsageResponse {
+    return new SudoReportUsageResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoReportUsageResponse {
+    return new SudoReportUsageResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoReportUsageResponse {
+    return new SudoReportUsageResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SudoReportUsageResponse | PlainMessage<SudoReportUsageResponse> | undefined, b: SudoReportUsageResponse | PlainMessage<SudoReportUsageResponse> | undefined): boolean {
+    return proto3.util.equals(SudoReportUsageResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.SudoUpdateOrganizationCustomDomainRequest
  */
 export class SudoUpdateOrganizationCustomDomainRequest extends Message<SudoUpdateOrganizationCustomDomainRequest> {

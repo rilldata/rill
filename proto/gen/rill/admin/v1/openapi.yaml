@@ -2039,6 +2039,36 @@ components:
                 token:
                     type: string
             type: object
+        v1SudoReportUsageRequest:
+            properties:
+                amount:
+                    format: double
+                    type: number
+                endTime:
+                    description: Optional end time of the reporting window. Defaults to the current server time.
+                    format: date-time
+                    type: string
+                eventName:
+                    type: string
+                org:
+                    type: string
+            type: object
+        v1SudoReportUsageResponse:
+            properties:
+                amount:
+                    format: double
+                    type: number
+                customerId:
+                    type: string
+                endTime:
+                    format: date-time
+                    type: string
+                eventName:
+                    type: string
+                startTime:
+                    format: date-time
+                    type: string
+            type: object
         v1SudoTriggerBillingRepairRequest:
             type: object
         v1SudoTriggerBillingRepairResponse:
@@ -7130,6 +7160,30 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: SudoUpdateOrganizationBillingCustomer update the billing customer for the organization
+    /v1/superuser/organization/billing/report-usage:
+        post:
+            operationId: AdminService_SudoReportUsage
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/v1SudoReportUsageRequest'
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1SudoReportUsageResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: SudoReportUsage reports a mock usage event for an organization.
     /v1/superuser/organization/custom-domain:
         patch:
             operationId: AdminService_SudoUpdateOrganizationCustomDomain
