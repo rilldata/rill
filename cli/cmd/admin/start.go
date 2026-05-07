@@ -110,7 +110,7 @@ type Config struct {
 	StripeAPIKey                      string `split_words:"true"`
 	StripeWebhookSecret               string `split_words:"true"`
 	PylonIdentitySecret               string `split_words:"true"`
-	AllowMockUsage                    bool   `default:"false" split_words:"true"` // set to allow sending mock usage for billing, ideally should be false in prod env
+	AllowMockUsage                    bool   `default:"false" split_words:"true"` // set to allow sending mock usage for billing, should be false in prod env
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.

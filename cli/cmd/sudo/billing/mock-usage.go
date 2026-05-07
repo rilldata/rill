@@ -11,11 +11,11 @@ import (
 )
 
 func MockUsageCmd(ch *cmdutil.Helper) *cobra.Command {
-	var eventName, endTimeStr string
+	var eventName, eventTimeStr string
 	var amount float64
 
 	cmd := &cobra.Command{
-		Use:   "mock-usage <org>",
+		Use:   "mock-usage <org-name>",
 		Short: "Report a mock usage event for an organization",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -29,13 +29,13 @@ func MockUsageCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("please set --amount to a positive value")
 			}
 
-			var endTime *timestamppb.Timestamp
-			if endTimeStr != "" {
-				t, err := time.Parse(time.RFC3339, endTimeStr)
+			var eventTime *timestamppb.Timestamp
+			if eventTimeStr != "" {
+				t, err := time.Parse(time.RFC3339, eventTimeStr)
 				if err != nil {
-					return fmt.Errorf("invalid --end-time (expected RFC3339): %w", err)
+					return fmt.Errorf("invalid --event-time (expected RFC3339): %w", err)
 				}
-				endTime = timestamppb.New(t)
+				eventTime = timestamppb.New(t)
 			}
 
 			client, err := ch.Client()
@@ -47,7 +47,7 @@ func MockUsageCmd(ch *cmdutil.Helper) *cobra.Command {
 				Org:       org,
 				EventName: eventName,
 				Amount:    amount,
-				EndTime:   endTime,
+				EndTime:   eventTime,
 			})
 			if err != nil {
 				return err
@@ -67,6 +67,6 @@ func MockUsageCmd(ch *cmdutil.Helper) *cobra.Command {
 	cmd.Flags().SortFlags = false
 	cmd.Flags().StringVar(&eventName, "event", "", "Event/metric name (for example, slot_seconds_spend or duckdb_estimated_size_bytes)")
 	cmd.Flags().Float64Var(&amount, "amount", 0, "Numeric amount to report")
-	cmd.Flags().StringVar(&endTimeStr, "end-time", "", "End time of the reporting window in RFC3339 (defaults to current server time)")
+	cmd.Flags().StringVar(&eventTimeStr, "event-time", "", "Event time of the reporting window in RFC3339 (defaults to current server time)")
 	return cmd
 }
