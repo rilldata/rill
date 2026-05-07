@@ -106,7 +106,7 @@ type Config struct {
 	ScaleDownConstraint               int    `default:"0" split_words:"true"`
 	OrbAPIKey                         string `split_words:"true"`
 	OrbWebhookSecret                  string `split_words:"true"`
-	OrbIntegratedTaxProvider          string `default:"avalara" split_words:"true"`
+	OrbIntegratedTaxProvider          string `default:"anrok" split_words:"true"`
 	StripeAPIKey                      string `split_words:"true"`
 	StripeWebhookSecret               string `split_words:"true"`
 	PylonIdentitySecret               string `split_words:"true"`

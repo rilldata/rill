@@ -27,6 +27,8 @@ export class EnvStore {
   }
 
   public async flush(editSession: EnvEditSession) {
+    if (editSession.entries.size === 0) return;
+
     editSession.entries.forEach((entry) => {
       if (!entry.variable) {
         entry.variable = new EnvVariable(

@@ -1305,6 +1305,8 @@ const (
 	BillingIssueTypePaymentFailed                          = 5
 	BillingIssueTypeSubscriptionCancelled                  = 6
 	BillingIssueTypeNeverSubscribed                        = 7
+	BillingIssueTypeOnCreditTrial                          = 8
+	BillingIssueTypeTrialCreditsDepleted                   = 9
 )
 
 type BillingIssueLevel int
@@ -1365,6 +1367,19 @@ type BillingIssueMetadataSubscriptionCancelled struct {
 }
 
 type BillingIssueMetadataNeverSubscribed struct{}
+
+type BillingIssueMetadataOnCreditTrial struct {
+	SubID            string  `json:"subscription_id"`
+	PlanID           string  `json:"plan_id"`
+	CreditAllocation float64 `json:"credit_allocation"`
+	LowCredit        bool    `json:"low_credit"` // set once the customer's credit balance has dropped below the low-credit threshold.
+}
+
+type BillingIssueMetadataTrialCreditsDepleted struct {
+	SubID      string    `json:"subscription_id"`
+	PlanID     string    `json:"plan_id"`
+	DepletedOn time.Time `json:"depleted_on"`
+}
 
 type UpsertBillingIssueOptions struct {
 	OrgID     string           `validate:"required"`

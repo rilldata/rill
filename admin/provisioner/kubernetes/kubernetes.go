@@ -10,9 +10,11 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"text/template"
 	"time"
+	"unicode/utf8"
 
 	"github.com/Masterminds/sprig/v3"
 	"github.com/c2h5oh/datasize"
@@ -31,6 +33,12 @@ import (
 	netv1ac "k8s.io/client-go/applyconfigurations/networking/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+)
+
+var (
+	invalidChars    = regexp.MustCompile(`[^a-z0-9._-]+`)
+	leadingInvalid  = regexp.MustCompile(`^[^a-z0-9]+`)
+	trailingInvalid = regexp.MustCompile(`[^a-z0-9]+$`)
 )
 
 func init() {
@@ -110,6 +118,7 @@ func NewKubernetes(specJSON []byte, db database.DB, logger *zap.Logger) (provisi
 	funcMap := sprig.TxtFuncMap()
 	delete(funcMap, "env")
 	delete(funcMap, "expandenv")
+	funcMap["sanitizeLabel"] = sanitizeLabel
 
 	// Define template files
 	templateFiles := []string{
@@ -455,4 +464,25 @@ func (r *runtimeState) AsMap() map[string]any {
 		panic(err)
 	}
 	return res
+}
+
+// sanitizeLabel takes an input string and transforms it into a valid Kubernetes label
+func sanitizeLabel(input string) string {
+	// Normalize case
+	v := strings.ToLower(input)
+
+	// Replace invalid chars
+	v = invalidChars.ReplaceAllString(v, "-")
+
+	// Truncate to 63 chars (safe for UTF-8)
+	if utf8.RuneCountInString(v) > 63 {
+		runes := []rune(v)
+		v = string(runes[:63])
+	}
+
+	// Strip leading/trailing non-alphanumeric
+	v = leadingInvalid.ReplaceAllString(v, "")
+	v = trailingInvalid.ReplaceAllString(v, "")
+
+	return v
 }
