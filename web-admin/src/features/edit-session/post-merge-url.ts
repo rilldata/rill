@@ -1,5 +1,5 @@
 import {
-  DeployingDashboardUrlParam,
+  TargetDashboardUrlParam,
   PreCommitShaUrlParam,
 } from "@rilldata/web-common/features/project/deploy/utils";
 
@@ -32,7 +32,7 @@ export function buildPostMergeUrl({
     window.location.origin,
   );
   if (dashboard) {
-    url.searchParams.set(DeployingDashboardUrlParam, dashboard);
+    url.searchParams.set(TargetDashboardUrlParam, dashboard);
   }
   if (preCommitSha) {
     url.searchParams.set(PreCommitShaUrlParam, preCommitSha);

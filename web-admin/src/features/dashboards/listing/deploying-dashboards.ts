@@ -18,7 +18,7 @@ export function useDeployingDashboards(
   client: RuntimeClient,
   orgName: string,
   projName: string,
-  deployingDashboard: string | null,
+  targetDashboard: string | null,
   preCommitSha: string | null,
 ): CreateQueryResult<{
   redirectPath: string | null;
@@ -47,7 +47,7 @@ export function useDeployingDashboards(
 
           const reconciling = getDashboardsReconciling(
             dashboards,
-            deployingDashboard,
+            targetDashboard,
           );
           if (reconciling) {
             return {
@@ -58,7 +58,7 @@ export function useDeployingDashboards(
 
           const dashboardsErrored = getDashboardsErrored(
             dashboards,
-            deployingDashboard,
+            targetDashboard,
           );
           if (dashboardsErrored) {
             return {
@@ -69,11 +69,11 @@ export function useDeployingDashboards(
           }
 
           const dashboard = dashboards.find(
-            (res) => res.meta?.name?.name === deployingDashboard,
+            (res) => res.meta?.name?.name === targetDashboard,
           );
 
           // Redirect to home page if no specific dashboard was deployed
-          if (!deployingDashboard || !dashboard?.meta?.name) {
+          if (!targetDashboard || !dashboard?.meta?.name) {
             return {
               redirectPath: `/${orgName}/${projName}`,
               dashboardsErrored: false,
