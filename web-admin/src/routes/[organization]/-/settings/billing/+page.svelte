@@ -17,10 +17,15 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import type { PageData } from "./$types";
+  import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors.ts";
 
   let { data }: { data: PageData } = $props();
 
   let organization = $derived(data.organization);
+  let categorisedIssues = $derived(
+    useCategorisedOrganizationBillingIssues(organization),
+  );
+
   let showUpgradeDialog = $derived(data.showUpgradeDialog);
   let billingPortalUrl = $derived(data.billingPortalUrl);
   let subscriptionQuery = $derived(
@@ -61,12 +66,14 @@
   <Spinner status={EntityStatus.Running} size="16px" />
 {:else}
   <div class="flex flex-col gap-8">
-    <Plan
-      {organization}
-      {showUpgradeDialog}
-      {billingPortalUrl}
-      bind:cancelOpen
-    />
+    {#if !$categorisedIssues.data?.neverSubscribed}
+      <Plan
+        {organization}
+        {showUpgradeDialog}
+        {billingPortalUrl}
+        bind:cancelOpen
+      />
+    {/if}
     {#if !isEnterprise}
       <Payment {organization} />
     {/if}

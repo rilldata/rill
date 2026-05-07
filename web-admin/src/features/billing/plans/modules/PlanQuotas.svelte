@@ -1,9 +1,9 @@
 <script lang="ts">
   import { createAdminServiceGetOrganization } from "@rilldata/web-admin/client";
-  import { listProjectsForOrgQueryOptions } from "@rilldata/web-admin/features/projects/list-projects-query-options";
+  import { listProjectsForOrgQueryOptions } from "@rilldata/web-admin/features/projects/list-projects-query-options.ts";
   import { createQuery } from "@tanstack/svelte-query";
-  import { getOrganizationUsageMetrics } from "@rilldata/web-admin/features/billing/plans/selectors";
-  import { formatUsageVsQuota } from "@rilldata/web-admin/features/billing/plans/utils";
+  import { getOrganizationUsageMetrics } from "@rilldata/web-admin/features/billing/plans/selectors.ts";
+  import { formatUsageVsQuota } from "@rilldata/web-admin/features/billing/plans/utils.ts";
   import { Progress } from "@rilldata/web-common/components/progress";
 
   export let organization: string;

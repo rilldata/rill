@@ -8,7 +8,7 @@
   import { getErrorForMutation } from "@rilldata/web-admin/client/utils";
   import ContactUs from "@rilldata/web-admin/features/billing/ContactUs.svelte";
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
-  import PlanQuotas from "@rilldata/web-admin/features/billing/plans/PlanQuotas.svelte";
+  import PlanQuotas from "@rilldata/web-admin/features/billing/plans/modules/PlanQuotas.svelte";
   import { getNextBillingCycleDate } from "@rilldata/web-admin/features/billing/plans/selectors";
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import {

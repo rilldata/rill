@@ -1,53 +1,28 @@
 <script lang="ts">
   import {
-    createAdminServiceCancelBillingSubscription,
     createAdminServiceGetBillingSubscription,
     createAdminServiceGetOrganization,
-    createAdminServiceListProjectsForOrganization,
-    createAdminServiceUpdateBillingSubscription,
-    getAdminServiceListDeploymentsQueryOptions,
     V1BillingIssueType,
-    V1BillingPlanType,
-    type V1Deployment,
   } from "@rilldata/web-admin/client";
-  import {
-    isActiveDeployment,
-    isProdDeployment,
-  } from "@rilldata/web-admin/features/branches/deployment-utils";
-  import { createQueries } from "@tanstack/svelte-query";
-  import { toStore } from "svelte/store";
-  import { getErrorForMutation } from "@rilldata/web-admin/client/utils";
-  import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
   import { needsPaymentSetup } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
-  import { getOrganizationUsageMetrics } from "@rilldata/web-admin/features/billing/plans/selectors";
+  import {
+    getBillingCycleDates,
+    getBillingStatsForOrg,
+    getPlanTierForSubscription,
+  } from "@rilldata/web-admin/features/billing/plans/selectors";
   import type {
     PlanTier,
     TeamPlanDialogTypes,
   } from "@rilldata/web-admin/features/billing/plans/types";
-  import {
-    isEnterprisePlan,
-    isFreePlan,
-    isManagedPlan,
-    isProPlan,
-    isTeamPlan,
-  } from "@rilldata/web-admin/features/billing/plans/utils";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
-  import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size";
-  import {
-    AlertDialog,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-  } from "@rilldata/web-common/components/alert-dialog";
-  import { Button } from "@rilldata/web-common/components/button";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import CostAndUsage from "@rilldata/web-admin/features/billing/plans/modules/CostAndUsage.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
   import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
   import { fetchPaymentsPortalURL } from "@rilldata/web-admin/features/billing/plans/selectors";
+  import CancelPlanDialog from "@rilldata/web-admin/features/billing/plans/dialog/CancelPlanDialog.svelte";
+  import UpgradeToProDialog from "@rilldata/web-admin/features/billing/plans/dialog/UpgradeToProDialog.svelte";
 
   let {
     organization,
@@ -65,7 +40,6 @@
     createAdminServiceGetBillingSubscription(organization),
   );
   let subscription = $derived($subscriptionQuery?.data?.subscription);
-  let plan = $derived(subscription?.plan);
 
   let orgQuery = $derived(createAdminServiceGetOrganization(organization));
   let hasPaymentCustomer = $derived(
@@ -78,38 +52,16 @@
   let paymentIssues = $derived($categorisedIssues.data?.payment);
 
   let subHasEnded = $derived(!!$categorisedIssues.data?.cancelled);
-  let planType = $derived(plan?.planType);
-  let planName = $derived(plan?.name ?? "");
 
-  let currentPlan: PlanTier = $derived.by(() => {
-    // Prefer planType enum when available; fall back to plan.name string matching
-    if (
-      planType === V1BillingPlanType.BILLING_PLAN_TYPE_TEAM ||
-      isTeamPlan(planName)
-    )
-      return "team";
-    if (
-      planType === V1BillingPlanType.BILLING_PLAN_TYPE_MANAGED ||
-      isManagedPlan(planName)
-    )
-      return "managed";
-    if (
-      planType === V1BillingPlanType.BILLING_PLAN_TYPE_ENTERPRISE ||
-      isEnterprisePlan(planName)
-    )
-      return "enterprise";
-    if (
-      planType === V1BillingPlanType.BILLING_PLAN_TYPE_PRO ||
-      isProPlan(planName)
-    )
-      return "pro";
-    if (isFreePlan(planName)) return "free";
-    // free_trial, no plan, cancelled — all trial
-    return "trial";
-  });
+  let currentPlan: PlanTier = $derived(
+    getPlanTierForSubscription(subscription),
+  );
 
   let isTrialExpired = $derived(
-    $categorisedIssues.data?.trial?.type === "BILLING_ISSUE_TYPE_TRIAL_ENDED",
+    $categorisedIssues.data?.trial?.type ===
+      V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_ENDED ||
+      $categorisedIssues.data?.trial?.type ===
+        V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED,
   );
 
   let dialogType: TeamPlanDialogTypes = $derived.by(() => {
@@ -151,73 +103,10 @@
   let trialDaysRemaining = $derived(TRIAL_DAYS - trialDaysUsed);
   let trialPercent = $derived(Math.round((trialDaysUsed / TRIAL_DAYS) * 100));
 
-  // Slots + storage data
-  let projectsQuery = $derived(
-    createAdminServiceListProjectsForOrganization(organization),
+  let billingStats = $derived(getBillingStatsForOrg(organization));
+  let dailyRunRate = $derived(
+    $billingStats.prodDailyCost + $billingStats.devDailyCost,
   );
-  // Compute units = project.{prod,dev}Slots × number of running {prod,dev}
-  // deployments for that project, summed across the org. We fan out one
-  // ListDeployments query per project — there's no org-level endpoint.
-  const deploymentsQueries = createQueries({
-    queries: toStore(() =>
-      ($projectsQuery.data?.projects ?? []).map((p) =>
-        getAdminServiceListDeploymentsQueryOptions(
-          organization,
-          p.name ?? "",
-          {},
-        ),
-      ),
-    ),
-  });
-
-  let prodSlots = $derived.by(() => {
-    const projs = $projectsQuery.data?.projects ?? [];
-    const results = $deploymentsQueries;
-    return projs.reduce((sum, p, i) => {
-      const deps = results[i]?.data?.deployments ?? [];
-      const slots = Number(p.prodSlots ?? 0);
-      const runningCount = deps.filter(
-        (d: V1Deployment) => isProdDeployment(d) && isActiveDeployment(d),
-      ).length;
-      return sum + slots * runningCount;
-    }, 0);
-  });
-  let devSlots = $derived.by(() => {
-    const projs = $projectsQuery.data?.projects ?? [];
-    const results = $deploymentsQueries;
-    return projs.reduce((sum, p, i) => {
-      const deps = results[i]?.data?.deployments ?? [];
-      const slots = Number(p.devSlots ?? 0);
-      const runningCount = deps.filter(
-        (d: V1Deployment) => !isProdDeployment(d) && isActiveDeployment(d),
-      ).length;
-      return sum + slots * runningCount;
-    }, 0);
-  });
-
-  let usageMetrics = $derived(getOrganizationUsageMetrics(organization));
-  let totalStorage = $derived(
-    $usageMetrics?.data?.reduce((s, m) => s + m.size, 0) ?? 0,
-  );
-
-  // Storage cost estimate from current snapshot. Final billing is the
-  // average across the cycle, so the invoice may differ; the UI labels
-  // this as an estimate via tooltip.
-  const BYTES_PER_GB = 1024 ** 3;
-  const STORAGE_FREE_GB = 1;
-  const STORAGE_RATE_PER_GB = 1;
-  let storageCost = $derived(
-    Math.max(0, totalStorage / BYTES_PER_GB - STORAGE_FREE_GB) *
-      STORAGE_RATE_PER_GB,
-  );
-
-  // Daily run-rate from the current configuration (units × list rate × 24h).
-  // Used as a placeholder until the billing usage API exposes accrued $ values.
-  const RATE_PER_UNIT_HR = 0.15;
-  const HOURS_PER_DAY = 24;
-  let prodDailyCost = $derived(prodSlots * RATE_PER_UNIT_HR * HOURS_PER_DAY);
-  let devDailyCost = $derived(devSlots * RATE_PER_UNIT_HR * HOURS_PER_DAY);
-  let dailyRunRate = $derived(prodDailyCost + devDailyCost);
 
   // Pro plan credit + post-credit estimate. Available credit is hard-zero
   // until the billing usage API exposes the remaining trial credit balance.
@@ -227,29 +116,9 @@
   );
 
   // Billing cycle
-  let cycleEnd = $derived(subscription?.currentBillingCycleEndDate);
-  // TODO: replace with subscription billing cycle dates once accrued cost API is available
-  let periodStart = $derived.by(() => {
-    const d = new Date();
-    return new Date(d.getFullYear(), d.getMonth(), 1).toLocaleDateString(
-      undefined,
-      { month: "short", day: "numeric", year: "numeric" },
-    );
-  });
-  let periodEnd = $derived.by(() => {
-    const d = new Date();
-    return new Date(d.getFullYear(), d.getMonth() + 1, 0).toLocaleDateString(
-      undefined,
-      { month: "short", day: "numeric", year: "numeric" },
-    );
-  });
-  let dueDate = $derived.by(() => {
-    const d = new Date();
-    return new Date(d.getFullYear(), d.getMonth() + 1, 1).toLocaleDateString(
-      undefined,
-      { month: "short", day: "numeric", year: "numeric" },
-    );
-  });
+  let { formattedPeriodStart, formattedPeriodEnd, formattedDueDate } = $derived(
+    getBillingCycleDates(subscription),
+  );
 
   // Upgrade dialog
   let upgradeDialogOpen = $state(false);
@@ -259,9 +128,6 @@
 
   // Pro upgrade confirmation
   let upgradeProDialogOpen = $state(false);
-  let upgradeProLoading = $state(false);
-  let upgradeProError = $state<string | null>(null);
-  let proPlanUpdater = createAdminServiceUpdateBillingSubscription();
 
   async function handleUpgradeToPro() {
     // No payment method on file, or payment issues → send to Stripe portal to set up.
@@ -276,57 +142,11 @@
       return;
     }
     // Payment method on file → confirm before upgrading.
-    upgradeProError = null;
     upgradeProDialogOpen = true;
-  }
-
-  async function confirmUpgradeToPro() {
-    upgradeProLoading = true;
-    upgradeProError = null;
-    try {
-      await $proPlanUpdater.mutateAsync({
-        org: organization,
-        data: { planName: "pro_plan" },
-      });
-      eventBus.emit("notification", {
-        type: "success",
-        message: "You're on the Pro plan",
-      });
-      void invalidateBillingInfo(organization);
-      upgradeProDialogOpen = false;
-    } catch (e) {
-      upgradeProError =
-        e instanceof Error ? e.message : "An unexpected error occurred";
-    } finally {
-      upgradeProLoading = false;
-    }
   }
 
   function handleContactSales() {
     window.Pylon("show");
-  }
-
-  // Cancel subscription
-  let planCanceller = $derived(createAdminServiceCancelBillingSubscription());
-  let cancelError = $derived(getErrorForMutation($planCanceller));
-  let cycleEndFormatted = $derived.by(() => {
-    if (!cycleEnd) return "";
-    return new Date(cycleEnd).toLocaleDateString(undefined, {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
-  });
-  async function handleCancelPlan() {
-    await $planCanceller.mutateAsync({ org: organization });
-    eventBus.emit("notification", {
-      type: "success",
-      message: `Your ${currentPlan === "pro" ? "Pro" : "Team"} plan was cancelled`,
-    });
-    void invalidateBillingInfo(organization, [
-      V1BillingIssueType.BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED,
-    ]);
-    cancelOpen = false;
   }
 </script>
 
@@ -543,7 +363,9 @@
           <span class="pro-stat-amount text-fg-secondary"
             >{fmtCredit(dailyRunRate)}</span
           >
-          <span class="pro-stat-sub">{periodStart} – {periodEnd}</span>
+          <span class="pro-stat-sub">
+            {formattedPeriodStart} – {formattedPeriodEnd}
+          </span>
         </div>
         <div class="pro-stat-col border-l pl-6">
           <span class="pro-stat-label">Available credit</span>
@@ -569,84 +391,20 @@
           <span class="pro-stat-amount text-fg-primary"
             >{fmtCredit(proEstimatedCost)}</span
           >
-          {#if dueDate}
-            <span class="pro-stat-sub">Due {dueDate}</span>
+          {#if formattedDueDate}
+            <span class="pro-stat-sub">Due {formattedDueDate}</span>
           {/if}
         </div>
       </div>
     {/if}
 
     {#if currentPlan === "free" || currentPlan === "pro"}
-      <!-- Cost + usage row -->
-      <!-- TODO: replace prod/dev dollar values with accrued costs once the
-           billing usage API exposes them. Current values project from
-           current config × list rate, which is misleading vs. actual
-           billed amounts. Storage is estimated from current snapshot. -->
-      <div class="stats-row">
-        <div class="flex items-center gap-4">
-          <div class="stat-column">
-            <span class="stat-value">{fmtCredit(prodDailyCost)}</span>
-            <span class="stat-label">{prodSlots} Prod Compute Units</span>
-          </div>
-          <div class="stat-column">
-            <span class="stat-value">{fmtCredit(devDailyCost)}</span>
-            <span class="stat-label">{devSlots} Dev Compute Units</span>
-          </div>
-          <div class="stat-column">
-            <div class="flex items-center gap-1">
-              <span class="stat-value">{fmtCredit(storageCost)}</span>
-              <Tooltip location="top" alignment="middle" distance={8}>
-                <span class="text-fg-muted flex">
-                  <InfoCircle size="14px" />
-                </span>
-                <TooltipContent maxWidth="260px" slot="tooltip-content">
-                  Estimated from current storage at $1/GB/month after a 1 GB
-                  free allowance. Final billing is based on average storage
-                  across the cycle, so the invoice may differ.
-                </TooltipContent>
-              </Tooltip>
-            </div>
-            <span class="stat-label"
-              >{totalStorage > 0 ? formatMemorySize(totalStorage) : "0 B"} Storage</span
-            >
-          </div>
-        </div>
-      </div>
+      <CostAndUsage {organization} />
     {/if}
   </div>
 </section>
 
-{#if currentPlan === "pro" || currentPlan === "team"}
-  <AlertDialog bind:open={cancelOpen}>
-    <AlertDialogContent>
-      <AlertDialogHeader>
-        <AlertDialogTitle
-          >Cancel your {currentPlan === "pro" ? "Pro" : "Team"} plan?</AlertDialogTitle
-        >
-        <AlertDialogDescription>
-          If you cancel your plan, you'll still be able to access your account
-          through
-          <span class="font-semibold">{cycleEndFormatted}.</span>
-        </AlertDialogDescription>
-        {#if cancelError}
-          <p class="text-red-500 text-sm">{cancelError}</p>
-        {/if}
-      </AlertDialogHeader>
-      <AlertDialogFooter class="mt-3">
-        <Button
-          type="secondary"
-          onClick={handleCancelPlan}
-          loading={$planCanceller.isPending}
-        >
-          Cancel plan
-        </Button>
-        <Button type="primary" onClick={() => (cancelOpen = false)}>
-          Keep plan
-        </Button>
-      </AlertDialogFooter>
-    </AlertDialogContent>
-  </AlertDialog>
-{/if}
+<CancelPlanDialog bind:open={cancelOpen} {organization} />
 
 <StartTeamPlanDialog
   bind:open={upgradeDialogOpen}
@@ -655,37 +413,7 @@
   endDate={renewEndDate}
 />
 
-<AlertDialog bind:open={upgradeProDialogOpen}>
-  <AlertDialogContent>
-    <AlertDialogHeader>
-      <AlertDialogTitle>Upgrade to Pro?</AlertDialogTitle>
-      <AlertDialogDescription>
-        Your subscription will start today using the payment method on file.
-        You'll be billed monthly based on usage at $0.15/unit/hr and $1/GB
-        storage/mo. Cancel anytime.
-      </AlertDialogDescription>
-      {#if upgradeProError}
-        <p class="text-red-500 text-sm">{upgradeProError}</p>
-      {/if}
-    </AlertDialogHeader>
-    <AlertDialogFooter class="mt-3">
-      <Button
-        type="secondary"
-        onClick={() => (upgradeProDialogOpen = false)}
-        disabled={upgradeProLoading}
-      >
-        Cancel
-      </Button>
-      <Button
-        type="primary"
-        onClick={confirmUpgradeToPro}
-        loading={upgradeProLoading}
-      >
-        Upgrade to Pro
-      </Button>
-    </AlertDialogFooter>
-  </AlertDialogContent>
-</AlertDialog>
+<UpgradeToProDialog bind:open={upgradeProDialogOpen} {organization} />
 
 <style lang="postcss">
   .section-header {
@@ -836,12 +564,6 @@
     @apply h-full bg-primary-500 rounded-full transition-all;
   }
 
-  .stats-row {
-    @apply flex items-center justify-between bg-surface-subtle border-t;
-    margin: 16px -24px 0;
-    padding: 12px 24px;
-  }
-
   .pricing-link {
     @apply mt-3 inline-flex items-center gap-1 self-end;
     @apply text-xs font-medium text-primary-600 no-underline;
@@ -858,19 +580,5 @@
 
   .pricing-link-top:hover {
     @apply underline;
-  }
-
-  .stat-column {
-    @apply flex flex-col gap-1;
-  }
-
-  .stat-value {
-    @apply font-sans font-medium text-sm;
-    line-height: 100%;
-  }
-
-  .stat-label {
-    @apply font-sans font-medium text-xs text-fg-tertiary;
-    line-height: 100%;
   }
 </style>

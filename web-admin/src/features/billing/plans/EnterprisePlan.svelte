@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { V1BillingPlan } from "@rilldata/web-admin/client";
   import ContactUs from "@rilldata/web-admin/features/billing/ContactUs.svelte";
-  import PlanQuotas from "@rilldata/web-admin/features/billing/plans/PlanQuotas.svelte";
+  import PlanQuotas from "@rilldata/web-admin/features/billing/plans/modules/PlanQuotas.svelte";
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
 
   let {
