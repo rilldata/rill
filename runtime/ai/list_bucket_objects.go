@@ -94,7 +94,7 @@ func (t *ListBucketObjects) Handler(ctx context.Context, args *ListBucketObjects
 	var objects []drivers.ObjectStoreEntry
 	var nextToken string
 	if fileutil.IsGlob(args.Path) {
-		objects, nextToken, err = os.ListObjectsForGlob(ctx, args.Bucket, args.Path, uint32(pageSize), args.PageToken)
+		objects, nextToken, err = os.ListObjectsForGlob(ctx, args.Bucket, args.Path, uint32(pageSize), args.PageToken, "", "")
 	} else {
 		objects, nextToken, err = os.ListObjects(ctx, args.Bucket, args.Path, "/", uint32(pageSize), args.PageToken)
 	}
