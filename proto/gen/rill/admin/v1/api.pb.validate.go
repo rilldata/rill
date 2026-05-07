@@ -43475,6 +43475,8 @@ func (m *Project) validate(all bool) error {
 
 	// no validation rules for ProdTtlSeconds
 
+	// no validation rules for DevTtlSeconds
+
 	// no validation rules for Annotations
 
 	// no validation rules for ProdVersion
@@ -43708,6 +43710,35 @@ func (m *Deployment) validate(all bool) error {
 		if err := v.Validate(); err != nil {
 			return DeploymentValidationError{
 				field:  "UpdatedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetUsedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, DeploymentValidationError{
+					field:  "UsedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, DeploymentValidationError{
+					field:  "UsedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetUsedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return DeploymentValidationError{
+				field:  "UsedOn",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}

@@ -592,6 +592,9 @@ components:
                 updatedOn:
                     format: date-time
                     type: string
+                usedOn:
+                    format: date-time
+                    type: string
             type: object
         v1DeploymentStatus:
             default: DEPLOYMENT_STATUS_UNSPECIFIED
@@ -1500,6 +1503,9 @@ components:
                 description:
                     type: string
                 devSlots:
+                    format: int64
+                    type: string
+                devTtlSeconds:
                     format: int64
                     type: string
                 directoryName:

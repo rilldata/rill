@@ -184,10 +184,6 @@ func (w *CreditBalanceDepletedWorker) Work(ctx context.Context, job *river.Job[C
 			return err
 		}
 		for _, proj := range projs {
-			if proj.PrimaryDeploymentID == nil {
-				afterProjectName = proj.Name
-				continue
-			}
 			if _, err := w.admin.HibernateProject(ctx, proj); err != nil {
 				return fmt.Errorf("failed to hibernate project %q: %w", proj.Name, err)
 			}

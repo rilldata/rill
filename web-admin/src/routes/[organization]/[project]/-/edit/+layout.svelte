@@ -66,6 +66,7 @@
   );
   $: projectPermissions = $projectQuery.data?.projectPermissions ?? {};
   $: primaryBranch = $projectQuery.data?.project?.primaryBranch;
+  $: devTtlSeconds = $projectQuery.data?.project?.devTtlSeconds;
 
   // Deployment data and credentials come from GetProject (no separate API needed)
   $: deployment = $projectQuery.data?.deployment;
@@ -107,7 +108,6 @@
     jwt !== null &&
     !isOtherOwner;
 
-  $: projectUrl = `/${organization}/${project}`;
   $: branchUrl = `/${organization}/${project}${branchPathPrefix(branch)}`;
 
   $: inProjectWelcomePage = isProjectWelcomePage($page);
@@ -158,44 +158,8 @@
         </CtaButton>
       </CtaContentContainer>
     </CtaLayoutContainer>
-  {:else if isReady && deployment?.id && instanceId && runtimeHost && jwt}
-    {#key `${runtimeHost}::${instanceId}`}
-      <RuntimeProvider host={runtimeHost} {instanceId} {jwt}>
-        {#if !inProjectWelcomePage}
-          <ProjectHeader
-            {organization}
-            {project}
-            {projectPermissions}
-            manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
-            manageOrgMembers={organizationPermissions?.manageOrgMembers}
-            readProjects={organizationPermissions?.readProjects}
-            {primaryBranch}
-            {planDisplayName}
-            {organizationLogoUrl}
-            editContext={true}
-          />
-          <EditSessionTimeoutBanner sessionStartedAt={deployment.createdOn} />
-        {/if}
-        <FileAndResourceWatcher
-          lifecycle="none"
-          {onBeforeReconnect}
-          errorBody="Lost connection to the editing environment. Try ending the session and starting a new one."
-        >
-          <div class="flex flex-1 overflow-hidden">
-            {#if !inProjectWelcomePage}
-              <WelcomeRedirector />
-              <Navigation showFooterLinks={false} />
-            {/if}
-            <section class="flex flex-1 overflow-hidden">
-              <div class="flex-1 overflow-hidden">
-                <slot />
-              </div>
-              <DeveloperChat />
-            </section>
-          </div>
-        </FileAndResourceWatcher>
-      </RuntimeProvider>
-    {/key}
+  {:else if isLoading}
+    <EditSessionLoading status={deploymentStatus} href={`/${organization}`} />
   {:else if isErrored}
     <SlimProjectHeader
       {organization}
@@ -227,8 +191,47 @@
       {branch}
       onStarted={() => (starting = true)}
     />
-  {:else if isLoading}
-    <EditSessionLoading status={deploymentStatus} cancelHref={projectUrl} />
+  {:else if isReady && deployment?.id && instanceId && runtimeHost && jwt}
+    {#key `${runtimeHost}::${instanceId}`}
+      <RuntimeProvider host={runtimeHost} {instanceId} {jwt}>
+        {#if !inProjectWelcomePage}
+          <ProjectHeader
+            {organization}
+            {project}
+            {projectPermissions}
+            manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
+            manageOrgMembers={organizationPermissions?.manageOrgMembers}
+            readProjects={organizationPermissions?.readProjects}
+            {primaryBranch}
+            {planDisplayName}
+            {organizationLogoUrl}
+            editContext={true}
+          />
+          <EditSessionTimeoutBanner
+            usedOn={deployment.usedOn}
+            {devTtlSeconds}
+          />
+        {/if}
+        <FileAndResourceWatcher
+          lifecycle="none"
+          {onBeforeReconnect}
+          errorBody="Lost connection to the editing environment. Try ending the session and starting a new one."
+        >
+          <div class="flex flex-1 overflow-hidden">
+            {#if !inProjectWelcomePage}
+              <WelcomeRedirector />
+              <Navigation showFooterLinks={false} />
+            {/if}
+            <section class="flex flex-1 overflow-hidden">
+              <div class="flex-1 overflow-hidden">
+                <slot />
+              </div>
+              <DeveloperChat />
+            </section>
+          </div>
+        </FileAndResourceWatcher>
+      </RuntimeProvider>
+    {/key}
   {:else}
     <SlimProjectHeader
       {organization}
