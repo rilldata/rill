@@ -6642,6 +6642,9 @@ definitions:
         type: string
         format: date-time
         description: Optional end time of the reporting window. Defaults to the current server time.
+      projectName:
+        type: string
+        description: Optional project name attribution for the mock event. If not set, a placeholder is used.
   v1SudoReportUsageResponse:
     type: object
     properties:

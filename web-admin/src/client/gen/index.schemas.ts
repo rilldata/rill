@@ -1464,6 +1464,8 @@ export interface V1SudoReportUsageRequest {
   amount?: number;
   /** Optional end time of the reporting window. Defaults to the current server time. */
   endTime?: string;
+  /** Optional project name attribution for the mock event. If not set, a placeholder is used. */
+  projectName?: string;
 }
 
 export interface V1SudoReportUsageResponse {

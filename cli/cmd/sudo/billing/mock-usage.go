@@ -11,7 +11,7 @@ import (
 )
 
 func MockUsageCmd(ch *cmdutil.Helper) *cobra.Command {
-	var eventName, eventTimeStr string
+	var eventName, eventTimeStr, projectName string
 	var amount float64
 
 	cmd := &cobra.Command{
@@ -44,10 +44,11 @@ func MockUsageCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			res, err := client.SudoReportUsage(ctx, &adminv1.SudoReportUsageRequest{
-				Org:       org,
-				EventName: eventName,
-				Amount:    amount,
-				EndTime:   eventTime,
+				Org:         org,
+				EventName:   eventName,
+				Amount:      amount,
+				EndTime:     eventTime,
+				ProjectName: projectName,
 			})
 			if err != nil {
 				return err
@@ -68,5 +69,6 @@ func MockUsageCmd(ch *cmdutil.Helper) *cobra.Command {
 	cmd.Flags().StringVar(&eventName, "event", "", "Event/metric name (for example, slot_seconds_spend or duckdb_estimated_size_bytes)")
 	cmd.Flags().Float64Var(&amount, "amount", 0, "Numeric amount to report")
 	cmd.Flags().StringVar(&eventTimeStr, "event-time", "", "Event time of the reporting window in RFC3339 (defaults to current server time)")
+	cmd.Flags().StringVar(&projectName, "project-name", "", "Optional project name to attribute the mock event to (defaults to a placeholder)")
 	return cmd
 }

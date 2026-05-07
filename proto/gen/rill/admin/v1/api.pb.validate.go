@@ -17234,6 +17234,8 @@ func (m *SudoReportUsageRequest) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for ProjectName
+
 	if len(errors) > 0 {
 		return SudoReportUsageRequestMultiError(errors)
 	}

@@ -2058,6 +2058,9 @@ components:
                     type: string
                 org:
                     type: string
+                projectName:
+                    description: Optional project name attribution for the mock event. If not set, a placeholder is used.
+                    type: string
             type: object
         v1SudoReportUsageResponse:
             properties:

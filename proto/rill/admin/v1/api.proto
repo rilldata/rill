@@ -2151,6 +2151,8 @@ message SudoReportUsageRequest {
   double amount = 3 [(validate.rules).double = {gt: 0}];
   // Optional end time of the reporting window. Defaults to the current server time.
   google.protobuf.Timestamp end_time = 4;
+  // Optional project name attribution for the mock event. If not set, a placeholder is used.
+  string project_name = 5;
 }
 
 message SudoReportUsageResponse {

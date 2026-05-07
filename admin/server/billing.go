@@ -801,6 +801,21 @@ func (s *Server) SudoReportUsage(ctx context.Context, req *adminv1.SudoReportUsa
 		endTime = req.EndTime.AsTime().UTC()
 	}
 
+	projectName := "mock-usage-project"
+	projectID := "mock-usage-project-id"
+	if req.ProjectName != "" {
+		proj, err := s.admin.DB.FindProjectByName(ctx, org.Name, req.ProjectName)
+		if err != nil {
+			if !errors.Is(err, database.ErrNotFound) {
+				return nil, fmt.Errorf("failed to find project %q: %w", req.ProjectName, err)
+			}
+			s.logger.Warn("mock usage: project not found, falling back to placeholder", zap.String("org", org.Name), zap.String("project_name", req.ProjectName))
+		} else {
+			projectName = proj.Name
+			projectID = proj.ID
+		}
+	}
+
 	usage := &billing.Usage{
 		CustomerID:     org.ID,
 		MetricName:     req.EventName,
@@ -810,9 +825,8 @@ func (s *Server) SudoReportUsage(ctx context.Context, req *adminv1.SudoReportUsa
 		EndTime:        endTime,
 		Metadata: map[string]interface{}{
 			"org_id":       org.ID,
-			"project_id":   "mock-usage-project-id", // actual project and instance ids are not relevant for mock usage as it does not affect the final amount but just helps in attributing cost to individual projects
-			"project_name": "mock-usage-project",
-			"instance_id":  "mock-usage-instance-id",
+			"project_id":   projectID,
+			"project_name": projectName,
 			"mock":         true,
 		},
 	}
