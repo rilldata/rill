@@ -56,6 +56,7 @@
     !currentBranch ||
     !projectLoaded ||
     alreadyOnPrimary ||
+    !hasLocalChanges ||
     isPublishing;
 
   // Prefetch prod's project parser commit SHA so the deploying page can
@@ -199,6 +200,8 @@
         Already on production
       {:else if !primaryBranch || !currentBranch || !projectLoaded}
         Loading project...
+      {:else if !hasLocalChanges}
+        No changes to publish
       {:else if !prodDeployment}
         Publish your project to production. We'll open a new tab where you can
         invite teammates while the deployment reconciles.
