@@ -14,9 +14,9 @@ func BillingCmd(ch *cmdutil.Helper) *cobra.Command {
 	billingCmd.AddCommand(SetCmd(ch))
 	billingCmd.AddCommand(DeleteIssueCmd(ch))
 	billingCmd.AddCommand(GrantTrialCreditsCmd(ch))
-	billingCmd.AddCommand(MockUsageCmd(ch))
 	billingCmd.AddCommand(RepairCmd(ch))
 	billingCmd.AddCommand(SetupCmd(ch))
+	billingCmd.AddCommand(MockUsageCmd(ch))
 
 	return billingCmd
 }
