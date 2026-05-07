@@ -1458,6 +1458,24 @@ export interface V1SudoIssueRuntimeManagerTokenResponse {
   token?: string;
 }
 
+export interface V1SudoReportUsageRequest {
+  org?: string;
+  eventName?: string;
+  value?: number;
+  /** Optional end time of the reporting window. Defaults to the current server time. */
+  endTime?: string;
+  /** Optional project name attribution for the mock event. If not set, a placeholder is used. */
+  projectName?: string;
+}
+
+export interface V1SudoReportUsageResponse {
+  customerId?: string;
+  eventName?: string;
+  value?: number;
+  startTime?: string;
+  endTime?: string;
+}
+
 export interface V1SudoTriggerBillingRepairRequest {
   [key: string]: unknown;
 }
