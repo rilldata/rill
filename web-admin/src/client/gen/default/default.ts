@@ -249,6 +249,8 @@ import type {
   V1SudoGrantTrialCreditsResponse,
   V1SudoIssueRuntimeManagerTokenRequest,
   V1SudoIssueRuntimeManagerTokenResponse,
+  V1SudoReportUsageRequest,
+  V1SudoReportUsageResponse,
   V1SudoTriggerBillingRepairRequest,
   V1SudoTriggerBillingRepairResponse,
   V1SudoUpdateAnnotationsRequest,
@@ -13672,6 +13674,92 @@ export const createAdminServiceSudoUpdateOrganizationBillingCustomer = <
     getAdminServiceSudoUpdateOrganizationBillingCustomerMutationOptions(
       options,
     );
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary SudoReportUsage reports a mock usage event for an organization.
+ */
+export const adminServiceSudoReportUsage = (
+  v1SudoReportUsageRequest: V1SudoReportUsageRequest,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1SudoReportUsageResponse>({
+    url: `/v1/superuser/organization/billing/report-usage`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: v1SudoReportUsageRequest,
+    signal,
+  });
+};
+
+export const getAdminServiceSudoReportUsageMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceSudoReportUsage>>,
+    TError,
+    { data: V1SudoReportUsageRequest },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceSudoReportUsage>>,
+  TError,
+  { data: V1SudoReportUsageRequest },
+  TContext
+> => {
+  const mutationKey = ["adminServiceSudoReportUsage"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceSudoReportUsage>>,
+    { data: V1SudoReportUsageRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceSudoReportUsage(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceSudoReportUsageMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSudoReportUsage>>
+>;
+export type AdminServiceSudoReportUsageMutationBody = V1SudoReportUsageRequest;
+export type AdminServiceSudoReportUsageMutationError = RpcStatus;
+
+/**
+ * @summary SudoReportUsage reports a mock usage event for an organization.
+ */
+export const createAdminServiceSudoReportUsage = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceSudoReportUsage>>,
+      TError,
+      { data: V1SudoReportUsageRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceSudoReportUsage>>,
+  TError,
+  { data: V1SudoReportUsageRequest },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceSudoReportUsageMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };

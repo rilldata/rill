@@ -7,7 +7,7 @@
   import type { PageData } from "./$types";
 
   export let data: PageData;
-  const { organization, project, deployingDashboard } = data;
+  const { organization, project, deployingDashboard, preCommitSha } = data;
 
   const runtimeClient = useRuntimeClient();
 
@@ -18,6 +18,7 @@
     organization.name,
     project.name,
     deployingDashboard,
+    preCommitSha,
   );
 
   $: ({ data: deployingDashboardsData } = $deployingDashboardResp ?? {

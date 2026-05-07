@@ -920,6 +920,14 @@ service AdminService {
     };
   }
 
+  // SudoReportUsage reports a mock usage event for an organization.
+  rpc SudoReportUsage(SudoReportUsageRequest) returns (SudoReportUsageResponse) {
+    option (google.api.http) = {
+      post: "/v1/superuser/organization/billing/report-usage",
+      body: "*"
+    };
+  }
+
   // SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
   // It only updates the custom domain in the database, which is used to ensure correct redirects.
   // The DNS records and ingress TLS must be configured separately.
@@ -2135,6 +2143,24 @@ message SudoGrantTrialCreditsRequest {
 message SudoGrantTrialCreditsResponse {
   // The grant amount actually applied, in USD.
   double granted_usd = 1;
+}
+
+message SudoReportUsageRequest {
+  string org = 1 [(validate.rules).string.min_len = 1];
+  string event_name = 2 [(validate.rules).string.min_len = 1];
+  double value = 3 [(validate.rules).double = {gt: 0}];
+  // Optional end time of the reporting window. Defaults to the current server time.
+  google.protobuf.Timestamp end_time = 4;
+  // Optional project name attribution for the mock event. If not set, a placeholder is used.
+  string project_name = 5;
+}
+
+message SudoReportUsageResponse {
+  string customer_id = 1;
+  string event_name = 2;
+  double value = 3;
+  google.protobuf.Timestamp start_time = 4;
+  google.protobuf.Timestamp end_time = 5;
 }
 
 message SudoUpdateOrganizationCustomDomainRequest {
