@@ -2064,9 +2064,6 @@ components:
             type: object
         v1SudoReportUsageResponse:
             properties:
-                amount:
-                    format: double
-                    type: number
                 customerId:
                     type: string
                 endTime:
@@ -2077,6 +2074,9 @@ components:
                 startTime:
                     format: date-time
                     type: string
+                value:
+                    format: double
+                    type: number
             type: object
         v1SudoTriggerBillingRepairRequest:
             type: object

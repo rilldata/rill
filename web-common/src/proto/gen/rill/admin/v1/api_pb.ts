@@ -6531,9 +6531,9 @@ export class SudoReportUsageResponse extends Message<SudoReportUsageResponse> {
   eventName = "";
 
   /**
-   * @generated from field: double amount = 3;
+   * @generated from field: double value = 3;
    */
-  amount = 0;
+  value = 0;
 
   /**
    * @generated from field: google.protobuf.Timestamp start_time = 4;
@@ -6555,7 +6555,7 @@ export class SudoReportUsageResponse extends Message<SudoReportUsageResponse> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "event_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "amount", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 3, name: "value", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
     { no: 4, name: "start_time", kind: "message", T: Timestamp },
     { no: 5, name: "end_time", kind: "message", T: Timestamp },
   ]);

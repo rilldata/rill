@@ -1471,7 +1471,7 @@ export interface V1SudoReportUsageRequest {
 export interface V1SudoReportUsageResponse {
   customerId?: string;
   eventName?: string;
-  amount?: number;
+  value?: number;
   startTime?: string;
   endTime?: string;
 }
