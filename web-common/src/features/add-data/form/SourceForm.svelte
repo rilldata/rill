@@ -10,7 +10,6 @@
   import AddDataFormStructure from "@rilldata/web-common/features/add-data/form/AddDataFormStructure.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { prepareSourceFormData } from "@rilldata/web-common/features/sources/sourceUtils.ts";
-  import { getSchemaSecretKeys } from "@rilldata/web-common/features/templates/schema-utils.ts";
   import {
     type AddDataConfig,
     type CreateModelStep,
@@ -145,7 +144,7 @@
       importSteps,
       connector: rewrittenConnector.name!,
       importFrom,
-      importTo: generateImportToConfig(importFrom, rewrittenFormValues.name),
+      importTo: generateImportToConfig(importFrom, formValues.name),
       envEditSession,
     } satisfies ImportStepConfig;
 

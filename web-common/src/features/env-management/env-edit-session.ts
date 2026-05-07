@@ -55,6 +55,19 @@ export class EnvEditSession {
     await this.parentStore.flush(this);
   }
 
+  public async rollback() {
+    [...this.inflightEntries.values()].forEach((v) => {
+      if (!v.variable || v.variable.version <= this.version) return;
+      this.inflightEntries.delete(v.key);
+    });
+    [...this.entries.values()].forEach((v) => {
+      if (!v.variable || v.variable.version <= this.version) return;
+      this.entries.delete(v.key);
+    });
+
+    await this.parentStore.rollback(this);
+  }
+
   private acquireVarName(varName: string) {
     const assignedVarName = getName(varName, [...this.assignedVars.keys()]);
     this.assignedVars.add(assignedVarName);

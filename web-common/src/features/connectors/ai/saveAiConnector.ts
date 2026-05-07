@@ -3,7 +3,6 @@ import { runtimeServicePutFile } from "../../../runtime-client";
 import type { RuntimeClient } from "../../../runtime-client/v2";
 import {
   compileConnectorYAML,
-  updateDotEnvWithSecrets,
   updateRillYAMLWithAiConnector,
 } from "../code-utils";
 import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-mappers";
@@ -22,6 +21,7 @@ import {
   getSchemaStringKeys,
 } from "../../templates/schema-utils";
 import { maybeInitProject } from "@rilldata/web-common/features/add-data/manager/steps/connector.ts";
+import type { EnvEditSession } from "@rilldata/web-common/features/env-management/env-edit-session.ts";
 
 async function setAiConnectorInRillYAML(
   queryClient: QueryClient,
@@ -49,6 +49,7 @@ export async function saveAiConnector(
   queryClient: QueryClient,
   schemaName: string,
   formValues: Record<string, string>,
+  envEditSession: EnvEditSession,
 ): Promise<void> {
   const connector = toConnectorDriver(schemaName);
   if (!connector) throw new Error(`Unknown AI connector: ${schemaName}`);
@@ -76,34 +77,27 @@ export async function saveAiConnector(
     EntityType.Connector,
   );
 
-  // Write secrets to .env
-  const { newBlob: newEnvBlob, originalBlob: envBlobForYaml } =
-    await updateDotEnvWithSecrets(client, queryClient, connector, formValues, {
-      secretKeys: schemaSecretKeys,
-      schema: schema ?? undefined,
-    });
-
-  await runtimeServicePutFile(client, {
-    path: ".env",
-    blob: newEnvBlob,
-    create: true,
-    createOnly: false,
-  });
-
-  // Write connector YAML
-  await runtimeServicePutFile(client, {
-    path: newConnectorFilePath,
-    blob: compileConnectorYAML(connector, formValues, {
+  const connectorYAML = compileConnectorYAML(
+    connector,
+    formValues,
+    envEditSession,
+    {
       connectorInstanceName: newConnectorName,
       orderedProperties: schemaFields,
       secretKeys: schemaSecretKeys,
       stringKeys: schemaStringKeys,
       schema: schema ?? undefined,
-      existingEnvBlob: envBlobForYaml,
       fieldFilter: schemaFields
         ? (property) => !("internal" in property && property.internal)
         : undefined,
-    }),
+    },
+  );
+  await envEditSession.commit();
+
+  // Write connector YAML
+  await runtimeServicePutFile(client, {
+    path: newConnectorFilePath,
+    blob: connectorYAML,
     create: true,
     createOnly: false,
   });

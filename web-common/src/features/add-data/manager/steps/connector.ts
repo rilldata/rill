@@ -32,7 +32,6 @@ import {
 import { EntityType } from "@rilldata/web-common/features/entity-management/types.ts";
 import {
   maybeUnsetOlapConnectorInYaml,
-  unsetResourceEnvVars,
   updateRillYAMLWithOlapConnector,
 } from "@rilldata/web-common/features/connectors/code-utils.ts";
 import type { QueryClient } from "@tanstack/svelte-query";
@@ -44,7 +43,8 @@ import {
   getProjectParserVersion,
   waitForProjectParserVersion,
 } from "@rilldata/web-common/features/entity-management/project-parser.ts";
-import type { EnvEditSession } from "@rilldata/web-common/features/env-management/env-edit-session.ts";
+import { EnvEditSession } from "@rilldata/web-common/features/env-management/env-edit-session.ts";
+import type { EnvStore } from "@rilldata/web-common/features/env-management/env-store.ts";
 
 export async function createConnector({
   runtimeClient,
@@ -169,23 +169,12 @@ export async function maybeDeleteConnector(
   runtimeClient: RuntimeClient,
   queryClient: QueryClient,
   connectorName: string,
+  envEditSession: EnvEditSession,
 ) {
   const connectorFilePath = addLeadingSlash(
     getFileAPIPathFromNameAndType(connectorName, EntityType.Connector),
   );
   if (!fileArtifacts.hasFileArtifact(connectorFilePath)) return;
-
-  const connectorFileArtifact =
-    fileArtifacts.getFileArtifact(connectorFilePath);
-  const connectorYaml = await connectorFileArtifact.fetchContent();
-  if (!connectorYaml) return;
-
-  // Get the existing env and remove the connector's env vars
-  const envBlob = await unsetResourceEnvVars(
-    runtimeClient,
-    queryClient,
-    connectorYaml,
-  );
 
   // Delete the connector file
   await runtimeServiceDeleteFile(runtimeClient, {
@@ -193,10 +182,7 @@ export async function maybeDeleteConnector(
   });
 
   // Update the .env file with the removed env vars
-  await runtimeServicePutFile(runtimeClient, {
-    path: ".env",
-    blob: envBlob,
-  });
+  await envEditSession.rollback();
 
   // Update the rill.yaml file to remove the connector as the OLAP connector.
   await unsetOlapConnectorInRillYAML(runtimeClient, queryClient, connectorName);
@@ -310,7 +296,7 @@ export function isPublicAuth(
 type CacheEntry = {
   name: string;
   formValues: Record<string, unknown>;
-  existingEnvBlob: string;
+  envEditSession: EnvEditSession;
 };
 
 export class ConnectorFormCache {
@@ -323,7 +309,11 @@ export class ConnectorFormCache {
     return id.toString();
   }
 
-  public async getOrCreate(schema: string, id: string): Promise<CacheEntry> {
+  public getOrCreate(
+    schema: string,
+    id: string,
+    envStore: EnvStore,
+  ): CacheEntry {
     if (this.cache.has(id)) {
       return this.cache.get(id)!;
     }
@@ -333,13 +323,12 @@ export class ConnectorFormCache {
       fileArtifacts.getNamesForKind(ResourceKind.Connector),
     );
 
-    const envFile = fileArtifacts.getFileArtifact(".env");
-    const envBlob = (await envFile.fetchContent(false)) ?? "";
+    const envEditSession = new EnvEditSession(envStore);
 
     const entry = {
       name,
       formValues: {},
-      existingEnvBlob: envBlob,
+      envEditSession,
     };
     this.cache.set(id, entry);
     return entry;

@@ -21,12 +21,15 @@ describe("getConnectorYamlPreview", () => {
     it("should retain same value across edit commits", async () => {
       const { envEditSession, testEnvs, envStore } =
         await makeTestEnvEditSession();
-      getConnectorYamlPreview({
+      const yamlInitial = getConnectorYamlPreview({
         connector,
         schema,
         formValues: formValuesWithPassword,
         envEditSession,
       });
+      expect(yamlInitial).toContain(
+        `password: "{{ .env.CLICKHOUSE_PASSWORD }}"`,
+      );
       await envEditSession.commit();
       expect(testEnvs).toEqual({
         CLICKHOUSE_PASSWORD: "pass",
@@ -36,7 +39,7 @@ describe("getConnectorYamlPreview", () => {
       testEnvs["CLICKHOUSE_PASSWORD"] = "pass";
       await envStore.pull();
 
-      getConnectorYamlPreview({
+      const yamlAfterPull = getConnectorYamlPreview({
         connector,
         schema,
         formValues: {
@@ -45,6 +48,9 @@ describe("getConnectorYamlPreview", () => {
         },
         envEditSession,
       });
+      expect(yamlAfterPull).toContain(
+        `password: "{{ .env.CLICKHOUSE_PASSWORD }}"`,
+      );
       await envEditSession.commit();
       expect(testEnvs).toEqual({
         CLICKHOUSE_PASSWORD: "pass_1",
@@ -54,7 +60,7 @@ describe("getConnectorYamlPreview", () => {
       testEnvs["CLICKHOUSE_PASSWORD"] = "pass_source";
       await envStore.pull();
 
-      getConnectorYamlPreview({
+      const yamlAfterSourceUpdate = getConnectorYamlPreview({
         connector,
         schema,
         formValues: {
@@ -63,6 +69,9 @@ describe("getConnectorYamlPreview", () => {
         },
         envEditSession,
       });
+      expect(yamlAfterSourceUpdate).toContain(
+        `password: "{{ .env.CLICKHOUSE_PASSWORD_1 }}"`,
+      );
       await envEditSession.commit();
       expect(testEnvs).toEqual({
         CLICKHOUSE_PASSWORD: "pass_source",
@@ -70,15 +79,18 @@ describe("getConnectorYamlPreview", () => {
       });
     });
 
-    it("should delete values if not updated from outside", async () => {
+    it("should delete unused vars if not updated from outside", async () => {
       const { envEditSession, testEnvs, envStore } =
         await makeTestEnvEditSession();
-      getConnectorYamlPreview({
+      const yamlInitial = getConnectorYamlPreview({
         connector,
         schema,
         formValues: formValuesWithPassword,
         envEditSession,
       });
+      expect(yamlInitial).toContain(
+        `password: "{{ .env.CLICKHOUSE_PASSWORD }}"`,
+      );
       await envEditSession.commit();
       expect(testEnvs).toEqual({
         CLICKHOUSE_PASSWORD: "pass",
@@ -88,25 +100,54 @@ describe("getConnectorYamlPreview", () => {
       testEnvs["CLICKHOUSE_PASSWORD"] = "pass";
       await envStore.pull();
 
-      getConnectorYamlPreview({
+      const yamlWithoutPassword = getConnectorYamlPreview({
         connector,
         schema,
         formValues: formValuesWithoutPassword,
         envEditSession,
       });
+      expect(yamlWithoutPassword).not.toContain("password:");
       await envEditSession.commit();
       expect(testEnvs).toEqual({});
     });
 
-    it("should retain values if updated from outside", async () => {
+    it("should delete vars on rollback if not updated from outside", async () => {
       const { envEditSession, testEnvs, envStore } =
         await makeTestEnvEditSession();
-      getConnectorYamlPreview({
+      const yamlInitial = getConnectorYamlPreview({
         connector,
         schema,
         formValues: formValuesWithPassword,
         envEditSession,
       });
+      expect(yamlInitial).toContain(
+        `password: "{{ .env.CLICKHOUSE_PASSWORD }}"`,
+      );
+      await envEditSession.commit();
+      expect(testEnvs).toEqual({
+        CLICKHOUSE_PASSWORD: "pass",
+      });
+
+      // New changes arrived but value didnt change
+      testEnvs["CLICKHOUSE_PASSWORD"] = "pass";
+      await envStore.pull();
+
+      await envEditSession.rollback();
+      expect(testEnvs).toEqual({});
+    });
+
+    it("should retain unused vars if updated from outside", async () => {
+      const { envEditSession, testEnvs, envStore } =
+        await makeTestEnvEditSession();
+      const yamlInitial = getConnectorYamlPreview({
+        connector,
+        schema,
+        formValues: formValuesWithPassword,
+        envEditSession,
+      });
+      expect(yamlInitial).toContain(
+        `password: "{{ .env.CLICKHOUSE_PASSWORD }}"`,
+      );
       await envEditSession.commit();
       expect(testEnvs).toEqual({
         CLICKHOUSE_PASSWORD: "pass",
@@ -116,13 +157,41 @@ describe("getConnectorYamlPreview", () => {
       testEnvs["CLICKHOUSE_PASSWORD"] = "pass_source";
       await envStore.pull();
 
-      getConnectorYamlPreview({
+      const yamlWithoutPassword = getConnectorYamlPreview({
         connector,
         schema,
         formValues: formValuesWithoutPassword,
         envEditSession,
       });
+      expect(yamlWithoutPassword).not.toContain("password:");
       await envEditSession.commit();
+      expect(testEnvs).toEqual({
+        CLICKHOUSE_PASSWORD: "pass_source",
+      });
+    });
+
+    it("should retain vars on rollback if updated from outside", async () => {
+      const { envEditSession, testEnvs, envStore } =
+        await makeTestEnvEditSession();
+      const yamlInitial = getConnectorYamlPreview({
+        connector,
+        schema,
+        formValues: formValuesWithPassword,
+        envEditSession,
+      });
+      expect(yamlInitial).toContain(
+        `password: "{{ .env.CLICKHOUSE_PASSWORD }}"`,
+      );
+      await envEditSession.commit();
+      expect(testEnvs).toEqual({
+        CLICKHOUSE_PASSWORD: "pass",
+      });
+
+      // New changes arrived with new values.
+      testEnvs["CLICKHOUSE_PASSWORD"] = "pass_source";
+      await envStore.pull();
+
+      await envEditSession.rollback();
       expect(testEnvs).toEqual({
         CLICKHOUSE_PASSWORD: "pass_source",
       });
@@ -137,7 +206,7 @@ describe("getConnectorYamlPreview", () => {
       it("should retain same value across edit commits", async () => {
         const { envEditSession, testEnvs, envStore } =
           await makeTestEnvEditSession();
-        getConnectorYamlPreview({
+        const yamlInitial = getConnectorYamlPreview({
           connector,
           schema,
           formValues: {
@@ -147,6 +216,9 @@ describe("getConnectorYamlPreview", () => {
           },
           envEditSession,
         });
+        expect(yamlInitial).toContain(
+          `attach: "'ducklake:postgres:{{ .env.DUCKLAKE_POSTGRES }}'"`,
+        );
         await envEditSession.commit();
         expect(testEnvs).toEqual({
           DUCKLAKE_POSTGRES:
@@ -158,7 +230,7 @@ describe("getConnectorYamlPreview", () => {
           "dbname=mydb host=localhost user=postgres password=pass";
         await envStore.pull();
 
-        getConnectorYamlPreview({
+        const yamlAfterPull = getConnectorYamlPreview({
           connector,
           schema,
           formValues: {
@@ -168,6 +240,9 @@ describe("getConnectorYamlPreview", () => {
           },
           envEditSession,
         });
+        expect(yamlAfterPull).toContain(
+          `attach: "'ducklake:postgres:{{ .env.DUCKLAKE_POSTGRES }}'"`,
+        );
         await envEditSession.commit();
         expect(testEnvs).toEqual({
           DUCKLAKE_POSTGRES:
@@ -179,7 +254,7 @@ describe("getConnectorYamlPreview", () => {
           "dbname=mydb host=localhost user=postgres password=pass_source";
         await envStore.pull();
 
-        getConnectorYamlPreview({
+        const yamlAfterSourceUpdate = getConnectorYamlPreview({
           connector,
           schema,
           formValues: {
@@ -189,6 +264,9 @@ describe("getConnectorYamlPreview", () => {
           },
           envEditSession,
         });
+        expect(yamlAfterSourceUpdate).toContain(
+          `attach: "'ducklake:postgres:{{ .env.DUCKLAKE_POSTGRES_1 }}'"`,
+        );
         await envEditSession.commit();
         expect(testEnvs).toEqual({
           DUCKLAKE_POSTGRES:
@@ -215,12 +293,15 @@ describe("getConnectorYamlPreview", () => {
       it("should retain same value across edit commits for separate fields", async () => {
         const { envEditSession, testEnvs, envStore } =
           await makeTestEnvEditSession();
-        getConnectorYamlPreview({
+        const yamlInitial = getConnectorYamlPreview({
           connector,
           schema,
           formValues: formValuesWithPassword,
           envEditSession,
         });
+        expect(yamlInitial).toContain(
+          `attach: "'ducklake:postgres:dbname=mydb host=localhost user=postgres password={{ .env.DUCKLAKE_CATALOG_POSTGRES_PASSWORD }}'"`,
+        );
         await envEditSession.commit();
         expect(testEnvs).toEqual({
           DUCKLAKE_CATALOG_POSTGRES_PASSWORD: "pass",
@@ -230,7 +311,7 @@ describe("getConnectorYamlPreview", () => {
         testEnvs["DUCKLAKE_CATALOG_POSTGRES_PASSWORD"] = "pass";
         await envStore.pull();
 
-        getConnectorYamlPreview({
+        const yamlAfterPull = getConnectorYamlPreview({
           connector,
           schema,
           formValues: {
@@ -239,6 +320,9 @@ describe("getConnectorYamlPreview", () => {
           },
           envEditSession,
         });
+        expect(yamlAfterPull).toContain(
+          `attach: "'ducklake:postgres:dbname=mydb host=localhost user=postgres password={{ .env.DUCKLAKE_CATALOG_POSTGRES_PASSWORD }}'"`,
+        );
         await envEditSession.commit();
         expect(testEnvs).toEqual({
           DUCKLAKE_CATALOG_POSTGRES_PASSWORD: "pass_1",
@@ -248,7 +332,7 @@ describe("getConnectorYamlPreview", () => {
         testEnvs["DUCKLAKE_CATALOG_POSTGRES_PASSWORD"] = "pass_source";
         await envStore.pull();
 
-        getConnectorYamlPreview({
+        const yamlAfterSourceUpdate = getConnectorYamlPreview({
           connector,
           schema,
           formValues: {
@@ -257,6 +341,9 @@ describe("getConnectorYamlPreview", () => {
           },
           envEditSession,
         });
+        expect(yamlAfterSourceUpdate).toContain(
+          `attach: "'ducklake:postgres:dbname=mydb host=localhost user=postgres password={{ .env.DUCKLAKE_CATALOG_POSTGRES_PASSWORD_1 }}'"`,
+        );
         await envEditSession.commit();
         expect(testEnvs).toEqual({
           DUCKLAKE_CATALOG_POSTGRES_PASSWORD: "pass_source",
@@ -264,15 +351,18 @@ describe("getConnectorYamlPreview", () => {
         });
       });
 
-      it("should delete values if not updated from outside", async () => {
+      it("should delete unused vars if not updated from outside", async () => {
         const { envEditSession, testEnvs, envStore } =
           await makeTestEnvEditSession();
-        getConnectorYamlPreview({
+        const yamlInitial = getConnectorYamlPreview({
           connector,
           schema,
           formValues: formValuesWithPassword,
           envEditSession,
         });
+        expect(yamlInitial).toContain(
+          `attach: "'ducklake:postgres:dbname=mydb host=localhost user=postgres password={{ .env.DUCKLAKE_CATALOG_POSTGRES_PASSWORD }}'"`,
+        );
         await envEditSession.commit();
         expect(testEnvs).toEqual({
           DUCKLAKE_CATALOG_POSTGRES_PASSWORD: "pass",
@@ -282,25 +372,31 @@ describe("getConnectorYamlPreview", () => {
         testEnvs["DUCKLAKE_CATALOG_POSTGRES_PASSWORD"] = "pass";
         await envStore.pull();
 
-        getConnectorYamlPreview({
+        const yamlWithoutPassword = getConnectorYamlPreview({
           connector,
           schema,
           formValues: formValuesWithoutPassword,
           envEditSession,
         });
+        expect(yamlWithoutPassword).toContain(
+          `attach: "'ducklake:postgres:dbname=mydb host=localhost user=postgres'"`,
+        );
         await envEditSession.commit();
         expect(testEnvs).toEqual({});
       });
 
-      it("should retain values if updated from outside", async () => {
+      it("should retain unused vars if updated from outside", async () => {
         const { envEditSession, testEnvs, envStore } =
           await makeTestEnvEditSession();
-        getConnectorYamlPreview({
+        const yamlInitial = getConnectorYamlPreview({
           connector,
           schema,
           formValues: formValuesWithPassword,
           envEditSession,
         });
+        expect(yamlInitial).toContain(
+          `attach: "'ducklake:postgres:dbname=mydb host=localhost user=postgres password={{ .env.DUCKLAKE_CATALOG_POSTGRES_PASSWORD }}'"`,
+        );
         await envEditSession.commit();
         expect(testEnvs).toEqual({
           DUCKLAKE_CATALOG_POSTGRES_PASSWORD: "pass",
@@ -310,12 +406,15 @@ describe("getConnectorYamlPreview", () => {
         testEnvs["DUCKLAKE_CATALOG_POSTGRES_PASSWORD"] = "pass_source";
         await envStore.pull();
 
-        getConnectorYamlPreview({
+        const yamlWithoutPassword = getConnectorYamlPreview({
           connector,
           schema,
           formValues: formValuesWithoutPassword,
           envEditSession,
         });
+        expect(yamlWithoutPassword).toContain(
+          `attach: "'ducklake:postgres:dbname=mydb host=localhost user=postgres'"`,
+        );
         await envEditSession.commit();
         expect(testEnvs).toEqual({
           DUCKLAKE_CATALOG_POSTGRES_PASSWORD: "pass_source",

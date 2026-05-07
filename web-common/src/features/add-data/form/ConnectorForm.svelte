@@ -30,7 +30,7 @@
 
   export let cachedFormValues: Record<string, unknown>;
   export let connectorName: string;
-  export let envEditSession: EnvEditSession;
+  export let cachedEnvEditSession: EnvEditSession;
 
   const runtimeClient = useRuntimeClient();
 
@@ -50,7 +50,7 @@
           schemaName: step.schema,
           formValues: form.data,
           validate: true,
-          envEditSession,
+          envEditSession: cachedEnvEditSession,
         });
 
         connectorFormCache.updateFormValues(step.connectorId, form.data);
@@ -72,7 +72,7 @@
         connector: connectorDriver,
         formValues: $form,
         schema,
-        envEditSession,
+        envEditSession: cachedEnvEditSession,
       })
     : "";
 
@@ -88,14 +88,19 @@
       schemaName: step.schema,
       formValues: $form,
       validate: false,
-      envEditSession,
+      envEditSession: cachedEnvEditSession,
     });
     onClose();
     return navigateToFile(addLeadingSlash(connectorPath));
   }
 
   async function cleanupAndBack() {
-    await maybeDeleteConnector(runtimeClient, queryClient, connectorName);
+    await maybeDeleteConnector(
+      runtimeClient,
+      queryClient,
+      connectorName,
+      cachedEnvEditSession,
+    );
 
     onBack();
   }

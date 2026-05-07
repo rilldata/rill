@@ -22,20 +22,21 @@
   const envStore = getEnvFileStore();
 
   let connectorName: string | null = null;
-  let envEditSession: EnvEditSession | null = null;
+  let cachedEnvEditSession: EnvEditSession | null = null;
   let cachedFormValues: Record<string, unknown> | null = null;
   onMount(async () => {
-    const { name, formValues } = await connectorFormCache.getOrCreate(
+    const { name, formValues, envEditSession } = connectorFormCache.getOrCreate(
       step.schema,
       step.connectorId,
+      envStore,
     );
     connectorName = name;
     cachedFormValues = formValues;
-    envEditSession = new EnvEditSession(envStore);
+    cachedEnvEditSession = envEditSession;
   });
 </script>
 
-{#if connectorName != null && envEditSession != null && cachedFormValues != null}
+{#if connectorName != null && cachedEnvEditSession != null && cachedFormValues != null}
   <ConnectorForm
     {stateManager}
     {step}
@@ -44,6 +45,6 @@
     {onClose}
     {connectorName}
     {cachedFormValues}
-    {envEditSession}
+    {cachedEnvEditSession}
   />
 {/if}

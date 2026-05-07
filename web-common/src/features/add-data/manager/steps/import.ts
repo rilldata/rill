@@ -15,7 +15,6 @@ import {
   runtimeServicePutFile,
 } from "@rilldata/web-common/runtime-client";
 import {
-  deleteFileArtifact,
   maybeDeleteFileArtifact,
   waitForResourceReconciliation,
 } from "@rilldata/web-common/features/entity-management/actions/actions.ts";
@@ -32,7 +31,6 @@ import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
 import { generateBlobForNewResourceFile } from "@rilldata/web-common/features/entity-management/add/new-files.ts";
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils.ts";
 import type { QueryClient } from "@tanstack/svelte-query";
-import { unsetResourceEnvVars } from "@rilldata/web-common/features/connectors/code-utils.ts";
 import { maybeGetConnectorDriver } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
 import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics.ts";
 import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
@@ -121,26 +119,6 @@ export async function cleanupImportStep(
 ) {
   const importToConfig = config.importTo;
 
-  let envBlob: string | null = null;
-  if (
-    importToConfig.modelPath &&
-    fileArtifacts.hasFileArtifact(importToConfig.modelPath)
-  ) {
-    const modelArtifact = fileArtifacts.getFileArtifact(
-      importToConfig.modelPath,
-    );
-    const modelYaml = await modelArtifact.fetchContent();
-
-    // Get the existing env and remove the connector's env vars
-    envBlob = await unsetResourceEnvVars(
-      runtimeClient,
-      queryClient,
-      modelYaml ?? "",
-    );
-
-    await deleteFileArtifact(runtimeClient, importToConfig.modelPath);
-  }
-
   // Cleanup any generated files.
   await Promise.all(
     [
@@ -153,13 +131,7 @@ export async function cleanupImportStep(
     }),
   );
 
-  if (envBlob) {
-    // Update the .env file with the removed env vars
-    await runtimeServicePutFile(runtimeClient, {
-      path: ".env",
-      blob: envBlob,
-    });
-  }
+  await config.envEditSession.rollback();
 }
 
 async function runCreateModelStep(

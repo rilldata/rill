@@ -28,11 +28,15 @@
   } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import { getScreenNameFromPage } from "../../file-explorer/telemetry";
+  import { getEnvFileStore } from "@rilldata/web-common/features/env-management/env-file-store.ts";
+  import { EnvEditSession } from "@rilldata/web-common/features/env-management/env-edit-session.ts";
 
   export let open = false;
 
   const queryClient = useQueryClient();
   const runtimeClient = useRuntimeClient();
+  const envStore = getEnvFileStore();
+  const envEditSession = new EnvEditSession(envStore);
 
   /** Expected API key prefixes per provider, used for soft validation. */
   const API_KEY_PREFIXES: Record<string, { prefix: string; label: string }> = {
@@ -136,7 +140,13 @@
     try {
       const formValues: Record<string, string> = { api_key: apiKey };
       if (model) formValues.model = model;
-      await saveAiConnector(runtimeClient, queryClient, schemaName, formValues);
+      await saveAiConnector(
+        runtimeClient,
+        queryClient,
+        schemaName,
+        formValues,
+        envEditSession,
+      );
       behaviourEvent?.fireSourceTriggerEvent(
         BehaviourEventAction.SourceAdd,
         BehaviourEventMedium.Button,
