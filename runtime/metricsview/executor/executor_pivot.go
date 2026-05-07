@@ -64,16 +64,20 @@ func (e *Executor) rewriteQueryForPivot(qry *metricsview.Query) (*pivotAST, bool
 		dialect = duckdb.DialectDuckDB
 	}
 
-	// Build a pivotAST based on fields to apply during and after the pivot (instead of in the underlying query)
+	// Build a pivotAST based on fields to apply during and after the pivot (instead of in the underlying query).
+	// The underlying dialect (which produced the staged data) may mangle aliases differently from the pivot dialect
+	// (e.g. BigQuery flexible column names collapse spaces and parens to "__"), so we keep both around to
+	// translate column references correctly when generating the PIVOT SQL.
 	ast := &pivotAST{
-		keep:            nil, // Populated below
-		on:              qry.PivotOn,
-		using:           nil, // Populated below
-		orderBy:         nil, // Populated below
-		limit:           qry.Limit,
-		offset:          qry.Offset,
-		useDisplayNames: qry.UseDisplayNames,
-		dialect:         dialect,
+		keep:              nil, // Populated below
+		on:                qry.PivotOn,
+		using:             nil, // Populated below
+		orderBy:           nil, // Populated below
+		limit:             qry.Limit,
+		offset:            qry.Offset,
+		useDisplayNames:   qry.UseDisplayNames,
+		dialect:           dialect,
+		underlyingDialect: e.olap.Dialect(),
 	}
 	for _, d := range qry.Dimensions {
 		var found bool
@@ -208,8 +212,18 @@ type pivotAST struct {
 	limit   *int64
 	offset  *int64
 
-	useDisplayNames bool
-	dialect         drivers.Dialect
+	useDisplayNames   bool
+	dialect           drivers.Dialect // dialect that runs the PIVOT (currently always DuckDB)
+	underlyingDialect drivers.Dialect // dialect that produced the staged data (so we can resolve aliased column names)
+}
+
+// columnRef returns an identifier reference to a column produced by the underlying query, escaped for the pivot dialect.
+// The underlying dialect may have mangled the alias (e.g. BigQuery), so we route the name through it before escaping.
+func (a *pivotAST) columnRef(name string) string {
+	if a.underlyingDialect != nil {
+		name = a.underlyingDialect.AliasName(name)
+	}
+	return a.dialect.EscapeIdentifier(name)
 }
 
 // SQL generates a query that outputs a pivoted table based on the pivot config and data in the underlying query.
@@ -232,7 +246,7 @@ func (a *pivotAST) SQL(underlyingAST *metricsview.AST, underlyingAlias string) (
 				return "", fmt.Errorf("pivot keep dimension %q not found in underlying query", fn)
 			}
 
-			b.WriteString(a.dialect.EscapeIdentifier(f.Name))
+			b.WriteString(a.columnRef(f.Name))
 			if f.DisplayName != "" {
 				b.WriteString(" AS ")
 				b.WriteString(a.dialect.EscapeAlias(f.DisplayName))
@@ -250,7 +264,7 @@ func (a *pivotAST) SQL(underlyingAST *metricsview.AST, underlyingAlias string) (
 			if i > 0 {
 				b.WriteString(", ")
 			}
-			b.WriteString(a.dialect.EscapeIdentifier(f.Name))
+			b.WriteString(a.columnRef(f.Name))
 		}
 
 		b.WriteString(") FROM (")
@@ -264,7 +278,7 @@ func (a *pivotAST) SQL(underlyingAST *metricsview.AST, underlyingAlias string) (
 		if i > 0 {
 			b.WriteString(", ")
 		}
-		b.WriteString(a.dialect.EscapeIdentifier(fn))
+		b.WriteString(a.columnRef(fn))
 	}
 
 	if len(a.using) > 0 {
@@ -279,7 +293,7 @@ func (a *pivotAST) SQL(underlyingAST *metricsview.AST, underlyingAlias string) (
 				b.WriteString(", ")
 			}
 			b.WriteString("ANY_VALUE(")
-			b.WriteString(a.dialect.EscapeIdentifier(fn))
+			b.WriteString(a.columnRef(fn))
 			b.WriteString(")")
 			b.WriteString(" AS ")
 			if a.useDisplayNames && f.DisplayName != "" {
@@ -296,7 +310,11 @@ func (a *pivotAST) SQL(underlyingAST *metricsview.AST, underlyingAlias string) (
 			if i > 0 {
 				b.WriteString(", ")
 			}
-			b.WriteString(a.dialect.OrderByAliasExpression(f.Name, f.Desc))
+			name := f.Name
+			if a.underlyingDialect != nil {
+				name = a.underlyingDialect.AliasName(name)
+			}
+			b.WriteString(a.dialect.OrderByAliasExpression(name, f.Desc))
 		}
 	}
 

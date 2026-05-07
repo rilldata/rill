@@ -2,6 +2,7 @@ package bigquery
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -10,13 +11,18 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
+// bqRestrictedRunRegex matches characters that are NOT supported in
+// BigQuery flexible column names. See:
+// https://cloud.google.com/bigquery/docs/schemas#flexible-column-names
+var bqRestrictedRunRegex = regexp.MustCompile(`[!"$()*,./;?@\[\\\]^` + "`" + `{}~\s]+`)
+
 type dialect struct {
 	drivers.BaseDialect
 }
 
 var DialectBigQuery drivers.Dialect = func() drivers.Dialect {
 	d := &dialect{}
-	d.BaseDialect = drivers.NewBaseDialect(drivers.DialectNameBigQuery, BigQueryEscapeIdentifier, BigQueryEscapeIdentifier)
+	d.BaseDialect = drivers.NewBaseDialect(drivers.DialectNameBigQuery, BigQueryEscapeIdentifier, BigQueryEscapeAlias)
 	return d
 }()
 
@@ -28,6 +34,19 @@ func BigQueryEscapeIdentifier(ident string) string {
 	// Replace any backticks inside the identifier with double backticks
 	return fmt.Sprintf("`%s`", strings.ReplaceAll(ident, "`", "``"))
 }
+
+func BigQueryEscapeAlias(alias string) string {
+	return BigQueryEscapeIdentifier(BigQueryAliasName(alias))
+}
+
+// BigQueryAliasName returns the column name BigQuery produces when the given string is used as a SELECT alias.
+// BigQuery flexible column names disallow certain characters; runs of disallowed characters are collapsed to "__"
+// and any trailing underscores are trimmed.
+func BigQueryAliasName(alias string) string {
+	return strings.TrimRight(bqRestrictedRunRegex.ReplaceAllString(alias, "__"), "_")
+}
+
+func (d *dialect) AliasName(name string) string { return BigQueryAliasName(name) }
 
 func (d *dialect) SupportsILike() bool { return false }
 
@@ -122,10 +141,6 @@ func (d *dialect) DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string,
 
 func (d *dialect) IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.TimeGrain) (string, error) {
 	return fmt.Sprintf("TIMESTAMP(DATETIME_SUB(DATETIME(%s, 'UTC'), INTERVAL (%s) %s), 'UTC')", tsExpr, unitExpr, d.ConvertToDateTruncSpecifier(grain)), nil
-}
-
-func (b *dialect) TimeFloorDisplayName(baseName string, grain string) string {
-	return fmt.Sprintf("%s_%s", baseName, grain) // BigQuery doesn't allow parentheses in column aliases, so use underscore instead
 }
 
 func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string, tz *time.Location, firstDay, firstMonth int) (string, []any, error) {

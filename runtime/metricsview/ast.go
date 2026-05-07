@@ -403,7 +403,7 @@ func (a *AST) ResolveDimension(qd Dimension, visible bool) (*runtimev1.MetricsVi
 	if displayName == "" {
 		displayName = qd.Name
 	}
-	displayName = a.Dialect.TimeFloorDisplayName(displayName, string(qd.Compute.TimeFloor.Grain))
+	displayName = fmt.Sprintf("%s (%s)", displayName, qd.Compute.TimeFloor.Grain)
 
 	return &runtimev1.MetricsViewSpec_Dimension{
 		Name:        qd.Name,

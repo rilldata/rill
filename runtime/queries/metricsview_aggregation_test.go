@@ -112,13 +112,13 @@ func TestMetricViewAggregationAgainstStarRocks(t *testing.T) {
 }
 
 func TestMetricViewAggregationAgainstBigQuery(t *testing.T) {
-	testmode.Expensive(t)
+	// testmode.Expensive(t)
 
 	rt, instanceID := newBigQueryInstance(t)
 	t.Run("testMetricsViewsAggregation", func(t *testing.T) { testMetricsViewsAggregation(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregationURI", func(t *testing.T) { testMetricsViewsAggregationURI(t, rt, instanceID) })
-	t.Run("testMetricsViewsAggregation_export_day", func(t *testing.T) { testMetricsViewsAggregation_export_day(t, rt, instanceID, "Timestamp_day") })
-	t.Run("testMetricsViewsAggregation_export_hour", func(t *testing.T) { testMetricsViewsAggregation_export_hour(t, rt, instanceID, "Timestamp_hour") })
+	t.Run("testMetricsViewsAggregation_export_day", func(t *testing.T) { testMetricsViewsAggregation_export_day(t, rt, instanceID, "Timestamp__day") })
+	t.Run("testMetricsViewsAggregation_export_hour", func(t *testing.T) { testMetricsViewsAggregation_export_hour(t, rt, instanceID, "Timestamp__hour") })
 	t.Run("testMetricsViewsAggregation_no_limit", func(t *testing.T) { testMetricsViewsAggregation_no_limit(t, rt, instanceID) })
 	t.Run("testMetricsViewAggregation_measure_filters", func(t *testing.T) { testBigQueryMetricsViewAggregation_measure_filters(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_timezone", func(t *testing.T) { testMetricsViewsAggregation_timezone(t, rt, instanceID) })

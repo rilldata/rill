@@ -36,6 +36,7 @@ type Dialect interface {
 	CanPivot() bool
 	EscapeIdentifier(ident string) string
 	EscapeAlias(alias string) string
+	AliasName(name string) string
 	EscapeQualifiedIdentifier(name string) string
 	EscapeTable(db, schema, table string) string
 	EscapeMember(tbl, name string) string
@@ -63,7 +64,6 @@ type Dialect interface {
 	DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain runtimev1.TimeGrain, tz string, firstDayOfWeek, firstMonthOfYear int) (string, error)
 	DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string, error)
 	IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.TimeGrain) (string, error)
-	TimeFloorDisplayName(baseName string, grain string) string
 	SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string, tz *time.Location, firstDay, firstMonth int) (string, []any, error)
 	SelectInlineResults(result *Result) (string, []any, []any, error)
 	LookupSelectExpr(lookupTable, lookupKeyColumn string) (string, error)
@@ -100,6 +100,13 @@ func (b *BaseDialect) EscapeIdentifier(ident string) string {
 
 func (b *BaseDialect) EscapeAlias(alias string) string {
 	return b.escapeAlias(alias)
+}
+
+// AliasName returns the column name produced when the given string is used as a SELECT alias.
+// Most dialects pass the name through unchanged; dialects that mangle disallowed characters
+// (e.g. BigQuery flexible column names) override this to apply the same sanitization.
+func (b *BaseDialect) AliasName(name string) string {
+	return name
 }
 
 // EscapeQualifiedIdentifier escapes a dot-separated qualified name (e.g. "schema.table") by escaping each part individually.
@@ -298,10 +305,6 @@ func (b *BaseDialect) DateDiff(_ runtimev1.TimeGrain, _, _ time.Time) (string, e
 
 func (b *BaseDialect) IntervalSubtract(_, _ string, _ runtimev1.TimeGrain) (string, error) {
 	return "", fmt.Errorf("IntervalSubtract not implemented for %s dialect", b.String())
-}
-
-func (b *BaseDialect) TimeFloorDisplayName(baseName string, grain string) string {
-	return fmt.Sprintf("%s (%s)", baseName, grain)
 }
 
 func (b *BaseDialect) SelectTimeRangeBins(_, _ time.Time, _ runtimev1.TimeGrain, _ string, _ *time.Location, _, _ int) (string, []any, error) {
