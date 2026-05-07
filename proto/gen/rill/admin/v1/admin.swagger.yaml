@@ -6635,7 +6635,7 @@ definitions:
         type: string
       eventName:
         type: string
-      amount:
+      value:
         type: number
         format: double
       endTime:
@@ -6652,7 +6652,7 @@ definitions:
         type: string
       eventName:
         type: string
-      amount:
+      value:
         type: number
         format: double
       startTime:

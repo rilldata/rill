@@ -1461,7 +1461,7 @@ export interface V1SudoIssueRuntimeManagerTokenResponse {
 export interface V1SudoReportUsageRequest {
   org?: string;
   eventName?: string;
-  amount?: number;
+  value?: number;
   /** Optional end time of the reporting window. Defaults to the current server time. */
   endTime?: string;
   /** Optional project name attribution for the mock event. If not set, a placeholder is used. */

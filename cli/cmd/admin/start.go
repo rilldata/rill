@@ -110,7 +110,7 @@ type Config struct {
 	StripeAPIKey                      string `split_words:"true"`
 	StripeWebhookSecret               string `split_words:"true"`
 	PylonIdentitySecret               string `split_words:"true"`
-	AllowMockUsage                    bool   `default:"false" split_words:"true"` // set to allow sending mock usage for billing, should be false in prod env
+	AllowMockBilling                  bool   `default:"false" split_words:"true"` // set to allow sending mock usage for billing, should be false in prod env
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -332,7 +332,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				MetricsProjectName:        metricsProjectName,
 				AutoscalerCron:            conf.AutoscalerCron,
 				ScaleDownConstraint:       conf.ScaleDownConstraint,
-				AllowMockUsage:            conf.AllowMockUsage,
+				AllowMockBilling:          conf.AllowMockBilling,
 			}
 			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiService, assetsBucket, biller, p)
 			if err != nil {

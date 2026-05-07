@@ -2148,7 +2148,7 @@ message SudoGrantTrialCreditsResponse {
 message SudoReportUsageRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
   string event_name = 2 [(validate.rules).string.min_len = 1];
-  double amount = 3 [(validate.rules).double = {gt: 0}];
+  double value = 3 [(validate.rules).double = {gt: 0}];
   // Optional end time of the reporting window. Defaults to the current server time.
   google.protobuf.Timestamp end_time = 4;
   // Optional project name attribution for the mock event. If not set, a placeholder is used.
@@ -2158,7 +2158,7 @@ message SudoReportUsageRequest {
 message SudoReportUsageResponse {
   string customer_id = 1;
   string event_name = 2;
-  double amount = 3;
+  double value = 3;
   google.protobuf.Timestamp start_time = 4;
   google.protobuf.Timestamp end_time = 5;
 }

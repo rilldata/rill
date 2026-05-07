@@ -17194,9 +17194,9 @@ func (m *SudoReportUsageRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if m.GetAmount() <= 0 {
+	if m.GetValue() <= 0 {
 		err := SudoReportUsageRequestValidationError{
-			field:  "Amount",
+			field:  "Value",
 			reason: "value must be greater than 0",
 		}
 		if !all {
@@ -17342,7 +17342,7 @@ func (m *SudoReportUsageResponse) validate(all bool) error {
 
 	// no validation rules for EventName
 
-	// no validation rules for Amount
+	// no validation rules for Value
 
 	if all {
 		switch v := interface{}(m.GetStartTime()).(type) {

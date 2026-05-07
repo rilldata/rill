@@ -2047,9 +2047,6 @@ components:
             type: object
         v1SudoReportUsageRequest:
             properties:
-                amount:
-                    format: double
-                    type: number
                 endTime:
                     description: Optional end time of the reporting window. Defaults to the current server time.
                     format: date-time
@@ -2061,6 +2058,9 @@ components:
                 projectName:
                     description: Optional project name attribution for the mock event. If not set, a placeholder is used.
                     type: string
+                value:
+                    format: double
+                    type: number
             type: object
         v1SudoReportUsageResponse:
             properties:
