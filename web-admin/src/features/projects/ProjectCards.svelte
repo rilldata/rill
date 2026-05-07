@@ -1,8 +1,9 @@
 <script lang="ts">
-  import { createAdminServiceListProjectsForOrganization } from "../../client";
   import ProjectCard from "./ProjectCard.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import { projectWelcomeEnabled } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
+  import { listProjectsForOrgQueryOptions } from "@rilldata/web-admin/features/projects/list-projects-query-options";
+  import { createQuery } from "@tanstack/svelte-query";
 
   let {
     organization,
@@ -10,9 +11,7 @@
   }: { organization: string; createProjectsPermission: boolean } = $props();
 
   let projectsQuery = $derived(
-    createAdminServiceListProjectsForOrganization(organization, {
-      pageSize: 1000,
-    }),
+    createQuery(listProjectsForOrgQueryOptions(organization)),
   );
   let projects = $derived($projectsQuery.data?.projects ?? []);
 

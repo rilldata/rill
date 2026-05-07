@@ -27,7 +27,6 @@
   import { useAlerts } from "../alerts/selectors";
   import AvatarButton from "../authentication/AvatarButton.svelte";
   import SignIn from "../authentication/SignIn.svelte";
-  import BranchSelector from "../branches/BranchSelector.svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
   import { useDashboards } from "../dashboards/listing/selectors";
   import {
@@ -189,8 +188,6 @@
               {activeBranch}
             </span>
           </li>
-        {:else if !onPublicURLPage && projectPermissions?.readDev}
-          <BranchSelector {organization} {project} {primaryBranch} />
         {/if}
       </svelte:fragment>
     </Breadcrumbs>
@@ -201,12 +198,7 @@
       {#if $developerChat}
         <ChatToggle />
       {/if}
-      <EditActions
-        {organization}
-        {project}
-        branch={activeBranch ?? ""}
-        {primaryBranch}
-      />
+      <EditActions {organization} {project} {primaryBranch} />
     {:else}
       {#if $viewAsUserStore}
         <ViewAsUserChip />

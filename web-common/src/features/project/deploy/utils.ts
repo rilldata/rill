@@ -1,5 +1,6 @@
 const deployingDashboardKey = "rill:app:deployingDashboard";
 export const DeployingDashboardUrlParam = "deploying_dashboard";
+export const PreCommitShaUrlParam = "pre_commit_sha";
 
 /**
  * Sets the deploying dashboard name from url to session storage if present.

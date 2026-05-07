@@ -1,24 +1,22 @@
 ---
-id: dashboards
-title: "Embed Dashboards"
-description: Embed Dashboards in your own applications
-sidebar_label: "Embed Dashboards"
+id: iframe
+title: Embed Dashboards in an Iframe
+description: Embed Rill dashboards in your own applications using iframes
+sidebar_label: Iframe
 sidebar_position: 10
 ---
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-## Embedding dashboards
-
-### Introduction
+## Introduction
 
 Rill Cloud provides the ability to embed dashboards as components in your own application using iframes, with a few different options:
 - Embedding individual dashboards as standalone iframes
 - Embedding individual dashboards with the ability to navigate to other dashboards (that exist in the _same_ project)
 - Embedding the dashboard list page present in a Rill project (with the ability to select and navigate between dashboards)
 
-When embedding Rill, you need to generate a service token for your backend to request an authenticated iframe URL via the Rill APIs. Afterwards, the iframe URL can be passed to your frontend application for rendering. Here's a high-level diagram of what this flow looks like:
+When embedding Rill, you need to generate a service token for your backend to request an authenticated iframe URL via the Rill API. Afterwards, the iframe URL can be passed to your frontend application for rendering. Here's a high-level diagram of what this flow looks like:
 
 ```mermaid
 sequenceDiagram
@@ -26,7 +24,7 @@ sequenceDiagram
   participant B as api.ezcommerce.com
   participant C as api.rilldata.com
   participant D as ui.rilldata.com/-/embed
-  participant E as node-4.us-east1.runtime.rilldata.com
+  participant E as node.region.runtime.rilldata.com
   A ->> B: Get iframe URL
   B ->> B: Resolve the user's email <br />using ezcommerce's own auth
   B ->>+ C: Get iframe URL for:<br />project="ezcommerce"<br />user="john@example.com"<br/>(uses Rill service token)
@@ -40,7 +38,7 @@ sequenceDiagram
   end
 ```
 
-### Create a service token
+## Create a service token
 Use the Rill CLI to create a service token for your current organization using the following command:
 ```bash
 # Create with organization role
@@ -58,7 +56,7 @@ For comprehensive documentation on service tokens, including roles, custom attri
 Service tokens can have broad permissions and should be handled confidentially. Therefore, the service token itself should **not** be integrated directly in frontend or other user-facing code that can be exposed publicly.
 :::
 
-### Backend: Build an iframe URL
+## Backend: Build an iframe URL
 You should implement an API on your backend that uses the service token to retrieve and return an iframe URL from Rill's API (which is hosted on `api.rilldata.com`).
 
 There are multiple reasons why the iframe URL <u>must</u> be constructed on your backend:
@@ -76,8 +74,8 @@ curl -X POST --location 'https://api.rilldata.com/v1/orgs/<org-name>/projects/<p
 --header 'Content-Type: application/json' \
 --header 'Authorization: Bearer <rill-svc-token>' \
 --data-raw '{
-"resource": "<explore-name>",
 "type": "explore",
+"resource": "<explore-name>",
 "user_email": "<user-email>"
 }'
 ```
@@ -105,8 +103,8 @@ app.post('/api/rill/iframe', async (req, res) => {
         Authorization: `Bearer ${rillServiceToken}`,
       },
       body: JSON.stringify({
-        resource: dashboardName,
         type: 'explore',
+        resource: dashboardName,
         // Optionally include the end user's email address for security policies:
         // user_email: '<end-user-email>',
         // Optionally set theme and theme mode:
@@ -152,8 +150,8 @@ def get_rill_iframe():
                 'Authorization': 'Bearer <rill-svc-token>',
             },
             json={
-                'resource': dashboard_name,
                 'type': 'explore',
+                'resource': dashboard_name,
                 # Optionally include the end user's email address for security policies:
                 # 'user_email': '<end-user-email>',
                 # Optionally set theme and theme mode:
@@ -192,8 +190,8 @@ func getRillIframe(w http.ResponseWriter, r *http.Request) {
 	dashboardName := reqBody["resource"]
 
 	requestBody, err := json.Marshal(map[string]string{
-		"resource": dashboardName,
 		"type": "explore",
+		"resource": dashboardName,
     // Optionally include the end user's email address for security policies:
 		// "user_email": "<end-user-email>",
 	})
@@ -250,6 +248,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -262,20 +261,21 @@ public class DashboardController {
         headers.set("Content-Type", "application/json");
         headers.set("Authorization", "Bearer <rill-svc-token>");
 
-        Map<String, Object> request = Map.of(
-                "resource", dashboardName,
-                "type", "explore",
-                "user_email", "<end-user-email>"
-        );
+        Map<String, Object> request = new HashMap<>();
+        request.put("type", "explore");
+        request.put("resource", dashboardName);
+        // Optionally include the end user's email address for security policies:
+        // request.put("user_email", "<end-user-email>");
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
         RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<Map> response = restTemplate.postForEntity("https://api.rilldata.com/v1/orgs/<org-name>/projects/<project-name>/iframe", entity, Map.class);
+        ResponseEntity<Map> response = restTemplate.postForEntity(
+                "https://api.rilldata.com/v1/orgs/<org-name>/projects/<project-name>/iframe",
+                entity,
+                Map.class
+        );
 
-        Map<String, Object> resp = (Map<String, Object>) response.getBody().get("resp");
-        Map<String, String> responseBody = Map.of("iframeResp", (String) ((Map<String, Object>) resp.get("body")));
-
-        return ResponseEntity.ok(responseBody);
+        return ResponseEntity.ok(response.getBody());
     }
 }
 ```
@@ -304,7 +304,7 @@ The response of the POST request will then contain an `iframeSrc` value that can
 
 ```json
 {
-  "iframeSrc": "https://ui.rilldata.com/-/embed?access_token=<token>&instance_id=<id>&kind=MetricsView&resource=<dashboard-name>&runtime_host=<runtime_host>&state=&theme=&theme_mode=dark",
+  "iframeSrc": "https://ui.rilldata.com/-/embed?access_token=<token>&instance_id=<id>&type=<dashboard type>&resource=<dashboard name>&runtime_host=<runtime host>",
   "runtimeHost": "<runtime_host>",
   "instanceId": "<id>",
   "accessToken": "<token>",
@@ -312,50 +312,46 @@ The response of the POST request will then contain an `iframeSrc` value that can
 }
 ```
 
-### User identity in embeds
+## User identity in embeds
 
 The `user_email`, `attributes` and `external_user_id` parameters serve two purposes in the embeds:
 - **User attributes for security policies:** `user_email` and `attributes` determine which attributes (such as `email`, `domain`, and `admin`) are available for use in [security policies](/developers/build/metrics-view/security).
 - **Per-user state:** `external_user_id` establishes a stable user identity that isolates per-user features such as AI chat history. Without a user identity, these features are not available.
 
 Only one of `user_email` or `attributes` can be provided for a given iframe. The `external_user_id` parameter can optionally be combined with either of them. Here is how each parameter works:
-- `user_email`: Looks up the user in Rill Cloud by email and populates their standard attributes. If no matching user is found, it generates limited attributes with only the fields `email`, `domain` and `admin` (set to `false`). Does not enable per-user state on its own; combine with `external_user_id` to enable per-user state.
+- `user_email`: Looks up the user in Rill Cloud by email and populates their standard attributes. If no matching user is found, it generates limited attributes with only the fields `email`, `domain` (the part of the email after `@`) and `admin` (set to `false`). The derived `domain` is commonly used in security policies (e.g. `app_site_domain = '{{ .user.domain }}'`). Does not enable per-user state on its own; combine with `external_user_id` to enable per-user state.
 - `attributes`: Passes the provided attributes through directly. Make sure to include all attributes referenced in your security policies (e.g. `email`, `domain`, `admin`, or custom attributes like `tenant_id`). Does not enable per-user state on its own; combine with `external_user_id` to enable per-user state.
 - `external_user_id`: Any stable identifier for the end user. This is usually the user's ID in your own database. Setting it enables per-user state such as AI chat history.
 
-### Embedding the project vs embedding an individual dashboard
+## Embedding the project vs embedding an individual dashboard
 
 One of the most common differences between how developers may wish to iframe Rill is whether they wish to embed at the project level or individual dashboard level. This behavior can be controlled through the combination of the `resource` and `navigation` properties!
 
 If you wish to embed a single dashboard **only**, your payload might look like:
 ```json
 {
-  // simply provide a resource
-  resource: 'dashboardName'
+  "type": "explore",
+  "resource": "dashboardName"
 }
 ```
 
 If you wish to still embed a dashboard _but allow navigation between dashboards_, then your payload should include both parameters:
 ```json
 {
-  // enable navigation and provide a resource
-    resource: 'dashboardName',
-    navigation: true
+  "type": "explore",
+  "resource": "dashboardName",
+  "navigation": true
 }
 ```
 
 Finally, _if you wish to embed the project list view of dashboards instead (what you see when you first open a project in Rill Cloud)_, then you can simply omit the `resource` and appropriately set `navigation` in your payload:
 ```json
 {
-  // enable navigation and do NOT provide a resource
-  navigation: true
+  "navigation": true
 }
 ```
 
-:::
-
-
-### Testing the dashboard
+## Testing the dashboard
 
 While it is possible to create the iframeSrc URL via the CLI or code to _test_ your embedded dashboard, it might be easier to start off using [Rill Developer's mock users](/developers/build/metrics-view/security#advanced-example-custom-attributes-embed-dashboards), especially if you have multiple attribute views that you want to test before deploying to Rill Cloud. You can pass specific custom_attributes as you would during iframe URL generation to view the pre-filtered explore dashboard.
 
@@ -367,11 +363,13 @@ While it is possible to create the iframeSrc URL via the CLI or code to _test_ y
 ```
 
 
-### Frontend: Embed the dashboard
+## Frontend: Embed the dashboard
 Your frontend should request an iframe URL from your backend API (which you set up in the previous step) and use the `iframeSrc` value of the response to render an HTML `<iframe>` element:
 ```html
 <iframe title="rill-dashboard" src="<iframeSrc>" width="100%" height="100%" />
 ```
+
+Once the dashboard is embedded, the parent page can also read and write its UI state (selected resource, filters, time range, view type, and so on) using a `postMessage`-based API exposed by the iframe. See the [postMessage API](/developers/embed/postmessage) reference for details.
 
 ## Appendix
 
@@ -389,10 +387,11 @@ export default function RillDashboard() {
 
   useEffect(() => {
     fetch(`<YOUR BACKEND HOST>/api/rill/iframe`, {
-      method: 'GET',
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify({ resource: '<your-dashboard-name>' }),
     })
     .then((response) => response.json())
     .then(({ iframeSrc, error }) => {
@@ -424,4 +423,4 @@ export default function RillDashboard() {
 
 ### Next.js Example
 
-You can find a different end-to-end example of embedding a Rill dashboard in a **Next.js** project in this sample [GitHub repo](https://github.com/rilldata/rill-embedding-example).
+You can find a different end-to-end example of embedding a Rill dashboard in a **Next.js** project in [`rilldata/rill-examples/embedding`](https://github.com/rilldata/rill-examples/tree/main/embedding).

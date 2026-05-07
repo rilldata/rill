@@ -20,6 +20,7 @@
     type ImportFromConfig,
   } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { getLabelsForSource } from "@rilldata/web-common/features/add-data/form/form-labels.ts";
   import ResizableSidebar from "@rilldata/web-common/layout/ResizableSidebar.svelte";
   import { generateImportToConfig } from "@rilldata/web-common/features/add-data/manager/steps/import.ts";
@@ -47,8 +48,13 @@
     $connectorDriverQuery.data?.driver ??
     getConnectorDriverForSchema(step.schema);
 
+  $: instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {
+    sensitive: true,
+  });
+  $: projectOlapConnector = $instanceQuery.data?.instance?.olapConnector ?? "";
+
   $: importSteps = connectorDriver
-    ? getImportStepsForConnector(config, connectorDriver)
+    ? getImportStepsForConnector(config, connectorDriver, projectOlapConnector)
     : [];
   $: supportsModeling = importSteps[0] === ImportDataStep.CreateModel;
 

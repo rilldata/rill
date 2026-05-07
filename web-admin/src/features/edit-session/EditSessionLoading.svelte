@@ -1,10 +1,17 @@
 <script lang="ts">
   import { V1DeploymentStatus } from "@rilldata/web-admin/client";
   import { Button } from "@rilldata/web-common/components/button";
+  import CtaNeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
   import LoadingSpinner from "@rilldata/web-common/components/LoadingSpinner.svelte";
+  import { onDestroy, onMount } from "svelte";
 
   export let status: V1DeploymentStatus | undefined;
-  export let cancelHref: string;
+  export let href: string;
+
+  const SLOW_NOTICE_DELAY_MS = 30_000;
+
+  let showSlowNotice = false;
+  let slowNoticeTimer: ReturnType<typeof setTimeout> | undefined;
 
   function getHeading(s: V1DeploymentStatus | undefined): string {
     switch (s) {
@@ -17,19 +24,26 @@
     }
   }
 
-  function handleCancel() {
-    // Full page navigation bypasses the branch injection hook in the
-    // parent layout, which would otherwise re-inject @branch into the URL.
-    window.location.href = cancelHref;
-  }
+  onMount(() => {
+    slowNoticeTimer = setTimeout(() => {
+      showSlowNotice = true;
+    }, SLOW_NOTICE_DELAY_MS);
+  });
+
+  onDestroy(() => {
+    if (slowNoticeTimer) clearTimeout(slowNoticeTimer);
+  });
 </script>
 
 <div class="loading-container">
   <div class="loading-content">
     <LoadingSpinner />
     <h2 class="text-lg font-semibold">{getHeading(status)}</h2>
+    {#if showSlowNotice}
+      <CtaNeedHelp leading="This is taking longer than usual." />
+    {/if}
   </div>
-  <Button type="secondary" onClick={handleCancel}>Cancel</Button>
+  <Button type="secondary" {href}>Back to projects</Button>
 </div>
 
 <style lang="postcss">

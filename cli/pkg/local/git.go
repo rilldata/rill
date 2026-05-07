@@ -112,6 +112,78 @@ func (s *Server) GithubRepoStatus(ctx context.Context, r *connect.Request[localv
 	}), nil
 }
 
+func (s *Server) CreateGithubPullRequest(ctx context.Context, r *connect.Request[localv1.CreateGithubPullRequestRequest]) (*connect.Response[localv1.CreateGithubPullRequestResponse], error) {
+	if !s.app.ch.IsAuthenticated() {
+		return nil, errors.New("must authenticate before performing this action")
+	}
+
+	projects, err := s.app.ch.InferProjects(ctx, s.app.ch.Org, s.app.ProjectPath)
+	if err != nil {
+		return nil, err
+	}
+	project := projects[0]
+
+	c, err := s.app.ch.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.CreateGithubPullRequest(ctx, &adminv1.CreateGithubPullRequestRequest{
+		Org:     project.OrgName,
+		Project: project.Name,
+		Branch:  r.Msg.Branch,
+		Title:   r.Msg.Title,
+		Body:    r.Msg.Body,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return connect.NewResponse(&localv1.CreateGithubPullRequestResponse{
+		PrUrl: resp.PrUrl,
+	}), nil
+}
+
+func (s *Server) GetGithubPullRequest(ctx context.Context, r *connect.Request[localv1.GetGithubPullRequestRequest]) (*connect.Response[localv1.GetGithubPullRequestResponse], error) {
+	if !s.app.ch.IsAuthenticated() {
+		return nil, errors.New("must authenticate before performing this action")
+	}
+
+	projects, err := s.app.ch.InferProjects(ctx, s.app.ch.Org, s.app.ProjectPath)
+	if err != nil {
+		return nil, err
+	}
+	project := projects[0]
+
+	c, err := s.app.ch.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.GetGithubPullRequest(ctx, &adminv1.GetGithubPullRequestRequest{
+		Org:     project.OrgName,
+		Project: project.Name,
+		Branch:  r.Msg.Branch,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	state := localv1.GetGithubPullRequestResponse_STATE_UNSPECIFIED
+	switch resp.PrState {
+	case adminv1.GetGithubPullRequestResponse_STATE_OPEN:
+		state = localv1.GetGithubPullRequestResponse_STATE_OPEN
+	case adminv1.GetGithubPullRequestResponse_STATE_CLOSED_UNMERGED:
+		state = localv1.GetGithubPullRequestResponse_STATE_CLOSED_UNMERGED
+	case adminv1.GetGithubPullRequestResponse_STATE_MERGED:
+		state = localv1.GetGithubPullRequestResponse_STATE_MERGED
+	}
+	return connect.NewResponse(&localv1.GetGithubPullRequestResponse{
+		PrUrl:   resp.PrUrl,
+		PrState: state,
+	}), nil
+}
+
 func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPullRequest]) (*connect.Response[localv1.GitPullResponse], error) {
 	// Get authenticated admin client
 	if !s.app.ch.IsAuthenticated() {
