@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/go-git/go-git/v5"
@@ -125,7 +126,9 @@ func ExtractRemotes(projectPath string, detectDotGit bool) ([]Remote, error) {
 		DetectDotGit: detectDotGit,
 	})
 	if err != nil {
-		return nil, err
+		// go-git rejects some valid repos (e.g. those with extensions.worktreeConfig).
+		// Fall back to shell git, which has more complete feature support.
+		return extractRemotesShell(projectPath)
 	}
 
 	remotes, err := repo.Remotes()
@@ -147,7 +150,40 @@ func ExtractRemotes(projectPath string, detectDotGit bool) ([]Remote, error) {
 		}
 	}
 
+	// In a git worktree, go-git opens the worktree's gitdir successfully but sees no remotes,
+	// because remote config lives in the common gitdir. Fall back to shell git.
+	if len(res) == 0 {
+		if shellRes, shellErr := extractRemotesShell(projectPath); shellErr == nil && len(shellRes) > 0 {
+			return shellRes, nil
+		}
+	}
+
 	return res, nil
+}
+
+// extractRemotesShell lists remotes by shelling out to `git remote -v`.
+// Used as a fallback when go-git can't read the repository (e.g. git worktrees).
+func extractRemotesShell(projectPath string) ([]Remote, error) {
+	cmd := exec.Command("git", "remote", "-v")
+	if projectPath != "" {
+		cmd.Dir = projectPath
+	}
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("git remote -v: %w", err)
+	}
+	seen := make(map[string]bool)
+	var remotes []Remote
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		// Format: "<name>\t<url> (fetch|push)"
+		fields := strings.Fields(line)
+		if len(fields) < 3 || fields[2] != "(fetch)" || seen[fields[0]] {
+			continue
+		}
+		seen[fields[0]] = true
+		remotes = append(remotes, Remote{Name: fields[0], URL: fields[1]})
+	}
+	return remotes, nil
 }
 
 func CommitAndPush(ctx context.Context, projectPath string, config *Config, commitMsg string, author *object.Signature) error {
