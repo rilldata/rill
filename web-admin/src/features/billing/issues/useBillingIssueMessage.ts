@@ -17,9 +17,10 @@ export type BillingIssueMessage = {
   title: string;
   description: string;
   cta?: BillingIssueMessageCTA;
+  dismissible?: BannerMessage["dismissible"];
 };
 export type BillingIssueMessageCTA = {
-  type: "upgrade" | "payment" | "contact" | "wake-projects";
+  type: "upgrade" | "show-upgrade" | "payment" | "contact";
   text: string;
 
   teamPlanDialogType?: TeamPlanDialogTypes;

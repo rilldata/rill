@@ -43,6 +43,16 @@ export interface BannerMessage {
     // callback when we need to take action like open pylon
     onClick?: () => void | Promise<void>;
   };
+
+  dismissible?: {
+    // TTL scope for the banner's dismissal tracking.
+    key: string;
+    // ID used to calculate ttl for.
+    // The same key can switch IDs. This means we need to start a new counter but save under the same `key`
+    id: string;
+    // If value is 0 then banner is dismissed forever.
+    ttl: number;
+  };
 }
 
 export interface PageContentResized {

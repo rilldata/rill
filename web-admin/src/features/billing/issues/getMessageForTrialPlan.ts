@@ -41,7 +41,7 @@ export function getMessageForTrialPlan(
     iconType: "alert",
     cta: {
       text: "Upgrade",
-      type: "upgrade",
+      type: "show-upgrade",
       teamPlanDialogType: "base",
     },
   };
@@ -87,12 +87,11 @@ function getMessageForCreditsTrial(trialIssue: V1BillingIssue) {
   const message: BillingIssueMessage = {
     type: "default",
     title: `Your trial has expired.`,
-    description: "Upgrade to maintain access.",
+    description: "Subscribe to Pro to maintain access.",
     iconType: "alert",
     cta: {
-      text: "Upgrade",
+      text: "Subscribe to Pro",
       type: "upgrade",
-      teamPlanDialogType: "base",
     },
   };
   const onCreditTrial = trialIssue.metadata?.onCreditTrial;
@@ -100,10 +99,18 @@ function getMessageForCreditsTrial(trialIssue: V1BillingIssue) {
 
   if (onCreditTrial.lowCredit) {
     message.type = "warning";
-    message.title = `Your org credits are running low.`;
+    message.title = "Your trial credit is running low.";
+    message.description = "";
+    message.dismissible = buildDismissableForIssue(trialIssue, 24 * 60 * 60); // 24 hrs
   } else {
     message.type = "default";
-    message.title = `Your org has been assigned ${onCreditTrial.creditAllocation ?? 0}$ credits.`;
+    message.title = `Welcome to rill.`;
+    message.description = `You've on a free trial with ${onCreditTrial.creditAllocation ?? 0}$ in credits.`;
+    message.cta = {
+      text: "View usage",
+      // TODO: type
+    };
+    message.dismissible = buildDismissableForIssue(trialIssue, 0);
   }
   return message;
 }
@@ -111,13 +118,13 @@ function getMessageForCreditsTrial(trialIssue: V1BillingIssue) {
 function getMessageForCreditsDepletedIssue() {
   return {
     type: "error",
-    title: `Your trial has expired and this org’s projects are now hibernating.`,
-    description: "Upgrade to wake projects and regain full access.",
+    title:
+      "Trial credit is used up. Projects are hibernated and dashboards are offline.",
+    description: "",
     iconType: "alert",
     cta: {
-      text: "Upgrade",
+      text: "Subscribe to Pro",
       type: "upgrade",
-      teamPlanDialogType: "trial-expired",
     },
   } satisfies BillingIssueMessage;
 }
@@ -138,4 +145,12 @@ export function trialHasPastGracePeriod(trialEndedIssue: V1BillingIssue) {
 function humanizeDuration(dur: Duration) {
   dur = shiftToLargest(dur, ["seconds", "minutes", "hours", "days"]);
   return dur.toHuman({ unitDisplay: "short" });
+}
+
+function buildDismissableForIssue(issue: V1BillingIssue, ttl: number) {
+  return {
+    key: issue.org ?? "",
+    id: issue.type,
+    ttl,
+  };
 }
