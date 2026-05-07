@@ -64,10 +64,7 @@ func (e *Executor) rewriteQueryForPivot(qry *metricsview.Query) (*pivotAST, bool
 		dialect = duckdb.DialectDuckDB
 	}
 
-	// Build a pivotAST based on fields to apply during and after the pivot (instead of in the underlying query).
-	// The underlying dialect (which produced the staged data) may mangle aliases differently from the pivot dialect
-	// (e.g. BigQuery flexible column names collapse spaces and parens to "__"), so we keep both around to
-	// translate column references correctly when generating the PIVOT SQL.
+	// Build a pivotAST based on fields to apply during and after the pivot (instead of in the underlying query)
 	ast := &pivotAST{
 		keep:              nil, // Populated below
 		on:                qry.PivotOn,
@@ -214,7 +211,7 @@ type pivotAST struct {
 
 	useDisplayNames   bool
 	dialect           drivers.Dialect // dialect that runs the PIVOT (currently always DuckDB)
-	underlyingDialect drivers.Dialect // dialect that produced the staged data (so we can resolve aliased column names)
+	underlyingDialect drivers.Dialect // dialect that produced the staged data
 }
 
 // columnRef returns an identifier reference to a column produced by the underlying query, escaped for the pivot dialect.
