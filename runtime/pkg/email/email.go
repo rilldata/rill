@@ -540,31 +540,6 @@ Thank you for trying Rill Cloud. We hope to see you again in the future!
 	})
 }
 
-type TrialStarted struct {
-	ToEmail      string
-	ToName       string
-	OrgName      string
-	FrontendURL  string
-	TrialEndDate time.Time
-}
-
-func (c *Client) SendTrialStarted(opts *TrialStarted) error {
-	return c.SendWelcomeToTrial(&Welcome{
-		ToEmail:     opts.ToEmail,
-		ToName:      opts.ToName,
-		Subject:     fmt.Sprintf("A 30-day free trial for %s has started", opts.OrgName),
-		FrontendURL: opts.FrontendURL,
-		WelcomeText: template.HTML(fmt.Sprintf(`
-You now have access to Rill Cloud until <b>%s</b> to explore all features including:
-<ul>
-<li>User management (RBAC)</li>
-<li>Embedded dashboards</li>
-<li>Alerts and scheduled reports</li> 
-</ul>
-`, opts.TrialEndDate.Format(dateFormat))),
-	})
-}
-
 type TrialEndingSoon struct {
 	ToEmail      string
 	ToName       string
@@ -647,19 +622,77 @@ Thank you for trying Rill Cloud. We hope to see you again in the future!
 	})
 }
 
-type TrialExtended struct {
-	ToEmail      string
-	ToName       string
-	OrgName      string
-	TrialEndDate time.Time
+type CreditTrialStarted struct {
+	ToEmail          string
+	ToName           string
+	OrgName          string
+	FrontendURL      string
+	CreditAllocation int
 }
 
-func (c *Client) SendTrialExtended(opts *TrialExtended) error {
-	return c.SendInformational(&Informational{
-		ToEmail:    opts.ToEmail,
-		ToName:     opts.ToName,
-		Subject:    fmt.Sprintf("Your trial for %s has been extended", opts.OrgName),
-		Body:       template.HTML(fmt.Sprintf("Your trial for <b>%q</b> has been extended until %s.", opts.OrgName, opts.TrialEndDate.Format(dateFormat))),
+func (c *Client) SendCreditTrialStarted(opts *CreditTrialStarted) error {
+	return c.SendWelcomeToTrial(&Welcome{
+		ToEmail:     opts.ToEmail,
+		ToName:      opts.ToName,
+		Subject:     fmt.Sprintf("Your Rill Cloud trial for %s has started", opts.OrgName),
+		FrontendURL: opts.FrontendURL,
+		WelcomeText: template.HTML(fmt.Sprintf(`
+You now have <b>%d Rill Cloud credits</b> to explore all features including:
+<ul>
+<li>User management (RBAC)</li>
+<li>Embedded dashboards</li>
+<li>Alerts and scheduled reports</li>
+</ul>
+We'll let you know when your balance is running low so you can upgrade whenever you're ready.
+`, opts.CreditAllocation)),
+	})
+}
+
+type CreditTrialLow struct {
+	ToEmail          string
+	ToName           string
+	OrgName          string
+	FrontendURL      string
+	UpgradeURL       string
+	RemainingBalance float64
+}
+
+func (c *Client) SendCreditTrialLow(opts *CreditTrialLow) error {
+	return c.SendCallToAction(&CallToAction{
+		ToEmail: opts.ToEmail,
+		ToName:  opts.ToName,
+		Subject: fmt.Sprintf("Your Rill Cloud trial credits for %s are running low", opts.OrgName),
+		PreButton: template.HTML(fmt.Sprintf(`
+Your trial credit balance for <b>%s</b> has dropped to about <b>$%.2f</b>.
+<br /><br />
+Upgrade now to keep your projects online before the credits run out.
+`, opts.OrgName, opts.RemainingBalance)),
+		ButtonText: "Upgrade Now",
+		ButtonLink: opts.UpgradeURL,
+		ShowFooter: true,
+	})
+}
+
+type CreditTrialDepleted struct {
+	ToEmail     string
+	ToName      string
+	OrgName     string
+	FrontendURL string
+	UpgradeURL  string
+}
+
+func (c *Client) SendCreditTrialDepleted(opts *CreditTrialDepleted) error {
+	return c.SendCallToAction(&CallToAction{
+		ToEmail: opts.ToEmail,
+		ToName:  opts.ToName,
+		Subject: fmt.Sprintf("Your Rill Cloud trial credits for %s are depleted", opts.OrgName),
+		PreButton: template.HTML(fmt.Sprintf(`
+Your trial credits for <b>%s</b> have run out, and the org's projects are now <a href="https://docs.rilldata.com/developers/other/FAQ#what-is-project-hibernation">hibernating</a>.
+<br /><br />
+Upgrade to bring your projects back online.
+`, opts.OrgName)),
+		ButtonText: "Upgrade Now",
+		ButtonLink: opts.UpgradeURL,
 		ShowFooter: true,
 	})
 }
@@ -698,7 +731,7 @@ func (c *Client) SendSubscriptionRenewed(opts *SubscriptionRenewed) error {
 	})
 }
 
-type TeamPlan struct {
+type PaidPlan struct {
 	ToEmail          string
 	ToName           string
 	OrgName          string
@@ -707,8 +740,8 @@ type TeamPlan struct {
 	BillingStartDate time.Time
 }
 
-// SendTeamPlanStarted sends customised plan started email for Team Plan
-func (c *Client) SendTeamPlanStarted(opts *TeamPlan) error {
+// SendPaidPlanStarted sends a customised plan-started email for a paid plan (Team or Pro).
+func (c *Client) SendPaidPlanStarted(opts *PaidPlan) error {
 	return c.SendWelcomeToTeam(&Welcome{
 		ToEmail:     opts.ToEmail,
 		ToName:      opts.ToName,
@@ -729,8 +762,8 @@ Interested inscheduling a call?
 	})
 }
 
-// SendTeamPlanRenewal sends customised plan renewed email for Team Plan
-func (c *Client) SendTeamPlanRenewal(opts *TeamPlan) error {
+// SendPaidPlanRenewal sends a customised plan-renewed email for a paid plan (Team or Pro).
+func (c *Client) SendPaidPlanRenewal(opts *PaidPlan) error {
 	return c.SendWelcomeToTeam(&Welcome{
 		ToEmail:     opts.ToEmail,
 		ToName:      opts.ToName,

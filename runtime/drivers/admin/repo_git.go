@@ -84,6 +84,17 @@ func (r *gitRepo) pullInner(ctx context.Context, userTriggered, force bool) erro
 		if err != nil {
 			return err
 		}
+		if r.editableDepl {
+			// set git config in the repo dir to ensure git commits/git merge etc pass on cloud
+			err = ensureGitConfig(r.repoDir, "user.name", "Rill")
+			if err != nil {
+				return err
+			}
+			err = ensureGitConfig(r.repoDir, "user.email", "noreply@rilldata.com")
+			if err != nil {
+				return err
+			}
+		}
 	} else {
 		// Repository exists, pull latest changes
 
@@ -398,8 +409,8 @@ func (r *gitRepo) commitAll(repo *git.Repository, message string) (string, error
 	hash, err := worktree.Commit(message, &git.CommitOptions{
 		All: true, // Commit all changes
 		Author: &object.Signature{
-			Name:  "Rill Runtime",
-			Email: "runtime@rilldata.com", // Use a generic author for the commit
+			Name:  "Rill",
+			Email: "noreply@rilldata.com",
 			When:  time.Now(),
 		},
 	})
@@ -512,4 +523,22 @@ func resetToRemoteTrackingBranch(repoDir, branch string) error {
 		return fmt.Errorf("git reset failed: %s", string(execErr.Stderr))
 	}
 	return nil
+}
+
+// ensureGitConfig ensures that the git config key is set.
+// if not set then it sets the key to the given value locally in the repo
+func ensureGitConfig(repoDir, key, value string) error {
+	_, err := exec.Command("git", "-C", repoDir, "config", "--get", key).Output()
+	if err == nil {
+		return nil
+	}
+
+	// Exit code 1 means "key not set" — that's the case we want to handle.
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) || exitErr.ExitCode() != 1 {
+		return err
+	}
+
+	// set only locally
+	return exec.Command("git", "-C", repoDir, "config", "--local", key, value).Run()
 }

@@ -4,7 +4,7 @@
   import { withEditorPrefix } from "@rilldata/web-common/layout/navigation/editor-routing";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
+  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/actions/ui-actions.ts";
   import MetricsInspector from "@rilldata/web-common/features/metrics-views/MetricsInspector.svelte";
   import MetricsEditor from "@rilldata/web-common/features/metrics-views/editor/MetricsEditor.svelte";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
@@ -92,18 +92,20 @@
     codeToggle={!hideCodeToggle}
     titleInput={fileName}
   >
-    <div class="flex gap-x-2" slot="cta">
-      {#if !inPreviewMode}
-        {#if isOldMetricsView}
-          <PreviewButton
-            href={withEditorPrefix(`/explore/${metricsViewName}`)}
-            disabled={!!parseError || !!reconcileError}
-          />
-        {:else}
-          <GoToDashboardButton {resource} />
+    {#snippet cta()}
+      <div class="flex gap-x-2">
+        {#if !inPreviewMode}
+          {#if isOldMetricsView}
+            <PreviewButton
+              href={withEditorPrefix(`/explore/${metricsViewName}`)}
+              disabled={!!parseError || !!reconcileError}
+            />
+          {:else}
+            <GoToDashboardButton {resource} />
+          {/if}
         {/if}
-      {/if}
-    </div>
+      </div>
+    {/snippet}
   </WorkspaceHeader>
 
   <svelte:fragment slot="body">

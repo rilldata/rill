@@ -300,13 +300,6 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 
 	var depl *database.Deployment
 	if req.Branch != "" {
-		if !permissions.ReadDev {
-			return &adminv1.GetProjectResponse{
-				Project:            s.projToDTO(proj, org.Name),
-				ProjectPermissions: permissions,
-			}, nil
-		}
-
 		depls, err := s.admin.DB.FindDeploymentsForProject(ctx, proj.ID, "", req.Branch)
 		if err != nil {
 			return nil, err
@@ -317,12 +310,8 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			return nil, status.Errorf(codes.FailedPrecondition, "multiple deployments found for branch %q. Recreate deployments to resolve", req.Branch)
 		}
 		depl = depls[0]
-
-		if !permissions.ReadDevStatus {
-			depl.StatusMessage = ""
-		}
 	} else {
-		if proj.PrimaryDeploymentID == nil || !permissions.ReadProd {
+		if proj.PrimaryDeploymentID == nil {
 			return &adminv1.GetProjectResponse{
 				Project:            s.projToDTO(proj, org.Name),
 				ProjectPermissions: permissions,
@@ -333,7 +322,19 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		if err != nil {
 			return nil, err
 		}
+	}
 
+	if depl.Environment == "dev" {
+		if !permissions.ReadDev {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to read dev deployment")
+		}
+		if !permissions.ReadDevStatus {
+			depl.StatusMessage = ""
+		}
+	} else {
+		if !permissions.ReadProd {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to read prod deployment")
+		}
 		if !permissions.ReadProdStatus {
 			depl.StatusMessage = ""
 		}
@@ -587,9 +588,8 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 				return nil, status.Errorf(codes.FailedPrecondition, "trial orgs quota exceeded for user %s", u.Email)
 			}
 		}
-		_, err = s.admin.Jobs.StartOrgTrial(ctx, org.ID)
-		if err != nil {
-			s.logger.Named("billing").Error("failed to submit job to start trial for org, please do it manually", zap.String("org_id", org.ID), zap.Error(err))
+		if _, err = s.admin.Jobs.StartOrgCreditTrial(ctx, org.ID); err != nil {
+			s.logger.Named("billing").Error("failed to submit job to start credit trial for org, please do it manually", zap.String("org_id", org.ID), zap.Error(err))
 			// continue creating the project
 		}
 	}
@@ -865,9 +865,18 @@ func (s *Server) GetProjectVariables(ctx context.Context, req *adminv1.GetProjec
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project variables")
+	perms := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	excludeProd := false
+	if !perms.ReadDevStatus && !perms.ReadProdStatus {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read variables")
 	}
+	if !perms.ReadProdStatus {
+		if req.Environment == "prod" {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to read variables for the prod environment")
+		}
+		excludeProd = true
+	}
+	// NOTE: Not explicitly checking ReadDevStatus for non-prod environments for simplicity; if you have ReadProdStatus, you're good to read variables for non-prod envs as well.
 
 	var vars []*database.ProjectVariable
 	if req.ForAllEnvironments {
@@ -884,6 +893,9 @@ func (s *Server) GetProjectVariables(ctx context.Context, req *adminv1.GetProjec
 		VariablesMap: make(map[string]string, len(vars)),
 	}
 	for _, v := range vars {
+		if excludeProd && v.Environment == "prod" {
+			continue
+		}
 		resp.Variables = append(resp.Variables, projectVariableToDTO(v))
 		// nolint:staticcheck // We still need to set it
 		resp.VariablesMap[v.Name] = v.Value
@@ -905,12 +917,14 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 	}
 
 	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.PermissionDenied, "only users can update project variables")
+	perms := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if !perms.ManageDev && !perms.ManageProd {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to update variables")
 	}
-	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to update project variables")
+	if req.Environment == "prod" && !perms.ManageProd {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to update variables for the prod environment")
 	}
+	// NOTE: Not explicitly checking ManageDev for non-prod environments for simplicity; if you have ManageProd, you're good to manage variables for non-prod envs as well.
 
 	var validationErr error
 	for k := range req.Variables {
@@ -922,7 +936,12 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 		return nil, status.Error(codes.InvalidArgument, validationErr.Error())
 	}
 
-	err = s.admin.UpdateProjectVariables(ctx, proj, req.Environment, req.Variables, req.UnsetVariables, claims.OwnerID())
+	var userID string
+	if claims.OwnerType() == auth.OwnerTypeUser {
+		userID = claims.OwnerID()
+	}
+
+	err = s.admin.UpdateProjectVariables(ctx, proj, req.Environment, req.Variables, req.UnsetVariables, userID)
 	if err != nil {
 		return nil, fmt.Errorf("variables updated failed with error %w", err)
 	}
@@ -2114,6 +2133,7 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		ArchiveAssetId:      safeStr(p.ArchiveAssetID),
 		PrimaryDeploymentId: safeStr(p.PrimaryDeploymentID),
 		ProdTtlSeconds:      safeInt64(p.ProdTTLSeconds),
+		DevTtlSeconds:       p.DevTTLSeconds,
 		FrontendUrl:         s.admin.URLs.Project(orgName, p.Name),
 		Annotations:         p.Annotations,
 		CreatedOn:           timestamppb.New(p.CreatedOn),
@@ -2267,6 +2287,7 @@ func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {
 		StatusMessage:     d.StatusMessage,
 		CreatedOn:         timestamppb.New(d.CreatedOn),
 		UpdatedOn:         timestamppb.New(d.UpdatedOn),
+		UsedOn:            timestamppb.New(d.UsedOn),
 	}
 }
 
