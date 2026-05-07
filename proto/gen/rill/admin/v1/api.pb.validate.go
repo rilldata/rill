@@ -48896,6 +48896,8 @@ func (m *BillingIssueMetadataOnCreditTrial) validate(all bool) error {
 
 	// no validation rules for LowCredit
 
+	// no validation rules for ApproxLowCreditBalance
+
 	if len(errors) > 0 {
 		return BillingIssueMetadataOnCreditTrialMultiError(errors)
 	}

@@ -215,6 +215,10 @@ components:
             type: object
         v1BillingIssueMetadataOnCreditTrial:
             properties:
+                approxLowCreditBalance:
+                    format: double
+                    title: only useful when low_credit is true, its updated periodically and may not reflect the real-time credit balance
+                    type: number
                 creditAllocation:
                     format: double
                     type: number

@@ -85,6 +85,7 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 	river.AddWorker(workers, &PaymentFailedGracePeriodCheckWorker{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &PlanChangedWorker{admin: adm})
 	river.AddWorker(workers, &CreditBalanceDroppedWorker{admin: adm, logger: billingLogger})
+	river.AddWorker(workers, &CreditTrialLowBalanceRefreshWorker{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &CreditBalanceDepletedWorker{admin: adm, logger: billingLogger})
 
 	// trial checks worker
@@ -137,6 +138,7 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 		{&DeleteExpiredTokensArgs{}, "0 */6 * * *", true},          // every 6 hours
 		{&DeleteExpiredVirtualFilesArgs{}, "0 */6 * * *", true},    // every 6 hours
 		{&DeleteUnusedAssetsArgs{}, "0 */6 * * *", true},           // every 6 hours
+		{&CreditTrialLowBalanceRefreshArgs{}, "0 * * * *", true},   // hourly
 		{&DeploymentsHealthCheckArgs{}, "0 */10 * * *", true},      // every 10 minutes
 		{&HibernateExpiredDeploymentsArgs{}, "0 */15 * * *", true}, // every 15 minutes
 	}

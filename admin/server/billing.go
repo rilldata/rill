@@ -708,13 +708,14 @@ func (s *Server) SudoGrantTrialCredits(ctx context.Context, req *adminv1.SudoGra
 			return nil, fmt.Errorf("unexpected metadata type for on-credit-trial issue for org %q", org.Name)
 		}
 		md.CreditAllocation += req.AmountUsd
+		md.ApproxLowCreditsBalance += req.AmountUsd
 		if _, err := s.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
 			OrgID:     org.ID,
 			Type:      database.BillingIssueTypeOnCreditTrial,
 			Metadata:  md,
 			EventTime: onCreditTrial.EventTime,
 		}); err != nil {
-			return nil, fmt.Errorf("failed to update on-credit-trial credit_allocation: %w", err)
+			return nil, fmt.Errorf("failed to update on-credit-trial metadata: %w", err)
 		}
 		return &adminv1.SudoGrantTrialCreditsResponse{GrantedUsd: req.AmountUsd}, nil
 	}
@@ -760,9 +761,10 @@ func (s *Server) SudoGrantTrialCredits(ctx context.Context, req *adminv1.SudoGra
 		OrgID: org.ID,
 		Type:  database.BillingIssueTypeOnCreditTrial,
 		Metadata: &database.BillingIssueMetadataOnCreditTrial{
-			SubID:            sub.ID,
-			PlanID:           sub.Plan.ID,
-			CreditAllocation: req.AmountUsd,
+			SubID:                   sub.ID,
+			PlanID:                  sub.Plan.ID,
+			CreditAllocation:        req.AmountUsd,
+			ApproxLowCreditsBalance: req.AmountUsd,
 		},
 		EventTime: time.Now().UTC(),
 	}); err != nil {
@@ -1247,10 +1249,11 @@ func billingIssueMetadataToDTO(t database.BillingIssueType, m database.BillingIs
 		return &adminv1.BillingIssueMetadata{
 			Metadata: &adminv1.BillingIssueMetadata_OnCreditTrial{
 				OnCreditTrial: &adminv1.BillingIssueMetadataOnCreditTrial{
-					SubscriptionId:   md.SubID,
-					PlanId:           md.PlanID,
-					CreditAllocation: md.CreditAllocation,
-					LowCredit:        md.LowCredit,
+					SubscriptionId:         md.SubID,
+					PlanId:                 md.PlanID,
+					CreditAllocation:       md.CreditAllocation,
+					LowCredit:              md.LowCredit,
+					ApproxLowCreditBalance: md.ApproxLowCreditsBalance,
 				},
 			},
 		}

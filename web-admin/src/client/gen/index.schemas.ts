@@ -189,6 +189,7 @@ export interface V1BillingIssueMetadataOnCreditTrial {
   planId?: string;
   creditAllocation?: number;
   lowCredit?: boolean;
+  approxLowCreditBalance?: number;
 }
 
 export interface V1BillingIssueMetadataOnTrial {

@@ -3719,6 +3719,7 @@ message BillingIssueMetadataOnCreditTrial {
   string plan_id = 2;
   double credit_allocation = 3;
   bool low_credit = 4;
+  double approx_low_credit_balance = 5; // only useful when low_credit is true, its updated periodically and may not reflect the real-time credit balance
 }
 
 message BillingIssueMetadataTrialCreditsDepleted {

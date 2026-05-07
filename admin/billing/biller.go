@@ -23,7 +23,7 @@ const CreditsCurrency = "credits"
 const USDCurrency = "USD"
 
 // CreditTrialLowBalanceThreshold is the credit balance at which we trigger a warning email.
-const CreditTrialLowBalanceThreshold = 50
+const CreditTrialLowBalanceThreshold = 125
 
 var ErrNotFound = errors.New("not found")
 

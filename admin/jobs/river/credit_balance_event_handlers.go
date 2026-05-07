@@ -26,7 +26,7 @@ type CreditBalanceDroppedWorker struct {
 	logger *zap.Logger
 }
 
-// Work handles a credit_balance_dropped Orb webhook. We re-fetch the live balance to confirm it's actually below the low-credit threshold (the webhook is unordered and the customer may have topped up between trigger and delivery), send the warning email once per trial, and persist the LowCredit flag on the OnCreditTrial issue so subsequent dropped events for the same trial are no-ops.
+// Work handles a credit_balance_dropped Orb webhook. We re-fetch the live balance to confirm it's actually below the low-credit threshold because the webhook is unordered and the customer may have topped up between trigger and delivery.
 func (w *CreditBalanceDroppedWorker) Work(ctx context.Context, job *river.Job[CreditBalanceDroppedArgs]) error {
 	org, err := w.admin.DB.FindOrganizationForBillingCustomerID(ctx, job.Args.BillingCustomerID)
 	if err != nil {
@@ -57,6 +57,9 @@ func (w *CreditBalanceDroppedWorker) Work(ctx context.Context, job *river.Job[Cr
 		w.logger.Named("billing").Info("credit_balance_dropped webhook ignored: balance is no longer below the low-credit threshold", zap.String("org_id", org.ID), zap.Float64("balance", balance), zap.Float64("threshold", billing.CreditTrialLowBalanceThreshold))
 		return nil
 	}
+	if err := updateOnCreditTrialApproxBalance(ctx, w.admin, bi, md, balance); err != nil {
+		return fmt.Errorf("failed to update on-credit-trial approximate credit balance for org %q: %w", org.Name, err)
+	}
 
 	err = w.admin.Email.SendCreditTrialLow(&email.CreditTrialLow{
 		ToEmail:          org.BillingEmail,
@@ -70,17 +73,71 @@ func (w *CreditBalanceDroppedWorker) Work(ctx context.Context, job *river.Job[Cr
 		return fmt.Errorf("failed to send credit trial low email for org %q: %w", org.Name, err)
 	}
 
-	md.LowCredit = true
-	if _, err := w.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
-		OrgID:     org.ID,
-		Type:      database.BillingIssueTypeOnCreditTrial,
-		Metadata:  md,
-		EventTime: bi.EventTime,
-	}); err != nil {
-		return fmt.Errorf("failed to mark on-credit-trial low_credit flag for org %q: %w", org.Name, err)
+	return nil
+}
+
+type CreditTrialLowBalanceRefreshArgs struct{}
+
+func (CreditTrialLowBalanceRefreshArgs) Kind() string { return "credit_trial_low_balance_refresh" }
+
+type CreditTrialLowBalanceRefreshWorker struct {
+	river.WorkerDefaults[CreditTrialLowBalanceRefreshArgs]
+	admin  *admin.Service
+	logger *zap.Logger
+}
+
+// Work refreshes approximate credit-trial balances after the customer has crossed the single low-balance alert threshold.
+func (w *CreditTrialLowBalanceRefreshWorker) Work(ctx context.Context, job *river.Job[CreditTrialLowBalanceRefreshArgs]) error {
+	issues, err := w.admin.DB.FindBillingIssueByType(ctx, database.BillingIssueTypeOnCreditTrial)
+	if err != nil {
+		return fmt.Errorf("failed to find on-credit-trial billing issues: %w", err)
+	}
+
+	for _, issue := range issues {
+		md, ok := issue.Metadata.(*database.BillingIssueMetadataOnCreditTrial)
+		if !ok {
+			return fmt.Errorf("unexpected metadata type for on-credit-trial issue %q", issue.ID)
+		}
+		if !md.LowCredit {
+			continue
+		}
+
+		org, err := w.admin.DB.FindOrganization(ctx, issue.OrgID)
+		if err != nil {
+			if errors.Is(err, database.ErrNotFound) {
+				w.logger.Named("billing").Warn("skipping credit-trial balance refresh: organization not found", zap.String("org_id", issue.OrgID), zap.String("billing_issue_id", issue.ID))
+				continue
+			}
+			return fmt.Errorf("failed to find organization for on-credit-trial issue %q: %w", issue.ID, err)
+		}
+		if org.BillingCustomerID == "" {
+			continue
+		}
+
+		balance, err := w.admin.Biller.GetCustomerCreditBalance(ctx, org.BillingCustomerID, billing.CreditsCurrency)
+		if err != nil {
+			return fmt.Errorf("failed to fetch credit balance for org %q: %w", org.Name, err)
+		}
+		if err := updateOnCreditTrialApproxBalance(ctx, w.admin, issue, md, balance); err != nil {
+			return fmt.Errorf("failed to update on-credit-trial approximate credit balance for org %q: %w", org.Name, err)
+		}
 	}
 
 	return nil
+}
+
+func updateOnCreditTrialApproxBalance(ctx context.Context, adm *admin.Service, issue *database.BillingIssue, md *database.BillingIssueMetadataOnCreditTrial, balance float64) error {
+	md.ApproxLowCreditsBalance = balance
+	if balance < billing.CreditTrialLowBalanceThreshold {
+		md.LowCredit = true
+	}
+	_, err := adm.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
+		OrgID:     issue.OrgID,
+		Type:      database.BillingIssueTypeOnCreditTrial,
+		Metadata:  md,
+		EventTime: issue.EventTime,
+	})
+	return err
 }
 
 type CreditBalanceDepletedArgs struct {

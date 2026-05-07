@@ -351,9 +351,10 @@ func (s *Service) StartCreditTrial(ctx context.Context, org *database.Organizati
 		OrgID: org.ID,
 		Type:  database.BillingIssueTypeOnCreditTrial,
 		Metadata: &database.BillingIssueMetadataOnCreditTrial{
-			SubID:            sub.ID,
-			PlanID:           sub.Plan.ID,
-			CreditAllocation: CreditTrialAllocation,
+			SubID:                   sub.ID,
+			PlanID:                  sub.Plan.ID,
+			CreditAllocation:        CreditTrialAllocation,
+			ApproxLowCreditsBalance: CreditTrialAllocation,
 		},
 		EventTime: sub.StartDate,
 	})
