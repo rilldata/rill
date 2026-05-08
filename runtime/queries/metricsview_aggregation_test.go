@@ -112,7 +112,7 @@ func TestMetricViewAggregationAgainstStarRocks(t *testing.T) {
 }
 
 func TestMetricViewAggregationAgainstBigQuery(t *testing.T) {
-	testmode.Expensive(t)
+	// testmode.Expensive(t)
 
 	rt, instanceID := newBigQueryInstance(t)
 	t.Run("testMetricsViewsAggregation", func(t *testing.T) { testMetricsViewsAggregation(t, rt, instanceID) })

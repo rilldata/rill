@@ -36,7 +36,8 @@ type Dialect interface {
 	CanPivot() bool
 	EscapeIdentifier(ident string) string
 	EscapeAlias(alias string) string
-	AliasName(name string) string
+	// SanitizeDisplayName returns a sanitized version of the given name so that it conforms to the dialect's identifier rules.
+	SanitizeDisplayName(name string) string
 	EscapeQualifiedIdentifier(name string) string
 	EscapeTable(db, schema, table string) string
 	EscapeMember(tbl, name string) string
@@ -102,11 +103,8 @@ func (b *BaseDialect) EscapeAlias(alias string) string {
 	return b.escapeAlias(alias)
 }
 
-// AliasName returns the column name produced when the given string is used as a SELECT alias.
-// Most dialects pass the name through unchanged; dialects that mangle disallowed characters
-// (e.g. BigQuery flexible column names) override this to apply the same sanitization.
-func (b *BaseDialect) AliasName(name string) string {
-	return name
+func (b *BaseDialect) SanitizeDisplayName(name string) string {
+	return b.escapeAlias(name)
 }
 
 // EscapeQualifiedIdentifier escapes a dot-separated qualified name (e.g. "schema.table") by escaping each part individually.

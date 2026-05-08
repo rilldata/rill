@@ -11,10 +11,10 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
-// bqRestrictedRunRegex matches characters that are NOT supported in
+// restrictedAliasCharactersRegex matches characters that are NOT supported in
 // BigQuery flexible column names. See:
 // https://cloud.google.com/bigquery/docs/schemas#flexible-column-names
-var bqRestrictedRunRegex = regexp.MustCompile(`[!"$()*,./;?@\[\\\]^` + "`" + `{}~\s]+`)
+var restrictedAliasCharactersRegex = regexp.MustCompile(`[!"$()*,./;?@\[\\\]^` + "`" + `{}~\s]+`)
 
 type dialect struct {
 	drivers.BaseDialect
@@ -36,17 +36,12 @@ func BigQueryEscapeIdentifier(ident string) string {
 }
 
 func BigQueryEscapeAlias(alias string) string {
-	return BigQueryEscapeIdentifier(BigQueryAliasName(alias))
+	return BigQueryEscapeIdentifier(alias)
 }
 
-// BigQueryAliasName returns the column name BigQuery produces when the given string is used as a SELECT alias.
-// BigQuery flexible column names disallow certain characters; runs of disallowed characters are collapsed to "__"
-// and any trailing underscores are trimmed.
-func BigQueryAliasName(alias string) string {
-	return strings.TrimRight(bqRestrictedRunRegex.ReplaceAllString(alias, "__"), "_")
+func (d *dialect) SanitizeDisplayName(alias string) string {
+	return BigQueryEscapeAlias(strings.TrimRight(restrictedAliasCharactersRegex.ReplaceAllString(alias, "__"), "_"))
 }
-
-func (d *dialect) AliasName(name string) string { return BigQueryAliasName(name) }
 
 func (d *dialect) SupportsILike() bool { return false }
 
