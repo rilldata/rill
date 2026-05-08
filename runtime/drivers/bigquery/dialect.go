@@ -22,7 +22,7 @@ type dialect struct {
 
 var DialectBigQuery drivers.Dialect = func() drivers.Dialect {
 	d := &dialect{}
-	d.BaseDialect = drivers.NewBaseDialect(drivers.DialectNameBigQuery, BigQueryEscapeIdentifier, BigQueryEscapeAlias)
+	d.BaseDialect = drivers.NewBaseDialect(drivers.DialectNameBigQuery, BigQueryEscapeIdentifier, BigQueryEscapeIdentifier)
 	return d
 }()
 
@@ -35,12 +35,8 @@ func BigQueryEscapeIdentifier(ident string) string {
 	return fmt.Sprintf("`%s`", strings.ReplaceAll(ident, "`", "``"))
 }
 
-func BigQueryEscapeAlias(alias string) string {
-	return BigQueryEscapeIdentifier(alias)
-}
-
 func (d *dialect) SanitizeDisplayName(alias string) string {
-	return BigQueryEscapeAlias(strings.TrimRight(restrictedAliasCharactersRegex.ReplaceAllString(alias, "__"), "_"))
+	return BigQueryEscapeIdentifier(strings.TrimRight(restrictedAliasCharactersRegex.ReplaceAllString(alias, "__"), "_"))
 }
 
 func (d *dialect) SupportsILike() bool { return false }
