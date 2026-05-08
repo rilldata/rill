@@ -43,6 +43,7 @@ import type {
   AdminServiceDeleteUserParams,
   AdminServiceDeleteVirtualFileParams,
   AdminServiceGetAlertMetaBody,
+  AdminServiceGetBillingCreditBalanceParams,
   AdminServiceGetBillingSubscriptionParams,
   AdminServiceGetCloneCredentialsParams,
   AdminServiceGetDeploymentBody,
@@ -142,6 +143,7 @@ import type {
   V1GenerateReportYAMLResponse,
   V1GetAlertMetaResponse,
   V1GetAlertYAMLResponse,
+  V1GetBillingCreditBalanceResponse,
   V1GetBillingProjectCredentialsRequest,
   V1GetBillingProjectCredentialsResponse,
   V1GetBillingSubscriptionResponse,
@@ -2240,6 +2242,114 @@ export const createAdminServiceUpdateOrganization = <
 
   return createMutation(mutationOptions, queryClient);
 };
+/**
+ * @summary GetBillingCreditBalance returns the organization's remaining trial credit balance
+ */
+export const adminServiceGetBillingCreditBalance = (
+  org: string,
+  params?: AdminServiceGetBillingCreditBalanceParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetBillingCreditBalanceResponse>({
+    url: `/v1/orgs/${org}/billing/credits`,
+    method: "GET",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceGetBillingCreditBalanceQueryKey = (
+  org?: string,
+  params?: AdminServiceGetBillingCreditBalanceParams,
+) => {
+  return [
+    `/v1/orgs/${org}/billing/credits`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getAdminServiceGetBillingCreditBalanceQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceGetBillingCreditBalance>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  params?: AdminServiceGetBillingCreditBalanceParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetBillingCreditBalance>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetBillingCreditBalanceQueryKey(org, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetBillingCreditBalance>>
+  > = ({ signal }) => adminServiceGetBillingCreditBalance(org, params, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!org,
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceGetBillingCreditBalance>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceGetBillingCreditBalanceQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetBillingCreditBalance>>
+>;
+export type AdminServiceGetBillingCreditBalanceQueryError = RpcStatus;
+
+/**
+ * @summary GetBillingCreditBalance returns the organization's remaining trial credit balance
+ */
+
+export function createAdminServiceGetBillingCreditBalance<
+  TData = Awaited<ReturnType<typeof adminServiceGetBillingCreditBalance>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  params?: AdminServiceGetBillingCreditBalanceParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetBillingCreditBalance>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceGetBillingCreditBalanceQueryOptions(
+    org,
+    params,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 /**
  * @summary ListOrganizationBillingIssues lists all the billing issues for the organization
  */

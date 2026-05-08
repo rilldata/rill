@@ -14782,6 +14782,86 @@ export class GetPaymentsPortalURLResponse extends Message<GetPaymentsPortalURLRe
 }
 
 /**
+ * @generated from message rill.admin.v1.GetBillingCreditBalanceRequest
+ */
+export class GetBillingCreditBalanceRequest extends Message<GetBillingCreditBalanceRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * @generated from field: bool superuser_force_access = 2;
+   */
+  superuserForceAccess = false;
+
+  constructor(data?: PartialMessage<GetBillingCreditBalanceRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetBillingCreditBalanceRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetBillingCreditBalanceRequest {
+    return new GetBillingCreditBalanceRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetBillingCreditBalanceRequest {
+    return new GetBillingCreditBalanceRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetBillingCreditBalanceRequest {
+    return new GetBillingCreditBalanceRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetBillingCreditBalanceRequest | PlainMessage<GetBillingCreditBalanceRequest> | undefined, b: GetBillingCreditBalanceRequest | PlainMessage<GetBillingCreditBalanceRequest> | undefined): boolean {
+    return proto3.util.equals(GetBillingCreditBalanceRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetBillingCreditBalanceResponse
+ */
+export class GetBillingCreditBalanceResponse extends Message<GetBillingCreditBalanceResponse> {
+  /**
+   * @generated from field: double balance = 1;
+   */
+  balance = 0;
+
+  constructor(data?: PartialMessage<GetBillingCreditBalanceResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetBillingCreditBalanceResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "balance", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetBillingCreditBalanceResponse {
+    return new GetBillingCreditBalanceResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetBillingCreditBalanceResponse {
+    return new GetBillingCreditBalanceResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetBillingCreditBalanceResponse {
+    return new GetBillingCreditBalanceResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetBillingCreditBalanceResponse | PlainMessage<GetBillingCreditBalanceResponse> | undefined, b: GetBillingCreditBalanceResponse | PlainMessage<GetBillingCreditBalanceResponse> | undefined): boolean {
+    return proto3.util.equals(GetBillingCreditBalanceResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.ListPublicBillingPlansRequest
  */
 export class ListPublicBillingPlansRequest extends Message<ListPublicBillingPlansRequest> {

@@ -528,6 +528,10 @@ export interface V1GetAlertYAMLResponse {
   yaml?: string;
 }
 
+export interface V1GetBillingCreditBalanceResponse {
+  balance?: number;
+}
+
 export interface V1GetBillingProjectCredentialsRequest {
   org?: string;
 }
@@ -1814,6 +1818,10 @@ export type AdminServiceUpdateOrganizationBody = {
   thumbnailAssetId?: string;
   defaultProjectRole?: string;
   billingEmail?: string;
+};
+
+export type AdminServiceGetBillingCreditBalanceParams = {
+  superuserForceAccess?: boolean;
 };
 
 export type AdminServiceListOrganizationBillingIssuesParams = {

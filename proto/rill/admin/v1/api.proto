@@ -1288,6 +1288,11 @@ service AdminService {
     option (google.api.http) = {get: "/v1/orgs/{org}/billing/payments/portal-url"};
   }
 
+  // GetBillingCreditBalance returns the organization's remaining trial credit balance
+  rpc GetBillingCreditBalance(GetBillingCreditBalanceRequest) returns (GetBillingCreditBalanceResponse) {
+    option (google.api.http) = {get: "/v1/orgs/{org}/billing/credits"};
+  }
+
   // ListPublicBillingPlans lists all public billing plans
   rpc ListPublicBillingPlans(ListPublicBillingPlansRequest) returns (ListPublicBillingPlansResponse) {
     option (google.api.http) = {get: "/v1/billing/plans"};
@@ -3162,6 +3167,15 @@ message GetPaymentsPortalURLRequest {
 
 message GetPaymentsPortalURLResponse {
   string url = 1;
+}
+
+message GetBillingCreditBalanceRequest {
+  string org = 1 [(validate.rules).string.min_len = 1];
+  bool superuser_force_access = 2;
+}
+
+message GetBillingCreditBalanceResponse {
+  double balance = 1;
 }
 
 message ListPublicBillingPlansRequest {}
