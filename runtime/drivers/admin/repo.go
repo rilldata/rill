@@ -441,15 +441,15 @@ func (r *repo) ListCommits(ctx context.Context, fromCommit string, limit int) ([
 
 // Status implements drivers.RepoStore.
 func (r *repo) Status(ctx context.Context) (*drivers.RepoStatus, error) {
-	if r.git == nil {
-		return &drivers.RepoStatus{}, nil
-	}
-
 	err := r.rlockEnsureReady(ctx, true)
 	if err != nil {
 		return nil, err
 	}
 	defer r.mu.RUnlock()
+
+	if r.git == nil {
+		return &drivers.RepoStatus{}, nil
+	}
 
 	// run git fetch - only updates the remote tracking branch and not the working tree.
 	err = r.git.fetchCurrentBranch(ctx)
@@ -474,15 +474,15 @@ func (r *repo) Status(ctx context.Context) (*drivers.RepoStatus, error) {
 }
 
 func (r *repo) Commit(ctx context.Context, message string) (string, error) {
-	if r.git == nil {
-		return "", fmt.Errorf("commits are not supported for this repo type")
-	}
-
 	err := r.rlockEnsureReady(ctx, false) // no remote operations
 	if err != nil {
 		return "", err
 	}
 	defer r.mu.RUnlock()
+
+	if r.git == nil {
+		return "", fmt.Errorf("commits are not supported for this repo type")
+	}
 
 	if !r.git.editable() {
 		return "", fmt.Errorf("repo is not editable")
