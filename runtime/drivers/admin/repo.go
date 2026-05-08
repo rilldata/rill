@@ -478,7 +478,7 @@ func (r *repo) Commit(ctx context.Context, message string) (string, error) {
 		return "", fmt.Errorf("commits are not supported for this repo type")
 	}
 
-	err := r.rlockEnsureReady(ctx, true)
+	err := r.rlockEnsureReady(ctx, false) // no remote operations
 	if err != nil {
 		return "", err
 	}
@@ -612,6 +612,7 @@ func (r *repo) roots() []string {
 }
 
 // lockForWrite acquires the write lock, ensures the repo is ready, and refreshes the admin handshake.
+// Callers should call r.mu.Unlock() when they are done with the write operations.
 func (r *repo) lockForWrite(ctx context.Context) error {
 	err := r.mu.Lock(ctx)
 	if err != nil {
@@ -781,7 +782,7 @@ func (r *repo) pullInner(ctx context.Context, opts *drivers.PullOptions) error {
 	return nil
 }
 
-// checkHandshakeLocked checks and possibly renews the repo details handshake with the admin server while holding the write lock.
+// checkHandshakeLocked calls checkHandshake while holding the write lock
 func (r *repo) checkHandshakeLocked(ctx context.Context, force bool) error {
 	if err := r.mu.Lock(ctx); err != nil {
 		return err
