@@ -140,6 +140,7 @@ export async function fetchProjectDeploymentDetails(
   const projResp = await queryClient.fetchQuery({
     queryKey,
     queryFn,
+    staleTime: 1000 * 60,
   });
 
   return {

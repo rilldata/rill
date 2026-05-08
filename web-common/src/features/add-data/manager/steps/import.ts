@@ -38,7 +38,7 @@ import { unsetResourceEnvVars } from "@rilldata/web-common/features/connectors/c
 import { maybeGetConnectorDriver } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
 import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics.ts";
 import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
-import { getRuntimeEditEnvironment } from "@rilldata/web-common/features/entity-management/edit-environment.ts";
+import { isCloudRuntimeEditEnvironment } from "@rilldata/web-common/features/entity-management/edit-environment.ts";
 
 export async function runImportSteps(
   runtimeClient: RuntimeClient,
@@ -125,6 +125,7 @@ export async function cleanupImportStep(
   const importToConfig = config.importTo;
 
   let envBlob: string | null = null;
+  let envBlobChanged = false;
   if (
     importToConfig.modelPath &&
     fileArtifacts.hasFileArtifact(importToConfig.modelPath)
@@ -135,7 +136,7 @@ export async function cleanupImportStep(
     const modelYaml = await modelArtifact.fetchContent();
 
     // Get the existing env and remove the connector's env vars
-    envBlob = await unsetResourceEnvVars(
+    [envBlob, envBlobChanged] = await unsetResourceEnvVars(
       runtimeClient,
       queryClient,
       modelYaml ?? "",
@@ -156,12 +157,16 @@ export async function cleanupImportStep(
     }),
   );
 
-  if (envBlob) {
+  if (envBlob && envBlobChanged) {
     // Update the .env file with the removed env vars
     await runtimeServicePutFile(runtimeClient, {
       path: ".env",
       blob: envBlob,
     });
+    if (isCloudRuntimeEditEnvironment()) {
+      // Only push env on cloud for now. We will revisit this for rill-dev.
+      await runtimeServicePushEnv(runtimeClient, {});
+    }
   }
 }
 
@@ -250,7 +255,7 @@ async function runCreateModelStep(
       create: true,
       createOnly: false,
     });
-    if (getRuntimeEditEnvironment() === "cloud") {
+    if (isCloudRuntimeEditEnvironment()) {
       // Only push env on cloud for now. We will revisit this for rill-dev.
       await runtimeServicePushEnv(runtimeClient, {});
     }

@@ -1,7 +1,6 @@
 <script lang="ts">
   import { createConnectorForm } from "@rilldata/web-common/features/sources/modal/FormValidation.ts";
   import {
-    runtimeServiceGetFile,
     runtimeServiceGetInstance,
     getRuntimeServiceGetInstanceQueryKey,
   } from "@rilldata/web-common/runtime-client";
@@ -31,6 +30,7 @@
   import {
     getConnectorDriverForSchema,
     getImportStepsForSource,
+    maybeGetEnvContent,
   } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
   import { maybeInitProject } from "@rilldata/web-common/features/add-data/manager/steps/connector.ts";
 
@@ -56,15 +56,7 @@
   let existingEnvBlob: string | null = null;
   let defaultOLAP = "duckdb";
   onMount(async () => {
-    try {
-      const envFile = await runtimeServiceGetFile(runtimeClient, {
-        path: ".env",
-      });
-      existingEnvBlob = envFile.blob ?? "";
-    } catch {
-      // .env doesn't exist yet
-      existingEnvBlob = "";
-    }
+    existingEnvBlob = await maybeGetEnvContent();
     try {
       const runtimeInstance = await queryClient.fetchQuery({
         queryKey: getRuntimeServiceGetInstanceQueryKey(
