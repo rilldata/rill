@@ -556,7 +556,7 @@ func (r *repo) MergeToBranch(ctx context.Context, branch string, force bool) err
 	}
 
 	if r.git == nil {
-		return fmt.Errorf("not a git repo, operation is not supported")
+		return fmt.Errorf("merges are not supported for this repo type")
 	}
 
 	// check handshake validity before merging to ensure credentials are still valid
