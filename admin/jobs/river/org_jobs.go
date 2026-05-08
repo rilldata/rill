@@ -114,7 +114,7 @@ func (w *StartCreditTrialWorker) Work(ctx context.Context, job *river.Job[StartC
 		ToName:           trialOrg.Name,
 		OrgName:          trialOrg.Name,
 		FrontendURL:      w.admin.URLs.Frontend(),
-		CreditAllocation: admin.CreditTrialAllocation,
+		CreditAllocation: billing.CreditTrialAllocation,
 	})
 	if err != nil {
 		w.logger.Error("failed to send credit trial started email", zap.String("org_name", trialOrg.Name), zap.String("org_id", trialOrg.ID), zap.String("billing_email", trialOrg.BillingEmail), zap.Error(err))

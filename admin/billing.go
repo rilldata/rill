@@ -13,8 +13,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const CreditTrialAllocation = 250 // trial credits
-
 func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Organization) (*database.Organization, error) {
 	// create payment customer
 	pc, err := s.PaymentProvider.CreateCustomer(ctx, org)
@@ -218,7 +216,7 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 			ToName:           org.Name,
 			OrgName:          org.Name,
 			FrontendURL:      s.URLs.Frontend(),
-			CreditAllocation: CreditTrialAllocation,
+			CreditAllocation: billing.CreditTrialAllocation,
 		})
 		if err != nil {
 			s.Logger.Named("billing").Error("failed to send credit trial started email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
@@ -286,7 +284,7 @@ func (s *Service) StartCreditTrial(ctx context.Context, org *database.Organizati
 	if balance <= 0 {
 		// Only seed the initial credits if the customer does not already have a trial balance.
 		// This keeps retries idempotent when an earlier attempt granted credits before failing.
-		if err := s.Biller.GrantCustomerCredits(ctx, org.BillingCustomerID, CreditTrialAllocation, billing.CreditsCurrency, "Initial trial credits", nil); err != nil {
+		if err := s.Biller.GrantCustomerCredits(ctx, org.BillingCustomerID, billing.CreditTrialAllocation, billing.CreditsCurrency, "Initial trial credits", nil); err != nil {
 			return nil, nil, fmt.Errorf("failed to grant trial credits: %w", err)
 		}
 	}
@@ -353,8 +351,8 @@ func (s *Service) StartCreditTrial(ctx context.Context, org *database.Organizati
 		Metadata: &database.BillingIssueMetadataOnCreditTrial{
 			SubID:                   sub.ID,
 			PlanID:                  sub.Plan.ID,
-			CreditAllocation:        CreditTrialAllocation,
-			ApproxLowCreditsBalance: CreditTrialAllocation,
+			CreditAllocation:        billing.CreditTrialAllocation,
+			ApproxLowCreditsBalance: billing.CreditTrialAllocation,
 		},
 		EventTime: sub.StartDate,
 	})

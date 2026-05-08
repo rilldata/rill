@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -129,7 +128,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 				ToName:           org.Name,
 				OrgName:          org.Name,
 				FrontendURL:      s.admin.URLs.Frontend(),
-				CreditAllocation: admin.CreditTrialAllocation,
+				CreditAllocation: billing.CreditTrialAllocation,
 			}); err != nil {
 				s.logger.Named("billing").Error("failed to send credit trial started email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
 			}

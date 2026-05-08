@@ -22,6 +22,8 @@ const CreditsCurrency = "credits"
 // USDCurrency is the standard real-world currency used for paid-plan billing and the USD ledger (e.g., where trial `credits` get rolled over on upgrade).
 const USDCurrency = "USD"
 
+const CreditTrialAllocation = 250 // trial credits
+
 // CreditTrialLowBalanceThreshold is the credit balance at which we trigger a warning email.
 const CreditTrialLowBalanceThreshold = 125
 
