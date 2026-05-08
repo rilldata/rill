@@ -32,6 +32,7 @@
   import { ConnectorExplorerStore } from "@rilldata/web-common/features/connectors/explorer/connector-explorer-store.ts";
   import { getEnvFileStore } from "@rilldata/web-common/features/env-management/env-file-store.ts";
   import { EnvEditSession } from "@rilldata/web-common/features/env-management/env-edit-session.ts";
+  import { getConnectorSchema } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
 
   export let config: AddDataConfig;
   export let step: ExploreConnectorStep;
@@ -43,7 +44,11 @@
   const runtimeClient = useRuntimeClient();
 
   const envStore = getEnvFileStore();
-  const envEditSession = new EnvEditSession(envStore);
+  const envEditSession = new EnvEditSession(
+    envStore,
+    step.connector,
+    getConnectorSchema(step.schema),
+  );
 
   $: connectorDriverQuery = getAnalyzedConnectorByName(
     runtimeClient,

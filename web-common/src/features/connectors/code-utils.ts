@@ -9,7 +9,6 @@ import {
   runtimeServiceGetInstance,
   runtimeServicePutFile,
   type V1ConnectorDriver,
-  type V1GetFileResponse,
 } from "../../runtime-client";
 import type { RuntimeClient } from "../../runtime-client/v2";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
@@ -281,12 +280,7 @@ driver: ${driverName}`;
 
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
-        const envVarName = getGenericEnvVarName(
-          connector.name as string,
-          key,
-          options?.schema,
-        );
-        const entry = envEditSession.acquire(key, String(value), envVarName);
+        const entry = envEditSession.acquire(key, String(value));
         return `${key}: "{{ .env.${entry.mappedEnvVarName} }}"`; // uses standard Go template syntax
       }
 
@@ -318,47 +312,6 @@ driver: ${driverName}`;
 
   // Return the compiled YAML
   return `${topOfFile}\n` + compiledKeyValues;
-}
-
-const EnvTemplateRegex = /{{\s*\.env\.([^.\s]+)\s*}}/g;
-
-export function getEnvVarsFromConnectorYAML(yaml: string) {
-  const envVars: string[] = [];
-  let match: RegExpExecArray | null;
-  while ((match = EnvTemplateRegex.exec(yaml)) !== null) {
-    envVars.push(match[1]);
-  }
-  return envVars;
-}
-
-export async function unsetResourceEnvVars(
-  runtimeClient: RuntimeClient,
-  queryClient: QueryClient,
-  yaml: string,
-) {
-  let envBlob: V1GetFileResponse | undefined = undefined;
-  try {
-    envBlob = await queryClient.fetchQuery({
-      queryKey: getRuntimeServiceGetFileQueryKey(runtimeClient.instanceId, {
-        path: ".env",
-      }),
-      queryFn: () => runtimeServiceGetFile(runtimeClient, { path: ".env" }),
-    });
-  } catch (error) {
-    if (error.message?.includes("no such file or directory")) {
-      return "";
-    }
-    throw error;
-  }
-
-  // Get the existing env and remove the resource's env vars
-  let blob = envBlob?.blob ?? "";
-  const envVars = getEnvVarsFromConnectorYAML(yaml);
-  envVars.forEach((envVar) => {
-    blob = deleteEnvVariable(blob, envVar);
-  });
-
-  return blob;
 }
 
 export async function updateDotEnvWithSecrets(
@@ -484,20 +437,6 @@ export function replaceOrAddEnvVariable(
     updatedLines.push(`${key}=${newValue}`);
   }
 
-  const newBlob = updatedLines
-    .filter((line, index) => !(line === "" && index === 0))
-    .join("\n")
-    .trim();
-
-  return newBlob;
-}
-
-export function deleteEnvVariable(
-  existingEnvBlob: string,
-  key: string,
-): string {
-  const lines = existingEnvBlob.split("\n");
-  const updatedLines = lines.filter((line) => !line.startsWith(`${key}=`));
   const newBlob = updatedLines
     .filter((line, index) => !(line === "" && index === 0))
     .join("\n")

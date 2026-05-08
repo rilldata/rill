@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { makeTestEnvEditSession } from "@rilldata/web-common/features/env-management/test/test-env-store.ts";
+import {
+  envMappedVarsAndValuesToObject,
+  makeTestEnvEditSession,
+} from "@rilldata/web-common/features/env-management/test/test-env-store.ts";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import { getConnectorYamlPreview } from "@rilldata/web-common/features/add-data/form/yaml-preview.ts";
 import { clickhouseSchema } from "@rilldata/web-common/features/templates/schemas/clickhouse.ts";
@@ -20,7 +23,7 @@ describe("getConnectorYamlPreview", () => {
 
     it("should retain same value across edit commits", async () => {
       const { envEditSession, testEnvs, envStore } =
-        await makeTestEnvEditSession();
+        await makeTestEnvEditSession(connector.name, schema);
       const yamlInitial = getConnectorYamlPreview({
         connector,
         schema,
@@ -81,7 +84,7 @@ describe("getConnectorYamlPreview", () => {
 
     it("should delete unused vars if not updated from outside", async () => {
       const { envEditSession, testEnvs, envStore } =
-        await makeTestEnvEditSession();
+        await makeTestEnvEditSession(connector.name, schema);
       const yamlInitial = getConnectorYamlPreview({
         connector,
         schema,
@@ -113,7 +116,7 @@ describe("getConnectorYamlPreview", () => {
 
     it("should delete vars on rollback if not updated from outside", async () => {
       const { envEditSession, testEnvs, envStore } =
-        await makeTestEnvEditSession();
+        await makeTestEnvEditSession(connector.name, schema);
       const yamlInitial = getConnectorYamlPreview({
         connector,
         schema,
@@ -138,7 +141,7 @@ describe("getConnectorYamlPreview", () => {
 
     it("should retain unused vars if updated from outside", async () => {
       const { envEditSession, testEnvs, envStore } =
-        await makeTestEnvEditSession();
+        await makeTestEnvEditSession(connector.name, schema);
       const yamlInitial = getConnectorYamlPreview({
         connector,
         schema,
@@ -172,7 +175,7 @@ describe("getConnectorYamlPreview", () => {
 
     it("should retain vars on rollback if updated from outside", async () => {
       const { envEditSession, testEnvs, envStore } =
-        await makeTestEnvEditSession();
+        await makeTestEnvEditSession(connector.name, schema);
       const yamlInitial = getConnectorYamlPreview({
         connector,
         schema,
@@ -196,6 +199,59 @@ describe("getConnectorYamlPreview", () => {
         CLICKHOUSE_PASSWORD: "pass_source",
       });
     });
+
+    it("should delete vars on rollback when unrelated changes to envs happened just before commit", async () => {
+      const { envEditSession, testEnvs, envStore } =
+        await makeTestEnvEditSession(connector.name, schema);
+
+      // Initial yaml compilation
+      getConnectorYamlPreview({
+        connector,
+        schema,
+        formValues: formValuesWithPassword,
+        envEditSession,
+      });
+
+      // An unrelated pull fires before commit
+      await envStore.pull();
+
+      // Commit happens after a pull
+      await envEditSession.commit();
+      expect(testEnvs).toEqual({
+        CLICKHOUSE_PASSWORD: "pass",
+      });
+
+      // Rollback removes the vars.
+      await envEditSession.rollback();
+      expect(testEnvs).toEqual({});
+    });
+
+    it("should delete vars on rollback when the env is updated just before commit", async () => {
+      const { envEditSession, testEnvs, envStore } =
+        await makeTestEnvEditSession(connector.name, schema);
+
+      // Initial yaml compilation
+      getConnectorYamlPreview({
+        connector,
+        schema,
+        formValues: formValuesWithPassword,
+        envEditSession,
+      });
+
+      // New changes arrived with new values.
+      testEnvs["CLICKHOUSE_PASSWORD"] = "pass_source";
+      await envStore.pull();
+
+      // Commit happens after a pull
+      await envEditSession.commit();
+      expect(testEnvs).toEqual({
+        CLICKHOUSE_PASSWORD: "pass",
+      });
+
+      // Rollback removes the vars. This is a known race condition.
+      await envEditSession.rollback();
+      expect(testEnvs).toEqual({});
+    });
   });
 
   describe("ducklake", () => {
@@ -205,7 +261,7 @@ describe("getConnectorYamlPreview", () => {
     describe("direct attach field", () => {
       it("should retain same value across edit commits", async () => {
         const { envEditSession, testEnvs, envStore } =
-          await makeTestEnvEditSession();
+          await makeTestEnvEditSession(connector.name, schema);
         const yamlInitial = getConnectorYamlPreview({
           connector,
           schema,
@@ -292,7 +348,7 @@ describe("getConnectorYamlPreview", () => {
 
       it("should retain same value across edit commits for separate fields", async () => {
         const { envEditSession, testEnvs, envStore } =
-          await makeTestEnvEditSession();
+          await makeTestEnvEditSession(connector.name, schema);
         const yamlInitial = getConnectorYamlPreview({
           connector,
           schema,
@@ -353,7 +409,7 @@ describe("getConnectorYamlPreview", () => {
 
       it("should delete unused vars if not updated from outside", async () => {
         const { envEditSession, testEnvs, envStore } =
-          await makeTestEnvEditSession();
+          await makeTestEnvEditSession(connector.name, schema);
         const yamlInitial = getConnectorYamlPreview({
           connector,
           schema,
@@ -387,7 +443,7 @@ describe("getConnectorYamlPreview", () => {
 
       it("should retain unused vars if updated from outside", async () => {
         const { envEditSession, testEnvs, envStore } =
-          await makeTestEnvEditSession();
+          await makeTestEnvEditSession(connector.name, schema);
         const yamlInitial = getConnectorYamlPreview({
           connector,
           schema,

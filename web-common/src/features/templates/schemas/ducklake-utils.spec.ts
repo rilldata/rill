@@ -14,7 +14,10 @@ import {
 
 describe("composeDuckLakeAttach", () => {
   it("returns empty string when catalog identifier is missing", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
+    const { envEditSession } = await makeTestEnvEditSession(
+      "ducklake",
+      undefined,
+    );
     expect(composeDuckLakeAttach({}, envEditSession)).toBe("");
     expect(
       composeDuckLakeAttach(
@@ -29,7 +32,10 @@ describe("composeDuckLakeAttach", () => {
   });
 
   it("defaults to duckdb catalog when catalog_type is unset", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
+    const { envEditSession } = await makeTestEnvEditSession(
+      "ducklake",
+      undefined,
+    );
     expect(
       composeDuckLakeAttach(
         { catalog_duckdb_path: "catalog.ducklake" },
@@ -40,7 +46,10 @@ describe("composeDuckLakeAttach", () => {
   });
 
   it("builds a minimal clause from a duckdb catalog path", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
+    const { envEditSession } = await makeTestEnvEditSession(
+      "ducklake",
+      undefined,
+    );
     expect(
       composeDuckLakeAttach(
         {
@@ -54,7 +63,10 @@ describe("composeDuckLakeAttach", () => {
   });
 
   it("builds a sqlite catalog clause with the sqlite: prefix", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
+    const { envEditSession } = await makeTestEnvEditSession(
+      "ducklake",
+      undefined,
+    );
     expect(
       composeDuckLakeAttach(
         {
@@ -68,7 +80,10 @@ describe("composeDuckLakeAttach", () => {
   });
 
   it("omits missing postgres params when composing the connection string", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
+    const { envEditSession } = await makeTestEnvEditSession(
+      "ducklake",
+      undefined,
+    );
     expect(
       composeDuckLakeAttach(
         {
@@ -83,7 +98,10 @@ describe("composeDuckLakeAttach", () => {
   });
 
   it("builds a mysql catalog clause using the database= key", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
+    const { envEditSession } = await makeTestEnvEditSession(
+      "ducklake",
+      undefined,
+    );
     expect(
       composeDuckLakeAttach(
         {
@@ -105,7 +123,10 @@ describe("composeDuckLakeAttach", () => {
   });
 
   it("substitutes postgres password with an env template reference", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
+    const { envEditSession } = await makeTestEnvEditSession(
+      "ducklake",
+      undefined,
+    );
     expect(
       composeDuckLakeAttach(
         {
@@ -126,7 +147,10 @@ describe("composeDuckLakeAttach", () => {
   });
 
   it("substitutes mysql password with an env template reference", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
+    const { envEditSession } = await makeTestEnvEditSession(
+      "ducklake",
+      undefined,
+    );
     expect(
       composeDuckLakeAttach(
         {
@@ -147,7 +171,10 @@ describe("composeDuckLakeAttach", () => {
   });
 
   it("omits the password pair when secretRefs is provided but the password is empty", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
+    const { envEditSession } = await makeTestEnvEditSession(
+      "ducklake",
+      undefined,
+    );
     expect(
       composeDuckLakeAttach(
         {
@@ -163,7 +190,10 @@ describe("composeDuckLakeAttach", () => {
   });
 
   it("includes an alias when provided", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
+    const { envEditSession } = await makeTestEnvEditSession(
+      "ducklake",
+      undefined,
+    );
     expect(
       composeDuckLakeAttach(
         {
@@ -178,7 +208,10 @@ describe("composeDuckLakeAttach", () => {
   });
 
   it("appends DATA_PATH based on data_path_type", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
+    const { envEditSession } = await makeTestEnvEditSession(
+      "ducklake",
+      undefined,
+    );
     expect(
       composeDuckLakeAttach(
         {
@@ -196,7 +229,10 @@ describe("composeDuckLakeAttach", () => {
   });
 
   it("picks the data path for the active storage type only", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
+    const { envEditSession } = await makeTestEnvEditSession(
+      "ducklake",
+      undefined,
+    );
     // A stale s3 value should not leak into DATA_PATH when local is active.
     expect(
       composeDuckLakeAttach(
@@ -228,7 +264,10 @@ describe("composeDuckLakeAttach", () => {
   });
 
   it("emits boolean options regardless of value", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
+    const { envEditSession } = await makeTestEnvEditSession(
+      "ducklake",
+      undefined,
+    );
     expect(
       composeDuckLakeAttach(
         {
@@ -246,7 +285,10 @@ describe("composeDuckLakeAttach", () => {
   });
 
   it("emits false and true boolean options", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
+    const { envEditSession } = await makeTestEnvEditSession(
+      "ducklake",
+      undefined,
+    );
     expect(
       composeDuckLakeAttach(
         {
@@ -262,7 +304,10 @@ describe("composeDuckLakeAttach", () => {
   });
 
   it("emits METADATA_PARAMETERS without wrapping quotes", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
+    const { envEditSession } = await makeTestEnvEditSession(
+      "ducklake",
+      undefined,
+    );
     expect(
       composeDuckLakeAttach(
         {
@@ -277,7 +322,10 @@ describe("composeDuckLakeAttach", () => {
   });
 
   it("escapes single quotes inside data path values", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
+    const { envEditSession } = await makeTestEnvEditSession(
+      "ducklake",
+      undefined,
+    );
     expect(
       composeDuckLakeAttach(
         {
@@ -293,7 +341,10 @@ describe("composeDuckLakeAttach", () => {
   });
 
   it("composes the example from the DuckLake docs", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
+    const { envEditSession } = await makeTestEnvEditSession(
+      "ducklake",
+      undefined,
+    );
     expect(
       composeDuckLakeAttach(
         {
@@ -312,7 +363,10 @@ describe("composeDuckLakeAttach", () => {
   });
 
   it("emits every advanced parameter when set", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
+    const { envEditSession } = await makeTestEnvEditSession(
+      "ducklake",
+      undefined,
+    );
     expect(
       composeDuckLakeAttach(
         {
@@ -358,7 +412,10 @@ describe("composeDuckLakeAttach", () => {
   });
 
   it("emits READ_ONLY from the mode toggle in both states", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
+    const { envEditSession } = await makeTestEnvEditSession(
+      "ducklake",
+      undefined,
+    );
     expect(
       composeDuckLakeAttach(
         {
@@ -386,7 +443,10 @@ describe("composeDuckLakeAttach", () => {
 
 describe("applyDuckLakeFormTransform", () => {
   it("returns values unchanged for non-DuckLake schemas", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
+    const { envEditSession } = await makeTestEnvEditSession(
+      "ducklake",
+      undefined,
+    );
     const values = { attach: "foo" };
     expect(applyDuckLakeFormTransform(null, values, envEditSession)).toBe(
       values,
@@ -401,7 +461,10 @@ describe("applyDuckLakeFormTransform", () => {
   });
 
   it("leaves attach alone when in SQL mode", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
+    const { envEditSession } = await makeTestEnvEditSession(
+      "ducklake",
+      undefined,
+    );
     const values = { connection_mode: "sql", attach: "user input" };
     expect(
       applyDuckLakeFormTransform(ducklakeSchema, values, envEditSession),
@@ -409,7 +472,10 @@ describe("applyDuckLakeFormTransform", () => {
   });
 
   it("synthesises attach from params when in parameters mode", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
+    const { envEditSession } = await makeTestEnvEditSession(
+      "ducklake",
+      undefined,
+    );
     const result = applyDuckLakeFormTransform(
       ducklakeSchema,
       {
@@ -427,7 +493,10 @@ describe("applyDuckLakeFormTransform", () => {
   });
 
   it("threads secretRefs through to composeDuckLakeAttach", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
+    const { envEditSession } = await makeTestEnvEditSession(
+      "ducklake",
+      undefined,
+    );
     const result = applyDuckLakeFormTransform(
       ducklakeSchema,
       {
@@ -448,13 +517,19 @@ describe("applyDuckLakeFormTransform", () => {
 
 describe("extractDuckLakeAttachSecrets", () => {
   it("returns empty extraction for empty input", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
+    const { envEditSession } = await makeTestEnvEditSession(
+      "ducklake",
+      undefined,
+    );
     expect(extractDuckLakeAttachSecrets("", envEditSession)).toEqual("");
     expect(envMappedVarsAndValuesToObject(envEditSession.entries)).toEqual({});
   });
 
   it("leaves non-credential catalog URIs alone", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
+    const { envEditSession } = await makeTestEnvEditSession(
+      "ducklake",
+      undefined,
+    );
     const attach =
       "'ducklake:catalog.ducklake' AS my_ducklake (DATA_PATH 'files/')";
     const rewrittenAttach = extractDuckLakeAttachSecrets(
@@ -474,7 +549,10 @@ describe("extractDuckLakeAttachSecrets", () => {
   });
 
   it("extracts a postgres catalog body into DUCKLAKE_POSTGRES", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
+    const { envEditSession } = await makeTestEnvEditSession(
+      "ducklake",
+      undefined,
+    );
     const attach =
       "'ducklake:postgres:dbname=mydb host=localhost password=secret' AS my_ducklake (DATA_PATH 'files/')";
     const rewrittenAttach = extractDuckLakeAttachSecrets(
@@ -490,7 +568,10 @@ describe("extractDuckLakeAttachSecrets", () => {
   });
 
   it("extracts mysql and motherduck catalog bodies", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
+    const { envEditSession } = await makeTestEnvEditSession(
+      "ducklake",
+      undefined,
+    );
 
     envEditSession.startEdit();
     const mysqlAttach = extractDuckLakeAttachSecrets(
@@ -515,6 +596,8 @@ describe("extractDuckLakeAttachSecrets", () => {
 
   it("suffixes when the base env var is already defined", async () => {
     const { envEditSession } = await makeTestEnvEditSession(
+      "ducklake",
+      undefined,
       {},
       {
         DUCKLAKE_POSTGRES: "existing",
@@ -533,7 +616,10 @@ describe("extractDuckLakeAttachSecrets", () => {
   });
 
   it("is idempotent when the body is already a single env template", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
+    const { envEditSession } = await makeTestEnvEditSession(
+      "ducklake",
+      undefined,
+    );
     const attach =
       "'ducklake:postgres:{{ .env.DUCKLAKE_POSTGRES }}' AS my_ducklake";
     const rewrittenAttach = extractDuckLakeAttachSecrets(
@@ -545,7 +631,10 @@ describe("extractDuckLakeAttachSecrets", () => {
   });
 
   it("allocates distinct env vars when the same driver appears twice", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
+    const { envEditSession } = await makeTestEnvEditSession(
+      "ducklake",
+      undefined,
+    );
     const attach =
       "'ducklake:postgres:dbname=a password=1' vs 'ducklake:postgres:dbname=b password=2'";
     const rewrittenAttach = extractDuckLakeAttachSecrets(

@@ -1,7 +1,7 @@
 import { EnvEditSessionVariable } from "@rilldata/web-common/features/env-management/env-edit-session-variable.ts";
 import { EnvStore } from "@rilldata/web-common/features/env-management/env-store.ts";
 import { EnvEditSession } from "@rilldata/web-common/features/env-management/env-edit-session.ts";
-import { asyncWait } from "@rilldata/web-common/lib/waitUtils.ts";
+import type { JSONSchemaObject } from "@rilldata/web-common/features/templates/schemas/types.ts";
 
 export async function makeTestEnvStore(
   initValues: Record<string, string> = {},
@@ -24,12 +24,17 @@ export async function makeTestEnvStore(
 }
 
 export async function makeTestEnvEditSession(
+  connectorName: string | undefined,
+  schema: JSONSchemaObject | undefined,
   initEditValues: Record<string, string> = {},
   initStoreValues: Record<string, string> = {},
 ) {
   const { testEnvs, envStore } = await makeTestEnvStore(initStoreValues);
-  await asyncWait(2); // Wait for time to pass so that edit session has older time
-  const envEditSession = new EnvEditSession(envStore);
+  const envEditSession = new EnvEditSession(
+    envStore,
+    connectorName ?? "",
+    schema,
+  );
   Object.entries(initEditValues).forEach(([key, value]) => {
     envEditSession.acquire(key, value);
   });
@@ -41,13 +46,5 @@ export function envMappedVarsAndValuesToObject(
 ) {
   return Object.fromEntries(
     vars.entries().map(([_, e]) => [e.mappedEnvVarName, e.value]),
-  );
-}
-
-export function envVarsAndNameToObject(
-  vars: Map<string, EnvEditSessionVariable>,
-) {
-  return Object.fromEntries(
-    vars.entries().map(([k, e]) => [k, e.mappedEnvVarName]),
   );
 }

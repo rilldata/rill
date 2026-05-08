@@ -70,6 +70,8 @@
     ? `https://docs.rilldata.com/developers/build/connectors/services/${getBackendConnectorName(schemaName)}`
     : "";
 
+  $: envEditSession.setEnvData(schemaName, schema);
+
   // Soft validation: warn when the API key doesn't match the expected prefix
   $: apiKeyWarning = getApiKeyWarning(schemaName, apiKey);
 

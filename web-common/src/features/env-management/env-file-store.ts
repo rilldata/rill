@@ -46,6 +46,7 @@ export function createEnvFileStore(runtimeClient: RuntimeClient) {
     },
   );
   setContext(EnvFileStoreKey, envStore);
+  void envStore.pull();
   return eventBus.on("env-file-updated", () => {
     void envStore.pull();
   });

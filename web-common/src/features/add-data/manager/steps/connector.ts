@@ -323,7 +323,11 @@ export class ConnectorFormCache {
       fileArtifacts.getNamesForKind(ResourceKind.Connector),
     );
 
-    const envEditSession = new EnvEditSession(envStore);
+    const envEditSession = new EnvEditSession(
+      envStore,
+      schema,
+      getConnectorSchema(schema),
+    );
 
     const entry = {
       name,

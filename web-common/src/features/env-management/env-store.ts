@@ -3,7 +3,6 @@ import { EnvVariable } from "@rilldata/web-common/features/env-management/env-va
 
 export class EnvStore {
   public store = new Map<string, EnvVariable>();
-  public version = 0;
 
   public constructor(
     private readonly getter: () => Promise<Record<string, string>>,
@@ -11,21 +10,11 @@ export class EnvStore {
   ) {}
 
   public async pull() {
-    this.version++;
     const newEntries = await this.getter();
     const newStore = new Map<string, EnvVariable>();
-
     for (const key in newEntries) {
-      let entry: EnvVariable;
-      if (this.store.has(key)) {
-        entry = this.store.get(key)!;
-        entry.reconcile(newEntries[key], this.version);
-      } else {
-        entry = new EnvVariable(key, newEntries[key], this.version);
-      }
-      newStore.set(key, entry);
+      newStore.set(key, new EnvVariable(key, newEntries[key]));
     }
-
     this.store = newStore;
   }
 
@@ -37,45 +26,46 @@ export class EnvStore {
       return;
     }
 
+    const newStore = new Map<string, EnvVariable>(this.store.entries());
+
     editSession.entries.forEach((entry) => {
-      if (!entry.variable) {
-        entry.variable = new EnvVariable(
-          entry.mappedEnvVarName,
-          entry.value,
-          this.version,
-        );
-      } else {
-        entry.variable.value = entry.value;
-      }
-      // Use mappedEnvVarName to add the final entry, key could be yaml key in edit session.
-      this.store.set(entry.mappedEnvVarName, entry.variable);
+      newStore.set(
+        entry.mappedEnvVarName,
+        new EnvVariable(entry.mappedEnvVarName, entry.value),
+      );
     });
     editSession.inflightEntries.forEach((entry) => {
-      this.store.delete(entry.mappedEnvVarName);
+      newStore.delete(entry.mappedEnvVarName);
     });
 
     await this.setter(
-      Object.fromEntries(this.store.values().map((v) => [v.key, v.value])),
+      Object.fromEntries(newStore.values().map((v) => [v.key, v.value])),
     );
+
+    this.store = newStore;
   }
 
-  public async rollback(editSession: EnvEditSession) {
-    if (
-      editSession.entries.size === 0 &&
-      editSession.inflightEntries.size === 0
-    ) {
-      return;
-    }
+  // Remove only the vars whose current value still matches what the session
+  // wrote. Anything an external party has changed (or removed) since the
+  // commit is left alone — we only revert our own writes.
+  public async rollbackOwned(committed: Map<string, string>) {
+    if (committed.size === 0) return;
 
-    editSession.entries.forEach((entry) => {
-      this.store.delete(entry.mappedEnvVarName);
-    });
-    editSession.inflightEntries.forEach((entry) => {
-      this.store.delete(entry.mappedEnvVarName);
-    });
+    const newStore = new Map<string, EnvVariable>(this.store.entries());
+    let changed = false;
+    for (const [name, writtenValue] of committed) {
+      const current = newStore.get(name);
+      if (current?.value === writtenValue) {
+        newStore.delete(name);
+        changed = true;
+      }
+    }
+    if (!changed) return;
 
     await this.setter(
-      Object.fromEntries(this.store.values().map((v) => [v.key, v.value])),
+      Object.fromEntries(newStore.values().map((v) => [v.key, v.value])),
     );
+
+    this.store = newStore;
   }
 }

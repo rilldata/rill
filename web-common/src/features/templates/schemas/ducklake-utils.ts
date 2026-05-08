@@ -1,7 +1,6 @@
 import { ducklakeSchema } from "./ducklake";
 import type { MultiStepFormSchema } from "./types";
 import type { EnvEditSession } from "@rilldata/web-common/features/env-management/env-edit-session.ts";
-import { getGenericEnvVarName } from "@rilldata/web-common/features/connectors/env-utils.ts";
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils.ts";
 
 /**
@@ -143,10 +142,7 @@ function fieldSecretRef(
   value: unknown,
 ): string | undefined {
   if (!value) return undefined;
-  // It is not worth it to pass through the driver name right now.
-  // If we ever use these for other connectors then refactor this;
-  const varName = getGenericEnvVarName("ducklake", fieldKey, undefined);
-  const entry = envEditSession.acquire(varName, String(value), varName);
+  const entry = envEditSession.acquire(fieldKey, String(value));
   return `{{ .env.${entry.mappedEnvVarName} }}`;
 }
 
@@ -301,7 +297,7 @@ export function extractDuckLakeAttachSecrets(
 
       const base = DUCKLAKE_CATALOG_ENV_VAR_BASE[driver];
       const envName = getName(base, varNames);
-      varNames.push(base);
+      varNames.push(envName);
 
       const entry = envEditSession.acquire(envName, trimmed, envName);
       return `'ducklake:${driver}:{{ .env.${entry.mappedEnvVarName} }}'`;

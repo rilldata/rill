@@ -48,7 +48,11 @@
     getConnectorDriverForSchema(step.schema);
 
   const envStore = getEnvFileStore();
-  const envEditSession = new EnvEditSession(envStore);
+  const envEditSession = new EnvEditSession(
+    envStore,
+    step.connector,
+    getConnectorSchema(step.schema),
+  );
 
   const importSteps = getImportStepsForSource(config);
 

@@ -11,7 +11,6 @@ import {
   getSchemaStringKeys,
 } from "../templates/schema-utils";
 import type { EnvEditSession } from "@rilldata/web-common/features/env-management/env-edit-session.ts";
-import { getGenericEnvVarName } from "@rilldata/web-common/features/connectors/env-utils.ts";
 
 // Helper text that we put at the top of every Model YAML file
 function sourceModelFileTop(driverName: string) {
@@ -72,12 +71,7 @@ export function compileSourceYAML(
 
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
-        const envVarName = getGenericEnvVarName(
-          connector.name as string,
-          key,
-          schema ?? undefined,
-        );
-        const entry = envEditSession.acquire(key, String(value), envVarName);
+        const entry = envEditSession.acquire(key, String(value));
         // For source files, we include secret properties
         return `${key}: "{{ .env.${entry.mappedEnvVarName} }}"`; // uses standard Go template syntax
       }

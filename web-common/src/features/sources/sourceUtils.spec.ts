@@ -331,8 +331,11 @@ describe("maybeRewriteToDuckDb", () => {
 
 describe("compileSourceYAML", () => {
   it("should produce basic model YAML with SQL", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
     const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const { envEditSession } = await makeTestEnvEditSession(
+      connector.name,
+      undefined,
+    );
     const result = compileSourceYAML(
       connector,
       {
@@ -349,8 +352,11 @@ describe("compileSourceYAML", () => {
   });
 
   it("should replace secret properties with env var placeholders", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
     const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const { envEditSession } = await makeTestEnvEditSession(
+      connector.name,
+      undefined,
+    );
     const result = compileSourceYAML(
       connector,
       { password: "super_secret", sql: "SELECT 1" },
@@ -362,8 +368,11 @@ describe("compileSourceYAML", () => {
   });
 
   it("should quote string properties", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
     const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const { envEditSession } = await makeTestEnvEditSession(
+      connector.name,
+      undefined,
+    );
     const result = compileSourceYAML(
       connector,
       { host: "ch.example.com", sql: "SELECT 1" },
@@ -374,8 +383,11 @@ describe("compileSourceYAML", () => {
   });
 
   it("should not quote non-string properties", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
     const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const { envEditSession } = await makeTestEnvEditSession(
+      connector.name,
+      undefined,
+    );
     const result = compileSourceYAML(
       connector,
       {
@@ -389,8 +401,11 @@ describe("compileSourceYAML", () => {
   });
 
   it("should filter out empty string values", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
     const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const { envEditSession } = await makeTestEnvEditSession(
+      connector.name,
+      undefined,
+    );
     const result = compileSourceYAML(
       connector,
       {
@@ -403,8 +418,11 @@ describe("compileSourceYAML", () => {
   });
 
   it("should filter out undefined values", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
     const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const { envEditSession } = await makeTestEnvEditSession(
+      connector.name,
+      undefined,
+    );
     const result = compileSourceYAML(
       connector,
       {
@@ -417,8 +435,11 @@ describe("compileSourceYAML", () => {
   });
 
   it("should always exclude the name field", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
     const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const { envEditSession } = await makeTestEnvEditSession(
+      connector.name,
+      undefined,
+    );
     const result = compileSourceYAML(
       connector,
       {
@@ -431,11 +452,14 @@ describe("compileSourceYAML", () => {
   });
 
   it("should include dev section for warehouse connectors", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
     const connector: V1ConnectorDriver = {
       name: "clickhouse",
       implementsWarehouse: true,
     };
+    const { envEditSession } = await makeTestEnvEditSession(
+      connector.name,
+      undefined,
+    );
     const result = compileSourceYAML(
       connector,
       {
@@ -450,11 +474,14 @@ describe("compileSourceYAML", () => {
   });
 
   it("should skip dev section for redshift", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
     const connector: V1ConnectorDriver = {
       name: "redshift",
       implementsWarehouse: true,
     };
+    const { envEditSession } = await makeTestEnvEditSession(
+      connector.name,
+      undefined,
+    );
     const result = compileSourceYAML(
       connector,
       {
@@ -466,11 +493,14 @@ describe("compileSourceYAML", () => {
   });
 
   it("should skip dev section for non-warehouse connectors", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
     const connector: V1ConnectorDriver = {
       name: "duckdb",
       implementsWarehouse: false,
     };
+    const { envEditSession } = await makeTestEnvEditSession(
+      connector.name,
+      undefined,
+    );
     const result = compileSourceYAML(
       connector,
       {
@@ -482,11 +512,14 @@ describe("compileSourceYAML", () => {
   });
 
   it("should skip dev section when no SQL", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
     const connector: V1ConnectorDriver = {
       name: "clickhouse",
       implementsWarehouse: true,
     };
+    const { envEditSession } = await makeTestEnvEditSession(
+      connector.name,
+      undefined,
+    );
     const result = compileSourceYAML(
       connector,
       { host: "ch.example.com" },
@@ -496,8 +529,11 @@ describe("compileSourceYAML", () => {
   });
 
   it("should use connectorInstanceName as connector value", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
     const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const { envEditSession } = await makeTestEnvEditSession(
+      connector.name,
+      undefined,
+    );
     const result = compileSourceYAML(
       connector,
       { sql: "SELECT 1" },
@@ -508,8 +544,11 @@ describe("compileSourceYAML", () => {
   });
 
   it("should use originalDriverName in header comment", async () => {
-    const { envEditSession } = await makeTestEnvEditSession();
     const connector: V1ConnectorDriver = { name: "duckdb" };
+    const { envEditSession } = await makeTestEnvEditSession(
+      connector.name,
+      undefined,
+    );
     const result = compileSourceYAML(
       connector,
       { sql: "SELECT 1" },
@@ -522,11 +561,13 @@ describe("compileSourceYAML", () => {
   });
 
   it("should handle env var conflict resolution with existingEnvBlob", async () => {
+    const connector: V1ConnectorDriver = { name: "clickhouse" };
     const { envEditSession } = await makeTestEnvEditSession(
+      connector.name,
+      undefined,
       {},
       { CLICKHOUSE_PASSWORD: "old_value" },
     );
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
     const result = compileSourceYAML(
       connector,
       { password: "secret", sql: "SELECT 1" },
