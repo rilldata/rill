@@ -7,7 +7,7 @@
   import type { PageData } from "./$types";
 
   export let data: PageData;
-  const { organization, project, deployingDashboard, preCommitSha } = data;
+  const { organization, project, targetDashboard, preCommitSha } = data;
 
   const runtimeClient = useRuntimeClient();
 
@@ -17,7 +17,7 @@
     runtimeClient,
     organization.name,
     project.name,
-    deployingDashboard,
+    targetDashboard,
     preCommitSha,
   );
 
