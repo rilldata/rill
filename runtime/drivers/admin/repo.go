@@ -474,11 +474,11 @@ func (r *repo) Status(ctx context.Context) (*drivers.RepoStatus, error) {
 }
 
 func (r *repo) Commit(ctx context.Context, message string) (string, error) {
-	err := r.rlockEnsureReady(ctx, false) // no remote operations
+	err := r.lockForWrite(ctx) // no remote operations but still need the write lock
 	if err != nil {
 		return "", err
 	}
-	defer r.mu.RUnlock()
+	defer r.mu.Unlock()
 
 	if r.git == nil {
 		return "", fmt.Errorf("commits are not supported for this repo type")
