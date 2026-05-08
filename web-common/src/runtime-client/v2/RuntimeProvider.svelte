@@ -24,7 +24,7 @@
   setContext(RUNTIME_CONTEXT_KEY, client);
   featureFlags.setRuntimeClient(client);
 
-  createEnvFileStore(client);
+  const envStoreUnsub = createEnvFileStore(client);
 
   // Handle JWT-only changes (15-min refresh, View As with same host)
   $: {
@@ -37,6 +37,7 @@
     featureFlags.clearRuntimeClient();
     evictRuntimeClient(client);
     client.dispose();
+    envStoreUnsub();
   });
 </script>
 

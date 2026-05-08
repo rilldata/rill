@@ -143,12 +143,10 @@ function fieldSecretRef(
   value: unknown,
 ): string | undefined {
   if (!value) return undefined;
+  // It is not worth it to pass through the driver name right now.
+  // If we ever use these for other connectors then refactor this;
   const varName = getGenericEnvVarName("ducklake", fieldKey, undefined);
-  const entry = envEditSession.acquire(
-    varName,
-    (value as any).toString?.() ?? "",
-    varName,
-  );
+  const entry = envEditSession.acquire(varName, String(value), varName);
   return `{{ .env.${entry.mappedEnvVarName} }}`;
 }
 

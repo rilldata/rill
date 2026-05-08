@@ -77,11 +77,7 @@ export function compileSourceYAML(
           key,
           schema ?? undefined,
         );
-        const entry = envEditSession.acquire(
-          key,
-          (value as any).toString?.() ?? "",
-          envVarName,
-        );
+        const entry = envEditSession.acquire(key, String(value), envVarName);
         // For source files, we include secret properties
         return `${key}: "{{ .env.${entry.mappedEnvVarName} }}"`; // uses standard Go template syntax
       }

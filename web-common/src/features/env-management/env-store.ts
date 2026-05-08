@@ -16,10 +16,13 @@ export class EnvStore {
     const newStore = new Map<string, EnvVariable>();
 
     for (const key in newEntries) {
-      const entry =
-        this.store.get(key) ??
-        new EnvVariable(key, newEntries[key], this.version);
-      entry.reconcile(newEntries[key], this.version);
+      let entry: EnvVariable;
+      if (this.store.has(key)) {
+        entry = this.store.get(key)!;
+        entry.reconcile(newEntries[key], this.version);
+      } else {
+        entry = new EnvVariable(key, newEntries[key], this.version);
+      }
       newStore.set(key, entry);
     }
 

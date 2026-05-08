@@ -59,6 +59,8 @@ export async function handleFileEvent(
           });
           await invalidate("app:init");
           eventBus.emit("rill-yaml-updated");
+        } else if (event.path === "/.env") {
+          eventBus.emit("env-file-updated", event.path);
         }
         state.seenFiles.add(event.path);
         break;

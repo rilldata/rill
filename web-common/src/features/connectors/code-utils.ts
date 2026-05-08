@@ -286,11 +286,7 @@ driver: ${driverName}`;
           key,
           options?.schema,
         );
-        const entry = envEditSession.acquire(
-          key,
-          (value as any).toString?.() ?? "",
-          envVarName,
-        );
+        const entry = envEditSession.acquire(key, String(value), envVarName);
         return `${key}: "{{ .env.${entry.mappedEnvVarName} }}"`; // uses standard Go template syntax
       }
 
