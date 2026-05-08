@@ -193,6 +193,7 @@
     {#key stepState.connector}
       <SourceForm
         {config}
+        {stateManager}
         step={stepState}
         onSubmit={importConfigured}
         {onBack}

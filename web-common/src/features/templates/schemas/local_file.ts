@@ -3,10 +3,7 @@ import {
   PossibleFileExtensions,
   PossibleZipExtensions,
 } from "@rilldata/web-common/features/sources/modal/possible-file-extensions.ts";
-import {
-  UploadFileSizeLimitInBytes,
-  UploadSizeExceededIsWarning,
-} from "@rilldata/web-common/features/sources/upload-utils.ts";
+import { UploadFileSizeLimitInBytes } from "@rilldata/web-common/features/sources/upload-utils.ts";
 
 export const localFileSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
@@ -24,11 +21,16 @@ export const localFileSchema: MultiStepFormSchema = {
       ].join(","),
       "x-step": "source",
       "x-hint": "CSV, TSV, Parquet, TXT or JSON",
+      "x-custom-validator": "file-upload",
       "x-file-size-limit": UploadFileSizeLimitInBytes,
-      "x-file-size-soft-limit": UploadSizeExceededIsWarning,
+      "x-file-size-soft-limit": true,
       "x-file-size-limit-warning-message":
         "Files over 100MB can be used locally but deployment to Rill Cloud is not allowed. Consider storing the data externally (e.g. S3) if you plan to deploy this project",
     },
   },
   required: ["file"],
 };
+
+export function updateLocalFileSchemaForCloud() {
+  (localFileSchema.properties!.file as any)["x-file-size-soft-limit"] = false;
+}
