@@ -135,8 +135,6 @@ type RepoStatus struct {
 
 type PullOptions struct {
 	ForceHandshake bool
-	// OnlyCheckHandshake, if true, will only perform the handshake verification without actually pulling changes
-	OnlyCheckHandshake bool
 
 	// If userTriggered is true, the latest changes will be pulled from the remote repository honouring DiscardChanges.
 	UserTriggered  bool
