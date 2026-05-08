@@ -124,3 +124,13 @@ export function calculateRowDimensionWidth(
     COLUMN_WIDTH_CONSTANTS.MAX_INIT_COL_WIDTH,
   );
 }
+
+export function getNestedRowDimensionWidthKey(
+  widthScopeKey: string,
+  rowDimensions: Array<{ name: string }>,
+) {
+  const rowDimensionName = rowDimensions[0]?.name;
+  if (!widthScopeKey || !rowDimensionName) return undefined;
+
+  return `${widthScopeKey}:${rowDimensionName}`;
+}
