@@ -18,12 +18,16 @@ export function sanitizeValueForVega(value: unknown) {
   if (typeof value === "string") {
     // Escape all special characters including quotes, brackets, operators, etc.
     return value.replace(
-      /[!@#$%^&*()+=\-[\]\\';,./{}|:<>?~]/g,
+      /[!@#$%^&*()+=\-[\]\\"';,./{}|:<>?~]/g,
       (match) => `\\${match}`,
     );
   } else {
     return String(value);
   }
+}
+
+export function sanitizeTitleForVegaTooltip(value: unknown) {
+  return String(value).replace(/\s+/g, " ").trim();
 }
 
 export function sanitizeValuesForSpec(values: unknown[]) {
