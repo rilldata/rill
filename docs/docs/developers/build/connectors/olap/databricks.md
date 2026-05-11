@@ -88,3 +88,5 @@ In Databricks terminology, `database` maps to the **catalog**, `database_schema`
 :::note
 Rill supports metrics views directly on Databricks as a live connector. Incremental models and partitioned ingestion are not supported in live connector mode.
 :::
+
+To reduce SQL warehouse spend on dashboards with repeat traffic, see [Caching query results](/developers/build/metrics-view/underlying-model#caching-query-results) on live connectors.

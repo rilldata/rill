@@ -8,6 +8,10 @@
   import { Button } from "../../components/button";
   import { useRuntimeClient } from "../../runtime-client/v2";
   import ChatToggle from "../chat/layouts/sidebar/ChatToggle.svelte";
+  import {
+    dashboardChatActions,
+    dashboardChatOpen,
+  } from "../chat/layouts/sidebar/sidebar-store";
   import ViewAsButton from "../dashboards/granular-access-policies/ViewAsButton.svelte";
   import {
     useDashboardPolicyCheck,
@@ -46,7 +50,7 @@
   {/if}
   <StateManagersProvider {metricsViewName} {exploreName} let:ready>
     {#if $dashboardChat}
-      <ChatToggle />
+      <ChatToggle open={dashboardChatOpen} actions={dashboardChatActions} />
     {/if}
     {#if ready}
       <GlobalDimensionSearch />

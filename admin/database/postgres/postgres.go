@@ -3167,6 +3167,11 @@ func (c *connection) FindProjectVariables(ctx context.Context, projectID string,
 }
 
 func (c *connection) UpsertProjectVariable(ctx context.Context, projectID, environment string, vars map[string]string, userID string) ([]*database.ProjectVariable, error) {
+	var userIDPtr *string
+	if userID != "" {
+		userIDPtr = &userID
+	}
+
 	query := `INSERT INTO project_variables (project_id, environment, name, value, value_encryption_key_id, updated_by_user_id, updated_on)
 	VALUES %s
 	ON CONFLICT (project_id, environment, lower(name)) DO UPDATE SET
@@ -3176,7 +3181,7 @@ func (c *connection) UpsertProjectVariable(ctx context.Context, projectID, envir
 		updated_on = now() RETURNING *`
 
 	var placeholders strings.Builder
-	args := []any{projectID, environment, userID}
+	args := []any{projectID, environment, userIDPtr}
 	i := 3
 	for key, value := range vars {
 		// Encrypt the variables
@@ -3721,6 +3726,10 @@ func (b *billingIssueDTO) AsModel() *database.BillingIssue {
 		metadata = &database.BillingIssueMetadataSubscriptionCancelled{}
 	case database.BillingIssueTypeNeverSubscribed:
 		metadata = &database.BillingIssueMetadataNeverSubscribed{}
+	case database.BillingIssueTypeOnCreditTrial:
+		metadata = &database.BillingIssueMetadataOnCreditTrial{}
+	case database.BillingIssueTypeTrialCreditsDepleted:
+		metadata = &database.BillingIssueMetadataTrialCreditsDepleted{}
 	default:
 	}
 	if err := json.Unmarshal(b.Metadata, &metadata); err != nil {
@@ -3741,7 +3750,7 @@ func (b *billingIssueDTO) getBillingIssueLevel() database.BillingIssueLevel {
 	if b.Type == database.BillingIssueTypeUnspecified {
 		return database.BillingIssueLevelUnspecified
 	}
-	if b.Type == database.BillingIssueTypeOnTrial {
+	if b.Type == database.BillingIssueTypeOnTrial || b.Type == database.BillingIssueTypeOnCreditTrial {
 		return database.BillingIssueLevelWarning
 	}
 	return database.BillingIssueLevelError

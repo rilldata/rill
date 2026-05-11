@@ -33,4 +33,8 @@ export const baseGetProjectQueryOptions: Partial<
   refetchOnMount: true,
   refetchOnReconnect: true,
   refetchOnWindowFocus: true,
+  // Align staleness with the RUNNING poll cadence so near-simultaneous observer
+  // mounts (e.g. project + edit layouts) dedupe instead of each firing its own
+  // refetch. Focus/reconnect refetch still kicks in once data exceeds this window.
+  staleTime: PollTimeWhenProjectDeploymentOk,
 };

@@ -46,6 +46,7 @@
   const HEADER_HEIGHT = 30;
 
   export let pivotDataStore: PivotDataStore;
+  export let widthScopeKey: string;
   export let config: Readable<PivotDataStoreConfig>;
   export let pivotState: Readable<PivotState>;
   export let canShowDataViewer = false;
@@ -371,6 +372,7 @@
       {headerGroups}
       {rows}
       {virtualRows}
+      {widthScopeKey}
       {before}
       {after}
       {timeDimension}

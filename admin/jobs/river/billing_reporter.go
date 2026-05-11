@@ -11,6 +11,9 @@ import (
 	"go.uber.org/zap"
 )
 
+// counterMetrics are billable metrics whose period total is sum(value) rather than max(value).
+var counterMetrics = map[string]bool{"slot_seconds_spend": true}
+
 type BillingReporterArgs struct{}
 
 func (BillingReporterArgs) Kind() string { return "billing_reporter" }
@@ -77,13 +80,15 @@ func (w *BillingReporterWorker) Work(ctx context.Context, job *river.Job[Billing
 	afterTime := time.Time{}
 	afterOrgID := ""
 	afterProjectID := ""
+	afterInstanceID := ""
+	afterBillingService := ""
 	afterEventName := ""
 
 	checkPoint := startTime
 	maxEndTime := time.Time{}
 	// loop until all the usage data is reported
 	for !stop {
-		u, err := client.GetUsageMetrics(ctx, startTime, endTime, afterTime, afterOrgID, afterProjectID, afterEventName, sqlGrainIdentifier, limit)
+		u, err := client.GetUsageMetrics(ctx, startTime, endTime, afterTime, afterOrgID, afterProjectID, afterInstanceID, afterBillingService, afterEventName, sqlGrainIdentifier, limit)
 		if err != nil {
 			return fmt.Errorf("failed to get usage metrics: %w", err)
 		}
@@ -98,6 +103,8 @@ func (w *BillingReporterWorker) Work(ctx context.Context, job *river.Job[Billing
 			afterTime = u[len(u)-1].StartTime
 			afterOrgID = u[len(u)-1].OrgID
 			afterProjectID = u[len(u)-1].ProjectID
+			afterInstanceID = u[len(u)-1].InstanceID
+			afterBillingService = u[len(u)-1].BillingService
 			afterEventName = u[len(u)-1].EventName
 		}
 		// since the usage data is ordered by start time first and end time is just (start time + grain), we can directly get the max end time
@@ -114,14 +121,18 @@ func (w *BillingReporterWorker) Work(ctx context.Context, job *river.Job[Billing
 				customerID = *m.BillingCustomerID
 			}
 
+			value := m.MaxValue
+			if counterMetrics[m.EventName] {
+				value = m.SumValue
+			}
 			usage = append(usage, &billing.Usage{
 				CustomerID:     customerID,
 				MetricName:     m.EventName,
-				Value:          m.MaxValue,
+				Value:          value,
 				ReportingGrain: w.admin.Biller.GetReportingGranularity(),
 				StartTime:      m.StartTime,
 				EndTime:        m.EndTime,
-				Metadata:       map[string]interface{}{"org_id": m.OrgID, "project_id": m.ProjectID, "project_name": m.ProjectName, "billing_service": m.BillingService},
+				Metadata:       map[string]interface{}{"org_id": m.OrgID, "project_id": m.ProjectID, "project_name": m.ProjectName, "instance_id": m.InstanceID, "billing_service": m.BillingService},
 			})
 		}
 

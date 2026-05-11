@@ -25,6 +25,7 @@
   export let pivotDataStore: PivotDataStore | undefined;
   export let pivotConfig: Readable<PivotDataStoreConfig> | undefined;
   export let pivotState: Writable<PivotState>;
+  export let widthScopeKey: string;
   export let hasHeader = false;
   export let component: PivotCanvasComponent;
 
@@ -103,6 +104,7 @@
       />
     {:else}
       <PivotTable
+        {widthScopeKey}
         border={hasHeader}
         rounded={hasHeader}
         {pivotDataStore}

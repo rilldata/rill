@@ -189,6 +189,16 @@ export enum BillingIssueType {
    * @generated from enum value: BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED = 7;
    */
   NEVER_SUBSCRIBED = 7,
+
+  /**
+   * @generated from enum value: BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL = 8;
+   */
+  ON_CREDIT_TRIAL = 8,
+
+  /**
+   * @generated from enum value: BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED = 9;
+   */
+  TRIAL_CREDITS_DEPLETED = 9,
 }
 // Retrieve enum metadata with: proto3.getEnumType(BillingIssueType)
 proto3.util.setEnumType(BillingIssueType, "rill.admin.v1.BillingIssueType", [
@@ -200,6 +210,8 @@ proto3.util.setEnumType(BillingIssueType, "rill.admin.v1.BillingIssueType", [
   { no: 5, name: "BILLING_ISSUE_TYPE_PAYMENT_FAILED" },
   { no: 6, name: "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED" },
   { no: 7, name: "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED" },
+  { no: 8, name: "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL" },
+  { no: 9, name: "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED" },
 ]);
 
 /**
@@ -6348,82 +6360,220 @@ export class SudoUpdateOrganizationBillingCustomerResponse extends Message<SudoU
 }
 
 /**
- * @generated from message rill.admin.v1.SudoExtendTrialRequest
+ * @generated from message rill.admin.v1.SudoGrantTrialCreditsRequest
  */
-export class SudoExtendTrialRequest extends Message<SudoExtendTrialRequest> {
+export class SudoGrantTrialCreditsRequest extends Message<SudoGrantTrialCreditsRequest> {
   /**
    * @generated from field: string org = 1;
    */
   org = "";
 
   /**
-   * @generated from field: int32 days = 2;
+   * Amount of trial credits to grant in USD.
+   *
+   * @generated from field: double amount_usd = 2;
    */
-  days = 0;
+  amountUsd = 0;
 
-  constructor(data?: PartialMessage<SudoExtendTrialRequest>) {
+  /**
+   * Optional human-readable reason for the grant.
+   *
+   * @generated from field: string description = 3;
+   */
+  description = "";
+
+  constructor(data?: PartialMessage<SudoGrantTrialCreditsRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.SudoExtendTrialRequest";
+  static readonly typeName = "rill.admin.v1.SudoGrantTrialCreditsRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "days", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "amount_usd", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoExtendTrialRequest {
-    return new SudoExtendTrialRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoGrantTrialCreditsRequest {
+    return new SudoGrantTrialCreditsRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoExtendTrialRequest {
-    return new SudoExtendTrialRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoGrantTrialCreditsRequest {
+    return new SudoGrantTrialCreditsRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoExtendTrialRequest {
-    return new SudoExtendTrialRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoGrantTrialCreditsRequest {
+    return new SudoGrantTrialCreditsRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: SudoExtendTrialRequest | PlainMessage<SudoExtendTrialRequest> | undefined, b: SudoExtendTrialRequest | PlainMessage<SudoExtendTrialRequest> | undefined): boolean {
-    return proto3.util.equals(SudoExtendTrialRequest, a, b);
+  static equals(a: SudoGrantTrialCreditsRequest | PlainMessage<SudoGrantTrialCreditsRequest> | undefined, b: SudoGrantTrialCreditsRequest | PlainMessage<SudoGrantTrialCreditsRequest> | undefined): boolean {
+    return proto3.util.equals(SudoGrantTrialCreditsRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.admin.v1.SudoExtendTrialResponse
+ * @generated from message rill.admin.v1.SudoGrantTrialCreditsResponse
  */
-export class SudoExtendTrialResponse extends Message<SudoExtendTrialResponse> {
+export class SudoGrantTrialCreditsResponse extends Message<SudoGrantTrialCreditsResponse> {
   /**
-   * @generated from field: google.protobuf.Timestamp trial_end = 1;
+   * The grant amount actually applied, in USD.
+   *
+   * @generated from field: double granted_usd = 1;
    */
-  trialEnd?: Timestamp;
+  grantedUsd = 0;
 
-  constructor(data?: PartialMessage<SudoExtendTrialResponse>) {
+  constructor(data?: PartialMessage<SudoGrantTrialCreditsResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.SudoExtendTrialResponse";
+  static readonly typeName = "rill.admin.v1.SudoGrantTrialCreditsResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "trial_end", kind: "message", T: Timestamp },
+    { no: 1, name: "granted_usd", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoExtendTrialResponse {
-    return new SudoExtendTrialResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoGrantTrialCreditsResponse {
+    return new SudoGrantTrialCreditsResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoExtendTrialResponse {
-    return new SudoExtendTrialResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoGrantTrialCreditsResponse {
+    return new SudoGrantTrialCreditsResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoExtendTrialResponse {
-    return new SudoExtendTrialResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoGrantTrialCreditsResponse {
+    return new SudoGrantTrialCreditsResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: SudoExtendTrialResponse | PlainMessage<SudoExtendTrialResponse> | undefined, b: SudoExtendTrialResponse | PlainMessage<SudoExtendTrialResponse> | undefined): boolean {
-    return proto3.util.equals(SudoExtendTrialResponse, a, b);
+  static equals(a: SudoGrantTrialCreditsResponse | PlainMessage<SudoGrantTrialCreditsResponse> | undefined, b: SudoGrantTrialCreditsResponse | PlainMessage<SudoGrantTrialCreditsResponse> | undefined): boolean {
+    return proto3.util.equals(SudoGrantTrialCreditsResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SudoReportUsageRequest
+ */
+export class SudoReportUsageRequest extends Message<SudoReportUsageRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * @generated from field: string event_name = 2;
+   */
+  eventName = "";
+
+  /**
+   * @generated from field: double value = 3;
+   */
+  value = 0;
+
+  /**
+   * Optional end time of the reporting window. Defaults to the current server time.
+   *
+   * @generated from field: google.protobuf.Timestamp end_time = 4;
+   */
+  endTime?: Timestamp;
+
+  /**
+   * Optional project name attribution for the mock event. If not set, a placeholder is used.
+   *
+   * @generated from field: string project_name = 5;
+   */
+  projectName = "";
+
+  constructor(data?: PartialMessage<SudoReportUsageRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SudoReportUsageRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "event_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "value", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 4, name: "end_time", kind: "message", T: Timestamp },
+    { no: 5, name: "project_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoReportUsageRequest {
+    return new SudoReportUsageRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoReportUsageRequest {
+    return new SudoReportUsageRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoReportUsageRequest {
+    return new SudoReportUsageRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SudoReportUsageRequest | PlainMessage<SudoReportUsageRequest> | undefined, b: SudoReportUsageRequest | PlainMessage<SudoReportUsageRequest> | undefined): boolean {
+    return proto3.util.equals(SudoReportUsageRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SudoReportUsageResponse
+ */
+export class SudoReportUsageResponse extends Message<SudoReportUsageResponse> {
+  /**
+   * @generated from field: string customer_id = 1;
+   */
+  customerId = "";
+
+  /**
+   * @generated from field: string event_name = 2;
+   */
+  eventName = "";
+
+  /**
+   * @generated from field: double value = 3;
+   */
+  value = 0;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp start_time = 4;
+   */
+  startTime?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp end_time = 5;
+   */
+  endTime?: Timestamp;
+
+  constructor(data?: PartialMessage<SudoReportUsageResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SudoReportUsageResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "event_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "value", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 4, name: "start_time", kind: "message", T: Timestamp },
+    { no: 5, name: "end_time", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoReportUsageResponse {
+    return new SudoReportUsageResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoReportUsageResponse {
+    return new SudoReportUsageResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoReportUsageResponse {
+    return new SudoReportUsageResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SudoReportUsageResponse | PlainMessage<SudoReportUsageResponse> | undefined, b: SudoReportUsageResponse | PlainMessage<SudoReportUsageResponse> | undefined): boolean {
+    return proto3.util.equals(SudoReportUsageResponse, a, b);
   }
 }
 
@@ -11282,6 +11432,234 @@ export class ListGithubUserReposResponse_Repo extends Message<ListGithubUserRepo
 }
 
 /**
+ * @generated from message rill.admin.v1.CreateGithubPullRequestRequest
+ */
+export class CreateGithubPullRequestRequest extends Message<CreateGithubPullRequestRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  /**
+   * The head branch for the PR
+   *
+   * @generated from field: string branch = 3;
+   */
+  branch = "";
+
+  /**
+   * Optional title of the PR. If not set, a default title will be used
+   *
+   * @generated from field: string title = 5;
+   */
+  title = "";
+
+  /**
+   * / Optional body of the PR
+   *
+   * @generated from field: string body = 6;
+   */
+  body = "";
+
+  constructor(data?: PartialMessage<CreateGithubPullRequestRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.CreateGithubPullRequestRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "body", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateGithubPullRequestRequest {
+    return new CreateGithubPullRequestRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateGithubPullRequestRequest {
+    return new CreateGithubPullRequestRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateGithubPullRequestRequest {
+    return new CreateGithubPullRequestRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateGithubPullRequestRequest | PlainMessage<CreateGithubPullRequestRequest> | undefined, b: CreateGithubPullRequestRequest | PlainMessage<CreateGithubPullRequestRequest> | undefined): boolean {
+    return proto3.util.equals(CreateGithubPullRequestRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.CreateGithubPullRequestResponse
+ */
+export class CreateGithubPullRequestResponse extends Message<CreateGithubPullRequestResponse> {
+  /**
+   * @generated from field: string pr_url = 1;
+   */
+  prUrl = "";
+
+  constructor(data?: PartialMessage<CreateGithubPullRequestResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.CreateGithubPullRequestResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "pr_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateGithubPullRequestResponse {
+    return new CreateGithubPullRequestResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateGithubPullRequestResponse {
+    return new CreateGithubPullRequestResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateGithubPullRequestResponse {
+    return new CreateGithubPullRequestResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateGithubPullRequestResponse | PlainMessage<CreateGithubPullRequestResponse> | undefined, b: CreateGithubPullRequestResponse | PlainMessage<CreateGithubPullRequestResponse> | undefined): boolean {
+    return proto3.util.equals(CreateGithubPullRequestResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetGithubPullRequestRequest
+ */
+export class GetGithubPullRequestRequest extends Message<GetGithubPullRequestRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  /**
+   * @generated from field: string branch = 3;
+   */
+  branch = "";
+
+  constructor(data?: PartialMessage<GetGithubPullRequestRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetGithubPullRequestRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetGithubPullRequestRequest {
+    return new GetGithubPullRequestRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetGithubPullRequestRequest {
+    return new GetGithubPullRequestRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetGithubPullRequestRequest {
+    return new GetGithubPullRequestRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetGithubPullRequestRequest | PlainMessage<GetGithubPullRequestRequest> | undefined, b: GetGithubPullRequestRequest | PlainMessage<GetGithubPullRequestRequest> | undefined): boolean {
+    return proto3.util.equals(GetGithubPullRequestRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetGithubPullRequestResponse
+ */
+export class GetGithubPullRequestResponse extends Message<GetGithubPullRequestResponse> {
+  /**
+   * @generated from field: string pr_url = 1;
+   */
+  prUrl = "";
+
+  /**
+   * @generated from field: rill.admin.v1.GetGithubPullRequestResponse.State pr_state = 2;
+   */
+  prState = GetGithubPullRequestResponse_State.UNSPECIFIED;
+
+  constructor(data?: PartialMessage<GetGithubPullRequestResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetGithubPullRequestResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "pr_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "pr_state", kind: "enum", T: proto3.getEnumType(GetGithubPullRequestResponse_State) },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetGithubPullRequestResponse {
+    return new GetGithubPullRequestResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetGithubPullRequestResponse {
+    return new GetGithubPullRequestResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetGithubPullRequestResponse {
+    return new GetGithubPullRequestResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetGithubPullRequestResponse | PlainMessage<GetGithubPullRequestResponse> | undefined, b: GetGithubPullRequestResponse | PlainMessage<GetGithubPullRequestResponse> | undefined): boolean {
+    return proto3.util.equals(GetGithubPullRequestResponse, a, b);
+  }
+}
+
+/**
+ * @generated from enum rill.admin.v1.GetGithubPullRequestResponse.State
+ */
+export enum GetGithubPullRequestResponse_State {
+  /**
+   * @generated from enum value: STATE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: STATE_OPEN = 1;
+   */
+  OPEN = 1,
+
+  /**
+   * @generated from enum value: STATE_CLOSED_UNMERGED = 2;
+   */
+  CLOSED_UNMERGED = 2,
+
+  /**
+   * @generated from enum value: STATE_MERGED = 3;
+   */
+  MERGED = 3,
+}
+// Retrieve enum metadata with: proto3.getEnumType(GetGithubPullRequestResponse_State)
+proto3.util.setEnumType(GetGithubPullRequestResponse_State, "rill.admin.v1.GetGithubPullRequestResponse.State", [
+  { no: 0, name: "STATE_UNSPECIFIED" },
+  { no: 1, name: "STATE_OPEN" },
+  { no: 2, name: "STATE_CLOSED_UNMERGED" },
+  { no: 3, name: "STATE_MERGED" },
+]);
+
+/**
  * @generated from message rill.admin.v1.ConnectProjectToGithubRequest
  */
 export class ConnectProjectToGithubRequest extends Message<ConnectProjectToGithubRequest> {
@@ -15791,6 +16169,11 @@ export class Project extends Message<Project> {
   prodTtlSeconds = protoInt64.zero;
 
   /**
+   * @generated from field: int64 dev_ttl_seconds = 27;
+   */
+  devTtlSeconds = protoInt64.zero;
+
+  /**
    * @generated from field: map<string, string> annotations = 20;
    */
   annotations: { [key: string]: string } = {};
@@ -15837,6 +16220,7 @@ export class Project extends Message<Project> {
     { no: 25, name: "dev_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 16, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 18, name: "prod_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 27, name: "dev_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 20, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 21, name: "prod_version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "created_on", kind: "message", T: Timestamp },
@@ -15924,6 +16308,11 @@ export class Deployment extends Message<Deployment> {
    */
   updatedOn?: Timestamp;
 
+  /**
+   * @generated from field: google.protobuf.Timestamp used_on = 14;
+   */
+  usedOn?: Timestamp;
+
   constructor(data?: PartialMessage<Deployment>) {
     super();
     proto3.util.initPartial(data, this);
@@ -15944,6 +16333,7 @@ export class Deployment extends Message<Deployment> {
     { no: 8, name: "status_message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "created_on", kind: "message", T: Timestamp },
     { no: 10, name: "updated_on", kind: "message", T: Timestamp },
+    { no: 14, name: "used_on", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Deployment {
@@ -17972,6 +18362,18 @@ export class BillingIssueMetadata extends Message<BillingIssueMetadata> {
      */
     value: BillingIssueMetadataNeverSubscribed;
     case: "neverSubscribed";
+  } | {
+    /**
+     * @generated from field: rill.admin.v1.BillingIssueMetadataOnCreditTrial on_credit_trial = 8;
+     */
+    value: BillingIssueMetadataOnCreditTrial;
+    case: "onCreditTrial";
+  } | {
+    /**
+     * @generated from field: rill.admin.v1.BillingIssueMetadataTrialCreditsDepleted trial_credits_depleted = 9;
+     */
+    value: BillingIssueMetadataTrialCreditsDepleted;
+    case: "trialCreditsDepleted";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<BillingIssueMetadata>) {
@@ -17989,6 +18391,8 @@ export class BillingIssueMetadata extends Message<BillingIssueMetadata> {
     { no: 5, name: "payment_failed", kind: "message", T: BillingIssueMetadataPaymentFailed, oneof: "metadata" },
     { no: 6, name: "subscription_cancelled", kind: "message", T: BillingIssueMetadataSubscriptionCancelled, oneof: "metadata" },
     { no: 7, name: "never_subscribed", kind: "message", T: BillingIssueMetadataNeverSubscribed, oneof: "metadata" },
+    { no: 8, name: "on_credit_trial", kind: "message", T: BillingIssueMetadataOnCreditTrial, oneof: "metadata" },
+    { no: 9, name: "trial_credits_depleted", kind: "message", T: BillingIssueMetadataTrialCreditsDepleted, oneof: "metadata" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingIssueMetadata {
@@ -18337,6 +18741,110 @@ export class BillingIssueMetadataNeverSubscribed extends Message<BillingIssueMet
 
   static equals(a: BillingIssueMetadataNeverSubscribed | PlainMessage<BillingIssueMetadataNeverSubscribed> | undefined, b: BillingIssueMetadataNeverSubscribed | PlainMessage<BillingIssueMetadataNeverSubscribed> | undefined): boolean {
     return proto3.util.equals(BillingIssueMetadataNeverSubscribed, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.BillingIssueMetadataOnCreditTrial
+ */
+export class BillingIssueMetadataOnCreditTrial extends Message<BillingIssueMetadataOnCreditTrial> {
+  /**
+   * @generated from field: string subscription_id = 1;
+   */
+  subscriptionId = "";
+
+  /**
+   * @generated from field: string plan_id = 2;
+   */
+  planId = "";
+
+  /**
+   * @generated from field: double credit_allocation = 3;
+   */
+  creditAllocation = 0;
+
+  /**
+   * @generated from field: bool low_credit = 4;
+   */
+  lowCredit = false;
+
+  constructor(data?: PartialMessage<BillingIssueMetadataOnCreditTrial>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.BillingIssueMetadataOnCreditTrial";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "subscription_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "plan_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "credit_allocation", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 4, name: "low_credit", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingIssueMetadataOnCreditTrial {
+    return new BillingIssueMetadataOnCreditTrial().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BillingIssueMetadataOnCreditTrial {
+    return new BillingIssueMetadataOnCreditTrial().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BillingIssueMetadataOnCreditTrial {
+    return new BillingIssueMetadataOnCreditTrial().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BillingIssueMetadataOnCreditTrial | PlainMessage<BillingIssueMetadataOnCreditTrial> | undefined, b: BillingIssueMetadataOnCreditTrial | PlainMessage<BillingIssueMetadataOnCreditTrial> | undefined): boolean {
+    return proto3.util.equals(BillingIssueMetadataOnCreditTrial, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.BillingIssueMetadataTrialCreditsDepleted
+ */
+export class BillingIssueMetadataTrialCreditsDepleted extends Message<BillingIssueMetadataTrialCreditsDepleted> {
+  /**
+   * @generated from field: string subscription_id = 1;
+   */
+  subscriptionId = "";
+
+  /**
+   * @generated from field: string plan_id = 2;
+   */
+  planId = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp depleted_on = 3;
+   */
+  depletedOn?: Timestamp;
+
+  constructor(data?: PartialMessage<BillingIssueMetadataTrialCreditsDepleted>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.BillingIssueMetadataTrialCreditsDepleted";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "subscription_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "plan_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "depleted_on", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingIssueMetadataTrialCreditsDepleted {
+    return new BillingIssueMetadataTrialCreditsDepleted().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BillingIssueMetadataTrialCreditsDepleted {
+    return new BillingIssueMetadataTrialCreditsDepleted().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BillingIssueMetadataTrialCreditsDepleted {
+    return new BillingIssueMetadataTrialCreditsDepleted().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BillingIssueMetadataTrialCreditsDepleted | PlainMessage<BillingIssueMetadataTrialCreditsDepleted> | undefined, b: BillingIssueMetadataTrialCreditsDepleted | PlainMessage<BillingIssueMetadataTrialCreditsDepleted> | undefined): boolean {
+    return proto3.util.equals(BillingIssueMetadataTrialCreditsDepleted, a, b);
   }
 }
 

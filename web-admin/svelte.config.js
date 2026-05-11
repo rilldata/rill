@@ -50,6 +50,11 @@ const config = {
         "default-src": ["self"],
         "script-src": [
           "self",
+          // @exodus/schemasafe (used by the Add Data connector forms) compiles
+          // JSON schemas into validators at runtime via the Function()
+          // constructor, which CSP treats as eval. Until we move to a
+          // standalone-compiled validator, 'unsafe-eval' is required.
+          "unsafe-eval",
           // ActiveCampaign: our app loads diffuser.js which chains to prism and trackcmp.
           "https://diffuser-cdn.app-us1.com",
           "https://prism.app-us1.com",

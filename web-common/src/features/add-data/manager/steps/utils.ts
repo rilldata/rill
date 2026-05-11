@@ -11,6 +11,8 @@ import {
   type AddDataConfig,
   ImportDataStep,
 } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
 
 export function getConnectorDriverForSchema(
   schemaName: string,
@@ -78,10 +80,16 @@ export function isExplorerType(connectorDriver: V1ConnectorDriver) {
   );
 }
 
-export function isLiveConnectorType(connectorDriver: V1ConnectorDriver) {
-  return (
-    !!connectorDriver?.implementsOlap && !connectorDriver?.implementsWarehouse
-  );
+export function isLiveConnectorType(
+  connectorDriver: V1ConnectorDriver,
+  projectOlapConnector = "",
+) {
+  if (!connectorDriver?.implementsOlap) return false;
+  // OLAP-only connectors (e.g., ClickHouse, Druid, Pinot) always go live.
+  if (!connectorDriver?.implementsWarehouse) return true;
+  // Warehouses (Snowflake, BigQuery) go live when the project's OLAP is
+  // anything other than DuckDB, since cross-OLAP ingestion is not a UI flow.
+  return !!projectOlapConnector && projectOlapConnector !== "duckdb";
 }
 
 const NonModelSteps = [
@@ -93,11 +101,27 @@ const FullListOfSteps = [ImportDataStep.CreateModel, ...NonModelSteps];
 export function getImportStepsForConnector(
   config: AddDataConfig,
   driver: V1ConnectorDriver,
+  projectOlapConnector = "",
 ) {
-  const steps = isLiveConnectorType(driver) ? NonModelSteps : FullListOfSteps;
-  return config.importOnly ? [steps[0]] : steps;
+  const live = isLiveConnectorType(driver, projectOlapConnector);
+  const steps = live ? NonModelSteps : FullListOfSteps;
+  if (!config.importOnly) return steps;
+  // When the user's goal is a metrics view, run through CreateMetricsView so
+  // non-live sources also produce a metrics view (after the ingest step).
+  if (config.targetResource === ResourceKind.MetricsView) {
+    return live
+      ? [ImportDataStep.CreateMetricsView]
+      : [ImportDataStep.CreateModel, ImportDataStep.CreateMetricsView];
+  }
+  return [steps[0]];
 }
 
 export function getImportStepsForSource(config: AddDataConfig) {
   return config.importOnly ? [ImportDataStep.CreateModel] : FullListOfSteps;
+}
+
+export async function maybeGetEnvContent() {
+  if (!fileArtifacts.hasFileArtifact("/.env")) return "";
+  const envFile = fileArtifacts.getFileArtifact("/.env");
+  return (await envFile.fetchContent(false)) ?? "";
 }
