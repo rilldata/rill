@@ -33,6 +33,7 @@ type Options struct {
 	MetricsProjectName        string
 	AutoscalerCron            string
 	ScaleDownConstraint       int
+	AllowMockBilling          bool
 }
 
 type Service struct {
@@ -54,6 +55,7 @@ type Service struct {
 	MetricsProjectID          string
 	AutoscalerCron            string
 	ScaleDownConstraint       int
+	AllowMockBilling          bool
 	Biller                    billing.Biller
 	PaymentProvider           payment.Provider
 }
@@ -138,6 +140,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		MetricsProjectID:          metricsProjectID,
 		AutoscalerCron:            opts.AutoscalerCron,
 		ScaleDownConstraint:       opts.ScaleDownConstraint,
+		AllowMockBilling:          opts.AllowMockBilling,
 		Biller:                    biller,
 		PaymentProvider:           p,
 	}, nil

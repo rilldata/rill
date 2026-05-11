@@ -7,6 +7,7 @@
     getAdminServiceListDeploymentsQueryKey,
   } from "@rilldata/web-admin/client";
   import { isActiveDeployment } from "@rilldata/web-admin/features/branches/deployment-utils";
+  import { useParserCommitSha } from "@rilldata/web-admin/features/projects/selectors";
   import { Button } from "@rilldata/web-common/components/button";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -55,7 +56,19 @@
     !currentBranch ||
     !projectLoaded ||
     alreadyOnPrimary ||
+    !hasLocalChanges ||
     isPublishing;
+
+  // Prefetch prod's project parser commit SHA so the deploying page can
+  // wait for prod to advance past it before redirecting to the dashboard,
+  // avoiding the stale-content race. Deployment + JWT come straight from
+  // `projectQuery` rather than via a dedicated `useProdRuntimeClient`
+  // hook: the popover doesn't make other prod-runtime calls, so the
+  // wrapper wouldn't earn its place.
+  $: parserShaQuery = useParserCommitSha(
+    prodDeployment,
+    $projectQuery.data?.jwt,
+  );
 
   async function handlePublish() {
     if (!primaryBranch || isPublishing) return;
@@ -82,6 +95,7 @@
       project,
       pathname: $page.url.pathname,
       hadProdDeployment,
+      preCommitSha: $parserShaQuery.data,
     });
     const targetWindow = window.open(targetUrl, "_blank");
     if (!targetWindow) {
@@ -186,6 +200,8 @@
         Already on production
       {:else if !primaryBranch || !currentBranch || !projectLoaded}
         Loading project...
+      {:else if !hasLocalChanges}
+        No changes to publish
       {:else if !prodDeployment}
         Publish your project to production. We'll open a new tab where you can
         invite teammates while the deployment reconciles.

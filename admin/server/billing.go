@@ -776,6 +776,74 @@ func (s *Server) SudoGrantTrialCredits(ctx context.Context, req *adminv1.SudoGra
 	return &adminv1.SudoGrantTrialCreditsResponse{GrantedUsd: req.AmountUsd}, nil
 }
 
+// SudoReportUsage reports a mock usage event for an organization.
+func (s *Server) SudoReportUsage(ctx context.Context, req *adminv1.SudoReportUsageRequest) (*adminv1.SudoReportUsageResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
+	observability.AddRequestAttributes(ctx, attribute.String("args.event_name", req.EventName))
+	observability.AddRequestAttributes(ctx, attribute.Float64("args.value", req.Value))
+
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can report mock usage")
+	}
+
+	if !s.admin.AllowMockBilling {
+		return nil, status.Error(codes.PermissionDenied, "mock usage reporting is disabled")
+	}
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
+	if err != nil {
+		return nil, err
+	}
+
+	endTime := time.Now().UTC()
+	if req.EndTime != nil {
+		endTime = req.EndTime.AsTime().UTC()
+	}
+	metadata := map[string]interface{}{
+		"org_id": org.ID,
+		"mock":   true,
+	}
+
+	// project details do not affect billing metrics calculation just helps in attributing cost to specific project
+	// so do best efforts check to add project metadata
+	if req.ProjectName != "" {
+		metadata["project_name"] = req.ProjectName
+		metadata["project_id"] = ""
+		proj, err := s.admin.DB.FindProjectByName(ctx, org.Name, req.ProjectName)
+		if err != nil && !errors.Is(err, database.ErrNotFound) {
+			return nil, fmt.Errorf("failed to find project %q: %w", req.ProjectName, err)
+		}
+		if proj != nil {
+			metadata["project_id"] = proj.ID
+		} else {
+			s.logger.Warn("mock usage: project not found, not including project_id in usage event", zap.String("org", org.Name), zap.String("project_name", req.ProjectName))
+		}
+	}
+
+	usage := &billing.Usage{
+		CustomerID:     org.ID,
+		MetricName:     req.EventName,
+		Value:          req.Value,
+		ReportingGrain: s.admin.Biller.GetReportingGranularity(),
+		StartTime:      endTime.Add(-time.Second),
+		EndTime:        endTime,
+		Metadata:       metadata,
+	}
+
+	if err := s.admin.Biller.ReportUsage(ctx, []*billing.Usage{usage}); err != nil {
+		return nil, fmt.Errorf("failed to report usage: %w", err)
+	}
+
+	return &adminv1.SudoReportUsageResponse{
+		CustomerId: org.ID,
+		EventName:  req.EventName,
+		Value:      req.Value,
+		StartTime:  timestamppb.New(usage.StartTime),
+		EndTime:    timestamppb.New(usage.EndTime),
+	}, nil
+}
+
 func (s *Server) SudoTriggerBillingRepair(ctx context.Context, req *adminv1.SudoTriggerBillingRepairRequest) (*adminv1.SudoTriggerBillingRepairResponse, error) {
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
