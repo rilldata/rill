@@ -121,10 +121,7 @@ export function getImportStepsForSource(config: AddDataConfig) {
 }
 
 export async function maybeGetEnvContent() {
-  if (!fileArtifacts.hasFileArtifact("/.env")) {
-    console.log("No /.env file artifact found");
-    return "";
-  }
+  if (!fileArtifacts.hasFileArtifact("/.env")) return "";
   const envFile = fileArtifacts.getFileArtifact("/.env");
   return (await envFile.fetchContent(false)) ?? "";
 }

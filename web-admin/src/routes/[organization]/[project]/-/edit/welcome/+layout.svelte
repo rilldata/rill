@@ -7,14 +7,15 @@
 
   const runtimeClient = useRuntimeClient();
 
-  // Prefetch connectors and load into cache. We will show a spinner while this is fetching.
+  // Prefetch connectors and load into cache, but do not show a spinner,
+  // it can be a bit jarring to see a lot of spinners
   const connectorsQuery = createRuntimeServiceAnalyzeConnectors(
     runtimeClient,
     {},
   );
 </script>
 
-<!-- preload connectors list but dont show a spinner -->
+<!-- Trigger load with hidden div so query is fired -->
 <div class="hidden">${$connectorsQuery.data}</div>
 
 <div class="flex size-full overflow-hidden">
