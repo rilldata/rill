@@ -12,6 +12,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
@@ -254,7 +255,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 				// Update primary branch and pull again
 				repo.primaryBranch = "rename"
 				ctx := context.Background()
-				err := repo.pullInner(ctx, false, false)
+				err := repo.pullInner(ctx, &drivers.PullOptions{})
 				require.NoError(t, err)
 
 				// Verify we're still on main (default branch unchanged)
@@ -262,7 +263,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 
 				// Now change default branch to rename and pull again
 				repo.defaultBranch = "rename"
-				err = repo.pullInner(ctx, false, false)
+				err = repo.pullInner(ctx, &drivers.PullOptions{})
 				require.NoError(t, err)
 
 				// Verify we've switched to rename branch
@@ -303,7 +304,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 				// Update primary branch and pull again
 				repo.primaryBranch = "rename"
 				ctx := context.Background()
-				err := repo.pullInner(ctx, false, false)
+				err := repo.pullInner(ctx, &drivers.PullOptions{})
 				require.NoError(t, err)
 
 				// Verify we're still on main (default branch unchanged)
@@ -316,7 +317,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 
 				// Now change default branch to rename and pull again
 				repo.defaultBranch = "rename"
-				err = repo.pullInner(ctx, false, false)
+				err = repo.pullInner(ctx, &drivers.PullOptions{})
 				require.NoError(t, err)
 
 				// Verify we've switched to rename branch
@@ -402,7 +403,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 
 				// Second pull uses the existing-repo fetch path.
 				ctx := context.Background()
-				err := repo.pullInner(ctx, false, false)
+				err := repo.pullInner(ctx, &drivers.PullOptions{})
 				require.NoError(t, err, "pullInner should succeed after primary branch change")
 
 				// Verify the new primary branch content was merged into edit-branch
@@ -502,7 +503,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 
 			// Execute pullInner
 			ctx := context.Background()
-			err := repo.pullInner(ctx, true, tt.force)
+			err := repo.pullInner(ctx, &drivers.PullOptions{UserTriggered: true, DiscardChanges: tt.force})
 
 			// Verify error expectation
 			if tt.expectError {

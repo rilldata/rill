@@ -440,7 +440,7 @@ func (r *repo) ListCommits(ctx context.Context, fromCommit string, limit int) ([
 }
 
 // Status implements drivers.RepoStore.
-func (r *repo) Status(ctx context.Context) (*drivers.RepoStatus, error) {
+func (r *repo) Status(ctx context.Context, remoteBranch string) (*drivers.RepoStatus, error) {
 	err := r.rlockEnsureReady(ctx, true)
 	if err != nil {
 		return nil, err
@@ -457,8 +457,29 @@ func (r *repo) Status(ctx context.Context) (*drivers.RepoStatus, error) {
 		return nil, fmt.Errorf("failed to fetch current branch: %w", err)
 	}
 
+	repo, err := git.PlainOpen(r.git.repoDir)
+	if err != nil {
+		return nil, err
+	}
+	head, err := repo.Head()
+	if err != nil {
+		return nil, err
+	}
+	branches := []string{head.Name().Short()}
+
+	// If a remote branch was explicitly requested and it differs from the current branch, fetch it too
+	// so that ahead/behind counts in RunGitStatus have an up-to-date remote tracking ref to compare against.
+	if remoteBranch != "" && remoteBranch != branches[0] {
+		branches = append(branches, remoteBranch)
+	}
+
+	err = r.git.fetchBranch(ctx, repo, branches...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch remote branch %q: %w", remoteBranch, err)
+	}
+
 	// run git status
-	st, err := gitutil.RunGitStatus(r.git.repoDir, r.git.subpath, "origin")
+	st, err := gitutil.RunGitStatus(r.git.repoDir, r.git.subpath, "origin", remoteBranch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Git status: %w", err)
 	}
@@ -735,7 +756,7 @@ func (r *repo) pullInner(ctx context.Context, opts *drivers.PullOptions) error {
 
 	// Push the pull into the underlying repos. These are created/updated by checkSyncHandshake.
 	if r.git != nil && opts.UserTriggered {
-		err = r.git.pull(ctx, opts.UserTriggered, opts.DiscardChanges)
+		err = r.git.pull(ctx, opts)
 		if err != nil {
 			return fmt.Errorf("git pull failed: %w", err)
 		}

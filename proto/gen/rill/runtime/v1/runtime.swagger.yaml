@@ -1357,6 +1357,11 @@ paths:
             properties:
               discardLocal:
                 type: boolean
+              remoteBranch:
+                type: string
+                description: |-
+                  remote_branch is the remote branch to pull into the current local branch.
+                  If empty, the upstream of the current local branch is used.
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/git/push:
@@ -1440,6 +1445,13 @@ paths:
         - name: instanceId
           in: path
           required: true
+          type: string
+        - name: remoteBranch
+          description: |-
+            remote_branch is the remote branch to compare the current local branch against.
+            If empty, the upstream of the current local branch is used.
+          in: query
+          required: false
           type: string
       tags:
         - RuntimeService

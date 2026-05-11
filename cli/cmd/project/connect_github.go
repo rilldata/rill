@@ -514,7 +514,7 @@ func createProjectFlow(ctx context.Context, ch *cmdutil.Helper, req *adminv1.Cre
 }
 
 func repoInSyncFlow(ch *cmdutil.Helper, gitPath, subpath, remoteName string) (bool, error) {
-	st, err := gitutil.RunGitStatus(gitPath, subpath, remoteName)
+	st, err := gitutil.RunGitStatus(gitPath, subpath, remoteName, "")
 	if err != nil {
 		return false, err
 	}
