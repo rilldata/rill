@@ -861,9 +861,9 @@ describe("header/cell mutual exclusivity", () => {
     result.handleCellClickToFilter("1", "outer", true, parentZoom);
     result.handleCellClickToFilter("2.0", "revenue", false, childUSWest);
 
-    expect(
-      sel(result).isRowHeaderSelected(dk({ outer: "Zoom" }, dims)),
-    ).toBe(true);
+    expect(sel(result).isRowHeaderSelected(dk({ outer: "Zoom" }, dims))).toBe(
+      true,
+    );
     expect(
       sel(result).isCellSelected(
         dk({ outer: "Airtable", inner: "US-West" }, dims),
