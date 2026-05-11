@@ -40122,6 +40122,227 @@ var _ interface {
 	ErrorName() string
 } = GetPaymentsPortalURLResponseValidationError{}
 
+// Validate checks the field values on GetBillingCreditBalanceRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetBillingCreditBalanceRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetBillingCreditBalanceRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// GetBillingCreditBalanceRequestMultiError, or nil if none found.
+func (m *GetBillingCreditBalanceRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetBillingCreditBalanceRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetOrg()) < 1 {
+		err := GetBillingCreditBalanceRequestValidationError{
+			field:  "Org",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for SuperuserForceAccess
+
+	if len(errors) > 0 {
+		return GetBillingCreditBalanceRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetBillingCreditBalanceRequestMultiError is an error wrapping multiple
+// validation errors returned by GetBillingCreditBalanceRequest.ValidateAll()
+// if the designated constraints aren't met.
+type GetBillingCreditBalanceRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetBillingCreditBalanceRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetBillingCreditBalanceRequestMultiError) AllErrors() []error { return m }
+
+// GetBillingCreditBalanceRequestValidationError is the validation error
+// returned by GetBillingCreditBalanceRequest.Validate if the designated
+// constraints aren't met.
+type GetBillingCreditBalanceRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetBillingCreditBalanceRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetBillingCreditBalanceRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetBillingCreditBalanceRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetBillingCreditBalanceRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetBillingCreditBalanceRequestValidationError) ErrorName() string {
+	return "GetBillingCreditBalanceRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetBillingCreditBalanceRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetBillingCreditBalanceRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetBillingCreditBalanceRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetBillingCreditBalanceRequestValidationError{}
+
+// Validate checks the field values on GetBillingCreditBalanceResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetBillingCreditBalanceResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetBillingCreditBalanceResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// GetBillingCreditBalanceResponseMultiError, or nil if none found.
+func (m *GetBillingCreditBalanceResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetBillingCreditBalanceResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Balance
+
+	if len(errors) > 0 {
+		return GetBillingCreditBalanceResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetBillingCreditBalanceResponseMultiError is an error wrapping multiple
+// validation errors returned by GetBillingCreditBalanceResponse.ValidateAll()
+// if the designated constraints aren't met.
+type GetBillingCreditBalanceResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetBillingCreditBalanceResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetBillingCreditBalanceResponseMultiError) AllErrors() []error { return m }
+
+// GetBillingCreditBalanceResponseValidationError is the validation error
+// returned by GetBillingCreditBalanceResponse.Validate if the designated
+// constraints aren't met.
+type GetBillingCreditBalanceResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetBillingCreditBalanceResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetBillingCreditBalanceResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetBillingCreditBalanceResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetBillingCreditBalanceResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetBillingCreditBalanceResponseValidationError) ErrorName() string {
+	return "GetBillingCreditBalanceResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetBillingCreditBalanceResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetBillingCreditBalanceResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetBillingCreditBalanceResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetBillingCreditBalanceResponseValidationError{}
+
 // Validate checks the field values on ListPublicBillingPlansRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
