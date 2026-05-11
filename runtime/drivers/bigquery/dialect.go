@@ -2,6 +2,7 @@ package bigquery
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -9,6 +10,11 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
+
+// restrictedAliasCharactersRegex matches characters that are NOT supported in
+// BigQuery flexible column names. See:
+// https://cloud.google.com/bigquery/docs/schemas#flexible-column-names
+var restrictedAliasCharactersRegex = regexp.MustCompile(`[!"$()*,./;?@\[\\\]^` + "`" + `{}~\s]+`)
 
 type dialect struct {
 	drivers.BaseDialect
@@ -27,6 +33,10 @@ func BigQueryEscapeIdentifier(ident string) string {
 	// Bigquery uses backticks for quoting identifiers
 	// Replace any backticks inside the identifier with double backticks
 	return fmt.Sprintf("`%s`", strings.ReplaceAll(ident, "`", "``"))
+}
+
+func (d *dialect) SanitizeDisplayName(alias string) string {
+	return strings.TrimRight(restrictedAliasCharactersRegex.ReplaceAllString(alias, "__"), "_")
 }
 
 func (d *dialect) SupportsILike() bool { return false }

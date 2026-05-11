@@ -35,6 +35,8 @@ type Dialect interface {
 	CanPivot() bool
 	EscapeIdentifier(ident string) string
 	EscapeAlias(alias string) string
+	// SanitizeDisplayName returns a sanitized version of the given name so that it conforms to the dialect's identifier rules.
+	SanitizeDisplayName(name string) string
 	EscapeQualifiedIdentifier(name string) string
 	EscapeTable(db, schema, table string) string
 	EscapeMember(tbl, name string) string
@@ -98,6 +100,10 @@ func (b *BaseDialect) EscapeIdentifier(ident string) string {
 
 func (b *BaseDialect) EscapeAlias(alias string) string {
 	return b.escapeAlias(alias)
+}
+
+func (b *BaseDialect) SanitizeDisplayName(name string) string {
+	return name
 }
 
 // EscapeQualifiedIdentifier escapes a dot-separated qualified name (e.g. "schema.table") by escaping each part individually.

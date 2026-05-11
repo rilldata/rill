@@ -117,10 +117,8 @@ func TestMetricViewAggregationAgainstBigQuery(t *testing.T) {
 	rt, instanceID := newBigQueryInstance(t)
 	t.Run("testMetricsViewsAggregation", func(t *testing.T) { testMetricsViewsAggregation(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregationURI", func(t *testing.T) { testMetricsViewsAggregationURI(t, rt, instanceID) })
-	// TODO: BigQuery rejects "Timestamp (day)"/"Timestamp (hour)" as column names
-	// TODO: handle later
-	// t.Run("testMetricsViewsAggregation_export_day", func(t *testing.T) { testMetricsViewsAggregation_export_day(t, rt, instanceID) })
-	// t.Run("testMetricsViewsAggregation_export_hour", func(t *testing.T) { testMetricsViewsAggregation_export_hour(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_export_day", func(t *testing.T) { testMetricsViewsAggregation_export_day(t, rt, instanceID, "Timestamp__day") })
+	t.Run("testMetricsViewsAggregation_export_hour", func(t *testing.T) { testMetricsViewsAggregation_export_hour(t, rt, instanceID, "Timestamp__hour") })
 	t.Run("testMetricsViewsAggregation_no_limit", func(t *testing.T) { testMetricsViewsAggregation_no_limit(t, rt, instanceID) })
 	t.Run("testMetricsViewAggregation_measure_filters", func(t *testing.T) { testBigQueryMetricsViewAggregation_measure_filters(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_timezone", func(t *testing.T) { testMetricsViewsAggregation_timezone(t, rt, instanceID) })
@@ -379,7 +377,7 @@ func testMetricsViewsAggregationURI(t *testing.T, rt *runtime.Runtime, instanceI
 	require.Equal(t, "http://localhost/Yahoo,2022-01-01T00:00:00Z", fieldsToString(rows[i], "pub_uri", "timestamp"))
 }
 
-func testMetricsViewsAggregation_export_day(t *testing.T, rt *runtime.Runtime, instanceID string) {
+func testMetricsViewsAggregation_export_day(t *testing.T, rt *runtime.Runtime, instanceID string, timeDisplayName ...string) {
 	limit := int64(10)
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
@@ -417,11 +415,16 @@ func testMetricsViewsAggregation_export_day(t *testing.T, rt *runtime.Runtime, i
 	require.NotEmpty(t, q.Result)
 	rows := q.Result.Data
 
+	timeCol := "Timestamp (day)"
+	if len(timeDisplayName) > 0 {
+		timeCol = timeDisplayName[0]
+	}
+
 	i := 0
-	require.Equal(t, "Facebook,2022-01-01T00:00:00Z", fieldsToString(rows[i], "Publisher", "Timestamp (day)"))
+	require.Equal(t, "Facebook,2022-01-01T00:00:00Z", fieldsToString(rows[i], "Publisher", timeCol))
 }
 
-func testMetricsViewsAggregation_export_hour(t *testing.T, rt *runtime.Runtime, instanceID string) {
+func testMetricsViewsAggregation_export_hour(t *testing.T, rt *runtime.Runtime, instanceID string, timeDisplayName ...string) {
 	limit := int64(10)
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
@@ -459,8 +462,13 @@ func testMetricsViewsAggregation_export_hour(t *testing.T, rt *runtime.Runtime, 
 	require.NotEmpty(t, q.Result)
 	rows := q.Result.Data
 
+	timeCol := "Timestamp (hour)"
+	if len(timeDisplayName) > 0 {
+		timeCol = timeDisplayName[0]
+	}
+
 	i := 0
-	require.Equal(t, "Facebook,2022-01-01T00:00:00Z", fieldsToString(rows[i], "Publisher", "Timestamp (hour)"))
+	require.Equal(t, "Facebook,2022-01-01T00:00:00Z", fieldsToString(rows[i], "Publisher", timeCol))
 }
 
 func testMetricsViewsAggregation_no_limit(t *testing.T, rt *runtime.Runtime, instanceID string) {
