@@ -113,13 +113,7 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 		}
 
 		// Delete the deployment and all its resources.
-		err := w.admin.StopDeploymentInner(ctx, depl)
-		if err != nil {
-			return err
-		}
-
-		// Delete the deployment
-		err = w.admin.DB.DeleteDeployment(ctx, depl.ID)
+		err := w.admin.DeleteDeploymentInner(ctx, depl)
 		if err != nil {
 			return err
 		}
