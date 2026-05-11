@@ -16,7 +16,7 @@ export const timeGrainToVegaTimeUnitMap: Record<V1TimeGrain, TimeUnit> = {
 
 export function sanitizeValueForVega(value: unknown) {
   if (typeof value === "string") {
-    // Escape all special characters including quotes, brackets, operators, etc.
+    // Escape field-path syntax so Vega treats arbitrary values as flat field names.
     return value.replace(
       /[!@#$%^&*()+=\-[\]\\"';,./{}|:<>?~]/g,
       (match) => `\\${match}`,
@@ -27,6 +27,7 @@ export function sanitizeValueForVega(value: unknown) {
 }
 
 export function sanitizeTitleForVegaTooltip(value: unknown) {
+  // Tooltip titles are compiled into Vega expressions, so keep labels single-line and unescaped.
   return String(value).replace(/\s+/g, " ").trim();
 }
 
