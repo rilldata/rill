@@ -12,8 +12,8 @@ import { themeControl } from "@rilldata/web-common/features/themes/theme-control
 import { getEmbedThemeStoreInstance } from "@rilldata/web-common/features/embeds/embed-theme";
 import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store";
 import {
-  chatOpen,
-  sidebarActions,
+  dashboardChatActions,
+  dashboardChatOpen,
 } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
 
 const STATE_CHANGE_THROTTLE_TIMEOUT = 200;
@@ -91,7 +91,7 @@ export default function initEmbedPublicAPI(): () => void {
   });
 
   registerRPCMethod("getAiPane", () => {
-    return { open: get(chatOpen) };
+    return { open: get(dashboardChatOpen) };
   });
 
   registerRPCMethod("setAiPane", (open: boolean) => {
@@ -99,9 +99,9 @@ export default function initEmbedPublicAPI(): () => void {
       throw new Error("Expected open to be a boolean");
     }
     if (open) {
-      sidebarActions.openChat();
+      dashboardChatActions.openChat();
     } else {
-      sidebarActions.closeChat();
+      dashboardChatActions.closeChat();
     }
     return true;
   });
@@ -149,7 +149,7 @@ export default function initEmbedPublicAPI(): () => void {
     AI_PANE_CHANGE_THROTTLE_TIMEOUT,
     AI_PANE_CHANGE_THROTTLE_TIMEOUT,
   );
-  const aiPaneUnsubscribe = chatOpen.subscribe((isOpen) => {
+  const aiPaneUnsubscribe = dashboardChatOpen.subscribe((isOpen) => {
     aiPaneChangeThrottler.throttle(() => {
       emitNotification("aiPaneChanged", {
         open: isOpen,

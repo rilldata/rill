@@ -129,6 +129,19 @@ func (o *Orb) GetPlanByName(ctx context.Context, name string) (*Plan, error) {
 	return nil, ErrNotFound
 }
 
+func (o *Orb) GetPlanByType(ctx context.Context, planType PlanType) (*Plan, error) {
+	plans, err := o.getAllPlans(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range plans {
+		if p.PlanType == planType {
+			return p, nil
+		}
+	}
+	return nil, ErrNotFound
+}
+
 func (o *Orb) CreateCustomer(ctx context.Context, organization *database.Organization, provider PaymentProvider) (*Customer, error) {
 	var paymentProviderType orb.CustomerNewParamsPaymentProvider
 	switch provider {
@@ -207,6 +220,78 @@ func (o *Orb) DeleteCustomer(ctx context.Context, customerID string) error {
 		return err
 	}
 	return nil
+}
+
+// CreateCustomerCreditAlerts registers a credit_balance_dropped alert at the given threshold and a credit_balance_depleted alert for the customer in Orb. Required for Orb to deliver the corresponding webhook events.
+func (o *Orb) CreateCustomerCreditAlerts(ctx context.Context, customerID, currency string, lowThreshold float64) error {
+	_, err := o.client.Alerts.NewForExternalCustomer(ctx, customerID, orb.AlertNewForExternalCustomerParams{
+		Currency: orb.String(currency),
+		Type:     orb.F(orb.AlertNewForExternalCustomerParamsTypeCreditBalanceDropped),
+		Thresholds: orb.F([]orb.ThresholdParam{
+			{Value: orb.F(lowThreshold)},
+		}),
+	})
+	if err != nil {
+		return fmt.Errorf("creating credit_balance_dropped alert: %w", err)
+	}
+
+	_, err = o.client.Alerts.NewForExternalCustomer(ctx, customerID, orb.AlertNewForExternalCustomerParams{
+		Currency: orb.String(currency),
+		Type:     orb.F(orb.AlertNewForExternalCustomerParamsTypeCreditBalanceDepleted),
+	})
+	if err != nil {
+		return fmt.Errorf("creating credit_balance_depleted alert: %w", err)
+	}
+
+	return nil
+}
+
+// GrantCustomerCredits adds an `increment` ledger entry to the customer's credit balance in Orb in the given currency. per_unit_cost_basis is set to "0.00" so the grant itself does not produce an invoice line item.
+func (o *Orb) GrantCustomerCredits(ctx context.Context, customerID string, amount float64, currency, description string, expiryDate *time.Time) error {
+	params := orb.CustomerCreditLedgerNewEntryByExternalIDParamsAddIncrementCreditLedgerEntryRequestParams{
+		Amount:           orb.F(amount),
+		Currency:         orb.String(currency),
+		EntryType:        orb.F(orb.CustomerCreditLedgerNewEntryByExternalIDParamsAddIncrementCreditLedgerEntryRequestParamsEntryTypeIncrement),
+		Description:      orb.String(description),
+		PerUnitCostBasis: orb.String("0.00"),
+	}
+	if expiryDate != nil {
+		params.ExpiryDate = orb.F(*expiryDate)
+	}
+	_, err := o.client.Customers.Credits.Ledger.NewEntryByExternalID(ctx, customerID, params)
+	if err != nil {
+		return fmt.Errorf("creating credit ledger increment entry: %w", err)
+	}
+	return nil
+}
+
+// DebitCustomerCredits posts a `decrement` ledger entry against the customer's credit balance in Orb in the given currency. Used to expire/zero out a credit pool, e.g., to roll trial credits over to a different currency on upgrade.
+func (o *Orb) DebitCustomerCredits(ctx context.Context, customerID string, amount float64, currency, description string) error {
+	_, err := o.client.Customers.Credits.Ledger.NewEntryByExternalID(ctx, customerID, orb.CustomerCreditLedgerNewEntryByExternalIDParamsAddDecrementCreditLedgerEntryRequestParams{
+		Amount:      orb.F(amount),
+		Currency:    orb.String(currency),
+		EntryType:   orb.F(orb.CustomerCreditLedgerNewEntryByExternalIDParamsAddDecrementCreditLedgerEntryRequestParamsEntryTypeDecrement),
+		Description: orb.String(description),
+	})
+	if err != nil {
+		return fmt.Errorf("creating credit ledger decrement entry: %w", err)
+	}
+	return nil
+}
+
+// GetCustomerCreditBalance returns the customer's current credit balance in the given currency. Sums active (unexpired) blocks only.
+func (o *Orb) GetCustomerCreditBalance(ctx context.Context, customerID, currency string) (float64, error) {
+	page, err := o.client.Customers.Credits.ListByExternalID(ctx, customerID, orb.CustomerCreditListByExternalIDParams{
+		Currency: orb.String(currency),
+	})
+	if err != nil {
+		return 0, fmt.Errorf("fetching customer credit balance: %w", err)
+	}
+	var total float64
+	for i := range page.Data {
+		total += page.Data[i].Balance
+	}
+	return total, nil
 }
 
 func (o *Orb) CreateSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error) {

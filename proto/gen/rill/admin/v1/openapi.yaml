@@ -9,6 +9,14 @@ components:
                 unsubscribeUrl:
                     type: string
             type: object
+        GetGithubPullRequestResponseState:
+            default: STATE_UNSPECIFIED
+            enum:
+                - STATE_UNSPECIFIED
+                - STATE_OPEN
+                - STATE_CLOSED_UNMERGED
+                - STATE_MERGED
+            type: string
         GetReportMetaResponseDeliveryMeta:
             properties:
                 editUrl:
@@ -186,12 +194,16 @@ components:
                     $ref: '#/components/schemas/v1BillingIssueMetadataNoBillableAddress'
                 noPaymentMethod:
                     $ref: '#/components/schemas/v1BillingIssueMetadataNoPaymentMethod'
+                onCreditTrial:
+                    $ref: '#/components/schemas/v1BillingIssueMetadataOnCreditTrial'
                 onTrial:
                     $ref: '#/components/schemas/v1BillingIssueMetadataOnTrial'
                 paymentFailed:
                     $ref: '#/components/schemas/v1BillingIssueMetadataPaymentFailed'
                 subscriptionCancelled:
                     $ref: '#/components/schemas/v1BillingIssueMetadataSubscriptionCancelled'
+                trialCreditsDepleted:
+                    $ref: '#/components/schemas/v1BillingIssueMetadataTrialCreditsDepleted'
                 trialEnded:
                     $ref: '#/components/schemas/v1BillingIssueMetadataTrialEnded'
             type: object
@@ -200,6 +212,18 @@ components:
         v1BillingIssueMetadataNoBillableAddress:
             type: object
         v1BillingIssueMetadataNoPaymentMethod:
+            type: object
+        v1BillingIssueMetadataOnCreditTrial:
+            properties:
+                creditAllocation:
+                    format: double
+                    type: number
+                lowCredit:
+                    type: boolean
+                planId:
+                    type: string
+                subscriptionId:
+                    type: string
             type: object
         v1BillingIssueMetadataOnTrial:
             properties:
@@ -245,6 +269,16 @@ components:
                     format: date-time
                     type: string
             type: object
+        v1BillingIssueMetadataTrialCreditsDepleted:
+            properties:
+                depletedOn:
+                    format: date-time
+                    type: string
+                planId:
+                    type: string
+                subscriptionId:
+                    type: string
+            type: object
         v1BillingIssueMetadataTrialEnded:
             properties:
                 endDate:
@@ -265,6 +299,8 @@ components:
                 - BILLING_ISSUE_TYPE_PAYMENT_FAILED
                 - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
                 - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
+                - BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL
+                - BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED
             type: string
         v1BillingPlan:
             properties:
@@ -442,6 +478,11 @@ components:
                 deployment:
                     $ref: '#/components/schemas/v1Deployment'
             type: object
+        v1CreateGithubPullRequestResponse:
+            properties:
+                prUrl:
+                    type: string
+            type: object
         v1CreateManagedGitRepoResponse:
             properties:
                 defaultBranch:
@@ -551,6 +592,9 @@ components:
                 updatedOn:
                     format: date-time
                     type: string
+                usedOn:
+                    format: date-time
+                    type: string
             type: object
         v1DeploymentStatus:
             default: DEPLOYMENT_STATUS_UNSPECIFIED
@@ -610,6 +654,12 @@ components:
             properties:
                 yaml:
                     type: string
+            type: object
+        v1GetBillingCreditBalanceResponse:
+            properties:
+                balance:
+                    format: double
+                    type: number
             type: object
         v1GetBillingProjectCredentialsRequest:
             properties:
@@ -732,6 +782,13 @@ components:
                 ttlSeconds:
                     format: int64
                     type: integer
+            type: object
+        v1GetGithubPullRequestResponse:
+            properties:
+                prState:
+                    $ref: '#/components/schemas/GetGithubPullRequestResponseState'
+                prUrl:
+                    type: string
             type: object
         v1GetGithubRepoStatusResponse:
             properties:
@@ -1454,6 +1511,9 @@ components:
                 devSlots:
                     format: int64
                     type: string
+                devTtlSeconds:
+                    format: int64
+                    type: string
                 directoryName:
                     type: string
                 frontendUrl:
@@ -1949,20 +2009,6 @@ components:
             type: object
         v1SudoDeleteOrganizationBillingIssueResponse:
             type: object
-        v1SudoExtendTrialRequest:
-            properties:
-                days:
-                    format: int32
-                    type: integer
-                org:
-                    type: string
-            type: object
-        v1SudoExtendTrialResponse:
-            properties:
-                trialEnd:
-                    format: date-time
-                    type: string
-            type: object
         v1SudoGetResourceResponse:
             properties:
                 deployment:
@@ -1976,6 +2022,25 @@ components:
                 user:
                     $ref: '#/components/schemas/v1User'
             type: object
+        v1SudoGrantTrialCreditsRequest:
+            properties:
+                amountUsd:
+                    description: Amount of trial credits to grant in USD.
+                    format: double
+                    type: number
+                description:
+                    description: Optional human-readable reason for the grant.
+                    type: string
+                org:
+                    type: string
+            type: object
+        v1SudoGrantTrialCreditsResponse:
+            properties:
+                grantedUsd:
+                    description: The grant amount actually applied, in USD.
+                    format: double
+                    type: number
+            type: object
         v1SudoIssueRuntimeManagerTokenRequest:
             properties:
                 host:
@@ -1985,6 +2050,39 @@ components:
             properties:
                 token:
                     type: string
+            type: object
+        v1SudoReportUsageRequest:
+            properties:
+                endTime:
+                    description: Optional end time of the reporting window. Defaults to the current server time.
+                    format: date-time
+                    type: string
+                eventName:
+                    type: string
+                org:
+                    type: string
+                projectName:
+                    description: Optional project name attribution for the mock event. If not set, a placeholder is used.
+                    type: string
+                value:
+                    format: double
+                    type: number
+            type: object
+        v1SudoReportUsageResponse:
+            properties:
+                customerId:
+                    type: string
+                endTime:
+                    format: date-time
+                    type: string
+                eventName:
+                    type: string
+                startTime:
+                    format: date-time
+                    type: string
+                value:
+                    format: double
+                    type: number
             type: object
         v1SudoTriggerBillingRepairRequest:
             type: object
@@ -2953,6 +3051,33 @@ paths:
                     description: An unexpected error response.
             summary: UpdateOrganization updates an organization
             x-visibility: public
+    /v1/orgs/{org}/billing/credits:
+        get:
+            operationId: AdminService_GetBillingCreditBalance
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: query
+                  name: superuserForceAccess
+                  schema:
+                    type: boolean
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetBillingCreditBalanceResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: GetBillingCreditBalance returns the organization's remaining trial credit balance
     /v1/orgs/{org}/billing/issues:
         get:
             operationId: AdminService_ListOrganizationBillingIssues
@@ -4237,6 +4362,84 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: CreateDeployment creates a new deployment for a project.
+    /v1/orgs/{org}/projects/{project}/github/pr:
+        post:
+            operationId: AdminService_CreateGithubPullRequest
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                body:
+                                    title: / Optional body of the PR
+                                    type: string
+                                branch:
+                                    title: The head branch for the PR
+                                    type: string
+                                title:
+                                    title: Optional title of the PR. If not set, a default title will be used
+                                    type: string
+                            type: object
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1CreateGithubPullRequestResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: CreateGithubPullRequest creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
+    /v1/orgs/{org}/projects/{project}/github/pr/{branch}:
+        get:
+            operationId: AdminService_GetGithubPullRequest
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: branch
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetGithubPullRequestResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: GetGithubPullRequest returns the status of the PR for the specified branch, if it exists.
     /v1/orgs/{org}/projects/{project}/hibernate:
         post:
             operationId: AdminService_HibernateProject
@@ -6999,6 +7202,30 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: SudoUpdateOrganizationBillingCustomer update the billing customer for the organization
+    /v1/superuser/organization/billing/report-usage:
+        post:
+            operationId: AdminService_SudoReportUsage
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/v1SudoReportUsageRequest'
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1SudoReportUsageResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: SudoReportUsage reports a mock usage event for an organization.
     /v1/superuser/organization/custom-domain:
         patch:
             operationId: AdminService_SudoUpdateOrganizationCustomDomain
@@ -7026,14 +7253,14 @@ paths:
                 SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
                 It only updates the custom domain in the database, which is used to ensure correct redirects.
                 The DNS records and ingress TLS must be configured separately.
-    /v1/superuser/organization/trial/extend:
+    /v1/superuser/organization/trial/grant-credits:
         post:
-            operationId: AdminService_SudoExtendTrial
+            operationId: AdminService_SudoGrantTrialCredits
             requestBody:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/v1SudoExtendTrialRequest'
+                            $ref: '#/components/schemas/v1SudoGrantTrialCreditsRequest'
                 required: true
                 x-originalParamName: body
             responses:
@@ -7041,7 +7268,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/v1SudoExtendTrialResponse'
+                                $ref: '#/components/schemas/v1SudoGrantTrialCreditsResponse'
                     description: A successful response.
                 default:
                     content:
@@ -7049,7 +7276,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
-            summary: SudoExtendTrial extends the trial period for an organization
+            summary: SudoGrantTrialCredits grants additional trial credits to an organization on the credit-based trial plan.
     /v1/superuser/organizations/{org}/billing/issues/{type}:
         delete:
             operationId: AdminService_SudoDeleteOrganizationBillingIssue
@@ -7072,6 +7299,8 @@ paths:
                         - BILLING_ISSUE_TYPE_PAYMENT_FAILED
                         - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
                         - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
+                        - BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL
+                        - BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED
                     type: string
             responses:
                 "200":

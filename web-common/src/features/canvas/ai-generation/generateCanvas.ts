@@ -1,6 +1,6 @@
 import { getConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager";
 import { ToolName } from "@rilldata/web-common/features/chat/core/types";
-import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
+import { developerChatActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
 import { pollForFileCreation } from "@rilldata/web-common/features/entity-management/actions/actions.ts";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
@@ -178,6 +178,7 @@ export async function createCanvasDashboardFromMetricsViewWithAgent(
     const conversationManager = getConversationManager(client, {
       conversationState: "browserStorage",
       agent: ToolName.DEVELOPER_AGENT,
+      surface: "developer",
     });
 
     // Start a new conversation instead of continuing existing one
@@ -191,7 +192,7 @@ export async function createCanvasDashboardFromMetricsViewWithAgent(
     generatingCanvas.set(true);
 
     // 4. Start the chat with the generation prompt
-    sidebarActions.startChat(prompt);
+    developerChatActions.startChat(prompt);
 
     // Wait for the stream to start async through the sidebar action.
     await waitUntil(() => get(currentConversation.isStreaming));
