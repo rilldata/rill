@@ -151,9 +151,8 @@ export class FileAndResourceWatcher {
     // disconnected may have been dropped, so we force a full re-fetch of
     // runtime-scoped queries and refresh the file-artifacts index.
     this.stream.onConnection("reconnect", async () => {
-      console.log("SSE reconnect...Waiting for controller restart...");
+      // Safeguard to make sure controller is actuall restarted
       await waitForControllerRestart(this.runtimeClient, this.queryClient);
-      console.log("SSE reconnect...Invalidating...");
       void this.invalidateAll().then(() =>
         fileArtifacts.init(this.runtimeClient, this.queryClient),
       );

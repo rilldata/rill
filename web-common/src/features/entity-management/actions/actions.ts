@@ -127,13 +127,11 @@ export async function waitForResourceReconciliation(
       }
       // Controller closed error could mean the controller is being restarted because there was env change
       if (isControllerClosedError(error) && attempt <= 3) {
-        console.log(`Controller closed for ${resourceName}, retrying...`);
         // Wait and try again if the controller is closed
         await new Promise((resolve) => setTimeout(resolve, pollInterval));
         continue;
       }
 
-      console.log("waitForResource", error);
       // Re-throw other errors
       throw error;
     }

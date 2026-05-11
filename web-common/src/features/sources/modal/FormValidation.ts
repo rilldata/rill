@@ -79,7 +79,6 @@ export function createConnectorForm(args: {
     onUpdate,
     resetForm: false,
     validationMethod: "onsubmit",
-    invalidateAll: false,
   });
   return form;
 }
