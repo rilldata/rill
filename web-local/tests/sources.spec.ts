@@ -5,9 +5,12 @@ import {
   updateCodeEditor,
   waitForProfiling,
 } from "./utils/commonHelpers";
-import { TestDataPath, createSourceV2 } from "./utils/sourceHelpers";
 import { test } from "./setup/base";
 import { fileNotPresent, waitForFileNavEntry } from "./utils/waitHelpers";
+import {
+  createLocalFileSource,
+  TestDataPath,
+} from "@rilldata/web-common/tests/utils/source-helpers.ts";
 
 test.describe("sources", () => {
   test.use({ project: "Blank" });
@@ -15,17 +18,21 @@ test.describe("sources", () => {
   test("Import sources", async ({ page }) => {
     await Promise.all([
       waitForProfiling(page, "AdBids", ["publisher", "domain", "timestamp"]),
-      createSourceV2(page, "AdBids.csv", "/models/AdBids.yaml"),
+      createLocalFileSource(page, "AdBids.csv", "/models/AdBids.yaml"),
     ]);
 
     await Promise.all([
       waitForProfiling(page, "AdImpressions", ["city", "country"]),
-      createSourceV2(page, "AdImpressions.tsv", "/models/AdImpressions.yaml"),
+      createLocalFileSource(
+        page,
+        "AdImpressions.tsv",
+        "/models/AdImpressions.yaml",
+      ),
     ]);
   });
 
   test("Rename and delete sources", async ({ page }) => {
-    await createSourceV2(page, "AdBids.csv", "/models/AdBids.yaml");
+    await createLocalFileSource(page, "AdBids.csv", "/models/AdBids.yaml");
 
     // rename
     await renameFileUsingMenu(page, "/models/AdBids.yaml", "AdBids_new.yaml");
@@ -40,12 +47,12 @@ test.describe("sources", () => {
 
   test("Edit source", async ({ page }) => {
     // Upload data & create two sources
-    await createSourceV2(
+    await createLocalFileSource(
       page,
       "AdImpressions.tsv",
       "/models/AdImpressions.yaml",
     );
-    await createSourceV2(page, "AdBids.csv", "/models/AdBids.yaml");
+    await createLocalFileSource(page, "AdBids.csv", "/models/AdBids.yaml");
 
     // Edit source path to a non-existent file
     const nonExistentSource = `connector: local_file
@@ -79,7 +86,12 @@ path: ${TestDataPath}/AdImpressions.tsv`;
   });
 
   test("Autogenerate canvas from source imported modal", async ({ page }) => {
-    await createSourceV2(page, "AdBids.csv", "/models/AdBids.yaml", false);
+    await createLocalFileSource(
+      page,
+      "AdBids.csv",
+      "/models/AdBids.yaml",
+      false,
+    );
     await page.getByRole("button", { name: "Generate dashboard" }).click();
     await waitForFileNavEntry(
       page,

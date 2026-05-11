@@ -1,6 +1,6 @@
 import { expect, type Page } from "@playwright/test";
-import { createSourceV2 } from "./utils/sourceHelpers";
 import { test } from "./setup/base";
+import { createLocalFileSource } from "@rilldata/web-common/tests/utils/source-helpers.ts";
 
 async function expectRillYAMLToContainOlapConnector(page: Page, text: string) {
   // Wait for the editor to be visible first
@@ -35,7 +35,7 @@ test.describe("Default olap_connector behavior", () => {
       page.getByText("Connect your data", { exact: true }),
     ).toBeVisible();
 
-    await createSourceV2(page, "AdBids.csv", "/models/AdBids.yaml");
+    await createLocalFileSource(page, "AdBids.csv", "/models/AdBids.yaml");
 
     await page.getByRole("link", { name: "rill.yaml" }).click();
     // Wait for navigation to complete

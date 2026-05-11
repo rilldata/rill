@@ -15,14 +15,14 @@ import {
 } from "../utils/exploreHelpers";
 import { assertLeaderboards } from "../utils/metricsViewHelpers";
 import { ResourceWatcher } from "../utils/ResourceWatcher";
-import { createSourceV2 } from "../utils/sourceHelpers";
 import { gotoNavEntry } from "../utils/waitHelpers";
+import { createLocalFileSource } from "@rilldata/web-common/tests/utils/source-helpers.ts";
 
 test.describe("explores", () => {
   test.use({ project: "Blank" });
 
   test("Autogenerate explore from source nav file", async ({ page }) => {
-    await createSourceV2(page, "AdBids.csv", "/models/AdBids.yaml");
+    await createLocalFileSource(page, "AdBids.csv", "/models/AdBids.yaml");
     await createExploreFromSource(page);
     // Temporary timeout while the issue is looked into
     await page.waitForTimeout(1000);

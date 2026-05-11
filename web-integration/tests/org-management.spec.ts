@@ -3,9 +3,27 @@ import { test } from "./setup/base";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
+import { createLocalFileSource } from "@rilldata/web-common/tests/utils/source-helpers.ts";
+import {
+  ClickHouseTestContainer,
+  enterClickhouseCredentials,
+  selectAdBidsAndSubmit,
+} from "@rilldata/web-common/tests/utils/clickhouse.ts";
 
 test.describe.serial("Org management flow", () => {
   const welcomeUserOrg = "e2e-welcome-user-org";
+  const welcomeUserProject = "e2e-welcome-project";
+
+  const clickhouse = new ClickHouseTestContainer();
+
+  test.beforeAll(async () => {
+    await clickhouse.start();
+    await clickhouse.seedAdBids();
+  });
+
+  test.afterAll(async () => {
+    await clickhouse.stop();
+  });
 
   // Load environment variables from our root `.env` file
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -57,12 +75,62 @@ test.describe.serial("Org management flow", () => {
     await anonPage.goto("/");
     await expect(anonPage.getByText("Create an organization")).toBeVisible();
 
+    // Set the feature flag for create project and refresh
+    await anonPage.evaluate(
+      `localStorage.setItem("rill:welcome:enabled", "true");`,
+    );
+    await anonPage.reload();
+    // Create org form is still available
+    await expect(anonPage.getByText("Create an organization")).toBeVisible();
+
     // Update the org name
     await anonPage.getByLabel("URL").fill(welcomeUserOrg);
-    // Click the continue button to deploy
+    // Click the Continue button
     await anonPage.getByRole("button", { name: "Continue" }).click();
 
-    await anonPage.waitForURL(`http://localhost:3000/${welcomeUserOrg}`);
+    // Project creation page is opened.
+    await expect(anonPage.getByText("Create your first project")).toBeVisible();
+
+    // Update the project name
+    await anonPage.getByLabel("Name").fill(welcomeUserProject);
+    // Click the Create project button
+    await anonPage.getByRole("button", { name: "Create project" }).click();
+
+    const ProjectEditRootPath = `/${welcomeUserOrg}/${welcomeUserProject}/@develop/-/edit`;
+
+    // Create a clickhouse connector that has secrets
+    await anonPage.getByLabel("Connect to clickhouse").click();
+    await enterClickhouseCredentials(anonPage, clickhouse);
+    // Submit the form and select adbids
+    await anonPage.getByRole("button", { name: "Test and Connect" }).click();
+    await selectAdBidsAndSubmit(anonPage, false);
+
+    // Assert user is on edit path
+    expect(anonPage.url()).toContain(ProjectEditRootPath);
+
+    // Upload a local file to create a source
+    await createLocalFileSource(
+      anonPage,
+      "AdImpressions.tsv",
+      "/models/AdImpressions.yaml",
+    );
+
+    // Start waiting for popup before clicking Publish.
+    const popupPromise = anonPage.waitForEvent("popup");
+
+    // Publish
+    await anonPage.getByRole("button", { name: "Publish" }).click();
+
+    // Await for the popped up publish page after hitting Publish
+    const publishPage = await popupPromise;
+
+    // Skip invite and continue to status page.
+    await publishPage.getByRole("button", { name: "Skip for now" }).click();
+
+    // Project homepage is opened on since we are not deploying from any dashboard.
+    await expect(publishPage.getByText("Welcome to")).toBeVisible({
+      timeout: 120_000,
+    });
   });
 
   test("Should delete the org created in welcome flow", async ({

@@ -1,6 +1,11 @@
-import { expect, type Page } from "@playwright/test";
+import { expect } from "@playwright/test";
 import { test } from "../setup/base";
-import { ClickHouseTestContainer } from "../utils/clickhouse";
+import {
+  ClickHouseTestContainer,
+  enterClickhouseCredentials,
+  selectAdBidsAndSubmit,
+  selectAdImpressionsAndSubmit,
+} from "@rilldata/web-common/tests/utils/clickhouse.ts";
 import { gotoNavEntry } from "../utils/waitHelpers.ts";
 import { validateYamlContents } from "../utils/yamlHelpers.ts";
 
@@ -415,114 +420,3 @@ test.describe("ClickHouse connector", () => {
     });
   });
 });
-
-async function enterClickhouseCredentials(
-  page: Page,
-  clickhouse: ClickHouseTestContainer,
-  assertYaml = true,
-) {
-  // Switch to "self-managed", "cloud" options does not allow non-ssl connections.
-  await page.getByLabel("Connection type").click();
-  await page.getByRole("option").getByText("Self Managed").click();
-
-  // Fill in the form correctly
-  await page.getByRole("textbox", { name: "Host" }).fill(clickhouse.getHost());
-  await page.getByRole("textbox", { name: "Host" }).press("Tab");
-  await page
-    .getByRole("textbox", { name: "Port" })
-    .fill(clickhouse.getPort().toString());
-  await page.getByRole("textbox", { name: "Port" }).press("Tab");
-  await page.getByRole("textbox", { name: "Username" }).fill("default");
-  await page.getByRole("textbox", { name: "Password" }).fill("password");
-  await page.getByRole("checkbox").scrollIntoViewIfNeeded();
-  if (await page.getByRole("checkbox").isChecked()) {
-    await page.getByRole("checkbox").click();
-  }
-
-  if (assertYaml) {
-    // Assert that the yaml contains key properties
-    const yamlPreview = page.getByLabel("Yaml preview");
-    await expect(yamlPreview).toContainText("type: connector");
-    await expect(yamlPreview).toContainText("driver: clickhouse");
-    await expect(yamlPreview).toContainText(`host: "${clickhouse.getHost()}"`);
-    await expect(yamlPreview).toContainText(
-      `port: "${clickhouse.getPort().toString()}"`,
-    );
-    await expect(yamlPreview).toContainText('username: "default"');
-    await expect(yamlPreview).toContainText(
-      'password: "{{ .env.CLICKHOUSE_PASSWORD }}"',
-    );
-    await expect(yamlPreview).toContainText("ssl: false");
-  }
-}
-
-async function selectAdBidsAndSubmit(page: Page, metricsViewOnly: boolean) {
-  // Wait for pick a table screen
-  await expect(
-    page.getByText("Pick a table to power your first dashboard"),
-  ).toBeVisible();
-
-  // Select ad_bids table
-  await page
-    .getByLabel("Import Table Form")
-    .getByLabel("default.default")
-    .click();
-  await page
-    .getByLabel("Import Table Form")
-    .getByLabel("clickhouse-default.ad_bids")
-    .click();
-
-  // Click the primary submit button
-  const submitLabel = metricsViewOnly
-    ? "Generate metrics with AI"
-    : "Generate dashboard with AI";
-  await page.getByRole("button", { name: submitLabel }).click();
-
-  // Creating metrics view is triggered.
-  await expect(page.getByText("Creating Metrics View...")).toBeVisible();
-
-  if (metricsViewOnly) {
-    // Wait for navigation to the new file
-    await page.waitForURL(/\/files\/metrics\/ad_bids_metrics.yaml/, {
-      timeout: 10_000,
-    });
-    return;
-  }
-
-  // Metrics view is created.
-  await expect
-    .poll(async () => page.getByText("Created Metrics View").isVisible(), {
-      timeout: 10_000,
-    })
-    .toBeTruthy();
-
-  // Wait for navigation to the new file
-  await page.waitForURL(/\/files\/dashboards\/ad_bids_metrics_canvas.yaml/, {
-    timeout: 10_000,
-  });
-}
-
-async function selectAdImpressionsAndSubmit(page: Page, connectorName: string) {
-  // Wait for pick a table screen
-  await expect(
-    page.getByText("Pick a table to power your first dashboard"),
-  ).toBeVisible();
-
-  // Select `ad_impressions` from the second connector
-  await page
-    .getByLabel("Import Table Form")
-    .getByLabel("default.default")
-    .click();
-  await page
-    .getByLabel("Import Table Form")
-    .getByLabel(`${connectorName}-default.ad_impressions`)
-    .click();
-
-  // Click the primary submit button (metrics-view-only flow).
-  await page.getByRole("button", { name: "Generate metrics with AI" }).click();
-
-  // Wait for navigation to the new file
-  await page.waitForURL(/\/files\/metrics\/ad_impressions_metrics.yaml/, {
-    timeout: 10_000,
-  });
-}

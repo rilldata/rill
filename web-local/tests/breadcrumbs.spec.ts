@@ -1,6 +1,7 @@
 import { expect } from "playwright/test";
 import { test } from "./setup/base";
-import { createSourceV2 } from "./utils/sourceHelpers";
+
+import { createLocalFileSource } from "@rilldata/web-common/tests/utils/source-helpers.ts";
 
 test.describe("Breadcrumbs", () => {
   test.use({ project: "Blank" });
@@ -9,7 +10,7 @@ test.describe("Breadcrumbs", () => {
     test.describe.configure({ retries: 3 });
     test.setTimeout(120_000);
     test("breadcrumb navigation", async ({ page }) => {
-      await createSourceV2(page, "AdBids.csv", "/models/AdBids.yaml");
+      await createLocalFileSource(page, "AdBids.csv", "/models/AdBids.yaml");
 
       let link = page.getByRole("link", {
         name: "AdBids",
