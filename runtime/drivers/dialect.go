@@ -104,7 +104,7 @@ func (b *BaseDialect) EscapeAlias(alias string) string {
 }
 
 func (b *BaseDialect) SanitizeDisplayName(name string) string {
-	return b.escapeAlias(name)
+	return name
 }
 
 // EscapeQualifiedIdentifier escapes a dot-separated qualified name (e.g. "schema.table") by escaping each part individually.

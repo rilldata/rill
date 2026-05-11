@@ -36,7 +36,7 @@ func BigQueryEscapeIdentifier(ident string) string {
 }
 
 func (d *dialect) SanitizeDisplayName(alias string) string {
-	return BigQueryEscapeIdentifier(strings.TrimRight(restrictedAliasCharactersRegex.ReplaceAllString(alias, "__"), "_"))
+	return strings.TrimRight(restrictedAliasCharactersRegex.ReplaceAllString(alias, "__"), "_")
 }
 
 func (d *dialect) SupportsILike() bool { return false }
