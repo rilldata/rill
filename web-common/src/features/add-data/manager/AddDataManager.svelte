@@ -23,7 +23,6 @@
     getConnectorDriverForSchema,
   } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
   import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
   import ConnectorFormWrapper from "@rilldata/web-common/features/add-data/form/ConnectorFormWrapper.svelte";
   import { getAddDataClass } from "@rilldata/web-common/features/add-data/class-utils.ts";
   import { inferSchemaForConnector } from "@rilldata/web-common/features/entity-management/add/selectors.ts";
@@ -84,9 +83,6 @@
   );
 
   async function init(connector?: string, schema?: string) {
-    // Load .env file to make sure it's available to the state manager.
-    await fileArtifacts.getFileArtifact(".env").fetchContent(false);
-
     let driver: V1ConnectorDriver | undefined = undefined;
     if (connector) {
       const analyzedConnector = await getConnectorDriverForConnector(

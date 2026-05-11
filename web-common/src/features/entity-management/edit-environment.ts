@@ -16,6 +16,6 @@ export function setRuntimeEditEnvironment(env: RuntimeEditEnvironment) {
   }
 }
 
-export function getRuntimeEditEnvironment(): RuntimeEditEnvironment {
-  return editEnvironment;
+export function isCloudRuntimeEditEnvironment() {
+  return editEnvironment === "cloud";
 }

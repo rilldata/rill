@@ -5,9 +5,6 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { projectWelcomeStatus } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
   import { checkpointProject } from "@rilldata/web-admin/features/projects/publish-project.ts";
-  import { createRuntimeServiceAnalyzeConnectors } from "@rilldata/web-common/runtime-client";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types.ts";
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import type { PageData } from "./$types";
 
   let { data }: { data: PageData } = $props();
@@ -19,12 +16,6 @@
   let isImportStep = $derived(addDataStep === AddDataStep.Import);
 
   let project = $derived(page.params.project);
-
-  // Prefetch connectors and load into cache. We will show a spinner while this is fetching.
-  const connectorsQuery = createRuntimeServiceAnalyzeConnectors(
-    runtimeClient,
-    {},
-  );
 
   async function handleDone() {
     projectWelcomeStatus.setProjectWelcomeStep(project, false);
@@ -38,21 +29,17 @@
     <div class="text-3xl font-bold text-fg-accent">Connect your data</div>
   {/if}
   <div class="w-fit h-fit mt-4">
-    {#if $connectorsQuery.isPending}
-      <Spinner status={EntityStatus.Running} size="3rem" duration={725} />
-    {:else}
-      <!-- TODO: add error state when connectors query errors -->
-      {#key data.schema}
-        <AddDataManager
-          config={{
-            welcomeScreen: true,
-          }}
-          initSchema={data.schema}
-          onStepChange={(step) => (addDataStep = step)}
-          onClose={() => window.history.back()}
-          onDone={handleDone}
-        />
-      {/key}
-    {/if}
+    <!-- TODO: add error state when connectors query errors -->
+    {#key data.schema}
+      <AddDataManager
+        config={{
+          welcomeScreen: true,
+        }}
+        initSchema={data.schema}
+        onStepChange={(step) => (addDataStep = step)}
+        onClose={() => window.history.back()}
+        onDone={handleDone}
+      />
+    {/key}
   </div>
 </div>

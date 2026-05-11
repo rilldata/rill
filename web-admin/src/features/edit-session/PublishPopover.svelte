@@ -51,12 +51,12 @@
     !!prodDeployment && isActiveDeployment(prodDeployment);
   $: alreadyOnPrimary =
     !!primaryBranch && !!currentBranch && currentBranch === primaryBranch;
+  // TODO: this should also check currentBranch vs primaryBranch once that API is available.
   $: disabled =
     !primaryBranch ||
     !currentBranch ||
     !projectLoaded ||
     alreadyOnPrimary ||
-    !hasLocalChanges ||
     isPublishing;
 
   // Prefetch prod's project parser commit SHA so the deploying page can
