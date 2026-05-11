@@ -14,11 +14,31 @@
   export let organization: string;
 
   $: billingIssueMessage = useBillingIssueMessage(organization);
-  $: billingCTAHandler = new BillingCTAHandler(organization);
-  $: ({ showStartTeamPlanDialog, startTeamPlanType, teamPlanEndDate } =
-    billingCTAHandler);
+  $: billingCTAHandler = BillingCTAHandler.get(organization);
+  $: ({
+    showStartTeamPlanDialog,
+    startTeamPlanType,
+    teamPlanEndDate,
+    wakingProjects,
+  } = billingCTAHandler);
 
-  function showBillingIssueBanner(message: BillingIssueMessage | undefined) {
+  function showBillingIssueBanner(
+    message: BillingIssueMessage | undefined,
+    isWakingProjects: boolean,
+  ) {
+    if (isWakingProjects) {
+      eventBus.emit("add-banner", {
+        id: BillingBannerID,
+        priority: BillingBannerPriority,
+        message: {
+          type: "info",
+          message: "Waking projects. We’ll notify you when they’re ready.",
+          iconType: "loading",
+        },
+      });
+      return;
+    }
+
     if (!message) {
       eventBus.emit("remove-banner", BillingBannerID);
       return;
@@ -46,7 +66,7 @@
     });
   }
 
-  $: showBillingIssueBanner($billingIssueMessage.data);
+  $: showBillingIssueBanner($billingIssueMessage.data, $wakingProjects);
 </script>
 
 <StartTeamPlanDialog
