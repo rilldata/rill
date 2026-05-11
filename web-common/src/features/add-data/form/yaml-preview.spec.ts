@@ -1,12 +1,10 @@
 import { describe, expect, it } from "vitest";
-import {
-  envMappedVarsAndValuesToObject,
-  makeTestEnvEditSession,
-} from "@rilldata/web-common/features/env-management/test/test-env-store.ts";
+import { makeTestEnvEditSession } from "@rilldata/web-common/features/env-management/test/test-env-store.ts";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import { getConnectorYamlPreview } from "@rilldata/web-common/features/add-data/form/yaml-preview.ts";
 import { clickhouseSchema } from "@rilldata/web-common/features/templates/schemas/clickhouse.ts";
 import { ducklakeSchema } from "@rilldata/web-common/features/templates/schemas/ducklake.ts";
+import { httpsSchema } from "@rilldata/web-common/features/templates/schemas/https.ts";
 
 describe("getConnectorYamlPreview", () => {
   describe("clickhouse", () => {
@@ -476,6 +474,146 @@ describe("getConnectorYamlPreview", () => {
           DUCKLAKE_CATALOG_POSTGRES_PASSWORD: "pass_source",
         });
       });
+    });
+  });
+
+  describe("https", () => {
+    const connector: V1ConnectorDriver = { name: "https" };
+    const schema = httpsSchema;
+    const formValuesWithoutAuth = {
+      auth_method: "with_headers",
+      headers: [{ key: "Content-Type", value: "application/json" }],
+    };
+    const formValuesWithAuth = {
+      auth_method: "with_headers",
+      headers: [
+        { key: "Content-Type", value: "application/json" },
+        { key: "Authorization", value: "Bearer my_token" },
+      ],
+    };
+
+    it("should retain same value across edit commits", async () => {
+      const { envEditSession, testEnvs, envStore } =
+        await makeTestEnvEditSession(connector.name, schema);
+      const yamlInitial = getConnectorYamlPreview({
+        connector,
+        schema,
+        formValues: formValuesWithAuth,
+        envEditSession,
+      });
+      expect(yamlInitial).toContain(
+        `"Authorization": "Bearer {{ .env.HTTPS_AUTHORIZATION }}"`,
+      );
+      await envEditSession.commit();
+      expect(testEnvs).toEqual({
+        HTTPS_AUTHORIZATION: "my_token",
+      });
+
+      // New changes arrived but value didnt change
+      testEnvs["HTTPS_AUTHORIZATION"] = "my_token";
+      await envStore.pull();
+
+      const yamlAfterPull = getConnectorYamlPreview({
+        connector,
+        schema,
+        formValues: {
+          ...formValuesWithAuth,
+          headers: [
+            { key: "Content-Type", value: "application/json" },
+            { key: "Authorization", value: "Bearer my_token_1" },
+          ],
+        },
+        envEditSession,
+      });
+      expect(yamlAfterPull).toContain(
+        `"Authorization": "Bearer {{ .env.HTTPS_AUTHORIZATION }}"`,
+      );
+      await envEditSession.commit();
+      expect(testEnvs).toEqual({
+        HTTPS_AUTHORIZATION: "my_token_1",
+      });
+
+      // New changes arrived with new values.
+      testEnvs["HTTPS_AUTHORIZATION"] = "my_token_source";
+      await envStore.pull();
+
+      const yamlAfterSourceUpdate = getConnectorYamlPreview({
+        connector,
+        schema,
+        formValues: {
+          ...formValuesWithAuth,
+          headers: [
+            { key: "Content-Type", value: "application/json" },
+            { key: "Authorization", value: "Bearer my_token_2" },
+          ],
+        },
+        envEditSession,
+      });
+      expect(yamlAfterSourceUpdate).toContain(
+        `"Authorization": "Bearer {{ .env.HTTPS_AUTHORIZATION_1 }}"`,
+      );
+      await envEditSession.commit();
+      expect(testEnvs).toEqual({
+        HTTPS_AUTHORIZATION: "my_token_source",
+        HTTPS_AUTHORIZATION_1: "my_token_2",
+      });
+    });
+
+    it("should delete unused vars if not updated from outside", async () => {
+      const { envEditSession, testEnvs, envStore } =
+        await makeTestEnvEditSession(connector.name, schema);
+      const yamlInitial = getConnectorYamlPreview({
+        connector,
+        schema,
+        formValues: formValuesWithAuth,
+        envEditSession,
+      });
+      expect(yamlInitial).toContain(
+        `"Authorization": "Bearer {{ .env.HTTPS_AUTHORIZATION }}"`,
+      );
+      await envEditSession.commit();
+      expect(testEnvs).toEqual({
+        HTTPS_AUTHORIZATION: "my_token",
+      });
+
+      // New changes arrived but value didnt change
+      testEnvs["HTTPS_AUTHORIZATION"] = "my_token";
+      await envStore.pull();
+
+      const yamlWithoutAuth = getConnectorYamlPreview({
+        connector,
+        schema,
+        formValues: formValuesWithoutAuth,
+        envEditSession,
+      });
+      expect(yamlWithoutAuth).not.toContain("Authorization");
+      await envEditSession.commit();
+      expect(testEnvs).toEqual({});
+    });
+
+    it("should delete vars on rollback if not updated from outside", async () => {
+      const { envEditSession, testEnvs, envStore } =
+        await makeTestEnvEditSession(connector.name, schema);
+      const yamlInitial = getConnectorYamlPreview({
+        connector,
+        schema,
+        formValues: formValuesWithAuth,
+        envEditSession,
+      });
+      expect(yamlInitial).toContain(
+        `"Authorization": "Bearer {{ .env.HTTPS_AUTHORIZATION }}"`,
+      );
+      await envEditSession.commit();
+      expect(testEnvs).toEqual({
+        HTTPS_AUTHORIZATION: "my_token",
+      });
+
+      // New changes arrived but value didnt change
+      testEnvs["HTTPS_AUTHORIZATION"] = "my_token";
+      await envStore.pull();
+
+      await envEditSession.rollback();
+      expect(testEnvs).toEqual({});
     });
   });
 });

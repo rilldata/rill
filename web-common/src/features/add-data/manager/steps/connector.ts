@@ -325,8 +325,8 @@ export class ConnectorFormCache {
 
     const envEditSession = new EnvEditSession(
       envStore,
-      schema,
-      getConnectorSchema(schema),
+      name, // use generated connector name as prefix
+      getConnectorSchema(schema) ?? undefined,
     );
 
     const entry = {

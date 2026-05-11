@@ -1,13 +1,10 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
-import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import {
   replaceAiConnectorInYAML,
   replaceOlapConnectorInYAML,
-  replaceOrAddEnvVariable,
   compileConnectorYAML,
   formatHeadersAsYamlMap,
-  updateDotEnvWithSecrets,
   maybeUnsetOlapConnectorInYaml,
 } from "./code-utils";
 import {
@@ -64,43 +61,6 @@ describe("YAML Model Template", () => {
     expect(yamlContent).not.toContain("limit 10000");
     expect(yamlContent).toContain("connector: redshift");
     expect(yamlContent).toContain("sql: select * from my_table");
-  });
-});
-
-describe("replaceOrAddEnvVariable", () => {
-  it("should create a new env file", () => {
-    const updatedEnvBlob = replaceOrAddEnvVariable("", "KEY1", "VALUE1");
-    expect(updatedEnvBlob).toBe("KEY1=VALUE1");
-  });
-
-  const existingEnvBlob = `# This is a comment
-# This is another comment
-KEY1=VALUE1
-KEY2=VALUE2`;
-
-  it("should update an existing key in the env file", () => {
-    const updatedEnvBlob = replaceOrAddEnvVariable(
-      existingEnvBlob,
-      "KEY1",
-      "NEW_VALUE1",
-    );
-    expect(updatedEnvBlob).toBe(`# This is a comment
-# This is another comment
-KEY1=NEW_VALUE1
-KEY2=VALUE2`);
-  });
-
-  it("should add a new key to the env file", () => {
-    const updatedEnvBlob = replaceOrAddEnvVariable(
-      existingEnvBlob,
-      "KEY3",
-      "VALUE3",
-    );
-    expect(updatedEnvBlob).toBe(`# This is a comment
-# This is another comment
-KEY1=VALUE1
-KEY2=VALUE2
-KEY3=VALUE3`);
   });
 });
 
@@ -306,112 +266,152 @@ describe("getGenericEnvVarName", () => {
 
 describe("formatHeadersAsYamlMap", () => {
   describe("array input", () => {
-    it("should format non-sensitive headers as plain text", () => {
-      const result = formatHeadersAsYamlMap([
-        { key: "Content-Type", value: "application/json" },
-        { key: "Accept", value: "text/html" },
-      ]);
+    it("should format non-sensitive headers as plain text", async () => {
+      const { testEnvs, envEditSession } = await makeTestEnvEditSession(
+        "https",
+        undefined,
+      );
+      const result = formatHeadersAsYamlMap(
+        [
+          { key: "Content-Type", value: "application/json" },
+          { key: "Accept", value: "text/html" },
+        ],
+        envEditSession,
+      );
       expect(result).toBe(
         `headers:\n    "Content-Type": "application/json"\n    "Accept": "text/html"`,
       );
+      await envEditSession.commit();
+      expect(testEnvs).toEqual({});
     });
 
-    it("should replace sensitive header with env ref when driverName provided", () => {
+    it("should replace sensitive header with env ref when driverName provided", async () => {
+      const { testEnvs, envEditSession } = await makeTestEnvEditSession(
+        "https",
+        undefined,
+      );
       const result = formatHeadersAsYamlMap(
         [{ key: "Authorization", value: "my_secret_token" }],
-        "https",
+        envEditSession,
       );
       expect(result).toContain(
-        '"Authorization": "{{ .env.connector.https.authorization }}"',
+        '"Authorization": "{{ .env.HTTPS_AUTHORIZATION }}"',
       );
+      await envEditSession.commit();
+      expect(testEnvs).toEqual({
+        HTTPS_AUTHORIZATION: "my_secret_token",
+      });
     });
 
-    it("should preserve Bearer scheme prefix", () => {
+    it("should preserve Bearer scheme prefix", async () => {
+      const { testEnvs, envEditSession } = await makeTestEnvEditSession(
+        "https",
+        undefined,
+      );
       const result = formatHeadersAsYamlMap(
         [{ key: "Authorization", value: "Bearer my_token" }],
-        "https",
+        envEditSession,
       );
       expect(result).toContain(
-        '"Authorization": "Bearer {{ .env.connector.https.authorization }}"',
+        '"Authorization": "Bearer {{ .env.HTTPS_AUTHORIZATION }}"',
       );
+      await envEditSession.commit();
+      expect(testEnvs).toEqual({
+        HTTPS_AUTHORIZATION: "my_token",
+      });
     });
 
-    it("should preserve Basic scheme prefix", () => {
-      const result = formatHeadersAsYamlMap(
-        [{ key: "Authorization", value: "Basic dXNlcjpwYXNz" }],
+    it("should handle mixed sensitive and non-sensitive headers", async () => {
+      const { testEnvs, envEditSession } = await makeTestEnvEditSession(
         "https",
+        undefined,
       );
-      expect(result).toContain(
-        '"Authorization": "Basic {{ .env.connector.https.authorization }}"',
-      );
-    });
-
-    it("should handle mixed sensitive and non-sensitive headers", () => {
       const result = formatHeadersAsYamlMap(
         [
           { key: "Content-Type", value: "application/json" },
           { key: "Authorization", value: "Bearer token123" },
         ],
-        "https",
+        envEditSession,
       );
       expect(result).toContain('"Content-Type": "application/json"');
       expect(result).toContain(
-        '"Authorization": "Bearer {{ .env.connector.https.authorization }}"',
+        '"Authorization": "Bearer {{ .env.HTTPS_AUTHORIZATION }}"',
       );
+      await envEditSession.commit();
+      expect(testEnvs).toEqual({
+        HTTPS_AUTHORIZATION: "token123",
+      });
     });
 
-    it("should filter entries with empty keys", () => {
-      const result = formatHeadersAsYamlMap([
-        { key: "", value: "ignored" },
-        { key: "Accept", value: "text/html" },
-      ]);
-      expect(result).toBe(`headers:\n    "Accept": "text/html"`);
-    });
-
-    it("should return empty string for empty array", () => {
-      expect(formatHeadersAsYamlMap([])).toBe("");
-    });
-
-    it("should use connectorInstanceName for env refs when provided", () => {
-      const result = formatHeadersAsYamlMap(
-        [{ key: "X-API-Key", value: "secret" }],
+    it("should filter entries with empty keys", async () => {
+      const { testEnvs, envEditSession } = await makeTestEnvEditSession(
         "https",
-        "my_api",
+        undefined,
       );
-      expect(result).toContain("{{ .env.connector.my_api.x_api_key }}");
+      const result = formatHeadersAsYamlMap(
+        [
+          { key: "", value: "ignored" },
+          { key: "Accept", value: "text/html" },
+        ],
+        envEditSession,
+      );
+      expect(result).toBe(`headers:\n    "Accept": "text/html"`);
+      await envEditSession.commit();
+      expect(testEnvs).toEqual({});
     });
 
-    it("should not create env refs when no driverName", () => {
-      const result = formatHeadersAsYamlMap([
-        { key: "Authorization", value: "Bearer token" },
-      ]);
-      expect(result).toContain('"Authorization": "Bearer token"');
-      expect(result).not.toContain(".env.");
+    it("should return empty string for empty array", async () => {
+      const { testEnvs, envEditSession } = await makeTestEnvEditSession(
+        "https",
+        undefined,
+      );
+      expect(formatHeadersAsYamlMap([], envEditSession)).toBe("");
+      await envEditSession.commit();
+      expect(testEnvs).toEqual({});
     });
   });
 
   describe("string input (legacy)", () => {
-    it("should parse Key: Value lines", () => {
+    it("should parse Key: Value lines", async () => {
+      const { testEnvs, envEditSession } = await makeTestEnvEditSession(
+        "https",
+        undefined,
+      );
       const result = formatHeadersAsYamlMap(
         "Content-Type: application/json\nAccept: text/html",
+        envEditSession,
       );
       expect(result).toBe(
         `headers:\n    "Content-Type": "application/json"\n    "Accept": "text/html"`,
       );
+      await envEditSession.commit();
+      expect(testEnvs).toEqual({});
     });
 
-    it("should replace sensitive headers with env refs", () => {
+    it("should replace sensitive headers with env refs", async () => {
+      const { testEnvs, envEditSession } = await makeTestEnvEditSession(
+        "https",
+        undefined,
+      );
       const result = formatHeadersAsYamlMap(
         "Authorization: Bearer my_token",
-        "https",
+        envEditSession,
       );
-      expect(result).toContain(
-        "Bearer {{ .env.connector.https.authorization }}",
-      );
+      expect(result).toContain("Bearer {{ .env.HTTPS_AUTHORIZATION }}");
+      await envEditSession.commit();
+      expect(testEnvs).toEqual({
+        HTTPS_AUTHORIZATION: "my_token",
+      });
     });
 
-    it("should return empty string for empty input", () => {
-      expect(formatHeadersAsYamlMap("")).toBe("");
+    it("should return empty string for empty input", async () => {
+      const { testEnvs, envEditSession } = await makeTestEnvEditSession(
+        "https",
+        undefined,
+      );
+      expect(formatHeadersAsYamlMap("", envEditSession)).toBe("");
+      await envEditSession.commit();
+      expect(testEnvs).toEqual({});
     });
   });
 });
@@ -726,286 +726,5 @@ describe("compileConnectorYAML", () => {
     expect(result).toContain("type: connector");
     expect(result).toContain("driver: clickhouse");
     expect(result).not.toContain("host:");
-  });
-});
-
-describe("updateDotEnvWithSecrets", () => {
-  const mockClient = {
-    instanceId: "test-instance-id",
-  } as unknown as RuntimeClient;
-
-  // Track fetchQuery calls so tests can inspect them
-  let mockEnvBlob = "";
-  const mockQueryClient = {
-    invalidateQueries: vi.fn().mockResolvedValue(undefined),
-    fetchQuery: vi
-      .fn()
-      .mockImplementation(() => Promise.resolve({ blob: mockEnvBlob })),
-  };
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockEnvBlob = "";
-    mockQueryClient.fetchQuery.mockImplementation(() =>
-      Promise.resolve({ blob: mockEnvBlob }),
-    );
-  });
-
-  it("should add secret keys to empty .env", async () => {
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
-    const formValues: Record<string, unknown> = {
-      password: "my_secret",
-      sql: "SELECT 1",
-    };
-    const { newBlob } = await updateDotEnvWithSecrets(
-      mockClient,
-      mockQueryClient as any,
-      connector,
-      formValues,
-      { secretKeys: ["password"] },
-    );
-    expect(newBlob).toContain("CLICKHOUSE_PASSWORD=my_secret");
-  });
-
-  it("should add multiple secret keys", async () => {
-    const connector: V1ConnectorDriver = { name: "s3" };
-    const formValues: Record<string, unknown> = {
-      aws_access_key_id: "AKID123",
-      aws_secret_access_key: "SECRET456",
-    };
-    const schema = {
-      properties: {
-        aws_access_key_id: { "x-env-var-name": "AWS_ACCESS_KEY_ID" },
-        aws_secret_access_key: {
-          "x-env-var-name": "AWS_SECRET_ACCESS_KEY",
-        },
-      },
-    };
-    const { newBlob } = await updateDotEnvWithSecrets(
-      mockClient,
-      mockQueryClient as any,
-      connector,
-      formValues,
-      { secretKeys: ["aws_access_key_id", "aws_secret_access_key"], schema },
-    );
-    expect(newBlob).toContain("AWS_ACCESS_KEY_ID=AKID123");
-    expect(newBlob).toContain("AWS_SECRET_ACCESS_KEY=SECRET456");
-  });
-
-  it("should append to existing .env without overwriting", async () => {
-    mockEnvBlob = "EXISTING_VAR=existing_value";
-    mockQueryClient.fetchQuery.mockResolvedValue({ blob: mockEnvBlob });
-
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
-    const formValues: Record<string, unknown> = { password: "new_pw" };
-    const { newBlob, originalBlob } = await updateDotEnvWithSecrets(
-      mockClient,
-      mockQueryClient as any,
-      connector,
-      formValues,
-      { secretKeys: ["password"] },
-    );
-    expect(originalBlob).toBe("EXISTING_VAR=existing_value");
-    expect(newBlob).toContain("EXISTING_VAR=existing_value");
-    expect(newBlob).toContain("CLICKHOUSE_PASSWORD=new_pw");
-  });
-
-  it("should handle env var conflicts with _1 suffix", async () => {
-    mockEnvBlob = "CLICKHOUSE_PASSWORD=old_value";
-    mockQueryClient.fetchQuery.mockResolvedValue({ blob: mockEnvBlob });
-
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
-    const formValues: Record<string, unknown> = { password: "new_value" };
-    const { newBlob } = await updateDotEnvWithSecrets(
-      mockClient,
-      mockQueryClient as any,
-      connector,
-      formValues,
-      { secretKeys: ["password"] },
-    );
-    // Should use _1 suffix since base name already exists
-    expect(newBlob).toContain("CLICKHOUSE_PASSWORD=old_value");
-    expect(newBlob).toContain("CLICKHOUSE_PASSWORD_1=new_value");
-  });
-
-  it("should skip empty or missing secret values", async () => {
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
-    const formValues: Record<string, unknown> = {
-      password: "",
-      dsn: undefined,
-    };
-    const { newBlob } = await updateDotEnvWithSecrets(
-      mockClient,
-      mockQueryClient as any,
-      connector,
-      formValues,
-      { secretKeys: ["password", "dsn"] },
-    );
-    expect(newBlob).toBe("");
-  });
-
-  it("should persist sensitive header values as env entries", async () => {
-    const connector: V1ConnectorDriver = { name: "https" };
-    const formValues: Record<string, unknown> = {
-      headers: [
-        { key: "Authorization", value: "Bearer my_token" },
-        { key: "Content-Type", value: "application/json" },
-      ],
-    };
-    const { newBlob } = await updateDotEnvWithSecrets(
-      mockClient,
-      mockQueryClient as any,
-      connector,
-      formValues,
-      { secretKeys: [] },
-    );
-    // Authorization is sensitive — secret part stored (without Bearer prefix)
-    expect(newBlob).toContain("my_token");
-    // Content-Type is not sensitive — should NOT be in .env
-    expect(newBlob).not.toContain("application/json");
-  });
-
-  it("should extract secret from Bearer scheme for sensitive headers", async () => {
-    const connector: V1ConnectorDriver = { name: "https" };
-    const formValues: Record<string, unknown> = {
-      headers: [{ key: "Authorization", value: "Bearer abc123" }],
-    };
-    const { newBlob } = await updateDotEnvWithSecrets(
-      mockClient,
-      mockQueryClient as any,
-      connector,
-      formValues,
-      { secretKeys: [] },
-    );
-    // Only the secret portion (after "Bearer ") is stored
-    expect(newBlob).toContain("=abc123");
-    expect(newBlob).not.toContain("Bearer");
-  });
-
-  it("should store full value when no auth scheme prefix", async () => {
-    const connector: V1ConnectorDriver = { name: "https" };
-    const formValues: Record<string, unknown> = {
-      headers: [{ key: "X-API-Key", value: "raw_api_key_value" }],
-    };
-    const { newBlob } = await updateDotEnvWithSecrets(
-      mockClient,
-      mockQueryClient as any,
-      connector,
-      formValues,
-      { secretKeys: [] },
-    );
-    expect(newBlob).toContain("=raw_api_key_value");
-  });
-
-  it("should handle both secrets and sensitive headers together", async () => {
-    const connector: V1ConnectorDriver = { name: "https" };
-    const formValues: Record<string, unknown> = {
-      password: "http_pass",
-      headers: [{ key: "Authorization", value: "Token secret_tok" }],
-    };
-    const { newBlob } = await updateDotEnvWithSecrets(
-      mockClient,
-      mockQueryClient as any,
-      connector,
-      formValues,
-      { secretKeys: ["password"] },
-    );
-    expect(newBlob).toContain("HTTPS_PASSWORD=http_pass");
-    expect(newBlob).toContain("secret_tok");
-  });
-
-  it("should skip headers with empty keys or values", async () => {
-    const connector: V1ConnectorDriver = { name: "https" };
-    const formValues: Record<string, unknown> = {
-      headers: [
-        { key: "", value: "some_value" },
-        { key: "Authorization", value: "" },
-        { key: "  ", value: "Bearer token" },
-      ],
-    };
-    const { newBlob } = await updateDotEnvWithSecrets(
-      mockClient,
-      mockQueryClient as any,
-      connector,
-      formValues,
-      { secretKeys: [] },
-    );
-    expect(newBlob).toBe("");
-  });
-
-  it("should invalidate cache before reading .env", async () => {
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
-    await updateDotEnvWithSecrets(
-      mockClient,
-      mockQueryClient as any,
-      connector,
-      { password: "pw" },
-      { secretKeys: ["password"] },
-    );
-    expect(mockQueryClient.invalidateQueries).toHaveBeenCalledTimes(1);
-    // invalidateQueries should be called before fetchQuery
-    const invalidateOrder =
-      mockQueryClient.invalidateQueries.mock.invocationCallOrder[0];
-    const fetchOrder = mockQueryClient.fetchQuery.mock.invocationCallOrder[0];
-    expect(invalidateOrder).toBeLessThan(fetchOrder);
-  });
-
-  it("should handle missing .env file gracefully", async () => {
-    mockQueryClient.fetchQuery.mockRejectedValue({
-      response: { data: { message: "no such file" } },
-    });
-
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
-    const { newBlob, originalBlob } = await updateDotEnvWithSecrets(
-      mockClient,
-      mockQueryClient as any,
-      connector,
-      { password: "pw" },
-      { secretKeys: ["password"] },
-    );
-    expect(originalBlob).toBe("");
-    expect(newBlob).toContain("CLICKHOUSE_PASSWORD=pw");
-  });
-
-  it("should rethrow non-file-not-found errors", async () => {
-    mockQueryClient.fetchQuery.mockRejectedValue({
-      response: { data: { message: "permission denied" } },
-    });
-
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
-    await expect(
-      updateDotEnvWithSecrets(
-        mockClient,
-        mockQueryClient as any,
-        connector,
-        { password: "pw" },
-        { secretKeys: ["password"] },
-      ),
-    ).rejects.toEqual({
-      response: { data: { message: "permission denied" } },
-    });
-  });
-
-  it("should use originalBlob for conflict detection across all secrets", async () => {
-    // When adding multiple secrets, conflict detection should use the original blob,
-    // not the progressively updated one
-    mockEnvBlob = "";
-    mockQueryClient.fetchQuery.mockResolvedValue({ blob: mockEnvBlob });
-
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
-    const formValues: Record<string, unknown> = {
-      password: "pw1",
-      dsn: "clickhouse://...",
-    };
-    const { newBlob } = await updateDotEnvWithSecrets(
-      mockClient,
-      mockQueryClient as any,
-      connector,
-      formValues,
-      { secretKeys: ["password", "dsn"] },
-    );
-    // Both should use base name since originalBlob is empty
-    expect(newBlob).toContain("CLICKHOUSE_PASSWORD=pw1");
-    expect(newBlob).toContain("CLICKHOUSE_DSN=clickhouse://...");
   });
 });
