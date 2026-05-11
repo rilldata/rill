@@ -8,15 +8,15 @@ import {
   wrapRetryAssertion,
 } from "../utils/commonHelpers";
 import { createModel, modelHasError } from "../utils/modelHelpers";
-import { createSourceV2 } from "../utils/sourceHelpers";
 import { fileNotPresent, waitForFileNavEntry } from "../utils/waitHelpers";
+import { createLocalFileSource } from "@rilldata/web-common/tests/utils/source-helpers.ts";
 
 test.describe("models", () => {
   test.use({ project: "Blank" });
 
   test("Create and edit model", async ({ page }) => {
     // Add the AdBids source
-    await createSourceV2(page, "AdBids.csv", "/models/AdBids.yaml");
+    await createLocalFileSource(page, "AdBids.csv", "/models/AdBids.yaml");
     await expect
       .poll(() => page.getByLabel("Column profile for AdBids").isVisible(), {
         timeout: 30_000,

@@ -1,6 +1,7 @@
 import { expect } from "@playwright/test";
 import { test } from "./setup/base";
-import { createSourceV2 } from "./utils/sourceHelpers";
+
+import { createLocalFileSource } from "@rilldata/web-common/tests/utils/source-helpers.ts";
 
 test.describe("Connector Table Menu Visibility", () => {
   test.use({ project: "Blank" });
@@ -8,7 +9,7 @@ test.describe("Connector Table Menu Visibility", () => {
   test("should show correct menu items for OLAP connector", async ({
     page,
   }) => {
-    await createSourceV2(page, "AdBids.csv", "/models/AdBids.yaml");
+    await createLocalFileSource(page, "AdBids.csv", "/models/AdBids.yaml");
 
     await page.locator(".database-schema-entry-header").first().click();
     await page.locator(".table-entry-header").first().click();
