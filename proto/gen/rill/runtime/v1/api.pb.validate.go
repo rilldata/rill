@@ -1876,8 +1876,6 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 
 	}
 
-	// no validation rules for Variables
-
 	// no validation rules for Annotations
 
 	// no validation rules for FrontendUrl
