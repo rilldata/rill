@@ -21,7 +21,10 @@ import {
   runtimeServicePutFileAndWaitForReconciliation,
   waitForResourceReconciliation,
 } from "@rilldata/web-common/features/entity-management/actions/actions.ts";
-import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+import {
+  fetchResource,
+  ResourceKind,
+} from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 import { get } from "svelte/store";
@@ -289,6 +292,7 @@ async function runCreateModelStep(
   // Wait for the model to successfully reconcile
   await waitForResourceReconciliation(
     runtimeClient,
+    queryClient,
     importToConfig.modelName,
     ResourceKind.Model,
   );
@@ -310,13 +314,15 @@ async function runCreateMetricsViewStep(
   let databaseSchema = "";
   if (
     config.importSteps.includes(ImportDataStep.CreateModel) &&
-    importToConfig.modelPath
+    importToConfig.modelName
   ) {
     // Get the model and use it's sink table/connector
-    const modelFileArtifact = fileArtifacts.getFileArtifact(
-      importToConfig.modelPath,
+    const modelResource = await fetchResource(
+      runtimeClient,
+      queryClient,
+      importToConfig.modelName,
+      ResourceKind.Model,
     );
-    const modelResource = await modelFileArtifact.fetchResource(queryClient);
     if (!modelResource?.model) {
       throw new Error("Failed to get model resource");
     }
@@ -346,6 +352,7 @@ async function runCreateMetricsViewStep(
   // Wait for the metrics view to successfully reconcile
   await waitForResourceReconciliation(
     runtimeClient,
+    queryClient,
     importToConfig.metricsViewName,
     ResourceKind.MetricsView,
   );
@@ -362,14 +369,15 @@ async function runCreateExploreStep(
   }
 
   // Get the metrics view resource for this explore
-  if (!importToConfig.metricsViewPath) {
+  if (!importToConfig.metricsViewName) {
     throw new Error("Metrics view must be specified for this step.");
   }
-  const metricsViewFileArtifact = fileArtifacts.getFileArtifact(
-    importToConfig.metricsViewPath,
+  const metricsViewResource = await fetchResource(
+    runtimeClient,
+    queryClient,
+    importToConfig.metricsViewName,
+    ResourceKind.MetricsView,
   );
-  const metricsViewResource =
-    await metricsViewFileArtifact.fetchResource(queryClient);
   if (!metricsViewResource?.metricsView?.state?.validSpec) {
     throw new Error("Failed to get metrics view resource");
   }
@@ -388,6 +396,7 @@ async function runCreateExploreStep(
   // Wait for explore to reconcile
   await waitForResourceReconciliation(
     runtimeClient,
+    queryClient,
     importToConfig.exploreName,
     ResourceKind.Explore,
   );
@@ -412,6 +421,7 @@ async function runCreateCanvasStep(
   // Wait for canvas to reconcile
   await waitForResourceReconciliation(
     runtimeClient,
+    queryClient,
     importToConfig.canvasName,
     ResourceKind.Canvas,
   );

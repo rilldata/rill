@@ -187,6 +187,7 @@ export async function createConnector({
 
       await waitForResourceReconciliation(
         runtimeClient,
+        queryClient,
         connectorName,
         ResourceKind.Connector,
         connectorStartingVersion,
