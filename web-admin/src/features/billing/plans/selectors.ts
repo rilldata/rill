@@ -25,17 +25,17 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import type { Page } from "@sveltejs/kit";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { DateTime } from "luxon";
-import { derived, readable, type Readable } from "svelte/store";
+import { derived, type Readable } from "svelte/store";
 import type { PlanTier } from "@rilldata/web-admin/features/billing/plans/types.ts";
 import type { CategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors.ts";
 
-export async function fetchTeamPlan() {
+export async function fetchProPlan() {
   const plansResp = await queryClient.fetchQuery({
     queryKey: getAdminServiceListPublicBillingPlansQueryKey(),
     queryFn: () => adminServiceListPublicBillingPlans(),
   });
 
-  return plansResp.plans?.find((p) => isTeamPlan(p.name ?? ""));
+  return plansResp.plans?.find((p) => isProPlan(p.name ?? ""));
 }
 
 /**

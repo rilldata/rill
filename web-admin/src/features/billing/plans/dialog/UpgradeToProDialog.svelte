@@ -12,6 +12,7 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations.ts";
   import { getErrorForMutation } from "@rilldata/web-admin/client/utils.ts";
+  import { fetchProPlan } from "@rilldata/web-admin/features/billing/plans/selectors.ts";
 
   let {
     open = $bindable(),
@@ -23,9 +24,13 @@
   let upgradeProError = $derived(getErrorForMutation($proPlanUpdater));
 
   async function confirmUpgradeToPro() {
+    const teamPlan = await fetchProPlan();
+    // if (!teamPlan) return;
+    console.log(teamPlan);
+    return;
     await $proPlanUpdater.mutateAsync({
       org: organization,
-      data: { planName: "pro_plan" },
+      data: { planName: teamPlan.name },
     });
     eventBus.emit("notification", {
       type: "success",

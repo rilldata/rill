@@ -41,3 +41,14 @@
     with $25/GB for overages. Upgrade to Pro for usage-based pricing.
   </p>
 </PlanContainer>
+
+<style lang="postcss">
+  .pricing-link-top {
+    @apply inline-flex items-center gap-1;
+    @apply text-sm font-medium text-primary-600 no-underline;
+  }
+
+  .pricing-link-top:hover {
+    @apply underline;
+  }
+</style>

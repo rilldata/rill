@@ -11,13 +11,15 @@
 
     action,
     children,
+    footer,
   }: {
     badge: string;
     description: string;
-    info?: Snippet<[]>;
+    info?: Snippet;
 
     action: Snippet;
     children: Snippet;
+    footer?: Snippet;
   } = $props();
 </script>
 
@@ -46,12 +48,18 @@
     </div>
 
     {@render children?.()}
+
+    {#if footer}
+      <div class="plan-footer">
+        {@render footer()}
+      </div>
+    {/if}
   </div>
 </section>
 
 <style lang="postcss">
   .section-header {
-    @apply text-lg font-medium text-fg-primary mb-3;
+    @apply text-lg font-medium text-fg-primary;
   }
 
   .plan-card {
@@ -63,11 +71,17 @@
   }
 
   .plan-badge {
-    @apply inline-flex items-center justify-center w-[76px] h-[21px] rounded-full border-none;
+    @apply inline-flex items-center justify-center px-2 h-[21px] rounded-full border-none;
     @apply text-xs font-semibold bg-surface-muted;
   }
 
   .plan-description {
     @apply font-sans font-semibold text-lg leading-7 align-middle text-fg-tertiary;
+  }
+
+  .plan-footer {
+    @apply flex items-center justify-between bg-surface-subtle border-t rounded-b-xl;
+    margin: 16px -24px -24px;
+    padding: 12px 24px;
   }
 </style>

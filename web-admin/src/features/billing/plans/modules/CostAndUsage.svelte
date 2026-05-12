@@ -42,46 +42,36 @@
      billing usage API exposes them. Current values project from
      current config × list rate, which is misleading vs. actual
      billed amounts. Storage is estimated from current snapshot. -->
-<div class="stats-row">
-  <div class="flex items-center gap-4">
-    <div class="stat-column">
-      <span class="stat-value">{fmtCredit($billingStats.prodDailyCost)}</span>
-      <span class="stat-label"
-        >{$billingStats.prodSlots} Prod Compute Units</span
-      >
+<div class="flex items-center gap-4">
+  <div class="stat-column">
+    <span class="stat-value">{fmtCredit($billingStats.prodDailyCost)}</span>
+    <span class="stat-label">{$billingStats.prodSlots} Prod Compute Units</span>
+  </div>
+  <div class="stat-column">
+    <span class="stat-value">{fmtCredit($billingStats.devDailyCost)}</span>
+    <span class="stat-label">{$billingStats.devSlots} Dev Compute Units</span>
+  </div>
+  <div class="stat-column">
+    <div class="flex items-center gap-1">
+      <span class="stat-value">{fmtCredit(storageCost)}</span>
+      <Tooltip location="top" alignment="middle" distance={8}>
+        <span class="text-fg-muted flex">
+          <InfoCircle size="14px" />
+        </span>
+        <TooltipContent maxWidth="260px" slot="tooltip-content">
+          Estimated from current storage at $1/GB/month after a 1 GB free
+          allowance. Final billing is based on average storage across the cycle,
+          so the invoice may differ.
+        </TooltipContent>
+      </Tooltip>
     </div>
-    <div class="stat-column">
-      <span class="stat-value">{fmtCredit($billingStats.devDailyCost)}</span>
-      <span class="stat-label">{$billingStats.devSlots} Dev Compute Units</span>
-    </div>
-    <div class="stat-column">
-      <div class="flex items-center gap-1">
-        <span class="stat-value">{fmtCredit(storageCost)}</span>
-        <Tooltip location="top" alignment="middle" distance={8}>
-          <span class="text-fg-muted flex">
-            <InfoCircle size="14px" />
-          </span>
-          <TooltipContent maxWidth="260px" slot="tooltip-content">
-            Estimated from current storage at $1/GB/month after a 1 GB free
-            allowance. Final billing is based on average storage across the
-            cycle, so the invoice may differ.
-          </TooltipContent>
-        </Tooltip>
-      </div>
-      <span class="stat-label"
-        >{totalStorage > 0 ? formatMemorySize(totalStorage) : "0 B"} Storage</span
-      >
-    </div>
+    <span class="stat-label">
+      {totalStorage > 0 ? formatMemorySize(totalStorage) : "0 B"} Storage
+    </span>
   </div>
 </div>
 
 <style lang="postcss">
-  .stats-row {
-    @apply flex items-center justify-between bg-surface-subtle border-t;
-    margin: 16px -24px 0;
-    padding: 12px 24px;
-  }
-
   .stat-column {
     @apply flex flex-col gap-1;
   }

@@ -8,7 +8,7 @@
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
   import {
     fetchPaymentsPortalURL,
-    fetchTeamPlan,
+    fetchProPlan,
     getBillingUpgradeUrl,
   } from "@rilldata/web-admin/features/billing/plans/selectors";
   import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types";
@@ -97,7 +97,7 @@
     let teamPlan;
     try {
       // only fetch when needed to avoid hitting orb for list of plans too often
-      teamPlan = await fetchTeamPlan();
+      teamPlan = await fetchProPlan();
       if (paymentIssues?.length) {
         window.open(
           await fetchPaymentsPortalURL(

@@ -12,7 +12,7 @@
   } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
   import {
     fetchPaymentsPortalURL,
-    fetchTeamPlan,
+    fetchProPlan,
     getBillingUpgradeUrl,
   } from "@rilldata/web-admin/features/billing/plans/selectors";
   import { showWelcomeToRillDialog } from "@rilldata/web-admin/features/billing/plans/utils";
@@ -58,7 +58,7 @@
       });
       return goto(`/${organization}/-/settings/billing`);
     }
-    const teamPlan = await fetchTeamPlan();
+    const teamPlan = await fetchProPlan();
     try {
       if (cancelled) {
         await $planRenewer.mutateAsync({

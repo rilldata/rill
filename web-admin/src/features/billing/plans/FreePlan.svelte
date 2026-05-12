@@ -61,7 +61,9 @@
     </a>
   </div>
 
-  <CostAndUsage {organization} />
+  {#snippet footer()}
+    <CostAndUsage {organization} />
+  {/snippet}
 </PlanContainer>
 
 <style lang="postcss">
