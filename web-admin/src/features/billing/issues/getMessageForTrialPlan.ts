@@ -102,12 +102,20 @@ function getMessageForCreditsTrial(trialIssue: V1BillingIssue) {
     message.type = "warning";
     message.title = "Your trial credit is running low.";
     message.description = "";
-    message.dismissible = buildDismissableForIssue(trialIssue, 24 * 60 * 60); // 24 hrs
+    message.dismissible = {
+      key: trialIssue.org ?? "",
+      id: `${trialIssue.type ?? ""}-low-credits`,
+      ttl: 24 * 60 * 60, // 24 hrs
+    };
   } else {
     message.type = "default";
     message.title = `Welcome to rill.`;
     message.description = `You've on a free trial with ${onCreditTrial.creditAllocation ?? 0}$ in credits.`;
-    message.dismissible = buildDismissableForIssue(trialIssue, 0);
+    message.dismissible = {
+      key: trialIssue.org ?? "",
+      id: `${trialIssue.type ?? ""}`,
+      ttl: 0, // Doesnt appear again once dismissed
+    };
   }
   return message;
 }
