@@ -632,12 +632,16 @@ func testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_WeeklyOnSatur
 	require.Len(t, rows, 4)
 	i := 0
 	require.Equal(t, parseTime(t, "2023-10-28T04:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.Equal(t, float64(456), rows[i].Records.Fields["total_records"].GetNumberValue())
 	i++
 	require.Equal(t, parseTime(t, "2023-11-04T04:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.Equal(t, float64(525), rows[i].Records.Fields["total_records"].GetNumberValue())
 	i++
 	require.Equal(t, parseTime(t, "2023-11-11T05:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.Equal(t, float64(0), rows[i].Records.Fields["total_records"].GetNumberValue())
 	i++
 	require.Equal(t, parseTime(t, "2023-11-18T05:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.Equal(t, float64(0), rows[i].Records.Fields["total_records"].GetNumberValue())
 }
 
 func testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Daily(t *testing.T, rt *runtime.Runtime, instanceID string) {
