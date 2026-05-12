@@ -5,6 +5,7 @@ import {
 import type { BillingIssueMessage } from "@rilldata/web-admin/features/billing/issues/useBillingIssueMessage";
 import { shiftToLargest } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import { DateTime, type Duration } from "luxon";
+import type { BannerMessage } from "@rilldata/web-common/lib/event-bus/events.ts";
 
 const WarningPeriodInDays = 7;
 
@@ -76,7 +77,7 @@ export function getMessageForTrialPlan(
         "Your trial has expired and this org’s projects are now hibernating.";
       message.description = "Upgrade to wake projects and regain full access.";
       message.type = "error";
-      message.cta.teamPlanDialogType = "trial-expired";
+      if (message.cta) message.cta.teamPlanDialogType = "trial-expired";
     }
   }
 
@@ -106,10 +107,6 @@ function getMessageForCreditsTrial(trialIssue: V1BillingIssue) {
     message.type = "default";
     message.title = `Welcome to rill.`;
     message.description = `You've on a free trial with ${onCreditTrial.creditAllocation ?? 0}$ in credits.`;
-    message.cta = {
-      text: "View usage",
-      // TODO: type
-    };
     message.dismissible = buildDismissableForIssue(trialIssue, 0);
   }
   return message;
@@ -150,7 +147,7 @@ function humanizeDuration(dur: Duration) {
 function buildDismissableForIssue(issue: V1BillingIssue, ttl: number) {
   return {
     key: issue.org ?? "",
-    id: issue.type,
+    id: issue.type ?? "",
     ttl,
-  };
+  } satisfies BannerMessage["dismissible"];
 }

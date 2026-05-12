@@ -55,6 +55,7 @@ export class BillingCTAHandler {
         }
 
         const teamPlan = await fetchTeamPlan();
+        if (!teamPlan) return;
         await adminServiceUpdateBillingSubscription(this.organization, {
           planName: teamPlan.name,
         });
