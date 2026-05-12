@@ -2,7 +2,8 @@ import { addLeadingSlash } from "@rilldata/web-common/features/entity-management
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.js";
 import { error } from "@sveltejs/kit";
 
-export const load = async ({ params: { file } }) => {
+export const load = async ({ params: { file }, parent }) => {
+  await parent();
   const path = addLeadingSlash(file);
   const fileArtifact = fileArtifacts.getFileArtifact(path);
 
