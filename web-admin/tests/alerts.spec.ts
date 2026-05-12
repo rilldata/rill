@@ -157,7 +157,7 @@ test.describe.serial("Alerts", () => {
         .click();
 
       // Edit the alert
-      await adminPage.getByRole("button", { name: "Edit" }).click();
+      await adminPage.getByLabel("Edit alert").click();
 
       const alertForm = adminPage.locator("form#edit-alert-form");
 
@@ -354,7 +354,7 @@ test.describe.serial("Alerts", () => {
         .click();
 
       // Edit the alert
-      await adminPage.getByRole("button", { name: "Edit" }).click();
+      await adminPage.getByLabel("Edit alert").click();
 
       const alertForm = adminPage.locator("form#edit-alert-form");
 

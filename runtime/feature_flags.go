@@ -61,7 +61,7 @@ var defaultFeatureFlags = map[string]string{
 	// Controls if the dashboard state is persisted when navigating to a different dashboard.
 	"sticky_dashboard_state": "false",
 	// Controls visibility of the cloud editing feature (Edit button and edit routes)
-	"cloud_editing": "false",
+	"cloud_editing": "true",
 	// Controls visibility of the custom chart option in canvas dashboards
 	"custom_charts": "false",
 }
