@@ -505,7 +505,7 @@ type Project struct {
 	// DevTTLSeconds is the time-to-live for dev deployments.
 	DevTTLSeconds int64 `db:"dev_ttl_seconds"`
 	// OverrideDiskGB, if set, overrides the disk size in GB that would otherwise be derived from the slot count.
-	// It applies to both production and dev deployments. It is intended to be set by superusers via `rill sudo project edit`.
+	// It applies to both production and dev deployments.
 	OverrideDiskGB *int64 `db:"override_disk_gb"`
 	// Annotations are internally configured key-value metadata about the project.
 	// They propagate to the project's deployments and telemetry.
