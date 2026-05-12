@@ -6,20 +6,20 @@ import {
   getAdminServiceGetPaymentsPortalURLQueryKey,
   getAdminServiceListPublicBillingPlansQueryKey,
 } from "@rilldata/web-admin/client";
-import { isTeamPlan } from "@rilldata/web-admin/features/billing/plans/utils";
+import { isProPlan } from "@rilldata/web-admin/features/billing/plans/utils";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import type { Page } from "@sveltejs/kit";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { DateTime } from "luxon";
 import { derived } from "svelte/store";
 
-export async function fetchTeamPlan() {
+export async function fetchProPlan() {
   const plansResp = await queryClient.fetchQuery({
     queryKey: getAdminServiceListPublicBillingPlansQueryKey(),
     queryFn: () => adminServiceListPublicBillingPlans(),
   });
 
-  return plansResp.plans?.find((p) => isTeamPlan(p.name ?? ""));
+  return plansResp.plans?.find((p) => isProPlan(p.name ?? ""));
 }
 
 /**
