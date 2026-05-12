@@ -420,7 +420,7 @@
                   </IconButton>
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Content align="start">
-                  {#if !!currentUserId && deployment.ownerUserId === currentUserId && deployment.editable}
+                  {#if !!currentUserId && deployment.editable}
                     <DropdownMenu.Item
                       class="font-normal flex items-center"
                       href={editUrl(deployment.branch)}

@@ -75,11 +75,6 @@
 
   const user = createAdminServiceGetCurrentUser();
 
-  $: currentUserId = $user.data?.user?.id;
-
-  $: isOtherOwner =
-    !!deployment && !!currentUserId && deployment.ownerUserId !== currentUserId;
-
   // Flipped when the user clicks "Start deployment" on a stopped deployment;
   // keeps the UI in loading state while the backend transitions STOPPED → PENDING → RUNNING.
   let starting = false;
@@ -103,8 +98,7 @@
       deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING) &&
     runtimeHost !== null &&
     instanceId !== null &&
-    jwt !== null &&
-    !isOtherOwner;
+    jwt !== null;
 
   $: branchUrl = `/${organization}/${project}${branchPathPrefix(branch)}`;
 
@@ -132,31 +126,7 @@
 </script>
 
 <div class="edit-session">
-  {#if isOtherOwner}
-    <SlimProjectHeader
-      {organization}
-      {project}
-      readProjects={organizationPermissions?.readProjects}
-      {planDisplayName}
-      {organizationLogoUrl}
-    />
-    <CtaLayoutContainer>
-      <CtaContentContainer>
-        <h1
-          class="text-8xl font-extrabold bg-gradient-to-b from-[#CBD5E1] to-[#E2E8F0] text-transparent bg-clip-text"
-        >
-          403
-        </h1>
-        <h2 class="text-lg font-semibold">
-          This editing session belongs to another user
-        </h2>
-        <CtaMessage>You can preview this branch in read-only mode.</CtaMessage>
-        <CtaButton variant="secondary" href={branchUrl}>
-          Preview this branch
-        </CtaButton>
-      </CtaContentContainer>
-    </CtaLayoutContainer>
-  {:else if isLoading}
+  {#if isLoading}
     <EditSessionLoading status={deploymentStatus} href={`/${organization}`} />
   {:else if isErrored}
     <SlimProjectHeader

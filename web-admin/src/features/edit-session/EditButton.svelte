@@ -28,14 +28,13 @@
   $: deployments = $devDeployments.data?.deployments ?? [];
   $: isLoading = $devDeployments.isLoading;
 
-  // If viewing a branch the user owns, clicking the button should go straight
+  // If viewing an editable branch, clicking the button should go straight
   // there — no dialog.
   $: activeBranchDeployment =
     activeBranch && currentUserId
       ? deployments.find(
           (d) =>
             d.branch === activeBranch &&
-            d.ownerUserId === currentUserId &&
             d.editable &&
             d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING &&
             d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED,
@@ -52,7 +51,7 @@
   function handleDirectEdit(e: MouseEvent) {
     e.preventDefault();
     requestSkipBranchInjection();
-    void goto(directEditHref!);
+    void goto(directEditHref);
   }
 </script>
 
