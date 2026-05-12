@@ -509,6 +509,28 @@ paths:
               billingEmail:
                 type: string
       x-visibility: public
+  /v1/orgs/{org}/billing/credits:
+    get:
+      summary: GetBillingCreditBalance returns the organization's remaining trial credit balance
+      operationId: AdminService_GetBillingCreditBalance
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetBillingCreditBalanceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
   /v1/orgs/{org}/billing/issues:
     get:
       summary: ListOrganizationBillingIssues lists all the billing issues for the organization
@@ -3902,6 +3924,25 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1SudoUpdateOrganizationBillingCustomerRequest'
+  /v1/superuser/organization/billing/report-usage:
+    post:
+      summary: SudoReportUsage reports a mock usage event for an organization.
+      operationId: AdminService_SudoReportUsage
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoReportUsageResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoReportUsageRequest'
   /v1/superuser/organization/custom-domain:
     patch:
       summary: |-
@@ -5179,6 +5220,12 @@ definitions:
     properties:
       yaml:
         type: string
+  v1GetBillingCreditBalanceResponse:
+    type: object
+    properties:
+      balance:
+        type: number
+        format: double
   v1GetBillingProjectCredentialsRequest:
     type: object
     properties:
@@ -6609,6 +6656,39 @@ definitions:
     properties:
       token:
         type: string
+  v1SudoReportUsageRequest:
+    type: object
+    properties:
+      org:
+        type: string
+      eventName:
+        type: string
+      value:
+        type: number
+        format: double
+      endTime:
+        type: string
+        format: date-time
+        description: Optional end time of the reporting window. Defaults to the current server time.
+      projectName:
+        type: string
+        description: Optional project name attribution for the mock event. If not set, a placeholder is used.
+  v1SudoReportUsageResponse:
+    type: object
+    properties:
+      customerId:
+        type: string
+      eventName:
+        type: string
+      value:
+        type: number
+        format: double
+      startTime:
+        type: string
+        format: date-time
+      endTime:
+        type: string
+        format: date-time
   v1SudoTriggerBillingRepairRequest:
     type: object
   v1SudoTriggerBillingRepairResponse:

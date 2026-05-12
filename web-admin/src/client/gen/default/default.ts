@@ -43,6 +43,7 @@ import type {
   AdminServiceDeleteUserParams,
   AdminServiceDeleteVirtualFileParams,
   AdminServiceGetAlertMetaBody,
+  AdminServiceGetBillingCreditBalanceParams,
   AdminServiceGetBillingSubscriptionParams,
   AdminServiceGetCloneCredentialsParams,
   AdminServiceGetDeploymentBody,
@@ -142,6 +143,7 @@ import type {
   V1GenerateReportYAMLResponse,
   V1GetAlertMetaResponse,
   V1GetAlertYAMLResponse,
+  V1GetBillingCreditBalanceResponse,
   V1GetBillingProjectCredentialsRequest,
   V1GetBillingProjectCredentialsResponse,
   V1GetBillingSubscriptionResponse,
@@ -249,6 +251,8 @@ import type {
   V1SudoGrantTrialCreditsResponse,
   V1SudoIssueRuntimeManagerTokenRequest,
   V1SudoIssueRuntimeManagerTokenResponse,
+  V1SudoReportUsageRequest,
+  V1SudoReportUsageResponse,
   V1SudoTriggerBillingRepairRequest,
   V1SudoTriggerBillingRepairResponse,
   V1SudoUpdateAnnotationsRequest,
@@ -2238,6 +2242,114 @@ export const createAdminServiceUpdateOrganization = <
 
   return createMutation(mutationOptions, queryClient);
 };
+/**
+ * @summary GetBillingCreditBalance returns the organization's remaining trial credit balance
+ */
+export const adminServiceGetBillingCreditBalance = (
+  org: string,
+  params?: AdminServiceGetBillingCreditBalanceParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetBillingCreditBalanceResponse>({
+    url: `/v1/orgs/${org}/billing/credits`,
+    method: "GET",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceGetBillingCreditBalanceQueryKey = (
+  org?: string,
+  params?: AdminServiceGetBillingCreditBalanceParams,
+) => {
+  return [
+    `/v1/orgs/${org}/billing/credits`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getAdminServiceGetBillingCreditBalanceQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceGetBillingCreditBalance>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  params?: AdminServiceGetBillingCreditBalanceParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetBillingCreditBalance>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetBillingCreditBalanceQueryKey(org, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetBillingCreditBalance>>
+  > = ({ signal }) => adminServiceGetBillingCreditBalance(org, params, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!org,
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceGetBillingCreditBalance>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceGetBillingCreditBalanceQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetBillingCreditBalance>>
+>;
+export type AdminServiceGetBillingCreditBalanceQueryError = RpcStatus;
+
+/**
+ * @summary GetBillingCreditBalance returns the organization's remaining trial credit balance
+ */
+
+export function createAdminServiceGetBillingCreditBalance<
+  TData = Awaited<ReturnType<typeof adminServiceGetBillingCreditBalance>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  params?: AdminServiceGetBillingCreditBalanceParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetBillingCreditBalance>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceGetBillingCreditBalanceQueryOptions(
+    org,
+    params,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 /**
  * @summary ListOrganizationBillingIssues lists all the billing issues for the organization
  */
@@ -13672,6 +13784,92 @@ export const createAdminServiceSudoUpdateOrganizationBillingCustomer = <
     getAdminServiceSudoUpdateOrganizationBillingCustomerMutationOptions(
       options,
     );
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary SudoReportUsage reports a mock usage event for an organization.
+ */
+export const adminServiceSudoReportUsage = (
+  v1SudoReportUsageRequest: V1SudoReportUsageRequest,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1SudoReportUsageResponse>({
+    url: `/v1/superuser/organization/billing/report-usage`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: v1SudoReportUsageRequest,
+    signal,
+  });
+};
+
+export const getAdminServiceSudoReportUsageMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceSudoReportUsage>>,
+    TError,
+    { data: V1SudoReportUsageRequest },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceSudoReportUsage>>,
+  TError,
+  { data: V1SudoReportUsageRequest },
+  TContext
+> => {
+  const mutationKey = ["adminServiceSudoReportUsage"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceSudoReportUsage>>,
+    { data: V1SudoReportUsageRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceSudoReportUsage(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceSudoReportUsageMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSudoReportUsage>>
+>;
+export type AdminServiceSudoReportUsageMutationBody = V1SudoReportUsageRequest;
+export type AdminServiceSudoReportUsageMutationError = RpcStatus;
+
+/**
+ * @summary SudoReportUsage reports a mock usage event for an organization.
+ */
+export const createAdminServiceSudoReportUsage = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceSudoReportUsage>>,
+      TError,
+      { data: V1SudoReportUsageRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceSudoReportUsage>>,
+  TError,
+  { data: V1SudoReportUsageRequest },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceSudoReportUsageMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };

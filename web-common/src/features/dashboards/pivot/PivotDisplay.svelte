@@ -90,6 +90,8 @@
     if (!$dashboardStore.pivot.activeCell) return;
     metricsExplorerStore.removePivotActiveCell($exploreName);
   }
+
+  $: widthScopeKey = `explore:${$exploreName}`;
 </script>
 
 <div class="layout" class:h-full={!$dynamicHeight}>
@@ -163,6 +165,7 @@
         />
       {:else}
         <PivotTable
+          {widthScopeKey}
           {pivotDataStore}
           overscan={60}
           config={pivotConfig}
