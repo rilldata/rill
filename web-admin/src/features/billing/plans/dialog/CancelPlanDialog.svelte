@@ -30,7 +30,9 @@
     createAdminServiceGetBillingSubscription(organization),
   );
   let subscription = $derived($subscriptionQuery?.data?.subscription);
-  let currentPlan = $derived(getPlanTierForSubscription(subscription));
+  let currentPlan = $derived(
+    getPlanTierForSubscription(subscription, undefined),
+  );
   let cycleEnd = $derived(subscription?.currentBillingCycleEndDate);
 
   // Cancel subscription

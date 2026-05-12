@@ -12,7 +12,9 @@ export function getTrialIssue(issues: V1BillingIssue[]) {
   return issues.find(
     (i) =>
       i.type === V1BillingIssueType.BILLING_ISSUE_TYPE_ON_TRIAL ||
-      i.type === V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_ENDED,
+      i.type === V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_ENDED ||
+      i.type === V1BillingIssueType.BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL ||
+      i.type === V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED,
   );
 }
 

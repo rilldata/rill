@@ -2,6 +2,7 @@ import { createQuery } from "@tanstack/svelte-query";
 import {
   adminServiceGetPaymentsPortalURL,
   adminServiceListPublicBillingPlans,
+  createAdminServiceGetBillingCreditBalance,
   createAdminServiceGetBillingProjectCredentials,
   getAdminServiceGetPaymentsPortalURLQueryKey,
   getAdminServiceListPublicBillingPlansQueryKey,
@@ -24,8 +25,9 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import type { Page } from "@sveltejs/kit";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { DateTime } from "luxon";
-import { derived, type Readable } from "svelte/store";
+import { derived, readable, type Readable } from "svelte/store";
 import type { PlanTier } from "@rilldata/web-admin/features/billing/plans/types.ts";
+import type { CategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors.ts";
 
 export async function fetchTeamPlan() {
   const plansResp = await queryClient.fetchQuery({
@@ -181,7 +183,12 @@ export function getBillingStatsForOrg(org: string): Readable<BillingStats> {
 
 export function getPlanTierForSubscription(
   subscription: V1Subscription | undefined,
+  categorisedIssues: CategorisedOrganizationBillingIssues | undefined,
 ): PlanTier {
+  if (!subscription) {
+    return categorisedIssues?.trial ? "free" : "pro";
+  }
+
   const plan = subscription?.plan;
   const planType = plan?.planType;
   const planName = plan?.name ?? "";
@@ -247,4 +254,22 @@ export function getBillingCycleDates(subscription: V1Subscription | undefined) {
     formattedPeriodEnd,
     formattedDueDate,
   };
+}
+
+const TOTAL_CREDIT = 250; // TODO: get from plan
+
+export function getPlanCredits(org: string) {
+  return derived(
+    createAdminServiceGetBillingCreditBalance(org, {}),
+    (creditsBalance) => {
+      const availableCredit = creditsBalance.data?.balance ?? TOTAL_CREDIT;
+      const usedCredit = TOTAL_CREDIT - availableCredit;
+      const creditPercent = Math.round((usedCredit / TOTAL_CREDIT) * 100);
+      return {
+        usedCredit,
+        availableCredit,
+        creditPercent,
+      };
+    },
+  );
 }
