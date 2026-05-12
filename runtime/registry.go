@@ -331,7 +331,13 @@ func (r *registryCache) create(ctx context.Context, inst *drivers.Instance) erro
 		return err
 	}
 
-	return r.add(inst)
+	err = r.add(inst)
+	if err != nil {
+		return err
+	}
+
+	_, err = r.rt.ReloadConfig(ctx, inst.ID)
+	return err
 }
 
 func (r *registryCache) add(inst *drivers.Instance) error {
