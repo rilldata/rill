@@ -7,6 +7,7 @@ import {
 } from "./pivot-click-selection";
 import {
   computeAncestorRowIds,
+  computeCellSelectedColDimGroupIndices,
   computeSelectedColIndices,
   isHeaderInHoveredRange,
   isHoveredHeader,
@@ -165,6 +166,113 @@ describe("computeSelectedColIndices", () => {
     expect([...computeSelectedColIndices(selection, headerGroups)]).toEqual([
       1, 2, 3,
     ]);
+  });
+});
+
+describe("computeCellSelectedColDimGroupIndices", () => {
+  const rowDimensionNames = ["city"];
+
+  function selectionFor(
+    colDimValues: Record<string, string | null>,
+    columnId = "selected_col",
+  ) {
+    const dimKey = "Bronx";
+    return buildClickSelection(
+      new Map(),
+      new Map([
+        [
+          `${dimKey}\t${columnId}`,
+          {
+            dimKey,
+            dimValues: { city: "Bronx", ...colDimValues },
+            columnId,
+          },
+        ],
+      ]),
+      new Set(),
+    );
+  }
+
+  it("requires the full column dimension path for a single-measure cell group", () => {
+    const headerGroups = [
+      {
+        headers: [
+          header(1),
+          header(3, { status: "closed" }),
+          header(1, { status: "open" }),
+        ],
+      },
+      {
+        headers: [
+          header(1),
+          header(1, { status: "closed", facility_type: "null" }),
+          header(1, { status: "closed", facility_type: "DS" }),
+          header(1, { status: "closed", facility_type: "n/a" }),
+          header(1, { status: "open", facility_type: "n/a" }),
+        ],
+      },
+      {
+        headers: [header(1), header(1), header(1), header(1), header(1)],
+      },
+    ] as unknown as HeaderGroup<PivotDataRow>[];
+    const selection = selectionFor({
+      status: "closed",
+      facility_type: "n/a",
+    });
+
+    expect([
+      ...computeCellSelectedColDimGroupIndices(
+        selection,
+        headerGroups,
+        rowDimensionNames,
+      ),
+    ]).toEqual([3]);
+  });
+
+  it("keeps sibling measures highlighted within the same full column dimension path", () => {
+    const headerGroups = [
+      {
+        headers: [
+          header(1),
+          header(6, { status: "closed" }),
+          header(2, { status: "open" }),
+        ],
+      },
+      {
+        headers: [
+          header(1),
+          header(2, { status: "closed", facility_type: "null" }),
+          header(2, { status: "closed", facility_type: "DS" }),
+          header(2, { status: "closed", facility_type: "n/a" }),
+          header(2, { status: "open", facility_type: "n/a" }),
+        ],
+      },
+      {
+        headers: [
+          header(1),
+          header(1),
+          header(1),
+          header(1),
+          header(1),
+          header(1),
+          header(1),
+          header(1),
+          header(1),
+        ],
+      },
+    ] as unknown as HeaderGroup<PivotDataRow>[];
+    const selection = selectionFor(
+      { status: "closed", facility_type: "n/a" },
+      "closed_na_revenue",
+    );
+
+    expect([
+      ...computeCellSelectedColDimGroupIndices(
+        selection,
+        headerGroups,
+        rowDimensionNames,
+      ),
+    ]).toEqual([5, 6]);
   });
 });
 

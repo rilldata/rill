@@ -110,9 +110,9 @@ export function computeCellSelectedColIndices(
 
 /**
  * Compute the set of leaf column indices that share the column-dimension
- * group of any cell selection. A leaf is "in the group" when its most
- * specific column-dimension parent header's `dimensionPath` is fully
- * present in some cell selection's stored dimValues.
+ * group of any cell selection. A leaf is "in the group" when a
+ * column-dimension header at the same path depth matches the selected
+ * column values.
  *
  * Used to extend a clicked cell's blue context highlight to its sibling
  * measure cells in the same col-dim group
@@ -128,7 +128,10 @@ export function computeCellSelectedColDimGroupIndices(
   if (!clickSelection?.cellSelections.size) return new Set();
 
   const rowDimSet = new Set(rowDimensionNames);
-  const selectedColPaths: Record<string, string | null>[] = [];
+  const selectedColPaths: {
+    values: Record<string, string | null>;
+    depth: number;
+  }[] = [];
   for (const entry of clickSelection.cellSelections.values()) {
     const colPath: Record<string, string | null> = {};
     for (const [name, value] of Object.entries(entry.dimValues)) {
@@ -136,7 +139,10 @@ export function computeCellSelectedColDimGroupIndices(
         colPath[name] = value;
       }
     }
-    selectedColPaths.push(colPath);
+    selectedColPaths.push({
+      values: colPath,
+      depth: Object.keys(colPath).length,
+    });
   }
 
   const leafGroup = headerGroups[headerGroups.length - 1];
@@ -145,7 +151,7 @@ export function computeCellSelectedColDimGroupIndices(
 
   // No col-dim values stored on any selection: all measure cells share the
   // same (empty) group; mark every leaf as in-group.
-  if (selectedColPaths.every((p) => Object.keys(p).length === 0)) {
+  if (selectedColPaths.every((p) => p.depth === 0)) {
     const all = new Set<number>();
     for (let i = 0; i < leafCount; i++) all.add(i);
     return all;
@@ -157,11 +163,13 @@ export function computeCellSelectedColDimGroupIndices(
     for (const header of group.headers) {
       const path = header.column.columnDef.meta?.dimensionPath;
       if (path && Object.keys(path).length > 0) {
-        const matches = selectedColPaths.some((selectedPath) =>
-          Object.entries(path).every(
-            ([name, value]) => selectedPath[name] === value,
-          ),
-        );
+        const pathEntries = Object.entries(path);
+        const matches = selectedColPaths.some((selectedPath) => {
+          if (pathEntries.length !== selectedPath.depth) return false;
+          return pathEntries.every(
+            ([name, value]) => selectedPath.values[name] === value,
+          );
+        });
         if (matches) {
           for (let c = colStart; c < colStart + header.colSpan; c++) {
             indices.add(c);
