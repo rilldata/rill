@@ -294,6 +294,17 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 	// Construct the full frontend URL including custom domain (if any) and org/project path
 	frontendURL := s.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name)
 
+	// Resolve variables based on environment
+	vars, err := s.ResolveVariables(ctx, depl)
+	if err != nil {
+		return err
+	}
+	// base variables are returned first followed by environment specific variables, so we can just iterate once and overlay them in order
+	v := map[string]string{}
+	for _, variable := range vars {
+		v[variable.Name] = variable.Value
+	}
+
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
 		InstanceId:     instanceID,
@@ -303,6 +314,7 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		AdminConnector: "admin",
 		AiConnector:    "admin",
 		Connectors:     connectors,
+		Variables:      v,
 		Annotations:    annotations.ToMap(),
 		FrontendUrl:    frontendURL,
 	})

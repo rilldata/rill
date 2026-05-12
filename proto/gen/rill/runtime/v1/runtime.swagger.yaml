@@ -4997,6 +4997,10 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Connector'
+      variables:
+        type: object
+        additionalProperties:
+          type: string
       annotations:
         type: object
         additionalProperties:
