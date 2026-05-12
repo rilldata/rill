@@ -712,7 +712,9 @@ func (c *connection) MergeToBranch(ctx context.Context, branch string, force boo
 		return err
 	}
 	if aborted {
-		return fmt.Errorf("merge conflicts detected while merging to branch %s", branch)
+		return &drivers.ErrMergeFailed{
+			Output: "merge failed due to conflicts, use force merge to favour current changes",
+		}
 	}
 	return nil
 }
