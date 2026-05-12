@@ -288,7 +288,7 @@ func (r *Runtime) pullEnv(ctx context.Context, instanceID string) (int, bool, er
 	}
 	defer release()
 
-	// Fetch cloud variables if an admin connector is configured
+	// Fetch cloud variables if an admin connector is configured (not configured only for tests)
 	var cloudPerEnv map[string]map[string]string
 	if inst.AdminConnector != "" {
 		admin, release, err := r.Admin(ctx, instanceID)
