@@ -40,11 +40,11 @@ type gitRepo struct {
 }
 
 // pull clones or pulls from the remote Git repository.
-func (r *gitRepo) pull(ctx context.Context, opts *drivers.PullOptions) error {
+func (r *gitRepo) pull(ctx context.Context, userTriggered, force bool) error {
 	// Call pullInner with retries
 	var err error
 	for i := 0; i < gitRetryN; i++ {
-		err = r.pullInner(ctx, opts)
+		err = r.pullInner(ctx, userTriggered, force)
 		if err == nil {
 			break
 		}
@@ -61,19 +61,10 @@ func (r *gitRepo) pull(ctx context.Context, opts *drivers.PullOptions) error {
 }
 
 // pullInner contains the actual logic of r.pull without retries.
-func (r *gitRepo) pullInner(ctx context.Context, opts *drivers.PullOptions) error {
-	force := opts.DiscardChanges
+func (r *gitRepo) pullInner(ctx context.Context, userTriggered, force bool) error {
 	// If the repository is not editable, there shouldn't be any local changes, but just to be safe, we always force pull.
 	if !r.editable() {
 		force = true
-	}
-
-	// mergeBranch is the remote branch we will merge/reset onto the local default branch.
-	// By default this is the project's default branch (its own upstream).
-	// Callers can override it (e.g. to pull the primary branch into an edit branch) via opts.RemoteBranch.
-	mergeBranch := r.defaultBranch
-	if opts.RemoteBranch != "" {
-		mergeBranch = opts.RemoteBranch
 	}
 
 	// Check if repoDir exists and is a valid Git repository
@@ -124,9 +115,6 @@ func (r *gitRepo) pullInner(ctx context.Context, opts *drivers.PullOptions) erro
 		branches := []string{r.defaultBranch}
 		if r.primaryBranch != r.defaultBranch {
 			branches = append(branches, r.primaryBranch)
-		}
-		if mergeBranch != r.defaultBranch && mergeBranch != r.primaryBranch {
-			branches = append(branches, mergeBranch)
 		}
 		for _, branch := range branches {
 			refSpec := config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", branch, branch))
@@ -185,28 +173,25 @@ func (r *gitRepo) pullInner(ctx context.Context, opts *drivers.PullOptions) erro
 
 	if force {
 		// Hard reset to remote branch
-		err = resetToRemoteTrackingBranch(r.repoDir, mergeBranch)
+		err = resetToRemoteTrackingBranch(r.repoDir, r.defaultBranch)
 		if err != nil {
 			if !(errors.Is(err, errRefNotFound) && r.editable()) { // In editable mode, the default branch may not exist yet on remote.
-				return fmt.Errorf("failed to reset to remote tracking branch %q: %w", mergeBranch, err)
+				return fmt.Errorf("failed to reset to remote tracking branch %q: %w", r.defaultBranch, err)
 			}
 		}
 	} else if !createDefault { // If we just created the default branch, there's no need to merge
-		merged, err := gitutil.MergeWithBailOnConflict(r.repoDir, fmt.Sprintf("%s/%s", "origin", mergeBranch))
+		merged, err := gitutil.MergeWithBailOnConflict(r.repoDir, fmt.Sprintf("%s/%s", "origin", r.defaultBranch))
 		if err != nil {
 			return err
 		}
 		if !merged { // Only user triggered pulls should fail on conflicts
-			if opts.UserTriggered {
-				return fmt.Errorf("local is behind remote and failed to sync with remote due to conflicts")
+			if userTriggered {
+				return &drivers.ErrMergeFailed{
+					Output: "local is behind remote and failed to sync with remote due to conflicts, use force pull to discard local changes and sync with remote",
+				}
 			}
-			r.h.logger.Warn("Merge aborted due to conflicts, local changes not synced with remote", zap.String("branch", mergeBranch))
+			r.h.logger.Warn("Merge aborted due to conflicts, local changes not synced with remote", zap.String("branch", r.defaultBranch))
 		}
-	}
-
-	// If the caller explicitly chose a merge target, don't second-guess them by also merging the primary branch.
-	if opts.RemoteBranch != "" {
-		return nil
 	}
 
 	if !r.editable() || r.primaryBranch == r.defaultBranch {
@@ -217,14 +202,22 @@ func (r *gitRepo) pullInner(ctx context.Context, opts *drivers.PullOptions) erro
 	// To reduce the chance of conflicts, we should also try to merge the primary branch into the default branch (but only force merge if `force` is true).
 
 	// merge primary branch into edit branch
-	primaryRef := "origin/" + r.primaryBranch
+	mergeBranch := "origin/" + r.primaryBranch
 	if force {
-		err = gitutil.MergeWithStrategy(r.repoDir, primaryRef, "theirs")
+		err = gitutil.MergeWithStrategy(r.repoDir, mergeBranch, "theirs")
 	} else {
-		_, err = gitutil.MergeWithBailOnConflict(r.repoDir, primaryRef)
+		var merged bool
+		merged, err = gitutil.MergeWithBailOnConflict(r.repoDir, mergeBranch)
+		if !merged && userTriggered { // only user triggered pulls should fail on conflicts
+			return &drivers.ErrMergeFailed{
+				Output: "failed to merge primary branch, use force pull to discard local changes and sync with primary branch",
+			}
+		}
 	}
 	if err != nil {
-		return fmt.Errorf("failed to merge primary branch %q into default branch %q: %w", r.primaryBranch, r.defaultBranch, err)
+		return &drivers.ErrMergeFailed{
+			Output: fmt.Sprintf("failed to merge primary branch %q into default branch %q: %v", r.primaryBranch, r.defaultBranch, err),
+		}
 	}
 	return nil
 }
@@ -355,13 +348,12 @@ func (r *gitRepo) mergeToBranch(ctx context.Context, branch string, force bool) 
 		merged, err = gitutil.MergeWithBailOnConflict(r.repoDir, r.defaultBranch)
 	}
 	if err != nil {
-		return fmt.Errorf("failed to merge default branch %q into branch %q: %w", r.defaultBranch, branch, err)
+		// wrap with drivers.ErrMergeFailed
+		return &drivers.ErrMergeFailed{Output: fmt.Sprintf("failed to merge default branch %q into branch %q: %v", r.defaultBranch, branch, err)}
 	}
 
 	if !merged {
-		// If the merge was aborted no need to push the changes
-		r.h.logger.Warn("Merge aborted due to conflicts, not pushing changes", zap.String("branch", branch), zap.String("defaultBranch", r.defaultBranch))
-		return nil
+		return &drivers.ErrMergeFailed{Output: "merge failed due to conflicts, use force merge to favour current changes"}
 	}
 
 	// Push the changes

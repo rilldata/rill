@@ -200,7 +200,13 @@ func (s *Server) GitMergeToBranch(ctx context.Context, req *runtimev1.GitMergeTo
 
 	err = repo.MergeToBranch(ctx, req.Branch, req.Force)
 	if err != nil {
-		return nil, fmt.Errorf("failed to merge: %w", err)
+		var mergeErr *drivers.ErrMergeFailed
+		if errors.As(err, &mergeErr) {
+			return &runtimev1.GitMergeToBranchResponse{
+				Output: mergeErr.Error(),
+			}, nil
+		}
+		return nil, err
 	}
 	return &runtimev1.GitMergeToBranchResponse{}, nil
 }
@@ -219,9 +225,14 @@ func (s *Server) GitPull(ctx context.Context, req *runtimev1.GitPullRequest) (*r
 	err = repo.Pull(ctx, &drivers.PullOptions{
 		UserTriggered:  true,
 		DiscardChanges: req.DiscardLocal,
-		RemoteBranch:   req.RemoteBranch,
 	})
 	if err != nil {
+		var mergeErr *drivers.ErrMergeFailed
+		if errors.As(err, &mergeErr) {
+			return &runtimev1.GitPullResponse{
+				Output: mergeErr.Error(),
+			}, nil
+		}
 		return nil, fmt.Errorf("failed to pull: %w", err)
 	}
 	return &runtimev1.GitPullResponse{}, nil

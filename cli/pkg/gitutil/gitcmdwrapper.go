@@ -110,11 +110,9 @@ func RunGitFetch(ctx context.Context, path, remote string) error {
 }
 
 // RunGitPull runs a git pull command in the specified path.
-// If remoteBranch is non-empty, it pulls `<remote>/<remoteBranch>` into the current local branch
-// instead of the upstream of the current local branch.
-func RunGitPull(ctx context.Context, path string, discardLocal bool, remote, remoteName, remoteBranch string) (string, error) {
+func RunGitPull(ctx context.Context, path string, discardLocal bool, remote, remoteName string) (string, error) {
 	// current status of the full repo
-	st, err := RunGitStatus(path, "", remoteName, remoteBranch)
+	st, err := RunGitStatus(path, "", remoteName, "")
 	if err != nil {
 		return "", err
 	}
@@ -143,16 +141,11 @@ func RunGitPull(ctx context.Context, path string, discardLocal bool, remote, rem
 		}
 	}
 
-	pullBranch := remoteBranch
-	if pullBranch == "" {
-		pullBranch = st.Branch
-	}
-
 	// git -C <path> pull <remote> <branch>
 	args := []string{"-C", path, "pull"}
 
 	if remote != "" {
-		args = append(args, remote, pullBranch)
+		args = append(args, remote, st.Branch)
 	}
 
 	cmd := exec.CommandContext(ctx, "git", args...)

@@ -13,6 +13,14 @@ import (
 
 var ErrRemoteAhead = fmt.Errorf("remote ahead of local state, please pull first")
 
+type ErrMergeFailed struct {
+	Output string
+}
+
+func (e *ErrMergeFailed) Error() string {
+	return e.Output
+}
+
 // RepoStore is implemented by drivers capable of storing project code files.
 // All paths start with '/' and are relative to the repo root.
 type RepoStore interface {
@@ -141,9 +149,6 @@ type PullOptions struct {
 	// If userTriggered is true, the latest changes will be pulled from the remote repository honouring DiscardChanges.
 	UserTriggered  bool
 	DiscardChanges bool
-	// RemoteBranch is the remote branch to pull into the current local branch.
-	// If empty, the upstream of the current local branch is used.
-	RemoteBranch string
 }
 
 // Commit represents a git commit.

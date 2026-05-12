@@ -489,7 +489,7 @@ func (c *connection) Pull(ctx context.Context, opts *drivers.PullOptions) error 
 		return err
 	}
 
-	_, err = gitutil.RunGitPull(ctx, gitPath, opts.DiscardChanges, remote, gitConfig.RemoteName(), opts.RemoteBranch)
+	_, err = gitutil.RunGitPull(ctx, gitPath, opts.DiscardChanges, remote, gitConfig.RemoteName())
 	if err != nil {
 		return err
 	}

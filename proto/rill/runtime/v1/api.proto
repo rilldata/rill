@@ -1354,9 +1354,6 @@ message GitSwitchBranchResponse {}
 message GitPullRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   bool discard_local = 2;
-  // remote_branch is the remote branch to pull into the current local branch.
-  // If empty, the upstream of the current local branch is used.
-  string remote_branch = 3;
 }
 
 message GitPullResponse {

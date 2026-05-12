@@ -15455,8 +15455,6 @@ func (m *GitPullRequest) validate(all bool) error {
 
 	// no validation rules for DiscardLocal
 
-	// no validation rules for RemoteBranch
-
 	if len(errors) > 0 {
 		return GitPullRequestMultiError(errors)
 	}
