@@ -4098,6 +4098,11 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
    */
   superuserForceAccess = false;
 
+  /**
+   * @generated from field: optional int64 override_disk_gb = 17;
+   */
+  overrideDiskGb?: bigint;
+
   constructor(data?: PartialMessage<UpdateProjectRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4122,6 +4127,7 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
     { no: 11, name: "prod_version", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 16, name: "dev_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
     { no: 14, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 17, name: "override_disk_gb", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateProjectRequest {
@@ -16254,6 +16260,11 @@ export class Project extends Message<Project> {
   devTtlSeconds = protoInt64.zero;
 
   /**
+   * @generated from field: int64 override_disk_gb = 28;
+   */
+  overrideDiskGb = protoInt64.zero;
+
+  /**
    * @generated from field: map<string, string> annotations = 20;
    */
   annotations: { [key: string]: string } = {};
@@ -16301,6 +16312,7 @@ export class Project extends Message<Project> {
     { no: 16, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 18, name: "prod_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 27, name: "dev_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 28, name: "override_disk_gb", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 20, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 21, name: "prod_version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "created_on", kind: "message", T: Timestamp },

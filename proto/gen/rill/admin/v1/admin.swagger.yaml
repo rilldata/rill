@@ -1229,6 +1229,9 @@ paths:
                 format: int64
               superuserForceAccess:
                 type: boolean
+              overrideDiskGb:
+                type: string
+                format: int64
       x-visibility: public
   /v1/orgs/{org}/projects/{project}/alerts:
     post:
@@ -6141,6 +6144,9 @@ definitions:
         type: string
         format: int64
       devTtlSeconds:
+        type: string
+        format: int64
+      overrideDiskGb:
         type: string
         format: int64
       annotations:

@@ -376,6 +376,7 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 			ProdTTLSeconds:       proj.ProdTTLSeconds,
 			DevSlots:             proj.DevSlots,
 			DevTTLSeconds:        proj.DevTTLSeconds,
+			OverrideDiskGB:       proj.OverrideDiskGB,
 			Annotations:          proj.Annotations,
 		})
 		if err != nil {
