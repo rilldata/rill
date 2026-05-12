@@ -5,7 +5,6 @@ import {
 import type { BillingIssueMessage } from "@rilldata/web-admin/features/billing/issues/useBillingIssueMessage";
 import { shiftToLargest } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import { DateTime, type Duration } from "luxon";
-import type { BannerMessage } from "@rilldata/web-common/lib/event-bus/events.ts";
 
 const WarningPeriodInDays = 7;
 
@@ -150,12 +149,4 @@ export function trialHasPastGracePeriod(trialEndedIssue: V1BillingIssue) {
 function humanizeDuration(dur: Duration) {
   dur = shiftToLargest(dur, ["seconds", "minutes", "hours", "days"]);
   return dur.toHuman({ unitDisplay: "short" });
-}
-
-function buildDismissableForIssue(issue: V1BillingIssue, ttl: number) {
-  return {
-    key: issue.org ?? "",
-    id: issue.type ?? "",
-    ttl,
-  } satisfies BannerMessage["dismissible"];
 }
