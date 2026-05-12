@@ -103,6 +103,18 @@ export function isEditPage({ route }: Pick<Page, "route">): boolean {
   return !!route?.id?.startsWith("/[organization]/[project]/-/edit");
 }
 
+/**
+ * True when the page is the explore or canvas preview inside Cloud Rill
+ * Developer (`/-/edit/(viz)/{explore,canvas}/[name]`). `isMetricsExplorerPage`
+ * and `isCanvasDashboardPage` only match production routes, so this is the
+ * editor-side equivalent for surfaces that need to swap chat affordances.
+ */
+export function isEditDashboardPreviewPage({
+  route,
+}: Pick<Page, "route">): boolean {
+  return !!route?.id?.startsWith("/[organization]/[project]/-/edit/(viz)/");
+}
+
 export function isProjectRequestAccessPage(page: Page): boolean {
   return !!page.route.id?.startsWith(
     "/[organization]/[project]/-/request-access",

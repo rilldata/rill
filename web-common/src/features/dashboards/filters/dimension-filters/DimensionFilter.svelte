@@ -284,8 +284,8 @@
     }
   }
 
-  function handleToggleExcludeMode() {
-    curExcludeMode = !curExcludeMode;
+  function handleToggleExcludeMode(checked: boolean) {
+    curExcludeMode = checked;
   }
 
   function onToggleSelectAll() {

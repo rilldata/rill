@@ -8,7 +8,7 @@
   export let excludeMode: boolean;
   export let allSelected: boolean;
   export let disableApplyButton: boolean;
-  export let onToggleExcludeMode: () => void;
+  export let onToggleExcludeMode: (checked: boolean) => void;
   export let onToggleSelectAll: () => void;
   export let onApply: () => void;
 </script>
@@ -19,7 +19,7 @@
       checked={excludeMode}
       id="include-exclude"
       small
-      onclick={onToggleExcludeMode}
+      onCheckedChange={onToggleExcludeMode}
       label="Include exclude toggle"
     />
     <Label class="font-normal text-xs" for="include-exclude">Exclude</Label>

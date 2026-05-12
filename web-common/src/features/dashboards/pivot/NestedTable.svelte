@@ -1,6 +1,7 @@
 <script lang="ts" context="module">
   import { writable } from "svelte/store";
   const measureLengths = writable(new Map<string, number>());
+  const rowDimensionLengths = writable(new Map<string, number>());
 </script>
 
 <script lang="ts">
@@ -19,12 +20,14 @@
     calculateMeasureWidth,
     calculateRowDimensionWidth,
     COLUMN_WIDTH_CONSTANTS as WIDTHS,
+    getNestedRowDimensionWidthKey,
   } from "./pivot-column-width-utils";
   import { isShowMoreRow } from "./pivot-utils";
   import type { PivotDataRow } from "./types";
 
   // State props
   export let hasColumnDimension: boolean;
+  export let widthScopeKey: string;
   export let timeDimension: string;
   export let assembled: boolean;
   export let rowDimensions: DimensionColumnProps;
@@ -61,11 +64,31 @@
   $: hasMeasures = measures.length > 0;
   $: rowDimensionLabel = getRowNestedLabel(rowDimensions);
   $: rowDimensionName = rowDimensionLabel ? rowDimensionLabel : null;
+  $: rowDimensionWidthKey = getNestedRowDimensionWidthKey(
+    widthScopeKey,
+    rowDimensions,
+  );
+
+  $: if (
+    hasRowDimension &&
+    rowDimensionName &&
+    rowDimensionWidthKey &&
+    !$rowDimensionLengths.has(rowDimensionWidthKey)
+  ) {
+    const estimatedWidth = calculateRowDimensionWidth(
+      rowDimensionName,
+      timeDimension,
+      dataRows,
+    );
+
+    rowDimensionLengths.update((rowDimensionLengths) => {
+      return rowDimensionLengths.set(rowDimensionWidthKey, estimatedWidth);
+    });
+  }
 
   $: rowDimensionWidth =
-    hasRowDimension && rowDimensionName
-      ? calculateRowDimensionWidth(rowDimensionName, timeDimension, dataRows)
-      : 0;
+    (rowDimensionWidthKey && $rowDimensionLengths.get(rowDimensionWidthKey)) ||
+    0;
 
   $: {
     // Get the longest column dimension header to ensure proper width calculation
@@ -209,7 +232,13 @@
       min={WIDTHS.MIN_COL_WIDTH}
       max={WIDTHS.MAX_COL_WIDTH}
       dimension={rowDimensionWidth}
-      onUpdate={(d) => (rowDimensionWidth = d)}
+      onUpdate={(d) => {
+        if (!rowDimensionWidthKey) return;
+
+        rowDimensionLengths.update((rowDimensionLengths) => {
+          return rowDimensionLengths.set(rowDimensionWidthKey, d);
+        });
+      }}
       onMouseDown={(e) => {
         resizingMeasure = false;
         onResizeStart(e);

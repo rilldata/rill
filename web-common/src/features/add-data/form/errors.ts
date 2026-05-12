@@ -14,8 +14,15 @@ export function setSubmitError(
   form: SuperValidated<Record<string, unknown>>,
   error: Error,
 ) {
-  setError(form, SubmitErrorKey + ".message", error.message);
-  setError(form, SubmitErrorKey + ".details", (error as any).details);
+  setError(form, SubmitErrorKey + ".message", error.message, {
+    removeFiles: false,
+  });
+  const details = (error as any).details;
+  if (details) {
+    setError(form, SubmitErrorKey + ".details", details, {
+      removeFiles: false,
+    });
+  }
 }
 
 export function getSubmitError(errors: Record<string, any>): SubmitError {
