@@ -77,7 +77,7 @@ Success! Run the following command to start the project:
 ### Rill Developer (local)
 
 - [**Connectors**](https://docs.rilldata.com/build/connectors/) — S3, GCS, databases, and 20+ sources
-- [**OLAP Engines**](https://docs.rilldata.com/build/olap-engines/) — Managed ClickHouse or DuckDB included, or connect an external engine (ClickHouse Cloud, Druid, Pinot, MotherDuck)
+- [**OLAP Engines**](https://docs.rilldata.com/developers/build/connectors/olap) — Managed ClickHouse or DuckDB included, or connect an external engine (ClickHouse Cloud, Druid, Pinot, MotherDuck)
 - [**SQL Models**](https://docs.rilldata.com/build/models/) — Transform raw data with SQL, join models together
 - [**Data Profiling**](https://docs.rilldata.com/build/models) — Instant column stats and distributions
 - [**Incremental Ingestion**](https://docs.rilldata.com/build/models/incremental-models) — Load only new data on each run to keep large datasets current without full refreshes
@@ -92,7 +92,7 @@ Success! Run the following command to start the project:
 - [**Conversational BI**](https://docs.rilldata.com/explore/ai-chat) — Ask questions in natural language
 - [**MCP Server**](https://docs.rilldata.com/explore/mcp) — Connect Claude, ChatGPT, or any AI agent to your metrics
 - [**Custom APIs & Embedding**](https://docs.rilldata.com/build/custom-apis/) — Expose metrics via REST or embed dashboards
-- [**Alerts & Reports**](https://docs.rilldata.com/build/alerts) — Threshold alerting, code-defined or UI-defined
+- [**Alerts & Reports**](https://docs.rilldata.com/developers/build/alerts) — Threshold alerting, code-defined or UI-defined
 
 ## How It Works
 
@@ -172,4 +172,4 @@ Or explore a [live embedded dashboard](https://rill-embedding-example.netlify.ap
 
 ## Contributing
 
-We welcome contributions! See our [Contributing Guide](https://docs.rilldata.com/home/contribute) to get started.
+We welcome contributions! See our [Contributing Guide](CONTRIBUTING.md) to get started.
