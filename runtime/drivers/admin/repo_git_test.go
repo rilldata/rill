@@ -836,7 +836,7 @@ func TestGitRepo_mergeToBranch(t *testing.T) {
 			},
 			branch:      "main",
 			force:       false,
-			expectError: false,
+			expectError: true,
 			validate: func(t *testing.T, repo *gitRepo, localDir, remoteDir string) {
 				// Remote main is unchanged: no push happened.
 				verifyRemoteBranchFile(t, remoteDir, "main", "test1.txt", "remote content")
