@@ -2,7 +2,6 @@
   import { goto } from "$app/navigation";
   import {
     createAdminServiceCreateDeployment,
-    createAdminServiceGetCurrentUser,
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
@@ -32,7 +31,6 @@
   /** The project's primary branch, used as the source for new branches. */
   export let primaryBranch: string | undefined = undefined;
 
-  const user = createAdminServiceGetCurrentUser();
   const devDeployments = useDevDeployments(organization, project);
   const createMutation = createAdminServiceCreateDeployment();
 
@@ -41,12 +39,11 @@
   let selectedBranchId = "";
   let createError = "";
 
-  $: currentUserId = $user.data?.user?.id;
   $: deployments = $devDeployments.data?.deployments ?? [];
   $: sourceBranch = primaryBranch || "main";
 
-  // Editable deployments sorted by most recently
-  // updated. Stopped/errored branches show so the user can resume or retry.
+  // Editable deployments sorted by most recently updated.
+  // Stopped/errored branches show so the user can resume or retry.
   $: ownDeployments = deployments
     .filter(
       (d) =>
@@ -63,7 +60,6 @@
   // Banner condition: active branch not editable
   $: activeBranchIsNonEditable =
     !!activeBranch &&
-    !!currentUserId &&
     deployments.some((d) => d.branch === activeBranch && !d.editable);
 
   // Reset all state every time the dialog opens.

@@ -1,7 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import {
-    createAdminServiceGetCurrentUser,
     createAdminServiceGetProject,
     getAdminServiceGetProjectQueryKey,
     V1DeploymentStatus,
@@ -18,10 +17,6 @@
   import { baseGetProjectQueryOptions } from "@rilldata/web-admin/features/projects/project-query-options";
   import SlimProjectHeader from "@rilldata/web-admin/features/projects/SlimProjectHeader.svelte";
   import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
-  import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
-  import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
-  import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
-  import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import FileAndResourceWatcher from "@rilldata/web-common/features/entity-management/FileAndResourceWatcher.svelte";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
@@ -73,15 +68,12 @@
   $: instanceId = deployment?.runtimeInstanceId ?? null;
   $: jwt = $projectQuery.data?.jwt ?? null;
 
-  const user = createAdminServiceGetCurrentUser();
-
   // Flipped when the user clicks "Start deployment" on a stopped deployment;
   // keeps the UI in loading state while the backend transitions STOPPED → PENDING → RUNNING.
   let starting = false;
 
   $: isLoading =
     $projectQuery.isPending ||
-    $user.isPending ||
     starting ||
     deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING;
 
@@ -99,8 +91,6 @@
     runtimeHost !== null &&
     instanceId !== null &&
     jwt !== null;
-
-  $: branchUrl = `/${organization}/${project}${branchPathPrefix(branch)}`;
 
   $: inProjectWelcomePage = isProjectWelcomePage($page);
 
