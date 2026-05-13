@@ -28,10 +28,13 @@
     getAdminServiceListDeploymentsQueryKey,
   } from "@rilldata/web-admin/client";
   import {
+    isEditPage,
+    isProjectInvitePage,
     isProjectPage,
     isPublicAlertPage,
     isPublicReportPage,
     isPublicURLPage,
+    isProjectWelcomePage,
   } from "@rilldata/web-admin/features/navigation/nav-utils";
   import BranchDeploymentStopped from "@rilldata/web-admin/features/branches/BranchDeploymentStopped.svelte";
   import ProjectBuilding from "@rilldata/web-admin/features/projects/ProjectBuilding.svelte";
@@ -77,7 +80,10 @@
   });
 
   let onProjectPage = $derived(isProjectPage(page));
+  let onEditPage = $derived(isEditPage(page));
+  let onInvitePage = $derived(isProjectInvitePage(page));
   let onPublicURLPage = $derived(isPublicURLPage(page));
+  let onWelcomePage = $derived(isProjectWelcomePage(page));
 
   // From root layout; passed through to header components
   let organizationPermissions = $derived(
@@ -222,7 +228,7 @@
       });
     }
 
-    // Keep BranchSelector's ListDeployments query in sync
+    // Keep the BranchesSection's ListDeployments query in sync
     void queryClient.invalidateQueries({
       queryKey: getAdminServiceListDeploymentsQueryKey(organization, project),
     });
@@ -246,8 +252,6 @@
     {organization}
     {project}
     readProjects={organizationPermissions?.readProjects}
-    readDev={!!runtime.projectPermissions?.readDev}
-    primaryBranch={projectData?.project?.primaryBranch}
     {planDisplayName}
     {organizationLogoUrl}
   />
@@ -257,7 +261,24 @@
     body={error.response.data?.message}
   />
 {:else if projectData}
-  {#if isProjectAvailable && runtime.host != null && runtime.instanceId}
+  {#if onEditPage}
+    <!-- Edit layout manages its own runtime and header -->
+    {@render children()}
+  {:else if onInvitePage}
+    <!-- Invite is admin-server-only and doesn't depend on the runtime, so we
+         render it immediately and let users invite teammates while the
+         deployment provisions. Otherwise the layout would briefly show
+         `ProjectBuilding` here while the just-created prod deployment is
+         still PENDING. -->
+    <SlimProjectHeader
+      {organization}
+      {project}
+      readProjects={organizationPermissions?.readProjects}
+      {planDisplayName}
+      {organizationLogoUrl}
+    />
+    {@render children()}
+  {:else if isProjectAvailable && runtime.host != null && runtime.instanceId}
     <!-- Re-key on host::instanceId to force RuntimeProvider to tear down and
          reconnect when the deployment changes (e.g. branch switch, View As). -->
     {#key `${runtime.host}::${runtime.instanceId}`}
@@ -267,25 +288,27 @@
         jwt={runtime.jwt}
         authContext={runtime.authContext}
       >
-        <ProjectHeader
-          {organization}
-          {project}
-          projectPermissions={runtime.projectPermissions}
-          manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
-          manageOrgMembers={organizationPermissions?.manageOrgMembers}
-          readProjects={organizationPermissions?.readProjects}
-          primaryBranch={projectData?.project?.primaryBranch}
-          {planDisplayName}
-          {organizationLogoUrl}
-        />
-        {#if onProjectPage && deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
-          <ProjectTabs
-            projectPermissions={runtime.projectPermissions}
+        {#if !onWelcomePage}
+          <ProjectHeader
             {organization}
-            pathname={page.url.pathname}
             {project}
-            {branchPrefix}
+            projectPermissions={runtime.projectPermissions}
+            manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
+            manageOrgMembers={organizationPermissions?.manageOrgMembers}
+            readProjects={organizationPermissions?.readProjects}
+            primaryBranch={projectData?.project?.primaryBranch}
+            {planDisplayName}
+            {organizationLogoUrl}
           />
+          {#if onProjectPage && deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
+            <ProjectTabs
+              projectPermissions={runtime.projectPermissions}
+              {organization}
+              pathname={page.url.pathname}
+              {project}
+              {branchPrefix}
+            />
+          {/if}
         {/if}
         {@render children()}
       </RuntimeProvider>
@@ -295,8 +318,6 @@
       {organization}
       {project}
       readProjects={organizationPermissions?.readProjects}
-      readDev={!!runtime.projectPermissions?.readDev}
-      primaryBranch={projectData?.project?.primaryBranch}
       {planDisplayName}
       {organizationLogoUrl}
     />

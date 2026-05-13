@@ -9,6 +9,14 @@ components:
                 unsubscribeUrl:
                     type: string
             type: object
+        GetGithubPullRequestResponseState:
+            default: STATE_UNSPECIFIED
+            enum:
+                - STATE_UNSPECIFIED
+                - STATE_OPEN
+                - STATE_CLOSED_UNMERGED
+                - STATE_MERGED
+            type: string
         GetReportMetaResponseDeliveryMeta:
             properties:
                 editUrl:
@@ -186,12 +194,16 @@ components:
                     $ref: '#/components/schemas/v1BillingIssueMetadataNoBillableAddress'
                 noPaymentMethod:
                     $ref: '#/components/schemas/v1BillingIssueMetadataNoPaymentMethod'
+                onCreditTrial:
+                    $ref: '#/components/schemas/v1BillingIssueMetadataOnCreditTrial'
                 onTrial:
                     $ref: '#/components/schemas/v1BillingIssueMetadataOnTrial'
                 paymentFailed:
                     $ref: '#/components/schemas/v1BillingIssueMetadataPaymentFailed'
                 subscriptionCancelled:
                     $ref: '#/components/schemas/v1BillingIssueMetadataSubscriptionCancelled'
+                trialCreditsDepleted:
+                    $ref: '#/components/schemas/v1BillingIssueMetadataTrialCreditsDepleted'
                 trialEnded:
                     $ref: '#/components/schemas/v1BillingIssueMetadataTrialEnded'
             type: object
@@ -200,6 +212,18 @@ components:
         v1BillingIssueMetadataNoBillableAddress:
             type: object
         v1BillingIssueMetadataNoPaymentMethod:
+            type: object
+        v1BillingIssueMetadataOnCreditTrial:
+            properties:
+                creditAllocation:
+                    format: double
+                    type: number
+                lowCredit:
+                    type: boolean
+                planId:
+                    type: string
+                subscriptionId:
+                    type: string
             type: object
         v1BillingIssueMetadataOnTrial:
             properties:
@@ -245,6 +269,16 @@ components:
                     format: date-time
                     type: string
             type: object
+        v1BillingIssueMetadataTrialCreditsDepleted:
+            properties:
+                depletedOn:
+                    format: date-time
+                    type: string
+                planId:
+                    type: string
+                subscriptionId:
+                    type: string
+            type: object
         v1BillingIssueMetadataTrialEnded:
             properties:
                 endDate:
@@ -265,6 +299,8 @@ components:
                 - BILLING_ISSUE_TYPE_PAYMENT_FAILED
                 - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
                 - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
+                - BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL
+                - BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED
             type: string
         v1BillingPlan:
             properties:
@@ -442,6 +478,11 @@ components:
                 deployment:
                     $ref: '#/components/schemas/v1Deployment'
             type: object
+        v1CreateGithubPullRequestResponse:
+            properties:
+                prUrl:
+                    type: string
+            type: object
         v1CreateManagedGitRepoResponse:
             properties:
                 defaultBranch:
@@ -551,6 +592,9 @@ components:
                 updatedOn:
                     format: date-time
                     type: string
+                usedOn:
+                    format: date-time
+                    type: string
             type: object
         v1DeploymentStatus:
             default: DEPLOYMENT_STATUS_UNSPECIFIED
@@ -610,6 +654,12 @@ components:
             properties:
                 yaml:
                     type: string
+            type: object
+        v1GetBillingCreditBalanceResponse:
+            properties:
+                balance:
+                    format: double
+                    type: number
             type: object
         v1GetBillingProjectCredentialsRequest:
             properties:
@@ -685,6 +735,9 @@ components:
                 duckdbConnectorConfig:
                     title: Duckdb connector config for the deployment
                     type: object
+                editable:
+                    description: Whether the deployment is editable (dev environment with changes persisted to git repo).
+                    type: boolean
                 frontendUrl:
                     description: Frontend URL for the deployment.
                     type: string
@@ -696,9 +749,14 @@ components:
                     description: Whether the deployment is git based or archive based.
                     type: boolean
                 variables:
+                    description: Variables for the deployment.
+                    items:
+                        $ref: '#/components/schemas/v1ProjectVariable'
+                    type: array
+                variablesLegacy:
                     additionalProperties:
                         type: string
-                    title: Variables for the deployment (connector credentials, etc.)
+                    description: 'Deprecated: Variables for the deployment. Use `variables` instead.'
                     type: object
             type: object
         v1GetDeploymentCredentialsResponse:
@@ -724,6 +782,13 @@ components:
                 ttlSeconds:
                     format: int64
                     type: integer
+            type: object
+        v1GetGithubPullRequestResponse:
+            properties:
+                prState:
+                    $ref: '#/components/schemas/GetGithubPullRequestResponseState'
+                prUrl:
+                    type: string
             type: object
         v1GetGithubRepoStatusResponse:
             properties:
@@ -1446,6 +1511,9 @@ components:
                 devSlots:
                     format: int64
                     type: string
+                devTtlSeconds:
+                    format: int64
+                    type: string
                 directoryName:
                     type: string
                 frontendUrl:
@@ -1464,6 +1532,9 @@ components:
                 orgId:
                     type: string
                 orgName:
+                    type: string
+                overrideDiskGb:
+                    format: int64
                     type: string
                 primaryBranch:
                     type: string
@@ -1941,20 +2012,6 @@ components:
             type: object
         v1SudoDeleteOrganizationBillingIssueResponse:
             type: object
-        v1SudoExtendTrialRequest:
-            properties:
-                days:
-                    format: int32
-                    type: integer
-                org:
-                    type: string
-            type: object
-        v1SudoExtendTrialResponse:
-            properties:
-                trialEnd:
-                    format: date-time
-                    type: string
-            type: object
         v1SudoGetResourceResponse:
             properties:
                 deployment:
@@ -1968,6 +2025,25 @@ components:
                 user:
                     $ref: '#/components/schemas/v1User'
             type: object
+        v1SudoGrantTrialCreditsRequest:
+            properties:
+                amountUsd:
+                    description: Amount of trial credits to grant in USD.
+                    format: double
+                    type: number
+                description:
+                    description: Optional human-readable reason for the grant.
+                    type: string
+                org:
+                    type: string
+            type: object
+        v1SudoGrantTrialCreditsResponse:
+            properties:
+                grantedUsd:
+                    description: The grant amount actually applied, in USD.
+                    format: double
+                    type: number
+            type: object
         v1SudoIssueRuntimeManagerTokenRequest:
             properties:
                 host:
@@ -1977,6 +2053,39 @@ components:
             properties:
                 token:
                     type: string
+            type: object
+        v1SudoReportUsageRequest:
+            properties:
+                endTime:
+                    description: Optional end time of the reporting window. Defaults to the current server time.
+                    format: date-time
+                    type: string
+                eventName:
+                    type: string
+                org:
+                    type: string
+                projectName:
+                    description: Optional project name attribution for the mock event. If not set, a placeholder is used.
+                    type: string
+                value:
+                    format: double
+                    type: number
+            type: object
+        v1SudoReportUsageResponse:
+            properties:
+                customerId:
+                    type: string
+                endTime:
+                    format: date-time
+                    type: string
+                eventName:
+                    type: string
+                startTime:
+                    format: date-time
+                    type: string
+                value:
+                    format: double
+                    type: number
             type: object
         v1SudoTriggerBillingRepairRequest:
             type: object
@@ -2495,6 +2604,7 @@ paths:
                     description: An unexpected error response.
             summary: UpdateOrganization updates an organization
             x-visibility: public
+    /v1/orgs/{org}/billing/credits: {}
     /v1/orgs/{org}/billing/issues: {}
     /v1/orgs/{org}/billing/payments/portal-url: {}
     /v1/orgs/{org}/billing/subscriptions: {}
@@ -2861,6 +2971,9 @@ paths:
                                     type: string
                                 newName:
                                     type: string
+                                overrideDiskGb:
+                                    format: int64
+                                    type: string
                                 primaryBranch:
                                     type: string
                                 prodSlots:
@@ -2906,6 +3019,8 @@ paths:
     /v1/orgs/{org}/projects/{project}/connect-to-github: {}
     /v1/orgs/{org}/projects/{project}/credentials: {}
     /v1/orgs/{org}/projects/{project}/deployments: {}
+    /v1/orgs/{org}/projects/{project}/github/pr: {}
+    /v1/orgs/{org}/projects/{project}/github/pr/{branch}: {}
     /v1/orgs/{org}/projects/{project}/hibernate: {}
     /v1/orgs/{org}/projects/{project}/iframe: {}
     /v1/orgs/{org}/projects/{project}/invites:
@@ -3716,8 +3831,9 @@ paths:
     /v1/superuser/deployments/manager-token: {}
     /v1/superuser/members: {}
     /v1/superuser/organization/billing/customer_id: {}
+    /v1/superuser/organization/billing/report-usage: {}
     /v1/superuser/organization/custom-domain: {}
-    /v1/superuser/organization/trial/extend: {}
+    /v1/superuser/organization/trial/grant-credits: {}
     /v1/superuser/organizations/{org}/billing/issues/{type}: {}
     /v1/superuser/projects/annotations: {}
     /v1/superuser/projects/search: {}

@@ -8,6 +8,10 @@
   import { Button } from "../../components/button";
   import { useRuntimeClient } from "../../runtime-client/v2";
   import ChatToggle from "../chat/layouts/sidebar/ChatToggle.svelte";
+  import {
+    dashboardChatActions,
+    dashboardChatOpen,
+  } from "../chat/layouts/sidebar/sidebar-store";
   import ViewAsButton from "../dashboards/granular-access-policies/ViewAsButton.svelte";
   import {
     useDashboardPolicyCheck,
@@ -15,6 +19,7 @@
   } from "../dashboards/granular-access-policies/useSecurityPolicyCheck";
   import StateManagersProvider from "../dashboards/state-managers/StateManagersProvider.svelte";
   import { featureFlags } from "../feature-flags";
+  import { getFileHref } from "../../layout/navigation/editor-routing";
 
   export let exploreName: string;
 
@@ -45,7 +50,7 @@
   {/if}
   <StateManagersProvider {metricsViewName} {exploreName} let:ready>
     {#if $dashboardChat}
-      <ChatToggle />
+      <ChatToggle open={dashboardChatOpen} actions={dashboardChatActions} />
     {/if}
     {#if ready}
       <GlobalDimensionSearch />
@@ -62,11 +67,11 @@
         {/snippet}
       </DropdownMenu.Trigger>
       <DropdownMenu.Content align="end">
-        <DropdownMenu.Item href={`/files${exploreFilePath}`}>
+        <DropdownMenu.Item href={getFileHref(exploreFilePath)}>
           <ExploreIcon size="16px" />
           Explore dashboard
         </DropdownMenu.Item>
-        <DropdownMenu.Item href={`/files${metricsViewFilePath}`}>
+        <DropdownMenu.Item href={getFileHref(metricsViewFilePath)}>
           <MetricsViewIcon size="16px" />
           Metrics View
         </DropdownMenu.Item>

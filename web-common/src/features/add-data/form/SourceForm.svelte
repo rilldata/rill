@@ -1,7 +1,6 @@
 <script lang="ts">
   import { createConnectorForm } from "@rilldata/web-common/features/sources/modal/FormValidation.ts";
   import {
-    runtimeServiceGetFile,
     runtimeServiceGetInstance,
     getRuntimeServiceGetInstanceQueryKey,
   } from "@rilldata/web-common/runtime-client";
@@ -31,10 +30,15 @@
   import {
     getConnectorDriverForSchema,
     getImportStepsForSource,
+    maybeGetEnvContent,
   } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
   import { maybeInitProject } from "@rilldata/web-common/features/add-data/manager/steps/connector.ts";
+  import { setSubmitError } from "@rilldata/web-common/features/add-data/form/errors.ts";
+  import type { AddDataStateManager } from "@rilldata/web-common/features/add-data/manager/AddDataStateManager.svelte.ts";
+  import { setError, type SuperValidated } from "sveltekit-superforms";
 
   export let config: AddDataConfig;
+  export let stateManager: AddDataStateManager;
   export let step: CreateModelStep;
   export let onSubmit: (importConfig: ImportStepConfig) => void;
   export let onBack: () => void;
@@ -56,15 +60,7 @@
   let existingEnvBlob: string | null = null;
   let defaultOLAP = "duckdb";
   onMount(async () => {
-    try {
-      const envFile = await runtimeServiceGetFile(runtimeClient, {
-        path: ".env",
-      });
-      existingEnvBlob = envFile.blob ?? "";
-    } catch {
-      // .env doesn't exist yet
-      existingEnvBlob = "";
-    }
+    existingEnvBlob = await maybeGetEnvContent();
     try {
       const runtimeInstance = await queryClient.fetchQuery({
         queryKey: getRuntimeServiceGetInstanceQueryKey(
@@ -85,7 +81,12 @@
     formType: "source",
     onUpdate: async ({ form }) => {
       if (!form.valid) return;
-      return submitImportConfig(form.data);
+      try {
+        await submitImportConfig(form);
+      } catch (e) {
+        stateManager.fireErrorEvent(e.message);
+        setSubmitError(form, e);
+      }
     },
     additionalDefaults: step.connectorFormValues,
   });
@@ -106,12 +107,15 @@
 
   $: sourceFormLabels = getLabelsForSource(importSteps);
 
-  async function submitImportConfig(formValues: any) {
+  async function submitImportConfig(
+    form: SuperValidated<Record<string, unknown>>,
+  ) {
     if (!connectorDriver) {
       throw new Error("Connector driver not found for: " + step.connector);
     }
+    const formValues = form.data;
 
-    await maybeInitProject(runtimeClient, connectorDriver);
+    await maybeInitProject(runtimeClient);
 
     const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
       connectorDriver,
@@ -137,14 +141,17 @@
     if (formValues.file) {
       // TODO: support multiple files upload
       const firstFile = formValues.file[0];
-      const filePath = await uploadFile(runtimeClient, firstFile);
-      if (filePath) {
+      try {
+        const filePath = await uploadFile(runtimeClient, firstFile);
         formValues.path = filePath;
         const [, fileName] = splitFolderFileNameAndExtension(filePath);
         formValues.name = getName(
           fileName,
           fileArtifacts.getNamesForKind(ResourceKind.Model),
         );
+      } catch (e) {
+        setError(form, "file", e.message); // set error on the file field
+        throw e; // rethrow so that global error handler is triggered
       }
     }
     const yaml = getSourceYamlPreview({
@@ -165,7 +172,10 @@
       importSteps,
       connector: rewrittenConnector.name!,
       importFrom,
-      importTo: generateImportToConfig(importFrom, formValues.name),
+      importTo: generateImportToConfig(
+        importFrom,
+        formValues.name as string | undefined,
+      ),
       envBlob: newBlob,
     } satisfies ImportStepConfig;
 

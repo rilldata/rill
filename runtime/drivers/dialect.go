@@ -36,6 +36,8 @@ type Dialect interface {
 	CanPivot() bool
 	EscapeIdentifier(ident string) string
 	EscapeAlias(alias string) string
+	// SanitizeDisplayName returns a sanitized version of the given name so that it conforms to the dialect's identifier rules.
+	SanitizeDisplayName(name string) string
 	EscapeQualifiedIdentifier(name string) string
 	EscapeTable(db, schema, table string) string
 	EscapeMember(tbl, name string) string
@@ -99,6 +101,10 @@ func (b *BaseDialect) EscapeIdentifier(ident string) string {
 
 func (b *BaseDialect) EscapeAlias(alias string) string {
 	return b.escapeAlias(alias)
+}
+
+func (b *BaseDialect) SanitizeDisplayName(name string) string {
+	return name
 }
 
 // EscapeQualifiedIdentifier escapes a dot-separated qualified name (e.g. "schema.table") by escaping each part individually.
@@ -342,7 +348,9 @@ func (b *BaseDialect) SelectInlineResults(result *Result) (string, []any, []any,
 				return "", nil, nil, fmt.Errorf("select inline: failed to get argument expression: %w", err)
 			}
 			prefix += fmt.Sprintf("%s AS %s", argExpr, b.escapeAlias(result.Schema.Fields[i].Name))
-			args = append(args, argVal)
+			if argVal != nil {
+				args = append(args, argVal)
+			}
 		}
 	}
 	if err := result.Err(); err != nil {
@@ -410,6 +418,9 @@ func DoubleQuotesEscapeIdentifier(ident string) string {
 }
 
 func getArgExpr(val any, typ runtimev1.Type_Code) (string, any, error) {
+	if val == nil {
+		return "NULL", nil, nil
+	}
 	// handle bigquery non-timestamp time types separately
 	switch v := val.(type) {
 	case civil.Date:

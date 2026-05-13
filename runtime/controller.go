@@ -29,8 +29,8 @@ const reconcileCancelationTimeout = 10 * time.Minute
 // errCyclicDependency is set as the error on resources that can't be reconciled due to a cyclic dependency
 var errCyclicDependency = errors.New("cannot be reconciled due to cyclic dependency")
 
-// errControllerClosed is returned from controller functions that require the controller to be running
-var errControllerClosed = errors.New("controller is closed")
+// ErrControllerClosed is returned from controller functions that require the controller to be running
+var ErrControllerClosed = errors.New("controller is closed")
 
 // dependencyError is returned when a resource can not be reconciled due to a dependency error.
 type dependencyError struct {
@@ -481,7 +481,7 @@ func (c *Controller) Subscribe(ctx context.Context, fn SubscribeCallback) error 
 	for {
 		select {
 		case <-c.closedCh:
-			return errControllerClosed
+			return ErrControllerClosed
 		case <-ctx.Done():
 			return ctx.Err()
 		}
@@ -850,7 +850,7 @@ func (c *Controller) reconciler(resourceKind string) Reconciler {
 // checkRunning panics if called when the Controller is not running.
 func (c *Controller) checkRunning() error {
 	if c.closed.Load() {
-		return errControllerClosed
+		return ErrControllerClosed
 	}
 	return nil
 }

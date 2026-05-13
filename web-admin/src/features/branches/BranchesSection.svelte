@@ -33,15 +33,24 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CopyableCodeBlock from "@rilldata/web-common/components/calls-to-action/CopyableCodeBlock.svelte";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
+  import type { FilterGroup } from "@rilldata/web-common/components/table-toolbar/types";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import {
-    EyeIcon,
+    createUrlFilterSync,
+    parseArrayParam,
+    parseStringParam,
+  } from "@rilldata/web-common/lib/url-filter-sync";
+  import {
     GitBranchIcon,
     PlayIcon,
     StopCircleIcon,
     Trash2Icon,
   } from "lucide-svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { onMount } from "svelte";
 
   let { organization, project }: { organization: string; project: string } =
     $props();
@@ -51,7 +60,7 @@
       pageSize: 1000,
     }),
   );
-  // Uses empty params `{}` so the cache key matches BranchSelector's query.
+  // Uses empty params `{}` so the cache key matches other unscoped consumers.
   let allDeployments = $derived(
     createAdminServiceListDeployments(
       organization,
@@ -61,7 +70,7 @@
         query: {
           refetchInterval: (query) => {
             const deployments = query.state.data?.deployments;
-            if (deployments?.some((d) => isTransitoryStatus(d.status!))) {
+            if (deployments?.some((d) => isTransitoryStatus(d.status))) {
               return 2000;
             }
             return false;
@@ -100,10 +109,88 @@
       : null,
   );
 
+  // Toolbar state — synced to URL params `q` and `status` (multi-select array)
+  const filterSync = createUrlFilterSync([
+    { key: "q", type: "string" },
+    { key: "status", type: "array" },
+  ]);
+
+  let searchText = $state(parseStringParam(page.url.searchParams.get("q")));
+  let statusFilter = $state<string[]>(
+    parseArrayParam(page.url.searchParams.get("status")),
+  );
+  let mounted = $state(false);
+
+  onMount(() => {
+    filterSync.init(page.url);
+    mounted = true;
+  });
+
+  // URL → local state on external navigation (back/forward)
+  $effect(() => {
+    if (!mounted) return;
+    const url = page.url;
+    if (filterSync.hasExternalNavigation(url)) {
+      filterSync.markSynced(url);
+      searchText = parseStringParam(url.searchParams.get("q"));
+      statusFilter = parseArrayParam(url.searchParams.get("status"));
+    }
+  });
+
+  // Local state → URL
+  $effect(() => {
+    if (!mounted) return;
+    filterSync.syncToUrl({ q: searchText, status: statusFilter });
+  });
+
+  let filterGroups = $derived([
+    {
+      label: "Status",
+      key: "status",
+      options: [
+        { label: "Ready", value: "running" },
+        { label: "Pending", value: "pending" },
+        { label: "Error", value: "errored" },
+        { label: "Stopped", value: "stopped" },
+      ],
+      selected: statusFilter,
+      defaultValue: [],
+      multiSelect: true,
+    },
+  ] satisfies FilterGroup[]);
+
+  function statusMatches(d: V1Deployment): boolean {
+    if (statusFilter.length === 0) return true;
+    const s = d.status;
+    return statusFilter.some((sel) => {
+      switch (sel) {
+        case "running":
+          return s === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING;
+        case "pending":
+          return (
+            s === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING ||
+            s === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING
+          );
+        case "errored":
+          return s === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED;
+        case "stopped":
+          return (
+            s === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED ||
+            s === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING
+          );
+        default:
+          return false;
+      }
+    });
+  }
+
   let visibleDeployments = $derived.by(() => {
+    const q = searchText.trim().toLowerCase();
     const active = ($allDeployments.data?.deployments ?? []).filter(
       (d: V1Deployment) =>
-        d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED,
+        d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED &&
+        statusMatches(d) &&
+        (q === "" || (d.branch ?? "").toLowerCase().includes(q)),
     );
     return [...active].sort((a, b) => {
       const aIsProd = isProdDeployment(a);
@@ -134,14 +221,18 @@
     });
   }
 
-  function previewUrl(branch: string | undefined): string {
-    return `/${organization}/${project}${branchPathPrefix(branch)}`;
+  function editUrl(branch: string | undefined): string {
+    return `/${organization}/${project}${branchPathPrefix(branch)}/-/edit`;
   }
 
   let openDropdownId = $state("");
   let pendingId = $state("");
   let deleteDialogOpen = $state(false);
   let pendingDelete = $state<{ id: string; branch: string } | null>(null);
+
+  function onFilterChange(key: string, selected: string[]) {
+    if (key === "status") statusFilter = selected;
+  }
 
   async function mutateDeployment(
     deploymentId: string,
@@ -167,7 +258,7 @@
     } catch (err) {
       eventBus.emit("notification", {
         type: "error",
-        message: `Failed to ${actionName} branch: ${getRpcErrorMessage(err as any)}`,
+        message: `Failed to ${actionName} branch: ${getRpcErrorMessage(err)}`,
       });
     } finally {
       pendingId = "";
@@ -194,7 +285,7 @@
     } catch (err) {
       eventBus.emit("notification", {
         type: "error",
-        message: `Failed to delete branch: ${getRpcErrorMessage(err as any)}`,
+        message: `Failed to delete branch: ${getRpcErrorMessage(err)}`,
       });
     } finally {
       pendingId = "";
@@ -204,6 +295,17 @@
 
 <section class="flex flex-col gap-y-5">
   <h2 class="text-lg font-medium">Branches</h2>
+
+  <TableToolbar
+    bind:searchText
+    {filterGroups}
+    {onFilterChange}
+    onClearAllFilters={() => {
+      statusFilter = [];
+      searchText = "";
+    }}
+    showSort={false}
+  />
 
   {#if $allDeployments.isLoading}
     <div class="empty-container">
@@ -252,13 +354,30 @@
           status === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED &&
           !isPending}
         {@const canStop = !prod && isActiveDeployment(deployment) && !isPending}
+        {@const branchName = deployment.branch || primaryBranch || "main"}
         <div class="data-row">
           <div class="pl-4 flex items-center gap-2 truncate">
-            <span class="font-mono text-xs truncate">
-              {deployment.branch || primaryBranch || "main"}
+            <span class="font-mono text-xs truncate" title={branchName}>
+              {branchName}
             </span>
             {#if prod}
               <span class="prod-badge">Production</span>
+            {/if}
+            {#if !prod && !deployment.editable}
+              <Tooltip location="bottom" distance={8}>
+                <span class="readonly-badge">Read-only</span>
+                <TooltipContent slot="tooltip-content">
+                  <div class="text-xs max-w-[360px] flex flex-col gap-y-1">
+                    <span>This deployment isn't configured for editing.</span>
+                    <span>
+                      To edit this branch, recreate it with
+                      <code class="font-mono"
+                        >rill project deployment create {branchName} --editable</code
+                      >.
+                    </span>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
             {/if}
             {#if isCurrent}
               <span class="current-badge">Current</span>
@@ -284,67 +403,67 @@
             {formatDate(deployment.updatedOn)}
           </div>
           <div class="pl-4 flex items-center">
-            <DropdownMenu.Root
-              open={openDropdownId === id}
-              onOpenChange={(open) => {
-                openDropdownId = open ? id : "";
-              }}
-            >
-              <DropdownMenu.Trigger class="flex-none">
-                <IconButton rounded active={openDropdownId === id} size={20}>
-                  <ThreeDot size="16px" />
-                </IconButton>
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Content align="start">
-                <DropdownMenu.Item
-                  class="font-normal flex items-center"
-                  href={prod
-                    ? `/${organization}/${project}`
-                    : previewUrl(deployment.branch)}
-                  onclick={requestSkipBranchInjection}
-                >
-                  <div class="flex items-center">
-                    <EyeIcon size="12px" />
-                    <span class="ml-2">{prod ? "View" : "Preview"}</span>
-                  </div>
-                </DropdownMenu.Item>
-                {#if canStart}
-                  <DropdownMenu.Item
-                    class="font-normal flex items-center"
-                    onclick={() =>
-                      mutateDeployment(
-                        id,
-                        deployment.branch,
-                        V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING,
-                        $startMutation.mutateAsync,
-                        "resume",
-                      )}
-                  >
-                    <div class="flex items-center">
-                      <PlayIcon size="12px" />
-                      <span class="ml-2">Resume</span>
-                    </div>
-                  </DropdownMenu.Item>
-                {/if}
-                {#if canStop}
-                  <DropdownMenu.Item
-                    class="font-normal flex items-center"
-                    onclick={() =>
-                      mutateDeployment(
-                        id,
-                        deployment.branch,
-                        V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING,
-                        $stopMutation.mutateAsync,
-                        "hibernate",
-                      )}
-                  >
-                    <div class="flex items-center">
-                      <StopCircleIcon size="12px" />
-                      <span class="ml-2">Hibernate</span>
-                    </div>
-                  </DropdownMenu.Item>
-                {/if}
-                {#if !prod}
+            {#if !prod}
+              <DropdownMenu.Root
+                open={openDropdownId === id}
+                onOpenChange={(open) => {
+                  openDropdownId = open ? id : "";
+                }}
+              >
+                <DropdownMenu.Trigger class="flex-none">
+                  <IconButton rounded active={openDropdownId === id} size={20}>
+                    <ThreeDot size="16px" />
+                  </IconButton>
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Content align="start">
+                  {#if deployment.editable}
+                    <DropdownMenu.Item
+                      class="font-normal flex items-center"
+                      href={editUrl(deployment.branch)}
+                      onclick={requestSkipBranchInjection}
+                    >
+                      <div class="flex items-center">
+                        <PlayIcon size="12px" />
+                        <span class="ml-2">Open editor</span>
+                      </div>
+                    </DropdownMenu.Item>
+                  {/if}
+                  {#if canStart}
+                    <DropdownMenu.Item
+                      class="font-normal flex items-center"
+                      onclick={() =>
+                        mutateDeployment(
+                          id,
+                          deployment.branch,
+                          V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING,
+                          $startMutation.mutateAsync,
+                          "resume",
+                        )}
+                    >
+                      <div class="flex items-center">
+                        <PlayIcon size="12px" />
+                        <span class="ml-2">Resume</span>
+                      </div>
+                    </DropdownMenu.Item>
+                  {/if}
+                  {#if canStop}
+                    <DropdownMenu.Item
+                      class="font-normal flex items-center"
+                      onclick={() =>
+                        mutateDeployment(
+                          id,
+                          deployment.branch,
+                          V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING,
+                          $stopMutation.mutateAsync,
+                          "hibernate",
+                        )}
+                    >
+                      <div class="flex items-center">
+                        <StopCircleIcon size="12px" />
+                        <span class="ml-2">Hibernate</span>
+                      </div>
+                    </DropdownMenu.Item>
+                  {/if}
                   <DropdownMenu.Item
                     class="font-normal flex items-center"
                     disabled={isPending}
@@ -355,9 +474,9 @@
                       <span class="ml-2">Delete</span>
                     </div>
                   </DropdownMenu.Item>
-                {/if}
-              </DropdownMenu.Content>
-            </DropdownMenu.Root>
+                </DropdownMenu.Content>
+              </DropdownMenu.Root>
+            {/if}
           </div>
         </div>
       {/each}
@@ -408,7 +527,8 @@
     @apply shrink-0 text-xs bg-primary-50 text-primary-600 px-1.5 py-0.5 rounded;
   }
 
-  .current-badge {
+  .current-badge,
+  .readonly-badge {
     @apply shrink-0 text-xs bg-gray-100 text-fg-muted px-1.5 py-0.5 rounded;
   }
 

@@ -23,6 +23,9 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+// ErrDeploymentNotReady is returned when a deployment's runtime is not yet available.
+var ErrDeploymentNotReady = errors.New("deployment not ready")
+
 type CreateDeploymentOptions struct {
 	ProjectID   string
 	OwnerUserID *string
@@ -204,12 +207,13 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 
 	// Provision the runtime
 	r, err := s.provisionRuntime(ctx, &provisionRuntimeOptions{
-		DeploymentID: depl.ID,
-		Environment:  depl.Environment,
-		Provisioner:  proj.Provisioner,
-		Slots:        slots,
-		Version:      runtimeVersion,
-		Annotations:  annotations.ToMap(),
+		DeploymentID:   depl.ID,
+		Environment:    depl.Environment,
+		Provisioner:    proj.Provisioner,
+		Slots:          slots,
+		Version:        runtimeVersion,
+		OverrideDiskGB: proj.OverrideDiskGB,
+		Annotations:    annotations.ToMap(),
 	})
 	if err != nil {
 		return err
@@ -296,6 +300,11 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 	if err != nil {
 		return err
 	}
+	// base variables are returned first followed by environment specific variables, so we can just iterate once and overlay them in order
+	v := map[string]string{}
+	for _, variable := range vars {
+		v[variable.Name] = variable.Value
+	}
 
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
@@ -306,7 +315,7 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		AdminConnector: "admin",
 		AiConnector:    "admin",
 		Connectors:     connectors,
-		Variables:      vars,
+		Variables:      v,
 		Annotations:    annotations.ToMap(),
 		FrontendUrl:    frontendURL,
 	})
@@ -327,6 +336,19 @@ func (s *Service) StopDeploymentInner(ctx context.Context, depl *database.Deploy
 		s.Logger.Error("failed to open runtime client", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
 	} else {
 		defer rt.Close()
+
+		// Checkpoint repo changes if this is an editable deployment.
+		// The runtime does checkpoint on close but because DeleteInstance removes the storage directly, the checkpoint can fail.
+		if depl.Editable {
+			_, err = rt.GitPush(ctx, &runtimev1.GitPushRequest{
+				InstanceId:    depl.RuntimeInstanceID,
+				CommitMessage: "Auto checkpoint",
+			})
+			if err != nil {
+				s.Logger.Error("failed to checkpoint repo changes", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
+			}
+		}
+
 		_, err = rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
 			InstanceId: depl.RuntimeInstanceID,
 		})
@@ -407,12 +429,13 @@ func (s *Service) UpdateDeploymentInner(ctx context.Context, d *database.Deploym
 
 	// Provision the runtime. This is idempotent and will (partially) update the existing provisioned runtime if the config has changed.
 	_, err = s.provisionRuntime(ctx, &provisionRuntimeOptions{
-		DeploymentID: d.ID,
-		Environment:  d.Environment,
-		Provisioner:  pr.Provisioner,
-		Slots:        slots,
-		Version:      runtimeVersion,
-		Annotations:  annotations.ToMap(),
+		DeploymentID:   d.ID,
+		Environment:    d.Environment,
+		Provisioner:    pr.Provisioner,
+		Slots:          slots,
+		Version:        runtimeVersion,
+		OverrideDiskGB: proj.OverrideDiskGB,
+		Annotations:    annotations.ToMap(),
 	})
 	if err != nil {
 		return err
@@ -494,9 +517,9 @@ func (s *Service) CheckProvisionerResource(ctx context.Context, pr *database.Pro
 func (s *Service) OpenRuntimeClient(depl *database.Deployment) (*client.Client, error) {
 	if depl.RuntimeHost == "" {
 		if depl.Status == database.DeploymentStatusErrored {
-			return nil, fmt.Errorf("deployment %q has no runtime host: %s", depl.ID, depl.StatusMessage)
+			return nil, fmt.Errorf("%w: deployment %q has no runtime host: %s", ErrDeploymentNotReady, depl.ID, depl.StatusMessage)
 		}
-		return nil, fmt.Errorf("deployment %q has no runtime host", depl.ID)
+		return nil, fmt.Errorf("%w: deployment %q has no runtime host", ErrDeploymentNotReady, depl.ID)
 	}
 
 	jwt, err := s.IssueRuntimeManagementToken(depl.RuntimeAudience)
@@ -517,7 +540,7 @@ func (s *Service) IssueRuntimeManagementToken(aud string) (string, error) {
 		AudienceURL:       aud,
 		Subject:           "admin-service",
 		TTL:               time.Hour,
-		SystemPermissions: []runtime.Permission{runtime.ManageInstances, runtime.ReadInstance, runtime.EditInstance, runtime.EditTrigger, runtime.ReadObjects},
+		SystemPermissions: []runtime.Permission{runtime.ManageInstances, runtime.ReadInstance, runtime.ManageInstance, runtime.EditTrigger, runtime.ReadObjects},
 	})
 	if err != nil {
 		return "", err
@@ -570,13 +593,14 @@ type DeploymentAnnotations struct {
 }
 
 func (da *DeploymentAnnotations) ToMap() map[string]string {
-	res := make(map[string]string, len(da.projAnnotations)+7)
+	res := make(map[string]string, len(da.projAnnotations)+8)
 	for k, v := range da.projAnnotations {
 		res[k] = v
 	}
 	res["organization_id"] = da.orgID
 	res["organization_name"] = da.orgName
 	res["organization_plan"] = da.orgBillingPlanName
+	res["organization_custom_domain"] = da.orgCustomDomain
 	res["project_id"] = da.projID
 	res["project_name"] = da.projName
 	res["slots"] = da.slots
@@ -597,12 +621,13 @@ func resolveSlots(proj *database.Project, environment string) (int, error) {
 }
 
 type provisionRuntimeOptions struct {
-	DeploymentID string
-	Environment  string
-	Provisioner  string
-	Slots        int
-	Version      string
-	Annotations  map[string]string
+	DeploymentID   string
+	Environment    string
+	Provisioner    string
+	Slots          int
+	Version        string
+	OverrideDiskGB *int64
+	Annotations    map[string]string
 }
 
 // triggerDeploymentReconcileJob triggers a reconcile deployment job for the given deployment ID.
@@ -629,9 +654,10 @@ func (s *Service) provisionRuntime(ctx context.Context, opts *provisionRuntimeOp
 
 	// Create provisioner args
 	args := &provisioner.RuntimeArgs{
-		Slots:       opts.Slots,
-		Version:     opts.Version,
-		Environment: opts.Environment,
+		Slots:          opts.Slots,
+		Version:        opts.Version,
+		Environment:    opts.Environment,
+		OverrideDiskGB: opts.OverrideDiskGB,
 	}
 
 	// Call into the generic provision function

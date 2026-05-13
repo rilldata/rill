@@ -13,10 +13,10 @@ import {
 import type { ConnectError } from "@connectrpc/connect";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import {
-  SSEFetchClient,
   SSEHttpError,
-  type SSEMessage,
-} from "@rilldata/web-common/runtime-client/sse-fetch-client";
+  createSSEStream,
+  type SSEStream,
+} from "@rilldata/web-common/runtime-client/sse";
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import {
   derived,
@@ -48,6 +48,19 @@ type ConversationEvents = {
 };
 
 /**
+ * Application-level error sent by the server over SSE as `event: error`.
+ */
+interface ChatServerError {
+  code?: string;
+  error?: string;
+}
+
+type ChatEventMap = {
+  message: V1CompleteStreamingResponse;
+  error: ChatServerError;
+};
+
+/**
  * Individual conversation state management.
  *
  * Handles streaming message sending, optimistic updates, and conversation-specific queries
@@ -69,7 +82,7 @@ export class Conversation {
   ) as typeof this.events.once;
 
   // Private state
-  private sseClient: SSEFetchClient | null = null;
+  private stream: SSEStream<ChatEventMap> | null = null;
   private hasReceivedFirstMessage = false;
   private readonly conversationQuery: CreateQueryResult<
     V1GetConversationResponse,
@@ -297,9 +310,7 @@ export class Conversation {
    * Cancel the current streaming session (user-initiated)
    */
   public cancelStream(): void {
-    if (this.sseClient) {
-      this.sseClient.stop();
-    }
+    this.stream?.close();
     this.isStreaming.set(false);
     this.streamError.set(null);
   }
@@ -308,13 +319,11 @@ export class Conversation {
    * Clean up all resources when conversation is no longer needed (lifecycle cleanup)
    */
   public cleanup(): void {
-    // Cancel any active streaming first
     this.cancelStream();
 
-    // Full resource cleanup
-    if (this.sseClient) {
-      this.sseClient.cleanup();
-      this.sseClient = null;
+    if (this.stream) {
+      this.stream.cleanup();
+      this.stream = null;
     }
 
     this.events.clearListeners();
@@ -338,8 +347,8 @@ export class Conversation {
       comment?: string;
     };
   }): Promise<void> {
-    this.ensureSSEClient();
-    this.sseClient!.stop();
+    this.ensureStream();
+    this.stream!.close();
 
     const baseUrl = `${this.client.host}/v1/instances/${this.instanceId}/ai/complete/stream?stream=messages`;
 
@@ -357,47 +366,79 @@ export class Conversation {
       ...request.context,
     };
 
-    await this.sseClient!.start(baseUrl, {
+    this.stream!.start(baseUrl, {
       method: "POST",
       body: requestBody,
       getJwt: () => this.client.getJwt(),
     });
+
+    // Resolve once the stream closes, matching the old await-on-fetch-client
+    // behavior so callers keep their sequential control flow.
+    await new Promise<void>((resolve) => {
+      const offClose = this.stream!.onceConnection("close", () => {
+        offClose();
+        resolve();
+      });
+    });
   }
 
   /**
-   * Ensure SSE client is initialized with event handlers.
+   * Ensure the SSE connection + typed subscriber are initialized.
+   *
+   * The admin AI endpoint emits success frames untagged (SSESubscriber
+   * normalizes `type === undefined` → "message") and failures as
+   * `event: error`. Both routes through typed decoders here, so this
+   * method no longer needs to parse JSON itself.
    */
-  private ensureSSEClient(): void {
-    if (this.sseClient) return;
+  private ensureStream(): void {
+    if (this.stream) return;
 
-    this.sseClient = new SSEFetchClient();
+    // Chat is a one-shot stream: no retry. SSEConnectionLifecycle is also not
+    // attached — the server ends the stream when the response is complete,
+    // and any cancellation is user-initiated.
+    this.stream = createSSEStream<ChatEventMap>({
+      decoders: {
+        message: (data) => JSON.parse(data) as V1CompleteStreamingResponse,
+        error: (data) => {
+          try {
+            return JSON.parse(data) as ChatServerError;
+          } catch {
+            return { error: data };
+          }
+        },
+      },
+      subscriber: {
+        onParseError: (error, message) => {
+          console.error("Failed to parse streaming response:", {
+            error,
+            type: message.type ?? "message",
+          });
+          this.hasReceivedFirstMessage = true;
+          this.streamError.set("Failed to process server response");
+        },
+      },
+    });
 
-    // Set up SSE event handlers
-    this.sseClient.on("message", (message: SSEMessage) => {
-      // Mark that we've received data
-      // Since server always emits user message first (after persisting),
-      // receiving any message means the server has persisted our message
+    this.stream.on("message", (response) => {
+      // Receiving any message means the server has persisted our user
+      // message (it echoes it back first).
       this.hasReceivedFirstMessage = true;
-
-      // Handle application-level errors sent via SSE
-      if (message.type === "error") {
-        this.handleServerError(message.data);
-        return;
-      }
-
-      // Handle normal streaming data
       try {
-        const response: V1CompleteStreamingResponse = JSON.parse(message.data);
         this.processStreamingResponse(response);
         if (response.message) this.events.emit("message", response.message);
       } catch (error) {
-        console.error("Failed to parse streaming response:", error);
+        console.error("Failed to process streaming response:", error);
         this.streamError.set("Failed to process server response");
       }
     });
 
-    this.sseClient.on("error", (error) => {
-      // Transport errors only: connection, network, HTTP failures
+    this.stream.on("error", (payload) => {
+      this.hasReceivedFirstMessage = true;
+      this.handleServerError(payload);
+    });
+
+    this.stream.onConnection("error", (error) => {
+      // Transport errors: connection, network, HTTP failures.
       console.error("[SSE] Transport error:", {
         message: error.message,
         status: error instanceof SSEHttpError ? error.status : undefined,
@@ -406,10 +447,6 @@ export class Conversation {
         name: error.name,
       });
       this.streamError.set(this.formatTransportError(error));
-    });
-
-    this.sseClient.on("close", () => {
-      // Stream closed - completion handled in caller
     });
   }
 
@@ -636,15 +673,10 @@ export class Conversation {
   // ----- Server Errors (Application-level) -----
 
   /**
-   * Format server error data into user-friendly message
+   * Format a typed server-side error payload into a user-facing string.
    */
-  private formatServerError(errorData: string): string {
-    try {
-      const parsed = JSON.parse(errorData);
-      return parsed.error || "Server error occurred";
-    } catch {
-      return `Server error: ${errorData}`;
-    }
+  private formatServerError(payload: ChatServerError): string {
+    return payload.error || "Server error occurred";
   }
 
   /**
@@ -654,8 +686,8 @@ export class Conversation {
    * AFTER the server has already persisted the user's message. No rollback is needed -
    * the user's message should remain visible in the conversation with an error indicator.
    */
-  private handleServerError(errorData: string): void {
-    this.streamError.set(this.formatServerError(errorData));
+  private handleServerError(payload: ChatServerError): void {
+    this.streamError.set(this.formatServerError(payload));
   }
 
   // ----- Transport Errors (Connection-level) -----

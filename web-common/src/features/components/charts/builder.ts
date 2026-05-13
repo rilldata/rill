@@ -1,5 +1,6 @@
 import {
   sanitizeFieldName,
+  sanitizeTitleForVegaTooltip,
   sanitizeValueForVega,
 } from "@rilldata/web-common/components/vega/util";
 import { createBrushParam } from "@rilldata/web-common/features/components/charts/brush-builder";
@@ -98,15 +99,23 @@ export function createPositionEncoding(
         ...(field.max !== undefined && { domainMax: field.max }),
       },
     }),
-    axis: {
-      ...(field.labelAngle !== undefined && { labelAngle: field.labelAngle }),
-      ...(field.axisOrient && { orient: field.axisOrient }),
-      ...(field.type === "quantitative" && {
-        formatType: sanitizeFieldName(field.field),
-      }),
-      ...(metaData && "format" in metaData && { format: metaData.format }),
-      ...(!field.showAxisTitle && { title: null }),
-    },
+    axis:
+      field.axisOrient === "none"
+        ? null
+        : {
+            ...(field.labelAngle !== undefined && {
+              labelAngle: field.labelAngle,
+            }),
+            ...(field.axisOrient && { orient: field.axisOrient }),
+            ...(field.type === "quantitative" && {
+              formatType: sanitizeFieldName(field.field),
+            }),
+            ...(metaData &&
+              "format" in metaData && {
+                format: metaData.format,
+              }),
+            ...(!field.showAxisTitle && { title: null }),
+          },
   };
 }
 
@@ -387,9 +396,11 @@ export function createCartesianMultiValueTooltipChannel(
 
     if (domainValues) {
       for (const value of domainValues) {
+        const title = sanitizeTitleForVegaTooltip(value);
         // Add current period value
         tooltipFields.push({
           field: sanitizeValueForVega(value),
+          title,
           type: "quantitative" as const,
           formatType: yFormatType,
         });
@@ -397,6 +408,7 @@ export function createCartesianMultiValueTooltipChannel(
         // Add previous period value
         tooltipFields.push({
           field: sanitizeValueForVega(value) + ComparisonDeltaPreviousSuffix,
+          title: title + ComparisonDeltaPreviousSuffix,
           type: "quantitative" as const,
           formatType: yFormatType,
         });
@@ -425,6 +437,7 @@ export function createCartesianMultiValueTooltipChannel(
     multiValueTooltipChannel = data.domainValues?.[colorField]?.map(
       (value) => ({
         field: sanitizeValueForVega(value as string),
+        title: sanitizeTitleForVegaTooltip(value),
         type: "quantitative" as const,
         formatType: yFormatType,
       }),

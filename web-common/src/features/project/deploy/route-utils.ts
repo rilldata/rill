@@ -1,8 +1,8 @@
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import {
-  DeployingDashboardUrlParam,
-  getDeployingDashboard,
+  TargetDashboardUrlParam,
+  getTargetDashboard,
 } from "@rilldata/web-common/features/project/deploy/utils.ts";
 import { addPosthogSessionIdToUrl } from "@rilldata/web-common/lib/analytics/posthog.ts";
 import { createLocalServiceGitStatus } from "@rilldata/web-common/runtime-client/local-service";
@@ -16,7 +16,7 @@ import type { V1ResourceName } from "@rilldata/web-common/runtime-client";
 /**
  * Returns a {@link Readable} with a route to deploy.
  *
- * Adds a "deploying_dashboard" param based on the active page.
+ * Adds a "target_dashboard" param based on the active page.
  * 1. If the user is on the editor page, gets the dashboard name from resourceName defined in {@link FileArtifact}. Since this is async we need a store derived from resourceName.
  * 2. If the user is on the visualization page, sets the dashboard name from route param.
  */
@@ -30,7 +30,7 @@ export function getDeployRoute(page: Page) {
   }
 
   if (isDashboardVizRoute(page)) {
-    deployUrl.searchParams.set(DeployingDashboardUrlParam, page.params.name);
+    deployUrl.searchParams.set(TargetDashboardUrlParam, page.params.name);
   }
 
   return readable(deployUrl.toString());
@@ -62,12 +62,9 @@ export function getUpdateProjectRoute(
     currentResource?.kind === ResourceKind.Explore ||
     currentResource?.kind === ResourceKind.Canvas
   ) {
-    deployUrl.searchParams.set(
-      DeployingDashboardUrlParam,
-      currentResource.name!,
-    );
+    deployUrl.searchParams.set(TargetDashboardUrlParam, currentResource.name!);
   } else if (isDashboardVizRoute(page)) {
-    deployUrl.searchParams.set(DeployingDashboardUrlParam, page.params.name);
+    deployUrl.searchParams.set(TargetDashboardUrlParam, page.params.name);
   }
 
   return deployUrl.toString();
@@ -91,9 +88,9 @@ export function getSelectOrganizationRoute() {
 
 export function getDeployingPageUrl(frontendUrl: string, isInvite: boolean) {
   const url = new URL(frontendUrl);
-  const deployingDashboard = getDeployingDashboard();
-  if (deployingDashboard) {
-    url.searchParams.set(DeployingDashboardUrlParam, deployingDashboard);
+  const targetDashboard = getTargetDashboard();
+  if (targetDashboard) {
+    url.searchParams.set(TargetDashboardUrlParam, targetDashboard);
   }
   if (isInvite) {
     url.pathname += "/-/invite";
@@ -184,7 +181,7 @@ function getDeployRouteFromEditor(page: Page, deployUrl: URL) {
       curResource?.kind === ResourceKind.Explore ||
       curResource?.kind === ResourceKind.Canvas;
     if (isDashboardResource && curResource.name) {
-      deployUrl.searchParams.set(DeployingDashboardUrlParam, curResource.name);
+      deployUrl.searchParams.set(TargetDashboardUrlParam, curResource.name);
     }
 
     return deployUrl.toString();

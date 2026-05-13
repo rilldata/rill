@@ -226,19 +226,6 @@ export function convertURLToExplorePreset(
     }
   }
 
-  if (searchParams.has(ExploreStateURLParams.ForceLineChart)) {
-    const raw = searchParams
-      .get(ExploreStateURLParams.ForceLineChart)
-      ?.toLowerCase();
-    if (raw === "true" || raw === "1") {
-      preset.chartForceLine = true;
-    } else if (raw === "false" || raw === "0" || raw === "") {
-      preset.chartForceLine = false;
-    } else {
-      errors.push(getSingleFieldError("force line chart", raw ?? ""));
-    }
-  }
-
   return { preset, errors };
 }
 
@@ -545,6 +532,12 @@ function fromExploreUrlParams(
     } else {
       errors.push(getSingleFieldError("sort type", sortType));
     }
+  }
+
+  if (searchParams.has(ExploreStateURLParams.ChartType)) {
+    preset.timeDimensionChartType = searchParams.get(
+      ExploreStateURLParams.ChartType,
+    ) as string;
   }
 
   return { preset, errors };

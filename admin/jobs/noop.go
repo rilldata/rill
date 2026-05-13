@@ -56,6 +56,14 @@ func (n *noop) PaymentSuccess(ctx context.Context, billingCustomerID, invoiceID 
 	return nil, nil
 }
 
+func (n *noop) CreditBalanceDropped(ctx context.Context, billingCustomerID string) (*InsertResult, error) {
+	return nil, nil
+}
+
+func (n *noop) CreditBalanceDepleted(ctx context.Context, billingCustomerID string) (*InsertResult, error) {
+	return nil, nil
+}
+
 func (n *noop) HandlePlanChangeBillingIssues(ctx context.Context, orgID, subID, planID string, subStartDate time.Time) (*InsertResult, error) {
 	return nil, nil
 }
@@ -68,7 +76,7 @@ func (n *noop) RepairOrgBilling(ctx context.Context, orgID string) (*InsertResul
 	return nil, nil
 }
 
-func (n *noop) StartOrgTrial(ctx context.Context, orgID string) (*InsertResult, error) {
+func (n *noop) StartOrgCreditTrial(ctx context.Context, orgID string) (*InsertResult, error) {
 	return nil, nil
 }
 

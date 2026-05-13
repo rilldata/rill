@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import ContextButton from "@rilldata/web-common/components/button/ContextButton.svelte";
+  import { getFileHref } from "@rilldata/web-common/layout/navigation/editor-routing";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import Alert from "@rilldata/web-common/components/icons/Alert.svelte";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
@@ -27,14 +28,14 @@
   import CopyIcon from "../../components/icons/CopyIcon.svelte";
   import CanvasMenuItems from "../canvas/CanvasMenuItems.svelte";
   import { fileArtifacts } from "../entity-management/file-artifacts";
-  import { getTopLevelFolder } from "../entity-management/file-path-utils";
   import { getIconComponent } from "../entity-management/resource-icon-mapping";
   import { ResourceKind } from "../entity-management/resource-selectors";
   import ExploreMenuItems from "../explores/ExploreMenuItems.svelte";
   import MetricsViewMenuItems from "../metrics-views/MetricsViewMenuItems.svelte";
   import ModelMenuItems from "../models/navigation/ModelMenuItems.svelte";
   import SourceMenuItems from "../sources/navigation/SourceMenuItems.svelte";
-  import { PROTECTED_DIRECTORIES, PROTECTED_FILES } from "./protected-paths";
+  import { isProtectedDirectory } from "@rilldata/web-common/features/entity-management/actions/protected-files.ts";
+  import { getTopLevelFolder } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
 
   export let filePath: string;
   export let onRename: (filePath: string, isDir: boolean) => void;
@@ -64,9 +65,9 @@
     $inferredResourceKind) as ResourceKind;
   $: padding = getPaddingFromPath(filePath);
   $: topLevelFolder = getTopLevelFolder(filePath);
-  $: isProtectedDirectory = PROTECTED_DIRECTORIES.includes(topLevelFolder);
+  $: protectedDirectory = isProtectedDirectory(topLevelFolder);
   $: isDotFile = fileName && fileName.startsWith(".");
-  $: isProtectedFile = PROTECTED_FILES.includes(filePath);
+  $: isProtectedFile = fileArtifact.pinned || fileArtifact.managed;
 
   $: hasErrors = fileArtifact.getHasErrors(queryClient);
   $: hasWarnings = fileArtifact.getHasWarnings(queryClient);
@@ -85,7 +86,7 @@
   }
 
   function handleMouseDown(e: MouseEvent) {
-    if (PROTECTED_FILES.includes(filePath)) return;
+    if (isProtectedFile) return;
     onMouseDown(e, { id, filePath, isDir: false, kind: resourceKind });
   }
 </script>
@@ -97,11 +98,11 @@
   class:opacity-50={$hasUnsavedChanges || $saving}
 >
   <a
-    class="w-full truncate flex items-center gap-x-1 font-medium {isProtectedDirectory ||
+    class="w-full truncate flex items-center gap-x-1 font-medium {protectedDirectory ||
     isDotFile
       ? 'hover:text-fg-secondary text-fg-muted '
       : 'text-fg-primary hover:text-fg-primary'}"
-    href="/files{filePath}"
+    href={getFileHref(filePath)}
     {id}
     class:italic={$hasUnsavedChanges || $saving}
     onclick={fireTelemetry}
@@ -130,7 +131,7 @@
       {fileName}
     </span>
   </a>
-  {#if !isProtectedDirectory && !isProtectedFile}
+  {#if !protectedDirectory && !isProtectedFile}
     <DropdownMenu.Root bind:open={contextMenuOpen}>
       <DropdownMenu.Trigger>
         {#snippet child({ props })}

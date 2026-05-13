@@ -64,6 +64,13 @@ export const ToolName = {
 // CHAT CONFIG
 // =============================================================================
 
+/**
+ * The two AI surfaces in a Rill workspace. Used to scope sidebar-chat sessionStorage
+ * (open state, conversation ID) so a Cloud Rill Developer (`/-/edit/...`) session
+ * does not leak into the production tab opened on Publish.
+ */
+export type ChatSurface = "developer" | "dashboard";
+
 export type ChatConfig = {
   agent: string;
   additionalContextStoreGetter: () => Readable<

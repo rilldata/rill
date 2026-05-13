@@ -8,7 +8,6 @@ import {
   isTeamPlan,
 } from "@rilldata/web-admin/features/billing/plans/utils";
 import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
-import { areAllProjectsHibernating } from "@rilldata/web-admin/features/organizations/selectors";
 import type { BannerMessage } from "@rilldata/web-common/lib/event-bus/events";
 import { derived } from "svelte/store";
 
@@ -18,9 +17,10 @@ export type BillingIssueMessage = {
   title: string;
   description: string;
   cta?: BillingIssueMessageCTA;
+  dismissible?: BannerMessage["dismissible"];
 };
 export type BillingIssueMessageCTA = {
-  type: "upgrade" | "payment" | "contact" | "wake-projects";
+  type: "upgrade" | "show-upgrade" | "payment" | "contact";
   text: string;
 
   teamPlanDialogType?: TeamPlanDialogTypes;
@@ -32,32 +32,29 @@ export function useBillingIssueMessage(organization: string) {
     [
       createAdminServiceGetOrganization(organization),
       useCategorisedOrganizationBillingIssues(organization),
-      areAllProjectsHibernating(organization),
     ],
-    ([orgResp, categorisedIssuesResp, allProjectsHibernatingResp]) => {
-      if (
-        orgResp.isLoading ||
-        categorisedIssuesResp.isLoading ||
-        allProjectsHibernatingResp.isLoading
-      ) {
+    ([orgResp, categorisedIssuesResp]) => {
+      if (orgResp.isLoading || categorisedIssuesResp.isLoading) {
         return {
           isFetching: true,
           isLoading: true,
           error: undefined,
         };
       }
-      if (
-        orgResp.error ||
-        categorisedIssuesResp.error ||
-        allProjectsHibernatingResp.error
-      ) {
+      if (orgResp.error || categorisedIssuesResp.error) {
         return {
           isFetching: false,
           isLoading: false,
-          error:
-            orgResp.error ??
-            categorisedIssuesResp.error ??
-            allProjectsHibernatingResp.error,
+          error: orgResp.error ?? categorisedIssuesResp.error,
+        };
+      }
+
+      if (categorisedIssuesResp.data?.trial) {
+        return {
+          isFetching: false,
+          isLoading: false,
+          error: undefined,
+          data: getMessageForTrialPlan(categorisedIssuesResp.data.trial),
         };
       }
 
@@ -69,15 +66,6 @@ export function useBillingIssueMessage(organization: string) {
           data: getMessageForCancelledIssue(
             categorisedIssuesResp.data.cancelled,
           ),
-        };
-      }
-
-      if (categorisedIssuesResp.data?.trial) {
-        return {
-          isFetching: false,
-          isLoading: false,
-          error: undefined,
-          data: getMessageForTrialPlan(categorisedIssuesResp.data.trial),
         };
       }
 
@@ -98,24 +86,6 @@ export function useBillingIssueMessage(organization: string) {
             error: undefined,
             data: paymentIssue,
           };
-      }
-
-      if (allProjectsHibernatingResp.data) {
-        return {
-          isFetching: false,
-          isLoading: false,
-          error: undefined,
-          data: <BillingIssueMessage>{
-            type: "default",
-            title: "Your org’s projects are hibernating.",
-            description: "",
-            iconType: "sleep",
-            cta: {
-              type: "wake-projects",
-              text: "Wake projects",
-            },
-          },
-        };
       }
 
       return {

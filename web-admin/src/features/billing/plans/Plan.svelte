@@ -46,12 +46,12 @@
 
 {#if neverSubbed}
   <!-- TODO: once mocks are in. Right now we just disable the routes. -->
+{:else if subIsFreePlan}
+  <FreePlan {organization} {plan} />
 {:else if isTrial}
   <TrialPlan {organization} {subscription} {showUpgradeDialog} {plan} />
 {:else if subHasEnded}
   <CancelledTeamPlan {organization} {showUpgradeDialog} {plan} />
-{:else if subIsFreePlan}
-  <FreePlan {organization} {plan} />
 {:else if subIsProPlan}
   <ProPlan {organization} {subscription} {plan} />
 {:else if subIsTeamPlan}

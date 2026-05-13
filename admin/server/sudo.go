@@ -21,7 +21,7 @@ func (s *Server) SudoIssueRuntimeManagerToken(ctx context.Context, req *adminv1.
 
 	jwt, err := s.admin.IssueRuntimeManagementToken(req.Host)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to issue runtime manager token: %v", err)
+		return nil, err
 	}
 
 	return &adminv1.SudoIssueRuntimeManagerTokenResponse{

@@ -16,8 +16,8 @@ test.describe("ClickHouse connector", () => {
 
   test.beforeAll(async () => {
     await clickhouseOne.start();
-    await clickhouseOne.seedAdBids();
     await clickhouseTwo.start();
+    await clickhouseOne.seedAdBids();
     await clickhouseTwo.seedAdImpressions();
   });
 
@@ -265,9 +265,9 @@ test.describe("ClickHouse connector", () => {
         .getByLabel("clickhouse_1-default.ad_impressions")
         .click();
 
-      // Click generate dashboard button
+      // Click the primary submit button (metrics-view-only flow).
       await page
-        .getByRole("button", { name: "Generate dashboard with AI" })
+        .getByRole("button", { name: "Generate metrics with AI" })
         .click();
 
       // Creating metrics view is triggered.
@@ -472,10 +472,11 @@ async function selectAdBidsAndSubmit(page: Page, metricsViewOnly: boolean) {
     .getByLabel("clickhouse-default.ad_bids")
     .click();
 
-  // Click generate dashboard button
-  await page
-    .getByRole("button", { name: "Generate dashboard with AI" })
-    .click();
+  // Click the primary submit button
+  const submitLabel = metricsViewOnly
+    ? "Generate metrics with AI"
+    : "Generate dashboard with AI";
+  await page.getByRole("button", { name: submitLabel }).click();
 
   // Creating metrics view is triggered.
   await expect(page.getByText("Creating Metrics View...")).toBeVisible();
@@ -517,10 +518,8 @@ async function selectAdImpressionsAndSubmit(page: Page, connectorName: string) {
     .getByLabel(`${connectorName}-default.ad_impressions`)
     .click();
 
-  // Click generate dashboard button
-  await page
-    .getByRole("button", { name: "Generate dashboard with AI" })
-    .click();
+  // Click the primary submit button (metrics-view-only flow).
+  await page.getByRole("button", { name: "Generate metrics with AI" }).click();
 
   // Wait for navigation to the new file
   await page.waitForURL(/\/files\/metrics\/ad_impressions_metrics.yaml/, {

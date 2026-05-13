@@ -15,8 +15,11 @@ import {
   type FileDiffBlock,
   type WriteFileCallData,
 } from "../file-diff/file-diff-block";
-import { goto } from "$app/navigation";
 import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
+import {
+  navigateToFile,
+  navigateToHome,
+} from "@rilldata/web-common/layout/navigation/editor-routing";
 import {
   createSimpleTooCall,
   type SimpleToolCall,
@@ -139,7 +142,7 @@ function handleNavigateToolCall(callMessage: V1Message) {
     if (!content.kind || !content.name) return;
     switch (content.kind) {
       case "file":
-        void goto(`/files${addLeadingSlash(content.name)}`);
+        void navigateToFile(addLeadingSlash(content.name));
     }
   } catch (err) {
     console.error(err);
@@ -165,7 +168,7 @@ function handleWriteFilesToolResult(
     if (!content.remove) return;
     const filePath = addLeadingSlash(content.path);
     if (isCurrentActivePage(filePath, false)) {
-      void goto("/");
+      void navigateToHome();
     }
   } catch (err) {
     console.error(err);

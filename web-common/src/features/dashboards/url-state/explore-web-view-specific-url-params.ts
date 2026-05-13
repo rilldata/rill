@@ -18,7 +18,7 @@ export const ExploreWebViewSpecificURLParams: Record<
     ExploreStateURLParams.HighlightedTimeRange,
     ExploreStateURLParams.ComparisonDimension,
     ExploreStateURLParams.DynamicYAxisScale,
-    ExploreStateURLParams.ForceLineChart,
+    ExploreStateURLParams.ChartType,
   ],
   tdd: [
     ExploreStateURLParams.WebView,
@@ -29,7 +29,6 @@ export const ExploreWebViewSpecificURLParams: Record<
     ExploreStateURLParams.HighlightedTimeRange,
     ExploreStateURLParams.ComparisonDimension,
     ExploreStateURLParams.DynamicYAxisScale,
-    ExploreStateURLParams.ForceLineChart,
   ],
   pivot: [
     ExploreStateURLParams.WebView,
@@ -55,7 +54,7 @@ export const ExploreWebViewCommonURLParams: Partial<
       ExploreStateURLParams.HighlightedTimeRange,
       ExploreStateURLParams.ComparisonDimension,
       ExploreStateURLParams.DynamicYAxisScale,
-      ExploreStateURLParams.ForceLineChart,
+      ExploreStateURLParams.ChartType,
     ],
   },
   tdd: {
@@ -64,7 +63,7 @@ export const ExploreWebViewCommonURLParams: Partial<
       ExploreStateURLParams.HighlightedTimeRange,
       ExploreStateURLParams.ComparisonDimension,
       ExploreStateURLParams.DynamicYAxisScale,
-      ExploreStateURLParams.ForceLineChart,
+      ExploreStateURLParams.ChartType,
     ],
   },
 };

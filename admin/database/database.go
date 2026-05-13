@@ -504,6 +504,9 @@ type Project struct {
 	DevSlots int `db:"dev_slots"`
 	// DevTTLSeconds is the time-to-live for dev deployments.
 	DevTTLSeconds int64 `db:"dev_ttl_seconds"`
+	// OverrideDiskGB, if set, overrides the disk size in GB that would otherwise be derived from the slot count.
+	// It applies to both production and dev deployments.
+	OverrideDiskGB *int64 `db:"override_disk_gb"`
 	// Annotations are internally configured key-value metadata about the project.
 	// They propagate to the project's deployments and telemetry.
 	Annotations map[string]string `db:"annotations"`
@@ -534,6 +537,7 @@ type InsertProjectOptions struct {
 	ProdTTLSeconds       *int64
 	DevSlots             int
 	DevTTLSeconds        int64
+	OverrideDiskGB       *int64
 }
 
 // UpdateProjectOptions defines options for updating a Project.
@@ -556,6 +560,7 @@ type UpdateProjectOptions struct {
 	ProdTTLSeconds       *int64
 	DevSlots             int
 	DevTTLSeconds        int64
+	OverrideDiskGB       *int64
 	Annotations          map[string]string
 }
 
@@ -1305,6 +1310,8 @@ const (
 	BillingIssueTypePaymentFailed                          = 5
 	BillingIssueTypeSubscriptionCancelled                  = 6
 	BillingIssueTypeNeverSubscribed                        = 7
+	BillingIssueTypeOnCreditTrial                          = 8
+	BillingIssueTypeTrialCreditsDepleted                   = 9
 )
 
 type BillingIssueLevel int
@@ -1365,6 +1372,19 @@ type BillingIssueMetadataSubscriptionCancelled struct {
 }
 
 type BillingIssueMetadataNeverSubscribed struct{}
+
+type BillingIssueMetadataOnCreditTrial struct {
+	SubID            string  `json:"subscription_id"`
+	PlanID           string  `json:"plan_id"`
+	CreditAllocation float64 `json:"credit_allocation"`
+	LowCredit        bool    `json:"low_credit"` // set once the customer's credit balance has dropped below the low-credit threshold.
+}
+
+type BillingIssueMetadataTrialCreditsDepleted struct {
+	SubID      string    `json:"subscription_id"`
+	PlanID     string    `json:"plan_id"`
+	DepletedOn time.Time `json:"depleted_on"`
+}
 
 type UpsertBillingIssueOptions struct {
 	OrgID     string           `validate:"required"`

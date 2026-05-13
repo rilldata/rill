@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import {
     Bot,
@@ -9,6 +8,7 @@
     PlusCircleIcon,
     Wand,
   } from "lucide-svelte";
+  import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
   import Button from "../../../components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
@@ -48,6 +48,7 @@
   let showAiConnectorDialog = false;
   let addDataModalOpen = false;
   let addDataConnector = "";
+  let addDataTargetResource: ResourceKind | undefined;
 
   let screenName = MetricsEventScreenName.Home;
 
@@ -89,6 +90,7 @@
   function handleAddData() {
     addDataModalOpen = true;
     addDataConnector = "";
+    addDataTargetResource = undefined;
     screenName = getScreenNameFromPage();
   }
 
@@ -135,7 +137,7 @@
       createOnly: true,
     });
 
-    await goto(`/files/${path}`);
+    await navigateToFile(`/${path}`);
   }
 </script>
 
@@ -177,12 +179,14 @@
       onSelect={(connector) => {
         addDataModalOpen = true;
         addDataConnector = connector;
+        addDataTargetResource = ResourceKind.Model;
       }}
     />
     <AddMetricsViewSubOption
       onSelect={(connector) => {
         addDataModalOpen = true;
         addDataConnector = connector;
+        addDataTargetResource = ResourceKind.MetricsView;
       }}
     />
     <DropdownMenu.Separator />
@@ -325,6 +329,7 @@
     medium: BehaviourEventMedium.Menu,
     space: MetricsEventSpace.LeftPanel,
     screen: screenName,
+    targetResource: addDataTargetResource,
   }}
   bind:open={addDataModalOpen}
   connector={addDataConnector}

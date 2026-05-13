@@ -80,8 +80,26 @@ export function inferSchemaForConnector(connector: V1AnalyzedConnector) {
         )?.path?.startsWith("md:")
       )
         return "motherduck";
+      if (isDuckLakeConnector(connector)) return "ducklake";
       break;
   }
 
   return driverName;
+}
+
+function isDuckLakeConnector(connector: V1AnalyzedConnector): boolean {
+  const attachCandidates: unknown[] = [
+    (connector.config as Record<string, unknown> | undefined)?.attach,
+    (connector.projectConfig as Record<string, unknown> | undefined)?.attach,
+    (connector.presetConfig as Record<string, unknown> | undefined)?.attach,
+  ];
+  if (
+    attachCandidates.some(
+      (v) => typeof v === "string" && v.includes("ducklake:"),
+    )
+  ) {
+    return true;
+  }
+  const name = connector.name ?? "";
+  return name === "ducklake" || name.startsWith("ducklake_");
 }

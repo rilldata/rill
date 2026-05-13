@@ -407,7 +407,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 		}
 
 		// check if there are uncommitted changes
-		st, err := gitutil.RunGitStatus(gitPath, subPath, remote.Name)
+		st, err := gitutil.RunGitStatus(gitPath, subPath, remote.Name, "")
 		if err != nil {
 			return nil, fmt.Errorf("failed to get git status: %w", err)
 		}
