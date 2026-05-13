@@ -305,10 +305,14 @@
             ? formatters[measureName]?.(deltaAbsMap[measureName])
             : null}
           customStyle={deltaAbsMap[measureName] !== null &&
-          (lowerIsBetterMap[measureName] ? deltaAbsMap[measureName] > 0 : deltaAbsMap[measureName] < 0)
+          (lowerIsBetterMap[measureName]
+            ? deltaAbsMap[measureName] > 0
+            : deltaAbsMap[measureName] < 0)
             ? "text-kpi-negative"
             : deltaAbsMap[measureName] !== null &&
-                (lowerIsBetterMap[measureName] ? deltaAbsMap[measureName] < 0 : deltaAbsMap[measureName] > 0)
+                (lowerIsBetterMap[measureName]
+                  ? deltaAbsMap[measureName] < 0
+                  : deltaAbsMap[measureName] > 0)
               ? "text-kpi-positive"
               : ""}
           truncate={true}
