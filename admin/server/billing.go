@@ -380,7 +380,7 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 		return nil, status.Error(codes.FailedPrecondition, "billing not yet initialized for the organization")
 	}
 
-	bisc, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeSubscriptionCancelled)
+	_, err = s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeSubscriptionCancelled)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			return nil, status.Errorf(codes.FailedPrecondition, "subscription not cancelled for the organization %s", org.Name)
@@ -437,49 +437,9 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 		}
 	}
 
-	// update quotas
-	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
-		Name:                                org.Name,
-		DisplayName:                         org.DisplayName,
-		Description:                         org.Description,
-		LogoAssetID:                         org.LogoAssetID,
-		LogoDarkAssetID:                     org.LogoDarkAssetID,
-		FaviconAssetID:                      org.FaviconAssetID,
-		ThumbnailAssetID:                    org.ThumbnailAssetID,
-		CustomDomain:                        org.CustomDomain,
-		DefaultProjectRoleID:                org.DefaultProjectRoleID,
-		QuotaProjects:                       valOrDefault(sub.Plan.Quotas.NumProjects, org.QuotaProjects),
-		QuotaDeployments:                    valOrDefault(sub.Plan.Quotas.NumDeployments, org.QuotaDeployments),
-		QuotaSlotsTotal:                     valOrDefault(sub.Plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
-		QuotaSlotsPerDeployment:             valOrDefault(sub.Plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
-		QuotaOutstandingInvites:             valOrDefault(sub.Plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
-		QuotaStorageLimitBytesPerDeployment: valOrDefault(sub.Plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
-		BillingCustomerID:                   org.BillingCustomerID,
-		BillingPlanName:                     &sub.Plan.Name,
-		BillingPlanDisplayName:              &sub.Plan.DisplayName,
-		PaymentCustomerID:                   org.PaymentCustomerID,
-		BillingEmail:                        org.BillingEmail,
-		CreatedByUserID:                     org.CreatedByUserID,
-	})
+	org, err = s.updateQuotasAndHandleBillingIssues(ctx, org, sub)
 	if err != nil {
 		return nil, err
-	}
-
-	// delete the billing issue
-	err = s.admin.DB.DeleteBillingIssue(ctx, bisc.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	// If this renewal is the post-depletion upgrade clear the TrialCreditsDepleted block.
-	depleted, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeTrialCreditsDepleted)
-	if err != nil && !errors.Is(err, database.ErrNotFound) {
-		return nil, err
-	}
-	if depleted != nil {
-		if err := s.admin.DB.DeleteBillingIssue(ctx, depleted.ID); err != nil {
-			return nil, fmt.Errorf("failed to delete trial-credits-depleted issue: %w", err)
-		}
 	}
 
 	s.logger.Named("billing").Info("subscription renewed", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("plan_id", sub.Plan.ID), zap.String("plan_name", sub.Plan.Name))
