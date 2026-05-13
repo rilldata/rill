@@ -9,6 +9,7 @@
   import {
     branchPathPrefix,
     extractBranchFromPath,
+    injectBranchIntoPath,
   } from "@rilldata/web-admin/features/branches/branch-utils";
   import BranchDeploymentStopped from "@rilldata/web-admin/features/branches/BranchDeploymentStopped.svelte";
   import EditSessionLoading from "@rilldata/web-admin/features/edit-session/EditSessionLoading.svelte";
@@ -28,6 +29,7 @@
   import { isProjectWelcomePage } from "@rilldata/web-admin/features/navigation/nav-utils.ts";
   import WelcomeRedirector from "@rilldata/web-admin/features/welcome/project/WelcomeRedirector.svelte";
   import { InfoIcon } from "lucide-svelte";
+  import EnvironmentVariablesEditor from "@rilldata/web-admin/features/projects/environment-variables/EnvironmentVariablesEditor.svelte";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -38,6 +40,11 @@
   // Keep the workspace route prefix in sync for cloud editing.
   $: editorRoutePrefix.set(
     `/${organization}/${project}${branchPathPrefix(branch)}/-/edit`,
+  );
+
+  $: settingsHref = injectBranchIntoPath(
+    `/${organization}/${project}/-/edit/env`,
+    branch,
   );
 
   // Root layout data: org permissions, plan display name, organization object
@@ -199,15 +206,8 @@
 </div>
 
 {#snippet envEditDisabled()}
-  <div class="flex flex-row gap-2 items-center w-fit text-sm">
-    <InfoIcon size={14} /> Manage environment variables in
-    <a
-      href="/{organization}/{project}/-/settings/environment-variables"
-      target="_blank"
-      rel="noopener"
-    >
-      Settings →
-    </a>
+  <div class="p-4 bg-surface-base h-full border">
+    <EnvironmentVariablesEditor />
   </div>
 {/snippet}
 

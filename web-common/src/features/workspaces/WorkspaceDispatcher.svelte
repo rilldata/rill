@@ -102,7 +102,7 @@
         />
         <svelte:fragment slot="body">
           {#if managed && notice}
-            <div class="flex flex-col size-full items-center justify-center">
+            <div class="flex flex-col size-full">
               {@render notice()}
             </div>
           {:else}
