@@ -654,12 +654,10 @@ func (s *Service) provisionRuntime(ctx context.Context, opts *provisionRuntimeOp
 
 	// Create provisioner args
 	args := &provisioner.RuntimeArgs{
-		Slots:       opts.Slots,
-		Version:     opts.Version,
-		Environment: opts.Environment,
-	}
-	if opts.OverrideDiskGB != nil {
-		args.OverrideDiskGB = *opts.OverrideDiskGB
+		Slots:          opts.Slots,
+		Version:        opts.Version,
+		Environment:    opts.Environment,
+		OverrideDiskGB: opts.OverrideDiskGB,
 	}
 
 	// Call into the generic provision function

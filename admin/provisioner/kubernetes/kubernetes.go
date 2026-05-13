@@ -194,8 +194,8 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, r *provisioner.Re
 
 	// Compute storage. If an override is provided on the project, it takes precedence over the slot-based default.
 	storageBytes := 40 * int64(args.Slots) * int64(datasize.GB)
-	if args.OverrideDiskGB > 0 {
-		storageBytes = args.OverrideDiskGB * int64(datasize.GB)
+	if args.OverrideDiskGB != nil && *args.OverrideDiskGB > 0 {
+		storageBytes = *args.OverrideDiskGB * int64(datasize.GB)
 	}
 
 	// Define template data
