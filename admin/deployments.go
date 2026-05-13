@@ -333,10 +333,11 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 // The implementation is idempotent, enabling it to be called from a retryable background job.
 func (s *Service) StopDeploymentInner(ctx context.Context, depl *database.Deployment) error {
 	// Connect to the deployment's runtime and checkpoint repo changes if editable.
+	// Best effort: if the runtime is unreachable (e.g. already gone or partially torn down), we proceed to hibernate the provisioner resources anyway.
 	if depl.Editable {
 		rt, err := s.OpenRuntimeClient(depl)
 		if err != nil {
-			s.Logger.Error("failed to open runtime client", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
+			s.Logger.Info("failed to open runtime client for deployment stop", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
 		} else {
 			defer rt.Close()
 
@@ -391,7 +392,6 @@ func (s *Service) StopDeploymentInner(ctx context.Context, depl *database.Deploy
 // DeleteDeploymentInner deletes a deployment by deprovisioning its runtime instance and resources.
 // Unlike StopDeploymentInner, this deletes all provisioned resources, wiping persistent state.
 // The implementation is idempotent, enabling it to be called from a retryable background job.
-// The caller is responsible for deleting the deployment row from the database afterwards.
 func (s *Service) DeleteDeploymentInner(ctx context.Context, depl *database.Deployment) error {
 	// If the deployment is running, try to do a graceful delete.
 	// It may not be running if it was previously stopped/hibernated.

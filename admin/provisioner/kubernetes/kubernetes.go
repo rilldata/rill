@@ -340,7 +340,6 @@ func (p *KubernetesProvisioner) Hibernate(ctx context.Context, r *provisioner.Re
 		return nil, err
 	}
 
-	// Mark hibernated in our state.
 	state.Hibernated = true
 
 	return &provisioner.Resource{

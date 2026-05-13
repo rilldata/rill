@@ -33,13 +33,13 @@ func (w *HibernateExpiredDeploymentsWorker) Work(ctx context.Context, job *river
 	}
 	w.logger.Info("hibernate: checking running deployments", zap.Int("deployments", len(running)))
 	for _, depl := range running {
-		w.logger.Info("hibernate: stopping deployment", zap.String("project_id", depl.ProjectID), zap.String("deployment_id", depl.ID))
-		err := w.stopDeployment(ctx, depl)
+		w.logger.Info("hibernate: enqueueing stop for deployment", zap.String("project_id", depl.ProjectID), zap.String("deployment_id", depl.ID))
+		err := w.admin.StopDeployment(ctx, depl)
 		if err != nil {
-			w.logger.Error("hibernate: failed to stop deployment", zap.String("project_id", depl.ProjectID), zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
+			w.logger.Error("hibernate: failed to enqueue stop for deployment", zap.String("project_id", depl.ProjectID), zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
 			continue
 		}
-		w.logger.Info("hibernate: stopped deployment", zap.String("project_id", depl.ProjectID), zap.String("deployment_id", depl.ID))
+		w.logger.Info("hibernate: enqueued stop for deployment", zap.String("project_id", depl.ProjectID), zap.String("deployment_id", depl.ID))
 	}
 	w.logger.Info("hibernate: completed running deployments check", zap.Int("deployments", len(running)))
 
@@ -50,24 +50,15 @@ func (w *HibernateExpiredDeploymentsWorker) Work(ctx context.Context, job *river
 	}
 	w.logger.Info("hibernate: checking stopped deployments", zap.Int("deployments", len(stopped)))
 	for _, depl := range stopped {
-		w.logger.Info("hibernate: deleting deployment", zap.String("project_id", depl.ProjectID), zap.String("deployment_id", depl.ID))
+		w.logger.Info("hibernate: enqueueing delete for stopped deployment", zap.String("project_id", depl.ProjectID), zap.String("deployment_id", depl.ID))
 		err := w.deleteStoppedDeployment(ctx, depl)
 		if err != nil {
-			w.logger.Error("hibernate: failed to delete stopped deployment", zap.String("project_id", depl.ProjectID), zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
+			w.logger.Error("hibernate: failed to enqueue delete for stopped deployment", zap.String("project_id", depl.ProjectID), zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
 			continue
 		}
-		w.logger.Info("hibernate: deleted stopped deployment", zap.String("project_id", depl.ProjectID), zap.String("deployment_id", depl.ID))
+		w.logger.Info("hibernate: enqueued delete for stopped deployment", zap.String("project_id", depl.ProjectID), zap.String("deployment_id", depl.ID))
 	}
 	w.logger.Info("hibernate: completed stopped deployments check", zap.Int("deployments", len(stopped)))
-
-	return nil
-}
-
-func (w *HibernateExpiredDeploymentsWorker) stopDeployment(ctx context.Context, depl *database.Deployment) error {
-	err := w.admin.StopDeployment(ctx, depl)
-	if err != nil {
-		return err
-	}
 
 	return nil
 }
