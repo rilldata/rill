@@ -751,13 +751,6 @@ func (c *Client) SendPaidPlanStarted(opts *PaidPlan) error {
 Thank you! You’ve successfully upgraded %s to the %s plan.
 <br /><br />
 Your next billing cycle starts on <b>%s</b>.
-<br /><br />
-As part of a paid plan, enjoy a complimentary 30-minute consultation call with our product experts 
-who can help optimize your setup (we can help tweak your data models/metrics, provide recommendations on setting up incremental refreshes, 
-help with work on security policies, or any other features and also share best practices. 
-<br /><br />
-Interested inscheduling a call?
-<a href="https://calendly.com/roy-endo-rilldata/30min" style="color:#4736F5">Book a time slot here</a>
 `, opts.OrgName, opts.PlanName, opts.BillingStartDate.Format(dateFormat))),
 	})
 }
@@ -770,7 +763,7 @@ func (c *Client) SendPaidPlanRenewal(opts *PaidPlan) error {
 		Subject:     fmt.Sprintf("Your %s plan subscription for %s has been renewed", opts.PlanName, opts.OrgName),
 		FrontendURL: opts.FrontendURL,
 		WelcomeText: template.HTML(fmt.Sprintf(`
-Thank you! You’ve successfully renewed to the <b>%s</b> for %s plan.
+Thank you! You’ve successfully renewed %s to the <b>%s</b> plan.
 <br /><br />
 Your next billing cycle starts on %s.
 `, opts.OrgName, opts.PlanName, opts.BillingStartDate.Format(dateFormat))),
