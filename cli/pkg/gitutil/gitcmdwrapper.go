@@ -24,7 +24,10 @@ type GitStatus struct {
 	RemoteCommits int32
 }
 
-func RunGitStatus(path, subpath, remoteName string) (GitStatus, error) {
+// RunGitStatus returns the status of the git repo at path.
+// If remoteBranch is non-empty, ahead/behind counts compare the local branch against
+// `<remoteName>/<remoteBranch>` instead of `<remoteName>/<localBranch>`.
+func RunGitStatus(path, subpath, remoteName, remoteBranch string) (GitStatus, error) {
 	var args []string
 	if subpath == "" {
 		args = []string{"-C", path, "status", "--porcelain=v2", "--branch"}
@@ -65,11 +68,17 @@ func RunGitStatus(path, subpath, remoteName string) (GitStatus, error) {
 		}
 	}
 
-	localCommits, err := countCommitsAhead(path, subpath, fmt.Sprintf("%s/%s", remoteName, status.Branch), status.Branch)
+	compareBranch := remoteBranch
+	if compareBranch == "" {
+		compareBranch = status.Branch
+	}
+	remoteRef := fmt.Sprintf("%s/%s", remoteName, compareBranch)
+
+	localCommits, err := countCommitsAhead(path, subpath, remoteRef, status.Branch)
 	if err == nil {
 		status.LocalCommits = localCommits
 	}
-	remoteCommits, err := countCommitsAhead(path, subpath, status.Branch, fmt.Sprintf("%s/%s", remoteName, status.Branch))
+	remoteCommits, err := countCommitsAhead(path, subpath, status.Branch, remoteRef)
 	if err == nil {
 		status.RemoteCommits = remoteCommits
 	}
@@ -103,7 +112,7 @@ func RunGitFetch(ctx context.Context, path, remote string) error {
 // RunGitPull runs a git pull command in the specified path.
 func RunGitPull(ctx context.Context, path string, discardLocal bool, remote, remoteName string) (string, error) {
 	// current status of the full repo
-	st, err := RunGitStatus(path, "", remoteName)
+	st, err := RunGitStatus(path, "", remoteName, "")
 	if err != nil {
 		return "", err
 	}

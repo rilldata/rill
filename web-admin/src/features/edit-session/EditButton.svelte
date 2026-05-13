@@ -1,9 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import {
-    createAdminServiceGetCurrentUser,
-    V1DeploymentStatus,
-  } from "@rilldata/web-admin/client";
+  import { V1DeploymentStatus } from "@rilldata/web-admin/client";
   import {
     injectBranchIntoPath,
     requestSkipBranchInjection,
@@ -19,28 +16,24 @@
   /** The project's primary branch, used as the source for new branches. */
   export let primaryBranch: string | undefined = undefined;
 
-  const user = createAdminServiceGetCurrentUser();
   const devDeployments = useDevDeployments(organization, project);
 
   let dialogOpen = false;
 
-  $: currentUserId = $user.data?.user?.id;
   $: deployments = $devDeployments.data?.deployments ?? [];
   $: isLoading = $devDeployments.isLoading;
 
-  // If viewing a branch the user owns, clicking the button should go straight
+  // If viewing an editable branch, clicking the button should go straight
   // there — no dialog.
-  $: activeBranchDeployment =
-    activeBranch && currentUserId
-      ? deployments.find(
-          (d) =>
-            d.branch === activeBranch &&
-            d.ownerUserId === currentUserId &&
-            d.editable &&
-            d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING &&
-            d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED,
-        )
-      : undefined;
+  $: activeBranchDeployment = activeBranch
+    ? deployments.find(
+        (d) =>
+          d.branch === activeBranch &&
+          d.editable &&
+          d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING &&
+          d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED,
+      )
+    : undefined;
 
   $: directEditHref = activeBranchDeployment?.branch
     ? injectBranchIntoPath(
@@ -52,7 +45,7 @@
   function handleDirectEdit(e: MouseEvent) {
     e.preventDefault();
     requestSkipBranchInjection();
-    void goto(directEditHref!);
+    void goto(directEditHref);
   }
 </script>
 

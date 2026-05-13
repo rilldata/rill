@@ -20,7 +20,7 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 	// Get authenticated admin client
 	if !s.app.ch.IsAuthenticated() {
 		// if not authenticated do not return local/remote changes info
-		st, err := gitutil.RunGitStatus(gitPath, subPath, "origin")
+		st, err := gitutil.RunGitStatus(gitPath, subPath, "origin", "")
 		if err != nil {
 			return nil, err
 		}
@@ -39,7 +39,7 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 			return nil, err
 		}
 		// if not connected to a project do not return local/remote changes info
-		st, err := gitutil.RunGitStatus(gitPath, subPath, "origin")
+		st, err := gitutil.RunGitStatus(gitPath, subPath, "origin", "")
 		if err != nil {
 			return nil, err
 		}
@@ -72,7 +72,7 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 	if err != nil {
 		return nil, err
 	}
-	gs, err := gitutil.RunGitStatus(gitPath, subPath, config.RemoteName())
+	gs, err := gitutil.RunGitStatus(gitPath, subPath, config.RemoteName(), "")
 	if err != nil {
 		return nil, err
 	}
@@ -270,7 +270,7 @@ func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPush
 	}
 
 	// fetch the status again
-	gs, err := gitutil.RunGitStatus(gitPath, subpath, config.RemoteName())
+	gs, err := gitutil.RunGitStatus(gitPath, subpath, config.RemoteName(), "")
 	if err != nil {
 		return nil, err
 	}

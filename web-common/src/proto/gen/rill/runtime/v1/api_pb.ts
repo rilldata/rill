@@ -5729,6 +5729,14 @@ export class GitStatusRequest extends Message$1<GitStatusRequest> {
    */
   instanceId = "";
 
+  /**
+   * remote_branch is the remote branch to compare the current local branch against.
+   * If empty, the upstream of the current local branch is used.
+   *
+   * @generated from field: string remote_branch = 2;
+   */
+  remoteBranch = "";
+
   constructor(data?: PartialMessage<GitStatusRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5738,6 +5746,7 @@ export class GitStatusRequest extends Message$1<GitStatusRequest> {
   static readonly typeName = "rill.runtime.v1.GitStatusRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "remote_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitStatusRequest {
