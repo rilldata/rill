@@ -551,6 +551,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		ProdTTLSeconds:       prodTTL,
 		DevSlots:             devSlots,
 		DevTTLSeconds:        devTTL,
+		OverrideDiskGB:       nil, // default to no override; can be set later by superusers
 	}
 
 	// Check and validate the project file source.
