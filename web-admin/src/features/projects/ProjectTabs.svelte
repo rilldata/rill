@@ -4,6 +4,7 @@
     width,
   } from "@rilldata/web-admin//components/nav/Tab.svelte";
   import Tab from "@rilldata/web-admin/components/nav/Tab.svelte";
+  import { isBranchPreview } from "@rilldata/web-admin/features/branches/branch-state";
   import { removeBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { type V1ProjectPermissions } from "../../client";
@@ -15,8 +16,6 @@
   export let branchPrefix: string = "";
 
   const { chat, reports, alerts } = featureFlags;
-
-  $: isBranchView = branchPrefix !== "";
 
   $: tabs = [
     {
@@ -42,12 +41,12 @@
     {
       route: `/${organization}/${project}${branchPrefix}/-/reports`,
       label: "Reports",
-      hasPermission: $reports && !isBranchView,
+      hasPermission: $reports && !$isBranchPreview,
     },
     {
       route: `/${organization}/${project}${branchPrefix}/-/alerts`,
       label: "Alerts",
-      hasPermission: $alerts && !isBranchView,
+      hasPermission: $alerts && !$isBranchPreview,
     },
     {
       route: `/${organization}/${project}${branchPrefix}/-/status`,
@@ -57,7 +56,7 @@
     {
       route: `/${organization}/${project}${branchPrefix}/-/settings`,
       label: "Settings",
-      hasPermission: projectPermissions.manageProject && !isBranchView,
+      hasPermission: projectPermissions.manageProject && !$isBranchPreview,
     },
   ];
 
