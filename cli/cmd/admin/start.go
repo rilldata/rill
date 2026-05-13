@@ -106,10 +106,11 @@ type Config struct {
 	ScaleDownConstraint               int    `default:"0" split_words:"true"`
 	OrbAPIKey                         string `split_words:"true"`
 	OrbWebhookSecret                  string `split_words:"true"`
-	OrbIntegratedTaxProvider          string `default:"avalara" split_words:"true"`
+	OrbIntegratedTaxProvider          string `default:"anrok" split_words:"true"`
 	StripeAPIKey                      string `split_words:"true"`
 	StripeWebhookSecret               string `split_words:"true"`
 	PylonIdentitySecret               string `split_words:"true"`
+	AllowMockBilling                  bool   `default:"false" split_words:"true"` // set to allow sending mock usage for billing, should be false in prod env
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -331,6 +332,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				MetricsProjectName:        metricsProjectName,
 				AutoscalerCron:            conf.AutoscalerCron,
 				ScaleDownConstraint:       conf.ScaleDownConstraint,
+				AllowMockBilling:          conf.AllowMockBilling,
 			}
 			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiService, assetsBucket, biller, p)
 			if err != nil {

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { V1DeploymentStatus } from "@rilldata/web-admin/client";
   import {
     injectBranchIntoPath,
     requestSkipBranchInjection,
@@ -19,19 +20,32 @@
 
   let dialogOpen = false;
 
+  $: deployments = $devDeployments.data?.deployments ?? [];
   $: isLoading = $devDeployments.isLoading;
 
-  // On a branch view, jump straight into edit mode for that branch.
-  // On production view, fall through to the dialog so the user can pick
-  // an existing dev branch or create a new one.
-  $: directEditHref = activeBranch
-    ? injectBranchIntoPath(`/${organization}/${project}/-/edit`, activeBranch)
+  // If viewing an editable branch, clicking the button should go straight
+  // there — no dialog.
+  $: activeBranchDeployment = activeBranch
+    ? deployments.find(
+        (d) =>
+          d.branch === activeBranch &&
+          d.editable &&
+          d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING &&
+          d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED,
+      )
+    : undefined;
+
+  $: directEditHref = activeBranchDeployment?.branch
+    ? injectBranchIntoPath(
+        `/${organization}/${project}/-/edit`,
+        activeBranchDeployment.branch,
+      )
     : undefined;
 
   function handleDirectEdit(e: MouseEvent) {
     e.preventDefault();
     requestSkipBranchInjection();
-    void goto(directEditHref!);
+    void goto(directEditHref);
   }
 </script>
 

@@ -19,6 +19,7 @@
   export let pivotDataStore: PivotDataStore | undefined;
   export let pivotConfig: Readable<PivotDataStoreConfig> | undefined;
   export let pivotState: Writable<PivotState>;
+  export let widthScopeKey: string;
   export let hasHeader = false;
 
   $: pivotColumns = splitPivotChips($pivotState.columns);
@@ -46,6 +47,7 @@
       />
     {:else}
       <PivotTable
+        {widthScopeKey}
         border={hasHeader}
         rounded={hasHeader}
         {pivotDataStore}

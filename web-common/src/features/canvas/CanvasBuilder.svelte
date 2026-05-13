@@ -311,6 +311,8 @@
     position: { row: number; column: number },
     items: CanvasComponentType[],
   ) {
+    if (!defaultMetrics) return;
+
     performTransaction({
       operations: items.map((type, i) => ({
         type: "add",
@@ -325,6 +327,7 @@
     const id = getId(position.row, position.column);
 
     setSelectedComponent(id);
+    openSidebar();
   }
 
   function updateContents() {
@@ -356,6 +359,7 @@
     });
 
     setSelectedComponent(id);
+    openSidebar();
   }
 
   function onDrop(row: number, column: number | null) {
@@ -557,6 +561,7 @@
 {#if specCanvasRows.length}
   <AddComponentDropdown
     floatingForm
+    disabled={!defaultMetrics}
     onItemClick={(type) => {
       initializeRow(specCanvasRows.length, type);
       setTimeout(() => scrollToBottom(), 500);

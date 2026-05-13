@@ -20,7 +20,7 @@
 </script>
 
 <SettingsContainer title={plan?.displayName ?? "Pro"}>
-  <div slot="body">
+  <div>
     Next billing cycle will start on
     <b>{getNextBillingCycleDate(subscription.currentBillingCycleEndDate)}</b>.
     <a
@@ -30,8 +30,8 @@
     >
     <PlanQuotas {organization} />
   </div>
-  <svelte:fragment slot="contact">
+  {#snippet contact()}
     <span>For any questions,</span>
     <ContactUs />
-  </svelte:fragment>
+  {/snippet}
 </SettingsContainer>

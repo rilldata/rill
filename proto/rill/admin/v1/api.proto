@@ -790,6 +790,19 @@ service AdminService {
     option (google.api.http) = {get: "/v1/github/user/repositories"};
   }
 
+  // CreateGithubPullRequest creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
+  rpc CreateGithubPullRequest(CreateGithubPullRequestRequest) returns (CreateGithubPullRequestResponse) {
+    option (google.api.http) = {
+      post: "/v1/orgs/{org}/projects/{project}/github/pr",
+      body: "*"
+    };
+  }
+
+  // GetGithubPullRequest returns the status of the PR for the specified branch, if it exists.
+  rpc GetGithubPullRequest(GetGithubPullRequestRequest) returns (GetGithubPullRequestResponse) {
+    option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/github/pr/{branch}"};
+  }
+
   // Connects a rill managed project to github.
   // Replaces the contents of the remote repo with the contents of the project.
   rpc ConnectProjectToGithub(ConnectProjectToGithubRequest) returns (ConnectProjectToGithubResponse) {
@@ -899,10 +912,18 @@ service AdminService {
     };
   }
 
-  // SudoExtendTrial extends the trial period for an organization
-  rpc SudoExtendTrial(SudoExtendTrialRequest) returns (SudoExtendTrialResponse) {
+  // SudoGrantTrialCredits grants additional trial credits to an organization on the credit-based trial plan.
+  rpc SudoGrantTrialCredits(SudoGrantTrialCreditsRequest) returns (SudoGrantTrialCreditsResponse) {
     option (google.api.http) = {
-      post: "/v1/superuser/organization/trial/extend",
+      post: "/v1/superuser/organization/trial/grant-credits",
+      body: "*"
+    };
+  }
+
+  // SudoReportUsage reports a mock usage event for an organization.
+  rpc SudoReportUsage(SudoReportUsageRequest) returns (SudoReportUsageResponse) {
+    option (google.api.http) = {
+      post: "/v1/superuser/organization/billing/report-usage",
       body: "*"
     };
   }
@@ -1265,6 +1286,11 @@ service AdminService {
   // GetPaymentsPortalURL returns the URL for the billing session to collect payment method
   rpc GetPaymentsPortalURL(GetPaymentsPortalURLRequest) returns (GetPaymentsPortalURLResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/billing/payments/portal-url"};
+  }
+
+  // GetBillingCreditBalance returns the organization's remaining trial credit balance
+  rpc GetBillingCreditBalance(GetBillingCreditBalanceRequest) returns (GetBillingCreditBalanceResponse) {
+    option (google.api.http) = {get: "/v1/orgs/{org}/billing/credits"};
   }
 
   // ListPublicBillingPlans lists all public billing plans
@@ -1848,6 +1874,7 @@ message UpdateProjectRequest {
   optional string prod_version = 11;
   optional int64 dev_slots = 16;
   bool superuser_force_access = 14;
+  optional int64 override_disk_gb = 17;
 }
 
 message UpdateProjectResponse {
@@ -2111,13 +2138,35 @@ message SudoUpdateOrganizationBillingCustomerResponse {
   Subscription subscription = 2;
 }
 
-message SudoExtendTrialRequest {
+message SudoGrantTrialCreditsRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
-  int32 days = 2 [(validate.rules).int32 = {gt: 0, lte: 30}];
+  // Amount of trial credits to grant in USD.
+  double amount_usd = 2 [(validate.rules).double = {gt: 0}];
+  // Optional human-readable reason for the grant.
+  string description = 3;
 }
 
-message SudoExtendTrialResponse {
-  google.protobuf.Timestamp trial_end = 1;
+message SudoGrantTrialCreditsResponse {
+  // The grant amount actually applied, in USD.
+  double granted_usd = 1;
+}
+
+message SudoReportUsageRequest {
+  string org = 1 [(validate.rules).string.min_len = 1];
+  string event_name = 2 [(validate.rules).string.min_len = 1];
+  double value = 3 [(validate.rules).double = {gt: 0}];
+  // Optional end time of the reporting window. Defaults to the current server time.
+  google.protobuf.Timestamp end_time = 4;
+  // Optional project name attribution for the mock event. If not set, a placeholder is used.
+  string project_name = 5;
+}
+
+message SudoReportUsageResponse {
+  string customer_id = 1;
+  string event_name = 2;
+  double value = 3;
+  google.protobuf.Timestamp start_time = 4;
+  google.protobuf.Timestamp end_time = 5;
 }
 
 message SudoUpdateOrganizationCustomDomainRequest {
@@ -2688,6 +2737,38 @@ message ListGithubUserReposResponse {
   repeated Repo repos = 1;
 }
 
+message CreateGithubPullRequestRequest {
+  string org = 1;
+  string project = 2;
+  // The head branch for the PR
+  string branch = 3;
+  // Optional title of the PR. If not set, a default title will be used
+  string title = 5;
+  /// Optional body of the PR
+  string body = 6;
+}
+
+message CreateGithubPullRequestResponse {
+  string pr_url = 1;
+}
+
+message GetGithubPullRequestRequest {
+  string org = 1;
+  string project = 2;
+  string branch = 3;
+}
+
+message GetGithubPullRequestResponse {
+  string pr_url = 1;
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    STATE_OPEN = 1;
+    STATE_CLOSED_UNMERGED = 2;
+    STATE_MERGED = 3;
+  }
+  State pr_state = 2;
+}
+
 message ConnectProjectToGithubRequest {
   string org = 1;
   string project = 2;
@@ -3089,6 +3170,15 @@ message GetPaymentsPortalURLResponse {
   string url = 1;
 }
 
+message GetBillingCreditBalanceRequest {
+  string org = 1 [(validate.rules).string.min_len = 1];
+  bool superuser_force_access = 2;
+}
+
+message GetBillingCreditBalanceResponse {
+  double balance = 1;
+}
+
 message ListPublicBillingPlansRequest {}
 
 message ListPublicBillingPlansResponse {
@@ -3268,6 +3358,8 @@ message Project {
   int64 dev_slots = 25;
   string frontend_url = 16; // Note: Does NOT incorporate the parent org's custom domain.
   int64 prod_ttl_seconds = 18;
+  int64 dev_ttl_seconds = 27;
+  int64 override_disk_gb = 28;
   map<string, string> annotations = 20;
   string prod_version = 21;
   google.protobuf.Timestamp created_on = 14;
@@ -3301,6 +3393,7 @@ message Deployment {
   string status_message = 8;
   google.protobuf.Timestamp created_on = 9;
   google.protobuf.Timestamp updated_on = 10;
+  google.protobuf.Timestamp used_on = 14;
 }
 
 message ProvisionerResource {
@@ -3595,6 +3688,8 @@ enum BillingIssueType {
   BILLING_ISSUE_TYPE_PAYMENT_FAILED = 5;
   BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED = 6;
   BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED = 7;
+  BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL = 8;
+  BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED = 9;
 }
 
 enum BillingIssueLevel {
@@ -3621,6 +3716,8 @@ message BillingIssueMetadata {
     BillingIssueMetadataPaymentFailed payment_failed = 5;
     BillingIssueMetadataSubscriptionCancelled subscription_cancelled = 6;
     BillingIssueMetadataNeverSubscribed never_subscribed = 7;
+    BillingIssueMetadataOnCreditTrial on_credit_trial = 8;
+    BillingIssueMetadataTrialCreditsDepleted trial_credits_depleted = 9;
   }
 }
 
@@ -3658,3 +3755,16 @@ message BillingIssueMetadataSubscriptionCancelled {
 }
 
 message BillingIssueMetadataNeverSubscribed {}
+
+message BillingIssueMetadataOnCreditTrial {
+  string subscription_id = 1;
+  string plan_id = 2;
+  double credit_allocation = 3;
+  bool low_credit = 4;
+}
+
+message BillingIssueMetadataTrialCreditsDepleted {
+  string subscription_id = 1;
+  string plan_id = 2;
+  google.protobuf.Timestamp depleted_on = 3;
+}

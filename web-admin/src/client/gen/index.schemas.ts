@@ -11,6 +11,17 @@ export interface GetAlertMetaResponseURLs {
   unsubscribeUrl?: string;
 }
 
+export type GetGithubPullRequestResponseState =
+  (typeof GetGithubPullRequestResponseState)[keyof typeof GetGithubPullRequestResponseState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetGithubPullRequestResponseState = {
+  STATE_UNSPECIFIED: "STATE_UNSPECIFIED",
+  STATE_OPEN: "STATE_OPEN",
+  STATE_CLOSED_UNMERGED: "STATE_CLOSED_UNMERGED",
+  STATE_MERGED: "STATE_MERGED",
+} as const;
+
 export type GetReportMetaResponseDeliveryMetaUserAttrs = {
   [key: string]: unknown;
 };
@@ -157,6 +168,8 @@ export interface V1BillingIssueMetadata {
   paymentFailed?: V1BillingIssueMetadataPaymentFailed;
   subscriptionCancelled?: V1BillingIssueMetadataSubscriptionCancelled;
   neverSubscribed?: V1BillingIssueMetadataNeverSubscribed;
+  onCreditTrial?: V1BillingIssueMetadataOnCreditTrial;
+  trialCreditsDepleted?: V1BillingIssueMetadataTrialCreditsDepleted;
 }
 
 export interface V1BillingIssueMetadataNeverSubscribed {
@@ -169,6 +182,13 @@ export interface V1BillingIssueMetadataNoBillableAddress {
 
 export interface V1BillingIssueMetadataNoPaymentMethod {
   [key: string]: unknown;
+}
+
+export interface V1BillingIssueMetadataOnCreditTrial {
+  subscriptionId?: string;
+  planId?: string;
+  creditAllocation?: number;
+  lowCredit?: boolean;
 }
 
 export interface V1BillingIssueMetadataOnTrial {
@@ -195,6 +215,12 @@ export interface V1BillingIssueMetadataSubscriptionCancelled {
   endDate?: string;
 }
 
+export interface V1BillingIssueMetadataTrialCreditsDepleted {
+  subscriptionId?: string;
+  planId?: string;
+  depletedOn?: string;
+}
+
 export interface V1BillingIssueMetadataTrialEnded {
   endDate?: string;
   gracePeriodEndDate?: string;
@@ -215,6 +241,9 @@ export const V1BillingIssueType = {
   BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED:
     "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED",
   BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED: "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED",
+  BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL: "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL",
+  BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED:
+    "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED",
 } as const;
 
 export interface V1BillingPlan {
@@ -330,6 +359,10 @@ export interface V1CreateDeploymentResponse {
   deployment?: V1Deployment;
 }
 
+export interface V1CreateGithubPullRequestResponse {
+  prUrl?: string;
+}
+
 export interface V1CreateManagedGitRepoResponse {
   remote?: string;
   username?: string;
@@ -425,6 +458,7 @@ export interface V1Deployment {
   statusMessage?: string;
   createdOn?: string;
   updatedOn?: string;
+  usedOn?: string;
 }
 
 export type V1DeploymentStatus =
@@ -492,6 +526,10 @@ export interface V1GetAlertMetaResponse {
 
 export interface V1GetAlertYAMLResponse {
   yaml?: string;
+}
+
+export interface V1GetBillingCreditBalanceResponse {
+  balance?: number;
 }
 
 export interface V1GetBillingProjectCredentialsRequest {
@@ -579,6 +617,11 @@ export interface V1GetDeploymentResponse {
   instanceId?: string;
   accessToken?: string;
   ttlSeconds?: number;
+}
+
+export interface V1GetGithubPullRequestResponse {
+  prUrl?: string;
+  prState?: GetGithubPullRequestResponseState;
 }
 
 export interface V1GetGithubRepoStatusResponse {
@@ -1047,6 +1090,8 @@ export interface V1Project {
   /** Note: Does NOT incorporate the parent org's custom domain. */
   frontendUrl?: string;
   prodTtlSeconds?: string;
+  devTtlSeconds?: string;
+  overrideDiskGb?: string;
   annotations?: V1ProjectAnnotations;
   prodVersion?: string;
   createdOn?: string;
@@ -1389,15 +1434,6 @@ export interface V1SudoDeleteOrganizationBillingIssueResponse {
   [key: string]: unknown;
 }
 
-export interface V1SudoExtendTrialRequest {
-  org?: string;
-  days?: number;
-}
-
-export interface V1SudoExtendTrialResponse {
-  trialEnd?: string;
-}
-
 export interface V1SudoGetResourceResponse {
   user?: V1User;
   org?: V1Organization;
@@ -1406,12 +1442,43 @@ export interface V1SudoGetResourceResponse {
   instance?: V1Deployment;
 }
 
+export interface V1SudoGrantTrialCreditsRequest {
+  org?: string;
+  /** Amount of trial credits to grant in USD. */
+  amountUsd?: number;
+  /** Optional human-readable reason for the grant. */
+  description?: string;
+}
+
+export interface V1SudoGrantTrialCreditsResponse {
+  /** The grant amount actually applied, in USD. */
+  grantedUsd?: number;
+}
+
 export interface V1SudoIssueRuntimeManagerTokenRequest {
   host?: string;
 }
 
 export interface V1SudoIssueRuntimeManagerTokenResponse {
   token?: string;
+}
+
+export interface V1SudoReportUsageRequest {
+  org?: string;
+  eventName?: string;
+  value?: number;
+  /** Optional end time of the reporting window. Defaults to the current server time. */
+  endTime?: string;
+  /** Optional project name attribution for the mock event. If not set, a placeholder is used. */
+  projectName?: string;
+}
+
+export interface V1SudoReportUsageResponse {
+  customerId?: string;
+  eventName?: string;
+  value?: number;
+  startTime?: string;
+  endTime?: string;
 }
 
 export interface V1SudoTriggerBillingRepairRequest {
@@ -1754,6 +1821,10 @@ export type AdminServiceUpdateOrganizationBody = {
   billingEmail?: string;
 };
 
+export type AdminServiceGetBillingCreditBalanceParams = {
+  superuserForceAccess?: boolean;
+};
+
 export type AdminServiceListOrganizationBillingIssuesParams = {
   superuserForceAccess?: boolean;
 };
@@ -1898,6 +1969,7 @@ export type AdminServiceUpdateProjectBody = {
   prodVersion?: string;
   devSlots?: string;
   superuserForceAccess?: boolean;
+  overrideDiskGb?: string;
 };
 
 export type AdminServiceGetCloneCredentialsParams = {
@@ -1948,6 +2020,12 @@ Optional for `dev` deployments. */
   /** Whether the deployment is editable and the edited changes are persisted back to the git repo.
 Can't be set for `prod` deployments. */
   editable?: boolean;
+};
+
+export type AdminServiceCreateGithubPullRequestBody = {
+  branch?: string;
+  title?: string;
+  body?: string;
 };
 
 export type AdminServiceHibernateProjectParams = {

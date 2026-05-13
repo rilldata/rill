@@ -1,16 +1,18 @@
-import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
 import {
   extractFileName,
   getTopLevelFolder,
   splitFolderFileNameAndExtension,
-} from "@rilldata/web-common/features/entity-management/file-path-utils";
-import { fileIsMainEntity } from "@rilldata/web-common/features/entity-management/file-selectors";
-import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-import { isNotFoundError } from "@rilldata/web-common/lib/errors";
+} from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
+import { fileIsMainEntity } from "@rilldata/web-common/features/entity-management/file-selectors.ts";
+import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+import {
+  isControllerClosedError,
+  isNotFoundError,
+} from "@rilldata/web-common/lib/errors.ts";
 import {
   runtimeServiceDeleteFile,
   runtimeServiceGetFile,
-  runtimeServiceGetResource,
   runtimeServicePutFile,
   runtimeServiceRenameFile,
   type RuntimeServicePutFileBody,
@@ -21,12 +23,17 @@ import {
   FolderNameToResourceKind,
   addLeadingSlash,
   removeLeadingSlash,
-} from "./entity-mappers";
+} from "../entity-mappers.ts";
 import {
   getProjectParserVersion,
   waitForProjectParserVersion,
-} from "./project-parser";
-import { ResourceKind } from "./resource-selectors";
+} from "../project-parser.ts";
+import {
+  fetchProjectParser,
+  fetchResource,
+  ResourceKind,
+} from "../resource-selectors.ts";
+import type { QueryClient } from "@tanstack/svelte-query";
 
 export async function runtimeServicePutFileAndWaitForReconciliation(
   client: RuntimeClient,
@@ -64,6 +71,7 @@ export async function waitForProjectParser(instanceId: string) {
 // Resource-level reconciliation
 export async function waitForResourceReconciliation(
   client: RuntimeClient,
+  queryClient: QueryClient,
   resourceName: string,
   resourceKind: ResourceKind,
   prevStateVersion?: string,
@@ -74,32 +82,35 @@ export async function waitForResourceReconciliation(
   while (true) {
     attempt++;
     try {
-      const resource = await runtimeServiceGetResource(client, {
-        name: { kind: resourceKind, name: resourceName },
-      });
+      const resource = await fetchResource(
+        client,
+        queryClient,
+        resourceName,
+        resourceKind,
+        true,
+      );
 
-      const newStateVersion = resource.resource?.meta?.stateVersion;
+      const newStateVersion = resource?.meta?.stateVersion;
       const newVersionArrived =
         prevStateVersion && newStateVersion
           ? newStateVersion > prevStateVersion
           : true;
 
       // Check if there's a reconcile error
-      if (resource.resource?.meta?.reconcileError && newVersionArrived) {
+      if (resource?.meta?.reconcileError && newVersionArrived) {
         const error = new Error("Resource configuration failed to reconcile");
-        (error as any).details = resource.resource.meta.reconcileError;
+        (error as any).details = resource.meta.reconcileError;
         throw error;
       }
 
       // Check the reconcile status
-      const reconcileStatus = resource.resource?.meta?.reconcileStatus;
+      const reconcileStatus = resource?.meta?.reconcileStatus;
       if (reconcileStatus === "RECONCILE_STATUS_IDLE" && newVersionArrived) {
         return; // Success!
       }
 
       // Still reconciling, continue polling
       await new Promise((resolve) => setTimeout(resolve, pollInterval));
-      continue;
     } catch (error) {
       // Resource not found could mean it was deleted due to reconcile failure
       if (isNotFoundError(error)) {
@@ -111,6 +122,12 @@ export async function waitForResourceReconciliation(
         }
 
         // Wait and try again
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+        continue;
+      }
+      // Controller closed error could mean the controller is being restarted because there was env change
+      if (isControllerClosedError(error) && attempt <= 3) {
+        // Wait and try again if the controller is closed
         await new Promise((resolve) => setTimeout(resolve, pollInterval));
         continue;
       }
@@ -248,6 +265,27 @@ export async function maybeDeleteFileArtifact(
 ) {
   if (!fileArtifacts.hasFileArtifact(filePath)) return;
   return deleteFileArtifact(client, filePath, force);
+}
+
+export async function waitForControllerRestart(
+  client: RuntimeClient,
+  queryClient: QueryClient,
+) {
+  const pollInterval = 2_000; // 2 seconds
+  let attempt = 0;
+
+  while (attempt < 5) {
+    attempt++;
+
+    try {
+      await fetchProjectParser(client, queryClient, true);
+      return;
+    } catch (e) {
+      console.log("Fetch errored", e);
+      // No-op
+    }
+    await new Promise((resolve) => setTimeout(resolve, pollInterval));
+  }
 }
 
 function extractMessage(msg: string) {

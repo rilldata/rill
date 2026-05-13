@@ -1,15 +1,14 @@
 <script lang="ts">
-  import {
-    createAdminServiceGetOrganization,
-    createAdminServiceListProjectsForOrganization,
-  } from "@rilldata/web-admin/client";
+  import { createAdminServiceGetOrganization } from "@rilldata/web-admin/client";
+  import { listProjectsForOrgQueryOptions } from "@rilldata/web-admin/features/projects/list-projects-query-options";
+  import { createQuery } from "@tanstack/svelte-query";
   import { getOrganizationUsageMetrics } from "@rilldata/web-admin/features/billing/plans/selectors";
   import { formatUsageVsQuota } from "@rilldata/web-admin/features/billing/plans/utils";
   import { Progress } from "@rilldata/web-common/components/progress";
 
   export let organization: string;
 
-  $: projects = createAdminServiceListProjectsForOrganization(organization);
+  $: projects = createQuery(listProjectsForOrgQueryOptions(organization));
   $: organizationQuotas = createAdminServiceGetOrganization(
     organization,
     undefined,

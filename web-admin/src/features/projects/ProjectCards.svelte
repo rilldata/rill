@@ -1,14 +1,12 @@
 <script lang="ts">
-  import { createAdminServiceListProjectsForOrganization } from "../../client";
   import ProjectCard from "./ProjectCard.svelte";
   import { Button } from "@rilldata/web-common/components/button";
-  import { projectWelcomeEnabled } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
+  import { listProjectsForOrgQueryOptions } from "@rilldata/web-admin/features/projects/list-projects-query-options";
+  import { createQuery } from "@tanstack/svelte-query";
 
   export let organization: string;
 
-  $: projs = createAdminServiceListProjectsForOrganization(organization, {
-    pageSize: 1000,
-  });
+  $: projs = createQuery(listProjectsForOrgQueryOptions(organization));
 </script>
 
 <div class="flex flex-col gap-y-4">
@@ -16,11 +14,9 @@
     class="flex flex-row items-center text-fg-secondary text-base font-normal leading-normal"
   >
     <span class="grow">Check out your projects below.</span>
-    {#if projectWelcomeEnabled}
-      <Button type="primary" href="/{organization}/-/create-project">
-        Create new
-      </Button>
-    {/if}
+    <Button type="primary" href="/{organization}/-/create-project">
+      Create new
+    </Button>
   </span>
 
   {#if $projs.data && $projs.data.projects?.length === 0}

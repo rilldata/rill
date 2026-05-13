@@ -33,6 +33,7 @@ import type {
   AdminServiceCreateAlertBodyBody,
   AdminServiceCreateAssetBody,
   AdminServiceCreateDeploymentBody,
+  AdminServiceCreateGithubPullRequestBody,
   AdminServiceCreateManagedGitRepoBody,
   AdminServiceCreateProjectBody,
   AdminServiceCreateProjectWhitelistedDomainBodyBody,
@@ -42,6 +43,7 @@ import type {
   AdminServiceDeleteUserParams,
   AdminServiceDeleteVirtualFileParams,
   AdminServiceGetAlertMetaBody,
+  AdminServiceGetBillingCreditBalanceParams,
   AdminServiceGetBillingSubscriptionParams,
   AdminServiceGetCloneCredentialsParams,
   AdminServiceGetDeploymentBody,
@@ -115,6 +117,7 @@ import type {
   V1CreateBookmarkRequest,
   V1CreateBookmarkResponse,
   V1CreateDeploymentResponse,
+  V1CreateGithubPullRequestResponse,
   V1CreateManagedGitRepoResponse,
   V1CreateOrganizationRequest,
   V1CreateOrganizationResponse,
@@ -140,6 +143,7 @@ import type {
   V1GenerateReportYAMLResponse,
   V1GetAlertMetaResponse,
   V1GetAlertYAMLResponse,
+  V1GetBillingCreditBalanceResponse,
   V1GetBillingProjectCredentialsRequest,
   V1GetBillingProjectCredentialsResponse,
   V1GetBillingSubscriptionResponse,
@@ -150,6 +154,7 @@ import type {
   V1GetDeploymentConfigResponse,
   V1GetDeploymentCredentialsResponse,
   V1GetDeploymentResponse,
+  V1GetGithubPullRequestResponse,
   V1GetGithubRepoStatusResponse,
   V1GetGithubUserStatusResponse,
   V1GetIFrameResponse,
@@ -241,11 +246,13 @@ import type {
   V1StartDeploymentResponse,
   V1StopDeploymentResponse,
   V1SudoDeleteOrganizationBillingIssueResponse,
-  V1SudoExtendTrialRequest,
-  V1SudoExtendTrialResponse,
   V1SudoGetResourceResponse,
+  V1SudoGrantTrialCreditsRequest,
+  V1SudoGrantTrialCreditsResponse,
   V1SudoIssueRuntimeManagerTokenRequest,
   V1SudoIssueRuntimeManagerTokenResponse,
+  V1SudoReportUsageRequest,
+  V1SudoReportUsageResponse,
   V1SudoTriggerBillingRepairRequest,
   V1SudoTriggerBillingRepairResponse,
   V1SudoUpdateAnnotationsRequest,
@@ -2235,6 +2242,114 @@ export const createAdminServiceUpdateOrganization = <
 
   return createMutation(mutationOptions, queryClient);
 };
+/**
+ * @summary GetBillingCreditBalance returns the organization's remaining trial credit balance
+ */
+export const adminServiceGetBillingCreditBalance = (
+  org: string,
+  params?: AdminServiceGetBillingCreditBalanceParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetBillingCreditBalanceResponse>({
+    url: `/v1/orgs/${org}/billing/credits`,
+    method: "GET",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceGetBillingCreditBalanceQueryKey = (
+  org?: string,
+  params?: AdminServiceGetBillingCreditBalanceParams,
+) => {
+  return [
+    `/v1/orgs/${org}/billing/credits`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getAdminServiceGetBillingCreditBalanceQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceGetBillingCreditBalance>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  params?: AdminServiceGetBillingCreditBalanceParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetBillingCreditBalance>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetBillingCreditBalanceQueryKey(org, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetBillingCreditBalance>>
+  > = ({ signal }) => adminServiceGetBillingCreditBalance(org, params, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!org,
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceGetBillingCreditBalance>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceGetBillingCreditBalanceQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetBillingCreditBalance>>
+>;
+export type AdminServiceGetBillingCreditBalanceQueryError = RpcStatus;
+
+/**
+ * @summary GetBillingCreditBalance returns the organization's remaining trial credit balance
+ */
+
+export function createAdminServiceGetBillingCreditBalance<
+  TData = Awaited<ReturnType<typeof adminServiceGetBillingCreditBalance>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  params?: AdminServiceGetBillingCreditBalanceParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetBillingCreditBalance>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceGetBillingCreditBalanceQueryOptions(
+    org,
+    params,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 /**
  * @summary ListOrganizationBillingIssues lists all the billing issues for the organization
  */
@@ -5768,6 +5883,225 @@ export const createAdminServiceCreateDeployment = <
 
   return createMutation(mutationOptions, queryClient);
 };
+/**
+ * @summary CreateGithubPullRequest creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
+ */
+export const adminServiceCreateGithubPullRequest = (
+  org: string,
+  project: string,
+  adminServiceCreateGithubPullRequestBody: AdminServiceCreateGithubPullRequestBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1CreateGithubPullRequestResponse>({
+    url: `/v1/orgs/${org}/projects/${project}/github/pr`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceCreateGithubPullRequestBody,
+    signal,
+  });
+};
+
+export const getAdminServiceCreateGithubPullRequestMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceCreateGithubPullRequest>>,
+    TError,
+    {
+      org: string;
+      project: string;
+      data: AdminServiceCreateGithubPullRequestBody;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceCreateGithubPullRequest>>,
+  TError,
+  {
+    org: string;
+    project: string;
+    data: AdminServiceCreateGithubPullRequestBody;
+  },
+  TContext
+> => {
+  const mutationKey = ["adminServiceCreateGithubPullRequest"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceCreateGithubPullRequest>>,
+    {
+      org: string;
+      project: string;
+      data: AdminServiceCreateGithubPullRequestBody;
+    }
+  > = (props) => {
+    const { org, project, data } = props ?? {};
+
+    return adminServiceCreateGithubPullRequest(org, project, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceCreateGithubPullRequestMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceCreateGithubPullRequest>>
+>;
+export type AdminServiceCreateGithubPullRequestMutationBody =
+  AdminServiceCreateGithubPullRequestBody;
+export type AdminServiceCreateGithubPullRequestMutationError = RpcStatus;
+
+/**
+ * @summary CreateGithubPullRequest creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
+ */
+export const createAdminServiceCreateGithubPullRequest = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceCreateGithubPullRequest>>,
+      TError,
+      {
+        org: string;
+        project: string;
+        data: AdminServiceCreateGithubPullRequestBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceCreateGithubPullRequest>>,
+  TError,
+  {
+    org: string;
+    project: string;
+    data: AdminServiceCreateGithubPullRequestBody;
+  },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceCreateGithubPullRequestMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary GetGithubPullRequest returns the status of the PR for the specified branch, if it exists.
+ */
+export const adminServiceGetGithubPullRequest = (
+  org: string,
+  project: string,
+  branch: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetGithubPullRequestResponse>({
+    url: `/v1/orgs/${org}/projects/${project}/github/pr/${branch}`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getAdminServiceGetGithubPullRequestQueryKey = (
+  org?: string,
+  project?: string,
+  branch?: string,
+) => {
+  return [`/v1/orgs/${org}/projects/${project}/github/pr/${branch}`] as const;
+};
+
+export const getAdminServiceGetGithubPullRequestQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceGetGithubPullRequest>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  project: string,
+  branch: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetGithubPullRequest>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetGithubPullRequestQueryKey(org, project, branch);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetGithubPullRequest>>
+  > = ({ signal }) =>
+    adminServiceGetGithubPullRequest(org, project, branch, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(org && project && branch),
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceGetGithubPullRequest>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceGetGithubPullRequestQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetGithubPullRequest>>
+>;
+export type AdminServiceGetGithubPullRequestQueryError = RpcStatus;
+
+/**
+ * @summary GetGithubPullRequest returns the status of the PR for the specified branch, if it exists.
+ */
+
+export function createAdminServiceGetGithubPullRequest<
+  TData = Awaited<ReturnType<typeof adminServiceGetGithubPullRequest>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  project: string,
+  branch: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetGithubPullRequest>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceGetGithubPullRequestQueryOptions(
+    org,
+    project,
+    branch,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 /**
  * @summary HibernateProject hibernates a project by tearing down its deployments.
  */
@@ -13454,6 +13788,92 @@ export const createAdminServiceSudoUpdateOrganizationBillingCustomer = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
+ * @summary SudoReportUsage reports a mock usage event for an organization.
+ */
+export const adminServiceSudoReportUsage = (
+  v1SudoReportUsageRequest: V1SudoReportUsageRequest,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1SudoReportUsageResponse>({
+    url: `/v1/superuser/organization/billing/report-usage`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: v1SudoReportUsageRequest,
+    signal,
+  });
+};
+
+export const getAdminServiceSudoReportUsageMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceSudoReportUsage>>,
+    TError,
+    { data: V1SudoReportUsageRequest },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceSudoReportUsage>>,
+  TError,
+  { data: V1SudoReportUsageRequest },
+  TContext
+> => {
+  const mutationKey = ["adminServiceSudoReportUsage"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceSudoReportUsage>>,
+    { data: V1SudoReportUsageRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceSudoReportUsage(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceSudoReportUsageMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSudoReportUsage>>
+>;
+export type AdminServiceSudoReportUsageMutationBody = V1SudoReportUsageRequest;
+export type AdminServiceSudoReportUsageMutationError = RpcStatus;
+
+/**
+ * @summary SudoReportUsage reports a mock usage event for an organization.
+ */
+export const createAdminServiceSudoReportUsage = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceSudoReportUsage>>,
+      TError,
+      { data: V1SudoReportUsageRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceSudoReportUsage>>,
+  TError,
+  { data: V1SudoReportUsageRequest },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceSudoReportUsageMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
  * @summary SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
 It only updates the custom domain in the database, which is used to ensure correct redirects.
 The DNS records and ingress TLS must be configured separately.
@@ -13549,38 +13969,38 @@ export const createAdminServiceSudoUpdateOrganizationCustomDomain = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary SudoExtendTrial extends the trial period for an organization
+ * @summary SudoGrantTrialCredits grants additional trial credits to an organization on the credit-based trial plan.
  */
-export const adminServiceSudoExtendTrial = (
-  v1SudoExtendTrialRequest: V1SudoExtendTrialRequest,
+export const adminServiceSudoGrantTrialCredits = (
+  v1SudoGrantTrialCreditsRequest: V1SudoGrantTrialCreditsRequest,
   signal?: AbortSignal,
 ) => {
-  return httpClient<V1SudoExtendTrialResponse>({
-    url: `/v1/superuser/organization/trial/extend`,
+  return httpClient<V1SudoGrantTrialCreditsResponse>({
+    url: `/v1/superuser/organization/trial/grant-credits`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    data: v1SudoExtendTrialRequest,
+    data: v1SudoGrantTrialCreditsRequest,
     signal,
   });
 };
 
-export const getAdminServiceSudoExtendTrialMutationOptions = <
+export const getAdminServiceSudoGrantTrialCreditsMutationOptions = <
   TError = RpcStatus,
   TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceSudoExtendTrial>>,
+    Awaited<ReturnType<typeof adminServiceSudoGrantTrialCredits>>,
     TError,
-    { data: V1SudoExtendTrialRequest },
+    { data: V1SudoGrantTrialCreditsRequest },
     TContext
   >;
 }): CreateMutationOptions<
-  Awaited<ReturnType<typeof adminServiceSudoExtendTrial>>,
+  Awaited<ReturnType<typeof adminServiceSudoGrantTrialCredits>>,
   TError,
-  { data: V1SudoExtendTrialRequest },
+  { data: V1SudoGrantTrialCreditsRequest },
   TContext
 > => {
-  const mutationKey = ["adminServiceSudoExtendTrial"];
+  const mutationKey = ["adminServiceSudoGrantTrialCredits"];
   const { mutation: mutationOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
@@ -13590,47 +14010,48 @@ export const getAdminServiceSudoExtendTrialMutationOptions = <
     : { mutation: { mutationKey } };
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceSudoExtendTrial>>,
-    { data: V1SudoExtendTrialRequest }
+    Awaited<ReturnType<typeof adminServiceSudoGrantTrialCredits>>,
+    { data: V1SudoGrantTrialCreditsRequest }
   > = (props) => {
     const { data } = props ?? {};
 
-    return adminServiceSudoExtendTrial(data);
+    return adminServiceSudoGrantTrialCredits(data);
   };
 
   return { mutationFn, ...mutationOptions };
 };
 
-export type AdminServiceSudoExtendTrialMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceSudoExtendTrial>>
+export type AdminServiceSudoGrantTrialCreditsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSudoGrantTrialCredits>>
 >;
-export type AdminServiceSudoExtendTrialMutationBody = V1SudoExtendTrialRequest;
-export type AdminServiceSudoExtendTrialMutationError = RpcStatus;
+export type AdminServiceSudoGrantTrialCreditsMutationBody =
+  V1SudoGrantTrialCreditsRequest;
+export type AdminServiceSudoGrantTrialCreditsMutationError = RpcStatus;
 
 /**
- * @summary SudoExtendTrial extends the trial period for an organization
+ * @summary SudoGrantTrialCredits grants additional trial credits to an organization on the credit-based trial plan.
  */
-export const createAdminServiceSudoExtendTrial = <
+export const createAdminServiceSudoGrantTrialCredits = <
   TError = RpcStatus,
   TContext = unknown,
 >(
   options?: {
     mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof adminServiceSudoExtendTrial>>,
+      Awaited<ReturnType<typeof adminServiceSudoGrantTrialCredits>>,
       TError,
-      { data: V1SudoExtendTrialRequest },
+      { data: V1SudoGrantTrialCreditsRequest },
       TContext
     >;
   },
   queryClient?: QueryClient,
 ): CreateMutationResult<
-  Awaited<ReturnType<typeof adminServiceSudoExtendTrial>>,
+  Awaited<ReturnType<typeof adminServiceSudoGrantTrialCredits>>,
   TError,
-  { data: V1SudoExtendTrialRequest },
+  { data: V1SudoGrantTrialCreditsRequest },
   TContext
 > => {
   const mutationOptions =
-    getAdminServiceSudoExtendTrialMutationOptions(options);
+    getAdminServiceSudoGrantTrialCreditsMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };
@@ -13647,7 +14068,9 @@ export const adminServiceSudoDeleteOrganizationBillingIssue = (
     | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
     | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
     | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
-    | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED",
+    | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
+    | "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL"
+    | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED",
 ) => {
   return httpClient<V1SudoDeleteOrganizationBillingIssueResponse>({
     url: `/v1/superuser/organizations/${org}/billing/issues/${type}`,
@@ -13672,7 +14095,9 @@ export const getAdminServiceSudoDeleteOrganizationBillingIssueMutationOptions =
           | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
           | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
           | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
-          | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED";
+          | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
+          | "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL"
+          | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED";
       },
       TContext
     >;
@@ -13689,7 +14114,9 @@ export const getAdminServiceSudoDeleteOrganizationBillingIssueMutationOptions =
         | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
         | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
         | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
-        | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED";
+        | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
+        | "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL"
+        | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED";
     },
     TContext
   > => {
@@ -13716,7 +14143,9 @@ export const getAdminServiceSudoDeleteOrganizationBillingIssueMutationOptions =
           | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
           | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
           | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
-          | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED";
+          | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
+          | "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL"
+          | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED";
       }
     > = (props) => {
       const { org, type } = props ?? {};
@@ -13758,7 +14187,9 @@ export const createAdminServiceSudoDeleteOrganizationBillingIssue = <
           | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
           | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
           | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
-          | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED";
+          | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
+          | "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL"
+          | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED";
       },
       TContext
     >;
@@ -13777,7 +14208,9 @@ export const createAdminServiceSudoDeleteOrganizationBillingIssue = <
       | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
       | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
       | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
-      | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED";
+      | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
+      | "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL"
+      | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED";
   },
   TContext
 > => {

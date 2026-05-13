@@ -20,6 +20,7 @@ import {
 } from "@rilldata/web-common/runtime-client/sse";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { QueryClient } from "@tanstack/svelte-query";
+import { waitForControllerRestart } from "@rilldata/web-common/features/entity-management/actions/actions.ts";
 
 const MAX_RETRIES = 3;
 
@@ -149,7 +150,9 @@ export class FileAndResourceWatcher {
     // On reconnect, re-run the post-connect bootstrap: events emitted while
     // disconnected may have been dropped, so we force a full re-fetch of
     // runtime-scoped queries and refresh the file-artifacts index.
-    this.stream.onConnection("reconnect", () => {
+    this.stream.onConnection("reconnect", async () => {
+      // Safeguard to make sure controller is actuall restarted
+      await waitForControllerRestart(this.runtimeClient, this.queryClient);
       void this.invalidateAll().then(() =>
         fileArtifacts.init(this.runtimeClient, this.queryClient),
       );

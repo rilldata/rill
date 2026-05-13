@@ -405,7 +405,7 @@ func (c *connection) ListCommits(ctx context.Context, pageToken string, limit in
 	return commits, nextPageToken, nil
 }
 
-func (c *connection) Status(ctx context.Context) (*drivers.RepoStatus, error) {
+func (c *connection) Status(ctx context.Context, remoteBranch string) (*drivers.RepoStatus, error) {
 	if !c.isGitRepo() {
 		return &drivers.RepoStatus{}, nil
 	}
@@ -424,7 +424,7 @@ func (c *connection) Status(ctx context.Context) (*drivers.RepoStatus, error) {
 	if err != nil {
 		if errors.Is(err, errProjectNotFound) || errors.Is(err, drivers.ErrNotAuthenticated) {
 			// not connected to a rill project or not authenticated, return minimal status
-			st, err := gitutil.RunGitStatus(gitPath, subPath, "origin")
+			st, err := gitutil.RunGitStatus(gitPath, subPath, "origin", remoteBranch)
 			if err != nil {
 				return nil, err
 			}
@@ -443,7 +443,7 @@ func (c *connection) Status(ctx context.Context) (*drivers.RepoStatus, error) {
 	if err != nil {
 		return nil, err
 	}
-	gs, err := gitutil.RunGitStatus(gitPath, subPath, config.RemoteName())
+	gs, err := gitutil.RunGitStatus(gitPath, subPath, config.RemoteName(), remoteBranch)
 	if err != nil {
 		return nil, err
 	}
@@ -624,7 +624,7 @@ func (c *connection) CommitAndPush(ctx context.Context, message string, force bo
 	}
 
 	// fetch the status
-	gs, err := gitutil.RunGitStatus(gitPath, subpath, gitConfig.RemoteName())
+	gs, err := gitutil.RunGitStatus(gitPath, subpath, gitConfig.RemoteName(), "")
 	if err != nil {
 		return err
 	}
@@ -712,7 +712,9 @@ func (c *connection) MergeToBranch(ctx context.Context, branch string, force boo
 		return err
 	}
 	if aborted {
-		return fmt.Errorf("merge conflicts detected while merging to branch %s", branch)
+		return &drivers.MergeFailedError{
+			Output: "merge failed due to conflicts, use force merge to favour current changes",
+		}
 	}
 	return nil
 }

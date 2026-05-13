@@ -38,7 +38,11 @@
   let trialInfo = $derived.by(() => {
     let message = "";
     let ended = false;
-    if (trialIssue.type === V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_ENDED) {
+    if (
+      trialIssue.type === V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_ENDED ||
+      trialIssue.type ===
+        V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED
+    ) {
       message = "Your trial has expired.";
       ended = true;
     } else {

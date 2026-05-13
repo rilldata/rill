@@ -13971,6 +13971,8 @@ func (m *GitStatusRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for RemoteBranch
+
 	if len(errors) > 0 {
 		return GitStatusRequestMultiError(errors)
 	}

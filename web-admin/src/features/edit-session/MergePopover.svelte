@@ -1,24 +1,28 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
+  import { page } from "$app/stores";
   import {
-    createAdminServiceDeleteDeployment,
-    createAdminServiceListDeployments,
+    createAdminServiceGetProject,
+    createAdminServiceRedeployProject,
+    getAdminServiceGetProjectQueryKey,
+    getAdminServiceListDeploymentsQueryKey,
   } from "@rilldata/web-admin/client";
-  import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
-  import { optimisticallyRemoveDeployment } from "@rilldata/web-admin/features/branches/branch-actions";
-  import { requestSkipBranchInjection } from "@rilldata/web-admin/features/branches/branch-utils";
+  import { isActiveDeployment } from "@rilldata/web-admin/features/branches/deployment-utils";
+  import { useParserCommitSha } from "@rilldata/web-admin/features/projects/selectors";
   import { Button } from "@rilldata/web-common/components/button";
   import * as Popover from "@rilldata/web-common/components/popover";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
+  import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import {
     createRuntimeServiceGitMergeToBranchMutation,
     createRuntimeServiceGitStatus,
-    type RpcStatus,
+    getRuntimeServiceGitStatusQueryKey,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { ExternalLink, GitPullRequest } from "lucide-svelte";
+  import { buildPostMergeUrl } from "./post-merge-url";
 
   export let organization: string;
   export let project: string;
@@ -31,29 +35,41 @@
   const client = useRuntimeClient();
   const gitMergeMutation = createRuntimeServiceGitMergeToBranchMutation(client);
   const gitStatusQuery = createRuntimeServiceGitStatus(client, {});
-  const deploymentsQuery = createAdminServiceListDeployments(
-    organization,
-    project,
-    {},
-  );
-  const deleteDeploymentMutation = createAdminServiceDeleteDeployment();
+  // Query GetProject without a branch param so `data.deployment` reflects
+  // the project's primary (prod) deployment. Self-managed projects can lack
+  // a prod deployment when created via `rill project connect-github
+  // --skip-deploy` (see `cli/cmd/project/connect_github.go`), and can also
+  // sit dormant after hibernation; we mirror PublishPopover's three-state
+  // logic and route accordingly.
+  const projectQuery = createAdminServiceGetProject(organization, project);
+  const redeployProjectMutation = createAdminServiceRedeployProject();
 
   $: currentBranch = $gitStatusQuery.data?.branch ?? "";
-  $: gitStatusErrorMessage = $gitStatusQuery.isError
-    ? (getRpcErrorMessage($gitStatusQuery.error as RpcStatus) ??
-      "Couldn't load branch info")
-    : "";
-  $: devDeploymentId = $deploymentsQuery.data?.deployments?.find(
-    (d) => d.runtimeInstanceId === client.instanceId,
-  )?.id;
   $: branchUrl =
     $gitStatusQuery.data?.githubUrl && currentBranch
       ? `${getGitUrlFromRemote($gitStatusQuery.data.githubUrl)}/tree/${encodeURIComponent(currentBranch)}`
       : "";
+  $: projectLoaded = $projectQuery.data !== undefined;
+  $: prodDeployment = $projectQuery.data?.deployment;
+  $: prodDeploymentActive =
+    !!prodDeployment && isActiveDeployment(prodDeployment);
   $: alreadyOnPrimary =
     !!primaryBranch && !!currentBranch && currentBranch === primaryBranch;
   $: disabled =
-    !primaryBranch || !currentBranch || alreadyOnPrimary || isMerging;
+    !primaryBranch ||
+    !currentBranch ||
+    !projectLoaded ||
+    alreadyOnPrimary ||
+    isMerging;
+
+  // Prefetch prod's project parser commit SHA so the deploying page can
+  // wait for prod to advance past it before redirecting (see
+  // `PublishPopover` for the same pattern, including why we read
+  // deployment + JWT directly from `projectQuery`).
+  $: parserShaQuery = useParserCommitSha(
+    prodDeployment,
+    $projectQuery.data?.jwt,
+  );
 
   $: if (!open) {
     errorMessage = "";
@@ -63,34 +79,83 @@
     if (!primaryBranch || isMerging) return;
     isMerging = true;
     errorMessage = "";
+
+    // Snapshot the prod deployment state at click time. Same three cases as
+    // PublishPopover (see comment there); RedeployProject covers both the
+    // no-deployment and dormant-deployment paths with one RPC.
+    const hadProdDeployment = !!prodDeployment;
+    const needsRedeploy = !prodDeploymentActive;
+
+    // Open the new tab synchronously so the browser ties window.open() to
+    // the click gesture; otherwise pop-up blockers reject the open after
+    // the awaited merge below. The destination pages handle their own
+    // loading state, so no placeholder is needed.
+    const targetUrl = buildPostMergeUrl({
+      organization,
+      project,
+      page: $page,
+      hadProdDeployment,
+      preCommitSha: $parserShaQuery.data,
+    });
+    const targetWindow = window.open(targetUrl, "_blank");
+    if (!targetWindow) {
+      errorMessage = "Pop-up was blocked. Please allow pop-ups and try again.";
+      isMerging = false;
+      return;
+    }
+
+    // gitStatus tracks localChanges and currentBranch; the merge below changes
+    // both (commitAll runs even on partial failure), so refresh once the
+    // mutation finishes regardless of outcome.
+    const gitStatusQueryKey = getRuntimeServiceGitStatusQueryKey(
+      client.instanceId,
+      {},
+    );
+
     try {
       await $gitMergeMutation.mutateAsync({
         branch: primaryBranch,
         force: false,
       });
     } catch (err) {
-      errorMessage = getRpcErrorMessage(err as RpcStatus) ?? "Failed to merge";
+      targetWindow.close();
+      errorMessage = extractErrorMessage(err) || "Failed to merge";
       isMerging = false;
       return;
+    } finally {
+      void queryClient.invalidateQueries({ queryKey: gitStatusQueryKey });
     }
 
-    // First, leave the edit page. Deleting the deployment while the page is still
-    // mounted would 404 its deployment queries and flash an error. The skip call
-    // opts out of the project layout's `beforeNavigate` branch injection so we
-    // actually land on the production project home, not back on the dev branch.
-    requestSkipBranchInjection();
-    await goto(`/${organization}/${project}`);
-
-    // Second, delete the dev deployment. On success, drop it from the
-    // ListDeployments cache so the BranchSelector on the destination page
-    // doesn't show the now-deleted branch.
-    // Note that the browser may cancel this request on page tear-down, so a better approach may be to
-    // hand off the deployment id via sessionStorage and fire the delete from the destination.
-    if (devDeploymentId) {
-      const id = devDeploymentId;
-      $deleteDeploymentMutation.mutate({ deploymentId: id });
-      void optimisticallyRemoveDeployment(organization, project, id);
+    if (needsRedeploy) {
+      try {
+        await $redeployProjectMutation.mutateAsync({
+          org: organization,
+          project,
+        });
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: getAdminServiceGetProjectQueryKey(organization, project),
+          }),
+          queryClient.invalidateQueries({
+            queryKey: getAdminServiceListDeploymentsQueryKey(
+              organization,
+              project,
+            ),
+          }),
+        ]);
+      } catch (err) {
+        targetWindow.close();
+        const detail = extractErrorMessage(err);
+        errorMessage = `Changes merged to production, but starting the production deployment failed${
+          detail ? `: ${detail}` : ""
+        }.`;
+        isMerging = false;
+        return;
+      }
     }
+
+    isMerging = false;
+    open = false;
   }
 </script>
 
@@ -106,16 +171,23 @@
     </Popover.Trigger>
     <Popover.Content align="end" class="!w-[320px]">
       <div class="flex flex-col gap-y-3">
-        {#if gitStatusErrorMessage}
-          <p class="text-xs text-red-600">{gitStatusErrorMessage}</p>
-        {:else}
-          <p class="text-xs text-fg-secondary">
+        <p class="text-xs text-fg-secondary">
+          {#if !prodDeployment}
+            Merging
+            <span class="font-semibold text-fg-primary">"{currentBranch}"</span>
+            sets up your production deployment. We'll open a new tab where you can
+            invite teammates while it reconciles.
+          {:else if !prodDeploymentActive}
+            Production is hibernated. Merging
+            <span class="font-semibold text-fg-primary">"{currentBranch}"</span>
+            will resume it and apply your changes. We'll open the deployment in a
+            new tab so you can watch updates reconcile.
+          {:else}
             Merging pushes changes from
             <span class="font-semibold text-fg-primary">"{currentBranch}"</span>
-            to production and returns you to the project home. Viewers will see updates
-            as the project reconciles.
-          </p>
-        {/if}
+            to production. We'll open a new tab so you can watch updates reconcile.
+          {/if}
+        </p>
         {#if branchUrl}
           <a
             class="github-link"
@@ -147,9 +219,7 @@
     <span class="text-xs">
       {#if alreadyOnPrimary}
         Already on production
-      {:else if gitStatusErrorMessage}
-        {gitStatusErrorMessage}
-      {:else if !primaryBranch || !currentBranch}
+      {:else if !primaryBranch || !currentBranch || !projectLoaded}
         Loading project...
       {:else}
         Review and confirm before merging
