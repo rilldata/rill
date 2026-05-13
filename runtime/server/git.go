@@ -200,7 +200,7 @@ func (s *Server) GitMergeToBranch(ctx context.Context, req *runtimev1.GitMergeTo
 
 	err = repo.MergeToBranch(ctx, req.Branch, req.Force)
 	if err != nil {
-		var mergeErr *drivers.ErrMergeFailed
+		var mergeErr *drivers.MergeFailedError
 		if errors.As(err, &mergeErr) {
 			return &runtimev1.GitMergeToBranchResponse{
 				Output: mergeErr.Error(),
@@ -227,7 +227,7 @@ func (s *Server) GitPull(ctx context.Context, req *runtimev1.GitPullRequest) (*r
 		DiscardChanges: req.DiscardLocal,
 	})
 	if err != nil {
-		var mergeErr *drivers.ErrMergeFailed
+		var mergeErr *drivers.MergeFailedError
 		if errors.As(err, &mergeErr) {
 			return &runtimev1.GitPullResponse{
 				Output: mergeErr.Error(),

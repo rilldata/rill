@@ -451,12 +451,6 @@ func (r *repo) Status(ctx context.Context, remoteBranch string) (*drivers.RepoSt
 		return &drivers.RepoStatus{}, nil
 	}
 
-	// run git fetch - only updates the remote tracking branch and not the working tree.
-	err = r.git.fetchCurrentBranch(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch current branch: %w", err)
-	}
-
 	repo, err := git.PlainOpen(r.git.repoDir)
 	if err != nil {
 		return nil, err
@@ -475,7 +469,7 @@ func (r *repo) Status(ctx context.Context, remoteBranch string) (*drivers.RepoSt
 
 	err = r.git.fetchBranch(ctx, repo, branches...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch remote branch %q: %w", remoteBranch, err)
+		return nil, fmt.Errorf("failed to fetch branches %q: %w", branches, err)
 	}
 
 	// run git status

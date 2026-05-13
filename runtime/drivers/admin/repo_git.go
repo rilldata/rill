@@ -186,7 +186,7 @@ func (r *gitRepo) pullInner(ctx context.Context, userTriggered, force bool) erro
 		}
 		if !merged { // Only user triggered pulls should fail on conflicts
 			if userTriggered {
-				return &drivers.ErrMergeFailed{
+				return &drivers.MergeFailedError{
 					Output: "local is behind remote and failed to sync with remote due to conflicts, use force pull to discard local changes and sync with remote",
 				}
 			}
@@ -209,13 +209,13 @@ func (r *gitRepo) pullInner(ctx context.Context, userTriggered, force bool) erro
 		var merged bool
 		merged, err = gitutil.MergeWithBailOnConflict(r.repoDir, mergeBranch)
 		if !merged && userTriggered { // only user triggered pulls should fail on conflicts
-			return &drivers.ErrMergeFailed{
+			return &drivers.MergeFailedError{
 				Output: "failed to merge primary branch, use force pull to discard local changes and sync with primary branch",
 			}
 		}
 	}
 	if err != nil {
-		return &drivers.ErrMergeFailed{
+		return &drivers.MergeFailedError{
 			Output: fmt.Sprintf("failed to merge primary branch %q into default branch %q: %v", r.primaryBranch, r.defaultBranch, err),
 		}
 	}
@@ -349,11 +349,11 @@ func (r *gitRepo) mergeToBranch(ctx context.Context, branch string, force bool) 
 	}
 	if err != nil {
 		// wrap with drivers.ErrMergeFailed
-		return &drivers.ErrMergeFailed{Output: fmt.Sprintf("failed to merge default branch %q into branch %q: %v", r.defaultBranch, branch, err)}
+		return &drivers.MergeFailedError{Output: fmt.Sprintf("failed to merge default branch %q into branch %q: %v", r.defaultBranch, branch, err)}
 	}
 
 	if !merged {
-		return &drivers.ErrMergeFailed{Output: "merge failed due to conflicts, use force merge to favour current changes"}
+		return &drivers.MergeFailedError{Output: "merge failed due to conflicts, use force merge to favour current changes"}
 	}
 
 	// Push the changes

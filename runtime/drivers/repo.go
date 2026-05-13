@@ -13,11 +13,11 @@ import (
 
 var ErrRemoteAhead = fmt.Errorf("remote ahead of local state, please pull first")
 
-type ErrMergeFailed struct {
+type MergeFailedError struct {
 	Output string
 }
 
-func (e *ErrMergeFailed) Error() string {
+func (e *MergeFailedError) Error() string {
 	return e.Output
 }
 
