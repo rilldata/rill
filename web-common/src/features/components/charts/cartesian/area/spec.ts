@@ -69,7 +69,11 @@ export function generateVLAreaChartSpec(
         sanitizedYField &&
         colorField &&
         multiValueTooltipChannel?.length
-          ? { field: colorField, value: sanitizedYField, groupby: [sanitizedXField] }
+          ? {
+              field: colorField,
+              value: sanitizedYField,
+              groupby: [sanitizedXField],
+            }
           : undefined,
     }),
   ];
