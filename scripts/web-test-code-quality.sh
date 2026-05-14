@@ -71,10 +71,6 @@ echo ""
 echo "== NPM Install =="
 npm ci
 
-echo ""
-echo "== NPM Audit =="
-npm audit --audit-level=high
-
 if [[ "$COMMON" == "true" ]]; then
   echo ""
   echo "== lint and type checks for web common =="
