@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -52,6 +53,7 @@ type KubernetesSpec struct {
 	TimeoutSeconds int                      `json:"timeout_seconds"`
 	KubeconfigPath string                   `json:"kubeconfig_path"`
 	TemplatePaths  *KubernetesTemplatePaths `json:"template_paths"`
+	DiskGBPerSlot  int                      `json:"disk_gb_per_slot"`
 }
 
 type KubernetesTemplatePaths struct {
@@ -99,6 +101,15 @@ func NewKubernetes(specJSON []byte, db database.DB, logger *zap.Logger) (provisi
 	err := json.Unmarshal(specJSON, ksp)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse kubernetes provisioner spec: %w", err)
+	}
+
+	// Resolve disk_gb_per_slot from env var if set
+	if val := os.Getenv("RILL_PROVISIONER_DISK_GB_PER_SLOT"); val != "" {
+		n, err := strconv.Atoi(val)
+		if err != nil || n <= 0 {
+			return nil, fmt.Errorf("RILL_PROVISIONER_DISK_GB_PER_SLOT must be a positive integer, got %q", val)
+		}
+		ksp.DiskGBPerSlot = n
 	}
 
 	// Build config from kubeconfig file, this will fallback to in-cluster config if no kubeconfig is specified
@@ -193,7 +204,11 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, r *provisioner.Re
 	host := p.getHost(provisionID)
 
 	// Compute storage. If an override is provided on the project, it takes precedence over the slot-based default.
-	storageBytes := 40 * int64(args.Slots) * int64(datasize.GB)
+	diskGBPerSlot := p.Spec.DiskGBPerSlot
+	if diskGBPerSlot <= 0 {
+		diskGBPerSlot = 40
+	}
+	storageBytes := int64(diskGBPerSlot) * int64(args.Slots) * int64(datasize.GB)
 	if args.OverrideDiskGB != nil && *args.OverrideDiskGB > 0 {
 		storageBytes = *args.OverrideDiskGB * int64(datasize.GB)
 	}
