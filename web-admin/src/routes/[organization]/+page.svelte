@@ -7,7 +7,6 @@
   import OrganizationHero from "../../features/organizations/OrganizationHero.svelte";
   import ProjectCards from "../../features/projects/ProjectCards.svelte";
   import { Button } from "@rilldata/web-common/components/button";
-  import { projectWelcomeEnabled } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
 
   $: ({
     params: { organization: orgName },
@@ -37,13 +36,11 @@
           rel="noreferrer noopener">See docs</a
         >
       </span>
-      {#if projectWelcomeEnabled}
-        <div class="w-fit">
-          <Button type="primary" href="/{orgName}/-/create-project">
-            Create new
-          </Button>
-        </div>
-      {/if}
+      <div class="w-fit">
+        <Button type="primary" href="/{orgName}/-/create-project">
+          Create new
+        </Button>
+      </div>
     {:else}
       <div class="flex flex-col gap-y-8">
         <OrganizationHero {title} />

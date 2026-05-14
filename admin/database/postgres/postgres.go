@@ -463,9 +463,10 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 			prod_ttl_seconds,
 			prod_version,
 			dev_slots,
-			dev_ttl_seconds
+			dev_ttl_seconds,
+			override_disk_gb
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19) RETURNING *`,
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20) RETURNING *`,
 		opts.OrganizationID,
 		opts.Name,
 		opts.Description,
@@ -485,6 +486,7 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 		opts.ProdVersion,
 		opts.DevSlots,
 		opts.DevTTLSeconds,
+		opts.OverrideDiskGB,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
@@ -530,8 +532,9 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 			prod_version = $17,
 			dev_slots = $18,
 			dev_ttl_seconds = $19,
+			override_disk_gb = $20,
 			updated_on = now()
-		WHERE id = $20
+		WHERE id = $21
 		RETURNING *
 		`,
 		opts.Name,
@@ -553,6 +556,7 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 		opts.ProdVersion,
 		opts.DevSlots,
 		opts.DevTTLSeconds,
+		opts.OverrideDiskGB,
 		id,
 	).StructScan(res)
 	if err != nil {

@@ -288,20 +288,22 @@ func (r *Runtime) pullEnv(ctx context.Context, instanceID string) (int, bool, er
 	}
 	defer release()
 
-	admin, release, err := r.Admin(ctx, instanceID)
-	if err != nil {
-		return 0, false, err
-	}
-	defer release()
-
-	// Fetch cloud variables
-	cfg, err := admin.GetConfig(ctx)
-	if err != nil && !errors.Is(err, drivers.ErrNotAuthenticated) {
-		return 0, false, fmt.Errorf("failed to get project variables: %w", err)
-	}
+	// Fetch cloud variables if an admin connector is configured (not configured only for tests)
 	var cloudPerEnv map[string]map[string]string
-	if cfg != nil {
-		cloudPerEnv = cfg.Variables
+	if inst.AdminConnector != "" {
+		admin, release, err := r.Admin(ctx, instanceID)
+		if err != nil {
+			return 0, false, err
+		}
+		defer release()
+
+		cfg, err := admin.GetConfig(ctx)
+		if err != nil && !errors.Is(err, drivers.ErrNotAuthenticated) {
+			return 0, false, fmt.Errorf("failed to get project variables: %w", err)
+		}
+		if cfg != nil {
+			cloudPerEnv = cfg.Variables
+		}
 	}
 
 	// Parse local .env files
