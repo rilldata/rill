@@ -192,7 +192,7 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, r *provisioner.Re
 	// Create unique host
 	host := p.getHost(provisionID)
 
-    // Compute storage. If an override is provided on the project, it takes precedence over the slot-based default.
+	// Compute storage. If an override is provided on the project, it takes precedence over the slot-based default.
 	storageBytes := int64(args.Slots) * int64(datasize.GB)
 	if args.OverrideDiskGB != nil && *args.OverrideDiskGB > 0 {
 		storageBytes = *args.OverrideDiskGB * int64(datasize.GB)
