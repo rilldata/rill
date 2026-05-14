@@ -3,6 +3,7 @@
   import { formatCredit } from "@rilldata/web-admin/features/billing/plans/utils.ts";
   import { getPlanCredits } from "@rilldata/web-admin/features/billing/plans/selectors.ts";
   import CostAndUsage from "@rilldata/web-admin/features/billing/plans/modules/CostAndUsage.svelte";
+  import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors.ts";
 
   let {
     organization,
@@ -12,7 +13,12 @@
     upgrade: () => void;
   } = $props();
 
-  let planCredits = $derived(getPlanCredits(organization));
+  let categorisedIssues = $derived(
+    useCategorisedOrganizationBillingIssues(organization),
+  );
+  let trialIssue = $derived($categorisedIssues.data?.trial);
+
+  let planCredits = $derived(getPlanCredits(organization, trialIssue));
   let { usedCredit, availableCredit, creditPercent } = $derived($planCredits);
 </script>
 

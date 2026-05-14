@@ -94,10 +94,10 @@
   async function handleUpgradePlan() {
     loading = true;
     fetchError = null;
-    let teamPlan;
+    let proPlan;
     try {
       // only fetch when needed to avoid hitting orb for list of plans too often
-      teamPlan = await fetchProPlan();
+      proPlan = await fetchProPlan();
       if (paymentIssues?.length) {
         window.open(
           await fetchPaymentsPortalURL(
@@ -121,18 +121,18 @@
       await $planRenewer.mutateAsync({
         org: organization,
         data: {
-          planName: teamPlan.name,
+          planName: proPlan.name,
         },
       });
       eventBus.emit("notification", {
         type: "success",
-        message: "Your Team plan was renewed",
+        message: "Your Pro plan was renewed",
       });
     } else {
       await $planUpdater.mutateAsync({
         org: organization,
         data: {
-          planName: teamPlan.name,
+          planName: proPlan.name,
         },
       });
       showWelcomeToRillDialog.set(true);

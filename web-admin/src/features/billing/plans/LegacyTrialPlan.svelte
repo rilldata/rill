@@ -22,16 +22,18 @@
   let categorisedIssues = $derived(
     useCategorisedOrganizationBillingIssues(organization),
   );
+  let trialIssue = $derived($categorisedIssues.data?.trial);
 
   let isTrialExpired = $derived(
-    $categorisedIssues.data?.trial?.type ===
-      V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_ENDED ||
-      $categorisedIssues.data?.trial?.type ===
+    trialIssue?.type === V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_ENDED ||
+      trialIssue?.type ===
         V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED,
   );
 
-  const TRIAL_DAYS = 30; // TODO: get from plan
-  let trialEndDate = $derived(subscription?.trialEndDate);
+  const TRIAL_DAYS = 30;
+  let trialEndDate = $derived(
+    trialIssue?.metadata?.onTrial?.endDate ?? subscription?.trialEndDate,
+  );
   let trialDaysUsed = $derived.by(() => {
     if (!trialEndDate) return 0;
     const end = new Date(trialEndDate).getTime();
@@ -52,15 +54,8 @@
 >
   {#snippet info()}
     {#if !isTrialExpired}
-      <Tooltip location="right" alignment="middle" distance={8}>
-        <span class="text-fg-muted flex">
-          <InfoCircle size="16px" />
-        </span>
-        <TooltipContent maxWidth="240px" slot="tooltip-content">
-          Legacy free trial · 30 days, no credit card required. Projects
-          hibernate when trial ends.
-        </TooltipContent>
-      </Tooltip>
+      Legacy free trial · 30 days, no credit card required. Projects hibernate
+      when trial ends.
     {/if}
   {/snippet}
 

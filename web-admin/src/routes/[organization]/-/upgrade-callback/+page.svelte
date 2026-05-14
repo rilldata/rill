@@ -58,24 +58,24 @@
       });
       return goto(`/${organization}/-/settings/billing`);
     }
-    const teamPlan = await fetchProPlan();
+    const proPlan = await fetchProPlan();
     try {
       if (cancelled) {
         await $planRenewer.mutateAsync({
           org: organization,
           data: {
-            planName: teamPlan.name,
+            planName: proPlan.name,
           },
         });
         eventBus.emit("notification", {
           type: "success",
-          message: "Your Team plan was renewed",
+          message: "Your Pro plan was renewed",
         });
       } else {
         await $planUpdater.mutateAsync({
           org: organization,
           data: {
-            planName: teamPlan.name,
+            planName: proPlan.name,
           },
         });
         // if redirect is set then this page won't be active.

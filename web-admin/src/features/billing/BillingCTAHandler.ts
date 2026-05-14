@@ -5,7 +5,7 @@ import {
 import type { BillingIssueMessage } from "@rilldata/web-admin/features/billing/issues/useBillingIssueMessage";
 import {
   fetchPaymentsPortalURL,
-  fetchTeamPlan,
+  fetchProPlan,
 } from "@rilldata/web-admin/features/billing/plans/selectors";
 import { fetchOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
 import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types";
@@ -54,10 +54,10 @@ export class BillingCTAHandler {
           break;
         }
 
-        const teamPlan = await fetchTeamPlan();
-        if (!teamPlan) return;
+        const proPlan = await fetchProPlan();
+        if (!proPlan) return;
         await adminServiceUpdateBillingSubscription(this.organization, {
-          planName: teamPlan.name,
+          planName: proPlan.name,
         });
         break;
       }

@@ -24,13 +24,11 @@
   let upgradeProError = $derived(getErrorForMutation($proPlanUpdater));
 
   async function confirmUpgradeToPro() {
-    const teamPlan = await fetchProPlan();
-    // if (!teamPlan) return;
-    console.log(teamPlan);
-    return;
+    const proPlan = await fetchProPlan();
+    if (!proPlan) return;
     await $proPlanUpdater.mutateAsync({
       org: organization,
-      data: { planName: teamPlan.name },
+      data: { planName: proPlan.name },
     });
     eventBus.emit("notification", {
       type: "success",

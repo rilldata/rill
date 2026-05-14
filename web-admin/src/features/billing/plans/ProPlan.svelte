@@ -26,7 +26,7 @@
 
   // Pro plan credit + post-credit estimate. Available credit is hard-zero
   // until the billing usage API exposes the remaining trial credit balance.
-  let planCredits = $derived(getPlanCredits(organization));
+  let planCredits = $derived(getPlanCredits(organization, undefined));
   let { availableCredit } = $derived($planCredits);
   let proEstimatedCost = $derived(Math.max(dailyRunRate - availableCredit, 0));
 

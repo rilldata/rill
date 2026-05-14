@@ -6,6 +6,7 @@ import {
   createAdminServiceGetBillingProjectCredentials,
   getAdminServiceGetPaymentsPortalURLQueryKey,
   getAdminServiceListPublicBillingPlansQueryKey,
+  type V1BillingIssue,
   V1BillingPlanType,
   type V1Subscription,
 } from "@rilldata/web-admin/client";
@@ -219,7 +220,6 @@ export function getPlanTierForSubscription(
 }
 
 export function getBillingCycleDates(subscription: V1Subscription | undefined) {
-  // TODO: replace with subscription billing cycle dates once accrued cost API is available
   const periodStart = subscription?.currentBillingCycleStartDate
     ? DateTime.fromISO(subscription.currentBillingCycleStartDate)
     : DateTime.now().startOf("month");
@@ -256,15 +256,26 @@ export function getBillingCycleDates(subscription: V1Subscription | undefined) {
   };
 }
 
-const TOTAL_CREDIT = 250; // TODO: get from plan
+const TOTAL_CREDIT = 250;
 
-export function getPlanCredits(org: string) {
+export function getPlanCredits(
+  org: string,
+  billingIssue: V1BillingIssue | undefined,
+) {
   return derived(
     createAdminServiceGetBillingCreditBalance(org, {}),
     (creditsBalance) => {
-      const availableCredit = creditsBalance.data?.balance ?? TOTAL_CREDIT;
-      const usedCredit = TOTAL_CREDIT - availableCredit;
-      const creditPercent = Math.round((usedCredit / TOTAL_CREDIT) * 100);
+      if (!creditsBalance.data) {
+        // Set everything to 0 while the data is potentially loading.
+        return { usedCredit: 0, availableCredit: 0, creditPercent: 0 };
+      }
+
+      const totalCredit =
+        billingIssue?.metadata?.onCreditTrial?.creditAllocation ?? TOTAL_CREDIT;
+
+      const availableCredit = creditsBalance.data?.balance ?? totalCredit;
+      const usedCredit = totalCredit - availableCredit;
+      const creditPercent = Math.round((usedCredit / totalCredit) * 100);
       return {
         usedCredit,
         availableCredit,
