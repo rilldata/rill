@@ -26,7 +26,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const devDeplTTL = 6 * time.Hour
+const devDeplTTL = 15 * time.Minute // reduced from 6 hours to 15 minutes for testing. Revert before final release.
 
 const prodDeplTTL = 14 * 24 * time.Hour
 
