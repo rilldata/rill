@@ -792,7 +792,7 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 	}
 
 	// variables
-	vars, err := s.admin.ResolveVariables(ctx, depl)
+	vars, _, err := s.admin.ResolveVariables(ctx, depl)
 	if err != nil {
 		return nil, err
 	}

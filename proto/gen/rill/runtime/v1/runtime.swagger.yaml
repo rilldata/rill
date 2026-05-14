@@ -5008,6 +5008,12 @@ definitions:
         type: object
         additionalProperties:
           type: string
+        title: 'Deprecated: Remove after some releases'
+      systemVariables:
+        type: object
+        additionalProperties:
+          type: string
+        title: system_variables are variables that are set by admin service and should not be overridden by user input
       annotations:
         type: object
         additionalProperties:

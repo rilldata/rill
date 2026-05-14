@@ -1,0 +1,1 @@
+ALTER TABLE INSTANCES ADD COLUMN system_variables TEXT;

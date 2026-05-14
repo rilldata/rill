@@ -95,15 +95,16 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 	}
 
 	inst := &drivers.Instance{
-		ID:             req.InstanceId,
-		Environment:    req.Environment,
-		OLAPConnector:  req.OlapConnector,
-		RepoConnector:  req.RepoConnector,
-		AdminConnector: req.AdminConnector,
-		AIConnector:    req.AiConnector,
-		Connectors:     req.Connectors,
-		Annotations:    req.Annotations,
-		FrontendURL:    req.FrontendUrl,
+		ID:              req.InstanceId,
+		Environment:     req.Environment,
+		OLAPConnector:   req.OlapConnector,
+		RepoConnector:   req.RepoConnector,
+		AdminConnector:  req.AdminConnector,
+		AIConnector:     req.AiConnector,
+		Connectors:      req.Connectors,
+		SystemVariables: req.SystemVariables,
+		Annotations:     req.Annotations,
+		FrontendURL:     req.FrontendUrl,
 	}
 
 	err := s.runtime.CreateInstance(ctx, inst)
