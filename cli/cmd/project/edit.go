@@ -114,7 +114,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	editCmd.Flags().StringVar(&subpath, "subpath", "", "Relative path to project in the repository (for monorepos)")
 	editCmd.Flags().StringVar(&provisioner, "provisioner", "", "Project provisioner (default: current provisioner)")
 	editCmd.Flags().Int64Var(&prodTTL, "prod-ttl-seconds", 0, "Time-to-live in seconds for production deployment (0 means no expiration)")
-	editCmd.Flags().Int64Var(&devTTL, "dev-ttl-seconds", 0, "Time-to-live in seconds for dev deployment (0 means no expiration)")
+	editCmd.Flags().Int64Var(&devTTL, "dev-ttl-seconds", 0, "Time-to-live in seconds for dev deployment (must be greater than 0)")
 	editCmd.Flags().IntVar(&prodSlots, "prod-slots", 0, "Slots to allocate for production deployments")
 	editCmd.Flags().IntVar(&devSlots, "dev-slots", 0, "Slots to allocate for dev deployments")
 

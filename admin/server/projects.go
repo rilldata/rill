@@ -821,6 +821,9 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 
 	devTTLSeconds := proj.DevTTLSeconds
 	if req.DevTtlSeconds != nil {
+		if *req.DevTtlSeconds <= 0 {
+			return nil, status.Error(codes.InvalidArgument, "dev_ttl_seconds must be greater than 0")
+		}
 		devTTLSeconds = *req.DevTtlSeconds
 	}
 
