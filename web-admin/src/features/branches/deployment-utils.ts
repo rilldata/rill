@@ -77,7 +77,7 @@ export async function maybeRedirectToEditableDeployment(
   const isActiveEditableDeployment =
     editableDeployment && isActiveDeployment(editableDeployment);
   // Editable deployment is inactive as well, project is probably hibernating, skip redirect.
-  if (!isActiveEditableDeployment) return;
+  if (!isActiveEditableDeployment && prodDeployment) return;
 
   // If user is already in a specific deployment do not redirect.
   // This method is meant as a convenience for direct links to unpublished project.
