@@ -1,1 +1,1 @@
-ALTER TABLE INSTANCES ADD COLUMN system_variables TEXT;
+ALTER TABLE instances ADD COLUMN system_variables TEXT;

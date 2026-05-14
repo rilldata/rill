@@ -57,7 +57,7 @@ type Instance struct {
 	// ProjectVariables contains default variables from rill.yaml
 	// (NOTE: This can always be reproduced from rill.yaml, so it's really just a handy cache of the values.)
 	ProjectVariables map[string]string `db:"project_variables"`
-	// SystemVariables contains variables set by the system (e.g. "rill.watch_repo") that should not be overriden by user.
+	// SystemVariables contains variables set by the system (e.g. "rill.watch_repo") that should not be overridden by user.
 	SystemVariables map[string]string `db:"system_variables"`
 	// FeatureFlags contains feature flags configured in rill.yaml
 	FeatureFlags map[string]string `db:"feature_flags"`
