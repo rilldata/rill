@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
@@ -168,17 +167,14 @@ func (a *Authenticator) authStart(w http.ResponseWriter, r *http.Request, signup
 	sess.Values[cookieFieldState] = state
 
 	host := originalHost(r)
-
-	// Parse custom_domain_flow early — needed to gate the DB lookup for redirect validation.
+	// If this is part of the custom domain login flow, save that info in the cookie since we need that info when handling the auth callback.
 	customDomainFlow := false
-	if b, err := strconv.ParseBool(r.URL.Query().Get("custom_domain_flow")); err == nil {
+	if b, err := strconv.ParseBool(r.URL.Query().Get("custom_domain_flow")); err == nil && b {
+		sess.Values[cookieFieldCustomDomainFlow] = b
 		customDomainFlow = b
 	}
-	if customDomainFlow {
-		sess.Values[cookieFieldCustomDomainFlow] = true
-	}
 
-	// Validate and store the redirect URL.
+	// Set redirect URL in cookie to enable custom redirects after auth has completed
 	redirect := r.URL.Query().Get("redirect")
 	if redirect != "" {
 		if !a.admin.URLs.IsSafeRedirectURL(redirect, host) {
@@ -197,11 +193,6 @@ func (a *Authenticator) authStart(w http.ResponseWriter, r *http.Request, signup
 				return
 			} else if err != nil {
 				http.Error(w, "internal server error", http.StatusInternalServerError)
-				return
-			}
-			// Path must be the custom-domain callback endpoint (with or without /api prefix).
-			if !strings.HasSuffix(parsed.Path, "/auth/custom-domain-callback") {
-				http.Error(w, "invalid redirect parameter", http.StatusBadRequest)
 				return
 			}
 		}
@@ -600,7 +591,7 @@ func (a *Authenticator) authLogout(w http.ResponseWriter, r *http.Request) {
 
 	// Extract and validate custom redirect destination (if any).
 	redirect := r.URL.Query().Get("redirect")
-	if redirect != "" && !a.admin.URLs.IsSafeRedirectURL(redirect, originalHost(r)) {
+	if !a.admin.URLs.IsSafeRedirectURL(redirect, originalHost(r)) {
 		http.Error(w, "invalid redirect parameter", http.StatusBadRequest)
 		return
 	}
