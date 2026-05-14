@@ -644,8 +644,7 @@ func (c *connection) FindDeployments(ctx context.Context, afterID string, limit 
 	return res, nil
 }
 
-// FindExpiredDeployments returns all the deployments which are expired as per ttl
-func (c *connection) FindExpiredDeployments(ctx context.Context) ([]*database.Deployment, error) {
+func (c *connection) FindDeploymentsToStop(ctx context.Context) ([]*database.Deployment, error) {
 	var res []*database.Deployment
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT d.* FROM deployments d
@@ -654,6 +653,18 @@ func (c *connection) FindExpiredDeployments(ctx context.Context) ([]*database.De
 		AND ((p.prod_ttl_seconds IS NOT NULL AND d.used_on + p.prod_ttl_seconds * interval '1 second' < now())
 		OR (d.environment = 'dev' AND p.dev_ttl_seconds IS NOT NULL AND d.used_on + p.dev_ttl_seconds * interval '1 second' < now()))
 	`, database.DeploymentStatusStopped)
+	if err != nil {
+		return nil, parseErr("deployments", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindDeploymentsToDelete(ctx context.Context, retention time.Duration) ([]*database.Deployment, error) {
+	var res []*database.Deployment
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT * FROM deployments
+		WHERE status = $1 AND desired_status_updated_on + $2 < now()
+	`, database.DeploymentStatusStopped, retention)
 	if err != nil {
 		return nil, parseErr("deployments", err)
 	}

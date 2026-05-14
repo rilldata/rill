@@ -242,6 +242,11 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 	}, nil
 }
 
+func (p *Provisioner) Hibernate(ctx context.Context, r *provisioner.Resource) (*provisioner.Resource, error) {
+	// Clickhouse-static provisioning has no compute to release; the database is shared and not torn down here.
+	return r, nil
+}
+
 func (p *Provisioner) Deprovision(ctx context.Context, r *provisioner.Resource) error {
 	// Check it's a clickhouse resource
 	if r.Type != provisioner.ResourceTypeClickHouse {

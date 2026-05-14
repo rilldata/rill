@@ -243,7 +243,9 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 	}
 	defer rt.Close()
 
-	// If the instance already exists, we can return now. (This can happen since this operation is idempotent and may be retried.)
+	// If the instance already exists, we can return now.
+	// This happens when the deployment is being resumed from hibernation (provisioner resource was hibernated, not deprovisioned).
+	// It can also happen since the operation is idempotent and may be retried.
 	_, err = rt.GetInstance(ctx, &runtimev1.GetInstanceRequest{InstanceId: instanceID})
 	if err != nil && status.Code(err) != codes.NotFound {
 		return err
@@ -328,19 +330,19 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 	return nil
 }
 
-// StopDeploymentInner stops a deployment by tearing down its runtime instance and resources.
+// StopDeploymentInner stops a deployment by checkpointing it and hibernating its provisioner resources.
+// Persistent state (e.g. the runtime's PVC) is preserved across stop/start so that restarts are fast.
 // The implementation is idempotent, enabling it to be called from a retryable background job.
 func (s *Service) StopDeploymentInner(ctx context.Context, depl *database.Deployment) error {
-	// Connect to the deployment's runtime and delete the instance
-	rt, err := s.OpenRuntimeClient(depl)
-	if err != nil {
-		s.Logger.Error("failed to open runtime client", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
-	} else {
-		defer rt.Close()
+	// Connect to the deployment's runtime and checkpoint repo changes if editable.
+	// Best effort: if the runtime is unreachable (e.g. already gone or partially torn down), we proceed to hibernate the provisioner resources anyway.
+	if depl.Editable {
+		rt, err := s.OpenRuntimeClient(depl)
+		if err != nil {
+			s.Logger.Info("failed to open runtime client for deployment stop", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
+		} else {
+			defer rt.Close()
 
-		// Checkpoint repo changes if this is an editable deployment.
-		// The runtime does checkpoint on close but because DeleteInstance removes the storage directly, the checkpoint can fail.
-		if depl.Editable {
 			_, err = rt.GitPush(ctx, &runtimev1.GitPushRequest{
 				InstanceId:    depl.RuntimeInstanceID,
 				CommitMessage: "Auto checkpoint",
@@ -349,16 +351,83 @@ func (s *Service) StopDeploymentInner(ctx context.Context, depl *database.Deploy
 				s.Logger.Error("failed to checkpoint repo changes", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
 			}
 		}
+	}
 
-		_, err = rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
-			InstanceId: depl.RuntimeInstanceID,
+	// Hibernate all provisioned resources for the deployment.
+	// Hibernation is a lighter-weight alternative to deprovisioning that attempts to preserve persistent state.
+	prs, err := s.DB.FindProvisionerResourcesForDeployment(ctx, depl.ID)
+	if err != nil {
+		return err
+	}
+	for _, pr := range prs {
+		p, ok := s.ProvisionerSet[pr.Provisioner]
+		if !ok {
+			s.Logger.Warn("provisioner: hibernation skipped, provisioner not found", zap.String("deployment_id", depl.ID), zap.String("provisioner", pr.Provisioner), zap.String("provision_id", pr.ID), observability.ZapCtx(ctx))
+			continue
+		}
+
+		r, err := p.Hibernate(ctx, &provisioner.Resource{
+			ID:     pr.ID,
+			Type:   provisioner.ResourceType(pr.Type),
+			State:  pr.State,
+			Config: pr.Config,
 		})
 		if err != nil {
-			s.Logger.Error("failed to delete instance", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
+			return err
+		}
+
+		_, err = s.DB.UpdateProvisionerResource(ctx, pr.ID, &database.UpdateProvisionerResourceOptions{
+			Status:        database.ProvisionerResourceStatusOK,
+			StatusMessage: "",
+			Args:          pr.Args,
+			State:         r.State,
+			Config:        r.Config,
+		})
+		if err != nil {
+			return err
 		}
 	}
 
-	// Delete all provisioned resources for the deployment
+	return nil
+}
+
+// DeleteDeploymentInner deletes a deployment by deprovisioning its runtime instance and resources.
+// Unlike StopDeploymentInner, this deletes all provisioned resources, wiping persistent state.
+// The implementation is idempotent, enabling it to be called from a retryable background job.
+func (s *Service) DeleteDeploymentInner(ctx context.Context, depl *database.Deployment) error {
+	// If the deployment is running, try to do a graceful delete.
+	// It may not be running if it was previously stopped/hibernated.
+	// Best effort is okay here since instance deletion is not really that important when using the Kubernetes provisioner.
+	if depl.RuntimeHost != "" && depl.RuntimeInstanceID != "" {
+		rt, err := s.OpenRuntimeClient(depl)
+		if err != nil {
+			s.Logger.Info("failed to open runtime client for deployment deletion", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
+		} else {
+			defer rt.Close()
+
+			// Mirrors the checkpointing from StopDeploymentInner.
+			if depl.Editable {
+				_, err = rt.GitPush(ctx, &runtimev1.GitPushRequest{
+					InstanceId:    depl.RuntimeInstanceID,
+					CommitMessage: "Auto checkpoint",
+				})
+				if err != nil {
+					s.Logger.Error("failed to checkpoint repo changes", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
+				}
+			}
+
+			// Graceful instance deletion.
+			// (In practice, with the Kubernetes provisioner where we anyway delete the disk, this isn't that important.)
+			_, err = rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
+				InstanceId: depl.RuntimeInstanceID,
+			})
+			if err != nil {
+				s.Logger.Error("failed to delete instance", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
+			}
+		}
+	}
+
+	// Deprovision and delete all provisioned resources for the deployment.
 	prs, err := s.DB.FindProvisionerResourcesForDeployment(ctx, depl.ID)
 	if err != nil {
 		return err
@@ -383,6 +452,12 @@ func (s *Service) StopDeploymentInner(ctx context.Context, depl *database.Deploy
 		if err != nil {
 			return err
 		}
+	}
+
+	// Delete the deployment from the database.
+	err = s.DB.DeleteDeployment(ctx, depl.ID)
+	if err != nil {
+		return err
 	}
 
 	return nil
