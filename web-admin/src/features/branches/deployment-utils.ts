@@ -3,6 +3,9 @@ import {
   getAdminServiceListDeploymentsQueryKey,
   V1DeploymentStatus,
   type V1Deployment,
+  createAdminServiceListProjectsForOrganization,
+  getAdminServiceListDeploymentsQueryOptions,
+  type V1Project,
 } from "@rilldata/web-admin/client";
 import {
   extractBranchFromPath,
@@ -10,6 +13,8 @@ import {
 } from "@rilldata/web-admin/features/branches/branch-utils.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { redirect } from "@sveltejs/kit";
+import { derived, type Readable } from "svelte/store";
+import { createQueries } from "@tanstack/svelte-query";
 
 /**
  * Invalidates all deployment queries for a project, triggering a refetch.
@@ -91,4 +96,33 @@ export async function maybeRedirectToEditableDeployment(
       editableDeployment.branch,
     ),
   );
+}
+
+export function getDeploymentsForProjectsInOrg(
+  org: string,
+): Readable<{ project: V1Project; deployments: V1Deployment[] }[]> {
+  const projectsQuery = createAdminServiceListProjectsForOrganization(org);
+
+  return derived(projectsQuery, (projectsResp, set) => {
+    const projects = projectsResp.data?.projects ?? [];
+    return createQueries(
+      {
+        queries: projects.map((project) =>
+          getAdminServiceListDeploymentsQueryOptions(
+            org,
+            project.name ?? "",
+            {},
+            {},
+          ),
+        ),
+        combine: (projectDeploymentsResponses) => {
+          return projectDeploymentsResponses.map((projectDeployments, i) => ({
+            project: projects[i],
+            deployments: projectDeployments.data?.deployments ?? [],
+          }));
+        },
+      },
+      queryClient,
+    ).subscribe(set);
+  });
 }

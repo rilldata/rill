@@ -109,7 +109,7 @@ function getMessageForCreditsTrial(trialIssue: V1BillingIssue) {
   } else {
     message.type = "default";
     message.title = `Welcome to rill.`;
-    message.description = `You've on a free trial with ${onCreditTrial.creditAllocation ?? 0}$ in credits.`;
+    message.description = `You are on a free trial with ${onCreditTrial.creditAllocation ?? 0}$ in credits.`;
     message.dismissible = {
       key: trialIssue.org ?? "",
       id: `${trialIssue.type ?? ""}`,
