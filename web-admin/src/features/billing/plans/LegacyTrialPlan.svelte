@@ -5,9 +5,6 @@
   } from "@rilldata/web-admin/client";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import PlanContainer from "@rilldata/web-admin/features/billing/plans/PlanContainer.svelte";
-  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
 
   let {
     organization,
