@@ -1091,6 +1091,7 @@ export interface V1Project {
   frontendUrl?: string;
   prodTtlSeconds?: string;
   devTtlSeconds?: string;
+  overrideDiskGb?: string;
   annotations?: V1ProjectAnnotations;
   prodVersion?: string;
   createdOn?: string;
@@ -1968,6 +1969,7 @@ export type AdminServiceUpdateProjectBody = {
   prodVersion?: string;
   devSlots?: string;
   superuserForceAccess?: boolean;
+  overrideDiskGb?: string;
 };
 
 export type AdminServiceGetCloneCredentialsParams = {

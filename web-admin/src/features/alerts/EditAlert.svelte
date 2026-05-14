@@ -23,7 +23,9 @@
 >
   <DialogTrigger>
     {#snippet child({ props })}
-      <Button {...props} type="secondary" {disabled}>Edit</Button>
+      <Button {...props} type="secondary" {disabled} label="Edit alert"
+        >Edit</Button
+      >
     {/snippet}
   </DialogTrigger>
   <DialogContent

@@ -440,7 +440,7 @@ func (r *repo) ListCommits(ctx context.Context, fromCommit string, limit int) ([
 }
 
 // Status implements drivers.RepoStore.
-func (r *repo) Status(ctx context.Context) (*drivers.RepoStatus, error) {
+func (r *repo) Status(ctx context.Context, remoteBranch string) (*drivers.RepoStatus, error) {
 	err := r.rlockEnsureReady(ctx, true)
 	if err != nil {
 		return nil, err
@@ -451,14 +451,29 @@ func (r *repo) Status(ctx context.Context) (*drivers.RepoStatus, error) {
 		return &drivers.RepoStatus{}, nil
 	}
 
-	// run git fetch - only updates the remote tracking branch and not the working tree.
-	err = r.git.fetchCurrentBranch(ctx)
+	repo, err := git.PlainOpen(r.git.repoDir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch current branch: %w", err)
+		return nil, err
+	}
+	head, err := repo.Head()
+	if err != nil {
+		return nil, err
+	}
+	branches := []string{head.Name().Short()}
+
+	// If a remote branch was explicitly requested and it differs from the current branch, fetch it too
+	// so that ahead/behind counts in RunGitStatus have an up-to-date remote tracking ref to compare against.
+	if remoteBranch != "" && remoteBranch != branches[0] {
+		branches = append(branches, remoteBranch)
+	}
+
+	err = r.git.fetchBranch(ctx, repo, branches...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch branches %q: %w", branches, err)
 	}
 
 	// run git status
-	st, err := gitutil.RunGitStatus(r.git.repoDir, r.git.subpath, "origin")
+	st, err := gitutil.RunGitStatus(r.git.repoDir, r.git.subpath, "origin", remoteBranch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Git status: %w", err)
 	}

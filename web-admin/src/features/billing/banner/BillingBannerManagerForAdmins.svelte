@@ -42,6 +42,7 @@
               },
             }
           : {}),
+        dismissible: message.dismissible,
       },
     });
   }

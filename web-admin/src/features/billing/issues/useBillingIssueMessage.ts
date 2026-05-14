@@ -17,9 +17,10 @@ export type BillingIssueMessage = {
   title: string;
   description: string;
   cta?: BillingIssueMessageCTA;
+  dismissible?: BannerMessage["dismissible"];
 };
 export type BillingIssueMessageCTA = {
-  type: "upgrade" | "payment" | "contact" | "wake-projects";
+  type: "upgrade" | "show-upgrade" | "payment" | "contact";
   text: string;
 
   teamPlanDialogType?: TeamPlanDialogTypes;
@@ -48,6 +49,15 @@ export function useBillingIssueMessage(organization: string) {
         };
       }
 
+      if (categorisedIssuesResp.data?.trial) {
+        return {
+          isFetching: false,
+          isLoading: false,
+          error: undefined,
+          data: getMessageForTrialPlan(categorisedIssuesResp.data.trial),
+        };
+      }
+
       if (categorisedIssuesResp.data?.cancelled) {
         return {
           isFetching: false,
@@ -56,15 +66,6 @@ export function useBillingIssueMessage(organization: string) {
           data: getMessageForCancelledIssue(
             categorisedIssuesResp.data.cancelled,
           ),
-        };
-      }
-
-      if (categorisedIssuesResp.data?.trial) {
-        return {
-          isFetching: false,
-          isLoading: false,
-          error: undefined,
-          data: getMessageForTrialPlan(categorisedIssuesResp.data.trial),
         };
       }
 

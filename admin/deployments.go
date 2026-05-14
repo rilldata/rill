@@ -207,12 +207,13 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 
 	// Provision the runtime
 	r, err := s.provisionRuntime(ctx, &provisionRuntimeOptions{
-		DeploymentID: depl.ID,
-		Environment:  depl.Environment,
-		Provisioner:  proj.Provisioner,
-		Slots:        slots,
-		Version:      runtimeVersion,
-		Annotations:  annotations.ToMap(),
+		DeploymentID:   depl.ID,
+		Environment:    depl.Environment,
+		Provisioner:    proj.Provisioner,
+		Slots:          slots,
+		Version:        runtimeVersion,
+		OverrideDiskGB: proj.OverrideDiskGB,
+		Annotations:    annotations.ToMap(),
 	})
 	if err != nil {
 		return err
@@ -428,12 +429,13 @@ func (s *Service) UpdateDeploymentInner(ctx context.Context, d *database.Deploym
 
 	// Provision the runtime. This is idempotent and will (partially) update the existing provisioned runtime if the config has changed.
 	_, err = s.provisionRuntime(ctx, &provisionRuntimeOptions{
-		DeploymentID: d.ID,
-		Environment:  d.Environment,
-		Provisioner:  pr.Provisioner,
-		Slots:        slots,
-		Version:      runtimeVersion,
-		Annotations:  annotations.ToMap(),
+		DeploymentID:   d.ID,
+		Environment:    d.Environment,
+		Provisioner:    pr.Provisioner,
+		Slots:          slots,
+		Version:        runtimeVersion,
+		OverrideDiskGB: proj.OverrideDiskGB,
+		Annotations:    annotations.ToMap(),
 	})
 	if err != nil {
 		return err
@@ -619,12 +621,13 @@ func resolveSlots(proj *database.Project, environment string) (int, error) {
 }
 
 type provisionRuntimeOptions struct {
-	DeploymentID string
-	Environment  string
-	Provisioner  string
-	Slots        int
-	Version      string
-	Annotations  map[string]string
+	DeploymentID   string
+	Environment    string
+	Provisioner    string
+	Slots          int
+	Version        string
+	OverrideDiskGB *int64
+	Annotations    map[string]string
 }
 
 // triggerDeploymentReconcileJob triggers a reconcile deployment job for the given deployment ID.
@@ -651,9 +654,10 @@ func (s *Service) provisionRuntime(ctx context.Context, opts *provisionRuntimeOp
 
 	// Create provisioner args
 	args := &provisioner.RuntimeArgs{
-		Slots:       opts.Slots,
-		Version:     opts.Version,
-		Environment: opts.Environment,
+		Slots:          opts.Slots,
+		Version:        opts.Version,
+		Environment:    opts.Environment,
+		OverrideDiskGB: opts.OverrideDiskGB,
 	}
 
 	// Call into the generic provision function

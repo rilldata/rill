@@ -1533,6 +1533,9 @@ components:
                     type: string
                 orgName:
                     type: string
+                overrideDiskGb:
+                    format: int64
+                    type: string
                 primaryBranch:
                     type: string
                 primaryDeploymentId:
@@ -2967,6 +2970,9 @@ paths:
                                 gitRemote:
                                     type: string
                                 newName:
+                                    type: string
+                                overrideDiskGb:
+                                    format: int64
                                     type: string
                                 primaryBranch:
                                     type: string

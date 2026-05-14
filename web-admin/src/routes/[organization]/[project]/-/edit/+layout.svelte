@@ -1,7 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import {
-    createAdminServiceGetCurrentUser,
     createAdminServiceGetProject,
     getAdminServiceGetProjectQueryKey,
     V1DeploymentStatus,
@@ -18,10 +17,6 @@
   import { baseGetProjectQueryOptions } from "@rilldata/web-admin/features/projects/project-query-options";
   import SlimProjectHeader from "@rilldata/web-admin/features/projects/SlimProjectHeader.svelte";
   import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
-  import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
-  import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
-  import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
-  import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import FileAndResourceWatcher from "@rilldata/web-common/features/entity-management/FileAndResourceWatcher.svelte";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
@@ -73,20 +68,12 @@
   $: instanceId = deployment?.runtimeInstanceId ?? null;
   $: jwt = $projectQuery.data?.jwt ?? null;
 
-  const user = createAdminServiceGetCurrentUser();
-
-  $: currentUserId = $user.data?.user?.id;
-
-  $: isOtherOwner =
-    !!deployment && !!currentUserId && deployment.ownerUserId !== currentUserId;
-
   // Flipped when the user clicks "Start deployment" on a stopped deployment;
   // keeps the UI in loading state while the backend transitions STOPPED → PENDING → RUNNING.
   let starting = false;
 
   $: isLoading =
     $projectQuery.isPending ||
-    $user.isPending ||
     starting ||
     deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING;
 
@@ -103,10 +90,7 @@
       deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING) &&
     runtimeHost !== null &&
     instanceId !== null &&
-    jwt !== null &&
-    !isOtherOwner;
-
-  $: branchUrl = `/${organization}/${project}${branchPathPrefix(branch)}`;
+    jwt !== null;
 
   $: inProjectWelcomePage = isProjectWelcomePage($page);
 
@@ -132,31 +116,7 @@
 </script>
 
 <div class="edit-session">
-  {#if isOtherOwner}
-    <SlimProjectHeader
-      {organization}
-      {project}
-      readProjects={organizationPermissions?.readProjects}
-      {planDisplayName}
-      {organizationLogoUrl}
-    />
-    <CtaLayoutContainer>
-      <CtaContentContainer>
-        <h1
-          class="text-8xl font-extrabold bg-gradient-to-b from-[#CBD5E1] to-[#E2E8F0] text-transparent bg-clip-text"
-        >
-          403
-        </h1>
-        <h2 class="text-lg font-semibold">
-          This editing session belongs to another user
-        </h2>
-        <CtaMessage>You can preview this branch in read-only mode.</CtaMessage>
-        <CtaButton variant="secondary" href={branchUrl}>
-          Preview this branch
-        </CtaButton>
-      </CtaContentContainer>
-    </CtaLayoutContainer>
-  {:else if isLoading}
+  {#if isLoading}
     <EditSessionLoading status={deploymentStatus} href={`/${organization}`} />
   {:else if isErrored}
     <SlimProjectHeader

@@ -124,6 +124,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		PrimaryDeploymentID:  &depl.ID,
 		DevSlots:             proj.DevSlots,
 		DevTTLSeconds:        proj.DevTTLSeconds,
+		OverrideDiskGB:       proj.OverrideDiskGB,
 		Annotations:          proj.Annotations,
 	})
 	if err != nil {
@@ -202,7 +203,8 @@ func (s *Service) UpdateProject(ctx context.Context, oldProj *database.Project, 
 		!reflect.DeepEqual(oldProj.Annotations, opts.Annotations) ||
 		!reflect.DeepEqual(oldProj.GitRemote, opts.GitRemote) ||
 		!reflect.DeepEqual(oldProj.GithubInstallationID, opts.GithubInstallationID) ||
-		!reflect.DeepEqual(oldProj.ArchiveAssetID, opts.ArchiveAssetID)
+		!reflect.DeepEqual(oldProj.ArchiveAssetID, opts.ArchiveAssetID) ||
+		!reflect.DeepEqual(oldProj.OverrideDiskGB, opts.OverrideDiskGB)
 
 	if !impactsDeployments {
 		return proj, nil
@@ -235,6 +237,7 @@ func (s *Service) UpdateProject(ctx context.Context, oldProj *database.Project, 
 				ProdTTLSeconds:       proj.ProdTTLSeconds,
 				DevSlots:             proj.DevSlots,
 				DevTTLSeconds:        proj.DevTTLSeconds,
+				OverrideDiskGB:       proj.OverrideDiskGB,
 				Annotations:          proj.Annotations,
 			})
 			if err != nil {
@@ -384,6 +387,7 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
 		DevSlots:             proj.DevSlots,
 		DevTTLSeconds:        proj.DevTTLSeconds,
+		OverrideDiskGB:       proj.OverrideDiskGB,
 		Annotations:          proj.Annotations,
 	})
 	if err != nil {
@@ -434,6 +438,7 @@ func (s *Service) HibernateProject(ctx context.Context, proj *database.Project) 
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
 		DevSlots:             proj.DevSlots,
 		DevTTLSeconds:        proj.DevTTLSeconds,
+		OverrideDiskGB:       proj.OverrideDiskGB,
 		Annotations:          proj.Annotations,
 	})
 	if err != nil {

@@ -10170,6 +10170,10 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 		// no validation rules for DevSlots
 	}
 
+	if m.OverrideDiskGb != nil {
+		// no validation rules for OverrideDiskGb
+	}
+
 	if len(errors) > 0 {
 		return UpdateProjectRequestMultiError(errors)
 	}
@@ -43699,6 +43703,8 @@ func (m *Project) validate(all bool) error {
 	// no validation rules for ProdTtlSeconds
 
 	// no validation rules for DevTtlSeconds
+
+	// no validation rules for OverrideDiskGb
 
 	// no validation rules for Annotations
 

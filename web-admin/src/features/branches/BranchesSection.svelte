@@ -4,7 +4,6 @@
   import {
     V1DeploymentStatus,
     createAdminServiceDeleteDeployment,
-    createAdminServiceGetCurrentUser,
     createAdminServiceGetProject,
     createAdminServiceListDeployments,
     createAdminServiceListOrganizationMemberUsers,
@@ -56,8 +55,6 @@
   let { organization, project }: { organization: string; project: string } =
     $props();
 
-  const user = createAdminServiceGetCurrentUser();
-
   let orgMembers = $derived(
     createAdminServiceListOrganizationMemberUsers(organization, {
       pageSize: 1000,
@@ -91,7 +88,6 @@
 
   let primaryBranch = $derived($projectQuery.data?.project?.primaryBranch);
   let activeBranch = $derived(extractBranchFromPath(page.url.pathname));
-  let currentUserId = $derived($user.data?.user?.id);
 
   let userNameMap = $derived(
     new Map(
@@ -420,7 +416,7 @@
                   </IconButton>
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Content align="start">
-                  {#if !!currentUserId && deployment.ownerUserId === currentUserId && deployment.editable}
+                  {#if deployment.editable}
                     <DropdownMenu.Item
                       class="font-normal flex items-center"
                       href={editUrl(deployment.branch)}
