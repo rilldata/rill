@@ -26,7 +26,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const devDeplTTL = 6 * time.Hour
+const devDeplTTL = time.Hour
 
 const prodDeplTTL = 14 * 24 * time.Hour
 

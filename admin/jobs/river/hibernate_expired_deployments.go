@@ -2,7 +2,6 @@ package river
 
 import (
 	"context"
-	"time"
 
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
@@ -10,10 +9,6 @@ import (
 	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
-
-// stoppedDeploymentRetention is how long after a deployment is stopped that we keep it around before fully deleting it.
-// (This ensures that we eventually delete persistent state like PVCs for stopped deployments.)
-const stoppedDeploymentRetention = 30 * 24 * time.Hour
 
 type HibernateExpiredDeploymentsArgs struct{}
 
@@ -43,8 +38,8 @@ func (w *HibernateExpiredDeploymentsWorker) Work(ctx context.Context, job *river
 	}
 	w.logger.Info("hibernate: completed running deployments check", zap.Int("deployments", len(running)))
 
-	// Delete deployments that have been stopped for a long time.
-	stopped, err := w.admin.DB.FindDeploymentsToDelete(ctx, stoppedDeploymentRetention)
+	// Delete deployments that have been stopped for longer than the configured retention.
+	stopped, err := w.admin.DB.FindDeploymentsToDelete(ctx, w.admin.StoppedDeploymentRetention)
 	if err != nil {
 		return err
 	}
