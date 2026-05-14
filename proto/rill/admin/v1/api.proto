@@ -1288,6 +1288,11 @@ service AdminService {
     option (google.api.http) = {get: "/v1/orgs/{org}/billing/payments/portal-url"};
   }
 
+  // GetBillingCreditBalance returns the organization's remaining trial credit balance
+  rpc GetBillingCreditBalance(GetBillingCreditBalanceRequest) returns (GetBillingCreditBalanceResponse) {
+    option (google.api.http) = {get: "/v1/orgs/{org}/billing/credits"};
+  }
+
   // ListPublicBillingPlans lists all public billing plans
   rpc ListPublicBillingPlans(ListPublicBillingPlansRequest) returns (ListPublicBillingPlansResponse) {
     option (google.api.http) = {get: "/v1/billing/plans"};
@@ -1869,6 +1874,7 @@ message UpdateProjectRequest {
   optional string prod_version = 11;
   optional int64 dev_slots = 16;
   bool superuser_force_access = 14;
+  optional int64 override_disk_gb = 17;
 }
 
 message UpdateProjectResponse {
@@ -3164,6 +3170,15 @@ message GetPaymentsPortalURLResponse {
   string url = 1;
 }
 
+message GetBillingCreditBalanceRequest {
+  string org = 1 [(validate.rules).string.min_len = 1];
+  bool superuser_force_access = 2;
+}
+
+message GetBillingCreditBalanceResponse {
+  double balance = 1;
+}
+
 message ListPublicBillingPlansRequest {}
 
 message ListPublicBillingPlansResponse {
@@ -3344,6 +3359,7 @@ message Project {
   string frontend_url = 16; // Note: Does NOT incorporate the parent org's custom domain.
   int64 prod_ttl_seconds = 18;
   int64 dev_ttl_seconds = 27;
+  int64 override_disk_gb = 28;
   map<string, string> annotations = 20;
   string prod_version = 21;
   google.protobuf.Timestamp created_on = 14;

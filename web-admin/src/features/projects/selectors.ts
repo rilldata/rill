@@ -140,6 +140,9 @@ export async function fetchProjectDeploymentDetails(
   const projResp = await queryClient.fetchQuery({
     queryKey,
     queryFn,
+    // We dont want to fire this for every page transition, only hit this once a minute.
+    // TODO: perhaps we can bump this further or not have it at all
+    staleTime: 1000 * 60,
   });
 
   return {

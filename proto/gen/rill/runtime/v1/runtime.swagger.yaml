@@ -1441,6 +1441,13 @@ paths:
           in: path
           required: true
           type: string
+        - name: remoteBranch
+          description: |-
+            remote_branch is the remote branch to compare the current local branch against.
+            If empty, the upstream of the current local branch is used.
+          in: query
+          required: false
+          type: string
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/logs:

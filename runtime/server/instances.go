@@ -102,7 +102,6 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		AdminConnector: req.AdminConnector,
 		AIConnector:    req.AiConnector,
 		Connectors:     req.Connectors,
-		Variables:      req.Variables,
 		Annotations:    req.Annotations,
 		FrontendURL:    req.FrontendUrl,
 	}

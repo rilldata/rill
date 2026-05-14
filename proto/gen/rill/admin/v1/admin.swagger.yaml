@@ -509,6 +509,28 @@ paths:
               billingEmail:
                 type: string
       x-visibility: public
+  /v1/orgs/{org}/billing/credits:
+    get:
+      summary: GetBillingCreditBalance returns the organization's remaining trial credit balance
+      operationId: AdminService_GetBillingCreditBalance
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetBillingCreditBalanceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
   /v1/orgs/{org}/billing/issues:
     get:
       summary: ListOrganizationBillingIssues lists all the billing issues for the organization
@@ -1207,6 +1229,9 @@ paths:
                 format: int64
               superuserForceAccess:
                 type: boolean
+              overrideDiskGb:
+                type: string
+                format: int64
       x-visibility: public
   /v1/orgs/{org}/projects/{project}/alerts:
     post:
@@ -5198,6 +5223,12 @@ definitions:
     properties:
       yaml:
         type: string
+  v1GetBillingCreditBalanceResponse:
+    type: object
+    properties:
+      balance:
+        type: number
+        format: double
   v1GetBillingProjectCredentialsRequest:
     type: object
     properties:
@@ -6113,6 +6144,9 @@ definitions:
         type: string
         format: int64
       devTtlSeconds:
+        type: string
+        format: int64
+      overrideDiskGb:
         type: string
         format: int64
       annotations:

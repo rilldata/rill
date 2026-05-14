@@ -1,7 +1,6 @@
 <script lang="ts">
   import ProjectCard from "./ProjectCard.svelte";
   import { Button } from "@rilldata/web-common/components/button";
-  import { projectWelcomeEnabled } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
   import { listProjectsForOrgQueryOptions } from "@rilldata/web-admin/features/projects/list-projects-query-options";
   import { createQuery } from "@tanstack/svelte-query";
 
@@ -15,9 +14,7 @@
   );
   let projects = $derived($projectsQuery.data?.projects ?? []);
 
-  let showNewProject = $derived(
-    projectWelcomeEnabled && createProjectsPermission,
-  );
+  let showNewProject = $derived(createProjectsPermission);
 </script>
 
 <div class="flex flex-col gap-y-4">

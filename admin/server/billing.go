@@ -58,6 +58,32 @@ func (s *Server) GetBillingSubscription(ctx context.Context, req *adminv1.GetBil
 	}, nil
 }
 
+func (s *Server) GetBillingCreditBalance(ctx context.Context, req *adminv1.GetBillingCreditBalanceRequest) (*adminv1.GetBillingCreditBalanceResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
+	if err != nil {
+		return nil, err
+	}
+
+	claims := auth.GetClaims(ctx)
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !forceAccess {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to read org credit balance")
+	}
+
+	if org.BillingCustomerID == "" {
+		return &adminv1.GetBillingCreditBalanceResponse{}, nil
+	}
+
+	balance, err := s.admin.Biller.GetCustomerCreditBalance(ctx, org.BillingCustomerID, billing.CreditsCurrency)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch credit balance: %w", err)
+	}
+
+	return &adminv1.GetBillingCreditBalanceResponse{Balance: balance}, nil
+}
+
 func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.UpdateBillingSubscriptionRequest) (*adminv1.UpdateBillingSubscriptionResponse, error) {
 	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
 	observability.AddRequestAttributes(ctx, attribute.String("args.plan_name", req.PlanName))

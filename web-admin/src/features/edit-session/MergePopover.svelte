@@ -93,7 +93,7 @@
     const targetUrl = buildPostMergeUrl({
       organization,
       project,
-      pathname: $page.url.pathname,
+      page: $page,
       hadProdDeployment,
       preCommitSha: $parserShaQuery.data,
     });

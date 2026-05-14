@@ -551,6 +551,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		ProdTTLSeconds:       prodTTL,
 		DevSlots:             devSlots,
 		DevTTLSeconds:        devTTL,
+		OverrideDiskGB:       nil, // default to no override; can be set later by superusers
 	}
 
 	// Check and validate the project file source.
@@ -677,6 +678,9 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	}
 	if req.ProdTtlSeconds != nil {
 		observability.AddRequestAttributes(ctx, attribute.Int64("args.prod_ttl_seconds", *req.ProdTtlSeconds))
+	}
+	if req.OverrideDiskGb != nil {
+		observability.AddRequestAttributes(ctx, attribute.Int64("args.override_disk_gb", *req.OverrideDiskGb))
 	}
 	if req.NewName != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.new_name", *req.NewName))
@@ -812,6 +816,22 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		}
 	}
 
+	// override_disk_gb is a sudo-only field. Only allow changes when the caller is a superuser using force access.
+	overrideDiskGB := proj.OverrideDiskGB
+	if req.OverrideDiskGb != nil {
+		if !forceAccess {
+			return nil, status.Error(codes.PermissionDenied, "only superusers can set override_disk_gb")
+		}
+		if *req.OverrideDiskGb == 0 {
+			overrideDiskGB = nil
+		} else if *req.OverrideDiskGb < 0 {
+			return nil, status.Error(codes.InvalidArgument, "override_disk_gb must be >= 0")
+		} else {
+			v := *req.OverrideDiskGb
+			overrideDiskGB = &v
+		}
+	}
+
 	opts := &database.UpdateProjectOptions{
 		Name:                 valOrDefault(req.NewName, proj.Name),
 		Description:          valOrDefault(req.Description, proj.Description),
@@ -830,6 +850,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		ProdTTLSeconds:       prodTTLSeconds,
 		DevSlots:             int(valOrDefault(req.DevSlots, int64(proj.DevSlots))),
 		DevTTLSeconds:        proj.DevTTLSeconds,
+		OverrideDiskGB:       overrideDiskGB,
 		Provisioner:          valOrDefault(req.Provisioner, proj.Provisioner),
 		Annotations:          proj.Annotations,
 	}
@@ -1807,6 +1828,7 @@ func (s *Server) SudoUpdateAnnotations(ctx context.Context, req *adminv1.SudoUpd
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
 		DevSlots:             proj.DevSlots,
 		DevTTLSeconds:        proj.DevTTLSeconds,
+		OverrideDiskGB:       proj.OverrideDiskGB,
 		Provisioner:          proj.Provisioner,
 		Annotations:          req.Annotations,
 	})
@@ -2134,6 +2156,7 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		PrimaryDeploymentId: safeStr(p.PrimaryDeploymentID),
 		ProdTtlSeconds:      safeInt64(p.ProdTTLSeconds),
 		DevTtlSeconds:       p.DevTTLSeconds,
+		OverrideDiskGb:      safeInt64(p.OverrideDiskGB),
 		FrontendUrl:         s.admin.URLs.Project(orgName, p.Name),
 		Annotations:         p.Annotations,
 		CreatedOn:           timestamppb.New(p.CreatedOn),
@@ -2240,6 +2263,7 @@ func (s *Server) githubRepoIDForProject(ctx context.Context, p *database.Project
 		ProdTTLSeconds:       p.ProdTTLSeconds,
 		DevSlots:             p.DevSlots,
 		DevTTLSeconds:        p.DevTTLSeconds,
+		OverrideDiskGB:       p.OverrideDiskGB,
 		Provisioner:          p.Provisioner,
 		Annotations:          p.Annotations,
 	})

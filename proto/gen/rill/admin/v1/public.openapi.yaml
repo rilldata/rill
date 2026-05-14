@@ -655,6 +655,12 @@ components:
                 yaml:
                     type: string
             type: object
+        v1GetBillingCreditBalanceResponse:
+            properties:
+                balance:
+                    format: double
+                    type: number
+            type: object
         v1GetBillingProjectCredentialsRequest:
             properties:
                 org:
@@ -1526,6 +1532,9 @@ components:
                 orgId:
                     type: string
                 orgName:
+                    type: string
+                overrideDiskGb:
+                    format: int64
                     type: string
                 primaryBranch:
                     type: string
@@ -2595,6 +2604,7 @@ paths:
                     description: An unexpected error response.
             summary: UpdateOrganization updates an organization
             x-visibility: public
+    /v1/orgs/{org}/billing/credits: {}
     /v1/orgs/{org}/billing/issues: {}
     /v1/orgs/{org}/billing/payments/portal-url: {}
     /v1/orgs/{org}/billing/subscriptions: {}
@@ -2960,6 +2970,9 @@ paths:
                                 gitRemote:
                                     type: string
                                 newName:
+                                    type: string
+                                overrideDiskGb:
+                                    format: int64
                                     type: string
                                 primaryBranch:
                                     type: string

@@ -1275,6 +1275,9 @@ message GitCommit {
 
 message GitStatusRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  // remote_branch is the remote branch to compare the current local branch against.
+  // If empty, the upstream of the current local branch is used.
+  string remote_branch = 2;
 }
 
 message GitStatusResponse {

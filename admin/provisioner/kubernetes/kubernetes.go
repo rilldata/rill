@@ -192,6 +192,12 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, r *provisioner.Re
 	// Create unique host
 	host := p.getHost(provisionID)
 
+	// Compute storage. If an override is provided on the project, it takes precedence over the slot-based default.
+	storageBytes := 40 * int64(args.Slots) * int64(datasize.GB)
+	if args.OverrideDiskGB != nil && *args.OverrideDiskGB > 0 {
+		storageBytes = *args.OverrideDiskGB * int64(datasize.GB)
+	}
+
 	// Define template data
 	data := &TemplateData{
 		ImageTag:     version,
@@ -200,7 +206,7 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, r *provisioner.Re
 		Host:         strings.Split(host, "//")[1], // Remove protocol
 		CPU:          1 * args.Slots,
 		MemoryGB:     4 * args.Slots,
-		StorageBytes: 40 * int64(args.Slots) * int64(datasize.GB),
+		StorageBytes: storageBytes,
 		Slots:        args.Slots,
 		Names:        names,
 		Annotations:  opts.Annotations,
