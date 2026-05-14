@@ -1,9 +1,7 @@
 <script lang="ts">
   import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
-  import { Button } from "../../components/button";
   import { useRuntimeClient } from "../../runtime-client/v2";
   import { featureFlags } from "../feature-flags";
-  import { getFileHref } from "../../layout/navigation/editor-routing";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import {
     dashboardChatActions,

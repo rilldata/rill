@@ -15,7 +15,6 @@
   import { getErrorMessage } from "@rilldata/web-common/features/explore-mappers/utils";
   import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { get } from "svelte/store";
 
   const runtimeClient = useRuntimeClient();
 
