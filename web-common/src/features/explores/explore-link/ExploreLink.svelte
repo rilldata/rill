@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import { goto } from "$app/navigation";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
@@ -14,6 +15,7 @@
   import { getErrorMessage } from "@rilldata/web-common/features/explore-mappers/utils";
   import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { get } from "svelte/store";
 
   const runtimeClient = useRuntimeClient();
 
@@ -28,6 +30,8 @@
   let isNavigating = false;
   let navigationError: ExploreLinkError | null = null;
 
+  $: onEditPage = $page.route?.id?.includes("/edit/(viz)/canvas");
+
   async function gotoExplorePage() {
     if (!exploreName || !exploreState || disabled) return;
 
@@ -39,8 +43,8 @@
         runtimeClient,
         exploreState,
         exploreName,
-        organization,
-        project,
+        onEditPage ? undefined : organization,
+        onEditPage ? undefined : project,
       );
       await goto(exploreURL);
     } catch (error) {

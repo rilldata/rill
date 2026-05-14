@@ -14,6 +14,7 @@
     useDashboardPolicyCheck,
     useRillYamlPolicyCheck,
   } from "../dashboards/granular-access-policies/useSecurityPolicyCheck";
+  import CanvasEditButton from "@rilldata/web-common/features/canvas/CanvasEditButton.svelte";
 
   const client = useRuntimeClient();
 
@@ -49,7 +50,7 @@
       <ChatToggle open={dashboardChatOpen} actions={dashboardChatActions} />
     {/if}
     {#if !$readOnly}
-      <Button type="secondary" href={getFileHref(canvasFilePath)}>Edit</Button>
+      <CanvasEditButton {canvasName} />
     {/if}
   </div>
 {/if}
