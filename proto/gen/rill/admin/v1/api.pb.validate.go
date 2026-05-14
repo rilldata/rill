@@ -10170,6 +10170,10 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 		// no validation rules for DevSlots
 	}
 
+	if m.DevTtlSeconds != nil {
+		// no validation rules for DevTtlSeconds
+	}
+
 	if m.OverrideDiskGb != nil {
 		// no validation rules for OverrideDiskGb
 	}

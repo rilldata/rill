@@ -3873,6 +3873,9 @@ paths:
                                 devSlots:
                                     format: int64
                                     type: string
+                                devTtlSeconds:
+                                    format: int64
+                                    type: string
                                 directoryName:
                                     type: string
                                 gitRemote:

@@ -26,7 +26,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const devDeplTTL = 15 * time.Minute // reduced from 6 hours to 15 minutes for testing. Revert before final release.
+const devDeplTTL = 6 * time.Hour
 
 const prodDeplTTL = 14 * 24 * time.Hour
 
@@ -679,6 +679,9 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	if req.ProdTtlSeconds != nil {
 		observability.AddRequestAttributes(ctx, attribute.Int64("args.prod_ttl_seconds", *req.ProdTtlSeconds))
 	}
+	if req.DevTtlSeconds != nil {
+		observability.AddRequestAttributes(ctx, attribute.Int64("args.dev_ttl_seconds", *req.DevTtlSeconds))
+	}
 	if req.OverrideDiskGb != nil {
 		observability.AddRequestAttributes(ctx, attribute.Int64("args.override_disk_gb", *req.OverrideDiskGb))
 	}
@@ -816,6 +819,11 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		}
 	}
 
+	devTTLSeconds := proj.DevTTLSeconds
+	if req.DevTtlSeconds != nil {
+		devTTLSeconds = *req.DevTtlSeconds
+	}
+
 	// override_disk_gb is a sudo-only field. Only allow changes when the caller is a superuser using force access.
 	overrideDiskGB := proj.OverrideDiskGB
 	if req.OverrideDiskGb != nil {
@@ -849,7 +857,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		ProdSlots:            int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots))),
 		ProdTTLSeconds:       prodTTLSeconds,
 		DevSlots:             int(valOrDefault(req.DevSlots, int64(proj.DevSlots))),
-		DevTTLSeconds:        proj.DevTTLSeconds,
+		DevTTLSeconds:        devTTLSeconds,
 		OverrideDiskGB:       overrideDiskGB,
 		Provisioner:          valOrDefault(req.Provisioner, proj.Provisioner),
 		Annotations:          proj.Annotations,
