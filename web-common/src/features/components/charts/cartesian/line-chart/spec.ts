@@ -31,7 +31,7 @@ export function generateVLLineChartSpec(
 
   const colorField =
     typeof config.color === "object" ? config.color.field : undefined;
-  const xField = sanitizeValueForVega(config.x?.field);
+  const sanitizedXField = sanitizeValueForVega(config.x?.field);
   const yField = config.y?.field;
   const sanitizedYField = sanitizeValueForVega(yField);
 
@@ -52,7 +52,7 @@ export function generateVLLineChartSpec(
   const hasComparison = data.hasComparison;
 
   const hoverRuleLayer = buildHoverRuleLayer({
-    xField,
+    xField: sanitizedXField,
     domainValues: data.domainValues,
     defaultTooltip: defaultTooltipChannel,
     multiValueTooltipChannel,
@@ -61,7 +61,7 @@ export function generateVLLineChartSpec(
     isDarkMode: data.isDarkMode,
     isInteractive: config.isInteractive,
     pivot: createVegaTransformPivotConfig(
-      xField,
+      sanitizedXField,
       sanitizedYField,
       colorField,
       !!hasComparison,
@@ -115,8 +115,8 @@ export function generateVLLineChartSpec(
   return {
     ...spec,
     ...(vegaConfig && { config: vegaConfig }),
-    ...(config.isInteractive && xField
-      ? { usermeta: { brushTemporalField: xField } }
+    ...(config.isInteractive && sanitizedXField
+      ? { usermeta: { brushTemporalField: sanitizedXField } }
       : {}),
   };
 }

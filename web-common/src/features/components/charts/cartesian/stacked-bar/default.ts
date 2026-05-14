@@ -29,7 +29,7 @@ export function generateVLStackedBarChartSpec(
 
   const colorField =
     typeof config.color === "object" ? config.color.field : undefined;
-  const xField = sanitizeValueForVega(config.x?.field);
+  const sanitizedXField = sanitizeValueForVega(config.x?.field);
   const yField = config.y?.field;
   const sanitizedYField = sanitizeValueForVega(yField);
 
@@ -49,7 +49,7 @@ export function generateVLStackedBarChartSpec(
   const hasComparison = data.hasComparison;
 
   const hoverRuleLayer = buildHoverRuleLayer({
-    xField,
+    xField: sanitizedXField,
     domainValues: data.domainValues,
     isBarMark: true,
     defaultTooltip: defaultTooltipChannel,
@@ -59,7 +59,7 @@ export function generateVLStackedBarChartSpec(
     isDarkMode: data.isDarkMode,
     isInteractive: config.isInteractive,
     pivot: createVegaTransformPivotConfig(
-      xField,
+      sanitizedXField,
       sanitizedYField,
       colorField,
       !!hasComparison,
@@ -103,8 +103,8 @@ export function generateVLStackedBarChartSpec(
   return {
     ...spec,
     ...(vegaConfig && { config: vegaConfig }),
-    ...(config.isInteractive && xField
-      ? { usermeta: { brushTemporalField: xField } }
+    ...(config.isInteractive && sanitizedXField
+      ? { usermeta: { brushTemporalField: sanitizedXField } }
       : {}),
   };
 }

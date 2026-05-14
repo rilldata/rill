@@ -35,7 +35,7 @@ export function generateVLStackedBarNormalizedSpec(
 
   const colorField =
     typeof config.color === "object" ? config.color.field : undefined;
-  const xField = sanitizeValueForVega(config.x?.field);
+  const sanitizedXField = sanitizeValueForVega(config.x?.field);
   const yField = config.y?.field;
   const sanitizedYField = sanitizeValueForVega(yField);
 
@@ -136,7 +136,7 @@ export function generateVLStackedBarNormalizedSpec(
   };
 
   const hoverRuleLayer = buildHoverRuleLayer({
-    xField,
+    xField: sanitizedXField,
     domainValues: data.domainValues,
     isBarMark: true,
     defaultTooltip: baseEncoding.tooltip as TooltipValue[],
@@ -145,7 +145,7 @@ export function generateVLStackedBarNormalizedSpec(
     primaryColor: data.theme.primary,
     isDarkMode: data.isDarkMode,
     pivot: createVegaTransformPivotConfig(
-      xField,
+      sanitizedXField,
       sanitizedYField,
       colorField,
       !!hasComparison,
