@@ -434,7 +434,7 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 		if err != nil {
 			return nil, err
 		}
-		err = s.mirrorGitRepo(ctx, *proj.GitRemote, req.Remote, mgdRepoToken, token)
+		err = mirrorGitRepo(ctx, *proj.GitRemote, req.Remote, mgdRepoToken, token)
 		if err != nil {
 			return nil, err
 		}
@@ -1207,43 +1207,6 @@ func (s *Server) createRepo(ctx context.Context, remote, branch string, user *da
 	return token, nil
 }
 
-func (s *Server) mirrorGitRepo(ctx context.Context, srcGitRemote, destGitRemote, srcToken, destToken string) error {
-	gitPath, err := os.MkdirTemp(os.TempDir(), "projects")
-	if err != nil {
-		return err
-	}
-	defer os.RemoveAll(gitPath)
-
-	repo, err := git.PlainCloneContext(ctx, gitPath, false, &git.CloneOptions{
-		URL:  srcGitRemote,
-		Auth: &githttp.BasicAuth{Username: "x-access-token", Password: srcToken},
-	})
-	if err != nil {
-		return fmt.Errorf("failed to clone git repo: %w", err)
-	}
-
-	_, err = repo.CreateRemote(&config.RemoteConfig{
-		Name: "dest",
-		URLs: []string{destGitRemote},
-	})
-	if err != nil {
-		return fmt.Errorf("failed to create remote: %w", err)
-	}
-
-	// Push everything (all refs, like git push --mirror)
-	err = repo.PushContext(ctx, &git.PushOptions{
-		Auth:       &githttp.BasicAuth{Username: "x-access-token", Password: destToken},
-		RemoteName: "dest",
-		RefSpecs: []config.RefSpec{
-			"+refs/*:refs/*", // force-push all refs
-		},
-	})
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (s *Server) pushAssetToGit(ctx context.Context, assetID, remote, branch, token string, author *object.Signature) error {
 	asset, err := s.admin.DB.FindAsset(ctx, assetID)
 	if err != nil {
@@ -1295,6 +1258,40 @@ func fromStringPtr(s *string) string {
 		return ""
 	}
 	return *s
+}
+
+func mirrorGitRepo(ctx context.Context, srcGitRemote, destGitRemote, srcToken, destToken string) error {
+	gitPath, err := os.MkdirTemp(os.TempDir(), "projects")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(gitPath)
+
+	repo, err := git.PlainCloneContext(ctx, gitPath, false, &git.CloneOptions{
+		URL:    srcGitRemote,
+		Auth:   &githttp.BasicAuth{Username: "x-access-token", Password: srcToken},
+		Mirror: true,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to clone git repo: %w", err)
+	}
+
+	_, err = repo.CreateRemote(&config.RemoteConfig{
+		Name: "dest",
+		URLs: []string{destGitRemote},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create remote: %w", err)
+	}
+
+	// Push everything (all refs, like git push --mirror)
+	return repo.PushContext(ctx, &git.PushOptions{
+		Auth:       &githttp.BasicAuth{Username: "x-access-token", Password: destToken},
+		RemoteName: "dest",
+		RefSpecs: []config.RefSpec{
+			"+refs/*:refs/*", // force-push all refs
+		},
+	})
 }
 
 // normalizeGitRemote adds a .git suffix to the Git remote URL if it doesn't already have one.
