@@ -24,8 +24,9 @@ export function generateVLAreaChartSpec(
 
   const colorField =
     typeof config.color === "object" ? config.color.field : undefined;
-  const xField = sanitizeValueForVega(config.x?.field);
-  const yField = sanitizeValueForVega(config.y?.field);
+  const sanitizedXField = sanitizeValueForVega(config.x?.field);
+  const yField = config.y?.field;
+  const sanitizedYField = sanitizeValueForVega(yField);
 
   const defaultTooltipChannel = createDefaultTooltipEncoding(
     [config.x, config.y, config.color],
@@ -55,7 +56,7 @@ export function generateVLAreaChartSpec(
       layer: inner,
     },
     buildHoverRuleLayer({
-      xField,
+      xField: sanitizedXField,
       domainValues: data.domainValues,
       defaultTooltip: defaultTooltipChannel,
       multiValueTooltipChannel,
@@ -64,8 +65,15 @@ export function generateVLAreaChartSpec(
       isDarkMode: data.isDarkMode,
       isInteractive: config.isInteractive,
       pivot:
-        xField && yField && colorField && multiValueTooltipChannel?.length
-          ? { field: colorField, value: yField, groupby: [xField] }
+        sanitizedXField &&
+        sanitizedYField &&
+        colorField &&
+        multiValueTooltipChannel?.length
+          ? {
+              field: colorField,
+              value: sanitizedYField,
+              groupby: [sanitizedXField],
+            }
           : undefined,
     }),
   ];
@@ -75,8 +83,8 @@ export function generateVLAreaChartSpec(
   return {
     ...spec,
     ...(vegaConfig && { config: vegaConfig }),
-    ...(config.isInteractive && xField
-      ? { usermeta: { brushTemporalField: xField } }
+    ...(config.isInteractive && sanitizedXField
+      ? { usermeta: { brushTemporalField: sanitizedXField } }
       : {}),
   };
 }
