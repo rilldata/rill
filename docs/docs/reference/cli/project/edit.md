@@ -22,7 +22,7 @@ rill project edit [<project-name>] [flags]
       --subpath string          Relative path to project in the repository (for monorepos)
       --provisioner string      Project provisioner (default: current provisioner)
       --prod-ttl-seconds int    Time-to-live in seconds for production deployment (0 means no expiration)
-      --dev-ttl-seconds int     Time-to-live in seconds for dev deployment (0 means no expiration)
+      --dev-ttl-seconds int     Time-to-live in seconds for dev deployment (must be greater than 0)
       --prod-slots int          Slots to allocate for production deployments
       --dev-slots int           Slots to allocate for dev deployments
 ```
