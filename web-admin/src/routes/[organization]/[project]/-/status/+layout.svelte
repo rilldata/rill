@@ -4,10 +4,13 @@
   import { page } from "$app/stores";
   import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
+  import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
 
-  $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
+  $: organization = $page.params.organization;
+  $: basePage = `/${organization}/${$page.params.project}/-/status`;
+  $: onBranch = !!extractBranchFromPath($page.url.pathname);
 
-  const navItems = [
+  $: navItems = [
     {
       label: "Overview",
       route: "",
@@ -16,7 +19,7 @@
     {
       label: "Branches",
       route: "/branches",
-      hasPermission: true,
+      hasPermission: !onBranch,
     },
     {
       label: "Resources",

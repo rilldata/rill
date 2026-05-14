@@ -115,8 +115,11 @@
     (c) => c.name === instance?.aiConnector,
   );
 
-  // Slots
-  $: currentSlots = Number(projectData?.prodSlots) || 0;
+  // Slots — pick dev vs prod based on the deployment's environment
+  $: currentSlots =
+    deployment?.environment === "dev"
+      ? Number(projectData?.devSlots) || 0
+      : Number(projectData?.prodSlots) || 0;
 
   // Billing plan detection
   $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
@@ -191,69 +194,65 @@
       </div>
     {/if}
 
-    {#if parserReconcileError}
-      <!-- Project failed to load: show the error instead of project-level details
-           (Last synced, OLAP, AI) which would be stale defaults -->
+    {#if lastUpdated}
+      <div class="info-row">
+        <span class="info-label">Last synced</span>
+        <span class="info-value">
+          {lastUpdated.toLocaleString(undefined, {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "numeric",
+            minute: "numeric",
+          })}
+        </span>
+      </div>
+    {/if}
+
+    {#if version}
+      <div class="info-row">
+        <span class="info-label">Runtime</span>
+        <span class="info-value">{version}</span>
+      </div>
+    {/if}
+
+    <div class="info-row">
+      <span class="info-label">OLAP Engine</span>
+      <span class="info-value">{olapEngineLabel}</span>
+    </div>
+
+    <div class="info-row">
+      <span class="info-label">AI Connector</span>
+      <span class="info-value">
+        {#if aiConnector && aiConnector.name !== "admin"}
+          {formatConnectorName(aiConnector.type)}
+          <span class="text-fg-tertiary text-xs ml-1">({aiConnector.name})</span
+          >
+        {:else}
+          Rill Managed
+        {/if}
+      </span>
+    </div>
+
+    {#if dataSizeBytes !== undefined}
+      <div class="info-row">
+        <span class="info-label">{dataLabel}</span>
+        <span class="info-value">
+          <a href="/{organization}/{project}/-/status/tables" class="repo-link">
+            {formatMemorySize(dataSizeBytes)}
+          </a>
+        </span>
+      </div>
+    {/if}
+
+    {#if parserReconcileError && isGithubConnected}
+      <!-- Only surface parser errors for user-connected GitHub projects;
+           Rill-managed projects hide it since users don't see the git layer. -->
       <div class="mt-2">
         <Callout level="error">
           <span class="text-sm">{parserReconcileError}</span>
         </Callout>
       </div>
-    {:else}
-      {#if lastUpdated}
-        <div class="info-row">
-          <span class="info-label">Last synced</span>
-          <span class="info-value">
-            {lastUpdated.toLocaleString(undefined, {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-              hour: "numeric",
-              minute: "numeric",
-            })}
-          </span>
-        </div>
-      {/if}
-
-      {#if version}
-        <div class="info-row">
-          <span class="info-label">Runtime</span>
-          <span class="info-value">{version}</span>
-        </div>
-      {/if}
-
-      <div class="info-row">
-        <span class="info-label">OLAP Engine</span>
-        <span class="info-value">{olapEngineLabel}</span>
-      </div>
-
-      <div class="info-row">
-        <span class="info-label">AI Connector</span>
-        <span class="info-value">
-          {#if aiConnector && aiConnector.name !== "admin"}
-            {formatConnectorName(aiConnector.type)}
-            <span class="text-fg-tertiary text-xs ml-1"
-              >({aiConnector.name})</span
-            >
-          {:else}
-            Rill Managed
-          {/if}
-        </span>
-      </div>
-
-      {#if dataSizeBytes !== undefined}
-        <div class="info-row">
-          <span class="info-label">{dataLabel}</span>
-          <span class="info-value">
-            <a
-              href="/{organization}/{project}/-/status/tables"
-              class="repo-link"
-            >
-              {formatMemorySize(dataSizeBytes)}
-            </a>
-          </span>
-        </div>
-      {/if}
     {/if}
   </div>
 </OverviewCard>

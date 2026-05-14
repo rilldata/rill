@@ -323,22 +323,12 @@
   {:else}
     <div class="table-wrapper">
       <div class="header-row">
-        <div class="pl-4 py-2 font-semibold text-fg-secondary text-sm">
-          Branch
-        </div>
-        <div class="pl-4 py-2 font-semibold text-fg-secondary text-sm">
-          Author
-        </div>
-        <div class="pl-4 py-2 font-semibold text-fg-secondary text-sm">
-          Status
-        </div>
-        <div class="pl-4 py-2 font-semibold text-fg-secondary text-sm">
-          Slots
-        </div>
-        <div class="pl-4 py-2 font-semibold text-fg-secondary text-sm">
-          Last updated
-        </div>
-        <div class="pl-4 py-2 font-semibold text-fg-secondary text-sm"></div>
+        <div class="pl-4 py-2">Branch</div>
+        <div class="pl-4 py-2">Author</div>
+        <div class="pl-4 py-2">Status</div>
+        <div class="pl-4 py-2">Units</div>
+        <div class="pl-4 py-2">Last updated</div>
+        <div class="pl-4 py-2"></div>
       </div>
       {#each visibleDeployments as deployment, i (deployment.id ?? i)}
         {@const prod = isProdDeployment(deployment)}
@@ -499,11 +489,11 @@
 
 <style lang="postcss">
   .empty-container {
-    @apply border border-border rounded-sm py-10 flex flex-col items-center gap-y-2;
+    @apply border border-border rounded-xl py-10 flex flex-col items-center gap-y-2;
   }
 
   .table-wrapper {
-    @apply flex flex-col border rounded-sm overflow-x-auto;
+    @apply flex flex-col border border-border rounded-xl bg-surface-background overflow-x-auto;
   }
 
   .header-row,
@@ -516,7 +506,7 @@
   }
 
   .header-row {
-    @apply w-full bg-surface-subtle;
+    @apply w-full bg-surface-subtle text-xs font-semibold text-fg-secondary uppercase tracking-wide;
   }
 
   .data-row {
