@@ -168,6 +168,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		Connectors:           connectors,
 		ProjectConnectors:    oldInst.ProjectConnectors,
 		ProjectVariables:     oldInst.ProjectVariables,
+		SystemVariables:      oldInst.SystemVariables,
 		FeatureFlags:         oldInst.FeatureFlags,
 		AIInstructions:       oldInst.AIInstructions,
 	}

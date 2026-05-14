@@ -296,7 +296,7 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 	frontendURL := s.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name)
 
 	// Resolve variables based on environment
-	vars, systemvars, err := s.ResolveVariables(ctx, depl)
+	vars, systemVars, err := s.ResolveVariables(ctx, depl)
 	if err != nil {
 		return err
 	}
@@ -316,7 +316,7 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		AiConnector:     "admin",
 		Connectors:      connectors,
 		Variables:       v,
-		SystemVariables: systemvars,
+		SystemVariables: systemVars,
 		Annotations:     annotations.ToMap(),
 		FrontendUrl:     frontendURL,
 	})

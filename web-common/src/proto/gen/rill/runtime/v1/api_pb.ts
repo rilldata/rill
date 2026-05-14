@@ -863,7 +863,7 @@ export class CreateInstanceRequest extends Message$1<CreateInstanceRequest> {
   connectors: Connector[] = [];
 
   /**
-   * Deprecated: Remove after some releases
+   * Deprecated: Continue populating this for some time for backward compatibility with older runtimes, remove after a few releases.
    *
    * @generated from field: map<string, string> variables = 7;
    */

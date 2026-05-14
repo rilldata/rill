@@ -504,7 +504,7 @@ message CreateInstanceRequest {
   string admin_connector = 15;
   string ai_connector = 17;
   repeated Connector connectors = 10;
-  // Deprecated: Remove after some releases
+  // Deprecated: Continue populating this for some time for backward compatibility with older runtimes, remove after a few releases.
   map<string, string> variables = 7;
   // system_variables are variables that are set by admin service and should not be overridden by user input
   map<string, string> system_variables = 19;

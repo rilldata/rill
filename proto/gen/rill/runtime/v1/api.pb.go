@@ -1147,7 +1147,7 @@ type CreateInstanceRequest struct {
 	AdminConnector string       `protobuf:"bytes,15,opt,name=admin_connector,json=adminConnector,proto3" json:"admin_connector,omitempty"`
 	AiConnector    string       `protobuf:"bytes,17,opt,name=ai_connector,json=aiConnector,proto3" json:"ai_connector,omitempty"`
 	Connectors     []*Connector `protobuf:"bytes,10,rep,name=connectors,proto3" json:"connectors,omitempty"`
-	// Deprecated: Remove after some releases
+	// Deprecated: Continue populating this for some time for backward compatibility with older runtimes, remove after a few releases.
 	Variables map[string]string `protobuf:"bytes,7,rep,name=variables,proto3" json:"variables,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// system_variables are variables that are set by admin service and should not be overridden by user input
 	SystemVariables map[string]string `protobuf:"bytes,19,rep,name=system_variables,json=systemVariables,proto3" json:"system_variables,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`

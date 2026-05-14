@@ -5008,7 +5008,7 @@ definitions:
         type: object
         additionalProperties:
           type: string
-        title: 'Deprecated: Remove after some releases'
+        description: 'Deprecated: Continue populating this for some time for backward compatibility with older runtimes, remove after a few releases.'
       systemVariables:
         type: object
         additionalProperties:
