@@ -296,7 +296,7 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 	frontendURL := s.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name)
 
 	// Resolve variables based on environment
-	vars, err := s.ResolveVariables(ctx, depl)
+	vars, systemVars, err := s.ResolveVariables(ctx, depl)
 	if err != nil {
 		return err
 	}
@@ -308,16 +308,17 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
-		InstanceId:     instanceID,
-		Environment:    depl.Environment,
-		OlapConnector:  "duckdb", // Default OLAP connector for backwards compatibility with projects that don't specify olap_connector in rill.yaml
-		RepoConnector:  "admin",
-		AdminConnector: "admin",
-		AiConnector:    "admin",
-		Connectors:     connectors,
-		Variables:      v,
-		Annotations:    annotations.ToMap(),
-		FrontendUrl:    frontendURL,
+		InstanceId:      instanceID,
+		Environment:     depl.Environment,
+		OlapConnector:   "duckdb", // Default OLAP connector for backwards compatibility with projects that don't specify olap_connector in rill.yaml
+		RepoConnector:   "admin",
+		AdminConnector:  "admin",
+		AiConnector:     "admin",
+		Connectors:      connectors,
+		Variables:       v,
+		SystemVariables: systemVars,
+		Annotations:     annotations.ToMap(),
+		FrontendUrl:     frontendURL,
 	})
 	if err != nil {
 		return err
