@@ -5,6 +5,7 @@ const ProjectQuotaErrorMatcher =
 const OrgQuotaErrorMatcher =
   /(quota exceeded: you can only create .* single-user orgs|trial orgs quota exceeded)/;
 const TrialEndedMatcher = /trial has ended/;
+const TrialCreditsDepleted = /trial credits depleted/;
 const SubEndedMatcher = /subscription cancelled/;
 export const GithubRepoNoAccessError = "GitNoAccessError";
 
@@ -120,6 +121,7 @@ function parseDeployErrorMessage(message: string, orgOnTrial: boolean) {
       break;
 
     case TrialEndedMatcher.test(message):
+    case TrialCreditsDepleted.test(message):
       type = DeployErrorType.TrialEnded;
       break;
 

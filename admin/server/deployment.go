@@ -376,6 +376,7 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 			ProdTTLSeconds:       proj.ProdTTLSeconds,
 			DevSlots:             proj.DevSlots,
 			DevTTLSeconds:        proj.DevTTLSeconds,
+			OverrideDiskGB:       proj.OverrideDiskGB,
 			Annotations:          proj.Annotations,
 		})
 		if err != nil {
@@ -791,7 +792,7 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 	}
 
 	// variables
-	vars, err := s.admin.ResolveVariables(ctx, depl)
+	vars, _, err := s.admin.ResolveVariables(ctx, depl)
 	if err != nil {
 		return nil, err
 	}

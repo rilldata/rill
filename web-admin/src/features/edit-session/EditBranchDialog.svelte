@@ -2,7 +2,6 @@
   import { goto } from "$app/navigation";
   import {
     createAdminServiceCreateDeployment,
-    createAdminServiceGetCurrentUser,
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
@@ -32,7 +31,6 @@
   /** The project's primary branch, used as the source for new branches. */
   export let primaryBranch: string | undefined = undefined;
 
-  const user = createAdminServiceGetCurrentUser();
   const devDeployments = useDevDeployments(organization, project);
   const createMutation = createAdminServiceCreateDeployment();
 
@@ -41,16 +39,14 @@
   let selectedBranchId = "";
   let createError = "";
 
-  $: currentUserId = $user.data?.user?.id;
   $: deployments = $devDeployments.data?.deployments ?? [];
   $: sourceBranch = primaryBranch || "main";
 
-  // Editable deployments owned by the current user, sorted by most recently
-  // updated. Stopped/errored branches show so the user can resume or retry.
+  // Editable deployments sorted by most recently updated.
+  // Stopped/errored branches show so the user can resume or retry.
   $: ownDeployments = deployments
     .filter(
       (d) =>
-        d.ownerUserId === currentUserId &&
         d.editable &&
         d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING &&
         d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED,
@@ -61,16 +57,10 @@
   $: hasOwnSessions = ownDeployments.length > 0;
   $: isStarting = $createMutation.isPending;
 
-  // Banner condition: active branch is owned but not editable
+  // Banner condition: active branch not editable
   $: activeBranchIsNonEditable =
     !!activeBranch &&
-    !!currentUserId &&
-    deployments.some(
-      (d) =>
-        d.branch === activeBranch &&
-        d.ownerUserId === currentUserId &&
-        !d.editable,
-    );
+    deployments.some((d) => d.branch === activeBranch && !d.editable);
 
   // Reset all state every time the dialog opens.
   $: if (open) {
@@ -145,8 +135,7 @@
       requestSkipBranchInjection();
       await goto(editUrl(resp.deployment?.branch));
     } catch (err) {
-      createError =
-        getRpcErrorMessage(err as any) ?? "Failed to start edit session.";
+      createError = getRpcErrorMessage(err) ?? "Failed to start edit session.";
     }
   }
 

@@ -1,7 +1,11 @@
 <script lang="ts">
+  import type { Readable } from "svelte/store";
   import Button from "../../../../components/button/Button.svelte";
   import * as Tooltip from "../../../../components/tooltip-v2";
-  import { chatOpen, sidebarActions } from "./sidebar-store";
+  import type { ChatActions } from "./sidebar-store";
+
+  export let open: Readable<boolean>;
+  export let actions: ChatActions;
 
   const isMac = window.navigator.userAgent.includes("Macintosh");
 </script>
@@ -10,7 +14,7 @@
   onkeydown={(e) => {
     if (e[isMac ? "metaKey" : "ctrlKey"] && e.key === "j") {
       e.preventDefault();
-      sidebarActions.toggleChat();
+      actions.toggleChat();
     }
   }}
 />
@@ -22,8 +26,8 @@
         {...props}
         compact
         type="secondary"
-        onClick={sidebarActions.toggleChat}
-        active={$chatOpen}
+        onClick={actions.toggleChat}
+        active={$open}
       >
         AI
       </Button>

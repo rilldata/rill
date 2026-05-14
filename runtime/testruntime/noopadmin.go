@@ -27,7 +27,7 @@ func (n *noopAdminService) GetAlertMetadata(ctx context.Context, alertName, owne
 }
 
 func (n *noopAdminService) GetConfig(ctx context.Context) (*drivers.Config, error) {
-	return nil, drivers.ErrNotImplemented
+	return &drivers.Config{}, nil
 }
 
 func (n *noopAdminService) GetReportMetadata(ctx context.Context, reportName, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {

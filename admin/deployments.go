@@ -207,12 +207,13 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 
 	// Provision the runtime
 	r, err := s.provisionRuntime(ctx, &provisionRuntimeOptions{
-		DeploymentID: depl.ID,
-		Environment:  depl.Environment,
-		Provisioner:  proj.Provisioner,
-		Slots:        slots,
-		Version:      runtimeVersion,
-		Annotations:  annotations.ToMap(),
+		DeploymentID:   depl.ID,
+		Environment:    depl.Environment,
+		Provisioner:    proj.Provisioner,
+		Slots:          slots,
+		Version:        runtimeVersion,
+		OverrideDiskGB: proj.OverrideDiskGB,
+		Annotations:    annotations.ToMap(),
 	})
 	if err != nil {
 		return err
@@ -297,7 +298,7 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 	frontendURL := s.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name)
 
 	// Resolve variables based on environment
-	vars, err := s.ResolveVariables(ctx, depl)
+	vars, systemVars, err := s.ResolveVariables(ctx, depl)
 	if err != nil {
 		return err
 	}
@@ -309,16 +310,17 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
-		InstanceId:     instanceID,
-		Environment:    depl.Environment,
-		OlapConnector:  "duckdb", // Default OLAP connector for backwards compatibility with projects that don't specify olap_connector in rill.yaml
-		RepoConnector:  "admin",
-		AdminConnector: "admin",
-		AiConnector:    "admin",
-		Connectors:     connectors,
-		Variables:      v,
-		Annotations:    annotations.ToMap(),
-		FrontendUrl:    frontendURL,
+		InstanceId:      instanceID,
+		Environment:     depl.Environment,
+		OlapConnector:   "duckdb", // Default OLAP connector for backwards compatibility with projects that don't specify olap_connector in rill.yaml
+		RepoConnector:   "admin",
+		AdminConnector:  "admin",
+		AiConnector:     "admin",
+		Connectors:      connectors,
+		Variables:       v,
+		SystemVariables: systemVars,
+		Annotations:     annotations.ToMap(),
+		FrontendUrl:     frontendURL,
 	})
 	if err != nil {
 		return err
@@ -503,12 +505,13 @@ func (s *Service) UpdateDeploymentInner(ctx context.Context, d *database.Deploym
 
 	// Provision the runtime. This is idempotent and will (partially) update the existing provisioned runtime if the config has changed.
 	_, err = s.provisionRuntime(ctx, &provisionRuntimeOptions{
-		DeploymentID: d.ID,
-		Environment:  d.Environment,
-		Provisioner:  pr.Provisioner,
-		Slots:        slots,
-		Version:      runtimeVersion,
-		Annotations:  annotations.ToMap(),
+		DeploymentID:   d.ID,
+		Environment:    d.Environment,
+		Provisioner:    pr.Provisioner,
+		Slots:          slots,
+		Version:        runtimeVersion,
+		OverrideDiskGB: proj.OverrideDiskGB,
+		Annotations:    annotations.ToMap(),
 	})
 	if err != nil {
 		return err
@@ -694,12 +697,13 @@ func resolveSlots(proj *database.Project, environment string) (int, error) {
 }
 
 type provisionRuntimeOptions struct {
-	DeploymentID string
-	Environment  string
-	Provisioner  string
-	Slots        int
-	Version      string
-	Annotations  map[string]string
+	DeploymentID   string
+	Environment    string
+	Provisioner    string
+	Slots          int
+	Version        string
+	OverrideDiskGB *int64
+	Annotations    map[string]string
 }
 
 // triggerDeploymentReconcileJob triggers a reconcile deployment job for the given deployment ID.
@@ -726,9 +730,10 @@ func (s *Service) provisionRuntime(ctx context.Context, opts *provisionRuntimeOp
 
 	// Create provisioner args
 	args := &provisioner.RuntimeArgs{
-		Slots:       opts.Slots,
-		Version:     opts.Version,
-		Environment: opts.Environment,
+		Slots:          opts.Slots,
+		Version:        opts.Version,
+		Environment:    opts.Environment,
+		OverrideDiskGB: opts.OverrideDiskGB,
 	}
 
 	// Call into the generic provision function

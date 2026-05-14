@@ -528,6 +528,10 @@ export interface V1GetAlertYAMLResponse {
   yaml?: string;
 }
 
+export interface V1GetBillingCreditBalanceResponse {
+  balance?: number;
+}
+
 export interface V1GetBillingProjectCredentialsRequest {
   org?: string;
 }
@@ -1087,6 +1091,7 @@ export interface V1Project {
   frontendUrl?: string;
   prodTtlSeconds?: string;
   devTtlSeconds?: string;
+  overrideDiskGb?: string;
   annotations?: V1ProjectAnnotations;
   prodVersion?: string;
   createdOn?: string;
@@ -1816,6 +1821,10 @@ export type AdminServiceUpdateOrganizationBody = {
   billingEmail?: string;
 };
 
+export type AdminServiceGetBillingCreditBalanceParams = {
+  superuserForceAccess?: boolean;
+};
+
 export type AdminServiceListOrganizationBillingIssuesParams = {
   superuserForceAccess?: boolean;
 };
@@ -1960,6 +1969,7 @@ export type AdminServiceUpdateProjectBody = {
   prodVersion?: string;
   devSlots?: string;
   superuserForceAccess?: boolean;
+  overrideDiskGb?: string;
 };
 
 export type AdminServiceGetCloneCredentialsParams = {

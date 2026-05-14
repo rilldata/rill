@@ -89,6 +89,7 @@ func (w *HibernateExpiredDeploymentsWorker) deleteStoppedDeployment(ctx context.
 			PrimaryDeploymentID:  nil,
 			DevSlots:             proj.DevSlots,
 			DevTTLSeconds:        proj.DevTTLSeconds,
+			OverrideDiskGB:       proj.OverrideDiskGB,
 			Annotations:          proj.Annotations,
 		})
 		if err != nil {

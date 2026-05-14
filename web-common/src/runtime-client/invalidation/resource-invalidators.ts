@@ -125,6 +125,7 @@ async function dispatchWrite(
         V1ReconcileStatus.RECONCILE_STATUS_IDLE) &&
     event.resource.meta.reconcileStatus ===
       V1ReconcileStatus.RECONCILE_STATUS_IDLE;
+
   if (!resourceVersionUnchanged && !resourceFinishedReconciling) {
     return;
   }

@@ -655,6 +655,12 @@ components:
                 yaml:
                     type: string
             type: object
+        v1GetBillingCreditBalanceResponse:
+            properties:
+                balance:
+                    format: double
+                    type: number
+            type: object
         v1GetBillingProjectCredentialsRequest:
             properties:
                 org:
@@ -1526,6 +1532,9 @@ components:
                 orgId:
                     type: string
                 orgName:
+                    type: string
+                overrideDiskGb:
+                    format: int64
                     type: string
                 primaryBranch:
                     type: string
@@ -3045,6 +3054,33 @@ paths:
                     description: An unexpected error response.
             summary: UpdateOrganization updates an organization
             x-visibility: public
+    /v1/orgs/{org}/billing/credits:
+        get:
+            operationId: AdminService_GetBillingCreditBalance
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: query
+                  name: superuserForceAccess
+                  schema:
+                    type: boolean
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetBillingCreditBalanceResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: GetBillingCreditBalance returns the organization's remaining trial credit balance
     /v1/orgs/{org}/billing/issues:
         get:
             operationId: AdminService_ListOrganizationBillingIssues
@@ -3842,6 +3878,9 @@ paths:
                                 gitRemote:
                                     type: string
                                 newName:
+                                    type: string
+                                overrideDiskGb:
+                                    format: int64
                                     type: string
                                 primaryBranch:
                                     type: string

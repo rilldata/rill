@@ -1441,6 +1441,13 @@ paths:
           in: path
           required: true
           type: string
+        - name: remoteBranch
+          description: |-
+            remote_branch is the remote branch to compare the current local branch against.
+            If empty, the upstream of the current local branch is used.
+          in: query
+          required: false
+          type: string
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/logs:
@@ -5001,6 +5008,12 @@ definitions:
         type: object
         additionalProperties:
           type: string
+        description: 'Deprecated: Continue populating this for some time for backward compatibility with older runtimes, remove after a few releases.'
+      systemVariables:
+        type: object
+        additionalProperties:
+          type: string
+        title: system_variables are variables that are set by admin service and should not be overridden by user input
       annotations:
         type: object
         additionalProperties:

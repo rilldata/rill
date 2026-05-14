@@ -7,6 +7,7 @@
     getAdminServiceListDeploymentsQueryKey,
   } from "@rilldata/web-admin/client";
   import { isActiveDeployment } from "@rilldata/web-admin/features/branches/deployment-utils";
+  import { useParserCommitSha } from "@rilldata/web-admin/features/projects/selectors";
   import { Button } from "@rilldata/web-common/components/button";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -22,6 +23,7 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { Rocket } from "lucide-svelte";
   import { buildPostMergeUrl } from "./post-merge-url";
+  import { goto } from "$app/navigation";
 
   export let organization: string;
   export let project: string;
@@ -50,12 +52,24 @@
     !!prodDeployment && isActiveDeployment(prodDeployment);
   $: alreadyOnPrimary =
     !!primaryBranch && !!currentBranch && currentBranch === primaryBranch;
+  // TODO: this should also check currentBranch vs primaryBranch once that API is available.
   $: disabled =
     !primaryBranch ||
     !currentBranch ||
     !projectLoaded ||
     alreadyOnPrimary ||
     isPublishing;
+
+  // Prefetch prod's project parser commit SHA so the deploying page can
+  // wait for prod to advance past it before redirecting to the dashboard,
+  // avoiding the stale-content race. Deployment + JWT come straight from
+  // `projectQuery` rather than via a dedicated `useProdRuntimeClient`
+  // hook: the popover doesn't make other prod-runtime calls, so the
+  // wrapper wouldn't earn its place.
+  $: parserShaQuery = useParserCommitSha(
+    prodDeployment,
+    $projectQuery.data?.jwt,
+  );
 
   async function handlePublish() {
     if (!primaryBranch || isPublishing) return;
@@ -72,26 +86,6 @@
     // it provisions a fresh one and tears down the old.
     const hadProdDeployment = !!prodDeployment;
     const needsRedeploy = !prodDeploymentActive;
-
-    // Open the new tab synchronously so the browser ties window.open() to
-    // the click gesture; otherwise pop-up blockers reject the open after
-    // the awaited mutations below. The destination pages handle their own
-    // loading state, so no placeholder is needed.
-    const targetUrl = buildPostMergeUrl({
-      organization,
-      project,
-      pathname: $page.url.pathname,
-      hadProdDeployment,
-    });
-    const targetWindow = window.open(targetUrl, "_blank");
-    if (!targetWindow) {
-      eventBus.emit("notification", {
-        type: "error",
-        message: "Pop-up was blocked. Please allow pop-ups and try again.",
-      });
-      isPublishing = false;
-      return;
-    }
 
     // gitStatus tracks localChanges and currentBranch; the mutations below
     // change both, so refresh once the flow finishes (success or failure).
@@ -112,7 +106,6 @@
         force: false,
       });
     } catch (err) {
-      targetWindow.close();
       eventBus.emit("notification", {
         type: "error",
         message: extractErrorMessage(err) || "Failed to publish",
@@ -152,7 +145,6 @@
         // The merge succeeded but the prod deployment failed to (re)start.
         // Be explicit so the user knows their changes are on the primary
         // branch and that the deployment step is what needs retrying.
-        targetWindow.close();
         const detail = extractErrorMessage(err);
         eventBus.emit("notification", {
           type: "error",
@@ -163,6 +155,23 @@
         isPublishing = false;
         return;
       }
+    }
+
+    const targetUrl = buildPostMergeUrl({
+      organization,
+      project,
+      page: $page,
+      hadProdDeployment,
+      preCommitSha: $parserShaQuery.data,
+    });
+    const targetWindow = window.open(targetUrl, "_blank");
+    if (!targetWindow) {
+      // Go to target directly if popup is blocked.
+      void goto(targetUrl);
+      eventBus.emit("notification", {
+        type: "error",
+        message: "Pop-up was blocked.",
+      });
     }
 
     isPublishing = false;
@@ -186,6 +195,8 @@
         Already on production
       {:else if !primaryBranch || !currentBranch || !projectLoaded}
         Loading project...
+      {:else if !hasLocalChanges}
+        No changes to publish
       {:else if !prodDeployment}
         Publish your project to production. We'll open a new tab where you can
         invite teammates while the deployment reconciles.

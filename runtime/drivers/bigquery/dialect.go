@@ -2,6 +2,7 @@ package bigquery
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -9,6 +10,11 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
+
+// restrictedAliasCharactersRegex matches characters that are NOT supported in
+// BigQuery flexible column names. See:
+// https://cloud.google.com/bigquery/docs/schemas#flexible-column-names
+var restrictedAliasCharactersRegex = regexp.MustCompile(`[!"$()*,./;?@\[\\\]^` + "`" + `{}~\s]+`)
 
 type dialect struct {
 	drivers.BaseDialect
@@ -27,6 +33,10 @@ func BigQueryEscapeIdentifier(ident string) string {
 	// Bigquery uses backticks for quoting identifiers
 	// Replace any backticks inside the identifier with double backticks
 	return fmt.Sprintf("`%s`", strings.ReplaceAll(ident, "`", "``"))
+}
+
+func (d *dialect) SanitizeDisplayName(alias string) string {
+	return strings.TrimRight(restrictedAliasCharactersRegex.ReplaceAllString(alias, "__"), "_")
 }
 
 func (d *dialect) SupportsILike() bool { return false }
@@ -77,6 +87,11 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 	}
 
 	specifier := d.ConvertToDateTruncSpecifier(grain)
+	// BigQuery's bare WEEK specifier truncates to Sunday-start weeks. Rill's firstDayOfWeek follows ISO 8601
+	// (1=Monday, 7=Sunday, default 1), so map it to BigQuery's WEEK(<WEEKDAY>) form to keep them aligned.
+	if grain == runtimev1.TimeGrain_TIME_GRAIN_WEEK {
+		specifier = weekSpecifier(firstDayOfWeek)
+	}
 
 	var expr string
 	if dim.Expression != "" {
@@ -91,10 +106,6 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 		expr = fmt.Sprintf("TIMESTAMP(%s)", expr)
 	}
 	if tz == "" {
-		if grain == runtimev1.TimeGrain_TIME_GRAIN_WEEK && firstDayOfWeek > 1 {
-			offset := 8 - firstDayOfWeek
-			return fmt.Sprintf("TIMESTAMP_SUB(TIMESTAMP_TRUNC(TIMESTAMP_ADD(%s, INTERVAL %d DAY), %s), INTERVAL %d DAY)", expr, offset, specifier, offset), nil
-		}
 		if grain == runtimev1.TimeGrain_TIME_GRAIN_YEAR && firstMonthOfYear > 1 {
 			offset := 13 - firstMonthOfYear
 			// TIMESTAMP_ADD/TIMESTAMP_SUB don't support MONTH; wrap TIMESTAMP_TRUNC result in DATETIME() before DATETIME_SUB.
@@ -103,10 +114,6 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 		return fmt.Sprintf("TIMESTAMP_TRUNC(%s, %s)", expr, specifier), nil
 	}
 	// TIMESTAMP_TRUNC natively accepts a timezone argument.
-	if grain == runtimev1.TimeGrain_TIME_GRAIN_WEEK && firstDayOfWeek > 1 {
-		offset := 8 - firstDayOfWeek
-		return fmt.Sprintf("TIMESTAMP_SUB(TIMESTAMP_TRUNC(TIMESTAMP_ADD(%s, INTERVAL %d DAY), %s, '%s'), INTERVAL %d DAY)", expr, offset, specifier, tz, offset), nil
-	}
 	if grain == runtimev1.TimeGrain_TIME_GRAIN_YEAR && firstMonthOfYear > 1 {
 		offset := 13 - firstMonthOfYear
 		// TIMESTAMP_ADD/TIMESTAMP_SUB don't support MONTH; wrap TIMESTAMP_TRUNC result in DATETIME() before DATETIME_SUB.
@@ -144,5 +151,24 @@ func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.Time
 			"SELECT TIMESTAMP(d, '%s') AS %s FROM UNNEST(GENERATE_DATE_ARRAY(DATE(TIMESTAMP '%s', '%s'), DATE(TIMESTAMP '%s', '%s'), INTERVAL 1 %s)) AS d WHERE TIMESTAMP(d, '%s') < TIMESTAMP '%s'",
 			tzStr, d.EscapeAlias(alias), startStr, tzStr, endStr, tzStr, d.ConvertToDateTruncSpecifier(grain), tzStr, endStr,
 		), nil, nil
+	}
+}
+
+func weekSpecifier(firstDayOfWeek int) string {
+	switch firstDayOfWeek {
+	case 2:
+		return "WEEK(TUESDAY)"
+	case 3:
+		return "WEEK(WEDNESDAY)"
+	case 4:
+		return "WEEK(THURSDAY)"
+	case 5:
+		return "WEEK(FRIDAY)"
+	case 6:
+		return "WEEK(SATURDAY)"
+	case 7:
+		return "WEEK(SUNDAY)"
+	default:
+		return "WEEK(MONDAY)"
 	}
 }

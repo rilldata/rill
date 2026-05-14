@@ -863,9 +863,18 @@ export class CreateInstanceRequest extends Message$1<CreateInstanceRequest> {
   connectors: Connector[] = [];
 
   /**
+   * Deprecated: Continue populating this for some time for backward compatibility with older runtimes, remove after a few releases.
+   *
    * @generated from field: map<string, string> variables = 7;
    */
   variables: { [key: string]: string } = {};
+
+  /**
+   * system_variables are variables that are set by admin service and should not be overridden by user input
+   *
+   * @generated from field: map<string, string> system_variables = 19;
+   */
+  systemVariables: { [key: string]: string } = {};
 
   /**
    * @generated from field: map<string, string> annotations = 9;
@@ -893,6 +902,7 @@ export class CreateInstanceRequest extends Message$1<CreateInstanceRequest> {
     { no: 17, name: "ai_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "connectors", kind: "message", T: Connector, repeated: true },
     { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 19, name: "system_variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 9, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 18, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
@@ -5729,6 +5739,14 @@ export class GitStatusRequest extends Message$1<GitStatusRequest> {
    */
   instanceId = "";
 
+  /**
+   * remote_branch is the remote branch to compare the current local branch against.
+   * If empty, the upstream of the current local branch is used.
+   *
+   * @generated from field: string remote_branch = 2;
+   */
+  remoteBranch = "";
+
   constructor(data?: PartialMessage<GitStatusRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5738,6 +5756,7 @@ export class GitStatusRequest extends Message$1<GitStatusRequest> {
   static readonly typeName = "rill.runtime.v1.GitStatusRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "remote_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitStatusRequest {

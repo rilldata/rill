@@ -57,6 +57,8 @@ type Instance struct {
 	// ProjectVariables contains default variables from rill.yaml
 	// (NOTE: This can always be reproduced from rill.yaml, so it's really just a handy cache of the values.)
 	ProjectVariables map[string]string `db:"project_variables"`
+	// SystemVariables contains variables set by the system (e.g. "rill.watch_repo") that should not be overridden by user.
+	SystemVariables map[string]string `db:"system_variables"`
 	// FeatureFlags contains feature flags configured in rill.yaml
 	FeatureFlags map[string]string `db:"feature_flags"`
 	// Annotations to enrich activity events (like usage tracking)
@@ -154,7 +156,7 @@ func (i *Instance) ResolveAIConnector() string {
 
 // ResolveVariables returns the final resolved variables
 func (i *Instance) ResolveVariables(withLowerKeys bool) map[string]string {
-	r := make(map[string]string, len(i.ProjectVariables)+len(i.Variables))
+	r := make(map[string]string, len(i.ProjectVariables)+len(i.Variables)+len(i.SystemVariables))
 
 	// set ProjectVariables first i.e. Project defaults
 	for k, v := range i.ProjectVariables {
@@ -166,6 +168,14 @@ func (i *Instance) ResolveVariables(withLowerKeys bool) map[string]string {
 
 	// override with instance Variables
 	for k, v := range i.Variables {
+		if withLowerKeys {
+			k = strings.ToLower(k)
+		}
+		r[k] = v
+	}
+
+	// override with system variables
+	for k, v := range i.SystemVariables {
 		if withLowerKeys {
 			k = strings.ToLower(k)
 		}
