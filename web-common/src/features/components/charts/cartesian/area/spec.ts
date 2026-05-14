@@ -25,7 +25,8 @@ export function generateVLAreaChartSpec(
   const colorField =
     typeof config.color === "object" ? config.color.field : undefined;
   const xField = sanitizeValueForVega(config.x?.field);
-  const yField = sanitizeValueForVega(config.y?.field);
+  const yField = config.y?.field;
+  const sanitizedYField = sanitizeValueForVega(yField);
 
   const defaultTooltipChannel = createDefaultTooltipEncoding(
     [config.x, config.y, config.color],
@@ -64,8 +65,11 @@ export function generateVLAreaChartSpec(
       isDarkMode: data.isDarkMode,
       isInteractive: config.isInteractive,
       pivot:
-        xField && yField && colorField && multiValueTooltipChannel?.length
-          ? { field: colorField, value: yField, groupby: [xField] }
+        xField &&
+        sanitizedYField &&
+        colorField &&
+        multiValueTooltipChannel?.length
+          ? { field: colorField, value: sanitizedYField, groupby: [xField] }
           : undefined,
     }),
   ];

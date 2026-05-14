@@ -32,7 +32,8 @@ export function generateVLLineChartSpec(
   const colorField =
     typeof config.color === "object" ? config.color.field : undefined;
   const xField = sanitizeValueForVega(config.x?.field);
-  const yField = sanitizeValueForVega(config.y?.field);
+  const yField = config.y?.field;
+  const sanitizedYField = sanitizeValueForVega(yField);
 
   const defaultTooltipChannel = createDefaultTooltipEncoding(
     [config.x, config.y, config.color],
@@ -61,7 +62,7 @@ export function generateVLLineChartSpec(
     isInteractive: config.isInteractive,
     pivot: createVegaTransformPivotConfig(
       xField,
-      yField,
+      sanitizedYField,
       colorField,
       !!hasComparison,
       !!multiValueTooltipChannel?.length,
