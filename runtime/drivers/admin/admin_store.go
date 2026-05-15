@@ -118,6 +118,7 @@ func (h *Handle) GetConfig(ctx context.Context) (*drivers.Config, error) {
 
 	return &drivers.Config{
 		Variables:             groupVariablesByEnv(res.Variables),
+		SystemVariables:       res.SystemVariables,
 		Annotations:           res.Annotations,
 		FrontendURL:           res.FrontendUrl,
 		UpdatedOn:             res.UpdatedOn.AsTime(),

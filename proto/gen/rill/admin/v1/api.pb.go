@@ -6223,6 +6223,8 @@ type GetDeploymentConfigResponse struct {
 	DuckdbConnectorConfig *structpb.Struct `protobuf:"bytes,6,opt,name=duckdb_connector_config,json=duckdbConnectorConfig,proto3" json:"duckdb_connector_config,omitempty"`
 	// Whether the deployment is editable (dev environment with changes persisted to git repo).
 	Editable bool `protobuf:"varint,8,opt,name=editable,proto3" json:"editable,omitempty"`
+	// System variables set by the admin service that should not be overridden by user input.
+	SystemVariables map[string]string `protobuf:"bytes,9,rep,name=system_variables,json=systemVariables,proto3" json:"system_variables,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
 func (x *GetDeploymentConfigResponse) Reset() {
@@ -6311,6 +6313,13 @@ func (x *GetDeploymentConfigResponse) GetEditable() bool {
 		return x.Editable
 	}
 	return false
+}
+
+func (x *GetDeploymentConfigResponse) GetSystemVariables() map[string]string {
+	if x != nil {
+		return x.SystemVariables
+	}
+	return nil
 }
 
 type ListRolesRequest struct {
@@ -23978,7 +23987,7 @@ type ListGithubUserReposResponse_Repo struct {
 func (x *ListGithubUserReposResponse_Repo) Reset() {
 	*x = ListGithubUserReposResponse_Repo{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[380]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[381]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -23991,7 +24000,7 @@ func (x *ListGithubUserReposResponse_Repo) String() string {
 func (*ListGithubUserReposResponse_Repo) ProtoMessage() {}
 
 func (x *ListGithubUserReposResponse_Repo) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[380]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[381]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -24058,7 +24067,7 @@ type GetReportMetaResponse_DeliveryMeta struct {
 func (x *GetReportMetaResponse_DeliveryMeta) Reset() {
 	*x = GetReportMetaResponse_DeliveryMeta{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[381]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[382]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -24071,7 +24080,7 @@ func (x *GetReportMetaResponse_DeliveryMeta) String() string {
 func (*GetReportMetaResponse_DeliveryMeta) ProtoMessage() {}
 
 func (x *GetReportMetaResponse_DeliveryMeta) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[381]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[382]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -24142,7 +24151,7 @@ type GetAlertMetaResponse_URLs struct {
 func (x *GetAlertMetaResponse_URLs) Reset() {
 	*x = GetAlertMetaResponse_URLs{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[384]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[385]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -24155,7 +24164,7 @@ func (x *GetAlertMetaResponse_URLs) String() string {
 func (*GetAlertMetaResponse_URLs) ProtoMessage() {}
 
 func (x *GetAlertMetaResponse_URLs) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[384]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[385]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -25062,7 +25071,7 @@ var file_rill_admin_v1_api_proto_rawDesc = []byte{
 	0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x23,
 	0x0a, 0x0d, 0x64, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e, 0x74, 0x5f, 0x69, 0x64, 0x18,
 	0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x64, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e,
-	0x74, 0x49, 0x64, 0x22, 0x98, 0x05, 0x0a, 0x1b, 0x47, 0x65, 0x74, 0x44, 0x65, 0x70, 0x6c, 0x6f,
+	0x74, 0x49, 0x64, 0x22, 0xc8, 0x06, 0x0a, 0x1b, 0x47, 0x65, 0x74, 0x44, 0x65, 0x70, 0x6c, 0x6f,
 	0x79, 0x6d, 0x65, 0x6e, 0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x65, 0x73, 0x70, 0x6f,
 	0x6e, 0x73, 0x65, 0x12, 0x3c, 0x0a, 0x09, 0x76, 0x61, 0x72, 0x69, 0x61, 0x62, 0x6c, 0x65, 0x73,
 	0x18, 0x07, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x61, 0x64,
@@ -25095,12 +25104,23 @@ var file_rill_admin_v1_api_proto_rawDesc = []byte{
 	0x2e, 0x53, 0x74, 0x72, 0x75, 0x63, 0x74, 0x52, 0x15, 0x64, 0x75, 0x63, 0x6b, 0x64, 0x62, 0x43,
 	0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0x1a,
 	0x0a, 0x08, 0x65, 0x64, 0x69, 0x74, 0x61, 0x62, 0x6c, 0x65, 0x18, 0x08, 0x20, 0x01, 0x28, 0x08,
-	0x52, 0x08, 0x65, 0x64, 0x69, 0x74, 0x61, 0x62, 0x6c, 0x65, 0x1a, 0x42, 0x0a, 0x14, 0x56, 0x61,
-	0x72, 0x69, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x4c, 0x65, 0x67, 0x61, 0x63, 0x79, 0x45, 0x6e, 0x74,
-	0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x03, 0x6b, 0x65, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x1a, 0x3e,
-	0x0a, 0x10, 0x41, 0x6e, 0x6e, 0x6f, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x45, 0x6e, 0x74,
+	0x52, 0x08, 0x65, 0x64, 0x69, 0x74, 0x61, 0x62, 0x6c, 0x65, 0x12, 0x6a, 0x0a, 0x10, 0x73, 0x79,
+	0x73, 0x74, 0x65, 0x6d, 0x5f, 0x76, 0x61, 0x72, 0x69, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x18, 0x09,
+	0x20, 0x03, 0x28, 0x0b, 0x32, 0x3f, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x61, 0x64, 0x6d, 0x69,
+	0x6e, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x44, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65,
+	0x6e, 0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x2e, 0x53, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x56, 0x61, 0x72, 0x69, 0x61, 0x62, 0x6c, 0x65, 0x73,
+	0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x0f, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x56, 0x61, 0x72,
+	0x69, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x1a, 0x42, 0x0a, 0x14, 0x56, 0x61, 0x72, 0x69, 0x61, 0x62,
+	0x6c, 0x65, 0x73, 0x4c, 0x65, 0x67, 0x61, 0x63, 0x79, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10,
+	0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79,
+	0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x1a, 0x3e, 0x0a, 0x10, 0x41, 0x6e,
+	0x6e, 0x6f, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10,
+	0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79,
+	0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x1a, 0x42, 0x0a, 0x14, 0x53, 0x79,
+	0x73, 0x74, 0x65, 0x6d, 0x56, 0x61, 0x72, 0x69, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x45, 0x6e, 0x74,
 	0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
 	0x03, 0x6b, 0x65, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20,
 	0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0x12,
@@ -29594,7 +29614,7 @@ func file_rill_admin_v1_api_proto_rawDescGZIP() []byte {
 }
 
 var file_rill_admin_v1_api_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
-var file_rill_admin_v1_api_proto_msgTypes = make([]protoimpl.MessageInfo, 388)
+var file_rill_admin_v1_api_proto_msgTypes = make([]protoimpl.MessageInfo, 389)
 var file_rill_admin_v1_api_proto_goTypes = []any{
 	(GithubPermission)(0),                                  // 0: rill.admin.v1.GithubPermission
 	(DeploymentStatus)(0),                                  // 1: rill.admin.v1.DeploymentStatus
@@ -29979,24 +29999,25 @@ var file_rill_admin_v1_api_proto_goTypes = []any{
 	nil,                                      // 380: rill.admin.v1.CreateAssetResponse.SigningHeadersEntry
 	nil,                                      // 381: rill.admin.v1.GetDeploymentConfigResponse.VariablesLegacyEntry
 	nil,                                      // 382: rill.admin.v1.GetDeploymentConfigResponse.AnnotationsEntry
-	nil,                                      // 383: rill.admin.v1.SudoUpdateAnnotationsRequest.AnnotationsEntry
-	nil,                                      // 384: rill.admin.v1.IssueMagicAuthTokenRequest.MetricsViewFiltersEntry
-	nil,                                      // 385: rill.admin.v1.GetGithubUserStatusResponse.OrganizationInstallationPermissionsEntry
-	(*ListGithubUserReposResponse_Repo)(nil), // 386: rill.admin.v1.ListGithubUserReposResponse.Repo
-	(*GetReportMetaResponse_DeliveryMeta)(nil), // 387: rill.admin.v1.GetReportMetaResponse.DeliveryMeta
-	nil,                               // 388: rill.admin.v1.GetReportMetaResponse.DeliveryMetaEntry
-	nil,                               // 389: rill.admin.v1.GetAlertMetaRequest.AnnotationsEntry
-	(*GetAlertMetaResponse_URLs)(nil), // 390: rill.admin.v1.GetAlertMetaResponse.URLs
-	nil,                               // 391: rill.admin.v1.GetAlertMetaResponse.RecipientUrlsEntry
-	nil,                               // 392: rill.admin.v1.Project.AnnotationsEntry
-	nil,                               // 393: rill.admin.v1.MagicAuthToken.MetricsViewFiltersEntry
-	(*timestamppb.Timestamp)(nil),     // 394: google.protobuf.Timestamp
-	(*structpb.Struct)(nil),           // 395: google.protobuf.Struct
-	(v1.ExportFormat)(0),              // 396: rill.runtime.v1.ExportFormat
-	(*v1.Expression)(nil),             // 397: rill.runtime.v1.Expression
+	nil,                                      // 383: rill.admin.v1.GetDeploymentConfigResponse.SystemVariablesEntry
+	nil,                                      // 384: rill.admin.v1.SudoUpdateAnnotationsRequest.AnnotationsEntry
+	nil,                                      // 385: rill.admin.v1.IssueMagicAuthTokenRequest.MetricsViewFiltersEntry
+	nil,                                      // 386: rill.admin.v1.GetGithubUserStatusResponse.OrganizationInstallationPermissionsEntry
+	(*ListGithubUserReposResponse_Repo)(nil), // 387: rill.admin.v1.ListGithubUserReposResponse.Repo
+	(*GetReportMetaResponse_DeliveryMeta)(nil), // 388: rill.admin.v1.GetReportMetaResponse.DeliveryMeta
+	nil,                               // 389: rill.admin.v1.GetReportMetaResponse.DeliveryMetaEntry
+	nil,                               // 390: rill.admin.v1.GetAlertMetaRequest.AnnotationsEntry
+	(*GetAlertMetaResponse_URLs)(nil), // 391: rill.admin.v1.GetAlertMetaResponse.URLs
+	nil,                               // 392: rill.admin.v1.GetAlertMetaResponse.RecipientUrlsEntry
+	nil,                               // 393: rill.admin.v1.Project.AnnotationsEntry
+	nil,                               // 394: rill.admin.v1.MagicAuthToken.MetricsViewFiltersEntry
+	(*timestamppb.Timestamp)(nil),     // 395: google.protobuf.Timestamp
+	(*structpb.Struct)(nil),           // 396: google.protobuf.Struct
+	(v1.ExportFormat)(0),              // 397: rill.runtime.v1.ExportFormat
+	(*v1.Expression)(nil),             // 398: rill.runtime.v1.Expression
 }
 var file_rill_admin_v1_api_proto_depIdxs = []int32{
-	394, // 0: rill.admin.v1.PingResponse.time:type_name -> google.protobuf.Timestamp
+	395, // 0: rill.admin.v1.PingResponse.time:type_name -> google.protobuf.Timestamp
 	335, // 1: rill.admin.v1.ListOrganizationsResponse.organizations:type_name -> rill.admin.v1.Organization
 	335, // 2: rill.admin.v1.GetOrganizationResponse.organization:type_name -> rill.admin.v1.Organization
 	342, // 3: rill.admin.v1.GetOrganizationResponse.permissions:type_name -> rill.admin.v1.OrganizationPermissions
@@ -30004,7 +30025,7 @@ var file_rill_admin_v1_api_proto_depIdxs = []int32{
 	335, // 5: rill.admin.v1.UpdateOrganizationResponse.organization:type_name -> rill.admin.v1.Organization
 	340, // 6: rill.admin.v1.ListDeploymentsResponse.deployments:type_name -> rill.admin.v1.Deployment
 	340, // 7: rill.admin.v1.CreateDeploymentResponse.deployment:type_name -> rill.admin.v1.Deployment
-	395, // 8: rill.admin.v1.GetDeploymentRequest.attributes:type_name -> google.protobuf.Struct
+	396, // 8: rill.admin.v1.GetDeploymentRequest.attributes:type_name -> google.protobuf.Struct
 	340, // 9: rill.admin.v1.StartDeploymentResponse.deployment:type_name -> rill.admin.v1.Deployment
 	339, // 10: rill.admin.v1.ListProjectsForOrganizationResponse.projects:type_name -> rill.admin.v1.Project
 	339, // 11: rill.admin.v1.ListProjectsForOrganizationAndUserResponse.projects:type_name -> rill.admin.v1.Project
@@ -30018,542 +30039,543 @@ var file_rill_admin_v1_api_proto_depIdxs = []int32{
 	376, // 19: rill.admin.v1.SearchProjectNamesRequest.annotations:type_name -> rill.admin.v1.SearchProjectNamesRequest.AnnotationsEntry
 	48,  // 20: rill.admin.v1.GetProjectVariablesResponse.variables:type_name -> rill.admin.v1.ProjectVariable
 	377, // 21: rill.admin.v1.GetProjectVariablesResponse.variables_map:type_name -> rill.admin.v1.GetProjectVariablesResponse.VariablesMapEntry
-	394, // 22: rill.admin.v1.ProjectVariable.created_on:type_name -> google.protobuf.Timestamp
-	394, // 23: rill.admin.v1.ProjectVariable.updated_on:type_name -> google.protobuf.Timestamp
+	395, // 22: rill.admin.v1.ProjectVariable.created_on:type_name -> google.protobuf.Timestamp
+	395, // 23: rill.admin.v1.ProjectVariable.updated_on:type_name -> google.protobuf.Timestamp
 	378, // 24: rill.admin.v1.UpdateProjectVariablesRequest.variables:type_name -> rill.admin.v1.UpdateProjectVariablesRequest.VariablesEntry
 	48,  // 25: rill.admin.v1.UpdateProjectVariablesResponse.variables:type_name -> rill.admin.v1.ProjectVariable
 	331, // 26: rill.admin.v1.SearchProjectUsersResponse.users:type_name -> rill.admin.v1.User
-	395, // 27: rill.admin.v1.GetDeploymentCredentialsRequest.attributes:type_name -> google.protobuf.Struct
-	395, // 28: rill.admin.v1.GetIFrameRequest.attributes:type_name -> google.protobuf.Struct
+	396, // 27: rill.admin.v1.GetDeploymentCredentialsRequest.attributes:type_name -> google.protobuf.Struct
+	396, // 28: rill.admin.v1.GetIFrameRequest.attributes:type_name -> google.protobuf.Struct
 	379, // 29: rill.admin.v1.GetIFrameRequest.query:type_name -> rill.admin.v1.GetIFrameRequest.QueryEntry
 	333, // 30: rill.admin.v1.ListServicesResponse.services:type_name -> rill.admin.v1.OrganizationMemberService
 	334, // 31: rill.admin.v1.ListProjectMemberServicesResponse.services:type_name -> rill.admin.v1.ProjectMemberService
-	395, // 32: rill.admin.v1.CreateServiceRequest.attributes:type_name -> google.protobuf.Struct
+	396, // 32: rill.admin.v1.CreateServiceRequest.attributes:type_name -> google.protobuf.Struct
 	332, // 33: rill.admin.v1.CreateServiceResponse.service:type_name -> rill.admin.v1.Service
 	333, // 34: rill.admin.v1.GetServiceResponse.service:type_name -> rill.admin.v1.OrganizationMemberService
 	334, // 35: rill.admin.v1.GetServiceResponse.project_memberships:type_name -> rill.admin.v1.ProjectMemberService
-	395, // 36: rill.admin.v1.UpdateServiceRequest.attributes:type_name -> google.protobuf.Struct
+	396, // 36: rill.admin.v1.UpdateServiceRequest.attributes:type_name -> google.protobuf.Struct
 	332, // 37: rill.admin.v1.UpdateServiceResponse.service:type_name -> rill.admin.v1.Service
 	332, // 38: rill.admin.v1.DeleteServiceResponse.service:type_name -> rill.admin.v1.Service
 	339, // 39: rill.admin.v1.CreateProjectResponse.project:type_name -> rill.admin.v1.Project
 	339, // 40: rill.admin.v1.UpdateProjectResponse.project:type_name -> rill.admin.v1.Project
 	380, // 41: rill.admin.v1.CreateAssetResponse.signing_headers:type_name -> rill.admin.v1.CreateAssetResponse.SigningHeadersEntry
-	395, // 42: rill.admin.v1.ProvisionRequest.args:type_name -> google.protobuf.Struct
+	396, // 42: rill.admin.v1.ProvisionRequest.args:type_name -> google.protobuf.Struct
 	341, // 43: rill.admin.v1.ProvisionResponse.resource:type_name -> rill.admin.v1.ProvisionerResource
 	48,  // 44: rill.admin.v1.GetDeploymentConfigResponse.variables:type_name -> rill.admin.v1.ProjectVariable
 	381, // 45: rill.admin.v1.GetDeploymentConfigResponse.variables_legacy:type_name -> rill.admin.v1.GetDeploymentConfigResponse.VariablesLegacyEntry
 	382, // 46: rill.admin.v1.GetDeploymentConfigResponse.annotations:type_name -> rill.admin.v1.GetDeploymentConfigResponse.AnnotationsEntry
-	394, // 47: rill.admin.v1.GetDeploymentConfigResponse.updated_on:type_name -> google.protobuf.Timestamp
-	395, // 48: rill.admin.v1.GetDeploymentConfigResponse.duckdb_connector_config:type_name -> google.protobuf.Struct
-	344, // 49: rill.admin.v1.ListRolesResponse.organization_roles:type_name -> rill.admin.v1.OrganizationRole
-	345, // 50: rill.admin.v1.ListRolesResponse.project_roles:type_name -> rill.admin.v1.ProjectRole
-	346, // 51: rill.admin.v1.ListOrganizationMemberUsersResponse.members:type_name -> rill.admin.v1.OrganizationMemberUser
-	349, // 52: rill.admin.v1.ListOrganizationInvitesResponse.invites:type_name -> rill.admin.v1.OrganizationInvite
-	346, // 53: rill.admin.v1.GetOrganizationMemberUserResponse.member:type_name -> rill.admin.v1.OrganizationMemberUser
-	347, // 54: rill.admin.v1.GetProjectMemberUserResponse.member:type_name -> rill.admin.v1.ProjectMemberUser
-	362, // 55: rill.admin.v1.ListUsergroupsForProjectAndUserResponse.usergroups:type_name -> rill.admin.v1.MemberUsergroup
-	395, // 56: rill.admin.v1.UpdateOrganizationMemberUserAttributesRequest.attributes:type_name -> google.protobuf.Struct
-	331, // 57: rill.admin.v1.ListSuperusersResponse.users:type_name -> rill.admin.v1.User
-	331, // 58: rill.admin.v1.SudoGetResourceResponse.user:type_name -> rill.admin.v1.User
-	335, // 59: rill.admin.v1.SudoGetResourceResponse.org:type_name -> rill.admin.v1.Organization
-	339, // 60: rill.admin.v1.SudoGetResourceResponse.project:type_name -> rill.admin.v1.Project
-	340, // 61: rill.admin.v1.SudoGetResourceResponse.deployment:type_name -> rill.admin.v1.Deployment
-	340, // 62: rill.admin.v1.SudoGetResourceResponse.instance:type_name -> rill.admin.v1.Deployment
-	335, // 63: rill.admin.v1.SudoUpdateOrganizationQuotasResponse.organization:type_name -> rill.admin.v1.Organization
-	335, // 64: rill.admin.v1.SudoUpdateOrganizationBillingCustomerResponse.organization:type_name -> rill.admin.v1.Organization
-	336, // 65: rill.admin.v1.SudoUpdateOrganizationBillingCustomerResponse.subscription:type_name -> rill.admin.v1.Subscription
-	394, // 66: rill.admin.v1.SudoReportUsageRequest.end_time:type_name -> google.protobuf.Timestamp
-	394, // 67: rill.admin.v1.SudoReportUsageResponse.start_time:type_name -> google.protobuf.Timestamp
-	394, // 68: rill.admin.v1.SudoReportUsageResponse.end_time:type_name -> google.protobuf.Timestamp
-	335, // 69: rill.admin.v1.SudoUpdateOrganizationCustomDomainResponse.organization:type_name -> rill.admin.v1.Organization
-	331, // 70: rill.admin.v1.SudoUpdateUserQuotasResponse.user:type_name -> rill.admin.v1.User
-	383, // 71: rill.admin.v1.SudoUpdateAnnotationsRequest.annotations:type_name -> rill.admin.v1.SudoUpdateAnnotationsRequest.AnnotationsEntry
-	339, // 72: rill.admin.v1.SudoUpdateAnnotationsResponse.project:type_name -> rill.admin.v1.Project
-	3,   // 73: rill.admin.v1.SudoDeleteOrganizationBillingIssueRequest.type:type_name -> rill.admin.v1.BillingIssueType
-	347, // 74: rill.admin.v1.ListProjectMemberUsersResponse.members:type_name -> rill.admin.v1.ProjectMemberUser
-	350, // 75: rill.admin.v1.ListProjectInvitesResponse.invites:type_name -> rill.admin.v1.ProjectInvite
-	231, // 76: rill.admin.v1.AddProjectMemberUserRequest.resources:type_name -> rill.admin.v1.ResourceName
-	231, // 77: rill.admin.v1.SetProjectMemberUserRoleRequest.resources:type_name -> rill.admin.v1.ResourceName
-	361, // 78: rill.admin.v1.ListUsergroupsForOrganizationAndUserResponse.usergroups:type_name -> rill.admin.v1.Usergroup
-	361, // 79: rill.admin.v1.CreateUsergroupResponse.usergroup:type_name -> rill.admin.v1.Usergroup
-	361, // 80: rill.admin.v1.GetUsergroupResponse.usergroup:type_name -> rill.admin.v1.Usergroup
-	361, // 81: rill.admin.v1.UpdateUsergroupResponse.usergroup:type_name -> rill.admin.v1.Usergroup
-	362, // 82: rill.admin.v1.ListOrganizationMemberUsergroupsResponse.members:type_name -> rill.admin.v1.MemberUsergroup
-	362, // 83: rill.admin.v1.ListProjectMemberUsergroupsResponse.members:type_name -> rill.admin.v1.MemberUsergroup
-	231, // 84: rill.admin.v1.AddProjectMemberUsergroupRequest.resources:type_name -> rill.admin.v1.ResourceName
-	231, // 85: rill.admin.v1.SetProjectMemberUsergroupRoleRequest.resources:type_name -> rill.admin.v1.ResourceName
-	348, // 86: rill.admin.v1.ListUsergroupMemberUsersResponse.members:type_name -> rill.admin.v1.UsergroupMemberUser
-	189, // 87: rill.admin.v1.UpdateUserPreferencesRequest.preferences:type_name -> rill.admin.v1.UserPreferences
-	189, // 88: rill.admin.v1.UpdateUserPreferencesResponse.preferences:type_name -> rill.admin.v1.UserPreferences
-	331, // 89: rill.admin.v1.GetUserResponse.user:type_name -> rill.admin.v1.User
-	331, // 90: rill.admin.v1.GetCurrentUserResponse.user:type_name -> rill.admin.v1.User
-	189, // 91: rill.admin.v1.GetCurrentUserResponse.preferences:type_name -> rill.admin.v1.UserPreferences
-	354, // 92: rill.admin.v1.ListUserAuthTokensResponse.tokens:type_name -> rill.admin.v1.UserAuthToken
-	352, // 93: rill.admin.v1.ListBookmarksResponse.bookmarks:type_name -> rill.admin.v1.Bookmark
-	352, // 94: rill.admin.v1.GetBookmarkResponse.bookmark:type_name -> rill.admin.v1.Bookmark
-	352, // 95: rill.admin.v1.CreateBookmarkResponse.bookmark:type_name -> rill.admin.v1.Bookmark
-	331, // 96: rill.admin.v1.SearchUsersResponse.users:type_name -> rill.admin.v1.User
-	353, // 97: rill.admin.v1.ListServiceAuthTokensResponse.tokens:type_name -> rill.admin.v1.ServiceToken
-	384, // 98: rill.admin.v1.IssueMagicAuthTokenRequest.metrics_view_filters:type_name -> rill.admin.v1.IssueMagicAuthTokenRequest.MetricsViewFiltersEntry
-	231, // 99: rill.admin.v1.IssueMagicAuthTokenRequest.resources:type_name -> rill.admin.v1.ResourceName
-	355, // 100: rill.admin.v1.ListMagicAuthTokensResponse.tokens:type_name -> rill.admin.v1.MagicAuthToken
-	355, // 101: rill.admin.v1.GetCurrentMagicAuthTokenResponse.token:type_name -> rill.admin.v1.MagicAuthToken
-	0,   // 102: rill.admin.v1.GetGithubUserStatusResponse.user_installation_permission:type_name -> rill.admin.v1.GithubPermission
-	385, // 103: rill.admin.v1.GetGithubUserStatusResponse.organization_installation_permissions:type_name -> rill.admin.v1.GetGithubUserStatusResponse.OrganizationInstallationPermissionsEntry
-	386, // 104: rill.admin.v1.ListGithubUserReposResponse.repos:type_name -> rill.admin.v1.ListGithubUserReposResponse.Repo
-	5,   // 105: rill.admin.v1.GetGithubPullRequestResponse.pr_state:type_name -> rill.admin.v1.GetGithubPullRequestResponse.State
-	394, // 106: rill.admin.v1.CreateManagedGitRepoResponse.password_expires_at:type_name -> google.protobuf.Timestamp
-	394, // 107: rill.admin.v1.GetCloneCredentialsResponse.git_password_expires_at:type_name -> google.protobuf.Timestamp
-	351, // 108: rill.admin.v1.ListWhitelistedDomainsResponse.domains:type_name -> rill.admin.v1.WhitelistedDomain
-	351, // 109: rill.admin.v1.ListProjectWhitelistedDomainsResponse.domains:type_name -> rill.admin.v1.WhitelistedDomain
-	394, // 110: rill.admin.v1.GetRepoMetaResponse.expires_on:type_name -> google.protobuf.Timestamp
-	394, // 111: rill.admin.v1.GetRepoMetaResponse.last_updated_on:type_name -> google.protobuf.Timestamp
-	394, // 112: rill.admin.v1.GetRepoMetaResponse.archive_created_on:type_name -> google.protobuf.Timestamp
-	356, // 113: rill.admin.v1.PullVirtualRepoResponse.files:type_name -> rill.admin.v1.VirtualFile
-	356, // 114: rill.admin.v1.GetVirtualFileResponse.file:type_name -> rill.admin.v1.VirtualFile
-	394, // 115: rill.admin.v1.GetReportMetaRequest.execution_time:type_name -> google.protobuf.Timestamp
-	231, // 116: rill.admin.v1.GetReportMetaRequest.resources:type_name -> rill.admin.v1.ResourceName
-	388, // 117: rill.admin.v1.GetReportMetaResponse.delivery_meta:type_name -> rill.admin.v1.GetReportMetaResponse.DeliveryMetaEntry
-	389, // 118: rill.admin.v1.GetAlertMetaRequest.annotations:type_name -> rill.admin.v1.GetAlertMetaRequest.AnnotationsEntry
-	391, // 119: rill.admin.v1.GetAlertMetaResponse.recipient_urls:type_name -> rill.admin.v1.GetAlertMetaResponse.RecipientUrlsEntry
-	395, // 120: rill.admin.v1.GetAlertMetaResponse.query_for_attributes:type_name -> google.protobuf.Struct
-	357, // 121: rill.admin.v1.CreateReportRequest.options:type_name -> rill.admin.v1.ReportOptions
-	357, // 122: rill.admin.v1.EditReportRequest.options:type_name -> rill.admin.v1.ReportOptions
-	357, // 123: rill.admin.v1.GenerateReportYAMLRequest.options:type_name -> rill.admin.v1.ReportOptions
-	358, // 124: rill.admin.v1.CreateAlertRequest.options:type_name -> rill.admin.v1.AlertOptions
-	358, // 125: rill.admin.v1.EditAlertRequest.options:type_name -> rill.admin.v1.AlertOptions
-	358, // 126: rill.admin.v1.GenerateAlertYAMLRequest.options:type_name -> rill.admin.v1.AlertOptions
-	335, // 127: rill.admin.v1.GetBillingSubscriptionResponse.organization:type_name -> rill.admin.v1.Organization
-	336, // 128: rill.admin.v1.GetBillingSubscriptionResponse.subscription:type_name -> rill.admin.v1.Subscription
-	335, // 129: rill.admin.v1.UpdateBillingSubscriptionResponse.organization:type_name -> rill.admin.v1.Organization
-	336, // 130: rill.admin.v1.UpdateBillingSubscriptionResponse.subscription:type_name -> rill.admin.v1.Subscription
-	335, // 131: rill.admin.v1.RenewBillingSubscriptionResponse.organization:type_name -> rill.admin.v1.Organization
-	336, // 132: rill.admin.v1.RenewBillingSubscriptionResponse.subscription:type_name -> rill.admin.v1.Subscription
-	359, // 133: rill.admin.v1.ListPublicBillingPlansResponse.plans:type_name -> rill.admin.v1.BillingPlan
-	395, // 134: rill.admin.v1.TelemetryRequest.event:type_name -> google.protobuf.Struct
-	363, // 135: rill.admin.v1.ListOrganizationBillingIssuesResponse.issues:type_name -> rill.admin.v1.BillingIssue
-	337, // 136: rill.admin.v1.User.quotas:type_name -> rill.admin.v1.UserQuotas
-	394, // 137: rill.admin.v1.User.created_on:type_name -> google.protobuf.Timestamp
-	394, // 138: rill.admin.v1.User.updated_on:type_name -> google.protobuf.Timestamp
-	395, // 139: rill.admin.v1.Service.attributes:type_name -> google.protobuf.Struct
-	394, // 140: rill.admin.v1.Service.created_on:type_name -> google.protobuf.Timestamp
-	394, // 141: rill.admin.v1.Service.updated_on:type_name -> google.protobuf.Timestamp
-	395, // 142: rill.admin.v1.OrganizationMemberService.attributes:type_name -> google.protobuf.Struct
-	394, // 143: rill.admin.v1.OrganizationMemberService.created_on:type_name -> google.protobuf.Timestamp
-	394, // 144: rill.admin.v1.OrganizationMemberService.updated_on:type_name -> google.protobuf.Timestamp
-	395, // 145: rill.admin.v1.ProjectMemberService.attributes:type_name -> google.protobuf.Struct
-	394, // 146: rill.admin.v1.ProjectMemberService.created_on:type_name -> google.protobuf.Timestamp
-	394, // 147: rill.admin.v1.ProjectMemberService.updated_on:type_name -> google.protobuf.Timestamp
-	338, // 148: rill.admin.v1.Organization.quotas:type_name -> rill.admin.v1.OrganizationQuotas
-	394, // 149: rill.admin.v1.Organization.created_on:type_name -> google.protobuf.Timestamp
-	394, // 150: rill.admin.v1.Organization.updated_on:type_name -> google.protobuf.Timestamp
-	359, // 151: rill.admin.v1.Subscription.plan:type_name -> rill.admin.v1.BillingPlan
-	394, // 152: rill.admin.v1.Subscription.start_date:type_name -> google.protobuf.Timestamp
-	394, // 153: rill.admin.v1.Subscription.end_date:type_name -> google.protobuf.Timestamp
-	394, // 154: rill.admin.v1.Subscription.current_billing_cycle_start_date:type_name -> google.protobuf.Timestamp
-	394, // 155: rill.admin.v1.Subscription.current_billing_cycle_end_date:type_name -> google.protobuf.Timestamp
-	394, // 156: rill.admin.v1.Subscription.trial_end_date:type_name -> google.protobuf.Timestamp
-	392, // 157: rill.admin.v1.Project.annotations:type_name -> rill.admin.v1.Project.AnnotationsEntry
-	394, // 158: rill.admin.v1.Project.created_on:type_name -> google.protobuf.Timestamp
-	394, // 159: rill.admin.v1.Project.updated_on:type_name -> google.protobuf.Timestamp
-	1,   // 160: rill.admin.v1.Deployment.status:type_name -> rill.admin.v1.DeploymentStatus
-	394, // 161: rill.admin.v1.Deployment.created_on:type_name -> google.protobuf.Timestamp
-	394, // 162: rill.admin.v1.Deployment.updated_on:type_name -> google.protobuf.Timestamp
-	394, // 163: rill.admin.v1.Deployment.used_on:type_name -> google.protobuf.Timestamp
-	395, // 164: rill.admin.v1.ProvisionerResource.args:type_name -> google.protobuf.Struct
-	395, // 165: rill.admin.v1.ProvisionerResource.config:type_name -> google.protobuf.Struct
-	342, // 166: rill.admin.v1.OrganizationRole.permissions:type_name -> rill.admin.v1.OrganizationPermissions
-	343, // 167: rill.admin.v1.ProjectRole.permissions:type_name -> rill.admin.v1.ProjectPermissions
-	395, // 168: rill.admin.v1.OrganizationMemberUser.attributes:type_name -> google.protobuf.Struct
-	394, // 169: rill.admin.v1.OrganizationMemberUser.created_on:type_name -> google.protobuf.Timestamp
-	394, // 170: rill.admin.v1.OrganizationMemberUser.updated_on:type_name -> google.protobuf.Timestamp
-	394, // 171: rill.admin.v1.ProjectMemberUser.created_on:type_name -> google.protobuf.Timestamp
-	394, // 172: rill.admin.v1.ProjectMemberUser.updated_on:type_name -> google.protobuf.Timestamp
-	231, // 173: rill.admin.v1.ProjectMemberUser.resources:type_name -> rill.admin.v1.ResourceName
-	394, // 174: rill.admin.v1.UsergroupMemberUser.created_on:type_name -> google.protobuf.Timestamp
-	394, // 175: rill.admin.v1.UsergroupMemberUser.updated_on:type_name -> google.protobuf.Timestamp
-	231, // 176: rill.admin.v1.ProjectInvite.resources:type_name -> rill.admin.v1.ResourceName
-	394, // 177: rill.admin.v1.Bookmark.created_on:type_name -> google.protobuf.Timestamp
-	394, // 178: rill.admin.v1.Bookmark.updated_on:type_name -> google.protobuf.Timestamp
-	394, // 179: rill.admin.v1.ServiceToken.created_on:type_name -> google.protobuf.Timestamp
-	394, // 180: rill.admin.v1.ServiceToken.expires_on:type_name -> google.protobuf.Timestamp
-	395, // 181: rill.admin.v1.UserAuthToken.attributes:type_name -> google.protobuf.Struct
-	394, // 182: rill.admin.v1.UserAuthToken.created_on:type_name -> google.protobuf.Timestamp
-	394, // 183: rill.admin.v1.UserAuthToken.expires_on:type_name -> google.protobuf.Timestamp
-	394, // 184: rill.admin.v1.UserAuthToken.used_on:type_name -> google.protobuf.Timestamp
-	394, // 185: rill.admin.v1.MagicAuthToken.created_on:type_name -> google.protobuf.Timestamp
-	394, // 186: rill.admin.v1.MagicAuthToken.expires_on:type_name -> google.protobuf.Timestamp
-	394, // 187: rill.admin.v1.MagicAuthToken.used_on:type_name -> google.protobuf.Timestamp
-	395, // 188: rill.admin.v1.MagicAuthToken.attributes:type_name -> google.protobuf.Struct
-	231, // 189: rill.admin.v1.MagicAuthToken.resources:type_name -> rill.admin.v1.ResourceName
-	393, // 190: rill.admin.v1.MagicAuthToken.metrics_view_filters:type_name -> rill.admin.v1.MagicAuthToken.MetricsViewFiltersEntry
-	394, // 191: rill.admin.v1.VirtualFile.updated_on:type_name -> google.protobuf.Timestamp
-	395, // 192: rill.admin.v1.ReportOptions.resolver_properties:type_name -> google.protobuf.Struct
-	396, // 193: rill.admin.v1.ReportOptions.export_format:type_name -> rill.runtime.v1.ExportFormat
-	395, // 194: rill.admin.v1.AlertOptions.resolver_properties:type_name -> google.protobuf.Struct
-	2,   // 195: rill.admin.v1.BillingPlan.plan_type:type_name -> rill.admin.v1.BillingPlanType
-	360, // 196: rill.admin.v1.BillingPlan.quotas:type_name -> rill.admin.v1.Quotas
-	394, // 197: rill.admin.v1.Usergroup.created_on:type_name -> google.protobuf.Timestamp
-	394, // 198: rill.admin.v1.Usergroup.updated_on:type_name -> google.protobuf.Timestamp
-	394, // 199: rill.admin.v1.MemberUsergroup.created_on:type_name -> google.protobuf.Timestamp
-	394, // 200: rill.admin.v1.MemberUsergroup.updated_on:type_name -> google.protobuf.Timestamp
-	231, // 201: rill.admin.v1.MemberUsergroup.resources:type_name -> rill.admin.v1.ResourceName
-	3,   // 202: rill.admin.v1.BillingIssue.type:type_name -> rill.admin.v1.BillingIssueType
-	4,   // 203: rill.admin.v1.BillingIssue.level:type_name -> rill.admin.v1.BillingIssueLevel
-	364, // 204: rill.admin.v1.BillingIssue.metadata:type_name -> rill.admin.v1.BillingIssueMetadata
-	394, // 205: rill.admin.v1.BillingIssue.event_time:type_name -> google.protobuf.Timestamp
-	394, // 206: rill.admin.v1.BillingIssue.created_on:type_name -> google.protobuf.Timestamp
-	365, // 207: rill.admin.v1.BillingIssueMetadata.on_trial:type_name -> rill.admin.v1.BillingIssueMetadataOnTrial
-	366, // 208: rill.admin.v1.BillingIssueMetadata.trial_ended:type_name -> rill.admin.v1.BillingIssueMetadataTrialEnded
-	367, // 209: rill.admin.v1.BillingIssueMetadata.no_payment_method:type_name -> rill.admin.v1.BillingIssueMetadataNoPaymentMethod
-	368, // 210: rill.admin.v1.BillingIssueMetadata.no_billable_address:type_name -> rill.admin.v1.BillingIssueMetadataNoBillableAddress
-	369, // 211: rill.admin.v1.BillingIssueMetadata.payment_failed:type_name -> rill.admin.v1.BillingIssueMetadataPaymentFailed
-	371, // 212: rill.admin.v1.BillingIssueMetadata.subscription_cancelled:type_name -> rill.admin.v1.BillingIssueMetadataSubscriptionCancelled
-	372, // 213: rill.admin.v1.BillingIssueMetadata.never_subscribed:type_name -> rill.admin.v1.BillingIssueMetadataNeverSubscribed
-	373, // 214: rill.admin.v1.BillingIssueMetadata.on_credit_trial:type_name -> rill.admin.v1.BillingIssueMetadataOnCreditTrial
-	374, // 215: rill.admin.v1.BillingIssueMetadata.trial_credits_depleted:type_name -> rill.admin.v1.BillingIssueMetadataTrialCreditsDepleted
-	394, // 216: rill.admin.v1.BillingIssueMetadataOnTrial.end_date:type_name -> google.protobuf.Timestamp
-	394, // 217: rill.admin.v1.BillingIssueMetadataOnTrial.grace_period_end_date:type_name -> google.protobuf.Timestamp
-	394, // 218: rill.admin.v1.BillingIssueMetadataTrialEnded.end_date:type_name -> google.protobuf.Timestamp
-	394, // 219: rill.admin.v1.BillingIssueMetadataTrialEnded.grace_period_end_date:type_name -> google.protobuf.Timestamp
-	370, // 220: rill.admin.v1.BillingIssueMetadataPaymentFailed.invoices:type_name -> rill.admin.v1.BillingIssueMetadataPaymentFailedMeta
-	394, // 221: rill.admin.v1.BillingIssueMetadataPaymentFailedMeta.due_date:type_name -> google.protobuf.Timestamp
-	394, // 222: rill.admin.v1.BillingIssueMetadataPaymentFailedMeta.failed_on:type_name -> google.protobuf.Timestamp
-	394, // 223: rill.admin.v1.BillingIssueMetadataPaymentFailedMeta.grace_period_end_date:type_name -> google.protobuf.Timestamp
-	394, // 224: rill.admin.v1.BillingIssueMetadataSubscriptionCancelled.end_date:type_name -> google.protobuf.Timestamp
-	394, // 225: rill.admin.v1.BillingIssueMetadataTrialCreditsDepleted.depleted_on:type_name -> google.protobuf.Timestamp
-	347, // 226: rill.admin.v1.ListProjectsForOrganizationAndUserResponse.ProjectRolesEntry.value:type_name -> rill.admin.v1.ProjectMemberUser
-	397, // 227: rill.admin.v1.IssueMagicAuthTokenRequest.MetricsViewFiltersEntry.value:type_name -> rill.runtime.v1.Expression
-	0,   // 228: rill.admin.v1.GetGithubUserStatusResponse.OrganizationInstallationPermissionsEntry.value:type_name -> rill.admin.v1.GithubPermission
-	395, // 229: rill.admin.v1.GetReportMetaResponse.DeliveryMeta.user_attrs:type_name -> google.protobuf.Struct
-	387, // 230: rill.admin.v1.GetReportMetaResponse.DeliveryMetaEntry.value:type_name -> rill.admin.v1.GetReportMetaResponse.DeliveryMeta
-	390, // 231: rill.admin.v1.GetAlertMetaResponse.RecipientUrlsEntry.value:type_name -> rill.admin.v1.GetAlertMetaResponse.URLs
-	397, // 232: rill.admin.v1.MagicAuthToken.MetricsViewFiltersEntry.value:type_name -> rill.runtime.v1.Expression
-	6,   // 233: rill.admin.v1.AdminService.Ping:input_type -> rill.admin.v1.PingRequest
-	8,   // 234: rill.admin.v1.AdminService.ListOrganizations:input_type -> rill.admin.v1.ListOrganizationsRequest
-	10,  // 235: rill.admin.v1.AdminService.GetOrganization:input_type -> rill.admin.v1.GetOrganizationRequest
-	12,  // 236: rill.admin.v1.AdminService.GetOrganizationNameForDomain:input_type -> rill.admin.v1.GetOrganizationNameForDomainRequest
-	14,  // 237: rill.admin.v1.AdminService.CreateOrganization:input_type -> rill.admin.v1.CreateOrganizationRequest
-	16,  // 238: rill.admin.v1.AdminService.DeleteOrganization:input_type -> rill.admin.v1.DeleteOrganizationRequest
-	18,  // 239: rill.admin.v1.AdminService.UpdateOrganization:input_type -> rill.admin.v1.UpdateOrganizationRequest
-	20,  // 240: rill.admin.v1.AdminService.ListProjectsForOrganization:input_type -> rill.admin.v1.ListProjectsForOrganizationRequest
-	34,  // 241: rill.admin.v1.AdminService.ListProjectsForOrganizationAndUser:input_type -> rill.admin.v1.ListProjectsForOrganizationAndUserRequest
-	36,  // 242: rill.admin.v1.AdminService.ListProjectsForFingerprint:input_type -> rill.admin.v1.ListProjectsForFingerprintRequest
-	38,  // 243: rill.admin.v1.AdminService.GetProject:input_type -> rill.admin.v1.GetProjectRequest
-	40,  // 244: rill.admin.v1.AdminService.ListProjectsForUserByName:input_type -> rill.admin.v1.ListProjectsForUserByNameRequest
-	42,  // 245: rill.admin.v1.AdminService.GetProjectByID:input_type -> rill.admin.v1.GetProjectByIDRequest
-	44,  // 246: rill.admin.v1.AdminService.SearchProjectNames:input_type -> rill.admin.v1.SearchProjectNamesRequest
-	77,  // 247: rill.admin.v1.AdminService.CreateProject:input_type -> rill.admin.v1.CreateProjectRequest
-	79,  // 248: rill.admin.v1.AdminService.DeleteProject:input_type -> rill.admin.v1.DeleteProjectRequest
-	81,  // 249: rill.admin.v1.AdminService.UpdateProject:input_type -> rill.admin.v1.UpdateProjectRequest
-	46,  // 250: rill.admin.v1.AdminService.GetProjectVariables:input_type -> rill.admin.v1.GetProjectVariablesRequest
-	49,  // 251: rill.admin.v1.AdminService.UpdateProjectVariables:input_type -> rill.admin.v1.UpdateProjectVariablesRequest
-	83,  // 252: rill.admin.v1.AdminService.CreateAsset:input_type -> rill.admin.v1.CreateAssetRequest
-	85,  // 253: rill.admin.v1.AdminService.RedeployProject:input_type -> rill.admin.v1.RedeployProjectRequest
-	87,  // 254: rill.admin.v1.AdminService.HibernateProject:input_type -> rill.admin.v1.HibernateProjectRequest
-	21,  // 255: rill.admin.v1.AdminService.ListDeployments:input_type -> rill.admin.v1.ListDeploymentsRequest
-	23,  // 256: rill.admin.v1.AdminService.CreateDeployment:input_type -> rill.admin.v1.CreateDeploymentRequest
-	25,  // 257: rill.admin.v1.AdminService.GetDeployment:input_type -> rill.admin.v1.GetDeploymentRequest
-	27,  // 258: rill.admin.v1.AdminService.StartDeployment:input_type -> rill.admin.v1.StartDeploymentRequest
-	29,  // 259: rill.admin.v1.AdminService.StopDeployment:input_type -> rill.admin.v1.StopDeploymentRequest
-	31,  // 260: rill.admin.v1.AdminService.DeleteDeployment:input_type -> rill.admin.v1.DeleteDeploymentRequest
-	89,  // 261: rill.admin.v1.AdminService.TriggerReconcile:input_type -> rill.admin.v1.TriggerReconcileRequest
-	91,  // 262: rill.admin.v1.AdminService.TriggerRefreshSources:input_type -> rill.admin.v1.TriggerRefreshSourcesRequest
-	93,  // 263: rill.admin.v1.AdminService.TriggerRedeploy:input_type -> rill.admin.v1.TriggerRedeployRequest
-	95,  // 264: rill.admin.v1.AdminService.Provision:input_type -> rill.admin.v1.ProvisionRequest
-	97,  // 265: rill.admin.v1.AdminService.GetDeploymentConfig:input_type -> rill.admin.v1.GetDeploymentConfigRequest
-	99,  // 266: rill.admin.v1.AdminService.ListRoles:input_type -> rill.admin.v1.ListRolesRequest
-	101, // 267: rill.admin.v1.AdminService.ListOrganizationMemberUsers:input_type -> rill.admin.v1.ListOrganizationMemberUsersRequest
-	103, // 268: rill.admin.v1.AdminService.ListOrganizationInvites:input_type -> rill.admin.v1.ListOrganizationInvitesRequest
-	105, // 269: rill.admin.v1.AdminService.AddOrganizationMemberUser:input_type -> rill.admin.v1.AddOrganizationMemberUserRequest
-	107, // 270: rill.admin.v1.AdminService.RemoveOrganizationMemberUser:input_type -> rill.admin.v1.RemoveOrganizationMemberUserRequest
-	109, // 271: rill.admin.v1.AdminService.LeaveOrganization:input_type -> rill.admin.v1.LeaveOrganizationRequest
-	111, // 272: rill.admin.v1.AdminService.SetOrganizationMemberUserRole:input_type -> rill.admin.v1.SetOrganizationMemberUserRoleRequest
-	113, // 273: rill.admin.v1.AdminService.GetOrganizationMemberUser:input_type -> rill.admin.v1.GetOrganizationMemberUserRequest
-	117, // 274: rill.admin.v1.AdminService.ListUsergroupsForProjectAndUser:input_type -> rill.admin.v1.ListUsergroupsForProjectAndUserRequest
-	119, // 275: rill.admin.v1.AdminService.UpdateOrganizationMemberUserAttributes:input_type -> rill.admin.v1.UpdateOrganizationMemberUserAttributesRequest
-	147, // 276: rill.admin.v1.AdminService.ListProjectMemberUsers:input_type -> rill.admin.v1.ListProjectMemberUsersRequest
-	149, // 277: rill.admin.v1.AdminService.ListProjectInvites:input_type -> rill.admin.v1.ListProjectInvitesRequest
-	151, // 278: rill.admin.v1.AdminService.AddProjectMemberUser:input_type -> rill.admin.v1.AddProjectMemberUserRequest
-	153, // 279: rill.admin.v1.AdminService.RemoveProjectMemberUser:input_type -> rill.admin.v1.RemoveProjectMemberUserRequest
-	155, // 280: rill.admin.v1.AdminService.SetProjectMemberUserRole:input_type -> rill.admin.v1.SetProjectMemberUserRoleRequest
-	115, // 281: rill.admin.v1.AdminService.GetProjectMemberUser:input_type -> rill.admin.v1.GetProjectMemberUserRequest
-	157, // 282: rill.admin.v1.AdminService.ListUsergroupsForOrganizationAndUser:input_type -> rill.admin.v1.ListUsergroupsForOrganizationAndUserRequest
-	159, // 283: rill.admin.v1.AdminService.CreateUsergroup:input_type -> rill.admin.v1.CreateUsergroupRequest
-	161, // 284: rill.admin.v1.AdminService.GetUsergroup:input_type -> rill.admin.v1.GetUsergroupRequest
-	163, // 285: rill.admin.v1.AdminService.UpdateUsergroup:input_type -> rill.admin.v1.UpdateUsergroupRequest
-	165, // 286: rill.admin.v1.AdminService.ListOrganizationMemberUsergroups:input_type -> rill.admin.v1.ListOrganizationMemberUsergroupsRequest
-	167, // 287: rill.admin.v1.AdminService.ListProjectMemberUsergroups:input_type -> rill.admin.v1.ListProjectMemberUsergroupsRequest
-	169, // 288: rill.admin.v1.AdminService.DeleteUsergroup:input_type -> rill.admin.v1.DeleteUsergroupRequest
-	171, // 289: rill.admin.v1.AdminService.AddOrganizationMemberUsergroup:input_type -> rill.admin.v1.AddOrganizationMemberUsergroupRequest
-	173, // 290: rill.admin.v1.AdminService.SetOrganizationMemberUsergroupRole:input_type -> rill.admin.v1.SetOrganizationMemberUsergroupRoleRequest
-	175, // 291: rill.admin.v1.AdminService.RemoveOrganizationMemberUsergroup:input_type -> rill.admin.v1.RemoveOrganizationMemberUsergroupRequest
-	177, // 292: rill.admin.v1.AdminService.AddProjectMemberUsergroup:input_type -> rill.admin.v1.AddProjectMemberUsergroupRequest
-	179, // 293: rill.admin.v1.AdminService.SetProjectMemberUsergroupRole:input_type -> rill.admin.v1.SetProjectMemberUsergroupRoleRequest
-	181, // 294: rill.admin.v1.AdminService.RemoveProjectMemberUsergroup:input_type -> rill.admin.v1.RemoveProjectMemberUsergroupRequest
-	183, // 295: rill.admin.v1.AdminService.AddUsergroupMemberUser:input_type -> rill.admin.v1.AddUsergroupMemberUserRequest
-	185, // 296: rill.admin.v1.AdminService.ListUsergroupMemberUsers:input_type -> rill.admin.v1.ListUsergroupMemberUsersRequest
-	187, // 297: rill.admin.v1.AdminService.RemoveUsergroupMemberUser:input_type -> rill.admin.v1.RemoveUsergroupMemberUserRequest
-	192, // 298: rill.admin.v1.AdminService.GetUser:input_type -> rill.admin.v1.GetUserRequest
-	194, // 299: rill.admin.v1.AdminService.GetCurrentUser:input_type -> rill.admin.v1.GetCurrentUserRequest
-	196, // 300: rill.admin.v1.AdminService.DeleteUser:input_type -> rill.admin.v1.DeleteUserRequest
-	198, // 301: rill.admin.v1.AdminService.ListUserAuthTokens:input_type -> rill.admin.v1.ListUserAuthTokensRequest
-	200, // 302: rill.admin.v1.AdminService.IssueUserAuthToken:input_type -> rill.admin.v1.IssueUserAuthTokenRequest
-	202, // 303: rill.admin.v1.AdminService.RevokeUserAuthToken:input_type -> rill.admin.v1.RevokeUserAuthTokenRequest
-	204, // 304: rill.admin.v1.AdminService.RevokeAllUserAuthTokens:input_type -> rill.admin.v1.RevokeAllUserAuthTokensRequest
-	206, // 305: rill.admin.v1.AdminService.RevokeRepresentativeAuthTokens:input_type -> rill.admin.v1.RevokeRepresentativeAuthTokensRequest
-	208, // 306: rill.admin.v1.AdminService.IssueRepresentativeAuthToken:input_type -> rill.admin.v1.IssueRepresentativeAuthTokenRequest
-	210, // 307: rill.admin.v1.AdminService.RevokeCurrentAuthToken:input_type -> rill.admin.v1.RevokeCurrentAuthTokenRequest
-	239, // 308: rill.admin.v1.AdminService.GetGithubRepoStatus:input_type -> rill.admin.v1.GetGithubRepoStatusRequest
-	241, // 309: rill.admin.v1.AdminService.GetGithubUserStatus:input_type -> rill.admin.v1.GetGithubUserStatusRequest
-	243, // 310: rill.admin.v1.AdminService.ListGithubUserRepos:input_type -> rill.admin.v1.ListGithubUserReposRequest
-	245, // 311: rill.admin.v1.AdminService.CreateGithubPullRequest:input_type -> rill.admin.v1.CreateGithubPullRequestRequest
-	247, // 312: rill.admin.v1.AdminService.GetGithubPullRequest:input_type -> rill.admin.v1.GetGithubPullRequestRequest
-	249, // 313: rill.admin.v1.AdminService.ConnectProjectToGithub:input_type -> rill.admin.v1.ConnectProjectToGithubRequest
-	251, // 314: rill.admin.v1.AdminService.CreateManagedGitRepo:input_type -> rill.admin.v1.CreateManagedGitRepoRequest
-	253, // 315: rill.admin.v1.AdminService.GetCloneCredentials:input_type -> rill.admin.v1.GetCloneCredentialsRequest
-	255, // 316: rill.admin.v1.AdminService.CreateWhitelistedDomain:input_type -> rill.admin.v1.CreateWhitelistedDomainRequest
-	257, // 317: rill.admin.v1.AdminService.RemoveWhitelistedDomain:input_type -> rill.admin.v1.RemoveWhitelistedDomainRequest
-	259, // 318: rill.admin.v1.AdminService.ListWhitelistedDomains:input_type -> rill.admin.v1.ListWhitelistedDomainsRequest
-	222, // 319: rill.admin.v1.AdminService.SearchUsers:input_type -> rill.admin.v1.SearchUsersRequest
-	51,  // 320: rill.admin.v1.AdminService.SearchProjectUsers:input_type -> rill.admin.v1.SearchProjectUsersRequest
-	121, // 321: rill.admin.v1.AdminService.ListSuperusers:input_type -> rill.admin.v1.ListSuperusersRequest
-	53,  // 322: rill.admin.v1.AdminService.GetDeploymentCredentials:input_type -> rill.admin.v1.GetDeploymentCredentialsRequest
-	55,  // 323: rill.admin.v1.AdminService.GetIFrame:input_type -> rill.admin.v1.GetIFrameRequest
-	123, // 324: rill.admin.v1.AdminService.SetSuperuser:input_type -> rill.admin.v1.SetSuperuserRequest
-	125, // 325: rill.admin.v1.AdminService.SudoGetResource:input_type -> rill.admin.v1.SudoGetResourceRequest
-	137, // 326: rill.admin.v1.AdminService.SudoUpdateUserQuotas:input_type -> rill.admin.v1.SudoUpdateUserQuotasRequest
-	127, // 327: rill.admin.v1.AdminService.SudoUpdateOrganizationQuotas:input_type -> rill.admin.v1.SudoUpdateOrganizationQuotasRequest
-	129, // 328: rill.admin.v1.AdminService.SudoUpdateOrganizationBillingCustomer:input_type -> rill.admin.v1.SudoUpdateOrganizationBillingCustomerRequest
-	131, // 329: rill.admin.v1.AdminService.SudoGrantTrialCredits:input_type -> rill.admin.v1.SudoGrantTrialCreditsRequest
-	133, // 330: rill.admin.v1.AdminService.SudoReportUsage:input_type -> rill.admin.v1.SudoReportUsageRequest
-	135, // 331: rill.admin.v1.AdminService.SudoUpdateOrganizationCustomDomain:input_type -> rill.admin.v1.SudoUpdateOrganizationCustomDomainRequest
-	139, // 332: rill.admin.v1.AdminService.SudoUpdateAnnotations:input_type -> rill.admin.v1.SudoUpdateAnnotationsRequest
-	141, // 333: rill.admin.v1.AdminService.SudoIssueRuntimeManagerToken:input_type -> rill.admin.v1.SudoIssueRuntimeManagerTokenRequest
-	143, // 334: rill.admin.v1.AdminService.SudoDeleteOrganizationBillingIssue:input_type -> rill.admin.v1.SudoDeleteOrganizationBillingIssueRequest
-	145, // 335: rill.admin.v1.AdminService.SudoTriggerBillingRepair:input_type -> rill.admin.v1.SudoTriggerBillingRepairRequest
-	261, // 336: rill.admin.v1.AdminService.CreateProjectWhitelistedDomain:input_type -> rill.admin.v1.CreateProjectWhitelistedDomainRequest
-	263, // 337: rill.admin.v1.AdminService.RemoveProjectWhitelistedDomain:input_type -> rill.admin.v1.RemoveProjectWhitelistedDomainRequest
-	265, // 338: rill.admin.v1.AdminService.ListProjectWhitelistedDomains:input_type -> rill.admin.v1.ListProjectWhitelistedDomainsRequest
-	57,  // 339: rill.admin.v1.AdminService.ListServices:input_type -> rill.admin.v1.ListServicesRequest
-	59,  // 340: rill.admin.v1.AdminService.ListProjectMemberServices:input_type -> rill.admin.v1.ListProjectMemberServicesRequest
-	61,  // 341: rill.admin.v1.AdminService.CreateService:input_type -> rill.admin.v1.CreateServiceRequest
-	63,  // 342: rill.admin.v1.AdminService.GetService:input_type -> rill.admin.v1.GetServiceRequest
-	65,  // 343: rill.admin.v1.AdminService.UpdateService:input_type -> rill.admin.v1.UpdateServiceRequest
-	67,  // 344: rill.admin.v1.AdminService.SetOrganizationMemberServiceRole:input_type -> rill.admin.v1.SetOrganizationMemberServiceRoleRequest
-	69,  // 345: rill.admin.v1.AdminService.RemoveOrganizationMemberService:input_type -> rill.admin.v1.RemoveOrganizationMemberServiceRequest
-	73,  // 346: rill.admin.v1.AdminService.SetProjectMemberServiceRole:input_type -> rill.admin.v1.SetProjectMemberServiceRoleRequest
-	71,  // 347: rill.admin.v1.AdminService.RemoveProjectMemberService:input_type -> rill.admin.v1.RemoveProjectMemberServiceRequest
-	75,  // 348: rill.admin.v1.AdminService.DeleteService:input_type -> rill.admin.v1.DeleteServiceRequest
-	228, // 349: rill.admin.v1.AdminService.ListServiceAuthTokens:input_type -> rill.admin.v1.ListServiceAuthTokensRequest
-	226, // 350: rill.admin.v1.AdminService.IssueServiceAuthToken:input_type -> rill.admin.v1.IssueServiceAuthTokenRequest
-	224, // 351: rill.admin.v1.AdminService.RevokeServiceAuthToken:input_type -> rill.admin.v1.RevokeServiceAuthTokenRequest
-	230, // 352: rill.admin.v1.AdminService.IssueMagicAuthToken:input_type -> rill.admin.v1.IssueMagicAuthTokenRequest
-	233, // 353: rill.admin.v1.AdminService.ListMagicAuthTokens:input_type -> rill.admin.v1.ListMagicAuthTokensRequest
-	235, // 354: rill.admin.v1.AdminService.GetCurrentMagicAuthToken:input_type -> rill.admin.v1.GetCurrentMagicAuthTokenRequest
-	237, // 355: rill.admin.v1.AdminService.RevokeMagicAuthToken:input_type -> rill.admin.v1.RevokeMagicAuthTokenRequest
-	190, // 356: rill.admin.v1.AdminService.UpdateUserPreferences:input_type -> rill.admin.v1.UpdateUserPreferencesRequest
-	212, // 357: rill.admin.v1.AdminService.ListBookmarks:input_type -> rill.admin.v1.ListBookmarksRequest
-	214, // 358: rill.admin.v1.AdminService.GetBookmark:input_type -> rill.admin.v1.GetBookmarkRequest
-	216, // 359: rill.admin.v1.AdminService.CreateBookmark:input_type -> rill.admin.v1.CreateBookmarkRequest
-	218, // 360: rill.admin.v1.AdminService.UpdateBookmark:input_type -> rill.admin.v1.UpdateBookmarkRequest
-	220, // 361: rill.admin.v1.AdminService.RemoveBookmark:input_type -> rill.admin.v1.RemoveBookmarkRequest
-	267, // 362: rill.admin.v1.AdminService.GetRepoMeta:input_type -> rill.admin.v1.GetRepoMetaRequest
-	269, // 363: rill.admin.v1.AdminService.PullVirtualRepo:input_type -> rill.admin.v1.PullVirtualRepoRequest
-	271, // 364: rill.admin.v1.AdminService.GetVirtualFile:input_type -> rill.admin.v1.GetVirtualFileRequest
-	273, // 365: rill.admin.v1.AdminService.DeleteVirtualFile:input_type -> rill.admin.v1.DeleteVirtualFileRequest
-	275, // 366: rill.admin.v1.AdminService.GetReportMeta:input_type -> rill.admin.v1.GetReportMetaRequest
-	277, // 367: rill.admin.v1.AdminService.GetAlertMeta:input_type -> rill.admin.v1.GetAlertMetaRequest
-	279, // 368: rill.admin.v1.AdminService.CreateReport:input_type -> rill.admin.v1.CreateReportRequest
-	281, // 369: rill.admin.v1.AdminService.EditReport:input_type -> rill.admin.v1.EditReportRequest
-	283, // 370: rill.admin.v1.AdminService.UnsubscribeReport:input_type -> rill.admin.v1.UnsubscribeReportRequest
-	285, // 371: rill.admin.v1.AdminService.DeleteReport:input_type -> rill.admin.v1.DeleteReportRequest
-	287, // 372: rill.admin.v1.AdminService.TriggerReport:input_type -> rill.admin.v1.TriggerReportRequest
-	289, // 373: rill.admin.v1.AdminService.GenerateReportYAML:input_type -> rill.admin.v1.GenerateReportYAMLRequest
-	291, // 374: rill.admin.v1.AdminService.CreateAlert:input_type -> rill.admin.v1.CreateAlertRequest
-	293, // 375: rill.admin.v1.AdminService.EditAlert:input_type -> rill.admin.v1.EditAlertRequest
-	295, // 376: rill.admin.v1.AdminService.UnsubscribeAlert:input_type -> rill.admin.v1.UnsubscribeAlertRequest
-	297, // 377: rill.admin.v1.AdminService.DeleteAlert:input_type -> rill.admin.v1.DeleteAlertRequest
-	299, // 378: rill.admin.v1.AdminService.GenerateAlertYAML:input_type -> rill.admin.v1.GenerateAlertYAMLRequest
-	301, // 379: rill.admin.v1.AdminService.GetAlertYAML:input_type -> rill.admin.v1.GetAlertYAMLRequest
-	303, // 380: rill.admin.v1.AdminService.GetBillingSubscription:input_type -> rill.admin.v1.GetBillingSubscriptionRequest
-	305, // 381: rill.admin.v1.AdminService.UpdateBillingSubscription:input_type -> rill.admin.v1.UpdateBillingSubscriptionRequest
-	307, // 382: rill.admin.v1.AdminService.CancelBillingSubscription:input_type -> rill.admin.v1.CancelBillingSubscriptionRequest
-	309, // 383: rill.admin.v1.AdminService.RenewBillingSubscription:input_type -> rill.admin.v1.RenewBillingSubscriptionRequest
-	311, // 384: rill.admin.v1.AdminService.GetPaymentsPortalURL:input_type -> rill.admin.v1.GetPaymentsPortalURLRequest
-	313, // 385: rill.admin.v1.AdminService.GetBillingCreditBalance:input_type -> rill.admin.v1.GetBillingCreditBalanceRequest
-	315, // 386: rill.admin.v1.AdminService.ListPublicBillingPlans:input_type -> rill.admin.v1.ListPublicBillingPlansRequest
-	317, // 387: rill.admin.v1.AdminService.GetBillingProjectCredentials:input_type -> rill.admin.v1.GetBillingProjectCredentialsRequest
-	321, // 388: rill.admin.v1.AdminService.RequestProjectAccess:input_type -> rill.admin.v1.RequestProjectAccessRequest
-	323, // 389: rill.admin.v1.AdminService.GetProjectAccessRequest:input_type -> rill.admin.v1.GetProjectAccessRequestRequest
-	325, // 390: rill.admin.v1.AdminService.ApproveProjectAccess:input_type -> rill.admin.v1.ApproveProjectAccessRequest
-	327, // 391: rill.admin.v1.AdminService.DenyProjectAccess:input_type -> rill.admin.v1.DenyProjectAccessRequest
-	329, // 392: rill.admin.v1.AdminService.ListOrganizationBillingIssues:input_type -> rill.admin.v1.ListOrganizationBillingIssuesRequest
-	7,   // 393: rill.admin.v1.AdminService.Ping:output_type -> rill.admin.v1.PingResponse
-	9,   // 394: rill.admin.v1.AdminService.ListOrganizations:output_type -> rill.admin.v1.ListOrganizationsResponse
-	11,  // 395: rill.admin.v1.AdminService.GetOrganization:output_type -> rill.admin.v1.GetOrganizationResponse
-	13,  // 396: rill.admin.v1.AdminService.GetOrganizationNameForDomain:output_type -> rill.admin.v1.GetOrganizationNameForDomainResponse
-	15,  // 397: rill.admin.v1.AdminService.CreateOrganization:output_type -> rill.admin.v1.CreateOrganizationResponse
-	17,  // 398: rill.admin.v1.AdminService.DeleteOrganization:output_type -> rill.admin.v1.DeleteOrganizationResponse
-	19,  // 399: rill.admin.v1.AdminService.UpdateOrganization:output_type -> rill.admin.v1.UpdateOrganizationResponse
-	33,  // 400: rill.admin.v1.AdminService.ListProjectsForOrganization:output_type -> rill.admin.v1.ListProjectsForOrganizationResponse
-	35,  // 401: rill.admin.v1.AdminService.ListProjectsForOrganizationAndUser:output_type -> rill.admin.v1.ListProjectsForOrganizationAndUserResponse
-	37,  // 402: rill.admin.v1.AdminService.ListProjectsForFingerprint:output_type -> rill.admin.v1.ListProjectsForFingerprintResponse
-	39,  // 403: rill.admin.v1.AdminService.GetProject:output_type -> rill.admin.v1.GetProjectResponse
-	41,  // 404: rill.admin.v1.AdminService.ListProjectsForUserByName:output_type -> rill.admin.v1.ListProjectsForUserByNameResponse
-	43,  // 405: rill.admin.v1.AdminService.GetProjectByID:output_type -> rill.admin.v1.GetProjectByIDResponse
-	45,  // 406: rill.admin.v1.AdminService.SearchProjectNames:output_type -> rill.admin.v1.SearchProjectNamesResponse
-	78,  // 407: rill.admin.v1.AdminService.CreateProject:output_type -> rill.admin.v1.CreateProjectResponse
-	80,  // 408: rill.admin.v1.AdminService.DeleteProject:output_type -> rill.admin.v1.DeleteProjectResponse
-	82,  // 409: rill.admin.v1.AdminService.UpdateProject:output_type -> rill.admin.v1.UpdateProjectResponse
-	47,  // 410: rill.admin.v1.AdminService.GetProjectVariables:output_type -> rill.admin.v1.GetProjectVariablesResponse
-	50,  // 411: rill.admin.v1.AdminService.UpdateProjectVariables:output_type -> rill.admin.v1.UpdateProjectVariablesResponse
-	84,  // 412: rill.admin.v1.AdminService.CreateAsset:output_type -> rill.admin.v1.CreateAssetResponse
-	86,  // 413: rill.admin.v1.AdminService.RedeployProject:output_type -> rill.admin.v1.RedeployProjectResponse
-	88,  // 414: rill.admin.v1.AdminService.HibernateProject:output_type -> rill.admin.v1.HibernateProjectResponse
-	22,  // 415: rill.admin.v1.AdminService.ListDeployments:output_type -> rill.admin.v1.ListDeploymentsResponse
-	24,  // 416: rill.admin.v1.AdminService.CreateDeployment:output_type -> rill.admin.v1.CreateDeploymentResponse
-	26,  // 417: rill.admin.v1.AdminService.GetDeployment:output_type -> rill.admin.v1.GetDeploymentResponse
-	28,  // 418: rill.admin.v1.AdminService.StartDeployment:output_type -> rill.admin.v1.StartDeploymentResponse
-	30,  // 419: rill.admin.v1.AdminService.StopDeployment:output_type -> rill.admin.v1.StopDeploymentResponse
-	32,  // 420: rill.admin.v1.AdminService.DeleteDeployment:output_type -> rill.admin.v1.DeleteDeploymentResponse
-	90,  // 421: rill.admin.v1.AdminService.TriggerReconcile:output_type -> rill.admin.v1.TriggerReconcileResponse
-	92,  // 422: rill.admin.v1.AdminService.TriggerRefreshSources:output_type -> rill.admin.v1.TriggerRefreshSourcesResponse
-	94,  // 423: rill.admin.v1.AdminService.TriggerRedeploy:output_type -> rill.admin.v1.TriggerRedeployResponse
-	96,  // 424: rill.admin.v1.AdminService.Provision:output_type -> rill.admin.v1.ProvisionResponse
-	98,  // 425: rill.admin.v1.AdminService.GetDeploymentConfig:output_type -> rill.admin.v1.GetDeploymentConfigResponse
-	100, // 426: rill.admin.v1.AdminService.ListRoles:output_type -> rill.admin.v1.ListRolesResponse
-	102, // 427: rill.admin.v1.AdminService.ListOrganizationMemberUsers:output_type -> rill.admin.v1.ListOrganizationMemberUsersResponse
-	104, // 428: rill.admin.v1.AdminService.ListOrganizationInvites:output_type -> rill.admin.v1.ListOrganizationInvitesResponse
-	106, // 429: rill.admin.v1.AdminService.AddOrganizationMemberUser:output_type -> rill.admin.v1.AddOrganizationMemberUserResponse
-	108, // 430: rill.admin.v1.AdminService.RemoveOrganizationMemberUser:output_type -> rill.admin.v1.RemoveOrganizationMemberUserResponse
-	110, // 431: rill.admin.v1.AdminService.LeaveOrganization:output_type -> rill.admin.v1.LeaveOrganizationResponse
-	112, // 432: rill.admin.v1.AdminService.SetOrganizationMemberUserRole:output_type -> rill.admin.v1.SetOrganizationMemberUserRoleResponse
-	114, // 433: rill.admin.v1.AdminService.GetOrganizationMemberUser:output_type -> rill.admin.v1.GetOrganizationMemberUserResponse
-	118, // 434: rill.admin.v1.AdminService.ListUsergroupsForProjectAndUser:output_type -> rill.admin.v1.ListUsergroupsForProjectAndUserResponse
-	120, // 435: rill.admin.v1.AdminService.UpdateOrganizationMemberUserAttributes:output_type -> rill.admin.v1.UpdateOrganizationMemberUserAttributesResponse
-	148, // 436: rill.admin.v1.AdminService.ListProjectMemberUsers:output_type -> rill.admin.v1.ListProjectMemberUsersResponse
-	150, // 437: rill.admin.v1.AdminService.ListProjectInvites:output_type -> rill.admin.v1.ListProjectInvitesResponse
-	152, // 438: rill.admin.v1.AdminService.AddProjectMemberUser:output_type -> rill.admin.v1.AddProjectMemberUserResponse
-	154, // 439: rill.admin.v1.AdminService.RemoveProjectMemberUser:output_type -> rill.admin.v1.RemoveProjectMemberUserResponse
-	156, // 440: rill.admin.v1.AdminService.SetProjectMemberUserRole:output_type -> rill.admin.v1.SetProjectMemberUserRoleResponse
-	116, // 441: rill.admin.v1.AdminService.GetProjectMemberUser:output_type -> rill.admin.v1.GetProjectMemberUserResponse
-	158, // 442: rill.admin.v1.AdminService.ListUsergroupsForOrganizationAndUser:output_type -> rill.admin.v1.ListUsergroupsForOrganizationAndUserResponse
-	160, // 443: rill.admin.v1.AdminService.CreateUsergroup:output_type -> rill.admin.v1.CreateUsergroupResponse
-	162, // 444: rill.admin.v1.AdminService.GetUsergroup:output_type -> rill.admin.v1.GetUsergroupResponse
-	164, // 445: rill.admin.v1.AdminService.UpdateUsergroup:output_type -> rill.admin.v1.UpdateUsergroupResponse
-	166, // 446: rill.admin.v1.AdminService.ListOrganizationMemberUsergroups:output_type -> rill.admin.v1.ListOrganizationMemberUsergroupsResponse
-	168, // 447: rill.admin.v1.AdminService.ListProjectMemberUsergroups:output_type -> rill.admin.v1.ListProjectMemberUsergroupsResponse
-	170, // 448: rill.admin.v1.AdminService.DeleteUsergroup:output_type -> rill.admin.v1.DeleteUsergroupResponse
-	172, // 449: rill.admin.v1.AdminService.AddOrganizationMemberUsergroup:output_type -> rill.admin.v1.AddOrganizationMemberUsergroupResponse
-	174, // 450: rill.admin.v1.AdminService.SetOrganizationMemberUsergroupRole:output_type -> rill.admin.v1.SetOrganizationMemberUsergroupRoleResponse
-	176, // 451: rill.admin.v1.AdminService.RemoveOrganizationMemberUsergroup:output_type -> rill.admin.v1.RemoveOrganizationMemberUsergroupResponse
-	178, // 452: rill.admin.v1.AdminService.AddProjectMemberUsergroup:output_type -> rill.admin.v1.AddProjectMemberUsergroupResponse
-	180, // 453: rill.admin.v1.AdminService.SetProjectMemberUsergroupRole:output_type -> rill.admin.v1.SetProjectMemberUsergroupRoleResponse
-	182, // 454: rill.admin.v1.AdminService.RemoveProjectMemberUsergroup:output_type -> rill.admin.v1.RemoveProjectMemberUsergroupResponse
-	184, // 455: rill.admin.v1.AdminService.AddUsergroupMemberUser:output_type -> rill.admin.v1.AddUsergroupMemberUserResponse
-	186, // 456: rill.admin.v1.AdminService.ListUsergroupMemberUsers:output_type -> rill.admin.v1.ListUsergroupMemberUsersResponse
-	188, // 457: rill.admin.v1.AdminService.RemoveUsergroupMemberUser:output_type -> rill.admin.v1.RemoveUsergroupMemberUserResponse
-	193, // 458: rill.admin.v1.AdminService.GetUser:output_type -> rill.admin.v1.GetUserResponse
-	195, // 459: rill.admin.v1.AdminService.GetCurrentUser:output_type -> rill.admin.v1.GetCurrentUserResponse
-	197, // 460: rill.admin.v1.AdminService.DeleteUser:output_type -> rill.admin.v1.DeleteUserResponse
-	199, // 461: rill.admin.v1.AdminService.ListUserAuthTokens:output_type -> rill.admin.v1.ListUserAuthTokensResponse
-	201, // 462: rill.admin.v1.AdminService.IssueUserAuthToken:output_type -> rill.admin.v1.IssueUserAuthTokenResponse
-	203, // 463: rill.admin.v1.AdminService.RevokeUserAuthToken:output_type -> rill.admin.v1.RevokeUserAuthTokenResponse
-	205, // 464: rill.admin.v1.AdminService.RevokeAllUserAuthTokens:output_type -> rill.admin.v1.RevokeAllUserAuthTokensResponse
-	207, // 465: rill.admin.v1.AdminService.RevokeRepresentativeAuthTokens:output_type -> rill.admin.v1.RevokeRepresentativeAuthTokensResponse
-	209, // 466: rill.admin.v1.AdminService.IssueRepresentativeAuthToken:output_type -> rill.admin.v1.IssueRepresentativeAuthTokenResponse
-	211, // 467: rill.admin.v1.AdminService.RevokeCurrentAuthToken:output_type -> rill.admin.v1.RevokeCurrentAuthTokenResponse
-	240, // 468: rill.admin.v1.AdminService.GetGithubRepoStatus:output_type -> rill.admin.v1.GetGithubRepoStatusResponse
-	242, // 469: rill.admin.v1.AdminService.GetGithubUserStatus:output_type -> rill.admin.v1.GetGithubUserStatusResponse
-	244, // 470: rill.admin.v1.AdminService.ListGithubUserRepos:output_type -> rill.admin.v1.ListGithubUserReposResponse
-	246, // 471: rill.admin.v1.AdminService.CreateGithubPullRequest:output_type -> rill.admin.v1.CreateGithubPullRequestResponse
-	248, // 472: rill.admin.v1.AdminService.GetGithubPullRequest:output_type -> rill.admin.v1.GetGithubPullRequestResponse
-	250, // 473: rill.admin.v1.AdminService.ConnectProjectToGithub:output_type -> rill.admin.v1.ConnectProjectToGithubResponse
-	252, // 474: rill.admin.v1.AdminService.CreateManagedGitRepo:output_type -> rill.admin.v1.CreateManagedGitRepoResponse
-	254, // 475: rill.admin.v1.AdminService.GetCloneCredentials:output_type -> rill.admin.v1.GetCloneCredentialsResponse
-	256, // 476: rill.admin.v1.AdminService.CreateWhitelistedDomain:output_type -> rill.admin.v1.CreateWhitelistedDomainResponse
-	258, // 477: rill.admin.v1.AdminService.RemoveWhitelistedDomain:output_type -> rill.admin.v1.RemoveWhitelistedDomainResponse
-	260, // 478: rill.admin.v1.AdminService.ListWhitelistedDomains:output_type -> rill.admin.v1.ListWhitelistedDomainsResponse
-	223, // 479: rill.admin.v1.AdminService.SearchUsers:output_type -> rill.admin.v1.SearchUsersResponse
-	52,  // 480: rill.admin.v1.AdminService.SearchProjectUsers:output_type -> rill.admin.v1.SearchProjectUsersResponse
-	122, // 481: rill.admin.v1.AdminService.ListSuperusers:output_type -> rill.admin.v1.ListSuperusersResponse
-	54,  // 482: rill.admin.v1.AdminService.GetDeploymentCredentials:output_type -> rill.admin.v1.GetDeploymentCredentialsResponse
-	56,  // 483: rill.admin.v1.AdminService.GetIFrame:output_type -> rill.admin.v1.GetIFrameResponse
-	124, // 484: rill.admin.v1.AdminService.SetSuperuser:output_type -> rill.admin.v1.SetSuperuserResponse
-	126, // 485: rill.admin.v1.AdminService.SudoGetResource:output_type -> rill.admin.v1.SudoGetResourceResponse
-	138, // 486: rill.admin.v1.AdminService.SudoUpdateUserQuotas:output_type -> rill.admin.v1.SudoUpdateUserQuotasResponse
-	128, // 487: rill.admin.v1.AdminService.SudoUpdateOrganizationQuotas:output_type -> rill.admin.v1.SudoUpdateOrganizationQuotasResponse
-	130, // 488: rill.admin.v1.AdminService.SudoUpdateOrganizationBillingCustomer:output_type -> rill.admin.v1.SudoUpdateOrganizationBillingCustomerResponse
-	132, // 489: rill.admin.v1.AdminService.SudoGrantTrialCredits:output_type -> rill.admin.v1.SudoGrantTrialCreditsResponse
-	134, // 490: rill.admin.v1.AdminService.SudoReportUsage:output_type -> rill.admin.v1.SudoReportUsageResponse
-	136, // 491: rill.admin.v1.AdminService.SudoUpdateOrganizationCustomDomain:output_type -> rill.admin.v1.SudoUpdateOrganizationCustomDomainResponse
-	140, // 492: rill.admin.v1.AdminService.SudoUpdateAnnotations:output_type -> rill.admin.v1.SudoUpdateAnnotationsResponse
-	142, // 493: rill.admin.v1.AdminService.SudoIssueRuntimeManagerToken:output_type -> rill.admin.v1.SudoIssueRuntimeManagerTokenResponse
-	144, // 494: rill.admin.v1.AdminService.SudoDeleteOrganizationBillingIssue:output_type -> rill.admin.v1.SudoDeleteOrganizationBillingIssueResponse
-	146, // 495: rill.admin.v1.AdminService.SudoTriggerBillingRepair:output_type -> rill.admin.v1.SudoTriggerBillingRepairResponse
-	262, // 496: rill.admin.v1.AdminService.CreateProjectWhitelistedDomain:output_type -> rill.admin.v1.CreateProjectWhitelistedDomainResponse
-	264, // 497: rill.admin.v1.AdminService.RemoveProjectWhitelistedDomain:output_type -> rill.admin.v1.RemoveProjectWhitelistedDomainResponse
-	266, // 498: rill.admin.v1.AdminService.ListProjectWhitelistedDomains:output_type -> rill.admin.v1.ListProjectWhitelistedDomainsResponse
-	58,  // 499: rill.admin.v1.AdminService.ListServices:output_type -> rill.admin.v1.ListServicesResponse
-	60,  // 500: rill.admin.v1.AdminService.ListProjectMemberServices:output_type -> rill.admin.v1.ListProjectMemberServicesResponse
-	62,  // 501: rill.admin.v1.AdminService.CreateService:output_type -> rill.admin.v1.CreateServiceResponse
-	64,  // 502: rill.admin.v1.AdminService.GetService:output_type -> rill.admin.v1.GetServiceResponse
-	66,  // 503: rill.admin.v1.AdminService.UpdateService:output_type -> rill.admin.v1.UpdateServiceResponse
-	68,  // 504: rill.admin.v1.AdminService.SetOrganizationMemberServiceRole:output_type -> rill.admin.v1.SetOrganizationMemberServiceRoleResponse
-	70,  // 505: rill.admin.v1.AdminService.RemoveOrganizationMemberService:output_type -> rill.admin.v1.RemoveOrganizationMemberServiceResponse
-	74,  // 506: rill.admin.v1.AdminService.SetProjectMemberServiceRole:output_type -> rill.admin.v1.SetProjectMemberServiceRoleResponse
-	72,  // 507: rill.admin.v1.AdminService.RemoveProjectMemberService:output_type -> rill.admin.v1.RemoveProjectMemberServiceResponse
-	76,  // 508: rill.admin.v1.AdminService.DeleteService:output_type -> rill.admin.v1.DeleteServiceResponse
-	229, // 509: rill.admin.v1.AdminService.ListServiceAuthTokens:output_type -> rill.admin.v1.ListServiceAuthTokensResponse
-	227, // 510: rill.admin.v1.AdminService.IssueServiceAuthToken:output_type -> rill.admin.v1.IssueServiceAuthTokenResponse
-	225, // 511: rill.admin.v1.AdminService.RevokeServiceAuthToken:output_type -> rill.admin.v1.RevokeServiceAuthTokenResponse
-	232, // 512: rill.admin.v1.AdminService.IssueMagicAuthToken:output_type -> rill.admin.v1.IssueMagicAuthTokenResponse
-	234, // 513: rill.admin.v1.AdminService.ListMagicAuthTokens:output_type -> rill.admin.v1.ListMagicAuthTokensResponse
-	236, // 514: rill.admin.v1.AdminService.GetCurrentMagicAuthToken:output_type -> rill.admin.v1.GetCurrentMagicAuthTokenResponse
-	238, // 515: rill.admin.v1.AdminService.RevokeMagicAuthToken:output_type -> rill.admin.v1.RevokeMagicAuthTokenResponse
-	191, // 516: rill.admin.v1.AdminService.UpdateUserPreferences:output_type -> rill.admin.v1.UpdateUserPreferencesResponse
-	213, // 517: rill.admin.v1.AdminService.ListBookmarks:output_type -> rill.admin.v1.ListBookmarksResponse
-	215, // 518: rill.admin.v1.AdminService.GetBookmark:output_type -> rill.admin.v1.GetBookmarkResponse
-	217, // 519: rill.admin.v1.AdminService.CreateBookmark:output_type -> rill.admin.v1.CreateBookmarkResponse
-	219, // 520: rill.admin.v1.AdminService.UpdateBookmark:output_type -> rill.admin.v1.UpdateBookmarkResponse
-	221, // 521: rill.admin.v1.AdminService.RemoveBookmark:output_type -> rill.admin.v1.RemoveBookmarkResponse
-	268, // 522: rill.admin.v1.AdminService.GetRepoMeta:output_type -> rill.admin.v1.GetRepoMetaResponse
-	270, // 523: rill.admin.v1.AdminService.PullVirtualRepo:output_type -> rill.admin.v1.PullVirtualRepoResponse
-	272, // 524: rill.admin.v1.AdminService.GetVirtualFile:output_type -> rill.admin.v1.GetVirtualFileResponse
-	274, // 525: rill.admin.v1.AdminService.DeleteVirtualFile:output_type -> rill.admin.v1.DeleteVirtualFileResponse
-	276, // 526: rill.admin.v1.AdminService.GetReportMeta:output_type -> rill.admin.v1.GetReportMetaResponse
-	278, // 527: rill.admin.v1.AdminService.GetAlertMeta:output_type -> rill.admin.v1.GetAlertMetaResponse
-	280, // 528: rill.admin.v1.AdminService.CreateReport:output_type -> rill.admin.v1.CreateReportResponse
-	282, // 529: rill.admin.v1.AdminService.EditReport:output_type -> rill.admin.v1.EditReportResponse
-	284, // 530: rill.admin.v1.AdminService.UnsubscribeReport:output_type -> rill.admin.v1.UnsubscribeReportResponse
-	286, // 531: rill.admin.v1.AdminService.DeleteReport:output_type -> rill.admin.v1.DeleteReportResponse
-	288, // 532: rill.admin.v1.AdminService.TriggerReport:output_type -> rill.admin.v1.TriggerReportResponse
-	290, // 533: rill.admin.v1.AdminService.GenerateReportYAML:output_type -> rill.admin.v1.GenerateReportYAMLResponse
-	292, // 534: rill.admin.v1.AdminService.CreateAlert:output_type -> rill.admin.v1.CreateAlertResponse
-	294, // 535: rill.admin.v1.AdminService.EditAlert:output_type -> rill.admin.v1.EditAlertResponse
-	296, // 536: rill.admin.v1.AdminService.UnsubscribeAlert:output_type -> rill.admin.v1.UnsubscribeAlertResponse
-	298, // 537: rill.admin.v1.AdminService.DeleteAlert:output_type -> rill.admin.v1.DeleteAlertResponse
-	300, // 538: rill.admin.v1.AdminService.GenerateAlertYAML:output_type -> rill.admin.v1.GenerateAlertYAMLResponse
-	302, // 539: rill.admin.v1.AdminService.GetAlertYAML:output_type -> rill.admin.v1.GetAlertYAMLResponse
-	304, // 540: rill.admin.v1.AdminService.GetBillingSubscription:output_type -> rill.admin.v1.GetBillingSubscriptionResponse
-	306, // 541: rill.admin.v1.AdminService.UpdateBillingSubscription:output_type -> rill.admin.v1.UpdateBillingSubscriptionResponse
-	308, // 542: rill.admin.v1.AdminService.CancelBillingSubscription:output_type -> rill.admin.v1.CancelBillingSubscriptionResponse
-	310, // 543: rill.admin.v1.AdminService.RenewBillingSubscription:output_type -> rill.admin.v1.RenewBillingSubscriptionResponse
-	312, // 544: rill.admin.v1.AdminService.GetPaymentsPortalURL:output_type -> rill.admin.v1.GetPaymentsPortalURLResponse
-	314, // 545: rill.admin.v1.AdminService.GetBillingCreditBalance:output_type -> rill.admin.v1.GetBillingCreditBalanceResponse
-	316, // 546: rill.admin.v1.AdminService.ListPublicBillingPlans:output_type -> rill.admin.v1.ListPublicBillingPlansResponse
-	318, // 547: rill.admin.v1.AdminService.GetBillingProjectCredentials:output_type -> rill.admin.v1.GetBillingProjectCredentialsResponse
-	322, // 548: rill.admin.v1.AdminService.RequestProjectAccess:output_type -> rill.admin.v1.RequestProjectAccessResponse
-	324, // 549: rill.admin.v1.AdminService.GetProjectAccessRequest:output_type -> rill.admin.v1.GetProjectAccessRequestResponse
-	326, // 550: rill.admin.v1.AdminService.ApproveProjectAccess:output_type -> rill.admin.v1.ApproveProjectAccessResponse
-	328, // 551: rill.admin.v1.AdminService.DenyProjectAccess:output_type -> rill.admin.v1.DenyProjectAccessResponse
-	330, // 552: rill.admin.v1.AdminService.ListOrganizationBillingIssues:output_type -> rill.admin.v1.ListOrganizationBillingIssuesResponse
-	393, // [393:553] is the sub-list for method output_type
-	233, // [233:393] is the sub-list for method input_type
-	233, // [233:233] is the sub-list for extension type_name
-	233, // [233:233] is the sub-list for extension extendee
-	0,   // [0:233] is the sub-list for field type_name
+	395, // 47: rill.admin.v1.GetDeploymentConfigResponse.updated_on:type_name -> google.protobuf.Timestamp
+	396, // 48: rill.admin.v1.GetDeploymentConfigResponse.duckdb_connector_config:type_name -> google.protobuf.Struct
+	383, // 49: rill.admin.v1.GetDeploymentConfigResponse.system_variables:type_name -> rill.admin.v1.GetDeploymentConfigResponse.SystemVariablesEntry
+	344, // 50: rill.admin.v1.ListRolesResponse.organization_roles:type_name -> rill.admin.v1.OrganizationRole
+	345, // 51: rill.admin.v1.ListRolesResponse.project_roles:type_name -> rill.admin.v1.ProjectRole
+	346, // 52: rill.admin.v1.ListOrganizationMemberUsersResponse.members:type_name -> rill.admin.v1.OrganizationMemberUser
+	349, // 53: rill.admin.v1.ListOrganizationInvitesResponse.invites:type_name -> rill.admin.v1.OrganizationInvite
+	346, // 54: rill.admin.v1.GetOrganizationMemberUserResponse.member:type_name -> rill.admin.v1.OrganizationMemberUser
+	347, // 55: rill.admin.v1.GetProjectMemberUserResponse.member:type_name -> rill.admin.v1.ProjectMemberUser
+	362, // 56: rill.admin.v1.ListUsergroupsForProjectAndUserResponse.usergroups:type_name -> rill.admin.v1.MemberUsergroup
+	396, // 57: rill.admin.v1.UpdateOrganizationMemberUserAttributesRequest.attributes:type_name -> google.protobuf.Struct
+	331, // 58: rill.admin.v1.ListSuperusersResponse.users:type_name -> rill.admin.v1.User
+	331, // 59: rill.admin.v1.SudoGetResourceResponse.user:type_name -> rill.admin.v1.User
+	335, // 60: rill.admin.v1.SudoGetResourceResponse.org:type_name -> rill.admin.v1.Organization
+	339, // 61: rill.admin.v1.SudoGetResourceResponse.project:type_name -> rill.admin.v1.Project
+	340, // 62: rill.admin.v1.SudoGetResourceResponse.deployment:type_name -> rill.admin.v1.Deployment
+	340, // 63: rill.admin.v1.SudoGetResourceResponse.instance:type_name -> rill.admin.v1.Deployment
+	335, // 64: rill.admin.v1.SudoUpdateOrganizationQuotasResponse.organization:type_name -> rill.admin.v1.Organization
+	335, // 65: rill.admin.v1.SudoUpdateOrganizationBillingCustomerResponse.organization:type_name -> rill.admin.v1.Organization
+	336, // 66: rill.admin.v1.SudoUpdateOrganizationBillingCustomerResponse.subscription:type_name -> rill.admin.v1.Subscription
+	395, // 67: rill.admin.v1.SudoReportUsageRequest.end_time:type_name -> google.protobuf.Timestamp
+	395, // 68: rill.admin.v1.SudoReportUsageResponse.start_time:type_name -> google.protobuf.Timestamp
+	395, // 69: rill.admin.v1.SudoReportUsageResponse.end_time:type_name -> google.protobuf.Timestamp
+	335, // 70: rill.admin.v1.SudoUpdateOrganizationCustomDomainResponse.organization:type_name -> rill.admin.v1.Organization
+	331, // 71: rill.admin.v1.SudoUpdateUserQuotasResponse.user:type_name -> rill.admin.v1.User
+	384, // 72: rill.admin.v1.SudoUpdateAnnotationsRequest.annotations:type_name -> rill.admin.v1.SudoUpdateAnnotationsRequest.AnnotationsEntry
+	339, // 73: rill.admin.v1.SudoUpdateAnnotationsResponse.project:type_name -> rill.admin.v1.Project
+	3,   // 74: rill.admin.v1.SudoDeleteOrganizationBillingIssueRequest.type:type_name -> rill.admin.v1.BillingIssueType
+	347, // 75: rill.admin.v1.ListProjectMemberUsersResponse.members:type_name -> rill.admin.v1.ProjectMemberUser
+	350, // 76: rill.admin.v1.ListProjectInvitesResponse.invites:type_name -> rill.admin.v1.ProjectInvite
+	231, // 77: rill.admin.v1.AddProjectMemberUserRequest.resources:type_name -> rill.admin.v1.ResourceName
+	231, // 78: rill.admin.v1.SetProjectMemberUserRoleRequest.resources:type_name -> rill.admin.v1.ResourceName
+	361, // 79: rill.admin.v1.ListUsergroupsForOrganizationAndUserResponse.usergroups:type_name -> rill.admin.v1.Usergroup
+	361, // 80: rill.admin.v1.CreateUsergroupResponse.usergroup:type_name -> rill.admin.v1.Usergroup
+	361, // 81: rill.admin.v1.GetUsergroupResponse.usergroup:type_name -> rill.admin.v1.Usergroup
+	361, // 82: rill.admin.v1.UpdateUsergroupResponse.usergroup:type_name -> rill.admin.v1.Usergroup
+	362, // 83: rill.admin.v1.ListOrganizationMemberUsergroupsResponse.members:type_name -> rill.admin.v1.MemberUsergroup
+	362, // 84: rill.admin.v1.ListProjectMemberUsergroupsResponse.members:type_name -> rill.admin.v1.MemberUsergroup
+	231, // 85: rill.admin.v1.AddProjectMemberUsergroupRequest.resources:type_name -> rill.admin.v1.ResourceName
+	231, // 86: rill.admin.v1.SetProjectMemberUsergroupRoleRequest.resources:type_name -> rill.admin.v1.ResourceName
+	348, // 87: rill.admin.v1.ListUsergroupMemberUsersResponse.members:type_name -> rill.admin.v1.UsergroupMemberUser
+	189, // 88: rill.admin.v1.UpdateUserPreferencesRequest.preferences:type_name -> rill.admin.v1.UserPreferences
+	189, // 89: rill.admin.v1.UpdateUserPreferencesResponse.preferences:type_name -> rill.admin.v1.UserPreferences
+	331, // 90: rill.admin.v1.GetUserResponse.user:type_name -> rill.admin.v1.User
+	331, // 91: rill.admin.v1.GetCurrentUserResponse.user:type_name -> rill.admin.v1.User
+	189, // 92: rill.admin.v1.GetCurrentUserResponse.preferences:type_name -> rill.admin.v1.UserPreferences
+	354, // 93: rill.admin.v1.ListUserAuthTokensResponse.tokens:type_name -> rill.admin.v1.UserAuthToken
+	352, // 94: rill.admin.v1.ListBookmarksResponse.bookmarks:type_name -> rill.admin.v1.Bookmark
+	352, // 95: rill.admin.v1.GetBookmarkResponse.bookmark:type_name -> rill.admin.v1.Bookmark
+	352, // 96: rill.admin.v1.CreateBookmarkResponse.bookmark:type_name -> rill.admin.v1.Bookmark
+	331, // 97: rill.admin.v1.SearchUsersResponse.users:type_name -> rill.admin.v1.User
+	353, // 98: rill.admin.v1.ListServiceAuthTokensResponse.tokens:type_name -> rill.admin.v1.ServiceToken
+	385, // 99: rill.admin.v1.IssueMagicAuthTokenRequest.metrics_view_filters:type_name -> rill.admin.v1.IssueMagicAuthTokenRequest.MetricsViewFiltersEntry
+	231, // 100: rill.admin.v1.IssueMagicAuthTokenRequest.resources:type_name -> rill.admin.v1.ResourceName
+	355, // 101: rill.admin.v1.ListMagicAuthTokensResponse.tokens:type_name -> rill.admin.v1.MagicAuthToken
+	355, // 102: rill.admin.v1.GetCurrentMagicAuthTokenResponse.token:type_name -> rill.admin.v1.MagicAuthToken
+	0,   // 103: rill.admin.v1.GetGithubUserStatusResponse.user_installation_permission:type_name -> rill.admin.v1.GithubPermission
+	386, // 104: rill.admin.v1.GetGithubUserStatusResponse.organization_installation_permissions:type_name -> rill.admin.v1.GetGithubUserStatusResponse.OrganizationInstallationPermissionsEntry
+	387, // 105: rill.admin.v1.ListGithubUserReposResponse.repos:type_name -> rill.admin.v1.ListGithubUserReposResponse.Repo
+	5,   // 106: rill.admin.v1.GetGithubPullRequestResponse.pr_state:type_name -> rill.admin.v1.GetGithubPullRequestResponse.State
+	395, // 107: rill.admin.v1.CreateManagedGitRepoResponse.password_expires_at:type_name -> google.protobuf.Timestamp
+	395, // 108: rill.admin.v1.GetCloneCredentialsResponse.git_password_expires_at:type_name -> google.protobuf.Timestamp
+	351, // 109: rill.admin.v1.ListWhitelistedDomainsResponse.domains:type_name -> rill.admin.v1.WhitelistedDomain
+	351, // 110: rill.admin.v1.ListProjectWhitelistedDomainsResponse.domains:type_name -> rill.admin.v1.WhitelistedDomain
+	395, // 111: rill.admin.v1.GetRepoMetaResponse.expires_on:type_name -> google.protobuf.Timestamp
+	395, // 112: rill.admin.v1.GetRepoMetaResponse.last_updated_on:type_name -> google.protobuf.Timestamp
+	395, // 113: rill.admin.v1.GetRepoMetaResponse.archive_created_on:type_name -> google.protobuf.Timestamp
+	356, // 114: rill.admin.v1.PullVirtualRepoResponse.files:type_name -> rill.admin.v1.VirtualFile
+	356, // 115: rill.admin.v1.GetVirtualFileResponse.file:type_name -> rill.admin.v1.VirtualFile
+	395, // 116: rill.admin.v1.GetReportMetaRequest.execution_time:type_name -> google.protobuf.Timestamp
+	231, // 117: rill.admin.v1.GetReportMetaRequest.resources:type_name -> rill.admin.v1.ResourceName
+	389, // 118: rill.admin.v1.GetReportMetaResponse.delivery_meta:type_name -> rill.admin.v1.GetReportMetaResponse.DeliveryMetaEntry
+	390, // 119: rill.admin.v1.GetAlertMetaRequest.annotations:type_name -> rill.admin.v1.GetAlertMetaRequest.AnnotationsEntry
+	392, // 120: rill.admin.v1.GetAlertMetaResponse.recipient_urls:type_name -> rill.admin.v1.GetAlertMetaResponse.RecipientUrlsEntry
+	396, // 121: rill.admin.v1.GetAlertMetaResponse.query_for_attributes:type_name -> google.protobuf.Struct
+	357, // 122: rill.admin.v1.CreateReportRequest.options:type_name -> rill.admin.v1.ReportOptions
+	357, // 123: rill.admin.v1.EditReportRequest.options:type_name -> rill.admin.v1.ReportOptions
+	357, // 124: rill.admin.v1.GenerateReportYAMLRequest.options:type_name -> rill.admin.v1.ReportOptions
+	358, // 125: rill.admin.v1.CreateAlertRequest.options:type_name -> rill.admin.v1.AlertOptions
+	358, // 126: rill.admin.v1.EditAlertRequest.options:type_name -> rill.admin.v1.AlertOptions
+	358, // 127: rill.admin.v1.GenerateAlertYAMLRequest.options:type_name -> rill.admin.v1.AlertOptions
+	335, // 128: rill.admin.v1.GetBillingSubscriptionResponse.organization:type_name -> rill.admin.v1.Organization
+	336, // 129: rill.admin.v1.GetBillingSubscriptionResponse.subscription:type_name -> rill.admin.v1.Subscription
+	335, // 130: rill.admin.v1.UpdateBillingSubscriptionResponse.organization:type_name -> rill.admin.v1.Organization
+	336, // 131: rill.admin.v1.UpdateBillingSubscriptionResponse.subscription:type_name -> rill.admin.v1.Subscription
+	335, // 132: rill.admin.v1.RenewBillingSubscriptionResponse.organization:type_name -> rill.admin.v1.Organization
+	336, // 133: rill.admin.v1.RenewBillingSubscriptionResponse.subscription:type_name -> rill.admin.v1.Subscription
+	359, // 134: rill.admin.v1.ListPublicBillingPlansResponse.plans:type_name -> rill.admin.v1.BillingPlan
+	396, // 135: rill.admin.v1.TelemetryRequest.event:type_name -> google.protobuf.Struct
+	363, // 136: rill.admin.v1.ListOrganizationBillingIssuesResponse.issues:type_name -> rill.admin.v1.BillingIssue
+	337, // 137: rill.admin.v1.User.quotas:type_name -> rill.admin.v1.UserQuotas
+	395, // 138: rill.admin.v1.User.created_on:type_name -> google.protobuf.Timestamp
+	395, // 139: rill.admin.v1.User.updated_on:type_name -> google.protobuf.Timestamp
+	396, // 140: rill.admin.v1.Service.attributes:type_name -> google.protobuf.Struct
+	395, // 141: rill.admin.v1.Service.created_on:type_name -> google.protobuf.Timestamp
+	395, // 142: rill.admin.v1.Service.updated_on:type_name -> google.protobuf.Timestamp
+	396, // 143: rill.admin.v1.OrganizationMemberService.attributes:type_name -> google.protobuf.Struct
+	395, // 144: rill.admin.v1.OrganizationMemberService.created_on:type_name -> google.protobuf.Timestamp
+	395, // 145: rill.admin.v1.OrganizationMemberService.updated_on:type_name -> google.protobuf.Timestamp
+	396, // 146: rill.admin.v1.ProjectMemberService.attributes:type_name -> google.protobuf.Struct
+	395, // 147: rill.admin.v1.ProjectMemberService.created_on:type_name -> google.protobuf.Timestamp
+	395, // 148: rill.admin.v1.ProjectMemberService.updated_on:type_name -> google.protobuf.Timestamp
+	338, // 149: rill.admin.v1.Organization.quotas:type_name -> rill.admin.v1.OrganizationQuotas
+	395, // 150: rill.admin.v1.Organization.created_on:type_name -> google.protobuf.Timestamp
+	395, // 151: rill.admin.v1.Organization.updated_on:type_name -> google.protobuf.Timestamp
+	359, // 152: rill.admin.v1.Subscription.plan:type_name -> rill.admin.v1.BillingPlan
+	395, // 153: rill.admin.v1.Subscription.start_date:type_name -> google.protobuf.Timestamp
+	395, // 154: rill.admin.v1.Subscription.end_date:type_name -> google.protobuf.Timestamp
+	395, // 155: rill.admin.v1.Subscription.current_billing_cycle_start_date:type_name -> google.protobuf.Timestamp
+	395, // 156: rill.admin.v1.Subscription.current_billing_cycle_end_date:type_name -> google.protobuf.Timestamp
+	395, // 157: rill.admin.v1.Subscription.trial_end_date:type_name -> google.protobuf.Timestamp
+	393, // 158: rill.admin.v1.Project.annotations:type_name -> rill.admin.v1.Project.AnnotationsEntry
+	395, // 159: rill.admin.v1.Project.created_on:type_name -> google.protobuf.Timestamp
+	395, // 160: rill.admin.v1.Project.updated_on:type_name -> google.protobuf.Timestamp
+	1,   // 161: rill.admin.v1.Deployment.status:type_name -> rill.admin.v1.DeploymentStatus
+	395, // 162: rill.admin.v1.Deployment.created_on:type_name -> google.protobuf.Timestamp
+	395, // 163: rill.admin.v1.Deployment.updated_on:type_name -> google.protobuf.Timestamp
+	395, // 164: rill.admin.v1.Deployment.used_on:type_name -> google.protobuf.Timestamp
+	396, // 165: rill.admin.v1.ProvisionerResource.args:type_name -> google.protobuf.Struct
+	396, // 166: rill.admin.v1.ProvisionerResource.config:type_name -> google.protobuf.Struct
+	342, // 167: rill.admin.v1.OrganizationRole.permissions:type_name -> rill.admin.v1.OrganizationPermissions
+	343, // 168: rill.admin.v1.ProjectRole.permissions:type_name -> rill.admin.v1.ProjectPermissions
+	396, // 169: rill.admin.v1.OrganizationMemberUser.attributes:type_name -> google.protobuf.Struct
+	395, // 170: rill.admin.v1.OrganizationMemberUser.created_on:type_name -> google.protobuf.Timestamp
+	395, // 171: rill.admin.v1.OrganizationMemberUser.updated_on:type_name -> google.protobuf.Timestamp
+	395, // 172: rill.admin.v1.ProjectMemberUser.created_on:type_name -> google.protobuf.Timestamp
+	395, // 173: rill.admin.v1.ProjectMemberUser.updated_on:type_name -> google.protobuf.Timestamp
+	231, // 174: rill.admin.v1.ProjectMemberUser.resources:type_name -> rill.admin.v1.ResourceName
+	395, // 175: rill.admin.v1.UsergroupMemberUser.created_on:type_name -> google.protobuf.Timestamp
+	395, // 176: rill.admin.v1.UsergroupMemberUser.updated_on:type_name -> google.protobuf.Timestamp
+	231, // 177: rill.admin.v1.ProjectInvite.resources:type_name -> rill.admin.v1.ResourceName
+	395, // 178: rill.admin.v1.Bookmark.created_on:type_name -> google.protobuf.Timestamp
+	395, // 179: rill.admin.v1.Bookmark.updated_on:type_name -> google.protobuf.Timestamp
+	395, // 180: rill.admin.v1.ServiceToken.created_on:type_name -> google.protobuf.Timestamp
+	395, // 181: rill.admin.v1.ServiceToken.expires_on:type_name -> google.protobuf.Timestamp
+	396, // 182: rill.admin.v1.UserAuthToken.attributes:type_name -> google.protobuf.Struct
+	395, // 183: rill.admin.v1.UserAuthToken.created_on:type_name -> google.protobuf.Timestamp
+	395, // 184: rill.admin.v1.UserAuthToken.expires_on:type_name -> google.protobuf.Timestamp
+	395, // 185: rill.admin.v1.UserAuthToken.used_on:type_name -> google.protobuf.Timestamp
+	395, // 186: rill.admin.v1.MagicAuthToken.created_on:type_name -> google.protobuf.Timestamp
+	395, // 187: rill.admin.v1.MagicAuthToken.expires_on:type_name -> google.protobuf.Timestamp
+	395, // 188: rill.admin.v1.MagicAuthToken.used_on:type_name -> google.protobuf.Timestamp
+	396, // 189: rill.admin.v1.MagicAuthToken.attributes:type_name -> google.protobuf.Struct
+	231, // 190: rill.admin.v1.MagicAuthToken.resources:type_name -> rill.admin.v1.ResourceName
+	394, // 191: rill.admin.v1.MagicAuthToken.metrics_view_filters:type_name -> rill.admin.v1.MagicAuthToken.MetricsViewFiltersEntry
+	395, // 192: rill.admin.v1.VirtualFile.updated_on:type_name -> google.protobuf.Timestamp
+	396, // 193: rill.admin.v1.ReportOptions.resolver_properties:type_name -> google.protobuf.Struct
+	397, // 194: rill.admin.v1.ReportOptions.export_format:type_name -> rill.runtime.v1.ExportFormat
+	396, // 195: rill.admin.v1.AlertOptions.resolver_properties:type_name -> google.protobuf.Struct
+	2,   // 196: rill.admin.v1.BillingPlan.plan_type:type_name -> rill.admin.v1.BillingPlanType
+	360, // 197: rill.admin.v1.BillingPlan.quotas:type_name -> rill.admin.v1.Quotas
+	395, // 198: rill.admin.v1.Usergroup.created_on:type_name -> google.protobuf.Timestamp
+	395, // 199: rill.admin.v1.Usergroup.updated_on:type_name -> google.protobuf.Timestamp
+	395, // 200: rill.admin.v1.MemberUsergroup.created_on:type_name -> google.protobuf.Timestamp
+	395, // 201: rill.admin.v1.MemberUsergroup.updated_on:type_name -> google.protobuf.Timestamp
+	231, // 202: rill.admin.v1.MemberUsergroup.resources:type_name -> rill.admin.v1.ResourceName
+	3,   // 203: rill.admin.v1.BillingIssue.type:type_name -> rill.admin.v1.BillingIssueType
+	4,   // 204: rill.admin.v1.BillingIssue.level:type_name -> rill.admin.v1.BillingIssueLevel
+	364, // 205: rill.admin.v1.BillingIssue.metadata:type_name -> rill.admin.v1.BillingIssueMetadata
+	395, // 206: rill.admin.v1.BillingIssue.event_time:type_name -> google.protobuf.Timestamp
+	395, // 207: rill.admin.v1.BillingIssue.created_on:type_name -> google.protobuf.Timestamp
+	365, // 208: rill.admin.v1.BillingIssueMetadata.on_trial:type_name -> rill.admin.v1.BillingIssueMetadataOnTrial
+	366, // 209: rill.admin.v1.BillingIssueMetadata.trial_ended:type_name -> rill.admin.v1.BillingIssueMetadataTrialEnded
+	367, // 210: rill.admin.v1.BillingIssueMetadata.no_payment_method:type_name -> rill.admin.v1.BillingIssueMetadataNoPaymentMethod
+	368, // 211: rill.admin.v1.BillingIssueMetadata.no_billable_address:type_name -> rill.admin.v1.BillingIssueMetadataNoBillableAddress
+	369, // 212: rill.admin.v1.BillingIssueMetadata.payment_failed:type_name -> rill.admin.v1.BillingIssueMetadataPaymentFailed
+	371, // 213: rill.admin.v1.BillingIssueMetadata.subscription_cancelled:type_name -> rill.admin.v1.BillingIssueMetadataSubscriptionCancelled
+	372, // 214: rill.admin.v1.BillingIssueMetadata.never_subscribed:type_name -> rill.admin.v1.BillingIssueMetadataNeverSubscribed
+	373, // 215: rill.admin.v1.BillingIssueMetadata.on_credit_trial:type_name -> rill.admin.v1.BillingIssueMetadataOnCreditTrial
+	374, // 216: rill.admin.v1.BillingIssueMetadata.trial_credits_depleted:type_name -> rill.admin.v1.BillingIssueMetadataTrialCreditsDepleted
+	395, // 217: rill.admin.v1.BillingIssueMetadataOnTrial.end_date:type_name -> google.protobuf.Timestamp
+	395, // 218: rill.admin.v1.BillingIssueMetadataOnTrial.grace_period_end_date:type_name -> google.protobuf.Timestamp
+	395, // 219: rill.admin.v1.BillingIssueMetadataTrialEnded.end_date:type_name -> google.protobuf.Timestamp
+	395, // 220: rill.admin.v1.BillingIssueMetadataTrialEnded.grace_period_end_date:type_name -> google.protobuf.Timestamp
+	370, // 221: rill.admin.v1.BillingIssueMetadataPaymentFailed.invoices:type_name -> rill.admin.v1.BillingIssueMetadataPaymentFailedMeta
+	395, // 222: rill.admin.v1.BillingIssueMetadataPaymentFailedMeta.due_date:type_name -> google.protobuf.Timestamp
+	395, // 223: rill.admin.v1.BillingIssueMetadataPaymentFailedMeta.failed_on:type_name -> google.protobuf.Timestamp
+	395, // 224: rill.admin.v1.BillingIssueMetadataPaymentFailedMeta.grace_period_end_date:type_name -> google.protobuf.Timestamp
+	395, // 225: rill.admin.v1.BillingIssueMetadataSubscriptionCancelled.end_date:type_name -> google.protobuf.Timestamp
+	395, // 226: rill.admin.v1.BillingIssueMetadataTrialCreditsDepleted.depleted_on:type_name -> google.protobuf.Timestamp
+	347, // 227: rill.admin.v1.ListProjectsForOrganizationAndUserResponse.ProjectRolesEntry.value:type_name -> rill.admin.v1.ProjectMemberUser
+	398, // 228: rill.admin.v1.IssueMagicAuthTokenRequest.MetricsViewFiltersEntry.value:type_name -> rill.runtime.v1.Expression
+	0,   // 229: rill.admin.v1.GetGithubUserStatusResponse.OrganizationInstallationPermissionsEntry.value:type_name -> rill.admin.v1.GithubPermission
+	396, // 230: rill.admin.v1.GetReportMetaResponse.DeliveryMeta.user_attrs:type_name -> google.protobuf.Struct
+	388, // 231: rill.admin.v1.GetReportMetaResponse.DeliveryMetaEntry.value:type_name -> rill.admin.v1.GetReportMetaResponse.DeliveryMeta
+	391, // 232: rill.admin.v1.GetAlertMetaResponse.RecipientUrlsEntry.value:type_name -> rill.admin.v1.GetAlertMetaResponse.URLs
+	398, // 233: rill.admin.v1.MagicAuthToken.MetricsViewFiltersEntry.value:type_name -> rill.runtime.v1.Expression
+	6,   // 234: rill.admin.v1.AdminService.Ping:input_type -> rill.admin.v1.PingRequest
+	8,   // 235: rill.admin.v1.AdminService.ListOrganizations:input_type -> rill.admin.v1.ListOrganizationsRequest
+	10,  // 236: rill.admin.v1.AdminService.GetOrganization:input_type -> rill.admin.v1.GetOrganizationRequest
+	12,  // 237: rill.admin.v1.AdminService.GetOrganizationNameForDomain:input_type -> rill.admin.v1.GetOrganizationNameForDomainRequest
+	14,  // 238: rill.admin.v1.AdminService.CreateOrganization:input_type -> rill.admin.v1.CreateOrganizationRequest
+	16,  // 239: rill.admin.v1.AdminService.DeleteOrganization:input_type -> rill.admin.v1.DeleteOrganizationRequest
+	18,  // 240: rill.admin.v1.AdminService.UpdateOrganization:input_type -> rill.admin.v1.UpdateOrganizationRequest
+	20,  // 241: rill.admin.v1.AdminService.ListProjectsForOrganization:input_type -> rill.admin.v1.ListProjectsForOrganizationRequest
+	34,  // 242: rill.admin.v1.AdminService.ListProjectsForOrganizationAndUser:input_type -> rill.admin.v1.ListProjectsForOrganizationAndUserRequest
+	36,  // 243: rill.admin.v1.AdminService.ListProjectsForFingerprint:input_type -> rill.admin.v1.ListProjectsForFingerprintRequest
+	38,  // 244: rill.admin.v1.AdminService.GetProject:input_type -> rill.admin.v1.GetProjectRequest
+	40,  // 245: rill.admin.v1.AdminService.ListProjectsForUserByName:input_type -> rill.admin.v1.ListProjectsForUserByNameRequest
+	42,  // 246: rill.admin.v1.AdminService.GetProjectByID:input_type -> rill.admin.v1.GetProjectByIDRequest
+	44,  // 247: rill.admin.v1.AdminService.SearchProjectNames:input_type -> rill.admin.v1.SearchProjectNamesRequest
+	77,  // 248: rill.admin.v1.AdminService.CreateProject:input_type -> rill.admin.v1.CreateProjectRequest
+	79,  // 249: rill.admin.v1.AdminService.DeleteProject:input_type -> rill.admin.v1.DeleteProjectRequest
+	81,  // 250: rill.admin.v1.AdminService.UpdateProject:input_type -> rill.admin.v1.UpdateProjectRequest
+	46,  // 251: rill.admin.v1.AdminService.GetProjectVariables:input_type -> rill.admin.v1.GetProjectVariablesRequest
+	49,  // 252: rill.admin.v1.AdminService.UpdateProjectVariables:input_type -> rill.admin.v1.UpdateProjectVariablesRequest
+	83,  // 253: rill.admin.v1.AdminService.CreateAsset:input_type -> rill.admin.v1.CreateAssetRequest
+	85,  // 254: rill.admin.v1.AdminService.RedeployProject:input_type -> rill.admin.v1.RedeployProjectRequest
+	87,  // 255: rill.admin.v1.AdminService.HibernateProject:input_type -> rill.admin.v1.HibernateProjectRequest
+	21,  // 256: rill.admin.v1.AdminService.ListDeployments:input_type -> rill.admin.v1.ListDeploymentsRequest
+	23,  // 257: rill.admin.v1.AdminService.CreateDeployment:input_type -> rill.admin.v1.CreateDeploymentRequest
+	25,  // 258: rill.admin.v1.AdminService.GetDeployment:input_type -> rill.admin.v1.GetDeploymentRequest
+	27,  // 259: rill.admin.v1.AdminService.StartDeployment:input_type -> rill.admin.v1.StartDeploymentRequest
+	29,  // 260: rill.admin.v1.AdminService.StopDeployment:input_type -> rill.admin.v1.StopDeploymentRequest
+	31,  // 261: rill.admin.v1.AdminService.DeleteDeployment:input_type -> rill.admin.v1.DeleteDeploymentRequest
+	89,  // 262: rill.admin.v1.AdminService.TriggerReconcile:input_type -> rill.admin.v1.TriggerReconcileRequest
+	91,  // 263: rill.admin.v1.AdminService.TriggerRefreshSources:input_type -> rill.admin.v1.TriggerRefreshSourcesRequest
+	93,  // 264: rill.admin.v1.AdminService.TriggerRedeploy:input_type -> rill.admin.v1.TriggerRedeployRequest
+	95,  // 265: rill.admin.v1.AdminService.Provision:input_type -> rill.admin.v1.ProvisionRequest
+	97,  // 266: rill.admin.v1.AdminService.GetDeploymentConfig:input_type -> rill.admin.v1.GetDeploymentConfigRequest
+	99,  // 267: rill.admin.v1.AdminService.ListRoles:input_type -> rill.admin.v1.ListRolesRequest
+	101, // 268: rill.admin.v1.AdminService.ListOrganizationMemberUsers:input_type -> rill.admin.v1.ListOrganizationMemberUsersRequest
+	103, // 269: rill.admin.v1.AdminService.ListOrganizationInvites:input_type -> rill.admin.v1.ListOrganizationInvitesRequest
+	105, // 270: rill.admin.v1.AdminService.AddOrganizationMemberUser:input_type -> rill.admin.v1.AddOrganizationMemberUserRequest
+	107, // 271: rill.admin.v1.AdminService.RemoveOrganizationMemberUser:input_type -> rill.admin.v1.RemoveOrganizationMemberUserRequest
+	109, // 272: rill.admin.v1.AdminService.LeaveOrganization:input_type -> rill.admin.v1.LeaveOrganizationRequest
+	111, // 273: rill.admin.v1.AdminService.SetOrganizationMemberUserRole:input_type -> rill.admin.v1.SetOrganizationMemberUserRoleRequest
+	113, // 274: rill.admin.v1.AdminService.GetOrganizationMemberUser:input_type -> rill.admin.v1.GetOrganizationMemberUserRequest
+	117, // 275: rill.admin.v1.AdminService.ListUsergroupsForProjectAndUser:input_type -> rill.admin.v1.ListUsergroupsForProjectAndUserRequest
+	119, // 276: rill.admin.v1.AdminService.UpdateOrganizationMemberUserAttributes:input_type -> rill.admin.v1.UpdateOrganizationMemberUserAttributesRequest
+	147, // 277: rill.admin.v1.AdminService.ListProjectMemberUsers:input_type -> rill.admin.v1.ListProjectMemberUsersRequest
+	149, // 278: rill.admin.v1.AdminService.ListProjectInvites:input_type -> rill.admin.v1.ListProjectInvitesRequest
+	151, // 279: rill.admin.v1.AdminService.AddProjectMemberUser:input_type -> rill.admin.v1.AddProjectMemberUserRequest
+	153, // 280: rill.admin.v1.AdminService.RemoveProjectMemberUser:input_type -> rill.admin.v1.RemoveProjectMemberUserRequest
+	155, // 281: rill.admin.v1.AdminService.SetProjectMemberUserRole:input_type -> rill.admin.v1.SetProjectMemberUserRoleRequest
+	115, // 282: rill.admin.v1.AdminService.GetProjectMemberUser:input_type -> rill.admin.v1.GetProjectMemberUserRequest
+	157, // 283: rill.admin.v1.AdminService.ListUsergroupsForOrganizationAndUser:input_type -> rill.admin.v1.ListUsergroupsForOrganizationAndUserRequest
+	159, // 284: rill.admin.v1.AdminService.CreateUsergroup:input_type -> rill.admin.v1.CreateUsergroupRequest
+	161, // 285: rill.admin.v1.AdminService.GetUsergroup:input_type -> rill.admin.v1.GetUsergroupRequest
+	163, // 286: rill.admin.v1.AdminService.UpdateUsergroup:input_type -> rill.admin.v1.UpdateUsergroupRequest
+	165, // 287: rill.admin.v1.AdminService.ListOrganizationMemberUsergroups:input_type -> rill.admin.v1.ListOrganizationMemberUsergroupsRequest
+	167, // 288: rill.admin.v1.AdminService.ListProjectMemberUsergroups:input_type -> rill.admin.v1.ListProjectMemberUsergroupsRequest
+	169, // 289: rill.admin.v1.AdminService.DeleteUsergroup:input_type -> rill.admin.v1.DeleteUsergroupRequest
+	171, // 290: rill.admin.v1.AdminService.AddOrganizationMemberUsergroup:input_type -> rill.admin.v1.AddOrganizationMemberUsergroupRequest
+	173, // 291: rill.admin.v1.AdminService.SetOrganizationMemberUsergroupRole:input_type -> rill.admin.v1.SetOrganizationMemberUsergroupRoleRequest
+	175, // 292: rill.admin.v1.AdminService.RemoveOrganizationMemberUsergroup:input_type -> rill.admin.v1.RemoveOrganizationMemberUsergroupRequest
+	177, // 293: rill.admin.v1.AdminService.AddProjectMemberUsergroup:input_type -> rill.admin.v1.AddProjectMemberUsergroupRequest
+	179, // 294: rill.admin.v1.AdminService.SetProjectMemberUsergroupRole:input_type -> rill.admin.v1.SetProjectMemberUsergroupRoleRequest
+	181, // 295: rill.admin.v1.AdminService.RemoveProjectMemberUsergroup:input_type -> rill.admin.v1.RemoveProjectMemberUsergroupRequest
+	183, // 296: rill.admin.v1.AdminService.AddUsergroupMemberUser:input_type -> rill.admin.v1.AddUsergroupMemberUserRequest
+	185, // 297: rill.admin.v1.AdminService.ListUsergroupMemberUsers:input_type -> rill.admin.v1.ListUsergroupMemberUsersRequest
+	187, // 298: rill.admin.v1.AdminService.RemoveUsergroupMemberUser:input_type -> rill.admin.v1.RemoveUsergroupMemberUserRequest
+	192, // 299: rill.admin.v1.AdminService.GetUser:input_type -> rill.admin.v1.GetUserRequest
+	194, // 300: rill.admin.v1.AdminService.GetCurrentUser:input_type -> rill.admin.v1.GetCurrentUserRequest
+	196, // 301: rill.admin.v1.AdminService.DeleteUser:input_type -> rill.admin.v1.DeleteUserRequest
+	198, // 302: rill.admin.v1.AdminService.ListUserAuthTokens:input_type -> rill.admin.v1.ListUserAuthTokensRequest
+	200, // 303: rill.admin.v1.AdminService.IssueUserAuthToken:input_type -> rill.admin.v1.IssueUserAuthTokenRequest
+	202, // 304: rill.admin.v1.AdminService.RevokeUserAuthToken:input_type -> rill.admin.v1.RevokeUserAuthTokenRequest
+	204, // 305: rill.admin.v1.AdminService.RevokeAllUserAuthTokens:input_type -> rill.admin.v1.RevokeAllUserAuthTokensRequest
+	206, // 306: rill.admin.v1.AdminService.RevokeRepresentativeAuthTokens:input_type -> rill.admin.v1.RevokeRepresentativeAuthTokensRequest
+	208, // 307: rill.admin.v1.AdminService.IssueRepresentativeAuthToken:input_type -> rill.admin.v1.IssueRepresentativeAuthTokenRequest
+	210, // 308: rill.admin.v1.AdminService.RevokeCurrentAuthToken:input_type -> rill.admin.v1.RevokeCurrentAuthTokenRequest
+	239, // 309: rill.admin.v1.AdminService.GetGithubRepoStatus:input_type -> rill.admin.v1.GetGithubRepoStatusRequest
+	241, // 310: rill.admin.v1.AdminService.GetGithubUserStatus:input_type -> rill.admin.v1.GetGithubUserStatusRequest
+	243, // 311: rill.admin.v1.AdminService.ListGithubUserRepos:input_type -> rill.admin.v1.ListGithubUserReposRequest
+	245, // 312: rill.admin.v1.AdminService.CreateGithubPullRequest:input_type -> rill.admin.v1.CreateGithubPullRequestRequest
+	247, // 313: rill.admin.v1.AdminService.GetGithubPullRequest:input_type -> rill.admin.v1.GetGithubPullRequestRequest
+	249, // 314: rill.admin.v1.AdminService.ConnectProjectToGithub:input_type -> rill.admin.v1.ConnectProjectToGithubRequest
+	251, // 315: rill.admin.v1.AdminService.CreateManagedGitRepo:input_type -> rill.admin.v1.CreateManagedGitRepoRequest
+	253, // 316: rill.admin.v1.AdminService.GetCloneCredentials:input_type -> rill.admin.v1.GetCloneCredentialsRequest
+	255, // 317: rill.admin.v1.AdminService.CreateWhitelistedDomain:input_type -> rill.admin.v1.CreateWhitelistedDomainRequest
+	257, // 318: rill.admin.v1.AdminService.RemoveWhitelistedDomain:input_type -> rill.admin.v1.RemoveWhitelistedDomainRequest
+	259, // 319: rill.admin.v1.AdminService.ListWhitelistedDomains:input_type -> rill.admin.v1.ListWhitelistedDomainsRequest
+	222, // 320: rill.admin.v1.AdminService.SearchUsers:input_type -> rill.admin.v1.SearchUsersRequest
+	51,  // 321: rill.admin.v1.AdminService.SearchProjectUsers:input_type -> rill.admin.v1.SearchProjectUsersRequest
+	121, // 322: rill.admin.v1.AdminService.ListSuperusers:input_type -> rill.admin.v1.ListSuperusersRequest
+	53,  // 323: rill.admin.v1.AdminService.GetDeploymentCredentials:input_type -> rill.admin.v1.GetDeploymentCredentialsRequest
+	55,  // 324: rill.admin.v1.AdminService.GetIFrame:input_type -> rill.admin.v1.GetIFrameRequest
+	123, // 325: rill.admin.v1.AdminService.SetSuperuser:input_type -> rill.admin.v1.SetSuperuserRequest
+	125, // 326: rill.admin.v1.AdminService.SudoGetResource:input_type -> rill.admin.v1.SudoGetResourceRequest
+	137, // 327: rill.admin.v1.AdminService.SudoUpdateUserQuotas:input_type -> rill.admin.v1.SudoUpdateUserQuotasRequest
+	127, // 328: rill.admin.v1.AdminService.SudoUpdateOrganizationQuotas:input_type -> rill.admin.v1.SudoUpdateOrganizationQuotasRequest
+	129, // 329: rill.admin.v1.AdminService.SudoUpdateOrganizationBillingCustomer:input_type -> rill.admin.v1.SudoUpdateOrganizationBillingCustomerRequest
+	131, // 330: rill.admin.v1.AdminService.SudoGrantTrialCredits:input_type -> rill.admin.v1.SudoGrantTrialCreditsRequest
+	133, // 331: rill.admin.v1.AdminService.SudoReportUsage:input_type -> rill.admin.v1.SudoReportUsageRequest
+	135, // 332: rill.admin.v1.AdminService.SudoUpdateOrganizationCustomDomain:input_type -> rill.admin.v1.SudoUpdateOrganizationCustomDomainRequest
+	139, // 333: rill.admin.v1.AdminService.SudoUpdateAnnotations:input_type -> rill.admin.v1.SudoUpdateAnnotationsRequest
+	141, // 334: rill.admin.v1.AdminService.SudoIssueRuntimeManagerToken:input_type -> rill.admin.v1.SudoIssueRuntimeManagerTokenRequest
+	143, // 335: rill.admin.v1.AdminService.SudoDeleteOrganizationBillingIssue:input_type -> rill.admin.v1.SudoDeleteOrganizationBillingIssueRequest
+	145, // 336: rill.admin.v1.AdminService.SudoTriggerBillingRepair:input_type -> rill.admin.v1.SudoTriggerBillingRepairRequest
+	261, // 337: rill.admin.v1.AdminService.CreateProjectWhitelistedDomain:input_type -> rill.admin.v1.CreateProjectWhitelistedDomainRequest
+	263, // 338: rill.admin.v1.AdminService.RemoveProjectWhitelistedDomain:input_type -> rill.admin.v1.RemoveProjectWhitelistedDomainRequest
+	265, // 339: rill.admin.v1.AdminService.ListProjectWhitelistedDomains:input_type -> rill.admin.v1.ListProjectWhitelistedDomainsRequest
+	57,  // 340: rill.admin.v1.AdminService.ListServices:input_type -> rill.admin.v1.ListServicesRequest
+	59,  // 341: rill.admin.v1.AdminService.ListProjectMemberServices:input_type -> rill.admin.v1.ListProjectMemberServicesRequest
+	61,  // 342: rill.admin.v1.AdminService.CreateService:input_type -> rill.admin.v1.CreateServiceRequest
+	63,  // 343: rill.admin.v1.AdminService.GetService:input_type -> rill.admin.v1.GetServiceRequest
+	65,  // 344: rill.admin.v1.AdminService.UpdateService:input_type -> rill.admin.v1.UpdateServiceRequest
+	67,  // 345: rill.admin.v1.AdminService.SetOrganizationMemberServiceRole:input_type -> rill.admin.v1.SetOrganizationMemberServiceRoleRequest
+	69,  // 346: rill.admin.v1.AdminService.RemoveOrganizationMemberService:input_type -> rill.admin.v1.RemoveOrganizationMemberServiceRequest
+	73,  // 347: rill.admin.v1.AdminService.SetProjectMemberServiceRole:input_type -> rill.admin.v1.SetProjectMemberServiceRoleRequest
+	71,  // 348: rill.admin.v1.AdminService.RemoveProjectMemberService:input_type -> rill.admin.v1.RemoveProjectMemberServiceRequest
+	75,  // 349: rill.admin.v1.AdminService.DeleteService:input_type -> rill.admin.v1.DeleteServiceRequest
+	228, // 350: rill.admin.v1.AdminService.ListServiceAuthTokens:input_type -> rill.admin.v1.ListServiceAuthTokensRequest
+	226, // 351: rill.admin.v1.AdminService.IssueServiceAuthToken:input_type -> rill.admin.v1.IssueServiceAuthTokenRequest
+	224, // 352: rill.admin.v1.AdminService.RevokeServiceAuthToken:input_type -> rill.admin.v1.RevokeServiceAuthTokenRequest
+	230, // 353: rill.admin.v1.AdminService.IssueMagicAuthToken:input_type -> rill.admin.v1.IssueMagicAuthTokenRequest
+	233, // 354: rill.admin.v1.AdminService.ListMagicAuthTokens:input_type -> rill.admin.v1.ListMagicAuthTokensRequest
+	235, // 355: rill.admin.v1.AdminService.GetCurrentMagicAuthToken:input_type -> rill.admin.v1.GetCurrentMagicAuthTokenRequest
+	237, // 356: rill.admin.v1.AdminService.RevokeMagicAuthToken:input_type -> rill.admin.v1.RevokeMagicAuthTokenRequest
+	190, // 357: rill.admin.v1.AdminService.UpdateUserPreferences:input_type -> rill.admin.v1.UpdateUserPreferencesRequest
+	212, // 358: rill.admin.v1.AdminService.ListBookmarks:input_type -> rill.admin.v1.ListBookmarksRequest
+	214, // 359: rill.admin.v1.AdminService.GetBookmark:input_type -> rill.admin.v1.GetBookmarkRequest
+	216, // 360: rill.admin.v1.AdminService.CreateBookmark:input_type -> rill.admin.v1.CreateBookmarkRequest
+	218, // 361: rill.admin.v1.AdminService.UpdateBookmark:input_type -> rill.admin.v1.UpdateBookmarkRequest
+	220, // 362: rill.admin.v1.AdminService.RemoveBookmark:input_type -> rill.admin.v1.RemoveBookmarkRequest
+	267, // 363: rill.admin.v1.AdminService.GetRepoMeta:input_type -> rill.admin.v1.GetRepoMetaRequest
+	269, // 364: rill.admin.v1.AdminService.PullVirtualRepo:input_type -> rill.admin.v1.PullVirtualRepoRequest
+	271, // 365: rill.admin.v1.AdminService.GetVirtualFile:input_type -> rill.admin.v1.GetVirtualFileRequest
+	273, // 366: rill.admin.v1.AdminService.DeleteVirtualFile:input_type -> rill.admin.v1.DeleteVirtualFileRequest
+	275, // 367: rill.admin.v1.AdminService.GetReportMeta:input_type -> rill.admin.v1.GetReportMetaRequest
+	277, // 368: rill.admin.v1.AdminService.GetAlertMeta:input_type -> rill.admin.v1.GetAlertMetaRequest
+	279, // 369: rill.admin.v1.AdminService.CreateReport:input_type -> rill.admin.v1.CreateReportRequest
+	281, // 370: rill.admin.v1.AdminService.EditReport:input_type -> rill.admin.v1.EditReportRequest
+	283, // 371: rill.admin.v1.AdminService.UnsubscribeReport:input_type -> rill.admin.v1.UnsubscribeReportRequest
+	285, // 372: rill.admin.v1.AdminService.DeleteReport:input_type -> rill.admin.v1.DeleteReportRequest
+	287, // 373: rill.admin.v1.AdminService.TriggerReport:input_type -> rill.admin.v1.TriggerReportRequest
+	289, // 374: rill.admin.v1.AdminService.GenerateReportYAML:input_type -> rill.admin.v1.GenerateReportYAMLRequest
+	291, // 375: rill.admin.v1.AdminService.CreateAlert:input_type -> rill.admin.v1.CreateAlertRequest
+	293, // 376: rill.admin.v1.AdminService.EditAlert:input_type -> rill.admin.v1.EditAlertRequest
+	295, // 377: rill.admin.v1.AdminService.UnsubscribeAlert:input_type -> rill.admin.v1.UnsubscribeAlertRequest
+	297, // 378: rill.admin.v1.AdminService.DeleteAlert:input_type -> rill.admin.v1.DeleteAlertRequest
+	299, // 379: rill.admin.v1.AdminService.GenerateAlertYAML:input_type -> rill.admin.v1.GenerateAlertYAMLRequest
+	301, // 380: rill.admin.v1.AdminService.GetAlertYAML:input_type -> rill.admin.v1.GetAlertYAMLRequest
+	303, // 381: rill.admin.v1.AdminService.GetBillingSubscription:input_type -> rill.admin.v1.GetBillingSubscriptionRequest
+	305, // 382: rill.admin.v1.AdminService.UpdateBillingSubscription:input_type -> rill.admin.v1.UpdateBillingSubscriptionRequest
+	307, // 383: rill.admin.v1.AdminService.CancelBillingSubscription:input_type -> rill.admin.v1.CancelBillingSubscriptionRequest
+	309, // 384: rill.admin.v1.AdminService.RenewBillingSubscription:input_type -> rill.admin.v1.RenewBillingSubscriptionRequest
+	311, // 385: rill.admin.v1.AdminService.GetPaymentsPortalURL:input_type -> rill.admin.v1.GetPaymentsPortalURLRequest
+	313, // 386: rill.admin.v1.AdminService.GetBillingCreditBalance:input_type -> rill.admin.v1.GetBillingCreditBalanceRequest
+	315, // 387: rill.admin.v1.AdminService.ListPublicBillingPlans:input_type -> rill.admin.v1.ListPublicBillingPlansRequest
+	317, // 388: rill.admin.v1.AdminService.GetBillingProjectCredentials:input_type -> rill.admin.v1.GetBillingProjectCredentialsRequest
+	321, // 389: rill.admin.v1.AdminService.RequestProjectAccess:input_type -> rill.admin.v1.RequestProjectAccessRequest
+	323, // 390: rill.admin.v1.AdminService.GetProjectAccessRequest:input_type -> rill.admin.v1.GetProjectAccessRequestRequest
+	325, // 391: rill.admin.v1.AdminService.ApproveProjectAccess:input_type -> rill.admin.v1.ApproveProjectAccessRequest
+	327, // 392: rill.admin.v1.AdminService.DenyProjectAccess:input_type -> rill.admin.v1.DenyProjectAccessRequest
+	329, // 393: rill.admin.v1.AdminService.ListOrganizationBillingIssues:input_type -> rill.admin.v1.ListOrganizationBillingIssuesRequest
+	7,   // 394: rill.admin.v1.AdminService.Ping:output_type -> rill.admin.v1.PingResponse
+	9,   // 395: rill.admin.v1.AdminService.ListOrganizations:output_type -> rill.admin.v1.ListOrganizationsResponse
+	11,  // 396: rill.admin.v1.AdminService.GetOrganization:output_type -> rill.admin.v1.GetOrganizationResponse
+	13,  // 397: rill.admin.v1.AdminService.GetOrganizationNameForDomain:output_type -> rill.admin.v1.GetOrganizationNameForDomainResponse
+	15,  // 398: rill.admin.v1.AdminService.CreateOrganization:output_type -> rill.admin.v1.CreateOrganizationResponse
+	17,  // 399: rill.admin.v1.AdminService.DeleteOrganization:output_type -> rill.admin.v1.DeleteOrganizationResponse
+	19,  // 400: rill.admin.v1.AdminService.UpdateOrganization:output_type -> rill.admin.v1.UpdateOrganizationResponse
+	33,  // 401: rill.admin.v1.AdminService.ListProjectsForOrganization:output_type -> rill.admin.v1.ListProjectsForOrganizationResponse
+	35,  // 402: rill.admin.v1.AdminService.ListProjectsForOrganizationAndUser:output_type -> rill.admin.v1.ListProjectsForOrganizationAndUserResponse
+	37,  // 403: rill.admin.v1.AdminService.ListProjectsForFingerprint:output_type -> rill.admin.v1.ListProjectsForFingerprintResponse
+	39,  // 404: rill.admin.v1.AdminService.GetProject:output_type -> rill.admin.v1.GetProjectResponse
+	41,  // 405: rill.admin.v1.AdminService.ListProjectsForUserByName:output_type -> rill.admin.v1.ListProjectsForUserByNameResponse
+	43,  // 406: rill.admin.v1.AdminService.GetProjectByID:output_type -> rill.admin.v1.GetProjectByIDResponse
+	45,  // 407: rill.admin.v1.AdminService.SearchProjectNames:output_type -> rill.admin.v1.SearchProjectNamesResponse
+	78,  // 408: rill.admin.v1.AdminService.CreateProject:output_type -> rill.admin.v1.CreateProjectResponse
+	80,  // 409: rill.admin.v1.AdminService.DeleteProject:output_type -> rill.admin.v1.DeleteProjectResponse
+	82,  // 410: rill.admin.v1.AdminService.UpdateProject:output_type -> rill.admin.v1.UpdateProjectResponse
+	47,  // 411: rill.admin.v1.AdminService.GetProjectVariables:output_type -> rill.admin.v1.GetProjectVariablesResponse
+	50,  // 412: rill.admin.v1.AdminService.UpdateProjectVariables:output_type -> rill.admin.v1.UpdateProjectVariablesResponse
+	84,  // 413: rill.admin.v1.AdminService.CreateAsset:output_type -> rill.admin.v1.CreateAssetResponse
+	86,  // 414: rill.admin.v1.AdminService.RedeployProject:output_type -> rill.admin.v1.RedeployProjectResponse
+	88,  // 415: rill.admin.v1.AdminService.HibernateProject:output_type -> rill.admin.v1.HibernateProjectResponse
+	22,  // 416: rill.admin.v1.AdminService.ListDeployments:output_type -> rill.admin.v1.ListDeploymentsResponse
+	24,  // 417: rill.admin.v1.AdminService.CreateDeployment:output_type -> rill.admin.v1.CreateDeploymentResponse
+	26,  // 418: rill.admin.v1.AdminService.GetDeployment:output_type -> rill.admin.v1.GetDeploymentResponse
+	28,  // 419: rill.admin.v1.AdminService.StartDeployment:output_type -> rill.admin.v1.StartDeploymentResponse
+	30,  // 420: rill.admin.v1.AdminService.StopDeployment:output_type -> rill.admin.v1.StopDeploymentResponse
+	32,  // 421: rill.admin.v1.AdminService.DeleteDeployment:output_type -> rill.admin.v1.DeleteDeploymentResponse
+	90,  // 422: rill.admin.v1.AdminService.TriggerReconcile:output_type -> rill.admin.v1.TriggerReconcileResponse
+	92,  // 423: rill.admin.v1.AdminService.TriggerRefreshSources:output_type -> rill.admin.v1.TriggerRefreshSourcesResponse
+	94,  // 424: rill.admin.v1.AdminService.TriggerRedeploy:output_type -> rill.admin.v1.TriggerRedeployResponse
+	96,  // 425: rill.admin.v1.AdminService.Provision:output_type -> rill.admin.v1.ProvisionResponse
+	98,  // 426: rill.admin.v1.AdminService.GetDeploymentConfig:output_type -> rill.admin.v1.GetDeploymentConfigResponse
+	100, // 427: rill.admin.v1.AdminService.ListRoles:output_type -> rill.admin.v1.ListRolesResponse
+	102, // 428: rill.admin.v1.AdminService.ListOrganizationMemberUsers:output_type -> rill.admin.v1.ListOrganizationMemberUsersResponse
+	104, // 429: rill.admin.v1.AdminService.ListOrganizationInvites:output_type -> rill.admin.v1.ListOrganizationInvitesResponse
+	106, // 430: rill.admin.v1.AdminService.AddOrganizationMemberUser:output_type -> rill.admin.v1.AddOrganizationMemberUserResponse
+	108, // 431: rill.admin.v1.AdminService.RemoveOrganizationMemberUser:output_type -> rill.admin.v1.RemoveOrganizationMemberUserResponse
+	110, // 432: rill.admin.v1.AdminService.LeaveOrganization:output_type -> rill.admin.v1.LeaveOrganizationResponse
+	112, // 433: rill.admin.v1.AdminService.SetOrganizationMemberUserRole:output_type -> rill.admin.v1.SetOrganizationMemberUserRoleResponse
+	114, // 434: rill.admin.v1.AdminService.GetOrganizationMemberUser:output_type -> rill.admin.v1.GetOrganizationMemberUserResponse
+	118, // 435: rill.admin.v1.AdminService.ListUsergroupsForProjectAndUser:output_type -> rill.admin.v1.ListUsergroupsForProjectAndUserResponse
+	120, // 436: rill.admin.v1.AdminService.UpdateOrganizationMemberUserAttributes:output_type -> rill.admin.v1.UpdateOrganizationMemberUserAttributesResponse
+	148, // 437: rill.admin.v1.AdminService.ListProjectMemberUsers:output_type -> rill.admin.v1.ListProjectMemberUsersResponse
+	150, // 438: rill.admin.v1.AdminService.ListProjectInvites:output_type -> rill.admin.v1.ListProjectInvitesResponse
+	152, // 439: rill.admin.v1.AdminService.AddProjectMemberUser:output_type -> rill.admin.v1.AddProjectMemberUserResponse
+	154, // 440: rill.admin.v1.AdminService.RemoveProjectMemberUser:output_type -> rill.admin.v1.RemoveProjectMemberUserResponse
+	156, // 441: rill.admin.v1.AdminService.SetProjectMemberUserRole:output_type -> rill.admin.v1.SetProjectMemberUserRoleResponse
+	116, // 442: rill.admin.v1.AdminService.GetProjectMemberUser:output_type -> rill.admin.v1.GetProjectMemberUserResponse
+	158, // 443: rill.admin.v1.AdminService.ListUsergroupsForOrganizationAndUser:output_type -> rill.admin.v1.ListUsergroupsForOrganizationAndUserResponse
+	160, // 444: rill.admin.v1.AdminService.CreateUsergroup:output_type -> rill.admin.v1.CreateUsergroupResponse
+	162, // 445: rill.admin.v1.AdminService.GetUsergroup:output_type -> rill.admin.v1.GetUsergroupResponse
+	164, // 446: rill.admin.v1.AdminService.UpdateUsergroup:output_type -> rill.admin.v1.UpdateUsergroupResponse
+	166, // 447: rill.admin.v1.AdminService.ListOrganizationMemberUsergroups:output_type -> rill.admin.v1.ListOrganizationMemberUsergroupsResponse
+	168, // 448: rill.admin.v1.AdminService.ListProjectMemberUsergroups:output_type -> rill.admin.v1.ListProjectMemberUsergroupsResponse
+	170, // 449: rill.admin.v1.AdminService.DeleteUsergroup:output_type -> rill.admin.v1.DeleteUsergroupResponse
+	172, // 450: rill.admin.v1.AdminService.AddOrganizationMemberUsergroup:output_type -> rill.admin.v1.AddOrganizationMemberUsergroupResponse
+	174, // 451: rill.admin.v1.AdminService.SetOrganizationMemberUsergroupRole:output_type -> rill.admin.v1.SetOrganizationMemberUsergroupRoleResponse
+	176, // 452: rill.admin.v1.AdminService.RemoveOrganizationMemberUsergroup:output_type -> rill.admin.v1.RemoveOrganizationMemberUsergroupResponse
+	178, // 453: rill.admin.v1.AdminService.AddProjectMemberUsergroup:output_type -> rill.admin.v1.AddProjectMemberUsergroupResponse
+	180, // 454: rill.admin.v1.AdminService.SetProjectMemberUsergroupRole:output_type -> rill.admin.v1.SetProjectMemberUsergroupRoleResponse
+	182, // 455: rill.admin.v1.AdminService.RemoveProjectMemberUsergroup:output_type -> rill.admin.v1.RemoveProjectMemberUsergroupResponse
+	184, // 456: rill.admin.v1.AdminService.AddUsergroupMemberUser:output_type -> rill.admin.v1.AddUsergroupMemberUserResponse
+	186, // 457: rill.admin.v1.AdminService.ListUsergroupMemberUsers:output_type -> rill.admin.v1.ListUsergroupMemberUsersResponse
+	188, // 458: rill.admin.v1.AdminService.RemoveUsergroupMemberUser:output_type -> rill.admin.v1.RemoveUsergroupMemberUserResponse
+	193, // 459: rill.admin.v1.AdminService.GetUser:output_type -> rill.admin.v1.GetUserResponse
+	195, // 460: rill.admin.v1.AdminService.GetCurrentUser:output_type -> rill.admin.v1.GetCurrentUserResponse
+	197, // 461: rill.admin.v1.AdminService.DeleteUser:output_type -> rill.admin.v1.DeleteUserResponse
+	199, // 462: rill.admin.v1.AdminService.ListUserAuthTokens:output_type -> rill.admin.v1.ListUserAuthTokensResponse
+	201, // 463: rill.admin.v1.AdminService.IssueUserAuthToken:output_type -> rill.admin.v1.IssueUserAuthTokenResponse
+	203, // 464: rill.admin.v1.AdminService.RevokeUserAuthToken:output_type -> rill.admin.v1.RevokeUserAuthTokenResponse
+	205, // 465: rill.admin.v1.AdminService.RevokeAllUserAuthTokens:output_type -> rill.admin.v1.RevokeAllUserAuthTokensResponse
+	207, // 466: rill.admin.v1.AdminService.RevokeRepresentativeAuthTokens:output_type -> rill.admin.v1.RevokeRepresentativeAuthTokensResponse
+	209, // 467: rill.admin.v1.AdminService.IssueRepresentativeAuthToken:output_type -> rill.admin.v1.IssueRepresentativeAuthTokenResponse
+	211, // 468: rill.admin.v1.AdminService.RevokeCurrentAuthToken:output_type -> rill.admin.v1.RevokeCurrentAuthTokenResponse
+	240, // 469: rill.admin.v1.AdminService.GetGithubRepoStatus:output_type -> rill.admin.v1.GetGithubRepoStatusResponse
+	242, // 470: rill.admin.v1.AdminService.GetGithubUserStatus:output_type -> rill.admin.v1.GetGithubUserStatusResponse
+	244, // 471: rill.admin.v1.AdminService.ListGithubUserRepos:output_type -> rill.admin.v1.ListGithubUserReposResponse
+	246, // 472: rill.admin.v1.AdminService.CreateGithubPullRequest:output_type -> rill.admin.v1.CreateGithubPullRequestResponse
+	248, // 473: rill.admin.v1.AdminService.GetGithubPullRequest:output_type -> rill.admin.v1.GetGithubPullRequestResponse
+	250, // 474: rill.admin.v1.AdminService.ConnectProjectToGithub:output_type -> rill.admin.v1.ConnectProjectToGithubResponse
+	252, // 475: rill.admin.v1.AdminService.CreateManagedGitRepo:output_type -> rill.admin.v1.CreateManagedGitRepoResponse
+	254, // 476: rill.admin.v1.AdminService.GetCloneCredentials:output_type -> rill.admin.v1.GetCloneCredentialsResponse
+	256, // 477: rill.admin.v1.AdminService.CreateWhitelistedDomain:output_type -> rill.admin.v1.CreateWhitelistedDomainResponse
+	258, // 478: rill.admin.v1.AdminService.RemoveWhitelistedDomain:output_type -> rill.admin.v1.RemoveWhitelistedDomainResponse
+	260, // 479: rill.admin.v1.AdminService.ListWhitelistedDomains:output_type -> rill.admin.v1.ListWhitelistedDomainsResponse
+	223, // 480: rill.admin.v1.AdminService.SearchUsers:output_type -> rill.admin.v1.SearchUsersResponse
+	52,  // 481: rill.admin.v1.AdminService.SearchProjectUsers:output_type -> rill.admin.v1.SearchProjectUsersResponse
+	122, // 482: rill.admin.v1.AdminService.ListSuperusers:output_type -> rill.admin.v1.ListSuperusersResponse
+	54,  // 483: rill.admin.v1.AdminService.GetDeploymentCredentials:output_type -> rill.admin.v1.GetDeploymentCredentialsResponse
+	56,  // 484: rill.admin.v1.AdminService.GetIFrame:output_type -> rill.admin.v1.GetIFrameResponse
+	124, // 485: rill.admin.v1.AdminService.SetSuperuser:output_type -> rill.admin.v1.SetSuperuserResponse
+	126, // 486: rill.admin.v1.AdminService.SudoGetResource:output_type -> rill.admin.v1.SudoGetResourceResponse
+	138, // 487: rill.admin.v1.AdminService.SudoUpdateUserQuotas:output_type -> rill.admin.v1.SudoUpdateUserQuotasResponse
+	128, // 488: rill.admin.v1.AdminService.SudoUpdateOrganizationQuotas:output_type -> rill.admin.v1.SudoUpdateOrganizationQuotasResponse
+	130, // 489: rill.admin.v1.AdminService.SudoUpdateOrganizationBillingCustomer:output_type -> rill.admin.v1.SudoUpdateOrganizationBillingCustomerResponse
+	132, // 490: rill.admin.v1.AdminService.SudoGrantTrialCredits:output_type -> rill.admin.v1.SudoGrantTrialCreditsResponse
+	134, // 491: rill.admin.v1.AdminService.SudoReportUsage:output_type -> rill.admin.v1.SudoReportUsageResponse
+	136, // 492: rill.admin.v1.AdminService.SudoUpdateOrganizationCustomDomain:output_type -> rill.admin.v1.SudoUpdateOrganizationCustomDomainResponse
+	140, // 493: rill.admin.v1.AdminService.SudoUpdateAnnotations:output_type -> rill.admin.v1.SudoUpdateAnnotationsResponse
+	142, // 494: rill.admin.v1.AdminService.SudoIssueRuntimeManagerToken:output_type -> rill.admin.v1.SudoIssueRuntimeManagerTokenResponse
+	144, // 495: rill.admin.v1.AdminService.SudoDeleteOrganizationBillingIssue:output_type -> rill.admin.v1.SudoDeleteOrganizationBillingIssueResponse
+	146, // 496: rill.admin.v1.AdminService.SudoTriggerBillingRepair:output_type -> rill.admin.v1.SudoTriggerBillingRepairResponse
+	262, // 497: rill.admin.v1.AdminService.CreateProjectWhitelistedDomain:output_type -> rill.admin.v1.CreateProjectWhitelistedDomainResponse
+	264, // 498: rill.admin.v1.AdminService.RemoveProjectWhitelistedDomain:output_type -> rill.admin.v1.RemoveProjectWhitelistedDomainResponse
+	266, // 499: rill.admin.v1.AdminService.ListProjectWhitelistedDomains:output_type -> rill.admin.v1.ListProjectWhitelistedDomainsResponse
+	58,  // 500: rill.admin.v1.AdminService.ListServices:output_type -> rill.admin.v1.ListServicesResponse
+	60,  // 501: rill.admin.v1.AdminService.ListProjectMemberServices:output_type -> rill.admin.v1.ListProjectMemberServicesResponse
+	62,  // 502: rill.admin.v1.AdminService.CreateService:output_type -> rill.admin.v1.CreateServiceResponse
+	64,  // 503: rill.admin.v1.AdminService.GetService:output_type -> rill.admin.v1.GetServiceResponse
+	66,  // 504: rill.admin.v1.AdminService.UpdateService:output_type -> rill.admin.v1.UpdateServiceResponse
+	68,  // 505: rill.admin.v1.AdminService.SetOrganizationMemberServiceRole:output_type -> rill.admin.v1.SetOrganizationMemberServiceRoleResponse
+	70,  // 506: rill.admin.v1.AdminService.RemoveOrganizationMemberService:output_type -> rill.admin.v1.RemoveOrganizationMemberServiceResponse
+	74,  // 507: rill.admin.v1.AdminService.SetProjectMemberServiceRole:output_type -> rill.admin.v1.SetProjectMemberServiceRoleResponse
+	72,  // 508: rill.admin.v1.AdminService.RemoveProjectMemberService:output_type -> rill.admin.v1.RemoveProjectMemberServiceResponse
+	76,  // 509: rill.admin.v1.AdminService.DeleteService:output_type -> rill.admin.v1.DeleteServiceResponse
+	229, // 510: rill.admin.v1.AdminService.ListServiceAuthTokens:output_type -> rill.admin.v1.ListServiceAuthTokensResponse
+	227, // 511: rill.admin.v1.AdminService.IssueServiceAuthToken:output_type -> rill.admin.v1.IssueServiceAuthTokenResponse
+	225, // 512: rill.admin.v1.AdminService.RevokeServiceAuthToken:output_type -> rill.admin.v1.RevokeServiceAuthTokenResponse
+	232, // 513: rill.admin.v1.AdminService.IssueMagicAuthToken:output_type -> rill.admin.v1.IssueMagicAuthTokenResponse
+	234, // 514: rill.admin.v1.AdminService.ListMagicAuthTokens:output_type -> rill.admin.v1.ListMagicAuthTokensResponse
+	236, // 515: rill.admin.v1.AdminService.GetCurrentMagicAuthToken:output_type -> rill.admin.v1.GetCurrentMagicAuthTokenResponse
+	238, // 516: rill.admin.v1.AdminService.RevokeMagicAuthToken:output_type -> rill.admin.v1.RevokeMagicAuthTokenResponse
+	191, // 517: rill.admin.v1.AdminService.UpdateUserPreferences:output_type -> rill.admin.v1.UpdateUserPreferencesResponse
+	213, // 518: rill.admin.v1.AdminService.ListBookmarks:output_type -> rill.admin.v1.ListBookmarksResponse
+	215, // 519: rill.admin.v1.AdminService.GetBookmark:output_type -> rill.admin.v1.GetBookmarkResponse
+	217, // 520: rill.admin.v1.AdminService.CreateBookmark:output_type -> rill.admin.v1.CreateBookmarkResponse
+	219, // 521: rill.admin.v1.AdminService.UpdateBookmark:output_type -> rill.admin.v1.UpdateBookmarkResponse
+	221, // 522: rill.admin.v1.AdminService.RemoveBookmark:output_type -> rill.admin.v1.RemoveBookmarkResponse
+	268, // 523: rill.admin.v1.AdminService.GetRepoMeta:output_type -> rill.admin.v1.GetRepoMetaResponse
+	270, // 524: rill.admin.v1.AdminService.PullVirtualRepo:output_type -> rill.admin.v1.PullVirtualRepoResponse
+	272, // 525: rill.admin.v1.AdminService.GetVirtualFile:output_type -> rill.admin.v1.GetVirtualFileResponse
+	274, // 526: rill.admin.v1.AdminService.DeleteVirtualFile:output_type -> rill.admin.v1.DeleteVirtualFileResponse
+	276, // 527: rill.admin.v1.AdminService.GetReportMeta:output_type -> rill.admin.v1.GetReportMetaResponse
+	278, // 528: rill.admin.v1.AdminService.GetAlertMeta:output_type -> rill.admin.v1.GetAlertMetaResponse
+	280, // 529: rill.admin.v1.AdminService.CreateReport:output_type -> rill.admin.v1.CreateReportResponse
+	282, // 530: rill.admin.v1.AdminService.EditReport:output_type -> rill.admin.v1.EditReportResponse
+	284, // 531: rill.admin.v1.AdminService.UnsubscribeReport:output_type -> rill.admin.v1.UnsubscribeReportResponse
+	286, // 532: rill.admin.v1.AdminService.DeleteReport:output_type -> rill.admin.v1.DeleteReportResponse
+	288, // 533: rill.admin.v1.AdminService.TriggerReport:output_type -> rill.admin.v1.TriggerReportResponse
+	290, // 534: rill.admin.v1.AdminService.GenerateReportYAML:output_type -> rill.admin.v1.GenerateReportYAMLResponse
+	292, // 535: rill.admin.v1.AdminService.CreateAlert:output_type -> rill.admin.v1.CreateAlertResponse
+	294, // 536: rill.admin.v1.AdminService.EditAlert:output_type -> rill.admin.v1.EditAlertResponse
+	296, // 537: rill.admin.v1.AdminService.UnsubscribeAlert:output_type -> rill.admin.v1.UnsubscribeAlertResponse
+	298, // 538: rill.admin.v1.AdminService.DeleteAlert:output_type -> rill.admin.v1.DeleteAlertResponse
+	300, // 539: rill.admin.v1.AdminService.GenerateAlertYAML:output_type -> rill.admin.v1.GenerateAlertYAMLResponse
+	302, // 540: rill.admin.v1.AdminService.GetAlertYAML:output_type -> rill.admin.v1.GetAlertYAMLResponse
+	304, // 541: rill.admin.v1.AdminService.GetBillingSubscription:output_type -> rill.admin.v1.GetBillingSubscriptionResponse
+	306, // 542: rill.admin.v1.AdminService.UpdateBillingSubscription:output_type -> rill.admin.v1.UpdateBillingSubscriptionResponse
+	308, // 543: rill.admin.v1.AdminService.CancelBillingSubscription:output_type -> rill.admin.v1.CancelBillingSubscriptionResponse
+	310, // 544: rill.admin.v1.AdminService.RenewBillingSubscription:output_type -> rill.admin.v1.RenewBillingSubscriptionResponse
+	312, // 545: rill.admin.v1.AdminService.GetPaymentsPortalURL:output_type -> rill.admin.v1.GetPaymentsPortalURLResponse
+	314, // 546: rill.admin.v1.AdminService.GetBillingCreditBalance:output_type -> rill.admin.v1.GetBillingCreditBalanceResponse
+	316, // 547: rill.admin.v1.AdminService.ListPublicBillingPlans:output_type -> rill.admin.v1.ListPublicBillingPlansResponse
+	318, // 548: rill.admin.v1.AdminService.GetBillingProjectCredentials:output_type -> rill.admin.v1.GetBillingProjectCredentialsResponse
+	322, // 549: rill.admin.v1.AdminService.RequestProjectAccess:output_type -> rill.admin.v1.RequestProjectAccessResponse
+	324, // 550: rill.admin.v1.AdminService.GetProjectAccessRequest:output_type -> rill.admin.v1.GetProjectAccessRequestResponse
+	326, // 551: rill.admin.v1.AdminService.ApproveProjectAccess:output_type -> rill.admin.v1.ApproveProjectAccessResponse
+	328, // 552: rill.admin.v1.AdminService.DenyProjectAccess:output_type -> rill.admin.v1.DenyProjectAccessResponse
+	330, // 553: rill.admin.v1.AdminService.ListOrganizationBillingIssues:output_type -> rill.admin.v1.ListOrganizationBillingIssuesResponse
+	394, // [394:554] is the sub-list for method output_type
+	234, // [234:394] is the sub-list for method input_type
+	234, // [234:234] is the sub-list for extension type_name
+	234, // [234:234] is the sub-list for extension extendee
+	0,   // [0:234] is the sub-list for field type_name
 }
 
 func init() { file_rill_admin_v1_api_proto_init() }
@@ -34990,7 +35012,7 @@ func file_rill_admin_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_admin_v1_api_proto_msgTypes[380].Exporter = func(v any, i int) any {
+		file_rill_admin_v1_api_proto_msgTypes[381].Exporter = func(v any, i int) any {
 			switch v := v.(*ListGithubUserReposResponse_Repo); i {
 			case 0:
 				return &v.state
@@ -35002,7 +35024,7 @@ func file_rill_admin_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_admin_v1_api_proto_msgTypes[381].Exporter = func(v any, i int) any {
+		file_rill_admin_v1_api_proto_msgTypes[382].Exporter = func(v any, i int) any {
 			switch v := v.(*GetReportMetaResponse_DeliveryMeta); i {
 			case 0:
 				return &v.state
@@ -35014,7 +35036,7 @@ func file_rill_admin_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_admin_v1_api_proto_msgTypes[384].Exporter = func(v any, i int) any {
+		file_rill_admin_v1_api_proto_msgTypes[385].Exporter = func(v any, i int) any {
 			switch v := v.(*GetAlertMetaResponse_URLs); i {
 			case 0:
 				return &v.state
@@ -35092,7 +35114,7 @@ func file_rill_admin_v1_api_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_rill_admin_v1_api_proto_rawDesc,
 			NumEnums:      6,
-			NumMessages:   388,
+			NumMessages:   389,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
