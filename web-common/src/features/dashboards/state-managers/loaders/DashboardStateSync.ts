@@ -167,7 +167,6 @@ export class DashboardStateSync {
     // Get the updated url params. If we merged state other than the url we would need to navigate to it.
     const redirectUrl = this.getUrlForExploreState(initExploreState);
 
-    console.log(initExploreState);
     // Update session storage with the initial state
     updateExploreSessionStore(
       this.exploreName,
