@@ -4894,6 +4894,13 @@ export class GetDeploymentConfigResponse extends Message<GetDeploymentConfigResp
    */
   editable = false;
 
+  /**
+   * System variables set by the admin service that should not be overridden by user input.
+   *
+   * @generated from field: map<string, string> system_variables = 9;
+   */
+  systemVariables: { [key: string]: string } = {};
+
   constructor(data?: PartialMessage<GetDeploymentConfigResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4910,6 +4917,7 @@ export class GetDeploymentConfigResponse extends Message<GetDeploymentConfigResp
     { no: 5, name: "uses_archive", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 6, name: "duckdb_connector_config", kind: "message", T: Struct },
     { no: 8, name: "editable", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 9, name: "system_variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetDeploymentConfigResponse {

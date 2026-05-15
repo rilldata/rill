@@ -5331,6 +5331,11 @@ definitions:
       editable:
         type: boolean
         description: Whether the deployment is editable (dev environment with changes persisted to git repo).
+      systemVariables:
+        type: object
+        additionalProperties:
+          type: string
+        description: System variables set by the admin service that should not be overridden by user input.
   v1GetDeploymentCredentialsResponse:
     type: object
     properties:

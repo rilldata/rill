@@ -588,6 +588,13 @@ export type V1GetDeploymentConfigResponseDuckdbConnectorConfig = {
   [key: string]: unknown;
 };
 
+/**
+ * System variables set by the admin service that should not be overridden by user input.
+ */
+export type V1GetDeploymentConfigResponseSystemVariables = {
+  [key: string]: string;
+};
+
 export interface V1GetDeploymentConfigResponse {
   /** Variables for the deployment. */
   variables?: V1ProjectVariable[];
@@ -603,6 +610,8 @@ export interface V1GetDeploymentConfigResponse {
   duckdbConnectorConfig?: V1GetDeploymentConfigResponseDuckdbConnectorConfig;
   /** Whether the deployment is editable (dev environment with changes persisted to git repo). */
   editable?: boolean;
+  /** System variables set by the admin service that should not be overridden by user input. */
+  systemVariables?: V1GetDeploymentConfigResponseSystemVariables;
 }
 
 export interface V1GetDeploymentCredentialsResponse {

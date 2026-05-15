@@ -1974,6 +1974,8 @@ message GetDeploymentConfigResponse {
   google.protobuf.Struct duckdb_connector_config = 6;
   // Whether the deployment is editable (dev environment with changes persisted to git repo).
   bool editable = 8;
+  // System variables set by the admin service that should not be overridden by user input.
+  map<string, string> system_variables = 9;
 }
 
 message ListRolesRequest {}
