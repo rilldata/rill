@@ -1,6 +1,12 @@
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { derived } from "svelte/store";
-import { createRuntimeServiceGitStatus } from "@rilldata/web-common/runtime-client";
+import {
+  createRuntimeServiceGitStatus,
+  getRuntimeServiceGitStatusQueryKey,
+  runtimeServiceGitStatus,
+  type V1GitStatusResponse,
+} from "@rilldata/web-common/runtime-client";
+import type { QueryClient } from "@tanstack/query-core";
 
 export function getDeploymentGithubStatus(
   runtimeClient: RuntimeClient,
@@ -25,6 +31,7 @@ export function getDeploymentGithubStatus(
           error,
           data: {
             hasLocalChanges: false,
+            hasChangesOnCurrent: false,
             alreadyOnPrimary: false,
             disabledPerGitStatus: true,
           },
@@ -36,12 +43,11 @@ export function getDeploymentGithubStatus(
         currentBranchGitStatusResp.data?.localCommits ||
           currentBranchGitStatusResp.data?.localChanges,
       );
-      const hasChangesAgainstPrimary = Boolean(
+      const hasChangesOnCurrent = Boolean(
         primaryBranchGitStatusResp.data?.localCommits ||
           primaryBranchGitStatusResp.data?.localChanges,
       );
-      const hasLocalChanges =
-        hasChangesAgainstCurrent || hasChangesAgainstPrimary;
+      const hasLocalChanges = hasChangesAgainstCurrent || hasChangesOnCurrent;
 
       const alreadyOnPrimary =
         !!primaryBranch && !!currentBranch && currentBranch === primaryBranch;
@@ -57,10 +63,39 @@ export function getDeploymentGithubStatus(
         error: undefined,
         data: {
           hasLocalChanges,
+          hasChangesOnCurrent,
           alreadyOnPrimary,
           disabledPerGitStatus,
         },
       };
     },
   );
+}
+
+export async function fetchDeploymentGithubStatusChanges(
+  runtimeClient: RuntimeClient,
+  queryClient: QueryClient,
+  primaryBranch: string | undefined,
+) {
+  const currentBranchGitStatusResp = await queryClient.fetchQuery({
+    queryKey: getRuntimeServiceGitStatusQueryKey(runtimeClient.instanceId, {}),
+    queryFn: () => runtimeServiceGitStatus(runtimeClient, {}),
+  });
+  const hasChangesAgainstCurrent = Boolean(
+    currentBranchGitStatusResp.localCommits ||
+      currentBranchGitStatusResp.localChanges,
+  );
+
+  const primaryBranchGitStatusResp =
+    queryClient.getQueryData<V1GitStatusResponse>(
+      getRuntimeServiceGitStatusQueryKey(runtimeClient.instanceId, {
+        remoteBranch: primaryBranch,
+      }),
+    );
+  const hasChangesAgainstPrimary = Boolean(
+    primaryBranchGitStatusResp?.localCommits ||
+      primaryBranchGitStatusResp?.localChanges,
+  );
+
+  return hasChangesAgainstCurrent || hasChangesAgainstPrimary;
 }

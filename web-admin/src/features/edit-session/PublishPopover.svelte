@@ -23,7 +23,10 @@
   import { Rocket } from "lucide-svelte";
   import { buildPostMergeUrl } from "./post-merge-url";
   import { goto } from "$app/navigation";
-  import { getDeploymentGithubStatus } from "@rilldata/web-admin/features/edit-session/selectors.ts";
+  import {
+    fetchDeploymentGithubStatusChanges,
+    getDeploymentGithubStatus,
+  } from "@rilldata/web-admin/features/edit-session/selectors.ts";
 
   export let organization: string;
   export let project: string;
@@ -46,14 +49,18 @@
 
   $: ({
     isPending,
-    data: { hasLocalChanges, alreadyOnPrimary, disabledPerGitStatus },
+    data: {
+      hasLocalChanges,
+      hasChangesOnCurrent,
+      alreadyOnPrimary,
+      disabledPerGitStatus,
+    },
   } = $gitStatusQuery);
 
   $: projectLoaded = $projectQuery.data !== undefined;
   $: prodDeployment = $projectQuery.data?.deployment;
   $: prodDeploymentActive =
     !!prodDeployment && isActiveDeployment(prodDeployment);
-  // TODO: this should also check currentBranch vs primaryBranch once that API is available.
   $: disabled = !projectLoaded || disabledPerGitStatus || isPublishing;
 
   // Prefetch prod's project parser commit SHA so the deploying page can
@@ -89,6 +96,22 @@
       client.instanceId,
       {},
     );
+
+    // Refetch local changes status, we predict this based on file watcher response.
+    // But we dont check if changes flipped to with changes to without changes.
+    hasLocalChanges = await fetchDeploymentGithubStatusChanges(
+      client,
+      queryClient,
+      primaryBranch,
+    );
+    if (!hasLocalChanges && !hasChangesOnCurrent) {
+      eventBus.emit("notification", {
+        type: "default",
+        message: "No changes detected",
+      });
+      isPublishing = false;
+      return;
+    }
 
     try {
       if (hasLocalChanges) {
