@@ -29,6 +29,7 @@ const (
 	cookieFieldRedirect         = "redirect"
 	cookieFieldCustomDomainFlow = "custom_domain_flow"
 	cookieFieldAccessToken      = "access_token"
+	browserSessionTTL           = 14 * 24 * time.Hour
 )
 
 // RegisterEndpoints adds HTTP endpoints for auth.
@@ -341,8 +342,8 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	ttl := 14 * 24 * time.Hour
 	// Issue a new persistent auth token
+	ttl := browserSessionTTL
 	authToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.AuthClientIDRillWeb, "Browser session", nil, &ttl, false)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to issue API token: %s", err), http.StatusInternalServerError)
@@ -406,7 +407,7 @@ func (a *Authenticator) authLoginCustomDomainCallback(w http.ResponseWriter, r *
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
-	ttl := 14 * 24 * time.Hour
+	ttl := browserSessionTTL
 	newAuthToken, err := a.admin.IssueUserAuthToken(r.Context(), validated.OwnerID(), database.AuthClientIDRillWeb, "Browser session", nil, &ttl, false)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to issue API token: %s", err), http.StatusInternalServerError)
