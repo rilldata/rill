@@ -1968,6 +1968,7 @@ export type AdminServiceUpdateProjectBody = {
   prodTtlSeconds?: string;
   prodVersion?: string;
   devSlots?: string;
+  devTtlSeconds?: string;
   superuserForceAccess?: boolean;
   overrideDiskGb?: string;
 };

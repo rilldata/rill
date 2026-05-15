@@ -651,7 +651,7 @@ func (c *connection) FindDeploymentsToStop(ctx context.Context) ([]*database.Dep
 		JOIN projects p ON d.project_id = p.id
 		WHERE d.status != $1
 		AND ((p.prod_ttl_seconds IS NOT NULL AND d.used_on + p.prod_ttl_seconds * interval '1 second' < now())
-		OR (d.environment = 'dev' AND p.dev_ttl_seconds IS NOT NULL AND d.used_on + p.dev_ttl_seconds * interval '1 second' < now()))
+		OR (d.environment = 'dev' AND d.used_on + p.dev_ttl_seconds * interval '1 second' < now()))
 	`, database.DeploymentStatusStopped)
 	if err != nil {
 		return nil, parseErr("deployments", err)

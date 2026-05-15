@@ -1227,6 +1227,9 @@ paths:
               devSlots:
                 type: string
                 format: int64
+              devTtlSeconds:
+                type: string
+                format: int64
               superuserForceAccess:
                 type: boolean
               overrideDiskGb:
