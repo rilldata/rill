@@ -315,6 +315,13 @@ export const AD_BIDS_EXPLORE: V1ExploreSpec = {
   measures: AD_BIDS_THREE_MEASURES.map((m) => m.name!),
 };
 
+// Exhaustive metrics view. TODO: replace usage of partial metrics view
+export const AD_BIDS_EXPLORE: V1ExploreSpec = {
+  metricsView: AD_BIDS_NAME,
+  dimensions: AD_BIDS_DIMENSIONS.map((d) => d.name!),
+  measures: AD_BIDS_THREE_MEASURES.map((m) => m.name!),
+};
+
 export const AD_BIDS_PRESET: V1ExplorePreset = {
   timeRange: "P7D",
   timezone: "Asia/Kathmandu",
