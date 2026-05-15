@@ -640,7 +640,7 @@ func (r *ProjectParserReconciler) attemptRename(ctx context.Context, inst *drive
 		return false, nil
 	}
 
-	// NOTE: Not comparing owner and paths since changing those are allowed when renaming.
+	// NOTE: Not comparing owner, paths, and tags since changing those are allowed when renaming.
 
 	// Run rename
 	err = r.C.UpdateName(ctx, existing.Meta.Name, newName, self.Meta.Name, def.Paths, def.Tags)
