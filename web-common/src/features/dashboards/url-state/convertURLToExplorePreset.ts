@@ -66,6 +66,14 @@ export function convertURLToExplorePreset(
     (m) => m.name!,
   );
   const dimensions = getMapFromArray(
+    metricsView.dimensions?.filter(
+      (d) =>
+        explore.dimensions?.includes(d.name!) &&
+        d.type !== "DIMENSION_TYPE_TIME",
+    ) ?? [],
+    (d) => d.name!,
+  );
+  const allDimensions = getMapFromArray(
     metricsView.dimensions?.filter((d) =>
       explore.dimensions?.includes(d.name!),
     ) ?? [],
@@ -124,7 +132,7 @@ export function convertURLToExplorePreset(
 
   const { preset: trPreset, errors: trErrors } = fromTimeRangesParams(
     searchParams,
-    dimensions,
+    allDimensions,
   );
 
   Object.assign(preset, trPreset);

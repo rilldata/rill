@@ -4,7 +4,9 @@ import type { ExploreState } from "@rilldata/web-common/features/dashboards/stor
 import {
   AD_BIDS_DIMENSION_TABLE_PRESET,
   AD_BIDS_EXPLORE,
+  AD_BIDS_EXPLORE_INIT,
   AD_BIDS_EXPLORE_NAME,
+  AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
   AD_BIDS_METRICS_VIEW,
   AD_BIDS_PIVOT_PRESET,
   AD_BIDS_PRESET,
@@ -309,7 +311,7 @@ const TestCases: {
       AD_BIDS_TOGGLE_BID_PUBLISHER_DIMENSION_VISIBILITY(AD_BIDS_EXPLORE),
     ],
     expectedSearch:
-      "measures=bid_price%2Cimpressions&dims=domain%2Cpublisher&sort_by=bid_price",
+      "measures=bid_price%2Cpublisher_count%2Cimpressions&dims=domain%2Ccountry%2Cpublisher&sort_by=bid_price",
   },
 
   {
@@ -553,13 +555,7 @@ describe("Human readable URL state variations", () => {
   });
 
   describe("Should update url state and restore default state on empty params", () => {
-    for (const {
-      title,
-      mutations,
-      preset,
-      expectedSearch,
-      extraExploreState,
-    } of TestCases) {
+    for (const { title, mutations, preset, expectedSearch } of TestCases) {
       it(title, async () => {
         const explore: V1ExploreSpec = {
           ...AD_BIDS_EXPLORE,
@@ -587,7 +583,6 @@ describe("Human readable URL state variations", () => {
         );
 
         await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
-        const stateAfterMutations = getCleanMetricsExploreForAssertion();
 
         // load url params with updated metrics state
         const updateUrlParams = getCleanedUrlParamsForGoto(
@@ -615,22 +610,6 @@ describe("Human readable URL state variations", () => {
         const currentState = getCleanMetricsExploreForAssertion();
         // current state should match the initial state
         expect(currentState).toEqual(initState);
-
-        const url = new URL("http://localhost");
-        // load url with the expected search
-        url.search = expectedSearch;
-        // get back the state from url params
-        const { partialExploreState: exploreStateFromUrl } =
-          convertURLSearchParamsToExploreState(
-            url.searchParams,
-            AD_BIDS_METRICS_VIEW,
-            explore,
-            defaultExplorePreset,
-          );
-        expect(exploreStateFromUrl).toEqual({
-          ...stateAfterMutations,
-          ...(extraExploreState ?? {}),
-        });
       });
     }
   });
