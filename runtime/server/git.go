@@ -108,6 +108,7 @@ func (s *Server) GitStatus(ctx context.Context, req *runtimev1.GitStatusRequest)
 	return &runtimev1.GitStatusResponse{
 		Branch:        gs.Branch,
 		GithubUrl:     gs.RemoteURL,
+		Subpath:       gs.Subpath,
 		ManagedGit:    gs.ManagedRepo,
 		LocalChanges:  gs.LocalChanges,
 		LocalCommits:  gs.LocalCommits,

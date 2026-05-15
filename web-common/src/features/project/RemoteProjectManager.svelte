@@ -6,15 +6,18 @@
   import ProjectContainsRemoteChangesDialog from "@rilldata/web-common/features/project/ProjectContainsRemoteChangesDialog.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
-  import type { GitStatusResponse } from "@rilldata/web-common/proto/gen/rill/local/v1/api_pb.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
-    createLocalServiceGitPull,
-    createLocalServiceGitStatus,
-    getLocalServiceGitStatusQueryKey,
-  } from "@rilldata/web-common/runtime-client/local-service";
+    createRuntimeServiceGitPullMutation,
+    createRuntimeServiceGitStatus,
+    getRuntimeServiceGitStatusQueryKey,
+    type V1GitStatusResponse,
+  } from "@rilldata/web-common/runtime-client";
 
-  const gitStatusQuery = createLocalServiceGitStatus();
-  const gitPullMutation = createLocalServiceGitPull();
+  const runtimeClient = useRuntimeClient();
+
+  const gitStatusQuery = createRuntimeServiceGitStatus(runtimeClient, {});
+  const gitPullMutation = createRuntimeServiceGitPullMutation(runtimeClient);
 
   let remoteChangeDialog = false;
   let mergeConflictResolutionDialog = false;
@@ -27,16 +30,16 @@
   $: ({ isPending: githubPullPending, error: githubPullError } =
     $gitPullMutation);
   let errorFromGitCommand: ConnectError | null = null;
-  $: error = githubPullError ?? errorFromGitCommand;
+  $: error = (githubPullError as ConnectError | null) ?? errorFromGitCommand;
 
-  function processGithubStatus(status: GitStatusResponse) {
-    remoteChangeDialog = status.remoteCommits > 0;
+  function processGithubStatus(status: V1GitStatusResponse) {
+    remoteChangeDialog = Boolean(status.remoteCommits);
   }
 
   async function handleFetchRemoteCommits() {
     if (inDeployPage) return; // Do not show the modal in deploy pages
 
-    if ($gitStatusQuery.data!.localCommits > 0) {
+    if ($gitStatusQuery.data?.localCommits) {
       // Since we can't really merge remote commits with local commits,
       // we just show the user the merge conflicts dialog for confirmation to clear it.
       // We could directly show it since the data is in gitStatusQuery, but it feels like weird UX.
@@ -51,7 +54,10 @@
     // TODO: download diff once API is ready
 
     void queryClient.invalidateQueries({
-      queryKey: getLocalServiceGitStatusQueryKey(),
+      queryKey: getRuntimeServiceGitStatusQueryKey(
+        runtimeClient.instanceId,
+        {},
+      ),
     });
 
     remoteChangeDialog = false;
@@ -82,7 +88,10 @@
     // TODO: download diff once API is ready
 
     void queryClient.invalidateQueries({
-      queryKey: getLocalServiceGitStatusQueryKey(),
+      queryKey: getRuntimeServiceGitStatusQueryKey(
+        runtimeClient.instanceId,
+        {},
+      ),
     });
 
     if (!resp.output) {

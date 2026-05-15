@@ -5547,6 +5547,9 @@ definitions:
       githubUrl:
         type: string
         description: The remote url of the git repo.
+      subpath:
+        type: string
+        description: Subpath from the git repo.
       managedGit:
         type: boolean
         description: If the repo is managed by Rill.

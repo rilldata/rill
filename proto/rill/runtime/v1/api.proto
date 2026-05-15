@@ -1288,6 +1288,8 @@ message GitStatusResponse {
   string branch = 1;
   // The remote url of the git repo.
   string github_url = 2;
+  // Subpath from the git repo.
+  string subpath = 7;
   // If the repo is managed by Rill.
   bool managed_git = 3;
   // local_changes returns true if there are any staged, unstaged, or untracked changes in the local git repo.

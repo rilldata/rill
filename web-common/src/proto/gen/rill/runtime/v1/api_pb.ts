@@ -5795,6 +5795,13 @@ export class GitStatusResponse extends Message$1<GitStatusResponse> {
   githubUrl = "";
 
   /**
+   * Subpath from the git repo.
+   *
+   * @generated from field: string subpath = 7;
+   */
+  subpath = "";
+
+  /**
    * If the repo is managed by Rill.
    *
    * @generated from field: bool managed_git = 3;
@@ -5832,6 +5839,7 @@ export class GitStatusResponse extends Message$1<GitStatusResponse> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "managed_git", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 4, name: "local_changes", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 5, name: "local_commits", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
