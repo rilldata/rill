@@ -127,7 +127,10 @@
     // TODO: download diff once API is ready
 
     void queryClient.invalidateQueries({
-      queryKey: getRuntimeServiceGitStatusQueryKey(runtimeClient.instanceId, {}),
+      queryKey: getRuntimeServiceGitStatusQueryKey(
+        runtimeClient.instanceId,
+        {},
+      ),
     });
 
     if (!resp.output) {

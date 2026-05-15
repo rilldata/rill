@@ -15,9 +15,6 @@ import {
   ListMatchingProjectsRequest,
   ListProjectsForOrgRequest,
   GetProjectRequest,
-  GitStatusRequest,
-  GitPullRequest,
-  GitPushRequest,
   GithubRepoStatusRequest,
 } from "@rilldata/web-common/proto/gen/rill/local/v1/api_pb";
 import {
