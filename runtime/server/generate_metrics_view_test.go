@@ -42,7 +42,7 @@ driver: duckdb
 	require.NoError(t, err)
 	defer release()
 
-	server, err := server.NewServer(ctx, &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
+	server, err := server.NewServer(ctx, &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	tt := []struct {
@@ -56,6 +56,7 @@ driver: duckdb
 			name:  "model passed in request",
 			model: "ad_bids",
 			contains: []string{
+				"connector: duckdb",
 				"model: ad_bids",
 				"measures:",
 				"format_preset: humanize",
@@ -64,17 +65,17 @@ driver: duckdb
 		{
 			name:     "model passed in request that matches a table",
 			model:    "foo",
-			contains: []string{"model: foo"},
+			contains: []string{"connector: duckdb", "model: foo"},
 		},
 		{
 			name:     "table passed in request that matches a model",
 			table:    "ad_bids",
-			contains: []string{"model: ad_bids"},
+			contains: []string{"connector: duckdb", "model: ad_bids"},
 		},
 		{
 			name:     "table passed in request that does not match a model",
 			table:    "foo",
-			contains: []string{"model: foo"},
+			contains: []string{"connector: duckdb", "model: foo"},
 		},
 		{
 			name:      "table in non-default connector passed in request",
@@ -126,7 +127,7 @@ func TestGenerateMetricsViewWithAI(t *testing.T) {
 	require.NoError(t, err)
 	defer release()
 
-	server, err := server.NewServer(ctx, &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
+	server, err := server.NewServer(ctx, &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	tt := []struct {

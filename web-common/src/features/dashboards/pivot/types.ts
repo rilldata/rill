@@ -12,8 +12,8 @@ import type {
   ColumnDef,
   ExpandedState,
   SortingState,
-} from "@tanstack/svelte-table";
-import type { Readable } from "svelte/motion";
+} from "tanstack-table-8-svelte-5";
+import type { Readable } from "svelte/store";
 
 export const COMPARISON_VALUE = "__previous";
 export const COMPARISON_DELTA = "__delta_abs";

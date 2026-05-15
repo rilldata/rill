@@ -1,8 +1,10 @@
 <script lang="ts">
   import { AlertCircleIcon } from "lucide-svelte";
+  import ExplainAndFixErrorButton from "@rilldata/web-common/features/chat/ExplainAndFixErrorButton.svelte";
 
   export let message: string;
   export let details: string | undefined = undefined;
+  export let filePath: string | undefined = undefined;
 
   let showDetails = true;
 
@@ -11,7 +13,7 @@
   }
 </script>
 
-<div class="error-container">
+<div class="error-container" aria-label="Submission error">
   <div class="flex items-start gap-1 min-w-0">
     <div class="flex-shrink-0 flex items-start">
       <AlertCircleIcon size={22} class="text-red-600" />
@@ -23,7 +25,7 @@
       {#if details}
         <button
           class="flex items-center mt-2 cursor-pointer select-none"
-          on:click={toggleDetails}
+          onclick={toggleDetails}
         >
           <span class="text-xs font-semibold text-fg-secondary capitalize"
             >Connection error</span
@@ -59,6 +61,11 @@
             <pre class="details whitespace-pre-wrap break-words">{details}</pre>
           </div>
         {/if}
+      {/if}
+      {#if filePath}
+        <div class="mt-2">
+          <ExplainAndFixErrorButton {filePath} />
+        </div>
       {/if}
     </div>
   </div>

@@ -1,4 +1,5 @@
 import type {
+  AddDataBehaviourEventFields,
   BehaviourEventAction,
   BehaviourEventMedium,
 } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
@@ -106,6 +107,23 @@ export class BehaviourEventHandler {
       this.commonUserMetrics,
       action,
       githubFields,
+    ]);
+  }
+
+  public fireAddDataStepEvent(
+    action: BehaviourEventAction,
+    medium: BehaviourEventMedium,
+    space: MetricsEventSpace,
+    screen_name: MetricsEventScreenName,
+    addDataFields: AddDataBehaviourEventFields,
+  ) {
+    return this.metricsService.dispatch("addDataStepEvent", [
+      this.commonUserMetrics,
+      action,
+      medium,
+      space,
+      screen_name,
+      addDataFields,
     ]);
   }
 }

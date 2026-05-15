@@ -38,6 +38,12 @@ func (t *WriteFile) Spec() *mcp.Tool {
 		Name:        WriteFileName,
 		Title:       "Write file",
 		Description: "Creates, updates or deletes a file in a Rill project. If the file already exists, it will be overwritten. If the file declares a Rill resource, it will wait for the resource to reconcile and return its kind, name and any errors encountered.",
+		Annotations: &mcp.ToolAnnotations{
+			DestructiveHint: boolPtr(true),
+			IdempotentHint:  true,
+			OpenWorldHint:   boolPtr(false),
+			ReadOnlyHint:    false,
+		},
 		Meta: map[string]any{
 			"openai/toolInvocation/invoking": "Writing file...",
 			"openai/toolInvocation/invoked":  "Wrote file",
@@ -156,10 +162,11 @@ func (t *WriteFile) reconcileAndGetStatus(ctx context.Context, path string) (res
 	resources = []map[string]any{}
 	for _, r := range rs {
 		resources = append(resources, map[string]any{
-			"kind":             r.Meta.Name.Kind,
-			"name":             r.Meta.Name.Name,
-			"reconcile_status": r.Meta.ReconcileStatus.String(),
-			"reconcile_error":  r.Meta.ReconcileError,
+			"kind":               r.Meta.Name.Kind,
+			"name":               r.Meta.Name.Name,
+			"reconcile_status":   r.Meta.ReconcileStatus.String(),
+			"reconcile_error":    r.Meta.ReconcileError,
+			"reconcile_warnings": r.Meta.ReconcileWarnings,
 		})
 	}
 	return resources, "", parseWarnings, nil

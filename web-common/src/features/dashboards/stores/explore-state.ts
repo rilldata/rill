@@ -139,6 +139,12 @@ export interface ExploreState {
   showTimeComparison: boolean;
 
   /**
+   * When true, the Y-axis of time-series charts uses a dynamic scale
+   * that fits the visible data range rather than always starting from zero.
+   */
+  dynamicYAxisScale: boolean;
+
+  /**
    * state of context column in the leaderboard
    */
   // @deprecated

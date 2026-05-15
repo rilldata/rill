@@ -161,15 +161,6 @@
 
 <Dialog
   bind:open
-  onOutsideClick={(e) => {
-    e.preventDefault();
-    open = false;
-    email = "";
-    role = "";
-    isSuperUser = false;
-    failedInvites = [];
-    $form.emails = [""];
-  }}
   onOpenChange={(open) => {
     if (!open) {
       email = "";
@@ -180,16 +171,32 @@
     }
   }}
 >
-  <DialogTrigger asChild>
-    <div class="hidden"></div>
+  <DialogTrigger>
+    {#snippet child({ props })}
+      <div {...props} class="hidden"></div>
+    {/snippet}
   </DialogTrigger>
-  <DialogContent class="translate-y-[-200px]">
+  <DialogContent
+    class="translate-y-[-200px]"
+    onInteractOutside={(e) => {
+      e.preventDefault();
+      open = false;
+      email = "";
+      role = "";
+      isSuperUser = false;
+      failedInvites = [];
+      $form.emails = [""];
+    }}
+  >
     <DialogHeader>
       <DialogTitle>Add users</DialogTitle>
     </DialogHeader>
     <form
       id={formId}
-      on:submit|preventDefault={submit}
+      onsubmit={(e) => {
+        e.preventDefault();
+        submit(e);
+      }}
       class="w-full"
       use:enhance
     >
@@ -203,7 +210,7 @@
         plural="emails"
       >
         <div slot="within-input" class="flex items-center h-full">
-          <DropdownMenu typeahead={false}>
+          <DropdownMenu>
             <DropdownMenuTrigger
               class="w-18 flex flex-row gap-1 items-center rounded-sm px-2 py-1 hover:bg-surface-hover"
             >
@@ -220,7 +227,7 @@
             >
               {#each ORG_ROLES_OPTIONS as { value, label, description } (value)}
                 <DropdownMenuItem
-                  on:click={() => ($form.role = value)}
+                  onclick={() => ($form.role = value)}
                   class="text-xs hover:bg-surface-hover {$form.role === value
                     ? 'bg-surface-active'
                     : ''}"

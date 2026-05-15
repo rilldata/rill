@@ -60,6 +60,7 @@
   <!-- Conversation List Sidebar -->
   <ConversationSidebar
     {conversationManager}
+    basePath={`/${organization}/${project}/-/ai`}
     collapsed={$conversationSidebarCollapsed}
     onToggle={toggleConversationSidebar}
     onConversationClick={() => {
@@ -71,6 +72,9 @@
   >
     <svelte:fragment slot="footer">
       <slot name="sidebar-footer" />
+    </svelte:fragment>
+    <svelte:fragment slot="collapsed-footer">
+      <slot name="sidebar-collapsed-footer" />
     </svelte:fragment>
   </ConversationSidebar>
 

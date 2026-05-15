@@ -11,8 +11,6 @@ import (
 	"github.com/rilldata/rill/runtime/parser"
 )
 
-var ErrAdminNotConfigured = fmt.Errorf("an admin service is not configured for this instance")
-
 var ErrAINotConfigured = fmt.Errorf("an AI service is not configured for this instance")
 
 func (r *Runtime) AcquireSystemHandle(ctx context.Context, connector string) (drivers.Handle, func(), error) {
@@ -85,11 +83,6 @@ func (r *Runtime) Admin(ctx context.Context, instanceID string) (drivers.AdminSe
 	inst, err := r.Instance(ctx, instanceID)
 	if err != nil {
 		return nil, nil, err
-	}
-
-	// The admin connector is optional
-	if inst.AdminConnector == "" {
-		return nil, nil, ErrAdminNotConfigured
 	}
 
 	conn, release, err := r.AcquireHandle(ctx, instanceID, inst.AdminConnector)

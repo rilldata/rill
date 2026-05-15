@@ -1,9 +1,5 @@
 <script lang="ts">
   import AddCircleOutline from "@rilldata/web-common/components/icons/AddCircleOutline.svelte";
-  import Subheading from "@rilldata/web-common/components/typography/Subheading.svelte";
-  import Card from "../../components/card/Card.svelte";
-  import CardDescription from "../../components/card/CardDescription.svelte";
-  import CardTitle from "../../components/card/CardTitle.svelte";
   import { behaviourEvent } from "../../metrics/initMetrics";
   import {
     BehaviourEventAction,
@@ -15,14 +11,20 @@
     createRuntimeServiceUnpackExampleMutation,
   } from "../../runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-
-  const runtimeClient = useRuntimeClient();
   import { EMPTY_PROJECT_TITLE } from "./constants";
   import { EXAMPLES } from "./constants";
+  import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-metadata.ts";
+  import ProjectCard from "@rilldata/web-common/features/welcome/ProjectCard.svelte";
+  import { goto } from "$app/navigation";
   import {
-    connectorIconMapping,
-    connectorLabelMapping,
-  } from "@rilldata/web-common/features/connectors/connector-icon-mapping.ts";
+    getFileHref,
+    navigateToHome,
+  } from "@rilldata/web-common/layout/navigation/editor-routing.ts";
+
+  export let isLocal = false;
+  export let onSelect: () => void = () => {};
+
+  const runtimeClient = useRuntimeClient();
 
   const unpackExampleProject =
     createRuntimeServiceUnpackExampleMutation(runtimeClient);
@@ -55,54 +57,58 @@
         force: true,
       });
 
-      setTimeout(() => {
-        if (window.location.search.includes("redirect=true"))
-          window.location.reload();
-      }, 5000);
+      onSelect();
+
+      // Legacy fix for rill dev for race conditions.
+      // TODO: find a better fix that the redirect here.
+      if (isLocal) {
+        setTimeout(() => {
+          window.location.assign("/?redirect=true");
+        }, 5000);
+      } else {
+        const dashboard = example?.firstFile;
+        if (dashboard) {
+          void goto(getFileHref(dashboard));
+        } else {
+          void navigateToHome();
+        }
+      }
     } catch {
       selectedProjectName = null;
     }
   }
 </script>
 
-<section class="flex flex-col items-center gap-y-5">
-  <Subheading>Or jump right into an example project.</Subheading>
-  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+<section class="flex flex-col items-center">
+  <div class="flex md:flex-row flex-col gap-4">
     {#each EXAMPLES as example (example.name)}
       {@const icon = connectorIconMapping[example.connector]}
-      {@const label =
-        connectorLabelMapping[example.connector] ?? example.connector}
-      <Card
-        redirect
-        imageUrl={example.image}
+      {@const loading = selectedProjectName === example.name}
+      <ProjectCard
+        onclick={() => void unpackProject(example)}
+        {loading}
         disabled={!!selectedProjectName}
-        isLoading={selectedProjectName === example.name}
-        on:click={async () => {
-          await unpackProject(example);
-        }}
+        label={example.title}
       >
-        <div class="absolute top-[160px] w-full pl-3">
-          <div class="flex flex-row w-fit items-center gap-x-1">
-            {#if icon}
-              <svelte:component this={icon} />
-            {/if}
-            <span class="italic text-slate-600">{label}</span>
-          </div>
-        </div>
-        <CardTitle className="w-full pl-3">{example.title}</CardTitle>
-        <CardDescription className="w-full text-left pl-3">
-          {example.description}
-        </CardDescription>
-      </Card>
+        <svelte:fragment slot="icon">
+          {#if icon}
+            <svelte:component this={icon} size="16px" />
+          {/if}
+        </svelte:fragment>
+        <span>{example.title}</span>
+      </ProjectCard>
     {/each}
 
-    <Card
+    <ProjectCard
+      onclick={() => unpackProject()}
+      loading={selectedProjectName === EMPTY_PROJECT_TITLE}
       disabled={!!selectedProjectName}
-      isLoading={selectedProjectName === EMPTY_PROJECT_TITLE}
-      on:click={() => unpackProject()}
+      label="Start a blank project"
     >
-      <AddCircleOutline size="2em" className="text-fg-secondary" />
-      <CardTitle position="middle">Start with an empty project</CardTitle>
-    </Card>
+      <svelte:fragment slot="icon">
+        <AddCircleOutline size="16px" />
+      </svelte:fragment>
+      <span>Start a blank project</span>
+    </ProjectCard>
   </div>
 </section>

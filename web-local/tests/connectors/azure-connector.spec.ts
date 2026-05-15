@@ -6,10 +6,8 @@ test.describe("Azure connector form reset", () => {
 
   test("clears connection string after submit and reopen", async ({ page }) => {
     // Open Add Data modal and pick Azure.
-    await page.getByRole("button", { name: "Add Asset" }).click();
-    await page.getByRole("menuitem", { name: "Add Data" }).click();
-    await page.locator("#azure").click();
-    await page.waitForSelector('form[id*="azure"]');
+    await page.getByLabel("See more connectors").click();
+    await page.getByLabel("Connect to azure").click();
 
     const connectionString = page.getByRole("textbox", {
       name: "Connection string",
@@ -34,8 +32,7 @@ test.describe("Azure connector form reset", () => {
     // Re-open and ensure the connection string is cleared.
     await page.getByRole("button", { name: "Add Asset" }).click();
     await page.getByRole("menuitem", { name: "Add Data" }).click();
-    await page.locator("#azure").click();
-    await page.waitForSelector('form[id*="azure"]');
+    await page.getByLabel("Connect to azure").click();
 
     await expect(connectionString).toHaveValue("");
   });

@@ -44,10 +44,7 @@
 >
   {#if editable}
     <!-- Editable mode: Show dropdown with explore option -->
-    <DropdownMenu.Root
-      bind:open={dropdownOpen}
-      portal=".dashboard-theme-boundary"
-    >
+    <DropdownMenu.Root bind:open={dropdownOpen}>
       <DropdownMenu.Trigger
         class="size-7 grid place-content-center bg-surface-card hover:brightness-[85%] active:brightness-75"
       >
@@ -60,7 +57,7 @@
         alignOffset={-4}
         class="w-40"
       >
-        <DropdownMenu.Item on:click={onDuplicate}>
+        <DropdownMenu.Item onclick={onDuplicate}>
           <Copy size="14px" />
           Duplicate
         </DropdownMenu.Item>
@@ -70,7 +67,7 @@
         {/if}
         <DropdownMenu.Separator />
         <DropdownMenu.Item
-          on:click={onDelete}
+          onclick={onDelete}
           class="text-red-600 data-[highlighted]:text-red-600"
         >
           <Trash size="14px" />

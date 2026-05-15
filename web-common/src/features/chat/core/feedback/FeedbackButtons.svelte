@@ -36,7 +36,7 @@
       disabled={isDisabled}
       ariaPressed={hasPositiveFeedback}
       ariaLabel="Upvote response"
-      on:click={handleUpvote}
+      onclick={handleUpvote}
     >
       <ThumbsUp
         size={14}
@@ -51,7 +51,7 @@
       disabled={isDisabled}
       ariaPressed={hasNegativeFeedback}
       ariaLabel="Downvote response"
-      on:click={handleDownvote}
+      onclick={handleDownvote}
     >
       <ThumbsDown
         size={14}

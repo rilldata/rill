@@ -52,24 +52,25 @@
   }
 </script>
 
-<DropdownMenu.Root bind:open typeahead={false}>
-  <DropdownMenu.Trigger asChild let:builder>
-    <button
-      use:builder.action
-      {...builder}
-      class="flex items-center gap-x-1"
-      aria-label="Timezone selector"
-      title={!availableTimeZones.length ? "No timezones configured" : ""}
-      disabled={lockTimeZone}
-      type="button"
-    >
-      {getAbbreviationForIANA(watermark, activeTimeZone)}
-      {#if !lockTimeZone}
-        <span class="flex-none transition-transform" class:-rotate-180={open}>
-          <CaretDownIcon />
-        </span>
-      {/if}
-    </button>
+<DropdownMenu.Root bind:open>
+  <DropdownMenu.Trigger>
+    {#snippet child({ props })}
+      <button
+        {...props}
+        class="flex items-center gap-x-1"
+        aria-label="Timezone selector"
+        title={!availableTimeZones.length ? "No timezones configured" : ""}
+        disabled={lockTimeZone}
+        type="button"
+      >
+        {getAbbreviationForIANA(watermark, activeTimeZone)}
+        {#if !lockTimeZone}
+          <span class="flex-none transition-transform" class:-rotate-180={open}>
+            <CaretDownIcon />
+          </span>
+        {/if}
+      </button>
+    {/snippet}
   </DropdownMenu.Trigger>
 
   <DropdownMenu.Content align="start" {side} class="w-80">
@@ -97,8 +98,9 @@
       {#each filteredPinnedTimeZones as [iana, { offset, abbreviation }] (iana)}
         <DropdownMenu.CheckboxItem
           checkRight
+          closeOnSelect
           checked={activeTimeZone === iana}
-          on:click={() => {
+          onSelect={() => {
             onSelectTimeZone(iana);
           }}
         >
@@ -120,7 +122,7 @@
           <DropdownMenu.Label>Recent</DropdownMenu.Label>
           {#if recentIANAs.length}
             <button
-              on:click={() => {
+              onclick={() => {
                 recents.set([]);
               }}
               class="text-[10px] text-fg-secondary">Clear recents</button
@@ -134,7 +136,7 @@
             <DropdownMenu.CheckboxItem
               checkRight
               checked={activeTimeZone === iana}
-              on:click={() => {
+              onclick={() => {
                 onSelectTimeZone(iana);
               }}
             >
@@ -162,7 +164,8 @@
         {#each filteredTimeZones as [iana, { abbreviation, offset }], i (i)}
           <DropdownMenu.CheckboxItem
             checkRight
-            on:click={() => {
+            closeOnSelect
+            onSelect={() => {
               onSelectTimeZone(iana);
               recents.set(Array.from(new Set([iana, ...$recents])).slice(0, 5));
             }}

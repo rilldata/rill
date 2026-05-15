@@ -12,7 +12,7 @@
   } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
   import {
     fetchPaymentsPortalURL,
-    fetchTeamPlan,
+    fetchProPlan,
     getBillingUpgradeUrl,
   } from "@rilldata/web-admin/features/billing/plans/selectors";
   import { showWelcomeToRillDialog } from "@rilldata/web-admin/features/billing/plans/utils";
@@ -20,8 +20,7 @@
   import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaNeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import LoadingSpinner from "@rilldata/web-common/components/LoadingSpinner.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { onMount } from "svelte";
   import type { PageData } from "./$types";
@@ -59,24 +58,24 @@
       });
       return goto(`/${organization}/-/settings/billing`);
     }
-    const teamPlan = await fetchTeamPlan();
+    const proPlan = await fetchProPlan();
     try {
       if (cancelled) {
         await $planRenewer.mutateAsync({
           org: organization,
           data: {
-            planName: teamPlan.name,
+            planName: proPlan.name,
           },
         });
         eventBus.emit("notification", {
           type: "success",
-          message: "Your Team plan was renewed",
+          message: "Your Pro plan was renewed",
         });
       } else {
         await $planUpdater.mutateAsync({
           org: organization,
           data: {
-            planName: teamPlan.name,
+            planName: proPlan.name,
           },
         });
         // if redirect is set then this page won't be active.
@@ -103,9 +102,7 @@
 
 <CtaLayoutContainer>
   <CtaContentContainer>
-    <div class="h-36">
-      <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
-    </div>
+    <LoadingSpinner />
     <CtaHeader variant="bold">
       {#if cancelled}
         Renewing team plan...

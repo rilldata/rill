@@ -41,6 +41,12 @@ func (t *CreateChart) Spec() *mcp.Tool {
 		Name:        CreateChartName,
 		Title:       "Create chart",
 		Description: createChartDescription,
+		Annotations: &mcp.ToolAnnotations{
+			DestructiveHint: boolPtr(false),
+			IdempotentHint:  true,
+			OpenWorldHint:   boolPtr(false),
+			ReadOnlyHint:    true,
+		},
 		Meta: map[string]any{
 			"openai/toolInvocation/invoking": "Creating chart...",
 			"openai/toolInvocation/invoked":  "Created chart",

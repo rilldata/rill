@@ -64,7 +64,7 @@ func convertToCursorRule(path string, inst *Instruction) (outputPath, content st
 	// Serialize front matter to YAML
 	fmBytes, _ := yaml.Marshal(&cursorFrontMatter{
 		Description: inst.Description,
-		AlwaysApply: path == "development.md",
+		AlwaysApply: path == "AGENTS.md",
 	})
 
 	// Build final content

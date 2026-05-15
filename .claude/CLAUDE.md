@@ -35,7 +35,8 @@ Two deployment modes share the same codebase:
 - **Local dev**: `rill devtool start local`
 - **Cloud dev**: `rill devtool start cloud`
 - **Test Go**: `go test ./...`
-- **Test frontend (unit)**: `npm run test -w web-common` (fast, use for tight feedback loops)
+- **Test frontend (unit, web-common)**: `npm run test -w web-common` (fast, use for tight feedback loops)
+- **Test frontend (unit, web-admin)**: `cd web-admin && npx vitest run src/path/to/spec.ts` (must run from `web-admin/` so vitest picks up the `@rilldata/web-admin` alias)
 - **Test frontend (e2e)**: `npm run test -w web-local` or `npm run test -w web-admin` (Playwright, slow)
 - **Lint/format frontend**: `npm run quality`
 - **Regenerate docs**: `make docs.generate` (run after changes to `proto/`, `cli/` or `runtime/parser`)

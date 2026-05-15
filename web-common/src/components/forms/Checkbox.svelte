@@ -7,14 +7,14 @@
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
 
-  type $$Props = CheckboxPrimitive.Props & {
+  type $$Props = CheckboxPrimitive.RootProps & {
     label?: string;
     inverse?: boolean;
     hint?: string;
     optional?: boolean;
   };
 
-  export let checked: $$Props["checked"] = undefined;
+  export let checked: $$Props["checked"] = false;
   export let disabled: $$Props["disabled"] = undefined;
   export let label: $$Props["label"] = undefined;
   export let inverse = false;
@@ -41,14 +41,11 @@
       className,
     )}
   >
-    <CheckboxPrimitive.Indicator
-      class={cn(
-        "flex items-center justify-center text-white",
-        "data-[state=unchecked]:hidden",
-      )}
-    >
-      <Check class="h-3.5 w-3.5" />
-    </CheckboxPrimitive.Indicator>
+    {#if checked}
+      <span class="flex items-center justify-center text-white">
+        <Check class="h-3.5 w-3.5" />
+      </span>
+    {/if}
   </CheckboxPrimitive.Root>
 
   {#if label}

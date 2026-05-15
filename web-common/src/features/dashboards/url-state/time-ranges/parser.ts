@@ -1,5 +1,5 @@
 import type { RillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime";
-import grammar from "./rill-time.cjs";
+import grammar from "./rill-time.js";
 import nearley from "nearley";
 
 const compiledGrammar = nearley.Grammar.fromCompiled(grammar);

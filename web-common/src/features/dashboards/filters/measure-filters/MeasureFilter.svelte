@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fly } from "svelte/transition";
   import { Chip } from "@rilldata/web-common/components/chip";
   import * as Popover from "@rilldata/web-common/components/popover/";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -7,7 +8,6 @@
   import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import MeasureFilterBody from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilterBody.svelte";
   import type { MetricsViewSpecDimension } from "@rilldata/web-common/runtime-client";
-  import { fly } from "svelte/transition";
   import MeasureFilterForm from "./MeasureFilterForm.svelte";
   import type { FilterManager } from "@rilldata/web-common/features/canvas/stores/filter-manager";
   import type { MeasureFilterItem } from "../../state-managers/selectors/measure-filters";
@@ -36,52 +36,54 @@
 
 <Popover.Root
   bind:open
-  preventScroll
   onOpenChange={() => {
     if (open && pinned !== curPinned) {
       toggleFilterPin?.(name, metricsViewNames);
     }
   }}
 >
-  <Popover.Trigger asChild let:builder>
-    <Tooltip
-      activeDelay={60}
-      alignment="start"
-      distance={8}
-      location="bottom"
-      suppress={open}
-    >
-      <Chip
-        type="measure"
-        active={open}
-        builders={[builder]}
-        {label}
-        gray={!filter}
-        theme
-        {onRemove}
-        removable={!curPinned}
-        removeTooltipText="Remove {label}"
+  <Popover.Trigger>
+    {#snippet child({ props })}
+      <Tooltip
+        activeDelay={60}
+        alignment="start"
+        distance={8}
+        location="bottom"
+        suppress={open}
       >
-        <MeasureFilterBody
-          dimensionName={allDimensions.find((d) => {
-            return d.name === dimensionName;
-          })?.displayName ?? ""}
-          {filter}
+        <Chip
+          {...props}
+          type="measure"
+          active={open}
           {label}
-          slot="body"
-        />
-      </Chip>
-      <div slot="tooltip-content" transition:fly={{ duration: 100, y: 4 }}>
-        <TooltipContent maxWidth="400px">
-          <TooltipTitle>
-            <svelte:fragment slot="name">{name}</svelte:fragment>
-            <svelte:fragment slot="description">{label || ""}</svelte:fragment>
-          </TooltipTitle>
+          gray={!filter}
+          theme
+          {onRemove}
+          removable={!curPinned}
+          removeTooltipText="Remove {label}"
+        >
+          <MeasureFilterBody
+            dimensionName={allDimensions.find((d) => {
+              return d.name === dimensionName;
+            })?.displayName ?? ""}
+            {filter}
+            {label}
+            slot="body"
+          />
+        </Chip>
+        <div slot="tooltip-content" transition:fly={{ duration: 100, y: 4 }}>
+          <TooltipContent maxWidth="400px">
+            <TooltipTitle>
+              <svelte:fragment slot="name">{name}</svelte:fragment>
+              <svelte:fragment slot="description">{label || ""}</svelte:fragment
+              >
+            </TooltipTitle>
 
-          <slot name="body-tooltip-content">Click to edit the values</slot>
-        </TooltipContent>
-      </div>
-    </Tooltip>
+            <slot name="body-tooltip-content">Click to edit the values</slot>
+          </TooltipContent>
+        </div>
+      </Tooltip>
+    {/snippet}
   </Popover.Trigger>
 
   {#if open}

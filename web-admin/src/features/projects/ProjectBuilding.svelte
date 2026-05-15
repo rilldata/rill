@@ -8,6 +8,8 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { isEmbedPage } from "@rilldata/web-common/layout/navigation/navigation-utils.ts";
 
+  export let branch: string | undefined = undefined;
+
   const onEmbedPage = isEmbedPage($page);
 </script>
 
@@ -17,7 +19,11 @@
       <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
     </div>
     <CtaHeader variant="bold">
-      Hang tight! We're deploying your project...
+      {#if branch}
+        Starting branch deployment...
+      {:else}
+        Hang tight! We're deploying your project...
+      {/if}
     </CtaHeader>
     {#if !onEmbedPage}
       <CtaNeedHelp />

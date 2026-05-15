@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import ContextButton from "@rilldata/web-common/components/button/ContextButton.svelte";
+  import { getFileHref } from "@rilldata/web-common/layout/navigation/editor-routing";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import Alert from "@rilldata/web-common/components/icons/Alert.svelte";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
@@ -27,14 +28,14 @@
   import CopyIcon from "../../components/icons/CopyIcon.svelte";
   import CanvasMenuItems from "../canvas/CanvasMenuItems.svelte";
   import { fileArtifacts } from "../entity-management/file-artifacts";
-  import { getTopLevelFolder } from "../entity-management/file-path-utils";
   import { getIconComponent } from "../entity-management/resource-icon-mapping";
   import { ResourceKind } from "../entity-management/resource-selectors";
   import ExploreMenuItems from "../explores/ExploreMenuItems.svelte";
   import MetricsViewMenuItems from "../metrics-views/MetricsViewMenuItems.svelte";
   import ModelMenuItems from "../models/navigation/ModelMenuItems.svelte";
   import SourceMenuItems from "../sources/navigation/SourceMenuItems.svelte";
-  import { PROTECTED_DIRECTORIES, PROTECTED_FILES } from "./protected-paths";
+  import { isProtectedDirectory } from "@rilldata/web-common/features/entity-management/actions/protected-files.ts";
+  import { getTopLevelFolder } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
 
   export let filePath: string;
   export let onRename: (filePath: string, isDir: boolean) => void;
@@ -64,11 +65,12 @@
     $inferredResourceKind) as ResourceKind;
   $: padding = getPaddingFromPath(filePath);
   $: topLevelFolder = getTopLevelFolder(filePath);
-  $: isProtectedDirectory = PROTECTED_DIRECTORIES.includes(topLevelFolder);
+  $: protectedDirectory = isProtectedDirectory(topLevelFolder);
   $: isDotFile = fileName && fileName.startsWith(".");
-  $: isProtectedFile = PROTECTED_FILES.includes(filePath);
+  $: isProtectedFile = fileArtifact.pinned || fileArtifact.managed;
 
   $: hasErrors = fileArtifact.getHasErrors(queryClient);
+  $: hasWarnings = fileArtifact.getHasWarnings(queryClient);
 
   function fireTelemetry() {
     const previousScreenName = getScreenNameFromPage();
@@ -84,7 +86,7 @@
   }
 
   function handleMouseDown(e: MouseEvent) {
-    if (PROTECTED_FILES.includes(filePath)) return;
+    if (isProtectedFile) return;
     onMouseDown(e, { id, filePath, isDir: false, kind: resourceKind });
   }
 </script>
@@ -96,15 +98,15 @@
   class:opacity-50={$hasUnsavedChanges || $saving}
 >
   <a
-    class="w-full truncate flex items-center gap-x-1 font-medium {isProtectedDirectory ||
+    class="w-full truncate flex items-center gap-x-1 font-medium {protectedDirectory ||
     isDotFile
       ? 'hover:text-fg-secondary text-fg-muted '
       : 'text-fg-primary hover:text-fg-primary'}"
-    href="/files{filePath}"
+    href={getFileHref(filePath)}
     {id}
     class:italic={$hasUnsavedChanges || $saving}
-    on:click={fireTelemetry}
-    on:mousedown={handleMouseDown}
+    onclick={fireTelemetry}
+    onmousedown={handleMouseDown}
     style:padding-left="{padding}px"
   >
     <div class="flex-none">
@@ -112,6 +114,8 @@
         <LoadingSpinner size="14px" />
       {:else if $error}
         <Alert size="14px" color="red" />
+      {:else if $hasWarnings && !$hasErrors}
+        <Alert size="14px" color="var(--color-warning-icon, #d97706)" />
       {:else}
         <svelte:component
           this={getIconComponent(resourceKind, filePath)}
@@ -119,22 +123,27 @@
         />
       {/if}
     </div>
-    <span class="truncate w-full" class:text-red-600={$hasErrors}>
+    <span
+      class="truncate w-full"
+      class:text-red-600={$hasErrors}
+      class:text-yellow-600={$hasWarnings && !$hasErrors}
+    >
       {fileName}
     </span>
   </a>
-  {#if !isProtectedDirectory && !isProtectedFile}
+  {#if !protectedDirectory && !isProtectedFile}
     <DropdownMenu.Root bind:open={contextMenuOpen}>
-      <DropdownMenu.Trigger asChild let:builder>
-        <ContextButton
-          builders={[builder]}
-          id="more-actions-{filePath}"
-          label="{filePath} actions menu trigger"
-          suppressTooltip={contextMenuOpen}
-          tooltipText="More actions"
-        >
-          <MoreHorizontal />
-        </ContextButton>
+      <DropdownMenu.Trigger>
+        {#snippet child({ props })}
+          <ContextButton
+            {...props}
+            label="{filePath} actions menu trigger"
+            suppressTooltip={contextMenuOpen}
+            tooltipText="More actions"
+          >
+            <MoreHorizontal />
+          </ContextButton>
+        {/snippet}
       </DropdownMenu.Trigger>
       <DropdownMenu.Content
         align="start"
@@ -143,16 +152,16 @@
         sideOffset={16}
       >
         {#if $hasUnsavedChanges}
-          <NavigationMenuItem on:click={saveLocalContent}>
+          <NavigationMenuItem onclick={saveLocalContent}>
             <Save slot="icon" size="12px" />
             Save file
           </NavigationMenuItem>
         {/if}
-        <NavigationMenuItem on:click={() => onRename(filePath, false)}>
+        <NavigationMenuItem onclick={() => onRename(filePath, false)}>
           <EditIcon slot="icon" />
           Rename
         </NavigationMenuItem>
-        <NavigationMenuItem on:click={() => onDuplicate(filePath, false)}>
+        <NavigationMenuItem onclick={() => onDuplicate(filePath, false)}>
           <CopyIcon slot="icon" />
           Duplicate
         </NavigationMenuItem>
@@ -170,7 +179,7 @@
           {/if}
         {/if}
         <NavigationMenuSeparator />
-        <NavigationMenuItem on:click={() => onDelete(filePath, false)}>
+        <NavigationMenuItem onclick={() => onDelete(filePath, false)}>
           <Trash slot="icon" />
           Delete
         </NavigationMenuItem>

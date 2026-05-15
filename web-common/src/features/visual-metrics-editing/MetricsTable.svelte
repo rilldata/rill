@@ -49,6 +49,7 @@
 
   $: wrapperWidth = wrapperRect.width;
   $: expressionWidth = Math.max(180, wrapperRect.width * 0.25);
+  $: hasHorizontalOverflow = tableWidth > wrapperWidth;
 
   $: filteredIndices = items
     .map((_, i) => i)
@@ -123,8 +124,9 @@
 <div
   class="wrapper"
   style:max-height="{Math.max(80, ((filteredIndices?.length ?? 0) + 1) * 40) +
-    1}px"
-  on:scroll={(e) => {
+    1 +
+    (hasHorizontalOverflow ? 15 : 0)}px"
+  onscroll={(e) => {
     scroll = e.currentTarget.scrollLeft;
   }}
   bind:contentRect={wrapperRect}
@@ -203,11 +205,12 @@
         />
       {:else}
         <tr style:height="40px" class="relative">
-          <div
+          <td
+            colspan="100"
             class="absolute left-0 h-10 px-6 items-center flex w-full italic"
           >
             No items matching search
-          </div>
+          </td>
         </tr>
       {/each}
 
@@ -232,7 +235,7 @@
       style:top="{insertIndex * ROW_HEIGHT + ROW_HEIGHT - (last ? 1 : 0)}px"
       class:last
       class="row-insert-marker"
-    />
+    ></span>
   {/if}
 </div>
 

@@ -4,6 +4,7 @@
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { getFileHref } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
@@ -72,8 +73,10 @@
   </div>
 {:else}
   <DropdownMenu.Root>
-    <DropdownMenu.Trigger asChild let:builder>
-      <NavigateOrDropdown resources={dashboards} {builder} />
+    <DropdownMenu.Trigger>
+      {#snippet child({ props })}
+        <NavigateOrDropdown {...props} resources={dashboards} />
+      {/snippet}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="end">
       <DropdownMenu.Group>
@@ -83,7 +86,9 @@
             resource?.meta?.name?.name}
           {@const filePath = resource?.meta?.filePaths?.[0]}
           {#if label && filePath}
-            <DropdownMenu.Item href={`/files/${removeLeadingSlash(filePath)}`}>
+            <DropdownMenu.Item
+              href={getFileHref(`/${removeLeadingSlash(filePath)}`)}
+            >
               <ExploreIcon />
               {label}
             </DropdownMenu.Item>
@@ -91,7 +96,7 @@
         {/each}
         <DropdownMenu.Separator />
         <DropdownMenu.Item
-          on:click={async () => {
+          onclick={async () => {
             if (resource?.meta?.name?.name) {
               // Use developer agent if enabled, otherwise fall back to RPC
               if ($developerChat) {
@@ -112,7 +117,7 @@
           Generate Canvas Dashboard{$ai ? " with AI" : ""}
         </DropdownMenu.Item>
         <DropdownMenu.Item
-          on:click={async () => {
+          onclick={async () => {
             if (resource)
               await createAndPreviewExplore(
                 runtimeClient,

@@ -293,6 +293,18 @@ function toExploreUrlParams(
     (value) => (value ? "true" : "false"),
   );
 
+  maybeSetParam(
+    searchParams,
+    partialExploreState,
+    "dynamicYAxisScale",
+    (value) => (value ? "true" : "false"),
+  );
+
+  if (partialExploreState.tdd?.chartType) {
+    const chartType = ToURLParamTDDChartMap[partialExploreState.tdd.chartType];
+    searchParams.set(ExploreStateURLParams.ChartType, chartType ?? "");
+  }
+
   return searchParams;
 }
 
@@ -362,6 +374,14 @@ function toTimeDimensionUrlParams(partialExploreState: Partial<ExploreState>) {
 
   // TODO: pin
   // TODO: what should be done when chartType is set but expandedMeasureName is not
+
+  maybeSetParam(
+    searchParams,
+    partialExploreState,
+    "dynamicYAxisScale",
+    (value) => (value ? "true" : "false"),
+  );
+
   return searchParams;
 }
 
@@ -390,10 +410,18 @@ function toPivotUrlParams(partialExploreState: Partial<ExploreState>) {
   searchParams.set(ExploreStateURLParams.PivotColumns, colsParams);
 
   const sort = partialExploreState.pivot.sorting?.[0];
-  const sortId =
-    sort?.id in ToURLParamTimeDimensionMap
-      ? ToURLParamTimeDimensionMap[sort?.id]
-      : sort?.id;
+  let sortId = sort?.id;
+  if (sortId) {
+    if (sortId in ToURLParamTimeDimensionMap) {
+      sortId = ToURLParamTimeDimensionMap[sortId];
+    } else if (sortId.includes("_rill_")) {
+      // Handle TanStack Table time dimension format: {timeDimension}_rill_{grain}
+      const grain = sortId.split("_rill_")[1];
+      if (grain in ToURLParamTimeDimensionMap) {
+        sortId = ToURLParamTimeDimensionMap[grain];
+      }
+    }
+  }
 
   searchParams.set(ExploreStateURLParams.SortBy, sortId ?? "");
 

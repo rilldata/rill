@@ -167,6 +167,10 @@ const config = {
                 label: "Project Files",
               },
               {
+                to: "/reference/time-syntax",
+                label: "Time Syntax",
+              },
+              {
                 to: "/reference/time-syntax/rill-iso-extensions",
                 label: "Rill ISO 8601",
               },
@@ -178,7 +182,6 @@ const config = {
                 to: "/reference/cli",
                 label: "CLI",
               },
-
               {
                 to: "/api/admin/",
                 label: "REST API",
@@ -186,19 +189,6 @@ const config = {
 
             ],
           },
-
-          // {
-          //   type: 'dropdown',
-          //   label: 'Reference',
-          //   position: 'left',
-          //   className: "navbar-reference-link",
-          //   items: [
-          //     { to: '/reference/project-files', label: 'Project Files' },
-          //     { to: '/reference/cli', label: 'CLI' },
-          //     { to: '/api/admin/', label: 'REST API' },
-
-          //   ],
-          // },
           {
             to: "/contact",
             label: "Contact Us",
@@ -305,7 +295,7 @@ const config = {
           },
           {
             from: '/integration/embedding',
-            to: '/developers/embed/dashboards',
+            to: '/developers/embed/iframe',
           },
           {
             from: '/develop/import-data',
@@ -1277,27 +1267,35 @@ const config = {
           },
           {
             from: '/integrate/embed-api',
-            to: '/developers/embed/iframe-api',
+            to: '/developers/embed/postmessage',
           },
           {
             from: '/developers/integrate/embed-iframe-api',
-            to: '/developers/embed/iframe-api',
+            to: '/developers/embed/postmessage',
           },
           {
             from: '/developers/embed/embed-iframe-api',
-            to: '/developers/embed/iframe-api',
+            to: '/developers/embed/postmessage',
           },
           {
             from: '/integrate/embedding',
-            to: '/developers/embed/dashboards',
+            to: '/developers/embed/iframe',
           },
           {
             from: '/developers/integrate/embedding',
-            to: '/developers/embed/dashboards',
+            to: '/developers/embed/iframe',
           },
           {
             from: '/developers/embed/embedding',
-            to: '/developers/embed/dashboards',
+            to: '/developers/embed/iframe',
+          },
+          {
+            from: '/developers/embed/dashboards',
+            to: '/developers/embed/iframe',
+          },
+          {
+            from: '/developers/embed/iframe-api',
+            to: '/developers/embed/postmessage',
           },
           {
             from: '/integrate/url-parameters',

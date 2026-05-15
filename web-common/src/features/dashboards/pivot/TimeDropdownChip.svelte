@@ -18,6 +18,8 @@
   export let availableGrains: V1TimeGrain[] = [];
   export let onTimeGrainSelect: (timeGrain: V1TimeGrain) => void = () => {};
   export let onRemove: () => void = () => {};
+  export let onmousedown: ((e: MouseEvent) => void) | undefined = undefined;
+  export let onclick: ((e: MouseEvent) => void) | undefined = undefined;
 
   let dropdownOpen = false;
 
@@ -34,38 +36,39 @@
 
 {#if timeGrainOptions.length > 0}
   <DropdownMenu.Root bind:open={dropdownOpen}>
-    <DropdownMenu.Trigger asChild let:builder>
-      <div use:builder.action {...builder}>
-        <PivotChip
-          {item}
-          {removable}
-          {grab}
-          {active}
-          {slideDuration}
-          {fullWidth}
-          on:mousedown
-          on:click
-          {onRemove}
-        >
-          <div class="grain-dropdown" slot="body">
-            <span
-              class="flex-none transition-transform"
-              class:-rotate-180={dropdownOpen}
-            >
-              <CaretDownIcon size="12px" />
-            </span>
-          </div>
-        </PivotChip>
-      </div>
+    <DropdownMenu.Trigger>
+      {#snippet child({ props })}
+        <div {...props}>
+          <PivotChip
+            {item}
+            {removable}
+            {grab}
+            {active}
+            {slideDuration}
+            {fullWidth}
+            {onmousedown}
+            {onclick}
+            {onRemove}
+          >
+            <div class="grain-dropdown" slot="body">
+              <span
+                class="flex-none transition-transform"
+                class:-rotate-180={dropdownOpen}
+              >
+                <CaretDownIcon size="12px" />
+              </span>
+            </div>
+          </PivotChip>
+        </div>
+      {/snippet}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content class="min-w-52" align="start">
       {#each timeGrainOptions as option (option.key)}
         <DropdownMenu.CheckboxItem
           checkRight
-          role="menuitem"
           checked={option.key === item.id}
           class="text-xs cursor-pointer capitalize"
-          on:click={() => handleTimeGrainSelect(option.key)}
+          onclick={() => handleTimeGrainSelect(option.key)}
         >
           {option.main}
         </DropdownMenu.CheckboxItem>
@@ -80,8 +83,8 @@
     {active}
     {slideDuration}
     {fullWidth}
-    on:mousedown
-    on:click
+    {onmousedown}
+    {onclick}
     {onRemove}
   />
 {/if}

@@ -6,6 +6,10 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import LastRefreshedDate from "@rilldata/web-admin/features/dashboards/listing/LastRefreshedDate.svelte";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
+  import {
+    dashboardChatActions,
+    dashboardChatOpen,
+  } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
   import type {
     V1Resource,
     V1ResourceName,
@@ -81,16 +85,16 @@
         </ol>
       </nav>
     {:else}
-      <div class="flex-1" />
+      <div class="flex-1"></div>
     {/if}
 
     {#if showDashboardChat}
       <div class="flex gap-x-4 items-center">
         <LastRefreshedDate dashboard={activeResource?.name} />
-        <ChatToggle />
+        <ChatToggle open={dashboardChatOpen} actions={dashboardChatActions} />
       </div>
     {/if}
   </div>
 {:else}
-  <div />
+  <div></div>
 {/if}

@@ -5,7 +5,7 @@
   type $$Props = AlertDialogPrimitive.TitleProps;
 
   let className: $$Props["class"] = undefined;
-  export let level: $$Props["level"] = "h3";
+  export let level: $$Props["level"] = 3;
   export { className as class };
 </script>
 

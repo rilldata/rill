@@ -153,7 +153,7 @@
       class:left-shift={extraLeftPadding}
     >
       {#if mockUserHasNoAccess}
-        <div class="mb-3" />
+        <div class="mb-3"></div>
       {:else}
         {#key exploreName}
           <section class="flex relative justify-between gap-x-4 py-4 pb-6 px-4">

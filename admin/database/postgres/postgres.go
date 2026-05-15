@@ -463,9 +463,10 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 			prod_ttl_seconds,
 			prod_version,
 			dev_slots,
-			dev_ttl_seconds
+			dev_ttl_seconds,
+			override_disk_gb
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19) RETURNING *`,
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20) RETURNING *`,
 		opts.OrganizationID,
 		opts.Name,
 		opts.Description,
@@ -485,6 +486,7 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 		opts.ProdVersion,
 		opts.DevSlots,
 		opts.DevTTLSeconds,
+		opts.OverrideDiskGB,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
@@ -530,8 +532,9 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 			prod_version = $17,
 			dev_slots = $18,
 			dev_ttl_seconds = $19,
+			override_disk_gb = $20,
 			updated_on = now()
-		WHERE id = $20
+		WHERE id = $21
 		RETURNING *
 		`,
 		opts.Name,
@@ -553,6 +556,7 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 		opts.ProdVersion,
 		opts.DevSlots,
 		opts.DevTTLSeconds,
+		opts.OverrideDiskGB,
 		id,
 	).StructScan(res)
 	if err != nil {
@@ -640,8 +644,7 @@ func (c *connection) FindDeployments(ctx context.Context, afterID string, limit 
 	return res, nil
 }
 
-// FindExpiredDeployments returns all the deployments which are expired as per ttl
-func (c *connection) FindExpiredDeployments(ctx context.Context) ([]*database.Deployment, error) {
+func (c *connection) FindDeploymentsToStop(ctx context.Context) ([]*database.Deployment, error) {
 	var res []*database.Deployment
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT d.* FROM deployments d
@@ -650,6 +653,18 @@ func (c *connection) FindExpiredDeployments(ctx context.Context) ([]*database.De
 		AND ((p.prod_ttl_seconds IS NOT NULL AND d.used_on + p.prod_ttl_seconds * interval '1 second' < now())
 		OR (d.environment = 'dev' AND p.dev_ttl_seconds IS NOT NULL AND d.used_on + p.dev_ttl_seconds * interval '1 second' < now()))
 	`, database.DeploymentStatusStopped)
+	if err != nil {
+		return nil, parseErr("deployments", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindDeploymentsToDelete(ctx context.Context, retention time.Duration) ([]*database.Deployment, error) {
+	var res []*database.Deployment
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT * FROM deployments
+		WHERE status = $1 AND desired_status_updated_on + $2 < now()
+	`, database.DeploymentStatusStopped, retention)
 	if err != nil {
 		return nil, parseErr("deployments", err)
 	}
@@ -3167,6 +3182,11 @@ func (c *connection) FindProjectVariables(ctx context.Context, projectID string,
 }
 
 func (c *connection) UpsertProjectVariable(ctx context.Context, projectID, environment string, vars map[string]string, userID string) ([]*database.ProjectVariable, error) {
+	var userIDPtr *string
+	if userID != "" {
+		userIDPtr = &userID
+	}
+
 	query := `INSERT INTO project_variables (project_id, environment, name, value, value_encryption_key_id, updated_by_user_id, updated_on)
 	VALUES %s
 	ON CONFLICT (project_id, environment, lower(name)) DO UPDATE SET
@@ -3176,7 +3196,7 @@ func (c *connection) UpsertProjectVariable(ctx context.Context, projectID, envir
 		updated_on = now() RETURNING *`
 
 	var placeholders strings.Builder
-	args := []any{projectID, environment, userID}
+	args := []any{projectID, environment, userIDPtr}
 	i := 3
 	for key, value := range vars {
 		// Encrypt the variables
@@ -3721,6 +3741,10 @@ func (b *billingIssueDTO) AsModel() *database.BillingIssue {
 		metadata = &database.BillingIssueMetadataSubscriptionCancelled{}
 	case database.BillingIssueTypeNeverSubscribed:
 		metadata = &database.BillingIssueMetadataNeverSubscribed{}
+	case database.BillingIssueTypeOnCreditTrial:
+		metadata = &database.BillingIssueMetadataOnCreditTrial{}
+	case database.BillingIssueTypeTrialCreditsDepleted:
+		metadata = &database.BillingIssueMetadataTrialCreditsDepleted{}
 	default:
 	}
 	if err := json.Unmarshal(b.Metadata, &metadata); err != nil {
@@ -3741,7 +3765,7 @@ func (b *billingIssueDTO) getBillingIssueLevel() database.BillingIssueLevel {
 	if b.Type == database.BillingIssueTypeUnspecified {
 		return database.BillingIssueLevelUnspecified
 	}
-	if b.Type == database.BillingIssueTypeOnTrial {
+	if b.Type == database.BillingIssueTypeOnTrial || b.Type == database.BillingIssueTypeOnCreditTrial {
 		return database.BillingIssueLevelWarning
 	}
 	return database.BillingIssueLevelError

@@ -56,12 +56,11 @@
 
   $: primaryRealSegments = primaryBridgeResult.inputSegments;
   $: primarySegments = primaryBridgeResult.bridgedSegments;
-  $: primarySingletons =
-    primarySeries && !connectNulls
-      ? primarySegments
-          .filter((s) => s.startIndex === s.endIndex)
-          .map((s) => s.startIndex)
-      : [];
+  $: primarySingletons = primarySeries
+    ? primarySegments
+        .filter((s) => s.startIndex === s.endIndex)
+        .map((s) => s.startIndex)
+    : [];
 
   $: secondarySeries = series.slice(1).map((s) => {
     const bridged = bridgeSmallGaps(
@@ -71,11 +70,9 @@
       scales.x,
       connectNulls,
     );
-    const singletons = !connectNulls
-      ? bridged.bridgedSegments
-          .filter((seg) => seg.startIndex === seg.endIndex)
-          .map((seg) => seg.startIndex)
-      : [];
+    const singletons = bridged.bridgedSegments
+      .filter((seg) => seg.startIndex === seg.endIndex)
+      .map((seg) => seg.startIndex);
     return { ...s, bridgedValues: bridged.values, singletons };
   });
 

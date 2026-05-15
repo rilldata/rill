@@ -1,8 +1,10 @@
 import {
   sanitizeFieldName,
+  sanitizeTitleForVegaTooltip,
   sanitizeValueForVega,
 } from "@rilldata/web-common/components/vega/util";
-import type { CartesianChartSpec } from "@rilldata/web-common/features/components/charts";
+import { createBrushParam } from "@rilldata/web-common/features/components/charts/brush-builder";
+import type { CartesianChartSpec } from "@rilldata/web-common/features/components/charts/cartesian/CartesianChartProvider";
 import type {
   ChartDataResult,
   ChartDomainValues,
@@ -33,17 +35,21 @@ import {
 import type { Color } from "chroma-js";
 import merge from "deepmerge";
 import type { VisualizationSpec } from "svelte-vega";
+import type { ExprRef, SignalRef } from "vega";
 import type { Config } from "vega-lite";
 import type {
   ColorDef,
   Field,
   MarkPropDef,
   PositionFieldDef,
-} from "vega-lite/build/src/channeldef";
-import type { Encoding } from "vega-lite/build/src/encoding";
-import type { TopLevelParameter } from "vega-lite/build/src/spec/toplevel";
-import type { TopLevelUnitSpec, UnitSpec } from "vega-lite/build/src/spec/unit";
-import type { ExprRef, SignalRef } from "vega-typings";
+} from "vega-lite/types_unstable/channeldef.js";
+import type { Encoding } from "vega-lite/types_unstable/encoding.js";
+import type { SelectionParameter } from "vega-lite/types_unstable/selection.js";
+import type {
+  TopLevelUnitSpec,
+  UnitSpec,
+} from "vega-lite/types_unstable/spec/index.js";
+import type { TopLevelParameter } from "vega-lite/types_unstable/spec/toplevel.js";
 
 export function createMultiLayerBaseSpec() {
   const baseSpec: VisualizationSpec = {
@@ -93,14 +99,23 @@ export function createPositionEncoding(
         ...(field.max !== undefined && { domainMax: field.max }),
       },
     }),
-    axis: {
-      ...(field.labelAngle !== undefined && { labelAngle: field.labelAngle }),
-      ...(field.type === "quantitative" && {
-        formatType: sanitizeFieldName(field.field),
-      }),
-      ...(metaData && "format" in metaData && { format: metaData.format }),
-      ...(!field.showAxisTitle && { title: null }),
-    },
+    axis:
+      field.axisOrient === "none"
+        ? null
+        : {
+            ...(field.labelAngle !== undefined && {
+              labelAngle: field.labelAngle,
+            }),
+            ...(field.axisOrient && { orient: field.axisOrient }),
+            ...(field.type === "quantitative" && {
+              formatType: sanitizeFieldName(field.field),
+            }),
+            ...(metaData &&
+              "format" in metaData && {
+                format: metaData.format,
+              }),
+            ...(!field.showAxisTitle && { title: null }),
+          },
   };
 }
 
@@ -381,9 +396,11 @@ export function createCartesianMultiValueTooltipChannel(
 
     if (domainValues) {
       for (const value of domainValues) {
+        const title = sanitizeTitleForVegaTooltip(value);
         // Add current period value
         tooltipFields.push({
           field: sanitizeValueForVega(value),
+          title,
           type: "quantitative" as const,
           formatType: yFormatType,
         });
@@ -391,6 +408,7 @@ export function createCartesianMultiValueTooltipChannel(
         // Add previous period value
         tooltipFields.push({
           field: sanitizeValueForVega(value) + ComparisonDeltaPreviousSuffix,
+          title: title + ComparisonDeltaPreviousSuffix,
           type: "quantitative" as const,
           formatType: yFormatType,
         });
@@ -419,6 +437,7 @@ export function createCartesianMultiValueTooltipChannel(
     multiValueTooltipChannel = data.domainValues?.[colorField]?.map(
       (value) => ({
         field: sanitizeValueForVega(value as string),
+        title: sanitizeTitleForVegaTooltip(value),
         type: "quantitative" as const,
         formatType: yFormatType,
       }),
@@ -450,6 +469,7 @@ export function buildHoverRuleLayer(args: {
   xBand?: number;
   isBarMark?: boolean;
   isDarkMode?: boolean;
+  isInteractive?: boolean;
 }): UnitSpec<Field> {
   const {
     xField,
@@ -462,7 +482,25 @@ export function buildHoverRuleLayer(args: {
     xBand,
     isBarMark = false,
     isDarkMode = false,
+    isInteractive = false,
   } = args;
+
+  const params: SelectionParameter[] = [
+    {
+      name: "hover",
+      select: {
+        type: "point",
+        encodings: ["x"],
+        on: "pointerover",
+        clear: "pointerout",
+        ...(!isBarMark && { nearest: true }),
+      },
+    },
+  ];
+
+  if (isInteractive) {
+    params.push(createBrushParam());
+  }
 
   return {
     transform:
@@ -478,8 +516,8 @@ export function buildHoverRuleLayer(args: {
     mark: {
       type: isBarMark ? "bar" : "rule",
       clip: true,
-      opacity: 0.6,
-      ...(!isBarMark && { strokeWidth: 5 }),
+      opacity: 0.8,
+      ...(!isBarMark && { strokeWidth: 1.5 }),
     },
     encoding: {
       x: {
@@ -505,17 +543,6 @@ export function buildHoverRuleLayer(args: {
         ? multiValueTooltipChannel
         : defaultTooltip,
     },
-    params: [
-      {
-        name: "hover",
-        select: {
-          type: "point",
-          encodings: ["x"],
-          on: "pointerover",
-          clear: "pointerout",
-          ...(!isBarMark && { nearest: true }),
-        },
-      },
-    ],
+    params,
   };
 }

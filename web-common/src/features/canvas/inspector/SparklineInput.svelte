@@ -31,7 +31,7 @@
     <InputLabel small {label} id={key} faint={!showSparkline} />
     <Switch
       checked={showSparkline}
-      on:click={() => {
+      onclick={() => {
         let newSparklinePosition = "bottom";
         if (showSparkline) newSparklinePosition = "none";
         onChange(newSparklinePosition);

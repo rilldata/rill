@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import ColumnProfile from "@rilldata/web-common/features/column-profile/ColumnProfile.svelte";
@@ -23,7 +24,6 @@
   } from "@rilldata/web-common/runtime-client";
   import { keepPreviousData } from "@tanstack/svelte-query";
   import { derived } from "svelte/store";
-  import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
   import InspectorHeaderGrid from "../../../layout/inspector/InspectorHeaderGrid.svelte";
   import IncrementalProcessing from "../incremental/IncrementalProcessing.svelte";

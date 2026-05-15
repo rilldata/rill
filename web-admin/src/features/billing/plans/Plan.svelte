@@ -1,48 +1,107 @@
 <script lang="ts">
-  import { createAdminServiceGetBillingSubscription } from "@rilldata/web-admin/client";
-  import CancelledTeamPlan from "@rilldata/web-admin/features/billing/plans/CancelledTeamPlan.svelte";
-  import EnterprisePlan from "@rilldata/web-admin/features/billing/plans/EnterprisePlan.svelte";
-  import POCPlan from "@rilldata/web-admin/features/billing/plans/POCPlan.svelte";
-  import TeamPlan from "@rilldata/web-admin/features/billing/plans/TeamPlan.svelte";
-  import TrialPlan from "@rilldata/web-admin/features/billing/plans/TrialPlan.svelte";
   import {
-    isManagedPlan,
-    isTeamPlan,
-  } from "@rilldata/web-admin/features/billing/plans/utils";
+    createAdminServiceGetBillingSubscription,
+    V1BillingIssueType,
+  } from "@rilldata/web-admin/client";
+  import { getPlanTierForSubscription } from "@rilldata/web-admin/features/billing/plans/selectors";
+  import type {
+    PlanTier,
+    TeamPlanDialogTypes,
+  } from "@rilldata/web-admin/features/billing/plans/types";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
+  import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
+  import CancelPlanDialog from "@rilldata/web-admin/features/billing/plans/dialog/CancelPlanDialog.svelte";
+  import UpgradeToProDialog from "@rilldata/web-admin/features/billing/plans/dialog/UpgradeToProDialog.svelte";
+  import ProPlan from "@rilldata/web-admin/features/billing/plans/ProPlan.svelte";
+  import LegacyTeamPlan from "@rilldata/web-admin/features/billing/plans/LegacyTeamPlan.svelte";
+  import FreePlan from "@rilldata/web-admin/features/billing/plans/FreePlan.svelte";
+  import LegacyTrialPlan from "@rilldata/web-admin/features/billing/plans/LegacyTrialPlan.svelte";
+  import EnterprisePlan from "@rilldata/web-admin/features/billing/plans/EnterprisePlan.svelte";
 
-  export let organization: string;
-  export let showUpgradeDialog: boolean;
+  let {
+    organization,
+    showUpgradeDialog,
+    billingPortalUrl,
+    cancelOpen = $bindable(false),
+  }: {
+    organization: string;
+    showUpgradeDialog: boolean;
+    billingPortalUrl: string | undefined;
+    cancelOpen?: boolean;
+  } = $props();
 
-  $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
-  $: subscription = $subscriptionQuery?.data?.subscription;
-  $: hasPayment = !!$subscriptionQuery?.data?.organization?.paymentCustomerId;
-  $: plan = subscription?.plan;
+  let subscriptionQuery = $derived(
+    createAdminServiceGetBillingSubscription(organization),
+  );
+  let subscription = $derived($subscriptionQuery?.data?.subscription);
 
-  $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
+  let categorisedIssues = $derived(
+    useCategorisedOrganizationBillingIssues(organization),
+  );
 
-  // fresh orgs will have a never subscribed issue associated with it
-  $: neverSubbed = !!$categorisedIssues.data?.neverSubscribed;
-  // trial plan will have a trial issue associated with it
-  $: isTrial = !!$categorisedIssues.data?.trial;
-  // ended subscription will have a cancelled issue associated with it
-  $: subHasEnded = !!$categorisedIssues.data?.cancelled;
-  $: subIsTeamPlan = plan && isTeamPlan(plan.name);
-  $: subIsManagedPlan = plan && isManagedPlan(plan.name);
-  $: subIsEnterprisePlan =
-    plan && !isTrial && !subIsTeamPlan && !subIsManagedPlan;
+  let subHasEnded = $derived(!!$categorisedIssues.data?.cancelled);
+
+  let currentPlan: PlanTier = $derived(
+    getPlanTierForSubscription(subscription, $categorisedIssues.data),
+  );
+
+  let isTrialExpired = $derived(
+    $categorisedIssues.data?.trial?.type ===
+      V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_ENDED ||
+      $categorisedIssues.data?.trial?.type ===
+        V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED,
+  );
+
+  let dialogType: TeamPlanDialogTypes = $derived.by(() => {
+    if (subHasEnded) return "renew";
+    if (isTrialExpired) return "trial-expired";
+    return "base";
+  });
+
+  let renewEndDate = $derived(
+    $categorisedIssues.data?.cancelled?.metadata?.subscriptionCancelled
+      ?.endDate ?? "",
+  );
+
+  // Upgrade dialog
+  let upgradeDialogOpen = $state(false);
+  $effect(() => {
+    if (showUpgradeDialog) upgradeDialogOpen = true;
+  });
+
+  // Pro upgrade confirmation
+  let upgradeProDialogOpen = $state(false);
+
+  function showUpgradeProDialog() {
+    upgradeProDialogOpen = true;
+  }
 </script>
 
-{#if neverSubbed}
-  <!-- TODO: once mocks are in. Right now we just disable the routes. -->
-{:else if isTrial}
-  <TrialPlan {organization} {subscription} {showUpgradeDialog} {plan} />
-{:else if subHasEnded}
-  <CancelledTeamPlan {organization} {showUpgradeDialog} {plan} />
-{:else if subIsTeamPlan}
-  <TeamPlan {organization} {subscription} {plan} />
-{:else if subIsManagedPlan}
-  <POCPlan {organization} {hasPayment} {plan} />
-{:else if subIsEnterprisePlan}
-  <EnterprisePlan {organization} {plan} />
+{#if currentPlan === "free"}
+  <FreePlan {organization} upgrade={showUpgradeProDialog} />
+{:else if currentPlan === "pro"}
+  <ProPlan {organization} {subscription} {billingPortalUrl} />
+{:else if currentPlan === "trial"}
+  <LegacyTrialPlan
+    {organization}
+    {subscription}
+    upgrade={showUpgradeProDialog}
+  />
+{:else if currentPlan === "team"}
+  <LegacyTeamPlan {billingPortalUrl} />
+{:else if currentPlan === "managed"}
+  <EnterprisePlan managed />
+{:else if currentPlan === "enterprise"}
+  <EnterprisePlan />
 {/if}
+
+<CancelPlanDialog bind:open={cancelOpen} {organization} />
+
+<StartTeamPlanDialog
+  bind:open={upgradeDialogOpen}
+  {organization}
+  type={dialogType}
+  endDate={renewEndDate}
+/>
+
+<UpgradeToProDialog bind:open={upgradeProDialogOpen} {organization} />

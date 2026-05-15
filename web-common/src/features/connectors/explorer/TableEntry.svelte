@@ -32,7 +32,23 @@
   $: expandedStore = store.getItem(connector, database, databaseSchema, table);
   $: showSchema = $expandedStore;
 
-  const { allowContextMenu, allowNavigateToTable, allowShowSchema } = store;
+  const {
+    allowContextMenu,
+    allowNavigateToTable,
+    allowShowSchema,
+    selectedTableStore,
+  } = store;
+  $: ({
+    connector: selectedConnector,
+    database: selectedDatabase,
+    schema: selectedSchema,
+    table: selectedTable,
+  } = $selectedTableStore);
+  $: isSelected =
+    selectedConnector === connector &&
+    selectedDatabase === database &&
+    selectedSchema === databaseSchema &&
+    selectedTable === table;
 
   $: isModelingSupportedForConnector = useIsModelingSupportedForConnector(
     client,
@@ -53,7 +69,7 @@
     makeTablePreviewHref(driver, connector, database, databaseSchema, table) ||
     undefined;
 
-  $: open = href ? $page.url.pathname === href : false;
+  $: open = isSelected || (href ? $page.url.pathname === href : false);
 
   // Allow navigation when a preview href is available
   $: element = allowNavigateToTable && href ? "a" : "button";
@@ -66,7 +82,8 @@
   >
     {#if allowShowSchema}
       <button
-        on:click={() => {
+        type="button"
+        onclick={() => {
           store.toggleItem(connector, database, databaseSchema, table);
         }}
       >
@@ -81,10 +98,10 @@
     <svelte:element
       this={element}
       class="clickable-text"
-      {...allowNavigateToTable && href ? { href } : {}}
+      {...allowNavigateToTable && href ? { href } : { type: "button" }}
       role="menuitem"
       tabindex="0"
-      on:click={() => {
+      onclick={() => {
         store.toggleItem(connector, database, databaseSchema, table);
       }}
     >
@@ -96,17 +113,18 @@
 
     {#if allowContextMenu && (showGenerateMetricsAndDashboard || isModelingSupported || showGenerateModel)}
       <DropdownMenu.Root bind:open={contextMenuOpen}>
-        <DropdownMenu.Trigger asChild let:builder>
-          <ContextButton
-            id="more-actions-{tableId}"
-            testId="more-actions-context-button"
-            tooltipText="More actions"
-            label="{tableId} actions menu trigger"
-            builders={[builder]}
-            suppressTooltip={contextMenuOpen}
-          >
-            <MoreHorizontal />
-          </ContextButton>
+        <DropdownMenu.Trigger>
+          {#snippet child({ props })}
+            <ContextButton
+              {...props}
+              data-testid="more-actions-context-button"
+              tooltipText="More actions"
+              label="{tableId} actions menu trigger"
+              suppressTooltip={contextMenuOpen}
+            >
+              <MoreHorizontal />
+            </ContextButton>
+          {/snippet}
         </DropdownMenu.Trigger>
         <DropdownMenu.Content
           class="min-w-60"

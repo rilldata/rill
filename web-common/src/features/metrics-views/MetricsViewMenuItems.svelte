@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import CanvasIcon from "@rilldata/web-common/components/icons/CanvasIcon.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import { openResourceGraphQuickView } from "@rilldata/web-common/features/resource-graph/quick-view/quick-view-store";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
@@ -56,7 +56,7 @@
     );
     if (!artifact) return;
     const previousScreenName = getScreenNameFromPage();
-    await goto(`/files${artifact.path}`);
+    await navigateToFile(artifact.path);
     await behaviourEvent?.fireNavigationEvent(
       referenceModelName,
       BehaviourEventMedium.Menu,
@@ -95,19 +95,19 @@
 
 {#if hasMenuItems}
   {#if referenceModelName}
-    <NavigationMenuItem on:click={editModel}>
+    <NavigationMenuItem onclick={editModel}>
       <Model slot="icon" />
       Edit underlying model
     </NavigationMenuItem>
   {/if}
-  <NavigationMenuItem on:click={viewGraph}>
+  <NavigationMenuItem onclick={viewGraph}>
     <GitBranch slot="icon" size="14px" />
     View DAG graph
   </NavigationMenuItem>
   {#if resource}
     <NavigationMenuItem
       disabled={!metricsViewName}
-      on:click={handleCreateCanvasDashboard}
+      onclick={handleCreateCanvasDashboard}
     >
       <CanvasIcon slot="icon" />
       <div class="flex gap-x-2 items-center">
@@ -121,7 +121,7 @@
   {/if}
   {#if resource}
     <NavigationMenuItem
-      on:click={() =>
+      onclick={() =>
         createAndPreviewExplore(
           runtimeClient,
           queryClient,
@@ -140,7 +140,7 @@
     </NavigationMenuItem>
   {/if}
 {:else}
-  <NavigationMenuItem on:click={viewGraph}>
+  <NavigationMenuItem onclick={viewGraph}>
     <GitBranch slot="icon" size="14px" />
     View DAG graph
   </NavigationMenuItem>

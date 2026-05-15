@@ -17,9 +17,10 @@ import (
 )
 
 type fileStoreInputProps struct {
-	Path    string            `mapstructure:"path"`
-	Format  string            `mapstructure:"format"`
-	Headers map[string]string `mapstructure:"headers"`
+	Path           string            `mapstructure:"path"`
+	Format         string            `mapstructure:"format"`
+	Headers        map[string]string `mapstructure:"headers"`
+	LocalFilesHash string            `mapstructure:"local_files_hash"` // set internally. Added here to not generate invalid fields warnings.
 }
 
 type fileStoreToSelfExecutor struct {

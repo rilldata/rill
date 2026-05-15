@@ -1,14 +1,15 @@
 <script lang="ts" context="module">
   import { writable } from "svelte/store";
   const measureLengths = writable(new Map<string, number>());
+  const rowDimensionLengths = writable(new Map<string, number>());
 </script>
 
 <script lang="ts">
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
-  import type { Cell, HeaderGroup, Row } from "@tanstack/svelte-table";
-  import { flexRender } from "@tanstack/svelte-table";
+  import type { Cell, HeaderGroup, Row } from "tanstack-table-8-svelte-5";
+  import { flexRender } from "tanstack-table-8-svelte-5";
   import { cellInspectorStore } from "../stores/cell-inspector-store";
   import {
     getRowNestedLabel,
@@ -19,12 +20,14 @@
     calculateMeasureWidth,
     calculateRowDimensionWidth,
     COLUMN_WIDTH_CONSTANTS as WIDTHS,
+    getNestedRowDimensionWidthKey,
   } from "./pivot-column-width-utils";
   import { isShowMoreRow } from "./pivot-utils";
   import type { PivotDataRow } from "./types";
 
   // State props
   export let hasColumnDimension: boolean;
+  export let widthScopeKey: string;
   export let timeDimension: string;
   export let assembled: boolean;
   export let rowDimensions: DimensionColumnProps;
@@ -61,11 +64,31 @@
   $: hasMeasures = measures.length > 0;
   $: rowDimensionLabel = getRowNestedLabel(rowDimensions);
   $: rowDimensionName = rowDimensionLabel ? rowDimensionLabel : null;
+  $: rowDimensionWidthKey = getNestedRowDimensionWidthKey(
+    widthScopeKey,
+    rowDimensions,
+  );
+
+  $: if (
+    hasRowDimension &&
+    rowDimensionName &&
+    rowDimensionWidthKey &&
+    !$rowDimensionLengths.has(rowDimensionWidthKey)
+  ) {
+    const estimatedWidth = calculateRowDimensionWidth(
+      rowDimensionName,
+      timeDimension,
+      dataRows,
+    );
+
+    rowDimensionLengths.update((rowDimensionLengths) => {
+      return rowDimensionLengths.set(rowDimensionWidthKey, estimatedWidth);
+    });
+  }
 
   $: rowDimensionWidth =
-    hasRowDimension && rowDimensionName
-      ? calculateRowDimensionWidth(rowDimensionName, timeDimension, dataRows)
-      : 0;
+    (rowDimensionWidthKey && $rowDimensionLengths.get(rowDimensionWidthKey)) ||
+    0;
 
   $: {
     // Get the longest column dimension header to ensure proper width calculation
@@ -209,7 +232,13 @@
       min={WIDTHS.MIN_COL_WIDTH}
       max={WIDTHS.MAX_COL_WIDTH}
       dimension={rowDimensionWidth}
-      onUpdate={(d) => (rowDimensionWidth = d)}
+      onUpdate={(d) => {
+        if (!rowDimensionWidthKey) return;
+
+        rowDimensionLengths.update((rowDimensionLengths) => {
+          return rowDimensionLengths.set(rowDimensionWidthKey, d);
+        });
+      }}
       onMouseDown={(e) => {
         resizingMeasure = false;
         onResizeStart(e);
@@ -218,7 +247,7 @@
         resizingMeasure = false;
       }}
     >
-      <div class="resize-bar" />
+      <div class="resize-bar"></div>
     </Resizer>
   </div>
 
@@ -250,7 +279,7 @@
               resizingMeasure = false;
             }}
           >
-            <div class="resize-bar" />
+            <div class="resize-bar"></div>
           </Resizer>
         </div>
       {/each}
@@ -266,9 +295,9 @@
   class:with-measures={hasMeasures}
   role="presentation"
   style:width="{totalLength + rowDimensionWidth}px"
-  on:click={modified({ shift: onCellCopy, click: onCellClick })}
-  on:mousemove={onMouseMove}
-  on:mouseleave={onTableLeave}
+  onclick={modified({ shift: onCellCopy, click: onCellClick })}
+  onmousemove={onMouseMove}
+  onmouseleave={onTableLeave}
 >
   <colgroup>
     {#if rowDimensionName && rowDimensionWidth}
@@ -300,7 +329,7 @@
               class:select-none={header.column.getCanSort()}
               class:flex-row-reverse={isMeasureColumn(header, i)}
               class:border-r={shouldShowHeaderRightBorder(header, i)}
-              on:click={header.column.getToggleSortingHandler()}
+              onclick={header.column.getToggleSortingHandler()}
             >
               {#if !header.isPlaceholder}
                 {#if icon}
@@ -326,7 +355,7 @@
     {/each}
   </thead>
   <tbody>
-    <tr style:height="{before}px" />
+    <tr style:height="{before}px"></tr>
     {#each virtualRows as row (row.index)}
       {@const cells = rows[row.index].getVisibleCells()}
       <tr class:show-more-row={isShowMoreRow(rows[row.index])}>
@@ -336,18 +365,23 @@
               ? cell.column.columnDef.cell(cell.getContext())
               : cell.column.columnDef.cell}
           {@const isActive = isCellActive(cell)}
+          {@const tooltipValue = cell.column.columnDef.meta?.tooltipFormatter
+            ? cell.column.columnDef.meta.tooltipFormatter(cell.getValue())
+            : cell.getValue()}
           <td
             class="ui-copy-number cell truncate group/cell"
             class:active-cell={isActive}
             class:interactive-cell={canShowDataViewer}
             class:border-r={shouldShowRightBorder(i)}
-            data-value={cell.getValue()}
+            data-value={tooltipValue}
             data-rowid={cell.row.id}
             data-columnid={cell.column.id}
             data-rowheader={i === 0 || undefined}
             class:totals-column={i > 0 && i <= measureCount}
-            on:mouseover={() => cellInspectorStore.updateValue(cell.getValue())}
-            on:focus={() => cellInspectorStore.updateValue(cell.getValue())}
+            onmouseover={() =>
+              cellInspectorStore.updateValue(cell.getValue(), tooltipValue)}
+            onfocus={() =>
+              cellInspectorStore.updateValue(cell.getValue(), tooltipValue)}
           >
             {#if result?.component && result?.props}
               <svelte:component
@@ -366,7 +400,7 @@
         {/each}
       </tr>
     {/each}
-    <tr style:height="{after}px" />
+    <tr style:height="{after}px"></tr>
   </tbody>
 </table>
 

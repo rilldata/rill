@@ -7,6 +7,7 @@
   import { setContext } from "svelte";
   import { writable } from "svelte/store";
   import { Theme } from "../themes/theme";
+  import { themeManager } from "../themes/theme-manager";
 
   export let theme: Theme | undefined;
   /**
@@ -29,6 +30,8 @@
   $: if (themeBoundary && styleEl) {
     // @ts-expect-error - textContent is writable but typed as readonly in some environments
     styleEl.textContent = css || "";
+    // Clear cached CSS variable lookups so charts re-resolve against the new theme
+    themeManager.clearCSSVariableCache();
   }
 </script>
 

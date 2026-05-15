@@ -1,18 +1,13 @@
 <script lang="ts">
   import { cn } from "@rilldata/web-common/lib/shadcn";
-  import { Command as CommandPrimitive } from "cmdk-sv";
-
-  // type $$Props = CommandPrimitive.GroupProps;
+  import { Command as CommandPrimitive } from "bits-ui";
 
   let className: string | undefined | null = undefined;
   export { className as class };
 </script>
 
 <CommandPrimitive.Group
-  class={cn(
-    "text-fg-primary [&_[data-cmdk-group-heading]]:text-fg-secondary overflow-hidden py-1 [&_[data-cmdk-group-heading]]:px-2 [&_[data-cmdk-group-heading]]:py-1.5 [&_[data-cmdk-group-heading]]:text-xs [&_[data-cmdk-group-heading]]:font-medium",
-    className,
-  )}
+  class={cn("text-fg-primary overflow-hidden py-1", className)}
   {...$$restProps}
 >
   <slot />

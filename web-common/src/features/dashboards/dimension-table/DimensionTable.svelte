@@ -194,7 +194,7 @@ TableCells – the cell contents.
 >
   <div
     bind:this={container}
-    on:scroll={() => {
+    onscroll={() => {
       horizontalScrolling = container?.scrollLeft > 0;
       /** capture to suppress cell tooltips. Otherwise,
        * there's quite a bit of rendering jank.
@@ -211,8 +211,8 @@ TableCells – the cell contents.
         role="grid"
         tabindex="0"
         class="relative"
-        on:mouseleave={clearActiveIndex}
-        on:blur={clearActiveIndex}
+        onmouseleave={clearActiveIndex}
+        onblur={clearActiveIndex}
         style:will-change="transform, contents"
         style:contain="content"
         style:width="{virtualWidth}px"

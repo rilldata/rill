@@ -19,6 +19,7 @@
   export let assembled = true;
 
   let diffIsNegative = false;
+  let diffIsPositive = false;
   let intValue: string;
   let negSign = "";
   let posSign = "";
@@ -48,6 +49,7 @@
     intValue = Math.round(intPart + fracPart).toString();
 
     diffIsNegative = value?.neg === "-";
+    diffIsPositive = !diffIsNegative && !value?.approxZero && +value.int !== 0;
     negSign = diffIsNegative && !value?.approxZero ? "-" : "";
     approxSign = value?.approxZero ? "~" : "";
     posSign = !diffIsNegative && !approxSign && showPosSign ? "+" : "";
@@ -58,6 +60,7 @@
     // but this whole thing is a mess and needs to be cleaned up.
 
     diffIsNegative = value < 0;
+    diffIsPositive = value > 0;
     intValue = Math.round(100 * value).toString();
     approxSign = Math.abs(value) < 0.005 ? "~" : "";
     posSign = !diffIsNegative && !approxSign && showPosSign ? "+" : "";
@@ -78,7 +81,11 @@
     {#if isNoData}
       <span class="text-fg-secondary">-</span>
     {:else if value !== null && assembled}
-      <span class:text-destructive={diffIsNegative}>
+      <span
+        class="text-fg-secondary"
+        class:text-kpi-negative={diffIsNegative}
+        class:text-kpi-positive={diffIsPositive}
+      >
         {approxSign}{negSign}{posSign}{intValue}{suffix}<span class="opacity-50"
           >%</span
         >

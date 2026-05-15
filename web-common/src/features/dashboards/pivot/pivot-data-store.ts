@@ -16,7 +16,7 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import type { ConnectError } from "@connectrpc/connect";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
-import type { ColumnDef } from "@tanstack/svelte-table";
+import type { ColumnDef } from "tanstack-table-8-svelte-5";
 import { type Readable, derived, readable } from "svelte/store";
 import { getColumnDefForPivot } from "./pivot-column-definition";
 import { getPivotConfig } from "./pivot-data-config";

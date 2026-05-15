@@ -463,7 +463,7 @@ func (a *AST) ResolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			return nil, err
 		}
 
-		expr := fmt.Sprintf("comparison.%s", a.Dialect.EscapeIdentifier(m.Name))
+		expr := fmt.Sprintf("comparison.%s", a.Dialect.EscapeAlias(m.Name))
 		if m.TreatNullsAs != "" {
 			expr = fmt.Sprintf("COALESCE(%s, %s)", expr, m.TreatNullsAs)
 		}
@@ -483,14 +483,14 @@ func (a *AST) ResolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			return nil, err
 		}
 
-		compareExpr := fmt.Sprintf("comparison.%s", a.Dialect.EscapeIdentifier(m.Name))
+		compareExpr := fmt.Sprintf("comparison.%s", a.Dialect.EscapeAlias(m.Name))
 		if m.TreatNullsAs != "" {
 			compareExpr = fmt.Sprintf("COALESCE(%s, %s)", compareExpr, m.TreatNullsAs)
 		}
 
 		return &runtimev1.MetricsViewSpec_Measure{
 			Name:               qm.Name,
-			Expression:         fmt.Sprintf("base.%s - %s", a.Dialect.EscapeIdentifier(m.Name), compareExpr),
+			Expression:         fmt.Sprintf("base.%s - %s", a.Dialect.EscapeAlias(m.Name), compareExpr),
 			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON,
 			ReferencedMeasures: []string{qm.Compute.ComparisonDelta.Measure},
 			DisplayName:        fmt.Sprintf("%s (Δ)", m.DisplayName),
@@ -503,8 +503,8 @@ func (a *AST) ResolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			return nil, err
 		}
 
-		base := fmt.Sprintf("base.%s", a.Dialect.EscapeIdentifier(m.Name))
-		compareExpr := fmt.Sprintf("comparison.%s", a.Dialect.EscapeIdentifier(m.Name))
+		base := fmt.Sprintf("base.%s", a.Dialect.EscapeAlias(m.Name))
+		compareExpr := fmt.Sprintf("comparison.%s", a.Dialect.EscapeAlias(m.Name))
 		if m.TreatNullsAs != "" {
 			compareExpr = fmt.Sprintf("COALESCE(%s, %s)", compareExpr, m.TreatNullsAs)
 		}
@@ -531,8 +531,8 @@ func (a *AST) ResolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 
 		// StarRocks returns DECIMAL for division, which gets mapped to string.
 		// Cast to DOUBLE for consistent numeric handling across all dialects.
-		expr := fmt.Sprintf("%s/%#f", a.Dialect.EscapeIdentifier(m.Name), *qm.Compute.PercentOfTotal.Total)
-		if a.Dialect == drivers.DialectStarRocks {
+		expr := fmt.Sprintf("%s/%#f", a.Dialect.EscapeAlias(m.Name), *qm.Compute.PercentOfTotal.Total)
+		if a.Dialect.String() == drivers.DialectNameStarRocks {
 			expr = fmt.Sprintf("CAST(%s AS DOUBLE)", expr)
 		}
 
@@ -680,7 +680,7 @@ func (a *AST) WrapSelect(s *SelectNode, innerAlias string) {
 		s.DimFields = append(s.DimFields, FieldNode{
 			Name:        f.Name,
 			DisplayName: f.DisplayName,
-			Expr:        a.Dialect.EscapeMember(cpy.Alias, f.Name),
+			Expr:        a.Dialect.EscapeMemberAlias(cpy.Alias, f.Name),
 		})
 	}
 
@@ -689,7 +689,7 @@ func (a *AST) WrapSelect(s *SelectNode, innerAlias string) {
 			s.DimFields = append(s.DimFields, FieldNode{
 				Name:        f.Name,
 				DisplayName: f.DisplayName,
-				Expr:        a.Dialect.EscapeMember(cpy.Alias, f.Name),
+				Expr:        a.Dialect.EscapeMemberAlias(cpy.Alias, f.Name),
 			})
 		}
 	}
@@ -699,7 +699,7 @@ func (a *AST) WrapSelect(s *SelectNode, innerAlias string) {
 		s.MeasureFields = append(s.MeasureFields, FieldNode{
 			Name:        f.Name,
 			DisplayName: f.DisplayName,
-			Expr:        a.Dialect.EscapeMember(cpy.Alias, f.Name),
+			Expr:        a.Dialect.EscapeMemberAlias(cpy.Alias, f.Name),
 			TreatNullAs: "",
 		})
 	}
@@ -745,12 +745,12 @@ func (a *AST) AddTimeRange(n *SelectNode, tr *TimeRange) error {
 		panic("ast received a non-empty, unresolved time range")
 	}
 
-	timeDimExpr, err := a.getTimeDimensionExpression(tr)
+	timeDimExpr, typeCode, err := a.getTimeDimensionExpression(tr)
 	if err != nil {
 		return err
 	}
 
-	expr, args := a.sqlForTimeRange(timeDimExpr, tr.Start, tr.End)
+	expr, args := a.sqlForTimeRange(timeDimExpr, typeCode, tr.Start, tr.End)
 	n.TimeWhere = &ExprNode{
 		Expr: expr,
 		Args: args,
@@ -822,7 +822,7 @@ func (a *AST) addSimpleMeasure(n *SelectNode, m *runtimev1.MetricsViewSpec_Measu
 		}
 	}
 
-	expr := a.Dialect.EscapeMember(n.FromSelect.Alias, m.Name)
+	expr := a.Dialect.EscapeMemberAlias(n.FromSelect.Alias, m.Name)
 	if n.Group {
 		expr = a.Dialect.AnyValueExpression(expr)
 	}
@@ -855,7 +855,7 @@ func (a *AST) addDerivedMeasure(n *SelectNode, m *runtimev1.MetricsViewSpec_Meas
 			}
 		}
 
-		expr := a.Dialect.EscapeMember(n.FromSelect.Alias, m.Name)
+		expr := a.Dialect.EscapeMemberAlias(n.FromSelect.Alias, m.Name)
 		if n.Group {
 			expr = a.Dialect.AnyValueExpression(expr)
 		}
@@ -931,7 +931,7 @@ func (a *AST) addTimeComparisonMeasure(n *SelectNode, m *runtimev1.MetricsViewSp
 		n.JoinComparisonType = JoinTypeFull
 
 		for i, f := range n.DimFields {
-			f.Expr = fmt.Sprintf("COALESCE(%s, %s)", f.Expr, a.Dialect.EscapeMember("comparison", f.Name))
+			f.Expr = fmt.Sprintf("COALESCE(%s, %s)", f.Expr, a.Dialect.EscapeMemberAlias("comparison", f.Name))
 			n.DimFields[i] = f // Because it's not a value, not a pointer
 		}
 	}
@@ -1087,7 +1087,7 @@ func (a *AST) buildBaseSelect(alias string, comparison bool) (*SelectNode, error
 		// Update the dimension fields to derive from the SpineSelect instead of the FromSelect
 		// (since by definition, some dimension values in the spine might not be present in FromSelect).
 		for i, f := range n.DimFields {
-			f.Expr = a.Dialect.EscapeMember(sn.Alias, f.Name)
+			f.Expr = a.Dialect.EscapeMemberAlias(sn.Alias, f.Name)
 			n.DimFields[i] = f
 		}
 	}
@@ -1207,7 +1207,7 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 		dimSelect.DimFields = append(dimSelect.DimFields, FieldNode{
 			Name:        timeAlias,
 			DisplayName: timeAlias,
-			Expr:        a.Dialect.EscapeMember(rangeSelect.Alias, timeAlias),
+			Expr:        a.Dialect.EscapeMemberAlias(rangeSelect.Alias, timeAlias),
 		})
 
 		return dimSelect, nil
@@ -1277,9 +1277,9 @@ func (a *AST) findFieldForComputedTimeDimension(dims []FieldNode, baseTimeDim st
 	return FieldNode{}, false
 }
 
-// getTimeDimensionExpression returns the SQL expression for the time dimension specified in the TimeRange or the metrics view's time dimension.
+// getTimeDimensionExpression returns the SQL expression and data type code for the time dimension specified in the TimeRange or the metrics view's time dimension.
 // It looks up the time dimension definition in the metrics view or returns the escaped column name from the model.
-func (a *AST) getTimeDimensionExpression(tr *TimeRange) (string, error) {
+func (a *AST) getTimeDimensionExpression(tr *TimeRange) (string, runtimev1.Type_Code, error) {
 	timeDim := a.MetricsView.TimeDimension
 	if tr.TimeDimension != "" {
 		timeDim = tr.TimeDimension
@@ -1287,15 +1287,20 @@ func (a *AST) getTimeDimensionExpression(tr *TimeRange) (string, error) {
 
 	t, err := a.LookupDimension(timeDim, true)
 	if err != nil {
-		return "", fmt.Errorf("time dimension %q not found: %w", timeDim, err)
+		return "", runtimev1.Type_CODE_UNSPECIFIED, fmt.Errorf("time dimension %q not found: %w", timeDim, err)
 	}
 
 	expr, err := a.Dialect.MetricsViewDimensionExpression(t)
 	if err != nil {
-		return "", fmt.Errorf("failed to compile time dimension %q expression: %w", t.Name, err)
+		return "", runtimev1.Type_CODE_UNSPECIFIED, fmt.Errorf("failed to compile time dimension %q expression: %w", t.Name, err)
 	}
 
-	return expr, nil
+	var typeCode runtimev1.Type_Code
+	if t.DataType != nil {
+		typeCode = t.DataType.Code
+	}
+
+	return expr, typeCode, nil
 }
 
 // checkNameForComputedField checks that the name for a computed field does not collide with an existing dimension or measure name.
@@ -1390,17 +1395,18 @@ func (a *AST) checkRequiredDimensionsPresentInQuery(m *runtimev1.MetricsViewSpec
 }
 
 // sqlForTimeRange builds a SQL expression and query args for filtering by a time range.
-func (a *AST) sqlForTimeRange(timeDimExpr string, start, end time.Time) (string, []any) {
+func (a *AST) sqlForTimeRange(timeDimExpr string, typeCode runtimev1.Type_Code, start, end time.Time) (string, []any) {
+	param := a.Dialect.GetTimeDimensionParameter(typeCode)
 	var where string
 	var args []any
 	if !start.IsZero() && !end.IsZero() {
-		where = fmt.Sprintf("%s >= %s AND %s < %s", timeDimExpr, a.Dialect.GetTimeDimensionParameter(), timeDimExpr, a.Dialect.GetTimeDimensionParameter())
+		where = fmt.Sprintf("%s >= %s AND %s < %s", timeDimExpr, param, timeDimExpr, param)
 		args = []any{start, end}
 	} else if !start.IsZero() {
-		where = fmt.Sprintf("%s >= %s", timeDimExpr, a.Dialect.GetTimeDimensionParameter())
+		where = fmt.Sprintf("%s >= %s", timeDimExpr, param)
 		args = []any{start}
 	} else if !end.IsZero() {
-		where = fmt.Sprintf("%s < %s", timeDimExpr, a.Dialect.GetTimeDimensionParameter())
+		where = fmt.Sprintf("%s < %s", timeDimExpr, param)
 		args = []any{end}
 	} else {
 		return "", nil

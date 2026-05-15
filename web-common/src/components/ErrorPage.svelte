@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
@@ -12,6 +12,7 @@
   export let body: string = "";
   export let detail: string | undefined = undefined;
   export let fatal = false;
+  export let href: string = "/";
 
   let showDetail = false;
 
@@ -27,14 +28,19 @@
     {/if}
     <h2 class="header">{header}</h2>
     <CtaMessage>{body}</CtaMessage>
-    {#if !fatal && !onEmbedPage}
-      <CtaButton variant="secondary" href="/">Back to home</CtaButton>
+    {#if (!fatal && !onEmbedPage) || $$slots.cta}
+      <div class="cta-actions">
+        <slot name="cta" />
+        {#if !fatal && !onEmbedPage}
+          <Button type="ghost" {href}>Back to home</Button>
+        {/if}
+      </div>
     {/if}
     {#if detail}
       <section class="detail-section">
         <button
           class="detail-toggle"
-          on:click={() => (showDetail = !showDetail)}
+          onclick={() => (showDetail = !showDetail)}
         >
           {#if !showDetail}
             Show details
@@ -60,6 +66,10 @@
 
   .header {
     @apply text-lg font-semibold;
+  }
+
+  .cta-actions {
+    @apply flex flex-col items-center gap-y-3;
   }
 
   .detail-section {

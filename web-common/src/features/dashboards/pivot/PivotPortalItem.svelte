@@ -9,6 +9,7 @@
   export let position = { left: 0, top: 0 };
   export let width: number | undefined = undefined;
   export let onRelease: () => void = () => {};
+  export let onmousedown: ((e: MouseEvent) => void) | undefined = undefined;
 
   function trackDragItem(e: MouseEvent) {
     requestAnimationFrame(() => {
@@ -20,7 +21,7 @@
   }
 </script>
 
-<svelte:window on:mousemove={trackDragItem} on:mouseup={onRelease} />
+<svelte:window onmousemove={trackDragItem} onmouseup={onRelease} />
 
 <div
   class="portal-item"
@@ -37,8 +38,7 @@
     fullWidth
     {item}
     {removable}
-    on:mousedown
-    on:remove
+    {onmousedown}
   />
 </div>
 

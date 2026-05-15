@@ -44,7 +44,7 @@
   import { featureFlags } from "../../feature-flags";
   import Timestamp from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/Timestamp.svelte";
   import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
-  import { Tooltip } from "bits-ui";
+  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import Metadata from "../time-controls/super-pill/components/Metadata.svelte";
   import { getValidComparisonOption } from "../time-controls/time-range-store";
   import { getPinnedTimeZones } from "../url-state/getDefaultExplorePreset";
@@ -424,7 +424,7 @@
 <div class="flex flex-col gap-y-2 size-full">
   {#if hasTimeSeries}
     <div class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center">
-      <Tooltip.Root openDelay={0}>
+      <Tooltip.Root delayDuration={0}>
         <Tooltip.Trigger class="cursor-default text-fg-secondary">
           <Calendar size="16px" />
         </Tooltip.Trigger>
@@ -479,7 +479,7 @@
       {/if}
 
       {#if !$rillTime && allTimeRangeInterval?.end?.isValid}
-        <Tooltip.Root openDelay={0}>
+        <Tooltip.Root delayDuration={0}>
           <Tooltip.Trigger>
             <span class="text-fg-secondary italic">
               as of <Timestamp

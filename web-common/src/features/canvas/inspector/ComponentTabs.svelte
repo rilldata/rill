@@ -38,7 +38,7 @@
   <div class="flex gap-x-2">
     {#each tabs as { tab, label } (tab)}
       {@const selected = tab === currentTab}
-      <Tab {selected} on:click={() => (currentTab = tab)}>
+      <Tab {selected} onclick={() => (currentTab = tab)}>
         {label}
       </Tab>
     {/each}

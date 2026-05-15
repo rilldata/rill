@@ -111,7 +111,7 @@ export const AllMeasureFilterOperationOptions = [
   },
   {
     value: MeasureFilterOperation.NotEquals,
-    label: "Does Not Equals",
+    label: "Does Not Equal",
     shortLabel: "!=",
   },
 ];

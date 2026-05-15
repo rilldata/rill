@@ -48,7 +48,7 @@ explore:
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
 
-	srv, err := NewServer(context.Background(), &Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
+	srv, err := NewServer(context.Background(), &Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	// Create a test server for the MCP handler with auth middleware
@@ -71,7 +71,6 @@ explore:
 	expectedTools := []string{
 		ai.ListMetricsViewsName,
 		ai.GetMetricsViewName,
-		ai.GetCanvasName,
 		ai.QueryMetricsViewName,
 		ai.QueryMetricsViewSummaryName,
 		ai.ProjectStatusName,

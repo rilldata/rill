@@ -12,10 +12,10 @@ export const PaymentBillingIssueTypes: Partial<
     long: "Input a valid payment to maintain access.",
     short: "payment method",
   },
-  [V1BillingIssueType.BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS]: {
-    long: "Input a valid billing address to maintain access.",
-    short: "billing address",
-  },
+  // [V1BillingIssueType.BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS]: {
+  //   long: "Input a valid billing address to maintain access.",
+  //   short: "billing address",
+  // },
 };
 
 export function needsPaymentSetup(issues: V1BillingIssue[]): boolean {

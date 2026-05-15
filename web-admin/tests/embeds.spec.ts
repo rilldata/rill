@@ -104,7 +104,7 @@ test.describe("Embeds", () => {
 
       expectMessageContaining(
         logMessages,
-        "f=advertiser_name+IN+('Instacart')",
+        "tr=P7D&grain=day&f=advertiser_name+IN+%28%27Instacart%27%29",
       );
     });
 
@@ -151,7 +151,7 @@ test.describe("Embeds", () => {
 
       expectMessageContaining(
         logMessages,
-        `{"id":1337,"result":{"state":"tr=P7D&grain=day&f=advertiser_name+IN+('Instacart')"}}`,
+        `{"id":1337,"result":{"state":"tr=P7D&grain=day&f=advertiser_name+IN+%28%27Instacart%27%29"}}`,
       );
     });
 
@@ -166,16 +166,34 @@ test.describe("Embeds", () => {
           {
             id: 1337,
             method: "setState",
-            params: "tr=P7D&grain=day&f=advertiser_name+IN+('Instacart')",
+            params:
+              "tr=P7D&grain=day&f=advertiser_name+IN+%28%27Instacart%27%29",
           },
           "*",
         );
       });
-
       await expect(
         frame.getByRole("row", { name: "Instacart $2.1k" }),
       ).toBeVisible();
       expectMessageContaining(logMessages, `{"id":1337,"result":true}`);
+
+      // Set new rill syntax that includes `+` in the syntax.
+      await embedPage.evaluate(() => {
+        const iframe = document.querySelector("iframe");
+        iframe?.contentWindow?.postMessage(
+          {
+            id: 1338,
+            method: "setState",
+            params:
+              "tr=2D+as+of+latest%2FD%2B1D&grain=day&f=advertiser_name+IN+%28%27Instacart%27%29",
+          },
+          "*",
+        );
+      });
+      await expect(
+        frame.getByRole("row", { name: "Instacart $1.1k" }),
+      ).toBeVisible();
+      expectMessageContaining(logMessages, `{"id":1338,"result":true}`);
     });
 
     test("getThemeMode returns current theme mode", async ({ embedPage }) => {
@@ -347,7 +365,7 @@ test.describe("Embeds", () => {
 
         expectMessageContaining(
           logMessages,
-          "tr=PT6H&compare_tr=rill-PP&grain=hour&f=advertiser_name+IN+('Instacart')",
+          "tr=PT6H&compare_tr=rill-PP&grain=hour&f=advertiser_name+IN+%28%27Instacart%27%29",
         );
       });
     });
@@ -380,7 +398,7 @@ test.describe("Embeds", () => {
 
       expectMessageContaining(
         logMessages,
-        "tr=PT24H&compare_tr=rill-PP&f.bids_metrics=advertiser_name+IN+('Instacart')",
+        "tr=PT24H&compare_tr=rill-PP&f.bids_metrics=advertiser_name+IN+%28%27Instacart%27%29",
       );
     });
 
@@ -407,7 +425,7 @@ test.describe("Embeds", () => {
 
       expectMessageContaining(
         logMessages,
-        `{"id":1337,"result":{"state":"tr=PT24H&compare_tr=rill-PP&f.bids_metrics=advertiser_name+IN+('Instacart')"}}`,
+        `{"id":1337,"result":{"state":"tr=PT24H&compare_tr=rill-PP&f.bids_metrics=advertiser_name+IN+%28%27Instacart%27%29"}}`,
       );
     });
 
@@ -425,16 +443,32 @@ test.describe("Embeds", () => {
             id: 1337,
             method: "setState",
             params:
-              "tr=P7D&compare_tr=rill-PW&f=advertiser_name+IN+('Instacart')",
+              "tr=P7D&compare_tr=rill-PW&f.bids_metrics=advertiser_name+IN+%28%27Instacart%27%29",
           },
           "*",
         );
       });
-
       await expect(frame.getByLabel("overall_spend KPI data")).toContainText(
         /Advertising Spend Overall\s*\$2,066\s*\+\$1,926 \+1k%\s*vs previous week/,
       );
       expectMessageContaining(logMessages, `{"id":1337,"result":true}`);
+
+      await embedPage.evaluate(() => {
+        const iframe = document.querySelector("iframe");
+        iframe?.contentWindow?.postMessage(
+          {
+            id: 1338,
+            method: "setState",
+            params:
+              "tr=2D+as+of+latest%2FD%2B1D&grain=day&compare_tr=rill-PP&f.bids_metrics=advertiser_name+IN+%28%27Instacart%27%29",
+          },
+          "*",
+        );
+      });
+      await expect(frame.getByLabel("overall_spend KPI data")).toContainText(
+        /Advertising Spend Overall\s*\$1,128\s*\+\$1,075 \+2k%\s*vs previous period/,
+      );
+      expectMessageContaining(logMessages, `{"id":1338,"result":true}`);
     });
 
     test("getThemeMode returns current theme mode for canvas", async ({
@@ -509,7 +543,7 @@ test.describe("Embeds", () => {
 
         expectMessageContaining(
           logMessages,
-          "tr=PT6H&compare_tr=rill-PP&f=advertiser_name+IN+('Instacart')",
+          "tr=PT6H&compare_tr=rill-PP&f=advertiser_name+IN+%28%27Instacart%27%29",
         );
       });
     });
@@ -536,7 +570,7 @@ test.describe("Embeds", () => {
     // Go to the `Programmatic Ads Auction` dashboard using the breadcrumbs
     await frame.getByLabel("Breadcrumb dropdown").click();
     await frame
-      .getByRole("menuitem", {
+      .getByRole("menuitemcheckbox", {
         name: "Programmatic Ads Auction",
         exact: true,
       })
@@ -554,7 +588,7 @@ test.describe("Embeds", () => {
     // Go to the `Bids Canvas Dashboard` dashboard using the breadcrumbs
     await frame.getByLabel("Breadcrumb dropdown").click();
     await frame
-      .getByRole("menuitem", { name: "Bids Canvas Dashboard" })
+      .getByRole("menuitemcheckbox", { name: "Bids Canvas Dashboard" })
       .first()
       .click();
 
@@ -580,7 +614,7 @@ test.describe("Embeds", () => {
     // Go back to the `Programmatic Ads Bids` dashboard using the breadcrumbs
     await frame.getByLabel("Breadcrumb dropdown").click();
     await frame
-      .getByRole("menuitem", { name: "Programmatic Ads Bids" })
+      .getByRole("menuitemcheckbox", { name: "Programmatic Ads Bids" })
       .click();
 
     await embedPage.waitForTimeout(500);
@@ -595,7 +629,7 @@ test.describe("Embeds", () => {
     // Go back to the `Bids Canvas Dashboard` dashboard using the breadcrumbs
     await frame.getByLabel("Breadcrumb dropdown").click();
     await frame
-      .getByRole("menuitem", { name: "Bids Canvas Dashboard" })
+      .getByRole("menuitemcheckbox", { name: "Bids Canvas Dashboard" })
       .first()
       .click();
 

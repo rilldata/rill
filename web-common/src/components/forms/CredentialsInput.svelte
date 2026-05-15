@@ -149,11 +149,25 @@
       <button
         type="button"
         class="file-input-button"
-        on:click={() => fileInput.click()}
-        on:dragenter|preventDefault|stopPropagation={() => (dragOver = true)}
-        on:dragleave|preventDefault|stopPropagation={() => (dragOver = false)}
-        on:dragover|preventDefault|stopPropagation
-        on:drop|preventDefault={handleFileDrop}
+        onclick={() => fileInput.click()}
+        ondragenter={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dragOver = true;
+        }}
+        ondragleave={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dragOver = false;
+        }}
+        ondragover={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+        ondrop={(e) => {
+          e.preventDefault();
+          handleFileDrop(e);
+        }}
         class:drag-over={dragOver}
       >
         <span class="choose-file-text">Choose file</span>
@@ -169,7 +183,7 @@
       </button>
       {#if selectedFileName && !hideContent && !Object.values(uploading).some((u) => u)}
         <div class="trash-icon-button">
-          <IconButton size={24} ariaLabel="Remove file" on:click={clearFile}>
+          <IconButton size={24} ariaLabel="Remove file" onclick={clearFile}>
             <Trash size="16px" />
             <div slot="tooltip-content">Remove file</div>
           </IconButton>
@@ -189,7 +203,7 @@
       hidden
       {multiple}
       bind:this={fileInput}
-      on:input={handleInput}
+      oninput={handleInput}
     />
   {/if}
 </div>

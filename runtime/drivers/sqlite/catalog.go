@@ -2,6 +2,8 @@ package sqlite
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"strings"
 	"time"
 
@@ -155,6 +157,10 @@ func (c *catalogStore) FindModelPartitions(ctx context.Context, opts *drivers.Fi
 
 	if opts.WherePending {
 		qry.WriteString(" AND executed_on IS NULL")
+	}
+
+	if opts.WhereSuccessful {
+		qry.WriteString(" AND executed_on IS NOT NULL AND error == ''")
 	}
 
 	if !opts.BeforeExecutedOn.IsZero() || opts.AfterKey != "" {
@@ -371,6 +377,9 @@ func (c *catalogStore) FindInstanceHealth(ctx context.Context, instanceID string
 	var h drivers.InstanceHealth
 	err := c.db.QueryRowContext(ctx, "SELECT health_json, updated_on FROM instance_health WHERE instance_id=?", instanceID).Scan(&h.HealthJSON, &h.UpdatedOn)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, drivers.ErrNotFound
+		}
 		return nil, err
 	}
 
@@ -429,6 +438,9 @@ func (c *catalogStore) FindAISession(ctx context.Context, sessionID string) (*dr
 
 	var s drivers.AISession
 	if err := row.Scan(&s.ID, &s.InstanceID, &s.OwnerID, &s.Title, &s.UserAgent, &s.SharedUntilMessageID, &s.ForkedFromSessionID, &s.CreatedOn, &s.UpdatedOn); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, drivers.ErrNotFound
+		}
 		return nil, err
 	}
 	return &s, nil

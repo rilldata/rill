@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/go-git/go-git/v5"
-	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -34,17 +33,12 @@ func (s *Server) ListGitBranches(ctx context.Context, req *runtimev1.ListGitBran
 	// List all deployments
 	admin, release, err := s.runtime.Admin(ctx, req.InstanceId)
 	if err != nil {
-		if errors.Is(err, runtime.ErrAdminNotConfigured) && s.adminOverride != nil {
-			admin = s.adminOverride
-			release = func() {}
-		} else {
-			return nil, err
-		}
+		return nil, err
 	}
 	defer release()
 
 	deployments, err := admin.ListDeployments(ctx)
-	if err != nil && !errors.Is(err, drivers.ErrNotAuthenticated) && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
+	if err != nil && !errors.Is(err, drivers.ErrNotAuthenticated) {
 		return nil, fmt.Errorf("failed to list deployments: %w", err)
 	}
 
@@ -104,9 +98,9 @@ func (s *Server) GitStatus(ctx context.Context, req *runtimev1.GitStatusRequest)
 	}
 	defer release()
 
-	gs, err := repo.Status(ctx)
+	gs, err := repo.Status(ctx, req.RemoteBranch)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get git status: %v", err)
+		return nil, fmt.Errorf("failed to get git status: %w", err)
 	}
 	if !gs.IsGitRepo {
 		return nil, status.Error(codes.FailedPrecondition, "not a git repository")
@@ -134,7 +128,7 @@ func (s *Server) ListGitCommits(ctx context.Context, req *runtimev1.ListGitCommi
 	pageSize := pagination.ValidPageSize(req.PageSize, 20)
 	commits, nextPageToken, err := repo.ListCommits(ctx, req.PageToken, pageSize)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list git commits: %v", err)
+		return nil, fmt.Errorf("failed to list git commits: %w", err)
 	}
 
 	res := make([]*runtimev1.GitCommit, 0, len(commits))
@@ -167,7 +161,7 @@ func (s *Server) GitCommit(ctx context.Context, req *runtimev1.GitCommitRequest)
 
 	hash, err := repo.Commit(ctx, req.CommitMessage)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to commit: %v", err)
+		return nil, fmt.Errorf("failed to commit: %w", err)
 	}
 	return &runtimev1.GitCommitResponse{
 		CommitSha: hash,
@@ -187,7 +181,7 @@ func (s *Server) RestoreGitCommit(ctx context.Context, req *runtimev1.RestoreGit
 
 	newCommitSHA, err := repo.RestoreCommit(ctx, req.CommitSha)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to restore commit: %v", err)
+		return nil, fmt.Errorf("failed to restore commit: %w", err)
 	}
 	return &runtimev1.RestoreGitCommitResponse{
 		NewCommitSha: newCommitSHA,
@@ -206,7 +200,13 @@ func (s *Server) GitMergeToBranch(ctx context.Context, req *runtimev1.GitMergeTo
 
 	err = repo.MergeToBranch(ctx, req.Branch, req.Force)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to merge: %v", err)
+		var mergeErr *drivers.MergeFailedError
+		if errors.As(err, &mergeErr) {
+			return &runtimev1.GitMergeToBranchResponse{
+				Output: mergeErr.Error(),
+			}, nil
+		}
+		return nil, err
 	}
 	return &runtimev1.GitMergeToBranchResponse{}, nil
 }
@@ -227,7 +227,13 @@ func (s *Server) GitPull(ctx context.Context, req *runtimev1.GitPullRequest) (*r
 		DiscardChanges: req.DiscardLocal,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to pull: %v", err)
+		var mergeErr *drivers.MergeFailedError
+		if errors.As(err, &mergeErr) {
+			return &runtimev1.GitPullResponse{
+				Output: mergeErr.Error(),
+			}, nil
+		}
+		return nil, fmt.Errorf("failed to pull: %w", err)
 	}
 	return &runtimev1.GitPullResponse{}, nil
 }
@@ -248,7 +254,7 @@ func (s *Server) GitPush(ctx context.Context, req *runtimev1.GitPushRequest) (*r
 		if errors.Is(err, drivers.ErrRemoteAhead) {
 			return nil, status.Error(codes.FailedPrecondition, "remote repository has changes that are not in local state, please pull first")
 		}
-		return nil, status.Errorf(codes.Internal, "failed to push: %v", err)
+		return nil, fmt.Errorf("failed to push: %w", err)
 	}
 	return &runtimev1.GitPushResponse{}, nil
 }

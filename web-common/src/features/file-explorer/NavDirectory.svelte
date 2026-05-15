@@ -26,9 +26,9 @@
   role="directory"
   class="w-full"
   class:bg-gray-100={isDragDropHover}
-  on:mouseenter={() => navEntryDragDropStore.onMouseEnter(directory.path)}
-  on:mouseleave={() => navEntryDragDropStore.onMouseLeave()}
-  on:contextmenu={() => navEntryDragDropStore.resetDrag()}
+  onmouseenter={() => navEntryDragDropStore.onMouseEnter(directory.path)}
+  onmouseleave={() => navEntryDragDropStore.onMouseLeave()}
+  oncontextmenu={() => navEntryDragDropStore.resetDrag()}
 >
   {#if directory.path !== "/"}
     <NavDirectoryEntry dir={directory} {onRename} {onDelete} {onMouseDown} />

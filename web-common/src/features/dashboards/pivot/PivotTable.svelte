@@ -22,13 +22,13 @@
     createSvelteTable,
     getCoreRowModel,
     getExpandedRowModel,
-  } from "@tanstack/svelte-table";
+  } from "tanstack-table-8-svelte-5";
   import {
     createVirtualizer,
     defaultRangeExtractor,
   } from "@tanstack/svelte-virtual";
   import { onMount } from "svelte";
-  import type { Readable } from "svelte/motion";
+  import type { Readable } from "svelte/store";
   import { derived } from "svelte/store";
   import NestedTable from "./NestedTable.svelte";
   import type {
@@ -44,6 +44,7 @@
   const HEADER_HEIGHT = 30;
 
   export let pivotDataStore: PivotDataStore;
+  export let widthScopeKey: string;
   export let config: Readable<PivotDataStoreConfig>;
   export let pivotState: Readable<PivotState>;
   export let canShowDataViewer = false;
@@ -307,7 +308,7 @@
   style:--header-height="{HEADER_HEIGHT}px"
   style:--total-header-height="{totalHeaderHeight + 1}px"
   bind:this={containerRefElement}
-  on:scroll={() => handleScroll(containerRefElement)}
+  onscroll={() => handleScroll(containerRefElement)}
 >
   {#if isFlat}
     <FlatTable
@@ -334,6 +335,7 @@
       {headerGroups}
       {rows}
       {virtualRows}
+      {widthScopeKey}
       {before}
       {after}
       {timeDimension}

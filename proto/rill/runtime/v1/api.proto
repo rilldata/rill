@@ -157,22 +157,6 @@ service RuntimeService {
     };
   }
 
-  // GenerateResolver generates resolver and resolver properties from a table or a metrics view
-  rpc GenerateResolver(GenerateResolverRequest) returns (GenerateResolverResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/generate/resolver",
-      body: "*"
-    };
-  }
-
-  // GenerateRenderer generates a component renderer and renderer properties from a resolver and resolver properties
-  rpc GenerateRenderer(GenerateRendererRequest) returns (GenerateRendererResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/generate/renderer",
-      body: "*"
-    };
-  }
-
   // QueryResolver queries a resolver with the given properties and arguments
   rpc QueryResolver(QueryResolverRequest) returns (QueryResolverResponse) {
     option (google.api.http) = {
@@ -388,6 +372,16 @@ service RuntimeService {
       body: "*"
     };
   }
+
+  // Env APIs
+
+  // PushEnv pushes local environment variables to admin service
+  rpc PushEnv(PushEnvRequest) returns (PushEnvResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/env/push",
+      body: "*"
+    };
+  }
 }
 
 // Request message for RuntimeService.Ping
@@ -510,7 +504,10 @@ message CreateInstanceRequest {
   string admin_connector = 15;
   string ai_connector = 17;
   repeated Connector connectors = 10;
+  // Deprecated: Continue populating this for some time for backward compatibility with older runtimes, remove after a few releases.
   map<string, string> variables = 7;
+  // system_variables are variables that are set by admin service and should not be overridden by user input
+  map<string, string> system_variables = 19;
   map<string, string> annotations = 9;
   string frontend_url = 18;
 }
@@ -551,7 +548,12 @@ message ReloadConfigRequest {
 }
 
 // Response message for RuntimeService.ReloadConfig
-message ReloadConfigResponse {}
+message ReloadConfigResponse {
+  // Number of variables pulled from admin service
+  int32 variables_count = 1;
+  // Whether the .env file(s) were modified
+  bool modified = 2;
+}
 
 // **********
 // Repos
@@ -738,33 +740,6 @@ message GenerateCanvasFileResponse {
   bool ai_succeeded = 1;
 }
 
-message GenerateResolverRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string prompt = 2;
-  // Both connector and table must be specified if metrics_view is not.
-  string connector = 3;
-  string table = 4;
-  // table and connector should not be provided if metrics_view is provided.
-  string metrics_view = 5;
-}
-
-message GenerateResolverResponse {
-  string resolver = 1;
-  google.protobuf.Struct resolver_properties = 2;
-}
-
-message GenerateRendererRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string prompt = 2;
-  string resolver = 3;
-  google.protobuf.Struct resolver_properties = 4;
-}
-
-message GenerateRendererResponse {
-  string renderer = 1;
-  google.protobuf.Struct renderer_properties = 2;
-}
-
 message QueryResolverRequest {
   string instance_id = 1;
   string resolver = 2;
@@ -865,7 +840,7 @@ message WatchResourcesResponse {
 
 message GetResourceRequest {
   string instance_id = 1;
-  ResourceName name = 2;
+  ResourceName name = 2 [(validate.rules).message.required = true];
   bool skip_security_checks = 3;
 }
 
@@ -1303,6 +1278,9 @@ message GitCommit {
 
 message GitStatusRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  // remote_branch is the remote branch to compare the current local branch against.
+  // If empty, the upstream of the current local branch is used.
+  string remote_branch = 2;
 }
 
 message GitStatusResponse {
@@ -1393,3 +1371,14 @@ message GitPushRequest {
 }
 
 message GitPushResponse {}
+
+message PushEnvRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+}
+
+message PushEnvResponse {
+  // Number of variables added
+  int32 added_count = 1;
+  // Number of variables changed
+  int32 changed_count = 2;
+}

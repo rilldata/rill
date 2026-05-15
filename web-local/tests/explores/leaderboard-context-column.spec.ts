@@ -132,7 +132,7 @@ test.describe("leaderboard context column", () => {
     // Switch to measure "total bid price"
     await measuresButton.click();
     await page
-      .getByRole("menuitem", { name: "Total Bid Price" })
+      .getByRole("menuitemcheckbox", { name: "Total Bid Price" })
       .filter({ has: page.getByText("Total Bid Price") })
       .click();
     await escape();
@@ -184,7 +184,7 @@ test.describe("leaderboard context column", () => {
     // Switch to measure "total rows" (no valid_percent_of_total)
     await measuresButton.click();
     await page
-      .getByRole("menuitem", { name: "Total Rows" })
+      .getByRole("menuitemcheckbox", { name: "Total Rows" })
       .filter({ has: page.getByText("Total Rows") })
       .click();
     await expect(measuresButton).toHaveText("Showing Total rows");

@@ -16,13 +16,15 @@
     <div class="font-semibold text-fg-primary mt-1 text-lg">
       Hang tight! We're building your table...
     </div>
-    <div class="text-fg-secondary">
-      Need help? Reach out to us on <a
-        target="_blank"
-        rel="noopener"
-        href="https://discord.gg/2ubRfjC7Rh">Discord</a
-      >
-    </div>
+    {#if !isEmbedded}
+      <div class="text-fg-secondary">
+        Need help? Reach out to us on <a
+          target="_blank"
+          rel="noopener"
+          href="https://discord.gg/2ubRfjC7Rh">Discord</a
+        >
+      </div>
+    {/if}
   {:else if hasColumnAndNoMeasure}
     <EmptyMeasureIcon />
     <div class="flex flex-col items-center gap-y-2">

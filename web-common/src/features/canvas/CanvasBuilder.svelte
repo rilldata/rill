@@ -42,10 +42,13 @@
 
   const runtimeClient = useRuntimeClient();
 
+  const MIN_DRAG_DISTANCE = 8;
+
   let initialMousePosition: { x: number; y: number } | null = null;
   let clientWidth: number;
   let offset = { x: 0, y: 0 };
   let dragComponent: BaseCanvasComponent | null = null;
+  let pendingDragComponent: BaseCanvasComponent | null = null;
   let timeout: ReturnType<typeof setTimeout> | null = null;
   let dragTimeout: ReturnType<typeof setTimeout> | null = null;
   let dragItemPosition = { top: 0, left: 0 };
@@ -116,6 +119,11 @@
 
   $: dropZone.setMouseDelta(mouseDelta);
 
+  $: if (pendingDragComponent && mouseDelta >= MIN_DRAG_DISTANCE) {
+    handleDragStart(pendingDragComponent);
+    pendingDragComponent = null;
+  }
+
   $: defaultMetrics = $metricsViewQuery?.data;
 
   $: activelyDragging = !!dragComponent;
@@ -172,12 +180,19 @@
 
   function onDragEnd() {
     dragComponent = null;
+    // Safety net: remove portal ghost if Svelte 5's {#if} cleanup didn't
+    document
+      .querySelectorAll("#rill-portal .drag-container")
+      .forEach((el) => el.remove());
   }
 
   function reset() {
     if (dragTimeout) {
       clearTimeout(dragTimeout);
     }
+
+    pendingDragComponent = null;
+    initialMousePosition = null;
 
     if (dragComponent) {
       onDragEnd();
@@ -296,6 +311,8 @@
     position: { row: number; column: number },
     items: CanvasComponentType[],
   ) {
+    if (!defaultMetrics) return;
+
     performTransaction({
       operations: items.map((type, i) => ({
         type: "add",
@@ -310,6 +327,7 @@
     const id = getId(position.row, position.column);
 
     setSelectedComponent(id);
+    openSidebar();
   }
 
   function updateContents() {
@@ -341,6 +359,7 @@
     });
 
     setSelectedComponent(id);
+    openSidebar();
   }
 
   function onDrop(row: number, column: number | null) {
@@ -420,8 +439,8 @@
 </script>
 
 <svelte:window
-  on:mouseup={reset}
-  on:keydown={(e) => {
+  onmouseup={reset}
+  onkeydown={(e) => {
     const selected = $selectedComponent;
     if (!selected || e.key !== "Backspace") return;
 
@@ -498,9 +517,12 @@
 
         openSidebarAfterSelection = true;
 
+        // Ensure cleanup on mouseup even if svelte:window handler fails
+        window.addEventListener("mouseup", reset, { once: true });
+
         dragTimeout = setTimeout(() => {
           openSidebarAfterSelection = false;
-          handleDragStart(component);
+          pendingDragComponent = component;
         }, 150);
       }}
     />
@@ -539,6 +561,7 @@
 {#if specCanvasRows.length}
   <AddComponentDropdown
     floatingForm
+    disabled={!defaultMetrics}
     onItemClick={(type) => {
       initializeRow(specCanvasRows.length, type);
       setTimeout(() => scrollToBottom(), 500);
@@ -576,41 +599,44 @@
       <AlertDialog.Title>Delete widget?</AlertDialog.Title>
 
       <AlertDialog.Description>
-        Are you sure you want to delete this widget? This action cannot be
-        undone.
+        This widget and its configuration will be permanently removed.
       </AlertDialog.Description>
 
       <AlertDialog.Footer>
-        <AlertDialog.Cancel asChild let:builder>
-          <Button
-            large
-            builders={[builder]}
-            type="secondary"
-            onClick={() => {
-              pendingComponentDelete = undefined;
-            }}
-          >
-            Cancel
-          </Button>
+        <AlertDialog.Cancel>
+          {#snippet child({ props })}
+            <Button
+              {...props}
+              large
+              type="secondary"
+              onClick={() => {
+                pendingComponentDelete = undefined;
+              }}
+            >
+              Cancel
+            </Button>
+          {/snippet}
         </AlertDialog.Cancel>
 
-        <AlertDialog.Action asChild let:builder>
-          <Button
-            large
-            builders={[builder]}
-            type="destructive"
-            onClick={() => {
-              if (!pendingComponentDelete) return;
-              const component = componentsStore.getNonReactive(
-                pendingComponentDelete,
-              );
-              if (!component) return;
-              deleteComponent(component);
-              pendingComponentDelete = undefined;
-            }}
-          >
-            Delete
-          </Button>
+        <AlertDialog.Action>
+          {#snippet child({ props })}
+            <Button
+              {...props}
+              large
+              type="destructive"
+              onClick={() => {
+                if (!pendingComponentDelete) return;
+                const component = componentsStore.getNonReactive(
+                  pendingComponentDelete,
+                );
+                if (!component) return;
+                deleteComponent(component);
+                pendingComponentDelete = undefined;
+              }}
+            >
+              Delete
+            </Button>
+          {/snippet}
         </AlertDialog.Action>
       </AlertDialog.Footer>
     </AlertDialog.Content>

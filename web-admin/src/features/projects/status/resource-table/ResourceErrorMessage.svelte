@@ -27,7 +27,7 @@
     <Tooltip distance={8}>
       <button
         class="hover:bg-surface-hover rounded p-1 active:bg-surface-active group"
-        on:click={() =>
+        onclick={() =>
           copyToClipboard(testErrorMessage, "Copied test error to clipboard")}
       >
         <CopyIcon
@@ -48,7 +48,7 @@
     <Tooltip distance={8}>
       <button
         class="hover:bg-surface-hover rounded p-1 active:bg-surface-active group"
-        on:click={() =>
+        onclick={() =>
           copyToClipboard(message, "Copied error message to clipboard")}
       >
         <CopyIcon

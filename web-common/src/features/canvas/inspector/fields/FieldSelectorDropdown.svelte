@@ -101,7 +101,7 @@
   }
 </script>
 
-<DropdownMenu.Root bind:open typeahead={false} closeOnItemClick={false}>
+<DropdownMenu.Root bind:open>
   <slot name="trigger" {open} />
 
   <SearchableMenuContent

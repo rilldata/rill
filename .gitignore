@@ -97,6 +97,7 @@ latest.txt
 .claude/notes/
 .claude/plans/
 .claude/worktrees/
+.claude/projects/
 
 # Vite temp files
 vite.config.ts.timestamp-*

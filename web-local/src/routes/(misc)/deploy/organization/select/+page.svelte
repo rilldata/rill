@@ -6,7 +6,12 @@
   import { CreateNewOrgFormId } from "@rilldata/web-common/features/organization/CreateNewOrgForm.svelte";
   import { getDeployOrGithubRouteGetter } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
-  import { createLocalServiceGetCurrentUser } from "@rilldata/web-common/runtime-client/local-service.ts";
+  import {
+    createLocalServiceCreateOrganization,
+    createLocalServiceGetCurrentUser,
+    getLocalServiceGetCurrentUserQueryKey,
+  } from "@rilldata/web-common/runtime-client/local-service.ts";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 
   const user = createLocalServiceGetCurrentUser();
 
@@ -20,11 +25,22 @@
   $: orgOptions =
     $user.data?.rillUserOrgs?.map((o) => ({ value: o, label: o })) ?? [];
 
-  function handleCreateOrg(orgName: string) {
-    selectedOrg = orgName;
+  const orgCreator = createLocalServiceCreateOrganization();
+
+  async function createOrg(name: string, displayName: string) {
+    await $orgCreator.mutateAsync({
+      name,
+      displayName,
+    });
+
+    await queryClient.invalidateQueries({
+      queryKey: getLocalServiceGetCurrentUserQueryKey(),
+    });
+
+    selectedOrg = name;
     isNewOrgDialogOpen = false;
     eventBus.emit("notification", {
-      message: `Created organization ${orgName}`,
+      message: `Created organization ${name}`,
     });
   }
 </script>
@@ -62,13 +78,15 @@
 </Button>
 
 <Dialog.Root bind:open={isNewOrgDialogOpen}>
-  <Dialog.Trigger asChild>
-    <div class="hidden"></div>
+  <Dialog.Trigger>
+    {#snippet child({ props })}
+      <div {...props} class="hidden"></div>
+    {/snippet}
   </Dialog.Trigger>
   <Dialog.Content noClose>
     <Dialog.Title>Create a new organization</Dialog.Title>
 
-    <CreateNewOrgForm onCreate={handleCreateOrg} size="lg" />
+    <CreateNewOrgForm {createOrg} size="lg" />
 
     <Dialog.Footer class="gap-x-2">
       <Button large type="text" onClick={() => (isNewOrgDialogOpen = false)}>

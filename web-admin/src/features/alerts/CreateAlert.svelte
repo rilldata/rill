@@ -7,7 +7,7 @@
   } from "@rilldata/web-common/components/dialog/index";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import AlertForm from "@rilldata/web-common/features/alerts/AlertForm.svelte";
+  import AlertFormDataWrapper from "@rilldata/web-common/features/alerts/AlertFormDataWrapper.svelte";
   import { useMetricsViewValidSpec } from "@rilldata/web-common/features/dashboards/selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -39,25 +39,33 @@
     bind:open
     let:onCancel
     let:onClose
+    let:preventClose
   >
-    <DialogTrigger asChild let:builder>
-      <Tooltip distance={8} location="top" suppress={!$isCustomTimeRange}>
-        <Button
-          compact
-          disabled={$isCustomTimeRange}
-          type="secondary"
-          builders={[builder]}
-          label="Create alert"
-        >
-          <BellPlusIcon class="inline-flex" size="16px" />
-        </Button>
-        <TooltipContent slot="tooltip-content">
-          To create an alert, set a non-custom time range.
-        </TooltipContent>
-      </Tooltip>
+    <DialogTrigger>
+      {#snippet child({ props })}
+        <Tooltip distance={8} location="top" suppress={!$isCustomTimeRange}>
+          <Button
+            {...props}
+            compact
+            disabled={$isCustomTimeRange}
+            type="secondary"
+            label="Create alert"
+          >
+            <BellPlusIcon class="inline-flex" size="16px" />
+          </Button>
+          <TooltipContent slot="tooltip-content">
+            To create an alert, set a non-custom time range.
+          </TooltipContent>
+        </Tooltip>
+      {/snippet}
     </DialogTrigger>
-    <DialogContent class="p-0 m-0 w-[802px] max-w-fit rounded-md" noClose>
-      <AlertForm
+    <DialogContent
+      class="p-0 m-0 w-[802px] max-w-fit rounded-md"
+      noClose
+      onEscapeKeydown={preventClose}
+      onInteractOutside={preventClose}
+    >
+      <AlertFormDataWrapper
         props={{ mode: "create", exploreName: $exploreName }}
         {onCancel}
         {onClose}

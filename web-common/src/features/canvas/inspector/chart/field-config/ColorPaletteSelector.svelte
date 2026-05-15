@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import ColorInput from "@rilldata/web-common/components/color-picker/ColorInput.svelte";
   import type { ChartFieldInput } from "@rilldata/web-common/features/canvas/inspector/types";
@@ -13,7 +14,6 @@
   } from "@rilldata/web-common/features/components/charts/util";
   import { COMPARISON_COLORS } from "@rilldata/web-common/features/dashboards/config";
   import { ChevronDown, ChevronRight } from "lucide-svelte";
-  import { slide } from "svelte/transition";
 
   export let colorMapping: ColorMapping | undefined;
   export let onChange: (property: keyof FieldConfig, value: any) => void;
@@ -88,7 +88,7 @@
   <div>
     <button
       class="w-full p-1 flex items-center justify-between hover:bg-surface-background"
-      on:click={toggleExpanded}
+      onclick={toggleExpanded}
     >
       <span class="text-xs font-medium">Color mapping</span>
       <div class="flex items-center gap-x-2">
