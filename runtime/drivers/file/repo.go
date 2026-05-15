@@ -451,6 +451,7 @@ func (c *connection) Status(ctx context.Context, remoteBranch string) (*drivers.
 		IsGitRepo:     true,
 		Branch:        gs.Branch,
 		RemoteURL:     gs.RemoteURL,
+		Subpath:       subPath,
 		ManagedRepo:   config.ManagedRepo,
 		LocalChanges:  gs.LocalChanges,
 		LocalCommits:  gs.LocalCommits,

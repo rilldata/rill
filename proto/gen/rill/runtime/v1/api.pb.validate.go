@@ -14081,6 +14081,8 @@ func (m *GitStatusResponse) validate(all bool) error {
 
 	// no validation rules for GithubUrl
 
+	// no validation rules for Subpath
+
 	// no validation rules for ManagedGit
 
 	// no validation rules for LocalChanges

@@ -21,14 +21,18 @@
     createLocalServiceGetCurrentUser,
     createLocalServiceGetMetadata,
     createLocalServiceListMatchingProjectsRequest,
-    createLocalServiceGitPull,
-    createLocalServiceGitStatus,
-    getLocalServiceGitStatusQueryKey,
   } from "@rilldata/web-common/runtime-client/local-service";
   import { onMount } from "svelte";
   import { Rocket } from "lucide-svelte";
   import { writable, get, derived } from "svelte/store";
   import { Button } from "../../../components/button";
+  import {
+    createRuntimeServiceGitPullMutation,
+    createRuntimeServiceGitStatus,
+    getRuntimeServiceGitStatusQueryKey,
+  } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import type { ConnectError } from "@connectrpc/connect";
 
   export let hasValidDashboard: boolean;
 
@@ -36,17 +40,19 @@
   let deployConfirmOpen = false;
   let updateProjectDropdownOpen = false;
 
+  const runtimeClient = useRuntimeClient();
+
   const userQuery = createLocalServiceGetCurrentUser();
   const metadata = createLocalServiceGetMetadata();
   const matchingProjectsQuery = createLocalServiceListMatchingProjectsRequest();
 
-  const gitStatusQuery = createLocalServiceGitStatus();
-  const gitPullMutation = createLocalServiceGitPull();
+  const gitStatusQuery = createRuntimeServiceGitStatus(runtimeClient, {});
+  const gitPullMutation = createRuntimeServiceGitPullMutation(runtimeClient);
 
   $: ({ isPending: githubPullPending, error: githubPullError } =
     $gitPullMutation);
   let errorFromGitCommand: Error | null = null;
-  $: error = githubPullError ?? errorFromGitCommand;
+  $: error = (githubPullError as ConnectError | null) ?? errorFromGitCommand;
 
   const deploymentState = derived(
     [gitStatusQuery, userQuery, matchingProjectsQuery],
@@ -55,7 +61,7 @@
       loading:
         $git.isFetching || ($user.data?.user ? $projects.isLoading : false),
       isDeployed: !!$projects.data?.projects?.length,
-      hasRemoteChanges: $git.data && $git.data.remoteCommits > 0,
+      hasRemoteChanges: Boolean($git.data?.remoteCommits),
     }),
   );
   $: ({ loading, isDeployed, hasRemoteChanges } = $deploymentState);
@@ -121,7 +127,7 @@
     // TODO: download diff once API is ready
 
     void queryClient.invalidateQueries({
-      queryKey: getLocalServiceGitStatusQueryKey(),
+      queryKey: getRuntimeServiceGitStatusQueryKey(runtimeClient.instanceId, {}),
     });
 
     if (!resp.output) {

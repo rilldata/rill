@@ -369,30 +369,6 @@ export function createLocalServiceListProjectsForOrgRequest<
   });
 }
 
-export function localServiceGitStatus() {
-  return getClient().gitStatus(new GitStatusRequest({}));
-}
-export const getLocalServiceGitStatusQueryKey = () => [`/v1/local/git-status`];
-export function createLocalServiceGitStatus<
-  TData = Awaited<ReturnType<typeof localServiceGitStatus>>,
-  TError = ConnectError,
->(options?: {
-  query?: Partial<
-    CreateQueryOptions<
-      Awaited<ReturnType<typeof localServiceGitStatus>>,
-      TError,
-      TData
-    >
-  >;
-}) {
-  const { query: queryOptions } = options ?? {};
-  return createQuery({
-    ...queryOptions,
-    queryKey: queryOptions?.queryKey ?? getLocalServiceGitStatusQueryKey(),
-    queryFn: queryOptions?.queryFn ?? (() => localServiceGitStatus()),
-  });
-}
-
 export function localServiceGithubRepoStatus(remote: string) {
   return getClient().githubRepoStatus(
     new GithubRepoStatusRequest({
@@ -454,56 +430,6 @@ export function createLocalServiceGithubRepoStatus<
     options,
   );
   return createQuery(queryOptions);
-}
-
-export function localServiceGitPull(args: PartialMessage<GitPullRequest>) {
-  return getClient().gitPull(new GitPullRequest(args));
-}
-export function createLocalServiceGitPull<
-  TError = ConnectError,
-  TContext = unknown,
->(options?: {
-  mutation?: Partial<
-    CreateMutationOptions<
-      Awaited<ReturnType<typeof localServiceGitPull>>,
-      TError,
-      PartialMessage<GitPullRequest>,
-      TContext
-    >
-  >;
-}) {
-  const { mutation: mutationOptions } = options ?? {};
-  return createMutation<
-    Awaited<ReturnType<typeof localServiceGitPull>>,
-    TError,
-    PartialMessage<GitPullRequest>,
-    unknown
-  >({ mutationFn: localServiceGitPull, ...mutationOptions });
-}
-
-export function localServiceGitPush(args: PartialMessage<GitPushRequest>) {
-  return getClient().gitPush(new GitPushRequest(args));
-}
-export function createLocalServiceGitPush<
-  TError = ConnectError,
-  TContext = unknown,
->(options?: {
-  mutation?: Partial<
-    CreateMutationOptions<
-      Awaited<ReturnType<typeof localServiceGitPush>>,
-      TError,
-      PartialMessage<GitPushRequest>,
-      TContext
-    >
-  >;
-}) {
-  const { mutation: mutationOptions } = options ?? {};
-  return createMutation<
-    Awaited<ReturnType<typeof localServiceGitPush>>,
-    TError,
-    PartialMessage<GitPushRequest>,
-    unknown
-  >({ mutationFn: localServiceGitPush, ...mutationOptions });
 }
 
 export function localServiceGetProjectRequest(

@@ -15,8 +15,9 @@
   import {
     createLocalServiceDeploy,
     createLocalServiceGetCurrentProject,
-    createLocalServiceGitStatus,
   } from "@rilldata/web-common/runtime-client/local-service.ts";
+  import { createRuntimeServiceGitStatus } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import DeployError from "@rilldata/web-common/features/project/deploy/DeployError.svelte";
   import CTAHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CTANeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
@@ -27,10 +28,11 @@
   export let data: PageData;
   const { org: orgParam, useGit } = data;
 
+  const runtimeClient = useRuntimeClient();
   const projectQuery = createLocalServiceGetCurrentProject();
   const deployMutation = createLocalServiceDeploy();
-  const gitStatusQuery = createLocalServiceGitStatus();
-  const gitRepoStatusQuery = getLocalGitRepoStatus();
+  const gitStatusQuery = createRuntimeServiceGitStatus(runtimeClient, {});
+  const gitRepoStatusQuery = getLocalGitRepoStatus(runtimeClient);
 
   $: ({ legacyArchiveDeploy } = featureFlags);
 

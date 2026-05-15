@@ -481,6 +481,7 @@ func (r *repo) Status(ctx context.Context, remoteBranch string) (*drivers.RepoSt
 		IsGitRepo:     true,
 		Branch:        st.Branch,
 		RemoteURL:     st.RemoteURL,
+		Subpath:       r.git.subpath,
 		ManagedRepo:   r.git.managedRepo,
 		LocalChanges:  st.LocalChanges,
 		LocalCommits:  st.LocalCommits,
