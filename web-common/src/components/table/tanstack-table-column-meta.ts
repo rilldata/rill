@@ -7,6 +7,8 @@ declare module "tanstack-table-8-svelte-5" {
     widthPercent?: number;
     marginLeft?: string;
     icon?: ComponentType<SvelteComponent>;
+    /** Full path of dimension name/value pairs from root to this header */
+    dimensionPath?: Record<string, string>;
     tooltipFormatter?: (value: unknown) => string | null | undefined;
   }
 }

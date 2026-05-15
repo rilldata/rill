@@ -15,9 +15,13 @@
   import { EXAMPLES } from "./constants";
   import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-metadata.ts";
   import ProjectCard from "@rilldata/web-common/features/welcome/ProjectCard.svelte";
+  import { goto } from "$app/navigation";
+  import {
+    getFileHref,
+    navigateToHome,
+  } from "@rilldata/web-common/layout/navigation/editor-routing.ts";
 
-  export let skipNavigation = false;
-  export let allowEmpty = true;
+  export let isLocal = false;
   export let onSelect: () => void = () => {};
 
   const runtimeClient = useRuntimeClient();
@@ -54,12 +58,21 @@
       });
 
       onSelect();
-      if (skipNavigation) return;
 
-      // TODO: improve navigation in rill dev to avoid this artificial 5 second delay
-      setTimeout(() => {
-        window.location.assign("/?redirect=true");
-      }, 5000);
+      // Legacy fix for rill dev for race conditions.
+      // TODO: find a better fix that the redirect here.
+      if (isLocal) {
+        setTimeout(() => {
+          window.location.assign("/?redirect=true");
+        }, 5000);
+      } else {
+        const dashboard = example?.firstFile;
+        if (dashboard) {
+          void goto(getFileHref(dashboard));
+        } else {
+          void navigateToHome();
+        }
+      }
     } catch {
       selectedProjectName = null;
     }
@@ -72,9 +85,7 @@
       {@const icon = connectorIconMapping[example.connector]}
       {@const loading = selectedProjectName === example.name}
       <ProjectCard
-        onclick={async () => {
-          await unpackProject(example);
-        }}
+        onclick={() => void unpackProject(example)}
         {loading}
         disabled={!!selectedProjectName}
         label={example.title}
@@ -88,18 +99,16 @@
       </ProjectCard>
     {/each}
 
-    {#if allowEmpty}
-      <ProjectCard
-        onclick={() => unpackProject()}
-        loading={selectedProjectName === EMPTY_PROJECT_TITLE}
-        disabled={!!selectedProjectName}
-        label="Start a blank project"
-      >
-        <svelte:fragment slot="icon">
-          <AddCircleOutline size="16px" />
-        </svelte:fragment>
-        <span>Start a blank project</span>
-      </ProjectCard>
-    {/if}
+    <ProjectCard
+      onclick={() => unpackProject()}
+      loading={selectedProjectName === EMPTY_PROJECT_TITLE}
+      disabled={!!selectedProjectName}
+      label="Start a blank project"
+    >
+      <svelte:fragment slot="icon">
+        <AddCircleOutline size="16px" />
+      </svelte:fragment>
+      <span>Start a blank project</span>
+    </ProjectCard>
   </div>
 </section>

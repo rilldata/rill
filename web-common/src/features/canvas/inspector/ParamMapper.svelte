@@ -146,8 +146,11 @@
               checked={config.meta?.invertBoolean
                 ? !$specStore[key]
                 : $specStore[key]}
-              onclick={() => {
-                component.updateProperty(key, !localParamValues[key]);
+              onCheckedChange={(next) => {
+                component.updateProperty(
+                  key,
+                  config.meta?.invertBoolean ? !next : next,
+                );
               }}
               small
             />

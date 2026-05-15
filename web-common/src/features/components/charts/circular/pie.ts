@@ -24,6 +24,7 @@ import type { CircularChartSpec } from "./CircularChartProvider";
 import {
   DEFAULT_LABELS_FORMAT,
   type LabelsConfig,
+  OTHER_SORT_KEY_FIELD,
   OTHER_VALUE,
   OTHER_VALUE_DOMAIN_KEY,
   PERCENT_OF_TOTAL_FIELD,
@@ -132,7 +133,15 @@ export function generateVLPieChartSpec(
 
   const theta = createPositionEncoding(config.measure, data);
   const color = createColorEncoding(config.color, data);
-  const order = createOrderEncoding(config.measure);
+  // When "Other" is in the data, order arcs by a synthetic key that pins
+  // "Other" to the end. Otherwise, fall back to ordering by the measure.
+  const order = hasOther
+    ? {
+        field: OTHER_SORT_KEY_FIELD,
+        type: "quantitative" as const,
+        sort: "descending" as const,
+      }
+    : createOrderEncoding(config.measure);
 
   const tooltip = createDefaultTooltipEncoding(
     [config.color, config.measure],

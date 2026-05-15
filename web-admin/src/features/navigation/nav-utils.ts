@@ -99,8 +99,20 @@ export function isPublicAlertPage(page: Page): boolean {
   );
 }
 
-export function isEditPage(page: Page): boolean {
-  return !!page.route?.id?.startsWith("/[organization]/[project]/-/edit");
+export function isEditPage({ route }: Pick<Page, "route">): boolean {
+  return !!route?.id?.startsWith("/[organization]/[project]/-/edit");
+}
+
+/**
+ * True when the page is the explore or canvas preview inside Cloud Rill
+ * Developer (`/-/edit/(viz)/{explore,canvas}/[name]`). `isMetricsExplorerPage`
+ * and `isCanvasDashboardPage` only match production routes, so this is the
+ * editor-side equivalent for surfaces that need to swap chat affordances.
+ */
+export function isEditDashboardPreviewPage({
+  route,
+}: Pick<Page, "route">): boolean {
+  return !!route?.id?.startsWith("/[organization]/[project]/-/edit/(viz)/");
 }
 
 export function isProjectRequestAccessPage(page: Page): boolean {
@@ -122,11 +134,25 @@ export function isWelcomePage({ route }: Pick<Page, "route">): boolean {
 }
 
 export function isProjectWelcomePage({ route }: Pick<Page, "route">): boolean {
-  return !!route.id?.startsWith("/[organization]/[project]/-/welcome");
+  return !!route.id?.startsWith("/[organization]/[project]/-/edit/welcome");
 }
 
 export function isAuthPage({ route }: Pick<Page, "route">): boolean {
   return !!route.id?.startsWith("/-/auth");
+}
+
+/**
+ * Returns true if the page is a page that is part of the onboarding flow.
+ * Project invite page, org/project welcome page, and project create page are all onboarding pages as of now.
+ * @param page
+ */
+export function isOnboardingPage(page: Page): boolean {
+  return (
+    isProjectInvitePage(page) ||
+    isWelcomePage(page) ||
+    isProjectWelcomePage(page) ||
+    isProjectCreatePage(page)
+  );
 }
 
 export function getScreenNameFromPage(page: Page): MetricsEventScreenName {

@@ -11,6 +11,12 @@
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
   import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
+  import {
+    dashboardChatActions,
+    dashboardChatOpen,
+    developerChatActions,
+    developerChatOpen,
+  } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
@@ -27,7 +33,6 @@
   import { useAlerts } from "../alerts/selectors";
   import AvatarButton from "../authentication/AvatarButton.svelte";
   import SignIn from "../authentication/SignIn.svelte";
-  import BranchSelector from "../branches/BranchSelector.svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
   import { useDashboards } from "../dashboards/listing/selectors";
   import {
@@ -36,6 +41,7 @@
   } from "../navigation/breadcrumb-selectors";
   import {
     isCanvasDashboardPage,
+    isEditDashboardPreviewPage,
     isMetricsExplorerPage,
     isProjectPage,
     isPublicURLPage,
@@ -75,6 +81,8 @@
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
   $: onCanvasDashboardPage = isCanvasDashboardPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
+
+  $: onEditDashboardPreview = isEditDashboardPreviewPage($page);
 
   $: activeBranch = extractBranchFromPath($page.url.pathname);
 
@@ -183,15 +191,12 @@
         {#if editContext && activeBranch}
           <li class="flex items-center mr-2">
             <span
-              class="flex items-center gap-x-1 px-2 py-0 rounded-2xl border bg-primary-50 border-primary-200 text-primary-800"
+              class="inline-block truncate max-w-[200px] px-2 py-0 rounded-2xl border bg-primary-50 border-primary-200 text-primary-800"
+              title={activeBranch}
             >
-              {activeBranch.length > 12
-                ? activeBranch.slice(0, 11) + "…"
-                : activeBranch}
+              {activeBranch}
             </span>
           </li>
-        {:else if !onPublicURLPage && projectPermissions?.readDev}
-          <BranchSelector {organization} {project} {primaryBranch} />
         {/if}
       </svelte:fragment>
     </Breadcrumbs>
@@ -199,16 +204,19 @@
 
   <div class="flex gap-x-2 items-center ml-auto">
     {#if editContext}
-      {#if $developerChat}
-        <ChatToggle />
+      {#if $developerChat && !onEditDashboardPreview}
+        <ChatToggle open={developerChatOpen} actions={developerChatActions} />
       {/if}
-      <EditActions {organization} {project} branch={activeBranch ?? ""} />
+      {#if $dashboardChat && onEditDashboardPreview}
+        <ChatToggle open={dashboardChatOpen} actions={dashboardChatActions} />
+      {/if}
+      <EditActions {organization} {project} {primaryBranch} />
     {:else}
       {#if $viewAsUserStore}
         <ViewAsUserChip />
       {/if}
       {#if $cloudEditing && onProjectPage && projectPermissions.manageDev}
-        <EditButton {organization} {project} {activeBranch} />
+        <EditButton {organization} {project} {activeBranch} {primaryBranch} />
       {/if}
       {#if onProjectPage && projectPermissions.manageProjectMembers}
         <ShareProjectPopover
@@ -231,13 +239,21 @@
           >
             <LastRefreshedDate {dashboard} />
             {#if $cloudEditing && (onMetricsExplorerPage || onCanvasDashboardPage) && projectPermissions.manageDev}
-              <EditButton {organization} {project} {activeBranch} />
+              <EditButton
+                {organization}
+                {project}
+                {activeBranch}
+                {primaryBranch}
+              />
             {/if}
             {#if $dimensionSearch && ready}
               <GlobalDimensionSearch />
             {/if}
-            {#if $dashboardChat && !onPublicURLPage}
-              <ChatToggle />
+            {#if $dashboardChat && !onPublicURLPage && !editContext}
+              <ChatToggle
+                open={dashboardChatOpen}
+                actions={dashboardChatActions}
+              />
             {/if}
             {#if hasUserAccess}
               <ExploreBookmarks
@@ -260,10 +276,10 @@
 
     {#if onCanvasDashboardPage}
       {#if $cloudEditing && projectPermissions.manageDev}
-        <EditButton {organization} {project} {activeBranch} />
+        <EditButton {organization} {project} {activeBranch} {primaryBranch} />
       {/if}
-      {#if $dashboardChat && !onPublicURLPage}
-        <ChatToggle />
+      {#if $dashboardChat && !onPublicURLPage && !editContext}
+        <ChatToggle open={dashboardChatOpen} actions={dashboardChatActions} />
       {/if}
       {#if hasUserAccess}
         <CanvasBookmarks {organization} {project} canvasName={dashboard} />

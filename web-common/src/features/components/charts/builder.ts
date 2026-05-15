@@ -1,5 +1,6 @@
 import {
   sanitizeFieldName,
+  sanitizeTitleForVegaTooltip,
   sanitizeValueForVega,
 } from "@rilldata/web-common/components/vega/util";
 import { createBrushParam } from "@rilldata/web-common/features/components/charts/brush-builder";
@@ -40,6 +41,7 @@ import type {
   ColorDef,
   Field,
   MarkPropDef,
+  OrderFieldDef,
   PositionFieldDef,
 } from "vega-lite/types_unstable/channeldef.js";
 import type { Encoding } from "vega-lite/types_unstable/encoding.js";
@@ -232,12 +234,14 @@ export function createOpacityEncoding(paramName: string) {
   };
 }
 
-export function createOrderEncoding(field: FieldConfig | undefined) {
+export function createOrderEncoding(
+  field: FieldConfig | undefined,
+): OrderFieldDef<Field> {
   if (!field || field.type === "value") return {};
   return {
     field: sanitizeValueForVega(field.field),
     type: field.type,
-    order: "descending",
+    sort: "descending",
   };
 }
 
@@ -395,9 +399,11 @@ export function createCartesianMultiValueTooltipChannel(
 
     if (domainValues) {
       for (const value of domainValues) {
+        const title = sanitizeTitleForVegaTooltip(value);
         // Add current period value
         tooltipFields.push({
           field: sanitizeValueForVega(value),
+          title,
           type: "quantitative" as const,
           formatType: yFormatType,
         });
@@ -405,6 +411,7 @@ export function createCartesianMultiValueTooltipChannel(
         // Add previous period value
         tooltipFields.push({
           field: sanitizeValueForVega(value) + ComparisonDeltaPreviousSuffix,
+          title: title + ComparisonDeltaPreviousSuffix,
           type: "quantitative" as const,
           formatType: yFormatType,
         });
@@ -433,6 +440,7 @@ export function createCartesianMultiValueTooltipChannel(
     multiValueTooltipChannel = data.domainValues?.[colorField]?.map(
       (value) => ({
         field: sanitizeValueForVega(value as string),
+        title: sanitizeTitleForVegaTooltip(value),
         type: "quantitative" as const,
         formatType: yFormatType,
       }),

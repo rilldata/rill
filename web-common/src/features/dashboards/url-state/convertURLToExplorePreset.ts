@@ -73,6 +73,12 @@ export function convertURLToExplorePreset(
     ) ?? [],
     (d) => d.name!,
   );
+  const allDimensions = getMapFromArray(
+    metricsView.dimensions?.filter((d) =>
+      explore.dimensions?.includes(d.name!),
+    ) ?? [],
+    (d) => d.name!,
+  );
 
   if (searchParams.has(ExploreStateURLParams.GzippedParams)) {
     searchParams = new URLSearchParams(
@@ -126,7 +132,7 @@ export function convertURLToExplorePreset(
 
   const { preset: trPreset, errors: trErrors } = fromTimeRangesParams(
     searchParams,
-    dimensions,
+    allDimensions,
   );
 
   Object.assign(preset, trPreset);

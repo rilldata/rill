@@ -335,7 +335,7 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 		Password:      pollRes.AccessToken,
 		DefaultBranch: branch,
 	}
-	err = gitutil.CommitAndPush(ctx, localGitPath, config, "", author, false)
+	err = gitutil.CommitAndPush(ctx, localGitPath, config, "", author)
 	if err != nil {
 		return fmt.Errorf("failed to push local project to Github: %w", err)
 	}
@@ -514,7 +514,7 @@ func createProjectFlow(ctx context.Context, ch *cmdutil.Helper, req *adminv1.Cre
 }
 
 func repoInSyncFlow(ch *cmdutil.Helper, gitPath, subpath, remoteName string) (bool, error) {
-	st, err := gitutil.RunGitStatus(gitPath, subpath, remoteName)
+	st, err := gitutil.RunGitStatus(gitPath, subpath, remoteName, "")
 	if err != nil {
 		return false, err
 	}

@@ -22,3 +22,6 @@ export type LabelsConfig = {
   // Hide labels for slices below this percent of total.
   threshold?: number;
 };
+// Synthetic field used to pin the "Other" slice to the end of the arc order
+// regardless of how rows sort by measure or category.
+export const OTHER_SORT_KEY_FIELD = "__other_sort_key";

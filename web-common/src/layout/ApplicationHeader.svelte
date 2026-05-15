@@ -8,6 +8,10 @@
   import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import CanvasPreviewCTAs from "@rilldata/web-common/features/canvas/CanvasPreviewCTAs.svelte";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
+  import {
+    developerChatActions,
+    developerChatOpen,
+  } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
   import { getBreadcrumbOptions } from "@rilldata/web-common/features/dashboards/dashboard-utils";
   import {
     useValidCanvases,
@@ -127,7 +131,7 @@
     {:else if route.id?.includes("canvas")}
       <CanvasPreviewCTAs canvasName={dashboardName} />
     {:else if showDeveloperChat}
-      <ChatToggle />
+      <ChatToggle open={developerChatOpen} actions={developerChatActions} />
     {/if}
     {#if showDeployCTA}
       <DeployProjectCTA {hasValidDashboard} />

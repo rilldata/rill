@@ -95,16 +95,16 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 	}
 
 	inst := &drivers.Instance{
-		ID:             req.InstanceId,
-		Environment:    req.Environment,
-		OLAPConnector:  req.OlapConnector,
-		RepoConnector:  req.RepoConnector,
-		AdminConnector: req.AdminConnector,
-		AIConnector:    req.AiConnector,
-		Connectors:     req.Connectors,
-		Variables:      req.Variables,
-		Annotations:    req.Annotations,
-		FrontendURL:    req.FrontendUrl,
+		ID:              req.InstanceId,
+		Environment:     req.Environment,
+		OLAPConnector:   req.OlapConnector,
+		RepoConnector:   req.RepoConnector,
+		AdminConnector:  req.AdminConnector,
+		AIConnector:     req.AiConnector,
+		Connectors:      req.Connectors,
+		SystemVariables: req.SystemVariables,
+		Annotations:     req.Annotations,
+		FrontendURL:     req.FrontendUrl,
 	}
 
 	err := s.runtime.CreateInstance(ctx, inst)
@@ -168,6 +168,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		Connectors:           connectors,
 		ProjectConnectors:    oldInst.ProjectConnectors,
 		ProjectVariables:     oldInst.ProjectVariables,
+		SystemVariables:      oldInst.SystemVariables,
 		FeatureFlags:         oldInst.FeatureFlags,
 		AIInstructions:       oldInst.AIInstructions,
 	}
@@ -177,7 +178,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		return nil, err
 	}
 
-	err = s.runtime.ReloadConfig(ctx, req.InstanceId)
+	_, err = s.runtime.ReloadConfig(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
@@ -285,20 +286,24 @@ func (s *Server) ReloadConfig(ctx context.Context, req *runtimev1.ReloadConfigRe
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	claims := auth.GetClaims(ctx, req.InstanceId)
-	if !claims.Can(runtime.ManageInstances) {
+	if !claims.Can(runtime.ManageInstance) {
 		return nil, ErrForbidden
 	}
 
-	err := s.runtime.ReloadConfig(ctx, req.InstanceId)
+	summary, err := s.runtime.ReloadConfig(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
-	return &runtimev1.ReloadConfigResponse{}, nil
+	return &runtimev1.ReloadConfigResponse{
+		VariablesCount: int32(summary.VarsCount),
+		Modified:       summary.VarsModified,
+	}, nil
 }
 
 func instanceToPB(inst *drivers.Instance, featureFlags map[string]bool, sensitive bool) *runtimev1.Instance {
 	pb := &runtimev1.Instance{
 		InstanceId:         inst.ID,
+		Environment:        inst.Environment,
 		ProjectDisplayName: inst.ProjectDisplayName,
 		CreatedOn:          timestamppb.New(inst.CreatedOn),
 		UpdatedOn:          timestamppb.New(inst.UpdatedOn),

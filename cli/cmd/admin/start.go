@@ -104,12 +104,15 @@ type Config struct {
 	MetricsProject                    string `default:"" split_words:"true"`
 	AutoscalerCron                    string `default:"CRON_TZ=America/Los_Angeles 0 0 * * 1" split_words:"true"`
 	ScaleDownConstraint               int    `default:"0" split_words:"true"`
-	OrbAPIKey                         string `split_words:"true"`
-	OrbWebhookSecret                  string `split_words:"true"`
-	OrbIntegratedTaxProvider          string `default:"avalara" split_words:"true"`
-	StripeAPIKey                      string `split_words:"true"`
-	StripeWebhookSecret               string `split_words:"true"`
-	PylonIdentitySecret               string `split_words:"true"`
+	// StoppedDeploymentRetention is how long a stopped (hibernated) deployment is kept around before its persistent state is fully deleted.
+	StoppedDeploymentRetention time.Duration `default:"168h" split_words:"true"`
+	OrbAPIKey                  string        `split_words:"true"`
+	OrbWebhookSecret           string        `split_words:"true"`
+	OrbIntegratedTaxProvider   string        `default:"anrok" split_words:"true"`
+	StripeAPIKey               string        `split_words:"true"`
+	StripeWebhookSecret        string        `split_words:"true"`
+	PylonIdentitySecret        string        `split_words:"true"`
+	AllowMockBilling           bool          `default:"false" split_words:"true"` // set to allow sending mock usage for billing, should be false in prod env
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -318,19 +321,21 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Init admin service
 			admOpts := &admin.Options{
-				DatabaseDriver:            conf.DatabaseDriver,
-				DatabaseDSN:               conf.DatabaseURL,
-				DatabaseEncryptionKeyring: conf.DatabaseEncryptionKeyring,
-				ExternalURL:               conf.ExternalGRPCURL, // NOTE: using gRPC url
-				FrontendURL:               conf.FrontendURL,
-				ProvisionerSetJSON:        conf.ProvisionerSetJSON,
-				ProvisionerMaxConcurrency: conf.ProvisionerMaxConcurrency,
-				DefaultProvisioner:        conf.DefaultProvisioner,
-				Version:                   ch.Version,
-				MetricsProjectOrg:         metricsProjectOrg,
-				MetricsProjectName:        metricsProjectName,
-				AutoscalerCron:            conf.AutoscalerCron,
-				ScaleDownConstraint:       conf.ScaleDownConstraint,
+				DatabaseDriver:             conf.DatabaseDriver,
+				DatabaseDSN:                conf.DatabaseURL,
+				DatabaseEncryptionKeyring:  conf.DatabaseEncryptionKeyring,
+				ExternalURL:                conf.ExternalGRPCURL, // NOTE: using gRPC url
+				FrontendURL:                conf.FrontendURL,
+				ProvisionerSetJSON:         conf.ProvisionerSetJSON,
+				ProvisionerMaxConcurrency:  conf.ProvisionerMaxConcurrency,
+				DefaultProvisioner:         conf.DefaultProvisioner,
+				Version:                    ch.Version,
+				MetricsProjectOrg:          metricsProjectOrg,
+				MetricsProjectName:         metricsProjectName,
+				AutoscalerCron:             conf.AutoscalerCron,
+				ScaleDownConstraint:        conf.ScaleDownConstraint,
+				AllowMockBilling:           conf.AllowMockBilling,
+				StoppedDeploymentRetention: conf.StoppedDeploymentRetention,
 			}
 			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiService, assetsBucket, biller, p)
 			if err != nil {

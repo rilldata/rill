@@ -17,6 +17,7 @@ export class EmbedStore {
   public readonly navigationEnabled: boolean;
   public readonly theme: string | null;
   public readonly themeMode: string | null;
+  public readonly externalUserId: string | null;
   public readonly embedId: string;
 
   /**
@@ -47,6 +48,7 @@ export class EmbedStore {
     this.navigationEnabled = url.searchParams.get("navigation") === "true";
     this.theme = url.searchParams.get("theme");
     this.themeMode = url.searchParams.get("theme_mode");
+    this.externalUserId = url.searchParams.get("external_user_id");
     this.embedId = `embed-${guidGenerator()}`;
 
     if (!this.instanceId) {

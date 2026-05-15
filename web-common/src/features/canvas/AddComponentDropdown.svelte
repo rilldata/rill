@@ -59,6 +59,7 @@
       {#if componentForm}
         <button
           {...props}
+          {disabled}
           class="pointer-events-auto shadow-sm hover:shadow-md flex bg-surface-subtle h-[84px] flex-col justify-center gap-2 items-center rounded-md border border-gray-200 w-full"
         >
           <PlusCircle class="w-6 h-6 text-fg-secondary" />
@@ -67,6 +68,7 @@
       {:else if floatingForm}
         <button
           {...props}
+          {disabled}
           class:pr-3.5={open}
           aria-label="Add widget"
           class="shadow-lg flex group hover:rounded-3xl w-fit gap-x-1 p-2 hover:pr-3.5 absolute bottom-3 right-3 items-center justify-center z-50 rounded-full bg-primary-600 text-white hover:bg-primary-500"
