@@ -12,6 +12,7 @@ import {
   runtimeServiceGenerateCanvasFile,
   runtimeServiceGenerateMetricsViewFile,
   runtimeServiceGetInstance,
+  runtimeServicePushEnv,
   runtimeServicePutFile,
 } from "@rilldata/web-common/runtime-client";
 import {
@@ -19,8 +20,11 @@ import {
   maybeDeleteFileArtifact,
   runtimeServicePutFileAndWaitForReconciliation,
   waitForResourceReconciliation,
-} from "@rilldata/web-common/features/entity-management/actions.ts";
-import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+} from "@rilldata/web-common/features/entity-management/actions/actions.ts";
+import {
+  fetchResource,
+  ResourceKind,
+} from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 import { get } from "svelte/store";
@@ -37,6 +41,7 @@ import { unsetResourceEnvVars } from "@rilldata/web-common/features/connectors/c
 import { maybeGetConnectorDriver } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
 import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics.ts";
 import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
+import { isCloudRuntimeEditEnvironment } from "@rilldata/web-common/features/entity-management/edit-environment.ts";
 
 export async function runImportSteps(
   runtimeClient: RuntimeClient,
@@ -123,6 +128,7 @@ export async function cleanupImportStep(
   const importToConfig = config.importTo;
 
   let envBlob: string | null = null;
+  let envBlobChanged = false;
   if (
     importToConfig.modelPath &&
     fileArtifacts.hasFileArtifact(importToConfig.modelPath)
@@ -133,7 +139,7 @@ export async function cleanupImportStep(
     const modelYaml = await modelArtifact.fetchContent();
 
     // Get the existing env and remove the connector's env vars
-    envBlob = await unsetResourceEnvVars(
+    [envBlob, envBlobChanged] = await unsetResourceEnvVars(
       runtimeClient,
       queryClient,
       modelYaml ?? "",
@@ -154,12 +160,16 @@ export async function cleanupImportStep(
     }),
   );
 
-  if (envBlob) {
+  if (envBlob && envBlobChanged) {
     // Update the .env file with the removed env vars
     await runtimeServicePutFile(runtimeClient, {
       path: ".env",
       blob: envBlob,
     });
+    if (isCloudRuntimeEditEnvironment()) {
+      // Only push env on cloud for now. We will revisit this for rill-dev.
+      await runtimeServicePushEnv(runtimeClient, {});
+    }
   }
 }
 
@@ -248,6 +258,10 @@ async function runCreateModelStep(
       create: true,
       createOnly: false,
     });
+    if (isCloudRuntimeEditEnvironment()) {
+      // Only push env on cloud for now. We will revisit this for rill-dev.
+      await runtimeServicePushEnv(runtimeClient, {});
+    }
   }
 
   let putFile = true;
@@ -278,6 +292,7 @@ async function runCreateModelStep(
   // Wait for the model to successfully reconcile
   await waitForResourceReconciliation(
     runtimeClient,
+    queryClient,
     importToConfig.modelName,
     ResourceKind.Model,
   );
@@ -299,13 +314,15 @@ async function runCreateMetricsViewStep(
   let databaseSchema = "";
   if (
     config.importSteps.includes(ImportDataStep.CreateModel) &&
-    importToConfig.modelPath
+    importToConfig.modelName
   ) {
     // Get the model and use it's sink table/connector
-    const modelFileArtifact = fileArtifacts.getFileArtifact(
-      importToConfig.modelPath,
+    const modelResource = await fetchResource(
+      runtimeClient,
+      queryClient,
+      importToConfig.modelName,
+      ResourceKind.Model,
     );
-    const modelResource = await modelFileArtifact.fetchResource(queryClient);
     if (!modelResource?.model) {
       throw new Error("Failed to get model resource");
     }
@@ -335,6 +352,7 @@ async function runCreateMetricsViewStep(
   // Wait for the metrics view to successfully reconcile
   await waitForResourceReconciliation(
     runtimeClient,
+    queryClient,
     importToConfig.metricsViewName,
     ResourceKind.MetricsView,
   );
@@ -351,14 +369,15 @@ async function runCreateExploreStep(
   }
 
   // Get the metrics view resource for this explore
-  if (!importToConfig.metricsViewPath) {
+  if (!importToConfig.metricsViewName) {
     throw new Error("Metrics view must be specified for this step.");
   }
-  const metricsViewFileArtifact = fileArtifacts.getFileArtifact(
-    importToConfig.metricsViewPath,
+  const metricsViewResource = await fetchResource(
+    runtimeClient,
+    queryClient,
+    importToConfig.metricsViewName,
+    ResourceKind.MetricsView,
   );
-  const metricsViewResource =
-    await metricsViewFileArtifact.fetchResource(queryClient);
   if (!metricsViewResource?.metricsView?.state?.validSpec) {
     throw new Error("Failed to get metrics view resource");
   }
@@ -377,6 +396,7 @@ async function runCreateExploreStep(
   // Wait for explore to reconcile
   await waitForResourceReconciliation(
     runtimeClient,
+    queryClient,
     importToConfig.exploreName,
     ResourceKind.Explore,
   );
@@ -401,6 +421,7 @@ async function runCreateCanvasStep(
   // Wait for canvas to reconcile
   await waitForResourceReconciliation(
     runtimeClient,
+    queryClient,
     importToConfig.canvasName,
     ResourceKind.Canvas,
   );

@@ -178,19 +178,25 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 			if !permissions.ReadDev {
 				return nil, status.Error(codes.PermissionDenied, "does not have permission to read dev deployment")
 			}
+			if !permissions.ReadDevStatus {
+				depl.StatusMessage = ""
+			}
 		} else {
 			if !permissions.ReadProd {
 				return nil, status.Error(codes.PermissionDenied, "does not have permission to read prod deployment")
+			}
+			if !permissions.ReadProdStatus {
+				depl.StatusMessage = ""
 			}
 		}
 
 		if req.For != nil || req.ExternalUserId != "" {
 			if depl.Environment == "dev" {
-				if !permissions.ManageDev {
+				if !permissions.ReadDevStatus {
 					return nil, status.Error(codes.PermissionDenied, "does not have permission to manage dev deployment")
 				}
 			} else {
-				if !permissions.ManageProd {
+				if !permissions.ReadProdStatus {
 					return nil, status.Error(codes.PermissionDenied, "does not have permission to manage prod deployment")
 				}
 			}
@@ -370,6 +376,7 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 			ProdTTLSeconds:       proj.ProdTTLSeconds,
 			DevSlots:             proj.DevSlots,
 			DevTTLSeconds:        proj.DevTTLSeconds,
+			OverrideDiskGB:       proj.OverrideDiskGB,
 			Annotations:          proj.Annotations,
 		})
 		if err != nil {
@@ -699,6 +706,10 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		iframeQuery["state"] = req.State
 	}
 
+	if req.ExternalUserId != "" {
+		iframeQuery["external_user_id"] = req.ExternalUserId
+	}
+
 	for k, v := range req.Query {
 		iframeQuery[k] = v
 	}
@@ -774,14 +785,28 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 	}
 
 	resp := &adminv1.GetDeploymentConfigResponse{
+		FrontendUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name),
+		Editable:    depl.Editable,
 		UpdatedOn:   timestamppb.New(depl.UpdatedOn),
 		UsesArchive: proj.ArchiveAssetID != nil,
 	}
-	vars, err := s.admin.ResolveVariables(ctx, depl)
+
+	// variables
+	vars, systemVars, err := s.admin.ResolveVariables(ctx, depl)
 	if err != nil {
 		return nil, err
 	}
-	resp.Variables = vars
+	resp.Variables = make([]*adminv1.ProjectVariable, 0, len(vars))
+	for _, v := range vars {
+		resp.Variables = append(resp.Variables, projectVariableToDTO(v))
+	}
+	resp.SystemVariables = systemVars
+
+	// remove in next release
+	resp.VariablesLegacy = make(map[string]string, len(vars)) // nolint:staticcheck // Still need to populate for backward compatibility.
+	for _, v := range vars {
+		resp.VariablesLegacy[v.Name] = v.Value // nolint:staticcheck // Still need to populate for backward compatibility.
+	}
 
 	// parsing duckdb connector config
 	rCfg, err := provisioner.NewRuntimeConfig(pr.Config)
@@ -800,8 +825,6 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 
 	annotations := s.admin.NewDeploymentAnnotations(org, proj, depl.Environment)
 	resp.Annotations = annotations.ToMap()
-
-	resp.FrontendUrl = s.admin.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name)
 
 	return resp, nil
 }

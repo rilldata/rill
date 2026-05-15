@@ -62,7 +62,7 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 	})
 
 	if req.SkipSecurityChecks {
-		if !claims.Admin() {
+		if !claims.Can(runtime.ReadInstance) {
 			return nil, ErrForbidden
 		}
 		return &runtimev1.ListResourcesResponse{Resources: rs}, nil
@@ -182,7 +182,7 @@ func (s *Server) GetResource(ctx context.Context, req *runtimev1.GetResourceRequ
 	}
 
 	if req.SkipSecurityChecks {
-		if !claims.Admin() {
+		if !claims.Can(runtime.ReadInstance) {
 			return nil, ErrForbidden
 		}
 		return &runtimev1.GetResourceResponse{Resource: r}, nil

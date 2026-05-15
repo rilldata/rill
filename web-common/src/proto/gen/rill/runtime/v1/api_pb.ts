@@ -863,9 +863,18 @@ export class CreateInstanceRequest extends Message$1<CreateInstanceRequest> {
   connectors: Connector[] = [];
 
   /**
+   * Deprecated: Continue populating this for some time for backward compatibility with older runtimes, remove after a few releases.
+   *
    * @generated from field: map<string, string> variables = 7;
    */
   variables: { [key: string]: string } = {};
+
+  /**
+   * system_variables are variables that are set by admin service and should not be overridden by user input
+   *
+   * @generated from field: map<string, string> system_variables = 19;
+   */
+  systemVariables: { [key: string]: string } = {};
 
   /**
    * @generated from field: map<string, string> annotations = 9;
@@ -893,6 +902,7 @@ export class CreateInstanceRequest extends Message$1<CreateInstanceRequest> {
     { no: 17, name: "ai_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "connectors", kind: "message", T: Connector, repeated: true },
     { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 19, name: "system_variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 9, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 18, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
@@ -1185,6 +1195,20 @@ export class ReloadConfigRequest extends Message$1<ReloadConfigRequest> {
  * @generated from message rill.runtime.v1.ReloadConfigResponse
  */
 export class ReloadConfigResponse extends Message$1<ReloadConfigResponse> {
+  /**
+   * Number of variables pulled from admin service
+   *
+   * @generated from field: int32 variables_count = 1;
+   */
+  variablesCount = 0;
+
+  /**
+   * Whether the .env file(s) were modified
+   *
+   * @generated from field: bool modified = 2;
+   */
+  modified = false;
+
   constructor(data?: PartialMessage<ReloadConfigResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1193,6 +1217,8 @@ export class ReloadConfigResponse extends Message$1<ReloadConfigResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.ReloadConfigResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "variables_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "modified", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReloadConfigResponse {
@@ -5713,6 +5739,14 @@ export class GitStatusRequest extends Message$1<GitStatusRequest> {
    */
   instanceId = "";
 
+  /**
+   * remote_branch is the remote branch to compare the current local branch against.
+   * If empty, the upstream of the current local branch is used.
+   *
+   * @generated from field: string remote_branch = 2;
+   */
+  remoteBranch = "";
+
   constructor(data?: PartialMessage<GitStatusRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5722,6 +5756,7 @@ export class GitStatusRequest extends Message$1<GitStatusRequest> {
   static readonly typeName = "rill.runtime.v1.GitStatusRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "remote_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitStatusRequest {
@@ -5758,6 +5793,13 @@ export class GitStatusResponse extends Message$1<GitStatusResponse> {
    * @generated from field: string github_url = 2;
    */
   githubUrl = "";
+
+  /**
+   * Subpath from the git repo.
+   *
+   * @generated from field: string subpath = 7;
+   */
+  subpath = "";
 
   /**
    * If the repo is managed by Rill.
@@ -5797,6 +5839,7 @@ export class GitStatusResponse extends Message$1<GitStatusResponse> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "managed_git", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 4, name: "local_changes", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 5, name: "local_commits", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
@@ -6448,6 +6491,90 @@ export class GitPushResponse extends Message$1<GitPushResponse> {
 
   static equals(a: GitPushResponse | PlainMessage<GitPushResponse> | undefined, b: GitPushResponse | PlainMessage<GitPushResponse> | undefined): boolean {
     return proto3.util.equals(GitPushResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.PushEnvRequest
+ */
+export class PushEnvRequest extends Message$1<PushEnvRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  constructor(data?: PartialMessage<PushEnvRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.PushEnvRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PushEnvRequest {
+    return new PushEnvRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PushEnvRequest {
+    return new PushEnvRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PushEnvRequest {
+    return new PushEnvRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: PushEnvRequest | PlainMessage<PushEnvRequest> | undefined, b: PushEnvRequest | PlainMessage<PushEnvRequest> | undefined): boolean {
+    return proto3.util.equals(PushEnvRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.PushEnvResponse
+ */
+export class PushEnvResponse extends Message$1<PushEnvResponse> {
+  /**
+   * Number of variables added
+   *
+   * @generated from field: int32 added_count = 1;
+   */
+  addedCount = 0;
+
+  /**
+   * Number of variables changed
+   *
+   * @generated from field: int32 changed_count = 2;
+   */
+  changedCount = 0;
+
+  constructor(data?: PartialMessage<PushEnvResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.PushEnvResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "added_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "changed_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PushEnvResponse {
+    return new PushEnvResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PushEnvResponse {
+    return new PushEnvResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PushEnvResponse {
+    return new PushEnvResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: PushEnvResponse | PlainMessage<PushEnvResponse> | undefined, b: PushEnvResponse | PlainMessage<PushEnvResponse> | undefined): boolean {
+    return proto3.util.equals(PushEnvResponse, a, b);
   }
 }
 

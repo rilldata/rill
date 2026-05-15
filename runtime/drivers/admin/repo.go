@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
+	"github.com/go-git/go-git/v5"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -82,7 +83,7 @@ func newRepo(h *Handle) *repo {
 
 // Root implements drivers.RepoStore.
 func (r *repo) Root(ctx context.Context) (string, error) {
-	err := r.rlockEnsureReady(ctx)
+	err := r.rlockEnsureReady(ctx, false)
 	if err != nil {
 		return "", err
 	}
@@ -98,7 +99,7 @@ func (r *repo) Root(ctx context.Context) (string, error) {
 
 // ListGlob implements drivers.RepoStore.
 func (r *repo) ListGlob(ctx context.Context, glob string, skipDirs bool) ([]drivers.DirEntry, error) {
-	err := r.rlockEnsureReady(ctx)
+	err := r.rlockEnsureReady(ctx, false)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +134,7 @@ func (r *repo) ListGlob(ctx context.Context, glob string, skipDirs bool) ([]driv
 
 // Get implements drivers.RepoStore.
 func (r *repo) Get(ctx context.Context, path string) (string, error) {
-	err := r.rlockEnsureReady(ctx)
+	err := r.rlockEnsureReady(ctx, false)
 	if err != nil {
 		return "", err
 	}
@@ -163,7 +164,7 @@ func (r *repo) Get(ctx context.Context, path string) (string, error) {
 
 // Hash implements drivers.RepoStore.
 func (r *repo) Hash(ctx context.Context, paths []string) (string, error) {
-	err := r.rlockEnsureReady(ctx)
+	err := r.rlockEnsureReady(ctx, false)
 	if err != nil {
 		return "", err
 	}
@@ -204,7 +205,7 @@ func (r *repo) Hash(ctx context.Context, paths []string) (string, error) {
 
 // Stat implements drivers.RepoStore.
 func (r *repo) Stat(ctx context.Context, path string) (*drivers.FileInfo, error) {
-	err := r.rlockEnsureReady(ctx)
+	err := r.rlockEnsureReady(ctx, false)
 	if err != nil {
 		return nil, err
 	}
@@ -237,7 +238,7 @@ func (r *repo) Stat(ctx context.Context, path string) (*drivers.FileInfo, error)
 
 // Put implements drivers.RepoStore.
 func (r *repo) Put(ctx context.Context, path string, reader io.Reader) error {
-	err := r.rlockEnsureReady(ctx)
+	err := r.rlockEnsureReady(ctx, false)
 	if err != nil {
 		return err
 	}
@@ -275,7 +276,7 @@ func (r *repo) Put(ctx context.Context, path string, reader io.Reader) error {
 
 // MkdirAll implements drivers.RepoStore.
 func (r *repo) MkdirAll(ctx context.Context, path string) error {
-	err := r.rlockEnsureReady(ctx)
+	err := r.rlockEnsureReady(ctx, false)
 	if err != nil {
 		return err
 	}
@@ -302,7 +303,7 @@ func (r *repo) MkdirAll(ctx context.Context, path string) error {
 
 // Rename implements drivers.RepoStore.
 func (r *repo) Rename(ctx context.Context, fromPath, toPath string) error {
-	err := r.rlockEnsureReady(ctx)
+	err := r.rlockEnsureReady(ctx, false)
 	if err != nil {
 		return err
 	}
@@ -341,7 +342,7 @@ func (r *repo) Rename(ctx context.Context, fromPath, toPath string) error {
 
 // Delete implements drivers.RepoStore.
 func (r *repo) Delete(ctx context.Context, path string, force bool) error {
-	err := r.rlockEnsureReady(ctx)
+	err := r.rlockEnsureReady(ctx, false)
 	if err != nil {
 		return err
 	}
@@ -375,7 +376,7 @@ func (r *repo) Delete(ctx context.Context, path string, force bool) error {
 
 // Watch implements drivers.RepoStore.
 func (r *repo) Watch(ctx context.Context, cb drivers.WatchCallback) error {
-	err := r.rlockEnsureReady(ctx)
+	err := r.rlockEnsureReady(ctx, false)
 	if err != nil {
 		return err
 	}
@@ -439,25 +440,40 @@ func (r *repo) ListCommits(ctx context.Context, fromCommit string, limit int) ([
 }
 
 // Status implements drivers.RepoStore.
-func (r *repo) Status(ctx context.Context) (*drivers.RepoStatus, error) {
-	if r.git == nil {
-		return &drivers.RepoStatus{}, nil
-	}
-
-	err := r.rlockEnsureReady(ctx)
+func (r *repo) Status(ctx context.Context, remoteBranch string) (*drivers.RepoStatus, error) {
+	err := r.rlockEnsureReady(ctx, true)
 	if err != nil {
 		return nil, err
 	}
 	defer r.mu.RUnlock()
 
-	// run git fetch - only updates the remote tracking branch and not the working tree.
-	err = r.git.fetchCurrentBranch(ctx)
+	if r.git == nil {
+		return &drivers.RepoStatus{}, nil
+	}
+
+	repo, err := git.PlainOpen(r.git.repoDir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch current branch: %w", err)
+		return nil, err
+	}
+	head, err := repo.Head()
+	if err != nil {
+		return nil, err
+	}
+	branches := []string{head.Name().Short()}
+
+	// If a remote branch was explicitly requested and it differs from the current branch, fetch it too
+	// so that ahead/behind counts in RunGitStatus have an up-to-date remote tracking ref to compare against.
+	if remoteBranch != "" && remoteBranch != branches[0] {
+		branches = append(branches, remoteBranch)
+	}
+
+	err = r.git.fetchBranch(ctx, repo, branches...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch branches %q: %w", branches, err)
 	}
 
 	// run git status
-	st, err := gitutil.RunGitStatus(r.git.repoDir, r.git.subpath, "origin")
+	st, err := gitutil.RunGitStatus(r.git.repoDir, r.git.subpath, "origin", remoteBranch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Git status: %w", err)
 	}
@@ -465,6 +481,7 @@ func (r *repo) Status(ctx context.Context) (*drivers.RepoStatus, error) {
 		IsGitRepo:     true,
 		Branch:        st.Branch,
 		RemoteURL:     st.RemoteURL,
+		Subpath:       r.git.subpath,
 		ManagedRepo:   r.git.managedRepo,
 		LocalChanges:  st.LocalChanges,
 		LocalCommits:  st.LocalCommits,
@@ -473,20 +490,24 @@ func (r *repo) Status(ctx context.Context) (*drivers.RepoStatus, error) {
 }
 
 func (r *repo) Commit(ctx context.Context, message string) (string, error) {
+	err := r.lockForWrite(ctx) // no remote operations but still need the write lock
+	if err != nil {
+		return "", err
+	}
+	defer r.mu.Unlock()
+
 	if r.git == nil {
 		return "", fmt.Errorf("commits are not supported for this repo type")
 	}
 
-	err := r.rlockEnsureReady(ctx)
-	if err != nil {
-		return "", err
-	}
-	defer r.mu.RUnlock()
-
 	if !r.git.editable() {
 		return "", fmt.Errorf("repo is not editable")
 	}
-	return r.git.commitToDefaultBranch(ctx, message)
+	repo, err := git.PlainOpen(r.git.repoDir)
+	if err != nil {
+		return "", err
+	}
+	return r.git.commitAll(repo, message)
 }
 
 // Pull implements drivers.RepoStore.
@@ -496,28 +517,18 @@ func (r *repo) Pull(ctx context.Context, opts *drivers.PullOptions) error {
 
 // CommitAndPush implements drivers.RepoStore.
 func (r *repo) CommitAndPush(ctx context.Context, message string, force bool) error {
-	// Get a write lock.
-	// NOTE: Not using rlockEnsureReady here because we need to exclude reads while the commit is happening.
-	err := r.mu.Lock(ctx)
+	// NOTE: Not using rlockEnsureReady here because we need to exclude reads while writes are happening.
+	err := r.lockForWrite(ctx)
 	if err != nil {
 		return err
 	}
 	defer r.mu.Unlock()
 
-	if !r.ready {
-		if r.pullErr != nil {
-			return fmt.Errorf("repo is not ready: %w", r.pullErr)
-		}
-		return fmt.Errorf("repo is not ready: pull files first")
-	}
-
 	if r.git == nil {
 		return fmt.Errorf("commits are not supported for this repo type")
 	}
 
-	// TODO: This should merge to the current branch
-	// A separate merge RPC should merge to primary branch
-	return r.git.commitAndPushToPrimaryBranch(ctx, message, force)
+	return r.git.commitToDefaultBranch(ctx, message, force)
 }
 
 // RestoreCommit implements drivers.RepoStore.
@@ -527,12 +538,22 @@ func (r *repo) RestoreCommit(ctx context.Context, commitSHA string) (string, err
 
 // MergeToBranch implements drivers.RepoStore.
 func (r *repo) MergeToBranch(ctx context.Context, branch string, force bool) error {
-	return drivers.ErrNotImplemented
+	// NOTE: Not using rlockEnsureReady here because we need to exclude reads while writes are happening.
+	err := r.lockForWrite(ctx)
+	if err != nil {
+		return err
+	}
+	defer r.mu.Unlock()
+
+	if r.git == nil {
+		return fmt.Errorf("merges are not supported for this repo type")
+	}
+	return r.git.mergeToBranch(ctx, branch, force)
 }
 
 // CommitHash implements drivers.RepoStore.
 func (r *repo) CommitHash(ctx context.Context) (string, error) {
-	err := r.rlockEnsureReady(ctx)
+	err := r.rlockEnsureReady(ctx, false)
 	if err != nil {
 		return "", err
 	}
@@ -546,7 +567,7 @@ func (r *repo) CommitHash(ctx context.Context) (string, error) {
 
 // CommitTimestamp implements drivers.RepoStore.
 func (r *repo) CommitTimestamp(ctx context.Context) (time.Time, error) {
-	err := r.rlockEnsureReady(ctx)
+	err := r.rlockEnsureReady(ctx, false)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -582,7 +603,7 @@ func (r *repo) close() error {
 	}
 
 	if r.git != nil && r.git.editable() {
-		_, err := r.git.commitToDefaultBranch(ctx, "Checkpoint commit")
+		err := r.git.commitToDefaultBranch(ctx, "Checkpoint commit", false)
 		if err != nil {
 			return fmt.Errorf("close failed: could not commit to edit branch: %w", err)
 		}
@@ -606,10 +627,37 @@ func (r *repo) roots() []string {
 	return roots
 }
 
+// lockForWrite acquires the write lock, ensures the repo is ready, and refreshes the admin handshake.
+// Callers should call r.mu.Unlock() when they are done with the write operations.
+func (r *repo) lockForWrite(ctx context.Context) error {
+	err := r.mu.Lock(ctx)
+	if err != nil {
+		return err
+	}
+
+	if !r.ready {
+		r.mu.Unlock()
+		if r.pullErr != nil {
+			return fmt.Errorf("repo is not ready: %w", r.pullErr)
+		}
+		return fmt.Errorf("repo is not ready: pull files first")
+	}
+
+	// Refresh the handshake to ensure credentials are still valid.
+	// Safe to call checkHandshake directly because we hold the write lock.
+	err = r.checkHandshake(ctx, false)
+	if err != nil {
+		r.mu.Unlock()
+		return err
+	}
+	return nil
+}
+
 // rlockEnsureReady acquires a read lock after ensuring that the repo is ready (has been pulled successfully).
 // If the repo is not pulled, it triggers and waits for a pull. If the pull fails, it returns the error without acquiring the read lock.
 // If the repo is already pulled, it returns immediately and does not trigger a fresh pull (that requires an explicit call to Pull).
-func (r *repo) rlockEnsureReady(ctx context.Context) error {
+// If repo is ready and checkHandshake is true, it will also check and refresh the handshake but no pull will be triggered.
+func (r *repo) rlockEnsureReady(ctx context.Context, checkHandshake bool) error {
 	// Get read lock
 	err := r.mu.RLock(ctx)
 	if err != nil {
@@ -618,7 +666,16 @@ func (r *repo) rlockEnsureReady(ctx context.Context) error {
 
 	// Return with lock held if already pulled.
 	if r.ready {
-		return nil
+		if !checkHandshake {
+			return nil
+		}
+		// If checkHandshake is true, we want to ensure the handshake is still valid before returning.
+		r.mu.RUnlock() // Release read lock because checkHandshakeLocked grabs a write lock.
+		err = r.checkHandshakeLocked(ctx, false)
+		if err != nil {
+			return err
+		}
+		return r.mu.RLock(ctx) // Re-acquire read lock after the handshake refresh completes.
 	}
 
 	// Release read lock and clone (which uses a singleflight)
@@ -694,7 +751,7 @@ func (r *repo) pullInner(ctx context.Context, opts *drivers.PullOptions) error {
 
 	// Push the pull into the underlying repos. These are created/updated by checkSyncHandshake.
 	if r.git != nil && opts.UserTriggered {
-		err = r.git.pull(ctx, opts.DiscardChanges)
+		err = r.git.pull(ctx, opts.UserTriggered, opts.DiscardChanges)
 		if err != nil {
 			return fmt.Errorf("git pull failed: %w", err)
 		}
@@ -739,6 +796,15 @@ func (r *repo) pullInner(ctx context.Context, opts *drivers.PullOptions) error {
 	}
 
 	return nil
+}
+
+// checkHandshakeLocked calls checkHandshake while holding the write lock
+func (r *repo) checkHandshakeLocked(ctx context.Context, force bool) error {
+	if err := r.mu.Lock(ctx); err != nil {
+		return err
+	}
+	defer r.mu.Unlock()
+	return r.checkHandshake(ctx, force)
 }
 
 // checkHandshake checks and possibly renews the repo details handshake with the admin server.

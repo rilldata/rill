@@ -61,6 +61,9 @@ func TestMetricsViewsComparisonAgainstClickHouse(t *testing.T) {
 	t.Run("testMetricsViewsComparison_measure_filters_with_compare_aliases", func(t *testing.T) {
 		testMetricsViewsComparison_general_toplist_having_same_name(t, rt, instanceID, minTime, halfTime, maxTime)
 	})
+	t.Run("testMetricsViewsComparison_null_dim_values", func(t *testing.T) {
+		testMetricsViewsComparison_null_dim_values(t, rt, instanceID, minTime, halfTime, maxTime)
+	})
 }
 
 func TestMetricsViewsComparisonAgainstDuckdb(t *testing.T) {
@@ -100,6 +103,9 @@ func TestMetricsViewsComparisonAgainstDuckdb(t *testing.T) {
 	t.Run("testMetricsViewsComparison_measure_filters_with_compare_aliases", func(t *testing.T) {
 		testMetricsViewsComparison_general_toplist_having_same_name(t, rt, instanceID, minTime, halfTime, maxTime)
 	})
+	t.Run("testMetricsViewsComparison_null_dim_values", func(t *testing.T) {
+		testMetricsViewsComparison_null_dim_values(t, rt, instanceID, minTime, halfTime, maxTime)
+	})
 
 	rt2, instanceID2 := testruntime.NewInstanceForProject(t, "ad_bids_2rows")
 	t.Run("testMetricsViewsComparison_export_xlsx", func(t *testing.T) {
@@ -121,6 +127,9 @@ func TestMetricsViewsComparisonAgainstStarRocks(t *testing.T) {
 	})
 	t.Run("testMetricsViewsComparison_measure_filters", func(t *testing.T) {
 		testMetricsViewsComparisonStarRocks_measure_filters(t, rt, instanceID)
+	})
+	t.Run("testMetricsViewsComparison_null_dim_values", func(t *testing.T) {
+		testMetricsViewsComparisonStarRocks_null_dim_values(t, rt, instanceID)
 	})
 }
 
@@ -162,6 +171,9 @@ func TestMetricsViewsComparisonAgainstBigQuery(t *testing.T) {
 	t.Run("testMetricsViewsComparison_general_toplist_having_same_name", func(t *testing.T) {
 		testMetricsViewsComparison_general_toplist_having_same_name(t, rt, instanceID, minTime, halfTime, maxTime)
 	})
+	t.Run("testMetricsViewsComparison_null_dim_values", func(t *testing.T) {
+		testMetricsViewsComparison_null_dim_values(t, rt, instanceID, minTime, halfTime, maxTime)
+	})
 }
 
 func TestMetricsViewsComparisonAgainstSnowflake(t *testing.T) {
@@ -202,6 +214,9 @@ func TestMetricsViewsComparisonAgainstSnowflake(t *testing.T) {
 	t.Run("testMetricsViewsComparison_general_toplist_having_same_name", func(t *testing.T) {
 		testMetricsViewsComparison_general_toplist_having_same_name(t, rt, instanceID, minTime, halfTime, maxTime)
 	})
+	t.Run("testMetricsViewsComparison_null_dim_values", func(t *testing.T) {
+		testMetricsViewsComparison_null_dim_values(t, rt, instanceID, minTime, halfTime, maxTime)
+	})
 }
 
 func TestMetricsViewsComparisonAgainstDatabricks(t *testing.T) {
@@ -241,6 +256,9 @@ func TestMetricsViewsComparisonAgainstDatabricks(t *testing.T) {
 	})
 	t.Run("testMetricsViewsComparison_general_toplist_having_same_name", func(t *testing.T) {
 		testMetricsViewsComparison_general_toplist_having_same_name(t, rt, instanceID, minTime, halfTime, maxTime)
+	})
+	t.Run("testMetricsViewsComparison_null_dim_values", func(t *testing.T) {
+		testMetricsViewsComparison_null_dim_values(t, rt, instanceID, minTime, halfTime, maxTime)
 	})
 }
 
@@ -1176,6 +1194,64 @@ func testMetricsViewsComparisonStarRocks_measure_filters(t *testing.T, rt *runti
 	require.NotEmpty(t, q.Result)
 }
 
+func testMetricsViewsComparisonStarRocks_null_dim_values(t *testing.T, rt *runtime.Runtime, instanceID string) {
+	ctr := &queries.ColumnTimeRange{
+		TableName:  "ad_bids",
+		ColumnName: "timestamp",
+	}
+	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
+	halfTime := ctr.Result.Min.AsTime().Add(diff / 2)
+
+	q := &queries.MetricsViewComparison{
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "pub",
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_1",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
+			Start: ctr.Result.Min,
+			End:   timestamppb.New(halfTime),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(halfTime),
+			End:   ctr.Result.Max,
+		},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				Name:     "measure_1",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+				Desc:     true,
+			},
+		},
+		Limit:          250,
+		SecurityClaims: testClaims(),
+	}
+
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	expected := []struct {
+		dim  any
+		base float64
+		cmp  float64
+	}{
+		{"Google", 3.2530, 2.5825},
+		{"Yahoo", 3.2528, 2.5814},
+		{nil, 3.0000, 3.0056},
+		{"Facebook", 2.8204, 3.1339},
+		{"Microsoft", 1.5083, 3.6072},
+	}
+	require.Len(t, q.Result.Rows, len(expected))
+	for i, want := range expected {
+		require.Equal(t, want.dim, q.Result.Rows[i].DimensionValue.AsInterface(), "row %d dimension", i)
+		require.InDelta(t, want.base, q.Result.Rows[i].MeasureValues[0].BaseValue.GetNumberValue(), 0.001, "row %d base", i)
+		require.InDelta(t, want.cmp, q.Result.Rows[i].MeasureValues[0].ComparisonValue.GetNumberValue(), 0.001, "row %d comparison", i)
+	}
+}
+
 // adBidsTimeRange resolves the full time range for the ad_bids table and
 // returns min, the halfway point, and max as protobuf timestamps.
 func adBidsTimeRange(t *testing.T, rt *runtime.Runtime, instanceID string) (min, half, max *timestamppb.Timestamp) {
@@ -1216,6 +1292,55 @@ func databricksAdBidsTimeRange(t *testing.T, rt *runtime.Runtime, instanceID str
 	require.NoError(t, err)
 	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
 	return ctr.Result.Min, timestamppb.New(ctr.Result.Min.AsTime().Add(diff / 2)), ctr.Result.Max
+}
+
+func testMetricsViewsComparison_null_dim_values(t *testing.T, rt *runtime.Runtime, instanceID string, minTime, halfTime, maxTime *timestamppb.Timestamp) {
+	q := &queries.MetricsViewComparison{
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "pub",
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_1",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
+			Start: minTime,
+			End:   halfTime,
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: halfTime,
+			End:   maxTime,
+		},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				Name:     "measure_1",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+				Desc:     true,
+			},
+		},
+		Limit:          250,
+		SecurityClaims: testClaims(),
+	}
+
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	expected := []struct {
+		dim  any
+		base float64
+		cmp  float64
+	}{
+		{"Google", 3.2530, 2.5825},
+		{"Yahoo", 3.2528, 2.5814},
+		{nil, 3.0000, 3.0056},
+		{"Facebook", 2.8204, 3.1339},
+		{"Microsoft", 1.5083, 3.6072},
+	}
+	require.Len(t, q.Result.Rows, len(expected))
+	for i, want := range expected {
+		require.Equal(t, want.dim, q.Result.Rows[i].DimensionValue.AsInterface(), "row %d dimension", i)
+		require.InDelta(t, want.base, q.Result.Rows[i].MeasureValues[0].BaseValue.GetNumberValue(), 0.001, "row %d base", i)
+		require.InDelta(t, want.cmp, q.Result.Rows[i].MeasureValues[0].ComparisonValue.GetNumberValue(), 0.001, "row %d comparison", i)
+	}
 }
 
 // snowflakeAdBidsTimeRange resolves the full time range for the Snowflake ad_bids table and

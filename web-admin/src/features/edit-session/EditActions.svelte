@@ -1,40 +1,69 @@
 <script lang="ts">
-  import { branchPathPrefix } from "@rilldata/web-admin/features/branches/branch-utils";
+  import { page } from "$app/stores";
   import { Button } from "@rilldata/web-common/components/button";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { GitPullRequestCreateArrow } from "lucide-svelte";
+  import ExploreEditDropdown from "@rilldata/web-common/features/explores/ExploreEditDropdown.svelte";
+  import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
+  import { createRuntimeServiceGitStatus } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { GitBranch } from "lucide-svelte";
   import CommitPopover from "./CommitPopover.svelte";
+  import ExitButton from "./ExitButton.svelte";
+  import MergePopover from "./MergePopover.svelte";
+  import PublishPopover from "./PublishPopover.svelte";
+  import CanvasEditButton from "@rilldata/web-common/features/canvas/CanvasEditButton.svelte";
 
   export let organization: string;
   export let project: string;
-  export let branch: string;
+  export let primaryBranch: string | undefined = undefined;
 
-  $: closeHref = `/${organization}/${project}${branchPathPrefix(branch)}`;
+  const client = useRuntimeClient();
+  const gitStatusQuery = createRuntimeServiceGitStatus(client, {});
 
-  function handleClose(e: MouseEvent) {
-    // Full page navigation avoids a race where useRuntimeClient() is called
-    // before the project layout's RuntimeProvider remounts.
-    e.preventDefault();
-    window.location.href = closeHref;
-  }
+  $: managedGit = $gitStatusQuery.data?.managedGit;
+  $: gitStatusLoaded = $gitStatusQuery.data !== undefined;
+  // Show the parent-level error UI only when GitStatus has never loaded.
+  // After a successful load, TanStack keeps `data` populated through transient
+  // refetch errors, so the popovers stay mounted and the user keeps the toolbar.
+  $: gitStatusErrorMessage =
+    !gitStatusLoaded && $gitStatusQuery.isError
+      ? extractErrorMessage($gitStatusQuery.error)
+      : "";
+
+  $: onExplorePreview = !!$page.route.id?.startsWith(
+    "/[organization]/[project]/-/edit/(viz)/explore",
+  );
+  $: onCanvasPreview = !!$page.route.id?.startsWith(
+    "/[organization]/[project]/-/edit/(viz)/canvas",
+  );
+  $: dashboardName = $page.params.name ?? "";
 </script>
 
-<Tooltip distance={8}>
-  <Button type="secondary" href={closeHref} onClick={handleClose}>Done</Button>
-  <TooltipContent slot="tooltip-content" maxWidth="200px">
-    <span class="text-xs">Return to project home</span>
-  </TooltipContent>
-</Tooltip>
+{#if onExplorePreview && dashboardName}
+  <ExploreEditDropdown exploreName={dashboardName} />
+{/if}
+{#if onCanvasPreview && dashboardName}
+  <CanvasEditButton canvasName={dashboardName} />
+{/if}
 
-<CommitPopover />
+{#if gitStatusLoaded}
+  {#if managedGit}
+    <PublishPopover {organization} {project} {primaryBranch} />
+  {:else}
+    <CommitPopover />
+    <MergePopover {organization} {project} {primaryBranch} />
+  {/if}
+{:else if gitStatusErrorMessage}
+  <Tooltip distance={8}>
+    <Button type="primary" disabled>
+      <GitBranch size="14" />
+      Git unavailable
+    </Button>
+    <TooltipContent slot="tooltip-content" maxWidth="220px">
+      <span class="text-xs">{gitStatusErrorMessage}</span>
+    </TooltipContent>
+  </Tooltip>
+{/if}
 
-<Tooltip distance={8}>
-  <Button type="primary" disabled>
-    <GitPullRequestCreateArrow size="14" />
-    Open PR
-  </Button>
-  <TooltipContent slot="tooltip-content" maxWidth="200px">
-    <span class="text-xs">Coming soon</span>
-  </TooltipContent>
-</Tooltip>
+<ExitButton {organization} {project} />

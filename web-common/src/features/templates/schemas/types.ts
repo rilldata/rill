@@ -32,6 +32,8 @@ export type JSONSchemaField = {
   "x-select-style"?: "standard" | "rich";
   /** Render the field value in a monospace font. */
   "x-monospace"?: boolean;
+  /** Initial number of visible rows for textarea fields. */
+  "x-rows"?: number;
   /** Which modal step this field belongs to. */
   "x-step"?: "connector" | "source" | "explorer";
   /** Field holds a secret value that should be stored in .env, not in YAML. */

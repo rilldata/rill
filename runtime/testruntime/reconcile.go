@@ -233,6 +233,18 @@ func RequireResource(t testing.TB, rt *runtime.Runtime, id string, a *runtimev1.
 	case runtime.ResourceKindMetricsView:
 		state := b.GetMetricsView().State
 		state.DataRefreshedOn = nil
+		if vs := state.ValidSpec; vs != nil {
+			for _, m := range vs.Measures {
+				if m.DataType != nil {
+					m.DataType.RawType = ""
+				}
+			}
+			for _, d := range vs.Dimensions {
+				if d.DataType != nil {
+					d.DataType.RawType = ""
+				}
+			}
+		}
 	case runtime.ResourceKindExplore:
 		state := b.GetExplore().State
 		state.DataRefreshedOn = nil

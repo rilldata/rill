@@ -603,7 +603,7 @@ func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *git
 	}
 
 	// 2. Check status of the subpath
-	status, err := gitutil.RunGitStatus(root, config.Subpath, config.RemoteName())
+	status, err := gitutil.RunGitStatus(root, config.Subpath, config.RemoteName(), "")
 	if err != nil {
 		return fmt.Errorf("failed to get git status: %w", err)
 	}
@@ -636,7 +636,7 @@ func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *git
 		if err != nil {
 			return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
 		}
-		return gitutil.CommitAndPush(ctx, root, config, commitMsg, author, false)
+		return gitutil.CommitAndPush(ctx, root, config, commitMsg, author)
 	case "2":
 		// Instead of a force push, we do a merge with favourLocal=true to ensure we don't lose history.
 		// This is not equivalent to a force push but is safer for users.
@@ -650,7 +650,7 @@ func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *git
 		if err != nil {
 			return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
 		}
-		return gitutil.CommitAndPush(ctx, root, config, commitMsg, author, false)
+		return gitutil.CommitAndPush(ctx, root, config, commitMsg, author)
 	default:
 		return fmt.Errorf("aborting deploy")
 	}

@@ -8,6 +8,7 @@
   export let imageUrl = "";
   export let onclick: ((e: MouseEvent) => void | Promise<void>) | undefined =
     undefined;
+  export let hovering = false;
 </script>
 
 <a
@@ -15,6 +16,8 @@
   class:gradient={!imageUrl}
   {onclick}
   onkeydown={(e) => e.key === "Enter" && e.currentTarget.click()}
+  onmouseenter={() => (hovering = true)}
+  onmouseleave={() => (hovering = false)}
   aria-disabled={disabled}
   class:loading={isLoading}
   style:background-image={imageUrl ? `url('${imageUrl}')` : ""}

@@ -17,6 +17,7 @@ func TestFullExt(t *testing.T) {
 		{"/path/to/../file.tar.gz", ".tar.gz"},
 		{"./file.tar.gz", ".tar.gz"},
 		{"https://server.com/path/file.tar.gz", ".tar.gz"},
+		{".env", ".env"},
 	}
 	for _, tt := range variations {
 		t.Run(tt.Path, func(t *testing.T) {

@@ -5,6 +5,7 @@ import {
   getRuntimeServiceGetResourceQueryKey,
   runtimeServiceDeleteFile,
   runtimeServiceGetFile,
+  runtimeServicePushEnv,
   runtimeServicePutFile,
   runtimeServiceUnpackEmpty,
   type V1ConnectorDriver,
@@ -15,7 +16,7 @@ import { isProjectInitialized } from "@rilldata/web-common/features/welcome/is-p
 import {
   waitForProjectParser,
   waitForResourceReconciliation,
-} from "@rilldata/web-common/features/entity-management/actions.ts";
+} from "@rilldata/web-common/features/entity-management/actions/actions.ts";
 import { EMPTY_PROJECT_TITLE } from "@rilldata/web-common/features/welcome/constants.ts";
 import { OLAP_ENGINES } from "@rilldata/web-common/features/sources/modal/constants.ts";
 import { invalidate } from "$app/navigation";
@@ -27,12 +28,7 @@ import {
   findRadioEnumKey,
   getSchemaSecretKeys,
 } from "@rilldata/web-common/features/templates/schema-utils.ts";
-import {
-  applyDuckLakeFormTransform,
-  buildDuckLakeSecretRefs,
-  extractDuckLakeAttachSecrets,
-  shouldExtractDuckLakeAttachSecrets,
-} from "@rilldata/web-common/features/templates/schemas/ducklake-utils.ts";
+import { applyDuckLakeFormPipeline } from "@rilldata/web-common/features/templates/schemas/ducklake-utils.ts";
 import type { MultiStepFormSchema } from "@rilldata/web-common/features/templates/schemas/types.ts";
 import {
   addLeadingSlash,
@@ -55,6 +51,8 @@ import {
   getProjectParserVersion,
   waitForProjectParserVersion,
 } from "@rilldata/web-common/features/entity-management/project-parser.ts";
+import { isCloudRuntimeEditEnvironment } from "@rilldata/web-common/features/entity-management/edit-environment.ts";
+import { maybeGetEnvContent } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
 
 export async function createConnector({
   runtimeClient,
@@ -82,35 +80,17 @@ export async function createConnector({
   // their own schema fields.
   const schema = getConnectorSchema(schemaName ?? connectorDriver.name ?? "");
 
-  // DuckLake "parameters" tab composes individual param fields into a single
-  // `attach` string; apply here so the same shape flows through yaml preview,
-  // .env secret handling, and file write. Password fields are stored in `.env`
-  // and referenced via template in the composed ATTACH clause.
-  const duckLakeSecretRefs = buildDuckLakeSecretRefs(
-    schema,
-    connectorDriver.name ?? "",
-    existingEnvBlob ?? "",
-  );
-  formValues = applyDuckLakeFormTransform(schema, formValues, {
-    secretRefs: duckLakeSecretRefs,
+  // DuckLake: compose Parameters tab into `attach` (with password fields
+  // stored in `.env` and referenced via template) and route raw-ATTACH
+  // catalog URIs through `.env`. Done before updateDotEnvWithSecrets so the
+  // same baseline blob drives env-var name conflict detection for all
+  // ducklake-derived secrets and any form-field secrets.
+  const duckLakeResult = applyDuckLakeFormPipeline(schema, formValues, {
+    connectorName: connectorDriver.name ?? "",
+    existingEnvBlob: existingEnvBlob ?? "",
   });
-
-  // DuckLake "ATTACH SQL" tab: route credential-bearing catalog URIs in the
-  // user-pasted attach string through `.env`. We do this before
-  // updateDotEnvWithSecrets so the same baseline blob drives conflict
-  // detection for both the extracted catalog and any form-field secrets.
-  let duckLakeAttachSecrets: Record<string, string> = {};
-  if (shouldExtractDuckLakeAttachSecrets(schema, formValues)) {
-    const rawAttach = formValues.attach;
-    if (typeof rawAttach === "string") {
-      const { rewrittenAttach, extractedSecrets } =
-        extractDuckLakeAttachSecrets(rawAttach, existingEnvBlob ?? "");
-      if (Object.keys(extractedSecrets).length > 0) {
-        formValues = { ...formValues, attach: rewrittenAttach };
-        duckLakeAttachSecrets = extractedSecrets;
-      }
-    }
-  }
+  formValues = duckLakeResult.transformedValues;
+  const duckLakeAttachSecrets = duckLakeResult.extractedSecrets;
 
   // Fast-path: public auth skips validation/test and advances directly
   if (isMultiStepConnector(schema) && isPublicAuth(schema, formValues)) {
@@ -173,12 +153,18 @@ export async function createConnector({
       }),
     )?.resource?.meta?.stateVersion;
 
-    await runtimeServicePutFile(runtimeClient, {
-      path: ".env",
-      blob: newEnvBlob,
-      create: true,
-      createOnly: false,
-    });
+    if (existingEnvBlob !== newEnvBlob) {
+      await runtimeServicePutFile(runtimeClient, {
+        path: ".env",
+        blob: newEnvBlob,
+        create: true,
+        createOnly: false,
+      });
+      if (isCloudRuntimeEditEnvironment()) {
+        // Only push env on cloud for now. We will revisit this for rill-dev.
+        await runtimeServicePushEnv(runtimeClient, {});
+      }
+    }
 
     await runtimeServicePutFile(runtimeClient, {
       path: newConnectorFilePath,
@@ -201,6 +187,7 @@ export async function createConnector({
 
       await waitForResourceReconciliation(
         runtimeClient,
+        queryClient,
         connectorName,
         ResourceKind.Connector,
         connectorStartingVersion,
@@ -255,7 +242,7 @@ export async function maybeDeleteConnector(
   if (!connectorYaml) return;
 
   // Get the existing env and remove the connector's env vars
-  const envBlob = await unsetResourceEnvVars(
+  const [envBlob, envBlobChanged] = await unsetResourceEnvVars(
     runtimeClient,
     queryClient,
     connectorYaml,
@@ -266,11 +253,17 @@ export async function maybeDeleteConnector(
     path: connectorFilePath,
   });
 
-  // Update the .env file with the removed env vars
-  await runtimeServicePutFile(runtimeClient, {
-    path: ".env",
-    blob: envBlob,
-  });
+  if (envBlobChanged) {
+    // Update the .env file with the removed env vars
+    await runtimeServicePutFile(runtimeClient, {
+      path: ".env",
+      blob: envBlob,
+    });
+    if (isCloudRuntimeEditEnvironment()) {
+      // Only push env on cloud for now. We will revisit this for rill-dev.
+      await runtimeServicePushEnv(runtimeClient, {});
+    }
+  }
 
   // Update the rill.yaml file to remove the connector as the OLAP connector.
   await unsetOlapConnectorInRillYAML(runtimeClient, queryClient, connectorName);
@@ -407,8 +400,7 @@ export class ConnectorFormCache {
       fileArtifacts.getNamesForKind(ResourceKind.Connector),
     );
 
-    const envFile = fileArtifacts.getFileArtifact(".env");
-    const envBlob = (await envFile.fetchContent(false)) ?? "";
+    const envBlob = await maybeGetEnvContent();
 
     const entry = {
       name,

@@ -1,7 +1,7 @@
 import type { Conversation } from "@rilldata/web-common/features/chat/core/conversation";
 import { getConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager";
 import { ToolName } from "@rilldata/web-common/features/chat/core/types";
-import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
+import { developerChatActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { derived, get, type Readable } from "svelte/store";
 import type { CustomChartComponent } from "./index";
@@ -39,6 +39,7 @@ export function sendToDevAgent(
   const conversationManager = getConversationManager(client, {
     conversationState: "browserStorage",
     agent: ToolName.DEVELOPER_AGENT,
+    surface: "developer",
   });
 
   const existing = componentConversations.get(component.id);
@@ -51,7 +52,7 @@ export function sendToDevAgent(
   }
 
   const fullPrompt = buildPrompt(component, userPrompt);
-  sidebarActions.startChat(fullPrompt);
+  developerChatActions.startChat(fullPrompt);
 
   // Track the conversation for this component so subsequent calls continue it
   const conversation = get(conversationManager.getCurrentConversation());
@@ -69,6 +70,7 @@ export function getAgentStreamingStore(
   const conversationManager = getConversationManager(client, {
     conversationState: "browserStorage",
     agent: ToolName.DEVELOPER_AGENT,
+    surface: "developer",
   });
 
   return derived(

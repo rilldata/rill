@@ -14,6 +14,7 @@
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes.ts";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
+  import { WelcomeStatus } from "@rilldata/web-common/features/welcome/status.ts";
 
   onMount(async () => {
     await waitUntil(() => !!behaviourEvent);
@@ -25,6 +26,10 @@
       {},
     );
   });
+
+  function handleGenerateSampleData() {
+    WelcomeStatus.set(false);
+  }
 </script>
 
 <div class="my-auto">
@@ -33,13 +38,13 @@
   <div class="flex flex-col py-6 gap-[28px]">
     <div class="flex flex-col mx-auto md:flex-row gap-x-12 gap-y-6">
       <ConnectYourDataWidget onWelcomeScreen />
-      <OnboardingGenerateSampleData />
+      <OnboardingGenerateSampleData onGenerate={handleGenerateSampleData} />
     </div>
 
     <p class="text-base font-normal text-fg-secondary text-center">
       Or jump right into an example project.
     </p>
 
-    <ProjectCards />
+    <ProjectCards isLocal />
   </div>
 </div>

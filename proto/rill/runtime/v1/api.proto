@@ -372,6 +372,16 @@ service RuntimeService {
       body: "*"
     };
   }
+
+  // Env APIs
+
+  // PushEnv pushes local environment variables to admin service
+  rpc PushEnv(PushEnvRequest) returns (PushEnvResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/env/push",
+      body: "*"
+    };
+  }
 }
 
 // Request message for RuntimeService.Ping
@@ -494,7 +504,10 @@ message CreateInstanceRequest {
   string admin_connector = 15;
   string ai_connector = 17;
   repeated Connector connectors = 10;
+  // Deprecated: Continue populating this for some time for backward compatibility with older runtimes, remove after a few releases.
   map<string, string> variables = 7;
+  // system_variables are variables that are set by admin service and should not be overridden by user input
+  map<string, string> system_variables = 19;
   map<string, string> annotations = 9;
   string frontend_url = 18;
 }
@@ -535,7 +548,12 @@ message ReloadConfigRequest {
 }
 
 // Response message for RuntimeService.ReloadConfig
-message ReloadConfigResponse {}
+message ReloadConfigResponse {
+  // Number of variables pulled from admin service
+  int32 variables_count = 1;
+  // Whether the .env file(s) were modified
+  bool modified = 2;
+}
 
 // **********
 // Repos
@@ -1260,6 +1278,9 @@ message GitCommit {
 
 message GitStatusRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  // remote_branch is the remote branch to compare the current local branch against.
+  // If empty, the upstream of the current local branch is used.
+  string remote_branch = 2;
 }
 
 message GitStatusResponse {
@@ -1267,6 +1288,8 @@ message GitStatusResponse {
   string branch = 1;
   // The remote url of the git repo.
   string github_url = 2;
+  // Subpath from the git repo.
+  string subpath = 7;
   // If the repo is managed by Rill.
   bool managed_git = 3;
   // local_changes returns true if there are any staged, unstaged, or untracked changes in the local git repo.
@@ -1350,3 +1373,14 @@ message GitPushRequest {
 }
 
 message GitPushResponse {}
+
+message PushEnvRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+}
+
+message PushEnvResponse {
+  // Number of variables added
+  int32 added_count = 1;
+  // Number of variables changed
+  int32 changed_count = 2;
+}

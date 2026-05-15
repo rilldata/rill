@@ -21,6 +21,7 @@ import {
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   type MetricsViewSpecDimension,
+  MetricsViewSpecDimensionType,
   type MetricsViewSpecMeasure,
   TypeCode,
   V1ExploreComparisonMode,
@@ -50,6 +51,7 @@ export const AD_BIDS_DOMAIN_DIMENSION = "domain";
 export const AD_BIDS_COUNTRY_DIMENSION = "country";
 export const AD_BIDS_PUBLISHER_IS_NULL_DOMAIN = "publisher_is_null";
 export const AD_BIDS_TIMESTAMP_DIMENSION = "timestamp";
+export const AD_BIDS_OFFSET_TIMESTAMP_DIMENSION = "offset_timestamp";
 
 export const AD_BIDS_INIT_MEASURES: MetricsViewSpecMeasure[] = [
   {
@@ -127,6 +129,34 @@ export const AD_BIDS_THREE_DIMENSIONS: MetricsViewSpecDimension[] = [
   {
     name: AD_BIDS_COUNTRY_DIMENSION,
     dataType: { code: TypeCode.CODE_STRING },
+  },
+];
+// Exhaustive set of dimensions. TODO: try and replace all instance of partial dimensions
+const AD_BIDS_DIMENSIONS: MetricsViewSpecDimension[] = [
+  {
+    name: AD_BIDS_PUBLISHER_DIMENSION,
+    dataType: { code: TypeCode.CODE_STRING },
+    type: MetricsViewSpecDimensionType.DIMENSION_TYPE_CATEGORICAL,
+  },
+  {
+    name: AD_BIDS_DOMAIN_DIMENSION,
+    dataType: { code: TypeCode.CODE_STRING },
+    type: MetricsViewSpecDimensionType.DIMENSION_TYPE_CATEGORICAL,
+  },
+  {
+    name: AD_BIDS_COUNTRY_DIMENSION,
+    dataType: { code: TypeCode.CODE_STRING },
+    type: MetricsViewSpecDimensionType.DIMENSION_TYPE_CATEGORICAL,
+  },
+  {
+    name: AD_BIDS_TIMESTAMP_DIMENSION,
+    dataType: { code: TypeCode.CODE_TIMESTAMP },
+    type: MetricsViewSpecDimensionType.DIMENSION_TYPE_TIME,
+  },
+  {
+    name: AD_BIDS_OFFSET_TIMESTAMP_DIMENSION,
+    dataType: { code: TypeCode.CODE_TIMESTAMP },
+    type: MetricsViewSpecDimensionType.DIMENSION_TYPE_TIME,
   },
 ];
 
@@ -210,6 +240,15 @@ export const AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME: V1MetricsViewSpec 
     timeDimension: AD_BIDS_TIMESTAMP_DIMENSION,
   };
 
+// Exhaustive metrics view. TODO: replace usage of partial metrics view
+export const AD_BIDS_METRICS_VIEW: V1MetricsViewSpec = {
+  displayName: AD_BIDS_NAME,
+  table: AD_BIDS_SOURCE_NAME,
+  dimensions: AD_BIDS_DIMENSIONS,
+  measures: AD_BIDS_THREE_MEASURES,
+  timeDimension: AD_BIDS_TIMESTAMP_DIMENSION,
+};
+
 export const AD_BIDS_EXPLORE_INIT: V1ExploreSpec = {
   displayName: AD_BIDS_EXPLORE_NAME,
   metricsView: AD_BIDS_METRICS_NAME,
@@ -254,6 +293,13 @@ export const AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS: V1ExploreSpec = {
   metricsView: AD_BIDS_METRICS_NAME,
   measures: AD_BIDS_THREE_MEASURES.map((m) => m.name!),
   dimensions: AD_BIDS_THREE_DIMENSIONS.map((d) => d.name!),
+};
+
+// Exhaustive metrics view. TODO: replace usage of partial metrics view
+export const AD_BIDS_EXPLORE: V1ExploreSpec = {
+  metricsView: AD_BIDS_NAME,
+  dimensions: AD_BIDS_DIMENSIONS.map((d) => d.name!),
+  measures: AD_BIDS_THREE_MEASURES.map((m) => m.name!),
 };
 
 export const AD_BIDS_PRESET: V1ExplorePreset = {

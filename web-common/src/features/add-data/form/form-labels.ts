@@ -48,6 +48,12 @@ const importOnlySourceFormLabels: AddDataFormLabels = {
 
   yamlPreviewTitle: "Model preview",
 };
+const generateMetricsViewSourceFormLabels: AddDataFormLabels = {
+  primaryLoadingCopy: "Generating metrics view...",
+  primaryButtonLabel: "Generate metrics with AI",
+
+  yamlPreviewTitle: "Model preview",
+};
 const importAndGenerateSourceFormLabels: AddDataFormLabels = {
   primaryLoadingCopy: "Generating dashboard...",
   primaryButtonLabel: "Generate dashboard with AI",
@@ -58,7 +64,9 @@ const importAndGenerateSourceFormLabels: AddDataFormLabels = {
 export function getLabelsForSource(steps: ImportDataStep[]) {
   const hasOnlyCreateStep =
     steps.length === 1 && steps[0] === ImportDataStep.CreateModel;
-  return hasOnlyCreateStep
-    ? importOnlySourceFormLabels
-    : importAndGenerateSourceFormLabels;
+  if (hasOnlyCreateStep) return importOnlySourceFormLabels;
+  const stopsAtMetricsView =
+    steps[steps.length - 1] === ImportDataStep.CreateMetricsView;
+  if (stopsAtMetricsView) return generateMetricsViewSourceFormLabels;
+  return importAndGenerateSourceFormLabels;
 }
