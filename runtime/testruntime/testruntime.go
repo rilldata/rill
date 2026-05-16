@@ -428,6 +428,72 @@ func NewInstanceWithClickhouseProject(t TestingT, withCluster bool) (*runtime.Ru
 	return rt, inst.ID
 }
 
+// NewInstanceWithClickhouseFiles spins up a ClickHouse cluster (via testclickhouse.StartCluster)
+// and creates a Rill instance whose project repo is a fresh temp directory pre-populated with the
+// given files. The instance uses ClickHouse as the OLAP connector. This is useful for tests that
+// need to mutate project files (e.g. add/remove connector resources) at runtime — unlike
+// NewInstanceWithClickhouseProject, which points at a read-only testdata directory.
+//
+// The returned runtime, instance ID, repo path, and CH DSN can all be used to drive subsequent
+// operations (PutFiles, DeleteFiles, ReconcileParserAndWait, raw CH queries against `dsn`).
+func NewInstanceWithClickhouseFiles(t TestingT, files map[string]string) (rt *runtime.Runtime, instanceID, repoPath, dsn, cluster string) {
+	dsn, cluster = testclickhouse.StartCluster(t)
+
+	rt = New(t, true)
+	ctx := t.Context()
+
+	repoPath = t.TempDir()
+	if files == nil {
+		files = map[string]string{}
+	}
+	if _, ok := files["rill.yaml"]; !ok {
+		files["rill.yaml"] = "olap_connector: clickhouse\n"
+	}
+	for path, data := range files {
+		abs := filepath.Join(repoPath, path)
+		require.NoError(t, os.MkdirAll(filepath.Dir(abs), os.ModePerm))
+		require.NoError(t, os.WriteFile(abs, []byte(data), 0o644))
+	}
+
+	inst := &drivers.Instance{
+		Environment:      "test",
+		OLAPConnector:    "duckdb",
+		RepoConnector:    "repo",
+		CatalogConnector: "catalog",
+		Connectors: []*runtimev1.Connector{
+			{
+				Type:   "file",
+				Name:   "repo",
+				Config: Must(structpb.NewStruct(map[string]any{"dsn": repoPath})),
+			},
+			{
+				Type:   "clickhouse",
+				Name:   "clickhouse",
+				Config: Must(structpb.NewStruct(map[string]any{"dsn": dsn, "mode": "readwrite", "cluster": cluster})),
+			},
+			{
+				Type:   "sqlite",
+				Name:   "catalog",
+				Config: Must(structpb.NewStruct(map[string]any{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())})),
+			},
+		},
+		Variables: map[string]string{"rill.stage_changes": "false"},
+	}
+
+	err := rt.CreateInstance(ctx, inst)
+	require.NoError(t, err)
+	require.NotEmpty(t, inst.ID)
+	instanceID = inst.ID
+
+	ctrl, err := rt.Controller(ctx, inst.ID)
+	require.NoError(t, err)
+	_, err = ctrl.Get(ctx, runtime.GlobalProjectParserName, false)
+	require.NoError(t, err)
+	require.NoError(t, ctrl.WaitUntilIdle(ctx, false))
+
+	return rt, inst.ID, repoPath, dsn, cluster
+}
+
 func NewInstanceWithStarRocksProject(t TestingT) (*runtime.Runtime, string) {
 	dsn := teststarrocks.StartWithData(t)
 
