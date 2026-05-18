@@ -9,6 +9,7 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { GitBranch } from "lucide-svelte";
   import CommitPopover from "./CommitPopover.svelte";
+  import EditSessionRemoteChangeManager from "./EditSessionRemoteChangeManager.svelte";
   import ExitButton from "./ExitButton.svelte";
   import MergePopover from "./MergePopover.svelte";
   import PublishPopover from "./PublishPopover.svelte";
@@ -49,6 +50,7 @@
 
 {#if gitStatusLoaded}
   {#if managedGit}
+    <EditSessionRemoteChangeManager {primaryBranch} />
     <PublishPopover {organization} {project} {primaryBranch} />
   {:else}
     <CommitPopover />
