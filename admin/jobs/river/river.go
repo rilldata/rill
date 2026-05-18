@@ -138,7 +138,7 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 		{&DeleteExpiredVirtualFilesArgs{}, "0 */6 * * *", true},    // every 6 hours
 		{&DeleteUnusedAssetsArgs{}, "0 */6 * * *", true},           // every 6 hours
 		{&DeploymentsHealthCheckArgs{}, "0 */10 * * *", true},      // every 10 minutes
-		{&HibernateExpiredDeploymentsArgs{}, "0 */15 * * *", true}, // every 15 minutes
+		{&HibernateExpiredDeploymentsArgs{}, "*/15 * * * *", true}, // every 15 minutes
 	}
 
 	var periodicJobs []*river.PeriodicJob
