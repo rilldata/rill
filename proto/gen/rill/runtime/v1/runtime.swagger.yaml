@@ -5536,6 +5536,9 @@ definitions:
       output:
         type: string
         description: The output of the git pull command. Only set for unsuccessful pulls.
+      mergedBranch:
+        type: string
+        description: The name of the branch that was being merged when a conflict occurred. Only set for unsuccessful pulls.
   v1GitPushResponse:
     type: object
   v1GitStatusResponse:

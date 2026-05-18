@@ -231,7 +231,8 @@ func (s *Server) GitPull(ctx context.Context, req *runtimev1.GitPullRequest) (*r
 		var mergeErr *drivers.MergeFailedError
 		if errors.As(err, &mergeErr) {
 			return &runtimev1.GitPullResponse{
-				Output: mergeErr.Error(),
+				Output:       mergeErr.Error(),
+				MergedBranch: mergeErr.MergedBranch,
 			}, nil
 		}
 		return nil, fmt.Errorf("failed to pull: %w", err)
