@@ -9,6 +9,7 @@ import {
   getRuntimeServiceIssueDevJWTQueryKey,
   getRuntimeServiceListFilesQueryKey,
   V1FileEvent,
+  type V1GitStatusResponse,
   type V1WatchFilesResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -80,9 +81,7 @@ export async function handleFileEvent(
     }
 
     // Keep the cloud editor's commit button in sync with the working tree.
-    void queryClient.invalidateQueries({
-      queryKey: getRuntimeServiceGitStatusQueryKey(instanceId, {}),
-    });
+    resetGitStatusQuery(queryClient, instanceId);
   }
 
   // Throttle: when many files arrive at once (e.g. initial sync), one refetch
@@ -94,4 +93,18 @@ export async function handleFileEvent(
       }),
     );
   }
+}
+
+function resetGitStatusQuery(queryClient: QueryClient, instanceId: string) {
+  const queryKey = getRuntimeServiceGitStatusQueryKey(instanceId, {});
+
+  const existingQueryData =
+    queryClient.getQueryData<V1GitStatusResponse>(queryKey);
+  // Skip updating the cache if there is no query data.
+  if (!existingQueryData) return;
+
+  queryClient.setQueryData(queryKey, {
+    ...existingQueryData,
+    localChanges: true, // Force localChanges=true
+  });
 }
