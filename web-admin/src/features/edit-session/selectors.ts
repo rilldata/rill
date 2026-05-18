@@ -32,6 +32,8 @@ export function getDeploymentGithubStatus(
           data: {
             hasLocalChanges: false,
             hasChangesOnCurrent: false,
+            hasRemoteChanges: false,
+            hasLocalCommitsOnCurrent: false,
             alreadyOnPrimary: false,
             disabledPerGitStatus: true,
           },
@@ -49,6 +51,16 @@ export function getDeploymentGithubStatus(
       );
       const hasLocalChanges = hasChangesAgainstCurrent || hasChangesOnCurrent;
 
+      // GitPull cascades primary -> current's remote -> local, so collapsing
+      // both signals into one is sufficient for the dialog flow.
+      const hasRemoteChanges = Boolean(
+        currentBranchGitStatusResp.data?.remoteCommits ||
+          primaryBranchGitStatusResp.data?.remoteCommits,
+      );
+      const hasLocalCommitsOnCurrent = Boolean(
+        currentBranchGitStatusResp.data?.localCommits,
+      );
+
       const alreadyOnPrimary =
         !!primaryBranch && !!currentBranch && currentBranch === primaryBranch;
 
@@ -64,6 +76,8 @@ export function getDeploymentGithubStatus(
         data: {
           hasLocalChanges,
           hasChangesOnCurrent,
+          hasRemoteChanges,
+          hasLocalCommitsOnCurrent,
           alreadyOnPrimary,
           disabledPerGitStatus,
         },
