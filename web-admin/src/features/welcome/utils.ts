@@ -10,6 +10,7 @@ import {
 } from "@rilldata/web-admin/client";
 import { isThemeSelectionNeeded } from "@rilldata/web-common/features/themes/theme-control.ts";
 import { redirect, type Page } from "@sveltejs/kit";
+import { isEmbedPage } from "@rilldata/web-common/layout/navigation/navigation-utils.ts";
 
 /**
  * Redirect users through the welcome flow when they have no organizations.
@@ -18,6 +19,7 @@ import { redirect, type Page } from "@sveltejs/kit";
 export async function maybeRedirectToWelcomePage(route: Page["route"]) {
   if (
     withinOrganization({ route }) ||
+    isEmbedPage({ route }) ||
     isAuthPage({ route }) ||
     isWelcomePage({ route })
   ) {
