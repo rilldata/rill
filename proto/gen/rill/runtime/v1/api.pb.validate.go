@@ -15563,6 +15563,8 @@ func (m *GitPullResponse) validate(all bool) error {
 
 	// no validation rules for Output
 
+	// no validation rules for MergedBranch
+
 	if len(errors) > 0 {
 		return GitPullResponseMultiError(errors)
 	}
