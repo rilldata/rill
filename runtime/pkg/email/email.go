@@ -631,20 +631,25 @@ type CreditTrialStarted struct {
 }
 
 func (c *Client) SendCreditTrialStarted(opts *CreditTrialStarted) error {
-	return c.SendWelcomeToTrial(&Welcome{
-		ToEmail:     opts.ToEmail,
-		ToName:      opts.ToName,
-		Subject:     fmt.Sprintf("Your Rill Cloud trial for %s has started", opts.OrgName),
-		FrontendURL: opts.FrontendURL,
-		WelcomeText: template.HTML(fmt.Sprintf(`
-You now have <b>%d Rill Cloud credits</b> to explore all features including:
-<ul>
-<li>User management (RBAC)</li>
-<li>Embedded dashboards</li>
-<li>Alerts and scheduled reports</li>
-</ul>
-We'll let you know when your balance is running low so you can upgrade whenever you're ready.
-`, opts.CreditAllocation)),
+	return c.SendCallToAction(&CallToAction{
+		ToEmail: opts.ToEmail,
+		ToName:  opts.ToName,
+		Subject: fmt.Sprintf("Welcome to Rill — start using your $%d credit", opts.CreditAllocation),
+		PreButton: template.HTML(fmt.Sprintf(`
+Hi there,
+<br /><br />
+Welcome to Rill! Your account is ready and loaded with <b>$%d in free credit</b> to explore the full platform — dashboards, metrics, embedded analytics, AI-powered exploration — everything.
+<br /><br />
+Your $%d credit covers compute (slots at $0.15/slot/hr) and $1/GB/month for managed data above 1GB. There's no time limit — your credit burns only when your dashboards are running. A typical setup with 4 slots gives you several weeks to build and share real dashboards with your team. Don't forget to hibernate if you're not using it!
+`, opts.CreditAllocation, opts.CreditAllocation)),
+		ButtonText: "Open Rill Cloud",
+		ButtonLink: opts.FrontendURL,
+		PostButton: template.HTML(`
+If you have any questions, feel free to contact us via <a href="mailto:support@rilldata.com" style="color:#4736F5">email</a>, or via chat on <a href="https://docs.rilldata.com/contact#in-app-chat" style="color:#4736F5">Rill Developer or Rill Cloud.</a> You can also check out <a href="https://docs.rilldata.com" style="color:#4736F5">docs.rilldata.com</a> to learn more.
+<br /><br />
+Happy exploring,
+`),
+		ShowFooter: false,
 	})
 }
 
@@ -661,15 +666,19 @@ func (c *Client) SendCreditTrialLow(opts *CreditTrialLow) error {
 	return c.SendCallToAction(&CallToAction{
 		ToEmail: opts.ToEmail,
 		ToName:  opts.ToName,
-		Subject: fmt.Sprintf("Your Rill Cloud trial credits for %s are running low", opts.OrgName),
+		Subject: "Your Rill credit is getting low",
 		PreButton: template.HTML(fmt.Sprintf(`
-Your trial credit balance for <b>%s</b> has dropped to about <b>$%.2f</b>.
+Hi there,
 <br /><br />
-Upgrade now to keep your projects online before the credits run out.
-`, opts.OrgName, opts.RemainingBalance)),
-		ButtonText: "Upgrade Now",
+You have about <b>$%.2f</b> of your original $250 Rill credit remaining. Once they are consumed, your dashboards will go into hibernation.
+<br /><br />
+Hibernation means your dashboards pause and go offline — but nothing is deleted. Your models, data connections, and configuration all stay intact. Upgrading to Pro reactivates everything instantly.
+<br /><br />
+The Pro plan is simple: $0.15/slot/hr for the compute you use, $1/GB/month for managed data above 1GB, no minimums beyond your deployment type, and any remaining free credit carries over so nothing goes to waste.
+`, opts.RemainingBalance)),
+		ButtonText: "Upgrade to Pro",
 		ButtonLink: opts.UpgradeURL,
-		ShowFooter: true,
+		ShowFooter: false,
 	})
 }
 
@@ -685,15 +694,24 @@ func (c *Client) SendCreditTrialDepleted(opts *CreditTrialDepleted) error {
 	return c.SendCallToAction(&CallToAction{
 		ToEmail: opts.ToEmail,
 		ToName:  opts.ToName,
-		Subject: fmt.Sprintf("Your Rill Cloud trial credits for %s are depleted", opts.OrgName),
-		PreButton: template.HTML(fmt.Sprintf(`
-Your trial credits for <b>%s</b> have run out, and the org's projects are now <a href="https://docs.rilldata.com/developers/other/FAQ#what-is-project-hibernation">hibernating</a>.
+		Subject: "Your Rill dashboards are now hibernated",
+		PreButton: template.HTML(`
+Hi there,
 <br /><br />
-Upgrade to bring your projects back online.
-`, opts.OrgName)),
-		ButtonText: "Upgrade Now",
+Your $250 Rill credit has been fully used and your dashboards are now <a href="https://docs.rilldata.com/developers/other/FAQ#what-is-project-hibernation" style="color:#4736F5">hibernated</a>. All deployments are paused — your team and any embedded analytics are currently offline.
+<br /><br />
+<b>Nothing has been deleted.</b> Your entire project — data connections, models, dashboards, and configuration — is preserved exactly as you left it.
+<br /><br />
+To bring everything back online, upgrade to the Pro plan. It takes under a minute: add a payment method, confirm the upgrade, and your dashboards reactivate immediately with your existing slot configuration.
+`),
+		ButtonText: "Reactivate Dashboards — Upgrade to Pro",
 		ButtonLink: opts.UpgradeURL,
-		ShowFooter: true,
+		PostButton: template.HTML(`
+Pro pricing is straightforward: $0.15/slot/hr for compute, $1/GB/month for managed data above 1GB. No contracts, no seat fees. Scale up or down anytime.
+<br /><br />
+If you'd like to discuss your options or need a custom arrangement, feel free to contact us via <a href="mailto:support@rilldata.com" style="color:#4736F5">email</a>, or via chat on <a href="https://docs.rilldata.com/contact#in-app-chat" style="color:#4736F5">Rill Developer or Rill Cloud.</a>
+`),
+		ShowFooter: false,
 	})
 }
 
@@ -736,22 +754,32 @@ type PaidPlan struct {
 	ToName           string
 	OrgName          string
 	FrontendURL      string
+	BillingURL       string
 	PlanName         string
 	BillingStartDate time.Time
 }
 
 // SendPaidPlanStarted sends a customised plan-started email for a paid plan (Team or Pro).
 func (c *Client) SendPaidPlanStarted(opts *PaidPlan) error {
-	return c.SendWelcomeToTeam(&Welcome{
-		ToEmail:     opts.ToEmail,
-		ToName:      opts.ToName,
-		Subject:     fmt.Sprintf("Welcome to the %s plan", opts.PlanName),
-		FrontendURL: opts.FrontendURL,
-		WelcomeText: template.HTML(fmt.Sprintf(`
-Thank you! You’ve successfully upgraded %s to the %s plan.
+	return c.SendCallToAction(&CallToAction{
+		ToEmail: opts.ToEmail,
+		ToName:  opts.ToName,
+		Subject: fmt.Sprintf("You're on the %s plan — dashboards are live", opts.PlanName),
+		PreButton: template.HTML(fmt.Sprintf(`
+Hi there,
 <br /><br />
-Your next billing cycle starts on <b>%s</b>.
-`, opts.OrgName, opts.PlanName, opts.BillingStartDate.Format(dateFormat))),
+You're all set on the Rill %s plan. Your dashboards are live and your team has full access.
+<br /><br />
+<b>A few things to know:</b>
+<br /><br />
+Billing is usage-based with no contracts. You'll receive a monthly invoice with a full breakdown of slot hours and data storage.
+`, opts.PlanName)),
+		ButtonText: "View Your Billing Dashboard",
+		ButtonLink: opts.BillingURL,
+		PostButton: template.HTML(fmt.Sprintf(`
+Welcome to %s. Happy building.
+`, opts.PlanName)),
+		ShowFooter: false,
 	})
 }
 

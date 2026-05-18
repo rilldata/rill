@@ -187,7 +187,7 @@ func (w *CreditBalanceDepletedWorker) Work(ctx context.Context, job *river.Job[C
 		ToName:      org.Name,
 		OrgName:     org.Name,
 		FrontendURL: w.admin.URLs.Frontend(),
-		UpgradeURL:  w.admin.URLs.Billing(org.Name, false),
+		UpgradeURL:  w.admin.URLs.Billing(org.Name, true),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to send credit trial depleted email for org %q: %w", org.Name, err)
