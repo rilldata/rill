@@ -764,11 +764,11 @@ func (c *Client) SendPaidPlanStarted(opts *PaidPlan) error {
 	return c.SendCallToAction(&CallToAction{
 		ToEmail: opts.ToEmail,
 		ToName:  opts.ToName,
-		Subject: fmt.Sprintf("You're on the %s plan — dashboards are live", opts.PlanName),
+		Subject: fmt.Sprintf("You're on the %s plan", opts.PlanName),
 		PreButton: template.HTML(fmt.Sprintf(`
 Hi there,
 <br /><br />
-You're all set on the Rill %s plan. Your dashboards are live and your team has full access.
+You're all set on the Rill %s plan.
 <br /><br />
 <b>A few things to know:</b>
 <br /><br />
