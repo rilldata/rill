@@ -17,13 +17,16 @@
   import {
     createRuntimeServiceGitMergeToBranchMutation,
     createRuntimeServiceGitPushMutation,
-    createRuntimeServiceGitStatus,
     getRuntimeServiceGitStatusQueryKey,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { Rocket } from "lucide-svelte";
   import { buildPostMergeUrl } from "./post-merge-url";
   import { goto } from "$app/navigation";
+  import {
+    fetchDeploymentGithubStatusChanges,
+    getDeploymentGithubStatus,
+  } from "@rilldata/web-admin/features/edit-session/selectors.ts";
 
   export let organization: string;
   export let project: string;
@@ -36,7 +39,7 @@
   const client = useRuntimeClient();
   const gitPushMutation = createRuntimeServiceGitPushMutation(client);
   const gitMergeMutation = createRuntimeServiceGitMergeToBranchMutation(client);
-  const gitStatusQuery = createRuntimeServiceGitStatus(client, {});
+  const gitStatusQuery = getDeploymentGithubStatus(client, primaryBranch);
   // Query GetProject without a branch param so `data.deployment` reflects
   // the project's primary (prod) deployment — the same source of truth the
   // project layout uses. ListDeployments is too loose: it includes orphan
@@ -44,21 +47,21 @@
   const projectQuery = createAdminServiceGetProject(organization, project);
   const redeployProjectMutation = createAdminServiceRedeployProject();
 
-  $: currentBranch = $gitStatusQuery.data?.branch ?? "";
-  $: hasLocalChanges = $gitStatusQuery.data?.localChanges ?? false;
+  $: ({
+    isPending,
+    data: {
+      hasLocalChanges,
+      hasChangesOnCurrent,
+      alreadyOnPrimary,
+      disabledPerGitStatus,
+    },
+  } = $gitStatusQuery);
+
   $: projectLoaded = $projectQuery.data !== undefined;
   $: prodDeployment = $projectQuery.data?.deployment;
   $: prodDeploymentActive =
     !!prodDeployment && isActiveDeployment(prodDeployment);
-  $: alreadyOnPrimary =
-    !!primaryBranch && !!currentBranch && currentBranch === primaryBranch;
-  // TODO: this should also check currentBranch vs primaryBranch once that API is available.
-  $: disabled =
-    !primaryBranch ||
-    !currentBranch ||
-    !projectLoaded ||
-    alreadyOnPrimary ||
-    isPublishing;
+  $: disabled = !projectLoaded || disabledPerGitStatus || isPublishing;
 
   // Prefetch prod's project parser commit SHA so the deploying page can
   // wait for prod to advance past it before redirecting to the dashboard,
@@ -93,6 +96,22 @@
       client.instanceId,
       {},
     );
+
+    // Refetch local changes status, we predict this based on file watcher response.
+    // But we dont check if changes flipped to with changes to without changes.
+    hasLocalChanges = await fetchDeploymentGithubStatusChanges(
+      client,
+      queryClient,
+      primaryBranch,
+    );
+    if (!hasLocalChanges && !hasChangesOnCurrent) {
+      eventBus.emit("notification", {
+        type: "default",
+        message: "No changes detected",
+      });
+      isPublishing = false;
+      return;
+    }
 
     try {
       if (hasLocalChanges) {
@@ -193,7 +212,7 @@
     <span class="text-xs">
       {#if alreadyOnPrimary}
         Already on production
-      {:else if !primaryBranch || !currentBranch || !projectLoaded}
+      {:else if isPending || !projectLoaded}
         Loading project...
       {:else if !hasLocalChanges}
         No changes to publish

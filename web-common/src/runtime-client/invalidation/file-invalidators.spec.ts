@@ -48,10 +48,12 @@ function fakeQueryClient() {
     invalidateQueries: vi.fn(),
     refetchQueries: vi.fn(),
     resetQueries: vi.fn(),
+    getQueryData: vi.fn(),
   } as unknown as QueryClient & {
     invalidateQueries: ReturnType<typeof vi.fn>;
     refetchQueries: ReturnType<typeof vi.fn>;
     resetQueries: ReturnType<typeof vi.fn>;
+    getQueryData: ReturnType<typeof vi.fn>;
   };
 }
 
@@ -229,10 +231,10 @@ describe("handleFileEvent", () => {
     );
 
     const gitStatusKey = getRuntimeServiceGitStatusQueryKey(INSTANCE_ID, {});
-    const gitHit = qc.invalidateQueries.mock.calls.some(
-      ([arg]) =>
-        Array.isArray(arg.queryKey) &&
-        JSON.stringify(arg.queryKey) === JSON.stringify(gitStatusKey),
+    const gitHit = qc.getQueryData.mock.calls.some(
+      ([queryKey]) =>
+        Array.isArray(queryKey) &&
+        JSON.stringify(queryKey) === JSON.stringify(gitStatusKey),
     );
     expect(gitHit).toBe(true);
   });
