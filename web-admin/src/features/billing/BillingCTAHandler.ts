@@ -37,6 +37,7 @@ export class BillingCTAHandler {
     categorisedIssues: CategorisedOrganizationBillingIssues,
   ) {
     if (!issueMessage.cta) return;
+    // TODO: propagate errors
     switch (issueMessage.cta.type) {
       case "upgrade":
         await upgradeToPro(this.organization, categorisedIssues, null);

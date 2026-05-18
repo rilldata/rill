@@ -76,7 +76,7 @@
 {#if currentPlan === "free"}
   <FreePlan {organization} upgrade={showUpgradeProDialog} />
 {:else if currentPlan === "pro"}
-  <ProPlan {organization} {subscription} {billingPortalUrl} />
+  <ProPlan {billingPortalUrl} />
 {:else if currentPlan === "trial"}
   <LegacyTrialPlan
     {organization}

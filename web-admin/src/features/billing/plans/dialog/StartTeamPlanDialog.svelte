@@ -48,7 +48,6 @@
 
       case "org":
         title = "To create another organization, start a Pro plan";
-        description = "";
         break;
 
       case "proj":
@@ -57,7 +56,7 @@
 
       case "renew":
         title = "Renew Pro plan";
-        description = `Your billing cycle will resume ${getSubscriptionResumedText(endDate)}.`;
+        description = `Your billing cycle will resume ${getSubscriptionResumedText(endDate)}. `;
         buttonText = "Continue";
         break;
     }
@@ -78,11 +77,12 @@
     fetchError = null;
     try {
       await upgradeToPro(organization, categorisedIssues, redirect);
+      // Only close if the upgrade was successful.
+      open = false;
     } catch (e) {
       fetchError = extractErrorMessage(e);
     }
     loading = false;
-    open = false;
   }
 </script>
 
@@ -102,9 +102,7 @@
 
       {#if fetchError}
         <div class="text-red-500 text-sm py-px">
-          {#if fetchError}
-            <div>{fetchError}</div>
-          {/if}
+          <div>{fetchError}</div>
         </div>
       {/if}
     </AlertDialogHeader>

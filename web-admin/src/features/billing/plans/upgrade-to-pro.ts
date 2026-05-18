@@ -24,7 +24,7 @@ export async function upgradeToPro(
       await fetchPaymentsPortalURL(
         org,
         getBillingUpgradeUrl(get(page), org),
-        true,
+        categorisedIssues.needsPaymentSetup,
       ),
       "_self",
     );
