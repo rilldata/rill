@@ -640,7 +640,7 @@ Hi there,
 <br /><br />
 Welcome to Rill! Your account is ready and loaded with <b>$%d in free credit</b> to explore the full platform — dashboards, metrics, embedded analytics, AI-powered exploration — everything.
 <br /><br />
-Your $%d credit covers compute (slots at $0.15/slot/hr) and $1/GB/month for managed data above 1GB. There's no time limit — your credit burns only when your dashboards are running. A typical setup with 4 slots gives you several weeks to build and share real dashboards with your team. Don't forget to hibernate if you're not using it!
+Your $%d credit covers compute at $0.15/slot/hr and $1/GB/month for managed data above 1GB. There's no time limit — your credit burns only when your dashboards are running. A typical project with 4 slots gives you few weeks to build and share real dashboards with your team. Don't forget to hibernate if you're not using it!
 `, opts.CreditAllocation, opts.CreditAllocation)),
 		ButtonText: "Open Rill Cloud",
 		ButtonLink: opts.FrontendURL,
@@ -672,7 +672,7 @@ Hi there,
 <br /><br />
 You have about <b>$%.2f</b> of your original $250 Rill credit remaining. Once they are consumed, your dashboards will go into hibernation.
 <br /><br />
-Hibernation means your dashboards pause and go offline — but nothing is deleted. Your models, data connections, and configuration all stay intact. Upgrading to Pro reactivates everything instantly.
+Hibernation means your dashboards pause and go offline — but nothing is deleted. Your models, data connections, and configuration all stay intact. Upgrading to Pro reactivates everything.
 <br /><br />
 The Pro plan is simple: $0.15/slot/hr for the compute you use, $1/GB/month for managed data above 1GB, no minimums beyond your deployment type, and any remaining free credit carries over so nothing goes to waste.
 `, opts.RemainingBalance)),
@@ -702,7 +702,7 @@ Your $250 Rill credit has been fully used and your dashboards are now <a href="h
 <br /><br />
 <b>Nothing has been deleted.</b> Your entire project — data connections, models, dashboards, and configuration — is preserved exactly as you left it.
 <br /><br />
-To bring everything back online, upgrade to the Pro plan. It takes under a minute: add a payment method, confirm the upgrade, and your dashboards reactivate immediately with your existing slot configuration.
+To bring everything back online, upgrade to the Pro plan. It takes under a minute: add a payment method, confirm the upgrade, and your dashboards reactivate with your existing slot configuration.
 `),
 		ButtonText: "Reactivate Dashboards — Upgrade to Pro",
 		ButtonLink: opts.UpgradeURL,
