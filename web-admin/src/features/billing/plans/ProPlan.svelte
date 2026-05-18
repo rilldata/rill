@@ -63,43 +63,9 @@
     $0.15/unit/hr · $1/GB storage/mo. Cancel anytime.
   {/snippet}
 
-  <div class="pro-stats">
-    <div class="pro-stat-col">
-      <span class="pro-stat-label">Current period estimate</span>
-      <span class="pro-stat-amount text-fg-secondary"
-        >{formatCredit(dailyRunRate)}</span
-      >
-      <span class="pro-stat-sub">
-        {formattedPeriodStart} – {formattedPeriodEnd}
-      </span>
-    </div>
-    <div class="pro-stat-col border-l pl-6">
-      <span class="pro-stat-label">Available credit</span>
-      <span class="pro-stat-amount text-green-700"
-        >{formatCredit(availableCredit)}</span
-      >
-      <span class="credit-pill">
-        <svg viewBox="0 0 12 12" fill="none" class="w-3 h-3 shrink-0">
-          <path
-            d="M10 3L4.5 8.5 2 6"
-            stroke="currentColor"
-            stroke-width="1.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-        Trial credit applied to your bill
-      </span>
-    </div>
-    <div class="pro-stat-col border-l pl-6">
-      <span class="pro-stat-label">Estimated cost after applied credit</span>
-      <span class="pro-stat-amount text-fg-primary"
-        >{formatCredit(proEstimatedCost)}</span
-      >
-      {#if formattedDueDate}
-        <span class="pro-stat-sub">Due {formattedDueDate}</span>
-      {/if}
-    </div>
+  <div class="text-sm text-fg-tertiary mt-4 pb-4">
+    You'll be billed monthly based on usage at $0.15/compute unit/hr and $1/GB
+    storage/mo.
   </div>
 
   {#snippet footer()}
@@ -109,8 +75,7 @@
 
 <style lang="postcss">
   .pro-stats {
-    @apply flex gap-6 mt-4 pt-4 border-t;
-    min-height: 92px;
+    @apply flex gap-6 mt-4 pt-4 border-t text-sm;
   }
 
   .pro-stat-col {
