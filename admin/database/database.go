@@ -100,7 +100,10 @@ type DB interface {
 	DeleteProjectWhitelistedDomain(ctx context.Context, id string) error
 
 	FindDeployments(ctx context.Context, afterID string, limit int) ([]*Deployment, error)
-	FindExpiredDeployments(ctx context.Context) ([]*Deployment, error)
+	// FindDeploymentsToStop finds running deployments that should be stopped due to not having been accessed for longer than the project's deployment TTL.
+	FindDeploymentsToStop(ctx context.Context) ([]*Deployment, error)
+	// FindDeploymentsToDelete finds stopped deployments that should be deleted (i.e. fully removed, including persistent state) due to having been stopped for longer than the provided retention.
+	FindDeploymentsToDelete(ctx context.Context, retention time.Duration) ([]*Deployment, error)
 	FindDeploymentsForProject(ctx context.Context, projectID, environment, branch string) ([]*Deployment, error)
 	FindDeployment(ctx context.Context, id string) (*Deployment, error)
 	FindDeploymentByInstanceID(ctx context.Context, instanceID string) (*Deployment, error)
@@ -504,6 +507,9 @@ type Project struct {
 	DevSlots int `db:"dev_slots"`
 	// DevTTLSeconds is the time-to-live for dev deployments.
 	DevTTLSeconds int64 `db:"dev_ttl_seconds"`
+	// OverrideDiskGB, if set, overrides the disk size in GB that would otherwise be derived from the slot count.
+	// It applies to both production and dev deployments.
+	OverrideDiskGB *int64 `db:"override_disk_gb"`
 	// Annotations are internally configured key-value metadata about the project.
 	// They propagate to the project's deployments and telemetry.
 	Annotations map[string]string `db:"annotations"`
@@ -534,6 +540,7 @@ type InsertProjectOptions struct {
 	ProdTTLSeconds       *int64
 	DevSlots             int
 	DevTTLSeconds        int64
+	OverrideDiskGB       *int64
 }
 
 // UpdateProjectOptions defines options for updating a Project.
@@ -556,6 +563,7 @@ type UpdateProjectOptions struct {
 	ProdTTLSeconds       *int64
 	DevSlots             int
 	DevTTLSeconds        int64
+	OverrideDiskGB       *int64
 	Annotations          map[string]string
 }
 

@@ -1,6 +1,6 @@
 import picomatch from "picomatch";
 import type { Snippet } from "svelte";
-import { getRuntimeEditEnvironment } from "../edit-environment.ts";
+import { isCloudRuntimeEditEnvironment } from "../edit-environment.ts";
 
 // Two distinct kinds of path protections:
 //
@@ -21,7 +21,8 @@ const compile = (pattern: string) => picomatch(pattern, { dot: true });
 
 const ALWAYS_PINNED = ["/rill.yaml"].map(compile);
 
-const CLOUD_READONLY = ["**/.env", "**/.*.env"].map(compile);
+const ENV_FILES = ["**/.env", "**/.*.env"].map(compile);
+const CLOUD_READONLY = ENV_FILES;
 
 const PROTECTED_DIRECTORIES = ["/tmp", "/tmp/**", "/.git", "/.git/**"].map(
   compile,
@@ -38,7 +39,7 @@ export function setCloudReadonlyNotice(notice: Snippet | undefined) {
 }
 
 export function isManaged(path: string): boolean {
-  if (getRuntimeEditEnvironment() === "cloud") {
+  if (isCloudRuntimeEditEnvironment()) {
     return CLOUD_READONLY.some((m) => m(path));
   }
   return false;
@@ -49,10 +50,7 @@ export function isPinned(path: string): boolean {
 }
 
 export function getReadonlyNotice(path: string): Snippet | undefined {
-  if (
-    getRuntimeEditEnvironment() === "cloud" &&
-    CLOUD_READONLY.some((m) => m(path))
-  ) {
+  if (isCloudRuntimeEditEnvironment() && ENV_FILES.some((m) => m(path))) {
     return cloudReadonlyNotice;
   }
   return undefined;
@@ -60,4 +58,8 @@ export function getReadonlyNotice(path: string): Snippet | undefined {
 
 export function isProtectedDirectory(path: string): boolean {
   return PROTECTED_DIRECTORIES.some((m) => m(path));
+}
+
+export function isEnvFile(path: string): boolean {
+  return ENV_FILES.some((m) => m(path));
 }

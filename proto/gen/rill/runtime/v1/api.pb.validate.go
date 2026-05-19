@@ -1878,6 +1878,8 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 
 	// no validation rules for Variables
 
+	// no validation rules for SystemVariables
+
 	// no validation rules for Annotations
 
 	// no validation rules for FrontendUrl
@@ -13971,6 +13973,8 @@ func (m *GitStatusRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for RemoteBranch
+
 	if len(errors) > 0 {
 		return GitStatusRequestMultiError(errors)
 	}
@@ -14076,6 +14080,8 @@ func (m *GitStatusResponse) validate(all bool) error {
 	// no validation rules for Branch
 
 	// no validation rules for GithubUrl
+
+	// no validation rules for Subpath
 
 	// no validation rules for ManagedGit
 
@@ -15556,6 +15562,8 @@ func (m *GitPullResponse) validate(all bool) error {
 	var errors []error
 
 	// no validation rules for Output
+
+	// no validation rules for MergedBranch
 
 	if len(errors) > 0 {
 		return GitPullResponseMultiError(errors)

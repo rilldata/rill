@@ -4094,9 +4094,19 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
   devSlots?: bigint;
 
   /**
+   * @generated from field: optional int64 dev_ttl_seconds = 18;
+   */
+  devTtlSeconds?: bigint;
+
+  /**
    * @generated from field: bool superuser_force_access = 14;
    */
   superuserForceAccess = false;
+
+  /**
+   * @generated from field: optional int64 override_disk_gb = 17;
+   */
+  overrideDiskGb?: bigint;
 
   constructor(data?: PartialMessage<UpdateProjectRequest>) {
     super();
@@ -4121,7 +4131,9 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
     { no: 10, name: "prod_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
     { no: 11, name: "prod_version", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 16, name: "dev_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
+    { no: 18, name: "dev_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
     { no: 14, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 17, name: "override_disk_gb", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateProjectRequest {
@@ -4882,6 +4894,13 @@ export class GetDeploymentConfigResponse extends Message<GetDeploymentConfigResp
    */
   editable = false;
 
+  /**
+   * System variables set by the admin service that should not be overridden by user input.
+   *
+   * @generated from field: map<string, string> system_variables = 9;
+   */
+  systemVariables: { [key: string]: string } = {};
+
   constructor(data?: PartialMessage<GetDeploymentConfigResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4898,6 +4917,7 @@ export class GetDeploymentConfigResponse extends Message<GetDeploymentConfigResp
     { no: 5, name: "uses_archive", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 6, name: "duckdb_connector_config", kind: "message", T: Struct },
     { no: 8, name: "editable", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 9, name: "system_variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetDeploymentConfigResponse {
@@ -14782,6 +14802,86 @@ export class GetPaymentsPortalURLResponse extends Message<GetPaymentsPortalURLRe
 }
 
 /**
+ * @generated from message rill.admin.v1.GetBillingCreditBalanceRequest
+ */
+export class GetBillingCreditBalanceRequest extends Message<GetBillingCreditBalanceRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * @generated from field: bool superuser_force_access = 2;
+   */
+  superuserForceAccess = false;
+
+  constructor(data?: PartialMessage<GetBillingCreditBalanceRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetBillingCreditBalanceRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetBillingCreditBalanceRequest {
+    return new GetBillingCreditBalanceRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetBillingCreditBalanceRequest {
+    return new GetBillingCreditBalanceRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetBillingCreditBalanceRequest {
+    return new GetBillingCreditBalanceRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetBillingCreditBalanceRequest | PlainMessage<GetBillingCreditBalanceRequest> | undefined, b: GetBillingCreditBalanceRequest | PlainMessage<GetBillingCreditBalanceRequest> | undefined): boolean {
+    return proto3.util.equals(GetBillingCreditBalanceRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetBillingCreditBalanceResponse
+ */
+export class GetBillingCreditBalanceResponse extends Message<GetBillingCreditBalanceResponse> {
+  /**
+   * @generated from field: double balance = 1;
+   */
+  balance = 0;
+
+  constructor(data?: PartialMessage<GetBillingCreditBalanceResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetBillingCreditBalanceResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "balance", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetBillingCreditBalanceResponse {
+    return new GetBillingCreditBalanceResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetBillingCreditBalanceResponse {
+    return new GetBillingCreditBalanceResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetBillingCreditBalanceResponse {
+    return new GetBillingCreditBalanceResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetBillingCreditBalanceResponse | PlainMessage<GetBillingCreditBalanceResponse> | undefined, b: GetBillingCreditBalanceResponse | PlainMessage<GetBillingCreditBalanceResponse> | undefined): boolean {
+    return proto3.util.equals(GetBillingCreditBalanceResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.ListPublicBillingPlansRequest
  */
 export class ListPublicBillingPlansRequest extends Message<ListPublicBillingPlansRequest> {
@@ -16174,6 +16274,11 @@ export class Project extends Message<Project> {
   devTtlSeconds = protoInt64.zero;
 
   /**
+   * @generated from field: int64 override_disk_gb = 28;
+   */
+  overrideDiskGb = protoInt64.zero;
+
+  /**
    * @generated from field: map<string, string> annotations = 20;
    */
   annotations: { [key: string]: string } = {};
@@ -16221,6 +16326,7 @@ export class Project extends Message<Project> {
     { no: 16, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 18, name: "prod_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 27, name: "dev_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 28, name: "override_disk_gb", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 20, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 21, name: "prod_version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "created_on", kind: "message", T: Timestamp },

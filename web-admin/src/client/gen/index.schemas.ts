@@ -528,6 +528,10 @@ export interface V1GetAlertYAMLResponse {
   yaml?: string;
 }
 
+export interface V1GetBillingCreditBalanceResponse {
+  balance?: number;
+}
+
 export interface V1GetBillingProjectCredentialsRequest {
   org?: string;
 }
@@ -584,6 +588,13 @@ export type V1GetDeploymentConfigResponseDuckdbConnectorConfig = {
   [key: string]: unknown;
 };
 
+/**
+ * System variables set by the admin service that should not be overridden by user input.
+ */
+export type V1GetDeploymentConfigResponseSystemVariables = {
+  [key: string]: string;
+};
+
 export interface V1GetDeploymentConfigResponse {
   /** Variables for the deployment. */
   variables?: V1ProjectVariable[];
@@ -599,6 +610,8 @@ export interface V1GetDeploymentConfigResponse {
   duckdbConnectorConfig?: V1GetDeploymentConfigResponseDuckdbConnectorConfig;
   /** Whether the deployment is editable (dev environment with changes persisted to git repo). */
   editable?: boolean;
+  /** System variables set by the admin service that should not be overridden by user input. */
+  systemVariables?: V1GetDeploymentConfigResponseSystemVariables;
 }
 
 export interface V1GetDeploymentCredentialsResponse {
@@ -1087,6 +1100,7 @@ export interface V1Project {
   frontendUrl?: string;
   prodTtlSeconds?: string;
   devTtlSeconds?: string;
+  overrideDiskGb?: string;
   annotations?: V1ProjectAnnotations;
   prodVersion?: string;
   createdOn?: string;
@@ -1816,6 +1830,10 @@ export type AdminServiceUpdateOrganizationBody = {
   billingEmail?: string;
 };
 
+export type AdminServiceGetBillingCreditBalanceParams = {
+  superuserForceAccess?: boolean;
+};
+
 export type AdminServiceListOrganizationBillingIssuesParams = {
   superuserForceAccess?: boolean;
 };
@@ -1959,7 +1977,9 @@ export type AdminServiceUpdateProjectBody = {
   prodTtlSeconds?: string;
   prodVersion?: string;
   devSlots?: string;
+  devTtlSeconds?: string;
   superuserForceAccess?: boolean;
+  overrideDiskGb?: string;
 };
 
 export type AdminServiceGetCloneCredentialsParams = {

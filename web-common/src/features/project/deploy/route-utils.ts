@@ -5,13 +5,16 @@ import {
   getTargetDashboard,
 } from "@rilldata/web-common/features/project/deploy/utils.ts";
 import { addPosthogSessionIdToUrl } from "@rilldata/web-common/lib/analytics/posthog.ts";
-import { createLocalServiceGitStatus } from "@rilldata/web-common/runtime-client/local-service";
 import type { Page } from "@sveltejs/kit";
 import { derived, readable } from "svelte/store";
 import { getLocalGitRepoStatus } from "../selectors";
 import { page } from "$app/stores";
 import { featureFlags } from "../../feature-flags";
-import type { V1ResourceName } from "@rilldata/web-common/runtime-client";
+import {
+  createRuntimeServiceGitStatus,
+  type V1ResourceName,
+} from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
 /**
  * Returns a {@link Readable} with a route to deploy.
@@ -108,9 +111,12 @@ export function getDeployingPageUrl(frontendUrl: string, isInvite: boolean) {
  * 1. If the project is not a github repo then returns {@link getCreateProjectRoute} that starts the deploy.
  * 2. If the project is a github repo then returns {@link getDeployUsingGithubRoute} that prompts the user for using either github/deploy.
  */
-export function getDeployOrGithubRouteGetter() {
+export function getDeployOrGithubRouteGetter(runtimeClient: RuntimeClient) {
   return derived(
-    [createLocalServiceGitStatus(), featureFlags.legacyArchiveDeploy],
+    [
+      createRuntimeServiceGitStatus(runtimeClient, {}),
+      featureFlags.legacyArchiveDeploy,
+    ],
     ([$gitStatus, legacyArchiveDeploy]) => {
       const hasLocalGitRepo = Boolean(
         $gitStatus.data?.githubUrl && !$gitStatus.data?.managedGit,
@@ -135,9 +141,16 @@ export function getDeployOrGithubRouteGetter() {
  *    it returns the create project route with github option (/developers/deploy/project/create?use_git=true).
  * 3. If the project is a github repo and we do not have access to the repo then it returns github access route (<admin_server>/github/connect)
  */
-export function getDeployRouteForProject(orgName: string) {
+export function getDeployRouteForProject(
+  runtimeClient: RuntimeClient,
+  orgName: string,
+) {
   return derived(
-    [createLocalServiceGitStatus(), getLocalGitRepoStatus(), page],
+    [
+      createRuntimeServiceGitStatus(runtimeClient, {}),
+      getLocalGitRepoStatus(runtimeClient),
+      page,
+    ],
     ([$gitStatus, $localGitRepoStatus, $page]) => {
       if ($gitStatus.isPending) return "";
 

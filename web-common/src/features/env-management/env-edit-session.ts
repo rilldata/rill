@@ -19,7 +19,7 @@ export class EnvEditSession {
   public constructor(
     public readonly parentStore: EnvStore,
     private keyPrefix: string = "",
-    private schema: JSONSchemaObject | undefined = undefined,
+    private schema: JSONSchemaObject | null | undefined = undefined,
   ) {
     this.assignedVars = new Set<string>(this.parentStore.store.keys());
   }

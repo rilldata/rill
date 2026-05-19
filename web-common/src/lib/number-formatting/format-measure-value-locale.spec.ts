@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { createMeasureValueFormatter } from "./format-measure-value";
 import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
+import { describe, expect, it } from "vitest";
+import { createMeasureValueFormatter } from "./format-measure-value";
 
 describe("format-measure-value with d3_locale", () => {
   it("should apply custom thousand separators for big numbers", () => {
@@ -136,5 +136,68 @@ describe("format-measure-value with d3_locale", () => {
     // Should have Euro as suffix
     expect(result).toContain("€");
     expect(result).toMatch(/\d+k?€/);
+  });
+});
+
+describe("format-measure-value SI prefix remap (G -> B)", () => {
+  const measureWithSI: MetricsViewSpecMeasure = {
+    name: "si_measure",
+    expression: "SUM(amount)",
+    formatD3: ",.3s",
+  };
+
+  it("should remap G to B for billions in table context", () => {
+    const formatter = createMeasureValueFormatter(measureWithSI, "table");
+    expect(formatter(1.5e9)).toBe("1.50B");
+  });
+
+  it("should remap G to B for negative billions", () => {
+    const formatter = createMeasureValueFormatter(measureWithSI, "table");
+    // D3 uses U+2212 (minus sign), not ASCII hyphen, for negatives.
+    expect(formatter(-2.5e9)).toBe("−2.50B");
+  });
+
+  it("should leave other SI prefixes untouched (M, k, T)", () => {
+    const formatter = createMeasureValueFormatter(measureWithSI, "table");
+    expect(formatter(1.5e6)).toBe("1.50M");
+    expect(formatter(1.5e3)).toBe("1.50k");
+    expect(formatter(1.5e12)).toBe("1.50T");
+  });
+
+  it("should remap G to B with a currency prefix", () => {
+    const measure: MetricsViewSpecMeasure = {
+      name: "currency_si",
+      expression: "SUM(amount)",
+      formatD3: "$,.3s",
+    };
+    const formatter = createMeasureValueFormatter(measure, "table");
+    expect(formatter(1.5e9)).toBe("$1.50B");
+  });
+
+  it("should remap G to B with a custom currency from locale", () => {
+    const measure: MetricsViewSpecMeasure = {
+      name: "rupee_si",
+      expression: "SUM(amount)",
+      formatD3: "$,.3s",
+      formatD3Locale: {
+        thousands: ",",
+        decimal: ".",
+        grouping: [3, 2, 2],
+        currency: ["₹", ""],
+      },
+    };
+    const formatter = createMeasureValueFormatter(measure, "table");
+    expect(formatter(1.5e9)).toBe("₹1.50B");
+  });
+
+  it("should not affect non-SI formats", () => {
+    // ",.3f" produces fixed-point output with no SI suffix.
+    const measure: MetricsViewSpecMeasure = {
+      name: "fixed_measure",
+      expression: "SUM(amount)",
+      formatD3: ",.3f",
+    };
+    const formatter = createMeasureValueFormatter(measure, "table");
+    expect(formatter(1500000000)).toBe("1,500,000,000.000");
   });
 });

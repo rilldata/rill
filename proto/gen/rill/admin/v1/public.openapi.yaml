@@ -655,6 +655,12 @@ components:
                 yaml:
                     type: string
             type: object
+        v1GetBillingCreditBalanceResponse:
+            properties:
+                balance:
+                    format: double
+                    type: number
+            type: object
         v1GetBillingProjectCredentialsRequest:
             properties:
                 org:
@@ -735,6 +741,11 @@ components:
                 frontendUrl:
                     description: Frontend URL for the deployment.
                     type: string
+                systemVariables:
+                    additionalProperties:
+                        type: string
+                    description: System variables set by the admin service that should not be overridden by user input.
+                    type: object
                 updatedOn:
                     description: Timestamp when the deployment was last updated.
                     format: date-time
@@ -1526,6 +1537,9 @@ components:
                 orgId:
                     type: string
                 orgName:
+                    type: string
+                overrideDiskGb:
+                    format: int64
                     type: string
                 primaryBranch:
                     type: string
@@ -2595,6 +2609,7 @@ paths:
                     description: An unexpected error response.
             summary: UpdateOrganization updates an organization
             x-visibility: public
+    /v1/orgs/{org}/billing/credits: {}
     /v1/orgs/{org}/billing/issues: {}
     /v1/orgs/{org}/billing/payments/portal-url: {}
     /v1/orgs/{org}/billing/subscriptions: {}
@@ -2955,11 +2970,17 @@ paths:
                                 devSlots:
                                     format: int64
                                     type: string
+                                devTtlSeconds:
+                                    format: int64
+                                    type: string
                                 directoryName:
                                     type: string
                                 gitRemote:
                                     type: string
                                 newName:
+                                    type: string
+                                overrideDiskGb:
+                                    format: int64
                                     type: string
                                 primaryBranch:
                                     type: string

@@ -293,10 +293,11 @@ export function resourceIsLoading(resource?: V1Resource) {
 }
 
 export async function fetchResource(
-  queryClient: QueryClient,
   client: RuntimeClient,
+  queryClient: QueryClient,
   name: string,
   kind: ResourceKind,
+  refetch = false,
 ) {
   const resp = await queryClient.fetchQuery({
     queryKey: getRuntimeServiceGetResourceQueryKey(client.instanceId, {
@@ -306,8 +307,23 @@ export async function fetchResource(
       runtimeServiceGetResource(client, {
         name: { name, kind },
       }),
+    staleTime: refetch ? 0 : Infinity,
   });
   return resp.resource;
+}
+
+export function fetchProjectParser(
+  client: RuntimeClient,
+  queryClient: QueryClient,
+  refetch = false,
+) {
+  return fetchResource(
+    client,
+    queryClient,
+    SingletonProjectParserName,
+    ResourceKind.ProjectParser,
+    refetch,
+  );
 }
 
 export async function fetchResources(

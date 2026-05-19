@@ -14,6 +14,7 @@ import (
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
@@ -185,7 +186,10 @@ func (r *gitRepo) pullInner(ctx context.Context, userTriggered, force bool) erro
 		}
 		if !merged { // Only user triggered pulls should fail on conflicts
 			if userTriggered {
-				return fmt.Errorf("local is behind remote and failed to sync with remote due to conflicts")
+				return &drivers.MergeFailedError{
+					Output:       "local is behind remote and failed to sync with remote due to conflicts, use force pull to discard local changes and sync with remote",
+					MergedBranch: r.defaultBranch,
+				}
 			}
 			r.h.logger.Warn("Merge aborted due to conflicts, local changes not synced with remote", zap.String("branch", r.defaultBranch))
 		}
@@ -203,10 +207,20 @@ func (r *gitRepo) pullInner(ctx context.Context, userTriggered, force bool) erro
 	if force {
 		err = gitutil.MergeWithStrategy(r.repoDir, mergeBranch, "theirs")
 	} else {
-		_, err = gitutil.MergeWithBailOnConflict(r.repoDir, mergeBranch)
+		var merged bool
+		merged, err = gitutil.MergeWithBailOnConflict(r.repoDir, mergeBranch)
+		if !merged && userTriggered { // only user triggered pulls should fail on conflicts
+			return &drivers.MergeFailedError{
+				Output:       "failed to merge primary branch, use force pull to discard local changes and sync with primary branch",
+				MergedBranch: r.primaryBranch,
+			}
+		}
 	}
 	if err != nil {
-		return fmt.Errorf("failed to merge primary branch %q into default branch %q: %w", r.primaryBranch, r.defaultBranch, err)
+		return &drivers.MergeFailedError{
+			Output:       fmt.Sprintf("failed to merge primary branch %q into default branch %q: %v", r.primaryBranch, r.defaultBranch, err),
+			MergedBranch: r.primaryBranch,
+		}
 	}
 	return nil
 }
@@ -337,13 +351,18 @@ func (r *gitRepo) mergeToBranch(ctx context.Context, branch string, force bool) 
 		merged, err = gitutil.MergeWithBailOnConflict(r.repoDir, r.defaultBranch)
 	}
 	if err != nil {
-		return fmt.Errorf("failed to merge default branch %q into branch %q: %w", r.defaultBranch, branch, err)
+		// wrap with drivers.ErrMergeFailed
+		return &drivers.MergeFailedError{
+			Output:       fmt.Sprintf("failed to merge default branch %q into branch %q: %v", r.defaultBranch, branch, err),
+			MergedBranch: r.defaultBranch,
+		}
 	}
 
 	if !merged {
-		// If the merge was aborted no need to push the changes
-		r.h.logger.Warn("Merge aborted due to conflicts, not pushing changes", zap.String("branch", branch), zap.String("defaultBranch", r.defaultBranch))
-		return nil
+		return &drivers.MergeFailedError{
+			Output:       "merge failed due to conflicts, use force merge to favour current changes",
+			MergedBranch: r.defaultBranch,
+		}
 	}
 
 	// Push the changes
@@ -459,12 +478,16 @@ func (r *gitRepo) pushBranch(ctx context.Context, branches ...string) error {
 	return nil
 }
 
-// fetchBranch fetches the specified branch from the remote repository.
+// fetchBranch fetches the specified branch(s) from the remote repository.
 // It does not return an error if the local branch is already up-to-date with the remote branch.
-func (r *gitRepo) fetchBranch(ctx context.Context, repo *git.Repository, branch string) error {
+func (r *gitRepo) fetchBranch(ctx context.Context, repo *git.Repository, branch ...string) error {
+	refSpecs := make([]config.RefSpec, 0, len(branch))
+	for _, b := range branch {
+		refSpecs = append(refSpecs, config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", b, b)))
+	}
 	err := repo.FetchContext(ctx, &git.FetchOptions{
 		RemoteURL: r.remoteURL,
-		RefSpecs:  []config.RefSpec{config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", branch, branch))},
+		RefSpecs:  refSpecs,
 	})
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
 		return err

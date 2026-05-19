@@ -32,8 +32,12 @@
   import { maybeInitProject } from "@rilldata/web-common/features/add-data/manager/steps/connector.ts";
   import { getEnvFileStore } from "@rilldata/web-common/features/env-management/env-file-store.ts";
   import { EnvEditSession } from "@rilldata/web-common/features/env-management/env-edit-session.ts";
+  import { setSubmitError } from "@rilldata/web-common/features/add-data/form/errors.ts";
+  import type { AddDataStateManager } from "@rilldata/web-common/features/add-data/manager/AddDataStateManager.svelte.ts";
+  import { setError, type SuperValidated } from "sveltekit-superforms";
 
   export let config: AddDataConfig;
+  export let stateManager: AddDataStateManager;
   export let step: CreateModelStep;
   export let onSubmit: (importConfig: ImportStepConfig) => void;
   export let onBack: () => void;
@@ -81,7 +85,12 @@
     formType: "source",
     onUpdate: async ({ form }) => {
       if (!form.valid) return;
-      return submitImportConfig(form.data);
+      try {
+        await submitImportConfig(form);
+      } catch (e) {
+        stateManager.fireErrorEvent(e.message);
+        setSubmitError(form, e);
+      }
     },
     additionalDefaults: step.connectorFormValues,
   });
@@ -102,24 +111,30 @@
 
   $: sourceFormLabels = getLabelsForSource(importSteps);
 
-  async function submitImportConfig(formValues: any) {
+  async function submitImportConfig(
+    form: SuperValidated<Record<string, unknown>>,
+  ) {
     if (!connectorDriver) {
       throw new Error("Connector driver not found for: " + step.connector);
     }
+    const formValues = form.data;
 
     await maybeInitProject(runtimeClient);
 
     if (formValues.file) {
       // TODO: support multiple files upload
       const firstFile = formValues.file[0];
-      const filePath = await uploadFile(runtimeClient, firstFile);
-      if (filePath) {
+      try {
+        const filePath = await uploadFile(runtimeClient, firstFile);
         formValues.path = filePath;
         const [, fileName] = splitFolderFileNameAndExtension(filePath);
         formValues.name = getName(
           fileName,
           fileArtifacts.getNamesForKind(ResourceKind.Model),
         );
+      } catch (e) {
+        setError(form, "file", e.message); // set error on the file field
+        throw e; // rethrow so that global error handler is triggered
       }
     }
 
@@ -148,7 +163,10 @@
       importSteps,
       connector: rewrittenConnector.name!,
       importFrom,
-      importTo: generateImportToConfig(importFrom, formValues.name),
+      importTo: generateImportToConfig(
+        importFrom,
+        formValues.name as string | undefined,
+      ),
       envEditSession,
     } satisfies ImportStepConfig;
 

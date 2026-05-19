@@ -1,7 +1,9 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import { Button } from "@rilldata/web-common/components/button";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import ExploreEditDropdown from "@rilldata/web-common/features/explores/ExploreEditDropdown.svelte";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import { createRuntimeServiceGitStatus } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -10,6 +12,7 @@
   import ExitButton from "./ExitButton.svelte";
   import MergePopover from "./MergePopover.svelte";
   import PublishPopover from "./PublishPopover.svelte";
+  import CanvasEditButton from "@rilldata/web-common/features/canvas/CanvasEditButton.svelte";
 
   export let organization: string;
   export let project: string;
@@ -27,7 +30,22 @@
     !gitStatusLoaded && $gitStatusQuery.isError
       ? extractErrorMessage($gitStatusQuery.error)
       : "";
+
+  $: onExplorePreview = !!$page.route.id?.startsWith(
+    "/[organization]/[project]/-/edit/(viz)/explore",
+  );
+  $: onCanvasPreview = !!$page.route.id?.startsWith(
+    "/[organization]/[project]/-/edit/(viz)/canvas",
+  );
+  $: dashboardName = $page.params.name ?? "";
 </script>
+
+{#if onExplorePreview && dashboardName}
+  <ExploreEditDropdown exploreName={dashboardName} />
+{/if}
+{#if onCanvasPreview && dashboardName}
+  <CanvasEditButton canvasName={dashboardName} />
+{/if}
 
 {#if gitStatusLoaded}
   {#if managedGit}

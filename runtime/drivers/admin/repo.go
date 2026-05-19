@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -21,6 +22,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/ctxsync"
 	"github.com/rilldata/rill/runtime/pkg/filewatcher"
+	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
 	"gopkg.in/yaml.v3"
 )
@@ -440,7 +442,7 @@ func (r *repo) ListCommits(ctx context.Context, fromCommit string, limit int) ([
 }
 
 // Status implements drivers.RepoStore.
-func (r *repo) Status(ctx context.Context) (*drivers.RepoStatus, error) {
+func (r *repo) Status(ctx context.Context, remoteBranch string) (*drivers.RepoStatus, error) {
 	err := r.rlockEnsureReady(ctx, true)
 	if err != nil {
 		return nil, err
@@ -451,14 +453,29 @@ func (r *repo) Status(ctx context.Context) (*drivers.RepoStatus, error) {
 		return &drivers.RepoStatus{}, nil
 	}
 
-	// run git fetch - only updates the remote tracking branch and not the working tree.
-	err = r.git.fetchCurrentBranch(ctx)
+	repo, err := git.PlainOpen(r.git.repoDir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch current branch: %w", err)
+		return nil, err
+	}
+	head, err := repo.Head()
+	if err != nil {
+		return nil, err
+	}
+	branches := []string{head.Name().Short()}
+
+	// If a remote branch was explicitly requested and it differs from the current branch, fetch it too
+	// so that ahead/behind counts in RunGitStatus have an up-to-date remote tracking ref to compare against.
+	if remoteBranch != "" && remoteBranch != branches[0] {
+		branches = append(branches, remoteBranch)
+	}
+
+	err = r.git.fetchBranch(ctx, repo, branches...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch branches %q: %w", branches, err)
 	}
 
 	// run git status
-	st, err := gitutil.RunGitStatus(r.git.repoDir, r.git.subpath, "origin")
+	st, err := gitutil.RunGitStatus(r.git.repoDir, r.git.subpath, "origin", remoteBranch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Git status: %w", err)
 	}
@@ -466,6 +483,7 @@ func (r *repo) Status(ctx context.Context) (*drivers.RepoStatus, error) {
 		IsGitRepo:     true,
 		Branch:        st.Branch,
 		RemoteURL:     st.RemoteURL,
+		Subpath:       r.git.subpath,
 		ManagedRepo:   r.git.managedRepo,
 		LocalChanges:  st.LocalChanges,
 		LocalCommits:  st.LocalCommits,
@@ -667,7 +685,12 @@ func (r *repo) rlockEnsureReady(ctx context.Context, checkHandshake bool) error 
 	// UserTriggered set to true to make sure the first pull gets the latest code files.
 	err = r.pull(ctx, &drivers.PullOptions{UserTriggered: true})
 	if err != nil {
-		return err
+		var mergeErr *drivers.MergeFailedError
+		if errors.As(err, &mergeErr) { // Don't return error so user gets chance to resolve conflicts
+			r.h.logger.Error("clean pull failed, merge conflicts detected", zap.Error(err))
+		} else {
+			return err
+		}
 	}
 
 	// We know it's ready now. Take read lock and return.
