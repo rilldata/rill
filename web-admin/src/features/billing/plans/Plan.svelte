@@ -9,9 +9,8 @@
     TeamPlanDialogTypes,
   } from "@rilldata/web-admin/features/billing/plans/types";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
-  import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
+  import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/dialog/StartTeamPlanDialog.svelte";
   import CancelPlanDialog from "@rilldata/web-admin/features/billing/plans/dialog/CancelPlanDialog.svelte";
-  import UpgradeToProDialog from "@rilldata/web-admin/features/billing/plans/dialog/UpgradeToProDialog.svelte";
   import ProPlan from "@rilldata/web-admin/features/billing/plans/ProPlan.svelte";
   import LegacyTeamPlan from "@rilldata/web-admin/features/billing/plans/LegacyTeamPlan.svelte";
   import FreePlan from "@rilldata/web-admin/features/billing/plans/FreePlan.svelte";
@@ -69,18 +68,15 @@
     if (showUpgradeDialog) upgradeDialogOpen = true;
   });
 
-  // Pro upgrade confirmation
-  let upgradeProDialogOpen = $state(false);
-
   function showUpgradeProDialog() {
-    upgradeProDialogOpen = true;
+    upgradeDialogOpen = true;
   }
 </script>
 
 {#if currentPlan === "free"}
   <FreePlan {organization} upgrade={showUpgradeProDialog} />
 {:else if currentPlan === "pro"}
-  <ProPlan {organization} {subscription} {billingPortalUrl} />
+  <ProPlan {billingPortalUrl} />
 {:else if currentPlan === "trial"}
   <LegacyTrialPlan
     {organization}
@@ -103,5 +99,3 @@
   type={dialogType}
   endDate={renewEndDate}
 />
-
-<UpgradeToProDialog bind:open={upgradeProDialogOpen} {organization} />

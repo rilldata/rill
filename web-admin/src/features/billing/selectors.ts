@@ -5,7 +5,10 @@ import {
   type V1BillingIssue,
   V1BillingIssueType,
 } from "@rilldata/web-admin/client";
-import { getPaymentIssues } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
+import {
+  getPaymentIssues,
+  needsPaymentSetup,
+} from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
 import {
   cancelledSubscriptionHasEnded,
   getCancelledIssue,
@@ -32,6 +35,7 @@ export type CategorisedOrganizationBillingIssues = {
   trial?: V1BillingIssue;
   cancelled?: V1BillingIssue;
   payment: V1BillingIssue[];
+  needsPaymentSetup: boolean;
 };
 export function useCategorisedOrganizationBillingIssues(organization: string) {
   return createAdminServiceListOrganizationBillingIssues(
@@ -46,6 +50,7 @@ export function useCategorisedOrganizationBillingIssues(organization: string) {
             trial: getTrialIssue(issues),
             cancelled: getCancelledIssue(issues),
             payment: getPaymentIssues(issues),
+            needsPaymentSetup: needsPaymentSetup(issues),
           };
         },
       },

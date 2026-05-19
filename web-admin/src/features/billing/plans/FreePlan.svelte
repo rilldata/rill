@@ -2,7 +2,6 @@
   import PlanContainer from "@rilldata/web-admin/features/billing/plans/PlanContainer.svelte";
   import { formatCredit } from "@rilldata/web-admin/features/billing/plans/utils.ts";
   import { getPlanCredits } from "@rilldata/web-admin/features/billing/plans/selectors.ts";
-  import CostAndUsage from "@rilldata/web-admin/features/billing/plans/modules/CostAndUsage.svelte";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors.ts";
 
   let {
@@ -66,10 +65,6 @@
       </svg>
     </a>
   </div>
-
-  {#snippet footer()}
-    <CostAndUsage {organization} />
-  {/snippet}
 </PlanContainer>
 
 <style lang="postcss">
