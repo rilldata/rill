@@ -192,6 +192,83 @@ func TestRunGitStatus_MonorepoRemoteCommits(t *testing.T) {
 	require.Equal(t, int32(1), status.RemoteCommits, "subproject2 should still have 1 remote commit")
 }
 
+// TestRunGitStatus_ExcludesLocalMergeCommits verifies that merge commits in the local branch
+// are not counted as "ahead" commits.
+func TestRunGitStatus_ExcludesLocalMergeCommits(t *testing.T) {
+	tempDir, _ := setupTestRepository(t)
+	mainBranch := getCurrentBranch(t, tempDir)
+
+	// Create a feature branch with one commit
+	cmd := exec.Command("git", "-C", tempDir, "checkout", "-b", "feature")
+	require.NoError(t, cmd.Run(), "failed to create feature branch")
+	createCommit(t, tempDir, "feature.txt", "feature content", "feature commit")
+
+	// Back to main and add a commit so the feature merge cannot fast-forward
+	cmd = exec.Command("git", "-C", tempDir, "checkout", mainBranch)
+	require.NoError(t, cmd.Run(), "failed to switch to main")
+	createCommit(t, tempDir, "main.txt", "main content", "main commit")
+
+	// Force a merge commit
+	cmd = exec.Command("git", "-C", tempDir, "merge", "--no-ff", "feature", "-m", "merge feature")
+	require.NoError(t, cmd.Run(), "failed to merge feature branch")
+
+	require.NoError(t, GitFetch(t.Context(), tempDir, nil), "failed to fetch")
+
+	status, err := RunGitStatus(tempDir, "", "origin", "")
+	require.NoError(t, err, "RunGitStatus failed")
+
+	// History has 3 commits ahead (feature, main, merge), but the merge must be excluded.
+	require.Equal(t, int32(2), status.LocalCommits, "merge commit should be excluded from local count")
+	require.Equal(t, int32(0), status.RemoteCommits, "unexpected remote commits")
+}
+
+// TestRunGitStatus_ExcludesRemoteMergeCommits verifies that merge commits on the remote
+// are not counted as "behind" commits.
+func TestRunGitStatus_ExcludesRemoteMergeCommits(t *testing.T) {
+	tempDir, remoteDir := setupTestRepository(t)
+	mainBranch := getCurrentBranch(t, tempDir)
+
+	createRemoteMergeCommit(t, remoteDir, mainBranch)
+
+	require.NoError(t, GitFetch(t.Context(), tempDir, nil), "failed to fetch")
+
+	status, err := RunGitStatus(tempDir, "", "origin", "")
+	require.NoError(t, err, "RunGitStatus failed")
+
+	require.Equal(t, int32(0), status.LocalCommits, "unexpected local commits")
+	require.Equal(t, int32(2), status.RemoteCommits, "merge commit should be excluded from remote count")
+}
+
+// TestGitPull_DiscardsLocalMergeCommits verifies that discardLocal=true correctly resets
+// the local branch even when its commits ahead include a merge commit (which would
+// previously break the HEAD~N reset strategy).
+func TestGitPull_DiscardsLocalMergeCommits(t *testing.T) {
+	tempDir, _ := setupTestRepository(t)
+	mainBranch := getCurrentBranch(t, tempDir)
+
+	cmd := exec.Command("git", "-C", tempDir, "checkout", "-b", "feature")
+	require.NoError(t, cmd.Run(), "failed to create feature branch")
+	createCommit(t, tempDir, "feature.txt", "feature content", "feature commit")
+
+	cmd = exec.Command("git", "-C", tempDir, "checkout", mainBranch)
+	require.NoError(t, cmd.Run(), "failed to switch to main")
+	createCommit(t, tempDir, "main.txt", "main content", "main commit")
+
+	cmd = exec.Command("git", "-C", tempDir, "merge", "--no-ff", "feature", "-m", "merge feature")
+	require.NoError(t, cmd.Run(), "failed to merge feature branch")
+
+	require.NoError(t, GitFetch(t.Context(), tempDir, nil), "failed to fetch")
+
+	_, err := RunGitPull(context.Background(), tempDir, true, "", "origin")
+	require.NoError(t, err, "GitPull with discardLocal failed")
+
+	// After discard, local should fully match remote.
+	status, err := RunGitStatus(tempDir, "", "origin", "")
+	require.NoError(t, err, "RunGitStatus failed after pull")
+	require.Equal(t, int32(0), status.LocalCommits, "expected no local commits after discard pull")
+	require.Equal(t, int32(0), status.RemoteCommits, "expected no remote commits after pull")
+}
+
 func TestGitPull(t *testing.T) {
 	tempDir, remoteDir := setupTestRepository(t)
 
@@ -591,6 +668,31 @@ func createRemoteCommit(t *testing.T, remoteDir, fileName, fileContent, commitMe
 	cmd = exec.Command("git", "-C", workingDir, "push", "origin", "HEAD")
 	err = cmd.Run()
 	require.NoError(t, err, "failed to push changes to remote repository")
+}
+
+// createRemoteMergeCommit builds a merge commit on the remote by cloning it,
+// creating a feature branch and a divergent commit, then merging with --no-ff and pushing.
+// After it returns, the remote `branch` has 2 non-merge commits + 1 merge commit
+// on top of its previous tip.
+func createRemoteMergeCommit(t *testing.T, remoteDir, branch string) {
+	workingDir := t.TempDir()
+	cmd := exec.Command("git", "clone", remoteDir, workingDir)
+	require.NoError(t, cmd.Run(), "failed to clone remote repository")
+	setupGitConfig(t, workingDir)
+
+	cmd = exec.Command("git", "-C", workingDir, "checkout", "-b", "remote-feature")
+	require.NoError(t, cmd.Run(), "failed to create remote feature branch")
+	createCommit(t, workingDir, "remote-feature.txt", "feature", "remote feature commit")
+
+	cmd = exec.Command("git", "-C", workingDir, "checkout", branch)
+	require.NoError(t, cmd.Run(), "failed to switch to branch")
+	createCommit(t, workingDir, "remote-main.txt", "main", "remote main commit")
+
+	cmd = exec.Command("git", "-C", workingDir, "merge", "--no-ff", "remote-feature", "-m", "remote merge")
+	require.NoError(t, cmd.Run(), "failed to create remote merge commit")
+
+	cmd = exec.Command("git", "-C", workingDir, "push", "origin", branch)
+	require.NoError(t, cmd.Run(), "failed to push merge to remote")
 }
 
 // setupGitConfig sets up the git configuration for the repository at repoPath.
