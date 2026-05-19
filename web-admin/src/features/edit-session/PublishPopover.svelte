@@ -81,8 +81,7 @@
   } = $gitStatusQuery);
 
   $: ({ isPending: gitPullPending, error: gitPullError } = $gitPullMutation);
-  $: dialogError =
-    (gitPullError as ConnectError | null) ?? errorFromGitCommand;
+  $: dialogError = (gitPullError as ConnectError | null) ?? errorFromGitCommand;
 
   $: projectLoaded = $projectQuery.data !== undefined;
   $: prodDeployment = $projectQuery.data?.deployment;
@@ -321,7 +320,7 @@
     let resp;
     try {
       resp = await $gitMergeMutation.mutateAsync({
-        branch: primaryBranch!,
+        branch: primaryBranch,
         force: true,
       });
     } catch (err) {

@@ -3,6 +3,7 @@
   import { isMergeConflictError } from "@rilldata/web-common/features/project/deploy/github-utils.ts";
   import MergeConflictResolutionDialog from "@rilldata/web-common/features/project/MergeConflictResolutionDialog.svelte";
   import ProjectContainsRemoteChangesDialog from "@rilldata/web-common/features/project/ProjectContainsRemoteChangesDialog.svelte";
+  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import {
@@ -25,12 +26,18 @@
   let mergeConflictResolutionDialog = false;
   let errorFromGitCommand: ConnectError | null = null;
 
-  // Auto-open whenever a new gitStatus emission reports remote changes — the
-  // derived value's reference changes on every refetch, so dismissal stays
-  // sticky until the next refetch (typically after a mutation invalidates
-  // the cache). Mirrors the RemoteProjectManager pattern in web-local.
+  // Debounce the open/close sync. The two underlying GitStatus queries
+  // refetch independently after each mutation, so the derived store can
+  // briefly re-emit the prior `hasRemoteChanges: true` while one refetch is
+  // in flight, then settle to `false` once both land — without debouncing,
+  // the user sees the dialog flicker back open and immediately close after a
+  // pull. The debouncer applies the latest value once emissions go quiet.
+  const syncRemoteChangeDialog = debounce((value: boolean) => {
+    remoteChangeDialog = value;
+  }, 500);
+
   $: if ($gitStatusQuery.data) {
-    remoteChangeDialog = $gitStatusQuery.data.hasRemoteChanges;
+    syncRemoteChangeDialog($gitStatusQuery.data.hasRemoteChanges);
   }
 
   $: hasLocalCommitsOnCurrent =
