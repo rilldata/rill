@@ -1,3 +1,4 @@
+import { queryClient as globalQueryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { derived } from "svelte/store";
 import {
@@ -112,4 +113,23 @@ export async function fetchDeploymentGithubStatusChanges(
   );
 
   return hasChangesAgainstCurrent || hasChangesAgainstPrimary;
+}
+
+export function invalidateGitStatusQueries(
+  runtimeClient: RuntimeClient,
+  primaryBranch: string | undefined,
+) {
+  // GitStatus is cached under two keys (see `getDeploymentGithubStatus`):
+  // one with no `remoteBranch` for the current branch and one keyed by the
+  // primary branch. Invalidate both so subscribers refetch.
+  void globalQueryClient.invalidateQueries({
+    queryKey: getRuntimeServiceGitStatusQueryKey(runtimeClient.instanceId, {}),
+  });
+  if (primaryBranch) {
+    void globalQueryClient.invalidateQueries({
+      queryKey: getRuntimeServiceGitStatusQueryKey(runtimeClient.instanceId, {
+        remoteBranch: primaryBranch,
+      }),
+    });
+  }
 }

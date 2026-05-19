@@ -254,10 +254,10 @@ func (r *gitRepo) commitToDefaultBranch(ctx context.Context, message string, for
 
 	_, err = r.commitAll(repo, message)
 	if err != nil {
-		if errors.Is(err, git.ErrEmptyCommit) {
-			return nil // No changes to commit
+		if !errors.Is(err, git.ErrEmptyCommit) {
+			return fmt.Errorf("failed to commit changes to edit branch: %w", err)
 		}
-		return fmt.Errorf("failed to commit changes to edit branch: %w", err)
+		// continue to push existing commits, if any
 	}
 
 	err = r.fetchCurrentBranch(ctx)

@@ -13,25 +13,25 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { isMergeConflictError } from "@rilldata/web-common/features/project/deploy/github-utils.ts";
   import MergeConflictResolutionDialog from "@rilldata/web-common/features/project/MergeConflictResolutionDialog.svelte";
-  import ProjectContainsRemoteChangesDialog from "@rilldata/web-common/features/project/ProjectContainsRemoteChangesDialog.svelte";
+  import RemoteSyncDialogs from "@rilldata/web-common/features/project/RemoteSyncDialogs.svelte";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import {
     createRuntimeServiceGitMergeToBranchMutation,
-    createRuntimeServiceGitPullMutation,
     createRuntimeServiceGitPushMutation,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { ConnectError } from "@connectrpc/connect";
   import { Rocket } from "lucide-svelte";
+  import { derived } from "svelte/store";
   import { buildPostMergeUrl } from "./post-merge-url";
   import { goto } from "$app/navigation";
   import {
     fetchDeploymentGithubStatusChanges,
     getDeploymentGithubStatus,
+    invalidateGitStatusQueries,
   } from "@rilldata/web-admin/features/edit-session/selectors.ts";
-  import { invalidateGitStatusQueries } from "@rilldata/web-admin/features/edit-session/invalidations.ts";
 
   export let organization: string;
   export let project: string;
@@ -47,10 +47,7 @@
 
   let isPublishing = false;
   let remoteChangeDialog = false;
-  let mergeConflictResolutionDialog = false;
-  // Which mutation triggered the conflict dialog; drives the dispatch in
-  // `handleForceFetchRemoteCommits`. `null` when the dialog isn't open.
-  let conflictSource: "pull" | "merge" | null = null;
+  let publishMergeConflictDialog = false;
   // Captured at click time so the publish flow can resume after a force
   // merge without re-reading state that may have changed.
   let pendingPublishSnapshots: PublishSnapshots | null = null;
@@ -59,8 +56,13 @@
   const client = useRuntimeClient();
   const gitPushMutation = createRuntimeServiceGitPushMutation(client);
   const gitMergeMutation = createRuntimeServiceGitMergeToBranchMutation(client);
-  const gitPullMutation = createRuntimeServiceGitPullMutation(client);
   const gitStatusQuery = getDeploymentGithubStatus(client, primaryBranch);
+  // Pull-flow dialog state lives in `RemoteSyncDialogs`. Shape the same
+  // derived store into the minimal contract that component expects.
+  const remoteSyncStatusSource = derived(gitStatusQuery, ($q) => ({
+    hasRemoteChanges: $q.data.hasRemoteChanges,
+    hasLocalCommitsOnCurrent: $q.data.hasLocalCommitsOnCurrent,
+  }));
   // Query GetProject without a branch param so `data.deployment` reflects
   // the project's primary (prod) deployment — the same source of truth the
   // project layout uses. ListDeployments is too loose: it includes orphan
@@ -74,14 +76,10 @@
       hasLocalChanges,
       hasChangesOnCurrent,
       hasRemoteChanges,
-      hasLocalCommitsOnCurrent,
       alreadyOnPrimary,
       disabledPerGitStatus,
     },
   } = $gitStatusQuery);
-
-  $: ({ isPending: gitPullPending, error: gitPullError } = $gitPullMutation);
-  $: dialogError = (gitPullError as ConnectError | null) ?? errorFromGitCommand;
 
   $: projectLoaded = $projectQuery.data !== undefined;
   $: prodDeployment = $projectQuery.data?.deployment;
@@ -106,7 +104,6 @@
     // If the remote has commits we don't have locally, stop and prompt the
     // user to pull first. After a successful pull the user re-clicks Publish.
     if (hasRemoteChanges) {
-      errorFromGitCommand = null;
       remoteChangeDialog = true;
       return;
     }
@@ -172,10 +169,9 @@
     // but the publish appears to have succeeded). Branch on it explicitly.
     if (mergeResp?.output) {
       if (isMergeConflictError(mergeResp.output)) {
-        conflictSource = "merge";
         pendingPublishSnapshots = snapshots;
         errorFromGitCommand = null;
-        mergeConflictResolutionDialog = true;
+        publishMergeConflictDialog = true;
       } else {
         eventBus.emit("notification", {
           type: "error",
@@ -247,60 +243,8 @@
     }
   }
 
-  async function handleFetchRemoteCommits() {
-    // GitPull can't auto-merge cleanly when there are unpushed local commits;
-    // jump straight to the force/keep choice (mirrors RemoteProjectManager).
-    if (hasLocalCommitsOnCurrent) {
-      conflictSource = "pull";
-      mergeConflictResolutionDialog = true;
-      return;
-    }
-
+  async function handleForcePublishMerge() {
     errorFromGitCommand = null;
-    const resp = await $gitPullMutation.mutateAsync({ discardLocal: false });
-    invalidateGitStatusQueries(client, primaryBranch);
-
-    if (!resp.output) {
-      remoteChangeDialog = false;
-      eventBus.emit("notification", {
-        message: "Remote project changes fetched and merged.",
-      });
-      return;
-    }
-
-    if (isMergeConflictError(resp.output)) {
-      conflictSource = "pull";
-      mergeConflictResolutionDialog = true;
-      return;
-    }
-
-    errorFromGitCommand = { message: resp.output } as ConnectError;
-  }
-
-  async function handleForceFetchRemoteCommits() {
-    errorFromGitCommand = null;
-
-    if (conflictSource === "pull") {
-      const resp = await $gitPullMutation.mutateAsync({ discardLocal: true });
-      invalidateGitStatusQueries(client, primaryBranch);
-
-      if (resp.output) {
-        errorFromGitCommand = { message: resp.output } as ConnectError;
-        return;
-      }
-
-      remoteChangeDialog = false;
-      mergeConflictResolutionDialog = false;
-      conflictSource = null;
-      eventBus.emit("notification", {
-        message:
-          "Remote project changes fetched and merged. Your changes have been stashed.",
-      });
-      return;
-    }
-
-    // conflictSource === "merge": force-merge to primary, then resume the
-    // publish flow with the snapshots captured at click time.
     isPublishing = true;
     let resp;
     try {
@@ -322,8 +266,7 @@
       return;
     }
 
-    mergeConflictResolutionDialog = false;
-    conflictSource = null;
+    publishMergeConflictDialog = false;
     const snapshots = pendingPublishSnapshots;
     pendingPublishSnapshots = null;
     if (snapshots) {
@@ -369,16 +312,16 @@
   </TooltipContent>
 </Tooltip>
 
-<ProjectContainsRemoteChangesDialog
-  bind:open={remoteChangeDialog}
-  loading={gitPullPending}
-  error={dialogError}
-  onFetchAndMerge={handleFetchRemoteCommits}
+<RemoteSyncDialogs
+  bind:remoteChangeOpen={remoteChangeDialog}
+  gitStatusSource={remoteSyncStatusSource}
+  {primaryBranch}
+  autoPush
 />
 
 <MergeConflictResolutionDialog
-  bind:open={mergeConflictResolutionDialog}
-  loading={gitPullPending || isPublishing}
-  error={dialogError}
-  onUseLatestVersion={handleForceFetchRemoteCommits}
+  bind:open={publishMergeConflictDialog}
+  loading={isPublishing}
+  error={errorFromGitCommand}
+  onUseLatestVersion={handleForcePublishMerge}
 />
