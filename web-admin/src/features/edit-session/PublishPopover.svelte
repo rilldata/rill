@@ -13,7 +13,6 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { isMergeConflictError } from "@rilldata/web-common/features/project/deploy/github-utils.ts";
   import MergeConflictResolutionDialog from "@rilldata/web-common/features/project/MergeConflictResolutionDialog.svelte";
-  import RemoteSyncDialogs from "@rilldata/web-common/features/project/RemoteSyncDialogs.svelte";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -24,7 +23,6 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { ConnectError } from "@connectrpc/connect";
   import { Rocket } from "lucide-svelte";
-  import { derived } from "svelte/store";
   import { buildPostMergeUrl } from "./post-merge-url";
   import { goto } from "$app/navigation";
   import {
@@ -46,10 +44,11 @@
   };
 
   let isPublishing = false;
-  let remoteChangeDialog = false;
   let publishMergeConflictDialog = false;
   // Captured at click time so the publish flow can resume after a force
-  // merge without re-reading state that may have changed.
+  // merge without re-reading state that may have changed. `preCommitSha` is
+  // refreshed before completing the flow because prod's parser may have
+  // advanced while the user resolved the conflict.
   let pendingPublishSnapshots: PublishSnapshots | null = null;
   let errorFromGitCommand: ConnectError | null = null;
 
@@ -57,12 +56,6 @@
   const gitPushMutation = createRuntimeServiceGitPushMutation(client);
   const gitMergeMutation = createRuntimeServiceGitMergeToBranchMutation(client);
   const gitStatusQuery = getDeploymentGithubStatus(client, primaryBranch);
-  // Pull-flow dialog state lives in `RemoteSyncDialogs`. Shape the same
-  // derived store into the minimal contract that component expects.
-  const remoteSyncStatusSource = derived(gitStatusQuery, ($q) => ({
-    hasRemoteChanges: $q.data.hasRemoteChanges,
-    hasLocalCommitsOnCurrent: $q.data.hasLocalCommitsOnCurrent,
-  }));
   // Query GetProject without a branch param so `data.deployment` reflects
   // the project's primary (prod) deployment — the same source of truth the
   // project layout uses. ListDeployments is too loose: it includes orphan
@@ -101,10 +94,11 @@
   async function handlePublish() {
     if (!primaryBranch || isPublishing) return;
 
-    // If the remote has commits we don't have locally, stop and prompt the
-    // user to pull first. After a successful pull the user re-clicks Publish.
+    // If the remote has commits we don't have locally, stop and ask the
+    // shared dialog (owned by CloudRemoteChangeManager) to open via
+    // the bus. After a successful pull the user re-clicks Publish.
     if (hasRemoteChanges) {
-      remoteChangeDialog = true;
+      eventBus.emit("remote-changes-detected");
       return;
     }
 
@@ -270,6 +264,9 @@
     const snapshots = pendingPublishSnapshots;
     pendingPublishSnapshots = null;
     if (snapshots) {
+      // Prod's parser may have advanced while the user was on the conflict
+      // dialog; re-read so the deploying page waits past the correct SHA.
+      snapshots.preCommitSha = $parserShaQuery.data;
       await completePublishFlow(snapshots);
     }
     isPublishing = false;
@@ -311,13 +308,6 @@
     </span>
   </TooltipContent>
 </Tooltip>
-
-<RemoteSyncDialogs
-  bind:remoteChangeOpen={remoteChangeDialog}
-  gitStatusSource={remoteSyncStatusSource}
-  {primaryBranch}
-  autoPush
-/>
 
 <MergeConflictResolutionDialog
   bind:open={publishMergeConflictDialog}
