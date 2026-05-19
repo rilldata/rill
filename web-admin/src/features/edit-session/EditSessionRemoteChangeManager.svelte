@@ -5,13 +5,13 @@
   import ProjectContainsRemoteChangesDialog from "@rilldata/web-common/features/project/ProjectContainsRemoteChangesDialog.svelte";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import {
     createRuntimeServiceGitPullMutation,
-    getRuntimeServiceGitStatusQueryKey,
+    createRuntimeServiceGitPushMutation,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { getDeploymentGithubStatus } from "./selectors.ts";
+  import { invalidateGitStatusQueries } from "@rilldata/web-admin/features/edit-session/invalidations.ts";
 
   export let primaryBranch: string | undefined;
 
@@ -21,6 +21,7 @@
     primaryBranch,
   );
   const gitPullMutation = createRuntimeServiceGitPullMutation(runtimeClient);
+  const gitPushMutation = createRuntimeServiceGitPushMutation(runtimeClient);
 
   let remoteChangeDialog = false;
   let mergeConflictResolutionDialog = false;
@@ -45,20 +46,6 @@
   $: ({ isPending: gitPullPending, error: gitPullError } = $gitPullMutation);
   $: dialogError = (gitPullError as ConnectError | null) ?? errorFromGitCommand;
 
-  function invalidateGitStatusQueries() {
-    void queryClient.invalidateQueries({
-      queryKey: getRuntimeServiceGitStatusQueryKey(
-        runtimeClient.instanceId,
-        {},
-      ),
-    });
-    void queryClient.invalidateQueries({
-      queryKey: getRuntimeServiceGitStatusQueryKey(runtimeClient.instanceId, {
-        remoteBranch: primaryBranch,
-      }),
-    });
-  }
-
   async function handleFetchRemoteCommits() {
     // GitPull can't auto-merge cleanly when there are unpushed local commits;
     // jump straight to the force/keep choice (mirrors RemoteProjectManager).
@@ -69,14 +56,19 @@
 
     errorFromGitCommand = null;
     const resp = await $gitPullMutation.mutateAsync({ discardLocal: false });
-    invalidateGitStatusQueries();
 
     if (!resp.output) {
+      // Push changes to remote branch from local branch.
+      await $gitPushMutation.mutateAsync({});
+      invalidateGitStatusQueries(runtimeClient, primaryBranch);
+
       remoteChangeDialog = false;
       eventBus.emit("notification", {
         message: "Remote project changes fetched and merged.",
       });
       return;
+    } else {
+      invalidateGitStatusQueries(runtimeClient, primaryBranch);
     }
 
     if (isMergeConflictError(resp.output)) {
@@ -90,12 +82,15 @@
   async function handleForceFetchRemoteCommits() {
     errorFromGitCommand = null;
     const resp = await $gitPullMutation.mutateAsync({ discardLocal: true });
-    invalidateGitStatusQueries();
 
     if (resp.output) {
       errorFromGitCommand = { message: resp.output } as ConnectError;
       return;
     }
+
+    // Push changes to remote branch from local branch.
+    await $gitPushMutation.mutateAsync({});
+    invalidateGitStatusQueries(runtimeClient, primaryBranch);
 
     remoteChangeDialog = false;
     mergeConflictResolutionDialog = false;

@@ -21,7 +21,6 @@
     createRuntimeServiceGitMergeToBranchMutation,
     createRuntimeServiceGitPullMutation,
     createRuntimeServiceGitPushMutation,
-    getRuntimeServiceGitStatusQueryKey,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { ConnectError } from "@connectrpc/connect";
@@ -32,6 +31,7 @@
     fetchDeploymentGithubStatusChanges,
     getDeploymentGithubStatus,
   } from "@rilldata/web-admin/features/edit-session/selectors.ts";
+  import { invalidateGitStatusQueries } from "@rilldata/web-admin/features/edit-session/invalidations.ts";
 
   export let organization: string;
   export let project: string;
@@ -100,21 +100,6 @@
     $projectQuery.data?.jwt,
   );
 
-  function invalidateGitStatusQueries() {
-    // gitStatus tracks localChanges and currentBranch; mutations below change
-    // both, so refresh after every flow. We cache both an empty-remoteBranch
-    // and a primary-branch keyed query (see `getDeploymentGithubStatus`), so
-    // invalidate both.
-    void queryClient.invalidateQueries({
-      queryKey: getRuntimeServiceGitStatusQueryKey(client.instanceId, {}),
-    });
-    void queryClient.invalidateQueries({
-      queryKey: getRuntimeServiceGitStatusQueryKey(client.instanceId, {
-        remoteBranch: primaryBranch,
-      }),
-    });
-  }
-
   async function handlePublish() {
     if (!primaryBranch || isPublishing) return;
 
@@ -179,7 +164,7 @@
       isPublishing = false;
       return;
     } finally {
-      invalidateGitStatusQueries();
+      invalidateGitStatusQueries(client, primaryBranch);
     }
 
     // GitMergeToBranch surfaces conflicts via `output` rather than an error;
@@ -273,7 +258,7 @@
 
     errorFromGitCommand = null;
     const resp = await $gitPullMutation.mutateAsync({ discardLocal: false });
-    invalidateGitStatusQueries();
+    invalidateGitStatusQueries(client, primaryBranch);
 
     if (!resp.output) {
       remoteChangeDialog = false;
@@ -297,7 +282,7 @@
 
     if (conflictSource === "pull") {
       const resp = await $gitPullMutation.mutateAsync({ discardLocal: true });
-      invalidateGitStatusQueries();
+      invalidateGitStatusQueries(client, primaryBranch);
 
       if (resp.output) {
         errorFromGitCommand = { message: resp.output } as ConnectError;
@@ -328,7 +313,7 @@
       isPublishing = false;
       return;
     } finally {
-      invalidateGitStatusQueries();
+      invalidateGitStatusQueries(client, primaryBranch);
     }
 
     if (resp?.output) {
