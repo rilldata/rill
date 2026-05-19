@@ -30,6 +30,7 @@ import { getFilterWithNullHandling } from "../query-util";
 export type FunnelMode = "width" | "order";
 export type FunnelColorMode = "stage" | "measure" | "name" | "value";
 export type FunnelBreakdownMode = "dimension" | "measures";
+export type FunnelPercentMode = "top" | "previous";
 
 export type FunnelChartSpec = {
   metrics_view: string;
@@ -38,6 +39,7 @@ export type FunnelChartSpec = {
   stage?: FieldConfig<"nominal">;
   mode?: FunnelMode;
   color?: FunnelColorMode;
+  percentMode?: FunnelPercentMode;
 };
 
 export type FunnelChartDefaultOptions = {
