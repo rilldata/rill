@@ -6,6 +6,7 @@ import (
 	"math"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 // TODO: handle parameters in values
@@ -191,10 +192,21 @@ func (a *AST) traverseBaseTable(parent astNode, childKey string) {
 	if a.added[name] {
 		return
 	}
-	a.newFromNode(node, parent, childKey, &TableRef{
-		Name:       name,
-		LocalAlias: a.aliases[name],
-	})
+	var ref *TableRef
+	if fn, ok := fileToFunc(name); ok {
+		ref = &TableRef{
+			Function: fn,
+			Paths:    []string{name},
+		}
+	} else {
+		ref = &TableRef{
+			Name:       name,
+			LocalAlias: a.aliases[name],
+		}
+	}
+
+	a.newFromNode(node, parent, childKey, ref)
+	a.newFromNode(node, parent, childKey, ref)
 	a.added[name] = true
 	// TODO: add to local alias
 }
@@ -373,6 +385,20 @@ func forceConvertToNum[N int32 | int64 | uint32 | uint64 | float32 | float64](v 
 		return 0
 	}
 	return 0
+}
+
+func fileToFunc(name string) (string, bool) {
+	nameLower := strings.ToLower(name)
+	switch {
+	case strings.HasSuffix(nameLower, ".csv"):
+		return "read_csv", true
+	case strings.HasSuffix(nameLower, ".json"):
+		return "read_json", true
+	case strings.HasSuffix(nameLower, ".parquet"):
+		return "read_parquet", true
+	default:
+		return "", false
+	}
 }
 
 type PositionError struct {
