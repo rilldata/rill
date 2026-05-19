@@ -1,3 +1,4 @@
+import { queryClient as globalQueryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { derived } from "svelte/store";
 import {
@@ -32,6 +33,8 @@ export function getDeploymentGithubStatus(
           data: {
             hasLocalChanges: false,
             hasChangesOnCurrent: false,
+            hasRemoteChanges: false,
+            hasLocalCommitsOnCurrent: false,
             alreadyOnPrimary: false,
             disabledPerGitStatus: true,
           },
@@ -49,6 +52,16 @@ export function getDeploymentGithubStatus(
       );
       const hasLocalChanges = hasChangesAgainstCurrent || hasChangesOnCurrent;
 
+      // GitPull cascades primary -> current's remote -> local, so collapsing
+      // both signals into one is sufficient for the dialog flow.
+      const hasRemoteChanges = Boolean(
+        currentBranchGitStatusResp.data?.remoteCommits ||
+          primaryBranchGitStatusResp.data?.remoteCommits,
+      );
+      const hasLocalCommitsOnCurrent = Boolean(
+        currentBranchGitStatusResp.data?.localCommits,
+      );
+
       const alreadyOnPrimary =
         !!primaryBranch && !!currentBranch && currentBranch === primaryBranch;
 
@@ -64,6 +77,8 @@ export function getDeploymentGithubStatus(
         data: {
           hasLocalChanges,
           hasChangesOnCurrent,
+          hasRemoteChanges,
+          hasLocalCommitsOnCurrent,
           alreadyOnPrimary,
           disabledPerGitStatus,
         },
@@ -98,4 +113,23 @@ export async function fetchDeploymentGithubStatusChanges(
   );
 
   return hasChangesAgainstCurrent || hasChangesAgainstPrimary;
+}
+
+export function invalidateGitStatusQueries(
+  runtimeClient: RuntimeClient,
+  primaryBranch: string | undefined,
+) {
+  // GitStatus is cached under two keys (see `getDeploymentGithubStatus`):
+  // one with no `remoteBranch` for the current branch and one keyed by the
+  // primary branch. Invalidate both so subscribers refetch.
+  void globalQueryClient.invalidateQueries({
+    queryKey: getRuntimeServiceGitStatusQueryKey(runtimeClient.instanceId, {}),
+  });
+  if (primaryBranch) {
+    void globalQueryClient.invalidateQueries({
+      queryKey: getRuntimeServiceGitStatusQueryKey(runtimeClient.instanceId, {
+        remoteBranch: primaryBranch,
+      }),
+    });
+  }
 }
