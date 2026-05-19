@@ -206,7 +206,6 @@ func (a *AST) traverseBaseTable(parent astNode, childKey string) {
 	}
 
 	a.newFromNode(node, parent, childKey, ref)
-	a.newFromNode(node, parent, childKey, ref)
 	a.added[name] = true
 	// TODO: add to local alias
 }
