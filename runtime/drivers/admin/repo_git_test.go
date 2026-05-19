@@ -1094,6 +1094,9 @@ func createRemoteBranch(t *testing.T, remoteDir, branchName, fileName, content, 
 func setupGitConfig(t *testing.T, repoPath string) {
 	require.NoError(t, execGitCommand(exec.Command("git", "-C", repoPath, "config", "user.name", "Test User")))
 	require.NoError(t, execGitCommand(exec.Command("git", "-C", repoPath, "config", "user.email", "test@example.com")))
+	// Disable background auto-gc: otherwise commit/push may spawn a detached `git gc --auto`
+	// that writes into .git/objects/pack after the test ends, racing with t.TempDir() cleanup.
+	require.NoError(t, execGitCommand(exec.Command("git", "-C", repoPath, "config", "gc.auto", "0")))
 }
 
 func execGitCommand(cmd *exec.Cmd) error {

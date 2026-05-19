@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -21,6 +22,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/ctxsync"
 	"github.com/rilldata/rill/runtime/pkg/filewatcher"
+	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
 	"gopkg.in/yaml.v3"
 )
@@ -683,7 +685,12 @@ func (r *repo) rlockEnsureReady(ctx context.Context, checkHandshake bool) error 
 	// UserTriggered set to true to make sure the first pull gets the latest code files.
 	err = r.pull(ctx, &drivers.PullOptions{UserTriggered: true})
 	if err != nil {
-		return err
+		var mergeErr *drivers.MergeFailedError
+		if errors.As(err, &mergeErr) { // Don't return error so user gets chance to resolve conflicts
+			r.h.logger.Error("clean pull failed, merge conflicts detected", zap.Error(err))
+		} else {
+			return err
+		}
 	}
 
 	// We know it's ready now. Take read lock and return.
