@@ -1,6 +1,9 @@
 import type { V1User } from "@rilldata/web-admin/client";
 import { SnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze.ts";
-import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils.ts";
+import {
+  DEFAULT_NOTIFICATION_ROW_LIMIT,
+  type AlertFormValues,
+} from "@rilldata/web-common/features/alerts/form-utils.ts";
 import { getEmptyMeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
@@ -39,6 +42,7 @@ export function getNewAlertInitialFormValues(
     ],
     criteriaOperation: V1Operation.OPERATION_AND,
     snooze: SnoozeOptions[0].value, // Defaults to `Off`
+    notificationRowLimit: DEFAULT_NOTIFICATION_ROW_LIMIT,
 
     refreshWhenDataRefreshes: true,
     ...getInitialScheduleFormValues(),

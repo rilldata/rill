@@ -15,6 +15,10 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+// alertNotificationRowLimitMax is the maximum number of rows an alert can include in a notification.
+// Kept conservative to avoid blowing past per-message size limits in Slack (~40k chars) and email.
+const alertNotificationRowLimitMax = 100
+
 // AlertYAML is the raw structure of an Alert resource defined in YAML (does not include common fields)
 type AlertYAML struct {
 	commonYAML  `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
@@ -27,8 +31,9 @@ type AlertYAML struct {
 		Limit         uint   `yaml:"limit"`
 		CheckUnclosed bool   `yaml:"check_unclosed"`
 	} `yaml:"intervals"`
-	Timeout string    `yaml:"timeout"`
-	Data    *DataYAML `yaml:"data"`
+	Timeout              string    `yaml:"timeout"`
+	NotificationRowLimit *uint32   `yaml:"notification_row_limit"`
+	Data                 *DataYAML `yaml:"data"`
 	For     struct {
 		UserID     string         `yaml:"user_id"`
 		UserEmail  string         `yaml:"user_email"`
@@ -126,6 +131,13 @@ func (p *Parser) parseAlert(node *Node) error {
 		timeout, err = parseDuration(tmp.Timeout)
 		if err != nil {
 			return err
+		}
+	}
+
+	// Validate notification_row_limit
+	if tmp.NotificationRowLimit != nil {
+		if *tmp.NotificationRowLimit < 1 || *tmp.NotificationRowLimit > alertNotificationRowLimitMax {
+			return fmt.Errorf(`invalid value %d for property "notification_row_limit": must be between 1 and %d`, *tmp.NotificationRowLimit, alertNotificationRowLimitMax)
 		}
 	}
 
@@ -289,6 +301,9 @@ func (p *Parser) parseAlert(node *Node) error {
 	r.AlertSpec.IntervalsCheckUnclosed = tmp.Intervals.CheckUnclosed
 	if timeout != 0 {
 		r.AlertSpec.TimeoutSeconds = uint32(timeout.Seconds())
+	}
+	if tmp.NotificationRowLimit != nil {
+		r.AlertSpec.NotificationRowLimit = *tmp.NotificationRowLimit
 	}
 
 	r.AlertSpec.Resolver = resolver

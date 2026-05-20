@@ -40,7 +40,6 @@
       display: block;
       margin: 13px 0;
     }
-
   </style>
   <!--[if mso]>
     <noscript>
@@ -64,14 +63,12 @@
         max-width: 100%;
       }
     }
-
   </style>
   <style media="screen and (min-width:480px)">
     .moz-text-html .mj-column-per-100 {
       width: 100% !important;
       max-width: 100%;
     }
-
   </style>
   <style type="text/css">
     @media only screen and (max-width:479px) {
@@ -83,14 +80,13 @@
         width: auto !important;
       }
     }
-
   </style>
   <meta name="color-scheme" content="light" />
   <meta name="supported-color-schemes" content="light" />
 </head>
 
 <body style="word-spacing:normal;">
-  <div style="" lang="und" dir="auto">
+  <div aria-roledescription="email" role="article" lang="und" dir="auto" style="word-spacing:normal;">
     <!--[if mso | IE]><table align="center" border="0" cellpadding="0" cellspacing="0" class="" role="presentation" style="width:600px;" width="600" ><tr><td style="line-height:0px;font-size:0px;mso-line-height-rule:exactly;"><![endif]-->
     <div style="margin:0px auto;max-width:600px;">
       <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="width:100%;">
@@ -126,14 +122,22 @@
                     </tr>
                     <tr>
                       <td align="left" style="font-size:0px;padding:10px 25px;padding-bottom:0px;word-break:break-word;">
-                        <div style="font-family:Helvetica;font-size:16px;line-height:1.25;text-align:left;color:#000000;">Your alert triggered for <b>{{ .ExecutionTimeString }}</b>. The first row that matched your alert criteria is:</div>
+                        <div style="font-family:Helvetica;font-size:16px;line-height:1.25;text-align:left;color:#000000;">Your alert triggered for <b>{{ .ExecutionTimeString }}</b>. {{ if eq .RowCount 1 }}1 row matched{{ else }}{{ .RowCount }} rows matched{{ end }} your alert criteria:</div>
                       </td>
                     </tr>
                     <tr>
-                      <td align="left" style="font-size:0px;padding:10px 25px;padding-bottom:0px;word-break:break-word;">
-                        <div style="font-family:Helvetica;font-size:16px;line-height:1.25;text-align:left;color:#000000;">{{ range $key, $value := .FailRow }} • <b>{{ $key }}</b>: {{ $value }}<br />
-                          {{ end }}
-                        </div>
+                      <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
+                        <table cellpadding="0" cellspacing="0" width="100%" border="0" style="color:#000000;font-family:Helvetica;font-size:16px;line-height:22px;table-layout:auto;width:100%;border:none;">
+                          <tr style="background-color: #f7f7fa; border-bottom: 1px solid #ccc; text-align: left;">
+                            {{ range $col := .Columns }}
+                            <th style="padding: 6px 10px; font-weight: bold;">{{ $col }}</th>{{ end }}
+                          </tr>
+                          {{ range $row := .FailRows }}
+                          <tr style="border-bottom: 1px solid #eee;">
+                            {{ range $col := $.Columns }}
+                            <td style="padding: 6px 10px;">{{ index $row $col }}</td>{{ end }}
+                          </tr>{{ end }}
+                        </table>
                       </td>
                     </tr>
                     <tr>

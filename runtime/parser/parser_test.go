@@ -1577,6 +1577,106 @@ annotations:
 	requireResourcesAndErrors(t, p, resources, nil)
 }
 
+func TestAlertNotificationRowLimit(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("valid value", func(t *testing.T) {
+		repo := makeRepo(t, map[string]string{
+			`rill.yaml`: ``,
+			`alerts/a1.yaml`: `
+type: alert
+display_name: A
+notification_row_limit: 25
+query:
+  name: Q
+  args:
+    x: 1
+notify:
+  email:
+    recipients: [a@example.com]
+`,
+		})
+		p, err := Parse(ctx, repo, "", "", "duckdb", true)
+		require.NoError(t, err)
+		require.Empty(t, p.Errors, "expected no parse errors, got %v", p.Errors)
+		var found bool
+		for _, r := range p.Resources {
+			if r.Name.Kind == ResourceKindAlert {
+				require.Equal(t, uint32(25), r.AlertSpec.NotificationRowLimit)
+				found = true
+			}
+		}
+		require.True(t, found, "expected alert resource")
+	})
+
+	t.Run("zero rejected", func(t *testing.T) {
+		repo := makeRepo(t, map[string]string{
+			`rill.yaml`: ``,
+			`alerts/a1.yaml`: `
+type: alert
+display_name: A
+notification_row_limit: 0
+query:
+  name: Q
+  args:
+    x: 1
+notify:
+  email:
+    recipients: [a@example.com]
+`,
+		})
+		p, err := Parse(ctx, repo, "", "", "duckdb", true)
+		require.NoError(t, err)
+		require.NotEmpty(t, p.Errors)
+	})
+
+	t.Run("above max rejected", func(t *testing.T) {
+		repo := makeRepo(t, map[string]string{
+			`rill.yaml`: ``,
+			`alerts/a1.yaml`: `
+type: alert
+display_name: A
+notification_row_limit: 101
+query:
+  name: Q
+  args:
+    x: 1
+notify:
+  email:
+    recipients: [a@example.com]
+`,
+		})
+		p, err := Parse(ctx, repo, "", "", "duckdb", true)
+		require.NoError(t, err)
+		require.NotEmpty(t, p.Errors)
+	})
+
+	t.Run("unset leaves spec at default zero", func(t *testing.T) {
+		repo := makeRepo(t, map[string]string{
+			`rill.yaml`: ``,
+			`alerts/a1.yaml`: `
+type: alert
+display_name: A
+query:
+  name: Q
+  args:
+    x: 1
+notify:
+  email:
+    recipients: [a@example.com]
+`,
+		})
+		p, err := Parse(ctx, repo, "", "", "duckdb", true)
+		require.NoError(t, err)
+		require.Empty(t, p.Errors)
+		for _, r := range p.Resources {
+			if r.Name.Kind == ResourceKindAlert {
+				require.Equal(t, uint32(0), r.AlertSpec.NotificationRowLimit, "unset YAML should leave spec at zero so the reconciler applies its default")
+			}
+		}
+	})
+}
+
 func TestMetricsViewAvoidSelfCyclicRef(t *testing.T) {
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{

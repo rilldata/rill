@@ -1,5 +1,8 @@
 import { getSnoozeValueFromAlertSpec } from "@rilldata/web-common/features/alerts/delivery-tab/snooze.ts";
-import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+import {
+  DEFAULT_NOTIFICATION_ROW_LIMIT,
+  type AlertFormValues,
+} from "@rilldata/web-common/features/alerts/form-utils";
 import {
   getEmptyMeasureFilterEntry,
   mapExprToMeasureFilter,
@@ -107,6 +110,8 @@ export function getExistingAlertInitialFormValues(
     exploreName: exploreName ?? metricsViewName,
     snooze: getSnoozeValueFromAlertSpec(alertSpec),
     evaluationInterval: alertSpec.intervalsIsoDuration ?? "",
+    notificationRowLimit:
+      alertSpec.notificationRowLimit || DEFAULT_NOTIFICATION_ROW_LIMIT,
     refreshWhenDataRefreshes: !alertSpec.refreshSchedule?.cron,
     ...getExistingScheduleFormValues(alertSpec.refreshSchedule),
     ...extractAlertNotification(alertSpec),

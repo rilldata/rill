@@ -3980,6 +3980,14 @@ export class AlertSpec extends Message<AlertSpec> {
   renotifyAfterSeconds = 0;
 
   /**
+   * Maximum number of matching rows to include in each notification (Slack, email, etc.).
+   * If unset (zero), the runtime applies a default of 10. Capped at 100 by the parser.
+   *
+   * @generated from field: uint32 notification_row_limit = 24;
+   */
+  notificationRowLimit = 0;
+
+  /**
    * @generated from field: repeated rill.runtime.v1.Notifier notifiers = 21;
    */
   notifiers: Notifier[] = [];
@@ -4017,6 +4025,7 @@ export class AlertSpec extends Message<AlertSpec> {
     { no: 17, name: "notify_on_error", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 18, name: "renotify", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 19, name: "renotify_after_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 24, name: "notification_row_limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 21, name: "notifiers", kind: "message", T: Notifier, repeated: true },
     { no: 20, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
@@ -4233,6 +4242,9 @@ export class AssertionResult extends Message<AssertionResult> {
   status = AssertionStatus.UNSPECIFIED;
 
   /**
+   * First failing row. Retained for backwards compatibility with state written before fail_rows existed.
+   * New callers should prefer fail_rows; readers should fall back to [fail_row] when fail_rows is empty.
+   *
    * @generated from field: google.protobuf.Struct fail_row = 2;
    */
   failRow?: Struct;
@@ -4247,6 +4259,13 @@ export class AssertionResult extends Message<AssertionResult> {
    */
   warnings: string[] = [];
 
+  /**
+   * All failing rows, up to AlertSpec.notification_row_limit.
+   *
+   * @generated from field: repeated google.protobuf.Struct fail_rows = 5;
+   */
+  failRows: Struct[] = [];
+
   constructor(data?: PartialMessage<AssertionResult>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4259,6 +4278,7 @@ export class AssertionResult extends Message<AssertionResult> {
     { no: 2, name: "fail_row", kind: "message", T: Struct },
     { no: 3, name: "error_message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "warnings", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 5, name: "fail_rows", kind: "message", T: Struct, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AssertionResult {

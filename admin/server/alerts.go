@@ -539,6 +539,9 @@ func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID str
 	res.Notify.Slack.Channels = opts.SlackChannels
 	res.Notify.Slack.Users = opts.SlackUsers
 	res.Notify.Slack.Webhooks = opts.SlackWebhooks
+	if opts.NotificationRowLimit > 0 {
+		res.NotificationRowLimit = opts.NotificationRowLimit
+	}
 	res.Annotations.AdminOwnerUserID = ownerUserID
 	res.Annotations.AdminManaged = true
 	res.Annotations.AdminNonce = time.Now().Format(time.RFC3339Nano)
@@ -582,6 +585,9 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	res.Notify.Slack.Channels = opts.SlackChannels
 	res.Notify.Slack.Users = opts.SlackUsers
 	res.Notify.Slack.Webhooks = opts.SlackWebhooks
+	if opts.NotificationRowLimit > 0 {
+		res.NotificationRowLimit = opts.NotificationRowLimit
+	}
 	res.Annotations.WebOpenPath = opts.WebOpenPath
 	res.Annotations.WebOpenState = opts.WebOpenState
 	return yaml.Marshal(res)
@@ -651,9 +657,10 @@ type alertYAML struct {
 			UserID string `yaml:"user_id"`
 		} `yaml:"for"`
 	} `yaml:"query"`
-	Renotify      bool   `yaml:"renotify"`
-	RenotifyAfter uint32 `yaml:"renotify_after"`
-	Notify        struct {
+	Renotify             bool   `yaml:"renotify"`
+	RenotifyAfter        uint32 `yaml:"renotify_after"`
+	NotificationRowLimit uint32 `yaml:"notification_row_limit,omitempty"`
+	Notify               struct {
 		Email struct {
 			Recipients []string `yaml:"recipients"`
 		}

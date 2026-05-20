@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"math"
+	"sort"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
@@ -98,10 +99,18 @@ func (c *Client) SendAlertStatus(opts *drivers.AlertStatus) error {
 			UnsubscribeLink:     template.URL(opts.UnsubscribeLink),
 		})
 	case runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL:
+		rows := opts.FailRows
+		if len(rows) == 0 && opts.FailRow != nil {
+			rows = []map[string]any{opts.FailRow}
+		}
+		columns := alertFailRowColumns(rows)
 		return c.sendAlertFail(opts, &alertFailData{
 			DisplayName:         opts.DisplayName,
 			ExecutionTimeString: opts.ExecutionTime.Format(time.RFC1123),
 			FailRow:             opts.FailRow,
+			FailRows:            rows,
+			RowCount:            len(rows),
+			Columns:             columns,
 			OpenLink:            template.URL(opts.OpenLink),
 			EditLink:            template.URL(opts.EditLink),
 			UnsubscribeLink:     template.URL(opts.UnsubscribeLink),
@@ -125,9 +134,27 @@ type alertFailData struct {
 	DisplayName         string
 	ExecutionTimeString string // Will be inferred from ExecutionTime
 	FailRow             map[string]any
-	OpenLink            template.URL
-	EditLink            template.URL
-	UnsubscribeLink     template.URL
+	FailRows            []map[string]any
+	RowCount            int
+	// Columns is the deterministic ordering used to render the HTML table headers and cells.
+	Columns         []string
+	OpenLink        template.URL
+	EditLink        template.URL
+	UnsubscribeLink template.URL
+}
+
+// alertFailRowColumns returns the deterministic column order for rendering fail rows in email.
+// Go map iteration is unordered, so we sort the keys of the first row alphabetically.
+func alertFailRowColumns(rows []map[string]any) []string {
+	if len(rows) == 0 {
+		return nil
+	}
+	cols := make([]string, 0, len(rows[0]))
+	for k := range rows[0] {
+		cols = append(cols, k)
+	}
+	sort.Strings(cols)
+	return cols
 }
 
 func (c *Client) sendAlertFail(opts *drivers.AlertStatus, data *alertFailData) error {

@@ -297,6 +297,8 @@ export interface V1AlertSpec {
   notifyOnError?: boolean;
   renotify?: boolean;
   renotifyAfterSeconds?: number;
+  /** Maximum number of matching rows to include in each notification (Slack, email, etc.). If unset (zero), the runtime applies a default of 10. Capped at 100 by the parser. */
+  notificationRowLimit?: number;
   notifiers?: V1Notifier[];
   annotations?: V1AlertSpecAnnotations;
 }
@@ -384,8 +386,11 @@ export type V1AssertionResultFailRow = { [key: string]: unknown };
 
 export interface V1AssertionResult {
   status?: V1AssertionStatus;
+  /** First failing row. Retained for backwards compatibility with state written before failRows existed. */
   failRow?: V1AssertionResultFailRow;
   errorMessage?: string;
+  /** All failing rows, up to AlertSpec.notificationRowLimit. */
+  failRows?: V1AssertionResultFailRow[];
 }
 
 export type V1AssertionStatus =

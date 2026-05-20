@@ -122,6 +122,10 @@ components:
                     type: string
                 metricsViewName:
                     type: string
+                notificationRowLimit:
+                    description: Maximum number of matching rows to include in each notification. Zero means use the runtime default.
+                    format: int64
+                    type: integer
                 queryArgsJson:
                     description: 'DEPRECATED: Use resolver and resolver_properties instead.'
                     type: string

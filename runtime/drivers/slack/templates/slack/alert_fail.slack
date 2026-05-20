@@ -2,11 +2,15 @@
 
 Your alert triggered for {{ .ExecutionTimeString }}.
 
-The first row that matched your alert criteria is:
+{{ if eq .RowCount 1 }}1 row matched your alert criteria:{{ else }}{{ .RowCount }} rows matched your alert criteria:{{ end }}
 
-{{ range $key, $value := .FailRow }}
-• *{{ $key }}*: {{ $value }}
-{{ end }}
+```
+{{ .TableText }}
+```
+{{- if gt .TruncatedRows 0 }}
+
+… {{ .TruncatedRows }} more row{{ if gt .TruncatedRows 1 }}s{{ end }} omitted.
+{{- end }}
 
 <{{ .OpenLink }}|Open in browser>
 

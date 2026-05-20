@@ -4127,6 +4127,12 @@ definitions:
       renotifyAfterSeconds:
         type: integer
         format: int64
+      notificationRowLimit:
+        type: integer
+        format: int64
+        description: |-
+          Maximum number of matching rows to include in each notification (Slack, email, etc.).
+          If unset (zero), the runtime applies a default of 10. Capped at 100 by the parser.
       notifiers:
         type: array
         items:
@@ -4280,12 +4286,20 @@ definitions:
         $ref: '#/definitions/v1AssertionStatus'
       failRow:
         type: object
+        description: |-
+          First failing row. Retained for backwards compatibility with state written before fail_rows existed.
+          New callers should prefer fail_rows; readers should fall back to [fail_row] when fail_rows is empty.
       errorMessage:
         type: string
       warnings:
         type: array
         items:
           type: string
+      failRows:
+        type: array
+        items:
+          type: object
+        description: All failing rows, up to AlertSpec.notification_row_limit.
   v1AssertionStatus:
     type: string
     enum:

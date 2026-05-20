@@ -197,6 +197,7 @@
           refreshTimeZone: values.timeZone,
           renotify: !!values.snooze,
           renotifyAfterSeconds: values.snooze ? Number(values.snooze) : 0,
+          notificationRowLimit: values.notificationRowLimit,
           webOpenPath: `/explore/${encodeURIComponent(exploreName)}`,
           webOpenState: getProtoFromDashboardState(
             $exploreState as ExploreState,

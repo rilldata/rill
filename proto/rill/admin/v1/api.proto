@@ -3627,6 +3627,8 @@ message AlertOptions {
   repeated string slack_webhooks = 11;
   string web_open_path = 15; // Annotation for the subpath of <UI host>/org/project to open for the report.
   string web_open_state = 12; // Annotation for the base64-encoded UI state to open for the report.
+  // Maximum number of matching rows to include in each notification. Zero means use the runtime default.
+  uint32 notification_row_limit = 18;
 }
 
 enum BillingPlanType {

@@ -14,13 +14,17 @@ type Notifier interface {
 
 type AlertStatus struct {
 	// TODO: Remove ToEmail, ToName once email notifier is created
-	ToEmail         string
-	ToName          string
-	DisplayName     string
-	ExecutionTime   time.Time
-	Status          runtimev1.AssertionStatus
-	IsRecover       bool
-	FailRow         map[string]any
+	ToEmail     string
+	ToName      string
+	DisplayName string
+	ExecutionTime time.Time
+	Status      runtimev1.AssertionStatus
+	IsRecover   bool
+	// FailRow is the first matching row. Retained for backwards compatibility with consumers that
+	// haven't migrated to FailRows yet. New consumers should read FailRows.
+	FailRow map[string]any
+	// FailRows holds all matching rows for the alert, up to AlertSpec.NotificationRowLimit.
+	FailRows        []map[string]any
 	ExecutionError  string
 	OpenLink        string
 	EditLink        string

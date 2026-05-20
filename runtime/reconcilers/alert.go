@@ -33,6 +33,10 @@ const alertQueryPriority = 1
 
 const alertCheckDefaultTimeout = 5 * time.Minute
 
+// defaultAlertNotificationRowLimit is the number of matching rows included in an alert notification
+// when the alert spec does not explicitly set notification_row_limit.
+const defaultAlertNotificationRowLimit = 10
+
 func init() {
 	runtime.RegisterReconcilerInitializer(runtime.ResourceKindAlert, newAlertReconciler)
 }
@@ -703,6 +707,11 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 		queryForAttrs = a.Spec.GetQueryForAttributes().AsMap()
 	}
 
+	rowLimit := int(a.Spec.NotificationRowLimit)
+	if rowLimit == 0 {
+		rowLimit = defaultAlertNotificationRowLimit
+	}
+
 	res, info, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         r.C.InstanceID,
 		Resolver:           a.Spec.Resolver,
@@ -711,7 +720,7 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 			"priority":       alertQueryPriority,
 			"execution_time": executionTime,
 			"format":         true,
-			"limit":          1,
+			"limit":          rowLimit,
 		},
 		Claims: &runtime.SecurityClaims{UserAttributes: queryForAttrs},
 	})
@@ -725,25 +734,38 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 		warnings = info.Warnings
 	}
 
-	row, err := res.Next()
-	if err != nil {
-		if errors.Is(err, io.EOF) {
-			r.C.Logger.Info("Alert passed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime), observability.ZapCtx(ctx))
-			return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_PASS, Warnings: warnings}, nil
+	failRows := make([]*structpb.Struct, 0, rowLimit)
+	for {
+		row, err := res.Next()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return nil, fmt.Errorf("failed to get row from alert resolver: %w", err)
 		}
-		return nil, fmt.Errorf("failed to get row from alert resolver: %w", err)
+
+		s, err := structpb.NewStruct(row)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert fail row to proto: %w", err)
+		}
+		failRows = append(failRows, s)
+
+		if len(failRows) >= rowLimit {
+			break
+		}
 	}
 
-	r.C.Logger.Info("Alert failed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime), observability.ZapCtx(ctx))
-
-	// Return fail row
-	failRow, err := structpb.NewStruct(row)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert fail row to proto: %w", err)
+	if len(failRows) == 0 {
+		r.C.Logger.Info("Alert passed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime), observability.ZapCtx(ctx))
+		return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_PASS, Warnings: warnings}, nil
 	}
+
+	r.C.Logger.Info("Alert failed", zap.String("name", self.Meta.Name.Name), zap.Int("rows", len(failRows)), zap.Time("execution_time", executionTime), observability.ZapCtx(ctx))
+
 	return &runtimev1.AssertionResult{
 		Status:   runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL,
-		FailRow:  failRow,
+		FailRow:  failRows[0], // Retained for backwards compatibility; consumers should prefer FailRows.
+		FailRows: failRows,
 		Warnings: warnings,
 	}, nil
 }
@@ -851,11 +873,26 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 				break
 			}
 
+			failRows := make([]map[string]any, 0, len(current.Result.FailRows))
+			for _, r := range current.Result.FailRows {
+				failRows = append(failRows, r.AsMap())
+			}
+			// Backwards compatibility: state written before fail_rows existed only has fail_row populated.
+			if len(failRows) == 0 && current.Result.FailRow != nil {
+				failRows = append(failRows, current.Result.FailRow.AsMap())
+			}
+
+			var firstRow map[string]any
+			if len(failRows) > 0 {
+				firstRow = failRows[0]
+			}
+
 			msg = &drivers.AlertStatus{
 				DisplayName:   a.Spec.DisplayName,
 				ExecutionTime: executionTime,
 				Status:        current.Result.Status,
-				FailRow:       current.Result.FailRow.AsMap(),
+				FailRow:       firstRow,
+				FailRows:      failRows,
 			}
 		case runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR:
 			if !a.Spec.NotifyOnError {

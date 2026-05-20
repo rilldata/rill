@@ -4725,6 +4725,10 @@ definitions:
       webOpenState:
         type: string
         description: Annotation for the base64-encoded UI state to open for the report.
+      notificationRowLimit:
+        type: integer
+        format: int64
+        description: Maximum number of matching rows to include in each notification. Zero means use the runtime default.
   v1ApproveProjectAccessResponse:
     type: object
   v1BillingIssue:

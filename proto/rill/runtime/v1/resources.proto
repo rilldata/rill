@@ -705,6 +705,9 @@ message AlertSpec {
   bool notify_on_error = 17;
   bool renotify = 18;
   uint32 renotify_after_seconds = 19;
+  // Maximum number of matching rows to include in each notification (Slack, email, etc.).
+  // If unset (zero), the runtime applies a default of 10. Capped at 100 by the parser.
+  uint32 notification_row_limit = 24;
   repeated Notifier notifiers = 21;
   map<string, string> annotations = 20;
 }
@@ -736,9 +739,13 @@ message AlertExecution {
 
 message AssertionResult {
   AssertionStatus status = 1;
+  // First failing row. Retained for backwards compatibility with state written before fail_rows existed.
+  // New callers should prefer fail_rows; readers should fall back to [fail_row] when fail_rows is empty.
   google.protobuf.Struct fail_row = 2;
   string error_message = 3;
   repeated string warnings = 4;
+  // All failing rows, up to AlertSpec.notification_row_limit.
+  repeated google.protobuf.Struct fail_rows = 5;
 }
 
 enum AssertionStatus {

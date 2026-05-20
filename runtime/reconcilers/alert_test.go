@@ -164,6 +164,10 @@ SELECT '2024-01-04T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 					"country":   "Denmark",
 					"Measure 0": "4",
 				})),
+				FailRows: []*structpb.Struct{must(structpb.NewStruct(map[string]any{
+					"country":   "Denmark",
+					"Measure 0": "4",
+				}))},
 			},
 			SentNotifications: true,
 			ExecutionTime:     timestamppb.New(time.Date(2024, 1, 4, 0, 0, 0, 0, time.UTC)),
@@ -322,6 +326,10 @@ SELECT '2024-01-04T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 					"country":   "Denmark",
 					"Measure 0": "4",
 				})),
+				FailRows: []*structpb.Struct{must(structpb.NewStruct(map[string]any{
+					"country":   "Denmark",
+					"Measure 0": "4",
+				}))},
 			},
 			SentNotifications: true,
 			ExecutionTime:     timestamppb.New(time.Date(2024, 1, 4, 0, 0, 0, 0, time.UTC)),
@@ -448,6 +456,10 @@ SELECT '2024-01-04T00:00:00Z'::TIMESTAMP as __time, 'Sweden' as country
 					"country": "Sweden",
 					"__time":  "2024-01-04T00:00:00Z",
 				})),
+				FailRows: []*structpb.Struct{must(structpb.NewStruct(map[string]any{
+					"country": "Sweden",
+					"__time":  "2024-01-04T00:00:00Z",
+				}))},
 			},
 			SentNotifications: true,
 			ExecutionTime:     nil,
@@ -559,6 +571,9 @@ SELECT '2024-01-02T00:00:00Z'::TIMESTAMP as __time, 'Sweden' as country
 				FailRow: must(structpb.NewStruct(map[string]any{
 					"measure_0": 1,
 				})),
+				FailRows: []*structpb.Struct{must(structpb.NewStruct(map[string]any{
+					"measure_0": 1,
+				}))},
 			},
 			SentNotifications: true,
 			ExecutionTime:     timestamppb.New(time.Date(2024, 1, 2, 0, 0, 0, 0, time.UTC)),

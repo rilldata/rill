@@ -21,14 +21,17 @@
         </mj-text>
 
         <mj-text padding-bottom="0px">
-          Your alert triggered for <b>{{ .ExecutionTimeString }}</b>. The first row that matched your alert criteria is:
+          Your alert triggered for <b>{{ .ExecutionTimeString }}</b>. {{ if eq .RowCount 1 }}1 row matched{{ else }}{{ .RowCount }} rows matched{{ end }} your alert criteria:
         </mj-text>
 
-        <mj-text padding-bottom="0px">
-          {{ range $key, $value := .FailRow }}
-          • <b>{{ $key }}</b>: {{ $value }}<br />
-          {{ end }}
-        </mj-text>
+        <mj-table>
+          <tr style="background-color: #f7f7fa; border-bottom: 1px solid #ccc; text-align: left;">
+            {{ range $col := .Columns }}<th style="padding: 6px 10px; font-weight: bold;">{{ $col }}</th>{{ end }}
+          </tr>
+          {{ range $row := .FailRows }}<tr style="border-bottom: 1px solid #eee;">
+            {{ range $col := $.Columns }}<td style="padding: 6px 10px;">{{ index $row $col }}</td>{{ end }}
+          </tr>{{ end }}
+        </mj-table>
 
         <mj-spacer height="20px" />
 

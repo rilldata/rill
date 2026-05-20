@@ -6,7 +6,10 @@
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
   import { SnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
-  import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+  import {
+    MAX_NOTIFICATION_ROW_LIMIT,
+    type AlertFormValues,
+  } from "@rilldata/web-common/features/alerts/form-utils";
   import ScheduleForm from "@rilldata/web-common/features/scheduled-reports/ScheduleForm.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { SuperForm } from "sveltekit-superforms/client";
@@ -62,6 +65,20 @@
       id="snooze"
       label=""
       options={SnoozeOptions}
+    />
+  </FormSection>
+
+  <FormSection
+    description={`Number of matching rows to include in each notification. Defaults to 10 (max ${MAX_NOTIFICATION_ROW_LIMIT}).`}
+    title="Rows per notification"
+  >
+    <Input
+      alwaysShowError
+      errors={$errors["notificationRowLimit"]}
+      id="notificationRowLimit"
+      title="Rows per notification"
+      inputType="number"
+      bind:value={$form["notificationRowLimit"]}
     />
   </FormSection>
   {#if $hasSlackNotifier.data}

@@ -135,6 +135,8 @@ export interface V1AlertOptions {
   webOpenPath?: string;
   /** Annotation for the base64-encoded UI state to open for the report. */
   webOpenState?: string;
+  /** Maximum number of matching rows to include in each notification. Zero means use the runtime default. */
+  notificationRowLimit?: number;
 }
 
 export interface V1ApproveProjectAccessResponse {

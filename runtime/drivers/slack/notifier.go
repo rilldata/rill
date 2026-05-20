@@ -5,8 +5,11 @@ import (
 	"embed"
 	"fmt"
 	htemplate "html/template"
+	"sort"
+	"strings"
 	"text/template"
 	"time"
+	"unicode/utf8"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/admin/pkg/urlutil"
@@ -14,6 +17,13 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/slack-go/slack"
+)
+
+// Slack message size guards. Slack rejects messages above 40KB; we cap our
+// rendered table well below that to leave room for the rest of the template.
+const (
+	slackMaxTableChars = 30000
+	slackMaxCellChars  = 40
 )
 
 //go:embed templates/slack/*
@@ -121,10 +131,20 @@ func (n *notifier) SendAlertStatus(s *drivers.AlertStatus) error {
 			EditLink:            htemplate.URL(s.EditLink),
 		})
 	case runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL:
+		rows := s.FailRows
+		if len(rows) == 0 && s.FailRow != nil {
+			rows = []map[string]any{s.FailRow}
+		}
+		columns := failRowsColumns(rows)
+		tableText, truncatedRows := renderFailRowsTable(rows, columns)
 		return n.sendAlertFail(&AlertFailData{
 			DisplayName:         s.DisplayName,
 			ExecutionTimeString: s.ExecutionTime.Format(time.RFC1123),
 			FailRow:             s.FailRow,
+			FailRows:            rows,
+			RowCount:            len(rows),
+			TableText:           tableText,
+			TruncatedRows:       truncatedRows,
 			OpenLink:            htemplate.URL(s.OpenLink),
 			EditLink:            htemplate.URL(s.EditLink),
 		})
@@ -281,6 +301,114 @@ type AlertFailData struct {
 	DisplayName         string
 	ExecutionTimeString string // Will be inferred from ExecutionTime
 	FailRow             map[string]any
-	OpenLink            htemplate.URL
-	EditLink            htemplate.URL
+	FailRows            []map[string]any
+	RowCount            int
+	// TableText is the rendered fixed-width table for the matching rows. Embedded inside a Slack code block.
+	TableText string
+	// TruncatedRows is the number of rows omitted from TableText to keep the message under Slack's size limit.
+	TruncatedRows int
+	OpenLink      htemplate.URL
+	EditLink      htemplate.URL
+}
+
+// failRowsColumns returns the deterministic column order for rendering fail rows.
+// Go map iteration is unordered, so we sort keys alphabetically using the first row's keys as the schema.
+func failRowsColumns(rows []map[string]any) []string {
+	if len(rows) == 0 {
+		return nil
+	}
+	cols := make([]string, 0, len(rows[0]))
+	for k := range rows[0] {
+		cols = append(cols, k)
+	}
+	sort.Strings(cols)
+	return cols
+}
+
+// renderFailRowsTable renders rows as a fixed-width text table suitable for embedding in a
+// Slack code block. It returns the rendered table and the number of rows dropped to stay
+// under slackMaxTableChars.
+func renderFailRowsTable(rows []map[string]any, columns []string) (string, int) {
+	if len(rows) == 0 || len(columns) == 0 {
+		return "", 0
+	}
+
+	cells := make([][]string, len(rows))
+	widths := make([]int, len(columns))
+	for j, col := range columns {
+		widths[j] = utf8.RuneCountInString(col)
+	}
+	for i, row := range rows {
+		cells[i] = make([]string, len(columns))
+		for j, col := range columns {
+			v := formatCell(row[col])
+			cells[i][j] = v
+			if w := utf8.RuneCountInString(v); w > widths[j] {
+				widths[j] = w
+			}
+		}
+	}
+
+	var b strings.Builder
+	writeRow := func(vals []string) {
+		for j, v := range vals {
+			if j > 0 {
+				b.WriteString("  ")
+			}
+			b.WriteString(padRight(v, widths[j]))
+		}
+		b.WriteByte('\n')
+	}
+
+	writeRow(columns)
+	sep := make([]string, len(columns))
+	for j, w := range widths {
+		sep[j] = strings.Repeat("-", w)
+	}
+	writeRow(sep)
+
+	truncated := 0
+	for i, row := range cells {
+		// Speculatively check whether adding this row would blow the budget.
+		preview := strings.Builder{}
+		for j, v := range row {
+			if j > 0 {
+				preview.WriteString("  ")
+			}
+			preview.WriteString(padRight(v, widths[j]))
+		}
+		preview.WriteByte('\n')
+
+		if b.Len()+preview.Len() > slackMaxTableChars {
+			truncated = len(rows) - i
+			break
+		}
+		b.WriteString(preview.String())
+	}
+
+	return strings.TrimRight(b.String(), "\n"), truncated
+}
+
+// formatCell stringifies a fail-row value and truncates it to slackMaxCellChars.
+func formatCell(v any) string {
+	s := fmt.Sprintf("%v", v)
+	if v == nil {
+		s = ""
+	}
+	// Collapse newlines so they don't break the table layout.
+	s = strings.ReplaceAll(s, "\n", " ")
+	s = strings.ReplaceAll(s, "\r", " ")
+	if utf8.RuneCountInString(s) > slackMaxCellChars {
+		runes := []rune(s)
+		s = string(runes[:slackMaxCellChars-1]) + "…"
+	}
+	return s
+}
+
+func padRight(s string, width int) string {
+	pad := width - utf8.RuneCountInString(s)
+	if pad <= 0 {
+		return s
+	}
+	return s + strings.Repeat(" ", pad)
 }

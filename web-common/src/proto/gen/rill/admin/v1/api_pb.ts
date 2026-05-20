@@ -18002,6 +18002,13 @@ export class AlertOptions extends Message<AlertOptions> {
    */
   webOpenState = "";
 
+  /**
+   * Maximum number of matching rows to include in each notification. Zero means use the runtime default.
+   *
+   * @generated from field: uint32 notification_row_limit = 18;
+   */
+  notificationRowLimit = 0;
+
   constructor(data?: PartialMessage<AlertOptions>) {
     super();
     proto3.util.initPartial(data, this);
@@ -18027,6 +18034,7 @@ export class AlertOptions extends Message<AlertOptions> {
     { no: 11, name: "slack_webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 15, name: "web_open_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "web_open_state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 18, name: "notification_row_limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AlertOptions {

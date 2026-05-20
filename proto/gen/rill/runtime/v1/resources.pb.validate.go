@@ -7347,6 +7347,8 @@ func (m *AlertSpec) validate(all bool) error {
 
 	// no validation rules for RenotifyAfterSeconds
 
+	// no validation rules for NotificationRowLimit
+
 	for idx, item := range m.GetNotifiers() {
 		_, _ = idx, item
 
@@ -8160,6 +8162,40 @@ func (m *AssertionResult) validate(all bool) error {
 	}
 
 	// no validation rules for ErrorMessage
+
+	for idx, item := range m.GetFailRows() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, AssertionResultValidationError{
+						field:  fmt.Sprintf("FailRows[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, AssertionResultValidationError{
+						field:  fmt.Sprintf("FailRows[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return AssertionResultValidationError{
+					field:  fmt.Sprintf("FailRows[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	if len(errors) > 0 {
 		return AssertionResultMultiError(errors)

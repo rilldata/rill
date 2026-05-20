@@ -46949,6 +46949,8 @@ func (m *AlertOptions) validate(all bool) error {
 
 	// no validation rules for WebOpenState
 
+	// no validation rules for NotificationRowLimit
+
 	if len(errors) > 0 {
 		return AlertOptionsMultiError(errors)
 	}

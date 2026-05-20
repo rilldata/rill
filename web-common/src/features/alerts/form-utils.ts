@@ -22,7 +22,10 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import type { ValidationErrors } from "sveltekit-superforms";
 import { yup, type ValidationAdapter } from "sveltekit-superforms/adapters";
-import { object, array, string } from "yup";
+import { object, array, number, string } from "yup";
+
+export const DEFAULT_NOTIFICATION_ROW_LIMIT = 10;
+export const MAX_NOTIFICATION_ROW_LIMIT = 100;
 
 export type AlertFormValues = {
   name: string;
@@ -32,6 +35,7 @@ export type AlertFormValues = {
   criteriaOperation: V1Operation;
   evaluationInterval: string;
   snooze: string;
+  notificationRowLimit: number;
   enableSlackNotification: boolean;
   slackChannels: string[];
   slackUsers: string[];
@@ -156,6 +160,14 @@ export const alertFormValidationSchema = yup(
     ),
     criteriaOperation: string().required("Required"),
     snooze: string().required("Required"),
+    notificationRowLimit: number()
+      .required("Required")
+      .integer("Must be a whole number")
+      .min(1, "Must be at least 1")
+      .max(
+        MAX_NOTIFICATION_ROW_LIMIT,
+        `Must be at most ${MAX_NOTIFICATION_ROW_LIMIT}`,
+      ),
     slackUsers: array(string().email("Invalid email")),
     emailRecipients: array(string().email("Invalid email")),
   }),
