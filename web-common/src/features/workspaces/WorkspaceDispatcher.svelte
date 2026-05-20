@@ -3,7 +3,7 @@
   import type { EditorView } from "@codemirror/view";
   import { customYAMLwithJSONandSQL } from "@rilldata/web-common/components/editor/presets/yamlWithJsonAndSql";
   import { GeneratingMessage } from "@rilldata/web-common/components/generating-message";
-  import { generatingCanvas } from "@rilldata/web-common/features/canvas/ai-generation/generateCanvas";
+  import { generatingCanvasFilePath } from "@rilldata/web-common/features/canvas/ai-generation/generateCanvas";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import FileWorkspaceHeader from "@rilldata/web-common/features/editor/FileWorkspaceHeader.svelte";
   import { getExtensionsForFile } from "@rilldata/web-common/features/editor/getExtensionsForFile";
@@ -67,6 +67,8 @@
   let parseErrorQuery = $derived(getParseError(queryClient));
   let parseError = $derived($parseErrorQuery);
 
+  let isGeneratingThisFile = $derived($generatingCanvasFilePath === path);
+
   onMount(() => {
     expandDirectory(path);
   });
@@ -87,7 +89,7 @@
 
 <div class="flex h-full overflow-hidden">
   <div class="flex-1 overflow-hidden">
-    {#if $generatingCanvas}
+    {#if isGeneratingThisFile}
       <GeneratingMessage title="Generating your Canvas dashboard..." />
     {:else if WorkspaceComponent}
       <WorkspaceComponent {fileArtifact} />
