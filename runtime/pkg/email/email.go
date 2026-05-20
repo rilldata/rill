@@ -640,7 +640,7 @@ Hi there,
 <br /><br />
 Welcome to Rill! Your account is ready and loaded with <b>$%d in free credit</b> to explore the full platform — dashboards, metrics, embedded analytics, AI-powered exploration, and more.
 <br /><br />
-Your $%d credit covers compute at $0.15/slot/hr and $1/GB/month for managed data above 1GB. There's no time limit — your credit is only consumed when your dashboards are running. A typical project with 4 slots gives you a few weeks to build and share real dashboards with your team. Don't forget to hibernate your project when you're not using it!
+Your $%d credit covers $0.15/compute unit/hr and $1/GB storage/mo for managed data above 1GB. There's no time limit — your credit is only consumed when your dashboards are running. A typical project with 4 compute units gives you a few weeks to build and share real dashboards with your team. Don't forget to hibernate your project when you're not using it!
 `, opts.CreditAllocation, opts.CreditAllocation)),
 		ButtonText: "Open Rill Cloud",
 		ButtonLink: opts.FrontendURL,
@@ -675,7 +675,7 @@ You have about <b>$%.2f</b> of your original $%d Rill credit remaining. Once it'
 <br /><br />
 Hibernation means your dashboards pause and go offline — but nothing is deleted. Your models, data connections, and configuration all stay intact. Upgrading to Pro reactivates everything.
 <br /><br />
-The Pro plan is simple: $0.15/slot/hr for the compute you use, $1/GB/month for managed data above 1GB, no monthly minimums, and any remaining free credit carries over so nothing goes to waste.
+The Pro plan is simple: $0.15/compute unit/hr, $1/GB storage/mo for managed data above 1GB, no monthly minimums, and any remaining free credit carries over so nothing goes to waste.
 `, opts.RemainingBalance, opts.CreditAllocation)),
 		ButtonText: "Upgrade to Pro",
 		ButtonLink: opts.UpgradeURL,
@@ -709,12 +709,12 @@ Your $%d Rill credit has been fully used and your dashboards are now <a href="ht
 <br /><br />
 <b>Nothing has been deleted.</b> Your entire project — data connections, models, dashboards, and configuration — is preserved exactly as you left it.
 <br /><br />
-To bring everything back online, upgrade to the Pro plan. It takes under a minute: add a payment method, confirm the upgrade, and your dashboards reactivate with your existing slot configuration.
+To bring everything back online, upgrade to the Pro plan. It takes under a minute: add a payment method, confirm the upgrade, and your dashboards reactivate with your existing configuration.
 `, opts.CreditAllocation)),
 		ButtonText: "Upgrade to Pro",
 		ButtonLink: opts.UpgradeURL,
 		PostButton: template.HTML(`
-Pro pricing is straightforward: $0.15/slot/hr for compute, $1/GB/month for managed data above 1GB. No contracts, no seat fees. Scale up or down anytime.
+Pro pricing is straightforward: $0.15/compute unit/hr, $1/GB storage/mo for managed data above 1GB. No contracts, no seat fees. Scale up or down anytime.
 <br /><br />
 If you'd like to discuss your options or need a custom arrangement, feel free to contact us via <a href="mailto:support@rilldata.com" style="color:#4736F5">email</a>, or via chat on <a href="https://docs.rilldata.com/contact#in-app-chat" style="color:#4736F5">Rill Developer or Rill Cloud.</a>
 <br /><br />
@@ -779,7 +779,7 @@ Hi there,
 <br /><br />
 You're all set on the Rill %s plan. Your next billing cycle starts on <b>%s</b>.
 <br /><br />
-Billing is usage-based with no contracts — you'll receive a monthly invoice with a full breakdown of slot hours and data storage.
+Billing is usage-based with no contracts — you'll receive a monthly invoice with a full breakdown of compute hours and data storage.
 `, opts.PlanName, opts.BillingStartDate.Format(dateFormat))),
 		ButtonText: "View Your Billing Dashboard",
 		ButtonLink: opts.BillingURL,
