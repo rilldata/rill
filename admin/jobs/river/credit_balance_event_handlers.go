@@ -64,6 +64,7 @@ func (w *CreditBalanceDroppedWorker) Work(ctx context.Context, job *river.Job[Cr
 		OrgName:          org.Name,
 		FrontendURL:      w.admin.URLs.Frontend(),
 		UpgradeURL:       w.admin.URLs.Billing(org.Name, true),
+		CreditAllocation: int(md.CreditAllocation),
 		RemainingBalance: balance,
 	})
 	if err != nil {
@@ -125,9 +126,11 @@ func (w *CreditBalanceDepletedWorker) Work(ctx context.Context, job *river.Job[C
 	}
 
 	var subID, planID string
+	var creditAllocation float64
 	if m, ok := onTrial.Metadata.(*database.BillingIssueMetadataOnCreditTrial); ok {
 		subID = m.SubID
 		planID = m.PlanID
+		creditAllocation = m.CreditAllocation
 	}
 
 	_, err = w.admin.Biller.CancelSubscriptionsForCustomer(ctx, org.BillingCustomerID, billing.SubscriptionCancellationOptionImmediate)
@@ -183,11 +186,12 @@ func (w *CreditBalanceDepletedWorker) Work(ctx context.Context, job *river.Job[C
 	w.logger.Named("billing").Warn("trial subscription cancelled and projects hibernated due to depleted trial credits", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
 
 	err = w.admin.Email.SendCreditTrialDepleted(&email.CreditTrialDepleted{
-		ToEmail:     org.BillingEmail,
-		ToName:      org.Name,
-		OrgName:     org.Name,
-		FrontendURL: w.admin.URLs.Frontend(),
-		UpgradeURL:  w.admin.URLs.Billing(org.Name, false),
+		ToEmail:          org.BillingEmail,
+		ToName:           org.Name,
+		OrgName:          org.Name,
+		FrontendURL:      w.admin.URLs.Frontend(),
+		UpgradeURL:       w.admin.URLs.Billing(org.Name, true),
+		CreditAllocation: int(creditAllocation),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to send credit trial depleted email for org %q: %w", org.Name, err)
