@@ -2,7 +2,7 @@
 
 Your alert triggered for {{ .ExecutionTimeString }}.
 
-{{ if eq .RowCount 1 }}1 row matched your alert criteria:{{ else }}{{ .RowCount }} rows matched your alert criteria:{{ end }}
+{{ if eq .RowCount 1 }}1 row matched your alert criteria:{{ else }}{{ .RowCount }}{{ if .MoreRowsMatched }}+{{ end }} rows matched your alert criteria:{{ end }}
 
 ```
 {{ .TableText }}

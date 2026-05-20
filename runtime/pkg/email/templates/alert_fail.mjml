@@ -21,7 +21,7 @@
         </mj-text>
 
         <mj-text padding-bottom="0px">
-          Your alert triggered for <b>{{ .ExecutionTimeString }}</b>. {{ if eq .RowCount 1 }}1 row matched{{ else }}{{ .RowCount }} rows matched{{ end }} your alert criteria:
+          Your alert triggered for <b>{{ .ExecutionTimeString }}</b>. {{ if eq .RowCount 1 }}1 row matched{{ else }}{{ .RowCount }}{{ if .MoreRowsMatched }}+{{ end }} rows matched{{ end }} your alert criteria:
         </mj-text>
 
         <mj-table>

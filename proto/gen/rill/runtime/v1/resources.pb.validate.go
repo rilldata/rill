@@ -8197,6 +8197,8 @@ func (m *AssertionResult) validate(all bool) error {
 
 	}
 
+	// no validation rules for FailRowsTruncated
+
 	if len(errors) > 0 {
 		return AssertionResultMultiError(errors)
 	}

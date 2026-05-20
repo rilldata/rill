@@ -122,7 +122,7 @@
                     </tr>
                     <tr>
                       <td align="left" style="font-size:0px;padding:10px 25px;padding-bottom:0px;word-break:break-word;">
-                        <div style="font-family:Helvetica;font-size:16px;line-height:1.25;text-align:left;color:#000000;">Your alert triggered for <b>{{ .ExecutionTimeString }}</b>. {{ if eq .RowCount 1 }}1 row matched{{ else }}{{ .RowCount }} rows matched{{ end }} your alert criteria:</div>
+                        <div style="font-family:Helvetica;font-size:16px;line-height:1.25;text-align:left;color:#000000;">Your alert triggered for <b>{{ .ExecutionTimeString }}</b>. {{ if eq .RowCount 1 }}1 row matched{{ else }}{{ .RowCount }}{{ if .MoreRowsMatched }}+{{ end }} rows matched{{ end }} your alert criteria:</div>
                       </td>
                     </tr>
                     <tr>

@@ -110,6 +110,7 @@ func (c *Client) SendAlertStatus(opts *drivers.AlertStatus) error {
 			FailRow:             opts.FailRow,
 			FailRows:            rows,
 			RowCount:            len(rows),
+			MoreRowsMatched:     opts.FailRowsTruncated,
 			Columns:             columns,
 			OpenLink:            template.URL(opts.OpenLink),
 			EditLink:            template.URL(opts.EditLink),
@@ -136,6 +137,9 @@ type alertFailData struct {
 	FailRow             map[string]any
 	FailRows            []map[string]any
 	RowCount            int
+	// MoreRowsMatched is true when the alert matched more rows than were included in FailRows
+	// (i.e. the notification row limit was hit). The template renders RowCount as "N+" in that case.
+	MoreRowsMatched bool
 	// Columns is the deterministic ordering used to render the HTML table headers and cells.
 	Columns         []string
 	OpenLink        template.URL

@@ -746,6 +746,9 @@ message AssertionResult {
   repeated string warnings = 4;
   // All failing rows, up to AlertSpec.notification_row_limit.
   repeated google.protobuf.Struct fail_rows = 5;
+  // True when more rows matched the alert criteria than were included in fail_rows.
+  // Notifications surface this as a "N+ rows matched..." indicator.
+  bool fail_rows_truncated = 6;
 }
 
 enum AssertionStatus {

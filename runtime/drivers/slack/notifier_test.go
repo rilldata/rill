@@ -1,11 +1,25 @@
 package slack
 
 import (
+	"bytes"
+	"embed"
 	"strings"
 	"testing"
+	"text/template"
 
 	"github.com/stretchr/testify/require"
 )
+
+// renderAlertFailForTest renders the alert_fail.slack template against the given data. It is a thin
+// helper so that tests can assert on the actual user-facing notification body.
+func renderAlertFailForTest(t *testing.T, data *AlertFailData) string {
+	t.Helper()
+	var tfs embed.FS = templatesFS
+	tmpl := template.Must(template.New("").ParseFS(tfs, "templates/slack/*.slack"))
+	buf := new(bytes.Buffer)
+	require.NoError(t, tmpl.Lookup("alert_fail.slack").Execute(buf, data))
+	return buf.String()
+}
 
 func TestRenderFailRowsTable_SingleRow(t *testing.T) {
 	rows := []map[string]any{
@@ -86,4 +100,40 @@ func TestRenderFailRowsTable_NilCellRendersEmpty(t *testing.T) {
 	text, _ := renderFailRowsTable(rows, cols)
 	require.NotContains(t, text, "<nil>")
 	require.Contains(t, text, "ok")
+}
+
+func TestAlertFailTemplate_MoreRowsMatchedRendersPlus(t *testing.T) {
+	text := renderAlertFailForTest(t, &AlertFailData{
+		DisplayName:         "Demo",
+		ExecutionTimeString: "now",
+		RowCount:            10,
+		MoreRowsMatched:     true,
+		TableText:           "context  clicks\n-------  ------\na        1",
+	})
+	require.Contains(t, text, "10+ rows matched your alert criteria")
+	require.NotContains(t, text, "10 rows matched")
+}
+
+func TestAlertFailTemplate_ExactCountWhenNotTruncated(t *testing.T) {
+	text := renderAlertFailForTest(t, &AlertFailData{
+		DisplayName:         "Demo",
+		ExecutionTimeString: "now",
+		RowCount:            6,
+		MoreRowsMatched:     false,
+		TableText:           "context  clicks\n-------  ------\na        1",
+	})
+	require.Contains(t, text, "6 rows matched your alert criteria")
+	require.NotContains(t, text, "6+ rows matched")
+}
+
+func TestAlertFailTemplate_SingleRowWording(t *testing.T) {
+	text := renderAlertFailForTest(t, &AlertFailData{
+		DisplayName:         "Demo",
+		ExecutionTimeString: "now",
+		RowCount:            1,
+		MoreRowsMatched:     false,
+		TableText:           "context\n-------\na",
+	})
+	require.Contains(t, text, "1 row matched your alert criteria")
+	require.NotContains(t, text, "1+ rows matched")
 }

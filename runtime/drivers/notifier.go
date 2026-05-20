@@ -24,8 +24,11 @@ type AlertStatus struct {
 	// haven't migrated to FailRows yet. New consumers should read FailRows.
 	FailRow map[string]any
 	// FailRows holds all matching rows for the alert, up to AlertSpec.NotificationRowLimit.
-	FailRows        []map[string]any
-	ExecutionError  string
+	FailRows []map[string]any
+	// FailRowsTruncated is true when more rows matched the alert than were included in FailRows.
+	// Renderers surface this as a "N+ rows matched..." indicator.
+	FailRowsTruncated bool
+	ExecutionError    string
 	OpenLink        string
 	EditLink        string
 	UnsubscribeLink string

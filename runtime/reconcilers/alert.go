@@ -712,6 +712,7 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 		rowLimit = defaultAlertNotificationRowLimit
 	}
 
+	// Ask the resolver for one more row than we'll keep, so we can detect whether more rows matched than the limit.
 	res, info, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         r.C.InstanceID,
 		Resolver:           a.Spec.Resolver,
@@ -720,7 +721,7 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 			"priority":       alertQueryPriority,
 			"execution_time": executionTime,
 			"format":         true,
-			"limit":          rowLimit,
+			"limit":          rowLimit + 1,
 		},
 		Claims: &runtime.SecurityClaims{UserAttributes: queryForAttrs},
 	})
@@ -735,6 +736,7 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 	}
 
 	failRows := make([]*structpb.Struct, 0, rowLimit)
+	truncated := false
 	for {
 		row, err := res.Next()
 		if err != nil {
@@ -744,15 +746,17 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 			return nil, fmt.Errorf("failed to get row from alert resolver: %w", err)
 		}
 
+		if len(failRows) >= rowLimit {
+			// We got the probe row, so we know there were more matches than the limit.
+			truncated = true
+			break
+		}
+
 		s, err := structpb.NewStruct(row)
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert fail row to proto: %w", err)
 		}
 		failRows = append(failRows, s)
-
-		if len(failRows) >= rowLimit {
-			break
-		}
 	}
 
 	if len(failRows) == 0 {
@@ -760,13 +764,14 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 		return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_PASS, Warnings: warnings}, nil
 	}
 
-	r.C.Logger.Info("Alert failed", zap.String("name", self.Meta.Name.Name), zap.Int("rows", len(failRows)), zap.Time("execution_time", executionTime), observability.ZapCtx(ctx))
+	r.C.Logger.Info("Alert failed", zap.String("name", self.Meta.Name.Name), zap.Int("rows", len(failRows)), zap.Bool("truncated", truncated), zap.Time("execution_time", executionTime), observability.ZapCtx(ctx))
 
 	return &runtimev1.AssertionResult{
-		Status:   runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL,
-		FailRow:  failRows[0], // Retained for backwards compatibility; consumers should prefer FailRows.
-		FailRows: failRows,
-		Warnings: warnings,
+		Status:            runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL,
+		FailRow:           failRows[0], // Retained for backwards compatibility; consumers should prefer FailRows.
+		FailRows:          failRows,
+		FailRowsTruncated: truncated,
+		Warnings:          warnings,
 	}, nil
 }
 
@@ -888,11 +893,12 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 			}
 
 			msg = &drivers.AlertStatus{
-				DisplayName:   a.Spec.DisplayName,
-				ExecutionTime: executionTime,
-				Status:        current.Result.Status,
-				FailRow:       firstRow,
-				FailRows:      failRows,
+				DisplayName:       a.Spec.DisplayName,
+				ExecutionTime:     executionTime,
+				Status:            current.Result.Status,
+				FailRow:           firstRow,
+				FailRows:          failRows,
+				FailRowsTruncated: current.Result.FailRowsTruncated,
 			}
 		case runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR:
 			if !a.Spec.NotifyOnError {

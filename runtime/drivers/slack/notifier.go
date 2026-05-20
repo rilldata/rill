@@ -143,6 +143,7 @@ func (n *notifier) SendAlertStatus(s *drivers.AlertStatus) error {
 			FailRow:             s.FailRow,
 			FailRows:            rows,
 			RowCount:            len(rows),
+			MoreRowsMatched:     s.FailRowsTruncated,
 			TableText:           tableText,
 			TruncatedRows:       truncatedRows,
 			OpenLink:            htemplate.URL(s.OpenLink),
@@ -303,6 +304,9 @@ type AlertFailData struct {
 	FailRow             map[string]any
 	FailRows            []map[string]any
 	RowCount            int
+	// MoreRowsMatched is true when the alert matched more rows than were included in FailRows
+	// (i.e. the notification row limit was hit). The template renders RowCount as "N+" in that case.
+	MoreRowsMatched bool
 	// TableText is the rendered fixed-width table for the matching rows. Embedded inside a Slack code block.
 	TableText string
 	// TruncatedRows is the number of rows omitted from TableText to keep the message under Slack's size limit.

@@ -4300,6 +4300,11 @@ definitions:
         items:
           type: object
         description: All failing rows, up to AlertSpec.notification_row_limit.
+      failRowsTruncated:
+        type: boolean
+        description: |-
+          True when more rows matched the alert criteria than were included in fail_rows.
+          Notifications surface this as a "N+ rows matched..." indicator.
   v1AssertionStatus:
     type: string
     enum:

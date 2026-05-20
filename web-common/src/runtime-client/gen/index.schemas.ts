@@ -391,6 +391,8 @@ export interface V1AssertionResult {
   errorMessage?: string;
   /** All failing rows, up to AlertSpec.notificationRowLimit. */
   failRows?: V1AssertionResultFailRow[];
+  /** True when more rows matched the alert criteria than were included in failRows. */
+  failRowsTruncated?: boolean;
 }
 
 export type V1AssertionStatus =

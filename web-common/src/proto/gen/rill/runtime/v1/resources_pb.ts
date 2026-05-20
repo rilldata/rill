@@ -4266,6 +4266,14 @@ export class AssertionResult extends Message<AssertionResult> {
    */
   failRows: Struct[] = [];
 
+  /**
+   * True when more rows matched the alert criteria than were included in fail_rows.
+   * Notifications surface this as a "N+ rows matched..." indicator.
+   *
+   * @generated from field: bool fail_rows_truncated = 6;
+   */
+  failRowsTruncated = false;
+
   constructor(data?: PartialMessage<AssertionResult>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4279,6 +4287,7 @@ export class AssertionResult extends Message<AssertionResult> {
     { no: 3, name: "error_message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "warnings", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 5, name: "fail_rows", kind: "message", T: Struct, repeated: true },
+    { no: 6, name: "fail_rows_truncated", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AssertionResult {
