@@ -110,6 +110,7 @@ export interface MetricsViewSpecMeasure {
   validPercentOfTotal?: boolean;
   treatNullsAs?: string;
   dataType?: Runtimev1Type;
+  lowerIsBetter?: boolean;
 }
 
 export type MetricsViewSpecMeasureType =
