@@ -125,6 +125,10 @@ type InstanceConfig struct {
 	AIRequireTimeRange bool `mapstructure:"rill.ai.require_time_range"`
 	// AIMaxTimeRangeDays is the maximum time range allowed for AI tool queries, in days. If set to 0, there is no limit.
 	AIMaxTimeRangeDays int64 `mapstructure:"rill.ai.max_time_range_days"`
+	// AILLMRequestTimeoutSeconds is the maximum duration of a single LLM completion request.
+	AILLMRequestTimeoutSeconds uint32 `mapstructure:"rill.ai.llm_request_timeout_seconds"`
+	// AIChatTimeoutSeconds is the maximum duration of an end-to-end AI chat request.
+	AIChatTimeoutSeconds uint32 `mapstructure:"rill.ai.chat_timeout_seconds"`
 	// StrictResolverProps indicates whether to return an error when a resolver contains properties that are not recognized by the resolver implementation.
 	StrictResolverProps bool `mapstructure:"rill.strict_resolver_properties"`
 	// StrictModelProps indicates whether to return an error when a model contains unmapped properties.
@@ -205,6 +209,8 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		AIDefaultQueryLimit:                  25,
 		AIMaxQueryLimit:                      250,
 		AIRequireTimeRange:                   true,
+		AILLMRequestTimeoutSeconds:           180,
+		AIChatTimeoutSeconds:                 300,
 		ModelPartitionsWarnOnFailure:         i.Environment == "prod",
 		ModelTestsWarnOnFailure:              i.Environment == "prod",
 	}

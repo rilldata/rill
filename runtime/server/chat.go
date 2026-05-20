@@ -446,13 +446,9 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 // CompleteStreamingHandler is a HTTP handler that wraps CompleteStreaming and maps it to SSE.
 // This is required as vanguard doesn't currently map streaming RPCs to SSE, so we register this handler manually override the behavior
 func (s *Server) CompleteStreamingHandler(w http.ResponseWriter, req *http.Request) {
-	// Add timeout for AI completion
-	ctx, cancel := context.WithTimeout(req.Context(), time.Minute*5)
-	defer cancel()
-	req = req.WithContext(ctx) // Replace request context with the timed context
-
 	// Observability
 	instanceID := req.PathValue("instance_id")
+	ctx := req.Context()
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", instanceID),
 	)
@@ -462,6 +458,16 @@ func (s *Server) CompleteStreamingHandler(w http.ResponseWriter, req *http.Reque
 		http.Error(w, "action not allowed", http.StatusUnauthorized)
 		return
 	}
+
+	// Apply configured timeout for AI chat
+	cfg, err := s.runtime.InstanceConfig(ctx, instanceID)
+	if err != nil {
+		http.Error(w, "failed to load instance config", http.StatusInternalServerError)
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(cfg.AIChatTimeoutSeconds)*time.Second)
+	defer cancel()
+	req = req.WithContext(ctx)
 
 	// Build request. Note we try to support both GET and POST.
 	completeReq := &runtimev1.CompleteStreamingRequest{}

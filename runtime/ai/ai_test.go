@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
@@ -15,11 +17,51 @@ import (
 	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
 	_ "github.com/rilldata/rill/runtime/resolvers"
 )
+
+type deadlineRecordingAIService struct {
+	deadline time.Time
+}
+
+func (d *deadlineRecordingAIService) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*drivers.CompleteResult, error) {
+	var ok bool
+	d.deadline, ok = ctx.Deadline()
+	if !ok {
+		return nil, errors.New("expected deadline")
+	}
+	return &drivers.CompleteResult{
+		Message: ai.NewTextCompletionMessage(ai.RoleAssistant, "done"),
+	}, nil
+}
+
+func TestCompleteUsesConfiguredLLMRequestTimeout(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Variables: map[string]string{
+			"rill.ai.llm_request_timeout_seconds": "2",
+		},
+	})
+
+	s := newSession(t, rt, instanceID)
+	rec := &deadlineRecordingAIService{}
+	s.SetLLM(func(ctx context.Context) (drivers.AIService, func(), error) {
+		return rec, func() {}, nil
+	})
+
+	start := time.Now()
+	var out string
+	err := s.Complete(t.Context(), "test_completion", &out, &ai.CompleteOptions{
+		Messages: []*aiv1.CompletionMessage{
+			ai.NewTextCompletionMessage(ai.RoleUser, "hello"),
+		},
+	})
+	require.NoError(t, err)
+	require.WithinDuration(t, start.Add(2*time.Second), rec.deadline, time.Second)
+}
 
 // newSession sets up a new AI session for testing.
 // It is suitable for testing tool calls that do not require LLM completions.
