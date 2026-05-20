@@ -59,7 +59,17 @@ func (e *warehouseToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 		return nil, err
 	}
 
-	m := &ModelInputProperties{SQL: "SELECT * FROM " + fromClause}
+	// parse incoming properties and forward them to the input properties of the self executor
+	inputProps := &ModelInputProperties{}
+	if err := mapstructure.WeakDecode(opts.InputProperties, &inputProps); err != nil {
+		return nil, err
+	}
+	m := &ModelInputProperties{
+		SQL:                         "SELECT * FROM " + fromClause,
+		PreExec:                     inputProps.PreExec,
+		PostExec:                    inputProps.PostExec,
+		CreateSecretsFromConnectors: inputProps.CreateSecretsFromConnectors,
+	}
 	propsMap := make(map[string]any)
 	if err := mapstructure.Decode(m, &propsMap); err != nil {
 		return nil, err

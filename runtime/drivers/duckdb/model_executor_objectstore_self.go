@@ -65,7 +65,17 @@ func (e *objectStoreToSelfExecutor) modelInputProperties(ctx context.Context, op
 		warnings = append(warnings, fmt.Sprintf("Undefined fields %q in input properties. Will be ignored.", strings.Join(unused, ", ")))
 	}
 
-	m := &ModelInputProperties{}
+	// parse incoming properties and forward them to the input properties of the self executor
+	forwardProps := &ModelInputProperties{}
+	if err := mapstructure.WeakDecode(opts.InputProperties, &forwardProps); err != nil {
+		return nil, nil, err
+	}
+
+	m := &ModelInputProperties{
+		PreExec:                     forwardProps.PreExec,
+		PostExec:                    forwardProps.PostExec,
+		CreateSecretsFromConnectors: forwardProps.CreateSecretsFromConnectors,
+	}
 	var format string
 	if parsed.Format != "" {
 		format = fmt.Sprintf(".%s", parsed.Format)
@@ -154,7 +164,17 @@ func (e *objectStoreToSelfExecutorNonNative) Execute(ctx context.Context, opts *
 		return nil, err
 	}
 
-	m := &ModelInputProperties{SQL: "SELECT * FROM " + fromClause}
+	// parse incoming properties and forward them to the input properties of the self executor
+	forwardProps := &ModelInputProperties{}
+	if err := mapstructure.WeakDecode(opts.InputProperties, &forwardProps); err != nil {
+		return nil, err
+	}
+	m := &ModelInputProperties{
+		SQL:                         "SELECT * FROM " + fromClause,
+		PreExec:                     forwardProps.PreExec,
+		PostExec:                    forwardProps.PostExec,
+		CreateSecretsFromConnectors: forwardProps.CreateSecretsFromConnectors,
+	}
 	propsMap := make(map[string]any)
 	if err := mapstructure.Decode(m, &propsMap); err != nil {
 		return nil, err
