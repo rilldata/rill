@@ -254,6 +254,29 @@ func validateChartFields(chartType string, spec map[string]any, mvSpec *runtimev
 				return fmt.Errorf("invalid measure fields: %w", err)
 			}
 		}
+		// Optional enum-valued funnel fields. Cross-validation between breakdownMode
+		// and color (e.g. color "stage" requires dimension mode) is enforced by the
+		// chart renderer, which falls back to sensible defaults; we only reject typos here.
+		if breakdownMode, ok := spec["breakdownMode"]; ok {
+			if err := validateEnum("breakdownMode", breakdownMode, []string{"dimension", "measures"}); err != nil {
+				return err
+			}
+		}
+		if mode, ok := spec["mode"]; ok {
+			if err := validateEnum("mode", mode, []string{"width", "order"}); err != nil {
+				return err
+			}
+		}
+		if color, ok := spec["color"]; ok {
+			if err := validateEnum("color", color, []string{"stage", "measure", "name", "value"}); err != nil {
+				return err
+			}
+		}
+		if percentMode, ok := spec["percentMode"]; ok {
+			if err := validateEnum("percentMode", percentMode, []string{"top", "previous"}); err != nil {
+				return err
+			}
+		}
 
 	case "donut_chart", "pie_chart":
 		if colorField, ok := pathutil.GetPath(spec, "color.field"); ok {
@@ -334,6 +357,20 @@ func validateField(availableFields map[string]bool, field any) error {
 		return fmt.Errorf("field %q not found in metrics view", fieldStr)
 	}
 	return nil
+}
+
+// validateEnum checks that value is a string and one of the allowed options.
+func validateEnum(name string, value any, allowed []string) error {
+	str, ok := value.(string)
+	if !ok {
+		return fmt.Errorf("%q must be a string", name)
+	}
+	for _, a := range allowed {
+		if str == a {
+			return nil
+		}
+	}
+	return fmt.Errorf("%q must be one of %v, got %q", name, allowed, str)
 }
 
 // validateFieldsArray validates an array of field names
@@ -852,6 +889,14 @@ number_of_commits: measure
 ### 7. Funnel Chart (` + "`funnel_chart`" + `)
 **Use for:** Showing flow through a process with decreasing values at each stage or measure
 
+**Funnel-specific fields:**
+- ` + "`breakdownMode`" + ` (required): ` + "`\"dimension\"`" + ` (one measure split by a stage dimension) or ` + "`\"measures\"`" + ` (multiple measures, one per stage)
+- ` + "`mode`" + `: ` + "`\"width\"`" + ` (bar width proportional to value, default) or ` + "`\"order\"`" + ` (bars shrink by fixed ratio in rank order)
+- ` + "`color`" + `:
+  - In ` + "`dimension`" + ` mode: ` + "`\"stage\"`" + ` (distinct color per stage) or ` + "`\"measure\"`" + ` (gradient by value)
+  - In ` + "`measures`" + ` mode: ` + "`\"name\"`" + ` (distinct color per measure) or ` + "`\"value\"`" + ` (gradient by value)
+- ` + "`percentMode`" + `: ` + "`\"top\"`" + ` (default; on-bar % is relative to the top stage) or ` + "`\"previous\"`" + ` (on-bar % is relative to the prior stage). The tooltip always shows both, regardless of this setting. Choose ` + "`\"previous\"`" + ` when the user asks about stage-to-stage drop-off or step conversion; choose ` + "`\"top\"`" + ` when they ask about overall conversion from the entry point.
+
 Example Specification with 1 dimension and 1 measure breakdown
 
 Field details:
@@ -875,6 +920,7 @@ total_users_measure: measure
       "type": "quantitative"
     },
     "mode": "width",
+    "percentMode": "top",
     "stage": {
       "field": "stage",
       "limit": 15,
@@ -884,7 +930,7 @@ total_users_measure: measure
 }
 ` + "```" + `
 
-Example Specification with multiple measures breakdown
+Example Specification with multiple measures breakdown and stage-to-stage percentages
 
 Field details:
 bids: metrics_view
@@ -910,7 +956,8 @@ impressions, video_starts, video_completes: measures
       ]
     },
     "metrics_view": "bids",
-    "mode": "width"
+    "mode": "width",
+    "percentMode": "previous"
   }
 }
 ` + "```" + `
