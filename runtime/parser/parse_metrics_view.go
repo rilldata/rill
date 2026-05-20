@@ -90,7 +90,9 @@ type MetricsViewYAML struct {
 		TimeZone       string             `yaml:"time_zone"`
 		Dimensions     *FieldSelectorYAML `yaml:"dimensions"`
 		Measures       *FieldSelectorYAML `yaml:"measures"`
+		DataTimeRange  string             `yaml:"data_time_range"`
 	} `yaml:"rollups"`
+	DataTimeRange   string `yaml:"data_time_range"`
 	Security        *SecurityPolicyYAML
 	QueryAttributes map[string]string `yaml:"query_attributes"`
 	Cache           struct {
@@ -305,6 +307,13 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		_, err := rilltime.Parse(tmp.DefaultTimeRange, rilltime.ParseOptions{})
 		if err != nil {
 			return fmt.Errorf(`invalid "default_time_range": %w`, err)
+		}
+	}
+
+	if tmp.DataTimeRange != "" {
+		_, err := rilltime.Parse(tmp.DataTimeRange, rilltime.ParseOptions{})
+		if err != nil {
+			return fmt.Errorf(`invalid "data_time_range": %w`, err)
 		}
 	}
 
@@ -773,6 +782,11 @@ func (p *Parser) parseMetricsView(node *Node) error {
 				return fmt.Errorf(`rollup[%d]: invalid "time_zone" %q: %w`, i, rollup.TimeZone, err)
 			}
 		}
+		if rollup.DataTimeRange != "" {
+			if _, err := rilltime.Parse(rollup.DataTimeRange, rilltime.ParseOptions{}); err != nil {
+				return fmt.Errorf(`rollup[%d]: invalid "data_time_range": %w`, i, err)
+			}
+		}
 		// Validate and resolve dimensions
 		var dims []string
 		var dimsSelector *runtimev1.FieldSelector
@@ -812,6 +826,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			DimensionsSelector: dimsSelector,
 			Measures:           measures,
 			MeasuresSelector:   measSelector,
+			DataTimeRange:      rollup.DataTimeRange,
 		})
 		node.Refs = append(node.Refs, ResourceName{Name: rollup.Model})
 	}
@@ -864,6 +879,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	spec.AiInstructions = tmp.AIInstructions
 	spec.TimeDimension = tmp.TimeDimension
 	spec.WatermarkExpression = tmp.Watermark
+	spec.DataTimeRange = tmp.DataTimeRange
 	spec.SmallestTimeGrain = smallestTimeGrain
 	spec.FirstDayOfWeek = tmp.FirstDayOfWeek
 	spec.FirstMonthOfYear = tmp.FirstMonthOfYear

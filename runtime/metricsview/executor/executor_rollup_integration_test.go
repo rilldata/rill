@@ -543,8 +543,8 @@ explore:
 			require.Equal(t, rollupTestDailyTable, table)
 		})
 
-		t.Run("prefer_smallest_data_range", func(t *testing.T) {
-			// Two monthly rollups: wide (Jan-Mar) and narrow (Feb-Mar); query Feb-Apr picks narrow
+		t.Run("prefer_definition_order", func(t *testing.T) {
+			// Two monthly rollups, both eligible for the query. The earlier one in the rollups list wins.
 			files := map[string]string{
 				"rill.yaml":              "",
 				"models/base_events.sql": rollupTestFiles()["models/base_events.sql"],
@@ -605,8 +605,8 @@ explore:
 				},
 			}
 			table := queryAndGetTable(t, e, qry)
-			// Both monthly rollups cover the range; narrow has smaller data range
-			require.Equal(t, "rollup_month_narrow", table)
+			// Both monthly rollups cover the range; wide is defined first so it wins under the definition-order tiebreaker.
+			require.Equal(t, "rollup_month_wide", table)
 		})
 	})
 
@@ -743,6 +743,182 @@ explore:
 			}
 			table := queryAndGetTable(t, e, qry)
 			require.Equal(t, rollupTestBaseTable, table)
+		})
+	})
+
+	t.Run("data_time_range", func(t *testing.T) {
+		t.Run("hot_cold_split", func(t *testing.T) {
+			// Two day-grain rollups with disjoint declared ranges. Distinct physical tables so the
+			// selector picks the one whose declared range covers the query.
+			files := map[string]string{
+				"rill.yaml":              "",
+				"models/base_events.sql": rollupTestFiles()["models/base_events.sql"],
+				"models/rollup_day_hot.sql": `
+SELECT date_trunc('day', timestamp) AS timestamp, publisher, domain,
+	SUM(impressions) AS impressions, SUM(clicks) AS clicks
+FROM base_events GROUP BY 1, 2, 3`,
+				"models/rollup_day_cold.sql": `
+SELECT date_trunc('day', timestamp) AS timestamp, publisher, domain,
+	SUM(impressions) AS impressions, SUM(clicks) AS clicks
+FROM base_events GROUP BY 1, 2, 3`,
+				"metrics_views/mv.yaml": `
+type: metrics_view
+version: 1
+model: base_events
+timeseries: timestamp
+data_time_range: "2024-01-01 to 2024-04-01"
+dimensions:
+  - name: publisher
+    column: publisher
+  - name: domain
+    column: domain
+measures:
+  - name: total_impressions
+    expression: 'SUM("impressions")'
+rollups:
+  - model: rollup_day_hot
+    time_grain: day
+    data_time_range: "2024-02-01 to 2024-04-01"
+    dimensions: [publisher, domain]
+    measures: [total_impressions]
+  - model: rollup_day_cold
+    time_grain: day
+    data_time_range: "2024-01-01 to 2024-02-01"
+    dimensions: [publisher, domain]
+    measures: [total_impressions]
+explore:
+  skip: true`,
+			}
+			customRT, customID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{Files: files})
+			testruntime.RequireReconcileState(t, customRT, customID, 5, 0, 0)
+			e := newRollupTestExecutor(t, customRT, customID)
+			defer e.Close()
+
+			// Query inside the hot window (Feb-Mar) → hot's declared range covers it; cold's does not.
+			hotQry := &metricsview.Query{
+				Dimensions: []metricsview.Dimension{
+					{Name: "timestamp", Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainDay}}},
+				},
+				Measures: []metricsview.Measure{{Name: "total_impressions"}},
+				TimeRange: &metricsview.TimeRange{
+					Start: time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+					End:   time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC),
+				},
+			}
+			require.Equal(t, "rollup_day_hot", queryAndGetTable(t, e, hotQry))
+
+			// Query inside the cold window (Jan) → only cold's declared range covers it.
+			coldQry := &metricsview.Query{
+				Dimensions: []metricsview.Dimension{
+					{Name: "timestamp", Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainDay}}},
+				},
+				Measures: []metricsview.Measure{{Name: "total_impressions"}},
+				TimeRange: &metricsview.TimeRange{
+					Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+					End:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+				},
+			}
+			require.Equal(t, "rollup_day_cold", queryAndGetTable(t, e, coldQry))
+
+			// Query straddling both windows → neither rollup covers the full range; falls back to base.
+			straddleQry := &metricsview.Query{
+				Dimensions: []metricsview.Dimension{
+					{Name: "timestamp", Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainDay}}},
+				},
+				Measures: []metricsview.Measure{{Name: "total_impressions"}},
+				TimeRange: &metricsview.TimeRange{
+					Start: time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC),
+					End:   time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC),
+				},
+			}
+			require.Equal(t, rollupTestBaseTable, queryAndGetTable(t, e, straddleQry))
+		})
+
+		t.Run("paca_priority", func(t *testing.T) {
+			// Three day-grain rollups with overlapping dimensions. A publisher-only query is eligible
+			// against all three; definition order picks the first (least-granular by dim count).
+			// A publisher+domain query is only eligible against the latter two; definition order picks the second.
+			files := map[string]string{
+				"rill.yaml":              "",
+				"models/base_events.sql": rollupTestFiles()["models/base_events.sql"],
+				"models/rollup_pub.sql": `
+SELECT date_trunc('day', timestamp) AS timestamp, publisher,
+	SUM(impressions) AS impressions, SUM(clicks) AS clicks
+FROM base_events GROUP BY 1, 2`,
+				"models/rollup_pubdom.sql": `
+SELECT date_trunc('day', timestamp) AS timestamp, publisher, domain,
+	SUM(impressions) AS impressions, SUM(clicks) AS clicks
+FROM base_events GROUP BY 1, 2, 3`,
+				"models/rollup_pubdomctry.sql": `
+SELECT date_trunc('day', timestamp) AS timestamp, publisher, domain, country,
+	SUM(impressions) AS impressions, SUM(clicks) AS clicks
+FROM base_events GROUP BY 1, 2, 3, 4`,
+				"metrics_views/mv.yaml": `
+type: metrics_view
+version: 1
+model: base_events
+timeseries: timestamp
+data_time_range: "2024-01-01 to 2024-04-01"
+dimensions:
+  - name: publisher
+    column: publisher
+  - name: domain
+    column: domain
+  - name: country
+    column: country
+measures:
+  - name: total_impressions
+    expression: 'SUM("impressions")'
+rollups:
+  - model: rollup_pub
+    time_grain: day
+    data_time_range: "2024-01-01 to 2024-04-01"
+    dimensions: [publisher]
+    measures: [total_impressions]
+  - model: rollup_pubdom
+    time_grain: day
+    data_time_range: "2024-01-01 to 2024-04-01"
+    dimensions: [publisher, domain]
+    measures: [total_impressions]
+  - model: rollup_pubdomctry
+    time_grain: day
+    data_time_range: "2024-01-01 to 2024-04-01"
+    dimensions: [publisher, domain, country]
+    measures: [total_impressions]
+explore:
+  skip: true`,
+			}
+			customRT, customID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{Files: files})
+			testruntime.RequireReconcileState(t, customRT, customID, 6, 0, 0)
+			e := newRollupTestExecutor(t, customRT, customID)
+			defer e.Close()
+
+			pubQry := &metricsview.Query{
+				Dimensions: []metricsview.Dimension{
+					{Name: "publisher"},
+					{Name: "timestamp", Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainDay}}},
+				},
+				Measures: []metricsview.Measure{{Name: "total_impressions"}},
+				TimeRange: &metricsview.TimeRange{
+					Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+					End:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+				},
+			}
+			require.Equal(t, "rollup_pub", queryAndGetTable(t, e, pubQry))
+
+			pubDomQry := &metricsview.Query{
+				Dimensions: []metricsview.Dimension{
+					{Name: "publisher"},
+					{Name: "domain"},
+					{Name: "timestamp", Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainDay}}},
+				},
+				Measures: []metricsview.Measure{{Name: "total_impressions"}},
+				TimeRange: &metricsview.TimeRange{
+					Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+					End:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+				},
+			}
+			require.Equal(t, "rollup_pubdom", queryAndGetTable(t, e, pubDomQry))
 		})
 	})
 

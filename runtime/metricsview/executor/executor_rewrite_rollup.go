@@ -67,7 +67,8 @@ const (
 //     to the rollup grain (to prevent the last bucket from pulling in extra data).
 //
 //  4. Selection: among eligible rollups, prefer the coarsest grain (fewer rows to scan).
-//     On ties, prefer the rollup with the smallest data range (tighter coverage).
+//     On ties, prefer the rollup defined earlier in the metrics view's rollups list — authors use this
+//     to express priority among same-grain rollups with overlapping dimensions.
 //
 // The selected rollup is returned as a synthetic MetricsViewSpec that points to the rollup table.
 // The caller uses this spec to build the query AST, so the rest of the query pipeline remains same.
@@ -76,7 +77,7 @@ const (
 type rollupCandidate struct {
 	rollup     *runtimev1.MetricsViewSpec_Rollup
 	grainOrder int
-	dataRange  time.Duration // max - min; 0 if no time dimension
+	index      int // position in MetricsViewSpec.Rollups; used as the secondary tiebreaker (earlier wins)
 }
 
 // rewriteQueryForRollup checks if a rollup table can satisfy the query.
@@ -148,7 +149,7 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 	tsFetched := false
 
 	var best *rollupCandidate
-	for _, rollup := range e.metricsView.Rollups {
+	for i, rollup := range e.metricsView.Rollups {
 		if rollup.Table == "" {
 			return nil, fmt.Errorf("rollup for model %q has no resolved table", rollup.Model)
 		}
@@ -277,17 +278,16 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 		candidateSpan.SetAttributes(attribute.String("rollup.eligible", "true"))
 		candidateSpan.End()
 
-		dataRange := rollupMax.Sub(rollupMin)
 		c := &rollupCandidate{
 			rollup:     rollup,
 			grainOrder: grainOrder[rollup.TimeGrain],
-			dataRange:  dataRange,
+			index:      i,
 		}
 
-		// Selection priority: coarsest grain (primary); smallest data range (secondary tiebreaker)
+		// Selection priority: coarsest grain (primary); earlier definition order (secondary tiebreaker)
 		if best == nil || c.grainOrder > best.grainOrder {
 			best = c
-		} else if c.grainOrder == best.grainOrder && c.dataRange > 0 && (best.dataRange == 0 || c.dataRange < best.dataRange) {
+		} else if c.grainOrder == best.grainOrder && c.index < best.index {
 			best = c
 		}
 	}

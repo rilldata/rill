@@ -1548,6 +1548,15 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    */
   rollups: MetricsViewSpec_Rollup[] = [];
 
+  /**
+   * Optional rilltime expression describing the time range covered by the base table.
+   * When set, the base table's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
+   * Evaluated with `now` = current time, `earliest` = zero time, `latest`/`watermark` = current time.
+   *
+   * @generated from field: string data_time_range = 36;
+   */
+  dataTimeRange = "";
+
   constructor(data?: PartialMessage<MetricsViewSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1582,6 +1591,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 35, name: "cache_timestamps_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 33, name: "query_attributes", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 34, name: "rollups", kind: "message", T: MetricsViewSpec_Rollup, repeated: true },
+    { no: 36, name: "data_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec {
@@ -2224,6 +2234,15 @@ export class MetricsViewSpec_Rollup extends Message<MetricsViewSpec_Rollup> {
    */
   measuresSelector?: FieldSelector;
 
+  /**
+   * Optional rilltime expression describing the time range covered by the rollup.
+   * When set, the rollup's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
+   * Evaluated with `now` = current time, `earliest` = zero time, `latest`/`watermark` = current time.
+   *
+   * @generated from field: string data_time_range = 11;
+   */
+  dataTimeRange = "";
+
   constructor(data?: PartialMessage<MetricsViewSpec_Rollup>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2242,6 +2261,7 @@ export class MetricsViewSpec_Rollup extends Message<MetricsViewSpec_Rollup> {
     { no: 8, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 9, name: "dimensions_selector", kind: "message", T: FieldSelector },
     { no: 10, name: "measures_selector", kind: "message", T: FieldSelector },
+    { no: 11, name: "data_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Rollup {

@@ -3871,6 +3871,12 @@ definitions:
       measuresSelector:
         $ref: '#/definitions/v1FieldSelector'
         description: Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+      dataTimeRange:
+        type: string
+        description: |-
+          Optional rilltime expression describing the time range covered by the rollup.
+          When set, the rollup's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
+          Evaluated with `now` = current time, `earliest` = zero time, `latest`/`watermark` = current time.
     description: |-
       Pre-aggregated rollup that can be used to accelerate queries.
       The system automatically routes queries to a rollup when the query can be satisfied from the pre-aggregated data.
@@ -6519,6 +6525,12 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/MetricsViewSpecRollup'
+      dataTimeRange:
+        type: string
+        description: |-
+          Optional rilltime expression describing the time range covered by the base table.
+          When set, the base table's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
+          Evaluated with `now` = current time, `earliest` = zero time, `latest`/`watermark` = current time.
   v1MetricsViewSpecAnnotation:
     type: object
     properties:

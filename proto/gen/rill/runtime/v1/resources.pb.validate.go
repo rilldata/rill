@@ -3439,6 +3439,8 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	}
 
+	// no validation rules for DataTimeRange
+
 	if m.CacheEnabled != nil {
 		// no validation rules for CacheEnabled
 	}
@@ -13605,6 +13607,8 @@ func (m *MetricsViewSpec_Rollup) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for DataTimeRange
 
 	if len(errors) > 0 {
 		return MetricsViewSpec_RollupMultiError(errors)
