@@ -13,7 +13,7 @@ import (
 
 const (
 	defaultAILLMRequestTimeoutSeconds uint32 = 180  // 3 minutes
-	defaultAIChatTimeoutSeconds       uint32 = 300  // 10 minutes
+	defaultAIChatTimeoutSeconds       uint32 = 300  // 5 minutes
 	maxAILLMRequestTimeoutSeconds     uint32 = 1800 // 30 minutes
 	maxAIChatTimeoutSeconds           uint32 = 1800 // 30 minutes
 )
