@@ -298,6 +298,8 @@ func timeoutSelector(fullMethodName string) time.Duration {
 	}
 
 	if fullMethodName == runtimev1.RuntimeService_Complete_FullMethodName || fullMethodName == runtimev1.RuntimeService_CompleteStreaming_FullMethodName {
+		// Applies only to native gRPC clients (e.g. the `rill chat` CLI).
+		// The HTTP/SSE path at /v1/instances/{id}/ai/complete/stream is served by CompleteStreamingHandler and uses its own timeout from rill.ai.chat_timeout_seconds, capped at 1800s in Instance.Config.
 		return time.Minute * 10
 	}
 

@@ -11,6 +11,13 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
+const (
+	defaultAILLMRequestTimeoutSeconds uint32 = 180  // 3 minutes
+	defaultAIChatTimeoutSeconds       uint32 = 300  // 10 minutes
+	maxAILLMRequestTimeoutSeconds     uint32 = 1800 // 30 minutes
+	maxAIChatTimeoutSeconds           uint32 = 1800 // 30 minutes
+)
+
 // RegistryStore is implemented by drivers capable of storing and looking up instances and repos.
 type RegistryStore interface {
 	FindInstances(ctx context.Context) ([]*Instance, error)
@@ -125,9 +132,9 @@ type InstanceConfig struct {
 	AIRequireTimeRange bool `mapstructure:"rill.ai.require_time_range"`
 	// AIMaxTimeRangeDays is the maximum time range allowed for AI tool queries, in days. If set to 0, there is no limit.
 	AIMaxTimeRangeDays int64 `mapstructure:"rill.ai.max_time_range_days"`
-	// AILLMRequestTimeoutSeconds is the maximum duration of a single LLM completion request.
+	// AILLMRequestTimeoutSeconds is the maximum duration of a single LLM completion request. If set to 0, the default is used. Capped at 1800 (30 minutes).
 	AILLMRequestTimeoutSeconds uint32 `mapstructure:"rill.ai.llm_request_timeout_seconds"`
-	// AIChatTimeoutSeconds is the maximum duration of an end-to-end AI chat request.
+	// AIChatTimeoutSeconds is the maximum duration of an end-to-end AI chat request. If set to 0, the default is used. Capped at 1800 (30 minutes).
 	AIChatTimeoutSeconds uint32 `mapstructure:"rill.ai.chat_timeout_seconds"`
 	// StrictResolverProps indicates whether to return an error when a resolver contains properties that are not recognized by the resolver implementation.
 	StrictResolverProps bool `mapstructure:"rill.strict_resolver_properties"`
@@ -209,8 +216,8 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		AIDefaultQueryLimit:                  25,
 		AIMaxQueryLimit:                      250,
 		AIRequireTimeRange:                   true,
-		AILLMRequestTimeoutSeconds:           180,
-		AIChatTimeoutSeconds:                 300,
+		AILLMRequestTimeoutSeconds:           defaultAILLMRequestTimeoutSeconds,
+		AIChatTimeoutSeconds:                 defaultAIChatTimeoutSeconds,
 		ModelPartitionsWarnOnFailure:         i.Environment == "prod",
 		ModelTestsWarnOnFailure:              i.Environment == "prod",
 	}
@@ -231,6 +238,18 @@ func (i *Instance) Config() (InstanceConfig, error) {
 	err := mapstructure.WeakDecode(vars, &res)
 	if err != nil {
 		return InstanceConfig{}, fmt.Errorf("failed to parse instance config: %w", err)
+	}
+
+	// timeout of 0 has no useful meaning (it would cause an immediate deadline), treat 0 as "the default". Then cap to an upper bound.
+	if res.AILLMRequestTimeoutSeconds == 0 {
+		res.AILLMRequestTimeoutSeconds = defaultAILLMRequestTimeoutSeconds
+	} else if res.AILLMRequestTimeoutSeconds > maxAILLMRequestTimeoutSeconds {
+		res.AILLMRequestTimeoutSeconds = maxAILLMRequestTimeoutSeconds
+	}
+	if res.AIChatTimeoutSeconds == 0 {
+		res.AIChatTimeoutSeconds = defaultAIChatTimeoutSeconds
+	} else if res.AIChatTimeoutSeconds > maxAIChatTimeoutSeconds {
+		res.AIChatTimeoutSeconds = maxAIChatTimeoutSeconds
 	}
 
 	return res, nil
