@@ -3,6 +3,7 @@
   import TimeSeriesChart from "@rilldata/web-common/components/time-series-chart/TimeSeriesChart.svelte";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import type { Annotation } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/annotation-utils";
+  import { qualitativeColorsArray } from "@rilldata/web-common/features/themes/palette-store";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { formatGrainBucket } from "@rilldata/web-common/lib/time/ranges/formatter";
   import type {
@@ -207,10 +208,12 @@
   $: dimTooltipEntries =
     isComparingDimension && hoveredIndex >= 0
       ? dimensionData
-          .map((dim) => ({
+          .map((dim, i) => ({
             label: dim.dimensionValue ?? "null",
             value: dim.data[hoveredIndex]?.value ?? null,
-            color: dim.color,
+            color:
+              $qualitativeColorsArray[i % $qualitativeColorsArray.length] ||
+              dim.color,
           }))
           .filter((e) => e.value !== null)
           .sort((a, b) => (b.value ?? 0) - (a.value ?? 0))
