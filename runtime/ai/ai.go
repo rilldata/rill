@@ -98,6 +98,12 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 		return nil, fmt.Errorf("failed to get instance %q: %w", opts.InstanceID, err)
 	}
 
+	// Resolve instance config once for the lifetime of this session.
+	instanceCfg, err := instance.Config()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read instance config: %w", err)
+	}
+
 	// Open catalog
 	catalog, release, err := r.Runtime.Catalog(ctx, opts.InstanceID)
 	if err != nil {
@@ -193,6 +199,7 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 		logger:              logger,
 		activity:            activityClient,
 		projectInstructions: instance.AIInstructions,
+		llmRequestTimeout:   time.Duration(instanceCfg.AILLMRequestTimeoutSeconds) * time.Second,
 		acquireLLM: func(ctx context.Context) (drivers.AIService, func(), error) {
 			return r.Runtime.AI(ctx, opts.InstanceID)
 		},
@@ -517,6 +524,7 @@ type BaseSession struct {
 	logger              *zap.Logger
 	activity            *activity.Client
 	projectInstructions string
+	llmRequestTimeout   time.Duration
 	acquireLLM          func(ctx context.Context) (drivers.AIService, func(), error)
 	acquireCatalog      func(ctx context.Context) (drivers.CatalogStore, func(), error)
 
@@ -1129,12 +1137,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 		return errors.New("max iterations must be greater than 1 when using tools")
 	}
 
-	// Resolve the configured LLM request timeout.
-	cfg, err := s.runner.Runtime.InstanceConfig(ctx, s.instanceID)
-	if err != nil {
-		return fmt.Errorf("failed to get instance config: %w", err)
-	}
-	llmRequestTimeout := time.Duration(cfg.AILLMRequestTimeoutSeconds) * time.Second
+	llmRequestTimeout := s.llmRequestTimeout
 
 	// Prepare tool definitions.
 	tools := make([]*aiv1.Tool, 0, len(opts.Tools))
@@ -1366,7 +1369,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 		return outVal, nil
 	}
 
-	_, err = s.Call(ctx, &CallOptions{
+	_, err := s.Call(ctx, &CallOptions{
 		Role:    RoleAssistant,
 		Name:    name,
 		Unwrap:  opts.UnwrapCall,
