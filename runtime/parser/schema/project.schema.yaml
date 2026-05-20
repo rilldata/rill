@@ -1395,12 +1395,12 @@ definitions:
             description: Raw SQL query to run against source
           pre_exec:
             type: string
-            description: Refers to SQL queries to run before the main query, available for DuckDB-based and ClickHouse-based models. (optional). Ensure pre_exec queries are idempotent. Use IF NOT EXISTS statements when applicable.
+            description: SQL queries to run on the output OLAP engine (DuckDB or ClickHouse) before the main query. (optional). Ensure pre_exec queries are idempotent. Use IF NOT EXISTS statements when applicable.
             examples:
               - pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES)
           post_exec:
             type: string
-            description: Refers to a SQL query that is run after the main query, available for DuckDB-based and ClickHouse-based models. (optional). Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable.
+            description: SQL query to run on the output OLAP engine (DuckDB or ClickHouse) after the main query. (optional). Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable.
             examples:
               - post_exec: DETACH DATABASE IF EXISTS postgres_db
           create_secrets_from_connectors:
@@ -1822,10 +1822,10 @@ definitions:
             description: 'Format of the data source (e.g., csv, json, parquet).'
           pre_exec:
             type: string
-            description: 'refers to SQL queries to run before the main query, available for DuckDB-based and ClickHouse-based models. _(optional)_. Ensure `pre_exec` queries are idempotent. Use `IF NOT EXISTS` statements when applicable.'
+            description: 'SQL queries to run on the output OLAP engine (DuckDB or ClickHouse) before the main query. _(optional)_. Ensure `pre_exec` queries are idempotent. Use `IF NOT EXISTS` statements when applicable.'
           post_exec:
             type: string
-            description: 'refers to a SQL query that is run after the main query, available for DuckDB-based and ClickHouse-based models. _(optional)_. Ensure `post_exec` queries are idempotent. Use `IF EXISTS` statements when applicable.'
+            description: 'SQL query to run on the output OLAP engine (DuckDB or ClickHouse) after the main query. _(optional)_. Ensure `post_exec` queries are idempotent. Use `IF EXISTS` statements when applicable.'
             examples:
             - pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES);
               sql: SELECT * FROM postgres_query('postgres_db', 'SELECT * FROM USERS')
