@@ -1,4 +1,8 @@
 import {
+  isPinned,
+  isManaged,
+} from "@rilldata/web-common/features/entity-management/actions/protected-files";
+import {
   extractFileExtension,
   splitFolderAndFileName,
 } from "@rilldata/web-common/features/entity-management/file-path-utils";
@@ -19,7 +23,6 @@ import {
   type V1Resource,
   type V1ResourceName,
   getRuntimeServiceGetResourceQueryKey,
-  runtimeServiceGetResource,
   type V1GetResourceResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -40,8 +43,6 @@ import { debounce } from "@rilldata/web-common/lib/create-debouncer";
 import { AsyncSaveState } from "./async-save-state";
 import type { EditorSelection } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
-import type { PartialMessage } from "@bufbuild/protobuf";
-import type { GetResourceRequest } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb.ts";
 
 const UNSUPPORTED_EXTENSIONS = [
   // Data formats
@@ -91,6 +92,12 @@ export class FileArtifact {
   readonly fileName: string;
   readonly disableAutoSave: boolean;
   readonly autoSave: Writable<boolean>;
+  // Path is locked: file can't be renamed or deleted, and other files can't
+  // be renamed onto this path.
+  readonly pinned: boolean;
+  // Content is managed outside of editors.
+  // Currently **/.*.env files are managed from project settings page on cloud editor
+  readonly managed: boolean;
   readonly snapshot: Writable<{
     scroll?: ReturnType<EditorView["scrollSnapshot"]>;
     selection?: EditorSelection;
@@ -124,6 +131,9 @@ export class FileArtifact {
     this.fileTypeUnsupported = UNSUPPORTED_EXTENSIONS.includes(
       this.fileExtension,
     );
+
+    this.pinned = isPinned(filePath);
+    this.managed = isManaged(filePath);
   }
 
   /**
@@ -332,27 +342,6 @@ export class FileArtifact {
       ).subscribe(set),
     ) as ReturnType<typeof useResource<V1Resource>>;
   };
-
-  async fetchResource(queryClient: QueryClient) {
-    const resourceName = get(this.resourceName);
-    if (!resourceName) return undefined;
-
-    const req: Omit<PartialMessage<GetResourceRequest>, "instanceId"> = {
-      name: {
-        kind: resourceName.kind,
-        name: resourceName.name,
-      },
-    };
-    const resp = await queryClient.fetchQuery({
-      queryKey: getRuntimeServiceGetResourceQueryKey(
-        this.client.instanceId,
-        req,
-      ),
-      queryFn: () => runtimeServiceGetResource(this.client, req),
-      staleTime: Infinity, // Always try to get from cache
-    });
-    return resp.resource;
-  }
 
   getParseError = (
     queryClient: QueryClient,

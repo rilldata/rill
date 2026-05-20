@@ -166,7 +166,22 @@ func validateFunnelChart(props map[string]any, metricsViews map[string]*runtimev
 		}
 	}
 
-	return validateOptionalDimensionField(mv, mvn, props, "stage.field")
+	if err := validateOptionalDimensionField(mv, mvn, props, "stage.field"); err != nil {
+		return err
+	}
+
+	// Optional enum-valued funnel fields. The renderer falls back to defaults for
+	// unknown values, but we reject typos here so authors get a clear error.
+	if err := validateOptionalStringEnum(props, "breakdownMode", []string{"dimension", "measures"}); err != nil {
+		return err
+	}
+	if err := validateOptionalStringEnum(props, "mode", []string{"width", "order"}); err != nil {
+		return err
+	}
+	if err := validateOptionalStringEnum(props, "color", []string{"stage", "measure", "name", "value"}); err != nil {
+		return err
+	}
+	return validateOptionalStringEnum(props, "percentMode", []string{"top", "previous"})
 }
 
 // validateHeatmap validates properties for heatmap.
@@ -474,6 +489,24 @@ func getOptionalPathString(props map[string]any, path string) (string, bool, err
 		return "", false, fmt.Errorf("renderer property %q is malformed: must be a string", path)
 	}
 	return s, true, nil
+}
+
+// validateOptionalStringEnum validates that an optional string field at the given
+// path, if present, equals one of the allowed values.
+func validateOptionalStringEnum(props map[string]any, path string, allowed []string) error {
+	value, ok, err := getOptionalPathString(props, path)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return nil
+	}
+	for _, a := range allowed {
+		if value == a {
+			return nil
+		}
+	}
+	return fmt.Errorf("renderer property %q must be one of %v, got %q", path, allowed, value)
 }
 
 // metricsViewHasDimension returns true if the metrics view has a dimension with the given name.

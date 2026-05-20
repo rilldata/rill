@@ -674,6 +674,7 @@ funnel_chart:
   breakdownMode: dimension
   color: stage
   mode: width
+  percentMode: top
   stage:
     field: funnel_stage
     type: nominal
@@ -683,7 +684,7 @@ funnel_chart:
     type: quantitative
 ```
 
-**With multiple measures breakdown:**
+**With multiple measures breakdown and step-to-step percentages:**
 
 ```yaml
 funnel_chart:
@@ -692,6 +693,7 @@ funnel_chart:
   breakdownMode: measures
   color: value
   mode: width
+  percentMode: previous
   measure:
     field: impressions
     type: quantitative
@@ -705,6 +707,11 @@ funnel_chart:
 **Breakdown modes and color options:**
 - `breakdownMode: dimension` with `color: stage` (different colors per stage) or `color: measure` (similar colors by value)
 - `breakdownMode: measures` with `color: name` (different colors per measure) or `color: value` (similar colors by value)
+
+**Percent mode (`percentMode`):**
+- `top` (default): the on-bar percentage label is each stage's value as a share of the top stage. Use for overall conversion ("how many of the entry-point users reached this stage").
+- `previous`: the on-bar percentage label is each stage's value as a share of the immediately prior stage. Use for stage-to-stage drop-off ("what fraction of the previous stage continued").
+- The tooltip always shows both `% of top` and `% of previous` regardless of this setting, so users can disambiguate without the author surfacing both.
 
 ### Pivot
 

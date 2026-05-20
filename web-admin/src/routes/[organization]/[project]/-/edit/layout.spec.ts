@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { isRedirect } from "@sveltejs/kit";
+import { CreateProjectBranchName } from "@rilldata/web-admin/features/projects/publish-project";
 import { load } from "./+layout";
 
 const { isProjectWelcomeStepMock } = vi.hoisted(() => ({
@@ -40,7 +41,9 @@ describe("edit/+layout load", () => {
     expect(isRedirect(result)).toBe(true);
     if (!isRedirect(result)) return;
     expect(result.status).toBe(307);
-    expect(result.location).toBe(`/${ORG}/${PROJECT}/@dev/-/edit/welcome`);
+    expect(result.location).toBe(
+      `/${ORG}/${PROJECT}/@${CreateProjectBranchName}/-/edit/welcome`,
+    );
   });
 
   it("does not redirect when already on the welcome page", async () => {

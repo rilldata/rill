@@ -1,8 +1,22 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import { createRuntimeServiceAnalyzeConnectors } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   let { children }: { children: Snippet } = $props();
+
+  const runtimeClient = useRuntimeClient();
+
+  // Prefetch connectors and load into cache, but do not show a spinner,
+  // it can be a bit jarring to see a lot of spinners
+  const connectorsQuery = createRuntimeServiceAnalyzeConnectors(
+    runtimeClient,
+    {},
+  );
 </script>
+
+<!-- Trigger load with hidden div so query is fired -->
+<div class="hidden">${$connectorsQuery.data}</div>
 
 <div class="flex size-full overflow-hidden">
   <div class="scroll">

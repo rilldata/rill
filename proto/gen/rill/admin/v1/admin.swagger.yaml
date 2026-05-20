@@ -509,6 +509,28 @@ paths:
               billingEmail:
                 type: string
       x-visibility: public
+  /v1/orgs/{org}/billing/credits:
+    get:
+      summary: GetBillingCreditBalance returns the organization's remaining trial credit balance
+      operationId: AdminService_GetBillingCreditBalance
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetBillingCreditBalanceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
   /v1/orgs/{org}/billing/issues:
     get:
       summary: ListOrganizationBillingIssues lists all the billing issues for the organization
@@ -1205,8 +1227,14 @@ paths:
               devSlots:
                 type: string
                 format: int64
+              devTtlSeconds:
+                type: string
+                format: int64
               superuserForceAccess:
                 type: boolean
+              overrideDiskGb:
+                type: string
+                format: int64
       x-visibility: public
   /v1/orgs/{org}/projects/{project}/alerts:
     post:
@@ -1574,6 +1602,69 @@ paths:
                 description: |-
                   Whether the deployment is editable and the edited changes are persisted back to the git repo.
                   Can't be set for `prod` deployments.
+  /v1/orgs/{org}/projects/{project}/github/pr:
+    post:
+      summary: CreateGithubPullRequest creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
+      operationId: AdminService_CreateGithubPullRequest
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateGithubPullRequestResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              branch:
+                type: string
+                title: The head branch for the PR
+              title:
+                type: string
+                title: Optional title of the PR. If not set, a default title will be used
+              body:
+                type: string
+                title: / Optional body of the PR
+  /v1/orgs/{org}/projects/{project}/github/pr/{branch}:
+    get:
+      summary: GetGithubPullRequest returns the status of the PR for the specified branch, if it exists.
+      operationId: AdminService_GetGithubPullRequest
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetGithubPullRequestResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: branch
+          in: path
+          required: true
+          type: string
   /v1/orgs/{org}/projects/{project}/hibernate:
     post:
       summary: HibernateProject hibernates a project by tearing down its deployments.
@@ -3839,6 +3930,25 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1SudoUpdateOrganizationBillingCustomerRequest'
+  /v1/superuser/organization/billing/report-usage:
+    post:
+      summary: SudoReportUsage reports a mock usage event for an organization.
+      operationId: AdminService_SudoReportUsage
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoReportUsageResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoReportUsageRequest'
   /v1/superuser/organization/custom-domain:
     patch:
       summary: |-
@@ -3861,15 +3971,15 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1SudoUpdateOrganizationCustomDomainRequest'
-  /v1/superuser/organization/trial/extend:
+  /v1/superuser/organization/trial/grant-credits:
     post:
-      summary: SudoExtendTrial extends the trial period for an organization
-      operationId: AdminService_SudoExtendTrial
+      summary: SudoGrantTrialCredits grants additional trial credits to an organization on the credit-based trial plan.
+      operationId: AdminService_SudoGrantTrialCredits
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1SudoExtendTrialResponse'
+            $ref: '#/definitions/v1SudoGrantTrialCreditsResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -3879,7 +3989,7 @@ paths:
           in: body
           required: true
           schema:
-            $ref: '#/definitions/v1SudoExtendTrialRequest'
+            $ref: '#/definitions/v1SudoGrantTrialCreditsRequest'
   /v1/superuser/organizations/{org}/billing/issues/{type}:
     delete:
       summary: SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the organization
@@ -3911,6 +4021,8 @@ paths:
             - BILLING_ISSUE_TYPE_PAYMENT_FAILED
             - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
             - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
+            - BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL
+            - BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED
   /v1/superuser/projects/annotations:
     patch:
       summary: SudoUpdateAnnotations endpoint for superusers to update project annotations
@@ -4461,6 +4573,14 @@ definitions:
         type: string
       unsubscribeUrl:
         type: string
+  GetGithubPullRequestResponseState:
+    type: string
+    enum:
+      - STATE_UNSPECIFIED
+      - STATE_OPEN
+      - STATE_CLOSED_UNMERGED
+      - STATE_MERGED
+    default: STATE_UNSPECIFIED
   GetReportMetaResponseDeliveryMeta:
     type: object
     properties:
@@ -4648,12 +4768,28 @@ definitions:
         $ref: '#/definitions/v1BillingIssueMetadataSubscriptionCancelled'
       neverSubscribed:
         $ref: '#/definitions/v1BillingIssueMetadataNeverSubscribed'
+      onCreditTrial:
+        $ref: '#/definitions/v1BillingIssueMetadataOnCreditTrial'
+      trialCreditsDepleted:
+        $ref: '#/definitions/v1BillingIssueMetadataTrialCreditsDepleted'
   v1BillingIssueMetadataNeverSubscribed:
     type: object
   v1BillingIssueMetadataNoBillableAddress:
     type: object
   v1BillingIssueMetadataNoPaymentMethod:
     type: object
+  v1BillingIssueMetadataOnCreditTrial:
+    type: object
+    properties:
+      subscriptionId:
+        type: string
+      planId:
+        type: string
+      creditAllocation:
+        type: number
+        format: double
+      lowCredit:
+        type: boolean
   v1BillingIssueMetadataOnTrial:
     type: object
     properties:
@@ -4699,6 +4835,16 @@ definitions:
       endDate:
         type: string
         format: date-time
+  v1BillingIssueMetadataTrialCreditsDepleted:
+    type: object
+    properties:
+      subscriptionId:
+        type: string
+      planId:
+        type: string
+      depletedOn:
+        type: string
+        format: date-time
   v1BillingIssueMetadataTrialEnded:
     type: object
     properties:
@@ -4719,6 +4865,8 @@ definitions:
       - BILLING_ISSUE_TYPE_PAYMENT_FAILED
       - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
       - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
+      - BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL
+      - BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED
     default: BILLING_ISSUE_TYPE_UNSPECIFIED
   v1BillingPlan:
     type: object
@@ -4901,6 +5049,11 @@ definitions:
     properties:
       deployment:
         $ref: '#/definitions/v1Deployment'
+  v1CreateGithubPullRequestResponse:
+    type: object
+    properties:
+      prUrl:
+        type: string
   v1CreateManagedGitRepoResponse:
     type: object
     properties:
@@ -5011,6 +5164,9 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+      usedOn:
+        type: string
+        format: date-time
   v1DeploymentStatus:
     type: string
     enum:
@@ -5070,6 +5226,12 @@ definitions:
     properties:
       yaml:
         type: string
+  v1GetBillingCreditBalanceResponse:
+    type: object
+    properties:
+      balance:
+        type: number
+        format: double
   v1GetBillingProjectCredentialsRequest:
     type: object
     properties:
@@ -5169,6 +5331,11 @@ definitions:
       editable:
         type: boolean
         description: Whether the deployment is editable (dev environment with changes persisted to git repo).
+      systemVariables:
+        type: object
+        additionalProperties:
+          type: string
+        description: System variables set by the admin service that should not be overridden by user input.
   v1GetDeploymentCredentialsResponse:
     type: object
     properties:
@@ -5193,6 +5360,13 @@ definitions:
       ttlSeconds:
         type: integer
         format: int64
+  v1GetGithubPullRequestResponse:
+    type: object
+    properties:
+      prUrl:
+        type: string
+      prState:
+        $ref: '#/definitions/GetGithubPullRequestResponseState'
   v1GetGithubRepoStatusResponse:
     type: object
     properties:
@@ -5977,6 +6151,12 @@ definitions:
       prodTtlSeconds:
         type: string
         format: int64
+      devTtlSeconds:
+        type: string
+        format: int64
+      overrideDiskGb:
+        type: string
+        format: int64
       annotations:
         type: object
         additionalProperties:
@@ -6448,20 +6628,6 @@ definitions:
         format: date-time
   v1SudoDeleteOrganizationBillingIssueResponse:
     type: object
-  v1SudoExtendTrialRequest:
-    type: object
-    properties:
-      org:
-        type: string
-      days:
-        type: integer
-        format: int32
-  v1SudoExtendTrialResponse:
-    type: object
-    properties:
-      trialEnd:
-        type: string
-        format: date-time
   v1SudoGetResourceResponse:
     type: object
     properties:
@@ -6475,6 +6641,25 @@ definitions:
         $ref: '#/definitions/v1Deployment'
       instance:
         $ref: '#/definitions/v1Deployment'
+  v1SudoGrantTrialCreditsRequest:
+    type: object
+    properties:
+      org:
+        type: string
+      amountUsd:
+        type: number
+        format: double
+        description: Amount of trial credits to grant in USD.
+      description:
+        type: string
+        description: Optional human-readable reason for the grant.
+  v1SudoGrantTrialCreditsResponse:
+    type: object
+    properties:
+      grantedUsd:
+        type: number
+        format: double
+        description: The grant amount actually applied, in USD.
   v1SudoIssueRuntimeManagerTokenRequest:
     type: object
     properties:
@@ -6485,6 +6670,39 @@ definitions:
     properties:
       token:
         type: string
+  v1SudoReportUsageRequest:
+    type: object
+    properties:
+      org:
+        type: string
+      eventName:
+        type: string
+      value:
+        type: number
+        format: double
+      endTime:
+        type: string
+        format: date-time
+        description: Optional end time of the reporting window. Defaults to the current server time.
+      projectName:
+        type: string
+        description: Optional project name attribution for the mock event. If not set, a placeholder is used.
+  v1SudoReportUsageResponse:
+    type: object
+    properties:
+      customerId:
+        type: string
+      eventName:
+        type: string
+      value:
+        type: number
+        format: double
+      startTime:
+        type: string
+        format: date-time
+      endTime:
+        type: string
+        format: date-time
   v1SudoTriggerBillingRepairRequest:
     type: object
   v1SudoTriggerBillingRepairResponse:

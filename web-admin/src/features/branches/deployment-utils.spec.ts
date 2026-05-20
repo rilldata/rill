@@ -213,7 +213,7 @@ describe("deployment-utils", () => {
       expect(isRedirect(result)).toBe(true);
       if (!isRedirect(result)) return; // type-safety
       expect(result.status).toBe(307);
-      expect(result.location).toBe("/rilldata/openrtb/@edit-branch");
+      expect(result.location).toBe("/rilldata/openrtb/@edit-branch/-/edit");
     });
 
     it("redirects when there is no prod deployment at all", async () => {
@@ -232,7 +232,7 @@ describe("deployment-utils", () => {
       expect(isRedirect(result)).toBe(true);
       if (!isRedirect(result)) return; // type-safety
       expect(result.status).toBe(307);
-      expect(result.location).toBe("/rilldata/openrtb/@edit-branch");
+      expect(result.location).toBe("/rilldata/openrtb/@edit-branch/-/edit");
     });
 
     it("redirects when prod is in PENDING (still active) — sanity check on active statuses", async () => {
@@ -277,6 +277,23 @@ describe("deployment-utils", () => {
       });
 
       const result = await call("/rilldata/openrtb/-/deploying");
+      expect(result).toBeUndefined();
+    });
+
+    it("does not redirect away from the invite page", async () => {
+      // Same redirect-eligible conditions as the deploying-page test.
+      listDeploymentsMock.mockResolvedValue({
+        deployments: [
+          makeDeployment({
+            environment: "dev",
+            editable: true,
+            branch: "edit-branch",
+            status: V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING,
+          }),
+        ],
+      });
+
+      const result = await call("/rilldata/openrtb/-/invite");
       expect(result).toBeUndefined();
     });
   });

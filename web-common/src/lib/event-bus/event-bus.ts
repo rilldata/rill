@@ -17,6 +17,7 @@ export interface Events {
   "page-content-resized": PageContentResized;
   "start-chat": string;
   "rill-yaml-updated": void;
+  "remote-changes-detected": void;
 }
 
 export const eventBus = new EventEmitter<Events>();

@@ -117,9 +117,17 @@ function createColumnDefinitionForDimensions(
           [dimensionNames[level]]: value,
         });
 
+        const dimensionPath = {
+          ...colValuePair,
+          [dimensionNames[level]]: value,
+        };
+
         return {
           header: sanitizeHeaderValue(displayValue),
           columns: nestedColumns,
+          meta: {
+            dimensionPath,
+          },
         };
       })
       .filter((column) => column.columns.length > 0);
@@ -191,6 +199,7 @@ export type MeasureColumnProps = Array<{
   tooltipFormatter: (value: unknown) => string | null | undefined;
   name: string;
   type: MeasureType;
+  lowerIsBetter: boolean;
 }>;
 export function getMeasureColumnProps(
   config: PivotDataStoreConfig,
@@ -241,6 +250,7 @@ export function getMeasureColumnProps(
       name: m,
       type,
       icon,
+      lowerIsBetter: measure?.lowerIsBetter ?? false,
     };
   });
 }
@@ -312,12 +322,14 @@ function getFlatColumnDef(
         accessorFn: (row) => row[d.name],
         header: d.label || d.name,
         cell: ({ getValue }) => {
-          return formatDimensionValue(
+          const value = formatDimensionValue(
             getValue() as string,
             i,
             config.time,
             rowDimensionNames,
           );
+          if (value === null) return "null";
+          return value;
         },
       };
     },
@@ -346,11 +358,13 @@ function getFlatColumnDef(
                 ? formatMeasurePercentageDifference(measureValue)
                 : null,
             inTable: true,
+            lowerIsBetter: m.lowerIsBetter,
           });
         } else if (m.type === "comparison_delta") {
           return cellComponent(PivotDeltaCell, {
             formattedValue: m.formatter(measureValue),
             value: measureValue,
+            lowerIsBetter: m.lowerIsBetter,
           });
         }
         const value = m.formatter(measureValue);
@@ -526,11 +540,13 @@ function getNestedColumnDef(
                   ? formatMeasurePercentageDifference(measureValue)
                   : null,
               inTable: true,
+              lowerIsBetter: m.lowerIsBetter,
             });
           } else if (m.type === "comparison_delta") {
             return cellComponent(PivotDeltaCell, {
               formattedValue: m.formatter(measureValue),
               value: measureValue,
+              lowerIsBetter: m.lowerIsBetter,
             });
           }
           const value = m.formatter(measureValue);

@@ -330,7 +330,7 @@ export async function unsetResourceEnvVars(
   runtimeClient: RuntimeClient,
   queryClient: QueryClient,
   yaml: string,
-) {
+): Promise<[string, boolean]> {
   let envBlob: V1GetFileResponse | undefined = undefined;
   try {
     envBlob = await queryClient.fetchQuery({
@@ -341,7 +341,7 @@ export async function unsetResourceEnvVars(
     });
   } catch (error) {
     if (error.message?.includes("no such file or directory")) {
-      return "";
+      return ["", false];
     }
     throw error;
   }
@@ -353,7 +353,7 @@ export async function unsetResourceEnvVars(
     blob = deleteEnvVariable(blob, envVar);
   });
 
-  return blob;
+  return [blob, envVars.length > 0];
 }
 
 export async function updateDotEnvWithSecrets(

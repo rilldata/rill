@@ -206,6 +206,8 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
   - **`treat_nulls_as`** - _[string]_ - used to configure what value to fill in for missing time buckets. This also works generally as COALESCING over non empty time buckets. 
 
+  - **`lower_is_better`** - _[boolean]_ - When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas (KPIs, big numbers, leaderboards, pivot tables, time-series tooltips) swap their positive/negative coloring accordingly. 
+
 ### `parent_dimensions`
 
 _[oneOf]_ - Optional field selectors for dimensions to inherit from the parent metrics view. 
@@ -369,7 +371,7 @@ Example: a `key_sql` of `SELECT MAX(updated_at) FROM orders` with `key_ttl: 5m` 
 
   - **`key_ttl`** - _[string]_ - How often `key_sql` is re-evaluated, as a Go duration string (e.g. `30s`, `5m`, `1h`). The previous result is reused between evaluations. Defaults to `60s`. 
 
-  - **`timestamps_ttl`** - _[string]_ - When `enabled` is false, Rill still caches the min/max timestamps that are used by the dashboard time picker. This sets a TTL for how long to cache these as a Go duration string. If `enabled` is `true`, then this setting has no effect. Defaults to `5m`. 
+  - **`timestamps_ttl`** - _[string]_ - TTL for caching the min/max timestamp queries used to populate a metrics view's rollups. Only takes effect when the metrics view has rollups defined and query result caching (`enabled`) is off — otherwise rollup timestamps are cached alongside other query results under `key_ttl`. Go duration string (e.g. `5m`). Defaults to `5m`. 
 
 ### `explore`
 

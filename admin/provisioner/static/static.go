@@ -121,13 +121,19 @@ func (p *StaticProvisioner) Provision(ctx context.Context, r *provisioner.Resour
 		return nil, err
 	}
 
+	// Compute storage. If an override is provided on the project, it takes precedence over the slot-based default.
+	storageBytes := int64(args.Slots) * 40 * int64(datasize.GB)
+	if args.OverrideDiskGB != nil && *args.OverrideDiskGB > 0 {
+		storageBytes = *args.OverrideDiskGB * int64(datasize.GB)
+	}
+
 	// Build resource
 	cfg := &provisioner.RuntimeConfig{
 		Host:         target.Host,
 		Audience:     target.Audience,
 		CPU:          1 * args.Slots,
 		MemoryGB:     4 * args.Slots,
-		StorageBytes: int64(args.Slots) * 40 * int64(datasize.GB),
+		StorageBytes: storageBytes,
 	}
 	state = &runtimeState{
 		Slots:   args.Slots,
@@ -139,6 +145,11 @@ func (p *StaticProvisioner) Provision(ctx context.Context, r *provisioner.Resour
 		State:  state.AsMap(),
 		Config: cfg.AsMap(),
 	}, nil
+}
+
+func (p *StaticProvisioner) Hibernate(ctx context.Context, r *provisioner.Resource) (*provisioner.Resource, error) {
+	// Static provisioning has no compute to release; the runtime is shared and not torn down here.
+	return r, nil
 }
 
 func (p *StaticProvisioner) Deprovision(ctx context.Context, r *provisioner.Resource) error {

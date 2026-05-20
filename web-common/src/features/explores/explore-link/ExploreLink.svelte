@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import { goto } from "$app/navigation";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
@@ -28,6 +29,8 @@
   let isNavigating = false;
   let navigationError: ExploreLinkError | null = null;
 
+  $: onEditPage = $page.route?.id?.includes("/edit/(viz)/canvas");
+
   async function gotoExplorePage() {
     if (!exploreName || !exploreState || disabled) return;
 
@@ -39,8 +42,8 @@
         runtimeClient,
         exploreState,
         exploreName,
-        organization,
-        project,
+        onEditPage ? undefined : organization,
+        onEditPage ? undefined : project,
       );
       await goto(exploreURL);
     } catch (error) {

@@ -110,6 +110,7 @@ export interface MetricsViewSpecMeasure {
   validPercentOfTotal?: boolean;
   treatNullsAs?: string;
   dataType?: Runtimev1Type;
+  lowerIsBetter?: boolean;
 }
 
 export type MetricsViewSpecMeasureType =
@@ -1178,6 +1179,8 @@ export interface V1GitStatusResponse {
   branch?: string;
   /** The remote url of the git repo. */
   githubUrl?: string;
+  /** The subpath of the git repo. */
+  subpath?: string;
   /** If the repo is managed by Rill. */
   managedGit?: boolean;
   /** local_changes returns true if there are any staged, unstaged, or untracked changes in the local git repo. */
