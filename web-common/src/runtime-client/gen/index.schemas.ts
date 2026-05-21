@@ -1692,6 +1692,11 @@ export interface V1MetricsViewSpec {
   parentMeasures?: V1FieldSelector;
   annotations?: V1MetricsViewSpecAnnotation[];
   securityRules?: V1SecurityRule[];
+  /** Raw SQL filter that is AND-combined into the WHERE clause of every query against this metrics view.
+Behaves like `where_sql` on MetricsViewAggregationRequest: applied automatically by the executor on top of any caller-supplied `where`/`where_sql` and security row filters. */
+  whereSql?: string;
+  /** Parsed form of `where_sql`. Only populated in `state.valid_spec` by the reconciler so the UI can render per-condition read-only filter chips without needing a SQL parser. Mirrors the dual `sql`/`expression` pattern on SecurityRuleRowFilter. */
+  whereExpression?: V1Expression;
   /** ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday). */
   firstDayOfWeek?: number;
   /** Month number to use as the base for time aggregations by year. Defaults to 1 (January). */

@@ -7,17 +7,22 @@
     MetricsViewSpecMeasure,
     V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
-  import { readable, type Readable } from "svelte/store";
+  import { derived, readable, type Readable } from "svelte/store";
 
   export let component: BaseCanvasComponent;
 
   let measures: Readable<MetricsViewSpecMeasure[]> = readable([]);
   let dimensions: Readable<MetricsViewSpecDimension[]> = readable([]);
+  let metricsViewWhereSql: Readable<string | undefined> = readable(undefined);
 
   $: ({
     specStore,
     parent: {
-      metricsView: { getDimensionsForMetricView, getMeasuresForMetricView },
+      metricsView: {
+        getDimensionsForMetricView,
+        getMeasuresForMetricView,
+        getMetricsViewFromName,
+      },
     },
     timeAndFilterStore,
     localFilters,
@@ -30,6 +35,10 @@
   $: if (metricsViewName) {
     measures = getMeasuresForMetricView(metricsViewName);
     dimensions = getDimensionsForMetricView(metricsViewName);
+    metricsViewWhereSql = derived(
+      getMetricsViewFromName(metricsViewName),
+      ($mv) => $mv.metricsView?.whereSql,
+    );
   }
 
   $: ({
@@ -101,6 +110,7 @@
       {dimensionThresholdFilters}
       dimensionsWithInlistFilter={dimensionsWithInListFilter}
       filters={dimensionFilter}
+      metricsViewWhereSql={$metricsViewWhereSql}
       {displayComparisonTimeRange}
       displayTimeRange={hasTimeFilters ? displayTimeRange : undefined}
       queryTimeStart={selectedTimeRange?.start?.toISOString()}

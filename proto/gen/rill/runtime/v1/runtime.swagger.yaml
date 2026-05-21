@@ -6485,6 +6485,14 @@ definitions:
           type: object
           $ref: '#/definitions/v1SecurityRule'
         title: Security for the metrics view
+      whereSql:
+        type: string
+        description: |-
+          Raw SQL filter that is AND-combined into the WHERE clause of every query against this metrics view.
+          Behaves like `where_sql` on MetricsViewAggregationRequest: applied automatically by the executor on top of any caller-supplied `where`/`where_sql` and security row filters.
+      whereExpression:
+        $ref: '#/definitions/v1Expression'
+        description: Parsed form of `where_sql`. Only populated in `state.valid_spec` by the reconciler so the UI can render per-condition read-only filter chips without needing a SQL parser. Mirrors the dual `sql`/`expression` pattern on SecurityRuleRowFilter.
       firstDayOfWeek:
         type: integer
         format: int64

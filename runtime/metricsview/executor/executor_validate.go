@@ -13,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 	"github.com/rilldata/rill/runtime/pkg/fieldselectorpb"
 	"golang.org/x/sync/errgroup"
 )
@@ -127,6 +128,18 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 			if _, ok := fields[strings.ToLower(f)]; !ok {
 				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("field %q referenced in 'security' is not a dimension or measure", f))
 			}
+		}
+	}
+
+	// Parse the spec-level where_sql so the frontend can render it as filter chips and so we surface syntax errors at reconcile time.
+	// The executor injects the raw string into queries; the parsed form is only stored for UI consumption.
+	mv.WhereExpression = nil
+	if mv.WhereSql != "" {
+		expr, err := metricssql.ParseFilter(mv.WhereSql)
+		if err != nil {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("invalid 'where_sql': %w", err))
+		} else {
+			mv.WhereExpression = metricsview.ExpressionToProto(expr)
 		}
 	}
 

@@ -171,6 +171,16 @@ async function dispatchWrite(
 
     case ResourceKind.MetricsView:
       void invalidateMetricsViewData(queryClient, event.name!.name!, failed);
+      // The Explore resource embeds the parent metrics view spec (via GetExplore), so
+      // changes to spec-level fields like `where_sql` need to refetch the explore query
+      // too — otherwise the dashboard reads a stale validSpec until reload.
+      void queryClient.refetchQueries({
+        predicate: (query) =>
+          Array.isArray(query.queryKey) &&
+          query.queryKey[0] === "RuntimeService" &&
+          query.queryKey[1] === "getExplore" &&
+          query.queryKey[2] === instanceId,
+      });
       return;
 
     case ResourceKind.Explore: {

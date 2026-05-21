@@ -41,6 +41,7 @@
   import { useTimeControlStore } from "../time-controls/time-control-store";
   import FilterButton from "./FilterButton.svelte";
   import DimensionFilter from "./dimension-filters/DimensionFilter.svelte";
+  import MetricsViewWhereChip from "./MetricsViewWhereChip.svelte";
   import { featureFlags } from "../../feature-flags";
   import Timestamp from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/Timestamp.svelte";
   import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
@@ -509,9 +510,12 @@
       <Filter size="16px" className="text-fg-secondary flex-none mt-[5px]" />
     {/if}
     <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2">
+      {#if metricsViewSpec.whereSql}
+        <MetricsViewWhereChip whereSql={metricsViewSpec.whereSql} />
+      {/if}
       {#if isComplexFilter}
         <AdvancedFilter advancedFilter={whereFilter} />
-      {:else if !allDimensionFilters.length && !allMeasureFilters.length}
+      {:else if !allDimensionFilters.length && !allMeasureFilters.length && !metricsViewSpec.whereSql}
         <div
           in:fly={{ duration: 200, x: 8 }}
           class="text-fg-muted grid ml-1 items-center"

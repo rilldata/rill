@@ -1043,6 +1043,12 @@ func (a *AST) buildWhereForUnderlyingTable(where *Expression) (*ExprNode, error)
 		res = res.And(rf, nil)
 	}
 
+	// Inject the metrics view's spec-level `where_sql` so every query on this metrics view is scoped by it.
+	// Caller-supplied where/where_sql and security row filters are already combined above; this AND's on top.
+	if ws := a.MetricsView.WhereSql; ws != "" {
+		res = res.And(ws, nil)
+	}
+
 	return res, nil
 }
 

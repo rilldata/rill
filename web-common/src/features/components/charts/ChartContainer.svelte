@@ -69,6 +69,11 @@
     $spec.metrics_view,
   );
 
+  $: metricsViewWhereSql = derived(
+    metricsViewSelectors.getMetricsViewFromName($spec.metrics_view),
+    ($mv) => $mv.metricsView?.whereSql,
+  );
+
   $: chartDataQuery = chartProvider.createChartDataQuery(
     client,
     timeAndFilterStore,
@@ -145,6 +150,7 @@
                 {dimensionThresholdFilters}
                 dimensionsWithInlistFilter={[]}
                 filters={whereFilter}
+                metricsViewWhereSql={$metricsViewWhereSql}
                 displayTimeRange={$timeAndFilterStore.timeRange}
                 displayComparisonTimeRange={$timeAndFilterStore.showTimeComparison
                   ? $timeAndFilterStore.comparisonTimeRange

@@ -1492,6 +1492,21 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   securityRules: SecurityRule[] = [];
 
   /**
+   * Raw SQL filter that is AND-combined into the WHERE clause of every query against this metrics view.
+   * Behaves like `where_sql` on MetricsViewAggregationRequest: applied automatically by the executor on top of any caller-supplied `where`/`where_sql` and security row filters.
+   *
+   * @generated from field: string where_sql = 36;
+   */
+  whereSql = "";
+
+  /**
+   * Parsed form of `where_sql`. Only populated in `state.valid_spec` by the reconciler so the UI can render per-condition read-only filter chips without needing a SQL parser. Mirrors the dual `sql`/`expression` pattern on SecurityRuleRowFilter.
+   *
+   * @generated from field: rill.runtime.v1.Expression where_expression = 37;
+   */
+  whereExpression?: Expression;
+
+  /**
    * ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday).
    *
    * @generated from field: uint32 first_day_of_week = 12;
@@ -1574,6 +1589,8 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 32, name: "parent_measures", kind: "message", T: FieldSelector },
     { no: 29, name: "annotations", kind: "message", T: MetricsViewSpec_Annotation, repeated: true },
     { no: 23, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
+    { no: 36, name: "where_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 37, name: "where_expression", kind: "message", T: Expression },
     { no: 12, name: "first_day_of_week", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 13, name: "first_month_of_year", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 25, name: "cache_enabled", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },

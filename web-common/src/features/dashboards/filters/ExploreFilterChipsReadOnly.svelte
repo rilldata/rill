@@ -30,7 +30,11 @@
       runtimeClient,
       metricsViewNamesStore,
     );
-  $: ({ measures, dimensions } = $combinedMeasuresAndDimensions);
+  $: ({
+    measures,
+    dimensions,
+    whereSql: metricsViewWhereSql,
+  } = $combinedMeasuresAndDimensions);
 </script>
 
 <FilterChipsReadOnly
@@ -44,4 +48,5 @@
   {displayTimeRange}
   {queryTimeStart}
   {queryTimeEnd}
+  {metricsViewWhereSql}
 />

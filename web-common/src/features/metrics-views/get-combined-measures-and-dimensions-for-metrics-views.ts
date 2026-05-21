@@ -29,6 +29,7 @@ export function getCombinedMeasuresAndDimensionsForMetricsViews(
       const measures: MetricsViewSpecMeasure[] = [];
       const seenDimensionNames = new Set<string>();
       const dimensions: MetricsViewSpecDimension[] = [];
+      const whereSqls: string[] = [];
 
       metricsViewQueryResponses.forEach((metricsViewQueryResponse) => {
         const spec =
@@ -53,11 +54,25 @@ export function getCombinedMeasuresAndDimensionsForMetricsViews(
             return true;
           }),
         );
+
+        if (spec.whereSql) {
+          whereSqls.push(spec.whereSql);
+        }
       });
+
+      // For multi-metricsview views (e.g. embedded), join the locked filters with AND so the chip
+      // reflects the conjunction the backend actually applies across all of them.
+      const whereSql =
+        whereSqls.length === 0
+          ? undefined
+          : whereSqls.length === 1
+            ? whereSqls[0]
+            : whereSqls.map((s) => `(${s})`).join(" AND ");
 
       return {
         measures,
         dimensions,
+        whereSql,
       };
     },
   });

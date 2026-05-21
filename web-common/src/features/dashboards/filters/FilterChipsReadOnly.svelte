@@ -16,6 +16,7 @@ The main feature-set component for dashboard filters
   import { getMeasureFilters } from "../state-managers/selectors/measure-filters";
   import DimensionFilterReadOnlyChip from "./dimension-filters/DimensionFilterReadOnlyChip.svelte";
   import MeasureFilterReadOnlyChip from "./measure-filters/MeasureFilterReadOnlyChip.svelte";
+  import MetricsViewWhereChip from "./MetricsViewWhereChip.svelte";
 
   export let metricsViewNames: string[];
   export let dimensions: MetricsViewSpecDimension[];
@@ -31,6 +32,8 @@ The main feature-set component for dashboard filters
   export let queryTimeEnd: string | undefined = undefined;
   export let hasBoldTimeRange: boolean = true;
   export let chipLayout: "wrap" | "scroll" = "wrap";
+  // Raw `where_sql` from the metrics view spec, rendered as a single non-clickable chip so users see the locked baseline filter the backend injects into every query.
+  export let metricsViewWhereSql: string | undefined = undefined;
 
   let scrollContainer: HTMLDivElement;
 
@@ -76,6 +79,9 @@ The main feature-set component for dashboard filters
       comparisonTimeRange={displayComparisonTimeRange}
       {hasBoldTimeRange}
     />
+  {/if}
+  {#if metricsViewWhereSql}
+    <MetricsViewWhereChip whereSql={metricsViewWhereSql} />
   {/if}
   {#if dimensionFilters.length > 0}
     {#each dimensionFilters as filterData (filterData.name)}

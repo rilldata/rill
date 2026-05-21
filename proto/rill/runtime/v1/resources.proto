@@ -356,6 +356,11 @@ message MetricsViewSpec {
   repeated Annotation annotations = 29;
   // Security for the metrics view
   repeated SecurityRule security_rules = 23;
+  // Raw SQL filter that is AND-combined into the WHERE clause of every query against this metrics view.
+  // Behaves like `where_sql` on MetricsViewAggregationRequest: applied automatically by the executor on top of any caller-supplied `where`/`where_sql` and security row filters.
+  string where_sql = 36;
+  // Parsed form of `where_sql`. Only populated in `state.valid_spec` by the reconciler so the UI can render per-condition read-only filter chips without needing a SQL parser. Mirrors the dual `sql`/`expression` pattern on SecurityRuleRowFilter.
+  Expression where_expression = 37;
   // ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday).
   uint32 first_day_of_week = 12;
   // Month number to use as the base for time aggregations by year. Defaults to 1 (January).

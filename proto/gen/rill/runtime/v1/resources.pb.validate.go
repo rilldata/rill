@@ -3393,6 +3393,37 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	}
 
+	// no validation rules for WhereSql
+
+	if all {
+		switch v := interface{}(m.GetWhereExpression()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewSpecValidationError{
+					field:  "WhereExpression",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewSpecValidationError{
+					field:  "WhereExpression",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetWhereExpression()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewSpecValidationError{
+				field:  "WhereExpression",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	// no validation rules for FirstDayOfWeek
 
 	// no validation rules for FirstMonthOfYear

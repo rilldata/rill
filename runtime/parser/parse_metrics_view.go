@@ -93,6 +93,7 @@ type MetricsViewYAML struct {
 		Measures       *FieldSelectorYAML `yaml:"measures"`
 	} `yaml:"rollups"`
 	Security        *SecurityPolicyYAML
+	WhereSQL        string            `yaml:"where_sql"` // Baseline SQL filter applied to every query against this metrics view
 	QueryAttributes map[string]string `yaml:"query_attributes"`
 	Cache           struct {
 		Enabled       *bool  `yaml:"enabled"`
@@ -919,6 +920,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	}
 
 	spec.SecurityRules = securityRules
+	spec.WhereSql = tmp.WhereSQL
 	spec.CacheEnabled = tmp.Cache.Enabled
 	spec.CacheKeySql = tmp.Cache.KeySQL
 	spec.CacheKeyTtlSeconds = int64(cacheTTLDuration.Seconds())
