@@ -18,9 +18,11 @@ import {
   MessageType,
   ToolName,
 } from "@rilldata/web-common/features/chat/core/types.ts";
+import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
-const LEGACY_DASHBOARD_CITATION_URL_PATHNAME_REGEX = /\/-\/open-query\/?$/;
-const DASHBOARD_CITATION_URL_PATHNAME_REGEX =
+export const LEGACY_DASHBOARD_CITATION_URL_PATHNAME_REGEX =
+  /\/-\/open-query\/?$/;
+export const DASHBOARD_CITATION_URL_PATHNAME_REGEX =
   /\/-\/ai\/[^/]+\/message\/([^/]+)\/-\/open\/?$/;
 
 /**
@@ -34,7 +36,7 @@ export function getMetricsResolverQueryToUrlMapperStore(
 ): Readable<{
   error: Error | null;
   isLoading: boolean;
-  data?: (url: URL) => string;
+  data?: (url: URL) => Promise<string>;
 }> {
   const resourcesQuery = createQuery(
     getMetricsViewAndExploreSpecsQueryOptions(conversation.runtimeClient),
@@ -58,9 +60,9 @@ export function getMetricsResolverQueryToUrlMapperStore(
       const metricsViewAndExploreSpecs = resourcesResp.data;
       const messages = conversationResp.data?.messages ?? [];
 
-      const mapper = (url: URL): string =>
+      const mapper = (url: URL): Promise<string> =>
         mapMetricsResolverQueryToUrl(
-          conversation.runtimeClient.instanceId,
+          conversation.runtimeClient,
           url,
           page,
           metricsViewAndExploreSpecs,
@@ -76,8 +78,8 @@ export function getMetricsResolverQueryToUrlMapperStore(
   );
 }
 
-export function mapMetricsResolverQueryToUrl(
-  instanceId: string,
+export async function mapMetricsResolverQueryToUrl(
+  runtimeClient: RuntimeClient,
   url: URL,
   pageState: Page,
   {
@@ -86,7 +88,7 @@ export function mapMetricsResolverQueryToUrl(
     exploreSpecsMap,
   }: MetricsViewAndExploreSpecs,
   messages: V1Message[],
-) {
+): Promise<string> {
   let query: MetricsResolverQuery;
   const isLegacyCitationUrl =
     LEGACY_DASHBOARD_CITATION_URL_PATHNAME_REGEX.test(url.pathname) &&
@@ -121,14 +123,15 @@ export function mapMetricsResolverQueryToUrl(
   const exploreSpec = exploreSpecsMap.get(exploreName);
   if (!exploreSpec) return url.href;
 
-  const partialExploreState = mapMetricsResolverQueryToDashboard(
+  const partialExploreState = await mapMetricsResolverQueryToDashboard(
+    runtimeClient,
     metricsViewSpec,
     exploreSpec,
     query,
   );
 
   const urlSearchParams = maybeGetExplorePageUrlSearchParams(
-    instanceId,
+    runtimeClient.instanceId,
     partialExploreState,
     metricsViewSpec,
     exploreSpec,

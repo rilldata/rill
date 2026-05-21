@@ -132,8 +132,8 @@ describe("mapMetricsResolverQueryToUrlParams", () => {
   ];
 
   for (const { title, url, expectedUrl } of testCases) {
-    it(title, () => {
-      const result = mapMetricsResolverQueryToUrl(
+    it(title, async () => {
+      const result = await mapMetricsResolverQueryToUrl(
         "",
         new URL(url),
         mockPage,

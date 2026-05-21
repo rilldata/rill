@@ -54,7 +54,8 @@ export async function openQuery({
     );
 
     // Convert query to ExploreState
-    const exploreState = mapMetricsResolverQueryToDashboard(
+    const exploreState = await mapMetricsResolverQueryToDashboard(
+      client,
       metricsViewSpec,
       exploreSpec,
       query,

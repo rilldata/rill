@@ -37,8 +37,11 @@ import type {
   TimeRange,
 } from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
 import type { SortingState } from "tanstack-table-8-svelte-5";
+import { resolveTimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/rill-time-ranges.ts";
+import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
-export function mapMetricsResolverQueryToDashboard(
+export async function mapMetricsResolverQueryToDashboard(
+  runtimeClient: RuntimeClient,
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
   query: MetricsResolverQuery,
@@ -84,6 +87,21 @@ export function mapMetricsResolverQueryToDashboard(
       mapResolverTimeRangeToDashboardControls(query.comparison_time_range);
     partialExploreState.showTimeComparison = true;
   }
+  // Resolve start/end by making a network call.
+  [
+    partialExploreState.selectedTimeRange,
+    partialExploreState.selectedComparisonTimeRange,
+  ] = await resolveTimeRanges(
+    runtimeClient,
+    exploreSpec,
+    [
+      partialExploreState.selectedTimeRange,
+      partialExploreState.selectedComparisonTimeRange,
+    ],
+    partialExploreState.selectedTimezone,
+    undefined,
+    partialExploreState.selectedTimeDimension,
+  );
 
   // Convert where filter
   if (query.where) {
