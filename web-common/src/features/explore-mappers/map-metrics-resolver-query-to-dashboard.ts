@@ -80,28 +80,7 @@ export async function mapMetricsResolverQueryToDashboard(
   }
 
   // Convert time ranges
-  partialExploreState.selectedTimeRange =
-    mapResolverTimeRangeToDashboardControls(query.time_range);
-  if (query.comparison_time_range) {
-    partialExploreState.selectedComparisonTimeRange =
-      mapResolverTimeRangeToDashboardControls(query.comparison_time_range);
-    partialExploreState.showTimeComparison = true;
-  }
-  // Resolve start/end by making a network call.
-  [
-    partialExploreState.selectedTimeRange,
-    partialExploreState.selectedComparisonTimeRange,
-  ] = await resolveTimeRanges(
-    runtimeClient,
-    exploreSpec,
-    [
-      partialExploreState.selectedTimeRange,
-      partialExploreState.selectedComparisonTimeRange,
-    ],
-    partialExploreState.selectedTimezone,
-    undefined,
-    partialExploreState.selectedTimeDimension,
-  );
+  await mapTimeRanges(runtimeClient, exploreSpec, partialExploreState, query);
 
   // Convert where filter
   if (query.where) {
@@ -206,6 +185,44 @@ function getValidDimensions(
     exploreDimensions,
     timeDimensions,
   };
+}
+
+async function mapTimeRanges(
+  runtimeClient: RuntimeClient,
+  exploreSpec: V1ExploreSpec,
+  partialExploreState: Partial<ExploreState>,
+  query: MetricsResolverQuery,
+) {
+  partialExploreState.selectedTimeRange =
+    mapResolverTimeRangeToDashboardControls(query.time_range);
+  if (query.comparison_time_range) {
+    partialExploreState.selectedComparisonTimeRange =
+      mapResolverTimeRangeToDashboardControls(query.comparison_time_range);
+    partialExploreState.showTimeComparison = true;
+  }
+  // Resolve start/end by making a network call.
+  [
+    partialExploreState.selectedTimeRange,
+    partialExploreState.selectedComparisonTimeRange,
+  ] = await resolveTimeRanges(
+    runtimeClient,
+    exploreSpec,
+    [
+      partialExploreState.selectedTimeRange,
+      partialExploreState.selectedComparisonTimeRange,
+    ],
+    partialExploreState.selectedTimezone,
+    undefined,
+    partialExploreState.selectedTimeDimension,
+  );
+  // Set time ranges to custom so that
+  if (partialExploreState.selectedTimeRange) {
+    partialExploreState.selectedTimeRange.name = TimeRangePreset.CUSTOM;
+  }
+  if (partialExploreState.selectedComparisonTimeRange) {
+    partialExploreState.selectedComparisonTimeRange.name =
+      TimeRangePreset.CUSTOM;
+  }
 }
 
 function mapResolverTimeRangeToDashboardControls(
