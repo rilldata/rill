@@ -72,6 +72,10 @@ _[integer]_ - Refers to the first day of the week for time grain aggregation (fo
 
 _[integer]_ - Refers to the first month of the year for time grain aggregation. The valid values are 1 through 12 where January=1 and December=12 
 
+### `max_query_time_range`
+
+_[string]_ - The maximum time span any single query against this metrics view may cover, expressed as an ISO 8601 duration with day-or-larger granularity (e.g. `P90D`, `P3M`, `P1Y`). Sub-day durations such as `PT12H` are not supported. Applies independently to the primary and comparison time ranges. If unset, no limit is enforced. 
+
 ### `dimensions`
 
 _[array of object]_ - Relates to exploring segments or dimensions of your data and filtering the dashboard 
