@@ -3640,6 +3640,14 @@ export class MetricsViewTimeRangeResponse extends Message<MetricsViewTimeRangeRe
   timeRangeSummary?: TimeRangeSummary;
 
   /**
+   * The metrics view's max_query_time_range property resolved into milliseconds against the current time.
+   * Zero if the metrics view does not configure max_query_time_range.
+   *
+   * @generated from field: int64 max_query_time_range_millis = 3;
+   */
+  maxQueryTimeRangeMillis = protoInt64.zero;
+
+  /**
    * Traces of spans captured during request execution. Only populated if trace was set to true in the request.
    *
    * @generated from field: rill.runtime.v1.Trace trace = 2;
@@ -3655,6 +3663,7 @@ export class MetricsViewTimeRangeResponse extends Message<MetricsViewTimeRangeRe
   static readonly typeName = "rill.runtime.v1.MetricsViewTimeRangeResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "time_range_summary", kind: "message", T: TimeRangeSummary },
+    { no: 3, name: "max_query_time_range_millis", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 2, name: "trace", kind: "message", T: Trace },
   ]);
 
@@ -4084,6 +4093,14 @@ export class MetricsViewTimeRangesResponse extends Message<MetricsViewTimeRanges
   timeRanges: TimeRange[] = [];
 
   /**
+   * The metrics view's max_query_time_range property resolved into milliseconds against the request's reference time.
+   * Zero if the metrics view does not configure max_query_time_range.
+   *
+   * @generated from field: int64 max_query_time_range_millis = 5;
+   */
+  maxQueryTimeRangeMillis = protoInt64.zero;
+
+  /**
    * Traces of spans captured during request execution. Only populated if trace was set to true in the request.
    *
    * @generated from field: rill.runtime.v1.Trace trace = 4;
@@ -4101,6 +4118,7 @@ export class MetricsViewTimeRangesResponse extends Message<MetricsViewTimeRanges
     { no: 1, name: "full_time_range", kind: "message", T: TimeRangeSummary },
     { no: 3, name: "resolved_time_ranges", kind: "message", T: ResolvedTimeRange, repeated: true },
     { no: 2, name: "time_ranges", kind: "message", T: TimeRange, repeated: true },
+    { no: 5, name: "max_query_time_range_millis", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 4, name: "trace", kind: "message", T: Trace },
   ]);
 
