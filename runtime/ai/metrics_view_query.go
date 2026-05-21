@@ -251,8 +251,8 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 		MaxTimeRangeDays: cfg.AIMaxTimeRangeDays,
 	}
 
-	// Apply a timeout to prevent runaway queries
-	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	// Apply a timeout to prevent runaway queries. Matches the default interactive query timeout.
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Minute)
 	defer cancel()
 
 	// Run the metrics query

@@ -53,7 +53,7 @@ func (t *QueryMetricsViewSummary) CheckAccess(ctx context.Context) (bool, error)
 }
 
 func (t *QueryMetricsViewSummary) Handler(ctx context.Context, args *QueryMetricsViewSummaryArgs) (*QueryMetricsViewSummaryResult, error) {
-	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Minute)
 	defer cancel()
 
 	session := GetSession(ctx)
