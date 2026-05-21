@@ -6,7 +6,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import {
   AD_BIDS_DOMAIN_DIMENSION,
-  AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS,
+  AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS_TIME_DIMENSION,
   AD_BIDS_IMPRESSIONS_MEASURE,
   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
   AD_BIDS_PUBLISHER_DIMENSION,
@@ -182,6 +182,79 @@ describe("mapMetricsResolverQueryToDashboard", () => {
         },
       },
     },
+    {
+      title: "single measure and 2 dimensions one time dimension",
+      query: {
+        measures: [{ name: AD_BIDS_IMPRESSIONS_MEASURE }],
+        dimensions: [
+          { name: AD_BIDS_PUBLISHER_DIMENSION },
+          { name: AD_BIDS_DOMAIN_DIMENSION },
+          {
+            name: AD_BIDS_TIMESTAMP_DIMENSION,
+            compute: {
+              time_floor: {
+                dimension: AD_BIDS_TIMESTAMP_DIMENSION,
+                grain: "day",
+              },
+            },
+          },
+        ],
+        sort: [
+          { desc: true, name: AD_BIDS_TIMESTAMP_DIMENSION },
+          { name: AD_BIDS_IMPRESSIONS_MEASURE },
+        ],
+      },
+      expectedPartialExplore: {
+        activePage: DashboardState_ActivePage.PIVOT,
+        selectedTimeRange: {
+          name: TimeRangePreset.ALL_TIME,
+        } as DashboardTimeControls,
+
+        visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE],
+        allMeasuresVisible: false,
+        visibleDimensions: [
+          AD_BIDS_PUBLISHER_DIMENSION,
+          AD_BIDS_DOMAIN_DIMENSION,
+        ],
+        allDimensionsVisible: false,
+
+        pivot: {
+          rows: [],
+          columns: [
+            {
+              id: "TIME_GRAIN_DAY",
+              title: "day",
+              type: PivotChipType.Time,
+            },
+            {
+              id: AD_BIDS_PUBLISHER_DIMENSION,
+              title: AD_BIDS_PUBLISHER_DIMENSION,
+              type: PivotChipType.Dimension,
+            },
+            {
+              id: AD_BIDS_DOMAIN_DIMENSION,
+              title: AD_BIDS_DOMAIN_DIMENSION,
+              type: PivotChipType.Dimension,
+            },
+            {
+              id: AD_BIDS_IMPRESSIONS_MEASURE,
+              title: AD_BIDS_IMPRESSIONS_MEASURE,
+              type: PivotChipType.Measure,
+            },
+          ],
+          sorting: [
+            { desc: true, id: "timestamp_rill_TIME_GRAIN_DAY" },
+            { desc: false, id: AD_BIDS_IMPRESSIONS_MEASURE },
+          ],
+          expanded: {},
+          columnPage: 0,
+          rowPage: 0,
+          enableComparison: false,
+          tableMode: "flat",
+          activeCell: null,
+        },
+      },
+    },
 
     {
       title: "time dimension filter",
@@ -248,7 +321,7 @@ describe("mapMetricsResolverQueryToDashboard", () => {
       expect(
         mapMetricsResolverQueryToDashboard(
           AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
-          AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS,
+          AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS_TIME_DIMENSION,
           query,
         ),
       ).toEqual(expectedPartialExplore);
