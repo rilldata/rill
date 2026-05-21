@@ -2,6 +2,7 @@ package ai
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -138,14 +139,14 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 			_, err := s.CallTool(ctx, RoleAssistant, QueryMetricsViewSummaryName, nil, &QueryMetricsViewSummaryArgs{
 				MetricsView: mvName,
 			})
-			if err != nil {
+			if err != nil && errors.Is(err, ctx.Err()) { // Don't exit on non-context errors
 				return nil, err
 			}
 
 			_, err = s.CallTool(ctx, RoleAssistant, GetMetricsViewName, nil, &GetMetricsViewArgs{
 				MetricsView: mvName,
 			})
-			if err != nil {
+			if err != nil && errors.Is(err, ctx.Err()) { // Don't exit on non-context errors
 				return nil, err
 			}
 		}
