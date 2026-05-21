@@ -120,7 +120,7 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 			_, err := s.CallTool(ctx, RoleAssistant, GetCanvasName, nil, &GetCanvasArgs{
 				Canvas: args.Canvas,
 			})
-			if err != nil {
+			if err != nil && errors.Is(err, ctx.Err()) { // Don't exit on non-context errors
 				return nil, err
 			}
 
@@ -155,7 +155,7 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	// If no specific dashboard is being explored, we pre-invoke the list_metrics_views tool.
 	if first && len(metricsViewNames) == 0 {
 		_, err := s.CallTool(ctx, RoleAssistant, ListMetricsViewsName, nil, &ListMetricsViewsArgs{})
-		if err != nil {
+		if err != nil && errors.Is(err, ctx.Err()) { // Don't exit on non-context errors
 			return nil, err
 		}
 	}
