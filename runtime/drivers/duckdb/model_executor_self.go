@@ -73,11 +73,8 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		return nil, fmt.Errorf("invalid output properties: %w", err)
 	}
 
-	// pre_exec, post_exec, and create_secrets_from_connectors are user-facing fields that execute on the output OLAP engine.
-	// They are sourced from the output properties. inputProps.PreExec/PostExec/CreateSecretsFromConnectors may also be set by
-	// upstream connector executors (e.g. sqlstore_self sets PreExec to an ATTACH and PostExec to a DETACH) or by self-to-self
-	// models that still configure them at the top level. Merge them so the upstream/internal values run as outer wrappers
-	// around any user-provided values.
+	// Merge pre/post exec/ statements and CreateSecretsFromConnectors from output props into input props
+	// Ideally pre_exec and post_exec needs to be set in output but for duckdb -> duckdb models they can be set in input props as well.
 	if outputProps.PreExec != "" {
 		if inputProps.PreExec != "" {
 			inputProps.PreExec += "\n;"

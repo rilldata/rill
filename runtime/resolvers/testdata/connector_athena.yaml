@@ -9,7 +9,7 @@ project_files:
     sql: "select * from integration_test.all_datatypes"
     output:
       connector: duckdb
-    post_exec: "UPDATE all_datatypes_duckdb SET id = id + 1"
+      post_exec: "UPDATE all_datatypes_duckdb SET id = id + 1"
 tests:
   - name: query_all_results_duckdb
     resolver: sql

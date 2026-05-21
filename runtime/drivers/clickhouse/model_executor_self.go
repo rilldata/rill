@@ -56,10 +56,8 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		return nil, fmt.Errorf("invalid model properties: %w", err)
 	}
 
-	// pre_exec and post_exec are user-facing fields that execute on the output engine. They are sourced from the output
-	// properties. inputProps.PreExec/PostExec may also be set by upstream connector executors or by self-to-self models that
-	// still configure them at the top level. Merge them so the upstream/internal values run as outer wrappers around any
-	// user-provided values.
+	// Merge pre/post exec statements from output props into input props
+	// Ideally pre_exec and post_exec needs to be set in output but for clickhouse -> clickhouse models they can be set in input props as well.
 	if outputProps.PreExec != "" {
 		if inputProps.PreExec != "" {
 			inputProps.PreExec += "\n;"
