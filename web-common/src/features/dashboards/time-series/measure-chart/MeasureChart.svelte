@@ -1,4 +1,5 @@
 <script lang="ts">
+  import InlineErrorIndicator from "@rilldata/web-common/features/dashboards/errors/InlineErrorIndicator.svelte";
   import TDDMeasureChart from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/TDDChart.svelte";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
@@ -323,10 +324,10 @@
     </div>
   {:else if isError}
     <div
-      class="flex items-center justify-center text-red-500 text-xs h-[145px]"
+      class="flex items-center justify-center h-[145px]"
       class:h-[245px]={showTimeDimensionDetail}
     >
-      {error ?? "Error loading data"}
+      <InlineErrorIndicator message={error} />
     </div>
   {:else if usesVegaChart && data.length > 0}
     <div class="w-full" style:height="{height}px">
