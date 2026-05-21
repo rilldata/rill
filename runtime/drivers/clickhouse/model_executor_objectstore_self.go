@@ -79,17 +79,7 @@ func (e *objectStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.M
 	if err != nil {
 		return nil, err
 	}
-
-	// parse incoming properties and forward them to the input properties of the self executor
-	forwardProps := &ModelInputProperties{}
-	if err := mapstructure.WeakDecode(opts.InputProperties, &forwardProps); err != nil {
-		return nil, err
-	}
-	props := &ModelInputProperties{
-		SQL:      sql,
-		PreExec:  forwardProps.PreExec,
-		PostExec: forwardProps.PostExec,
-	}
+	props := &ModelInputProperties{SQL: sql}
 	propsMap := make(map[string]any)
 	if err := mapstructure.Decode(props, &propsMap); err != nil {
 		return nil, err

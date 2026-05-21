@@ -56,6 +56,24 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		return nil, fmt.Errorf("invalid model properties: %w", err)
 	}
 
+	// pre_exec and post_exec are user-facing fields that execute on the output engine. They are sourced from the output
+	// properties. inputProps.PreExec/PostExec may also be set by upstream connector executors or by self-to-self models that
+	// still configure them at the top level. Merge them so the upstream/internal values run as outer wrappers around any
+	// user-provided values.
+	if outputProps.PreExec != "" {
+		if inputProps.PreExec != "" {
+			inputProps.PreExec += "\n;"
+		}
+		inputProps.PreExec += outputProps.PreExec
+	}
+	if outputProps.PostExec != "" {
+		if inputProps.PostExec != "" {
+			inputProps.PostExec = outputProps.PostExec + "\n;" + inputProps.PostExec
+		} else {
+			inputProps.PostExec = outputProps.PostExec
+		}
+	}
+
 	usedModelName := false
 	if outputProps.Table == "" {
 		outputProps.Table = opts.ModelName

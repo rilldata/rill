@@ -73,6 +73,28 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		return nil, fmt.Errorf("invalid output properties: %w", err)
 	}
 
+	// pre_exec, post_exec, and create_secrets_from_connectors are user-facing fields that execute on the output OLAP engine.
+	// They are sourced from the output properties. inputProps.PreExec/PostExec/CreateSecretsFromConnectors may also be set by
+	// upstream connector executors (e.g. sqlstore_self sets PreExec to an ATTACH and PostExec to a DETACH) or by self-to-self
+	// models that still configure them at the top level. Merge them so the upstream/internal values run as outer wrappers
+	// around any user-provided values.
+	if outputProps.PreExec != "" {
+		if inputProps.PreExec != "" {
+			inputProps.PreExec += "\n;"
+		}
+		inputProps.PreExec += outputProps.PreExec
+	}
+	if outputProps.PostExec != "" {
+		if inputProps.PostExec != "" {
+			inputProps.PostExec = outputProps.PostExec + "\n;" + inputProps.PostExec
+		} else {
+			inputProps.PostExec = outputProps.PostExec
+		}
+	}
+	if len(outputProps.CreateSecretsFromConnectors) > 0 {
+		inputProps.CreateSecretsFromConnectors = append(inputProps.CreateSecretsFromConnectors, outputProps.CreateSecretsFromConnectors...)
+	}
+
 	usedModelName := false
 	if outputProps.Table == "" {
 		outputProps.Table = opts.ModelName

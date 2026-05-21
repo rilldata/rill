@@ -1556,6 +1556,28 @@ definitions:
               partition_by:
                 type: string
                 description: Column or expression to partition the table by
+              pre_exec:
+                type: string
+                description: SQL query to run on the output OLAP engine (DuckDB or ClickHouse) before the main query. (optional). Ensure pre_exec queries are idempotent. Use IF NOT EXISTS statements when applicable.
+                examples:
+                  - pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES)
+              post_exec:
+                type: string
+                description: SQL query to run on the output OLAP engine (DuckDB or ClickHouse) after the main query. (optional). Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable.
+                examples:
+                  - post_exec: DETACH DATABASE IF EXISTS postgres_db
+              create_secrets_from_connectors:
+                type:
+                  - string
+                  - array
+                items:
+                  type: string
+                description: List of connector names for which temporary secrets should be created on the output OLAP engine before executing the SQL. Only applies when the output connector is DuckDB. This allows DuckDB-based models to access cloud storage (S3, GCS, Azure) using credentials from named connectors.
+                examples:
+                  - create_secrets_from_connectors: my_s3_connector
+                  - create_secrets_from_connectors:
+                      - my_s3_connector
+                      - my_other_s3_connector
             allOf:
               - if:
                   title: Additional properties for `output` when `connector` is `clickhouse`
@@ -1820,21 +1842,6 @@ definitions:
           format:
             type: string
             description: 'Format of the data source (e.g., csv, json, parquet).'
-          pre_exec:
-            type: string
-            description: 'SQL queries to run on the output OLAP engine (DuckDB or ClickHouse) before the main query. _(optional)_. Ensure `pre_exec` queries are idempotent. Use `IF NOT EXISTS` statements when applicable.'
-          post_exec:
-            type: string
-            description: 'SQL query to run on the output OLAP engine (DuckDB or ClickHouse) after the main query. _(optional)_. Ensure `post_exec` queries are idempotent. Use `IF EXISTS` statements when applicable.'
-            examples:
-            - pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES);
-              sql: SELECT * FROM postgres_query('postgres_db', 'SELECT * FROM USERS')
-              post_exec: DETACH DATABASE IF EXISTS postgres_db 
-          create_secrets_from_connectors:
-            type:
-              - string
-              - array
-            description: List of connector names for which temporary secrets should be created before executing the SQL.
       gcs:
         type: object
         properties:

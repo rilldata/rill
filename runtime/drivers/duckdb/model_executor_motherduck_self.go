@@ -93,19 +93,10 @@ func (e *mdToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecu
 		return nil, fmt.Errorf("no motherduck token found. Refer to this documentation for instructions: https://docs.rilldata.com/developers/build/connectors/olap/motherduck")
 	}
 
-	// parse incoming properties and forward them to the input properties of the self executor
-	forwardProps := &ModelInputProperties{}
-	if err := mapstructure.WeakDecode(opts.InputProperties, &forwardProps); err != nil {
-		return nil, err
-	}
-
 	clone := *opts
 	m := &ModelInputProperties{
-		SQL:                         inputProps.SQL,
-		InitQueries:                 fmt.Sprintf("INSTALL 'motherduck'; LOAD 'motherduck'; SET motherduck_token=%s; ATTACH %s;", safeSQLString(token), safeSQLString(dsn)),
-		PreExec:                     forwardProps.PreExec,
-		PostExec:                    forwardProps.PostExec,
-		CreateSecretsFromConnectors: forwardProps.CreateSecretsFromConnectors,
+		SQL:         inputProps.SQL,
+		InitQueries: fmt.Sprintf("INSTALL 'motherduck'; LOAD 'motherduck'; SET motherduck_token=%s; ATTACH %s;", safeSQLString(token), safeSQLString(dsn)),
 	}
 	var props map[string]any
 	err = mapstructure.Decode(m, &props)

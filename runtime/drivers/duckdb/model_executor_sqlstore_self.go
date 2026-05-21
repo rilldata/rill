@@ -65,15 +65,9 @@ func (e *sqlStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mode
 		return nil, fmt.Errorf("invalid input properties: %w", err)
 	}
 
-	// parse incoming properties and forward them to the input properties of the self executor
-	forwardProps := &ModelInputProperties{}
-	if err := mapstructure.WeakDecode(opts.InputProperties, &forwardProps); err != nil {
-		return nil, err
-	}
-
 	// Build the model executor options with updated input properties
 	clone := *opts
-	newInputProps, err := e.modelInputProperties(opts.ModelName, opts.InputConnector, opts.InputHandle, inputProps, forwardProps)
+	newInputProps, err := e.modelInputProperties(opts.ModelName, opts.InputConnector, opts.InputHandle, inputProps)
 	if err != nil {
 		return nil, err
 	}
@@ -90,10 +84,8 @@ func (e *sqlStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mode
 	return res, nil
 }
 
-func (e *sqlStoreToSelfExecutor) modelInputProperties(modelName, inputConnector string, inputHandle drivers.Handle, inputProps *sqlStoreToSelfInputProps, forwardProps *ModelInputProperties) (map[string]any, error) {
-	m := &ModelInputProperties{
-		CreateSecretsFromConnectors: forwardProps.CreateSecretsFromConnectors,
-	}
+func (e *sqlStoreToSelfExecutor) modelInputProperties(modelName, inputConnector string, inputHandle drivers.Handle, inputProps *sqlStoreToSelfInputProps) (map[string]any, error) {
+	m := &ModelInputProperties{}
 	dbName := fmt.Sprintf("%s__%s", modelName, inputConnector)
 	safeDBName := safeName(dbName)
 	userQuery, _ := strings.CutSuffix(inputProps.SQL, ";") // trim trailing semi colon
@@ -136,15 +128,6 @@ func (e *sqlStoreToSelfExecutor) modelInputProperties(modelName, inputConnector 
 		return nil, fmt.Errorf("internal error: unsupported external database: %s", inputHandle.Driver())
 	}
 	m.PostExec = fmt.Sprintf("DETACH %s", safeDBName)
-
-	// Append user-provided PreExec/PostExec
-	if forwardProps.PreExec != "" {
-		m.PreExec += "\n;" + forwardProps.PreExec
-	}
-	if forwardProps.PostExec != "" {
-		m.PostExec = forwardProps.PostExec + "\n;" + m.PostExec
-	}
-
 	propsMap := make(map[string]any)
 	if err := mapstructure.Decode(m, &propsMap); err != nil {
 		return nil, err
