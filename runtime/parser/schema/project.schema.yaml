@@ -2075,6 +2075,9 @@ definitions:
           first_month_of_year:
             type: integer
             description: Refers to the first month of the year for time grain aggregation. The valid values are 1 through 12 where January=1 and December=12
+          max_query_time_range:
+            type: string
+            description: 'The maximum time span any single query against this metrics view may cover, expressed as an ISO 8601 duration with day-or-larger granularity (e.g. `P90D`, `P3M`, `P1Y`). Sub-day durations such as `PT12H` are not supported. Applies independently to the primary and comparison time ranges. If unset, no limit is enforced.'
           dimensions:
             type: array
             description: Relates to exploring segments or dimensions of your data and filtering the dashboard
@@ -2226,7 +2229,10 @@ definitions:
                 treat_nulls_as:
                   type: string
                   description: used to configure what value to fill in for missing time buckets. This also works generally as COALESCING over non empty time buckets.
-                
+                lower_is_better:
+                  type: boolean
+                  description: When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas (KPIs, big numbers, leaderboards, pivot tables, time-series tooltips) swap their positive/negative coloring accordingly.
+
               required:
                 - name
 

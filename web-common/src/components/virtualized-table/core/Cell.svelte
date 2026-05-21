@@ -41,6 +41,7 @@
     index: number;
     meta: boolean;
   }) => void = () => {};
+  export let lowerIsBetter = false;
   export let onkeydown: ((e: KeyboardEvent) => void) | undefined = undefined;
 
   const config: VirtualizedTableConfig = getContext("config");
@@ -177,6 +178,7 @@
           {type}
           value={formattedValue || value}
           color="text-fg-secondary"
+          {lowerIsBetter}
         />
       </button>
     </BarAndLabel>

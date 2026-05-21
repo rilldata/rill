@@ -3439,6 +3439,8 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	}
 
+	// no validation rules for MaxQueryTimeRange
+
 	if m.CacheEnabled != nil {
 		// no validation rules for CacheEnabled
 	}
@@ -13286,6 +13288,8 @@ func (m *MetricsViewSpec_Measure) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for LowerIsBetter
 
 	if len(errors) > 0 {
 		return MetricsViewSpec_MeasureMultiError(errors)

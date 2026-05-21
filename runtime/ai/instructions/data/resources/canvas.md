@@ -175,6 +175,7 @@ When building a new canvas dashboard, follow this recommended structure:
 - **Two-dimensional patterns**: Use `heatmap`
 - **Dual-metric comparison**: Use `combo_chart` for two measures with different scales
 - **Funnel analysis**: Use `funnel_chart` to visualize sequential stage drop-offs
+- **Two-measure relationships**: Use `scatter_plot` to explore correlation, clusters, or outliers between two numeric measures
 
 
 # Field guidelines
@@ -663,6 +664,52 @@ combo_chart:
     mark: line
 ```
 
+### Scatter Plot
+
+Visualize the relationship between two measures, with each point representing a data value. Points can be optionally colored by a dimension and sized by a measure. Useful for correlation analysis and identifying outliers across two numeric metrics.
+
+**Interactive controls** (rendered automatically):
+- `Shift + Drag`: pan the plot
+- Scroll wheel: zoom in/out
+- Double-click: reset zoom and pan to default view
+
+```yaml
+scatter_plot:
+  metrics_view: bids_metrics
+  title: "Bids vs Clicks by Advertiser"
+  x:
+    field: total_bids
+    type: quantitative
+    zeroBasedOrigin: false
+  y:
+    field: total_clicks
+    type: quantitative
+    zeroBasedOrigin: false
+  dimension:
+    field: advertiser_name
+    limit: 10
+    type: nominal
+  size:
+    field: total_impressions
+    type: quantitative
+  color:
+    field: device_os
+    limit: 5
+    type: nominal
+    legendOrientation: top
+```
+
+**Scatter-specific fields:**
+- `x` (required): Measure on the x-axis. Must be `type: quantitative`.
+- `y` (required): Measure on the y-axis. Must be `type: quantitative`.
+- `dimension` (optional): Nominal dimension; each distinct value renders as a separate point. Use `limit` to cap the number of points.
+- `size` (optional): Measure that controls point radius. Must be `type: quantitative`.
+- `color` (optional): A color string or a nominal dimension field object to color points by.
+
+**Notes:**
+- Setting `zeroBasedOrigin: false` on both axes is usually preferred for scatter plots, since the interesting range often does not include zero.
+- `comparison_time_range` is not supported for scatter plots.
+
 ### Funnel Chart
 
 Show flow through stages or conversion processes:
@@ -674,6 +721,7 @@ funnel_chart:
   breakdownMode: dimension
   color: stage
   mode: width
+  percentMode: top
   stage:
     field: funnel_stage
     type: nominal
@@ -683,7 +731,7 @@ funnel_chart:
     type: quantitative
 ```
 
-**With multiple measures breakdown:**
+**With multiple measures breakdown and step-to-step percentages:**
 
 ```yaml
 funnel_chart:
@@ -692,6 +740,7 @@ funnel_chart:
   breakdownMode: measures
   color: value
   mode: width
+  percentMode: previous
   measure:
     field: impressions
     type: quantitative
@@ -705,6 +754,11 @@ funnel_chart:
 **Breakdown modes and color options:**
 - `breakdownMode: dimension` with `color: stage` (different colors per stage) or `color: measure` (similar colors by value)
 - `breakdownMode: measures` with `color: name` (different colors per measure) or `color: value` (similar colors by value)
+
+**Percent mode (`percentMode`):**
+- `top` (default): the on-bar percentage label is each stage's value as a share of the top stage. Use for overall conversion ("how many of the entry-point users reached this stage").
+- `previous`: the on-bar percentage label is each stage's value as a share of the immediately prior stage. Use for stage-to-stage drop-off ("what fraction of the previous stage continued").
+- The tooltip always shows both `% of top` and `% of previous` regardless of this setting, so users can disambiguate without the author surfacing both.
 
 ### Pivot
 
