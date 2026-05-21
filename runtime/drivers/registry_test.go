@@ -85,22 +85,13 @@ func TestInstanceConfigAITimeouts(t *testing.T) {
 	inst := &drivers.Instance{
 		Environment: "prod",
 		Variables: map[string]string{
-			"rill.ai.llm_request_timeout_seconds": "600",
-			"rill.ai.chat_timeout_seconds":        "600",
+			"rill.ai.completion_timeout_seconds": "600",
+			"rill.ai.llm_timeout_seconds":        "600",
 		},
 	}
 
 	cfg, err := inst.Config()
 	require.NoError(t, err)
-	require.Equal(t, uint32(600), cfg.AILLMRequestTimeoutSeconds)
-	require.Equal(t, uint32(600), cfg.AIChatTimeoutSeconds)
-}
-
-func TestInstanceConfigAITimeoutDefaults(t *testing.T) {
-	inst := &drivers.Instance{Environment: "prod"}
-
-	cfg, err := inst.Config()
-	require.NoError(t, err)
-	require.Equal(t, uint32(180), cfg.AILLMRequestTimeoutSeconds)
-	require.Equal(t, uint32(300), cfg.AIChatTimeoutSeconds)
+	require.Equal(t, uint32(600), cfg.AICompletionTimeoutSeconds)
+	require.Equal(t, uint32(600), cfg.AILLMTimeoutSeconds)
 }

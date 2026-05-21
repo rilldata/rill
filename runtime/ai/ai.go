@@ -1134,7 +1134,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 	if err != nil {
 		return fmt.Errorf("failed to get instance config: %w", err)
 	}
-	llmRequestTimeout := time.Duration(cfg.AILLMRequestTimeoutSeconds) * time.Second
+	llmRequestTimeout := time.Duration(cfg.AILLMTimeoutSeconds) * time.Second
 
 	// Prepare tool definitions.
 	tools := make([]*aiv1.Tool, 0, len(opts.Tools))

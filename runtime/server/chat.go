@@ -210,6 +210,14 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 		return nil, ErrForbidden
 	}
 
+	// Apply configured timeout for AI completions
+	cfg, err := s.runtime.InstanceConfig(ctx, req.InstanceId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load instance config: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(cfg.AICompletionTimeoutSeconds)*time.Second)
+	defer cancel()
+
 	// Validate request - either prompt or feedback context must be provided
 	if req.Prompt == "" && req.FeedbackAgentContext == nil {
 		return nil, status.Error(codes.InvalidArgument, "prompt or feedback_agent_context must be provided")
@@ -238,10 +246,6 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 			resErr = errors.Join(resErr, err)
 		}
 	}()
-
-	// Context
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
 
 	// Prepare agent args if provided
 	var analystAgentArgs *ai.AnalystAgentArgs
@@ -321,6 +325,14 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		return ErrForbidden
 	}
 
+	// Apply configured timeout for AI completions
+	cfg, err := s.runtime.InstanceConfig(stream.Context(), req.InstanceId)
+	if err != nil {
+		return fmt.Errorf("failed to load instance config: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(stream.Context(), time.Duration(cfg.AICompletionTimeoutSeconds)*time.Second)
+	defer cancel()
+
 	// Validate request - either prompt or feedback context must be provided
 	if req.Prompt == "" && req.FeedbackAgentContext == nil {
 		return status.Error(codes.InvalidArgument, "prompt or feedback_agent_context must be provided")
@@ -334,7 +346,7 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	userAgent := fmt.Sprintf("rill/%s", version)
 
 	// Open the AI session
-	session, err := s.ai.Session(stream.Context(), &ai.SessionOptions{
+	session, err := s.ai.Session(ctx, &ai.SessionOptions{
 		InstanceID: req.InstanceId,
 		SessionID:  req.ConversationId,
 		Claims:     claims,
@@ -344,15 +356,11 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		return err
 	}
 	defer func() {
-		err := session.Flush(stream.Context())
+		err := session.Flush(ctx)
 		if err != nil {
 			resErr = errors.Join(resErr, err)
 		}
 	}()
-
-	// Context
-	ctx, cancel := context.WithCancel(stream.Context())
-	defer cancel()
 
 	// Open subscription for session messages and stream them to the client in the background
 	subCh := session.Subscribe()
@@ -447,8 +455,8 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 // This is required as vanguard doesn't currently map streaming RPCs to SSE, so we register this handler manually override the behavior
 func (s *Server) CompleteStreamingHandler(w http.ResponseWriter, req *http.Request) {
 	// Observability
-	instanceID := req.PathValue("instance_id")
 	ctx := req.Context()
+	instanceID := req.PathValue("instance_id")
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", instanceID),
 	)
@@ -462,10 +470,10 @@ func (s *Server) CompleteStreamingHandler(w http.ResponseWriter, req *http.Reque
 	// Apply configured timeout for AI chat
 	cfg, err := s.runtime.InstanceConfig(ctx, instanceID)
 	if err != nil {
-		http.Error(w, "failed to load instance config", http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("failed to load instance config: %v", err), http.StatusBadRequest)
 		return
 	}
-	ctx, cancel := context.WithTimeout(ctx, time.Duration(cfg.AIChatTimeoutSeconds)*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(cfg.AICompletionTimeoutSeconds)*time.Second)
 	defer cancel()
 	req = req.WithContext(ctx)
 

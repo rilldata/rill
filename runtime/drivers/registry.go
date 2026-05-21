@@ -117,6 +117,10 @@ type InstanceConfig struct {
 	AlertsFastStreamingRefreshCron string `mapstructure:"rill.alerts.fast_streaming_refresh_cron"`
 	// ParserSkipUpdatesIfParseErrors short-circuits project parser reconciliation when parse errors exist.
 	ParserSkipUpdatesIfParseErrors bool `mapstructure:"rill.parser.skip_updates_if_parse_errors"`
+	// AICompletionTimeoutSeconds is the maximum duration of a full AI completion request, which may include multiple LLM requests and tool calls.
+	AICompletionTimeoutSeconds uint32 `mapstructure:"rill.ai.completion_timeout_seconds"`
+	// AILLMTimeoutSeconds is the maximum duration of a single LLM completion request.
+	AILLMTimeoutSeconds uint32 `mapstructure:"rill.ai.llm_timeout_seconds"`
 	// AIDefaultQueryLimit is the default row limit applied to AI tool queries when no limit is specified.
 	AIDefaultQueryLimit int64 `mapstructure:"rill.ai.default_query_limit"`
 	// AIMaxQueryLimit is the maximum row limit allowed for AI tool queries.
@@ -125,10 +129,6 @@ type InstanceConfig struct {
 	AIRequireTimeRange bool `mapstructure:"rill.ai.require_time_range"`
 	// AIMaxTimeRangeDays is the maximum time range allowed for AI tool queries, in days. If set to 0, there is no limit.
 	AIMaxTimeRangeDays int64 `mapstructure:"rill.ai.max_time_range_days"`
-	// AILLMRequestTimeoutSeconds is the maximum duration of a single LLM completion request.
-	AILLMRequestTimeoutSeconds uint32 `mapstructure:"rill.ai.llm_request_timeout_seconds"`
-	// AIChatTimeoutSeconds is the maximum duration of an end-to-end AI chat request.
-	AIChatTimeoutSeconds uint32 `mapstructure:"rill.ai.chat_timeout_seconds"`
 	// StrictResolverProps indicates whether to return an error when a resolver contains properties that are not recognized by the resolver implementation.
 	StrictResolverProps bool `mapstructure:"rill.strict_resolver_properties"`
 	// StrictModelProps indicates whether to return an error when a model contains unmapped properties.
@@ -206,11 +206,11 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		MetricsNullFillingImplementation:     "pushdown",
 		AlertsDefaultStreamingRefreshCron:    "0 0 * * *",    // Every 24 hours
 		AlertsFastStreamingRefreshCron:       "*/10 * * * *", // Every 10 minutes
+		AILLMTimeoutSeconds:                  180,
+		AICompletionTimeoutSeconds:           300,
 		AIDefaultQueryLimit:                  25,
 		AIMaxQueryLimit:                      250,
 		AIRequireTimeRange:                   true,
-		AILLMRequestTimeoutSeconds:           180,
-		AIChatTimeoutSeconds:                 300,
 		ModelPartitionsWarnOnFailure:         i.Environment == "prod",
 		ModelTestsWarnOnFailure:              i.Environment == "prod",
 	}
