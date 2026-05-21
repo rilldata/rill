@@ -301,7 +301,7 @@ func timeoutSelector(fullMethodName string) time.Duration {
 	}
 
 	if fullMethodName == runtimev1.RuntimeService_Complete_FullMethodName || fullMethodName == runtimev1.RuntimeService_CompleteStreaming_FullMethodName {
-		return time.Minute * 10
+		return time.Minute * 59 // Hard cap. Actual timeout is configured using config variable rill.ai.completion_timeout_seconds.
 	}
 
 	if fullMethodName == runtimev1.RuntimeService_Health_FullMethodName || fullMethodName == runtimev1.RuntimeService_InstanceHealth_FullMethodName {
