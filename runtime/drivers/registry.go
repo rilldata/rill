@@ -196,8 +196,8 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		MetricsNullFillingImplementation:     "pushdown",
 		AlertsDefaultStreamingRefreshCron:    "0 0 * * *",    // Every 24 hours
 		AlertsFastStreamingRefreshCron:       "*/10 * * * *", // Every 10 minutes
-		AILLMTimeoutSeconds:                  180,
-		AICompletionTimeoutSeconds:           300,
+		AICompletionTimeoutSeconds:           60 * 10,        // 10 minutes
+		AILLMTimeoutSeconds:                  60 * 4,         // 4 minutes
 		AIDefaultQueryLimit:                  25,
 		AIMaxQueryLimit:                      250,
 		AIRequireTimeRange:                   true,
