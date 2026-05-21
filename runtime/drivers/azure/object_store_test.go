@@ -13,6 +13,7 @@ import (
 )
 
 func TestObjectStoreCloud(t *testing.T) {
+	t.Skip("skipping due to inactive Azure account")
 	testmode.Expensive(t)
 	// using azure cloud for these test because azurite does not support startFrom
 	cfg := testruntime.AcquireConnector(t, "azure_cloud")
