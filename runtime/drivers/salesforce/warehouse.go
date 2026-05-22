@@ -33,14 +33,7 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 		return nil, err
 	}
 
-	var username, password, endpoint, key, clientID string
-	if srcProps.Username != "" { // get from src properties
-		username = srcProps.Username
-	} else if u, ok := c.config["username"].(string); ok && u != "" { // get from driver configs
-		username = u
-	} else {
-		return nil, fmt.Errorf("the property 'username' is required for Salesforce. Provide 'username' in the YAML properties or pass '--env connector.salesforce.username=...' to 'rill start'")
-	}
+	var username, password, endpoint, key, clientID, clientSecret string
 
 	if srcProps.Endpoint != "" { // get from src properties
 		endpoint = srcProps.Endpoint
@@ -58,6 +51,12 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 		clientID = defaultClientID
 	}
 
+	if srcProps.Username != "" { // get from src properties
+		username = srcProps.Username
+	} else if u, ok := c.config["username"].(string); ok && u != "" { // get from driver configs
+		username = u
+	}
+
 	if srcProps.Password != "" { // get from src properties
 		password = srcProps.Password
 	} else if p, ok := c.config["password"].(string); ok && p != "" { // get from driver configs
@@ -70,8 +69,10 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 		key = k
 	}
 
-	if password == "" && key == "" {
-		return nil, fmt.Errorf("the property 'password' or property 'key' is required for Salesforce. Provide 'password' or 'key' in the YAML properties or pass '--env connector.salesforce.password=...' or '--env connector.salesforce.key=...' to 'rill start'")
+	if srcProps.ClientSecret != "" { // get from src properties
+		clientSecret = srcProps.ClientSecret
+	} else if s, ok := c.config["client_secret"].(string); ok && s != "" { // get from driver configs
+		clientSecret = s
 	}
 
 	authOptions := authenticationOptions{
@@ -80,6 +81,20 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 		JWT:          key,
 		Endpoint:     endpoint,
 		ConnectedApp: clientID,
+		ClientSecret: clientSecret,
+	}
+
+	switch selectAuthMode(authOptions) {
+	case authModeUnknown:
+		return nil, fmt.Errorf("Salesforce credentials are required: provide a JWT 'key', a 'username' and 'password' (with 'client_secret'), or a 'client_secret' for the client credentials flow")
+	case authModePassword:
+		if clientSecret == "" {
+			return nil, fmt.Errorf("the property 'client_secret' is required for username/password authentication. Provide 'client_secret' in the YAML properties or pass '--env connector.salesforce.client_secret=...' to 'rill start'")
+		}
+	case authModeJWT:
+		if username == "" {
+			return nil, fmt.Errorf("the property 'username' is required for JWT authentication. Provide 'username' in the YAML properties or pass '--env connector.salesforce.username=...' to 'rill start'")
+		}
 	}
 
 	session, err := authenticate(authOptions)
@@ -156,14 +171,16 @@ func (j *bulkJob) Next(ctx context.Context) ([]string, error) {
 }
 
 type sourceProperties struct {
-	SOQL     string `mapstructure:"soql"`
-	SObject  string `mapstructure:"sobject"`
-	QueryAll bool   `mapstructure:"queryAll"`
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
-	Key      string `mapstructure:"key"`
-	Endpoint string `mapstructure:"endpoint"`
-	ClientID string `mapstructure:"client_id"`
+	SOQL         string `mapstructure:"soql"`
+	SQL          string `mapstructure:"sql"`
+	SObject      string `mapstructure:"sobject"`
+	QueryAll     bool   `mapstructure:"queryAll"`
+	Username     string `mapstructure:"username"`
+	Password     string `mapstructure:"password"`
+	Key          string `mapstructure:"key"`
+	Endpoint     string `mapstructure:"endpoint"`
+	ClientID     string `mapstructure:"client_id"`
+	ClientSecret string `mapstructure:"client_secret"`
 }
 
 func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
@@ -172,8 +189,13 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Accept `sql:` as an alias for `soql:` so Salesforce fits the same model
+	// shape as other warehouse drivers (which read `sql:` from the source).
 	if conf.SOQL == "" {
-		return nil, fmt.Errorf("property 'soql' is mandatory for connector \"salesforce\"")
+		conf.SOQL = conf.SQL
+	}
+	if conf.SOQL == "" {
+		return nil, fmt.Errorf("property 'soql' (or 'sql') is mandatory for connector \"salesforce\"")
 	}
 	if conf.SObject == "" {
 		return nil, fmt.Errorf("property 'sobject' is mandatory for connector \"salesforce\"")

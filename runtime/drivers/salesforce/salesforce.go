@@ -54,6 +54,11 @@ var spec = drivers.Spec{
 			Type:   drivers.StringPropertyType,
 			Secret: false,
 		},
+		{
+			Key:    "client_secret",
+			Type:   drivers.StringPropertyType,
+			Secret: true,
+		},
 	},
 	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	SourceProperties: []*drivers.PropertySpec{
@@ -105,7 +110,7 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			DisplayName: "JWT Key for Authentication",
 			Required:    false,
-			Hint:        "Paste your JWT private key for token-based authentication. Used with Connected App and Client ID.",
+			Hint:        "Paste your JWT private key for token-based authentication. Used with a Connected App or External Client App's Client ID.",
 			Placeholder: "your_jwt_key",
 			Secret:      true,
 		},
@@ -123,8 +128,17 @@ var spec = drivers.Spec{
 			DisplayName: "Connected App Client Id",
 			Required:    false,
 			Default:     defaultClientID,
-			Hint:        "The client ID (consumer key) from your Salesforce Connected App. Required for JWT authentication.",
+			Hint:        "The Client ID from your Salesforce Connected App. The client credentials and JWT flows also accept an External Client App's Client ID.",
 			NoPrompt:    true,
+		},
+		{
+			Key:         "client_secret",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Connected App Client Secret",
+			Required:    false,
+			Hint:        "The Client Secret from your Salesforce Connected App. Required for the OAuth password flow (Connected App only) and for the client credentials flow (which also accepts an External Client App).",
+			Placeholder: "your_client_secret",
+			Secret:      true,
 		},
 		{
 			Key:         "name",
@@ -171,14 +185,7 @@ type connection struct {
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	var username, password, endpoint, key, clientID string
-
-	if u, ok := c.config["username"].(string); ok && u != "" {
-		username = u
-	} else {
-		// backwards compatibility: return early because this can be defined in sourceProp
-		return nil
-	}
+	var username, password, endpoint, key, clientID, clientSecret string
 
 	if e, ok := c.config["endpoint"].(string); ok && e != "" {
 		endpoint = e
@@ -193,17 +200,20 @@ func (c *connection) Ping(ctx context.Context) error {
 		clientID = defaultClientID
 	}
 
-	if p, ok := c.config["password"].(string); ok && p != "" {
+	if u, ok := c.config["username"].(string); ok {
+		username = u
+	}
+
+	if p, ok := c.config["password"].(string); ok {
 		password = p
 	}
 
-	if k, ok := c.config["key"].(string); ok && k != "" {
+	if k, ok := c.config["key"].(string); ok {
 		key = k
 	}
 
-	if password == "" && key == "" {
-		// backwards compatibility: return early because this can be defined in sourceProp
-		return nil
+	if s, ok := c.config["client_secret"].(string); ok {
+		clientSecret = s
 	}
 
 	authOptions := authenticationOptions{
@@ -212,6 +222,12 @@ func (c *connection) Ping(ctx context.Context) error {
 		JWT:          key,
 		Endpoint:     endpoint,
 		ConnectedApp: clientID,
+		ClientSecret: clientSecret,
+	}
+
+	if selectAuthMode(authOptions) == authModeUnknown {
+		// backwards compatibility: credentials may be defined in the source properties instead
+		return nil
 	}
 
 	_, err := authenticate(authOptions)
