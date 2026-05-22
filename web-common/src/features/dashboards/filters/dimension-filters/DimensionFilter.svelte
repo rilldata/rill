@@ -456,7 +456,9 @@
             <TooltipTitle>
               <svelte:fragment slot="name">{name}</svelte:fragment>
               <svelte:fragment slot="description"
-                >{required ? "required dimension" : "dimension"}</svelte:fragment
+                >{required
+                  ? "required dimension"
+                  : "dimension"}</svelte:fragment
               >
             </TooltipTitle>
             {#if missingRequired}
