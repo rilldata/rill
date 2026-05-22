@@ -206,7 +206,6 @@ func (e *Executor) Timestamps(ctx context.Context, timeDim string) (metricsview.
 	res.Now = time.Now()
 
 	// For the primary time dimension, also resolve rollup table timestamps.
-	// Per-rollup data_time_range short-circuits the OLAP probe for that rollup.
 	if timeDim == mv.TimeDimension && len(mv.Rollups) > 0 {
 		res.Rollups = make(map[string]metricsview.TimestampsResult, len(mv.Rollups))
 		for _, rollup := range mv.Rollups {

@@ -67,7 +67,7 @@ const (
 //     to the rollup grain (to prevent the last bucket from pulling in extra data).
 //
 //  4. Selection: among eligible rollups, prefer the coarsest grain (fewer rows to scan).
-//     On ties, prefer the rollup defined earlier in the metrics view's rollups list — authors use this
+//     On ties, prefer the rollup defined earlier in the metrics view's rollups list — use this
 //     to express priority among same-grain rollups with overlapping dimensions.
 //
 // The selected rollup is returned as a synthetic MetricsViewSpec that points to the rollup table.
@@ -264,7 +264,7 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 
 		// Check end alignment now: if data extends beyond the query end and the end is not aligned to the rollup grain,
 		// the last rollup bucket would include data beyond the requested range. rollupEligible only checks start alignment.
-		// Essentially it just check if base has data >= query end time, then makes sure the query end time is rollup grain aligned
+		// Essentially, it just checks if the base has data >= query end time, then makes sure the query end time is rollup grain aligned
 		if hasTimeRange && !qry.TimeRange.End.IsZero() && !baseMax.Before(qry.TimeRange.End) &&
 			!timeAligned(qry.TimeRange.End, rollup.TimeGrain, rollupLoc, e.metricsView.FirstDayOfWeek) {
 			rejectCandidate(rejectEndNotAligned,

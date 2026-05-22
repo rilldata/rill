@@ -62,7 +62,7 @@ _[string]_ - A SQL expression that tells us the max timestamp that the measures 
 
 ### `data_time_range`
 
-_[string]_ - Optional [rilltime](https://docs.rilldata.com/reference/time-syntax/time-syntax) expression describing the base table's time coverage (e.g. `-5Y to now`, `inf`). When set, Rill skips the `min`/`max` OLAP probe for the base table and uses the declared bounds for coverage checks. 
+_[string]_ - Optional [rilltime](https://docs.rilldata.com/reference/time-syntax/time-syntax) expression describing the base table's time coverage (e.g. `-5Y to now`, `inf`). When set, Rill skips the `min`/`max` OLAP probe for the model/table and uses the declared bounds for coverage checks. 
 
 ### `smallest_time_grain`
 
