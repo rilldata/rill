@@ -83,7 +83,7 @@ Raw PEM written inline in the connector YAML (without an `.env` reference) is al
 
 ## Models
 
-A Salesforce model file references the connector by name and supplies the SOQL query plus the SObject the query reads from. The Bulk API needs the SObject to create the job, so it is set explicitly — Rill does not parse it from the SOQL.
+A Salesforce model file references the connector by name and supplies the SOQL query. Rill issues the query through the Salesforce [Bulk API 2.0](https://developer.salesforce.com/docs/atlas.en-us.api_asynch.meta/api_asynch/bulk_api_2_0.htm)
 
 ```yaml
 type: model
@@ -94,13 +94,14 @@ connector: salesforce
 soql: |
   SELECT Id, Name, CreatedDate
   FROM Opportunity
-sobject: Opportunity
 
 output:
   connector: duckdb
 ```
 
 Use `soql:` for the query. `sql:` is also accepted as an alias for parity with other warehouse drivers (the connector explorer in the UI writes the query into `sql:`). Add `queryAll: true` to include soft-deleted records.
+
+SOQL itself does not accept `SELECT *`, but the connector rewrites the `SELECT * FROM <SObject>` shape (which the explorer's "Table" mode emits) into an explicit field list discovered from the SObject's describe response. Compound types like `Address` and `Location` are skipped — their atomic sub-components (e.g. `BillingStreet`, `BillingCity`) are queried instead.
 
 ## Local credentials
 

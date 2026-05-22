@@ -72,15 +72,6 @@ var spec = drivers.Spec{
 			Hint:        "Write a SOQL query to retrieve data from your Salesforce object. For example: SELECT Id, Name FROM Opportunity.",
 		},
 		{
-			Key:         "sobject",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "SObject",
-			Description: "SObject to query in Salesforce.",
-			Placeholder: "Opportunity",
-			Hint:        "Enter the name of the Salesforce object you want to query (e.g., Opportunity, Lead, Account).",
-		},
-		{
 			Key:         "queryAll",
 			Type:        drivers.BooleanPropertyType,
 			Required:    false,
@@ -185,56 +176,18 @@ type connection struct {
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	var username, password, endpoint, key, clientID, clientSecret string
+	authOptions := c.authOptions()
 
-	if e, ok := c.config["endpoint"].(string); ok && e != "" {
-		endpoint = e
-	} else {
-		// backwards compatibility: return early because this can be defined in sourceProp
+	// Backwards compatibility: endpoint and credentials may be defined in
+	// per-model source properties rather than the connector config, so a
+	// connector with no creds at this layer is not necessarily broken.
+	if authOptions.Endpoint == "" || selectAuthMode(authOptions) == authModeUnknown {
 		return nil
 	}
 
-	if c, ok := c.config["client_id"].(string); ok && c != "" {
-		clientID = c
-	} else {
-		clientID = defaultClientID
-	}
-
-	if u, ok := c.config["username"].(string); ok {
-		username = u
-	}
-
-	if p, ok := c.config["password"].(string); ok {
-		password = p
-	}
-
-	if k, ok := c.config["key"].(string); ok {
-		key = k
-	}
-
-	if s, ok := c.config["client_secret"].(string); ok {
-		clientSecret = s
-	}
-
-	authOptions := authenticationOptions{
-		Username:     username,
-		Password:     password,
-		JWT:          key,
-		Endpoint:     endpoint,
-		ConnectedApp: clientID,
-		ClientSecret: clientSecret,
-	}
-
-	if selectAuthMode(authOptions) == authModeUnknown {
-		// backwards compatibility: credentials may be defined in the source properties instead
-		return nil
-	}
-
-	_, err := authenticate(authOptions)
-	if err != nil {
+	if _, err := authenticate(authOptions); err != nil {
 		return fmt.Errorf("authentication failed: %w", err)
 	}
-
 	return nil
 }
 
@@ -290,11 +243,6 @@ func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 
 // AsOLAP implements drivers.Connection.
 func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
-	return nil, false
-}
-
-// AsInformationSchema implements drivers.Connection.
-func (c *connection) AsInformationSchema() (drivers.InformationSchema, bool) {
 	return nil, false
 }
 

@@ -100,14 +100,6 @@ export const salesforceSchema: MultiStepFormSchema = {
       "x-placeholder": "SELECT Id, Name FROM Opportunity",
       "x-step": "explorer",
     },
-    sobject: {
-      type: "string",
-      title: "SObject",
-      description:
-        "Salesforce object the SOQL query reads from (e.g. Opportunity, Account, MyObject__c)",
-      "x-placeholder": "Opportunity",
-      "x-step": "explorer",
-    },
     name: {
       type: "string",
       title: "Model name",
@@ -117,7 +109,7 @@ export const salesforceSchema: MultiStepFormSchema = {
       "x-step": "explorer",
     },
   },
-  required: ["soql", "sobject", "name"],
+  required: ["soql", "name"],
   allOf: [
     {
       if: { properties: { auth_method: { const: "username_password" } } },

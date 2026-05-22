@@ -86,43 +86,43 @@ func TestSelectAuthMode(t *testing.T) {
 }
 
 func TestParseSourceProperties(t *testing.T) {
-	// Explicit soql + sobject is the historical shape.
+	// Explicit soql is the historical shape; Bulk API 2.0 derives the
+	// SObject from the query itself so `sobject` is no longer required.
 	conf, err := parseSourceProperties(map[string]any{
-		"soql":    "SELECT Id FROM Opportunity",
-		"sobject": "Opportunity",
+		"soql": "SELECT Id FROM Opportunity",
 	})
 	require.NoError(t, err)
 	require.Equal(t, "SELECT Id FROM Opportunity", conf.SOQL)
-	require.Equal(t, "Opportunity", conf.SObject)
 
 	// `sql:` is accepted as a fallback for `soql:` so Salesforce fits the
 	// warehouse model shape produced by the connector explorer.
 	conf, err = parseSourceProperties(map[string]any{
-		"sql":     "SELECT Id FROM Account",
-		"sobject": "Account",
+		"sql": "SELECT Id FROM Account",
 	})
 	require.NoError(t, err)
 	require.Equal(t, "SELECT Id FROM Account", conf.SOQL)
-	require.Equal(t, "Account", conf.SObject)
 
 	// An explicit soql wins over sql when both are supplied.
 	conf, err = parseSourceProperties(map[string]any{
-		"soql":    "SELECT Id FROM Opportunity",
-		"sql":     "SELECT Name FROM Lead",
-		"sobject": "Opportunity",
+		"soql": "SELECT Id FROM Opportunity",
+		"sql":  "SELECT Name FROM Lead",
 	})
 	require.NoError(t, err)
 	require.Equal(t, "SELECT Id FROM Opportunity", conf.SOQL)
 
-	// Missing query is an error.
-	_, err = parseSourceProperties(map[string]any{"sobject": "Opportunity"})
+	// Missing query is still an error.
+	_, err = parseSourceProperties(map[string]any{})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "soql")
 
-	// Missing sobject is an error.
-	_, err = parseSourceProperties(map[string]any{"soql": "SELECT Id FROM Opportunity"})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "sobject")
+	// A legacy `sobject:` value is silently ignored (no schema field) so
+	// existing project YAMLs don't error out after the Bulk 2.0 switch.
+	conf, err = parseSourceProperties(map[string]any{
+		"soql":    "SELECT Id FROM Opportunity",
+		"sobject": "Opportunity",
+	})
+	require.NoError(t, err)
+	require.Equal(t, "SELECT Id FROM Opportunity", conf.SOQL)
 }
 
 func TestDecodeJWTKey(t *testing.T) {
@@ -148,6 +148,34 @@ func TestDecodeJWTKey(t *testing.T) {
 	// Garbage that is neither PEM nor base64 is rejected.
 	_, err = decodeJWTKey("not a key !@#$")
 	require.Error(t, err)
+}
+
+func TestApplyOverrides(t *testing.T) {
+	base := authenticationOptions{
+		Endpoint:     "login.salesforce.com",
+		ConnectedApp: defaultClientID,
+		Username:     "config@example.com",
+		Password:     "config-pw",
+	}
+
+	// Per-source values supplied on the model win over connector config.
+	src := &sourceProperties{
+		Endpoint: "test.salesforce.com",
+		Username: "src@example.com",
+		Password: "src-pw",
+	}
+	got := base
+	src.applyOverrides(&got)
+	require.Equal(t, "test.salesforce.com", got.Endpoint)
+	require.Equal(t, "src@example.com", got.Username)
+	require.Equal(t, "src-pw", got.Password)
+	// ConnectedApp was not set on the source, so the connector default stays.
+	require.Equal(t, defaultClientID, got.ConnectedApp)
+
+	// An empty source struct leaves the connector-level options untouched.
+	got = base
+	(&sourceProperties{}).applyOverrides(&got)
+	require.Equal(t, base, got)
 }
 
 func TestAuthenticateValidation(t *testing.T) {
