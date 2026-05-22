@@ -317,6 +317,7 @@ export class CanvasEntity {
     const defaultPreset = validSpec?.defaultPreset ?? {};
     const filterExpressions = defaultPreset.filterExpr ?? {};
     const pinnedFilters = validSpec?.pinnedFilters ?? [];
+    const requiredFilters = validSpec?.requiredFilters ?? [];
 
     if (metricsViews) {
       if (this.filterManager) {
@@ -324,6 +325,7 @@ export class CanvasEntity {
           metricsViews,
           pinnedFilters,
           filterExpressions,
+          requiredFilters,
         );
       } else {
         this.filterManager = new FilterManager(
@@ -331,6 +333,7 @@ export class CanvasEntity {
           this.instanceId,
           pinnedFilters,
           filterExpressions,
+          requiredFilters,
         );
         // Clears the active component when a global filter changes through
         // FilterManager.actions.* (user-driven filter UI). Pivot click-to-filter
@@ -359,10 +362,13 @@ export class CanvasEntity {
     const filterMap = new YAMLMap();
 
     const pinnedFilters = get(this.filterManager.pinnedFilterKeysStore);
+    const requiredFilters = get(this.filterManager.requiredFilterKeysStore);
 
-    const genericPinnedKeys = Array.from(pinnedFilters).map(
-      (f) => f.split("::")[1],
-    );
+    // Required filters are implicitly pinned at runtime; persist them only under
+    // `filters.required` to avoid duplicating them in `filters.pinned`.
+    const genericPinnedKeys = Array.from(pinnedFilters)
+      .filter((f) => !requiredFilters.has(f))
+      .map((f) => f.split("::")[1]);
 
     if (genericPinnedKeys.length > 0) {
       yaml.setIn(["filters", "pinned"], genericPinnedKeys);

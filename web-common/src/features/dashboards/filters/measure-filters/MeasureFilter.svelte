@@ -29,7 +29,16 @@
   let open = openOnMount && !filterData.filter;
   let curPinned = filterData.pinned;
 
-  $: ({ filter, pinned, label, measures, dimensionName, name } = filterData);
+  $: ({
+    filter,
+    pinned,
+    label,
+    measures,
+    dimensionName,
+    name,
+    required,
+    missingRequired,
+  } = filterData);
 
   $: metricsViewNames = measures ? Array.from(measures.keys()) : [];
 </script>
@@ -57,9 +66,10 @@
           active={open}
           {label}
           gray={!filter}
+          error={!!missingRequired}
           theme
           {onRemove}
-          removable={!curPinned}
+          removable={!curPinned && !required}
           removeTooltipText="Remove {label}"
         >
           <MeasureFilterBody
@@ -75,11 +85,16 @@
           <TooltipContent maxWidth="400px">
             <TooltipTitle>
               <svelte:fragment slot="name">{name}</svelte:fragment>
-              <svelte:fragment slot="description">{label || ""}</svelte:fragment
+              <svelte:fragment slot="description"
+                >{required ? "required measure" : label || ""}</svelte:fragment
               >
             </TooltipTitle>
 
-            <slot name="body-tooltip-content">Click to edit the values</slot>
+            {#if missingRequired}
+              This filter is required. Set a value to load the dashboard.
+            {:else}
+              <slot name="body-tooltip-content">Click to edit the values</slot>
+            {/if}
           </TooltipContent>
         </div>
       </Tooltip>

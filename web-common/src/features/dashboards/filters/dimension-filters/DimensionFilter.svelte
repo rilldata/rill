@@ -78,6 +78,8 @@
     isInclude,
     dimensions,
     pinned,
+    required,
+    missingRequired,
   } = filterData);
 
   $: if (!open && filterData.mode !== curMode) {
@@ -421,12 +423,13 @@
           {...props}
           type="dimension"
           gray={selectedValues.length === 0 && !inputText}
+          error={!!missingRequired}
           active={open}
           exclude={curExcludeMode}
           label={`${name} filter`}
           theme
           onRemove={() => removeDimensionFilter(name, metricsViewNames)}
-          removable={!readOnly && !curPinned}
+          removable={!readOnly && !curPinned && !required}
           {readOnly}
           removeTooltipText="remove {selectedValues.length} value{selectedValues.length !==
           1
@@ -452,9 +455,15 @@
           <TooltipContent maxWidth="400px">
             <TooltipTitle>
               <svelte:fragment slot="name">{name}</svelte:fragment>
-              <svelte:fragment slot="description">dimension</svelte:fragment>
+              <svelte:fragment slot="description"
+                >{required ? "required dimension" : "dimension"}</svelte:fragment
+              >
             </TooltipTitle>
-            Click to edit the the filters in this dimension
+            {#if missingRequired}
+              This filter is required. Select a value to load the dashboard.
+            {:else}
+              Click to edit the the filters in this dimension
+            {/if}
           </TooltipContent>
         </div>
       </Tooltip>

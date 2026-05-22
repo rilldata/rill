@@ -872,6 +872,9 @@ message CanvasSpec {
   repeated SecurityRule security_rules = 6;
   // Array of dimension or measure names
   repeated string pinned_filters = 16;
+  // Array of dimension or measure names that must have a value before the canvas can render.
+  // Required filters are implicitly pinned.
+  repeated string required_filters = 19;
 }
 
 message CanvasState {
