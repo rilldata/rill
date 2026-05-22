@@ -73,6 +73,25 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		return nil, fmt.Errorf("invalid output properties: %w", err)
 	}
 
+	// Merge pre/post exec/ statements and CreateSecretsFromConnectors from output props into input props
+	// Ideally pre_exec and post_exec needs to be set in output but for duckdb -> duckdb models they can be set in input props as well.
+	if outputProps.PreExec != "" {
+		if inputProps.PreExec != "" {
+			inputProps.PreExec += "\n;"
+		}
+		inputProps.PreExec += outputProps.PreExec
+	}
+	if outputProps.PostExec != "" {
+		if inputProps.PostExec != "" {
+			inputProps.PostExec = outputProps.PostExec + "\n;" + inputProps.PostExec
+		} else {
+			inputProps.PostExec = outputProps.PostExec
+		}
+	}
+	if len(outputProps.CreateSecretsFromConnectors) > 0 {
+		inputProps.CreateSecretsFromConnectors = append(inputProps.CreateSecretsFromConnectors, outputProps.CreateSecretsFromConnectors...)
+	}
+
 	usedModelName := false
 	if outputProps.Table == "" {
 		outputProps.Table = opts.ModelName
