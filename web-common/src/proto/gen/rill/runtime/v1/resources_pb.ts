@@ -1454,7 +1454,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    * When set, the base table's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
    * Evaluated with `now` = current time, `earliest` = zero time, `latest`/`watermark` = current time.
    *
-   * @generated from field: string data_time_range = 36;
+   * @generated from field: string data_time_range = 37;
    */
   dataTimeRange = "";
 
@@ -1557,6 +1557,15 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    */
   rollups: MetricsViewSpec_Rollup[] = [];
 
+  /**
+   * Maximum time span any single query against this metrics view may cover, as an ISO 8601 duration with day-or-larger granularity (e.g. "P90D", "P3M", "P1Y").
+   * Sub-day durations (hours, minutes, seconds) are not supported. Applies to queries that take a time range, including the comparison time range.
+   * Time-range introspection RPCs are exempt. If unset, no limit is enforced.
+   *
+   * @generated from field: string max_query_time_range = 36;
+   */
+  maxQueryTimeRange = "";
+
   constructor(data?: PartialMessage<MetricsViewSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1577,7 +1586,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 5, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 20, name: "watermark_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 36, name: "data_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 37, name: "data_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "dimensions", kind: "message", T: MetricsViewSpec_Dimension, repeated: true },
     { no: 7, name: "measures", kind: "message", T: MetricsViewSpec_Measure, repeated: true },
     { no: 31, name: "parent_dimensions", kind: "message", T: FieldSelector },
@@ -1592,6 +1601,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 35, name: "cache_timestamps_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 33, name: "query_attributes", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 34, name: "rollups", kind: "message", T: MetricsViewSpec_Rollup, repeated: true },
+    { no: 36, name: "max_query_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec {
@@ -2008,6 +2018,13 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
    */
   dataType?: Type;
 
+  /**
+   * When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas (KPIs, big numbers, leaderboards, pivot tables, time-series tooltips) swap their positive/negative coloring accordingly.
+   *
+   * @generated from field: bool lower_is_better = 17;
+   */
+  lowerIsBetter = false;
+
   constructor(data?: PartialMessage<MetricsViewSpec_Measure>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2032,6 +2049,7 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
     { no: 6, name: "valid_percent_of_total", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 14, name: "treat_nulls_as", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "data_type", kind: "message", T: Type },
+    { no: 17, name: "lower_is_better", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Measure {

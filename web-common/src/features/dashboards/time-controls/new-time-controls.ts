@@ -548,11 +548,26 @@ const defaultBuckets: RangeBuckets = {
 const previousPeriodRegex =
   /-\d+[sSmMhHdDwWqQYy]\/[sSmMhHdDwWqQYy]\s+to\s+ref\/[sSmMhHdDwWqQYy]/;
 
+// rangeWithinCap returns true unless the range can be statically sized to more than maxRange.
+// rill-time expressions and unparseable inputs pass through; the backend has the final say.
+function rangeWithinCap(range: string, maxRange: Duration): boolean {
+  if (range === "inf") return false;
+  if (!range.startsWith("P") && !range.startsWith("p")) return true;
+  const d = Duration.fromISO(range);
+  if (!d.isValid) return true;
+  return d.as("milliseconds") <= maxRange.as("milliseconds");
+}
+
 export function bucketYamlRanges(
   yamlRanges: V1ExploreTimeRange[],
   minTimeGrain: V1TimeGrain | undefined,
   usingRillTime: boolean,
+  maxQueryTimeRange?: Duration,
 ): RangeBuckets {
+  const capped = maxQueryTimeRange
+    ? maxQueryTimeRange.as("milliseconds") > 0
+    : false;
+
   const showDefaults = !yamlRanges.length;
 
   if (!minTimeGrain) {
@@ -560,11 +575,28 @@ export function bucketYamlRanges(
   }
 
   if (showDefaults) {
-    if (!usingRillTime) return defaultBuckets;
+    if (!usingRillTime) {
+      if (!capped) return defaultBuckets;
+      return {
+        ...defaultBuckets,
+        latest: RILL_LATEST.filter((r) =>
+          rangeWithinCap(r, maxQueryTimeRange!),
+        ).map((r) => parseRillTime(r)),
+        allTime: false,
+      };
+    }
 
     const timeGrainOptions = getAllowedGrains(minTimeGrain);
 
-    return getDefaultRangeBuckets(timeGrainOptions);
+    const buckets = getDefaultRangeBuckets(timeGrainOptions);
+    if (!capped) return buckets;
+    return {
+      ...buckets,
+      latest: buckets.latest.filter((p) =>
+        rangeWithinCap(p.toString(), maxQueryTimeRange!),
+      ),
+      allTime: false,
+    };
   }
 
   const skeleton: RangeBuckets = {
@@ -579,9 +611,11 @@ export function bucketYamlRanges(
     if (!range) return;
 
     if (range === "inf") {
-      skeleton.allTime = true;
+      if (!capped) skeleton.allTime = true;
       return;
     }
+
+    if (capped && !rangeWithinCap(range, maxQueryTimeRange!)) return;
 
     try {
       const parsed = parseRillTime(range);

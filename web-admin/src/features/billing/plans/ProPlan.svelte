@@ -1,5 +1,9 @@
 <script lang="ts">
   import PlanContainer from "@rilldata/web-admin/features/billing/plans/PlanContainer.svelte";
+  import {
+    PricingDetails,
+    PricingDetailsCompact,
+  } from "@rilldata/web-common/features/billing/pricing-details.ts";
 
   let {
     billingPortalUrl,
@@ -32,12 +36,11 @@
   {/snippet}
 
   {#snippet info()}
-    $0.15/unit/hr · $1/GB storage/mo. Cancel anytime.
+    {PricingDetailsCompact} Cancel anytime.
   {/snippet}
 
   <div class="text-sm text-fg-tertiary mt-4 pb-4">
-    You'll be billed monthly based on usage at $0.15/compute unit/hr and $1/GB
-    storage/mo.
+    {PricingDetails}
   </div>
 </PlanContainer>
 

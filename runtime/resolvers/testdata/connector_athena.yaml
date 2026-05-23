@@ -9,6 +9,7 @@ project_files:
     sql: "select * from integration_test.all_datatypes"
     output:
       connector: duckdb
+      post_exec: "UPDATE all_datatypes_duckdb SET id = id + 1"
 tests:
   - name: query_all_results_duckdb
     resolver: sql
@@ -16,9 +17,9 @@ tests:
       sql: "select * from all_datatypes_duckdb order by id"
     result_csv: |
       id,boolean_col,int32_col,int64_col,float_col,double_col,byte_array_col,fixed_len_byte_array_col,string_col,decimal_col,date_col,time_millis_col,time_micros_col,timestamp_millis_col,timestamp_micros_col,uuid_col,list_int_col,list_string_col,map_col,struct_col
-      1,true,123,45678901234,1.2300000190734863,3.14159,YWJjZA==,MTIzNDU2Nzg5MGFiY2RlZg==,hello,123.45,2024-03-06,123456,123456789,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789Z,uuidabcd1234efgh,"[1,2,3]","[""apple"",""banana"",""cherry""]","{""key1"":10,""key2"":20}","{""field_float_col"":3.140000104904175,""field_int_col"":42,""field_string_col"":""example""}"
-      2,false,0,0,0,0,,MDAwMDAwMDAwMDAwMDAwMA==,,0,1970-01-01,0,0,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],{},"{""field_float_col"":0,""field_int_col"":0,""field_string_col"":""""}"
-      3,,,,,,,,,,,,,,,,,,,
+      2,true,123,45678901234,1.2300000190734863,3.14159,YWJjZA==,MTIzNDU2Nzg5MGFiY2RlZg==,hello,123.45,2024-03-06,123456,123456789,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789Z,uuidabcd1234efgh,"[1,2,3]","[""apple"",""banana"",""cherry""]","{""key1"":10,""key2"":20}","{""field_float_col"":3.140000104904175,""field_int_col"":42,""field_string_col"":""example""}"
+      3,false,0,0,0,0,,MDAwMDAwMDAwMDAwMDAwMA==,,0,1970-01-01,0,0,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],{},"{""field_float_col"":0,""field_int_col"":0,""field_string_col"":""""}"
+      4,,,,,,,,,,,,,,,,,,,
   - name: query_all_datatypes_duckdb
     resolver: sql
     properties:

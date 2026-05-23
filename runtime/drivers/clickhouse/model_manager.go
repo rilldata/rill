@@ -66,6 +66,10 @@ type ModelOutputProperties struct {
 	DictionarySourceUser string `mapstructure:"dictionary_source_user"`
 	// DictionarySourcePassword is the password for the user that can access the source dictionary table. Only used when typ is DICTIONARY.
 	DictionarySourcePassword string `mapstructure:"dictionary_source_password"`
+	// PreExec is a SQL query to run on the output engine before the main query. Ensure pre_exec queries are idempotent.
+	PreExec string `mapstructure:"pre_exec"`
+	// PostExec is a SQL query to run on the output engine after the main query. Ensure post_exec queries are idempotent.
+	PostExec string `mapstructure:"post_exec"`
 }
 
 // validateAndApplyDefaults validates the model input and output properties and applies defaults.
