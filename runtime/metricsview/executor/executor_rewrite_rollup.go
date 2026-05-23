@@ -58,8 +58,7 @@ const (
 //     e. The base and comparison time range time dimensions are available in the rollup.
 //     f. All queried measures are present. Computed measures are rejected except for comparison-derived
 //        computes (ComparisonValue / ComparisonDelta / ComparisonRatio / ComparisonTime), which are
-//        allowed as long as their referenced base measure is in the rollup since they are pure SQL
-//        wrappers over the referenced measure.
+//        allowed as long as their referenced base measure is in the rollup.
 //     g. All WHERE filter dimensions are present in the rollup.
 //
 //  3. Time coverage: an eligible rollup must cover both the base and (when present) comparison time ranges.
@@ -102,10 +101,8 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 		return nil, nil
 	}
 
-	// Disqualify: queries using a non-primary time dimension on either range (rollups are built on the primary)
-	usesNonPrimaryTimeDim := (qry.TimeRange != nil && qry.TimeRange.TimeDimension != "" && qry.TimeRange.TimeDimension != e.metricsView.TimeDimension) ||
-		(qry.ComparisonTimeRange != nil && qry.ComparisonTimeRange.TimeDimension != "" && qry.ComparisonTimeRange.TimeDimension != e.metricsView.TimeDimension)
-	if usesNonPrimaryTimeDim {
+	// Disqualify: queries using a non-primary time dimension (rollups are built on the primary)
+	if qry.TimeRange != nil && qry.TimeRange.TimeDimension != "" && qry.TimeRange.TimeDimension != e.metricsView.TimeDimension {
 		_, span := tracer.Start(ctx, "rollup.selection")
 		span.SetAttributes(
 			attribute.Int("rollup.candidate_count", len(e.metricsView.Rollups)),
@@ -210,8 +207,7 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 		rollupEffEnd := timeutil.OffsetTime(rollupMax, timeutil.TimeGrainFromAPI(rollup.TimeGrain), 1, rollupLoc)
 
 		// Check coverage for the base time range (or full base table range when no time range is set),
-		// and additionally for the comparison time range when present. Both ranges must be covered
-		// because the AST builds the base and comparison SELECTs against the same rollup table.
+		// and additionally for the comparison time range when present.
 		rangeRejected := false
 		if hasTimeRange {
 			if reason, attrs := checkRangeCoverage(qry.TimeRange, baseMin, baseMax, rollupMin, rollupEffEnd); reason != "" {
@@ -367,15 +363,12 @@ func rollupEligible(rollup *runtimev1.MetricsViewSpec_Rollup, qry *metricsview.Q
 		}
 	}
 
-	// 5. Time range's time dimension must be available in the rollup (checked for both base and comparison ranges).
+	// 5. Time range's time dimension must be available in the rollup
 	trTimeDim := primaryTimeDim
 	if qry.TimeRange != nil && qry.TimeRange.TimeDimension != "" {
 		trTimeDim = qry.TimeRange.TimeDimension
 	}
 	if trTimeDim != "" && !dimInRollup(trTimeDim) {
-		return false, rejectTimeDimensionMissing, nil
-	}
-	if qry.ComparisonTimeRange != nil && qry.ComparisonTimeRange.TimeDimension != "" && !dimInRollup(qry.ComparisonTimeRange.TimeDimension) {
 		return false, rejectTimeDimensionMissing, nil
 	}
 
