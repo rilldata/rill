@@ -103,10 +103,6 @@ function syncMeasures(explore: V1ExploreSpec, exploreState: ExploreState) {
     exploreState.tdd.expandedMeasureName = undefined;
   }
 
-  exploreState.pivot.columns = exploreState.pivot.columns.filter((measure) =>
-    measuresSet.has(measure.id),
-  );
-
   if (exploreState.allMeasuresVisible) {
     // this makes sure that the visible keys is in sync with list of measures
     exploreState.visibleMeasures = [...measuresSet];
@@ -140,16 +136,6 @@ function syncDimensions(explore: V1ExploreSpec, exploreState: ExploreState) {
     exploreState.activePage = DashboardState_ActivePage.DEFAULT;
   }
 
-  exploreState.pivot.rows = exploreState.pivot.rows.filter(
-    (dimension) =>
-      dimensionsSet.has(dimension.id) || dimension.type === PivotChipType.Time,
-  );
-
-  exploreState.pivot.columns = exploreState.pivot.columns.filter(
-    (dimension) =>
-      dimensionsSet.has(dimension.id) || dimension.type === PivotChipType.Time,
-  );
-
   if (exploreState.allDimensionsVisible) {
     // this makes sure that the visible keys is in sync with list of dimensions
     exploreState.visibleDimensions = [...dimensionsSet];
@@ -159,6 +145,23 @@ function syncDimensions(explore: V1ExploreSpec, exploreState: ExploreState) {
       ? exploreState.visibleDimensions.filter((d) => dimensionsSet.has(d))
       : [];
   }
+}
+
+function syncPivot(explore: V1ExploreSpec, exploreState: ExploreState) {
+  const measuresSet = new Set(explore.measures ?? []);
+  const dimensionsSet = new Set(explore.dimensions ?? []);
+
+  exploreState.pivot.rows = exploreState.pivot.rows.filter(
+    (dimension) =>
+      dimensionsSet.has(dimension.id) || 
+      dimension.type === PivotChipType.Time,
+  );
+  exploreState.pivot.columns = exploreState.pivot.columns.filter(
+    (column) =>
+      measuresSet.has(column.id) || 
+      dimensionsSet.has(column.id) || 
+      column.type === PivotChipType.Time,
+  );
 }
 
 const metricsViewReducers = {
@@ -234,6 +237,9 @@ const metricsViewReducers = {
 
       // remove references to non existent dimensions
       syncDimensions(explore, exploreState);
+
+      // synchronize pivot rows & columns
+      syncPivot(explore, exploreState);
     });
   },
 
