@@ -101,7 +101,7 @@
           "tags": {
             "type": "array",
             "items": { "type": "string" },
-            "description": "Optional list of tags used to group the dimension in the dashboard."
+            "description": "Optional list of tags used to group this dimension in the explore dashboard's dimensions dropdown. Tags are case-sensitive and trimmed on read."
           }
         },
         "oneOf": [
@@ -204,7 +204,7 @@
           "tags": {
             "type": "array",
             "items": { "type": "string" },
-            "description": "Optional list of tags used to group the measure in the dashboard."
+            "description": "Optional list of tags used to group this measure in the explore dashboard's measures dropdown. Tags are case-sensitive and trimmed on read."
           }
         },
         "required": ["expression"]

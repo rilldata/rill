@@ -8,7 +8,6 @@ import { dimensionTableActions } from "./dimension-table";
 import { dimensionActions } from "./dimensions";
 import { measureActions } from "./measures";
 import { sortActions } from "./sorting";
-import { tagActions } from "./tags";
 import type {
   DashboardCallbackExecutor,
   DashboardMutatorFn,
@@ -87,11 +86,6 @@ export const createStateManagerActions = (
      * Actions related to the leaderboard.
      */
     leaderboard: createDashboardUpdaters(actionArgs, leaderboardActions),
-
-    /**
-     * Bulk visibility actions keyed by dimension or measure tag.
-     */
-    tags: createDashboardUpdaters(actionArgs, tagActions),
   };
 };
 

@@ -2,10 +2,7 @@
   import EyeIcon from "@rilldata/web-common/components/icons/Eye.svelte";
   import EyeOffIcon from "@rilldata/web-common/components/icons/EyeInvisible.svelte";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
-  import type {
-    DimensionTag,
-    TagVisibilityState,
-  } from "@rilldata/web-common/features/dashboards/state-managers/selectors/tags";
+  import type { DimensionTag, TagVisibilityState } from "./tag-utils";
 
   type Props = {
     tag: DimensionTag;

@@ -11,13 +11,17 @@
     MetricsViewSpecMeasure,
   } from "@rilldata/web-common/runtime-client";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
-  import type {
-    DimensionTag,
-    TagVisibilityState,
-  } from "@rilldata/web-common/features/dashboards/state-managers/selectors/tags";
   import { Button } from "../button";
   import Search from "../search/Search.svelte";
   import DashboardMetricsTagRow from "./DashboardMetricsTagRow.svelte";
+  import {
+    applyHideAllInTag,
+    applyOnlyShowTag,
+    applyShowAllInTag,
+    computeTagVisibility,
+    deriveTags,
+    itemHasTag,
+  } from "./tag-utils";
 
   type SelectableItem = MetricsViewSpecMeasure | MetricsViewSpecDimension;
 
@@ -41,22 +45,7 @@
   $: tooltipText = `Choose ${type === "measure" ? "measures" : "dimensions"} to display`;
   $: pluralLabel = type === "measure" ? "measures" : "dimensions";
 
-  // Derive tags from items in first-appearance order.
-  $: tags = (() => {
-    const seen = new Map<string, number>();
-    for (const item of allItems) {
-      if (!item.tags) continue;
-      for (const tag of item.tags) {
-        if (!tag) continue;
-        seen.set(tag, (seen.get(tag) ?? 0) + 1);
-      }
-    }
-    return Array.from(seen, ([name, total]) => ({
-      name,
-      displayName: name,
-      totalCount: total,
-    })) as DimensionTag[];
-  })();
+  $: tags = deriveTags(allItems);
 
   $: hasTags = tags.length > 0;
   $: visibleSet = new Set(selectedItems.filter((id) => id));
@@ -72,7 +61,7 @@
 
   // Items visible in the right column, filtered by the selected tag if any.
   $: itemsForRightColumn = filterActive
-    ? allItems.filter((i) => i.tags?.includes(selectedTag!))
+    ? allItems.filter((i) => itemHasTag(i, selectedTag!))
     : allItems;
 
   // Reset all transient state whenever the popover closes.
@@ -84,38 +73,6 @@
   // If the active tag disappears (e.g. spec changes), drop the filter.
   $: if (selectedTag && !tags.some((t) => t.name === selectedTag)) {
     selectedTag = null;
-  }
-
-  function tagVisibility(tagName: string): TagVisibilityState {
-    let total = 0;
-    let visibleCount = 0;
-    for (const item of allItems) {
-      if (!item.tags?.includes(tagName)) continue;
-      total += 1;
-      if (item.name && visibleSet.has(item.name)) visibleCount += 1;
-    }
-    const state: TagVisibilityState["state"] =
-      visibleCount === 0 ? "none" : visibleCount === total ? "all" : "partial";
-    return { tagName, visibleCount, totalCount: total, state };
-  }
-
-  function namesInTag(tagName: string): string[] {
-    return allItems
-      .filter((i) => i.name && i.tags?.includes(tagName))
-      .map((i) => i.name!);
-  }
-
-  function orderedByAllItems(names: string[]): string[] {
-    const allowed = new Set(names);
-    return allItems
-      .map((i) => i.name)
-      .filter((n): n is string => !!n && allowed.has(n));
-  }
-
-  function clampMinOne(next: string[]): string[] {
-    if (next.length > 0) return next;
-    const fallback = selectedItems[0] ?? allItems[0]?.name;
-    return fallback ? [fallback] : [];
   }
 
   function handleSelectedReorder(data: {
@@ -144,18 +101,15 @@
   }
 
   function showAllInTag(tagName: string) {
-    const union = new Set([...selectedItems, ...namesInTag(tagName)]);
-    onSelectedChange(orderedByAllItems(Array.from(union)));
+    onSelectedChange(applyShowAllInTag(selectedItems, allItems, tagName));
   }
 
   function hideAllInTag(tagName: string) {
-    const remove = new Set(namesInTag(tagName));
-    const remaining = selectedItems.filter((n) => !remove.has(n));
-    onSelectedChange(clampMinOne(orderedByAllItems(remaining)));
+    onSelectedChange(applyHideAllInTag(selectedItems, allItems, tagName));
   }
 
   function showOnlyTag(tagName: string) {
-    onSelectedChange(clampMinOne(orderedByAllItems(namesInTag(tagName))));
+    onSelectedChange(applyOnlyShowTag(selectedItems, allItems, tagName));
   }
 
   function toggleTagFilter(tagName: string) {
@@ -224,7 +178,11 @@
               {#each filteredTags as tag (tag.name)}
                 <DashboardMetricsTagRow
                   {tag}
-                  visibility={tagVisibility(tag.name)}
+                  visibility={computeTagVisibility(
+                    allItems,
+                    visibleSet,
+                    tag.name,
+                  )}
                   selected={selectedTag === tag.name}
                   onSelect={() => toggleTagFilter(tag.name)}
                   onShowAll={() => showAllInTag(tag.name)}

@@ -309,7 +309,7 @@
           const t = node.get("tags");
           if (!(t instanceof YAMLSeq)) continue;
           for (const tagNode of t.items) {
-            const value =
+            const raw =
               typeof tagNode === "string"
                 ? tagNode
                 : tagNode &&
@@ -318,6 +318,7 @@
                     typeof (tagNode as { value: unknown }).value === "string"
                   ? (tagNode as { value: string }).value
                   : "";
+            const value = raw.trim();
             if (value) seen.add(value);
           }
         }

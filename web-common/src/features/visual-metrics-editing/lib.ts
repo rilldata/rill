@@ -8,10 +8,10 @@ function readTags(item?: YAMLMap<string, unknown>): string[] {
   if (!(raw instanceof YAMLSeq)) return [];
   return raw.items
     .map((node) => {
-      if (typeof node === "string") return node;
+      if (typeof node === "string") return node.trim();
       if (node && typeof node === "object" && "value" in node) {
         const v = (node as { value: unknown }).value;
-        return typeof v === "string" ? v : "";
+        return typeof v === "string" ? v.trim() : "";
       }
       return "";
     })
