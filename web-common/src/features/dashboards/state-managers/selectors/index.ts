@@ -14,6 +14,7 @@ import { dimensionTableSelectors } from "./dimension-table";
 import { dimensionSelectors } from "./dimensions";
 import { measureSelectors } from "./measures";
 import { pivotSelectors } from "./pivot";
+import { tagSelectors } from "./tags";
 import { sortingSelectors } from "./sorting";
 import { timeRangeSelectors } from "./time-range";
 import type { ReadablesObj, SelectorFnsObj } from "./types";
@@ -154,6 +155,11 @@ export const createStateManagerReadables = (
       leaderboardSelectors,
       dashboardDataReadables,
     ),
+
+    /**
+     * Readables related to dimension and measure tags.
+     */
+    tags: createReadablesFromSelectors(tagSelectors, dashboardDataReadables),
   };
 };
 
