@@ -25,7 +25,7 @@ var aiSessionTTL = 90 * 24 * time.Hour // 3 months
 
 // aiSessionDeleteBatchSize bounds how many sessions are deleted per transaction.
 // Each batch holds the sqlite write lock briefly, so other registry operations can interleave.
-const aiSessionDeleteBatchSize = 500
+const aiSessionDeleteBatchSize = 200
 
 // Migrate implements drivers.Connection.
 // Migrate for SQLite may not be safe for concurrent use.
