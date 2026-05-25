@@ -251,7 +251,11 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		return err
 	}
 	if err == nil {
-		// Instance already exists. We can return.
+		// Instance already exists (resumed from hibernation). Call ReloadConfig to pick up any variable or config changes that occurred while stopped.
+		_, err = rt.ReloadConfig(ctx, &runtimev1.ReloadConfigRequest{InstanceId: instanceID})
+		if err != nil {
+			return err
+		}
 		return nil
 	}
 

@@ -68,6 +68,7 @@
         timeRangeOptionsStore,
         availableTimeZonesStore,
         allowCustomRangeStore,
+        maxQueryTimeRangeStore,
       },
     },
   } = getCanvasStore(canvasName, instanceId));
@@ -97,6 +98,7 @@
   $: availableTimeZones = $availableTimeZonesStore;
   $: timeRanges = $timeRangeOptionsStore;
   $: allowCustomTimeRange = $allowCustomRangeStore;
+  $: maxQueryTimeRange = $maxQueryTimeRangeStore;
 
   $: ({
     dimensionFilters,
@@ -174,6 +176,7 @@
             canPanRight={canPan.right}
             watermark={undefined}
             {allowCustomTimeRange}
+            {maxQueryTimeRange}
             {showDefaultItem}
             applyRange={(timeRange) => {
               const string = `${timeRange.start.toISOString()},${timeRange.end.toISOString()}`;

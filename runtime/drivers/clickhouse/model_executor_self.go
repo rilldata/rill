@@ -56,6 +56,22 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		return nil, fmt.Errorf("invalid model properties: %w", err)
 	}
 
+	// Merge pre/post exec statements from output props into input props
+	// Ideally pre_exec and post_exec needs to be set in output but for clickhouse -> clickhouse models they can be set in input props as well.
+	if outputProps.PreExec != "" {
+		if inputProps.PreExec != "" {
+			inputProps.PreExec += "\n;"
+		}
+		inputProps.PreExec += outputProps.PreExec
+	}
+	if outputProps.PostExec != "" {
+		if inputProps.PostExec != "" {
+			inputProps.PostExec = outputProps.PostExec + "\n;" + inputProps.PostExec
+		} else {
+			inputProps.PostExec = outputProps.PostExec
+		}
+	}
+
 	usedModelName := false
 	if outputProps.Table == "" {
 		outputProps.Table = opts.ModelName

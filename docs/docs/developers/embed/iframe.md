@@ -42,14 +42,18 @@ sequenceDiagram
 Use the Rill CLI to create a service token for your current organization using the following command:
 ```bash
 # Create with organization role
-rill service create <service_name> --org-role viewer
+rill service create <service_name> --org-role admin
 
 # Or create with project-specific role
-rill service create <service_name> --project <project_name> --project-role viewer
+rill service create <service_name> --project <project_name> --project-role admin
 ```
 
 :::info
 For comprehensive documentation on service tokens, including roles, custom attributes, and management, see [Service Tokens](/guide/administration/access-tokens/service-tokens). Also see the [CLI reference](/reference/cli/service) for command details.
+:::
+
+:::note Why is the admin role required?
+Service tokens used for iframe embedding require the `admin` role to access the deployment management APIs that generate iframe URLs. Using the `viewer` role will result in a 403 permission error.
 :::
 
 :::caution

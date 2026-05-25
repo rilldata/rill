@@ -2,6 +2,7 @@
   import WithTween from "@rilldata/web-common/components/data-graphic/functional-components/WithTween.svelte";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import InlineErrorIndicator from "@rilldata/web-common/features/dashboards/errors/InlineErrorIndicator.svelte";
   import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -12,20 +13,20 @@
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
   import {
-    type MetricsViewSpecMeasure,
     createQueryServiceMetricsViewAggregation,
+    type MetricsViewSpecMeasure,
     type V1Expression,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { cellInspectorStore } from "../stores/cell-inspector-store";
+  import { keepPreviousData } from "@tanstack/svelte-query";
   import {
     crossfade,
     fly,
     type CrossfadeParams,
     type FlyParams,
   } from "svelte/transition";
+  import { cellInspectorStore } from "../stores/cell-inspector-store";
   import BigNumberTooltipContent from "./BigNumberTooltipContent.svelte";
-  import { keepPreviousData } from "@tanstack/svelte-query";
 
   export let measure: MetricsViewSpecMeasure;
   export let withTimeseries = true;
@@ -148,9 +149,18 @@
   $: noChange = !comparisonValue;
   $: isComparisonPositive = diff > 0;
   $: isComparisonNegative = diff < 0;
-  $: comparisonDeltaColorClass = isComparisonPositive
+  $: lowerIsBetter = measure?.lowerIsBetter ?? false;
+  // When comparisonValue < 0, dividing diff by a negative denominator flips the percentage sign,
+  // so "positive %" actually means "value went lower". We flip lowerIsBetter to compensate.
+  $: lowerIsBetterForPerc =
+    comparisonValue != null && comparisonValue < 0
+      ? !lowerIsBetter
+      : lowerIsBetter;
+  $: comparisonDeltaColorClass = (
+    lowerIsBetter ? isComparisonNegative : isComparisonPositive
+  )
     ? "text-kpi-positive"
-    : isComparisonNegative
+    : (lowerIsBetter ? isComparisonPositive : isComparisonNegative)
       ? "text-kpi-negative"
       : "text-fg-secondary";
 
@@ -191,7 +201,7 @@
 </script>
 
 <Tooltip
-  suppress={suppressTooltip}
+  suppress={suppressTooltip || isError}
   distance={8}
   location="right"
   alignment="start"
@@ -246,7 +256,9 @@
               <div
                 role="complementary"
                 class="w-fit max-w-full overflow-hidden text-ellipsis {comparisonDeltaColorClass}"
-                class:font-semibold={isComparisonPositive}
+                class:font-semibold={lowerIsBetter
+                  ? isComparisonNegative
+                  : isComparisonPositive}
                 onmouseenter={() => {
                   tooltipValue =
                     measureValueFormatterTooltip(diff) ?? "no data";
@@ -288,7 +300,11 @@
                   copyValue =
                     measureValueFormatterUnabridged(value) ?? "no data";
                 }}
-                class="w-fit {comparisonDeltaColorClass}"
+                class="w-fit {(
+                  lowerIsBetter ? isComparisonNegative : isComparisonPositive
+                )
+                  ? 'font-semibold'
+                  : ''} {comparisonDeltaColorClass}"
               >
                 <WithTween
                   value={comparisonPercChange}
@@ -297,6 +313,7 @@
                 >
                   <PercentageChange
                     tabularNumber={false}
+                    lowerIsBetter={lowerIsBetterForPerc}
                     value={formatMeasurePercentageDifference(output)}
                   />
                 </WithTween>
@@ -305,12 +322,8 @@
           </div>
         {/if}
       {:else if status === EntityStatus.Error}
-        <div class="text-xs pt-1">
-          {#if errorMessage}
-            Error: {errorMessage}
-          {:else}
-            Error fetching totals data
-          {/if}
+        <div class="pt-1">
+          <InlineErrorIndicator message={errorMessage} />
         </div>
       {:else if status === EntityStatus.Running}
         <div

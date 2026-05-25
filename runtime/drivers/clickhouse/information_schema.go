@@ -303,21 +303,33 @@ func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Tab
 	}
 	defer func() { _ = release() }()
 
+	// On a cluster, data is sharded across replicas and Rill-created tables are Distributed tables whose data lives in `<name>_local`.
+	// Use cluster() (one replica per shard) so SUM(bytes_on_disk) totals every shard without double-counting replicas,
+	// and look up the `_local` name alongside the original so Distributed tables resolve to their backing storage.
+	partsExpr := "system.parts"
+	if c.config.Cluster != "" {
+		partsExpr = fmt.Sprintf("cluster(%s, system.parts)", safeSQLString(c.config.Cluster))
+	}
+
 	var queryBuilder strings.Builder
-	queryBuilder.WriteString(`
-		SELECT 
-			database, 
-			table, 
+	fmt.Fprintf(&queryBuilder, `
+		SELECT
+			database,
+			table,
 			SUM(bytes_on_disk) AS total_size_bytes
-		FROM system.parts
+		FROM %s
 		WHERE active = 1 AND (database, table) IN (
-	`)
-	args := make([]interface{}, 0, len(tables)*2)
-	placeholders := make([]string, 0, len(tables))
+	`, partsExpr)
+	args := make([]interface{}, 0, len(tables)*4)
+	placeholders := make([]string, 0, len(tables)*2)
 
 	for _, table := range tables {
 		placeholders = append(placeholders, "(?, ?)")
 		args = append(args, table.DatabaseSchema, table.Name)
+		if c.config.Cluster != "" {
+			placeholders = append(placeholders, "(?, ?)")
+			args = append(args, table.DatabaseSchema, localTableName(table.Name))
+		}
 	}
 
 	queryBuilder.WriteString(strings.Join(placeholders, ", "))
@@ -356,6 +368,10 @@ func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Tab
 		}
 		if size, ok := schemaTables[t.Name]; ok {
 			t.PhysicalSizeBytes = int64(size)
+		} else if c.config.Cluster != "" {
+			if size, ok := schemaTables[localTableName(t.Name)]; ok {
+				t.PhysicalSizeBytes = int64(size)
+			}
 		}
 	}
 	return err

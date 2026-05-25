@@ -15,6 +15,7 @@
   import { Button } from "@rilldata/web-common/components/button";
   import { upgradeToPro } from "@rilldata/web-admin/features/billing/plans/upgrade-to-pro.ts";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors.ts";
+  import { PricingDetails } from "@rilldata/web-common/features/billing/pricing-details.ts";
 
   let {
     open = $bindable(false),
@@ -29,10 +30,9 @@
   } = $props();
 
   let title: string = $state("");
-  let description =
-    $state(`Your subscription will start today using the payment method on file.
-    You'll be billed monthly based on usage at $0.15/compute unit/hr and $1/GB storage/mo.
-    Cancel anytime.`);
+  let description = $state(
+    `Your subscription will start today using the payment method on file. ${PricingDetails} Cancel anytime.`,
+  );
   let buttonText = $state("Upgrade to Pro");
   function setCopyBasedOnType(t: TeamPlanDialogTypes) {
     switch (t) {

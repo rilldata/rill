@@ -905,6 +905,9 @@ message MetricsViewTimeRangeRequest {
 message MetricsViewTimeRangeResponse {
   // Not optional, not null
   TimeRangeSummary time_range_summary = 1;
+  // The metrics view's max_query_time_range property resolved into milliseconds against the current time.
+  // Zero if the metrics view does not configure max_query_time_range.
+  int64 max_query_time_range_millis = 3;
   // Traces of spans captured during request execution. Only populated if trace was set to true in the request.
   Trace trace = 2;
 }
@@ -977,6 +980,9 @@ message MetricsViewTimeRangesResponse {
   // The same values as resolved_time_ranges for backwards compatibility.
   // Deprecated: use resolved_time_ranges instead.
   repeated TimeRange time_ranges = 2;
+  // The metrics view's max_query_time_range property resolved into milliseconds against the request's reference time.
+  // Zero if the metrics view does not configure max_query_time_range.
+  int64 max_query_time_range_millis = 5;
   // Traces of spans captured during request execution. Only populated if trace was set to true in the request.
   Trace trace = 4;
 }

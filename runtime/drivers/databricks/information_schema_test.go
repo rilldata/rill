@@ -21,6 +21,7 @@ var knownTestTables = []string{"all_datatypes", "bar", "baz", "foo", "foz", "mod
 const numKnown = 6
 
 func TestInformationSchema(t *testing.T) {
+	t.Skip("skipping due to inactive Databricks account")
 	testmode.Expensive(t)
 	_, olap := acquireTestDatabricks(t)
 	ctx := t.Context()

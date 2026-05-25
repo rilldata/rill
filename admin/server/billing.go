@@ -271,6 +271,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 				ToName:           org.Name,
 				OrgName:          org.Name,
 				FrontendURL:      s.admin.URLs.Frontend(),
+				BillingURL:       s.admin.URLs.Billing(org.Name, false),
 				PlanName:         plan.DisplayName,
 				BillingStartDate: sub.CurrentBillingCycleEndDate,
 			})
