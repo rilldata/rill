@@ -27,19 +27,6 @@ service LocalService {
   // GetGithubPullRequest returns the status of the most recent Github PR for the specified branch, if any. Forwards to admin API of the same name.
   rpc GetGithubPullRequest(GetGithubPullRequestRequest) returns (GetGithubPullRequestResponse) {}
 
-  // GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
-  // If there are any merge conflicts the pull is aborted.
-  // Force can be set to true to force the pull and overwrite any local changes.
-  rpc GitPull(GitPullRequest) returns (GitPullResponse) {}
-  
-  // GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
-  // The difference between this and PushTiGithub is that this does not create a new repo.
-  // It only pushes the changes to the existing remote repo.
-  rpc GitPush(GitPushRequest) returns (GitPushResponse) {}
-  
-  // PushToGithub create a Git repo from local project and pushed to users git account.
-  rpc PushToGithub(PushToGithubRequest) returns (PushToGithubResponse) {}
-
   // DeployProject deploys the local project to the Rill cloud.
   rpc DeployProject(DeployProjectRequest) returns (DeployProjectResponse) {}
 
@@ -154,33 +141,6 @@ message GetGithubPullRequestResponse {
     STATE_MERGED = 3;
   }
   State pr_state = 2;
-}
-
-message GitPullRequest {
-  bool discard_local = 1;
-}
-
-message GitPullResponse {
-  // The output of the git pull command. Only set for unsuccessful pulls.
-  string output = 1; 
-}
-
-message GitPushRequest {
-  string commit_message = 1;
-  bool force = 2;
-}
-
-message GitPushResponse {}
-
-message PushToGithubRequest {
-  string account = 1;
-  string repo = 2;
-}
-
-message PushToGithubResponse {
-  string remote = 1;
-  string account = 2;
-  string repo = 3;
 }
 
 message DeployProjectRequest {

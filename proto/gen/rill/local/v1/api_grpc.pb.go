@@ -26,9 +26,6 @@ const (
 	LocalService_GithubRepoStatus_FullMethodName                    = "/rill.local.v1.LocalService/GithubRepoStatus"
 	LocalService_CreateGithubPullRequest_FullMethodName             = "/rill.local.v1.LocalService/CreateGithubPullRequest"
 	LocalService_GetGithubPullRequest_FullMethodName                = "/rill.local.v1.LocalService/GetGithubPullRequest"
-	LocalService_GitPull_FullMethodName                             = "/rill.local.v1.LocalService/GitPull"
-	LocalService_GitPush_FullMethodName                             = "/rill.local.v1.LocalService/GitPush"
-	LocalService_PushToGithub_FullMethodName                        = "/rill.local.v1.LocalService/PushToGithub"
 	LocalService_DeployProject_FullMethodName                       = "/rill.local.v1.LocalService/DeployProject"
 	LocalService_RedeployProject_FullMethodName                     = "/rill.local.v1.LocalService/RedeployProject"
 	LocalService_GetCurrentUser_FullMethodName                      = "/rill.local.v1.LocalService/GetCurrentUser"
@@ -58,16 +55,6 @@ type LocalServiceClient interface {
 	CreateGithubPullRequest(ctx context.Context, in *CreateGithubPullRequestRequest, opts ...grpc.CallOption) (*CreateGithubPullRequestResponse, error)
 	// GetGithubPullRequest returns the status of the most recent Github PR for the specified branch, if any. Forwards to admin API of the same name.
 	GetGithubPullRequest(ctx context.Context, in *GetGithubPullRequestRequest, opts ...grpc.CallOption) (*GetGithubPullRequestResponse, error)
-	// GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
-	// If there are any merge conflicts the pull is aborted.
-	// Force can be set to true to force the pull and overwrite any local changes.
-	GitPull(ctx context.Context, in *GitPullRequest, opts ...grpc.CallOption) (*GitPullResponse, error)
-	// GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
-	// The difference between this and PushTiGithub is that this does not create a new repo.
-	// It only pushes the changes to the existing remote repo.
-	GitPush(ctx context.Context, in *GitPushRequest, opts ...grpc.CallOption) (*GitPushResponse, error)
-	// PushToGithub create a Git repo from local project and pushed to users git account.
-	PushToGithub(ctx context.Context, in *PushToGithubRequest, opts ...grpc.CallOption) (*PushToGithubResponse, error)
 	// DeployProject deploys the local project to the Rill cloud.
 	DeployProject(ctx context.Context, in *DeployProjectRequest, opts ...grpc.CallOption) (*DeployProjectResponse, error)
 	// RedeployProject updates a deployed project.
@@ -161,36 +148,6 @@ func (c *localServiceClient) GetGithubPullRequest(ctx context.Context, in *GetGi
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetGithubPullRequestResponse)
 	err := c.cc.Invoke(ctx, LocalService_GetGithubPullRequest_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *localServiceClient) GitPull(ctx context.Context, in *GitPullRequest, opts ...grpc.CallOption) (*GitPullResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GitPullResponse)
-	err := c.cc.Invoke(ctx, LocalService_GitPull_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *localServiceClient) GitPush(ctx context.Context, in *GitPushRequest, opts ...grpc.CallOption) (*GitPushResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GitPushResponse)
-	err := c.cc.Invoke(ctx, LocalService_GitPush_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *localServiceClient) PushToGithub(ctx context.Context, in *PushToGithubRequest, opts ...grpc.CallOption) (*PushToGithubResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(PushToGithubResponse)
-	err := c.cc.Invoke(ctx, LocalService_PushToGithub_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -305,16 +262,6 @@ type LocalServiceServer interface {
 	CreateGithubPullRequest(context.Context, *CreateGithubPullRequestRequest) (*CreateGithubPullRequestResponse, error)
 	// GetGithubPullRequest returns the status of the most recent Github PR for the specified branch, if any. Forwards to admin API of the same name.
 	GetGithubPullRequest(context.Context, *GetGithubPullRequestRequest) (*GetGithubPullRequestResponse, error)
-	// GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
-	// If there are any merge conflicts the pull is aborted.
-	// Force can be set to true to force the pull and overwrite any local changes.
-	GitPull(context.Context, *GitPullRequest) (*GitPullResponse, error)
-	// GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
-	// The difference between this and PushTiGithub is that this does not create a new repo.
-	// It only pushes the changes to the existing remote repo.
-	GitPush(context.Context, *GitPushRequest) (*GitPushResponse, error)
-	// PushToGithub create a Git repo from local project and pushed to users git account.
-	PushToGithub(context.Context, *PushToGithubRequest) (*PushToGithubResponse, error)
 	// DeployProject deploys the local project to the Rill cloud.
 	DeployProject(context.Context, *DeployProjectRequest) (*DeployProjectResponse, error)
 	// RedeployProject updates a deployed project.
@@ -364,15 +311,6 @@ func (UnimplementedLocalServiceServer) CreateGithubPullRequest(context.Context, 
 }
 func (UnimplementedLocalServiceServer) GetGithubPullRequest(context.Context, *GetGithubPullRequestRequest) (*GetGithubPullRequestResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetGithubPullRequest not implemented")
-}
-func (UnimplementedLocalServiceServer) GitPull(context.Context, *GitPullRequest) (*GitPullResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GitPull not implemented")
-}
-func (UnimplementedLocalServiceServer) GitPush(context.Context, *GitPushRequest) (*GitPushResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GitPush not implemented")
-}
-func (UnimplementedLocalServiceServer) PushToGithub(context.Context, *PushToGithubRequest) (*PushToGithubResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method PushToGithub not implemented")
 }
 func (UnimplementedLocalServiceServer) DeployProject(context.Context, *DeployProjectRequest) (*DeployProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeployProject not implemented")
@@ -544,60 +482,6 @@ func _LocalService_GetGithubPullRequest_Handler(srv interface{}, ctx context.Con
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(LocalServiceServer).GetGithubPullRequest(ctx, req.(*GetGithubPullRequestRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _LocalService_GitPull_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GitPullRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(LocalServiceServer).GitPull(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: LocalService_GitPull_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LocalServiceServer).GitPull(ctx, req.(*GitPullRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _LocalService_GitPush_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GitPushRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(LocalServiceServer).GitPush(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: LocalService_GitPush_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LocalServiceServer).GitPush(ctx, req.(*GitPushRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _LocalService_PushToGithub_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PushToGithubRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(LocalServiceServer).PushToGithub(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: LocalService_PushToGithub_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LocalServiceServer).PushToGithub(ctx, req.(*PushToGithubRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -798,18 +682,6 @@ var LocalService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetGithubPullRequest",
 			Handler:    _LocalService_GetGithubPullRequest_Handler,
-		},
-		{
-			MethodName: "GitPull",
-			Handler:    _LocalService_GitPull_Handler,
-		},
-		{
-			MethodName: "GitPush",
-			Handler:    _LocalService_GitPush_Handler,
-		},
-		{
-			MethodName: "PushToGithub",
-			Handler:    _LocalService_PushToGithub_Handler,
 		},
 		{
 			MethodName: "DeployProject",
