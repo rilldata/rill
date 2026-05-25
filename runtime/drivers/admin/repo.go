@@ -16,12 +16,12 @@ import (
 	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
-	"github.com/go-git/go-git/v5"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/ctxsync"
 	"github.com/rilldata/rill/runtime/pkg/filewatcher"
+	rtgitutil "github.com/rilldata/rill/runtime/pkg/gitutil"
 	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
 	"gopkg.in/yaml.v3"
@@ -453,23 +453,19 @@ func (r *repo) Status(ctx context.Context, remoteBranch string) (*drivers.RepoSt
 		return &drivers.RepoStatus{}, nil
 	}
 
-	repo, err := git.PlainOpen(r.git.repoDir)
+	currentBranch, err := rtgitutil.CurrentBranch(r.git.repoDir)
 	if err != nil {
 		return nil, err
 	}
-	head, err := repo.Head()
-	if err != nil {
-		return nil, err
-	}
-	branches := []string{head.Name().Short()}
+	branches := []string{currentBranch}
 
 	// If a remote branch was explicitly requested and it differs from the current branch, fetch it too
 	// so that ahead/behind counts in RunGitStatus have an up-to-date remote tracking ref to compare against.
-	if remoteBranch != "" && remoteBranch != branches[0] {
+	if remoteBranch != "" && remoteBranch != currentBranch {
 		branches = append(branches, remoteBranch)
 	}
 
-	err = r.git.fetchBranch(ctx, repo, branches...)
+	err = r.git.fetchBranch(ctx, branches...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch branches %q: %w", branches, err)
 	}
@@ -505,11 +501,7 @@ func (r *repo) Commit(ctx context.Context, message string) (string, error) {
 	if !r.git.editable() {
 		return "", fmt.Errorf("repo is not editable")
 	}
-	repo, err := git.PlainOpen(r.git.repoDir)
-	if err != nil {
-		return "", err
-	}
-	return r.git.commitAll(repo, message)
+	return rtgitutil.CommitAll(r.git.repoDir, "", message, "Rill", "noreply@rilldata.com")
 }
 
 // Pull implements drivers.RepoStore.

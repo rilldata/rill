@@ -3,12 +3,10 @@ package file
 import (
 	"context"
 	"errors"
+	"os/exec"
 	"path/filepath"
-	"time"
+	"strings"
 
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -98,37 +96,36 @@ func (c *connection) loadGitConfig(ctx context.Context) (*gitutil.Config, error)
 	return c.gitConfig, nil
 }
 
-func (c *connection) gitSignature(ctx context.Context, client *client.Client, path string) (*object.Signature, error) {
-	repo, err := git.PlainOpen(path)
-	if err == nil {
-		cfg, err := repo.ConfigScoped(config.SystemScope)
-		if err == nil && cfg.User.Email != "" && cfg.User.Name != "" {
-			// user has git properly configured use that
-			return &object.Signature{
-				Name:  cfg.User.Name,
-				Email: cfg.User.Email,
-				When:  time.Now(),
-			}, nil
-		}
+// gitSignature returns the git author name and email to use for commits.
+// It checks the local git config first, then falls back to the logged-in Rill user.
+func (c *connection) gitSignature(ctx context.Context, client *client.Client, path string) (name, email string, _ error) {
+	n, e := gitReadUserConfig(path)
+	if n != "" && e != "" {
+		return n, e, nil
 	}
 
 	if client == nil {
-		return &object.Signature{
-			Name:  "Rill",
-			Email: "noreply@rilldata.com",
-			When:  time.Now(),
-		}, nil
+		return "Rill", "noreply@rilldata.com", nil
 	}
 	userResp, err := client.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
 	if err != nil {
-		return nil, err
+		return "", "", err
 	}
+	return userResp.User.DisplayName, userResp.User.Email, nil
+}
 
-	return &object.Signature{
-		Name:  userResp.User.DisplayName,
-		Email: userResp.User.Email,
-		When:  time.Now(),
-	}, nil
+// gitReadUserConfig reads user.name and user.email from the git config for the given path.
+// Returns ("", "") if not configured.
+func gitReadUserConfig(repoDir string) (name, email string) {
+	nameOut, err := exec.Command("git", "-C", repoDir, "config", "user.name").Output()
+	if err == nil {
+		name = strings.TrimSpace(string(nameOut))
+	}
+	emailOut, err := exec.Command("git", "-C", repoDir, "config", "user.email").Output()
+	if err == nil {
+		email = strings.TrimSpace(string(emailOut))
+	}
+	return name, email
 }
 
 func (c *connection) getAdminClient() (*client.Client, error) {

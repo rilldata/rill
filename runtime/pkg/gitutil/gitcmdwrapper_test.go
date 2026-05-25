@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -222,6 +223,187 @@ func TestMergeWithBailOnConflict(t *testing.T) {
 	})
 }
 
+func TestCheckout(t *testing.T) {
+	t.Run("checkout existing branch", func(t *testing.T) {
+		tempDir := setupTestRepository(t)
+
+		cmd := exec.Command("git", "-C", tempDir, "checkout", "-b", "feature")
+		output, err := cmd.CombinedOutput()
+		require.NoError(t, err, "failed to create feature branch: "+string(output))
+
+		cmd = exec.Command("git", "-C", tempDir, "checkout", "main")
+		output, err = cmd.CombinedOutput()
+		require.NoError(t, err, "failed to switch to main: "+string(output))
+
+		err = Checkout(tempDir, "feature", false, false, "")
+		require.NoError(t, err)
+
+		branch, err := CurrentBranch(tempDir)
+		require.NoError(t, err)
+		require.Equal(t, "feature", branch)
+	})
+
+	t.Run("checkout non-existent branch returns ErrRefNotFound", func(t *testing.T) {
+		tempDir := setupTestRepository(t)
+
+		err := Checkout(tempDir, "does-not-exist", false, false, "")
+		require.ErrorIs(t, err, ErrRefNotFound)
+	})
+
+	t.Run("checkout with force discards local changes", func(t *testing.T) {
+		tempDir := setupTestRepository(t)
+
+		// Dirty the working tree
+		err := os.WriteFile(filepath.Join(tempDir, "test1.txt"), []byte("dirty"), 0644)
+		require.NoError(t, err)
+
+		err = Checkout(tempDir, "main", true, false, "")
+		require.NoError(t, err)
+
+		// File should be restored to its committed state
+		content, err := os.ReadFile(filepath.Join(tempDir, "test1.txt"))
+		require.NoError(t, err)
+		require.Equal(t, "content of file 1", string(content))
+	})
+
+	t.Run("create branch with -B", func(t *testing.T) {
+		tempDir := setupTestRepository(t)
+
+		err := Checkout(tempDir, "new-branch", false, true, "")
+		require.NoError(t, err)
+
+		branch, err := CurrentBranch(tempDir)
+		require.NoError(t, err)
+		require.Equal(t, "new-branch", branch)
+	})
+
+	t.Run("create branch at startPoint", func(t *testing.T) {
+		tempDir := setupTestRepository(t)
+
+		// Get current HEAD hash to use as startPoint
+		out, err := exec.Command("git", "-C", tempDir, "rev-parse", "HEAD").Output()
+		require.NoError(t, err)
+		startPoint := strings.TrimSpace(string(out))
+
+		createCommit(t, tempDir, "extra.txt", "extra", "add extra file")
+
+		// Create a new branch pointing at the earlier commit
+		err = Checkout(tempDir, "at-start", false, true, startPoint)
+		require.NoError(t, err)
+
+		branch, err := CurrentBranch(tempDir)
+		require.NoError(t, err)
+		require.Equal(t, "at-start", branch)
+
+		// extra.txt should not exist on this branch
+		_, statErr := os.Stat(filepath.Join(tempDir, "extra.txt"))
+		require.True(t, os.IsNotExist(statErr), "extra.txt should not exist at startPoint")
+	})
+}
+
+func TestResetToRemote(t *testing.T) {
+	t.Run("resets local branch to remote state", func(t *testing.T) {
+		repoDir, _ := setupTestRepositoryWithRemote(t)
+
+		// Make a local commit that hasn't been pushed
+		createCommit(t, repoDir, "local-only.txt", "local only content", "local commit")
+
+		err := ResetToRemote(repoDir, "main")
+		require.NoError(t, err)
+
+		// local-only.txt should be gone after the hard reset
+		_, statErr := os.Stat(filepath.Join(repoDir, "local-only.txt"))
+		require.True(t, os.IsNotExist(statErr), "local-only.txt should not exist after reset to remote")
+	})
+
+	t.Run("non-existent remote branch returns ErrRefNotFound", func(t *testing.T) {
+		repoDir, _ := setupTestRepositoryWithRemote(t)
+
+		err := ResetToRemote(repoDir, "does-not-exist")
+		require.ErrorIs(t, err, ErrRefNotFound)
+	})
+}
+
+func TestCurrentBranch(t *testing.T) {
+	t.Run("returns main on initial branch", func(t *testing.T) {
+		tempDir := setupTestRepository(t)
+
+		branch, err := CurrentBranch(tempDir)
+		require.NoError(t, err)
+		require.Equal(t, "main", branch)
+	})
+
+	t.Run("returns correct branch after checkout", func(t *testing.T) {
+		tempDir := setupTestRepository(t)
+
+		cmd := exec.Command("git", "-C", tempDir, "checkout", "-b", "my-feature")
+		output, err := cmd.CombinedOutput()
+		require.NoError(t, err, "failed to create branch: "+string(output))
+
+		branch, err := CurrentBranch(tempDir)
+		require.NoError(t, err)
+		require.Equal(t, "my-feature", branch)
+	})
+}
+
+func TestCommitAll(t *testing.T) {
+	t.Run("commits all changes and returns hash", func(t *testing.T) {
+		tempDir := setupTestRepository(t)
+
+		err := os.WriteFile(filepath.Join(tempDir, "new.txt"), []byte("hello"), 0644)
+		require.NoError(t, err)
+
+		hash, err := CommitAll(tempDir, "", "test commit", "Alice", "alice@example.com")
+		require.NoError(t, err)
+		require.NotEmpty(t, hash, "should return commit hash")
+
+		// Verify HEAD matches the returned hash
+		out, err := exec.Command("git", "-C", tempDir, "rev-parse", "HEAD").Output()
+		require.NoError(t, err)
+		require.Equal(t, hash, strings.TrimSpace(string(out)))
+	})
+
+	t.Run("nothing to commit returns empty string", func(t *testing.T) {
+		tempDir := setupTestRepository(t)
+
+		hash, err := CommitAll(tempDir, "", "empty commit", "Alice", "alice@example.com")
+		require.NoError(t, err)
+		require.Empty(t, hash, "should return empty string when nothing to commit")
+	})
+
+	t.Run("commits only files matching glob", func(t *testing.T) {
+		tempDir := setupTestRepository(t)
+
+		err := os.WriteFile(filepath.Join(tempDir, "include.yaml"), []byte("included"), 0644)
+		require.NoError(t, err)
+		err = os.WriteFile(filepath.Join(tempDir, "exclude.txt"), []byte("excluded"), 0644)
+		require.NoError(t, err)
+
+		hash, err := CommitAll(tempDir, "*.yaml", "yaml only", "Alice", "alice@example.com")
+		require.NoError(t, err)
+		require.NotEmpty(t, hash)
+
+		// exclude.txt should be untracked (not staged/committed)
+		out, err := exec.Command("git", "-C", tempDir, "status", "--porcelain").Output()
+		require.NoError(t, err)
+		require.Contains(t, string(out), "exclude.txt", "exclude.txt should remain untracked")
+	})
+
+	t.Run("author name and email are recorded on commit", func(t *testing.T) {
+		tempDir := setupTestRepository(t)
+
+		err := os.WriteFile(filepath.Join(tempDir, "authored.txt"), []byte("content"), 0644)
+		require.NoError(t, err)
+
+		_, err = CommitAll(tempDir, "", "authored commit", "Bob", "bob@example.com")
+		require.NoError(t, err)
+
+		out, err := exec.Command("git", "-C", tempDir, "log", "-1", "--format=%an %ae").Output()
+		require.NoError(t, err)
+		require.Equal(t, "Bob bob@example.com", strings.TrimSpace(string(out)))
+	})
+}
+
 func setupTestRepository(t *testing.T) string {
 	tempDir := t.TempDir()
 
@@ -297,4 +479,24 @@ func setupGitConfig(t *testing.T, repoPath string) {
 	cmd = exec.Command("git", "-C", repoPath, "config", "user.email", "test@rilldata.com")
 	err = cmd.Run()
 	require.NoError(t, err, "failed to set user email in git config")
+}
+
+// setupTestRepositoryWithRemote creates a test repo with a bare remote and pushes main to it.
+func setupTestRepositoryWithRemote(t *testing.T) (repoDir, remoteDir string) {
+	remoteDir = t.TempDir()
+	cmd := exec.Command("git", "init", "--bare", remoteDir)
+	output, err := cmd.CombinedOutput()
+	require.NoError(t, err, "failed to init bare remote: "+string(output))
+
+	repoDir = setupTestRepository(t)
+
+	cmd = exec.Command("git", "-C", repoDir, "remote", "add", "origin", remoteDir)
+	output, err = cmd.CombinedOutput()
+	require.NoError(t, err, "failed to add remote: "+string(output))
+
+	cmd = exec.Command("git", "-C", repoDir, "push", "-u", "origin", "main")
+	output, err = cmd.CombinedOutput()
+	require.NoError(t, err, "failed to push to remote: "+string(output))
+
+	return repoDir, remoteDir
 }

@@ -15,11 +15,7 @@ import (
 	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/filewatcher"
@@ -219,11 +215,6 @@ func (c *connection) ListBranches(ctx context.Context) ([]string, string, error)
 		return nil, "", err
 	}
 
-	repo, err := git.PlainOpen(gitPath)
-	if err != nil {
-		return nil, "", err
-	}
-
 	cfg, err := c.loadGitConfig(ctx)
 	if err != nil && !errors.Is(err, errProjectNotFound) && !errors.Is(err, drivers.ErrNotAuthenticated) {
 		return nil, "", err
@@ -231,68 +222,44 @@ func (c *connection) ListBranches(ctx context.Context) ([]string, string, error)
 	var remoteName string
 	if cfg != nil {
 		remoteName = cfg.RemoteName()
-		// fetch all branches
-		err := repo.FetchContext(ctx, &git.FetchOptions{
-			RemoteName: cfg.RemoteName(),
-			RemoteURL:  cfg.Remote,
-			RefSpecs:   []config.RefSpec{config.RefSpec("+refs/heads/*:refs/remotes/" + cfg.RemoteName() + "/*")},
-			Auth: &http.BasicAuth{
-				Username: cfg.Username,
-				Password: cfg.Password,
-			},
-		})
-		if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-			return nil, "", err
-		}
-	} else {
-		// List all remotes
-		remotes, err := repo.Remotes()
+		credURL, err := cfg.FullyQualifiedRemote()
 		if err != nil {
 			return nil, "", err
 		}
-
-		for _, r := range remotes {
-			if r.Config().Name == "__rill_remote" {
-				remoteName = r.Config().Name
+		if err := gitFetchAll(ctx, gitPath, credURL, remoteName); err != nil {
+			return nil, "", err
+		}
+	} else {
+		remotes, err := gitListRemotes(gitPath)
+		if err != nil {
+			return nil, "", err
+		}
+		for name := range remotes {
+			if name == "__rill_remote" {
+				remoteName = name
 				break
 			}
-			remoteName = r.Config().Name
+			remoteName = name
 		}
 	}
 
-	// List all references (local and remote)
+	localBranches, remoteBranches, err := gitListRefs(gitPath)
+	if err != nil {
+		return nil, "", err
+	}
+
 	branchSet := make(map[string]bool)
-	refs, err := repo.References()
-	if err != nil {
-		return nil, "", err
+	for _, b := range localBranches {
+		branchSet[b] = true
+	}
+	for _, b := range remoteBranches[remoteName] {
+		branchSet[b] = true
 	}
 
-	err = refs.ForEach(func(ref *plumbing.Reference) error {
-		refName := ref.Name()
-		// Include local branches (refs/heads/*)
-		if refName.IsBranch() {
-			branchSet[refName.Short()] = true
-		}
-		// Include remote branches (refs/remotes/origin/*)
-		if refName.IsRemote() {
-			// Strip "<remote>/" prefix to get branch name
-			// Skip HEAD reference
-			if branchName, ok := strings.CutPrefix(refName.Short(), remoteName+"/"); ok && branchName != "HEAD" {
-				branchSet[branchName] = true
-			}
-		}
-		return nil
-	})
+	currentBranch, err := rtgitutil.CurrentBranch(gitPath)
 	if err != nil {
 		return nil, "", err
 	}
-
-	// Get current branch
-	head, err := repo.Head()
-	if err != nil {
-		return nil, "", err
-	}
-	currentBranch := head.Name().Short()
 
 	return maps.Keys(branchSet), currentBranch, nil
 }
@@ -311,27 +278,7 @@ func (c *connection) SwitchBranch(ctx context.Context, branchName string, create
 		return err
 	}
 
-	repo, err := git.PlainOpen(gitPath)
-	if err != nil {
-		return err
-	}
-
-	// Get the worktree
-	w, err := repo.Worktree()
-	if err != nil {
-		return err
-	}
-
-	err = w.Checkout(&git.CheckoutOptions{
-		Branch: plumbing.NewBranchReferenceName(branchName),
-		Create: createIfNotExists,
-		Force:  ignoreLocalChanges,
-	})
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return rtgitutil.Checkout(gitPath, branchName, ignoreLocalChanges, createIfNotExists, "")
 }
 
 // ListCommits implements drivers.RepoStore.
@@ -348,57 +295,33 @@ func (c *connection) ListCommits(ctx context.Context, pageToken string, limit in
 		return nil, "", err
 	}
 
-	repo, err := git.PlainOpen(gitPath)
-	if err != nil {
-		return nil, "", err
-	}
-
-	// Determine starting point: page token or HEAD
-	var fromHash plumbing.Hash
-	if pageToken != "" {
-		fromHash = plumbing.NewHash(pageToken)
-	} else {
-		head, err := repo.Head()
+	// Use HEAD if no page token provided
+	fromHash := pageToken
+	if fromHash == "" {
+		fromHash, err = gitHeadHash(gitPath)
 		if err != nil {
 			return nil, "", err
 		}
-		fromHash = head.Hash()
 	}
 
-	// Get commit iterator starting from the determined hash
-	commitIter, err := repo.Log(&git.LogOptions{
-		From:  fromHash,
-		Order: git.LogOrderCommitterTime,
-	})
+	rawCommits, err := gitLogCommits(gitPath, fromHash, limit)
 	if err != nil {
 		return nil, "", err
 	}
-	defer commitIter.Close()
 
 	var commits []drivers.Commit
 	var nextPageToken string
-	for {
-		if limit > 0 && len(commits) >= limit {
-			// Peek next commit to get the next page token
-			nextCommit, err := commitIter.Next()
-			if err == nil {
-				nextPageToken = nextCommit.Hash.String()
-			}
+	for i, rc := range rawCommits {
+		if limit > 0 && i >= limit {
+			nextPageToken = rc.hash
 			break
 		}
-		commit, err := commitIter.Next()
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				break
-			}
-			return nil, "", err
-		}
 		commits = append(commits, drivers.Commit{
-			CommitSha:     commit.Hash.String(),
-			AuthorName:    commit.Author.Name,
-			AuthorEmail:   commit.Author.Email,
-			CommitMessage: commit.Message,
-			CommittedOn:   timestamppb.New(commit.Committer.When),
+			CommitSha:     rc.hash,
+			AuthorName:    rc.authorName,
+			AuthorEmail:   rc.authorEmail,
+			CommitMessage: rc.message,
+			CommittedOn:   timestamppb.New(rc.committedAt),
 		})
 	}
 
@@ -516,12 +439,12 @@ func (c *connection) Commit(ctx context.Context, message string) (string, error)
 	if err != nil && !errors.Is(err, drivers.ErrNotAuthenticated) { // allow committing without auth
 		return "", err
 	}
-	author, err := c.gitSignature(ctx, client, gitPath)
+	authorName, authorEmail, err := c.gitSignature(ctx, client, gitPath)
 	if err != nil {
 		return "", err
 	}
 
-	hash, err := gitCommitAll(gitPath, subpath, message, author)
+	hash, err := gitCommitAll(gitPath, subpath, message, authorName, authorEmail)
 	if err != nil {
 		return "", err
 	}
@@ -545,13 +468,8 @@ func (c *connection) RestoreCommit(ctx context.Context, commitSHA string) (strin
 	}
 
 	// check that commit exists
-	repo, err := git.PlainOpen(gitPath)
-	if err != nil {
-		return "", err
-	}
-	_, err = repo.CommitObject(plumbing.NewHash(commitSHA))
-	if err != nil {
-		if errors.Is(err, plumbing.ErrObjectNotFound) {
+	if err := gitVerifyCommit(gitPath, commitSHA); err != nil {
+		if errors.Is(err, errCommitNotFound) {
 			return "", fmt.Errorf("commit %q not found", commitSHA)
 		}
 		return "", err
@@ -562,12 +480,12 @@ func (c *connection) RestoreCommit(ctx context.Context, commitSHA string) (strin
 	if err != nil {
 		return "", err
 	}
-	author, err := c.gitSignature(ctx, client, gitPath)
+	authorName, authorEmail, err := c.gitSignature(ctx, client, gitPath)
 	if err != nil {
 		return "", err
 	}
 
-	_, err = gitCommitAll(gitPath, subpath, "WIP: commit before restore", author)
+	_, err = gitCommitAll(gitPath, subpath, "WIP: commit before restore", authorName, authorEmail)
 	if err != nil {
 		return "", err
 	}
@@ -578,12 +496,12 @@ func (c *connection) RestoreCommit(ctx context.Context, commitSHA string) (strin
 	}
 
 	// Create the restore commit
-	hash, err := gitCommitAll(gitPath, subpath, fmt.Sprintf("Restore commit %s", commitSHA[:7]), author)
+	hash, err := gitCommitAll(gitPath, subpath, fmt.Sprintf("Restore commit %s", commitSHA[:7]), authorName, authorEmail)
 	if err != nil {
-		if errors.Is(err, git.ErrEmptyCommit) {
-			return "", fmt.Errorf("restore would result in no changes")
-		}
-		return "", fmt.Errorf("failed to commit restore: %w", err)
+		return "", err
+	}
+	if hash == "" {
+		return "", fmt.Errorf("restore would result in no changes")
 	}
 
 	return hash, nil
@@ -619,7 +537,7 @@ func (c *connection) CommitAndPush(ctx context.Context, message string, force bo
 	if err != nil {
 		return err
 	}
-	author, err := c.gitSignature(ctx, client, gitPath)
+	authorName, authorEmail, err := c.gitSignature(ctx, client, gitPath)
 	if err != nil {
 		return err
 	}
@@ -646,13 +564,21 @@ func (c *connection) CommitAndPush(ctx context.Context, message string, force bo
 		if err != nil {
 			return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
 		}
-		return gitutil.CommitAndPush(ctx, c.root, gitConfig, message, author)
+		return gitutil.CommitAndPush(ctx, c.root, gitConfig, message, &object.Signature{
+			Name:  authorName,
+			Email: authorEmail,
+			When:  time.Now(),
+		})
 	}
 	err = gitutil.RunUpstreamMerge(ctx, gitConfig.RemoteName(), c.root, gitConfig.DefaultBranch, false)
 	if err != nil {
 		return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
 	}
-	return gitutil.CommitAndPush(ctx, c.root, gitConfig, message, author)
+	return gitutil.CommitAndPush(ctx, c.root, gitConfig, message, &object.Signature{
+		Name:  authorName,
+		Email: authorEmail,
+		When:  time.Now(),
+	})
 }
 
 func (c *connection) MergeToBranch(ctx context.Context, branch string, force bool) (resErr error) {
@@ -669,35 +595,19 @@ func (c *connection) MergeToBranch(ctx context.Context, branch string, force boo
 		return err
 	}
 
-	repo, err := git.PlainOpen(gitPath)
-	if err != nil {
-		return err
-	}
-
 	// Get the current branch
-	head, err := repo.Head()
+	currentBranch, err := rtgitutil.CurrentBranch(gitPath)
 	if err != nil {
 		return err
 	}
-	currentBranch := head.Name().Short()
 
 	// Switch to the target branch
-	w, err := repo.Worktree()
-	if err != nil {
-		return err
-	}
-	err = w.Checkout(&git.CheckoutOptions{
-		Branch: plumbing.NewBranchReferenceName(branch),
-	})
-	if err != nil {
+	if err := rtgitutil.Checkout(gitPath, branch, false, false, ""); err != nil {
 		return err
 	}
 	defer func() {
 		// Switch back to the original branch
-		err := w.Checkout(&git.CheckoutOptions{
-			Branch: plumbing.NewBranchReferenceName(currentBranch),
-		})
-		if err != nil {
+		if err := rtgitutil.Checkout(gitPath, currentBranch, false, false, ""); err != nil {
 			resErr = errors.Join(resErr, fmt.Errorf("failed to switch back to the original branch: %w", err))
 		}
 	}()
@@ -708,11 +618,11 @@ func (c *connection) MergeToBranch(ctx context.Context, branch string, force boo
 		}
 		return rtgitutil.MergeWithStrategy(gitPath, branch, "theirs")
 	}
-	aborted, err := rtgitutil.MergeWithBailOnConflict(gitPath, branch)
+	merged, err := rtgitutil.MergeWithBailOnConflict(gitPath, branch)
 	if err != nil {
 		return err
 	}
-	if aborted {
+	if !merged {
 		return &drivers.MergeFailedError{
 			Output:       "merge failed due to conflicts, use force merge to favour current changes",
 			MergedBranch: branch,
@@ -732,45 +642,22 @@ func (c *connection) CommitTimestamp(ctx context.Context) (time.Time, error) {
 }
 
 func (c *connection) isGitRepo() bool {
-	_, err := git.PlainOpen(c.root)
-	return err == nil
+	return isGitDir(c.root)
 }
 
-func gitCommitAll(path, subpath, message string, author *object.Signature) (string, error) {
-	repo, err := git.PlainOpen(path)
-	if err != nil {
-		return "", err
-	}
-
-	wt, err := repo.Worktree()
-	if err != nil {
-		return "", fmt.Errorf("failed to get worktree: %w", err)
-	}
-
-	// Stage all changes (git add -A for the subpath)
-	var stagingPath string
-	if subpath != "" {
-		stagingPath = filepath.Join(subpath, "**")
-	} else {
-		stagingPath = "."
-	}
-	if err := wt.AddWithOptions(&git.AddOptions{Glob: stagingPath}); err != nil {
-		return "", fmt.Errorf("failed to add files to git: %w", err)
-	}
-
-	// Commit the changes (git commit -m)
+func gitCommitAll(path, subpath, message, authorName, authorEmail string) (string, error) {
 	if message == "" {
 		message = "Auto committed by Rill"
 	}
-	hash, err := wt.Commit(message, &git.CommitOptions{Author: author, AllowEmptyCommits: false})
-	if err != nil {
-		if !errors.Is(err, git.ErrEmptyCommit) {
-			return "", fmt.Errorf("failed to commit files to git: %w", err)
-		}
-		// empty commit - nothing to commit
-		return "", nil
+	var glob string
+	if subpath != "" {
+		glob = filepath.Join(subpath, "**")
 	}
-	return hash.String(), nil
+	hash, err := rtgitutil.CommitAll(path, glob, message, authorName, authorEmail)
+	if err != nil {
+		return "", fmt.Errorf("failed to commit files to git: %w", err)
+	}
+	return hash, nil
 }
 
 func restoreToCommit(path, subpath, commithash string) error {
@@ -785,6 +672,146 @@ func restoreToCommit(path, subpath, commithash string) error {
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to restore to commit: %s, %w", string(output), err)
+	}
+	return nil
+}
+
+// isGitDir reports whether path is inside a git repository.
+func isGitDir(path string) bool {
+	return exec.Command("git", "-C", path, "rev-parse", "--git-dir").Run() == nil
+}
+
+// gitFetchAll fetches all branches from credURL into refs/remotes/<remoteName>/*.
+func gitFetchAll(ctx context.Context, repoDir, credURL, remoteName string) error {
+	refSpec := fmt.Sprintf("+refs/heads/*:refs/remotes/%s/*", remoteName)
+	out, err := exec.CommandContext(ctx, "git", "-C", repoDir, "fetch", "--force", credURL, refSpec).CombinedOutput()
+	if err != nil {
+		var execErr *exec.ExitError
+		if errors.As(err, &execErr) {
+			return fmt.Errorf("git fetch failed: %s", string(out))
+		}
+		return err
+	}
+	return nil
+}
+
+// gitListRemotes returns a map of remote name → URL for the repository.
+func gitListRemotes(repoDir string) (map[string]string, error) {
+	out, err := exec.Command("git", "-C", repoDir, "remote", "-v").Output()
+	if err != nil {
+		var execErr *exec.ExitError
+		if errors.As(err, &execErr) {
+			return nil, fmt.Errorf("git remote failed: %s", string(execErr.Stderr))
+		}
+		return nil, err
+	}
+	remotes := make(map[string]string)
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		parts := strings.Fields(line)
+		if len(parts) >= 2 {
+			remotes[parts[0]] = parts[1]
+		}
+	}
+	return remotes, nil
+}
+
+// gitListRefs returns local branch names and remote branch names keyed by remote name.
+func gitListRefs(repoDir string) (localBranches []string, remoteBranches map[string][]string, err error) {
+	out, err := exec.Command("git", "-C", repoDir, "for-each-ref", "--format=%(refname)", "refs/heads", "refs/remotes").Output()
+	if err != nil {
+		var execErr *exec.ExitError
+		if errors.As(err, &execErr) {
+			return nil, nil, fmt.Errorf("git for-each-ref failed: %s", string(execErr.Stderr))
+		}
+		return nil, nil, err
+	}
+	remoteBranches = make(map[string][]string)
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		if after, ok := strings.CutPrefix(line, "refs/heads/"); ok {
+			localBranches = append(localBranches, after)
+		} else if after, ok := strings.CutPrefix(line, "refs/remotes/"); ok {
+			parts := strings.SplitN(after, "/", 2)
+			if len(parts) == 2 && parts[1] != "HEAD" {
+				remoteBranches[parts[0]] = append(remoteBranches[parts[0]], parts[1])
+			}
+		}
+	}
+	return localBranches, remoteBranches, nil
+}
+
+// gitHeadHash returns the commit hash of HEAD.
+func gitHeadHash(repoDir string) (string, error) {
+	out, err := exec.Command("git", "-C", repoDir, "rev-parse", "HEAD").Output()
+	if err != nil {
+		var execErr *exec.ExitError
+		if errors.As(err, &execErr) {
+			if strings.Contains(string(execErr.Stderr), "unknown revision") {
+				return "", nil
+			}
+			return "", fmt.Errorf("git rev-parse failed: %s", string(execErr.Stderr))
+		}
+		return "", err
+	}
+	return strings.TrimSpace(string(out)), nil
+}
+
+// commitInfo holds data for a single git commit.
+type commitInfo struct {
+	hash        string
+	authorName  string
+	authorEmail string
+	message     string
+	committedAt time.Time
+}
+
+// gitLogCommits returns up to limit+1 commits starting from fromHash (for pagination).
+func gitLogCommits(repoDir, fromHash string, limit int) ([]commitInfo, error) {
+	args := []string{"-C", repoDir, "log", "--format=%H%x00%an%x00%ae%x00%cI%x00%s"}
+	if fromHash != "" {
+		args = append(args, fromHash)
+	}
+	if limit > 0 {
+		args = append(args, fmt.Sprintf("-n%d", limit+1))
+	}
+	out, err := exec.Command("git", args...).Output()
+	if err != nil {
+		var execErr *exec.ExitError
+		if errors.As(err, &execErr) {
+			return nil, fmt.Errorf("git log failed: %s", string(execErr.Stderr))
+		}
+		return nil, err
+	}
+	var commits []commitInfo
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		if line == "" {
+			continue
+		}
+		parts := strings.SplitN(line, "\x00", 5)
+		if len(parts) < 5 {
+			continue
+		}
+		committedAt, _ := time.Parse(time.RFC3339, parts[3])
+		commits = append(commits, commitInfo{
+			hash:        parts[0],
+			authorName:  parts[1],
+			authorEmail: parts[2],
+			message:     parts[4],
+			committedAt: committedAt,
+		})
+	}
+	return commits, nil
+}
+
+var errCommitNotFound = errors.New("commit not found")
+
+// gitVerifyCommit checks that a commit hash exists in the repository.
+func gitVerifyCommit(repoDir, sha string) error {
+	if err := exec.Command("git", "-C", repoDir, "cat-file", "-e", sha+"^{commit}").Run(); err != nil {
+		return errCommitNotFound
 	}
 	return nil
 }

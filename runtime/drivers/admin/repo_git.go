@@ -10,10 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -68,31 +64,22 @@ func (r *gitRepo) pullInner(ctx context.Context, userTriggered, force bool) erro
 	}
 
 	// Check if repoDir exists and is a valid Git repository
-	repo, err := git.PlainOpen(r.repoDir)
-	if err != nil {
+	if !isGitRepo(r.repoDir) {
 		// Repository doesn't exist or is invalid, remove and clone fresh
 		if err := os.RemoveAll(r.repoDir); err != nil {
 			return err
 		}
 
-		cloneOptions := &git.CloneOptions{
-			URL:           r.remoteURL,
-			SingleBranch:  r.primaryBranch == r.defaultBranch,
-			ReferenceName: plumbing.ReferenceName("refs/heads/" + r.primaryBranch), // primary branch must exist, default branch may not exist yet in editable mode.
-		}
-
-		repo, err = git.PlainCloneContext(ctx, r.repoDir, false, cloneOptions)
-		if err != nil {
+		if err := gitClone(ctx, r.repoDir, r.remoteURL, r.primaryBranch, r.primaryBranch == r.defaultBranch); err != nil {
 			return err
 		}
+
 		if r.editableDepl {
 			// set git config in the repo dir to ensure git commits/git merge etc pass on cloud
-			err = ensureGitConfig(r.repoDir, "user.name", "Rill")
-			if err != nil {
+			if err := ensureGitConfig(r.repoDir, "user.name", "Rill"); err != nil {
 				return err
 			}
-			err = ensureGitConfig(r.repoDir, "user.email", "noreply@rilldata.com")
-			if err != nil {
+			if err := ensureGitConfig(r.repoDir, "user.email", "noreply@rilldata.com"); err != nil {
 				return err
 			}
 		}
@@ -100,12 +87,7 @@ func (r *gitRepo) pullInner(ctx context.Context, userTriggered, force bool) erro
 		// Repository exists, pull latest changes
 
 		// Ensure the remote URL is correct
-		_ = repo.DeleteRemote("origin")
-		remote, err := repo.CreateRemote(&config.RemoteConfig{
-			Name: "origin",
-			URLs: []string{r.remoteURL},
-		})
-		if err != nil {
+		if err := setGitRemote(r.repoDir, "origin", r.remoteURL); err != nil {
 			return fmt.Errorf("failed to set remote URL: %w", err)
 		}
 
@@ -117,12 +99,7 @@ func (r *gitRepo) pullInner(ctx context.Context, userTriggered, force bool) erro
 			branches = append(branches, r.primaryBranch)
 		}
 		for _, branch := range branches {
-			refSpec := config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", branch, branch))
-			err = remote.Fetch(&git.FetchOptions{
-				RefSpecs: []config.RefSpec{refSpec},
-				Force:    true,
-			})
-			if err != nil && !(errors.Is(err, git.NoErrAlreadyUpToDate) || git.NoMatchingRefSpecError{}.Is(err)) {
+			if err := fetchBranch(ctx, r.repoDir, r.remoteURL, branch, true); err != nil {
 				return fmt.Errorf("failed to fetch from remote: %w", err)
 			}
 		}
@@ -130,9 +107,9 @@ func (r *gitRepo) pullInner(ctx context.Context, userTriggered, force bool) erro
 
 	// Checkout the default branch
 	var createDefault bool
-	err = gitCheckout(r.repoDir, r.defaultBranch, force, false, "")
+	err := gitutil.Checkout(r.repoDir, r.defaultBranch, force, false, "")
 	if err != nil {
-		if !errors.Is(err, errRefNotFound) {
+		if !errors.Is(err, gitutil.ErrRefNotFound) {
 			return fmt.Errorf("failed to checkout branch %q: %w", r.defaultBranch, err)
 		}
 
@@ -140,12 +117,12 @@ func (r *gitRepo) pullInner(ctx context.Context, userTriggered, force bool) erro
 		// a. when branch is created remotely after the last pull
 		// b. primary branch was edited
 		// c. in editable mode when the default branch may not exist at all.
-		remoteHash, err := repo.Reference(plumbing.ReferenceName("refs/remotes/origin/"+r.defaultBranch), true)
+		remoteHash, err := gitResolveRef(r.repoDir, "refs/remotes/origin/"+r.defaultBranch)
 		if err != nil {
-			if errors.Is(err, plumbing.ErrReferenceNotFound) && r.editable() {
+			if errors.Is(err, gitutil.ErrRefNotFound) && r.editable() {
 				// In editable mode, the default branch may not exist yet on remote. We will create it based on the primary branch.
 				r.h.logger.Info("Default branch does not exist on remote, will create it based on primary branch", zap.String("defaultBranch", r.defaultBranch), zap.String("primaryBranch", r.primaryBranch))
-				remoteHash, err = repo.Reference(plumbing.ReferenceName("refs/remotes/origin/"+r.primaryBranch), true)
+				remoteHash, err = gitResolveRef(r.repoDir, "refs/remotes/origin/"+r.primaryBranch)
 				if err != nil {
 					return fmt.Errorf("failed to get reference for primary branch %q: %w", r.primaryBranch, err)
 				}
@@ -157,7 +134,7 @@ func (r *gitRepo) pullInner(ctx context.Context, userTriggered, force bool) erro
 		}
 
 		// Create the default branch at the resolved remote hash
-		err = gitCheckout(r.repoDir, r.defaultBranch, true, true, remoteHash.Hash().String())
+		err = gitutil.Checkout(r.repoDir, r.defaultBranch, true, true, remoteHash)
 		if err != nil {
 			return fmt.Errorf("failed to create and checkout default branch %q: %w", r.defaultBranch, err)
 		}
@@ -173,9 +150,9 @@ func (r *gitRepo) pullInner(ctx context.Context, userTriggered, force bool) erro
 
 	if force {
 		// Hard reset to remote branch
-		err = resetToRemoteTrackingBranch(r.repoDir, r.defaultBranch)
+		err = gitutil.ResetToRemote(r.repoDir, r.defaultBranch)
 		if err != nil {
-			if !(errors.Is(err, errRefNotFound) && r.editable()) { // In editable mode, the default branch may not exist yet on remote.
+			if !(errors.Is(err, gitutil.ErrRefNotFound) && r.editable()) { // In editable mode, the default branch may not exist yet on remote.
 				return fmt.Errorf("failed to reset to remote tracking branch %q: %w", r.defaultBranch, err)
 			}
 		}
@@ -247,18 +224,12 @@ func (r *gitRepo) commitToDefaultBranch(ctx context.Context, message string, for
 	}
 
 	r.h.logger.Info("commitToDefaultBranch", observability.ZapCtx(ctx))
-	repo, err := git.PlainOpen(r.repoDir)
-	if err != nil {
-		return err
-	}
 
-	_, err = r.commitAll(repo, message)
+	_, err := gitutil.CommitAll(r.repoDir, "", message, "Rill", "noreply@rilldata.com")
 	if err != nil {
-		if !errors.Is(err, git.ErrEmptyCommit) {
-			return fmt.Errorf("failed to commit changes to edit branch: %w", err)
-		}
-		// continue to push existing commits, if any
+		return fmt.Errorf("failed to commit changes to edit branch: %w", err)
 	}
+	// if hash == "", there was nothing to commit; continue to push existing commits
 
 	err = r.fetchCurrentBranch(ctx)
 	if err != nil {
@@ -307,24 +278,20 @@ func (r *gitRepo) mergeToBranch(ctx context.Context, branch string, force bool) 
 	}
 
 	r.h.logger.Info("mergeToBranch", zap.String("branch", branch), zap.Bool("force", force), observability.ZapCtx(ctx))
-	repo, err := git.PlainOpen(r.repoDir)
+
+	_, err := gitutil.CommitAll(r.repoDir, "", "Auto commit before merging to "+branch, "Rill", "noreply@rilldata.com")
 	if err != nil {
-		return fmt.Errorf("failed to open repository: %w", err)
-	}
-	_, err = r.commitAll(repo, "Auto commit before merging to "+branch)
-	if err != nil && !errors.Is(err, git.ErrEmptyCommit) {
 		return fmt.Errorf("failed to commit changes: %w", err)
 	}
 
 	// Fetch the branch to ensure we are up-to-date
-	err = r.fetchBranch(ctx, repo, branch)
-	if err != nil {
+	if err := r.fetchBranch(ctx, branch); err != nil {
 		return err
 	}
 
 	if r.defaultBranch != branch {
 		defer func() {
-			err := gitCheckout(r.repoDir, r.defaultBranch, true, false, "")
+			err := gitutil.Checkout(r.repoDir, r.defaultBranch, true, false, "")
 			if err != nil {
 				resErr = errors.Join(resErr, fmt.Errorf("failed to checkout default branch %q: %w", r.defaultBranch, err))
 				return
@@ -333,11 +300,11 @@ func (r *gitRepo) mergeToBranch(ctx context.Context, branch string, force bool) 
 
 		// Switch to the requested branch, then hard-reset it to the remote tracking ref.
 		// Hard reset is safe here because local changes were already committed above.
-		err = gitCheckout(r.repoDir, branch, true, false, "")
+		err = gitutil.Checkout(r.repoDir, branch, true, false, "")
 		if err != nil {
 			return fmt.Errorf("failed to checkout branch %q: %w", branch, err)
 		}
-		err = resetToRemoteTrackingBranch(r.repoDir, branch)
+		err = gitutil.ResetToRemote(r.repoDir, branch)
 		if err != nil {
 			return fmt.Errorf("failed to reset to remote tracking branch %q: %w", branch, err)
 		}
@@ -375,181 +342,163 @@ func (r *gitRepo) mergeToBranch(ctx context.Context, branch string, force bool) 
 
 // commitHash returns the current commit hash of the repository.
 func (r *gitRepo) commitHash() (string, error) {
-	repo, err := git.PlainOpen(r.repoDir)
-	if err != nil {
-		return "", err
-	}
-
-	ref, err := repo.Head()
-	if err != nil {
-		return "", err
-	}
-
-	if ref.Hash().IsZero() {
-		return "", nil
-	}
-
-	return ref.Hash().String(), nil
+	return gitHeadHash(r.repoDir)
 }
 
 // commitTimestamp returns the timestamp of the latest commit on the current branch.
 func (r *gitRepo) commitTimestamp() (time.Time, error) {
-	repo, err := git.PlainOpen(r.repoDir)
+	hash, err := gitHeadHash(r.repoDir)
 	if err != nil {
 		return time.Time{}, err
 	}
-
-	ref, err := repo.Head()
-	if err != nil {
-		return time.Time{}, err
+	if hash == "" {
+		return time.Time{}, nil
 	}
-
-	commit, err := repo.CommitObject(ref.Hash())
-	if err != nil {
-		return time.Time{}, err
-	}
-
-	return commit.Author.When, nil
-}
-
-func (r *gitRepo) commitAll(repo *git.Repository, message string) (string, error) {
-	worktree, err := repo.Worktree()
-	if err != nil {
-		return "", err
-	}
-
-	err = worktree.AddWithOptions(&git.AddOptions{
-		All: true, // Add all changes
-	})
-	if err != nil {
-		return "", err
-	}
-
-	hash, err := worktree.Commit(message, &git.CommitOptions{
-		All: true, // Commit all changes
-		Author: &object.Signature{
-			Name:  "Rill",
-			Email: "noreply@rilldata.com",
-			When:  time.Now(),
-		},
-	})
-	if err != nil {
-		return "", err
-	}
-	return hash.String(), nil
+	return gitCommitTimestamp(r.repoDir, hash)
 }
 
 func (r *gitRepo) fetchCurrentBranch(ctx context.Context) error {
-	repo, err := git.PlainOpen(r.repoDir)
+	branch, err := gitutil.CurrentBranch(r.repoDir)
 	if err != nil {
 		return err
 	}
-	head, err := repo.Head()
-	if err != nil {
-		return err
-	}
-	return r.fetchBranch(ctx, repo, head.Name().Short())
+	return r.fetchBranch(ctx, branch)
 }
 
 // pushBranch pushes the specified branches to the remote repository.
 // If the remote branch is already up-to-date, it does not return an error.
-// It re-opens the repository so that any objects written by prior shell-based git
-// commands (e.g. merge, checkout) are visible to go-git's push.
 func (r *gitRepo) pushBranch(ctx context.Context, branches ...string) error {
 	if len(branches) == 0 {
 		return errors.New("at least one branch must be specified to push")
 	}
-	repo, err := git.PlainOpen(r.repoDir)
-	if err != nil {
-		return err
-	}
-	refSpecs := make([]config.RefSpec, 0, len(branches))
-	for _, branch := range branches {
-		refSpecs = append(refSpecs, config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", branch, branch)))
-	}
-	err = repo.PushContext(ctx, &git.PushOptions{
-		RemoteName: "origin",
-		RemoteURL:  r.remoteURL,
-		RefSpecs:   refSpecs,
-	})
-	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-		return err
-	}
-	return nil
+	return gitPushBranches(ctx, r.repoDir, r.remoteURL, branches...)
 }
 
-// fetchBranch fetches the specified branch(s) from the remote repository.
+// fetchBranch fetches the specified branch(es) from the remote repository.
 // It does not return an error if the local branch is already up-to-date with the remote branch.
-func (r *gitRepo) fetchBranch(ctx context.Context, repo *git.Repository, branch ...string) error {
-	refSpecs := make([]config.RefSpec, 0, len(branch))
+func (r *gitRepo) fetchBranch(ctx context.Context, branch ...string) error {
 	for _, b := range branch {
-		refSpecs = append(refSpecs, config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", b, b)))
-	}
-	err := repo.FetchContext(ctx, &git.FetchOptions{
-		RemoteURL: r.remoteURL,
-		RefSpecs:  refSpecs,
-	})
-	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-		return err
+		if err := fetchBranch(ctx, r.repoDir, r.remoteURL, b, false); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-var errRefNotFound = errors.New("reference not found")
+// isGitRepo reports whether repoDir is a valid git repository.
+func isGitRepo(repoDir string) bool {
+	return exec.Command("git", "-C", repoDir, "rev-parse", "--git-dir").Run() == nil
+}
 
-// gitCheckout checks out a branch using the git command.
-// If create is true, it creates the branch (using -B) at the given startPoint.
-// go-git wipes out git-ignored changes during checkout so must use the git command.
-func gitCheckout(repoDir, branch string, force, create bool, startPoint string) error {
-	args := []string{"-C", repoDir, "checkout"}
+// gitClone clones a remote repository into repoDir on the specified branch.
+func gitClone(ctx context.Context, repoDir, remoteURL, branch string, singleBranch bool) error {
+	args := []string{"clone"}
+	if singleBranch {
+		args = append(args, "--single-branch")
+	}
+	args = append(args, "-b", branch, remoteURL, repoDir)
+	out, err := exec.CommandContext(ctx, "git", args...).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("git clone failed: %s", string(out))
+	}
+	return nil
+}
+
+// setGitRemote replaces the named remote with the given URL, removing it first if it exists.
+func setGitRemote(repoDir, name, url string) error {
+	_ = exec.Command("git", "-C", repoDir, "remote", "remove", name).Run()
+	out, err := exec.Command("git", "-C", repoDir, "remote", "add", name, url).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("git remote add failed: %s", string(out))
+	}
+	return nil
+}
+
+// fetchBranch fetches a single branch from the remote URL into refs/remotes/origin/<branch>.
+// It silently ignores "no matching remote ref" errors (branch doesn't exist on remote yet).
+func fetchBranch(ctx context.Context, repoDir, remoteURL, branch string, force bool) error {
+	refSpec := fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", branch, branch)
+	args := []string{"-C", repoDir, "fetch"}
 	if force {
 		args = append(args, "--force")
 	}
-	if create {
-		args = append(args, "-B", branch)
-		if startPoint != "" {
-			args = append(args, startPoint)
-		}
-	} else {
-		args = append(args, branch)
-	}
-	cmd := exec.Command("git", args...)
-	_, err := cmd.Output()
+	args = append(args, remoteURL, refSpec)
+	out, err := exec.CommandContext(ctx, "git", args...).CombinedOutput()
 	if err != nil {
 		var execErr *exec.ExitError
-		if !errors.As(err, &execErr) {
-			return err
+		if errors.As(err, &execErr) {
+			if strings.Contains(string(out), "couldn't find remote ref") {
+				return nil // branch doesn't exist on remote yet
+			}
+			return fmt.Errorf("git fetch failed: %s", string(out))
 		}
-		stderr := string(execErr.Stderr)
-		if strings.Contains(stderr, "did not match") {
-			return errRefNotFound
-		}
-		return fmt.Errorf("git checkout failed: %s", stderr)
+		return err
 	}
 	return nil
 }
 
-// resetToRemoteTrackingBranch resets to the commit pointed by the remote tracking branch.
-// This is used to reset the local branch to the state of the remote branch so it is expected that the latest changes have been fetched.
-// go-git wipes out git-ignored changes so must use the git command.
-func resetToRemoteTrackingBranch(repoDir, branch string) error {
-	cmd := exec.Command("git", "-C", repoDir, "reset", "--hard", "origin/"+branch)
-	_, err := cmd.Output()
+// gitResolveRef resolves a full ref name (e.g. refs/remotes/origin/main) to a commit hash.
+// Returns gitutil.ErrRefNotFound if the ref does not exist.
+func gitResolveRef(repoDir, ref string) (string, error) {
+	out, err := exec.Command("git", "-C", repoDir, "rev-parse", ref).Output()
+	if err != nil {
+		return "", gitutil.ErrRefNotFound
+	}
+	return strings.TrimSpace(string(out)), nil
+}
+
+// gitHeadHash returns the commit hash of HEAD, or "" if the repo has no commits yet.
+func gitHeadHash(repoDir string) (string, error) {
+	out, err := exec.Command("git", "-C", repoDir, "rev-parse", "HEAD").Output()
 	if err != nil {
 		var execErr *exec.ExitError
-		if !errors.As(err, &execErr) {
-			return err
+		if errors.As(err, &execErr) && strings.Contains(string(execErr.Stderr), "unknown revision") {
+			return "", nil
 		}
-		if strings.Contains(string(execErr.Stderr), "unknown revision") {
-			return errRefNotFound
+		return "", fmt.Errorf("git rev-parse HEAD failed: %s", string(execErr.Stderr))
+	}
+	return strings.TrimSpace(string(out)), nil
+}
+
+// gitCommitTimestamp returns the author timestamp of a commit.
+func gitCommitTimestamp(repoDir, hash string) (time.Time, error) {
+	out, err := exec.Command("git", "-C", repoDir, "log", "-1", "--format=%aI", hash).Output()
+	if err != nil {
+		var execErr *exec.ExitError
+		if errors.As(err, &execErr) {
+			return time.Time{}, fmt.Errorf("git log failed: %s", string(execErr.Stderr))
 		}
-		return fmt.Errorf("git reset failed: %s", string(execErr.Stderr))
+		return time.Time{}, err
+	}
+	ts := strings.TrimSpace(string(out))
+	if ts == "" {
+		return time.Time{}, nil
+	}
+	return time.Parse(time.RFC3339, ts)
+}
+
+// gitPushBranches pushes one or more branches to the remote URL.
+// Treats "Everything up-to-date" as success.
+func gitPushBranches(ctx context.Context, repoDir, remoteURL string, branches ...string) error {
+	args := []string{"-C", repoDir, "push", remoteURL}
+	for _, branch := range branches {
+		args = append(args, fmt.Sprintf("refs/heads/%s:refs/heads/%s", branch, branch))
+	}
+	out, err := exec.CommandContext(ctx, "git", args...).CombinedOutput()
+	if err != nil {
+		var execErr *exec.ExitError
+		if errors.As(err, &execErr) {
+			if strings.Contains(string(out), "Everything up-to-date") {
+				return nil
+			}
+			return fmt.Errorf("git push failed: %s", string(out))
+		}
+		return err
 	}
 	return nil
 }
 
-// ensureGitConfig ensures that the git config key is set.
-// if not set then it sets the key to the given value locally in the repo
+// ensureGitConfig sets a git config key locally if not already set at any scope.
 func ensureGitConfig(repoDir, key, value string) error {
 	_, err := exec.Command("git", "-C", repoDir, "config", "--get", key).Output()
 	if err == nil {
