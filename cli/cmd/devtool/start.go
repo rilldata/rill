@@ -178,11 +178,13 @@ func checkRillRepo() error {
 		return fmt.Errorf("you must run `rill devtool` from the root of the rill repository")
 	}
 
-	remote, err := gitutil.ExtractGitRemote("", "", false)
+	// Shell out to `git` so this also works inside a linked worktree, where `.git` is
+	// a file and the remote config lives in the main repo (not reachable via go-git's PlainOpen).
+	out, err := exec.Command("git", "remote", "get-url", "origin").Output()
 	if err != nil {
 		return fmt.Errorf("error extracting git remote: %w", err)
 	}
-	githubRemote, _ := remote.Github()
+	githubRemote, _ := gitutil.NormalizeGithubRemote(strings.TrimSpace(string(out)))
 
 	if githubRemote != rillGitRemote {
 		return fmt.Errorf("you must run `rill devtool` from the rill repository (expected remote %q, got %q)", rillGitRemote, githubRemote)
