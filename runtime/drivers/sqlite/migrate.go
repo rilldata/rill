@@ -23,6 +23,10 @@ var migrationVersionTable = "runtime_migration_version"
 // TTL for AI sessions; sessions with no messages newer than this are deleted by deleteExpiredAISessionsLoop.
 var aiSessionTTL = 90 * 24 * time.Hour // 3 months
 
+// aiSessionDeleteBatchSize bounds how many sessions are deleted per transaction.
+// Each batch holds the sqlite write lock briefly, so other registry operations can interleave.
+const aiSessionDeleteBatchSize = 500
+
 // Migrate implements drivers.Connection.
 // Migrate for SQLite may not be safe for concurrent use.
 func (c *connection) Migrate(_ context.Context) (err error) {
@@ -156,13 +160,8 @@ func (c *connection) deleteExpiredAISessionsLoop() {
 	}
 }
 
-// aiSessionDeleteBatchSize bounds how many sessions are deleted per transaction.
-// Each batch holds the sqlite write lock briefly, so other registry operations can interleave.
-const aiSessionDeleteBatchSize = 500
-
 // deleteExpiredAISessions deletes AI sessions that have no messages newer than aiSessionTTL.
-// It snapshots expired session IDs first, then deletes messages and sessions in batched transactions
-// to bound lock-hold time and to avoid a race where a resurrected session loses its old messages.
+// It snapshots expired session IDs first, then deletes messages and sessions in batched transactions to bound lock-hold time.
 func (c *connection) deleteExpiredAISessions(ctx context.Context) error {
 	cutoff := time.Now().UTC().Add(-aiSessionTTL)
 
@@ -194,8 +193,7 @@ func (c *connection) deleteExpiredAISessions(ctx context.Context) error {
 	}
 	rows.Close()
 
-	// Delete in batches; each batch atomically deletes a session's messages and the session itself,
-	// so a session resurrected between statements can't end up orphaned with its messages gone.
+	// Delete in batches; each batch atomically deletes a session's messages and the session itself.
 	for start := 0; start < len(ids); start += aiSessionDeleteBatchSize {
 		end := start + aiSessionDeleteBatchSize
 		if end > len(ids) {
