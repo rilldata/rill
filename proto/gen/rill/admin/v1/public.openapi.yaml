@@ -741,6 +741,11 @@ components:
                 frontendUrl:
                     description: Frontend URL for the deployment.
                     type: string
+                systemVariables:
+                    additionalProperties:
+                        type: string
+                    description: System variables set by the admin service that should not be overridden by user input.
+                    type: object
                 updatedOn:
                     description: Timestamp when the deployment was last updated.
                     format: date-time
@@ -2963,6 +2968,9 @@ paths:
                                 description:
                                     type: string
                                 devSlots:
+                                    format: int64
+                                    type: string
+                                devTtlSeconds:
                                     format: int64
                                     type: string
                                 directoryName:

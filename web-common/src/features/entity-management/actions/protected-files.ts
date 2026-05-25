@@ -21,7 +21,8 @@ const compile = (pattern: string) => picomatch(pattern, { dot: true });
 
 const ALWAYS_PINNED = ["/rill.yaml"].map(compile);
 
-const CLOUD_READONLY = ["**/.env", "**/.*.env"].map(compile);
+const ENV_FILES = ["**/.env", "**/.*.env"].map(compile);
+const CLOUD_READONLY = ENV_FILES;
 
 const PROTECTED_DIRECTORIES = ["/tmp", "/tmp/**", "/.git", "/.git/**"].map(
   compile,
@@ -49,7 +50,7 @@ export function isPinned(path: string): boolean {
 }
 
 export function getReadonlyNotice(path: string): Snippet | undefined {
-  if (isCloudRuntimeEditEnvironment() && CLOUD_READONLY.some((m) => m(path))) {
+  if (isCloudRuntimeEditEnvironment() && ENV_FILES.some((m) => m(path))) {
     return cloudReadonlyNotice;
   }
   return undefined;
@@ -57,4 +58,8 @@ export function getReadonlyNotice(path: string): Snippet | undefined {
 
 export function isProtectedDirectory(path: string): boolean {
   return PROTECTED_DIRECTORIES.some((m) => m(path));
+}
+
+export function isEnvFile(path: string): boolean {
+  return ENV_FILES.some((m) => m(path));
 }

@@ -9,8 +9,6 @@
   import Payment from "@rilldata/web-admin/features/billing/Payment.svelte";
   import Plan from "@rilldata/web-admin/features/billing/plans/Plan.svelte";
   import {
-    isEnterprisePlan,
-    isManagedPlan,
     isProPlan,
     isTeamPlan,
   } from "@rilldata/web-admin/features/billing/plans/utils";
@@ -37,18 +35,13 @@
   let planName = $derived(
     $subscriptionQuery?.data?.subscription?.plan?.name ?? "",
   );
-  let isEnterprise = $derived(
-    planType === V1BillingPlanType.BILLING_PLAN_TYPE_ENTERPRISE ||
-      planType === V1BillingPlanType.BILLING_PLAN_TYPE_MANAGED ||
-      isManagedPlan(planName) ||
-      isEnterprisePlan(planName),
-  );
-  let showCancel = $derived(
+  let isPaidPlan = $derived(
     planType === V1BillingPlanType.BILLING_PLAN_TYPE_PRO ||
       planType === V1BillingPlanType.BILLING_PLAN_TYPE_TEAM ||
       isProPlan(planName) ||
       isTeamPlan(planName),
   );
+  let isCancelled = $derived(Boolean($categorisedIssues.data?.cancelled));
 
   let cancelOpen = $state(false);
 
@@ -74,11 +67,11 @@
         bind:cancelOpen
       />
     {/if}
-    {#if !isEnterprise}
+    {#if isPaidPlan}
       <Payment {organization} />
     {/if}
     <BillingContactSetting {organization} />
-    {#if showCancel}
+    {#if isPaidPlan && !isCancelled}
       <button class="cancel-link" onclick={() => (cancelOpen = true)}>
         Cancel subscription
       </button>

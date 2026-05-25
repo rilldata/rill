@@ -4094,6 +4094,11 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
   devSlots?: bigint;
 
   /**
+   * @generated from field: optional int64 dev_ttl_seconds = 18;
+   */
+  devTtlSeconds?: bigint;
+
+  /**
    * @generated from field: bool superuser_force_access = 14;
    */
   superuserForceAccess = false;
@@ -4126,6 +4131,7 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
     { no: 10, name: "prod_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
     { no: 11, name: "prod_version", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 16, name: "dev_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
+    { no: 18, name: "dev_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
     { no: 14, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 17, name: "override_disk_gb", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
   ]);
@@ -4888,6 +4894,13 @@ export class GetDeploymentConfigResponse extends Message<GetDeploymentConfigResp
    */
   editable = false;
 
+  /**
+   * System variables set by the admin service that should not be overridden by user input.
+   *
+   * @generated from field: map<string, string> system_variables = 9;
+   */
+  systemVariables: { [key: string]: string } = {};
+
   constructor(data?: PartialMessage<GetDeploymentConfigResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4904,6 +4917,7 @@ export class GetDeploymentConfigResponse extends Message<GetDeploymentConfigResp
     { no: 5, name: "uses_archive", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 6, name: "duckdb_connector_config", kind: "message", T: Struct },
     { no: 8, name: "editable", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 9, name: "system_variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetDeploymentConfigResponse {

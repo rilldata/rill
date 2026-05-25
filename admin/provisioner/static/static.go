@@ -147,6 +147,11 @@ func (p *StaticProvisioner) Provision(ctx context.Context, r *provisioner.Resour
 	}, nil
 }
 
+func (p *StaticProvisioner) Hibernate(ctx context.Context, r *provisioner.Resource) (*provisioner.Resource, error) {
+	// Static provisioning has no compute to release; the runtime is shared and not torn down here.
+	return r, nil
+}
+
 func (p *StaticProvisioner) Deprovision(ctx context.Context, r *provisioner.Resource) error {
 	// Check it's a runtime resource
 	if r.Type != provisioner.ResourceTypeRuntime {

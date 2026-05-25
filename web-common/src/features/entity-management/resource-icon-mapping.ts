@@ -12,6 +12,7 @@ import MetricsViewIcon from "../../components/icons/MetricsViewIcon.svelte";
 import ModelIcon from "@rilldata/web-common/components/icons/ModelIcon.svelte";
 import File from "@rilldata/web-common/components/icons/File.svelte";
 import SettingsIcon from "@rilldata/web-common/components/icons/SettingsIcon.svelte";
+import { isEnvFile } from "@rilldata/web-common/features/entity-management/actions/protected-files.ts";
 
 export const resourceIconMapping = {
   [ResourceKind.Source]: TableIcon,
@@ -61,7 +62,7 @@ export function getIconComponent(
 ) {
   return kind
     ? resourceIconMapping[kind]
-    : filePath === "/.env" || filePath === "/rill.yaml"
+    : isEnvFile(filePath) || filePath === "/rill.yaml"
       ? SettingsIcon
       : File;
 }

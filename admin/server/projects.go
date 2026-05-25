@@ -26,7 +26,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const devDeplTTL = 6 * time.Hour
+const devDeplTTL = time.Hour
 
 const prodDeplTTL = 14 * 24 * time.Hour
 
@@ -525,7 +525,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		userID = &tmp
 	}
 
-	devSlots := 8 // default value for older CLIs which will not pass this field
+	devSlots := 4 // default value for older CLIs which will not pass this field
 	if req.DevSlots != 0 {
 		devSlots = int(req.DevSlots)
 	}
@@ -679,6 +679,9 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	if req.ProdTtlSeconds != nil {
 		observability.AddRequestAttributes(ctx, attribute.Int64("args.prod_ttl_seconds", *req.ProdTtlSeconds))
 	}
+	if req.DevTtlSeconds != nil {
+		observability.AddRequestAttributes(ctx, attribute.Int64("args.dev_ttl_seconds", *req.DevTtlSeconds))
+	}
 	if req.OverrideDiskGb != nil {
 		observability.AddRequestAttributes(ctx, attribute.Int64("args.override_disk_gb", *req.OverrideDiskGb))
 	}
@@ -816,6 +819,14 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		}
 	}
 
+	devTTLSeconds := proj.DevTTLSeconds
+	if req.DevTtlSeconds != nil {
+		if *req.DevTtlSeconds <= 0 {
+			return nil, status.Error(codes.InvalidArgument, "dev_ttl_seconds must be greater than 0")
+		}
+		devTTLSeconds = *req.DevTtlSeconds
+	}
+
 	// override_disk_gb is a sudo-only field. Only allow changes when the caller is a superuser using force access.
 	overrideDiskGB := proj.OverrideDiskGB
 	if req.OverrideDiskGb != nil {
@@ -849,7 +860,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		ProdSlots:            int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots))),
 		ProdTTLSeconds:       prodTTLSeconds,
 		DevSlots:             int(valOrDefault(req.DevSlots, int64(proj.DevSlots))),
-		DevTTLSeconds:        proj.DevTTLSeconds,
+		DevTTLSeconds:        devTTLSeconds,
 		OverrideDiskGB:       overrideDiskGB,
 		Provisioner:          valOrDefault(req.Provisioner, proj.Provisioner),
 		Annotations:          proj.Annotations,

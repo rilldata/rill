@@ -74,13 +74,10 @@ func RunGitStatus(path, subpath, remoteName, remoteBranch string) (GitStatus, er
 	}
 	remoteRef := fmt.Sprintf("%s/%s", remoteName, compareBranch)
 
-	localCommits, err := countCommitsAhead(path, subpath, remoteRef, status.Branch)
+	ahead, behind, err := countAheadBehind(path, subpath, status.Branch, remoteRef)
 	if err == nil {
-		status.LocalCommits = localCommits
-	}
-	remoteCommits, err := countCommitsAhead(path, subpath, status.Branch, remoteRef)
-	if err == nil {
-		status.RemoteCommits = remoteCommits
+		status.LocalCommits = ahead
+		status.RemoteCommits = behind
 	}
 
 	// get the remote URL
@@ -128,8 +125,10 @@ func RunGitPull(ctx context.Context, path string, discardLocal bool, remote, rem
 		}
 
 		if st.LocalCommits > 0 {
-			// reset the local commits and stash the changes
-			cmd := exec.CommandContext(ctx, "git", "-C", path, "reset", "--mixed", fmt.Sprintf("HEAD~%d", st.LocalCommits))
+			// reset local commits by moving HEAD to the remote tip; HEAD~N would be wrong
+			// because LocalCommits excludes merge commits.
+			remoteRef := fmt.Sprintf("%s/%s", remoteName, st.Branch)
+			cmd := exec.CommandContext(ctx, "git", "-C", path, "reset", "--mixed", remoteRef)
 			if out, err := cmd.CombinedOutput(); err != nil {
 				return "", fmt.Errorf("failed to reset local commits: %s (%w)", string(out), err)
 			}
@@ -228,22 +227,29 @@ func isGitIgnored(repoRoot, subpath string) (bool, error) {
 	return true, nil
 }
 
-// countCommitsAhead counts the number of commits in `from` branch not present in `to` branch.
-func countCommitsAhead(path, subpath, to, from string) (int32, error) {
-	var args []string
-	if subpath == "" {
-		args = []string{"-C", path, "rev-list", "--count", fmt.Sprintf("%s..%s", to, from)}
-	} else {
-		args = []string{"-C", path, "rev-list", "--count", fmt.Sprintf("%s..%s", to, from), "--", subpath}
+// countAheadBehind returns the number of non-merge commits on `local` not in `remote` (ahead)
+// and on `remote` not in `local` (behind), in a single git invocation.
+func countAheadBehind(path, subpath, local, remote string) (int32, int32, error) {
+	args := []string{"-C", path, "rev-list", "--left-right", "--count", "--no-merges", fmt.Sprintf("%s...%s", local, remote)}
+	if subpath != "" {
+		args = append(args, "--", subpath)
 	}
 	cmd := exec.Command("git", args...)
 	data, err := cmd.CombinedOutput()
 	if err != nil {
-		return 0, fmt.Errorf("failed to count commits: %s(%w)", data, err)
+		return 0, 0, fmt.Errorf("failed to count commits: %s(%w)", data, err)
 	}
-	count, err := strconv.ParseInt(strings.TrimSpace(string(data)), 10, 32)
+	parts := strings.Fields(strings.TrimSpace(string(data)))
+	if len(parts) != 2 {
+		return 0, 0, fmt.Errorf("unexpected rev-list output: %q", string(data))
+	}
+	ahead, err := strconv.ParseInt(parts[0], 10, 32)
 	if err != nil {
-		return 0, fmt.Errorf("failed to parse commit count: %w", err)
+		return 0, 0, fmt.Errorf("failed to parse ahead count: %w", err)
 	}
-	return int32(count), nil
+	behind, err := strconv.ParseInt(parts[1], 10, 32)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to parse behind count: %w", err)
+	}
+	return int32(ahead), int32(behind), nil
 }

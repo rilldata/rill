@@ -792,7 +792,7 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 	}
 
 	// variables
-	vars, err := s.admin.ResolveVariables(ctx, depl)
+	vars, systemVars, err := s.admin.ResolveVariables(ctx, depl)
 	if err != nil {
 		return nil, err
 	}
@@ -800,6 +800,7 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 	for _, v := range vars {
 		resp.Variables = append(resp.Variables, projectVariableToDTO(v))
 	}
+	resp.SystemVariables = systemVars
 
 	// remove in next release
 	resp.VariablesLegacy = make(map[string]string, len(vars)) // nolint:staticcheck // Still need to populate for backward compatibility.

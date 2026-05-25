@@ -100,7 +100,10 @@ type DB interface {
 	DeleteProjectWhitelistedDomain(ctx context.Context, id string) error
 
 	FindDeployments(ctx context.Context, afterID string, limit int) ([]*Deployment, error)
-	FindExpiredDeployments(ctx context.Context) ([]*Deployment, error)
+	// FindDeploymentsToStop finds running deployments that should be stopped due to not having been accessed for longer than the project's deployment TTL.
+	FindDeploymentsToStop(ctx context.Context) ([]*Deployment, error)
+	// FindDeploymentsToDelete finds stopped deployments that should be deleted (i.e. fully removed, including persistent state) due to having been stopped for longer than the provided retention.
+	FindDeploymentsToDelete(ctx context.Context, retention time.Duration) ([]*Deployment, error)
 	FindDeploymentsForProject(ctx context.Context, projectID, environment, branch string) ([]*Deployment, error)
 	FindDeployment(ctx context.Context, id string) (*Deployment, error)
 	FindDeploymentByInstanceID(ctx context.Context, instanceID string) (*Deployment, error)

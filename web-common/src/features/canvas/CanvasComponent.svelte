@@ -45,6 +45,7 @@
     }
   }
   export let selected = false;
+  export let active = false;
   export let ghost = false;
   export let allowPointerEvents = true;
   export let editable = false;
@@ -66,6 +67,7 @@
   role="presentation"
   id={componentName}
   class:selected
+  class:active
   class:editable
   class:opacity-20={ghost}
   style:pointer-events={!allowPointerEvents ? "none" : "auto"}
@@ -107,6 +109,12 @@
   }
 
   .selected {
+    @apply shadow-md outline-primary-400 outline-[1.5px];
+
+    outline-style: solid !important;
+  }
+
+  .active {
     @apply shadow-md outline-primary-400 outline-[1.5px];
 
     outline-style: solid !important;

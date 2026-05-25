@@ -36,7 +36,7 @@ export function useDeployingDashboards(
           // pre-merge SHA. Until then, the runtime hasn't pulled the new
           // commit, so the dashboard appears idle with stale content and
           // would redirect prematurely.
-          if (preCommitSha && parserStillAtSha(resources, preCommitSha)) {
+          if (parserAtShaOrReconciling(resources, preCommitSha)) {
             return {
               redirectPath: null,
               dashboardsErrored: false,
@@ -114,8 +114,7 @@ function makeDeployingRefetchInterval(preCommitSha: string | null) {
     if (smart !== false) return smart;
 
     if (
-      preCommitSha &&
-      parserStillAtSha(query.state.data?.resources ?? [], preCommitSha)
+      parserAtShaOrReconciling(query.state.data?.resources ?? [], preCommitSha)
     ) {
       return MAX_REFETCH_INTERVAL;
     }
@@ -123,12 +122,25 @@ function makeDeployingRefetchInterval(preCommitSha: string | null) {
   };
 }
 
-function parserStillAtSha(resources: V1Resource[], preCommitSha: string) {
+function parserAtShaOrReconciling(
+  resources: V1Resource[],
+  preCommitSha: string | null,
+) {
   const parser = resources.find((r) => r.projectParser);
-  // Treat an absent SHA as "still at pre-merge" so we keep polling
-  // rather than redirecting to a half-initialized runtime.
-  const currentSha = parser?.projectParser?.state?.currentCommitSha ?? "";
-  return currentSha === preCommitSha || currentSha === "";
+  if (
+    parser?.meta?.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE
+  ) {
+    return true;
+  }
+
+  if (preCommitSha) {
+    // Treat an absent SHA as "still at pre-merge" so we keep polling
+    // rather than redirecting to a half-initialized runtime.
+    const currentSha = parser?.projectParser?.state?.currentCommitSha ?? "";
+    if (currentSha === preCommitSha || currentSha === "") return true;
+  }
+
+  return false;
 }
 
 function getDashboardsReconciling(

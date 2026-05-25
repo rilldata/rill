@@ -92,6 +92,11 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) (v
 			restartController = true
 		}
 	}
+	systemVarsChanged := !maps.Equal(inst.SystemVariables, cfg.SystemVariables)
+	if systemVarsChanged {
+		inst.SystemVariables = cfg.SystemVariables
+		restartController = true
+	}
 	inst.Annotations = cfg.Annotations
 
 	// Create a new connectors slice to avoid modifying cached objects

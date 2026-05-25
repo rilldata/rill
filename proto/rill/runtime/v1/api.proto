@@ -504,7 +504,10 @@ message CreateInstanceRequest {
   string admin_connector = 15;
   string ai_connector = 17;
   repeated Connector connectors = 10;
+  // Deprecated: Continue populating this for some time for backward compatibility with older runtimes, remove after a few releases.
   map<string, string> variables = 7;
+  // system_variables are variables that are set by admin service and should not be overridden by user input
+  map<string, string> system_variables = 19;
   map<string, string> annotations = 9;
   string frontend_url = 18;
 }
@@ -1285,6 +1288,8 @@ message GitStatusResponse {
   string branch = 1;
   // The remote url of the git repo.
   string github_url = 2;
+  // Subpath from the git repo.
+  string subpath = 7;
   // If the repo is managed by Rill.
   bool managed_git = 3;
   // local_changes returns true if there are any staged, unstaged, or untracked changes in the local git repo.
@@ -1359,6 +1364,8 @@ message GitPullRequest {
 message GitPullResponse {
   // The output of the git pull command. Only set for unsuccessful pulls.
   string output = 1;
+  // The name of the branch that was being merged when a conflict occurred. Only set for unsuccessful pulls.
+  string merged_branch = 2;
 }
 
 message GitPushRequest {

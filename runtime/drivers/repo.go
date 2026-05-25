@@ -15,6 +15,8 @@ var ErrRemoteAhead = fmt.Errorf("remote ahead of local state, please pull first"
 
 type MergeFailedError struct {
 	Output string
+	// MergedBranch is the name of the branch that was being merged when the error occurred.
+	MergedBranch string
 }
 
 func (e *MergeFailedError) Error() string {

@@ -45,6 +45,7 @@ type AlertMetadata struct {
 // For local runtimes only applicable fields like Variables will be populated.
 type Config struct {
 	Variables             map[string]map[string]string
+	SystemVariables       map[string]string
 	Annotations           map[string]string
 	FrontendURL           string
 	UpdatedOn             time.Time

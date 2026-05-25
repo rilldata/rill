@@ -108,6 +108,7 @@ func (s *Server) GitStatus(ctx context.Context, req *runtimev1.GitStatusRequest)
 	return &runtimev1.GitStatusResponse{
 		Branch:        gs.Branch,
 		GithubUrl:     gs.RemoteURL,
+		Subpath:       gs.Subpath,
 		ManagedGit:    gs.ManagedRepo,
 		LocalChanges:  gs.LocalChanges,
 		LocalCommits:  gs.LocalCommits,
@@ -230,7 +231,8 @@ func (s *Server) GitPull(ctx context.Context, req *runtimev1.GitPullRequest) (*r
 		var mergeErr *drivers.MergeFailedError
 		if errors.As(err, &mergeErr) {
 			return &runtimev1.GitPullResponse{
-				Output: mergeErr.Error(),
+				Output:       mergeErr.Error(),
+				MergedBranch: mergeErr.MergedBranch,
 			}, nil
 		}
 		return nil, fmt.Errorf("failed to pull: %w", err)

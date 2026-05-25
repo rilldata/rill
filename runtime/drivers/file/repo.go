@@ -451,6 +451,7 @@ func (c *connection) Status(ctx context.Context, remoteBranch string) (*drivers.
 		IsGitRepo:     true,
 		Branch:        gs.Branch,
 		RemoteURL:     gs.RemoteURL,
+		Subpath:       subPath,
 		ManagedRepo:   config.ManagedRepo,
 		LocalChanges:  gs.LocalChanges,
 		LocalCommits:  gs.LocalCommits,
@@ -713,7 +714,8 @@ func (c *connection) MergeToBranch(ctx context.Context, branch string, force boo
 	}
 	if aborted {
 		return &drivers.MergeFailedError{
-			Output: "merge failed due to conflicts, use force merge to favour current changes",
+			Output:       "merge failed due to conflicts, use force merge to favour current changes",
+			MergedBranch: branch,
 		}
 	}
 	return nil
