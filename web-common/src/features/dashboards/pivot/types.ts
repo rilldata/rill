@@ -95,6 +95,7 @@ export interface PivotQueryError {
  * This is the config that is passed to the pivot data store methods
  */
 export interface PivotDataStoreConfig {
+  ready?: boolean;
   measureNames: string[];
   rowDimensionNames: string[];
   colDimensionNames: string[];
