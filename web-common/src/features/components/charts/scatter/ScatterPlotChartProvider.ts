@@ -24,7 +24,10 @@ import {
   type Readable,
   type Writable,
 } from "svelte/store";
-import { getFilterWithNullHandling } from "../query-util";
+import {
+  canQueryWithTimeRange,
+  getFilterWithNullHandling,
+} from "../query-util";
 
 export type ScatterPlotChartSpec = {
   metrics_view: string;
@@ -95,14 +98,20 @@ export class ScatterPlotChartProvider {
       hasColorDimension = true;
     }
 
+    const hasTemporalDimension =
+      config.x?.type === "temporal" || config.y?.type === "temporal";
+
     const topNColorQueryOptionsStore = derived(
       [timeAndFilterStore, visibleStore],
       ([$timeAndFilterStore, $visible]) => {
-        const { timeRange, where } = $timeAndFilterStore;
+        const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const enabled =
           $visible &&
-          !!timeRange?.start &&
-          !!timeRange?.end &&
+          canQueryWithTimeRange(
+            hasTimeSeries,
+            timeRange,
+            hasTemporalDimension,
+          ) &&
           hasColorDimension &&
           !!colorDimensionName &&
           !!colorLimit;
@@ -139,12 +148,16 @@ export class ScatterPlotChartProvider {
     const queryOptionsStore = derived(
       [timeAndFilterStore, topNColorQuery, visibleStore],
       ([$timeAndFilterStore, $topNColorQuery, $visible]) => {
-        const { timeRange, where, timeGrain } = $timeAndFilterStore;
+        const { timeRange, where, timeGrain, hasTimeSeries } =
+          $timeAndFilterStore;
         const topNColorData = $topNColorQuery?.data?.data;
         const enabled =
           $visible &&
-          !!timeRange?.start &&
-          !!timeRange?.end &&
+          canQueryWithTimeRange(
+            hasTimeSeries,
+            timeRange,
+            hasTemporalDimension,
+          ) &&
           !!measures?.length &&
           !!dimensions?.length &&
           (hasColorDimension && colorDimensionName && colorLimit
@@ -169,9 +182,6 @@ export class ScatterPlotChartProvider {
         }
 
         let finalDimensions = dimensions;
-        const hasTemporalDimension =
-          config.x?.type === "temporal" || config.y?.type === "temporal";
-
         if (timeGrain && hasTemporalDimension) {
           finalDimensions = dimensions.map((d) => {
             if (
