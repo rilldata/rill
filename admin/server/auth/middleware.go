@@ -11,6 +11,7 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -91,8 +92,8 @@ func (a *Authenticator) HTTPMiddlewareLenient(next http.Handler) http.Handler {
 }
 
 // CookieRefreshMiddleware is a middleware that refreshes the auth cookie.
-// This enables us to do rolling cookie refreshes so we can have a relatively short cookie max age.
-// Note that it does not update the auth token encrypted inside the cookie.
+// This enables us to do rolling cookie refreshes so we can have a relatively short cookie max age (browserSessionTTL).
+// Once per day we refresh the auth token TTL if it's still valid.
 func (a *Authenticator) CookieRefreshMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sess := a.cookies.Get(r, cookieName)
@@ -101,6 +102,14 @@ func (a *Authenticator) CookieRefreshMiddleware(next http.Handler) http.Handler 
 			if err := sess.Save(r, w); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
+			}
+			validatedToken, err := a.admin.ValidateAuthToken(r.Context(), authToken)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			if err := a.admin.ExtendBrowserSessionAuthToken(r.Context(), validatedToken, browserSessionTTL, browserSessionTTLRefreshThreshold); err != nil {
+				a.logger.Info("failed to extend browser session auth token TTL", zap.Error(err), observability.ZapCtx(r.Context()))
 			}
 		}
 		next.ServeHTTP(w, r)

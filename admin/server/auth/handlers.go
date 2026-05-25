@@ -29,7 +29,11 @@ const (
 	cookieFieldRedirect         = "redirect"
 	cookieFieldCustomDomainFlow = "custom_domain_flow"
 	cookieFieldAccessToken      = "access_token"
-	browserSessionTTL           = 14 * 24 * time.Hour
+)
+
+var (
+	browserSessionTTL                 = 14 * 24 * time.Hour
+	browserSessionTTLRefreshThreshold = browserSessionTTL - 24*time.Hour
 )
 
 // RegisterEndpoints adds HTTP endpoints for auth.
@@ -343,8 +347,7 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 	}
 
 	// Issue a new persistent auth token
-	ttl := browserSessionTTL
-	authToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.AuthClientIDRillWeb, "Browser session", nil, &ttl, false)
+	authToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.AuthClientIDRillWeb, "Browser session", nil, &browserSessionTTL, false)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to issue API token: %s", err), http.StatusInternalServerError)
 		return
@@ -407,8 +410,7 @@ func (a *Authenticator) authLoginCustomDomainCallback(w http.ResponseWriter, r *
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
-	ttl := browserSessionTTL
-	newAuthToken, err := a.admin.IssueUserAuthToken(r.Context(), validated.OwnerID(), database.AuthClientIDRillWeb, "Browser session", nil, &ttl, false)
+	newAuthToken, err := a.admin.IssueUserAuthToken(r.Context(), validated.OwnerID(), database.AuthClientIDRillWeb, "Browser session", nil, &browserSessionTTL, false)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to issue API token: %s", err), http.StatusInternalServerError)
 		return
