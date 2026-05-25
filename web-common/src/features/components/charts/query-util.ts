@@ -22,9 +22,10 @@ export function canQueryWithTimeRange(
   requiresTimeRange = false,
 ): boolean {
   const hasTimeRange = !!timeRange?.start && !!timeRange?.end;
-  return requiresTimeRange
-    ? hasTimeRange
-    : hasTimeSeries === false || (hasTimeSeries === true && hasTimeRange);
+  if (requiresTimeRange) return hasTimeRange;
+  if (hasTimeSeries === false) return true;
+  if (hasTimeSeries === true) return hasTimeRange;
+  return false;
 }
 
 export function getFilterWithNullHandling(
