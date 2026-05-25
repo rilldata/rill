@@ -37,7 +37,7 @@ import {
 import type { QueryClient } from "@tanstack/svelte-query";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
-import { getConnectorYamlPreview } from "@rilldata/web-common/features/add-data/form/yaml-preview.ts";
+import { getConnectorYAML } from "@rilldata/web-common/features/add-data/form/connector-source-yaml-generator.ts";
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils.ts";
 import {
   getProjectParserVersion,
@@ -103,7 +103,7 @@ export async function createConnector({
       }),
     )?.resource?.meta?.stateVersion;
 
-    const connectorYaml = getConnectorYamlPreview({
+    const connectorYaml = getConnectorYAML({
       connector: connectorDriver,
       formValues,
       schema,

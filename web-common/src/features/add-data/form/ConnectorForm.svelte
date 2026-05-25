@@ -1,7 +1,7 @@
 <script lang="ts">
   import { createConnectorForm } from "@rilldata/web-common/features/sources/modal/FormValidation.ts";
   import { getConnectorSchema } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
-  import { getConnectorYamlPreview } from "./yaml-preview.ts";
+  import { getConnectorYAML } from "./connector-source-yaml-generator.ts";
   import AddDataFormStructure from "@rilldata/web-common/features/add-data/form/AddDataFormStructure.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -68,7 +68,7 @@
 
   $: schema = getConnectorSchema(step.schema);
   $: yamlPreview = connectorDriver
-    ? getConnectorYamlPreview({
+    ? getConnectorYAML({
         connector: connectorDriver,
         formValues: $form,
         schema,

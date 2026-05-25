@@ -1,10 +1,7 @@
 import type { QueryClient } from "@tanstack/query-core";
 import { runtimeServicePutFile } from "../../../runtime-client";
 import type { RuntimeClient } from "../../../runtime-client/v2";
-import {
-  compileConnectorYAML,
-  updateRillYAMLWithAiConnector,
-} from "../code-utils";
+import { generateYAML, updateRillYAMLWithAiConnector } from "../code-utils";
 import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-mappers";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
 import { getName } from "../../entity-management/name-utils";
@@ -77,21 +74,16 @@ export async function saveAiConnector(
     EntityType.Connector,
   );
 
-  const connectorYAML = compileConnectorYAML(
-    connector,
-    formValues,
-    envEditSession,
-    {
-      connectorInstanceName: newConnectorName,
-      orderedProperties: schemaFields,
-      secretKeys: schemaSecretKeys,
-      stringKeys: schemaStringKeys,
-      schema: schema ?? undefined,
-      fieldFilter: schemaFields
-        ? (property) => !("internal" in property && property.internal)
-        : undefined,
-    },
-  );
+  const connectorYAML = generateYAML(connector, formValues, envEditSession, {
+    connectorInstanceName: newConnectorName,
+    orderedProperties: schemaFields,
+    secretKeys: schemaSecretKeys,
+    stringKeys: schemaStringKeys,
+    schema: schema ?? undefined,
+    fieldFilter: schemaFields
+      ? (property) => !("internal" in property && property.internal)
+      : undefined,
+  });
   await envEditSession.commit();
 
   // Write connector YAML

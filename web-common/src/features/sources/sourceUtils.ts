@@ -21,7 +21,7 @@ type: model
 materialize: true`;
 }
 
-export function compileSourceYAML(
+export function generateSourceYAML(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
   envEditSession: EnvEditSession,

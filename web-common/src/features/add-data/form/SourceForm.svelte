@@ -6,7 +6,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { getConnectorSchema } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
   import { onMount } from "svelte";
-  import { getSourceYamlPreview } from "./yaml-preview.ts";
+  import { getSourceYAML } from "./connector-source-yaml-generator.ts";
   import AddDataFormStructure from "@rilldata/web-common/features/add-data/form/AddDataFormStructure.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { prepareSourceFormData } from "@rilldata/web-common/features/sources/sourceUtils.ts";
@@ -99,7 +99,7 @@
 
   $: schema = getConnectorSchema(step.schema);
   $: yamlPreview = connectorDriver
-    ? getSourceYamlPreview({
+    ? getSourceYAML({
         connectorName: step.connector,
         connector: connectorDriver,
         formValues: $form,
@@ -145,7 +145,7 @@
     );
     const schema = getConnectorSchema(rewrittenConnector.name ?? "");
 
-    const yaml = getSourceYamlPreview({
+    const yaml = getSourceYAML({
       connectorName: step.connector,
       connector: connectorDriver,
       formValues: rewrittenFormValues,

@@ -169,7 +169,7 @@ export function formatHeadersAsYamlMap(
   return `headers:\n${entries.join("\n")}`;
 }
 
-export function compileConnectorYAML(
+export function generateYAML(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
   envEditSession: EnvEditSession,

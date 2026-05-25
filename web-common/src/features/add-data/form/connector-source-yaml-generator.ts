@@ -4,16 +4,16 @@ import {
   getSchemaStringKeys,
 } from "@rilldata/web-common/features/templates/schema-utils.ts";
 import type { MultiStepFormSchema } from "@rilldata/web-common/features/templates/schemas/types.ts";
-import { compileConnectorYAML } from "@rilldata/web-common/features/connectors/code-utils.ts";
+import { generateYAML } from "@rilldata/web-common/features/connectors/code-utils.ts";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import {
-  compileSourceYAML,
+  generateSourceYAML,
   prepareSourceFormData,
 } from "@rilldata/web-common/features/sources/sourceUtils.ts";
 import { getConnectorSchema } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
 import type { EnvEditSession } from "@rilldata/web-common/features/env-management/env-edit-session.ts";
 
-export function getConnectorYamlPreview({
+export function getConnectorYAML({
   connector,
   schema,
   formValues,
@@ -33,26 +33,21 @@ export function getConnectorYamlPreview({
   const schemaStringKeys = schema
     ? getSchemaStringKeys(schema, { step: "connector" })
     : [];
-  const yamlPreview = compileConnectorYAML(
-    connector,
-    formValues,
-    envEditSession,
-    {
-      fieldFilter: (property) => {
-        if ("internal" in property && property.internal) return false;
-        return !("noPrompt" in property && property.noPrompt);
-      },
-      orderedProperties: schemaFields,
-      secretKeys: schemaSecretKeys,
-      stringKeys: schemaStringKeys,
-      schema: schema ?? undefined,
+  const yaml = generateYAML(connector, formValues, envEditSession, {
+    fieldFilter: (property) => {
+      if ("internal" in property && property.internal) return false;
+      return !("noPrompt" in property && property.noPrompt);
     },
-  );
+    orderedProperties: schemaFields,
+    secretKeys: schemaSecretKeys,
+    stringKeys: schemaStringKeys,
+    schema: schema ?? undefined,
+  });
 
-  return yamlPreview;
+  return yaml;
 }
 
-export function getSourceYamlPreview({
+export function getSourceYAML({
   connectorName,
   connector,
   schema,
@@ -85,7 +80,7 @@ export function getSourceYamlPreview({
     ? getSchemaStringKeys(rewrittenSchema, { step: "source" })
     : undefined;
   if (isRewrittenToDuckDb) {
-    return compileSourceYAML(
+    return generateSourceYAML(
       rewrittenConnector,
       rewrittenFormValues,
       envEditSession,
@@ -97,7 +92,7 @@ export function getSourceYamlPreview({
       },
     );
   }
-  return getConnectorYamlPreview({
+  return getConnectorYAML({
     connector,
     schema,
     formValues: rewrittenFormValues,

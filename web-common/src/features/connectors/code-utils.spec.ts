@@ -3,7 +3,7 @@ import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import {
   replaceAiConnectorInYAML,
   replaceOlapConnectorInYAML,
-  compileConnectorYAML,
+  generateYAML,
   formatHeadersAsYamlMap,
   maybeUnsetOlapConnectorInYaml,
 } from "./code-utils";
@@ -416,7 +416,7 @@ describe("formatHeadersAsYamlMap", () => {
   });
 });
 
-describe("compileConnectorYAML", () => {
+describe("generateYAML", () => {
   it("should produce basic connector YAML", async () => {
     const connector: V1ConnectorDriver = {
       name: "clickhouse",
@@ -427,7 +427,7 @@ describe("compileConnectorYAML", () => {
       connector.name,
       undefined,
     );
-    const result = compileConnectorYAML(
+    const result = generateYAML(
       connector,
       { host: "ch.example.com" },
       envEditSession,
@@ -447,7 +447,7 @@ describe("compileConnectorYAML", () => {
       connector.name,
       undefined,
     );
-    const result = compileConnectorYAML(
+    const result = generateYAML(
       connector,
       { host: "ch.example.com", port: 9000, database: "default" },
       envEditSession,
@@ -478,7 +478,7 @@ describe("compileConnectorYAML", () => {
       connector.name,
       schema,
     );
-    const result = compileConnectorYAML(
+    const result = generateYAML(
       connector,
       { password: "super_secret" },
       envEditSession,
@@ -518,7 +518,7 @@ describe("compileConnectorYAML", () => {
         CLICKHOUSE_PASSWORD: "abc",
       },
     );
-    const result = compileConnectorYAML(
+    const result = generateYAML(
       connector,
       { password: "secret" },
       envEditSession,
@@ -539,7 +539,7 @@ describe("compileConnectorYAML", () => {
     });
 
     // Calling compile again should not create new variable.
-    const newResult = compileConnectorYAML(
+    const newResult = generateYAML(
       connector,
       { password: "secret_new" },
       envEditSession,
@@ -570,7 +570,7 @@ describe("compileConnectorYAML", () => {
       connector.name,
       undefined,
     );
-    const result = compileConnectorYAML(
+    const result = generateYAML(
       connector,
       { host: "ch.example.com" },
       envEditSession,
@@ -588,12 +588,9 @@ describe("compileConnectorYAML", () => {
       connector.name,
       undefined,
     );
-    const result = compileConnectorYAML(
-      connector,
-      { port: 9000 },
-      envEditSession,
-      { orderedProperties: [{ key: "port" }] },
-    );
+    const result = generateYAML(connector, { port: 9000 }, envEditSession, {
+      orderedProperties: [{ key: "port" }],
+    });
     expect(result).toContain("port: 9000");
     expect(result).not.toContain('"9000"');
   });
@@ -604,7 +601,7 @@ describe("compileConnectorYAML", () => {
       connector.name,
       undefined,
     );
-    const result = compileConnectorYAML(
+    const result = generateYAML(
       connector,
       { host: "ch.example.com", database: "" },
       envEditSession,
@@ -620,7 +617,7 @@ describe("compileConnectorYAML", () => {
       connector.name,
       undefined,
     );
-    const result = compileConnectorYAML(
+    const result = generateYAML(
       connector,
       { host: "ch.example.com", database: undefined },
       envEditSession,
@@ -635,7 +632,7 @@ describe("compileConnectorYAML", () => {
       connector.name,
       undefined,
     );
-    const result = compileConnectorYAML(
+    const result = generateYAML(
       connector,
       { url: "https://example.com", headers: [] },
       envEditSession,
@@ -650,7 +647,7 @@ describe("compileConnectorYAML", () => {
       connector.name,
       undefined,
     );
-    const result = compileConnectorYAML(
+    const result = generateYAML(
       connector,
       { host: "ch.example.com", managed: false },
       envEditSession,
@@ -665,7 +662,7 @@ describe("compileConnectorYAML", () => {
       connector.name,
       undefined,
     );
-    const result = compileConnectorYAML(
+    const result = generateYAML(
       connector,
       { host: "ch.example.com", managed: true },
       envEditSession,
@@ -680,7 +677,7 @@ describe("compileConnectorYAML", () => {
       connector.name,
       undefined,
     );
-    const result = compileConnectorYAML(
+    const result = generateYAML(
       connector,
       { path: "md:my_db" },
       envEditSession,
@@ -696,7 +693,7 @@ describe("compileConnectorYAML", () => {
       connector.name,
       undefined,
     );
-    const result = compileConnectorYAML(
+    const result = generateYAML(
       connector,
       { host: "ch.example.com", managed: true },
       envEditSession,
@@ -718,7 +715,7 @@ describe("compileConnectorYAML", () => {
       connector.name,
       undefined,
     );
-    const result = compileConnectorYAML(
+    const result = generateYAML(
       connector,
       { host: "ch.example.com" },
       envEditSession,

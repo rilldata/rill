@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { makeTestEnvEditSession } from "@rilldata/web-common/features/env-management/test/test-env-store.ts";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
-import { getConnectorYamlPreview } from "@rilldata/web-common/features/add-data/form/yaml-preview.ts";
+import { getConnectorYAML } from "@rilldata/web-common/features/add-data/form/connector-source-yaml-generator.ts";
 import { clickhouseSchema } from "@rilldata/web-common/features/templates/schemas/clickhouse.ts";
 import { ducklakeSchema } from "@rilldata/web-common/features/templates/schemas/ducklake.ts";
 import { httpsSchema } from "@rilldata/web-common/features/templates/schemas/https.ts";
 
-describe("getConnectorYamlPreview", () => {
+describe("getConnectorYAML", () => {
   describe("clickhouse", () => {
     const connector: V1ConnectorDriver = { name: "clickhouse" };
     const schema = clickhouseSchema;
@@ -22,7 +22,7 @@ describe("getConnectorYamlPreview", () => {
     it("should retain same value across edit commits", async () => {
       const { envEditSession, testEnvs, envStore } =
         await makeTestEnvEditSession(connector.name, schema);
-      const yamlInitial = getConnectorYamlPreview({
+      const yamlInitial = getConnectorYAML({
         connector,
         schema,
         formValues: formValuesWithPassword,
@@ -40,7 +40,7 @@ describe("getConnectorYamlPreview", () => {
       testEnvs["CLICKHOUSE_PASSWORD"] = "pass";
       await envStore.pull();
 
-      const yamlAfterPull = getConnectorYamlPreview({
+      const yamlAfterPull = getConnectorYAML({
         connector,
         schema,
         formValues: {
@@ -61,7 +61,7 @@ describe("getConnectorYamlPreview", () => {
       testEnvs["CLICKHOUSE_PASSWORD"] = "pass_source";
       await envStore.pull();
 
-      const yamlAfterSourceUpdate = getConnectorYamlPreview({
+      const yamlAfterSourceUpdate = getConnectorYAML({
         connector,
         schema,
         formValues: {
@@ -83,7 +83,7 @@ describe("getConnectorYamlPreview", () => {
     it("should delete unused vars if not updated from outside", async () => {
       const { envEditSession, testEnvs, envStore } =
         await makeTestEnvEditSession(connector.name, schema);
-      const yamlInitial = getConnectorYamlPreview({
+      const yamlInitial = getConnectorYAML({
         connector,
         schema,
         formValues: formValuesWithPassword,
@@ -101,7 +101,7 @@ describe("getConnectorYamlPreview", () => {
       testEnvs["CLICKHOUSE_PASSWORD"] = "pass";
       await envStore.pull();
 
-      const yamlWithoutPassword = getConnectorYamlPreview({
+      const yamlWithoutPassword = getConnectorYAML({
         connector,
         schema,
         formValues: formValuesWithoutPassword,
@@ -115,7 +115,7 @@ describe("getConnectorYamlPreview", () => {
     it("should delete vars on rollback if not updated from outside", async () => {
       const { envEditSession, testEnvs, envStore } =
         await makeTestEnvEditSession(connector.name, schema);
-      const yamlInitial = getConnectorYamlPreview({
+      const yamlInitial = getConnectorYAML({
         connector,
         schema,
         formValues: formValuesWithPassword,
@@ -140,7 +140,7 @@ describe("getConnectorYamlPreview", () => {
     it("should retain unused vars if updated from outside", async () => {
       const { envEditSession, testEnvs, envStore } =
         await makeTestEnvEditSession(connector.name, schema);
-      const yamlInitial = getConnectorYamlPreview({
+      const yamlInitial = getConnectorYAML({
         connector,
         schema,
         formValues: formValuesWithPassword,
@@ -158,7 +158,7 @@ describe("getConnectorYamlPreview", () => {
       testEnvs["CLICKHOUSE_PASSWORD"] = "pass_source";
       await envStore.pull();
 
-      const yamlWithoutPassword = getConnectorYamlPreview({
+      const yamlWithoutPassword = getConnectorYAML({
         connector,
         schema,
         formValues: formValuesWithoutPassword,
@@ -174,7 +174,7 @@ describe("getConnectorYamlPreview", () => {
     it("should retain vars on rollback if updated from outside", async () => {
       const { envEditSession, testEnvs, envStore } =
         await makeTestEnvEditSession(connector.name, schema);
-      const yamlInitial = getConnectorYamlPreview({
+      const yamlInitial = getConnectorYAML({
         connector,
         schema,
         formValues: formValuesWithPassword,
@@ -203,7 +203,7 @@ describe("getConnectorYamlPreview", () => {
         await makeTestEnvEditSession(connector.name, schema);
 
       // Initial yaml compilation
-      getConnectorYamlPreview({
+      getConnectorYAML({
         connector,
         schema,
         formValues: formValuesWithPassword,
@@ -229,7 +229,7 @@ describe("getConnectorYamlPreview", () => {
         await makeTestEnvEditSession(connector.name, schema);
 
       // Initial yaml compilation
-      getConnectorYamlPreview({
+      getConnectorYAML({
         connector,
         schema,
         formValues: formValuesWithPassword,
@@ -260,7 +260,7 @@ describe("getConnectorYamlPreview", () => {
       it("should retain same value across edit commits", async () => {
         const { envEditSession, testEnvs, envStore } =
           await makeTestEnvEditSession(connector.name, schema);
-        const yamlInitial = getConnectorYamlPreview({
+        const yamlInitial = getConnectorYAML({
           connector,
           schema,
           formValues: {
@@ -284,7 +284,7 @@ describe("getConnectorYamlPreview", () => {
           "dbname=mydb host=localhost user=postgres password=pass";
         await envStore.pull();
 
-        const yamlAfterPull = getConnectorYamlPreview({
+        const yamlAfterPull = getConnectorYAML({
           connector,
           schema,
           formValues: {
@@ -308,7 +308,7 @@ describe("getConnectorYamlPreview", () => {
           "dbname=mydb host=localhost user=postgres password=pass_source";
         await envStore.pull();
 
-        const yamlAfterSourceUpdate = getConnectorYamlPreview({
+        const yamlAfterSourceUpdate = getConnectorYAML({
           connector,
           schema,
           formValues: {
@@ -347,7 +347,7 @@ describe("getConnectorYamlPreview", () => {
       it("should retain same value across edit commits for separate fields", async () => {
         const { envEditSession, testEnvs, envStore } =
           await makeTestEnvEditSession(connector.name, schema);
-        const yamlInitial = getConnectorYamlPreview({
+        const yamlInitial = getConnectorYAML({
           connector,
           schema,
           formValues: formValuesWithPassword,
@@ -365,7 +365,7 @@ describe("getConnectorYamlPreview", () => {
         testEnvs["DUCKLAKE_CATALOG_POSTGRES_PASSWORD"] = "pass";
         await envStore.pull();
 
-        const yamlAfterPull = getConnectorYamlPreview({
+        const yamlAfterPull = getConnectorYAML({
           connector,
           schema,
           formValues: {
@@ -386,7 +386,7 @@ describe("getConnectorYamlPreview", () => {
         testEnvs["DUCKLAKE_CATALOG_POSTGRES_PASSWORD"] = "pass_source";
         await envStore.pull();
 
-        const yamlAfterSourceUpdate = getConnectorYamlPreview({
+        const yamlAfterSourceUpdate = getConnectorYAML({
           connector,
           schema,
           formValues: {
@@ -408,7 +408,7 @@ describe("getConnectorYamlPreview", () => {
       it("should delete unused vars if not updated from outside", async () => {
         const { envEditSession, testEnvs, envStore } =
           await makeTestEnvEditSession(connector.name, schema);
-        const yamlInitial = getConnectorYamlPreview({
+        const yamlInitial = getConnectorYAML({
           connector,
           schema,
           formValues: formValuesWithPassword,
@@ -426,7 +426,7 @@ describe("getConnectorYamlPreview", () => {
         testEnvs["DUCKLAKE_CATALOG_POSTGRES_PASSWORD"] = "pass";
         await envStore.pull();
 
-        const yamlWithoutPassword = getConnectorYamlPreview({
+        const yamlWithoutPassword = getConnectorYAML({
           connector,
           schema,
           formValues: formValuesWithoutPassword,
@@ -442,7 +442,7 @@ describe("getConnectorYamlPreview", () => {
       it("should retain unused vars if updated from outside", async () => {
         const { envEditSession, testEnvs, envStore } =
           await makeTestEnvEditSession(connector.name, schema);
-        const yamlInitial = getConnectorYamlPreview({
+        const yamlInitial = getConnectorYAML({
           connector,
           schema,
           formValues: formValuesWithPassword,
@@ -460,7 +460,7 @@ describe("getConnectorYamlPreview", () => {
         testEnvs["DUCKLAKE_CATALOG_POSTGRES_PASSWORD"] = "pass_source";
         await envStore.pull();
 
-        const yamlWithoutPassword = getConnectorYamlPreview({
+        const yamlWithoutPassword = getConnectorYAML({
           connector,
           schema,
           formValues: formValuesWithoutPassword,
@@ -495,7 +495,7 @@ describe("getConnectorYamlPreview", () => {
     it("should retain same value across edit commits", async () => {
       const { envEditSession, testEnvs, envStore } =
         await makeTestEnvEditSession(connector.name, schema);
-      const yamlInitial = getConnectorYamlPreview({
+      const yamlInitial = getConnectorYAML({
         connector,
         schema,
         formValues: formValuesWithAuth,
@@ -513,7 +513,7 @@ describe("getConnectorYamlPreview", () => {
       testEnvs["HTTPS_AUTHORIZATION"] = "my_token";
       await envStore.pull();
 
-      const yamlAfterPull = getConnectorYamlPreview({
+      const yamlAfterPull = getConnectorYAML({
         connector,
         schema,
         formValues: {
@@ -537,7 +537,7 @@ describe("getConnectorYamlPreview", () => {
       testEnvs["HTTPS_AUTHORIZATION"] = "my_token_source";
       await envStore.pull();
 
-      const yamlAfterSourceUpdate = getConnectorYamlPreview({
+      const yamlAfterSourceUpdate = getConnectorYAML({
         connector,
         schema,
         formValues: {
@@ -562,7 +562,7 @@ describe("getConnectorYamlPreview", () => {
     it("should delete unused vars if not updated from outside", async () => {
       const { envEditSession, testEnvs, envStore } =
         await makeTestEnvEditSession(connector.name, schema);
-      const yamlInitial = getConnectorYamlPreview({
+      const yamlInitial = getConnectorYAML({
         connector,
         schema,
         formValues: formValuesWithAuth,
@@ -580,7 +580,7 @@ describe("getConnectorYamlPreview", () => {
       testEnvs["HTTPS_AUTHORIZATION"] = "my_token";
       await envStore.pull();
 
-      const yamlWithoutAuth = getConnectorYamlPreview({
+      const yamlWithoutAuth = getConnectorYAML({
         connector,
         schema,
         formValues: formValuesWithoutAuth,
@@ -594,7 +594,7 @@ describe("getConnectorYamlPreview", () => {
     it("should delete vars on rollback if not updated from outside", async () => {
       const { envEditSession, testEnvs, envStore } =
         await makeTestEnvEditSession(connector.name, schema);
-      const yamlInitial = getConnectorYamlPreview({
+      const yamlInitial = getConnectorYAML({
         connector,
         schema,
         formValues: formValuesWithAuth,
@@ -617,3 +617,5 @@ describe("getConnectorYamlPreview", () => {
     });
   });
 });
+
+describe("getSourceYAML", () => {});

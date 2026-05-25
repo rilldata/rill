@@ -27,7 +27,7 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import { get } from "svelte/store";
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import {
-  compileSourceYAML,
+  generateSourceYAML,
   inferModelNameFromSQL,
 } from "@rilldata/web-common/features/sources/sourceUtils.ts";
 import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
@@ -178,7 +178,7 @@ async function runCreateModelStep(
 
     // User provided a SQL query to generate the model.
     case "sql":
-      yaml = compileSourceYAML(
+      yaml = generateSourceYAML(
         connectorDriver,
         {
           name: importToConfig.modelName,
@@ -199,7 +199,7 @@ async function runCreateModelStep(
         (importFromConfig.schema ? importFromConfig.schema + "." : "") +
         importFromConfig.table;
       const sql = `SELECT * FROM ${fromTableName}`;
-      yaml = compileSourceYAML(
+      yaml = generateSourceYAML(
         connectorDriver,
         {
           name: importToConfig.modelName,

@@ -5,7 +5,7 @@ import {
   inferSourceName,
   buildDuckDbQuery,
   maybeRewriteToDuckDb,
-  compileSourceYAML,
+  generateSourceYAML,
   prepareSourceFormData,
 } from "./sourceUtils";
 import { makeTestEnvEditSession } from "@rilldata/web-common/features/env-management/test/test-env-store.ts";
@@ -336,7 +336,7 @@ describe("compileSourceYAML", () => {
       connector.name,
       undefined,
     );
-    const result = compileSourceYAML(
+    const result = generateSourceYAML(
       connector,
       {
         sql: "SELECT * FROM events",
@@ -357,7 +357,7 @@ describe("compileSourceYAML", () => {
       connector.name,
       undefined,
     );
-    const result = compileSourceYAML(
+    const result = generateSourceYAML(
       connector,
       { password: "super_secret", sql: "SELECT 1" },
       envEditSession,
@@ -373,7 +373,7 @@ describe("compileSourceYAML", () => {
       connector.name,
       undefined,
     );
-    const result = compileSourceYAML(
+    const result = generateSourceYAML(
       connector,
       { host: "ch.example.com", sql: "SELECT 1" },
       envEditSession,
@@ -388,7 +388,7 @@ describe("compileSourceYAML", () => {
       connector.name,
       undefined,
     );
-    const result = compileSourceYAML(
+    const result = generateSourceYAML(
       connector,
       {
         port: 9000,
@@ -406,7 +406,7 @@ describe("compileSourceYAML", () => {
       connector.name,
       undefined,
     );
-    const result = compileSourceYAML(
+    const result = generateSourceYAML(
       connector,
       {
         database: "",
@@ -423,7 +423,7 @@ describe("compileSourceYAML", () => {
       connector.name,
       undefined,
     );
-    const result = compileSourceYAML(
+    const result = generateSourceYAML(
       connector,
       {
         database: undefined,
@@ -440,7 +440,7 @@ describe("compileSourceYAML", () => {
       connector.name,
       undefined,
     );
-    const result = compileSourceYAML(
+    const result = generateSourceYAML(
       connector,
       {
         name: "my_source",
@@ -460,7 +460,7 @@ describe("compileSourceYAML", () => {
       connector.name,
       undefined,
     );
-    const result = compileSourceYAML(
+    const result = generateSourceYAML(
       connector,
       {
         sql: "SELECT * FROM events;",
@@ -482,7 +482,7 @@ describe("compileSourceYAML", () => {
       connector.name,
       undefined,
     );
-    const result = compileSourceYAML(
+    const result = generateSourceYAML(
       connector,
       {
         sql: "SELECT * FROM events",
@@ -501,7 +501,7 @@ describe("compileSourceYAML", () => {
       connector.name,
       undefined,
     );
-    const result = compileSourceYAML(
+    const result = generateSourceYAML(
       connector,
       {
         sql: "SELECT * FROM events",
@@ -520,7 +520,7 @@ describe("compileSourceYAML", () => {
       connector.name,
       undefined,
     );
-    const result = compileSourceYAML(
+    const result = generateSourceYAML(
       connector,
       { host: "ch.example.com" },
       envEditSession,
@@ -534,7 +534,7 @@ describe("compileSourceYAML", () => {
       connector.name,
       undefined,
     );
-    const result = compileSourceYAML(
+    const result = generateSourceYAML(
       connector,
       { sql: "SELECT 1" },
       envEditSession,
@@ -549,7 +549,7 @@ describe("compileSourceYAML", () => {
       connector.name,
       undefined,
     );
-    const result = compileSourceYAML(
+    const result = generateSourceYAML(
       connector,
       { sql: "SELECT 1" },
       envEditSession,
@@ -568,7 +568,7 @@ describe("compileSourceYAML", () => {
       {},
       { CLICKHOUSE_PASSWORD: "old_value" },
     );
-    const result = compileSourceYAML(
+    const result = generateSourceYAML(
       connector,
       { password: "secret", sql: "SELECT 1" },
       envEditSession,
