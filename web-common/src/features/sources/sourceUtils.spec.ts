@@ -329,7 +329,7 @@ describe("maybeRewriteToDuckDb", () => {
   });
 });
 
-describe("compileSourceYAML", () => {
+describe("generateSourceYAML", () => {
   it("should produce basic model YAML with SQL", async () => {
     const connector: V1ConnectorDriver = { name: "clickhouse" };
     const { envEditSession } = await makeTestEnvEditSession(

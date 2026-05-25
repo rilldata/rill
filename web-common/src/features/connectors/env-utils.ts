@@ -15,7 +15,9 @@
 export function getGenericEnvVarName(
   driverName: string,
   propertyKey: string,
-  schema?: { properties?: Record<string, { "x-env-var-name"?: string }> },
+  schema: {
+    properties?: Record<string, { "x-env-var-name"?: string }>;
+  } | null = null,
 ): string {
   // If schema provides explicit env var name, use it
   const field = schema?.properties?.[propertyKey];

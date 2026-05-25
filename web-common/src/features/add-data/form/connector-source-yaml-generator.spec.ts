@@ -617,5 +617,3 @@ describe("getConnectorYAML", () => {
     });
   });
 });
-
-describe("getSourceYAML", () => {});

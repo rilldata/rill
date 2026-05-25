@@ -36,7 +36,6 @@
   const queryClient = useQueryClient();
   const runtimeClient = useRuntimeClient();
   const envStore = getEnvFileStore();
-  const envEditSession = new EnvEditSession(envStore);
 
   /** Expected API key prefixes per provider, used for soft validation. */
   const API_KEY_PREFIXES: Record<string, { prefix: string; label: string }> = {
@@ -70,7 +69,7 @@
     ? `https://docs.rilldata.com/developers/build/connectors/services/${getBackendConnectorName(schemaName)}`
     : "";
 
-  $: envEditSession.setEnvData(schemaName, schema);
+  $: envEditSession = new EnvEditSession(envStore, schemaName, schema);
 
   // Soft validation: warn when the API key doesn't match the expected prefix
   $: apiKeyWarning = getApiKeyWarning(schemaName, apiKey);

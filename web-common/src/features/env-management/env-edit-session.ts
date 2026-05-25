@@ -18,15 +18,10 @@ export class EnvEditSession {
 
   public constructor(
     public readonly parentStore: EnvStore,
-    private keyPrefix: string = "",
-    private schema: JSONSchemaObject | null | undefined = undefined,
+    private readonly keyPrefix: string = "",
+    private readonly schema: JSONSchemaObject | null = null,
   ) {
     this.assignedVars = new Set<string>(this.parentStore.store.keys());
-  }
-
-  public setEnvData(keyPrefix: string, schema: JSONSchemaObject | undefined) {
-    this.keyPrefix = keyPrefix;
-    this.schema = schema;
   }
 
   public startEdit() {
@@ -68,13 +63,6 @@ export class EnvEditSession {
     this.entries.set(key, entry);
     this.assignedVars.add(key);
     return entry;
-  }
-
-  public setValue(key: string, value: string) {
-    const entry = this.entries.get(key);
-    if (entry) {
-      entry.value = value;
-    }
   }
 
   public async commit() {
