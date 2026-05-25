@@ -42,9 +42,46 @@ func (l *localAdminService) GetAlertMetadata(ctx context.Context, alertName, own
 	return nil, drivers.ErrNotImplemented
 }
 
-// GetDeploymentConfig implements drivers.AdminService.
-func (l *localAdminService) GetDeploymentConfig(ctx context.Context) (*drivers.DeploymentConfig, error) {
-	return nil, drivers.ErrNotImplemented
+// GetConfig implements drivers.AdminService.
+func (l *localAdminService) GetConfig(ctx context.Context) (*drivers.Config, error) {
+	if l.ch.AdminToken() == "" {
+		return nil, drivers.ErrNotAuthenticated
+	}
+
+	client, err := l.ch.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	projects, err := l.ch.InferProjects(ctx, l.ch.Org, l.root)
+	if err != nil {
+		return nil, err
+	}
+	project := projects[0]
+
+	resp, err := client.GetProjectVariables(ctx, &adminv1.GetProjectVariablesRequest{
+		Org:         project.OrgName,
+		Project:     project.Name,
+		Environment: l.environment,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	perEnv := make(map[string]map[string]string)
+	for _, v := range resp.Variables {
+		vars, ok := perEnv[v.Environment]
+		if !ok {
+			vars = make(map[string]string)
+			perEnv[v.Environment] = vars
+		}
+		vars[v.Name] = v.Value
+	}
+
+	return &drivers.Config{
+		Variables: perEnv,
+		Editable:  true,
+	}, nil
 }
 
 // GetReportMetadata implements drivers.AdminService.
@@ -94,6 +131,32 @@ func (l *localAdminService) ListDeployments(ctx context.Context) ([]*drivers.Dep
 	}
 
 	return res, nil
+}
+
+// UpdateProjectVariables implements drivers.AdminService.
+func (l *localAdminService) UpdateProjectVariables(ctx context.Context, environment string, variables map[string]string) error {
+	if l.ch.AdminToken() == "" {
+		return drivers.ErrNotAuthenticated
+	}
+
+	client, err := l.ch.Client()
+	if err != nil {
+		return err
+	}
+
+	projects, err := l.ch.InferProjects(ctx, l.ch.Org, l.root)
+	if err != nil {
+		return err
+	}
+	project := projects[0]
+
+	_, err = client.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
+		Org:         project.OrgName,
+		Project:     project.Name,
+		Environment: environment,
+		Variables:   variables,
+	})
+	return err
 }
 
 // HasAnonymousSourceAccess implements [drivers.Driver].

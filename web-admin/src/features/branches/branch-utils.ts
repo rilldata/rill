@@ -110,8 +110,9 @@ export function handleBranchNavigation(
 
 /**
  * Shared flag: when set, the next `beforeNavigate` call in the project layout
- * will skip `@branch` injection. Used by the BranchSelector to navigate
- * to production without the layout re-injecting the current branch.
+ * will skip `@branch` injection. Callers set this before navigating to a URL
+ * that intentionally lacks a branch segment, to prevent the layout from
+ * re-injecting the current branch.
  *
  * Auto-expires after 500ms to prevent a stale flag from leaking if the
  * expected navigation never fires (e.g., cancelled by another hook).

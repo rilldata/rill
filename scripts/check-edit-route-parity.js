@@ -16,11 +16,21 @@ const ROUTE_FILE_PATTERN = /^\+(page|layout|server)\.(svelte|ts)$/;
 
 const REPO_ROOT = fileURLToPath(new URL("..", import.meta.url));
 
+// The roots cover the two halves of an active edit session: the file-editor
+// workspace and the dashboard-preview viz tree. Onboarding/deploy flows live
+// outside these roots on both sides and are intentionally not parity-checked:
+//   - web-local: `(misc)/welcome`, `(misc)/deploy`
+//   - web-admin: `/-/edit/welcome`
+// They render distinct UIs that don't share the editor's component composition,
+// so divergence is expected.
 const LOCAL_ROOTS = [
   "web-local/src/routes/(application)/(workspace)",
   "web-local/src/routes/(viz)",
 ];
-const ADMIN_ROOT = "web-admin/src/routes/[organization]/[project]/-/edit";
+const ADMIN_ROOTS = [
+  "web-admin/src/routes/[organization]/[project]/-/edit/(workspace)",
+  "web-admin/src/routes/[organization]/[project]/-/edit/(viz)",
+];
 
 // Logical paths that exist only in web-local by design. Keep a short reason
 // comment on each entry so a future contributor can judge whether it's still
@@ -28,7 +38,7 @@ const ADMIN_ROOT = "web-admin/src/routes/[organization]/[project]/-/edit";
 const LOCAL_ONLY_ALLOWLIST = [
   // Citation URL routes
   // TODO: ensure citations within the edit session get routed to the developer
-  // preview dashboards _within_ the edit session, not to the branch preview 
+  // preview dashboards _within_ the edit session, not to the branch preview
   // dashboards _outside_ the edit session.
   "/-/ai/[conversationId]/message/[messageId]/+layout.ts",
   "/-/ai/[conversationId]/message/[messageId]/-/open/+page.ts",
@@ -40,9 +50,10 @@ const LOCAL_ONLY_ALLOWLIST = [
   "/dashboard/[name]/+page.ts",
 ];
 
-const ADMIN_ONLY_ALLOWLIST = [
-  // none today
-];
+// Empty today: every route under ADMIN_ROOTS has a web-local counterpart.
+// Add an entry (with a reason comment) if cloud ever needs an editor route
+// that has no local equivalent.
+const ADMIN_ONLY_ALLOWLIST = [];
 
 function walkRoutes(absRoot) {
   const results = [];
@@ -93,7 +104,7 @@ function staleAllowlistEntries(allowlist, shouldExistIn) {
 
 function main() {
   const localRoutes = collect(LOCAL_ROOTS);
-  const adminRoutes = collect([ADMIN_ROOT]);
+  const adminRoutes = collect(ADMIN_ROOTS);
 
   const missingInAdmin = diff(localRoutes, adminRoutes, LOCAL_ONLY_ALLOWLIST);
   const missingInLocal = diff(adminRoutes, localRoutes, ADMIN_ONLY_ALLOWLIST);
@@ -118,7 +129,7 @@ function main() {
     );
     for (const p of missingInAdmin) console.error(`  ${p}`);
     console.error(
-      `\nFix: either mirror each route under ${ADMIN_ROOT}/, or add the path to LOCAL_ONLY_ALLOWLIST in scripts/check-edit-route-parity.js with a reason.`,
+      `\nFix: either mirror each route under web-admin/src/routes/[organization]/[project]/-/edit/(workspace)/ or (viz)/, or add the path to LOCAL_ONLY_ALLOWLIST in scripts/check-edit-route-parity.js with a reason.`,
     );
   }
 

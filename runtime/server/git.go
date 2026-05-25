@@ -98,7 +98,7 @@ func (s *Server) GitStatus(ctx context.Context, req *runtimev1.GitStatusRequest)
 	}
 	defer release()
 
-	gs, err := repo.Status(ctx)
+	gs, err := repo.Status(ctx, req.RemoteBranch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get git status: %w", err)
 	}
@@ -108,6 +108,7 @@ func (s *Server) GitStatus(ctx context.Context, req *runtimev1.GitStatusRequest)
 	return &runtimev1.GitStatusResponse{
 		Branch:        gs.Branch,
 		GithubUrl:     gs.RemoteURL,
+		Subpath:       gs.Subpath,
 		ManagedGit:    gs.ManagedRepo,
 		LocalChanges:  gs.LocalChanges,
 		LocalCommits:  gs.LocalCommits,
@@ -200,7 +201,13 @@ func (s *Server) GitMergeToBranch(ctx context.Context, req *runtimev1.GitMergeTo
 
 	err = repo.MergeToBranch(ctx, req.Branch, req.Force)
 	if err != nil {
-		return nil, fmt.Errorf("failed to merge: %w", err)
+		var mergeErr *drivers.MergeFailedError
+		if errors.As(err, &mergeErr) {
+			return &runtimev1.GitMergeToBranchResponse{
+				Output: mergeErr.Error(),
+			}, nil
+		}
+		return nil, err
 	}
 	return &runtimev1.GitMergeToBranchResponse{}, nil
 }
@@ -221,6 +228,13 @@ func (s *Server) GitPull(ctx context.Context, req *runtimev1.GitPullRequest) (*r
 		DiscardChanges: req.DiscardLocal,
 	})
 	if err != nil {
+		var mergeErr *drivers.MergeFailedError
+		if errors.As(err, &mergeErr) {
+			return &runtimev1.GitPullResponse{
+				Output:       mergeErr.Error(),
+				MergedBranch: mergeErr.MergedBranch,
+			}, nil
+		}
 		return nil, fmt.Errorf("failed to pull: %w", err)
 	}
 	return &runtimev1.GitPullResponse{}, nil

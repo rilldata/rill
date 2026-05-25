@@ -44,6 +44,27 @@ export function isNotFoundError(error: unknown): boolean {
   return false;
 }
 
+const ControllerIsClosedError = "controller is closed";
+
+/**
+ * Returns true if the error is a ConnectRPC Unavailable error (code 14).
+ * Works for any error shape: ConnectError, Axios/REST, or plain objects.
+ */
+export function isControllerClosedError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const e = error as Record<string, unknown>;
+  // ConnectError: { code: 14 }
+  if (e.code === 14)
+    return typeof e.message === "string"
+      ? e.message.includes(ControllerIsClosedError)
+      : false;
+  const respMessage = (e as { response: { data: { message: unknown } } })
+    .response?.data?.message;
+  return typeof respMessage === "string"
+    ? respMessage.includes(ControllerIsClosedError)
+    : false;
+}
+
 /**
  * Extracts a human-readable error message from any error shape.
  * Handles ConnectError (rawMessage), HTTPError (response.data.message),

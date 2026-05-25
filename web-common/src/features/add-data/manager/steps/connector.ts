@@ -5,6 +5,7 @@ import {
   getRuntimeServiceGetResourceQueryKey,
   runtimeServiceDeleteFile,
   runtimeServiceGetFile,
+  runtimeServicePushEnv,
   runtimeServicePutFile,
   runtimeServiceUnpackEmpty,
   type V1ConnectorDriver,
@@ -15,7 +16,7 @@ import { isProjectInitialized } from "@rilldata/web-common/features/welcome/is-p
 import {
   waitForProjectParser,
   waitForResourceReconciliation,
-} from "@rilldata/web-common/features/entity-management/actions.ts";
+} from "@rilldata/web-common/features/entity-management/actions/actions.ts";
 import { EMPTY_PROJECT_TITLE } from "@rilldata/web-common/features/welcome/constants.ts";
 import { OLAP_ENGINES } from "@rilldata/web-common/features/sources/modal/constants.ts";
 import { invalidate } from "$app/navigation";
@@ -50,6 +51,8 @@ import {
   getProjectParserVersion,
   waitForProjectParserVersion,
 } from "@rilldata/web-common/features/entity-management/project-parser.ts";
+import { isCloudRuntimeEditEnvironment } from "@rilldata/web-common/features/entity-management/edit-environment.ts";
+import { maybeGetEnvContent } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
 
 export async function createConnector({
   runtimeClient,
@@ -150,12 +153,18 @@ export async function createConnector({
       }),
     )?.resource?.meta?.stateVersion;
 
-    await runtimeServicePutFile(runtimeClient, {
-      path: ".env",
-      blob: newEnvBlob,
-      create: true,
-      createOnly: false,
-    });
+    if (existingEnvBlob !== newEnvBlob) {
+      await runtimeServicePutFile(runtimeClient, {
+        path: ".env",
+        blob: newEnvBlob,
+        create: true,
+        createOnly: false,
+      });
+      if (isCloudRuntimeEditEnvironment()) {
+        // Only push env on cloud for now. We will revisit this for rill-dev.
+        await runtimeServicePushEnv(runtimeClient, {});
+      }
+    }
 
     await runtimeServicePutFile(runtimeClient, {
       path: newConnectorFilePath,
@@ -178,6 +187,7 @@ export async function createConnector({
 
       await waitForResourceReconciliation(
         runtimeClient,
+        queryClient,
         connectorName,
         ResourceKind.Connector,
         connectorStartingVersion,
@@ -232,7 +242,7 @@ export async function maybeDeleteConnector(
   if (!connectorYaml) return;
 
   // Get the existing env and remove the connector's env vars
-  const envBlob = await unsetResourceEnvVars(
+  const [envBlob, envBlobChanged] = await unsetResourceEnvVars(
     runtimeClient,
     queryClient,
     connectorYaml,
@@ -243,11 +253,17 @@ export async function maybeDeleteConnector(
     path: connectorFilePath,
   });
 
-  // Update the .env file with the removed env vars
-  await runtimeServicePutFile(runtimeClient, {
-    path: ".env",
-    blob: envBlob,
-  });
+  if (envBlobChanged) {
+    // Update the .env file with the removed env vars
+    await runtimeServicePutFile(runtimeClient, {
+      path: ".env",
+      blob: envBlob,
+    });
+    if (isCloudRuntimeEditEnvironment()) {
+      // Only push env on cloud for now. We will revisit this for rill-dev.
+      await runtimeServicePushEnv(runtimeClient, {});
+    }
+  }
 
   // Update the rill.yaml file to remove the connector as the OLAP connector.
   await unsetOlapConnectorInRillYAML(runtimeClient, queryClient, connectorName);
@@ -384,8 +400,7 @@ export class ConnectorFormCache {
       fileArtifacts.getNamesForKind(ResourceKind.Connector),
     );
 
-    const envFile = fileArtifacts.getFileArtifact(".env");
-    const envBlob = (await envFile.fetchContent(false)) ?? "";
+    const envBlob = await maybeGetEnvContent();
 
     const entry = {
       name,

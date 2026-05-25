@@ -30,6 +30,16 @@
         Connect your own client
       </Button>
     </svelte:fragment>
+    <svelte:fragment slot="sidebar-collapsed-footer">
+      <Button
+        type="secondary"
+        square
+        label="Connect your own client"
+        onClick={() => (mcpDialogOpen = true)}
+      >
+        <APIIcon size="14px" className="!fill-current" />
+      </Button>
+    </svelte:fragment>
   </ProjectChat>
 
   <MCPConnectDialog

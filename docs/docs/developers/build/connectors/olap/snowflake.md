@@ -89,3 +89,5 @@ measures:
 :::note
 Rill supports metrics views directly on Snowflake as a live connector. Incremental models and partitioned ingestion are not supported in live connector mode.
 :::
+
+To reduce warehouse spend on dashboards with repeat traffic, see [Caching query results](/developers/build/metrics-view/underlying-model#caching-query-results) on live connectors.

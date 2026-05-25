@@ -11,6 +11,7 @@ import (
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	var prodSlots, devSlots int
 	var prodVersion string
+	var overrideDiskGB int64
 
 	editCmd := &cobra.Command{
 		Use:   "edit <org> <project>",
@@ -46,6 +47,14 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				req.DevSlots = &devSlotsInt64
 				isEditRequested = true
 			}
+			if cmd.Flags().Changed("override-disk-gb") {
+				if overrideDiskGB < 0 {
+					return fmt.Errorf("--override-disk-gb must be >= 0 (use 0 to clear the override)")
+				}
+				v := overrideDiskGB
+				req.OverrideDiskGb = &v
+				isEditRequested = true
+			}
 
 			if !isEditRequested {
 				ch.Printf("No edit requested\n")
@@ -72,5 +81,6 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	editCmd.Flags().IntVar(&prodSlots, "prod-slots", 0, "Slots to allocate for production deployments")
 	editCmd.Flags().IntVar(&devSlots, "dev-slots", 0, "Slots to allocate for dev deployments")
 	editCmd.Flags().StringVar(&prodVersion, "prod-version", "", "Rill version for production deployment")
+	editCmd.Flags().Int64Var(&overrideDiskGB, "override-disk-gb", 0, "Override disk size in GB for prod and dev deployments (0 clears the override)")
 	return editCmd
 }

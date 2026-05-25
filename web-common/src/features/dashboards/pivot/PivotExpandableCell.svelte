@@ -15,20 +15,33 @@
   $: assembledAndCanExpand = assembled && canExpand;
 
   $: needsSpacer = row.depth >= 1 || (hasNestedDimensions && !canExpand);
+
+  function handleExpandClick(e: MouseEvent) {
+    e.stopPropagation();
+    if (assembledAndCanExpand) {
+      row.getToggleExpandedHandler()();
+    }
+  }
 </script>
 
 <div
   role="presentation"
-  class="dimension-cell pointer-events-none"
+  class="dimension-cell"
   style:padding-left="{row.depth * 14}px"
-  class:cursor-pointer={assembledAndCanExpand}
 >
   {#if value === LOADING_CELL}
     <span class="loading-cell"></span>
   {:else if assembledAndCanExpand}
-    <div class="caret opacity-100 shrink-0" class:expanded>
-      <ChevronRight size="16px" color="#9CA3AF" />
-    </div>
+    <button
+      type="button"
+      tabindex="-1"
+      aria-label={expanded ? "Collapse row" : "Expand row"}
+      class="caret opacity-100 shrink-0 cursor-pointer"
+      class:expanded
+      onclick={handleExpandClick}
+    >
+      <ChevronRight size="16px" />
+    </button>
   {:else if needsSpacer}
     <span class="shrink-0"><Spacer size="16px" /></span>
   {/if}
@@ -51,6 +64,12 @@
 
   .dimension-cell {
     @apply flex gap-x-0.5;
+  }
+
+  .caret {
+    @apply grid size-4 place-items-center rounded-sm border-0 bg-transparent p-0 text-gray-400 transition-colors;
+    @apply hover:bg-surface-active hover:text-fg-primary;
+    @apply focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary-400;
   }
 
   .caret.expanded {

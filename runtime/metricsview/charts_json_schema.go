@@ -103,6 +103,11 @@ const ChartsJSONSchema = `{
           "type": "string",
           "description": "Display mode for the chart."
         },
+        "percentMode": {
+          "type": "string",
+          "enum": ["top", "previous"],
+          "description": "For funnel charts: reference for the on-bar percentage label. 'top' shows each stage as % of the top stage; 'previous' shows each stage as % of the prior stage. Tooltip always shows both regardless of this setting."
+        },
         "show_data_labels": {
           "type": "boolean",
           "description": "Whether to show data labels on the chart."

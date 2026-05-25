@@ -25,5 +25,5 @@ func DefaultDevSlots(ch *cmdutil.Helper) int {
 	if ch.IsDev() {
 		return 1
 	}
-	return 8
+	return 4
 }

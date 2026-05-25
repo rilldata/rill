@@ -3,11 +3,11 @@ import type {
   ConnectorCategory,
   MultiStepFormSchema,
 } from "../../templates/schemas/types";
-import type { ConnectorStep } from "./connectorStepStore";
 import { athenaSchema } from "../../templates/schemas/athena";
 import { azureSchema } from "../../templates/schemas/azure";
 import { bigquerySchema } from "../../templates/schemas/bigquery";
 import { claudeSchema } from "../../templates/schemas/claude";
+import { databricksSchema } from "../../templates/schemas/databricks";
 import { clickhouseSchema } from "../../templates/schemas/clickhouse";
 import { gcsSchema } from "../../templates/schemas/gcs";
 import { geminiSchema } from "../../templates/schemas/gemini";
@@ -58,6 +58,7 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   azure: azureSchema,
   delta: deltaSchema,
   claude: claudeSchema,
+  databricks: databricksSchema,
   openai: openaiSchema,
   gemini: geminiSchema,
 };
@@ -216,37 +217,6 @@ export function getFormHeight(schema: MultiStepFormSchema | null): string {
  * These connectors don't support skipping the connector setup step.
  */
 export const SKIP_LINK_EXCLUDED_CONNECTORS = ["salesforce", "sqlite"];
-
-/**
- * Determine if the skip link should be shown for a connector.
- * The skip link allows users to skip connector setup and go directly to import.
- * Only shown for connectors where handleSkip() can actually advance the step
- * (i.e., multi-step connectors or connectors with an explorer step).
- *
- * @param step - Current form step ("connector", "source", or "explorer")
- * @param connectorName - Name of the connector (e.g., "postgres", "s3")
- * @param connectorInstanceName - If set, user came from "Import Data" button
- * @param implementsOlap - Whether the connector is an OLAP engine
- */
-export function shouldShowSkipLink(
-  step: ConnectorStep,
-  connectorName: string | undefined,
-  connectorInstanceName: string | null,
-  implementsOlap: boolean | undefined,
-): boolean {
-  if (
-    step !== "connector" ||
-    connectorInstanceName ||
-    implementsOlap ||
-    SKIP_LINK_EXCLUDED_CONNECTORS.includes(connectorName ?? "")
-  ) {
-    return false;
-  }
-
-  // Only show skip link if handleSkip() can actually advance the step
-  const schema = getConnectorSchema(connectorName ?? "");
-  return isMultiStepConnector(schema) || hasExplorerStep(schema);
-}
 
 /**
  * Get the form width CSS class for a connector's add data modal.

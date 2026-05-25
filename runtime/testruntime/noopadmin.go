@@ -26,8 +26,8 @@ func (n *noopAdminService) GetAlertMetadata(ctx context.Context, alertName, owne
 	return nil, drivers.ErrNotImplemented
 }
 
-func (n *noopAdminService) GetDeploymentConfig(ctx context.Context) (*drivers.DeploymentConfig, error) {
-	return nil, drivers.ErrNotImplemented
+func (n *noopAdminService) GetConfig(ctx context.Context) (*drivers.Config, error) {
+	return &drivers.Config{}, nil
 }
 
 func (n *noopAdminService) GetReportMetadata(ctx context.Context, reportName, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
@@ -40,6 +40,10 @@ func (n *noopAdminService) ProvisionConnector(ctx context.Context, name, driver 
 
 func (n *noopAdminService) ListDeployments(ctx context.Context) ([]*drivers.Deployment, error) {
 	return nil, drivers.ErrNotImplemented
+}
+
+func (n *noopAdminService) UpdateProjectVariables(ctx context.Context, environment string, variables map[string]string) error {
+	return drivers.ErrNotImplemented
 }
 
 // HasAnonymousSourceAccess implements [drivers.Driver].

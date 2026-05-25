@@ -10,7 +10,7 @@
     resourceIsLoading,
     ResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
+  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/actions/ui-actions.ts";
   import {
     WorkspaceContainer,
     WorkspaceHeader,
@@ -100,21 +100,25 @@
         onTitleChange={onChangeCallback}
         resourceKind={ResourceKind.Canvas}
       >
-        <div class="flex gap-x-2" slot="cta">
-          {#if ready}
-            <SaveDefaultsButton
-              {canvasName}
-              instanceId={runtimeClient.instanceId}
-              saving={$saving}
-            />
-          {/if}
+        {#snippet cta()}
+          <div class="flex gap-x-2">
+            {#if ready}
+              <SaveDefaultsButton
+                {canvasName}
+                instanceId={runtimeClient.instanceId}
+                saving={$saving}
+              />
+            {/if}
 
-          <PreviewButton
-            href={withEditorPrefix(`/canvas/${canvasName}`)}
-            disabled={!!parseError || !!reconcileError || resourceIsReconciling}
-            reconciling={resourceIsReconciling}
-          />
-        </div>
+            <PreviewButton
+              href={withEditorPrefix(`/canvas/${canvasName}`)}
+              disabled={!!parseError ||
+                !!reconcileError ||
+                resourceIsReconciling}
+              reconciling={resourceIsReconciling}
+            />
+          </div>
+        {/snippet}
       </WorkspaceHeader>
 
       <svelte:fragment slot="body">

@@ -33,7 +33,10 @@
   }: {
     organization: string;
     defaultName?: string;
-    onCreate: (projectName: string, frontendUrl: string) => void;
+    onCreate: (
+      projectName: string,
+      frontendUrl: string,
+    ) => Promise<void> | void;
     onDeployError?: (deployError: DeployError) => void;
   } = $props();
 
@@ -61,8 +64,11 @@
 
   let createdGitRepo = $state("");
 
-  let formInstance = $derived(
-    superForm(defaults({ name: defaultName }, schema), {
+  const { form, errors, enhance, submit, submitting } = superForm(
+    // No need to be reactive to default name. It is derived from list of projects that wont change during the form creation.
+    // eslint-disable-next-line svelte/valid-compile
+    defaults({ name: defaultName }, schema),
+    {
       SPA: true,
       validators: schema,
       async onUpdate({ form }) {
@@ -78,7 +84,7 @@
           const createManagedGitRepoResult =
             await $createManagedGitRepo.mutateAsync({
               org: organization,
-              data: { name: project },
+              data: { name: project, autoInit: true },
             });
           createdGitRepo = createManagedGitRepoResult.remote ?? "";
         }
@@ -117,7 +123,7 @@
           ),
         });
 
-        onCreate(project, resp.project?.frontendUrl ?? "/");
+        return onCreate(project, resp.project?.frontendUrl ?? "/");
       },
       onError({ result }) {
         const error =
@@ -138,10 +144,9 @@
           $errors["name"] = [error];
         }
       },
-    }),
+      invalidateAll: false,
+    },
   );
-
-  let { form, errors, enhance, submit, submitting } = $derived(formInstance);
 </script>
 
 <form

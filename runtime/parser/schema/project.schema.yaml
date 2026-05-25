@@ -948,6 +948,12 @@ definitions:
             sslmode:
               type: string
               description:  "ssl mode options: `disable`, `allow`, `prefer` or `require`."
+            max_open_conns:
+              type: integer
+              description: Maximum number of open connections to the database (defaults to 1)
+            conn_max_lifetime:
+              type: string
+              description: Maximum time a connection may be reused, as a Go duration string (defaults to 1m)
             log_queries:
               type: boolean
               description: Controls whether to log raw SQL queries
@@ -1002,6 +1008,12 @@ definitions:
             sslmode:
               type: string
               description: "ssl mode options: `disable`, `allow`, `prefer` or `require`."
+            max_open_conns:
+              type: integer
+              description: Maximum number of open connections to the database (defaults to 1)
+            conn_max_lifetime:
+              type: string
+              description: Maximum time a connection may be reused, as a Go duration string (defaults to 1m)
             log_queries:
               type: boolean
               description: Controls whether to log raw SQL queries
@@ -2284,6 +2296,25 @@ definitions:
           security:
               $ref: '#/definitions/security_policy_properties'
               description: Defines a security policy for the dashboard
+          cache:
+            type: object
+            description: |
+              Enable caching of query results for metrics views backed by externally-managed tables (e.g. in Snowflake, BigQuery). These settings have no effect for metrics views backed by Rill models (where queries are automatically cached and invalidated when the model is refreshed).
+              Each cache entry is keyed by a hash of the query combined with the latest result of `key_sql`. Cached results stay valid as long as `key_sql` returns the same value; when its result changes, prior results become unreachable. `key_sql` itself runs at most once per `key_ttl`, decoupling freshness checks from query traffic.
+              Example: a `key_sql` of `SELECT MAX(updated_at) FROM orders` with `key_ttl: 5m` checks for new data every 5 minutes but only invalidates cached results when new data has actually landed.
+            properties:
+              enabled:
+                type: boolean
+                description: Whether to cache query results for this metrics view. Defaults to false for metrics views backed by externally-managed tables and to true for metrics views backed by a Rill model.
+              key_sql:
+                type: string
+                description: SQL returning a single value used in the cache key, typically a max timestamp, version, or row count. Cached results are invalidated when this value changes. Optional; defaults to the metrics view's watermark expression (which itself defaults to `MAX(<time dimension>)`).
+              key_ttl:
+                type: string
+                description: 'How often `key_sql` is re-evaluated, as a Go duration string (e.g. `30s`, `5m`, `1h`). The previous result is reused between evaluations. Defaults to `60s`.'
+              timestamps_ttl:
+                type: string
+                description: 'TTL for caching the min/max timestamp queries used to populate a metrics view''s rollups. Only takes effect when the metrics view has rollups defined and query result caching (`enabled`) is off — otherwise rollup timestamps are cached alongside other query results under `key_ttl`. Go duration string (e.g. `5m`). Defaults to `5m`.'
           explore:
             $ref: '#/definitions/explore_properties'
             description: Defines an optional inline explore view for the metrics view. If not specified a default explore will be emitted unless `skip` is set to true.

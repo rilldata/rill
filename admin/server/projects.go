@@ -26,7 +26,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const devDeplTTL = 6 * time.Hour
+const devDeplTTL = time.Hour
 
 const prodDeplTTL = 14 * 24 * time.Hour
 
@@ -300,13 +300,6 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 
 	var depl *database.Deployment
 	if req.Branch != "" {
-		if !permissions.ReadDev {
-			return &adminv1.GetProjectResponse{
-				Project:            s.projToDTO(proj, org.Name),
-				ProjectPermissions: permissions,
-			}, nil
-		}
-
 		depls, err := s.admin.DB.FindDeploymentsForProject(ctx, proj.ID, "", req.Branch)
 		if err != nil {
 			return nil, err
@@ -317,12 +310,8 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			return nil, status.Errorf(codes.FailedPrecondition, "multiple deployments found for branch %q. Recreate deployments to resolve", req.Branch)
 		}
 		depl = depls[0]
-
-		if !permissions.ReadDevStatus {
-			depl.StatusMessage = ""
-		}
 	} else {
-		if proj.PrimaryDeploymentID == nil || !permissions.ReadProd {
+		if proj.PrimaryDeploymentID == nil {
 			return &adminv1.GetProjectResponse{
 				Project:            s.projToDTO(proj, org.Name),
 				ProjectPermissions: permissions,
@@ -333,7 +322,19 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		if err != nil {
 			return nil, err
 		}
+	}
 
+	if depl.Environment == "dev" {
+		if !permissions.ReadDev {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to read dev deployment")
+		}
+		if !permissions.ReadDevStatus {
+			depl.StatusMessage = ""
+		}
+	} else {
+		if !permissions.ReadProd {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to read prod deployment")
+		}
 		if !permissions.ReadProdStatus {
 			depl.StatusMessage = ""
 		}
@@ -524,6 +525,11 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		userID = &tmp
 	}
 
+	devSlots := 4 // default value for older CLIs which will not pass this field
+	if req.DevSlots != 0 {
+		devSlots = int(req.DevSlots)
+	}
+
 	// Prepare the project options
 	opts := &database.InsertProjectOptions{
 		OrganizationID:       org.ID,
@@ -543,8 +549,9 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		ProdVersion:          req.ProdVersion,
 		ProdSlots:            int(req.ProdSlots),
 		ProdTTLSeconds:       prodTTL,
-		DevSlots:             int(req.DevSlots),
+		DevSlots:             devSlots,
 		DevTTLSeconds:        devTTL,
+		OverrideDiskGB:       nil, // default to no override; can be set later by superusers
 	}
 
 	// Check and validate the project file source.
@@ -582,9 +589,8 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 				return nil, status.Errorf(codes.FailedPrecondition, "trial orgs quota exceeded for user %s", u.Email)
 			}
 		}
-		_, err = s.admin.Jobs.StartOrgTrial(ctx, org.ID)
-		if err != nil {
-			s.logger.Named("billing").Error("failed to submit job to start trial for org, please do it manually", zap.String("org_id", org.ID), zap.Error(err))
+		if _, err = s.admin.Jobs.StartOrgCreditTrial(ctx, org.ID); err != nil {
+			s.logger.Named("billing").Error("failed to submit job to start credit trial for org, please do it manually", zap.String("org_id", org.ID), zap.Error(err))
 			// continue creating the project
 		}
 	}
@@ -672,6 +678,12 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	}
 	if req.ProdTtlSeconds != nil {
 		observability.AddRequestAttributes(ctx, attribute.Int64("args.prod_ttl_seconds", *req.ProdTtlSeconds))
+	}
+	if req.DevTtlSeconds != nil {
+		observability.AddRequestAttributes(ctx, attribute.Int64("args.dev_ttl_seconds", *req.DevTtlSeconds))
+	}
+	if req.OverrideDiskGb != nil {
+		observability.AddRequestAttributes(ctx, attribute.Int64("args.override_disk_gb", *req.OverrideDiskGb))
 	}
 	if req.NewName != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.new_name", *req.NewName))
@@ -807,6 +819,30 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		}
 	}
 
+	devTTLSeconds := proj.DevTTLSeconds
+	if req.DevTtlSeconds != nil {
+		if *req.DevTtlSeconds <= 0 {
+			return nil, status.Error(codes.InvalidArgument, "dev_ttl_seconds must be greater than 0")
+		}
+		devTTLSeconds = *req.DevTtlSeconds
+	}
+
+	// override_disk_gb is a sudo-only field. Only allow changes when the caller is a superuser using force access.
+	overrideDiskGB := proj.OverrideDiskGB
+	if req.OverrideDiskGb != nil {
+		if !forceAccess {
+			return nil, status.Error(codes.PermissionDenied, "only superusers can set override_disk_gb")
+		}
+		if *req.OverrideDiskGb == 0 {
+			overrideDiskGB = nil
+		} else if *req.OverrideDiskGb < 0 {
+			return nil, status.Error(codes.InvalidArgument, "override_disk_gb must be >= 0")
+		} else {
+			v := *req.OverrideDiskGb
+			overrideDiskGB = &v
+		}
+	}
+
 	opts := &database.UpdateProjectOptions{
 		Name:                 valOrDefault(req.NewName, proj.Name),
 		Description:          valOrDefault(req.Description, proj.Description),
@@ -824,7 +860,8 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		ProdSlots:            int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots))),
 		ProdTTLSeconds:       prodTTLSeconds,
 		DevSlots:             int(valOrDefault(req.DevSlots, int64(proj.DevSlots))),
-		DevTTLSeconds:        proj.DevTTLSeconds,
+		DevTTLSeconds:        devTTLSeconds,
+		OverrideDiskGB:       overrideDiskGB,
 		Provisioner:          valOrDefault(req.Provisioner, proj.Provisioner),
 		Annotations:          proj.Annotations,
 	}
@@ -860,9 +897,18 @@ func (s *Server) GetProjectVariables(ctx context.Context, req *adminv1.GetProjec
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project variables")
+	perms := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	excludeProd := false
+	if !perms.ReadDevStatus && !perms.ReadProdStatus {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read variables")
 	}
+	if !perms.ReadProdStatus {
+		if req.Environment == "prod" {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to read variables for the prod environment")
+		}
+		excludeProd = true
+	}
+	// NOTE: Not explicitly checking ReadDevStatus for non-prod environments for simplicity; if you have ReadProdStatus, you're good to read variables for non-prod envs as well.
 
 	var vars []*database.ProjectVariable
 	if req.ForAllEnvironments {
@@ -879,6 +925,9 @@ func (s *Server) GetProjectVariables(ctx context.Context, req *adminv1.GetProjec
 		VariablesMap: make(map[string]string, len(vars)),
 	}
 	for _, v := range vars {
+		if excludeProd && v.Environment == "prod" {
+			continue
+		}
 		resp.Variables = append(resp.Variables, projectVariableToDTO(v))
 		// nolint:staticcheck // We still need to set it
 		resp.VariablesMap[v.Name] = v.Value
@@ -900,12 +949,14 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 	}
 
 	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.PermissionDenied, "only users can update project variables")
+	perms := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if !perms.ManageDev && !perms.ManageProd {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to update variables")
 	}
-	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to update project variables")
+	if req.Environment == "prod" && !perms.ManageProd {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to update variables for the prod environment")
 	}
+	// NOTE: Not explicitly checking ManageDev for non-prod environments for simplicity; if you have ManageProd, you're good to manage variables for non-prod envs as well.
 
 	var validationErr error
 	for k := range req.Variables {
@@ -917,7 +968,12 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 		return nil, status.Error(codes.InvalidArgument, validationErr.Error())
 	}
 
-	err = s.admin.UpdateProjectVariables(ctx, proj, req.Environment, req.Variables, req.UnsetVariables, claims.OwnerID())
+	var userID string
+	if claims.OwnerType() == auth.OwnerTypeUser {
+		userID = claims.OwnerID()
+	}
+
+	err = s.admin.UpdateProjectVariables(ctx, proj, req.Environment, req.Variables, req.UnsetVariables, userID)
 	if err != nil {
 		return nil, fmt.Errorf("variables updated failed with error %w", err)
 	}
@@ -1783,6 +1839,7 @@ func (s *Server) SudoUpdateAnnotations(ctx context.Context, req *adminv1.SudoUpd
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
 		DevSlots:             proj.DevSlots,
 		DevTTLSeconds:        proj.DevTTLSeconds,
+		OverrideDiskGB:       proj.OverrideDiskGB,
 		Provisioner:          proj.Provisioner,
 		Annotations:          req.Annotations,
 	})
@@ -2109,6 +2166,8 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		ArchiveAssetId:      safeStr(p.ArchiveAssetID),
 		PrimaryDeploymentId: safeStr(p.PrimaryDeploymentID),
 		ProdTtlSeconds:      safeInt64(p.ProdTTLSeconds),
+		DevTtlSeconds:       p.DevTTLSeconds,
+		OverrideDiskGb:      safeInt64(p.OverrideDiskGB),
 		FrontendUrl:         s.admin.URLs.Project(orgName, p.Name),
 		Annotations:         p.Annotations,
 		CreatedOn:           timestamppb.New(p.CreatedOn),
@@ -2215,6 +2274,7 @@ func (s *Server) githubRepoIDForProject(ctx context.Context, p *database.Project
 		ProdTTLSeconds:       p.ProdTTLSeconds,
 		DevSlots:             p.DevSlots,
 		DevTTLSeconds:        p.DevTTLSeconds,
+		OverrideDiskGB:       p.OverrideDiskGB,
 		Provisioner:          p.Provisioner,
 		Annotations:          p.Annotations,
 	})
@@ -2262,6 +2322,7 @@ func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {
 		StatusMessage:     d.StatusMessage,
 		CreatedOn:         timestamppb.New(d.CreatedOn),
 		UpdatedOn:         timestamppb.New(d.UpdatedOn),
+		UsedOn:            timestamppb.New(d.UsedOn),
 	}
 }
 
