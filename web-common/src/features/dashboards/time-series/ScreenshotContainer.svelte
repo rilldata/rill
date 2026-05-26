@@ -7,12 +7,16 @@
     V1Expression,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
-  import { getFontEmbedCSS, toPng } from "html-to-image";
-  import { Interval } from "luxon";
+  import { toPng } from "html-to-image";
+  import { DateTime, Interval } from "luxon";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
   import MeasureChart from "./measure-chart/MeasureChart.svelte";
   import MeasureChartXAxis from "./measure-chart/MeasureChartXAxis.svelte";
   import { ScrubController } from "./measure-chart/ScrubController";
+  import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
+  import ExploreFilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/ExploreFilterChipsReadOnly.svelte";
+  import ThemeProvider from "@rilldata/web-common/features/dashboards/ThemeProvider.svelte";
+  import { activeDashboardTheme } from "@rilldata/web-common/features/themes/active-dashboard-theme.ts";
 
   export let open = false;
   export let measure: MetricsViewSpecMeasure;
@@ -35,7 +39,14 @@
 
   let captureNode: HTMLDivElement;
   let downloading = false;
-  let url = "";
+
+  $: formattedTimeRange = interval
+    ? prettyFormatTimeRange(interval, timeGranularity)
+    : "";
+  $: generatedTime = prettyFormatTimeRange(
+    Interval.fromDateTimes(DateTime.now(), DateTime.now()),
+    timeGranularity,
+  );
 
   const SVG_PROPS = [
     "fill",
@@ -68,97 +79,94 @@
     try {
       inlineSvgStyles(captureNode);
       await document.fonts.ready;
-      const fontEmbedCSS = await getFontEmbedCSS(captureNode);
-      url = await toPng(captureNode, { fontEmbedCSS, cacheBust: true });
-      // const link = document.createElement("a");
-      // link.download = `${measure.name ?? "chart"}.png`;
-      // link.href = url;
-      // link.click();
+      const url = await toPng(captureNode, { cacheBust: true });
+      const link = document.createElement("a");
+      link.download = `${measure.name ?? "chart"}_${formattedTimeRange || generatedTime}.png`;
+      link.href = url;
+      link.click();
     } finally {
       downloading = false;
     }
   }
 </script>
 
-<Dialog.Root
-  bind:open
-  onOpenChange={() => {
-    url = "";
-  }}
->
+<Dialog.Root bind:open>
   <Dialog.Content class="max-w-3xl flex flex-col gap-y-4">
     <Dialog.Header>
       <Dialog.Title>Export chart</Dialog.Title>
     </Dialog.Header>
 
-    <div
-      bind:this={captureNode}
-      class="flex flex-col gap-y-3 p-4 bg-surface-background border rounded-md"
-    >
-      <header class="flex flex-col gap-y-0.5">
-        <slot name="header">
-          <h2 class="text-base font-semibold text-fg-base">
-            {measure.displayName || measure.name}
-          </h2>
-          {#if measure.description}
-            <p class="text-xs text-fg-muted">{measure.description}</p>
-          {/if}
-        </slot>
-      </header>
-
-      <div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2">
-        {#if timeGranularity}
-          <div class="col-span-2 grid grid-cols-subgrid">
-            <div></div>
-            <MeasureChartXAxis {interval} {timeGranularity} />
+    <ThemeProvider theme={$activeDashboardTheme} applyLayout={false}>
+      <div
+        bind:this={captureNode}
+        class="flex flex-col gap-y-3 p-4 bg-surface-background border rounded-md"
+      >
+        <header class="flex flex-row gap-y-0.5">
+          <div class="flex flex-col">
+            <h2 class="text-base font-semibold text-fg-base">
+              {measure.displayName || measure.name}
+            </h2>
+            {#if measure.description}
+              <p class="text-xs text-fg-muted">{measure.description}</p>
+            {/if}
           </div>
-        {/if}
+          <div class="grow"></div>
+          <div>{formattedTimeRange}</div>
+        </header>
 
-        <MeasureBigNumber
-          {measure}
-          {metricsViewName}
-          {where}
-          {timeDimension}
-          {timeStart}
-          {timeEnd}
-          {comparisonTimeStart}
-          {comparisonTimeEnd}
-          {showComparison}
-          {ready}
+        <ExploreFilterChipsReadOnly
+          metricsViewNames={[metricsViewName]}
+          filters={where}
+          dimensionsWithInlistFilter={[]}
+          dimensionThresholdFilters={[]}
         />
 
-        {#if timeGranularity}
-          <MeasureChart
+        <div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2">
+          {#if timeGranularity}
+            <div class="col-span-2 grid grid-cols-subgrid">
+              <div></div>
+              <MeasureChartXAxis {interval} {timeGranularity} />
+            </div>
+          {/if}
+
+          <MeasureBigNumber
             {measure}
-            {scrubController}
-            tddChartType={TDDChart.DEFAULT}
             {metricsViewName}
             {where}
             {timeDimension}
-            {interval}
-            {comparisonInterval}
-            {timeGranularity}
-            {timeZone}
-            {ready}
+            {timeStart}
+            {timeEnd}
+            {comparisonTimeStart}
+            {comparisonTimeEnd}
             {showComparison}
-            connectNulls={true}
+            {ready}
           />
-        {/if}
-      </div>
 
-      <footer class="flex items-center justify-between text-xs text-fg-muted">
-        <slot name="footer">
-          <span>Generated {new Date().toLocaleString()}</span>
+          {#if timeGranularity}
+            <MeasureChart
+              {measure}
+              {scrubController}
+              tddChartType={TDDChart.DEFAULT}
+              {metricsViewName}
+              {where}
+              {timeDimension}
+              {interval}
+              {comparisonInterval}
+              {timeGranularity}
+              {timeZone}
+              {ready}
+              {showComparison}
+              connectNulls={true}
+            />
+          {/if}
+        </div>
+
+        <footer class="flex items-center justify-between text-xs text-fg-muted">
           <span>Rill</span>
-        </slot>
-      </footer>
-    </div>
-
-    {#if url}
-      <div>
-        <img src={url} alt="Screenshot" class="w-full h-auto" />
+          <span>Generated {generatedTime}</span>
+        </footer>
       </div>
-    {/if}
+    </ThemeProvider>
 
     <Dialog.Footer>
       <Button type="secondary" onClick={() => (open = false)}>Cancel</Button>

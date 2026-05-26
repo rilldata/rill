@@ -33,7 +33,7 @@
   import { type MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client/gen/index.schemas";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { DateTime, Interval } from "luxon";
-  import { Button, IconButton } from "../../../components/button";
+  import { Button } from "../../../components/button";
   import Pivot from "../../../components/icons/Pivot.svelte";
   import { TIME_GRAIN } from "../../../lib/time/config";
   import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
