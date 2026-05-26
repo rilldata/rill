@@ -114,8 +114,14 @@ export function createPivotConfig(
       const { timeRange, comparisonTimeRange, where } = $timeAndFilterStore;
       const metricsViewName = $tableSpec.metrics_view;
       const metricsView =
-        $canvasData?.data?.metricsViews[metricsViewName]?.state?.validSpec ??
-        {};
+        $canvasData?.data?.metricsViews[metricsViewName]?.state?.validSpec;
+      const ready =
+        !!metricsViewName &&
+        !!metricsView &&
+        ($timeAndFilterStore.hasTimeSeries === false ||
+          ($timeAndFilterStore.hasTimeSeries === true &&
+            !!timeRange?.start &&
+            !!timeRange?.end));
 
       let queryWhere: V1Expression | undefined;
       if (!$selfFiltered || $selfFiltered.size === 0) {
@@ -135,6 +141,7 @@ export function createPivotConfig(
             comparisonTimeRange,
             pivotState,
             timeRange,
+            ready,
           )
         : processPivot(
             $tableSpec,
@@ -145,6 +152,7 @@ export function createPivotConfig(
             comparisonTimeRange,
             pivotState,
             timeRange,
+            ready,
           );
     },
   );
@@ -159,9 +167,11 @@ export function processPivot(
   comparisonTimeRange: V1TimeRange | undefined,
   pivotState: Writable<PivotState>,
   timeRange: V1TimeRange,
+  ready: boolean,
 ) {
   if (!$tableSpec) {
     return {
+      ready: false,
       measureNames: [],
       rowDimensionNames: [],
       colDimensionNames: [],
@@ -182,6 +192,7 @@ export function processPivot(
     $timeAndFilterStore.showTimeComparison;
 
   const config: PivotDataStoreConfig = {
+    ready,
     measureNames: ($tableSpec?.measures || []).flatMap((name) => {
       const group = [name];
       if (enableComparison) {
@@ -239,9 +250,11 @@ export function processFlat(
   comparisonTimeRange: V1TimeRange | undefined,
   pivotState: Writable<PivotState>,
   timeRange: V1TimeRange,
+  ready: boolean,
 ) {
   if (!$tableSpec) {
     return {
+      ready: false,
       measureNames: [],
       rowDimensionNames: [],
       colDimensionNames: [],
@@ -269,6 +282,7 @@ export function processFlat(
     $timeAndFilterStore.showTimeComparison;
 
   const config: PivotDataStoreConfig = {
+    ready,
     measureNames: (measures || []).flatMap((name) => {
       const group = [name];
       if (enableComparison) {
