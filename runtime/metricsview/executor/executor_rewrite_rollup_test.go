@@ -222,7 +222,161 @@ func TestRewriteQueryForRollup_WhereDimensionMissing(t *testing.T) {
 	require.Nil(t, result)
 }
 
-func TestRewriteQueryForRollup_ComparisonTimeRange(t *testing.T) {
+func TestRollupEligible_ComparisonTimeRange_Aligned(t *testing.T) {
+	rollup := &runtimev1.MetricsViewSpec_Rollup{
+		Table:     "daily_rollup",
+		TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		Measures:  []string{"total_impressions"},
+	}
+	qry := &metricsview.Query{
+		Measures: []metricsview.Measure{{Name: "total_impressions"}},
+		TimeRange: &metricsview.TimeRange{
+			Start: time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+			End:   time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC),
+		},
+		ComparisonTimeRange: &metricsview.TimeRange{
+			Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+			End:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+		},
+	}
+	eligible, reason, err := rollupEligible(rollup, qry, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, nil, "timestamp", 0)
+	require.NoError(t, err)
+	require.True(t, eligible, "expected eligible, got reject reason: %s", reason)
+}
+
+func TestRollupEligible_ComparisonTimeRange_StartNotAligned(t *testing.T) {
+	rollup := &runtimev1.MetricsViewSpec_Rollup{
+		Table:     "daily_rollup",
+		TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		Measures:  []string{"total_impressions"},
+	}
+	qry := &metricsview.Query{
+		Measures: []metricsview.Measure{{Name: "total_impressions"}},
+		TimeRange: &metricsview.TimeRange{
+			Start: time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+			End:   time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC),
+		},
+		ComparisonTimeRange: &metricsview.TimeRange{
+			Start: time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC), // mid-day, not aligned to day grain
+			End:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+		},
+	}
+	eligible, reason, err := rollupEligible(rollup, qry, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, nil, "timestamp", 0)
+	require.NoError(t, err)
+	require.False(t, eligible)
+	require.Equal(t, rejectStartNotAligned, reason)
+}
+
+func TestRollupEligible_ComparisonTimeRange_NonPrimaryTimeDim(t *testing.T) {
+	// Non-primary time dim on the comparison range is handled at the early-skip layer,
+	// not rollupEligible. Confirm rollupEligible itself rejects via rejectTimeDimensionMissing
+	// when the comparison range references a time dim that's not in the rollup.
+	rollup := &runtimev1.MetricsViewSpec_Rollup{
+		Table:     "daily_rollup",
+		TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		Measures:  []string{"total_impressions"},
+	}
+	qry := &metricsview.Query{
+		Measures: []metricsview.Measure{{Name: "total_impressions"}},
+		TimeRange: &metricsview.TimeRange{
+			Start: time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+			End:   time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC),
+		},
+		ComparisonTimeRange: &metricsview.TimeRange{
+			Start:         time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+			End:           time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+			TimeDimension: "other_ts", // not in rollup
+		},
+	}
+	eligible, reason, err := rollupEligible(rollup, qry, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, nil, "timestamp", 0)
+	require.NoError(t, err)
+	require.False(t, eligible)
+	require.Equal(t, rejectTimeDimensionMissing, reason)
+}
+
+func TestRollupEligible_ComparisonValueMeasure(t *testing.T) {
+	// ComparisonValue references a base measure; if that base measure is in the rollup, it's allowed.
+	rollup := &runtimev1.MetricsViewSpec_Rollup{
+		Table:     "daily_rollup",
+		TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		Measures:  []string{"total_impressions"},
+	}
+	qry := &metricsview.Query{
+		Measures: []metricsview.Measure{
+			{Name: "total_impressions"},
+			{
+				Name: "prev_impressions",
+				Compute: &metricsview.MeasureCompute{
+					ComparisonValue: &metricsview.MeasureComputeComparisonValue{Measure: "total_impressions"},
+				},
+			},
+		},
+		TimeRange: &metricsview.TimeRange{
+			Start: time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+			End:   time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC),
+		},
+		ComparisonTimeRange: &metricsview.TimeRange{
+			Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+			End:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+		},
+	}
+	eligible, reason, err := rollupEligible(rollup, qry, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, nil, "timestamp", 0)
+	require.NoError(t, err)
+	require.True(t, eligible, "expected eligible, got reject reason: %s", reason)
+}
+
+func TestRollupEligible_ComparisonDeltaMissingReferencedMeasure(t *testing.T) {
+	// ComparisonDelta referencing a measure that's not in the rollup must be rejected.
+	rollup := &runtimev1.MetricsViewSpec_Rollup{
+		Table:     "daily_rollup",
+		TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		Measures:  []string{"total_impressions"}, // missing total_clicks
+	}
+	qry := &metricsview.Query{
+		Measures: []metricsview.Measure{
+			{
+				Name: "clicks_delta",
+				Compute: &metricsview.MeasureCompute{
+					ComparisonDelta: &metricsview.MeasureComputeComparisonDelta{Measure: "total_clicks"},
+				},
+			},
+		},
+		TimeRange: &metricsview.TimeRange{
+			Start: time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+			End:   time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC),
+		},
+		ComparisonTimeRange: &metricsview.TimeRange{
+			Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+			End:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+		},
+	}
+	eligible, reason, err := rollupEligible(rollup, qry, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, nil, "timestamp", 0)
+	require.NoError(t, err)
+	require.False(t, eligible)
+	require.Equal(t, rejectMeasureMissing, reason)
+}
+
+func TestRollupEligible_CountStillRejected(t *testing.T) {
+	// Non-comparison computed measures (count, count_distinct, percent_of_total, uri) remain rejected.
+	rollup := &runtimev1.MetricsViewSpec_Rollup{
+		Table:     "daily_rollup",
+		TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		Measures:  []string{"total_impressions"},
+	}
+	qry := &metricsview.Query{
+		Measures: []metricsview.Measure{
+			{Name: "__count__", Compute: &metricsview.MeasureCompute{Count: true}},
+		},
+	}
+	eligible, reason, err := rollupEligible(rollup, qry, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, nil, "timestamp", 0)
+	require.NoError(t, err)
+	require.False(t, eligible)
+	require.Equal(t, rejectComputedMeasure, reason)
+}
+
+func TestRewriteQueryForRollup_ComparisonTimeRange_NonPrimaryTimeDim(t *testing.T) {
+	// A comparison range referencing a non-primary time dimension must skip rollup routing
+	// at the early-skip layer (without needing to fetch timestamps).
 	e := &Executor{
 		metricsView: &runtimev1.MetricsViewSpec{
 			Table:         "base_table",
@@ -231,25 +385,18 @@ func TestRewriteQueryForRollup_ComparisonTimeRange(t *testing.T) {
 				{Name: "total_impressions", Expression: `SUM("impressions")`},
 			},
 			Rollups: []*runtimev1.MetricsViewSpec_Rollup{
-				{
-					Table:     "daily_rollup",
-					TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
-					Measures:  []string{"total_impressions"},
-				},
+				{Table: "daily_rollup", TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY, Measures: []string{"total_impressions"}},
 			},
 		},
 	}
-
 	qry := &metricsview.Query{
-		Measures: []metricsview.Measure{
-			{Name: "total_impressions"},
-		},
+		Measures: []metricsview.Measure{{Name: "total_impressions"}},
 		ComparisonTimeRange: &metricsview.TimeRange{
-			Start: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
-			End:   time.Date(2023, 2, 1, 0, 0, 0, 0, time.UTC),
+			Start:         time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+			End:           time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+			TimeDimension: "other_ts",
 		},
 	}
-
 	result, err := e.rewriteQueryForRollup(context.Background(), qry)
 	require.NoError(t, err)
 	require.Nil(t, result)
