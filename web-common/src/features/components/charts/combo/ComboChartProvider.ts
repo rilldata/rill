@@ -27,6 +27,7 @@ import {
   type Writable,
 } from "svelte/store";
 import {
+  canQueryWithTimeRange,
   getFilterWithNullHandling,
   vegaSortToAggregationSort,
 } from "../query-util";
@@ -101,6 +102,7 @@ export class ComboChartProvider {
     }
 
     const dimensionName = config.x?.field;
+    const requiresTimeRange = config.x?.type === "temporal";
 
     const xAxisQueryOptionsStore = derived(
       [timeAndFilterStore, visibleStore],
@@ -108,7 +110,7 @@ export class ComboChartProvider {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const enabled =
           $visible &&
-          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
+          canQueryWithTimeRange(hasTimeSeries, timeRange) &&
           !!dimensionName &&
           config?.x?.type === "nominal" &&
           !Array.isArray(config.x?.sort) &&
@@ -162,7 +164,7 @@ export class ComboChartProvider {
 
         const enabled =
           $visible &&
-          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
+          canQueryWithTimeRange(hasTimeSeries, timeRange, requiresTimeRange) &&
           !!measures?.length &&
           (config.x?.type === "nominal" && !Array.isArray(config.x?.sort)
             ? xTopNData !== undefined
@@ -215,7 +217,7 @@ export class ComboChartProvider {
             dimensions,
             where: combinedWhere,
             timeRange,
-            fillMissing: config.x?.type === "temporal",
+            fillMissing: requiresTimeRange,
             sort:
               config.x?.type === "temporal"
                 ? [{ name: config.x?.field, desc: false }]
