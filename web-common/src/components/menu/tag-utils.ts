@@ -13,7 +13,6 @@ export type Taggable = {
 
 export type DimensionTag = {
   name: string;
-  displayName: string;
   totalCount: number;
 };
 
@@ -24,57 +23,65 @@ export type TagVisibilityState = {
   state: "none" | "partial" | "all";
 };
 
-// Walks items in spec order and collects unique tags. Tag strings are trimmed
-// to normalize accidental whitespace from YAML authoring. Tags remain
-// case-sensitive: "Geography" and "geography" are distinct.
-export function deriveTags(items: Taggable[]): DimensionTag[] {
-  const seen = new Map<string, number>();
+// Cached lookup table built once from a list of items. Operations below walk
+// the (typically small) per-tag bucket instead of re-scanning every item.
+//
+// Tag strings are trimmed to normalize accidental whitespace from YAML
+// authoring. Tags remain case-sensitive: "Geography" and "geography" are
+// distinct.
+export type TagIndex = {
+  tags: DimensionTag[];
+  itemsByTag: Map<string, Taggable[]>;
+  allItems: Taggable[];
+};
+
+export function buildTagIndex(items: Taggable[]): TagIndex {
+  const itemsByTag = new Map<string, Taggable[]>();
   for (const item of items) {
     if (!item.tags) continue;
     for (const raw of item.tags) {
       const tag = typeof raw === "string" ? raw.trim() : "";
       if (!tag) continue;
-      seen.set(tag, (seen.get(tag) ?? 0) + 1);
+      let bucket = itemsByTag.get(tag);
+      if (!bucket) {
+        bucket = [];
+        itemsByTag.set(tag, bucket);
+      }
+      bucket.push(item);
     }
   }
-  return Array.from(seen, ([name, total]) => ({
-    name,
-    displayName: name,
-    totalCount: total,
-  }));
-}
-
-export function itemHasTag(item: Taggable, tagName: string): boolean {
-  if (!item.tags) return false;
-  for (const t of item.tags) {
-    if (typeof t === "string" && t.trim() === tagName) return true;
+  const tags: DimensionTag[] = [];
+  for (const [name, bucket] of itemsByTag) {
+    tags.push({ name, totalCount: bucket.length });
   }
-  return false;
+  return { tags, itemsByTag, allItems: items };
 }
 
-export function namesInTag(items: Taggable[], tagName: string): string[] {
+export function itemsInTag(index: TagIndex, tagName: string): Taggable[] {
+  return index.itemsByTag.get(tagName) ?? [];
+}
+
+export function namesInTag(index: TagIndex, tagName: string): string[] {
   const result: string[] = [];
-  for (const item of items) {
-    if (!item.name || !itemHasTag(item, tagName)) continue;
-    result.push(item.name);
+  for (const item of itemsInTag(index, tagName)) {
+    if (item.name) result.push(item.name);
   }
   return result;
 }
 
 export function computeTagVisibility(
-  items: Taggable[],
+  index: TagIndex,
   visibleNames: Iterable<string>,
   tagName: string,
 ): TagVisibilityState {
   const visible =
     visibleNames instanceof Set ? visibleNames : new Set(visibleNames);
-  let total = 0;
+  const bucket = itemsInTag(index, tagName);
   let visibleCount = 0;
-  for (const item of items) {
-    if (!itemHasTag(item, tagName)) continue;
-    total += 1;
+  for (const item of bucket) {
     if (item.name && visible.has(item.name)) visibleCount += 1;
   }
+  const total = bucket.length;
   return {
     tagName,
     visibleCount,
@@ -87,11 +94,11 @@ export function computeTagVisibility(
 // Union of currently visible names with all items in tagName, ordered by spec.
 export function applyShowAllInTag(
   visibleNames: string[],
-  items: Taggable[],
+  index: TagIndex,
   tagName: string,
 ): string[] {
-  const union = new Set([...visibleNames, ...namesInTag(items, tagName)]);
-  return orderBySpec(union, items);
+  const union = new Set([...visibleNames, ...namesInTag(index, tagName)]);
+  return orderBySpec(union, index.allItems);
 }
 
 // Currently visible minus items in tagName. Clamped to keep one item visible
@@ -99,15 +106,15 @@ export function applyShowAllInTag(
 // invariant in setDimensionVisibility / setMeasureVisibility.
 export function applyHideAllInTag(
   visibleNames: string[],
-  items: Taggable[],
+  index: TagIndex,
   tagName: string,
 ): string[] {
-  const remove = new Set(namesInTag(items, tagName));
+  const remove = new Set(namesInTag(index, tagName));
   const remaining = visibleNames.filter((n) => !remove.has(n));
   return clampMinOne(
-    orderBySpec(new Set(remaining), items),
+    orderBySpec(new Set(remaining), index.allItems),
     visibleNames,
-    items,
+    index.allItems,
   );
 }
 
@@ -115,11 +122,15 @@ export function applyHideAllInTag(
 // item visible.
 export function applyOnlyShowTag(
   visibleNames: string[],
-  items: Taggable[],
+  index: TagIndex,
   tagName: string,
 ): string[] {
-  const inTag = namesInTag(items, tagName);
-  return clampMinOne(orderBySpec(new Set(inTag), items), visibleNames, items);
+  const inTag = namesInTag(index, tagName);
+  return clampMinOne(
+    orderBySpec(new Set(inTag), index.allItems),
+    visibleNames,
+    index.allItems,
+  );
 }
 
 function orderBySpec(allowed: Set<string>, items: Taggable[]): string[] {

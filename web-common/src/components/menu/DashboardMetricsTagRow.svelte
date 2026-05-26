@@ -37,7 +37,7 @@
     type="button"
     class="flex items-center gap-x-2 flex-1 min-w-0 text-left"
     onclick={onSelect}
-    aria-label={`${selected ? "Clear filter" : "Filter by"} ${tag.displayName}`}
+    aria-label={`${selected ? "Clear filter" : "Filter by"} ${tag.name}`}
     aria-pressed={selected}
   >
     <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true">
@@ -63,7 +63,7 @@
       {/if}
     </svg>
     <span class="truncate flex-1 min-w-0 text-fg-primary text-sm">
-      {tag.displayName}
+      {tag.name}
     </span>
     <span
       class="tabular-nums text-xs text-fg-secondary flex-none"
@@ -86,7 +86,7 @@
             e.stopPropagation();
             onShowOnly();
           }}
-          aria-label={`Only show ${tag.displayName}`}
+          aria-label={`Only show ${tag.name}`}
         >
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
             <circle cx="8" cy="8" r="4.5" class="fill-current" />
@@ -117,7 +117,7 @@
             e.stopPropagation();
             onShowAll();
           }}
-          aria-label={`Show all in ${tag.displayName}`}
+          aria-label={`Show all in ${tag.name}`}
         >
           <EyeIcon size="14px" color="currentColor" />
         </button>
@@ -139,7 +139,7 @@
             e.stopPropagation();
             onHideAll();
           }}
-          aria-label={`Hide all in ${tag.displayName}`}
+          aria-label={`Hide all in ${tag.name}`}
         >
           <EyeOffIcon size="14px" color="currentColor" />
         </button>

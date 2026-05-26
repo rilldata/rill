@@ -18,7 +18,7 @@
   import { FileArtifact } from "../entity-management/file-artifact";
   import { YAMLDimension, YAMLMeasure, type MenuOption } from "./lib";
   import SimpleSqlExpression from "./SimpleSQLExpression.svelte";
-  import TagInput from "./TagInput.svelte";
+  import TagInput from "@rilldata/web-common/components/forms/TagInput.svelte";
 
   export let item: YAMLMeasure | YAMLDimension;
   export let fileArtifact: FileArtifact;

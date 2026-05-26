@@ -3,9 +3,8 @@ import {
   applyHideAllInTag,
   applyOnlyShowTag,
   applyShowAllInTag,
+  buildTagIndex,
   computeTagVisibility,
-  deriveTags,
-  itemHasTag,
   namesInTag,
   type Taggable,
 } from "./tag-utils";
@@ -19,61 +18,64 @@ const items: Taggable[] = [
   { name: "spaced", tags: ["  Product  "] },
 ];
 
+const index = buildTagIndex(items);
+
 describe("tag-utils", () => {
-  describe("deriveTags", () => {
+  describe("buildTagIndex", () => {
     it("preserves first-appearance order and counts per tag", () => {
-      expect(deriveTags(items)).toEqual([
-        { name: "Geography", displayName: "Geography", totalCount: 3 },
-        { name: "Customer", displayName: "Customer", totalCount: 2 },
-        { name: "Product", displayName: "Product", totalCount: 1 },
+      expect(index.tags).toEqual([
+        { name: "Geography", totalCount: 3 },
+        { name: "Customer", totalCount: 2 },
+        { name: "Product", totalCount: 1 },
       ]);
     });
 
     it("ignores empty and whitespace-only tag strings", () => {
-      expect(
-        deriveTags([
-          { name: "a", tags: ["", "   ", "X"] },
-          { name: "b", tags: ["X"] },
-        ]),
-      ).toEqual([{ name: "X", displayName: "X", totalCount: 2 }]);
+      const idx = buildTagIndex([
+        { name: "a", tags: ["", "   ", "X"] },
+        { name: "b", tags: ["X"] },
+      ]);
+      expect(idx.tags).toEqual([{ name: "X", totalCount: 2 }]);
     });
 
     it("treats casing as distinct", () => {
-      expect(
-        deriveTags([
-          { name: "a", tags: ["X"] },
-          { name: "b", tags: ["x"] },
-        ]),
-      ).toEqual([
-        { name: "X", displayName: "X", totalCount: 1 },
-        { name: "x", displayName: "x", totalCount: 1 },
+      const idx = buildTagIndex([
+        { name: "a", tags: ["X"] },
+        { name: "b", tags: ["x"] },
+      ]);
+      expect(idx.tags).toEqual([
+        { name: "X", totalCount: 1 },
+        { name: "x", totalCount: 1 },
       ]);
     });
-  });
 
-  describe("itemHasTag", () => {
-    it("matches trimmed tag strings", () => {
-      expect(itemHasTag({ tags: ["  Product  "] }, "Product")).toBe(true);
-      expect(itemHasTag({ tags: ["Product"] }, "Other")).toBe(false);
-      expect(itemHasTag({}, "Product")).toBe(false);
+    it("buckets items per tag in spec order", () => {
+      expect(index.itemsByTag.get("Geography")?.map((i) => i.name)).toEqual([
+        "country",
+        "city",
+        "state",
+      ]);
+      expect(index.itemsByTag.get("Product")?.map((i) => i.name)).toEqual([
+        "spaced",
+      ]);
     });
   });
 
   describe("namesInTag", () => {
     it("returns items in spec order", () => {
-      expect(namesInTag(items, "Geography")).toEqual([
+      expect(namesInTag(index, "Geography")).toEqual([
         "country",
         "city",
         "state",
       ]);
-      expect(namesInTag(items, "Product")).toEqual(["spaced"]);
-      expect(namesInTag(items, "Missing")).toEqual([]);
+      expect(namesInTag(index, "Product")).toEqual(["spaced"]);
+      expect(namesInTag(index, "Missing")).toEqual([]);
     });
   });
 
   describe("computeTagVisibility", () => {
     it("returns 'none' when no items in tag are visible", () => {
-      expect(computeTagVisibility(items, ["untagged"], "Geography")).toEqual({
+      expect(computeTagVisibility(index, ["untagged"], "Geography")).toEqual({
         tagName: "Geography",
         visibleCount: 0,
         totalCount: 3,
@@ -83,7 +85,7 @@ describe("tag-utils", () => {
 
     it("returns 'partial' when some items in tag are visible", () => {
       expect(
-        computeTagVisibility(items, ["country", "city"], "Geography"),
+        computeTagVisibility(index, ["country", "city"], "Geography"),
       ).toEqual({
         tagName: "Geography",
         visibleCount: 2,
@@ -94,7 +96,7 @@ describe("tag-utils", () => {
 
     it("returns 'all' when every item in tag is visible", () => {
       expect(
-        computeTagVisibility(items, ["country", "city", "state"], "Geography"),
+        computeTagVisibility(index, ["country", "city", "state"], "Geography"),
       ).toEqual({
         tagName: "Geography",
         visibleCount: 3,
@@ -106,7 +108,7 @@ describe("tag-utils", () => {
 
   describe("applyShowAllInTag", () => {
     it("unions current visible with all items in the tag, ordered by spec", () => {
-      expect(applyShowAllInTag(["customer_id"], items, "Geography")).toEqual([
+      expect(applyShowAllInTag(["customer_id"], index, "Geography")).toEqual([
         "country",
         "city",
         "state",
@@ -116,7 +118,7 @@ describe("tag-utils", () => {
 
     it("is idempotent when all tag items are already visible", () => {
       expect(
-        applyShowAllInTag(["country", "city", "state"], items, "Geography"),
+        applyShowAllInTag(["country", "city", "state"], index, "Geography"),
       ).toEqual(["country", "city", "state"]);
     });
   });
@@ -126,21 +128,21 @@ describe("tag-utils", () => {
       expect(
         applyHideAllInTag(
           ["country", "city", "customer_id"],
-          items,
+          index,
           "Geography",
         ),
       ).toEqual(["customer_id"]);
     });
 
     it("does not touch dimensions outside the tag", () => {
-      expect(applyHideAllInTag(["untagged"], items, "Geography")).toEqual([
+      expect(applyHideAllInTag(["untagged"], index, "Geography")).toEqual([
         "untagged",
       ]);
     });
 
     it("falls back to the first visible item to keep at least one visible", () => {
       expect(
-        applyHideAllInTag(["country", "city"], items, "Geography"),
+        applyHideAllInTag(["country", "city"], index, "Geography"),
       ).toEqual(["country"]);
     });
   });
@@ -148,12 +150,12 @@ describe("tag-utils", () => {
   describe("applyOnlyShowTag", () => {
     it("limits visible names to items in the tag", () => {
       expect(
-        applyOnlyShowTag(["country", "customer_id"], items, "Geography"),
+        applyOnlyShowTag(["country", "customer_id"], index, "Geography"),
       ).toEqual(["country", "city", "state"]);
     });
 
     it("falls back to keep one item visible if the tag is empty", () => {
-      expect(applyOnlyShowTag(["country"], items, "Missing")).toEqual([
+      expect(applyOnlyShowTag(["country"], index, "Missing")).toEqual([
         "country",
       ]);
     });

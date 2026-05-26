@@ -18,9 +18,8 @@
     applyHideAllInTag,
     applyOnlyShowTag,
     applyShowAllInTag,
+    buildTagIndex,
     computeTagVisibility,
-    deriveTags,
-    itemHasTag,
   } from "./tag-utils";
 
   type SelectableItem = MetricsViewSpecMeasure | MetricsViewSpecDimension;
@@ -45,7 +44,8 @@
   $: tooltipText = `Choose ${type === "measure" ? "measures" : "dimensions"} to display`;
   $: pluralLabel = type === "measure" ? "measures" : "dimensions";
 
-  $: tags = deriveTags(allItems);
+  $: tagIndex = buildTagIndex(allItems);
+  $: tags = tagIndex.tags;
 
   $: hasTags = tags.length > 0;
   $: visibleSet = new Set(selectedItems.filter((id) => id));
@@ -55,13 +55,13 @@
 
   $: filteredTags = searchActive
     ? tags.filter((t) =>
-        t.displayName.toLowerCase().includes(searchText.trim().toLowerCase()),
+        t.name.toLowerCase().includes(searchText.trim().toLowerCase()),
       )
     : tags;
 
   // Items visible in the right column, filtered by the selected tag if any.
   $: itemsForRightColumn = filterActive
-    ? allItems.filter((i) => itemHasTag(i, selectedTag!))
+    ? (tagIndex.itemsByTag.get(selectedTag!) ?? [])
     : allItems;
 
   // Reset all transient state whenever the popover closes.
@@ -101,15 +101,15 @@
   }
 
   function showAllInTag(tagName: string) {
-    onSelectedChange(applyShowAllInTag(selectedItems, allItems, tagName));
+    onSelectedChange(applyShowAllInTag(selectedItems, tagIndex, tagName));
   }
 
   function hideAllInTag(tagName: string) {
-    onSelectedChange(applyHideAllInTag(selectedItems, allItems, tagName));
+    onSelectedChange(applyHideAllInTag(selectedItems, tagIndex, tagName));
   }
 
   function showOnlyTag(tagName: string) {
-    onSelectedChange(applyOnlyShowTag(selectedItems, allItems, tagName));
+    onSelectedChange(applyOnlyShowTag(selectedItems, tagIndex, tagName));
   }
 
   function toggleTagFilter(tagName: string) {
@@ -179,7 +179,7 @@
                 <DashboardMetricsTagRow
                   {tag}
                   visibility={computeTagVisibility(
-                    allItems,
+                    tagIndex,
                     visibleSet,
                     tag.name,
                   )}
