@@ -15,7 +15,10 @@ import {
   type V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-import type { Schema as MetricsResolverQuery } from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
+import type {
+  Schema as MetricsResolverQuery,
+  TimeRange,
+} from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
 import { error, redirect } from "@sveltejs/kit";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params.ts";
@@ -24,11 +27,13 @@ import { ExploreLinkErrorType } from "@rilldata/web-common/features/explore-mapp
 
 export async function openQuery({
   query,
+  resolvedTimeRanges,
   organization,
   project,
   client,
 }: {
   query: MetricsResolverQuery;
+  resolvedTimeRanges: TimeRange[];
   client: RuntimeClient;
   organization?: string;
   project?: string;
@@ -58,7 +63,7 @@ export async function openQuery({
       metricsViewSpec,
       exploreSpec,
       query,
-      [], // TODO
+      resolvedTimeRanges,
     );
 
     // Generate the final explore URL

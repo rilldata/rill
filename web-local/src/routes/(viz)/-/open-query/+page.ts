@@ -7,6 +7,7 @@ export async function load({ url }) {
 
   await openQuery({
     query,
+    resolvedTimeRanges: [],
     client: getLocalRuntimeClient(),
   });
 }

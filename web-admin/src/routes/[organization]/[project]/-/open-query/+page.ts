@@ -5,12 +5,13 @@ import { getQueryFromUrl } from "@rilldata/web-common/features/chat/core/citatio
 
 export const load: PageLoad = async ({ params, url, parent }) => {
   const { runtime } = await parent();
-  const client = getCloudRuntimeClient(runtime!);
+  const client = getCloudRuntimeClient(runtime);
 
   const query = getQueryFromUrl(url);
 
   await openQuery({
     query,
+    resolvedTimeRanges: [],
     organization: params.organization,
     project: params.project,
     client,

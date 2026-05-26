@@ -5432,6 +5432,8 @@ definitions:
     properties:
       message:
         $ref: '#/definitions/v1Message'
+      result:
+        $ref: '#/definitions/v1Message'
     title: Response message for RuntimeService.GetAIMessage
   v1GetConversationResponse:
     type: object
