@@ -218,14 +218,17 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 		rollupEffEnd := timeutil.OffsetTime(rollupMax, timeutil.TimeGrainFromAPI(rollup.TimeGrain), 1, rollupLoc)
 
 		if hasTimeRange {
-			// Clamp query range to the base table's actual data range.
-			// This ensures a rollup isn't rejected when the query extends beyond both the base table and rollup.
+			// Clamp the query range to the base table's data range, but only on the side where the
+			// rollup is no wider than the base. A rollup that extends past the base on a given end
+			// (e.g. an archive with rollupMin < baseMin, or a stream rollup with rollupMax > baseMax)
+			// is held to its own coverage on that end — clamping would silently let it through with
+			// a gap relative to the query.
 			effectiveStart := qry.TimeRange.Start
-			if !effectiveStart.IsZero() && baseMin.After(effectiveStart) {
+			if !effectiveStart.IsZero() && baseMin.After(effectiveStart) && !rollupMin.Before(baseMin) {
 				effectiveStart = baseMin
 			}
 			effectiveEnd := qry.TimeRange.End
-			if !effectiveEnd.IsZero() && baseMax.Before(effectiveEnd) {
+			if !effectiveEnd.IsZero() && baseMax.Before(effectiveEnd) && !rollupMax.After(baseMax) {
 				effectiveEnd = baseMax
 			}
 

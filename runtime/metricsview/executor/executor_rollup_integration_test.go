@@ -543,6 +543,127 @@ explore:
 			require.Equal(t, rollupTestDailyTable, table)
 		})
 
+		t.Run("partial_archive_rejected_definition_order_picks_wider", func(t *testing.T) {
+			// Two day-grain rollups that both extend before the base. B (idx 0) starts at 2023-11-01;
+			// A (idx 1) starts at 2023-01-01. A query touching October 2023 — before both base and B —
+			// must skip B (low-end gap) and pick A. Without the asymmetric clamp, the start-side clamp
+			// would mask B's gap and definition order would silently pick B, dropping October data.
+			files := map[string]string{
+				"rill.yaml":              "",
+				"models/base_events.sql": rollupTestFiles()["models/base_events.sql"],
+				"models/rollup_day_b.sql": `
+SELECT date_trunc('day', ts) AS timestamp, 'Google' AS publisher, 'news.com' AS domain,
+	100 AS impressions, 20 AS clicks
+FROM generate_series(TIMESTAMP '2023-11-01 00:00:00', TIMESTAMP '2024-03-31 23:00:00', INTERVAL '1 HOUR') t(ts)
+GROUP BY 1`,
+				"models/rollup_day_a.sql": `
+SELECT date_trunc('day', ts) AS timestamp, 'Google' AS publisher, 'news.com' AS domain,
+	100 AS impressions, 20 AS clicks
+FROM generate_series(TIMESTAMP '2023-01-01 00:00:00', TIMESTAMP '2024-03-31 23:00:00', INTERVAL '1 HOUR') t(ts)
+GROUP BY 1`,
+				"metrics_views/mv.yaml": `
+type: metrics_view
+version: 1
+model: base_events
+timeseries: timestamp
+dimensions:
+  - name: publisher
+    column: publisher
+  - name: domain
+    column: domain
+measures:
+  - name: total_impressions
+    expression: 'SUM("impressions")'
+rollups:
+  - model: rollup_day_b
+    time_grain: day
+    dimensions: [publisher, domain]
+    measures: [total_impressions]
+  - model: rollup_day_a
+    time_grain: day
+    dimensions: [publisher, domain]
+    measures: [total_impressions]
+explore:
+  skip: true`,
+			}
+			customRT, customID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{Files: files})
+			testruntime.RequireReconcileState(t, customRT, customID, 5, 0, 0)
+			e := newRollupTestExecutor(t, customRT, customID)
+			defer e.Close()
+
+			qry := &metricsview.Query{
+				Dimensions: []metricsview.Dimension{
+					{Name: "timestamp", Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainDay}}},
+				},
+				Measures: []metricsview.Measure{{Name: "total_impressions"}},
+				TimeRange: &metricsview.TimeRange{
+					Start: time.Date(2023, 10, 1, 0, 0, 0, 0, time.UTC),
+					End:   time.Date(2024, 4, 1, 0, 0, 0, 0, time.UTC),
+				},
+			}
+			require.Equal(t, "rollup_day_a", queryAndGetTable(t, e, qry))
+		})
+
+		t.Run("partial_archive_rejected_coarser_grain_loses", func(t *testing.T) {
+			// Day rollup A (full archive from 2023-01-01) at idx 0 and month rollup B (partial archive from
+			// 2023-11-01) at idx 1. A month-grain query touching October 2023 would normally pick B on the
+			// coarsest-grain rule, but B's low-end gap must reject it; A wins.
+			files := map[string]string{
+				"rill.yaml":              "",
+				"models/base_events.sql": rollupTestFiles()["models/base_events.sql"],
+				"models/rollup_day_a.sql": `
+SELECT date_trunc('day', ts) AS timestamp, 'Google' AS publisher, 'news.com' AS domain,
+	100 AS impressions, 20 AS clicks
+FROM generate_series(TIMESTAMP '2023-01-01 00:00:00', TIMESTAMP '2024-03-31 23:00:00', INTERVAL '1 HOUR') t(ts)
+GROUP BY 1`,
+				"models/rollup_month_b.sql": `
+SELECT date_trunc('month', ts) AS timestamp, 'Google' AS publisher, 'news.com' AS domain,
+	100 AS impressions, 20 AS clicks
+FROM generate_series(TIMESTAMP '2023-11-01 00:00:00', TIMESTAMP '2024-03-31 23:00:00', INTERVAL '1 HOUR') t(ts)
+GROUP BY 1`,
+				"metrics_views/mv.yaml": `
+type: metrics_view
+version: 1
+model: base_events
+timeseries: timestamp
+dimensions:
+  - name: publisher
+    column: publisher
+  - name: domain
+    column: domain
+measures:
+  - name: total_impressions
+    expression: 'SUM("impressions")'
+rollups:
+  - model: rollup_day_a
+    time_grain: day
+    dimensions: [publisher, domain]
+    measures: [total_impressions]
+  - model: rollup_month_b
+    time_grain: month
+    dimensions: [publisher, domain]
+    measures: [total_impressions]
+explore:
+  skip: true`,
+			}
+			customRT, customID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{Files: files})
+			testruntime.RequireReconcileState(t, customRT, customID, 5, 0, 0)
+			e := newRollupTestExecutor(t, customRT, customID)
+			defer e.Close()
+
+			qry := &metricsview.Query{
+				Dimensions: []metricsview.Dimension{
+					{Name: "timestamp", Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainMonth}}},
+				},
+				Measures: []metricsview.Measure{{Name: "total_impressions"}},
+				TimeRange: &metricsview.TimeRange{
+					Start: time.Date(2023, 10, 1, 0, 0, 0, 0, time.UTC),
+					End:   time.Date(2024, 4, 1, 0, 0, 0, 0, time.UTC),
+				},
+			}
+			require.Equal(t, "rollup_day_a", queryAndGetTable(t, e, qry))
+		})
+
 		t.Run("prefer_definition_order", func(t *testing.T) {
 			// Two monthly rollups, both eligible for the query. The earlier one in the rollups list wins.
 			files := map[string]string{
