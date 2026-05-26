@@ -223,24 +223,43 @@ func (o *Orb) DeleteCustomer(ctx context.Context, customerID string) error {
 }
 
 // CreateCustomerCreditAlerts registers a credit_balance_dropped alert at the given threshold and a credit_balance_depleted alert for the customer in Orb. Required for Orb to deliver the corresponding webhook events.
+// Idempotent: if the alerts already exist for the customer/currency they are not re-created (Orb throws an error if the alert already exits).
 func (o *Orb) CreateCustomerCreditAlerts(ctx context.Context, customerID, currency string, lowThreshold float64) error {
-	_, err := o.client.Alerts.NewForExternalCustomer(ctx, customerID, orb.AlertNewForExternalCustomerParams{
-		Currency: orb.String(currency),
-		Type:     orb.F(orb.AlertNewForExternalCustomerParamsTypeCreditBalanceDropped),
-		Thresholds: orb.F([]orb.ThresholdParam{
-			{Value: orb.F(lowThreshold)},
-		}),
+	existing := make(map[orb.AlertType]bool)
+	iter := o.client.Alerts.ListAutoPaging(ctx, orb.AlertListParams{
+		ExternalCustomerID: orb.String(customerID),
 	})
-	if err != nil {
-		return fmt.Errorf("creating credit_balance_dropped alert: %w", err)
+	for iter.Next() {
+		a := iter.Current()
+		if a.Currency == currency {
+			existing[a.Type] = true
+		}
+	}
+	if err := iter.Err(); err != nil {
+		return fmt.Errorf("listing customer alerts: %w", err)
 	}
 
-	_, err = o.client.Alerts.NewForExternalCustomer(ctx, customerID, orb.AlertNewForExternalCustomerParams{
-		Currency: orb.String(currency),
-		Type:     orb.F(orb.AlertNewForExternalCustomerParamsTypeCreditBalanceDepleted),
-	})
-	if err != nil {
-		return fmt.Errorf("creating credit_balance_depleted alert: %w", err)
+	if !existing[orb.AlertTypeCreditBalanceDropped] {
+		_, err := o.client.Alerts.NewForExternalCustomer(ctx, customerID, orb.AlertNewForExternalCustomerParams{
+			Currency: orb.String(currency),
+			Type:     orb.F(orb.AlertNewForExternalCustomerParamsTypeCreditBalanceDropped),
+			Thresholds: orb.F([]orb.ThresholdParam{
+				{Value: orb.F(lowThreshold)},
+			}),
+		})
+		if err != nil {
+			return fmt.Errorf("creating credit_balance_dropped alert: %w", err)
+		}
+	}
+
+	if !existing[orb.AlertTypeCreditBalanceDepleted] {
+		_, err := o.client.Alerts.NewForExternalCustomer(ctx, customerID, orb.AlertNewForExternalCustomerParams{
+			Currency: orb.String(currency),
+			Type:     orb.F(orb.AlertNewForExternalCustomerParamsTypeCreditBalanceDepleted),
+		})
+		if err != nil {
+			return fmt.Errorf("creating credit_balance_depleted alert: %w", err)
+		}
 	}
 
 	return nil
