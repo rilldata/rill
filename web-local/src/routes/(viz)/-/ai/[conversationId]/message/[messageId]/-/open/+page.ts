@@ -9,7 +9,9 @@ export async function load({ parent }) {
   const { message, result } = await parent();
 
   const query = maybeGetMetricsResolverQueryFromMessage(message);
-  const resolvedTimeRanges = getResolvedTimeRangesFromMessage(result);
+  const resolvedTimeRanges = result
+    ? getResolvedTimeRangesFromMessage(result)
+    : [];
   const client = getLocalRuntimeClient();
 
   await openQuery({

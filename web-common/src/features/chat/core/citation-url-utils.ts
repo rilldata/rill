@@ -41,7 +41,7 @@ export async function fetchMessage(
     // 200 response should always have a message.
     return {
       message: toolCallResp.message!,
-      result: toolCallResp.result!,
+      result: toolCallResp.result,
     };
   } catch (e) {
     const apiError = e.response?.data?.message;
@@ -78,11 +78,11 @@ export function maybeGetMetricsResolverQueryFromMessage(message: V1Message) {
 }
 
 export function getResolvedTimeRangesFromMessage(
-  message: V1Message,
+  resultMessage: V1Message,
 ): TimeRange[] {
   try {
-    const resultData = JSON.parse(message.contentData ?? "{}");
-    return resultData.resolved_time_ranges;
+    const resultData = JSON.parse(resultMessage.contentData ?? "{}");
+    return resultData.resolved_time_ranges ?? [];
   } catch (e) {
     console.error("Failed to parse result message JSON", e);
   }

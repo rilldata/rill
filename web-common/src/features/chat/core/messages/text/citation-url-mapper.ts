@@ -9,7 +9,10 @@ import type {
   Schema as MetricsResolverQuery,
   TimeRange,
 } from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
-import { getQueryFromUrl } from "@rilldata/web-common/features/chat/core/citation-url-utils.ts";
+import {
+  getQueryFromUrl,
+  getResolvedTimeRangesFromMessage,
+} from "@rilldata/web-common/features/chat/core/citation-url-utils.ts";
 import { mapMetricsResolverQueryToDashboard } from "@rilldata/web-common/features/explore-mappers/map-metrics-resolver-query-to-dashboard.ts";
 import { maybeGetExplorePageUrlSearchParams } from "@rilldata/web-common/features/explore-mappers/utils.ts";
 import { getUrlForExplore } from "@rilldata/web-common/features/explore-mappers/generate-explore-link.ts";
@@ -121,12 +124,7 @@ export function mapMetricsResolverQueryToUrl(
 
     const resultMessage = messages.find((m) => m.parentId === callId);
     if (resultMessage?.contentData) {
-      try {
-        const resultData = JSON.parse(resultMessage.contentData);
-        resolvedTimeRanges.push(...resultData.resolved_time_ranges);
-      } catch (e) {
-        console.error("Failed to parse result message JSON", e);
-      }
+      resolvedTimeRanges.push(...getResolvedTimeRangesFromMessage(resultMessage));
     }
   }
 
