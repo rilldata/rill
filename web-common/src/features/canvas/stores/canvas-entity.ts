@@ -368,9 +368,6 @@ export class CanvasEntity {
       setTimeout(resolve, 100);
     });
 
-    const yaml = get(this.parsedContent);
-    const filterMap = new YAMLMap();
-
     const pinnedFilters = get(this.filterManager.pinnedFilterKeysStore);
     const requiredFilters = get(this.filterManager.requiredFilterKeysStore);
 
@@ -381,6 +378,43 @@ export class CanvasEntity {
     const requiredNames = Array.from(requiredFilters).map(
       (f) => f.split("::")[1],
     );
+    const timeRange = get(this.timeManager.state.rangeStore);
+    const comparisonOn = get(this.timeManager.state.showTimeComparisonStore);
+
+    const metricsViewFilters = get(this.filterManager.metricsViewFilters);
+    const filterNames = Array.from(metricsViewFilters.keys());
+    const promises = Array.from(metricsViewFilters.values()).map((filters) => {
+      const parsed = get(filters.parsed);
+      return queryClient.fetchQuery({
+        queryKey: [
+          "resolve-metrics-view-filter-expression",
+          this.instanceId,
+          parsed.where,
+        ],
+        queryFn: () =>
+          queryServiceConvertExpressionToMetricsSQL(this.client, {
+            expression: parsed.where as any,
+          }),
+      });
+    });
+
+    const responses = await Promise.all(promises);
+
+    const filterMap = new YAMLMap();
+    responses.forEach((response, index) => {
+      if (!response.sql) return;
+      filterMap.add({
+        key: filterNames[index],
+        value: response.sql,
+      });
+    });
+
+    // Read the YAML document AFTER the async work so any component edits
+    // that landed in editorContent during the await are preserved. Reading
+    // before the await captures a stale Document whose round-trip back to
+    // disk would drop those components. The mutate-and-write below runs
+    // synchronously to keep the read-modify-write atomic.
+    const yaml = get(this.parsedContent);
 
     setOrDeleteFilterList(yaml, "pinned", pinnedNames);
     setOrDeleteFilterList(yaml, "required", requiredNames);
@@ -396,9 +430,6 @@ export class CanvasEntity {
       }
     }
 
-    const timeRange = get(this.timeManager.state.rangeStore);
-    const comparisonOn = get(this.timeManager.state.showTimeComparisonStore);
-
     if (timeRange) {
       yaml.setIn(["defaults", "time_range"], timeRange);
     }
@@ -412,37 +443,6 @@ export class CanvasEntity {
         // no-op
       }
     }
-
-    const promises = get(this.filterManager.metricsViewFilters)
-      .entries()
-      .map(([_, filters]) => {
-        const parsed = get(filters.parsed);
-
-        return queryClient.fetchQuery({
-          queryKey: [
-            "resolve-metrics-view-filter-expression",
-            this.instanceId,
-            parsed.where,
-          ],
-          queryFn: () =>
-            queryServiceConvertExpressionToMetricsSQL(this.client, {
-              expression: parsed.where as any,
-            }),
-        });
-      });
-
-    const responses = await Promise.all(promises);
-
-    responses.forEach((response, index) => {
-      const name = Array.from(
-        get(this.filterManager.metricsViewFilters).keys(),
-      )[index];
-      if (!response.sql) return;
-      filterMap.add({
-        key: name,
-        value: response.sql,
-      });
-    });
 
     yaml.setIn(["defaults", "filters"], filterMap);
 

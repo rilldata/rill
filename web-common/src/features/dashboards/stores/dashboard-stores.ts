@@ -103,10 +103,6 @@ function syncMeasures(explore: V1ExploreSpec, exploreState: ExploreState) {
     exploreState.tdd.expandedMeasureName = undefined;
   }
 
-  exploreState.pivot.columns = exploreState.pivot.columns.filter((measure) =>
-    measuresSet.has(measure.id),
-  );
-
   if (exploreState.allMeasuresVisible) {
     // this makes sure that the visible keys is in sync with list of measures
     exploreState.visibleMeasures = [...measuresSet];
@@ -125,6 +121,7 @@ function syncMeasures(explore: V1ExploreSpec, exploreState: ExploreState) {
 function syncDimensions(explore: V1ExploreSpec, exploreState: ExploreState) {
   // Having a map here improves the lookup for existing dimension name
   const dimensionsSet = new Set(explore.dimensions ?? []);
+  const measuresSet = new Set(explore.measures ?? []);
 
   exploreState.whereFilter =
     filterExpressions(exploreState.whereFilter, (e) => {
@@ -146,8 +143,10 @@ function syncDimensions(explore: V1ExploreSpec, exploreState: ExploreState) {
   );
 
   exploreState.pivot.columns = exploreState.pivot.columns.filter(
-    (dimension) =>
-      dimensionsSet.has(dimension.id) || dimension.type === PivotChipType.Time,
+    (col) =>
+      measuresSet.has(col.id) ||
+      dimensionsSet.has(col.id) ||
+      col.type === PivotChipType.Time,
   );
 
   if (exploreState.allDimensionsVisible) {
