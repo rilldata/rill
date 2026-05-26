@@ -68,6 +68,7 @@ export class FilterManager {
   pinnedFilterKeysStore = writable<Set<string>>(new Set());
   defaultPinnedFilterKeysStore = writable<Set<string>>(new Set());
   requiredFilterKeysStore = writable<Set<string>>(new Set());
+  defaultRequiredFilterKeysStore = writable<Set<string>>(new Set());
   temporaryFilterKeysStore = writable<Map<string, boolean>>(new Map());
 
   // Fires when a global filter mutation is committed (via actions or clearAllFilters).
@@ -345,18 +346,18 @@ export class FilterManager {
       });
     }
     this.requiredFilterKeysStore.set(requiredKeys);
+    this.defaultRequiredFilterKeysStore.set(new Set(requiredKeys));
 
-    if (pinnedFilters || requiredKeys.size > 0) {
+    // Pinned and required are tracked independently. convertToUIFilters renders
+    // a filter as visible whenever it's pinned OR required, so we don't fold
+    // required into the pinned set here. Doing so would mean toggling required
+    // off in the UI also drops the pin.
+    if (pinnedFilters) {
       const pinnedKeys = new Set<string>();
-
-      pinnedFilters?.forEach((filterName) => {
+      pinnedFilters.forEach((filterName) => {
         const key = resolveFilterKey(filterName);
         if (key) pinnedKeys.add(key);
       });
-
-      // Required filters are implicitly pinned.
-      requiredKeys.forEach((key) => pinnedKeys.add(key));
-
       this.pinnedFilterKeysStore.set(pinnedKeys);
       this.defaultPinnedFilterKeysStore.set(new Set(pinnedKeys));
     }
@@ -558,12 +559,15 @@ export class FilterManager {
 
     // Sorting to ensure that pills don't jump around unnecessarily in the UI
     // Can be optimized - bgh
+    const stickyKeys = Array.from(
+      new Set([...requiredFilters, ...pinnedFilters]),
+    );
     const sortedDimensionMap = new Map(
       Array.from(merged.dimensionFilters.entries()).sort((a, b) => {
         return sortMeasuresOrDimensions(
           a[0],
           b[0],
-          Array.from(pinnedFilters),
+          stickyKeys,
           Array.from(temporaryFilterKeys.keys()),
           fullFilterString,
         );
@@ -575,7 +579,7 @@ export class FilterManager {
         return sortMeasuresOrDimensions(
           a[0],
           b[0],
-          Array.from(pinnedFilters),
+          stickyKeys,
           Array.from(temporaryFilterKeys.keys()),
           fullFilterString,
         );
@@ -792,6 +796,23 @@ export class FilterManager {
         return pinned;
       });
     },
+    toggleFilterRequired: (name: string, metricsViewNames: string[]) => {
+      const key = getLookupKey(metricsViewNames, name);
+      this.requiredFilterKeysStore.update((required) => {
+        if (required.has(key)) {
+          required.delete(key);
+        } else {
+          required.add(key);
+        }
+        return required;
+      });
+      // Required pills render via either pinned or required, so clear any
+      // temporary-flag state so the pill doesn't accidentally collapse.
+      this.temporaryFilterKeysStore.update((tempFilters) => {
+        tempFilters.delete(key);
+        return tempFilters;
+      });
+    },
   };
 
   checkTemporaryFilter = (
@@ -878,27 +899,27 @@ export class FilterManager {
 
 /**
  * Sorts filter items with the following priority:
- * 1. Pinned items, following the order of the yaml
+ * 1. Sticky items (required or pinned), following their order in stickyKeys
  * 2. Regular filter items, following their appearance in the full filter string
  * 3. Temporary items
  */
 function sortMeasuresOrDimensions(
   aKey: string,
   bKey: string,
-  pinnedFilters: string[],
+  stickyKeys: string[],
   temporaryFilterKeys: string[],
   fullFilterString: string,
 ): number {
-  const isAPinned = pinnedFilters.includes(aKey);
-  const isBPinned = pinnedFilters.includes(bKey);
+  const isASticky = stickyKeys.includes(aKey);
+  const isBSticky = stickyKeys.includes(bKey);
   const isATemporary = temporaryFilterKeys.includes(aKey);
   const isBTemporary = temporaryFilterKeys.includes(bKey);
 
-  if (isAPinned && isBPinned) {
-    return pinnedFilters.indexOf(aKey) - pinnedFilters.indexOf(bKey);
+  if (isASticky && isBSticky) {
+    return stickyKeys.indexOf(aKey) - stickyKeys.indexOf(bKey);
   }
-  if (isAPinned !== isBPinned) {
-    return isAPinned ? -1 : 1;
+  if (isASticky !== isBSticky) {
+    return isASticky ? -1 : 1;
   }
 
   if (isATemporary && isBTemporary) {

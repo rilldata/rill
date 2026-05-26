@@ -19,6 +19,9 @@
   export let toggleFilterPin:
     | FilterManager["actions"]["toggleFilterPin"]
     | undefined = undefined;
+  export let toggleFilterRequired:
+    | FilterManager["actions"]["toggleFilterRequired"]
+    | undefined = undefined;
   export let onRemove: () => void;
   export let onApply: (params: {
     dimension: string;
@@ -28,6 +31,7 @@
 
   let open = openOnMount && !filterData.filter;
   let curPinned = filterData.pinned;
+  let curRequired = filterData.required;
 
   $: ({
     filter,
@@ -48,6 +52,9 @@
   onOpenChange={() => {
     if (open && pinned !== curPinned) {
       toggleFilterPin?.(name, metricsViewNames);
+    }
+    if (open && required !== curRequired) {
+      toggleFilterRequired?.(name, metricsViewNames);
     }
   }}
 >
@@ -113,10 +120,15 @@
         if (pinned !== curPinned) {
           toggleFilterPin?.(name, metricsViewNames);
         }
+        if (required !== curRequired) {
+          toggleFilterRequired?.(name, metricsViewNames);
+        }
         onApply(params);
       }}
       bind:pinned={curPinned}
+      bind:required={curRequired}
       showPinControl={!!toggleFilterPin}
+      showRequiredControl={!!toggleFilterRequired}
       {side}
     />
   {/if}

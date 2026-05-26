@@ -194,15 +194,25 @@ export class CanvasEntity {
         this.defaultUrlParamsStore,
         this.filterManager.pinnedFilterKeysStore,
         this.filterManager.defaultPinnedFilterKeysStore,
+        this.filterManager.requiredFilterKeysStore,
+        this.filterManager.defaultRequiredFilterKeysStore,
       ],
       ([
         $searchParams,
         $defaultUrlParams,
         pinnedFilters,
         defaultPinnedFilterKeys,
+        requiredFilters,
+        defaultRequiredFilterKeys,
       ]) => {
         if (
           defaultPinnedFilterKeys.symmetricDifference(pinnedFilters).size > 0
+        ) {
+          return false;
+        }
+        if (
+          defaultRequiredFilterKeys.symmetricDifference(requiredFilters).size >
+          0
         ) {
           return false;
         }
@@ -364,30 +374,25 @@ export class CanvasEntity {
     const pinnedFilters = get(this.filterManager.pinnedFilterKeysStore);
     const requiredFilters = get(this.filterManager.requiredFilterKeysStore);
 
-    // Required filters are implicitly pinned at runtime; persist them only under
-    // `filters.required` to avoid duplicating them in `filters.pinned`.
-    const genericPinnedKeys = Array.from(pinnedFilters)
-      .filter((f) => !requiredFilters.has(f))
-      .map((f) => f.split("::")[1]);
+    // Persist pinned and required independently. Render-time treats a filter as
+    // visible whenever it's in either set, so we don't dedupe here: doing so
+    // would silently drop the pin flag if a user later toggled required off.
+    const pinnedNames = Array.from(pinnedFilters).map((f) => f.split("::")[1]);
+    const requiredNames = Array.from(requiredFilters).map(
+      (f) => f.split("::")[1],
+    );
 
-    if (genericPinnedKeys.length > 0) {
-      yaml.setIn(["filters", "pinned"], genericPinnedKeys);
-    } else {
+    setOrDeleteFilterList(yaml, "pinned", pinnedNames);
+    setOrDeleteFilterList(yaml, "required", requiredNames);
+
+    if (
+      yaml.get("filters") instanceof YAMLMap &&
+      (yaml.get("filters") as YAMLMap).items.length === 0
+    ) {
       try {
-        yaml.deleteIn(["filters", "pinned"]);
+        yaml.deleteIn(["filters"]);
       } catch {
         // no-op
-      }
-
-      if (
-        yaml.get("filters") instanceof YAMLMap &&
-        yaml.get("filters").items.length === 0
-      ) {
-        try {
-          yaml.deleteIn(["filters"]);
-        } catch {
-          // no-op
-        }
       }
     }
 
@@ -845,6 +850,22 @@ function getDefaults(defaultPreset: V1CanvasPreset) {
   );
 
   return defaultSearchParams;
+}
+
+function setOrDeleteFilterList(
+  yaml: ReturnType<typeof parseDocument>,
+  key: "pinned" | "required",
+  names: string[],
+) {
+  if (names.length > 0) {
+    yaml.setIn(["filters", key], names);
+  } else {
+    try {
+      yaml.deleteIn(["filters", key]);
+    } catch {
+      // no-op
+    }
+  }
 }
 
 const customKeySort = (
