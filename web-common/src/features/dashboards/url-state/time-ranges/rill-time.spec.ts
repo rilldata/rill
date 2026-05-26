@@ -220,49 +220,6 @@ describe("rill time", () => {
       ],
 
       ["inf", "All time", false, undefined, undefined],
-
-      [
-        "7D offset -1P",
-        "Last 7 days",
-        false,
-        V1TimeGrain.TIME_GRAIN_DAY,
-        undefined,
-      ],
-      [
-        "7D offset -1M",
-        "Last 7 days",
-        false,
-        V1TimeGrain.TIME_GRAIN_DAY,
-        undefined,
-      ],
-      [
-        "7D as of watermark/D offset -1P",
-        "Last 7 days",
-        true,
-        V1TimeGrain.TIME_GRAIN_DAY,
-        undefined,
-      ],
-      [
-        "7D as of watermark/D+1D offset -1M",
-        "Last 7 days",
-        false,
-        V1TimeGrain.TIME_GRAIN_DAY,
-        undefined,
-      ],
-      [
-        "7D tz UTC offset -1P",
-        "Last 7 days",
-        false,
-        V1TimeGrain.TIME_GRAIN_DAY,
-        undefined,
-      ],
-      [
-        "2025-02-20T01:23:45Z,2025-07-15T02:34:50Z offset -1P",
-        "Custom",
-        false,
-        V1TimeGrain.TIME_GRAIN_SECOND,
-        undefined,
-      ],
     ];
 
     const compiledGrammar = nearley.Grammar.fromCompiled(grammar);
@@ -303,22 +260,6 @@ describe("rill time", () => {
         const rt = parseRillTime(rillTime);
         overrideRillTimeRef(rt, refOverride);
         expect(rt.toString(), updatedRillTime);
-      });
-    }
-  });
-
-  describe("offset and tz ordering", () => {
-    const Cases: [rillTime: string, serialized: string][] = [
-      ["7D tz UTC offset -1P", "7D tz UTC offset -1P"],
-      ["7D offset -1P tz UTC", "7D tz UTC offset -1P"],
-      ["7D offset +2D", "7D offset +2D"],
-      ["7D offset -1P", "7D offset -1P"],
-    ];
-
-    for (const [rillTime, serialized] of Cases) {
-      it(rillTime, () => {
-        const rt = parseRillTime(rillTime);
-        expect(rt.toString()).toEqual(serialized);
       });
     }
   });

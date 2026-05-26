@@ -37,9 +37,6 @@ export function enhanceCitationLinks(
     const shouldUseGoto = isLocalLink || isPartialLink;
     if (!shouldUseGoto) return;
 
-    // Fallback path for clicks that land before the async content rewrite completes:
-    // map the citation URL on demand. After the rewrite, the mapper is a no-op on
-    // the already-translated href.
     e.preventDefault();
     void goto(mappedHref);
   }

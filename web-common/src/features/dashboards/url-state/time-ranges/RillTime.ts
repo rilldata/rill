@@ -32,13 +32,10 @@ export type RillTimeAsOfLabel = {
   offset: number;
 };
 
-export type RillOffset = RillPreviousPeriodOffset | RillGrainPointInTimePart;
-
 export class RillTime {
   public isComplete: boolean = false;
   public timezone: string | undefined;
   public anchorOverrides: RillPointInTime[] = [];
-  public offset: RillOffset | undefined;
 
   public readonly rangeGrain: V1TimeGrain | undefined;
   public byGrain: V1TimeGrain | undefined;
@@ -67,11 +64,6 @@ export class RillTime {
 
   public withTimezone(timezone: string) {
     this.timezone = timezone;
-    return this;
-  }
-
-  public withOffset(offset: RillOffset) {
-    this.offset = offset;
     return this;
   }
 
@@ -122,10 +114,6 @@ export class RillTime {
 
     if (this.timezone) {
       timeRange += ` tz ${this.timezone}`;
-    }
-
-    if (this.offset) {
-      timeRange += ` offset ${this.offset.toString()}`;
     }
 
     return timeRange;
@@ -740,17 +728,6 @@ export class RillAbsoluteTime implements RillPointInTimeVariant {
 
   public toString() {
     return this.timeStr;
-  }
-}
-
-export class RillPreviousPeriodOffset {
-  public constructor(
-    public readonly prefix: string,
-    public readonly num: number,
-  ) {}
-
-  public toString() {
-    return `${this.prefix}${this.num}P`;
   }
 }
 

@@ -89,7 +89,7 @@ export function mapMetricsResolverQueryToUrl(
     exploreSpecsMap,
   }: MetricsViewAndExploreSpecs,
   messages: V1Message[],
-): string {
+) {
   let query: MetricsResolverQuery;
   const isLegacyCitationUrl =
     LEGACY_DASHBOARD_CITATION_URL_PATHNAME_REGEX.test(url.pathname) &&

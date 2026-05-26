@@ -21,17 +21,14 @@
     RillGrainPointInTime,
     RillGrainPointInTimePart,
     RillAbsoluteTime,
-    RillPreviousPeriodOffset,
   } from "./RillTime.ts"
 %}
 
 rill_time => new_rill_time {% id %}
            | old_rill_time {% id %}
 
-new_rill_time => interval_with_grain trailing_modifier:* {% ([rt, modifiers]) => modifiers.reduce((acc, mod) => mod(acc), rt) %}
-
-trailing_modifier => _ "tz" _ timezone_modifier  {% ([, , , tz]) => (rt) => rt.withTimezone(tz) %}
-                   | _ "offset"i _ offset_value  {% ([, , , offset]) => (rt) => rt.withOffset(offset) %}
+new_rill_time => interval_with_grain                            {% id %}
+               | interval_with_grain _ "tz" _ timezone_modifier {% ([rt, , , , tz]) => rt.withTimezone(tz) %}
 
 interval_with_grain => interval_with_anchor_override _ "by"i _ grain {% ([rt, , , , grain]) => rt.withGrain(grain) %}
                      | interval_with_anchor_override                 {% id %}
@@ -71,10 +68,6 @@ point_in_time_variants => grain_point_in_time   {% id %}
 
 grain_point_in_time      => grain_point_in_time_part:+ {% ([parts]) => new RillGrainPointInTime([...parts]) %}
 grain_point_in_time_part => prefix _ grain_duration    {% ([prefix, _, grains]) => new RillGrainPointInTimePart(prefix, grains) %}
-
-offset_value    => previous_period           {% id %}
-                 | grain_point_in_time_part  {% id %}
-previous_period => prefix _ num "P"i         {% ([prefix, _, num]) => new RillPreviousPeriodOffset(prefix, num) %}
 
 labeled_point_in_time => "earliest"i  {% RillLabelledPointInTime.postProcessor %}
                        | "latest"i    {% RillLabelledPointInTime.postProcessor %}
