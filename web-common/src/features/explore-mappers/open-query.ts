@@ -54,11 +54,11 @@ export async function openQuery({
     );
 
     // Convert query to ExploreState
-    const exploreState = await mapMetricsResolverQueryToDashboard(
-      client,
+    const exploreState = mapMetricsResolverQueryToDashboard(
       metricsViewSpec,
       exploreSpec,
       query,
+      [], // TODO
     );
 
     // Generate the final explore URL

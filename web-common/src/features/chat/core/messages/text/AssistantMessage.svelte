@@ -1,8 +1,6 @@
 <!-- Renders assistant responses from router_agent. -->
 <script lang="ts">
-  import { getMetricsResolverQueryToUrlMapperStore } from "@rilldata/web-common/features/chat/core/messages/text/citation-url-mapper.ts";
   import { enhanceCitationLinks } from "@rilldata/web-common/features/chat/core/messages/text/enhance-citation-links.ts";
-  import { rewriteCitationUrls } from "@rilldata/web-common/features/chat/core/messages/text/rewrite-citation-urls.ts";
   import Markdown from "../../../../../components/markdown/Markdown.svelte";
   import type { Conversation } from "../../conversation";
   import FeedbackButtons from "../../feedback/FeedbackButtons.svelte";
@@ -16,25 +14,16 @@
   $: message = block.message;
   $: messageId = message.id ?? "";
 
-  const mapperStore = getMetricsResolverQueryToUrlMapperStore(conversation);
-
   // Safety net: strip wrapper if the LLM wraps the entire response in ```markdown fences
-  $: rawContent = extractMessageText(message).replace(
+  $: content = extractMessageText(message).replace(
     /^```markdown\n([\s\S]*)\n```$/,
     "$1",
   );
-  $: contentPromise = $mapperStore.data
-    ? rewriteCitationUrls(rawContent, $mapperStore.data)
-    : Promise.resolve(rawContent);
 </script>
 
 <div class="chat-message">
   <div class="chat-message-content" use:enhanceCitationLinks={conversation}>
-    {#await contentPromise}
-      <Markdown content={rawContent} />
-    {:then content}
-      <Markdown {content} />
-    {/await}
+    <Markdown {content} />
   </div>
   <div class="chat-message-actions">
     <FeedbackButtons

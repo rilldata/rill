@@ -29,8 +29,11 @@ export function enhanceCitationLinks(
     const href = e.target.getAttribute("href") ?? "";
     const parsedUrl = URL.parse(href);
 
+    const mapper = get(mapperStore).data;
+    const mappedHref = parsedUrl && mapper ? mapper(parsedUrl) : href;
+
     const isLocalLink = window.location.origin === parsedUrl?.origin;
-    const isPartialLink = href.startsWith("/");
+    const isPartialLink = mappedHref.startsWith("/");
     const shouldUseGoto = isLocalLink || isPartialLink;
     if (!shouldUseGoto) return;
 
@@ -38,12 +41,7 @@ export function enhanceCitationLinks(
     // map the citation URL on demand. After the rewrite, the mapper is a no-op on
     // the already-translated href.
     e.preventDefault();
-    void (async () => {
-      const mapper = get(mapperStore).data;
-      const mappedHref =
-        parsedUrl && mapper ? await mapper(parsedUrl) : href;
-      void goto(mappedHref);
-    })();
+    void goto(mappedHref);
   }
 
   node.addEventListener("click", handleClick);

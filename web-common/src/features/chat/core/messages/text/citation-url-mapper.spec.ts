@@ -18,7 +18,6 @@ import {
   MessageType,
   ToolName,
 } from "@rilldata/web-common/features/chat/core/types.ts";
-import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
 const MetricsResolverQuery = {
   metrics_view: "AdBids_metrics",
@@ -133,9 +132,9 @@ describe("mapMetricsResolverQueryToUrlParams", () => {
   ];
 
   for (const { title, url, expectedUrl } of testCases) {
-    it(title, async () => {
-      const result = await mapMetricsResolverQueryToUrl(
-        { instanceId: "" } as RuntimeClient,
+    it(title, () => {
+      const result = mapMetricsResolverQueryToUrl(
+        "",
         new URL(url),
         mockPage,
         MockMetricsViewAndExploreSpecs,

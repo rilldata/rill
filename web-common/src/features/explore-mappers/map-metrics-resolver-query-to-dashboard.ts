@@ -37,14 +37,12 @@ import type {
   TimeRange,
 } from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
 import type { SortingState } from "tanstack-table-8-svelte-5";
-import { resolveTimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/rill-time-ranges.ts";
-import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
-export async function mapMetricsResolverQueryToDashboard(
-  runtimeClient: RuntimeClient,
+export function mapMetricsResolverQueryToDashboard(
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
   query: MetricsResolverQuery,
+  resolvedTimeRanges: TimeRange[],
 ) {
   // Build partial ExploreState directly from Query
   const partialExploreState: Partial<ExploreState> = {};
@@ -80,7 +78,7 @@ export async function mapMetricsResolverQueryToDashboard(
   }
 
   // Convert time ranges
-  await mapTimeRanges(runtimeClient, exploreSpec, partialExploreState, query);
+  mapTimeRanges(partialExploreState, query, resolvedTimeRanges);
 
   // Convert where filter
   if (query.where) {
@@ -187,42 +185,41 @@ function getValidDimensions(
   };
 }
 
-async function mapTimeRanges(
-  runtimeClient: RuntimeClient,
-  exploreSpec: V1ExploreSpec,
+function mapTimeRanges(
   partialExploreState: Partial<ExploreState>,
   query: MetricsResolverQuery,
+  resolvedTimeRanges: TimeRange[],
 ) {
   partialExploreState.selectedTimeRange =
     mapResolverTimeRangeToDashboardControls(query.time_range);
+  fillInResolvedTimeRange(
+    partialExploreState.selectedTimeRange,
+    resolvedTimeRanges,
+  );
+
   if (query.comparison_time_range) {
     partialExploreState.selectedComparisonTimeRange =
       mapResolverTimeRangeToDashboardControls(query.comparison_time_range);
     partialExploreState.showTimeComparison = true;
-  }
-  // Resolve start/end by making a network call.
-  [
-    partialExploreState.selectedTimeRange,
-    partialExploreState.selectedComparisonTimeRange,
-  ] = await resolveTimeRanges(
-    runtimeClient,
-    exploreSpec,
-    [
-      partialExploreState.selectedTimeRange,
+
+    fillInResolvedTimeRange(
       partialExploreState.selectedComparisonTimeRange,
-    ],
-    partialExploreState.selectedTimezone,
-    undefined,
-    partialExploreState.selectedTimeDimension,
+      resolvedTimeRanges,
+    );
+  }
+}
+
+function fillInResolvedTimeRange(
+  dashboardTimeRange: DashboardTimeControls,
+  resolvedTimeRanges: TimeRange[],
+) {
+  const resolvedTimeRange = resolvedTimeRanges.find(
+    (tr) => tr.expression === dashboardTimeRange.name,
   );
-  // Set time ranges to custom so that
-  if (partialExploreState.selectedTimeRange) {
-    partialExploreState.selectedTimeRange.name = TimeRangePreset.CUSTOM;
-  }
-  if (partialExploreState.selectedComparisonTimeRange) {
-    partialExploreState.selectedComparisonTimeRange.name =
-      TimeRangePreset.CUSTOM;
-  }
+  if (!resolvedTimeRange) return;
+  dashboardTimeRange.name = TimeRangePreset.CUSTOM;
+  dashboardTimeRange.start = new Date(resolvedTimeRange.start!);
+  dashboardTimeRange.end = new Date(resolvedTimeRange.end!);
 }
 
 function mapResolverTimeRangeToDashboardControls(

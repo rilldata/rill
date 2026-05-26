@@ -5,7 +5,10 @@ import {
   type MetricsViewAndExploreSpecs,
 } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
-import type { Schema as MetricsResolverQuery } from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
+import type {
+  Schema as MetricsResolverQuery,
+  TimeRange,
+} from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
 import { getQueryFromUrl } from "@rilldata/web-common/features/chat/core/citation-url-utils.ts";
 import { mapMetricsResolverQueryToDashboard } from "@rilldata/web-common/features/explore-mappers/map-metrics-resolver-query-to-dashboard.ts";
 import { maybeGetExplorePageUrlSearchParams } from "@rilldata/web-common/features/explore-mappers/utils.ts";
@@ -18,11 +21,9 @@ import {
   MessageType,
   ToolName,
 } from "@rilldata/web-common/features/chat/core/types.ts";
-import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
-export const LEGACY_DASHBOARD_CITATION_URL_PATHNAME_REGEX =
-  /\/-\/open-query\/?$/;
-export const DASHBOARD_CITATION_URL_PATHNAME_REGEX =
+const LEGACY_DASHBOARD_CITATION_URL_PATHNAME_REGEX = /\/-\/open-query\/?$/;
+const DASHBOARD_CITATION_URL_PATHNAME_REGEX =
   /\/-\/ai\/[^/]+\/message\/([^/]+)\/-\/open\/?$/;
 
 /**
@@ -36,7 +37,7 @@ export function getMetricsResolverQueryToUrlMapperStore(
 ): Readable<{
   error: Error | null;
   isLoading: boolean;
-  data?: (url: URL) => Promise<string>;
+  data?: (url: URL) => string;
 }> {
   const resourcesQuery = createQuery(
     getMetricsViewAndExploreSpecsQueryOptions(conversation.runtimeClient),
@@ -60,9 +61,9 @@ export function getMetricsResolverQueryToUrlMapperStore(
       const metricsViewAndExploreSpecs = resourcesResp.data;
       const messages = conversationResp.data?.messages ?? [];
 
-      const mapper = (url: URL): Promise<string> =>
+      const mapper = (url: URL): string =>
         mapMetricsResolverQueryToUrl(
-          conversation.runtimeClient,
+          conversation.runtimeClient.instanceId,
           url,
           page,
           metricsViewAndExploreSpecs,
@@ -78,8 +79,8 @@ export function getMetricsResolverQueryToUrlMapperStore(
   );
 }
 
-export async function mapMetricsResolverQueryToUrl(
-  runtimeClient: RuntimeClient,
+export function mapMetricsResolverQueryToUrl(
+  instanceId: string,
   url: URL,
   pageState: Page,
   {
@@ -88,11 +89,14 @@ export async function mapMetricsResolverQueryToUrl(
     exploreSpecsMap,
   }: MetricsViewAndExploreSpecs,
   messages: V1Message[],
-): Promise<string> {
+): string {
   let query: MetricsResolverQuery;
   const isLegacyCitationUrl =
     LEGACY_DASHBOARD_CITATION_URL_PATHNAME_REGEX.test(url.pathname) &&
     url.searchParams.has("query");
+
+  const resolvedTimeRanges: TimeRange[] = [];
+
   if (isLegacyCitationUrl) {
     try {
       query = getQueryFromUrl(url);
@@ -114,6 +118,16 @@ export async function mapMetricsResolverQueryToUrl(
       callMessage.tool === ToolName.QUERY_METRICS_VIEW;
     if (!isMetricsQueryCall) return url.href;
     query = callMessage.content?.[0]?.toolCall?.input;
+
+    const resultMessage = messages.find((m) => m.parentId === callId);
+    if (resultMessage?.contentData) {
+      try {
+        const resultData = JSON.parse(resultMessage.contentData);
+        resolvedTimeRanges.push(...resultData.resolved_time_ranges);
+      } catch (e) {
+        console.error("Failed to parse result message JSON", e);
+      }
+    }
   }
 
   const metricsViewName = query.metrics_view ?? "";
@@ -123,15 +137,15 @@ export async function mapMetricsResolverQueryToUrl(
   const exploreSpec = exploreSpecsMap.get(exploreName);
   if (!exploreSpec) return url.href;
 
-  const partialExploreState = await mapMetricsResolverQueryToDashboard(
-    runtimeClient,
+  const partialExploreState = mapMetricsResolverQueryToDashboard(
     metricsViewSpec,
     exploreSpec,
     query,
+    resolvedTimeRanges,
   );
 
   const urlSearchParams = maybeGetExplorePageUrlSearchParams(
-    runtimeClient.instanceId,
+    instanceId,
     partialExploreState,
     metricsViewSpec,
     exploreSpec,
