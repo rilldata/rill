@@ -62,7 +62,7 @@
         />
       {/if}
     </svg>
-    <span class="truncate flex-1 min-w-0 text-fg-primary text-sm">
+    <span class="truncate flex-1 min-w-0 text-fg-primary">
       {tag.name}
     </span>
     <span
