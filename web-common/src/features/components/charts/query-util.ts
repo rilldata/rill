@@ -25,6 +25,7 @@ export function canQueryWithTimeRange(
   if (requiresTimeRange) return hasTimeRange;
   if (hasTimeSeries === false) return true;
   if (hasTimeSeries === true) return hasTimeRange;
+  // hasTimeSeries === undefined: metrics view spec not yet resolved, block the query.
   return false;
 }
 
