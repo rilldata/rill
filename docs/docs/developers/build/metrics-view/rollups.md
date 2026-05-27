@@ -72,7 +72,7 @@ rollups:
 
 ### Declaring Coverage with `data_time_range`
 
-By default Rill discovers a rollup's time coverage at query time by running `SELECT min(time), max(time)` against the rollup table. If you'd rather declare coverage statically — to skip the probe, or to scope a rollup to a specific window — set `data_time_range` on the rollup. The value is a [rilltime expression](/reference/time-syntax/time-syntax):
+By default Rill discovers a rollup's time coverage at query time by running `SELECT min(time), max(time)` against the rollup table. If you'd rather declare coverage statically — to skip the probe, or to scope a rollup to a specific window — set `data_time_range` on the rollup. The value is a [rilltime expression](/reference/time-syntax):
 
 ```yaml
 rollups:
