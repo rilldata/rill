@@ -63,11 +63,16 @@ func Run(ctx context.Context, ver version.Version) {
 		os.Exit(1)
 	}
 
-	// Check version.
+	// Crude check to detect if we may be running as Rill Cloud, namely if the command is `rill admin ...` or `rill runtime ...`.
+	isCloud := len(os.Args) >= 2 && (os.Args[1] == "admin" || os.Args[1] == "runtime")
+
+	// Check version (if not running as a cloud service).
 	// NOTE: Not using PersistentPreRunE due to this issue: https://github.com/spf13/cobra/issues/216.
-	err = ch.CheckVersion(ctx)
-	if err != nil {
-		ch.PrintfWarn("Warning: version check failed: %v\n\n", err)
+	if !isCloud {
+		err = ch.CheckVersion(ctx)
+		if err != nil {
+			ch.PrintfWarn("Warning: version check failed: %v\n\n", err)
+		}
 	}
 
 	// Print warning if currently acting as an assumed user

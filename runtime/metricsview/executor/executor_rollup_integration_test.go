@@ -1141,6 +1141,160 @@ explore:
 			require.Equal(t, float64(7440), rows[2].impressions, "March")
 		})
 
+		t.Run("comparison_query_uses_rollup", func(t *testing.T) {
+			// A comparison query with both ranges grain-aligned to a rollup should route to it.
+			e := newRollupTestExecutor(t, rt, instanceID)
+			defer e.Close()
+
+			qry := &metricsview.Query{
+				Dimensions: []metricsview.Dimension{
+					{Name: "timestamp", Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainMonth}}},
+				},
+				Measures: []metricsview.Measure{
+					{Name: "total_impressions"},
+					{
+						Name: "prev_impressions",
+						Compute: &metricsview.MeasureCompute{
+							ComparisonValue: &metricsview.MeasureComputeComparisonValue{Measure: "total_impressions"},
+						},
+					},
+					{
+						Name: "impressions_delta",
+						Compute: &metricsview.MeasureCompute{
+							ComparisonDelta: &metricsview.MeasureComputeComparisonDelta{Measure: "total_impressions"},
+						},
+					},
+				},
+				TimeRange: &metricsview.TimeRange{
+					Start: time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+					End:   time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC),
+				},
+				ComparisonTimeRange: &metricsview.TimeRange{
+					Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+					End:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+				},
+			}
+			table := queryAndGetTable(t, e, qry)
+			// Monthly is coarsest eligible for both ranges
+			require.Equal(t, rollupTestMonthTable, table)
+		})
+
+		t.Run("comparison_misaligned_falls_to_base", func(t *testing.T) {
+			// Comparison range start is mid-day (not aligned to any day+ grain); all rollups rejected.
+			e := newRollupTestExecutor(t, rt, instanceID)
+			defer e.Close()
+
+			qry := &metricsview.Query{
+				Measures: []metricsview.Measure{
+					{Name: "total_impressions"},
+					{
+						Name: "prev_impressions",
+						Compute: &metricsview.MeasureCompute{
+							ComparisonValue: &metricsview.MeasureComputeComparisonValue{Measure: "total_impressions"},
+						},
+					},
+				},
+				TimeRange: &metricsview.TimeRange{
+					Start: time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+					End:   time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC),
+				},
+				ComparisonTimeRange: &metricsview.TimeRange{
+					Start: time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC), // mid-day
+					End:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+				},
+			}
+			table := queryAndGetTable(t, e, qry)
+			require.Equal(t, rollupTestBaseTable, table)
+		})
+
+		t.Run("comparison_not_covered_falls_to_base", func(t *testing.T) {
+			// Weekly rollup only has Jan+Feb; comparison range is in Mar — uncovered, weekly rejected.
+			// Daily and monthly do cover March, so monthly is selected.
+			e := newRollupTestExecutor(t, rt, instanceID)
+			defer e.Close()
+
+			qry := &metricsview.Query{
+				Dimensions: []metricsview.Dimension{
+					{Name: "timestamp", Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainMonth}}},
+				},
+				Measures: []metricsview.Measure{
+					{Name: "total_impressions"},
+					{
+						Name: "prev_impressions",
+						Compute: &metricsview.MeasureCompute{
+							ComparisonValue: &metricsview.MeasureComputeComparisonValue{Measure: "total_impressions"},
+						},
+					},
+				},
+				TimeRange: &metricsview.TimeRange{
+					Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+					End:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+				},
+				ComparisonTimeRange: &metricsview.TimeRange{
+					Start: time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC),
+					End:   time.Date(2024, 4, 1, 0, 0, 0, 0, time.UTC),
+				},
+			}
+			table := queryAndGetTable(t, e, qry)
+			require.Equal(t, rollupTestMonthTable, table)
+		})
+
+		t.Run("monthly_comparison_matches_base", func(t *testing.T) {
+			// Compare Feb (rollup) vs Jan (rollup) at month grain: deltas and ratios must match
+			// a direct query against the base table.
+			e := newRollupTestExecutor(t, rt, instanceID)
+			defer e.Close()
+			ctx := context.Background()
+
+			qry := &metricsview.Query{
+				Dimensions: []metricsview.Dimension{
+					{Name: "timestamp", Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainMonth}}},
+				},
+				Measures: []metricsview.Measure{
+					{Name: "total_impressions"},
+					{
+						Name: "prev_impressions",
+						Compute: &metricsview.MeasureCompute{
+							ComparisonValue: &metricsview.MeasureComputeComparisonValue{Measure: "total_impressions"},
+						},
+					},
+					{
+						Name: "impressions_delta",
+						Compute: &metricsview.MeasureCompute{
+							ComparisonDelta: &metricsview.MeasureComputeComparisonDelta{Measure: "total_impressions"},
+						},
+					},
+				},
+				Sort: []metricsview.Sort{{Name: "timestamp"}},
+				TimeRange: &metricsview.TimeRange{
+					Start: time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+					End:   time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC),
+				},
+				ComparisonTimeRange: &metricsview.TimeRange{
+					Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+					End:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+				},
+			}
+
+			res, err := e.Query(ctx, qry, nil)
+			require.NoError(t, err)
+			defer res.Close()
+
+			// Verify the rollup was used, then read the row.
+			require.Equal(t, rollupTestMonthTable, e.LatestQueryTable())
+
+			require.True(t, res.Next())
+			var ts time.Time
+			var base, prev, delta float64
+			require.NoError(t, res.Scan(&ts, &base, &prev, &delta))
+			require.False(t, res.Next())
+
+			// Jan: 744 hours * 10 = 7440 (prev); Feb: 696 hours * 10 = 6960 (base, 2024 leap year)
+			require.Equal(t, float64(6960), base, "Feb base impressions")
+			require.Equal(t, float64(7440), prev, "Jan prev impressions")
+			require.Equal(t, float64(-480), delta, "Feb - Jan delta")
+		})
+
 		t.Run("no_grain_with_filter_correctness", func(t *testing.T) {
 			e := newRollupTestExecutor(t, rt, instanceID)
 			defer e.Close()

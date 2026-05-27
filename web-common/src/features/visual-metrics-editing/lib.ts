@@ -1,7 +1,22 @@
 import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 import type { MetricsViewSpecDimension } from "@rilldata/web-common/runtime-client";
 import { writable } from "svelte/store";
-import type { YAMLMap } from "yaml";
+import { YAMLMap, YAMLSeq } from "yaml";
+
+function readTags(item?: YAMLMap<string, unknown>): string[] {
+  const raw = item?.get("tags");
+  if (!(raw instanceof YAMLSeq)) return [];
+  return raw.items
+    .map((node) => {
+      if (typeof node === "string") return node.trim();
+      if (node && typeof node === "object" && "value" in node) {
+        const v = (node as { value: unknown }).value;
+        return typeof v === "string" ? v.trim() : "";
+      }
+      return "";
+    })
+    .filter((t): t is string => !!t);
+}
 
 export const types: ItemType[] = ["measures", "dimensions"];
 
@@ -34,6 +49,7 @@ export class YAMLDimension {
   unnest: boolean | undefined;
   resourceName: string;
   type: "time" | "geo" | "categorical" | undefined;
+  tags: string[];
 
   constructor(
     item?: YAMLMap<string, string>,
@@ -50,6 +66,7 @@ export class YAMLDimension {
         : item?.get("unnest") === "true";
     this.resourceName = dimension?.name ?? "";
     this.type = item?.get("type") as "time" | "geo" | "categorical" | undefined;
+    this.tags = readTags(item);
   }
 }
 
@@ -63,6 +80,7 @@ export class YAMLMeasure {
   format_d3: string;
   format_preset: FormatPreset | "";
   type: "simple" | "derived" | "time_comparison" | undefined;
+  tags: string[];
 
   constructor(item?: YAMLMap<string, string>) {
     this.expression = item?.get("expression") ?? "";
@@ -80,6 +98,7 @@ export class YAMLMeasure {
       | "derived"
       | "time_comparison"
       | undefined;
+    this.tags = readTags(item);
   }
 }
 
