@@ -267,10 +267,10 @@ func TestRollupEligible_ComparisonTimeRange_StartNotAligned(t *testing.T) {
 	require.Equal(t, rejectStartNotAligned, reason)
 }
 
-func TestRollupEligible_ComparisonTimeRange_NonPrimaryTimeDim(t *testing.T) {
-	// Non-primary time dim on the comparison range is handled at the early-skip layer,
-	// not rollupEligible. Confirm rollupEligible itself rejects via rejectTimeDimensionMissing
-	// when the comparison range references a time dim that's not in the rollup.
+func TestRollupEligible_NonPrimaryTimeDim(t *testing.T) {
+	// rollupEligible defends against queries whose time ranges reference a dimension not in the rollup.
+	// The main and comparison ranges share the same TimeDimension by invariant, so a single check on
+	// TimeRange.TimeDimension covers both.
 	rollup := &runtimev1.MetricsViewSpec_Rollup{
 		Table:     "daily_rollup",
 		TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
@@ -279,13 +279,14 @@ func TestRollupEligible_ComparisonTimeRange_NonPrimaryTimeDim(t *testing.T) {
 	qry := &metricsview.Query{
 		Measures: []metricsview.Measure{{Name: "total_impressions"}},
 		TimeRange: &metricsview.TimeRange{
-			Start: time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
-			End:   time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC),
+			Start:         time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+			End:           time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC),
+			TimeDimension: "other_ts", // not in rollup
 		},
 		ComparisonTimeRange: &metricsview.TimeRange{
 			Start:         time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 			End:           time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
-			TimeDimension: "other_ts", // not in rollup
+			TimeDimension: "other_ts",
 		},
 	}
 	eligible, reason, err := rollupEligible(rollup, qry, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, nil, "timestamp", 0)
@@ -375,8 +376,8 @@ func TestRollupEligible_CountStillRejected(t *testing.T) {
 }
 
 func TestRewriteQueryForRollup_ComparisonTimeRange_NonPrimaryTimeDim(t *testing.T) {
-	// A comparison range referencing a non-primary time dimension must skip rollup routing
-	// at the early-skip layer (without needing to fetch timestamps).
+	// A query whose main and comparison ranges both reference a non-primary time dimension
+	// must skip rollup routing at the early-skip layer (without needing to fetch timestamps).
 	e := &Executor{
 		metricsView: &runtimev1.MetricsViewSpec{
 			Table:         "base_table",
@@ -391,6 +392,11 @@ func TestRewriteQueryForRollup_ComparisonTimeRange_NonPrimaryTimeDim(t *testing.
 	}
 	qry := &metricsview.Query{
 		Measures: []metricsview.Measure{{Name: "total_impressions"}},
+		TimeRange: &metricsview.TimeRange{
+			Start:         time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+			End:           time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC),
+			TimeDimension: "other_ts",
+		},
 		ComparisonTimeRange: &metricsview.TimeRange{
 			Start:         time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 			End:           time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
