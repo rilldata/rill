@@ -338,6 +338,33 @@ func validateChartFields(chartType string, spec map[string]any, mvSpec *runtimev
 				return fmt.Errorf("invalid y2 field: %w", err)
 			}
 		}
+
+	case "scatter_plot":
+		if xField, ok := pathutil.GetPath(spec, "x.field"); ok {
+			if err := validateField(availableFields, xField); err != nil {
+				return fmt.Errorf("invalid x field: %w", err)
+			}
+		}
+		if yField, ok := pathutil.GetPath(spec, "y.field"); ok {
+			if err := validateField(availableFields, yField); err != nil {
+				return fmt.Errorf("invalid y field: %w", err)
+			}
+		}
+		if dimensionField, ok := pathutil.GetPath(spec, "dimension.field"); ok {
+			if err := validateField(availableFields, dimensionField); err != nil {
+				return fmt.Errorf("invalid dimension field: %w", err)
+			}
+		}
+		if sizeField, ok := pathutil.GetPath(spec, "size.field"); ok {
+			if err := validateField(availableFields, sizeField); err != nil {
+				return fmt.Errorf("invalid size field: %w", err)
+			}
+		}
+		if colorField, ok := pathutil.GetPath(spec, "color.field"); ok {
+			if err := validateField(availableFields, colorField); err != nil {
+				return fmt.Errorf("invalid color field: %w", err)
+			}
+		}
 	}
 
 	return nil
@@ -1058,6 +1085,64 @@ rill_measures: special field
 }
 ` + "```" + `
 
+### 10. Scatter Plot (` + "`scatter_plot`" + `)
+**Use for:** Visualizing the relationship between two measures, with each point representing a data value. Points can be optionally colored by a dimension and sized by a measure. Useful for correlation analysis and identifying outliers across two numeric metrics.
+
+**Scatter-specific fields:**
+- ` + "`x`" + ` (required): Measure on the x-axis. Must be ` + "`type: quantitative`" + `.
+- ` + "`y`" + ` (required): Measure on the y-axis. Must be ` + "`type: quantitative`" + `.
+- ` + "`dimension`" + ` (optional): Nominal dimension; each distinct value renders as a separate point.
+- ` + "`size`" + ` (optional): Measure that controls the point radius. Must be ` + "`type: quantitative`" + `.
+- ` + "`color`" + ` (optional): Either a color string or a nominal dimension field object to color points by.
+
+Example Specification
+
+Field details:
+bids_metrics: metrics_view
+advertiser_name: dimension
+device_os: dimension
+total_bids: measure
+total_clicks: measure
+total_impressions: measure
+
+` + "```json" + `
+{
+  "chart_type": "scatter_plot",
+  "spec": {
+    "metrics_view": "bids_metrics",
+    "time_range": {
+      "start": "2024-01-01T00:00:00Z",
+      "end": "2024-12-31T23:59:59Z"
+    },
+    "x": {
+      "field": "total_bids",
+      "type": "quantitative",
+      "zeroBasedOrigin": false
+    },
+    "y": {
+      "field": "total_clicks",
+      "type": "quantitative",
+      "zeroBasedOrigin": false
+    },
+    "dimension": {
+      "field": "advertiser_name",
+      "limit": 10,
+      "type": "nominal"
+    },
+    "size": {
+      "field": "total_impressions",
+      "type": "quantitative"
+    },
+    "color": {
+      "field": "device_os",
+      "limit": 5,
+      "type": "nominal",
+      "legendOrientation": "top"
+    }
+  }
+}
+` + "```" + `
+
 ## Field Type Definitions
 
 ### Data Types
@@ -1144,6 +1229,7 @@ Choose the appropriate chart type based on your data and analysis goals:
 - **` + "`funnel_chart`" + `**: Visualizes conversion rates or stage-based processes
 - **Distribution patterns**: Use ` + "`heatmap`" + ` for density or correlation analysis
 - **Multi-measure comparison**: Prefer ` + "`stacked_bar`" + ` when comparing 3 or more related measures
+- **Two-measure relationships**: Use ` + "`scatter_plot`" + ` to explore correlation, clusters, or outliers between two numeric measures across a dimension's values
 
 
 ## Important Chart Configuration Notes and Requirements
@@ -1181,4 +1267,4 @@ Choose the appropriate chart type based on your data and analysis goals:
 
 ### Limitations
 - **Comparison measures**: Direct comparison measures like 'measure_name__delta_abs' or 'measure_name__delta_rel' are not allowed in the spec. Do not use such measures in the spec anywhere.
-- **Comparison chart types**: ` + "`comparison_time_range`" + ` is only supported for cartesian chart types (bar_chart, line_chart, stacked_bar, stacked_bar_normalized). It is NOT supported for donut_chart, pie_chart, funnel_chart, heatmap, combo_chart, or area_chart.`
+- **Comparison chart types**: ` + "`comparison_time_range`" + ` is only supported for cartesian chart types (bar_chart, line_chart, stacked_bar, stacked_bar_normalized). It is NOT supported for donut_chart, pie_chart, funnel_chart, heatmap, combo_chart, area_chart, or scatter_plot.`

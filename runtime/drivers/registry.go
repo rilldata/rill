@@ -117,6 +117,10 @@ type InstanceConfig struct {
 	AlertsFastStreamingRefreshCron string `mapstructure:"rill.alerts.fast_streaming_refresh_cron"`
 	// ParserSkipUpdatesIfParseErrors short-circuits project parser reconciliation when parse errors exist.
 	ParserSkipUpdatesIfParseErrors bool `mapstructure:"rill.parser.skip_updates_if_parse_errors"`
+	// AICompletionTimeoutSeconds is the maximum duration of a full AI completion request, which may include multiple LLM requests and tool calls.
+	AICompletionTimeoutSeconds uint32 `mapstructure:"rill.ai.completion_timeout_seconds"`
+	// AILLMTimeoutSeconds is the maximum duration of a single LLM completion request.
+	AILLMTimeoutSeconds uint32 `mapstructure:"rill.ai.llm_timeout_seconds"`
 	// AIDefaultQueryLimit is the default row limit applied to AI tool queries when no limit is specified.
 	AIDefaultQueryLimit int64 `mapstructure:"rill.ai.default_query_limit"`
 	// AIMaxQueryLimit is the maximum row limit allowed for AI tool queries.
@@ -202,6 +206,8 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		MetricsNullFillingImplementation:     "pushdown",
 		AlertsDefaultStreamingRefreshCron:    "0 0 * * *",    // Every 24 hours
 		AlertsFastStreamingRefreshCron:       "*/10 * * * *", // Every 10 minutes
+		AICompletionTimeoutSeconds:           60 * 10,        // 10 minutes
+		AILLMTimeoutSeconds:                  60 * 4,         // 4 minutes
 		AIDefaultQueryLimit:                  25,
 		AIMaxQueryLimit:                      250,
 		AIRequireTimeRange:                   true,
