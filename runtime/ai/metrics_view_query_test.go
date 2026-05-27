@@ -175,3 +175,82 @@ cache:
 	require.Equal(t, nil, res.Data[0][0])
 	require.Equal(t, nil, res.Data[0][1])
 }
+
+func TestMetricsViewQueryResolvedTimeRanges(t *testing.T) {
+	// Setup a metrics view with a time dimension. The watermark defaults to the max event_time, i.e. 2025-05-13T00:00:00Z.
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"test_data.sql": `
+SELECT '2025-05-10T00:00:00Z'::TIMESTAMP AS event_time, 'US' AS country, 100 AS revenue
+UNION ALL
+SELECT '2025-05-11T00:00:00Z'::TIMESTAMP AS event_time, 'US' AS country, 200 AS revenue
+UNION ALL
+SELECT '2025-05-12T00:00:00Z'::TIMESTAMP AS event_time, 'US' AS country, 300 AS revenue
+UNION ALL
+SELECT '2025-05-13T00:00:00Z'::TIMESTAMP AS event_time, 'US' AS country, 400 AS revenue
+`,
+			"test_metrics.yaml": `
+type: metrics_view
+model: test_data
+timeseries: event_time
+dimensions:
+- column: country
+measures:
+- name: total_revenue
+  expression: SUM(revenue)
+explore:
+  skip: true
+`,
+		},
+		Variables: map[string]string{
+			"rill.ai.require_time_range": "false",
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
+
+	s := newSession(t, rt, instanceID)
+
+	baseArgs := func() ai.QueryMetricsViewArgs {
+		return ai.QueryMetricsViewArgs{
+			"metrics_view": "test_metrics",
+			"dimensions":   []map[string]any{{"name": "country"}},
+			"measures":     []map[string]any{{"name": "total_revenue"}},
+		}
+	}
+
+	t.Run("no time range", func(t *testing.T) {
+		var res *ai.QueryMetricsViewResult
+		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.QueryMetricsViewName, &res, baseArgs())
+		require.NoError(t, err)
+		require.Nil(t, res.ResolvedTimeRanges)
+	})
+
+	t.Run("literal start/end time range", func(t *testing.T) {
+		args := baseArgs()
+		args["time_range"] = map[string]any{
+			"start": "2025-05-10T00:00:00Z",
+			"end":   "2025-05-14T00:00:00Z",
+		}
+		var res *ai.QueryMetricsViewResult
+		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.QueryMetricsViewName, &res, args)
+		require.NoError(t, err)
+		// Only expression-based time ranges are recorded in ResolvedTimeRanges.
+		require.Nil(t, res.ResolvedTimeRanges)
+	})
+
+	t.Run("expression time range and comparison", func(t *testing.T) {
+		args := baseArgs()
+		args["time_range"] = map[string]any{"expression": "1D as of watermark/D"}
+		args["comparison_time_range"] = map[string]any{"expression": "1D as of watermark/D offset -1D"}
+		var res *ai.QueryMetricsViewResult
+		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.QueryMetricsViewName, &res, args)
+		require.NoError(t, err)
+		require.Len(t, res.ResolvedTimeRanges, 2)
+		require.Equal(t, "1D as of watermark/D", res.ResolvedTimeRanges[0].Expression)
+		require.Equal(t, parseTestTime(t, "2025-05-12T00:00:00Z"), res.ResolvedTimeRanges[0].Start)
+		require.Equal(t, parseTestTime(t, "2025-05-13T00:00:00Z"), res.ResolvedTimeRanges[0].End)
+		require.Equal(t, "1D as of watermark/D offset -1D", res.ResolvedTimeRanges[1].Expression)
+		require.Equal(t, parseTestTime(t, "2025-05-11T00:00:00Z"), res.ResolvedTimeRanges[1].Start)
+		require.Equal(t, parseTestTime(t, "2025-05-12T00:00:00Z"), res.ResolvedTimeRanges[1].End)
+	})
+}

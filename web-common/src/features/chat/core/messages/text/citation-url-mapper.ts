@@ -124,7 +124,9 @@ export function mapMetricsResolverQueryToUrl(
 
     const resultMessage = messages.find((m) => m.parentId === callId);
     if (resultMessage?.contentData) {
-      resolvedTimeRanges.push(...getResolvedTimeRangesFromMessage(resultMessage));
+      resolvedTimeRanges.push(
+        ...getResolvedTimeRangesFromMessage(resultMessage),
+      );
     }
   }
 
