@@ -18,6 +18,7 @@ export interface Events {
   "start-chat": string;
   "rill-yaml-updated": void;
   "env-file-updated": string;
+  "remote-changes-detected": void;
 }
 
 export const eventBus = new EventEmitter<Events>();

@@ -3,6 +3,7 @@
   import { formatCredit } from "@rilldata/web-admin/features/billing/plans/utils.ts";
   import { getPlanCredits } from "@rilldata/web-admin/features/billing/plans/selectors.ts";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors.ts";
+  import { PricingDetailsCompact } from "@rilldata/web-common/features/billing/pricing-details.ts";
 
   let {
     organization,
@@ -24,7 +25,7 @@
 <PlanContainer badge="Pro Trial" description="$250 free credit">
   {#snippet info()}
     No time limit, use it until it's gone.<br />
-    $0.15/unit/hr · $1/GB storage/mo<br />
+    {PricingDetailsCompact}<br />
     1 unit = 4GiB RAM, 1vGPU
   {/snippet}
 

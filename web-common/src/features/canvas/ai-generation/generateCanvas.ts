@@ -12,6 +12,7 @@ import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import {
   runtimeServiceGenerateCanvasFile,
   runtimeServiceGenerateMetricsViewFile,
+  runtimeServicePutFile,
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { get, writable } from "svelte/store";
@@ -21,7 +22,7 @@ import { getName } from "../../entity-management/name-utils";
 import { featureFlags } from "../../feature-flags";
 import OptionToCancelAIGeneration from "../../metrics-views/ai-generation/OptionToCancelAIGeneration.svelte";
 
-export const generatingCanvas = writable(false);
+export const generatingCanvasFilePath = writable<string | null>(null);
 
 /**
  * Creates a metrics view from a table.
@@ -173,6 +174,16 @@ export async function createCanvasDashboardFromMetricsViewWithAgent(
   const prompt = `Create a canvas dashboard at ${canvasFilePath} based on the "${metricsViewName}" metrics view. Include appropriate visualizations like KPI grids, charts, and leaderboards based on the available measures and dimensions.`;
 
   try {
+    // Set generating state and create a placeholder file so it appears in the
+    // left nav with a loading spinner before the agent has written anything.
+    generatingCanvasFilePath.set(canvasFilePath);
+    await runtimeServicePutFile(client, {
+      path: canvasFilePath,
+      blob: "type: canvas\n",
+      create: true,
+      createOnly: true,
+    });
+
     // 3. Set up file creation detection
     // Get conversation manager and start a new conversation
     const conversationManager = getConversationManager(client, {
@@ -187,9 +198,6 @@ export async function createCanvasDashboardFromMetricsViewWithAgent(
     const currentConversation = get(
       conversationManager.getCurrentConversation(),
     );
-
-    // Set generating state
-    generatingCanvas.set(true);
 
     // 4. Start the chat with the generation prompt
     developerChatActions.startChat(prompt);
@@ -206,7 +214,7 @@ export async function createCanvasDashboardFromMetricsViewWithAgent(
       detail: err instanceof Error ? err.message : String(err),
     });
   } finally {
-    generatingCanvas.set(false);
+    generatingCanvasFilePath.set(null);
   }
 }
 

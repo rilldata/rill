@@ -86,7 +86,7 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 	}
 
 	return &adminv1.GetOrganizationResponse{
-		Organization: s.organizationToDTO(org, perms.ManageOrg),
+		Organization: s.organizationToDTO(org, perms.ManageOrg || forceAccess),
 		Permissions:  perms,
 	}, nil
 }
