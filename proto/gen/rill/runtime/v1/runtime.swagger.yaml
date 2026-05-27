@@ -4441,6 +4441,13 @@ definitions:
         items:
           type: string
         title: Array of dimension or measure names
+      requiredFilters:
+        type: array
+        items:
+          type: string
+        description: |-
+          Array of dimension or measure names that must have a value before the canvas can render.
+          Required filters are implicitly pinned.
   v1CanvasState:
     type: object
     properties:

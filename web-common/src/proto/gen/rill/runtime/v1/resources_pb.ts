@@ -5040,6 +5040,14 @@ export class CanvasSpec extends Message<CanvasSpec> {
    */
   pinnedFilters: string[] = [];
 
+  /**
+   * Array of dimension or measure names that must have a value before the canvas can render.
+   * Required filters are implicitly pinned.
+   *
+   * @generated from field: repeated string required_filters = 19;
+   */
+  requiredFilters: string[] = [];
+
   constructor(data?: PartialMessage<CanvasSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5064,6 +5072,7 @@ export class CanvasSpec extends Message<CanvasSpec> {
     { no: 18, name: "rows", kind: "message", T: CanvasRow, repeated: true },
     { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 16, name: "pinned_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 19, name: "required_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasSpec {
