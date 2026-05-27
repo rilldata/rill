@@ -9,7 +9,7 @@ import type {
 import { writable } from "svelte/store";
 import { YAMLMap, YAMLSeq } from "yaml";
 import { ResourceKind } from "../entity-management/resource-selectors";
-import type { CanvasComponentType } from "./components/types";
+import type { CanvasComponentType, ComponentSpec } from "./components/types";
 import { COMPONENT_CLASS_MAP } from "./components/util";
 
 // TODO: Move this individual component class
@@ -137,7 +137,11 @@ export interface Transaction {
 export function generateArrayRearrangeFunction(transaction: Transaction) {
   return <I, R extends { items?: I[] }>(
     array: R[],
-    newItemGenerator: (pos: Position, type: CanvasComponentType) => I,
+    newItemGenerator: (
+      pos: Position,
+      type: CanvasComponentType,
+      operationIndex: number,
+    ) => I,
     rowUpdater: (row: R, index: number, touched: boolean) => R,
   ) => {
     const newArray = structuredClone(array);
@@ -146,7 +150,7 @@ export function generateArrayRearrangeFunction(transaction: Transaction) {
       () => false,
     );
 
-    for (const op of transaction.operations) {
+    for (const [operationIndex, op] of transaction.operations.entries()) {
       switch (op.type) {
         case "delete": {
           const { row, col } = op.target;
@@ -241,7 +245,11 @@ export function generateArrayRearrangeFunction(transaction: Transaction) {
             throw new Error("Maximum number of items reached");
           }
 
-          const newItem = newItemGenerator(destination, componentType);
+          const newItem = newItemGenerator(
+            destination,
+            componentType,
+            operationIndex,
+          );
           row.items?.splice(destination.col, 0, newItem);
           touchedRows[rowIndex] = true;
           break;
@@ -293,6 +301,14 @@ export function generateNewAssets(params: {
   } = params;
 
   const mover = generateArrayRearrangeFunction(transaction);
+  const addedComponentSpecs = transaction.operations.map((op) => {
+    if (op.type !== "add") return undefined;
+
+    return {
+      type: op.componentType,
+      spec: createComponentSpec(op.componentType, defaultMetrics),
+    };
+  });
 
   const resolvedComponentsArray = specRows.map((row) => {
     const items =
@@ -304,9 +320,15 @@ export function generateNewAssets(params: {
 
   const updatedYamlRows = mover<YAMLItem, YAMLRow>(
     yamlRows,
-    (_, type) => {
+    (_, type, operationIndex) => {
+      const spec = getAddedComponentSpec(
+        addedComponentSpecs,
+        operationIndex,
+        type,
+        defaultMetrics,
+      );
       return {
-        ...initComponentSpec(type, defaultMetrics),
+        [type]: spec,
         width: 0,
       };
     },
@@ -355,9 +377,16 @@ export function generateNewAssets(params: {
 
   const updatedResolvedComponents = mover<V1Resource, { items: V1Resource[] }>(
     resolvedComponentsArray,
-    (pos, type) => {
+    (pos, type, operationIndex) => {
+      const spec = getAddedComponentSpec(
+        addedComponentSpecs,
+        operationIndex,
+        type,
+        defaultMetrics,
+      );
       return createOptimisticResource({
         type,
+        spec,
         ...defaultMetrics,
       });
     },
@@ -392,17 +421,57 @@ export function generateNewAssets(params: {
   };
 }
 
+function createComponentSpec(
+  componentType: CanvasComponentType,
+  defaultMetrics: {
+    metricsViewName: string;
+    metricsViewSpec: V1MetricsViewSpec | undefined;
+  },
+) {
+  return COMPONENT_CLASS_MAP[componentType].newComponentSpec(
+    defaultMetrics.metricsViewName,
+    defaultMetrics.metricsViewSpec,
+  );
+}
+
+function getAddedComponentSpec(
+  addedComponentSpecs: Array<
+    | {
+        type: CanvasComponentType;
+        spec: ComponentSpec;
+      }
+    | undefined
+  >,
+  index: number,
+  type: CanvasComponentType,
+  defaultMetrics: {
+    metricsViewName: string;
+    metricsViewSpec: V1MetricsViewSpec | undefined;
+  },
+) {
+  const addedComponentSpec = addedComponentSpecs[index];
+  const spec =
+    addedComponentSpec?.type === type
+      ? addedComponentSpec.spec
+      : createComponentSpec(type, defaultMetrics);
+
+  return structuredClone(spec);
+}
+
 function createOptimisticResource(options: {
   type: CanvasComponentType;
   metricsViewName: string;
   metricsViewSpec: V1MetricsViewSpec | undefined;
+  spec?: ComponentSpec;
 }): V1Resource {
   const { type, metricsViewName, metricsViewSpec } = options;
 
-  const spec = COMPONENT_CLASS_MAP[type].newComponentSpec(
-    metricsViewName,
-    metricsViewSpec,
-  );
+  const spec =
+    options.spec ??
+    COMPONENT_CLASS_MAP[type].newComponentSpec(
+      metricsViewName,
+      metricsViewSpec,
+    );
 
   return {
     meta: {
@@ -443,10 +512,7 @@ export function initComponentSpec(
     metricsViewSpec: V1MetricsViewSpec | undefined;
   },
 ) {
-  const newSpec = COMPONENT_CLASS_MAP[componentType].newComponentSpec(
-    defaultMetrics.metricsViewName,
-    defaultMetrics.metricsViewSpec,
-  );
+  const newSpec = createComponentSpec(componentType, defaultMetrics);
 
   return {
     [componentType]: newSpec,
