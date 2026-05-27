@@ -101,7 +101,8 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 		return nil, nil
 	}
 
-	// Disqualify: queries using a non-primary time dimension (rollups are built on the primary)
+	// Disqualify: queries using a non-primary time dimension (rollups are built on the primary).
+	// The comparison time range should have the same TimeDimension as the base, so checking TimeRange is sufficient.
 	if qry.TimeRange != nil && qry.TimeRange.TimeDimension != "" && qry.TimeRange.TimeDimension != e.metricsView.TimeDimension {
 		_, span := tracer.Start(ctx, "rollup.selection")
 		span.SetAttributes(

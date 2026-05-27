@@ -48,7 +48,6 @@ func SeedCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 			}
-			ch.Interactive = false // disable interactive prompts for seeding
 			return project.ConnectGithubFlow(cmd.Context(), ch, &project.DeployOpts{
 				GitPath:     temp,
 				SubPath:     "rill-openrtb-prog-ads",
