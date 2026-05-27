@@ -604,10 +604,12 @@ explore:
 			require.Equal(t, "rollup_day_a", queryAndGetTable(t, e, qry))
 		})
 
-		t.Run("partial_archive_rejected_coarser_grain_loses", func(t *testing.T) {
-			// Day rollup A (full archive from 2023-01-01) at idx 0 and month rollup B (partial archive from
-			// 2023-11-01) at idx 1. A month-grain query touching October 2023 would normally pick B on the
-			// coarsest-grain rule, but B's low-end gap must reject it; A wins.
+		t.Run("query_extends_below_base_widest_archive_wins", func(t *testing.T) {
+			// Day rollup A (archive from 2023-01-01) at idx 0 and month rollup B (archive from
+			// 2023-11-01) at idx 1. The query reaches back to October 2023, which is below the base
+			// table's start (2024-01-01). Both rollups pass coverage (clamped to the widest available
+			// source), so selection switches to the widest-range rule and A's deeper history wins
+			// over B's coarser grain.
 			files := map[string]string{
 				"rill.yaml":              "",
 				"models/base_events.sql": rollupTestFiles()["models/base_events.sql"],
@@ -658,6 +660,68 @@ explore:
 				Measures: []metricsview.Measure{{Name: "total_impressions"}},
 				TimeRange: &metricsview.TimeRange{
 					Start: time.Date(2023, 10, 1, 0, 0, 0, 0, time.UTC),
+					End:   time.Date(2024, 4, 1, 0, 0, 0, 0, time.UTC),
+				},
+			}
+			require.Equal(t, "rollup_day_a", queryAndGetTable(t, e, qry))
+		})
+
+		t.Run("query_extends_below_base_same_grain_widest_archive_wins", func(t *testing.T) {
+			// Two daily rollups: B (idx 0) reaches back to 2023-11-01; A (idx 1) reaches back to
+			// 2023-01-01. The query asks for 2022-10-01..2024-04-01, which extends below the base
+			// table's start (2024-01-01). Both pass coverage under the widest-source clamp; A wins
+			// selection because it has the deepest archive. Without the widest-range rule, the
+			// definition-order tiebreaker would have picked B.
+			files := map[string]string{
+				"rill.yaml":              "",
+				"models/base_events.sql": rollupTestFiles()["models/base_events.sql"],
+				"models/rollup_day_b.sql": `
+SELECT date_trunc('day', ts) AS timestamp, 'Google' AS publisher, 'news.com' AS domain,
+	100 AS impressions, 20 AS clicks
+FROM generate_series(TIMESTAMP '2023-11-01 00:00:00', TIMESTAMP '2024-03-31 23:00:00', INTERVAL '1 HOUR') t(ts)
+GROUP BY 1`,
+				"models/rollup_day_a.sql": `
+SELECT date_trunc('day', ts) AS timestamp, 'Google' AS publisher, 'news.com' AS domain,
+	100 AS impressions, 20 AS clicks
+FROM generate_series(TIMESTAMP '2023-01-01 00:00:00', TIMESTAMP '2024-03-31 23:00:00', INTERVAL '1 HOUR') t(ts)
+GROUP BY 1`,
+				"metrics_views/mv.yaml": `
+type: metrics_view
+version: 1
+model: base_events
+timeseries: timestamp
+dimensions:
+  - name: publisher
+    column: publisher
+  - name: domain
+    column: domain
+measures:
+  - name: total_impressions
+    expression: 'SUM("impressions")'
+rollups:
+  - model: rollup_day_b
+    time_grain: day
+    dimensions: [publisher, domain]
+    measures: [total_impressions]
+  - model: rollup_day_a
+    time_grain: day
+    dimensions: [publisher, domain]
+    measures: [total_impressions]
+explore:
+  skip: true`,
+			}
+			customRT, customID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{Files: files})
+			testruntime.RequireReconcileState(t, customRT, customID, 5, 0, 0)
+			e := newRollupTestExecutor(t, customRT, customID)
+			defer e.Close()
+
+			qry := &metricsview.Query{
+				Dimensions: []metricsview.Dimension{
+					{Name: "timestamp", Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainDay}}},
+				},
+				Measures: []metricsview.Measure{{Name: "total_impressions"}},
+				TimeRange: &metricsview.TimeRange{
+					Start: time.Date(2022, 10, 1, 0, 0, 0, 0, time.UTC),
 					End:   time.Date(2024, 4, 1, 0, 0, 0, 0, time.UTC),
 				},
 			}
@@ -732,6 +796,66 @@ explore:
 	})
 
 	t.Run("no_time_range_checks_coverage", func(t *testing.T) {
+		t.Run("prefers_widest_range_over_coarsest_grain", func(t *testing.T) {
+			// Base table spans 2024-01-01..2024-03-31. Monthly rollup A (idx 0) has extra
+			// history back to 2023-11-01; daily rollup B (idx 1) has even more history back
+			// to 2023-01-01. With no time range, the user's "all data" view should expose
+			// the deepest history available, so B (widest range) wins despite A's coarser grain.
+			files := map[string]string{
+				"rill.yaml":              "",
+				"models/base_events.sql": rollupTestFiles()["models/base_events.sql"],
+				"models/rollup_month_a.sql": `
+SELECT date_trunc('month', ts) AS timestamp, 'Google' AS publisher, 'news.com' AS domain,
+	100 AS impressions, 20 AS clicks
+FROM generate_series(TIMESTAMP '2023-11-01 00:00:00', TIMESTAMP '2024-03-31 23:00:00', INTERVAL '1 HOUR') t(ts)
+GROUP BY 1`,
+				"models/rollup_day_b.sql": `
+SELECT date_trunc('day', ts) AS timestamp, 'Google' AS publisher, 'news.com' AS domain,
+	100 AS impressions, 20 AS clicks
+FROM generate_series(TIMESTAMP '2023-01-01 00:00:00', TIMESTAMP '2024-03-31 23:00:00', INTERVAL '1 HOUR') t(ts)
+GROUP BY 1`,
+				"metrics_views/mv.yaml": `
+type: metrics_view
+version: 1
+model: base_events
+timeseries: timestamp
+dimensions:
+  - name: publisher
+    column: publisher
+  - name: domain
+    column: domain
+measures:
+  - name: total_impressions
+    expression: 'SUM("impressions")'
+rollups:
+  - model: rollup_month_a
+    time_grain: month
+    dimensions: [publisher, domain]
+    measures: [total_impressions]
+  - model: rollup_day_b
+    time_grain: day
+    dimensions: [publisher, domain]
+    measures: [total_impressions]
+explore:
+  skip: true`,
+			}
+			customRT, customID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{Files: files})
+			testruntime.RequireReconcileState(t, customRT, customID, 5, 0, 0)
+			e := newRollupTestExecutor(t, customRT, customID)
+			defer e.Close()
+
+			qry := &metricsview.Query{
+				Dimensions: []metricsview.Dimension{
+					{Name: "publisher"},
+				},
+				Measures: []metricsview.Measure{
+					{Name: "total_impressions"},
+				},
+				// No TimeRange: means "all data"
+			}
+			require.Equal(t, "rollup_day_b", queryAndGetTable(t, e, qry))
+		})
+
 		t.Run("only_partial_rollup_returns_nil", func(t *testing.T) {
 			// Only rollup is partial (Jan+Feb); no time range requires full coverage
 			files := map[string]string{

@@ -183,6 +183,7 @@ The base table is used if no rollup is eligible.
 - **Filters on missing dimensions disqualify the rollup.** A WHERE clause on `country` will skip a rollup that doesn't include `country`, even if the query's group-by columns are all in the rollup.
 - **The rollup is responsible for being correct.** Rill does not validate that the rollup's measure values are consistent with the base — it trusts the model. If the rollup model uses the wrong aggregation (e.g. `AVG` where the base measure is `SUM`), queries routed to it will return wrong numbers.
 - **Rollups are assumed to be roughly caught up with the base table.** Coverage is measured against the base table's latest timestamp. A rollup that lags behind the base will be silently skipped for any query that reaches the tail of the data — including common "last 24 hours" queries and queries without a time range — even if it has the right grain, dimensions, and measures. Refresh rollups in step with the base model so selection actually happens.
+- **Rollups must not extend beyond the base table.** Routing assumes the rollup's max timestamp is no later than the base's. A rollup that gets ahead of the base (e.g. ingested through a separate path) may return incorrect results at the tail of the data.
 
 :::info
 The full configuration schema is in the [metrics view reference](/reference/project-files/metrics-views#rollups).
