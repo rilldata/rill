@@ -411,19 +411,33 @@
     height="{height}px"
     onmousemove={(e) => {
       const x = clampX(e.offsetX);
-      const fractionalIndex = xScale.invert(x);
+      const isScrubbingNow = get(scrubController.state).isScrubbing;
 
+      // Keep scrub tracking even if the drag strays into the margins.
+      if (isScrubbingNow) {
+        scrubController.update(x, xScale);
+      }
+
+      // The SVG extends into the y-axis margin (and top/bottom margins),
+      // so onmouseleave doesn't fire when the cursor moves onto axis labels.
+      // Treat anything outside the plot bounds as a leave so the tooltip hides.
+      const isInPlot =
+        e.offsetX >= pb.left &&
+        e.offsetX <= pb.left + pb.width &&
+        e.offsetY >= pb.top &&
+        e.offsetY <= pb.top + pb.height;
+      if (!isInPlot) {
+        handleSvgMouseLeave();
+        return;
+      }
+
+      const fractionalIndex = xScale.invert(x);
       hoverState = {
         index: fractionalIndex,
         screenX: x,
         screenY: e.offsetY,
         isHovered: true,
       };
-
-      // Update scrub if dragging
-      if (get(scrubController.state).isScrubbing) {
-        scrubController.update(x, xScale);
-      }
 
       annotationPopover.checkHover(e, annotationGroups, isScrubbing);
       mousePageX = e.pageX;
