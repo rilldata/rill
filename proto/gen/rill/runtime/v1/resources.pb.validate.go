@@ -3199,6 +3199,8 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	// no validation rules for WatermarkExpression
 
+	// no validation rules for DataTimeRange
+
 	for idx, item := range m.GetDimensions() {
 		_, _ = idx, item
 
@@ -13547,6 +13549,8 @@ func (m *MetricsViewSpec_Rollup) validate(all bool) error {
 	// no validation rules for Table
 
 	// no validation rules for Model
+
+	// no validation rules for DataTimeRange
 
 	// no validation rules for TimeGrain
 
