@@ -39,7 +39,7 @@ export class EnvStore {
     });
 
     await this.setter(
-      Object.fromEntries(newStore.values().map((v) => [v.key, v.value])),
+      Object.fromEntries([...newStore.values()].map((v) => [v.key, v.value])),
     );
 
     this.store = newStore;
@@ -63,7 +63,7 @@ export class EnvStore {
     if (!changed) return;
 
     await this.setter(
-      Object.fromEntries(newStore.values().map((v) => [v.key, v.value])),
+      Object.fromEntries([...newStore.values()].map((v) => [v.key, v.value])),
     );
 
     this.store = newStore;

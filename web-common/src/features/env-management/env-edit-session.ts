@@ -18,7 +18,7 @@ export class EnvEditSession {
 
   public constructor(
     public readonly parentStore: EnvStore,
-    private readonly keyPrefix: string = "",
+    private readonly namespace: string = "",
     private readonly schema: JSONSchemaObject | null = null,
   ) {
     this.assignedVars = new Set<string>(this.parentStore.store.keys());
@@ -56,7 +56,7 @@ export class EnvEditSession {
       return entry;
     }
 
-    envVarName ??= getGenericEnvVarName(this.keyPrefix, key, this.schema);
+    envVarName ??= getGenericEnvVarName(this.namespace, key, this.schema);
     const mappedEnvVarName = this.acquireVarName(envVarName);
     const entry = new EnvEditSessionVariable(key, value, mappedEnvVarName);
 
@@ -82,7 +82,7 @@ export class EnvEditSession {
   }
 
   private acquireVarName(varName: string) {
-    const assignedVarName = getName(varName, [...this.assignedVars.keys()]);
+    const assignedVarName = getName(varName, [...this.assignedVars]);
     this.assignedVars.add(assignedVarName);
     return assignedVarName;
   }

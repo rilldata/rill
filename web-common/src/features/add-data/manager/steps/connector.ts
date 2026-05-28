@@ -346,6 +346,10 @@ export class ConnectorFormCache {
     }
   }
 
+  public delete(id: string) {
+    this.cache.delete(id);
+  }
+
   public clear() {
     this.cache.clear();
     this.id = 0;

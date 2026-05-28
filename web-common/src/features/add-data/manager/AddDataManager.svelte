@@ -23,9 +23,9 @@
     getConnectorDriverForSchema,
   } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
   import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
-  import ConnectorFormWrapper from "@rilldata/web-common/features/add-data/form/ConnectorFormWrapper.svelte";
   import { getAddDataClass } from "@rilldata/web-common/features/add-data/class-utils.ts";
   import { inferSchemaForConnector } from "@rilldata/web-common/features/entity-management/add/selectors.ts";
+  import ConnectorForm from "@rilldata/web-common/features/add-data/form/ConnectorForm.svelte";
 
   const {
     config,
@@ -177,7 +177,7 @@
   {#if stepState.step === AddDataStep.SelectConnector}
     <SourceSelector {config} onSelect={schemaSelected} {onBack} />
   {:else if stepState.step === AddDataStep.CreateConnector}
-    <ConnectorFormWrapper
+    <ConnectorForm
       {stateManager}
       step={stepState}
       onSubmit={(connectorName, connectorFormValues) =>

@@ -17,7 +17,7 @@
   import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { getConnectorDriverForSchema } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
   import type { AddDataStateManager } from "@rilldata/web-common/features/add-data/manager/AddDataStateManager.svelte.ts";
-  import type { EnvEditSession } from "@rilldata/web-common/features/env-management/env-edit-session.ts";
+  import { getEnvFileStore } from "@rilldata/web-common/features/env-management/env-file-store.ts";
 
   export let stateManager: AddDataStateManager;
   export let step: CreateConnectorStep;
@@ -28,11 +28,14 @@
   export let onBack: () => void;
   export let onClose: () => void;
 
-  export let cachedFormValues: Record<string, unknown>;
-  export let connectorName: string;
-  export let cachedEnvEditSession: EnvEditSession;
-
+  const envStore = getEnvFileStore();
   const runtimeClient = useRuntimeClient();
+
+  const {
+    name: connectorName,
+    formValues: cachedFormValues,
+    envEditSession: cachedEnvEditSession,
+  } = connectorFormCache.getOrCreate(step.schema, step.connectorId, envStore);
 
   $: connectorDriver = getConnectorDriverForSchema(step.schema);
 
@@ -101,6 +104,7 @@
       connectorName,
       cachedEnvEditSession,
     );
+    connectorFormCache.delete(step.connectorId);
 
     onBack();
   }

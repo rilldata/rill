@@ -5,6 +5,7 @@ import { getConnectorYAML } from "@rilldata/web-common/features/add-data/form/co
 import { clickhouseSchema } from "@rilldata/web-common/features/templates/schemas/clickhouse.ts";
 import { ducklakeSchema } from "@rilldata/web-common/features/templates/schemas/ducklake.ts";
 import { httpsSchema } from "@rilldata/web-common/features/templates/schemas/https.ts";
+import { EnvEditSession } from "@rilldata/web-common/features/env-management/env-edit-session.ts";
 
 describe("getConnectorYAML", () => {
   describe("clickhouse", () => {
@@ -249,6 +250,45 @@ describe("getConnectorYAML", () => {
       // Rollback removes the vars. This is a known race condition.
       await envEditSession.rollback();
       expect(testEnvs).toEqual({});
+    });
+
+    it("should not reuse vars for new connectors", async () => {
+      const { envEditSession, testEnvs, envStore } =
+        await makeTestEnvEditSession(connector.name, schema, {});
+      getConnectorYAML({
+        connector,
+        schema,
+        formValues: formValuesWithPassword,
+        envEditSession,
+      });
+      await envEditSession.commit();
+      expect(testEnvs).toEqual({
+        CLICKHOUSE_PASSWORD: "pass",
+      });
+
+      const newEnvEditSession = new EnvEditSession(
+        envStore,
+        connector.name + "_1",
+        schema,
+      );
+      const yamlInitial = getConnectorYAML({
+        connector,
+        schema,
+        formValues: {
+          ...formValuesWithPassword,
+          password: "new_pass",
+        },
+        envEditSession: newEnvEditSession,
+      });
+      // Since clickhouse has `x-secret-value` name of the connector doesnt affect the variable name
+      expect(yamlInitial).toContain(
+        `password: "{{ .env.CLICKHOUSE_PASSWORD_1 }}"`,
+      );
+      await newEnvEditSession.commit();
+      expect(testEnvs).toEqual({
+        CLICKHOUSE_PASSWORD: "pass",
+        CLICKHOUSE_PASSWORD_1: "new_pass",
+      });
     });
   });
 
@@ -614,6 +654,48 @@ describe("getConnectorYAML", () => {
 
       await envEditSession.rollback();
       expect(testEnvs).toEqual({});
+    });
+
+    it("should not reuse vars for new connectors", async () => {
+      const { envEditSession, testEnvs, envStore } =
+        await makeTestEnvEditSession(connector.name, schema, {});
+      getConnectorYAML({
+        connector,
+        schema,
+        formValues: formValuesWithAuth,
+        envEditSession,
+      });
+      await envEditSession.commit();
+      expect(testEnvs).toEqual({
+        HTTPS_AUTHORIZATION: "my_token",
+      });
+
+      const newEnvEditSession = new EnvEditSession(
+        envStore,
+        connector.name + "_1",
+        schema,
+      );
+      const yamlInitial = getConnectorYAML({
+        connector,
+        schema,
+        formValues: {
+          ...formValuesWithAuth,
+          headers: [
+            { key: "Content-Type", value: "application/json" },
+            { key: "Authorization", value: "Bearer my_token_2" },
+          ],
+        },
+        envEditSession: newEnvEditSession,
+      });
+      // Since clickhouse has `x-secret-value` name of the connector doesnt affect the variable name
+      expect(yamlInitial).toContain(
+        `"Authorization": "Bearer {{ .env.HTTPS_1_AUTHORIZATION }}"`,
+      );
+      await newEnvEditSession.commit();
+      expect(testEnvs).toEqual({
+        HTTPS_AUTHORIZATION: "my_token",
+        HTTPS_1_AUTHORIZATION: "my_token_2",
+      });
     });
   });
 });

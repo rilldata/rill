@@ -3,7 +3,7 @@
  * If schema provides x-env-var-name, use it directly.
  * Otherwise uses DRIVER_NAME_PROPERTY_KEY format.
  *
- * @param driverName - The connector driver name (e.g., "clickhouse", "s3")
+ * @param namespace - Usually the connector driver name (e.g., "clickhouse", "s3")
  * @param propertyKey - The property key (e.g., "password", "aws_access_key_id")
  * @param schema - Optional schema with x-env-var-name annotations
  * @returns The environment variable name in SCREAMING_SNAKE_CASE
@@ -13,7 +13,7 @@
  * getGenericEnvVarName("s3", "aws_access_key_id", s3Schema) // "AWS_ACCESS_KEY_ID" (from x-env-var-name)
  */
 export function getGenericEnvVarName(
-  driverName: string,
+  namespace: string,
   propertyKey: string,
   schema: {
     properties?: Record<string, { "x-env-var-name"?: string }>;
@@ -31,11 +31,11 @@ export function getGenericEnvVarName(
     .replace(/[._-]+/g, "_")
     .toUpperCase();
 
-  // Otherwise, use DriverName_PropertyKey format
-  const driverNameUpper = driverName
+  // Otherwise, use Namespace_PropertyKey format
+  const namespaceUpper = namespace
     .replace(/([a-z])([A-Z])/g, "$1_$2")
     .replace(/[._-]+/g, "_")
     .toUpperCase();
 
-  return `${driverNameUpper}_${propertyKeyUpper}`;
+  return `${namespaceUpper}_${propertyKeyUpper}`;
 }

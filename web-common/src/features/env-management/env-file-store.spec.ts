@@ -45,10 +45,7 @@ import {
 import { isCloudRuntimeEditEnvironment } from "@rilldata/web-common/features/entity-management/edit-environment.ts";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
 import { EnvEditSession } from "@rilldata/web-common/features/env-management/env-edit-session.ts";
-import {
-  createEnvFileStore,
-  getEnvFileStore,
-} from "./env-file-store";
+import { createEnvFileStore, getEnvFileStore } from "./env-file-store";
 
 const runtimeClient = { instanceId: "inst-1" } as never;
 
@@ -101,9 +98,7 @@ describe("env-file-store", () => {
       const { store, unsubscribe } = await setupStore(
         `URL="https://example.com#section"\nPASSWORD='foo#bar'`,
       );
-      expect(store.store.get("URL")?.value).toBe(
-        "https://example.com#section",
-      );
+      expect(store.store.get("URL")?.value).toBe("https://example.com#section");
       expect(store.store.get("PASSWORD")?.value).toBe("foo#bar");
       unsubscribe();
     });
