@@ -61,7 +61,7 @@
   export let onScrubClear: (() => void) | undefined = undefined;
   export let onPanLeft: (() => void) | undefined = undefined;
   export let onPanRight: (() => void) | undefined = undefined;
-  export let scrubController: ScrubController;
+  export let scrubController: ScrubController | undefined = undefined;
   export let connectNulls: boolean = true;
   export let dynamicYAxis: boolean = false;
 

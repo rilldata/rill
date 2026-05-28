@@ -12,7 +12,6 @@
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
   import MeasureChart from "./measure-chart/MeasureChart.svelte";
   import MeasureChartXAxis from "./measure-chart/MeasureChartXAxis.svelte";
-  import { ScrubController } from "./measure-chart/ScrubController";
   import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
   import ExploreFilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/ExploreFilterChipsReadOnly.svelte";
   import ThemeProvider from "@rilldata/web-common/features/dashboards/ThemeProvider.svelte";
@@ -33,9 +32,6 @@
   export let timeZone: string = "UTC";
   export let showComparison = false;
   export let ready = true;
-
-  // Inert scrub controller — interactions are not needed for screenshots.
-  const scrubController = new ScrubController();
 
   let captureNode: HTMLDivElement;
   let downloading = false;
@@ -140,12 +136,12 @@
             {comparisonTimeEnd}
             {showComparison}
             {ready}
+            skipLink
           />
 
           {#if timeGranularity}
             <MeasureChart
               {measure}
-              {scrubController}
               tddChartType={TDDChart.DEFAULT}
               {metricsViewName}
               {where}

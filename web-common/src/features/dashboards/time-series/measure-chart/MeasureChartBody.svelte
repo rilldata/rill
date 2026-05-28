@@ -76,7 +76,7 @@
       }) => void)
     | undefined;
   export let onScrubClear: (() => void) | undefined;
-  export let scrubController: ScrubController;
+  export let scrubController: ScrubController | undefined = undefined;
   export let metricsViewName: string;
   export let connectNulls: boolean = true;
   export let dynamicYAxis: boolean = false;
@@ -141,12 +141,12 @@
   $: xTickIndices = computeXTickIndices(mode, data.length);
 
   // Keep scrub controller in sync with data length
-  $: scrubController.setDataLength(data.length);
+  $: scrubController?.setDataLength(data.length);
 
   // Subscribe to scrub state from controller for rendering
-  $: scrubStateStore = scrubController.state;
+  $: scrubStateStore = scrubController?.state;
   $: currentScrubState = $scrubStateStore;
-  $: isScrubbing = currentScrubState.isScrubbing;
+  $: isScrubbing = Boolean(currentScrubState?.isScrubbing);
 
   // Scrub indices: use local (active) state while scrubbing, external (URL) state otherwise
   $: externalScrubStartIndex = chartScrubInterval
@@ -155,8 +155,8 @@
   $: externalScrubEndIndex = chartScrubInterval
     ? dateToIndex(data, chartScrubInterval.end.toMillis())
     : null;
-  $: scrubStartIndex = currentScrubState.startIndex ?? externalScrubStartIndex;
-  $: scrubEndIndex = currentScrubState.endIndex ?? externalScrubEndIndex;
+  $: scrubStartIndex = currentScrubState?.startIndex ?? externalScrubStartIndex;
+  $: scrubEndIndex = currentScrubState?.endIndex ?? externalScrubEndIndex;
   $: hasScrubSelection = scrubStartIndex !== null && scrubEndIndex !== null;
 
   // Hover state
@@ -178,7 +178,7 @@
 
   $: hoveredIndex = $hoverIndex?.start ?? -1;
   $: hoveredPoint = data[hoveredIndex] ?? null;
-  $: cursorStyle = scrubController.getCursorStyle(hoverState.screenX, xScale);
+  $: cursorStyle = scrubController?.getCursorStyle(hoverState.screenX, xScale);
 
   // Formatters
   $: measureFormatter = createMeasureValueFormatter(measure);
@@ -264,7 +264,7 @@
 
   function handleReset() {
     onScrubClear?.();
-    scrubController.reset();
+    scrubController?.reset();
   }
 
   function handleSvgMouseLeave() {
@@ -275,7 +275,7 @@
   }
 
   function handleMouseDown(e: MouseEvent) {
-    if (e.button !== 0) return;
+    if (!scrubController || e.button !== 0) return;
     mouseDownX = e.clientX;
     mouseDownY = e.clientY;
     const x = clampX(e.offsetX);
@@ -308,7 +308,7 @@
       const [start, end] = s < e ? [s, e] : [e, s];
       measureSelection.setRange(measureName, start, end);
     }
-    scrubController.reset();
+    scrubController?.reset();
   }
 
   function handlePointClick(offsetX: number) {
@@ -324,6 +324,8 @@
   }
 
   function handleMouseUp(e: MouseEvent) {
+    if (!scrubController) return;
+
     const wasClick =
       mouseDownX !== null &&
       mouseDownY !== null &&
@@ -383,7 +385,7 @@
 
     if (isOutside) {
       // Click outside selection clears it
-      scrubController.reset();
+      scrubController?.reset();
       onScrubClear?.();
       measureSelection.clear();
     } else if (measureName) {
@@ -421,7 +423,7 @@
       };
 
       // Update scrub if dragging
-      if (get(scrubController.state).isScrubbing) {
+      if (scrubController && get(scrubController.state).isScrubbing) {
         scrubController.update(x, xScale);
       }
 

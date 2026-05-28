@@ -438,7 +438,7 @@
             />
 
             <DropdownMenu.Root>
-              <DropdownMenu.Trigger class="absolute right-2 top-0">
+              <DropdownMenu.Trigger class="absolute right-2 -top-2">
                 <ThreeDot />
               </DropdownMenu.Trigger>
               <DropdownMenu.Content align="end">
