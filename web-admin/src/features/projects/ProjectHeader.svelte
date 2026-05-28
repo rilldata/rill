@@ -46,6 +46,7 @@
     isProjectPage,
     isPublicURLPage,
   } from "../navigation/nav-utils";
+  import Bookmarks from "@rilldata/web-admin/features/project-wide-bookmarks/Bookmarks.svelte";
   import PageTitle from "../public-urls/PageTitle.svelte";
   import { useReports } from "../scheduled-reports/selectors";
 
@@ -272,6 +273,8 @@
           </StateManagersProvider>
         {/key}
       {/if}
+    {:else}
+      <Bookmarks {organization} {project} />
     {/if}
 
     {#if onCanvasDashboardPage}

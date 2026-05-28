@@ -1025,6 +1025,8 @@ components:
                     items:
                         $ref: '#/components/schemas/v1Bookmark'
                     type: array
+                nextPageToken:
+                    type: string
             type: object
         v1ListDeploymentsResponse:
             properties:
@@ -7801,6 +7803,15 @@ paths:
                     type: string
                 - in: query
                   name: resourceName
+                  schema:
+                    type: string
+                - in: query
+                  name: pageSize
+                  schema:
+                    format: int64
+                    type: integer
+                - in: query
+                  name: pageToken
                   schema:
                     type: string
             responses:
