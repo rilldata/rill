@@ -433,6 +433,11 @@ components:
                     $ref: '#/components/schemas/v1ToolResult'
             title: Content block within a message
             type: object
+        v1CopyPersonalVirtualFileResponse:
+            properties:
+                name:
+                    type: string
+            type: object
         v1CreateAlertResponse:
             properties:
                 name:
@@ -511,6 +516,11 @@ components:
                 organization:
                     $ref: '#/components/schemas/v1Organization'
             type: object
+        v1CreatePersonalVirtualFileResponse:
+            properties:
+                name:
+                    type: string
+            type: object
         v1CreateProjectResponse:
             properties:
                 project:
@@ -543,6 +553,8 @@ components:
                     type: string
             type: object
         v1DeleteOrganizationResponse:
+            type: object
+        v1DeletePersonalVirtualFileResponse:
             type: object
         v1DeleteProjectResponse:
             properties:
@@ -610,6 +622,8 @@ components:
                 - DEPLOYMENT_STATUS_DELETED
             type: string
         v1EditAlertResponse:
+            type: object
+        v1EditPersonalVirtualFileResponse:
             type: object
         v1EditReportResponse:
             type: object
@@ -862,6 +876,18 @@ components:
                 url:
                     type: string
             type: object
+        v1GetPersonalVirtualFileResponse:
+            properties:
+                displayName:
+                    type: string
+                name:
+                    type: string
+                updatedOn:
+                    format: date-time
+                    type: string
+                yaml:
+                    type: string
+            type: object
         v1GetProjectAccessRequestResponse:
             properties:
                 email:
@@ -1098,6 +1124,13 @@ components:
                 organizations:
                     items:
                         $ref: '#/components/schemas/v1Organization'
+                    type: array
+            type: object
+        v1ListPersonalVirtualFilesResponse:
+            properties:
+                files:
+                    items:
+                        $ref: '#/components/schemas/v1PersonalVirtualFileSummary'
                     type: array
             type: object
         v1ListProjectInvitesResponse:
@@ -1490,6 +1523,37 @@ components:
                 permissions:
                     $ref: '#/components/schemas/v1OrganizationPermissions'
             type: object
+        v1PersonalVirtualFileSourceKind:
+            default: PERSONAL_VIRTUAL_FILE_SOURCE_KIND_UNSPECIFIED
+            description: |-
+                PersonalVirtualFileSourceKind enumerates the kinds of source resources that CopyPersonalVirtualFile can clone from.
+
+                 - PERSONAL_VIRTUAL_FILE_SOURCE_KIND_SHARED: Clone from a shared resource in the project (e.g. a shared canvas dashboard).
+                 - PERSONAL_VIRTUAL_FILE_SOURCE_KIND_PERSONAL: Clone from one of the caller's own personal virtual files.
+            enum:
+                - PERSONAL_VIRTUAL_FILE_SOURCE_KIND_UNSPECIFIED
+                - PERSONAL_VIRTUAL_FILE_SOURCE_KIND_SHARED
+                - PERSONAL_VIRTUAL_FILE_SOURCE_KIND_PERSONAL
+            type: string
+        v1PersonalVirtualFileSummary:
+            properties:
+                displayName:
+                    type: string
+                name:
+                    type: string
+                type:
+                    $ref: '#/components/schemas/v1PersonalVirtualFileType'
+                updatedOn:
+                    format: date-time
+                    type: string
+            type: object
+        v1PersonalVirtualFileType:
+            default: PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED
+            description: PersonalVirtualFileType enumerates the resource kinds that can be stored as a personal virtual file.
+            enum:
+                - PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED
+                - PERSONAL_VIRTUAL_FILE_TYPE_CANVAS
+            type: string
         v1PingResponse:
             properties:
                 time:
@@ -1643,6 +1707,8 @@ components:
                 createBookmarks:
                     type: boolean
                 createMagicAuthTokens:
+                    type: boolean
+                createPersonalCanvases:
                     type: boolean
                 createReports:
                     type: boolean
@@ -3279,6 +3345,9 @@ paths:
             summary: SetProjectMemberUserRole sets the role for the member
             x-visibility: public
     /v1/orgs/{org}/projects/{project}/members/{email}/usergroups: {}
+    /v1/orgs/{org}/projects/{project}/personal-virtual-files: {}
+    /v1/orgs/{org}/projects/{project}/personal-virtual-files/-/copy: {}
+    /v1/orgs/{org}/projects/{project}/personal-virtual-files/{type}/{name}: {}
     /v1/orgs/{org}/projects/{project}/redeploy: {}
     /v1/orgs/{org}/projects/{project}/reports: {}
     /v1/orgs/{org}/projects/{project}/reports/-/yaml: {}

@@ -1255,6 +1255,45 @@ service AdminService {
     };
   }
 
+  // CreatePersonalVirtualFile creates a personal (owner-only) resource as a virtual file in the project.
+  rpc CreatePersonalVirtualFile(CreatePersonalVirtualFileRequest) returns (CreatePersonalVirtualFileResponse) {
+    option (google.api.http) = {
+      post: "/v1/orgs/{org}/projects/{project}/personal-virtual-files",
+      body: "*"
+    };
+  }
+
+  // EditPersonalVirtualFile updates the YAML body of a personal virtual file the caller owns.
+  rpc EditPersonalVirtualFile(EditPersonalVirtualFileRequest) returns (EditPersonalVirtualFileResponse) {
+    option (google.api.http) = {
+      put: "/v1/orgs/{org}/projects/{project}/personal-virtual-files/{type}/{name}",
+      body: "*"
+    };
+  }
+
+  // DeletePersonalVirtualFile deletes a personal virtual file the caller owns.
+  rpc DeletePersonalVirtualFile(DeletePersonalVirtualFileRequest) returns (DeletePersonalVirtualFileResponse) {
+    option (google.api.http) = {delete: "/v1/orgs/{org}/projects/{project}/personal-virtual-files/{type}/{name}"};
+  }
+
+  // CopyPersonalVirtualFile clones a shared resource (or one of the caller's own personal items) into a new personal virtual file.
+  rpc CopyPersonalVirtualFile(CopyPersonalVirtualFileRequest) returns (CopyPersonalVirtualFileResponse) {
+    option (google.api.http) = {
+      post: "/v1/orgs/{org}/projects/{project}/personal-virtual-files/-/copy",
+      body: "*"
+    };
+  }
+
+  // GetPersonalVirtualFile returns the YAML body and metadata for a personal virtual file the caller owns.
+  rpc GetPersonalVirtualFile(GetPersonalVirtualFileRequest) returns (GetPersonalVirtualFileResponse) {
+    option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/personal-virtual-files/{type}/{name}"};
+  }
+
+  // ListPersonalVirtualFiles lists the calling user's personal virtual files for the given type.
+  rpc ListPersonalVirtualFiles(ListPersonalVirtualFilesRequest) returns (ListPersonalVirtualFilesResponse) {
+    option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/personal-virtual-files"};
+  }
+
   // GetBillingSubscription lists the subscription for the organization
   rpc GetBillingSubscription(GetBillingSubscriptionRequest) returns (GetBillingSubscriptionResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/billing/subscriptions"};
@@ -3122,6 +3161,98 @@ message GetAlertYAMLResponse {
   string yaml = 1;
 }
 
+// PersonalVirtualFileType enumerates the resource kinds that can be stored as a personal virtual file.
+enum PersonalVirtualFileType {
+  PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED = 0;
+  PERSONAL_VIRTUAL_FILE_TYPE_CANVAS = 1;
+}
+
+// PersonalVirtualFileSourceKind enumerates the kinds of source resources that CopyPersonalVirtualFile can clone from.
+enum PersonalVirtualFileSourceKind {
+  PERSONAL_VIRTUAL_FILE_SOURCE_KIND_UNSPECIFIED = 0;
+  // Clone from a shared resource in the project (e.g. a shared canvas dashboard).
+  PERSONAL_VIRTUAL_FILE_SOURCE_KIND_SHARED = 1;
+  // Clone from one of the caller's own personal virtual files.
+  PERSONAL_VIRTUAL_FILE_SOURCE_KIND_PERSONAL = 2;
+}
+
+message PersonalVirtualFileSummary {
+  string name = 1;
+  string display_name = 2;
+  PersonalVirtualFileType type = 3;
+  google.protobuf.Timestamp updated_on = 4;
+}
+
+message CreatePersonalVirtualFileRequest {
+  string org = 1;
+  string project = 2;
+  PersonalVirtualFileType type = 3 [(validate.rules).enum = {defined_only: true, not_in: [0]}];
+  string display_name = 4 [(validate.rules).string.min_len = 1];
+  // Optional: initial YAML body. If empty, the server generates a blank template for the given type.
+  string yaml = 5;
+}
+
+message CreatePersonalVirtualFileResponse {
+  string name = 1;
+}
+
+message EditPersonalVirtualFileRequest {
+  string org = 1;
+  string project = 2;
+  PersonalVirtualFileType type = 3 [(validate.rules).enum = {defined_only: true, not_in: [0]}];
+  string name = 4;
+  string yaml = 5 [(validate.rules).string.min_len = 1];
+}
+
+message EditPersonalVirtualFileResponse {}
+
+message DeletePersonalVirtualFileRequest {
+  string org = 1;
+  string project = 2;
+  PersonalVirtualFileType type = 3 [(validate.rules).enum = {defined_only: true, not_in: [0]}];
+  string name = 4;
+}
+
+message DeletePersonalVirtualFileResponse {}
+
+message CopyPersonalVirtualFileRequest {
+  string org = 1;
+  string project = 2;
+  PersonalVirtualFileType type = 3 [(validate.rules).enum = {defined_only: true, not_in: [0]}];
+  PersonalVirtualFileSourceKind source_kind = 4 [(validate.rules).enum = {defined_only: true, not_in: [0]}];
+  string source_name = 5 [(validate.rules).string.min_len = 1];
+  // Optional: override the display name. If empty, "Copy of <source>" is used.
+  string display_name = 6;
+}
+
+message CopyPersonalVirtualFileResponse {
+  string name = 1;
+}
+
+message GetPersonalVirtualFileRequest {
+  string org = 1;
+  string project = 2;
+  PersonalVirtualFileType type = 3 [(validate.rules).enum = {defined_only: true, not_in: [0]}];
+  string name = 4;
+}
+
+message GetPersonalVirtualFileResponse {
+  string name = 1;
+  string display_name = 2;
+  string yaml = 3;
+  google.protobuf.Timestamp updated_on = 4;
+}
+
+message ListPersonalVirtualFilesRequest {
+  string org = 1;
+  string project = 2;
+  PersonalVirtualFileType type = 3 [(validate.rules).enum = {defined_only: true, not_in: [0]}];
+}
+
+message ListPersonalVirtualFilesResponse {
+  repeated PersonalVirtualFileSummary files = 1;
+}
+
 message GetBillingSubscriptionRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
   bool superuser_force_access = 2;
@@ -3444,6 +3575,7 @@ message ProjectPermissions {
   bool manage_alerts = 14;
   bool create_bookmarks = 17;
   bool manage_bookmarks = 18;
+  bool create_personal_canvases = 23;
 }
 
 message OrganizationRole {

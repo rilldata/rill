@@ -24,6 +24,7 @@
     editable = true,
     showInspectorToggle = true,
     showTableToggle = false,
+    showBreadcrumbs = true,
     hasUnsavedChanges,
     filePath,
     codeToggle = false,
@@ -37,6 +38,9 @@
     editable?: boolean;
     showInspectorToggle?: boolean;
     showTableToggle?: boolean;
+    // Breadcrumbs reflect the project file tree, which only makes sense in Rill Developer.
+    // Cloud hosts (e.g. personal canvas editor) should pass false.
+    showBreadcrumbs?: boolean;
     hasUnsavedChanges: boolean;
     filePath: string;
     codeToggle?: boolean;
@@ -65,12 +69,14 @@
 </script>
 
 <header bind:clientWidth={width}>
-  <div
-    class="slide pl-3.5 h-7 flex items-center"
-    class:!pl-10={!$navigationOpen}
-  >
-    <WorkspaceBreadcrumbs {resource} {filePath} />
-  </div>
+  {#if showBreadcrumbs}
+    <div
+      class="slide pl-3.5 h-7 flex items-center"
+      class:!pl-10={!$navigationOpen}
+    >
+      <WorkspaceBreadcrumbs {resource} {filePath} />
+    </div>
+  {/if}
 
   <div class="second-level-wrapper">
     <div class="flex gap-x-1 items-center w-full" class:truncate={!editing}>

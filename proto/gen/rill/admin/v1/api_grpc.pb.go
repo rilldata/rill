@@ -166,6 +166,12 @@ const (
 	AdminService_DeleteAlert_FullMethodName                            = "/rill.admin.v1.AdminService/DeleteAlert"
 	AdminService_GenerateAlertYAML_FullMethodName                      = "/rill.admin.v1.AdminService/GenerateAlertYAML"
 	AdminService_GetAlertYAML_FullMethodName                           = "/rill.admin.v1.AdminService/GetAlertYAML"
+	AdminService_CreatePersonalVirtualFile_FullMethodName              = "/rill.admin.v1.AdminService/CreatePersonalVirtualFile"
+	AdminService_EditPersonalVirtualFile_FullMethodName                = "/rill.admin.v1.AdminService/EditPersonalVirtualFile"
+	AdminService_DeletePersonalVirtualFile_FullMethodName              = "/rill.admin.v1.AdminService/DeletePersonalVirtualFile"
+	AdminService_CopyPersonalVirtualFile_FullMethodName                = "/rill.admin.v1.AdminService/CopyPersonalVirtualFile"
+	AdminService_GetPersonalVirtualFile_FullMethodName                 = "/rill.admin.v1.AdminService/GetPersonalVirtualFile"
+	AdminService_ListPersonalVirtualFiles_FullMethodName               = "/rill.admin.v1.AdminService/ListPersonalVirtualFiles"
 	AdminService_GetBillingSubscription_FullMethodName                 = "/rill.admin.v1.AdminService/GetBillingSubscription"
 	AdminService_UpdateBillingSubscription_FullMethodName              = "/rill.admin.v1.AdminService/UpdateBillingSubscription"
 	AdminService_CancelBillingSubscription_FullMethodName              = "/rill.admin.v1.AdminService/CancelBillingSubscription"
@@ -502,6 +508,18 @@ type AdminServiceClient interface {
 	GenerateAlertYAML(ctx context.Context, in *GenerateAlertYAMLRequest, opts ...grpc.CallOption) (*GenerateAlertYAMLResponse, error)
 	// GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
 	GetAlertYAML(ctx context.Context, in *GetAlertYAMLRequest, opts ...grpc.CallOption) (*GetAlertYAMLResponse, error)
+	// CreatePersonalVirtualFile creates a personal (owner-only) resource as a virtual file in the project.
+	CreatePersonalVirtualFile(ctx context.Context, in *CreatePersonalVirtualFileRequest, opts ...grpc.CallOption) (*CreatePersonalVirtualFileResponse, error)
+	// EditPersonalVirtualFile updates the YAML body of a personal virtual file the caller owns.
+	EditPersonalVirtualFile(ctx context.Context, in *EditPersonalVirtualFileRequest, opts ...grpc.CallOption) (*EditPersonalVirtualFileResponse, error)
+	// DeletePersonalVirtualFile deletes a personal virtual file the caller owns.
+	DeletePersonalVirtualFile(ctx context.Context, in *DeletePersonalVirtualFileRequest, opts ...grpc.CallOption) (*DeletePersonalVirtualFileResponse, error)
+	// CopyPersonalVirtualFile clones a shared resource (or one of the caller's own personal items) into a new personal virtual file.
+	CopyPersonalVirtualFile(ctx context.Context, in *CopyPersonalVirtualFileRequest, opts ...grpc.CallOption) (*CopyPersonalVirtualFileResponse, error)
+	// GetPersonalVirtualFile returns the YAML body and metadata for a personal virtual file the caller owns.
+	GetPersonalVirtualFile(ctx context.Context, in *GetPersonalVirtualFileRequest, opts ...grpc.CallOption) (*GetPersonalVirtualFileResponse, error)
+	// ListPersonalVirtualFiles lists the calling user's personal virtual files for the given type.
+	ListPersonalVirtualFiles(ctx context.Context, in *ListPersonalVirtualFilesRequest, opts ...grpc.CallOption) (*ListPersonalVirtualFilesResponse, error)
 	// GetBillingSubscription lists the subscription for the organization
 	GetBillingSubscription(ctx context.Context, in *GetBillingSubscriptionRequest, opts ...grpc.CallOption) (*GetBillingSubscriptionResponse, error)
 	// UpdateBillingSubscription updates the billing plan for the organization
@@ -2004,6 +2022,66 @@ func (c *adminServiceClient) GetAlertYAML(ctx context.Context, in *GetAlertYAMLR
 	return out, nil
 }
 
+func (c *adminServiceClient) CreatePersonalVirtualFile(ctx context.Context, in *CreatePersonalVirtualFileRequest, opts ...grpc.CallOption) (*CreatePersonalVirtualFileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreatePersonalVirtualFileResponse)
+	err := c.cc.Invoke(ctx, AdminService_CreatePersonalVirtualFile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) EditPersonalVirtualFile(ctx context.Context, in *EditPersonalVirtualFileRequest, opts ...grpc.CallOption) (*EditPersonalVirtualFileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EditPersonalVirtualFileResponse)
+	err := c.cc.Invoke(ctx, AdminService_EditPersonalVirtualFile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) DeletePersonalVirtualFile(ctx context.Context, in *DeletePersonalVirtualFileRequest, opts ...grpc.CallOption) (*DeletePersonalVirtualFileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeletePersonalVirtualFileResponse)
+	err := c.cc.Invoke(ctx, AdminService_DeletePersonalVirtualFile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) CopyPersonalVirtualFile(ctx context.Context, in *CopyPersonalVirtualFileRequest, opts ...grpc.CallOption) (*CopyPersonalVirtualFileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CopyPersonalVirtualFileResponse)
+	err := c.cc.Invoke(ctx, AdminService_CopyPersonalVirtualFile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetPersonalVirtualFile(ctx context.Context, in *GetPersonalVirtualFileRequest, opts ...grpc.CallOption) (*GetPersonalVirtualFileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetPersonalVirtualFileResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetPersonalVirtualFile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ListPersonalVirtualFiles(ctx context.Context, in *ListPersonalVirtualFilesRequest, opts ...grpc.CallOption) (*ListPersonalVirtualFilesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListPersonalVirtualFilesResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListPersonalVirtualFiles_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) GetBillingSubscription(ctx context.Context, in *GetBillingSubscriptionRequest, opts ...grpc.CallOption) (*GetBillingSubscriptionResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetBillingSubscriptionResponse)
@@ -2455,6 +2533,18 @@ type AdminServiceServer interface {
 	GenerateAlertYAML(context.Context, *GenerateAlertYAMLRequest) (*GenerateAlertYAMLResponse, error)
 	// GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
 	GetAlertYAML(context.Context, *GetAlertYAMLRequest) (*GetAlertYAMLResponse, error)
+	// CreatePersonalVirtualFile creates a personal (owner-only) resource as a virtual file in the project.
+	CreatePersonalVirtualFile(context.Context, *CreatePersonalVirtualFileRequest) (*CreatePersonalVirtualFileResponse, error)
+	// EditPersonalVirtualFile updates the YAML body of a personal virtual file the caller owns.
+	EditPersonalVirtualFile(context.Context, *EditPersonalVirtualFileRequest) (*EditPersonalVirtualFileResponse, error)
+	// DeletePersonalVirtualFile deletes a personal virtual file the caller owns.
+	DeletePersonalVirtualFile(context.Context, *DeletePersonalVirtualFileRequest) (*DeletePersonalVirtualFileResponse, error)
+	// CopyPersonalVirtualFile clones a shared resource (or one of the caller's own personal items) into a new personal virtual file.
+	CopyPersonalVirtualFile(context.Context, *CopyPersonalVirtualFileRequest) (*CopyPersonalVirtualFileResponse, error)
+	// GetPersonalVirtualFile returns the YAML body and metadata for a personal virtual file the caller owns.
+	GetPersonalVirtualFile(context.Context, *GetPersonalVirtualFileRequest) (*GetPersonalVirtualFileResponse, error)
+	// ListPersonalVirtualFiles lists the calling user's personal virtual files for the given type.
+	ListPersonalVirtualFiles(context.Context, *ListPersonalVirtualFilesRequest) (*ListPersonalVirtualFilesResponse, error)
 	// GetBillingSubscription lists the subscription for the organization
 	GetBillingSubscription(context.Context, *GetBillingSubscriptionRequest) (*GetBillingSubscriptionResponse, error)
 	// UpdateBillingSubscription updates the billing plan for the organization
@@ -2927,6 +3017,24 @@ func (UnimplementedAdminServiceServer) GenerateAlertYAML(context.Context, *Gener
 }
 func (UnimplementedAdminServiceServer) GetAlertYAML(context.Context, *GetAlertYAMLRequest) (*GetAlertYAMLResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAlertYAML not implemented")
+}
+func (UnimplementedAdminServiceServer) CreatePersonalVirtualFile(context.Context, *CreatePersonalVirtualFileRequest) (*CreatePersonalVirtualFileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreatePersonalVirtualFile not implemented")
+}
+func (UnimplementedAdminServiceServer) EditPersonalVirtualFile(context.Context, *EditPersonalVirtualFileRequest) (*EditPersonalVirtualFileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EditPersonalVirtualFile not implemented")
+}
+func (UnimplementedAdminServiceServer) DeletePersonalVirtualFile(context.Context, *DeletePersonalVirtualFileRequest) (*DeletePersonalVirtualFileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeletePersonalVirtualFile not implemented")
+}
+func (UnimplementedAdminServiceServer) CopyPersonalVirtualFile(context.Context, *CopyPersonalVirtualFileRequest) (*CopyPersonalVirtualFileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CopyPersonalVirtualFile not implemented")
+}
+func (UnimplementedAdminServiceServer) GetPersonalVirtualFile(context.Context, *GetPersonalVirtualFileRequest) (*GetPersonalVirtualFileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPersonalVirtualFile not implemented")
+}
+func (UnimplementedAdminServiceServer) ListPersonalVirtualFiles(context.Context, *ListPersonalVirtualFilesRequest) (*ListPersonalVirtualFilesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListPersonalVirtualFiles not implemented")
 }
 func (UnimplementedAdminServiceServer) GetBillingSubscription(context.Context, *GetBillingSubscriptionRequest) (*GetBillingSubscriptionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetBillingSubscription not implemented")
@@ -5634,6 +5742,114 @@ func _AdminService_GetAlertYAML_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_CreatePersonalVirtualFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreatePersonalVirtualFileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).CreatePersonalVirtualFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_CreatePersonalVirtualFile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).CreatePersonalVirtualFile(ctx, req.(*CreatePersonalVirtualFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_EditPersonalVirtualFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EditPersonalVirtualFileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).EditPersonalVirtualFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_EditPersonalVirtualFile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).EditPersonalVirtualFile(ctx, req.(*EditPersonalVirtualFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_DeletePersonalVirtualFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeletePersonalVirtualFileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).DeletePersonalVirtualFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_DeletePersonalVirtualFile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).DeletePersonalVirtualFile(ctx, req.(*DeletePersonalVirtualFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_CopyPersonalVirtualFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CopyPersonalVirtualFileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).CopyPersonalVirtualFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_CopyPersonalVirtualFile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).CopyPersonalVirtualFile(ctx, req.(*CopyPersonalVirtualFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetPersonalVirtualFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPersonalVirtualFileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetPersonalVirtualFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetPersonalVirtualFile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetPersonalVirtualFile(ctx, req.(*GetPersonalVirtualFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ListPersonalVirtualFiles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListPersonalVirtualFilesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListPersonalVirtualFiles(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListPersonalVirtualFiles_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListPersonalVirtualFiles(ctx, req.(*ListPersonalVirtualFilesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_GetBillingSubscription_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetBillingSubscriptionRequest)
 	if err := dec(in); err != nil {
@@ -6462,6 +6678,30 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetAlertYAML",
 			Handler:    _AdminService_GetAlertYAML_Handler,
+		},
+		{
+			MethodName: "CreatePersonalVirtualFile",
+			Handler:    _AdminService_CreatePersonalVirtualFile_Handler,
+		},
+		{
+			MethodName: "EditPersonalVirtualFile",
+			Handler:    _AdminService_EditPersonalVirtualFile_Handler,
+		},
+		{
+			MethodName: "DeletePersonalVirtualFile",
+			Handler:    _AdminService_DeletePersonalVirtualFile_Handler,
+		},
+		{
+			MethodName: "CopyPersonalVirtualFile",
+			Handler:    _AdminService_CopyPersonalVirtualFile_Handler,
+		},
+		{
+			MethodName: "GetPersonalVirtualFile",
+			Handler:    _AdminService_GetPersonalVirtualFile_Handler,
+		},
+		{
+			MethodName: "ListPersonalVirtualFiles",
+			Handler:    _AdminService_ListPersonalVirtualFiles_Handler,
 		},
 		{
 			MethodName: "GetBillingSubscription",

@@ -35,6 +35,60 @@ proto3.util.setEnumType(GithubPermission, "rill.admin.v1.GithubPermission", [
 ]);
 
 /**
+ * PersonalVirtualFileType enumerates the resource kinds that can be stored as a personal virtual file.
+ *
+ * @generated from enum rill.admin.v1.PersonalVirtualFileType
+ */
+export enum PersonalVirtualFileType {
+  /**
+   * @generated from enum value: PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: PERSONAL_VIRTUAL_FILE_TYPE_CANVAS = 1;
+   */
+  CANVAS = 1,
+}
+// Retrieve enum metadata with: proto3.getEnumType(PersonalVirtualFileType)
+proto3.util.setEnumType(PersonalVirtualFileType, "rill.admin.v1.PersonalVirtualFileType", [
+  { no: 0, name: "PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED" },
+  { no: 1, name: "PERSONAL_VIRTUAL_FILE_TYPE_CANVAS" },
+]);
+
+/**
+ * PersonalVirtualFileSourceKind enumerates the kinds of source resources that CopyPersonalVirtualFile can clone from.
+ *
+ * @generated from enum rill.admin.v1.PersonalVirtualFileSourceKind
+ */
+export enum PersonalVirtualFileSourceKind {
+  /**
+   * @generated from enum value: PERSONAL_VIRTUAL_FILE_SOURCE_KIND_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * Clone from a shared resource in the project (e.g. a shared canvas dashboard).
+   *
+   * @generated from enum value: PERSONAL_VIRTUAL_FILE_SOURCE_KIND_SHARED = 1;
+   */
+  SHARED = 1,
+
+  /**
+   * Clone from one of the caller's own personal virtual files.
+   *
+   * @generated from enum value: PERSONAL_VIRTUAL_FILE_SOURCE_KIND_PERSONAL = 2;
+   */
+  PERSONAL = 2,
+}
+// Retrieve enum metadata with: proto3.getEnumType(PersonalVirtualFileSourceKind)
+proto3.util.setEnumType(PersonalVirtualFileSourceKind, "rill.admin.v1.PersonalVirtualFileSourceKind", [
+  { no: 0, name: "PERSONAL_VIRTUAL_FILE_SOURCE_KIND_UNSPECIFIED" },
+  { no: 1, name: "PERSONAL_VIRTUAL_FILE_SOURCE_KIND_SHARED" },
+  { no: 2, name: "PERSONAL_VIRTUAL_FILE_SOURCE_KIND_PERSONAL" },
+]);
+
+/**
  * @generated from enum rill.admin.v1.DeploymentStatus
  */
 export enum DeploymentStatus {
@@ -14358,6 +14412,641 @@ export class GetAlertYAMLResponse extends Message<GetAlertYAMLResponse> {
 }
 
 /**
+ * @generated from message rill.admin.v1.PersonalVirtualFileSummary
+ */
+export class PersonalVirtualFileSummary extends Message<PersonalVirtualFileSummary> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string display_name = 2;
+   */
+  displayName = "";
+
+  /**
+   * @generated from field: rill.admin.v1.PersonalVirtualFileType type = 3;
+   */
+  type = PersonalVirtualFileType.UNSPECIFIED;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp updated_on = 4;
+   */
+  updatedOn?: Timestamp;
+
+  constructor(data?: PartialMessage<PersonalVirtualFileSummary>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.PersonalVirtualFileSummary";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "type", kind: "enum", T: proto3.getEnumType(PersonalVirtualFileType) },
+    { no: 4, name: "updated_on", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PersonalVirtualFileSummary {
+    return new PersonalVirtualFileSummary().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PersonalVirtualFileSummary {
+    return new PersonalVirtualFileSummary().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PersonalVirtualFileSummary {
+    return new PersonalVirtualFileSummary().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: PersonalVirtualFileSummary | PlainMessage<PersonalVirtualFileSummary> | undefined, b: PersonalVirtualFileSummary | PlainMessage<PersonalVirtualFileSummary> | undefined): boolean {
+    return proto3.util.equals(PersonalVirtualFileSummary, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.CreatePersonalVirtualFileRequest
+ */
+export class CreatePersonalVirtualFileRequest extends Message<CreatePersonalVirtualFileRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  /**
+   * @generated from field: rill.admin.v1.PersonalVirtualFileType type = 3;
+   */
+  type = PersonalVirtualFileType.UNSPECIFIED;
+
+  /**
+   * @generated from field: string display_name = 4;
+   */
+  displayName = "";
+
+  /**
+   * Optional: initial YAML body. If empty, the server generates a blank template for the given type.
+   *
+   * @generated from field: string yaml = 5;
+   */
+  yaml = "";
+
+  constructor(data?: PartialMessage<CreatePersonalVirtualFileRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.CreatePersonalVirtualFileRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "type", kind: "enum", T: proto3.getEnumType(PersonalVirtualFileType) },
+    { no: 4, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "yaml", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreatePersonalVirtualFileRequest {
+    return new CreatePersonalVirtualFileRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreatePersonalVirtualFileRequest {
+    return new CreatePersonalVirtualFileRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreatePersonalVirtualFileRequest {
+    return new CreatePersonalVirtualFileRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreatePersonalVirtualFileRequest | PlainMessage<CreatePersonalVirtualFileRequest> | undefined, b: CreatePersonalVirtualFileRequest | PlainMessage<CreatePersonalVirtualFileRequest> | undefined): boolean {
+    return proto3.util.equals(CreatePersonalVirtualFileRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.CreatePersonalVirtualFileResponse
+ */
+export class CreatePersonalVirtualFileResponse extends Message<CreatePersonalVirtualFileResponse> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  constructor(data?: PartialMessage<CreatePersonalVirtualFileResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.CreatePersonalVirtualFileResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreatePersonalVirtualFileResponse {
+    return new CreatePersonalVirtualFileResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreatePersonalVirtualFileResponse {
+    return new CreatePersonalVirtualFileResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreatePersonalVirtualFileResponse {
+    return new CreatePersonalVirtualFileResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreatePersonalVirtualFileResponse | PlainMessage<CreatePersonalVirtualFileResponse> | undefined, b: CreatePersonalVirtualFileResponse | PlainMessage<CreatePersonalVirtualFileResponse> | undefined): boolean {
+    return proto3.util.equals(CreatePersonalVirtualFileResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.EditPersonalVirtualFileRequest
+ */
+export class EditPersonalVirtualFileRequest extends Message<EditPersonalVirtualFileRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  /**
+   * @generated from field: rill.admin.v1.PersonalVirtualFileType type = 3;
+   */
+  type = PersonalVirtualFileType.UNSPECIFIED;
+
+  /**
+   * @generated from field: string name = 4;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string yaml = 5;
+   */
+  yaml = "";
+
+  constructor(data?: PartialMessage<EditPersonalVirtualFileRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.EditPersonalVirtualFileRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "type", kind: "enum", T: proto3.getEnumType(PersonalVirtualFileType) },
+    { no: 4, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "yaml", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditPersonalVirtualFileRequest {
+    return new EditPersonalVirtualFileRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): EditPersonalVirtualFileRequest {
+    return new EditPersonalVirtualFileRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): EditPersonalVirtualFileRequest {
+    return new EditPersonalVirtualFileRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: EditPersonalVirtualFileRequest | PlainMessage<EditPersonalVirtualFileRequest> | undefined, b: EditPersonalVirtualFileRequest | PlainMessage<EditPersonalVirtualFileRequest> | undefined): boolean {
+    return proto3.util.equals(EditPersonalVirtualFileRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.EditPersonalVirtualFileResponse
+ */
+export class EditPersonalVirtualFileResponse extends Message<EditPersonalVirtualFileResponse> {
+  constructor(data?: PartialMessage<EditPersonalVirtualFileResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.EditPersonalVirtualFileResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditPersonalVirtualFileResponse {
+    return new EditPersonalVirtualFileResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): EditPersonalVirtualFileResponse {
+    return new EditPersonalVirtualFileResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): EditPersonalVirtualFileResponse {
+    return new EditPersonalVirtualFileResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: EditPersonalVirtualFileResponse | PlainMessage<EditPersonalVirtualFileResponse> | undefined, b: EditPersonalVirtualFileResponse | PlainMessage<EditPersonalVirtualFileResponse> | undefined): boolean {
+    return proto3.util.equals(EditPersonalVirtualFileResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.DeletePersonalVirtualFileRequest
+ */
+export class DeletePersonalVirtualFileRequest extends Message<DeletePersonalVirtualFileRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  /**
+   * @generated from field: rill.admin.v1.PersonalVirtualFileType type = 3;
+   */
+  type = PersonalVirtualFileType.UNSPECIFIED;
+
+  /**
+   * @generated from field: string name = 4;
+   */
+  name = "";
+
+  constructor(data?: PartialMessage<DeletePersonalVirtualFileRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.DeletePersonalVirtualFileRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "type", kind: "enum", T: proto3.getEnumType(PersonalVirtualFileType) },
+    { no: 4, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeletePersonalVirtualFileRequest {
+    return new DeletePersonalVirtualFileRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeletePersonalVirtualFileRequest {
+    return new DeletePersonalVirtualFileRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeletePersonalVirtualFileRequest {
+    return new DeletePersonalVirtualFileRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeletePersonalVirtualFileRequest | PlainMessage<DeletePersonalVirtualFileRequest> | undefined, b: DeletePersonalVirtualFileRequest | PlainMessage<DeletePersonalVirtualFileRequest> | undefined): boolean {
+    return proto3.util.equals(DeletePersonalVirtualFileRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.DeletePersonalVirtualFileResponse
+ */
+export class DeletePersonalVirtualFileResponse extends Message<DeletePersonalVirtualFileResponse> {
+  constructor(data?: PartialMessage<DeletePersonalVirtualFileResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.DeletePersonalVirtualFileResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeletePersonalVirtualFileResponse {
+    return new DeletePersonalVirtualFileResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeletePersonalVirtualFileResponse {
+    return new DeletePersonalVirtualFileResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeletePersonalVirtualFileResponse {
+    return new DeletePersonalVirtualFileResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeletePersonalVirtualFileResponse | PlainMessage<DeletePersonalVirtualFileResponse> | undefined, b: DeletePersonalVirtualFileResponse | PlainMessage<DeletePersonalVirtualFileResponse> | undefined): boolean {
+    return proto3.util.equals(DeletePersonalVirtualFileResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.CopyPersonalVirtualFileRequest
+ */
+export class CopyPersonalVirtualFileRequest extends Message<CopyPersonalVirtualFileRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  /**
+   * @generated from field: rill.admin.v1.PersonalVirtualFileType type = 3;
+   */
+  type = PersonalVirtualFileType.UNSPECIFIED;
+
+  /**
+   * @generated from field: rill.admin.v1.PersonalVirtualFileSourceKind source_kind = 4;
+   */
+  sourceKind = PersonalVirtualFileSourceKind.UNSPECIFIED;
+
+  /**
+   * @generated from field: string source_name = 5;
+   */
+  sourceName = "";
+
+  /**
+   * Optional: override the display name. If empty, "Copy of <source>" is used.
+   *
+   * @generated from field: string display_name = 6;
+   */
+  displayName = "";
+
+  constructor(data?: PartialMessage<CopyPersonalVirtualFileRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.CopyPersonalVirtualFileRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "type", kind: "enum", T: proto3.getEnumType(PersonalVirtualFileType) },
+    { no: 4, name: "source_kind", kind: "enum", T: proto3.getEnumType(PersonalVirtualFileSourceKind) },
+    { no: 5, name: "source_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CopyPersonalVirtualFileRequest {
+    return new CopyPersonalVirtualFileRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CopyPersonalVirtualFileRequest {
+    return new CopyPersonalVirtualFileRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CopyPersonalVirtualFileRequest {
+    return new CopyPersonalVirtualFileRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CopyPersonalVirtualFileRequest | PlainMessage<CopyPersonalVirtualFileRequest> | undefined, b: CopyPersonalVirtualFileRequest | PlainMessage<CopyPersonalVirtualFileRequest> | undefined): boolean {
+    return proto3.util.equals(CopyPersonalVirtualFileRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.CopyPersonalVirtualFileResponse
+ */
+export class CopyPersonalVirtualFileResponse extends Message<CopyPersonalVirtualFileResponse> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  constructor(data?: PartialMessage<CopyPersonalVirtualFileResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.CopyPersonalVirtualFileResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CopyPersonalVirtualFileResponse {
+    return new CopyPersonalVirtualFileResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CopyPersonalVirtualFileResponse {
+    return new CopyPersonalVirtualFileResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CopyPersonalVirtualFileResponse {
+    return new CopyPersonalVirtualFileResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CopyPersonalVirtualFileResponse | PlainMessage<CopyPersonalVirtualFileResponse> | undefined, b: CopyPersonalVirtualFileResponse | PlainMessage<CopyPersonalVirtualFileResponse> | undefined): boolean {
+    return proto3.util.equals(CopyPersonalVirtualFileResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetPersonalVirtualFileRequest
+ */
+export class GetPersonalVirtualFileRequest extends Message<GetPersonalVirtualFileRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  /**
+   * @generated from field: rill.admin.v1.PersonalVirtualFileType type = 3;
+   */
+  type = PersonalVirtualFileType.UNSPECIFIED;
+
+  /**
+   * @generated from field: string name = 4;
+   */
+  name = "";
+
+  constructor(data?: PartialMessage<GetPersonalVirtualFileRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetPersonalVirtualFileRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "type", kind: "enum", T: proto3.getEnumType(PersonalVirtualFileType) },
+    { no: 4, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetPersonalVirtualFileRequest {
+    return new GetPersonalVirtualFileRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetPersonalVirtualFileRequest {
+    return new GetPersonalVirtualFileRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetPersonalVirtualFileRequest {
+    return new GetPersonalVirtualFileRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetPersonalVirtualFileRequest | PlainMessage<GetPersonalVirtualFileRequest> | undefined, b: GetPersonalVirtualFileRequest | PlainMessage<GetPersonalVirtualFileRequest> | undefined): boolean {
+    return proto3.util.equals(GetPersonalVirtualFileRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetPersonalVirtualFileResponse
+ */
+export class GetPersonalVirtualFileResponse extends Message<GetPersonalVirtualFileResponse> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string display_name = 2;
+   */
+  displayName = "";
+
+  /**
+   * @generated from field: string yaml = 3;
+   */
+  yaml = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp updated_on = 4;
+   */
+  updatedOn?: Timestamp;
+
+  constructor(data?: PartialMessage<GetPersonalVirtualFileResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetPersonalVirtualFileResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "yaml", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "updated_on", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetPersonalVirtualFileResponse {
+    return new GetPersonalVirtualFileResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetPersonalVirtualFileResponse {
+    return new GetPersonalVirtualFileResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetPersonalVirtualFileResponse {
+    return new GetPersonalVirtualFileResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetPersonalVirtualFileResponse | PlainMessage<GetPersonalVirtualFileResponse> | undefined, b: GetPersonalVirtualFileResponse | PlainMessage<GetPersonalVirtualFileResponse> | undefined): boolean {
+    return proto3.util.equals(GetPersonalVirtualFileResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ListPersonalVirtualFilesRequest
+ */
+export class ListPersonalVirtualFilesRequest extends Message<ListPersonalVirtualFilesRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  /**
+   * @generated from field: rill.admin.v1.PersonalVirtualFileType type = 3;
+   */
+  type = PersonalVirtualFileType.UNSPECIFIED;
+
+  constructor(data?: PartialMessage<ListPersonalVirtualFilesRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListPersonalVirtualFilesRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "type", kind: "enum", T: proto3.getEnumType(PersonalVirtualFileType) },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListPersonalVirtualFilesRequest {
+    return new ListPersonalVirtualFilesRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListPersonalVirtualFilesRequest {
+    return new ListPersonalVirtualFilesRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListPersonalVirtualFilesRequest {
+    return new ListPersonalVirtualFilesRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListPersonalVirtualFilesRequest | PlainMessage<ListPersonalVirtualFilesRequest> | undefined, b: ListPersonalVirtualFilesRequest | PlainMessage<ListPersonalVirtualFilesRequest> | undefined): boolean {
+    return proto3.util.equals(ListPersonalVirtualFilesRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ListPersonalVirtualFilesResponse
+ */
+export class ListPersonalVirtualFilesResponse extends Message<ListPersonalVirtualFilesResponse> {
+  /**
+   * @generated from field: repeated rill.admin.v1.PersonalVirtualFileSummary files = 1;
+   */
+  files: PersonalVirtualFileSummary[] = [];
+
+  constructor(data?: PartialMessage<ListPersonalVirtualFilesResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListPersonalVirtualFilesResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "files", kind: "message", T: PersonalVirtualFileSummary, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListPersonalVirtualFilesResponse {
+    return new ListPersonalVirtualFilesResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListPersonalVirtualFilesResponse {
+    return new ListPersonalVirtualFilesResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListPersonalVirtualFilesResponse {
+    return new ListPersonalVirtualFilesResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListPersonalVirtualFilesResponse | PlainMessage<ListPersonalVirtualFilesResponse> | undefined, b: ListPersonalVirtualFilesResponse | PlainMessage<ListPersonalVirtualFilesResponse> | undefined): boolean {
+    return proto3.util.equals(ListPersonalVirtualFilesResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.GetBillingSubscriptionRequest
  */
 export class GetBillingSubscriptionRequest extends Message<GetBillingSubscriptionRequest> {
@@ -16731,6 +17420,11 @@ export class ProjectPermissions extends Message<ProjectPermissions> {
    */
   manageBookmarks = false;
 
+  /**
+   * @generated from field: bool create_personal_canvases = 23;
+   */
+  createPersonalCanvases = false;
+
   constructor(data?: PartialMessage<ProjectPermissions>) {
     super();
     proto3.util.initPartial(data, this);
@@ -16761,6 +17455,7 @@ export class ProjectPermissions extends Message<ProjectPermissions> {
     { no: 14, name: "manage_alerts", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 17, name: "create_bookmarks", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 18, name: "manage_bookmarks", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 23, name: "create_personal_canvases", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProjectPermissions {

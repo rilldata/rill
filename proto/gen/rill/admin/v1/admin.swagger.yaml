@@ -2004,6 +2004,212 @@ paths:
           in: path
           required: true
           type: string
+  /v1/orgs/{org}/projects/{project}/personal-virtual-files:
+    get:
+      summary: ListPersonalVirtualFiles lists the calling user's personal virtual files for the given type.
+      operationId: AdminService_ListPersonalVirtualFiles
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListPersonalVirtualFilesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: type
+          in: query
+          required: false
+          type: string
+          enum:
+            - PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED
+            - PERSONAL_VIRTUAL_FILE_TYPE_CANVAS
+          default: PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED
+    post:
+      summary: CreatePersonalVirtualFile creates a personal (owner-only) resource as a virtual file in the project.
+      operationId: AdminService_CreatePersonalVirtualFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreatePersonalVirtualFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              type:
+                $ref: '#/definitions/v1PersonalVirtualFileType'
+              displayName:
+                type: string
+              yaml:
+                type: string
+                description: 'Optional: initial YAML body. If empty, the server generates a blank template for the given type.'
+  /v1/orgs/{org}/projects/{project}/personal-virtual-files/-/copy:
+    post:
+      summary: CopyPersonalVirtualFile clones a shared resource (or one of the caller's own personal items) into a new personal virtual file.
+      operationId: AdminService_CopyPersonalVirtualFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CopyPersonalVirtualFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              type:
+                $ref: '#/definitions/v1PersonalVirtualFileType'
+              sourceKind:
+                $ref: '#/definitions/v1PersonalVirtualFileSourceKind'
+              sourceName:
+                type: string
+              displayName:
+                type: string
+                description: 'Optional: override the display name. If empty, "Copy of <source>" is used.'
+  /v1/orgs/{org}/projects/{project}/personal-virtual-files/{type}/{name}:
+    get:
+      summary: GetPersonalVirtualFile returns the YAML body and metadata for a personal virtual file the caller owns.
+      operationId: AdminService_GetPersonalVirtualFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetPersonalVirtualFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: type
+          in: path
+          required: true
+          type: string
+          enum:
+            - PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED
+            - PERSONAL_VIRTUAL_FILE_TYPE_CANVAS
+        - name: name
+          in: path
+          required: true
+          type: string
+    delete:
+      summary: DeletePersonalVirtualFile deletes a personal virtual file the caller owns.
+      operationId: AdminService_DeletePersonalVirtualFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeletePersonalVirtualFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: type
+          in: path
+          required: true
+          type: string
+          enum:
+            - PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED
+            - PERSONAL_VIRTUAL_FILE_TYPE_CANVAS
+        - name: name
+          in: path
+          required: true
+          type: string
+    put:
+      summary: EditPersonalVirtualFile updates the YAML body of a personal virtual file the caller owns.
+      operationId: AdminService_EditPersonalVirtualFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1EditPersonalVirtualFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: type
+          in: path
+          required: true
+          type: string
+          enum:
+            - PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED
+            - PERSONAL_VIRTUAL_FILE_TYPE_CANVAS
+        - name: name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              yaml:
+                type: string
   /v1/orgs/{org}/projects/{project}/redeploy:
     post:
       summary: |-
@@ -5004,6 +5210,11 @@ definitions:
       toolResult:
         $ref: '#/definitions/v1ToolResult'
     title: Content block within a message
+  v1CopyPersonalVirtualFileResponse:
+    type: object
+    properties:
+      name:
+        type: string
   v1CreateAlertResponse:
     type: object
     properties:
@@ -5082,6 +5293,11 @@ definitions:
     properties:
       organization:
         $ref: '#/definitions/v1Organization'
+  v1CreatePersonalVirtualFileResponse:
+    type: object
+    properties:
+      name:
+        type: string
   v1CreateProjectResponse:
     type: object
     properties:
@@ -5114,6 +5330,8 @@ definitions:
       deploymentId:
         type: string
   v1DeleteOrganizationResponse:
+    type: object
+  v1DeletePersonalVirtualFileResponse:
     type: object
   v1DeleteProjectResponse:
     type: object
@@ -5181,6 +5399,8 @@ definitions:
       - DEPLOYMENT_STATUS_DELETED
     default: DEPLOYMENT_STATUS_UNSPECIFIED
   v1EditAlertResponse:
+    type: object
+  v1EditPersonalVirtualFileResponse:
     type: object
   v1EditReportResponse:
     type: object
@@ -5434,6 +5654,18 @@ definitions:
     properties:
       url:
         type: string
+  v1GetPersonalVirtualFileResponse:
+    type: object
+    properties:
+      name:
+        type: string
+      displayName:
+        type: string
+      yaml:
+        type: string
+      updatedOn:
+        type: string
+        format: date-time
   v1GetProjectAccessRequestResponse:
     type: object
     properties:
@@ -5684,6 +5916,14 @@ definitions:
           $ref: '#/definitions/v1Organization'
       nextPageToken:
         type: string
+  v1ListPersonalVirtualFilesResponse:
+    type: object
+    properties:
+      files:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1PersonalVirtualFileSummary'
   v1ListProjectInvitesResponse:
     type: object
     properties:
@@ -6096,6 +6336,37 @@ definitions:
         type: string
       permissions:
         $ref: '#/definitions/v1OrganizationPermissions'
+  v1PersonalVirtualFileSourceKind:
+    type: string
+    enum:
+      - PERSONAL_VIRTUAL_FILE_SOURCE_KIND_UNSPECIFIED
+      - PERSONAL_VIRTUAL_FILE_SOURCE_KIND_SHARED
+      - PERSONAL_VIRTUAL_FILE_SOURCE_KIND_PERSONAL
+    default: PERSONAL_VIRTUAL_FILE_SOURCE_KIND_UNSPECIFIED
+    description: |-
+      PersonalVirtualFileSourceKind enumerates the kinds of source resources that CopyPersonalVirtualFile can clone from.
+
+       - PERSONAL_VIRTUAL_FILE_SOURCE_KIND_SHARED: Clone from a shared resource in the project (e.g. a shared canvas dashboard).
+       - PERSONAL_VIRTUAL_FILE_SOURCE_KIND_PERSONAL: Clone from one of the caller's own personal virtual files.
+  v1PersonalVirtualFileSummary:
+    type: object
+    properties:
+      name:
+        type: string
+      displayName:
+        type: string
+      type:
+        $ref: '#/definitions/v1PersonalVirtualFileType'
+      updatedOn:
+        type: string
+        format: date-time
+  v1PersonalVirtualFileType:
+    type: string
+    enum:
+      - PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED
+      - PERSONAL_VIRTUAL_FILE_TYPE_CANVAS
+    default: PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED
+    description: PersonalVirtualFileType enumerates the resource kinds that can be stored as a personal virtual file.
   v1PingResponse:
     type: object
     properties:
@@ -6288,6 +6559,8 @@ definitions:
       createBookmarks:
         type: boolean
       manageBookmarks:
+        type: boolean
+      createPersonalCanvases:
         type: boolean
   v1ProjectRole:
     type: object

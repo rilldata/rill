@@ -872,6 +872,8 @@ message CanvasSpec {
   repeated SecurityRule security_rules = 6;
   // Array of dimension or measure names
   repeated string pinned_filters = 16;
+  // Annotations are arbitrary key-value pairs that can be used to attach metadata to the canvas (e.g. used to mark personal canvases created by the admin server).
+  map<string, string> annotations = 19;
 }
 
 message CanvasState {

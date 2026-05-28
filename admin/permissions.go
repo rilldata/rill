@@ -125,6 +125,7 @@ func (s *Service) ProjectPermissionsForUser(ctx context.Context, projectID, user
 			ManageAlerts:               true,
 			CreateBookmarks:            true,
 			ManageBookmarks:            true,
+			CreatePersonalCanvases:     true,
 		}, nil
 	}
 
@@ -173,6 +174,7 @@ func (s *Service) ProjectPermissionsForService(ctx context.Context, projectID, s
 			ManageAlerts:               true,
 			CreateBookmarks:            true,
 			ManageBookmarks:            true,
+			CreatePersonalCanvases:     false,
 		}, nil
 	}
 
@@ -229,6 +231,7 @@ func (s *Service) ProjectPermissionsForDeployment(ctx context.Context, projectID
 			ManageAlerts:               false,
 			CreateBookmarks:            false,
 			ManageBookmarks:            false,
+			CreatePersonalCanvases:     false,
 		}, nil
 	}
 
@@ -266,6 +269,7 @@ func (s *Service) ProjectPermissionsForMagicAuthToken(ctx context.Context, proje
 		ManageAlerts:               false,
 		CreateBookmarks:            false,
 		ManageBookmarks:            false,
+		CreatePersonalCanvases:     false,
 	}, nil
 }
 
@@ -310,5 +314,6 @@ func UnionProjectRoles(a *adminv1.ProjectPermissions, b *database.ProjectRole) *
 		ManageAlerts:               a.ManageAlerts || b.ManageAlerts,
 		CreateBookmarks:            a.CreateBookmarks || b.CreateBookmarks,
 		ManageBookmarks:            a.ManageBookmarks || b.ManageBookmarks,
+		CreatePersonalCanvases:     a.CreatePersonalCanvases || b.CreatePersonalCanvases,
 	}
 }

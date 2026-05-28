@@ -2906,6 +2906,22 @@ func (c *connection) FindVirtualFile(ctx context.Context, projectID, environment
 	return res, nil
 }
 
+// FindVirtualFilesByPrefix returns all non-deleted virtual files whose path starts with pathPrefix.
+// Intended for listing personal virtual files scoped to a user's directory (e.g. "personal/canvases/{user_id}/").
+func (c *connection) FindVirtualFilesByPrefix(ctx context.Context, projectID, environment, pathPrefix string) ([]*database.VirtualFile, error) {
+	var res []*database.VirtualFile
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT path, data, deleted, updated_on
+		FROM virtual_files
+		WHERE project_id=$1 AND environment=$2 AND deleted=FALSE AND path LIKE $3 || '%'
+		ORDER BY path
+	`, projectID, environment, pathPrefix)
+	if err != nil {
+		return nil, parseErr("virtual files", err)
+	}
+	return res, nil
+}
+
 func (c *connection) UpsertVirtualFile(ctx context.Context, opts *database.InsertVirtualFileOptions) error {
 	if err := database.Validate(opts); err != nil {
 		return err

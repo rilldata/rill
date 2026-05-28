@@ -66,6 +66,7 @@ class FeatureFlags {
   stickyDashboardState = new FeatureFlag("user", false);
   cloudEditing = new FeatureFlag("user", false);
   customCharts = new FeatureFlag("user", false);
+  personalCanvases = new FeatureFlag("user", false);
 
   private flagsUnsub?: () => void;
 

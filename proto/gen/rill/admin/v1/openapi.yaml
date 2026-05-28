@@ -433,6 +433,11 @@ components:
                     $ref: '#/components/schemas/v1ToolResult'
             title: Content block within a message
             type: object
+        v1CopyPersonalVirtualFileResponse:
+            properties:
+                name:
+                    type: string
+            type: object
         v1CreateAlertResponse:
             properties:
                 name:
@@ -511,6 +516,11 @@ components:
                 organization:
                     $ref: '#/components/schemas/v1Organization'
             type: object
+        v1CreatePersonalVirtualFileResponse:
+            properties:
+                name:
+                    type: string
+            type: object
         v1CreateProjectResponse:
             properties:
                 project:
@@ -543,6 +553,8 @@ components:
                     type: string
             type: object
         v1DeleteOrganizationResponse:
+            type: object
+        v1DeletePersonalVirtualFileResponse:
             type: object
         v1DeleteProjectResponse:
             properties:
@@ -610,6 +622,8 @@ components:
                 - DEPLOYMENT_STATUS_DELETED
             type: string
         v1EditAlertResponse:
+            type: object
+        v1EditPersonalVirtualFileResponse:
             type: object
         v1EditReportResponse:
             type: object
@@ -862,6 +876,18 @@ components:
                 url:
                     type: string
             type: object
+        v1GetPersonalVirtualFileResponse:
+            properties:
+                displayName:
+                    type: string
+                name:
+                    type: string
+                updatedOn:
+                    format: date-time
+                    type: string
+                yaml:
+                    type: string
+            type: object
         v1GetProjectAccessRequestResponse:
             properties:
                 email:
@@ -1098,6 +1124,13 @@ components:
                 organizations:
                     items:
                         $ref: '#/components/schemas/v1Organization'
+                    type: array
+            type: object
+        v1ListPersonalVirtualFilesResponse:
+            properties:
+                files:
+                    items:
+                        $ref: '#/components/schemas/v1PersonalVirtualFileSummary'
                     type: array
             type: object
         v1ListProjectInvitesResponse:
@@ -1490,6 +1523,37 @@ components:
                 permissions:
                     $ref: '#/components/schemas/v1OrganizationPermissions'
             type: object
+        v1PersonalVirtualFileSourceKind:
+            default: PERSONAL_VIRTUAL_FILE_SOURCE_KIND_UNSPECIFIED
+            description: |-
+                PersonalVirtualFileSourceKind enumerates the kinds of source resources that CopyPersonalVirtualFile can clone from.
+
+                 - PERSONAL_VIRTUAL_FILE_SOURCE_KIND_SHARED: Clone from a shared resource in the project (e.g. a shared canvas dashboard).
+                 - PERSONAL_VIRTUAL_FILE_SOURCE_KIND_PERSONAL: Clone from one of the caller's own personal virtual files.
+            enum:
+                - PERSONAL_VIRTUAL_FILE_SOURCE_KIND_UNSPECIFIED
+                - PERSONAL_VIRTUAL_FILE_SOURCE_KIND_SHARED
+                - PERSONAL_VIRTUAL_FILE_SOURCE_KIND_PERSONAL
+            type: string
+        v1PersonalVirtualFileSummary:
+            properties:
+                displayName:
+                    type: string
+                name:
+                    type: string
+                type:
+                    $ref: '#/components/schemas/v1PersonalVirtualFileType'
+                updatedOn:
+                    format: date-time
+                    type: string
+            type: object
+        v1PersonalVirtualFileType:
+            default: PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED
+            description: PersonalVirtualFileType enumerates the resource kinds that can be stored as a personal virtual file.
+            enum:
+                - PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED
+                - PERSONAL_VIRTUAL_FILE_TYPE_CANVAS
+            type: string
         v1PingResponse:
             properties:
                 time:
@@ -1643,6 +1707,8 @@ components:
                 createBookmarks:
                     type: boolean
                 createMagicAuthTokens:
+                    type: boolean
+                createPersonalCanvases:
                     type: boolean
                 createReports:
                     type: boolean
@@ -4855,6 +4921,260 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: ListUsergroupsForProjectAndUser returns the user groups for a user within a project
+    /v1/orgs/{org}/projects/{project}/personal-virtual-files:
+        get:
+            operationId: AdminService_ListPersonalVirtualFiles
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - in: query
+                  name: type
+                  schema:
+                    default: PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED
+                    enum:
+                        - PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED
+                        - PERSONAL_VIRTUAL_FILE_TYPE_CANVAS
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1ListPersonalVirtualFilesResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: ListPersonalVirtualFiles lists the calling user's personal virtual files for the given type.
+        post:
+            operationId: AdminService_CreatePersonalVirtualFile
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                displayName:
+                                    type: string
+                                type:
+                                    $ref: '#/components/schemas/v1PersonalVirtualFileType'
+                                yaml:
+                                    description: 'Optional: initial YAML body. If empty, the server generates a blank template for the given type.'
+                                    type: string
+                            type: object
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1CreatePersonalVirtualFileResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: CreatePersonalVirtualFile creates a personal (owner-only) resource as a virtual file in the project.
+    /v1/orgs/{org}/projects/{project}/personal-virtual-files/-/copy:
+        post:
+            operationId: AdminService_CopyPersonalVirtualFile
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                displayName:
+                                    description: 'Optional: override the display name. If empty, "Copy of <source>" is used.'
+                                    type: string
+                                sourceKind:
+                                    $ref: '#/components/schemas/v1PersonalVirtualFileSourceKind'
+                                sourceName:
+                                    type: string
+                                type:
+                                    $ref: '#/components/schemas/v1PersonalVirtualFileType'
+                            type: object
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1CopyPersonalVirtualFileResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: CopyPersonalVirtualFile clones a shared resource (or one of the caller's own personal items) into a new personal virtual file.
+    /v1/orgs/{org}/projects/{project}/personal-virtual-files/{type}/{name}:
+        delete:
+            operationId: AdminService_DeletePersonalVirtualFile
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: type
+                  required: true
+                  schema:
+                    enum:
+                        - PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED
+                        - PERSONAL_VIRTUAL_FILE_TYPE_CANVAS
+                    type: string
+                - in: path
+                  name: name
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1DeletePersonalVirtualFileResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: DeletePersonalVirtualFile deletes a personal virtual file the caller owns.
+        get:
+            operationId: AdminService_GetPersonalVirtualFile
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: type
+                  required: true
+                  schema:
+                    enum:
+                        - PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED
+                        - PERSONAL_VIRTUAL_FILE_TYPE_CANVAS
+                    type: string
+                - in: path
+                  name: name
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetPersonalVirtualFileResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: GetPersonalVirtualFile returns the YAML body and metadata for a personal virtual file the caller owns.
+        put:
+            operationId: AdminService_EditPersonalVirtualFile
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: type
+                  required: true
+                  schema:
+                    enum:
+                        - PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED
+                        - PERSONAL_VIRTUAL_FILE_TYPE_CANVAS
+                    type: string
+                - in: path
+                  name: name
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                yaml:
+                                    type: string
+                            type: object
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1EditPersonalVirtualFileResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: EditPersonalVirtualFile updates the YAML body of a personal virtual file the caller owns.
     /v1/orgs/{org}/projects/{project}/redeploy:
         post:
             operationId: AdminService_RedeployProject

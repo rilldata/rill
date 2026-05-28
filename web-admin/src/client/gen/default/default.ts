@@ -30,11 +30,13 @@ import type {
   AdminServiceAddProjectMemberUserBody,
   AdminServiceCancelBillingSubscriptionParams,
   AdminServiceConnectProjectToGithubBody,
+  AdminServiceCopyPersonalVirtualFileBody,
   AdminServiceCreateAlertBodyBody,
   AdminServiceCreateAssetBody,
   AdminServiceCreateDeploymentBody,
   AdminServiceCreateGithubPullRequestBody,
   AdminServiceCreateManagedGitRepoBody,
+  AdminServiceCreatePersonalVirtualFileBody,
   AdminServiceCreateProjectBody,
   AdminServiceCreateProjectWhitelistedDomainBodyBody,
   AdminServiceCreateReportBodyBody,
@@ -42,6 +44,7 @@ import type {
   AdminServiceCreateUsergroupBody,
   AdminServiceDeleteUserParams,
   AdminServiceDeleteVirtualFileParams,
+  AdminServiceEditPersonalVirtualFileBody,
   AdminServiceGetAlertMetaBody,
   AdminServiceGetBillingCreditBalanceParams,
   AdminServiceGetBillingSubscriptionParams,
@@ -69,6 +72,7 @@ import type {
   AdminServiceListOrganizationMemberUsergroupsParams,
   AdminServiceListOrganizationMemberUsersParams,
   AdminServiceListOrganizationsParams,
+  AdminServiceListPersonalVirtualFilesParams,
   AdminServiceListProjectInvitesParams,
   AdminServiceListProjectMemberUsergroupsParams,
   AdminServiceListProjectMemberUsersParams,
@@ -112,6 +116,7 @@ import type {
   V1CompleteRequest,
   V1CompleteResponse,
   V1ConnectProjectToGithubResponse,
+  V1CopyPersonalVirtualFileResponse,
   V1CreateAlertResponse,
   V1CreateAssetResponse,
   V1CreateBookmarkRequest,
@@ -121,6 +126,7 @@ import type {
   V1CreateManagedGitRepoResponse,
   V1CreateOrganizationRequest,
   V1CreateOrganizationResponse,
+  V1CreatePersonalVirtualFileResponse,
   V1CreateProjectResponse,
   V1CreateProjectWhitelistedDomainResponse,
   V1CreateReportResponse,
@@ -130,6 +136,7 @@ import type {
   V1DeleteAlertResponse,
   V1DeleteDeploymentResponse,
   V1DeleteOrganizationResponse,
+  V1DeletePersonalVirtualFileResponse,
   V1DeleteProjectResponse,
   V1DeleteReportResponse,
   V1DeleteServiceResponse,
@@ -138,6 +145,7 @@ import type {
   V1DeleteVirtualFileResponse,
   V1DenyProjectAccessResponse,
   V1EditAlertResponse,
+  V1EditPersonalVirtualFileResponse,
   V1EditReportResponse,
   V1GenerateAlertYAMLResponse,
   V1GenerateReportYAMLResponse,
@@ -162,6 +170,7 @@ import type {
   V1GetOrganizationNameForDomainResponse,
   V1GetOrganizationResponse,
   V1GetPaymentsPortalURLResponse,
+  V1GetPersonalVirtualFileResponse,
   V1GetProjectAccessRequestResponse,
   V1GetProjectByIDResponse,
   V1GetProjectMemberUserResponse,
@@ -189,6 +198,7 @@ import type {
   V1ListOrganizationMemberUsergroupsResponse,
   V1ListOrganizationMemberUsersResponse,
   V1ListOrganizationsResponse,
+  V1ListPersonalVirtualFilesResponse,
   V1ListProjectInvitesResponse,
   V1ListProjectMemberServicesResponse,
   V1ListProjectMemberUsergroupsResponse,
@@ -7038,6 +7048,716 @@ export function createAdminServiceListUsergroupsForProjectAndUser<
   return query;
 }
 
+/**
+ * @summary ListPersonalVirtualFiles lists the calling user's personal virtual files for the given type.
+ */
+export const adminServiceListPersonalVirtualFiles = (
+  org: string,
+  project: string,
+  params?: AdminServiceListPersonalVirtualFilesParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ListPersonalVirtualFilesResponse>({
+    url: `/v1/orgs/${org}/projects/${project}/personal-virtual-files`,
+    method: "GET",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceListPersonalVirtualFilesQueryKey = (
+  org?: string,
+  project?: string,
+  params?: AdminServiceListPersonalVirtualFilesParams,
+) => {
+  return [
+    `/v1/orgs/${org}/projects/${project}/personal-virtual-files`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getAdminServiceListPersonalVirtualFilesQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceListPersonalVirtualFiles>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  project: string,
+  params?: AdminServiceListPersonalVirtualFilesParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceListPersonalVirtualFiles>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceListPersonalVirtualFilesQueryKey(org, project, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceListPersonalVirtualFiles>>
+  > = ({ signal }) =>
+    adminServiceListPersonalVirtualFiles(org, project, params, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(org && project),
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceListPersonalVirtualFiles>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceListPersonalVirtualFilesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListPersonalVirtualFiles>>
+>;
+export type AdminServiceListPersonalVirtualFilesQueryError = RpcStatus;
+
+/**
+ * @summary ListPersonalVirtualFiles lists the calling user's personal virtual files for the given type.
+ */
+
+export function createAdminServiceListPersonalVirtualFiles<
+  TData = Awaited<ReturnType<typeof adminServiceListPersonalVirtualFiles>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  project: string,
+  params?: AdminServiceListPersonalVirtualFilesParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceListPersonalVirtualFiles>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceListPersonalVirtualFilesQueryOptions(
+    org,
+    project,
+    params,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary CreatePersonalVirtualFile creates a personal (owner-only) resource as a virtual file in the project.
+ */
+export const adminServiceCreatePersonalVirtualFile = (
+  org: string,
+  project: string,
+  adminServiceCreatePersonalVirtualFileBody: AdminServiceCreatePersonalVirtualFileBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1CreatePersonalVirtualFileResponse>({
+    url: `/v1/orgs/${org}/projects/${project}/personal-virtual-files`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceCreatePersonalVirtualFileBody,
+    signal,
+  });
+};
+
+export const getAdminServiceCreatePersonalVirtualFileMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceCreatePersonalVirtualFile>>,
+    TError,
+    {
+      org: string;
+      project: string;
+      data: AdminServiceCreatePersonalVirtualFileBody;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceCreatePersonalVirtualFile>>,
+  TError,
+  {
+    org: string;
+    project: string;
+    data: AdminServiceCreatePersonalVirtualFileBody;
+  },
+  TContext
+> => {
+  const mutationKey = ["adminServiceCreatePersonalVirtualFile"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceCreatePersonalVirtualFile>>,
+    {
+      org: string;
+      project: string;
+      data: AdminServiceCreatePersonalVirtualFileBody;
+    }
+  > = (props) => {
+    const { org, project, data } = props ?? {};
+
+    return adminServiceCreatePersonalVirtualFile(org, project, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceCreatePersonalVirtualFileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceCreatePersonalVirtualFile>>
+>;
+export type AdminServiceCreatePersonalVirtualFileMutationBody =
+  AdminServiceCreatePersonalVirtualFileBody;
+export type AdminServiceCreatePersonalVirtualFileMutationError = RpcStatus;
+
+/**
+ * @summary CreatePersonalVirtualFile creates a personal (owner-only) resource as a virtual file in the project.
+ */
+export const createAdminServiceCreatePersonalVirtualFile = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceCreatePersonalVirtualFile>>,
+      TError,
+      {
+        org: string;
+        project: string;
+        data: AdminServiceCreatePersonalVirtualFileBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceCreatePersonalVirtualFile>>,
+  TError,
+  {
+    org: string;
+    project: string;
+    data: AdminServiceCreatePersonalVirtualFileBody;
+  },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceCreatePersonalVirtualFileMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary CopyPersonalVirtualFile clones a shared resource (or one of the caller's own personal items) into a new personal virtual file.
+ */
+export const adminServiceCopyPersonalVirtualFile = (
+  org: string,
+  project: string,
+  adminServiceCopyPersonalVirtualFileBody: AdminServiceCopyPersonalVirtualFileBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1CopyPersonalVirtualFileResponse>({
+    url: `/v1/orgs/${org}/projects/${project}/personal-virtual-files/-/copy`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceCopyPersonalVirtualFileBody,
+    signal,
+  });
+};
+
+export const getAdminServiceCopyPersonalVirtualFileMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceCopyPersonalVirtualFile>>,
+    TError,
+    {
+      org: string;
+      project: string;
+      data: AdminServiceCopyPersonalVirtualFileBody;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceCopyPersonalVirtualFile>>,
+  TError,
+  {
+    org: string;
+    project: string;
+    data: AdminServiceCopyPersonalVirtualFileBody;
+  },
+  TContext
+> => {
+  const mutationKey = ["adminServiceCopyPersonalVirtualFile"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceCopyPersonalVirtualFile>>,
+    {
+      org: string;
+      project: string;
+      data: AdminServiceCopyPersonalVirtualFileBody;
+    }
+  > = (props) => {
+    const { org, project, data } = props ?? {};
+
+    return adminServiceCopyPersonalVirtualFile(org, project, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceCopyPersonalVirtualFileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceCopyPersonalVirtualFile>>
+>;
+export type AdminServiceCopyPersonalVirtualFileMutationBody =
+  AdminServiceCopyPersonalVirtualFileBody;
+export type AdminServiceCopyPersonalVirtualFileMutationError = RpcStatus;
+
+/**
+ * @summary CopyPersonalVirtualFile clones a shared resource (or one of the caller's own personal items) into a new personal virtual file.
+ */
+export const createAdminServiceCopyPersonalVirtualFile = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceCopyPersonalVirtualFile>>,
+      TError,
+      {
+        org: string;
+        project: string;
+        data: AdminServiceCopyPersonalVirtualFileBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceCopyPersonalVirtualFile>>,
+  TError,
+  {
+    org: string;
+    project: string;
+    data: AdminServiceCopyPersonalVirtualFileBody;
+  },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceCopyPersonalVirtualFileMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary GetPersonalVirtualFile returns the YAML body and metadata for a personal virtual file the caller owns.
+ */
+export const adminServiceGetPersonalVirtualFile = (
+  org: string,
+  project: string,
+  type:
+    | "PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED"
+    | "PERSONAL_VIRTUAL_FILE_TYPE_CANVAS",
+  name: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetPersonalVirtualFileResponse>({
+    url: `/v1/orgs/${org}/projects/${project}/personal-virtual-files/${type}/${name}`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getAdminServiceGetPersonalVirtualFileQueryKey = (
+  org?: string,
+  project?: string,
+  type?:
+    | "PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED"
+    | "PERSONAL_VIRTUAL_FILE_TYPE_CANVAS",
+  name?: string,
+) => {
+  return [
+    `/v1/orgs/${org}/projects/${project}/personal-virtual-files/${type}/${name}`,
+  ] as const;
+};
+
+export const getAdminServiceGetPersonalVirtualFileQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceGetPersonalVirtualFile>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  project: string,
+  type:
+    | "PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED"
+    | "PERSONAL_VIRTUAL_FILE_TYPE_CANVAS",
+  name: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetPersonalVirtualFile>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetPersonalVirtualFileQueryKey(org, project, type, name);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetPersonalVirtualFile>>
+  > = ({ signal }) =>
+    adminServiceGetPersonalVirtualFile(org, project, type, name, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(org && project && type && name),
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceGetPersonalVirtualFile>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceGetPersonalVirtualFileQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetPersonalVirtualFile>>
+>;
+export type AdminServiceGetPersonalVirtualFileQueryError = RpcStatus;
+
+/**
+ * @summary GetPersonalVirtualFile returns the YAML body and metadata for a personal virtual file the caller owns.
+ */
+
+export function createAdminServiceGetPersonalVirtualFile<
+  TData = Awaited<ReturnType<typeof adminServiceGetPersonalVirtualFile>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  project: string,
+  type:
+    | "PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED"
+    | "PERSONAL_VIRTUAL_FILE_TYPE_CANVAS",
+  name: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetPersonalVirtualFile>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceGetPersonalVirtualFileQueryOptions(
+    org,
+    project,
+    type,
+    name,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary DeletePersonalVirtualFile deletes a personal virtual file the caller owns.
+ */
+export const adminServiceDeletePersonalVirtualFile = (
+  org: string,
+  project: string,
+  type:
+    | "PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED"
+    | "PERSONAL_VIRTUAL_FILE_TYPE_CANVAS",
+  name: string,
+) => {
+  return httpClient<V1DeletePersonalVirtualFileResponse>({
+    url: `/v1/orgs/${org}/projects/${project}/personal-virtual-files/${type}/${name}`,
+    method: "DELETE",
+  });
+};
+
+export const getAdminServiceDeletePersonalVirtualFileMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceDeletePersonalVirtualFile>>,
+    TError,
+    {
+      org: string;
+      project: string;
+      type:
+        | "PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED"
+        | "PERSONAL_VIRTUAL_FILE_TYPE_CANVAS";
+      name: string;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceDeletePersonalVirtualFile>>,
+  TError,
+  {
+    org: string;
+    project: string;
+    type:
+      | "PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED"
+      | "PERSONAL_VIRTUAL_FILE_TYPE_CANVAS";
+    name: string;
+  },
+  TContext
+> => {
+  const mutationKey = ["adminServiceDeletePersonalVirtualFile"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceDeletePersonalVirtualFile>>,
+    {
+      org: string;
+      project: string;
+      type:
+        | "PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED"
+        | "PERSONAL_VIRTUAL_FILE_TYPE_CANVAS";
+      name: string;
+    }
+  > = (props) => {
+    const { org, project, type, name } = props ?? {};
+
+    return adminServiceDeletePersonalVirtualFile(org, project, type, name);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceDeletePersonalVirtualFileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceDeletePersonalVirtualFile>>
+>;
+
+export type AdminServiceDeletePersonalVirtualFileMutationError = RpcStatus;
+
+/**
+ * @summary DeletePersonalVirtualFile deletes a personal virtual file the caller owns.
+ */
+export const createAdminServiceDeletePersonalVirtualFile = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceDeletePersonalVirtualFile>>,
+      TError,
+      {
+        org: string;
+        project: string;
+        type:
+          | "PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED"
+          | "PERSONAL_VIRTUAL_FILE_TYPE_CANVAS";
+        name: string;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceDeletePersonalVirtualFile>>,
+  TError,
+  {
+    org: string;
+    project: string;
+    type:
+      | "PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED"
+      | "PERSONAL_VIRTUAL_FILE_TYPE_CANVAS";
+    name: string;
+  },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceDeletePersonalVirtualFileMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary EditPersonalVirtualFile updates the YAML body of a personal virtual file the caller owns.
+ */
+export const adminServiceEditPersonalVirtualFile = (
+  org: string,
+  project: string,
+  type:
+    | "PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED"
+    | "PERSONAL_VIRTUAL_FILE_TYPE_CANVAS",
+  name: string,
+  adminServiceEditPersonalVirtualFileBody: AdminServiceEditPersonalVirtualFileBody,
+) => {
+  return httpClient<V1EditPersonalVirtualFileResponse>({
+    url: `/v1/orgs/${org}/projects/${project}/personal-virtual-files/${type}/${name}`,
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceEditPersonalVirtualFileBody,
+  });
+};
+
+export const getAdminServiceEditPersonalVirtualFileMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceEditPersonalVirtualFile>>,
+    TError,
+    {
+      org: string;
+      project: string;
+      type:
+        | "PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED"
+        | "PERSONAL_VIRTUAL_FILE_TYPE_CANVAS";
+      name: string;
+      data: AdminServiceEditPersonalVirtualFileBody;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceEditPersonalVirtualFile>>,
+  TError,
+  {
+    org: string;
+    project: string;
+    type:
+      | "PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED"
+      | "PERSONAL_VIRTUAL_FILE_TYPE_CANVAS";
+    name: string;
+    data: AdminServiceEditPersonalVirtualFileBody;
+  },
+  TContext
+> => {
+  const mutationKey = ["adminServiceEditPersonalVirtualFile"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceEditPersonalVirtualFile>>,
+    {
+      org: string;
+      project: string;
+      type:
+        | "PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED"
+        | "PERSONAL_VIRTUAL_FILE_TYPE_CANVAS";
+      name: string;
+      data: AdminServiceEditPersonalVirtualFileBody;
+    }
+  > = (props) => {
+    const { org, project, type, name, data } = props ?? {};
+
+    return adminServiceEditPersonalVirtualFile(org, project, type, name, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceEditPersonalVirtualFileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceEditPersonalVirtualFile>>
+>;
+export type AdminServiceEditPersonalVirtualFileMutationBody =
+  AdminServiceEditPersonalVirtualFileBody;
+export type AdminServiceEditPersonalVirtualFileMutationError = RpcStatus;
+
+/**
+ * @summary EditPersonalVirtualFile updates the YAML body of a personal virtual file the caller owns.
+ */
+export const createAdminServiceEditPersonalVirtualFile = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceEditPersonalVirtualFile>>,
+      TError,
+      {
+        org: string;
+        project: string;
+        type:
+          | "PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED"
+          | "PERSONAL_VIRTUAL_FILE_TYPE_CANVAS";
+        name: string;
+        data: AdminServiceEditPersonalVirtualFileBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceEditPersonalVirtualFile>>,
+  TError,
+  {
+    org: string;
+    project: string;
+    type:
+      | "PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED"
+      | "PERSONAL_VIRTUAL_FILE_TYPE_CANVAS";
+    name: string;
+    data: AdminServiceEditPersonalVirtualFileBody;
+  },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceEditPersonalVirtualFileMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
 /**
  * @summary RedeployProject creates a new production deployment for a project.
 If the project currently has another production deployment, the old deployment will be deprovisioned.

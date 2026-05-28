@@ -145,8 +145,12 @@ export class FileArtifact {
     this.client = client;
   }
 
-  fetchContent = async (invalidate = false) => {
-    if (!this.client) return;
+  // fetchBlob is the persistence hook called by fetchContent. Override in subclasses to read
+  // the canonical YAML from a different transport (e.g. admin RPC GetPersonalVirtualFile).
+  protected async fetchBlob(
+    invalidate: boolean,
+  ): Promise<string | undefined> {
+    if (!this.client) return undefined;
     const instanceId = this.client.instanceId;
     const queryParams = {
       path: this.path,
@@ -160,19 +164,22 @@ export class FileArtifact {
     > = ({ signal }) =>
       runtimeServiceGetFile(this.client, queryParams, { signal });
 
-    let fetchedContent: string | undefined = undefined;
-
     try {
       const response = await queryClient.fetchQuery({
         queryKey,
         queryFn,
         staleTime: Infinity,
       });
-
-      fetchedContent = response.blob;
+      return response.blob;
     } catch (e) {
       console.log("FETCH ERROR", e);
+      return undefined;
     }
+  }
+
+  fetchContent = async (invalidate = false) => {
+    if (!this.client) return;
+    const fetchedContent = await this.fetchBlob(invalidate);
 
     const currentRemoteContent = get(this.remoteContent);
     const editorContent = get(this.editorContent);
@@ -250,6 +257,15 @@ export class FileArtifact {
     await this.saveContent(get(this.editorContent) ?? "");
   };
 
+  // putBlob is the persistence hook called by saveContent. Override in subclasses to redirect
+  // writes to a different transport (e.g. admin RPCs for personal virtual files in Rill Cloud).
+  protected async putBlob(blob: string): Promise<void> {
+    await runtimeServicePutFile(this.client, {
+      path: this.path,
+      blob,
+    });
+  }
+
   private saveContent = async (blob: string) => {
     if (!this.client) return;
     const instanceId = this.client.instanceId;
@@ -267,10 +283,7 @@ export class FileArtifact {
     try {
       const fileSavePromise = this.saveState.initiateSave();
 
-      await runtimeServicePutFile(this.client, {
-        path: this.path,
-        blob,
-      });
+      await this.putBlob(blob);
 
       await fileSavePromise;
     } catch {

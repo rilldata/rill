@@ -4441,6 +4441,11 @@ definitions:
         items:
           type: string
         title: Array of dimension or measure names
+      annotations:
+        type: object
+        additionalProperties:
+          type: string
+        description: Annotations are arbitrary key-value pairs that can be used to attach metadata to the canvas (e.g. used to mark personal canvases created by the admin server).
   v1CanvasState:
     type: object
     properties:

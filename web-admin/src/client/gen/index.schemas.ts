@@ -328,6 +328,10 @@ export interface V1ContentBlock {
   toolResult?: V1ToolResult;
 }
 
+export interface V1CopyPersonalVirtualFileResponse {
+  name?: string;
+}
+
 export interface V1CreateAlertResponse {
   name?: string;
 }
@@ -381,6 +385,10 @@ export interface V1CreateOrganizationResponse {
   organization?: V1Organization;
 }
 
+export interface V1CreatePersonalVirtualFileResponse {
+  name?: string;
+}
+
 export interface V1CreateProjectResponse {
   project?: V1Project;
 }
@@ -414,6 +422,10 @@ export interface V1DeleteDeploymentResponse {
 }
 
 export interface V1DeleteOrganizationResponse {
+  [key: string]: unknown;
+}
+
+export interface V1DeletePersonalVirtualFileResponse {
   [key: string]: unknown;
 }
 
@@ -478,6 +490,10 @@ export const V1DeploymentStatus = {
 } as const;
 
 export interface V1EditAlertResponse {
+  [key: string]: unknown;
+}
+
+export interface V1EditPersonalVirtualFileResponse {
   [key: string]: unknown;
 }
 
@@ -679,6 +695,13 @@ export interface V1GetPaymentsPortalURLResponse {
   url?: string;
 }
 
+export interface V1GetPersonalVirtualFileResponse {
+  name?: string;
+  displayName?: string;
+  yaml?: string;
+  updatedOn?: string;
+}
+
 export interface V1GetProjectAccessRequestResponse {
   email?: string;
 }
@@ -847,6 +870,10 @@ export interface V1ListOrganizationMemberUsersResponse {
 export interface V1ListOrganizationsResponse {
   organizations?: V1Organization[];
   nextPageToken?: string;
+}
+
+export interface V1ListPersonalVirtualFilesResponse {
+  files?: V1PersonalVirtualFileSummary[];
 }
 
 export interface V1ListProjectInvitesResponse {
@@ -1070,6 +1097,45 @@ export interface V1OrganizationRole {
   permissions?: V1OrganizationPermissions;
 }
 
+/**
+ * PersonalVirtualFileSourceKind enumerates the kinds of source resources that CopyPersonalVirtualFile can clone from.
+
+ - PERSONAL_VIRTUAL_FILE_SOURCE_KIND_SHARED: Clone from a shared resource in the project (e.g. a shared canvas dashboard).
+ - PERSONAL_VIRTUAL_FILE_SOURCE_KIND_PERSONAL: Clone from one of the caller's own personal virtual files.
+ */
+export type V1PersonalVirtualFileSourceKind =
+  (typeof V1PersonalVirtualFileSourceKind)[keyof typeof V1PersonalVirtualFileSourceKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1PersonalVirtualFileSourceKind = {
+  PERSONAL_VIRTUAL_FILE_SOURCE_KIND_UNSPECIFIED:
+    "PERSONAL_VIRTUAL_FILE_SOURCE_KIND_UNSPECIFIED",
+  PERSONAL_VIRTUAL_FILE_SOURCE_KIND_SHARED:
+    "PERSONAL_VIRTUAL_FILE_SOURCE_KIND_SHARED",
+  PERSONAL_VIRTUAL_FILE_SOURCE_KIND_PERSONAL:
+    "PERSONAL_VIRTUAL_FILE_SOURCE_KIND_PERSONAL",
+} as const;
+
+export interface V1PersonalVirtualFileSummary {
+  name?: string;
+  displayName?: string;
+  type?: V1PersonalVirtualFileType;
+  updatedOn?: string;
+}
+
+/**
+ * PersonalVirtualFileType enumerates the resource kinds that can be stored as a personal virtual file.
+ */
+export type V1PersonalVirtualFileType =
+  (typeof V1PersonalVirtualFileType)[keyof typeof V1PersonalVirtualFileType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1PersonalVirtualFileType = {
+  PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED:
+    "PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED",
+  PERSONAL_VIRTUAL_FILE_TYPE_CANVAS: "PERSONAL_VIRTUAL_FILE_TYPE_CANVAS",
+} as const;
+
 export interface V1PingResponse {
   version?: string;
   time?: string;
@@ -1168,6 +1234,7 @@ export interface V1ProjectPermissions {
   manageAlerts?: boolean;
   createBookmarks?: boolean;
   manageBookmarks?: boolean;
+  createPersonalCanvases?: boolean;
 }
 
 export interface V1ProjectRole {
@@ -2109,6 +2176,39 @@ export type AdminServiceAddProjectMemberUserBody = {
   role?: string;
   restrictResources?: boolean;
   resources?: V1ResourceName[];
+};
+
+export type AdminServiceListPersonalVirtualFilesParams = {
+  type?: AdminServiceListPersonalVirtualFilesType;
+};
+
+export type AdminServiceListPersonalVirtualFilesType =
+  (typeof AdminServiceListPersonalVirtualFilesType)[keyof typeof AdminServiceListPersonalVirtualFilesType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AdminServiceListPersonalVirtualFilesType = {
+  PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED:
+    "PERSONAL_VIRTUAL_FILE_TYPE_UNSPECIFIED",
+  PERSONAL_VIRTUAL_FILE_TYPE_CANVAS: "PERSONAL_VIRTUAL_FILE_TYPE_CANVAS",
+} as const;
+
+export type AdminServiceCreatePersonalVirtualFileBody = {
+  type?: V1PersonalVirtualFileType;
+  displayName?: string;
+  /** Optional: initial YAML body. If empty, the server generates a blank template for the given type. */
+  yaml?: string;
+};
+
+export type AdminServiceCopyPersonalVirtualFileBody = {
+  type?: V1PersonalVirtualFileType;
+  sourceKind?: V1PersonalVirtualFileSourceKind;
+  sourceName?: string;
+  /** Optional: override the display name. If empty, "Copy of <source>" is used. */
+  displayName?: string;
+};
+
+export type AdminServiceEditPersonalVirtualFileBody = {
+  yaml?: string;
 };
 
 export type AdminServiceRedeployProjectParams = {

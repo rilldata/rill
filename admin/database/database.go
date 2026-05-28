@@ -309,6 +309,7 @@ type DB interface {
 
 	FindVirtualFiles(ctx context.Context, projectID, environment string, afterUpdatedOn time.Time, afterPath string, limit int) ([]*VirtualFile, error)
 	FindVirtualFile(ctx context.Context, projectID, environment, path string) (*VirtualFile, error)
+	FindVirtualFilesByPrefix(ctx context.Context, projectID, environment, pathPrefix string) ([]*VirtualFile, error)
 	UpsertVirtualFile(ctx context.Context, opts *InsertVirtualFileOptions) error
 	UpdateVirtualFileDeleted(ctx context.Context, projectID, environment, path string) error
 	DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error
@@ -1002,6 +1003,7 @@ type ProjectRole struct {
 	ManageAlerts               bool `db:"manage_alerts"`
 	CreateBookmarks            bool `db:"create_bookmarks"`
 	ManageBookmarks            bool `db:"manage_bookmarks"`
+	CreatePersonalCanvases     bool `db:"create_personal_canvases"`
 }
 
 // UserProjectRole represents a user's project role plus resource scoping metadata.
