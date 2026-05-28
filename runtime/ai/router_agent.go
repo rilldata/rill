@@ -247,6 +247,9 @@ func promptToTitle(message string) string {
 }
 
 // mapAgentErr maps common agent errors to more user-friendly messages.
+//
+// NOTE: For context errors, it does not include the underlying error to keep messages clean.
+// The actual error is still available in the message containing the sub-agent's result.
 func mapAgentErr(err error) error {
 	if errors.Is(err, context.Canceled) {
 		return fmt.Errorf("agent canceled")
