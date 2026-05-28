@@ -19,7 +19,6 @@
   } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import Header from "@rilldata/web-common/layout/header/Header.svelte";
@@ -35,10 +34,7 @@
   import SignIn from "../authentication/SignIn.svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
   import {
-    UNTAGGED_KEY,
-    UNTAGGED_LABEL,
     getPrimaryTag,
-    getResourceTags,
     useDashboards,
   } from "../dashboards/listing/selectors";
   import {
@@ -52,6 +48,14 @@
     isProjectPage,
     isPublicURLPage,
   } from "../navigation/nav-utils";
+  import {
+    buildTagPathsOptions,
+    buildVisualizationOptions,
+    getAllDashboardTags,
+    groupDashboardsByTag,
+    hasUntaggedDashboards,
+    sortDashboardResources,
+  } from "./project-header-paths";
   import PageTitle from "../public-urls/PageTitle.svelte";
   import { useReports } from "../scheduled-reports/selectors";
 
@@ -130,139 +134,36 @@
     return undefined;
   })();
 
-  $: allDashboardTags = Array.from(
-    new Set(visualizations.flatMap(getResourceTags)),
-  ).sort();
+  $: allDashboardTags = getAllDashboardTags(visualizations);
 
-  $: hasUntaggedDashboard = visualizations.some(
-    (r) => getResourceTags(r).length === 0,
-  );
+  $: hasUntaggedDashboard = hasUntaggedDashboards(visualizations);
 
-  $: sortedVisualizations = [...visualizations].sort((a, b) => {
-    const aIsCanvas = !!a?.canvas;
-    const bIsCanvas = !!b?.canvas;
-    if (aIsCanvas !== bIsCanvas) return aIsCanvas ? -1 : 1;
-    return a.meta.name.name.localeCompare(b.meta.name.name);
+  $: sortedVisualizations = sortDashboardResources(visualizations);
+
+  // Dashboards grouped by tag. Multi-tag dashboards appear in every tag's
+  // bucket. Used for both the tag submenu entries and the tag-grouped
+  // dashboard dropdown.
+  $: dashboardsByTag = groupDashboardsByTag(sortedVisualizations);
+
+  $: tagPathsOptions = buildTagPathsOptions({
+    allDashboardTags,
+    dashboardsByTag,
+    hasUntaggedDashboard,
+    activeTag,
+    organization,
+    project,
   });
-
-  // Dashboards grouped by their primary tag. Used for both the tag submenu
-  // entries and the tag-grouped dashboard dropdown.
-  $: dashboardsByTag = (() => {
-    const map = new Map<string, typeof sortedVisualizations>();
-    for (const r of sortedVisualizations) {
-      const tags = getResourceTags(r);
-      tags.forEach((tag) => {
-        const bucket = map.get(tag) ?? [];
-        bucket.push(r);
-        map.set(tag, bucket);
-      });
-    }
-    return map;
-  })();
-  $: console.log(dashboardsByTag, activeTag);
-
-  function buildDashboardHref(
-    resource: (typeof sortedVisualizations)[number],
-    tag: string,
-  ) {
-    const isMetricsExplorer = !!resource?.explore;
-    const slug = isMetricsExplorer ? "explore" : "canvas";
-    const name = resource.meta.name.name;
-    const base = `/${organization}/${project}/${slug}/${name}`;
-    return tag === UNTAGGED_KEY
-      ? base
-      : `${base}?tags=${encodeURIComponent(tag)}`;
-  }
-
-  function buildDashboardSubOption(
-    resource: (typeof sortedVisualizations)[number],
-    tag: string,
-  ): [string, PathOption] {
-    const name = resource.meta.name.name;
-    const isMetricsExplorer = !!resource?.explore;
-    return [
-      name.toLowerCase(),
-      {
-        label:
-          (isMetricsExplorer
-            ? resource?.explore?.spec?.displayName
-            : resource?.canvas?.spec?.displayName) || name,
-        href: buildDashboardHref(resource, tag),
-        resourceKind: isMetricsExplorer
-          ? ResourceKind.Explore
-          : ResourceKind.Canvas,
-      },
-    ];
-  }
-
-  // Tag breadcrumb options: each tag shows a submenu of the dashboards that
-  // carry that tag. UNTAGGED_KEY is included when any dashboard has no tags,
-  // or when it's the currently active selection (so the breadcrumb renders).
-  $: tagPathsOptions = (() => {
-    const map = new Map<string, PathOption>();
-    for (const tag of allDashboardTags) {
-      const subEntries = (dashboardsByTag.get(tag) ?? []).map((r) =>
-        buildDashboardSubOption(r, tag),
-      );
-      map.set(tag.toLowerCase(), {
-        label: tag,
-        href: `/${organization}/${project}?tags=${encodeURIComponent(tag)}`,
-        subOptions: new Map(subEntries),
-      });
-    }
-    if (hasUntaggedDashboard || activeTag === UNTAGGED_KEY) {
-      const subEntries = (dashboardsByTag.get(UNTAGGED_KEY) ?? []).map((r) =>
-        buildDashboardSubOption(r, UNTAGGED_KEY),
-      );
-      map.set(UNTAGGED_KEY, {
-        label: UNTAGGED_LABEL,
-        href: `/${organization}/${project}?tags=${encodeURIComponent(UNTAGGED_KEY)}`,
-        subOptions: new Map(subEntries),
-      });
-    }
-    return map;
-  })();
 
   $: alerts = $alertsQuery.data?.resources ?? [];
   $: reports = $reportsQuery.data?.resources ?? [];
 
-  function buildDashboardPathOption(
-    resource: (typeof sortedVisualizations)[number],
-  ): PathOption {
-    const name = resource.meta.name.name;
-    const isMetricsExplorer = !!resource?.explore;
-    return {
-      label:
-        (isMetricsExplorer
-          ? resource?.explore?.spec?.displayName
-          : resource?.canvas?.spec?.displayName) || name,
-      // depth: 2 ensures path generation always anchors at the project
-      // level, even when a tag segment is inserted before this one.
-      depth: 2,
-      section: isMetricsExplorer ? "explore" : "canvas",
-      resourceKind: isMetricsExplorer
-        ? ResourceKind.Explore
-        : ResourceKind.Canvas,
-    };
-  }
-
-  // Dashboard breadcrumb options. When tagAsFolders is on and a tag folder is
-  // active, the dropdown is scoped to just that tag's dashboards.
   $: visualizationPaths = {
-    options: (() => {
-      const map = new Map<string, PathOption>();
-      const scopedResources =
-        $tagAsFolders && activeTag
-          ? (dashboardsByTag.get(activeTag) ?? [])
-          : sortedVisualizations;
-      for (const resource of scopedResources) {
-        map.set(
-          resource.meta.name.name.toLowerCase(),
-          buildDashboardPathOption(resource),
-        );
-      }
-      return map;
-    })(),
+    options: buildVisualizationOptions({
+      sortedVisualizations,
+      dashboardsByTag,
+      activeTag,
+      tagAsFolders: $tagAsFolders,
+    }),
     carryOverSearchParams: $stickyDashboardState,
   };
 
