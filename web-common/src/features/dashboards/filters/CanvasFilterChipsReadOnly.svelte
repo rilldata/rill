@@ -38,6 +38,7 @@
     {#if dimension && dimension.name}
       <DimensionFilterReadOnlyChip
         pinned={filterData.pinned}
+        missingRequired={!!filterData.missingRequired}
         name={dimension.name}
         {metricsViewNames}
         label={dimension.displayName ||
@@ -61,6 +62,7 @@
     {#if measure && measure.name}
       <MeasureFilterReadOnlyChip
         pinned={filterData.pinned}
+        missingRequired={!!filterData.missingRequired}
         dimensionName={filterData.dimensionName}
         label={filterData.label}
         filter={filterData.filter}

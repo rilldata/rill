@@ -44,6 +44,8 @@
   import MeasureChart from "./measure-chart/MeasureChart.svelte";
   import MeasureChartXAxis from "./measure-chart/MeasureChartXAxis.svelte";
   import { ScrubController } from "./measure-chart/ScrubController";
+  import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
+  import ScreenshotContainer from "@rilldata/web-common/features/dashboards/time-series/ScreenshotContainer.svelte";
 
   const { rillTime } = featureFlags;
 
@@ -179,6 +181,9 @@
   $: annotationsEnabled =
     !!$exploreValidSpec.data?.metricsView?.annotations?.length;
 
+  let screenshotDialogOpen = false;
+  let screenshotDialogMeasure: MetricsViewSpecMeasure | undefined = undefined;
+
   // Pan handler
   function handlePan(direction: "left" | "right") {
     const panRange = $getNewPanRange(direction);
@@ -252,6 +257,11 @@
     if (!measureSelection.isRangeSelection()) {
       measureSelection.clear();
     }
+  }
+
+  function openScreenshotDialog(measure: MetricsViewSpecMeasure) {
+    screenshotDialogMeasure = measure;
+    screenshotDialogOpen = true;
   }
 </script>
 
@@ -392,39 +402,54 @@
         />
 
         {#if activeTimeGrain}
-          <MeasureChart
-            {measure}
-            {scrubController}
-            {connectNulls}
-            tddChartType={tddChartType ?? TDDChart.DEFAULT}
-            metricsViewName={chartMetricsViewName}
-            where={chartWhere}
-            {timeDimension}
-            interval={chartInterval}
-            comparisonInterval={chartComparisonInterval}
-            timeGranularity={activeTimeGrain}
-            timeZone={selectedTimezone}
-            ready={chartReady}
-            {chartScrubInterval}
-            {comparisonDimension}
-            dimensionValues={chartDimensionValues}
-            dimensionWhere={whereFilter}
-            {annotationsEnabled}
-            canPanLeft={$canPanLeft}
-            canPanRight={$canPanRight}
-            onPanLeft={() => handlePan("left")}
-            onPanRight={() => handlePan("right")}
-            {showComparison}
-            {showTimeDimensionDetail}
-            dynamicYAxis={dynamicYAxisScale}
-            onScrub={handleScrub}
-            onScrubClear={() => {
-              metricsExplorerStore.setSelectedScrubRange(
-                exploreName,
-                undefined,
-              );
-            }}
-          />
+          <div class="relative">
+            <MeasureChart
+              {measure}
+              {scrubController}
+              {connectNulls}
+              tddChartType={tddChartType ?? TDDChart.DEFAULT}
+              metricsViewName={chartMetricsViewName}
+              where={chartWhere}
+              {timeDimension}
+              interval={chartInterval}
+              comparisonInterval={chartComparisonInterval}
+              timeGranularity={activeTimeGrain}
+              timeZone={selectedTimezone}
+              ready={chartReady}
+              {chartScrubInterval}
+              {comparisonDimension}
+              dimensionValues={chartDimensionValues}
+              dimensionWhere={whereFilter}
+              {annotationsEnabled}
+              canPanLeft={$canPanLeft}
+              canPanRight={$canPanRight}
+              onPanLeft={() => handlePan("left")}
+              onPanRight={() => handlePan("right")}
+              {showComparison}
+              {showTimeDimensionDetail}
+              dynamicYAxis={dynamicYAxisScale}
+              onScrub={handleScrub}
+              onScrubClear={() => {
+                metricsExplorerStore.setSelectedScrubRange(
+                  exploreName,
+                  undefined,
+                );
+              }}
+            />
+
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger class="absolute right-2 -top-2">
+                <ThreeDot />
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content align="end">
+                <DropdownMenu.Item
+                  onclick={() => openScreenshotDialog(measure)}
+                >
+                  Download as PNG
+                </DropdownMenu.Item>
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
+          </div>
         {:else}
           <div class="flex items-center justify-center w-24">
             <Spinner status={EntityStatus.Running} />
@@ -442,3 +467,23 @@
   }}
   onReplace={createPivot}
 />
+
+{#if screenshotDialogMeasure}
+  <ScreenshotContainer
+    bind:open={screenshotDialogOpen}
+    measure={screenshotDialogMeasure}
+    metricsViewName={chartMetricsViewName}
+    where={chartWhere}
+    {timeDimension}
+    {timeStart}
+    {timeEnd}
+    {comparisonTimeStart}
+    {comparisonTimeEnd}
+    interval={chartInterval}
+    comparisonInterval={chartComparisonInterval}
+    timeGranularity={activeTimeGrain}
+    timeZone={selectedTimezone}
+    {showComparison}
+    ready={chartReady}
+  />
+{/if}

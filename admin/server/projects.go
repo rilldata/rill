@@ -525,7 +525,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		userID = &tmp
 	}
 
-	devSlots := 8 // default value for older CLIs which will not pass this field
+	devSlots := 4 // default value for older CLIs which will not pass this field
 	if req.DevSlots != 0 {
 		devSlots = int(req.DevSlots)
 	}

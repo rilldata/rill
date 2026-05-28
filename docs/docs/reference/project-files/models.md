@@ -57,7 +57,7 @@ _[string]_ - Raw SQL query to run against source _(required)_
 
 ### `pre_exec`
 
-_[string]_ - Refers to SQL queries to run before the main query, available for DuckDB-based and ClickHouse-based models. (optional). Ensure pre_exec queries are idempotent. Use IF NOT EXISTS statements when applicable. 
+_[string]_ - SQL queries to run on the output OLAP engine (DuckDB or ClickHouse) before the main query. (optional). Ensure pre_exec queries are idempotent. Use IF NOT EXISTS statements when applicable. 
 
 ```yaml
 pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES)
@@ -65,7 +65,7 @@ pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=po
 
 ### `post_exec`
 
-_[string]_ - Refers to a SQL query that is run after the main query, available for DuckDB-based and ClickHouse-based models. (optional). Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable. 
+_[string]_ - SQL query to run on the output OLAP engine (DuckDB or ClickHouse) after the main query. (optional). Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable. 
 
 ```yaml
 post_exec: DETACH DATABASE IF EXISTS postgres_db
@@ -391,6 +391,30 @@ _[object]_ - to define the properties of output
 
   - **`partition_by`** - _[string]_ - Column or expression to partition the table by 
 
+  - **`pre_exec`** - _[string]_ - SQL query to run on the output OLAP engine (DuckDB or ClickHouse) before the main query. (optional). Ensure pre_exec queries are idempotent. Use IF NOT EXISTS statements when applicable. 
+
+```yaml
+pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES)
+```
+
+  - **`post_exec`** - _[string]_ - SQL query to run on the output OLAP engine (DuckDB or ClickHouse) after the main query. (optional). Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable. 
+
+```yaml
+post_exec: DETACH DATABASE IF EXISTS postgres_db
+```
+
+  - **`create_secrets_from_connectors`** - _[string, array]_ - List of connector names for which temporary secrets should be created on the output OLAP engine before executing the SQL. Only applies when the output connector is DuckDB. This allows DuckDB-based models to access cloud storage (S3, GCS, Azure) using credentials from named connectors. 
+
+```yaml
+create_secrets_from_connectors: my_s3_connector
+```
+
+```yaml
+create_secrets_from_connectors:
+    - my_s3_connector
+    - my_other_s3_connector
+```
+
   **Additional properties for `output` when `connector` is `clickhouse`**
 
   - **`type`** - _[string]_ - Type to materialize the model into. Can be 'TABLE', 'VIEW' or 'DICTIONARY' 
@@ -592,24 +616,6 @@ _[string]_ - Path to the data source.
 ### `format`
 
 _[string]_ - Format of the data source (e.g., csv, json, parquet). 
-
-### `pre_exec`
-
-_[string]_ - refers to SQL queries to run before the main query, available for DuckDB-based and ClickHouse-based models. _(optional)_. Ensure `pre_exec` queries are idempotent. Use `IF NOT EXISTS` statements when applicable. 
-
-### `post_exec`
-
-_[string]_ - refers to a SQL query that is run after the main query, available for DuckDB-based and ClickHouse-based models. _(optional)_. Ensure `post_exec` queries are idempotent. Use `IF EXISTS` statements when applicable. 
-
-```yaml
-pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES);
-sql: SELECT * FROM postgres_query('postgres_db', 'SELECT * FROM USERS')
-post_exec: DETACH DATABASE IF EXISTS postgres_db
-```
-
-### `create_secrets_from_connectors`
-
-_[string, array]_ - List of connector names for which temporary secrets should be created before executing the SQL. 
 
 ## Additional properties when `connector` is `gcs` or [named connector](./connectors#gcs) of gcs
 

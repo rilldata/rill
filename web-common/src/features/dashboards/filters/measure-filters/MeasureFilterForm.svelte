@@ -15,6 +15,7 @@
   import { string, object, mixed } from "yup";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import PinButton from "../PinButton.svelte";
+  import RequiredButton from "../RequiredButton.svelte";
 
   export let dimensionName: string;
   export let name: string;
@@ -30,6 +31,8 @@
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let pinned = false;
   export let showPinControl = false;
+  export let required = false;
+  export let showRequiredControl = false;
 
   const initialValues = {
     dimension: dimensionName,
@@ -127,18 +130,30 @@
   preventScroll
   id="measure-filter-popover"
 >
-  {#if showPinControl}
+  {#if showPinControl || showRequiredControl}
     <div
       class="flex flex-row items-center justify-between mb-2 pointer-events-auto"
     >
       <b>{label}</b>
 
-      <PinButton
-        pinned={!!pinned}
-        onTogglePin={() => {
-          pinned = !pinned;
-        }}
-      />
+      <div class="flex flex-row items-center gap-x-1">
+        {#if showRequiredControl}
+          <RequiredButton
+            required={!!required}
+            onToggleRequired={() => {
+              required = !required;
+            }}
+          />
+        {/if}
+        {#if showPinControl}
+          <PinButton
+            pinned={!!pinned}
+            onTogglePin={() => {
+              pinned = !pinned;
+            }}
+          />
+        {/if}
+      </div>
     </div>
   {/if}
   <form

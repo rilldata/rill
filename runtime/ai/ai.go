@@ -1102,8 +1102,6 @@ func (s *Session) CallTool(ctx context.Context, role Role, toolName string, out,
 	})
 }
 
-const llmRequestTimeout = 3 * time.Minute
-
 // CompleteOptions provides options for Session.Complete.
 type CompleteOptions struct {
 	Messages      []*aiv1.CompletionMessage
@@ -1130,6 +1128,13 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 	if opts.MaxIterations == 1 && len(opts.Tools) > 0 {
 		return errors.New("max iterations must be greater than 1 when using tools")
 	}
+
+	// Resolve the configured LLM request timeout.
+	cfg, err := s.runner.Runtime.InstanceConfig(ctx, s.instanceID)
+	if err != nil {
+		return fmt.Errorf("failed to get instance config: %w", err)
+	}
+	llmRequestTimeout := time.Duration(cfg.AILLMTimeoutSeconds) * time.Second
 
 	// Prepare tool definitions.
 	tools := make([]*aiv1.Tool, 0, len(opts.Tools))
@@ -1361,7 +1366,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 		return outVal, nil
 	}
 
-	_, err := s.Call(ctx, &CallOptions{
+	_, err = s.Call(ctx, &CallOptions{
 		Role:    RoleAssistant,
 		Name:    name,
 		Unwrap:  opts.UnwrapCall,

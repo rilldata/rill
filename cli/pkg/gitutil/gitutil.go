@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/go-git/go-git/v5"
@@ -118,33 +119,47 @@ func ExtractGitRemote(projectPath, remoteName string, detectDotGit bool) (Remote
 }
 
 // ExtractRemotes extracts all Git remotes from the Git repository at projectPath.
-// The returned remotes are normalized with NormalizeGithubRemote.
 // If detectDotGit is true, it will look for a .git directory in parent directories.
+// Shells out to the `git` CLI so it works inside linked worktrees, where `.git` is a
+// file pointing to the main repo's worktree dir and the remote config is reachable
+// only via `commondir` (which go-git's PlainOpen does not resolve).
 func ExtractRemotes(projectPath string, detectDotGit bool) ([]Remote, error) {
-	repo, err := git.PlainOpenWithOptions(projectPath, &git.PlainOpenOptions{
-		DetectDotGit: detectDotGit,
-	})
+	if !detectDotGit {
+		// require a .git entry at exactly this path: a directory in a regular
+		// checkout, or a file in a linked worktree.
+		if _, err := os.Stat(filepath.Join(projectPath, ".git")); err != nil {
+			if os.IsNotExist(err) {
+				return nil, ErrNotAGitRepository
+			}
+			return nil, err
+		}
+	}
+
+	out, err := exec.Command("git", "-C", projectPath, "remote").Output()
 	if err != nil {
+		var execErr *exec.ExitError
+		if errors.As(err, &execErr) {
+			stderr := strings.TrimSpace(string(execErr.Stderr))
+			if strings.Contains(stderr, "not a git repository") {
+				return nil, ErrNotAGitRepository
+			}
+			return nil, fmt.Errorf("git remote: %s", stderr)
+		}
 		return nil, err
 	}
 
-	remotes, err := repo.Remotes()
-	if err != nil {
-		return nil, err
-	}
-
-	res := make([]Remote, len(remotes))
-	for idx, remote := range remotes {
-		if len(remote.Config().URLs) == 0 {
-			return nil, fmt.Errorf("no URL found for git remote %q", remote.Config().Name)
+	names := strings.Fields(string(out))
+	res := make([]Remote, 0, len(names))
+	for _, name := range names {
+		urlOut, err := exec.Command("git", "-C", projectPath, "remote", "get-url", name).Output()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get URL for git remote %q: %w", name, err)
 		}
-
-		res[idx] = Remote{
-			Name: remote.Config().Name,
-			// The first URL in the slice is the URL Git fetches from (main one).
-			// We'll make things easy for ourselves and only consider that.
-			URL: remote.Config().URLs[0],
+		u := strings.TrimSpace(string(urlOut))
+		if u == "" {
+			return nil, fmt.Errorf("no URL found for git remote %q", name)
 		}
+		res = append(res, Remote{Name: name, URL: u})
 	}
 
 	return res, nil

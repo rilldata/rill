@@ -45,11 +45,6 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 
 	org.BillingCustomerID = bc.ID
 
-	// Register credit-balance alerts on the customer; safe to call before any subscription / credit grant exists.
-	if err := s.Biller.CreateCustomerCreditAlerts(ctx, org.BillingCustomerID, billing.CreditsCurrency, billing.CreditTrialLowBalanceThreshold); err != nil {
-		return nil, fmt.Errorf("failed to register credit balance alerts: %w", err)
-	}
-
 	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                org.Name,
 		DisplayName:                         org.DisplayName,
@@ -157,10 +152,6 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 		}
 	}
 
-	if err := s.Biller.CreateCustomerCreditAlerts(ctx, org.BillingCustomerID, billing.CreditsCurrency, billing.CreditTrialLowBalanceThreshold); err != nil {
-		return nil, nil, fmt.Errorf("failed to register credit balance alerts: %w", err)
-	}
-
 	// update billing and payment customer id
 	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                org.Name,
@@ -263,6 +254,11 @@ func (s *Service) StartCreditTrial(ctx context.Context, org *database.Organizati
 	plan, err := s.Biller.GetPlanByType(ctx, billing.FreePlanType)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get credit trial plan: %w", err)
+	}
+
+	// Register the credit-balance alerts on the customer.
+	if err := s.Biller.CreateCustomerCreditAlerts(ctx, org.BillingCustomerID, billing.CreditsCurrency, billing.CreditTrialLowBalanceThreshold); err != nil {
+		return nil, nil, fmt.Errorf("failed to register customer credit alerts: %w", err)
 	}
 
 	sub, err := s.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
