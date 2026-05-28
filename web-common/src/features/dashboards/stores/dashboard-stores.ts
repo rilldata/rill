@@ -1,7 +1,7 @@
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getWhereFilterExpressionIndex } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
-import { AdvancedMeasureCorrector } from "@rilldata/web-common/features/dashboards/stores/AdvancedMeasureCorrector";
+import { correctExploreState } from "@rilldata/web-common/features/dashboards/stores/correct-explore-state.ts";
 import { type ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   createAndExpression,
@@ -24,8 +24,8 @@ import type {
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import { V1Operation } from "@rilldata/web-common/runtime-client";
-import type { ExpandedState, SortingState } from "@tanstack/svelte-table";
 import { derived, writable, type Readable } from "svelte/store";
+import type { ExpandedState, SortingState } from "tanstack-table-8-svelte-5";
 import { SortType } from "web-common/src/features/dashboards/proto-state/derived-types";
 import {
   PivotChipType,
@@ -83,6 +83,17 @@ function syncMeasures(explore: V1ExploreSpec, exploreState: ExploreState) {
     if (!exploreState.leaderboardMeasureNames?.length) {
       exploreState.leaderboardMeasureNames = [defaultMeasure];
     }
+    // Ensure leaderboardSortByMeasureName is in leaderboardMeasureNames (sync invariant)
+    if (
+      exploreState.leaderboardMeasureNames?.length &&
+      exploreState.leaderboardSortByMeasureName &&
+      !exploreState.leaderboardMeasureNames.includes(
+        exploreState.leaderboardSortByMeasureName,
+      )
+    ) {
+      exploreState.leaderboardSortByMeasureName =
+        exploreState.leaderboardMeasureNames[0];
+    }
   }
 
   if (
@@ -91,10 +102,6 @@ function syncMeasures(explore: V1ExploreSpec, exploreState: ExploreState) {
   ) {
     exploreState.tdd.expandedMeasureName = undefined;
   }
-
-  exploreState.pivot.columns = exploreState.pivot.columns.filter((measure) =>
-    measuresSet.has(measure.id),
-  );
 
   if (exploreState.allMeasuresVisible) {
     // this makes sure that the visible keys is in sync with list of measures
@@ -114,6 +121,7 @@ function syncMeasures(explore: V1ExploreSpec, exploreState: ExploreState) {
 function syncDimensions(explore: V1ExploreSpec, exploreState: ExploreState) {
   // Having a map here improves the lookup for existing dimension name
   const dimensionsSet = new Set(explore.dimensions ?? []);
+  const measuresSet = new Set(explore.measures ?? []);
 
   exploreState.whereFilter =
     filterExpressions(exploreState.whereFilter, (e) => {
@@ -135,8 +143,10 @@ function syncDimensions(explore: V1ExploreSpec, exploreState: ExploreState) {
   );
 
   exploreState.pivot.columns = exploreState.pivot.columns.filter(
-    (dimension) =>
-      dimensionsSet.has(dimension.id) || dimension.type === PivotChipType.Time,
+    (col) =>
+      measuresSet.has(col.id) ||
+      dimensionsSet.has(col.id) ||
+      col.type === PivotChipType.Time,
   );
 
   if (exploreState.allDimensionsVisible) {
@@ -188,14 +198,13 @@ const metricsViewReducers = {
       exploreState.dimensionFilterExcludeMode = includeExcludeModeFromFilters(
         partial.whereFilter,
       );
-      AdvancedMeasureCorrector.correct(exploreState, metricsView);
+      correctExploreState(metricsView, exploreState);
     });
   },
 
   mergePartialExplorerEntity(
     name: string,
     partialExploreState: Partial<ExploreState>,
-    metricsView: V1MetricsViewSpec,
   ) {
     partialExploreState = structuredClone(partialExploreState);
 
@@ -211,10 +220,11 @@ const metricsViewReducers = {
       exploreState.dimensionFilterExcludeMode = includeExcludeModeFromFilters(
         partialExploreState.whereFilter,
       );
-      AdvancedMeasureCorrector.correct(exploreState, metricsView);
+      // Partial comes from getMergedExploreState and is already corrected
     });
   },
 
+  // TODO: There is a single use of this. Find a way to merge this into rest of the flow from DashboardStateSync
   sync(name: string, explore: V1ExploreSpec) {
     if (!name || !explore || !explore.measures) return;
     updateMetricsExplorerByName(name, (exploreState) => {
@@ -467,7 +477,7 @@ const metricsViewReducers = {
         exploreState.showTimeComparison = true;
       }
       exploreState.selectedComparisonTimeRange = comparisonTimeRange;
-      AdvancedMeasureCorrector.correct(exploreState, metricsViewSpec);
+      correctExploreState(metricsViewSpec, exploreState);
     });
   },
 
@@ -516,7 +526,7 @@ const metricsViewReducers = {
 
       exploreState.selectedComparisonTimeRange = comparisonTimeRange;
 
-      AdvancedMeasureCorrector.correct(exploreState, metricsViewSpec);
+      correctExploreState(metricsViewSpec, exploreState);
     });
   },
 
@@ -593,6 +603,12 @@ const metricsViewReducers = {
         outermostRowLimit: limit,
         activeCell: null,
       };
+    });
+  },
+
+  setDynamicYAxisScale(name: string, value: boolean) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.dynamicYAxisScale = value;
     });
   },
 };

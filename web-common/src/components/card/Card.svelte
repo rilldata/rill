@@ -6,13 +6,18 @@
   export let redirect = false;
   export let href = "/";
   export let imageUrl = "";
+  export let onclick: ((e: MouseEvent) => void | Promise<void>) | undefined =
+    undefined;
+  export let hovering = false;
 </script>
 
 <a
   href={href + (redirect ? "?redirect=true" : "")}
   class:gradient={!imageUrl}
-  on:click
-  on:keydown={(e) => e.key === "Enter" && e.currentTarget.click()}
+  {onclick}
+  onkeydown={(e) => e.key === "Enter" && e.currentTarget.click()}
+  onmouseenter={() => (hovering = true)}
+  onmouseleave={() => (hovering = false)}
   aria-disabled={disabled}
   class:loading={isLoading}
   style:background-image={imageUrl ? `url('${imageUrl}')` : ""}

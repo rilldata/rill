@@ -21,12 +21,11 @@ func HibernateCmd(ch *cmdutil.Helper) *cobra.Command {
 			if len(args) > 0 {
 				project = args[0]
 			}
-			// Only prompt interactively if no flags or args are provided
-			if !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
+			if project == "" {
 				var err error
-				project, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
+				project, err = ch.InferProjectName(cmd.Context(), path, "use --project to specify the name")
 				if err != nil {
-					return fmt.Errorf("unable to infer project name (use `--project` to explicitly specify the name): %w", err)
+					return err
 				}
 			}
 

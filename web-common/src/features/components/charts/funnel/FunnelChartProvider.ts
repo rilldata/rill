@@ -25,11 +25,15 @@ import {
   type Readable,
   type Writable,
 } from "svelte/store";
-import { getFilterWithNullHandling } from "../query-util";
+import {
+  canQueryWithTimeRange,
+  getFilterWithNullHandling,
+} from "../query-util";
 
 export type FunnelMode = "width" | "order";
 export type FunnelColorMode = "stage" | "measure" | "name" | "value";
 export type FunnelBreakdownMode = "dimension" | "measures";
+export type FunnelPercentMode = "top" | "previous";
 
 export type FunnelChartSpec = {
   metrics_view: string;
@@ -38,6 +42,7 @@ export type FunnelChartSpec = {
   stage?: FieldConfig<"nominal">;
   mode?: FunnelMode;
   color?: FunnelColorMode;
+  percentMode?: FunnelPercentMode;
 };
 
 export type FunnelChartDefaultOptions = {
@@ -129,7 +134,7 @@ export class FunnelChartProvider {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const enabled =
           $visible &&
-          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
+          canQueryWithTimeRange(hasTimeSeries, timeRange) &&
           !!stageDimensionName &&
           !isMultiMeasure &&
           !Array.isArray(config.stage?.sort);
@@ -165,7 +170,7 @@ export class FunnelChartProvider {
         const topNStageData = $topNStageQuery?.data?.data;
         const enabled =
           $visible &&
-          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
+          canQueryWithTimeRange(hasTimeSeries, timeRange) &&
           !!measures?.length &&
           (isMultiMeasure || !!dimensions?.length) &&
           (!isMultiMeasure &&

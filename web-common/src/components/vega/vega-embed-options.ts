@@ -5,11 +5,11 @@ import type { EmbedOptions } from "svelte-vega";
 import { expressionInterpreter } from "vega-interpreter";
 import type { Config } from "vega-lite";
 import type { ExpressionFunction } from "./types";
+import { sanitizeTitleForVegaTooltip } from "./util";
 import { getRillTheme } from "./vega-config";
 
 export interface CreateEmbedOptionsParams {
   client: RuntimeClient;
-  canvasDashboard: boolean;
   width: number;
   height: number;
   config?: Config;
@@ -23,7 +23,6 @@ export interface CreateEmbedOptionsParams {
 
 export function createEmbedOptions({
   client,
-  canvasDashboard,
   width,
   height,
   config,
@@ -37,7 +36,7 @@ export function createEmbedOptions({
   const jwt = client.getJwt();
 
   return {
-    config: config || getRillTheme(canvasDashboard, themeMode === "dark"),
+    config: config || getRillTheme(themeMode === "dark"),
     renderer,
     tooltip: {
       theme: themeMode,
@@ -47,8 +46,8 @@ export function createEmbedOptions({
     },
     actions: false,
     logLevel: 0, // only show errors
-    width: canvasDashboard ? width : undefined,
-    height: canvasDashboard ? height : undefined,
+    width,
+    height,
     ...(useExpressionInterpreter && {
       // Add interpreter so that vega expressions are CSP compliant
       ast: true,
@@ -69,9 +68,14 @@ export function createEmbedOptions({
 }
 
 export function getTooltipFormatter(colorMapping: ColorMapping) {
-  const colorMap = new Map<string, string>(
-    (colorMapping ?? []).map((m) => [m.value, m.color]),
-  );
+  const colorMap = new Map<string, string>();
+  for (const mapping of colorMapping ?? []) {
+    colorMap.set(mapping.value, mapping.color);
+    const tooltipTitle = sanitizeTitleForVegaTooltip(mapping.value);
+    if (!colorMap.has(tooltipTitle)) {
+      colorMap.set(tooltipTitle, mapping.color);
+    }
+  }
 
   return (
     items: Record<string, unknown>,

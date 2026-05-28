@@ -2,14 +2,17 @@
   export let assembled: boolean;
   export let formattedValue: string;
   export let value: number | null | undefined;
+  export let lowerIsBetter = false;
 </script>
 
 {#if assembled}
   {#if value !== null && value !== undefined}
     <span
-      class="pointer-events-none {value > 0
-        ? 'text-fg-secondary'
-        : 'text-destructive'}"
+      class="pointer-events-none {(lowerIsBetter ? value < 0 : value > 0)
+        ? 'text-kpi-positive'
+        : (lowerIsBetter ? value > 0 : value < 0)
+          ? 'text-kpi-negative'
+          : 'text-fg-secondary'}"
     >
       {formattedValue}
     </span>
@@ -17,7 +20,7 @@
     <span class="text-fg-secondary pointer-events-none">-</span>
   {/if}
 {:else}
-  <span class="loading-cell" />
+  <span class="loading-cell"></span>
 {/if}
 
 <style lang="postcss">

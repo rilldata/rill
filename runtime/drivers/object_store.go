@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
-	"github.com/mitchellh/mapstructure"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/pkg/pagination"
 )
 
@@ -27,7 +27,7 @@ type ObjectStore interface {
 	// ListObjectsForGlob returns all objects in the given bucket whose paths match
 	// the specified glob pattern. The pattern supports doublestar syntax, including
 	// recursive patterns like "**". It returns the matching entries and any error.
-	ListObjectsForGlob(ctx context.Context, bucket, glob string, pageSize uint32, pageToken string) ([]ObjectStoreEntry, string, error)
+	ListObjectsForGlob(ctx context.Context, bucket, glob string, pageSize uint32, pageToken string, start, end string) ([]ObjectStoreEntry, string, error)
 	// DownloadFiles provides an iterator for downloading and consuming files.
 	// It resolves globs similar to ListObjects.
 	DownloadFiles(ctx context.Context, path string) (FileIterator, error)
@@ -65,23 +65,29 @@ type ObjectStoreModelInputProperties struct {
 }
 
 func (p *ObjectStoreModelInputProperties) Decode(props map[string]any) error {
-	err := mapstructure.WeakDecode(props, p)
+	_, err := p.DecodeWithWarnings(props)
+	return err
+}
+
+// DecodeWithWarnings is like Decode but also returns any unused keys from the input.
+func (p *ObjectStoreModelInputProperties) DecodeWithWarnings(props map[string]any) ([]string, error) {
+	unused, err := mapstructureutil.WeakDecodeWithWarnings(props, p)
 	if err != nil {
-		return fmt.Errorf("failed to parse input properties: %w", err)
+		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
 	if p.Path == "" && p.URI == "" {
-		return fmt.Errorf("missing property `path`")
+		return nil, fmt.Errorf("missing property `path`")
 	}
 	if p.Path != "" && p.URI != "" {
-		return fmt.Errorf("cannot specify both `path` and `uri`")
+		return nil, fmt.Errorf("cannot specify both `path` and `uri`")
 	}
 	if p.URI != "" { // Backwards compatibility
 		p.Path = p.URI
 	}
 	if !doublestar.ValidatePattern(p.Path) {
-		return fmt.Errorf("glob pattern %q is invalid", p.Path)
+		return nil, fmt.Errorf("glob pattern %q is invalid", p.Path)
 	}
-	return nil
+	return unused, nil
 }
 
 // ObjectStoreModelOutputProperties contain common output properties for object store models.

@@ -26,7 +26,7 @@ model: m1
 dimensions:
 - name: foo
   expression: id
-  lookup_table: m2 # Expect ref since it is a model in the same project
+  lookup_table: default.m2 # Expect ref to m2 after stripping the schema prefix since it is a model in the same project
   lookup_key_column: id
   lookup_value_column: value
 - name: bar
@@ -80,7 +80,7 @@ measures:
 						Name:              "foo",
 						DisplayName:       "Foo",
 						Expression:        "id",
-						LookupTable:       "m2",
+						LookupTable:       "default.m2",
 						LookupKeyColumn:   "id",
 						LookupValueColumn: "value",
 					},
@@ -107,7 +107,7 @@ measures:
 
 	ctx := context.Background()
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -192,7 +192,7 @@ measures:
 
 	ctx := context.Background()
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -304,7 +304,7 @@ measures:
 
 	ctx := context.Background()
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 
@@ -488,4 +488,492 @@ func TestValidateQueryAttributes(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestMetricsViewRollups(t *testing.T) {
+	files := map[string]string{
+		`rill.yaml`:               ``,
+		`models/m1.sql`:           `SELECT 1 AS id, 'a' AS publisher, 'b' AS domain`,
+		`models/rollup_daily.sql`: `SELECT 1 AS id`,
+		`metrics_views/mv1.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+dimensions:
+- name: publisher
+  column: publisher
+- name: domain
+  column: domain
+measures:
+- name: total_impressions
+  expression: "SUM(impressions)"
+- name: total_clicks
+  expression: "SUM(clicks)"
+rollups:
+  - model: rollup_daily
+    time_grain: day
+    dimensions:
+      - publisher
+      - domain
+    measures:
+      - total_impressions
+      - total_clicks
+`,
+	}
+
+	ctx := context.Background()
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	require.Empty(t, p.Errors)
+
+	// Find the metrics view resource
+	var mvSpec *runtimev1.MetricsViewSpec
+	for _, r := range p.Resources {
+		if r.Name.Kind == ResourceKindMetricsView && r.Name.Name == "mv1" {
+			mvSpec = r.MetricsViewSpec
+			break
+		}
+	}
+	require.NotNil(t, mvSpec)
+	require.Len(t, mvSpec.Rollups, 1)
+
+	rollup := mvSpec.Rollups[0]
+	require.Equal(t, "rollup_daily", rollup.Model)
+	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_DAY, rollup.TimeGrain)
+	require.Equal(t, []string{"publisher", "domain"}, rollup.Dimensions)
+	require.Equal(t, []string{"total_impressions", "total_clicks"}, rollup.Measures)
+	require.Nil(t, rollup.DimensionsSelector)
+	require.Nil(t, rollup.MeasuresSelector)
+}
+
+func TestMetricsViewRollupsStarSelector(t *testing.T) {
+	files := map[string]string{
+		`rill.yaml`:               ``,
+		`models/m1.sql`:           `SELECT 1 AS id, 'a' AS publisher`,
+		`models/rollup_daily.sql`: `SELECT 1 AS id`,
+		`metrics_views/mv1.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: total_impressions
+  expression: "SUM(impressions)"
+rollups:
+  - model: rollup_daily
+    time_grain: day
+    dimensions: "*"
+    measures: "*"
+`,
+	}
+
+	ctx := context.Background()
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	require.Empty(t, p.Errors)
+
+	var mvSpec *runtimev1.MetricsViewSpec
+	for _, r := range p.Resources {
+		if r.Name.Kind == ResourceKindMetricsView && r.Name.Name == "mv1" {
+			mvSpec = r.MetricsViewSpec
+			break
+		}
+	}
+	require.NotNil(t, mvSpec)
+	require.Len(t, mvSpec.Rollups, 1)
+
+	rollup := mvSpec.Rollups[0]
+	// '*' cannot be resolved at parse time; should produce selectors
+	require.Empty(t, rollup.Dimensions)
+	require.Empty(t, rollup.Measures)
+	require.NotNil(t, rollup.DimensionsSelector)
+	require.NotNil(t, rollup.MeasuresSelector)
+}
+
+func TestMetricsViewRollupsExcludeSelector(t *testing.T) {
+	files := map[string]string{
+		`rill.yaml`:               ``,
+		`models/m1.sql`:           `SELECT 1 AS id, 'a' AS publisher`,
+		`models/rollup_daily.sql`: `SELECT 1 AS id`,
+		`metrics_views/mv1.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: total_impressions
+  expression: "SUM(impressions)"
+- name: total_clicks
+  expression: "SUM(clicks)"
+rollups:
+  - model: rollup_daily
+    time_grain: day
+    dimensions:
+      - publisher
+    measures:
+      exclude:
+        - total_clicks
+`,
+	}
+
+	ctx := context.Background()
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	require.Empty(t, p.Errors)
+
+	var mvSpec *runtimev1.MetricsViewSpec
+	for _, r := range p.Resources {
+		if r.Name.Kind == ResourceKindMetricsView && r.Name.Name == "mv1" {
+			mvSpec = r.MetricsViewSpec
+			break
+		}
+	}
+	require.NotNil(t, mvSpec)
+	require.Len(t, mvSpec.Rollups, 1)
+
+	rollup := mvSpec.Rollups[0]
+	require.Equal(t, []string{"publisher"}, rollup.Dimensions)
+	// Exclude selector cannot be resolved at parse time
+	require.Empty(t, rollup.Measures)
+	require.NotNil(t, rollup.MeasuresSelector)
+}
+
+func TestMetricsViewRollupsRequiredTimeGrain(t *testing.T) {
+	files := map[string]string{
+		`rill.yaml`:               ``,
+		`models/m1.sql`:           `SELECT 1 AS id, 'a' AS publisher`,
+		`models/rollup_daily.sql`: `SELECT 1 AS id`,
+		`metrics_views/mv1.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: total_impressions
+  expression: "SUM(impressions)"
+rollups:
+  - model: rollup_daily
+    dimensions:
+      - publisher
+    measures:
+      - total_impressions
+`,
+	}
+
+	ctx := context.Background()
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	require.NotEmpty(t, p.Errors)
+	require.Contains(t, p.Errors[0].Message, `"time_grain" is required`)
+}
+
+func TestMetricsViewRollupsValidation(t *testing.T) {
+	tests := []struct {
+		name    string
+		yaml    string
+		wantErr string
+	}{
+		{
+			name: "missing timeseries",
+			yaml: `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+rollups:
+  - model: r1
+    time_grain: day
+    measures:
+      - count
+`,
+			wantErr: `rollups require a "timeseries" to be defined`,
+		},
+		{
+			name: "missing model",
+			yaml: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+rollups:
+  - time_grain: day
+    measures:
+      - count
+`,
+			wantErr: `"model" is required`,
+		},
+		{
+			name: "invalid time_grain",
+			yaml: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+rollups:
+  - model: r1
+    time_grain: fortnight
+    measures:
+      - count
+`,
+			wantErr: `invalid "time_grain"`,
+		},
+		{
+			name: "dimension not in metrics view",
+			yaml: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+rollups:
+  - model: r1
+    time_grain: day
+    dimensions:
+      - nonexistent
+    measures:
+      - count
+`,
+			wantErr: `dimension "nonexistent" does not exist`,
+		},
+		{
+			name: "measure not in metrics view",
+			yaml: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+rollups:
+  - model: r1
+    time_grain: day
+    measures:
+      - nonexistent
+`,
+			wantErr: `measure "nonexistent" does not exist`,
+		},
+		{
+			name: "invalid timezone",
+			yaml: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+rollups:
+  - model: r1
+    time_grain: day
+    time_zone: Not/A_Timezone
+    measures:
+      - count
+`,
+			wantErr: `invalid "time_zone"`,
+		},
+		{
+			name: "invalid rollup data_time_range",
+			yaml: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+rollups:
+  - model: r1
+    time_grain: day
+    measures:
+      - count
+    data_time_range: "not a rilltime"
+`,
+			wantErr: `invalid "data_time_range"`,
+		},
+		{
+			name: "invalid metrics view data_time_range",
+			yaml: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+data_time_range: "garbage"
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+`,
+			wantErr: `invalid "data_time_range"`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			files := map[string]string{
+				`rill.yaml`:              ``,
+				`models/m1.sql`:          `SELECT 1 AS id`,
+				`metrics_views/mv1.yaml`: tt.yaml,
+			}
+			ctx := context.Background()
+			repo := makeRepo(t, files)
+			p, err := Parse(ctx, repo, "", "", "duckdb", true)
+			require.NoError(t, err)
+			require.NotEmpty(t, p.Errors)
+			require.Contains(t, p.Errors[0].Message, tt.wantErr)
+		})
+	}
+}
+
+func TestMetricsViewMaxQueryTimeRange(t *testing.T) {
+	mvBody := func(maxRange string) string {
+		s := `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- name: foo
+  column: id
+measures:
+- name: count
+  expression: COUNT(*)
+`
+		if maxRange != "" {
+			s += "max_query_time_range: " + maxRange + "\n"
+		}
+		return s
+	}
+
+	t.Run("valid", func(t *testing.T) {
+		files := map[string]string{
+			`rill.yaml`:              ``,
+			`models/m1.sql`:          `SELECT 1 AS id`,
+			`metrics_views/mv1.yaml`: mvBody("P90D"),
+		}
+		ctx := context.Background()
+		repo := makeRepo(t, files)
+		p, err := Parse(ctx, repo, "", "", "duckdb", true)
+		require.NoError(t, err)
+		require.Empty(t, p.Errors)
+
+		var mv *runtimev1.MetricsViewSpec
+		for _, r := range p.Resources {
+			if r.MetricsViewSpec != nil {
+				mv = r.MetricsViewSpec
+				break
+			}
+		}
+		require.NotNil(t, mv)
+		require.Equal(t, "P90D", mv.MaxQueryTimeRange)
+	})
+
+	for _, bad := range []string{"garbage", "rill-PM", "inf", "PT12H", "PT1H30M", "P1DT6H"} {
+		t.Run("invalid_"+bad, func(t *testing.T) {
+			files := map[string]string{
+				`rill.yaml`:              ``,
+				`models/m1.sql`:          `SELECT 1 AS id`,
+				`metrics_views/mv1.yaml`: mvBody(bad),
+			}
+			ctx := context.Background()
+			repo := makeRepo(t, files)
+			p, err := Parse(ctx, repo, "", "", "duckdb", true)
+			require.NoError(t, err)
+			require.NotEmpty(t, p.Errors)
+			require.Contains(t, p.Errors[0].Message, "max_query_time_range")
+		})
+	}
+}
+
+func TestMetricsViewDataTimeRange(t *testing.T) {
+	files := map[string]string{
+		`rill.yaml`:               ``,
+		`models/m1.sql`:           `SELECT 1 AS id, 'a' AS publisher`,
+		`models/rollup_daily.sql`: `SELECT 1 AS id`,
+		`metrics_views/mv1.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+data_time_range: -5Y to now
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: total_impressions
+  expression: "SUM(impressions)"
+rollups:
+  - model: rollup_daily
+    time_grain: day
+    data_time_range: -1Y to now
+    dimensions:
+      - publisher
+    measures:
+      - total_impressions
+`,
+	}
+
+	ctx := context.Background()
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	require.Empty(t, p.Errors)
+
+	var mvSpec *runtimev1.MetricsViewSpec
+	for _, r := range p.Resources {
+		if r.Name.Kind == ResourceKindMetricsView && r.Name.Name == "mv1" {
+			mvSpec = r.MetricsViewSpec
+			break
+		}
+	}
+	require.NotNil(t, mvSpec)
+	require.Equal(t, "-5Y to now", mvSpec.DataTimeRange)
+	require.Len(t, mvSpec.Rollups, 1)
+	require.Equal(t, "-1Y to now", mvSpec.Rollups[0].DataTimeRange)
 }

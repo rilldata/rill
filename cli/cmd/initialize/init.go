@@ -38,6 +38,14 @@ func InitCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use:   "init [<path>]",
 		Short: "Initialize a new Rill project",
 		Long:  long.String(),
+		Example: `  # Interactive initialization (prompts for all options)
+  rill init
+
+  # Create an empty DuckDB project with Claude agent instructions
+  rill init my-project --olap duckdb --agent claude
+
+  # Add Claude agent instructions to an existing Rill project
+  rill init ./existing-project --agent claude`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Assess what flags were set
 			numFlags := 0
@@ -90,17 +98,14 @@ func InitCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// If a project already exists, we allow adding agent files via --agent, but no other changes.
 			if cmdutil.HasRillProject(projectPath) {
-				if explicitAgent {
-					if numFlags > 1 {
-						return fmt.Errorf("when adding agent instructions to an existing project, --agent must be the only flag set")
-					}
-					repo, _, err := cmdutil.RepoForProjectPath(projectPath)
-					if err != nil {
-						return fmt.Errorf("failed to open project: %w", err)
-					}
-					return writeAgentInstructions(cmd.Context(), ch, repo, agent)
+				if !explicitAgent || numFlags > 1 {
+					return fmt.Errorf("init failed because a Rill project already exists at %q (hint: only the --agent flag is supported for updating an existing project)", projectPath)
 				}
-				return fmt.Errorf("a Rill project already exists at %q (use --agent to update agent instructions)", projectPath)
+				repo, _, err := cmdutil.RepoForProjectPath(projectPath)
+				if err != nil {
+					return fmt.Errorf("failed to open project: %w", err)
+				}
+				return writeAgentInstructions(cmd.Context(), ch, repo, agent)
 			}
 
 			// In interactive mode, if no flags were provided, we prompt for input.
@@ -133,7 +138,7 @@ func InitCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				// Agent instructions
-				agent, err = cmdutil.SelectPrompt("Agent instructions", []string{"claude", "cursor", "all", "none"}, "claude")
+				agent, err = cmdutil.SelectPrompt("Agent instructions", agentOptions, "claude")
 				if err != nil {
 					return err
 				}
@@ -227,6 +232,7 @@ func InitCmd(ch *cmdutil.Helper) *cobra.Command {
 			if ch.Interactive {
 				ch.Printf("\nSuccess! Run the following command to start the project:\n\n")
 				ch.Printf("  rill start %s\n\n", escaped)
+				ch.Printf("Tip: Use `rill start --preview` to launch in preview mode for a dashboard-only experience.\n\n")
 			} else {
 				ch.Printf("Run `rill validate %s` to build and validate the project, or `rill start %s` to build and serve the project on localhost\n", escaped, escaped)
 			}
@@ -252,6 +258,7 @@ var olapOptions = []string{
 var agentOptions = []string{
 	"claude",
 	"cursor",
+	"agentsmd",
 	"all",
 	"none",
 }
@@ -268,6 +275,15 @@ func writeAgentInstructions(ctx context.Context, ch *cmdutil.Helper, repo driver
 			return fmt.Errorf("failed to add Cursor rules: %w", err)
 		}
 		ch.Printf("Added Cursor rules in .cursor\n")
+		if err := instructions.InitAgentsMD(ctx, repo, true); err != nil {
+			return fmt.Errorf("failed to add AGENTS.md files: %w", err)
+		}
+		ch.Printf("Added agent instructions in AGENTS.md and .agents\n")
+	case "agentsmd":
+		if err := instructions.InitAgentsMD(ctx, repo, true); err != nil {
+			return fmt.Errorf("failed to add AGENTS.md files: %w", err)
+		}
+		ch.Printf("Added agent instructions in AGENTS.md and .agents\n")
 	case "claude":
 		if err := instructions.InitClaudeCode(ctx, repo, true); err != nil {
 			return fmt.Errorf("failed to add Claude Code files: %w", err)

@@ -14,7 +14,7 @@ import {
   type V1MetricsViewSpec,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import type { Readable } from "svelte/motion";
+import type { Readable } from "svelte/store";
 import { derived, get, writable, type Writable } from "svelte/store";
 import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
 import type {
@@ -54,10 +54,15 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
   config: Readable<PivotDataStoreConfig>;
   pivotDataStore: ReturnType<typeof usePivotForCanvas>;
   pivotState: Writable<PivotState>;
+  /** Dimensions the pivot itself has filtered via click-to-filter.
+   *  These are excluded from the pivot's own data query so all rows remain visible. */
+  selfFilteredDimensions: Writable<Set<string>>;
 
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
-    const type = resource.component?.state?.validSpec
-      ?.renderer as CanvasComponentType;
+    const type = (resource.component?.state?.validSpec?.renderer ??
+      (parent.allowUnvalidatedSpec
+        ? resource.component?.spec?.renderer
+        : undefined)) as CanvasComponentType;
 
     if (type !== "table" && type !== "pivot") {
       throw new Error(
@@ -87,18 +92,21 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
     this.type = type;
 
     this.pivotState = writable(this.getInitPivotState(type));
+    this.selfFilteredDimensions = writable(new Set<string>());
 
     this.config = createPivotConfig(
       this.parent,
       this.specStore,
       this.pivotState,
       this.timeAndFilterStore,
+      this.selfFilteredDimensions,
     );
 
     this.pivotDataStore = usePivotForCanvas(
       this.parent,
       derived(this.specStore, ($specStore) => $specStore.metrics_view),
       this.config,
+      this.visible,
     );
   }
 
@@ -187,6 +195,12 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
 
   updateTableType(newTableType: "pivot" | "table") {
     if (!this.parent.fileArtifact) return;
+
+    // Clear active component if this pivot was the active one
+    if (get(this.parent.activeComponent) === this.id) {
+      this.parent.clearActiveComponent();
+    }
+    this.selfFilteredDimensions.set(new Set());
 
     this.type = newTableType;
 

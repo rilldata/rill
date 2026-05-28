@@ -38,6 +38,7 @@
   $: metricsViewSpec = $_metricViewSpec.metricsView;
 
   $: schema = validateTableSchema(metricsViewSpec, tableSpec);
+  $: widthScopeKey = `canvas:${component.parent.name}:${component.id}`;
 
   $: if ("columns" in tableSpec && schema.isValid) {
     const columns = tableSpec?.columns || [];
@@ -78,4 +79,6 @@
   {pivotDataStore}
   pivotConfig={config}
   {pivotState}
+  {component}
+  {widthScopeKey}
 />

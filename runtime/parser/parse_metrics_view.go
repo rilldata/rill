@@ -8,6 +8,7 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"golang.org/x/exp/maps"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -34,6 +35,7 @@ type MetricsViewYAML struct {
 	SmallestTimeGrain string           `yaml:"smallest_time_grain"`
 	FirstDayOfWeek    uint32           `yaml:"first_day_of_week"`
 	FirstMonthOfYear  uint32           `yaml:"first_month_of_year"`
+	MaxQueryTimeRange string           `yaml:"max_query_time_range"`
 	Dimensions        []*struct {
 		Name                    string
 		DisplayName             string `yaml:"display_name"`
@@ -69,6 +71,7 @@ type MetricsViewYAML struct {
 		Ignore              bool           `yaml:"ignore"` // Deprecated
 		ValidPercentOfTotal bool           `yaml:"valid_percent_of_total"`
 		TreatNullsAs        string         `yaml:"treat_nulls_as"`
+		LowerIsBetter       bool           `yaml:"lower_is_better"`
 		Tags                []string
 	}
 	ParentDimensions *FieldSelectorYAML `yaml:"parent_dimensions"` // used when Parent is set
@@ -82,12 +85,24 @@ type MetricsViewYAML struct {
 		Connector      string             `yaml:"connector"`
 		Measures       *FieldSelectorYAML `yaml:"measures"`
 	} `yaml:"annotations"`
+	Rollups []*struct {
+		Model          string             `yaml:"model"`
+		Database       string             `yaml:"database"`
+		DatabaseSchema string             `yaml:"database_schema"`
+		TimeGrain      string             `yaml:"time_grain"`
+		TimeZone       string             `yaml:"time_zone"`
+		Dimensions     *FieldSelectorYAML `yaml:"dimensions"`
+		Measures       *FieldSelectorYAML `yaml:"measures"`
+		DataTimeRange  string             `yaml:"data_time_range"`
+	} `yaml:"rollups"`
+	DataTimeRange   string `yaml:"data_time_range"`
 	Security        *SecurityPolicyYAML
 	QueryAttributes map[string]string `yaml:"query_attributes"`
 	Cache           struct {
-		Enabled *bool  `yaml:"enabled"`
-		KeySQL  string `yaml:"key_sql"`
-		KeyTTL  string `yaml:"key_ttl"`
+		Enabled       *bool  `yaml:"enabled"`
+		KeySQL        string `yaml:"key_sql"`
+		KeyTTL        string `yaml:"key_ttl"`
+		TimestampsTTL string `yaml:"timestamps_ttl"` // fallback TTL for timestamp caching when MV-level cache is disabled; defaults to 5m
 	} `yaml:"cache"`
 	Explore *struct {
 		Skip                 bool                   `yaml:"skip"`
@@ -295,6 +310,13 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		_, err := rilltime.Parse(tmp.DefaultTimeRange, rilltime.ParseOptions{})
 		if err != nil {
 			return fmt.Errorf(`invalid "default_time_range": %w`, err)
+		}
+	}
+
+	if tmp.DataTimeRange != "" {
+		_, err := rilltime.Parse(tmp.DataTimeRange, rilltime.ParseOptions{})
+		if err != nil {
+			return fmt.Errorf(`invalid "data_time_range": %w`, err)
 		}
 	}
 
@@ -602,6 +624,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			FormatD3Locale:      formatD3Locale,
 			ValidPercentOfTotal: measure.ValidPercentOfTotal,
 			TreatNullsAs:        measure.TreatNullsAs,
+			LowerIsBetter:       measure.LowerIsBetter,
 			Tags:                measure.Tags,
 		})
 	}
@@ -632,6 +655,26 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	// 0 is default and type is uint32
 	if tmp.FirstMonthOfYear > 12 {
 		return fmt.Errorf("invalid first month of year %d, must be between 1 and 12", tmp.FirstMonthOfYear)
+	}
+
+	if tmp.MaxQueryTimeRange != "" {
+		if strings.HasPrefix(tmp.MaxQueryTimeRange, "rill-") {
+			return fmt.Errorf(`invalid "max_query_time_range" %q: only fixed ISO 8601 day-or-larger durations are allowed`, tmp.MaxQueryTimeRange)
+		}
+		d, err := duration.ParseISO8601(tmp.MaxQueryTimeRange)
+		if err != nil {
+			return fmt.Errorf(`invalid "max_query_time_range": %w`, err)
+		}
+		sd, ok := d.(duration.StandardDuration)
+		if !ok || sd.Hour != 0 || sd.Minute != 0 || sd.Second != 0 {
+			return fmt.Errorf(`invalid "max_query_time_range" %q: sub-day granularity is not supported, use a duration like P1D, P30D, P3M, or P1Y`, tmp.MaxQueryTimeRange)
+		}
+	}
+
+	if tmp.Cache.TimestampsTTL != "" {
+		if _, err := time.ParseDuration(tmp.Cache.TimestampsTTL); err != nil {
+			return fmt.Errorf(`invalid "cache.timestamps_ttl": %w`, err)
+		}
 	}
 
 	tmp.DefaultComparison.Mode = strings.ToLower(tmp.DefaultComparison.Mode)
@@ -690,6 +733,10 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	// Attempt to link the lookup tables in the DAG in case they are models.
 	// If they are not models, the upstream logic for refs will filter them out.
 	for lookupTable := range lookupTableNames {
+		// see if the lookup table name is qualified with a dot, and if so we take the part after the last dot as the name for DAG linking
+		if idx := strings.LastIndex(lookupTable, "."); idx >= 0 && idx < len(lookupTable)-1 {
+			lookupTable = lookupTable[idx+1:]
+		}
 		// Not setting Kind so that inference kicks in.
 		node.Refs = append(node.Refs, ResourceName{Name: lookupTable})
 	}
@@ -727,6 +774,79 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			// Not setting Kind so that inference kicks in.
 			node.Refs = append(node.Refs, ResourceName{Name: annotation.Table})
 		}
+	}
+
+	// Validate and add rollup tables as refs
+	if len(tmp.Rollups) > 0 && tmp.TimeDimension == "" {
+		return fmt.Errorf(`rollups require a "timeseries" to be defined`)
+	}
+	var rollups []*runtimev1.MetricsViewSpec_Rollup
+	for i, rollup := range tmp.Rollups {
+		if rollup == nil {
+			return fmt.Errorf(`rollup[%d]: empty rollup configuration`, i)
+		}
+		if rollup.Model == "" {
+			return fmt.Errorf(`rollup[%d]: "model" is required`, i)
+		}
+		if rollup.TimeGrain == "" {
+			return fmt.Errorf(`rollup[%d]: "time_grain" is required`, i)
+		}
+		tg, err := parseTimeGrain(rollup.TimeGrain)
+		if err != nil {
+			return fmt.Errorf(`rollup[%d]: invalid "time_grain": %w`, i, err)
+		}
+		if rollup.TimeZone != "" {
+			if _, err := time.LoadLocation(rollup.TimeZone); err != nil {
+				return fmt.Errorf(`rollup[%d]: invalid "time_zone" %q: %w`, i, rollup.TimeZone, err)
+			}
+		}
+		if rollup.DataTimeRange != "" {
+			if _, err := rilltime.Parse(rollup.DataTimeRange, rilltime.ParseOptions{}); err != nil {
+				return fmt.Errorf(`rollup[%d]: invalid "data_time_range": %w`, i, err)
+			}
+		}
+		// Validate and resolve dimensions
+		var dims []string
+		var dimsSelector *runtimev1.FieldSelector
+		if resolved, ok := rollup.Dimensions.TryResolve(); ok {
+			for _, dimName := range resolved {
+				nameType, ok := names[strings.ToLower(dimName)]
+				if !ok || nameType != nameIsDimension {
+					return fmt.Errorf(`rollup[%d]: dimension %q does not exist in the metrics view`, i, dimName)
+				}
+			}
+			dims = resolved
+		} else {
+			dimsSelector = rollup.Dimensions.Proto()
+		}
+		// Validate and resolve measures
+		var measures []string
+		var measSelector *runtimev1.FieldSelector
+		if resolved, ok := rollup.Measures.TryResolve(); ok {
+			for _, mName := range resolved {
+				nameType, ok := names[strings.ToLower(mName)]
+				if !ok || nameType != nameIsMeasure {
+					return fmt.Errorf(`rollup[%d]: measure %q does not exist in the metrics view`, i, mName)
+				}
+			}
+			measures = resolved
+		} else {
+			measSelector = rollup.Measures.Proto()
+		}
+
+		rollups = append(rollups, &runtimev1.MetricsViewSpec_Rollup{
+			Database:           rollup.Database,
+			DatabaseSchema:     rollup.DatabaseSchema,
+			Model:              rollup.Model,
+			TimeGrain:          tg,
+			TimeZone:           rollup.TimeZone,
+			Dimensions:         dims,
+			DimensionsSelector: dimsSelector,
+			Measures:           measures,
+			MeasuresSelector:   measSelector,
+			DataTimeRange:      rollup.DataTimeRange,
+		})
+		node.Refs = append(node.Refs, ResourceName{Name: rollup.Model})
 	}
 
 	securityRefs, err := inferRefsFromSecurityRules(securityRules)
@@ -777,9 +897,15 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	spec.AiInstructions = tmp.AIInstructions
 	spec.TimeDimension = tmp.TimeDimension
 	spec.WatermarkExpression = tmp.Watermark
+	spec.DataTimeRange = tmp.DataTimeRange
 	spec.SmallestTimeGrain = smallestTimeGrain
 	spec.FirstDayOfWeek = tmp.FirstDayOfWeek
 	spec.FirstMonthOfYear = tmp.FirstMonthOfYear
+	spec.MaxQueryTimeRange = tmp.MaxQueryTimeRange
+	if tmp.Cache.TimestampsTTL != "" {
+		d, _ := time.ParseDuration(tmp.Cache.TimestampsTTL) // already validated above
+		spec.CacheTimestampsTtlSeconds = int64(d.Seconds())
+	}
 
 	spec.Dimensions = dimensions
 	spec.Measures = measures
@@ -816,6 +942,8 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			MeasuresSelector: annotationMeasuresSelector,
 		})
 	}
+
+	spec.Rollups = rollups
 
 	// Parse the dimensions and measures selectors
 	if tmp.Parent != "" {

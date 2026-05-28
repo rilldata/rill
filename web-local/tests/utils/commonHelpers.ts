@@ -1,3 +1,4 @@
+import { expect } from "@playwright/test";
 import { asyncWaitUntil } from "@rilldata/web-common/lib/waitUtils";
 import type { Page } from "playwright";
 
@@ -28,12 +29,11 @@ export async function waitForProfiling(
   columns: Array<string>,
 ) {
   return Promise.all(
-    [
-      page.waitForResponse("**/rill.runtime.v1.QueryService/TableColumns"),
-      columns.map(() =>
-        page.waitForResponse("**/rill.runtime.v1.QueryService/ColumnNullCount"),
-      ),
-    ].flat(),
+    columns.map((c) =>
+      expect(page.getByLabel(`${c} profile`, { exact: true })).toBeVisible({
+        timeout: 30_000,
+      }),
+    ),
   );
 }
 
@@ -83,15 +83,12 @@ export async function renameFileUsingMenu(
   await openFileNavEntryContextMenu(page, filePath);
   await clickMenuButton(page, "Rename");
 
-  // wait for rename modal to open
-  await page
-    .locator("#rill-portal h2", {
-      hasText: "Rename",
-    })
-    .waitFor();
+  // wait for rename modal to open (dialog is portaled to document.body)
+  const dialog = page.getByRole("dialog");
+  await dialog.waitFor();
 
   // type new fileName and submit
-  await page.locator("#rill-portal input").fill(toFileName);
+  await dialog.locator("input").fill(toFileName);
   await Promise.all([
     page.waitForResponse("**/rill.runtime.v1.RuntimeService/RenameFile"),
     clickModalButton(page, "Change Name"),

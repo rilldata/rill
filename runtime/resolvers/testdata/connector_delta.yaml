@@ -1,0 +1,40 @@
+expensive: true
+connectors:
+  - gcs_s3_compat
+project_files:
+  gcs_hmac.yaml:
+    type: connector
+    driver: gcs
+    key_id: '{{.env.connector.gcs_s3_compat.key_id }}'
+    secret: '{{.env.connector.gcs_s3_compat.secret }}'
+  model_delta_to_duckdb_with_gcs_hmac.yaml:
+    type: model
+    connector: duckdb
+    create_secrets_from_connectors: gcs_hmac
+    materialize: true
+    sql: |
+      SELECT *
+      FROM delta_scan('gs://integration-test.rilldata.com/delta/orders_delta')
+tests:
+  - name: test_row_count_for_model_delta_to_duckdb_with_gcs_hmac
+    resolver: sql
+    properties:
+      sql: "SELECT count(*) as count FROM model_delta_to_duckdb_with_gcs_hmac"
+    result_csv: |
+      count
+      1000
+  - name: test_schema_for_model_delta_to_duckdb_with_gcs_hmac
+    resolver: sql
+    properties:
+      sql: "describe model_delta_to_duckdb_with_gcs_hmac"
+    result_csv: |
+      column_name,column_type,null,key,default,extra
+      order_id,BIGINT,YES,,,
+      customer_id,VARCHAR,YES,,,
+      product_name,VARCHAR,YES,,,
+      quantity,BIGINT,YES,,,
+      unit_price,DOUBLE,YES,,,
+      discount,DOUBLE,YES,,,
+      order_date,DATE,YES,,,
+      ship_mode,VARCHAR,YES,,,
+      is_returned,BOOLEAN,YES,,,

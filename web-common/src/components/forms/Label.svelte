@@ -2,7 +2,7 @@
   import { Label as LabelPrimitive } from "bits-ui";
   import { cn } from "@rilldata/web-common/lib/shadcn";
 
-  type $$Props = LabelPrimitive.Props;
+  type $$Props = LabelPrimitive.RootProps;
 
   let className: $$Props["class"] = undefined;
   export { className as class };

@@ -13,7 +13,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { PROJECT_ROLES_DESCRIPTION_MAP } from "../constants";
+  import { PROJECT_ROLES_DESCRIPTION_MAP } from "./constants";
 
   export let organization: string;
   export let group: V1MemberUsergroup;
@@ -146,7 +146,7 @@
         'admin'
           ? 'bg-gray-100'
           : ''}"
-        on:click={() => handleRoleSelect(ProjectUserRoles.Admin)}
+        onclick={() => handleRoleSelect(ProjectUserRoles.Admin)}
       >
         <span class="font-medium">Admin</span>
         <span class="text-xs text-fg-secondary"
@@ -160,7 +160,7 @@
       'editor'
         ? 'bg-gray-100'
         : ''}"
-      on:click={() => handleRoleSelect(ProjectUserRoles.Editor)}
+      onclick={() => handleRoleSelect(ProjectUserRoles.Editor)}
     >
       <span class="font-medium">Editor</span>
       <span class="text-xs text-fg-secondary"
@@ -173,7 +173,7 @@
       'viewer'
         ? 'bg-gray-100'
         : ''}"
-      on:click={() => handleRoleSelect(ProjectUserRoles.Viewer)}
+      onclick={() => handleRoleSelect(ProjectUserRoles.Viewer)}
     >
       <span class="font-medium">Viewer</span>
       <span class="text-xs text-fg-secondary"
@@ -185,7 +185,7 @@
       <DropdownMenu.Separator />
       <DropdownMenu.Item
         class="font-normal flex items-center py-2"
-        on:click={handleRemove}
+        onclick={handleRemove}
       >
         <span class="text-red-600">Remove</span>
       </DropdownMenu.Item>

@@ -29,6 +29,12 @@ func (t *ListBuckets) Spec() *mcp.Tool {
 		Name:        ListBucketsName,
 		Title:       "List Buckets",
 		Description: "List buckets available in an object store connector. Note: This is best-effort - bucket listing may not return all accessible buckets depending on cloud provider permissions. There may be access to additional buckets not returned here.",
+		Annotations: &mcp.ToolAnnotations{
+			DestructiveHint: boolPtr(false),
+			IdempotentHint:  true,
+			OpenWorldHint:   boolPtr(false),
+			ReadOnlyHint:    true,
+		},
 		Meta: map[string]any{
 			"openai/toolInvocation/invoking": "Listing buckets...",
 			"openai/toolInvocation/invoked":  "Listed buckets",

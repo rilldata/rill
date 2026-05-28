@@ -2,6 +2,7 @@
   import WithTween from "@rilldata/web-common/components/data-graphic/functional-components/WithTween.svelte";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import InlineErrorIndicator from "@rilldata/web-common/features/dashboards/errors/InlineErrorIndicator.svelte";
   import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -12,20 +13,20 @@
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
   import {
-    type MetricsViewSpecMeasure,
     createQueryServiceMetricsViewAggregation,
+    type MetricsViewSpecMeasure,
     type V1Expression,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { cellInspectorStore } from "../stores/cell-inspector-store";
+  import { keepPreviousData } from "@tanstack/svelte-query";
   import {
     crossfade,
     fly,
     type CrossfadeParams,
     type FlyParams,
   } from "svelte/transition";
+  import { cellInspectorStore } from "../stores/cell-inspector-store";
   import BigNumberTooltipContent from "./BigNumberTooltipContent.svelte";
-  import { keepPreviousData } from "@tanstack/svelte-query";
 
   export let measure: MetricsViewSpecMeasure;
   export let withTimeseries = true;
@@ -39,6 +40,7 @@
   export let comparisonTimeEnd: string | undefined = undefined;
   export let showComparison = false;
   export let ready: boolean = true;
+  export let skipLink: boolean = false;
 
   const client = useRuntimeClient();
 
@@ -146,7 +148,22 @@
       ? value - comparisonValue
       : 0;
   $: noChange = !comparisonValue;
-  $: isComparisonPositive = diff >= 0;
+  $: isComparisonPositive = diff > 0;
+  $: isComparisonNegative = diff < 0;
+  $: lowerIsBetter = measure?.lowerIsBetter ?? false;
+  // When comparisonValue < 0, dividing diff by a negative denominator flips the percentage sign,
+  // so "positive %" actually means "value went lower". We flip lowerIsBetter to compensate.
+  $: lowerIsBetterForPerc =
+    comparisonValue != null && comparisonValue < 0
+      ? !lowerIsBetter
+      : lowerIsBetter;
+  $: comparisonDeltaColorClass = (
+    lowerIsBetter ? isComparisonNegative : isComparisonPositive
+  )
+    ? "text-kpi-positive"
+    : (lowerIsBetter ? isComparisonPositive : isComparisonNegative)
+      ? "text-kpi-negative"
+      : "text-fg-secondary";
 
   $: formattedDiff = `${isComparisonPositive ? "+" : ""}${measureValueFormatter(
     diff,
@@ -173,19 +190,19 @@
       isMeasureExpanded = true;
     }
   };
-  $: useDiv = isMeasureExpanded || !withTimeseries;
+  $: useDiv = isMeasureExpanded || !withTimeseries || skipLink;
 
   function handleMouseOver() {
-    cellInspectorStore.updateValue(value);
+    cellInspectorStore.updateValue(value, tooltipValue);
   }
 
   function handleFocus() {
-    cellInspectorStore.updateValue(value);
+    cellInspectorStore.updateValue(value, tooltipValue);
   }
 </script>
 
 <Tooltip
-  suppress={suppressTooltip}
+  suppress={suppressTooltip || isError}
   distance={8}
   location="right"
   alignment="start"
@@ -203,7 +220,7 @@
     class="group big-number outline-border"
     class:shadow-grad={!useDiv}
     class:cursor-pointer={!useDiv}
-    on:click={modified({
+    onclick={modified({
       shift: () => shiftClickHandler(copyValue),
       click: () => {
         suppressTooltip = true;
@@ -226,8 +243,8 @@
       class="text-fg-secondary relative w-full h-full overflow-hidden text-ellipsis"
       style:font-size={withTimeseries ? "1.6rem" : "1.8rem"}
       style:font-weight="light"
-      on:mouseover={handleMouseOver}
-      on:focus={handleFocus}
+      onmouseover={handleMouseOver}
+      onfocus={handleFocus}
       tabindex="0"
     >
       {#if value !== null && value !== undefined && status === EntityStatus.Idle}
@@ -239,15 +256,17 @@
             {#if comparisonValue != null}
               <div
                 role="complementary"
-                class="w-fit max-w-full overflow-hidden text-ellipsis text-fg-secondary"
-                class:font-semibold={isComparisonPositive}
-                on:mouseenter={() => {
+                class="w-fit max-w-full overflow-hidden text-ellipsis {comparisonDeltaColorClass}"
+                class:font-semibold={lowerIsBetter
+                  ? isComparisonNegative
+                  : isComparisonPositive}
+                onmouseenter={() => {
                   tooltipValue =
                     measureValueFormatterTooltip(diff) ?? "no data";
                   copyValue =
                     measureValueFormatterUnabridged(diff) ?? "no data";
                 }}
-                on:mouseleave={() => {
+                onmouseleave={() => {
                   tooltipValue =
                     measureValueFormatterTooltip(value) ?? "no data";
                   copyValue =
@@ -266,7 +285,7 @@
             {#if comparisonPercChange != null && !noChange && !measureIsPercentage}
               <div
                 role="complementary"
-                on:mouseenter={() => {
+                onmouseenter={() => {
                   tooltipValue = numberPartsToString(
                     formatMeasurePercentageDifference(
                       comparisonPercChange ?? 0,
@@ -276,14 +295,16 @@
                     measureValueFormatterUnabridged(comparisonPercChange) ??
                     "no data";
                 }}
-                on:mouseleave={() => {
+                onmouseleave={() => {
                   tooltipValue =
                     measureValueFormatterUnabridged(value) ?? "no data";
                   copyValue =
                     measureValueFormatterUnabridged(value) ?? "no data";
                 }}
-                class="w-fit text-fg-secondary"
-                class:text-red-500={!isComparisonPositive}
+                class="w-fit {comparisonDeltaColorClass}"
+                class:font-semibold={lowerIsBetter
+                  ? isComparisonNegative
+                  : isComparisonPositive}
               >
                 <WithTween
                   value={comparisonPercChange}
@@ -292,6 +313,7 @@
                 >
                   <PercentageChange
                     tabularNumber={false}
+                    lowerIsBetter={lowerIsBetterForPerc}
                     value={formatMeasurePercentageDifference(output)}
                   />
                 </WithTween>
@@ -300,12 +322,8 @@
           </div>
         {/if}
       {:else if status === EntityStatus.Error}
-        <div class="text-xs pt-1">
-          {#if errorMessage}
-            Error: {errorMessage}
-          {:else}
-            Error fetching totals data
-          {/if}
+        <div class="pt-1">
+          <InlineErrorIndicator message={errorMessage} />
         </div>
       {:else if status === EntityStatus.Running}
         <div

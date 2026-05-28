@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fade, slide } from "svelte/transition";
   import { goto } from "$app/navigation";
   import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
@@ -7,7 +8,7 @@
     ResourceKind,
     resourceIsLoading,
   } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
-  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
+  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/actions/ui-actions.ts";
   import WorkspaceInspector from "@rilldata/web-common/features/models/inspector/WorkspaceInspector.svelte";
   import ModelEditor from "@rilldata/web-common/features/models/workspace/ModelEditor.svelte";
   import ModelWorkspaceCtAs from "@rilldata/web-common/features/models/workspace/ModelWorkspaceCTAs.svelte";
@@ -21,9 +22,10 @@
 
   import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matcher";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { fade, slide } from "svelte/transition";
   import ReconcilingSpinner from "../entity-management/ReconcilingSpinner.svelte";
+  import ReconcileWarningPanel from "../entity-management/ReconcileWarningPanel.svelte";
   import { getUserFriendlyError } from "../models/error-utils";
+  import ExplainAndFixErrorButton from "@rilldata/web-common/features/chat/ExplainAndFixErrorButton.svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -101,7 +103,7 @@
     hasUnsavedChanges={$hasUnsavedChanges}
     onTitleChange={handleNameChange}
   >
-    <svelte:fragment slot="workspace-controls">
+    {#snippet workspaceControls()}
       <p
         class="text-fg-muted line-clamp-1 mr-2 text-[11px]"
         transition:fade={{ duration: 200 }}
@@ -110,9 +112,9 @@
           Computed on {formatRefreshedOn(refreshedOn)}
         {/if}
       </p>
-    </svelte:fragment>
+    {/snippet}
 
-    <svelte:fragment slot="cta" let:width>
+    {#snippet cta(width: number)}
       {@const collapse = width < 800}
 
       <div class="flex gap-x-2 items-center">
@@ -125,7 +127,7 @@
           hasUnsavedChanges={$hasUnsavedChanges}
         />
       </div>
-    </svelte:fragment>
+    {/snippet}
   </WorkspaceHeader>
 
   <div
@@ -137,6 +139,8 @@
         <ModelEditor {fileArtifact} bind:autoSave={$autoSave} onSave={save} />
       {/key}
     </WorkspaceEditorContainer>
+
+    <ReconcileWarningPanel {fileArtifact} />
 
     {#if $tableVisible}
       <WorkspaceTableContainer {filePath}>
@@ -157,6 +161,9 @@
                   {getUserFriendlyError(error.message ?? "")}
                 </div>
               {/each}
+              <div class="flex justify-start pt-1">
+                <ExplainAndFixErrorButton {filePath} />
+              </div>
             </div>
           {/if}
         </svelte:fragment>

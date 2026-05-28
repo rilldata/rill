@@ -31,16 +31,12 @@
       dimensions: { getDimensionDisplayName },
       dimensionFilters: { isFilterExcludeMode },
       measures: { visibleMeasures },
-      leaderboard: { leaderboardMeasureNames },
     },
     actions: {
       sorting: { toggleSort },
       dimensions: { setPrimaryDimension },
       dimensionsFilter: { toggleDimensionFilterMode },
-      leaderboard: {
-        toggleLeaderboardShowContextForAllMeasures,
-        setLeaderboardSortByMeasureName,
-      },
+      leaderboard: { toggleLeaderboardShowContextForAllMeasures },
     },
     timeRangeSummaryStore,
     dashboardStore,
@@ -73,16 +69,6 @@
 
     // Reset expanded dimension
     setPrimaryDimension("");
-
-    // If user previously sorted by a measure that is not in the leaderboard measure names in expanded view,
-    // we need to set a new sort measure from the available leaderboard measures
-    if (
-      !$leaderboardMeasureNames.includes(
-        $dashboardStore.leaderboardSortByMeasureName,
-      )
-    ) {
-      setLeaderboardSortByMeasureName($leaderboardMeasureNames[0]);
-    }
   };
   function toggleFilterMode() {
     toggleDimensionFilterMode(dimensionName);

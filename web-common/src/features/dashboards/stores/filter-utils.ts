@@ -518,7 +518,11 @@ export function flattenInExpressionValues(expr: V1Expression) {
       expr.cond.op !== V1Operation.OPERATION_NIN);
   if (notInExpr) return expr;
   const ident = expr.cond!.exprs?.[0]?.ident;
-  const vals = expr.cond!.exprs?.slice(1).flatMap((e) => e.val);
+  const valExprs = expr.cond!.exprs?.slice(1);
+  // Do not flatten measure filter. They will be of format `<dim> IN <subquery>`
+  if (valExprs?.[0]?.subquery) return expr;
+
+  const vals = valExprs?.flatMap((e) => e.val);
   if (!ident || !vals) return expr;
   return createInExpression(
     ident,

@@ -1,6 +1,5 @@
 // TODO: move this file once other parts are merged
 
-import { Timestamp } from "@bufbuild/protobuf";
 import {
   queryServiceExportReport,
   type RpcStatus,
@@ -43,7 +42,10 @@ export function createDownloadReportMutation<
 
     const exportResp = await queryServiceExportReport(client, {
       report: data.reportId,
-      executionTime: Timestamp.fromJson(data.executionTime),
+      // Our new API types expect Message types, but we call `fromJson`.
+      // So technically this needs to be json.
+      // TODO: fix types
+      executionTime: data.executionTime as any,
       originBaseUrl: data.originBaseUrl,
     });
     const downloadUrl = `${data.host}${exportResp.downloadUrlPath}`;

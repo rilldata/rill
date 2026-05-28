@@ -156,7 +156,25 @@ Service tokens can issue short-lived ephemeral tokens for end users. This is use
 - Temporary API access
 - User-specific data access
 
+### With User Email
+
+For simple cases, you can just provide the end user's email:
+
+```bash
+curl -X POST https://api.rilldata.com/v1/orgs/<org-name>/projects/<project-name>/credentials \
+  -H "Authorization: Bearer <service-token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_email": "user@example.com",
+    "ttl_seconds": 3600
+  }'
+```
+
+The response contains a short-lived JWT token that can be used to access Rill APIs on behalf of the user.
+
 ### With Custom User Attributes
+
+For advanced cases, you can pass custom user attributes:
 
 ```bash
 curl -X POST https://api.rilldata.com/v1/orgs/<org-name>/projects/<project-name>/credentials \
@@ -173,18 +191,15 @@ curl -X POST https://api.rilldata.com/v1/orgs/<org-name>/projects/<project-name>
   }'
 ```
 
-### With User Email
+The custom attributes can be referenced in the project's [security policies](/developers/build/metrics-view/security). When using custom attributes, make sure that you pass a value for every attribute referenced in the project's security policies.
 
-For simpler cases, you can just provide the user's email:
+### User identity
 
-```bash
-curl -X POST https://api.rilldata.com/v1/orgs/<org-name>/projects/<project-name>/credentials \
-  -H "Authorization: Bearer <service-token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "user_email": "user@example.com",
-    "ttl_seconds": 3600
-  }'
-```
+The `user_email`, `attributes`, and `external_user_id` parameters serve two purposes in ephemeral tokens:
+- **User attributes for security policies:** `user_email` and `attributes` determine which attributes (such as `email`, `domain`, and `admin`) are available for use in [security policies](/developers/build/metrics-view/security).
+- **Per-user state:** `external_user_id` establishes a stable user identity that isolates per-user features such as AI chat history. Without a user identity, these features are not available.
 
-The response contains a short-lived JWT token that can be used to access Rill APIs on behalf of the user.
+Only one of `user_email` or `attributes` can be provided for a given token. The `external_user_id` parameter can optionally be combined with either of them. Here is how each parameter works:
+- `user_email`: Looks up the user in Rill Cloud by email and populates their standard attributes. If no matching user is found, it generates limited attributes with only the fields `email`, `domain` and `admin` (set to `false`). Does not enable per-user state on its own; combine with `external_user_id` to enable per-user state.
+- `attributes`: Passes the provided attributes through directly. Make sure to include all attributes referenced in your security policies (e.g. `email`, `domain`, `admin`, or custom attributes like `tenant_id`). Does not enable per-user state on its own; combine with `external_user_id` to enable per-user state.
+- `external_user_id`: Any stable identifier for an external end user. This is usually the user's ID in your own database. Setting it enables per-user state such as AI chat history. Can be combined with `user_email` or `attributes`.

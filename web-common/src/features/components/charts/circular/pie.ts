@@ -1,10 +1,11 @@
 import { sanitizeFieldName } from "@rilldata/web-common/components/vega/util";
 import type { VisualizationSpec } from "svelte-vega";
+import type { ExprRef, SignalRef } from "vega";
 import type { Config } from "vega-lite";
-import type { Field } from "vega-lite/build/src/channeldef";
-import type { LayerSpec } from "vega-lite/build/src/spec/layer";
-import type { UnitSpec } from "vega-lite/build/src/spec/unit";
-import type { ExprRef, SignalRef } from "vega-typings";
+import type { Field } from "vega-lite/types_unstable/channeldef.js";
+import type { LayerSpec } from "vega-lite/types_unstable/spec/layer.js";
+import type { UnitSpec } from "vega-lite/types_unstable/spec/unit.js";
+import type { Transform } from "vega-lite/types_unstable/transform.js";
 import {
   createColorEncoding,
   createConfigWithLegend,
@@ -16,6 +17,14 @@ import {
 } from "../builder";
 import type { ChartDataResult } from "../types";
 import type { CircularChartSpec } from "./CircularChartProvider";
+import {
+  OTHER_SORT_KEY_FIELD,
+  OTHER_VALUE,
+  OTHER_VALUE_DOMAIN_KEY,
+  PERCENT_OF_TOTAL_FIELD,
+  PERCENT_OF_TOTAL_TITLE,
+  TOTAL_DOMAIN_KEY,
+} from "./constants";
 
 function getInnerRadius(innerRadiusPercentage: number | undefined) {
   if (!innerRadiusPercentage) return 0;
@@ -46,11 +55,30 @@ export function generateVLPieChartSpec(
   config: CircularChartSpec,
   data: ChartDataResult,
 ): VisualizationSpec {
-  const totalValue = data.domainValues?.["total"]?.[0];
+  const totalValue = data.domainValues?.[TOTAL_DOMAIN_KEY]?.[0];
   const shouldShowTotal =
     totalValue !== undefined && config.measure?.showTotal === true;
 
   const measureMetaData = config.measure && data.fields[config.measure.field];
+
+  const validPercentOfTotal =
+    measureMetaData &&
+    "validPercentOfTotal" in measureMetaData &&
+    measureMetaData.validPercentOfTotal === true;
+
+  // Show "% of total" in the tooltip when the measure supports it
+  const showPercentOfTotal = Boolean(
+    config.measure?.field &&
+      typeof totalValue === "number" &&
+      validPercentOfTotal,
+  );
+
+  // Inject the synthetic "Other" row when the provider has set it.
+  const otherValue = data.domainValues?.[OTHER_VALUE_DOMAIN_KEY]?.[0];
+  const hasOther =
+    typeof otherValue === "number" &&
+    !!config.color?.field &&
+    !!config.measure?.field;
 
   /**
    * The layout property is not typed in the current version of Vega-Lite.
@@ -74,12 +102,29 @@ export function generateVLPieChartSpec(
 
   const theta = createPositionEncoding(config.measure, data);
   const color = createColorEncoding(config.color, data);
-  const order = createOrderEncoding(config.measure);
+  // When "Other" is in the data, order arcs by a synthetic key that pins
+  // "Other" to the end. Otherwise, fall back to ordering by the measure.
+  const order = hasOther
+    ? {
+        field: OTHER_SORT_KEY_FIELD,
+        type: "quantitative" as const,
+        sort: "descending" as const,
+      }
+    : createOrderEncoding(config.measure);
 
   const tooltip = createDefaultTooltipEncoding(
     [config.color, config.measure],
     data,
   );
+
+  if (showPercentOfTotal) {
+    tooltip.push({
+      field: PERCENT_OF_TOTAL_FIELD,
+      title: PERCENT_OF_TOTAL_TITLE,
+      type: "quantitative",
+      format: ".1%",
+    });
+  }
 
   const arcLayer: LayerSpec<Field> | UnitSpec<Field> = {
     mark: {
@@ -94,6 +139,37 @@ export function generateVLPieChartSpec(
       tooltip,
     },
   };
+
+  if (hasOther && config.color?.field && config.measure?.field) {
+    const colorField = config.color.field;
+    const measureField = config.measure.field;
+    const otherRow: Record<string, unknown> = {
+      [colorField]: OTHER_VALUE,
+      [measureField]: otherValue,
+    };
+    arcLayer.data = {
+      values: [...data.data, otherRow],
+    };
+  }
+
+  const transforms: Transform[] = [];
+  if (showPercentOfTotal && config.measure?.field) {
+    transforms.push({
+      calculate: `datum['${config.measure.field}'] / ${totalValue}`,
+      as: PERCENT_OF_TOTAL_FIELD,
+    });
+  }
+  if (hasOther && config.color?.field && config.measure?.field) {
+    // Pin "Other" to the end of the arc order: give it -Infinity so it always
+    // sorts last under `order: descending` regardless of its measure value.
+    transforms.push({
+      calculate: `datum['${config.color.field}'] === '${OTHER_VALUE}' ? -1/0 : datum['${config.measure.field}']`,
+      as: OTHER_SORT_KEY_FIELD,
+    });
+  }
+  if (transforms.length > 0) {
+    arcLayer.transform = transforms;
+  }
 
   if (shouldShowTotal && totalValue !== undefined) {
     const spec = createMultiLayerBaseSpec();
@@ -136,6 +212,12 @@ export function generateVLPieChartSpec(
     const spec = createSingleLayerBaseSpec("arc");
     spec.mark = arcLayer.mark;
     spec.encoding = arcLayer.encoding;
+    if (arcLayer.data) {
+      spec.data = arcLayer.data;
+    }
+    if (arcLayer.transform) {
+      spec.transform = arcLayer.transform;
+    }
 
     return {
       ...spec,

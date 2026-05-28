@@ -26,6 +26,7 @@ import {
   type V1Expression,
   type V1MetricsViewSpec,
   V1Operation,
+  V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import type {
   Dimension,
@@ -35,7 +36,7 @@ import type {
   Sort,
   TimeRange,
 } from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
-import type { SortingState } from "@tanstack/svelte-table";
+import type { SortingState } from "tanstack-table-8-svelte-5";
 
 export function mapMetricsResolverQueryToDashboard(
   metricsViewSpec: V1MetricsViewSpec,
@@ -170,13 +171,15 @@ function getValidDimensions(
   const mvDimensions = new Set<string>(
     metricsViewSpec.dimensions?.map((d) => d.name!) ?? [],
   );
+  // TODO: handle multiple timestamp metrics views
   const exploreDimensions = dimensions
     .filter(
       (d) =>
-        mvDimensions.has(d.name) && exploreSpec.dimensions?.includes(d.name),
+        mvDimensions.has(d.name) &&
+        exploreSpec.dimensions?.includes(d.name) &&
+        d.compute?.time_floor?.dimension !== metricsViewSpec.timeDimension,
     )
     .map((d) => d.name);
-  // TODO: handle multiple timestamp metrics views
   const timeDimensions = dimensions.filter(
     (d) => d.compute?.time_floor?.dimension === metricsViewSpec.timeDimension,
   );
@@ -348,11 +351,13 @@ function mapPivot(
 
   if (partialExploreState.visibleDimensions) {
     columns.push(
-      ...partialExploreState.visibleDimensions.map((d) => ({
-        id: d,
-        title: d,
-        type: PivotChipType.Dimension,
-      })),
+      ...partialExploreState.visibleDimensions
+        .filter((d) => !timeDimensions.find((td) => td.name === d))
+        .map((d) => ({
+          id: d,
+          title: d,
+          type: PivotChipType.Dimension,
+        })),
     );
   }
 
@@ -367,7 +372,19 @@ function mapPivot(
   }
 
   const sorting: SortingState =
-    query.sort?.map((s) => ({ id: s.name, desc: !!s.desc })) ?? [];
+    query.sort?.map((s) => {
+      const td = timeDimensions.find((td) => td.name === s.name);
+      if (!td?.compute?.time_floor?.grain)
+        return { id: s.name, desc: !!s.desc };
+
+      const grain =
+        DateTimeUnitToV1TimeGrain[td.compute.time_floor.grain] ??
+        V1TimeGrain.TIME_GRAIN_SECOND;
+      const id = td?.compute?.time_floor?.grain
+        ? `${td.name}_rill_${grain}`
+        : s.name;
+      return { id, desc: !!s.desc };
+    }) ?? [];
 
   return {
     rows: [],

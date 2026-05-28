@@ -23,7 +23,6 @@ import { derived, writable, type Readable } from "svelte/store";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import type {
   HeaderData,
-  HighlightedCell,
   TDDCellData,
   TDDComparison,
   TableData,
@@ -465,14 +464,5 @@ export const useTimeDimensionDataStore =
   memoizeMetricsStore<TimeSeriesDataStore>((ctx: StateManagers) =>
     createTimeDimensionDataStore(ctx),
   );
-
-/**
- * Stores for handling interactions between chart and table
- * Two separate stores created to avoid looped updates and renders
- */
-export const tableInteractionStore = writable<HighlightedCell>({
-  dimensionValue: undefined,
-  time: undefined,
-});
 
 export const lastKnownPosition = writable<TablePosition>(undefined);

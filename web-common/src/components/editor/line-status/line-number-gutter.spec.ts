@@ -1,8 +1,9 @@
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { beforeEach, describe, expect, it } from "vitest";
+import { flushSync } from "svelte";
 import { lineStatus } from ".";
-import { LINE_NUMBER_GUTTER_CLASS } from "./line-number-gutter";
+import { LINE_NUMBER_GUTTER_CLASS } from "./line-number-gutter.svelte";
 
 const doc = `name: test dashboard
 measures:
@@ -72,6 +73,7 @@ describe("Line Number Gutter Extension (CodeMirror)", () => {
         insert: doc + "\n",
       },
     });
+    flushSync();
     const lineNumbers = getLineNumberElements(container);
     expect(lineNumbers.length).toBe(doc.split("\n").length + 2);
     expect(lineNumbers[0].textContent).toBe("7");
@@ -86,6 +88,7 @@ describe("Line Number Gutter Extension (CodeMirror)", () => {
         insert: doc.split("\n").slice(0, -1).join("\n"),
       },
     });
+    flushSync();
 
     const lineNumbers = getLineNumberElements(container);
     expect(lineNumbers.length).toBe(doc.split("\n").length);

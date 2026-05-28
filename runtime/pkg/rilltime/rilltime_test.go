@@ -473,6 +473,10 @@ func TestEval_Misc(t *testing.T) {
 		{"3W18D23h as of latest-3Y", "2022-04-04T07:32:36Z", "2022-05-14T06:32:36Z", timeutil.TimeGrainWeek, 1, 1},
 
 		{"7D as of latest/D+1D offset -1M", "2025-04-08T00:00:00Z", "2025-04-15T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+
+		// MTD with truncating to month
+		{"MTD as of now/M", "2025-05-01T00:00:00Z", "2025-05-01T00:00:00Z", timeutil.TimeGrainMillisecond, 1, 1},
+		{"MTD as of latest/M+1M", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z", timeutil.TimeGrainMillisecond, 1, 1},
 	}
 
 	runTests(t, testCases, now, minTime, maxTime, watermark, nil)

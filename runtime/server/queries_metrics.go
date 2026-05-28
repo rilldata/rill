@@ -396,9 +396,19 @@ func (s *Server) MetricsViewTimeRange(ctx context.Context, req *runtimev1.Metric
 		return nil, ErrForbidden
 	}
 
+	_, mv, err := lookupMetricsView(ctx, s.runtime, req.InstanceId, req.MetricsViewName)
+	if err != nil {
+		return nil, err
+	}
+
 	ts, err := queries.ResolveTimestampResult(ctx, s.runtime, req.InstanceId, req.MetricsViewName, req.TimeDimension, claims, int(req.Priority))
 	if err != nil {
 		return nil, err
+	}
+
+	maxQueryTimeRange := ""
+	if mv.ValidSpec != nil {
+		maxQueryTimeRange = mv.ValidSpec.MaxQueryTimeRange
 	}
 
 	return &runtimev1.MetricsViewTimeRangeResponse{
@@ -409,6 +419,7 @@ func (s *Server) MetricsViewTimeRange(ctx context.Context, req *runtimev1.Metric
 			Max:       valOrNullTime(ts.Max),
 			Watermark: valOrNullTime(ts.Watermark),
 		},
+		MaxQueryTimeRangeMillis: metricsview.ResolveMaxQueryTimeRange(maxQueryTimeRange, time.Now()).Milliseconds(),
 	}, nil
 }
 
@@ -581,14 +592,20 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 		}
 	}
 
+	maxQueryTimeRange := ""
+	if mv.ValidSpec != nil {
+		maxQueryTimeRange = mv.ValidSpec.MaxQueryTimeRange
+	}
+
 	return &runtimev1.MetricsViewTimeRangesResponse{
 		FullTimeRange: &runtimev1.TimeRangeSummary{
 			Min:       valOrNullTime(ts.Min),
 			Max:       valOrNullTime(ts.Max),
 			Watermark: valOrNullTime(ts.Watermark),
 		},
-		ResolvedTimeRanges: timeRanges,
-		TimeRanges:         backwardsCompatibleRanges,
+		ResolvedTimeRanges:      timeRanges,
+		TimeRanges:              backwardsCompatibleRanges,
+		MaxQueryTimeRangeMillis: metricsview.ResolveMaxQueryTimeRange(maxQueryTimeRange, now).Milliseconds(),
 	}, nil
 }
 
@@ -642,7 +659,7 @@ func (s *Server) MetricsViewAnnotations(ctx context.Context, req *runtimev1.Metr
 		return nil, err
 	}
 
-	res, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
+	res, _, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         req.InstanceId,
 		Resolver:           "metrics_annotations",
 		ResolverProperties: props,
@@ -665,12 +682,12 @@ func (s *Server) MetricsViewAnnotations(ctx context.Context, req *runtimev1.Metr
 		var ann annotation
 		err = mapstructureutil.WeakDecode(row, &ann)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 
 		additionalFieldsPb, err := pbutil.ToStruct(ann.AdditionalFields, res.Schema())
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 
 		var timeEnd *timestamppb.Timestamp
@@ -723,7 +740,7 @@ func (s *Server) ConvertExpressionToMetricsSQL(ctx context.Context, req *runtime
 	expr := metricsview.NewExpressionFromProto(req.Expression)
 	sql, err := metricsview.ExpressionToSQL(expr)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	return &runtimev1.ConvertExpressionToMetricsSQLResponse{
@@ -770,18 +787,18 @@ func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime
 func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.Resource, *runtimev1.MetricsViewState, error) {
 	ctrl, err := rt.Controller(ctx, instanceID)
 	if err != nil {
-		return nil, nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, nil, err
 	}
 
 	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name}, false)
 	if err != nil {
-		return nil, nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, nil, err
 	}
 
 	mv := res.GetMetricsView()
 	spec := mv.State.ValidSpec
 	if spec == nil {
-		return nil, nil, status.Errorf(codes.InvalidArgument, "metrics view %q is invalid", name)
+		return nil, nil, status.Errorf(codes.FailedPrecondition, "metrics view %q is invalid", name)
 	}
 
 	return res, mv.State, nil

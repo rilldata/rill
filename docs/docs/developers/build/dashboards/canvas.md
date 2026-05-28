@@ -51,62 +51,21 @@ Set project-wide default time ranges and available options for all canvas dashbo
 [Learn more about canvas defaults →](/developers/build/project-configuration#canvas-defaults)
 ::: 
 
-<!-- 
 ## Default Filters
 
-Dashboard creators can configure default dimension and measure filters to establish a consistent starting point for viewers. This feature enables you to pre-configure the most relevant data views, ensuring users begin their analysis with the most appropriate context and reducing the need for manual filter configuration.
-
-### Dimension Filters
-
-![Dimension Default Filters](/img/build/dashboard/canvas/dimension-default-filters.png)
-Additional parameters can be configured to control filter behavior, including locking filters, hiding values, and setting default selections.
+Dashboard creators can configure default filters to establish a consistent starting point for viewers. Filters are defined as Metrics SQL WHERE expressions, keyed by the metrics view name they apply to.
 
 ```yaml
 defaults:
   filters:
-    dimensions:
-      # Exclude "Not Available" values and lock the filter
-      - dimension: app_site_domain
-        exclude: true
-        locked: true
-        values:
-          - "Not Available"
-      
-      # Make filter non-removable but allow value changes
-      - dimension: app_site_name
-        removable: false
-      
-      # Standard dimension filter
-      - dimension: device_state
+    # Key is the metrics view name; value is a Metrics SQL WHERE expression
+    my_metrics_view: "country IN ('US', 'CA') AND revenue > 1000"
+    another_metrics_view: "status = 'active'"
 ```
 
-### Measure Filters
+This lets you pre-filter data across one or more metrics views used in the canvas, ensuring users begin their analysis with the most relevant context.
 
-Measure filters can be configured in the same way:
-
-```yaml
-defaults:
-  filters:
-    measures:
-      # Lock impressions filter with greater than 10 threshold
-      - measure: impressions
-        locked: true
-        # hidden: true  # Uncomment to hide from UI
-        by_dimension: app_site_domain
-        operator: gt  # Available: gt, lt, gte, lte, bt, nbt, eq, neq
-        values:
-          - "10"
-      
-      # Configure total_bids filter with less than or equal to 10
-      - measure: total_bids
-        by_dimension: app_site_name
-        operator: lte  # Available: gt, lt, gte, lte, bt, nbt, eq, neq
-        values:
-          - "10"
-```
-
-![Measure Default Filters](/img/build/dashboard/canvas/measure-default-filters.png)
-For detailed YAML configurations, see the [`filters`](/reference/project-files/canvas-dashboards#defaults) section in our reference documentation.-->
+For detailed YAML configurations, see the [`defaults`](/reference/project-files/canvas-dashboards#defaults) section in our reference documentation.
 
 ## Example Canvas Dashboards
 

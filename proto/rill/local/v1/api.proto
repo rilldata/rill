@@ -21,6 +21,12 @@ service LocalService {
   // GithubRepoStatus returns info about a Github user account based on the caller's installations. Forwards to admin API of the same name.
   rpc GithubRepoStatus(GithubRepoStatusRequest) returns (GithubRepoStatusResponse) {}
 
+  // CreateGithubPullRequest creates a Github PR from the specified branch to the connected project's primary branch. Forwards to admin API of the same name.
+  rpc CreateGithubPullRequest(CreateGithubPullRequestRequest) returns (CreateGithubPullRequestResponse) {}
+
+  // GetGithubPullRequest returns the status of the most recent Github PR for the specified branch, if any. Forwards to admin API of the same name.
+  rpc GetGithubPullRequest(GetGithubPullRequestRequest) returns (GetGithubPullRequestResponse) {}
+
   // GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
   // If there are any merge conflicts the pull is aborted.
   // Force can be set to true to force the pull and overwrite any local changes.
@@ -85,6 +91,8 @@ message GetMetadataResponse {
   int32 grpc_port = 11;
   string login_url = 12;
   string admin_url = 13;
+  reserved 14;
+  bool preview_mode = 15;
 }
 
 message GetVersionRequest {}
@@ -121,6 +129,31 @@ message GithubRepoStatusResponse {
   bool has_access = 1;
   string grant_access_url = 2;
   string default_branch = 3;
+}
+
+message CreateGithubPullRequestRequest {
+  string branch = 1;
+  string title = 2;
+  string body = 3;
+}
+
+message CreateGithubPullRequestResponse {
+  string pr_url = 1;
+}
+
+message GetGithubPullRequestRequest {
+  string branch = 1;
+}
+
+message GetGithubPullRequestResponse {
+  string pr_url = 1;
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    STATE_OPEN = 1;
+    STATE_CLOSED_UNMERGED = 2;
+    STATE_MERGED = 3;
+  }
+  State pr_state = 2;
 }
 
 message GitPullRequest {

@@ -1,4 +1,4 @@
-import { Command as CommandPrimitive } from "cmdk-sv";
+import { Command as CommandPrimitive } from "bits-ui";
 
 import Root from "./command.svelte";
 import Dialog from "./command-dialog.svelte";
@@ -11,12 +11,16 @@ import Separator from "./command-separator.svelte";
 import Shortcut from "./command-shortcut.svelte";
 
 const Loading = CommandPrimitive.Loading;
+const GroupHeading = CommandPrimitive.GroupHeading;
+const GroupItems = CommandPrimitive.GroupItems;
 
 export {
   Root,
   Dialog,
   Empty,
   Group,
+  GroupHeading,
+  GroupItems,
   Item,
   Input,
   List,
@@ -28,6 +32,8 @@ export {
   Dialog as CommandDialog,
   Empty as CommandEmpty,
   Group as CommandGroup,
+  GroupHeading as CommandGroupHeading,
+  GroupItems as CommandGroupItems,
   Item as CommandItem,
   Input as CommandInput,
   List as CommandList,

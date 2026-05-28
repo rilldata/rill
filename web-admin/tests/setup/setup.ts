@@ -152,7 +152,7 @@ setup.describe("global setup", () => {
       })
       .click();
 
-    await page.waitForURL("/");
+    await page.waitForURL(/\/(-\/welcome\/theme)?/);
 
     // Save the admin's Rill auth cookies to file.
     // Subsequent tests can seed their browser with this state, instead of needing to go through the log-in flow again.
@@ -165,7 +165,7 @@ setup.describe("global setup", () => {
     const { stdout: orgCreateStdout } = await execAsync(
       `rill org create ${RILL_ORG_NAME}`,
     );
-    expect(orgCreateStdout).toContain("Created organization");
+    expect(orgCreateStdout).toContain("Created org");
 
     // create service and write access token to file
     const { stdout: orgCreateService } = await execAsync(

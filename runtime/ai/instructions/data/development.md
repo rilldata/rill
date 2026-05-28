@@ -1,5 +1,5 @@
 ---
-description: How to develop a Rill project with an introduction to Rill's concepts and resource types
+description: Overview of how to develop a Rill project
 ---
 
 # Instructions for developing a Rill project

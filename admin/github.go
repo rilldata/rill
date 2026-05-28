@@ -42,7 +42,9 @@ type Github interface {
 	InstallationToken(ctx context.Context, installationID, repoID int64) (token string, expiresAt time.Time, err error)
 	InstallationTokenForOrg(ctx context.Context, org string) (token string, expiresAt time.Time, err error)
 
-	CreateManagedRepo(ctx context.Context, repoPrefix string) (*github.Repository, error)
+	CreateManagedRepo(ctx context.Context, repoPrefix string, autoInit bool) (*github.Repository, error)
+	// DeleteManagedRepo deletes the given repo from the managed org. For test cleanup only.
+	DeleteManagedRepo(ctx context.Context, repo string) error
 	ManagedOrgInstallationID() (int64, error)
 }
 
@@ -151,7 +153,7 @@ func (g *githubClient) InstallationTokenForOrg(ctx context.Context, org string) 
 	return g.token(ctx, client)
 }
 
-func (g *githubClient) CreateManagedRepo(ctx context.Context, name string) (*github.Repository, error) {
+func (g *githubClient) CreateManagedRepo(ctx context.Context, name string, autoInit bool) (*github.Repository, error) {
 	repoName := fmt.Sprintf("%s-%v", name, uuid.New().String()[0:8])
 
 	// get managed org client
@@ -163,8 +165,9 @@ func (g *githubClient) CreateManagedRepo(ctx context.Context, name string) (*git
 
 	// create the repo
 	repo, _, err := client.Repositories.Create(ctx, g.managedAcct, &github.Repository{
-		Name:    github.Ptr(repoName),
-		Private: github.Ptr(true),
+		Name:     github.Ptr(repoName),
+		Private:  github.Ptr(true),
+		AutoInit: github.Ptr(autoInit),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create managed repo: %w", err)
@@ -189,6 +192,21 @@ func (g *githubClient) CreateManagedRepo(ctx context.Context, name string) (*git
 	return repo, nil
 }
 
+func (g *githubClient) DeleteManagedRepo(ctx context.Context, repo string) error {
+	// get managed org client
+	id, err := g.ManagedOrgInstallationID()
+	if err != nil {
+		return fmt.Errorf("failed to get managed org installation ID: %w", err)
+	}
+	client := g.InstallationClient(id, nil)
+
+	_, err = client.Repositories.Delete(ctx, g.managedAcct, repo)
+	if err != nil {
+		return fmt.Errorf("failed to delete repo: %w", err)
+	}
+	return nil
+}
+
 func (g *githubClient) ManagedOrgInstallationID() (int64, error) {
 	return g.managedOrgInstallationID, g.managedOrgFetchError
 }
@@ -209,7 +227,7 @@ func (g *githubClient) token(ctx context.Context, client *github.Client) (string
 	return t, expiry, nil
 }
 
-func (s *Service) CreateManagedGitRepo(ctx context.Context, org *database.Organization, name, ownerID string) (*github.Repository, error) {
+func (s *Service) CreateManagedGitRepo(ctx context.Context, org *database.Organization, name, ownerID string, autoInit bool) (*github.Repository, error) {
 	if org.QuotaProjects >= 0 {
 		count, err := s.DB.CountManagedGitRepos(ctx, org.ID)
 		if err != nil {
@@ -222,7 +240,7 @@ func (s *Service) CreateManagedGitRepo(ctx context.Context, org *database.Organi
 		}
 	}
 
-	repo, err := s.Github.CreateManagedRepo(ctx, fmt.Sprintf("%s-%s", org.Name, name))
+	repo, err := s.Github.CreateManagedRepo(ctx, fmt.Sprintf("%s-%s", org.Name, name), autoInit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create managed repo: %w", err)
 	}

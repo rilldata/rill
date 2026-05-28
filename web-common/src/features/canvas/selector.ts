@@ -1,16 +1,16 @@
+import type { ConnectError } from "@connectrpc/connect";
 import {
   ResourceKind,
   useFilteredResources,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
+  createQueryServiceResolveCanvas,
   type V1CanvasSpec,
   type V1MetricsView,
   type V1ResolveCanvasResponse,
   type V1ResolveCanvasResponseResolvedComponents,
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-import { createQueryServiceResolveCanvas } from "@rilldata/web-common/runtime-client";
-import type { ConnectError } from "@connectrpc/connect";
 import type {
   CreateQueryOptions,
   CreateQueryResult,
@@ -93,10 +93,11 @@ export function useCanvas(
     CreateQueryOptions<V1ResolveCanvasResponse, ConnectError, CanvasResponse>
   >,
   queryClient?: QueryClient,
+  allowUnvalidatedSpec = false,
 ): CreateQueryResult<CanvasResponse, ConnectError> {
   return createQueryServiceResolveCanvas(
     client,
-    { canvas: canvasName },
+    { canvas: canvasName, unsafe: allowUnvalidatedSpec },
     {
       query: {
         select: (data) => {
@@ -109,14 +110,16 @@ export function useCanvas(
           }
 
           return {
-            canvas: data.canvas?.canvas?.state?.validSpec,
+            canvas:
+              data.canvas?.canvas?.state?.validSpec ??
+              (allowUnvalidatedSpec ? data.canvas?.canvas?.spec : undefined),
             components: data.resolvedComponents,
             metricsViews,
             filePath: data.canvas?.meta?.filePaths?.[0],
           };
         },
 
-        enabled: !!canvasName && !!client.instanceId,
+        enabled: !!canvasName && !!client?.instanceId,
         ...queryOptions,
       },
     },

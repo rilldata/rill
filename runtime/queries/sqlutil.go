@@ -7,14 +7,9 @@ import (
 
 	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/drivers"
 )
 
 var ErrExportNotSupported = fmt.Errorf("exporting is not supported")
-
-func safeName(name string) string {
-	return drivers.DialectDuckDB.EscapeIdentifier(name)
-}
 
 func tempName(prefix string) string {
 	return prefix + strings.ReplaceAll(uuid.New().String(), "-", "")

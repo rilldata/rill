@@ -65,7 +65,7 @@
           type="text"
           placeholder={keyPlaceholder}
           value={entry.key}
-          on:input={(e) => updateKey(i, e.currentTarget.value)}
+          oninput={(e) => updateKey(i, e.currentTarget.value)}
           aria-label="Header name {i + 1}"
           class="kv-input"
         />
@@ -75,7 +75,7 @@
           type="text"
           placeholder={valuePlaceholder}
           value={entry.value}
-          on:input={(e) => updateValue(i, e.currentTarget.value)}
+          oninput={(e) => updateValue(i, e.currentTarget.value)}
           aria-label="Header value {i + 1}"
           class="kv-input"
         />
@@ -83,7 +83,7 @@
       <button
         type="button"
         class="remove-button"
-        on:click={() => removeRow(i)}
+        onclick={() => removeRow(i)}
         aria-label="Remove header {i + 1}"
       >
         <XIcon size="14px" />
@@ -96,7 +96,7 @@
     {/if}
   {/each}
 
-  <button type="button" class="add-button" on:click={addRow}>
+  <button type="button" class="add-button" onclick={addRow}>
     <PlusIcon size="14px" />
     Add header
   </button>

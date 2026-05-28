@@ -1,31 +1,34 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
-  import type { TimeSeriesPoint } from "./types";
-  import { createVisibilityObserver } from "./interactions";
-  import { ScrubController } from "./ScrubController";
-  import MeasureChartBody from "./MeasureChartBody.svelte";
-  import TDDAlternateChart from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/TDDAlternateChart.svelte";
+  import InlineErrorIndicator from "@rilldata/web-common/features/dashboards/errors/InlineErrorIndicator.svelte";
+  import TDDMeasureChart from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/TDDChart.svelte";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
-  import { adjustTimeInterval } from "../utils";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
   import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import {
     createQueryServiceMetricsViewTimeSeries,
+    V1TimeGrain,
     type V1Expression,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { keepPreviousData } from "@tanstack/svelte-query";
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { DateTime, Interval } from "luxon";
-  import { transformTimeSeriesData } from "./use-measure-time-series";
-  import {
-    createDimensionAggregationQuery,
-    buildDimensionSeriesData,
-  } from "./use-dimension-data";
+  import { onDestroy, onMount } from "svelte";
   import { createAnnotationsQuery } from "../annotations-selectors";
+  import { adjustTimeInterval, localToTimeZoneOffset } from "../utils";
+  import { resolveEffectiveChartType, usesVegaRenderer } from "./chart-series";
+  import { chartBrushStore, chartHoverStore, hoverIndex } from "./hover-index";
+  import { createVisibilityObserver } from "./interactions";
+  import MeasureChartBody from "./MeasureChartBody.svelte";
+  import { ScrubController } from "./ScrubController";
+  import type { TimeSeriesPoint } from "./types";
+  import {
+    buildDimensionSeriesData,
+    createDimensionAggregationQuery,
+  } from "./use-dimension-data";
+  import { transformTimeSeriesData } from "./use-measure-time-series";
   import { dateToIndex } from "./utils";
-  import { hoverIndex } from "./hover-index";
 
   const VISIBILITY_ROOT_MARGIN = "120px";
 
@@ -58,15 +61,15 @@
   export let onScrubClear: (() => void) | undefined = undefined;
   export let onPanLeft: (() => void) | undefined = undefined;
   export let onPanRight: (() => void) | undefined = undefined;
-  export let scrubController: ScrubController;
+  export let scrubController: ScrubController | undefined = undefined;
   export let connectNulls: boolean = true;
+  export let dynamicYAxis: boolean = false;
 
   const client = useRuntimeClient();
   const { visible, observe } = createVisibilityObserver(VISIBILITY_ROOT_MARGIN);
 
   let container: HTMLDivElement;
   let unobserve: (() => void) | undefined;
-  let tddIsScrubbing = false;
 
   onMount(() => {
     if (container) unobserve = observe(container);
@@ -78,6 +81,33 @@
 
   $: measureName = measure.name ?? "";
   $: height = showTimeDimensionDetail ? 245 : 145;
+
+  $: effectiveChartType = resolveEffectiveChartType(
+    tddChartType,
+    hasDimensionComparison,
+  );
+  $: usesVegaChart = usesVegaRenderer(effectiveChartType);
+
+  // Seed the shared brush store from the persisted scrub interval so TDD Vega
+  // charts can render the brush on mount, chart-type switch, or page refresh.
+  $: {
+    const brushStoreEmpty = $chartBrushStore.startMs === undefined;
+    if (
+      usesVegaChart &&
+      brushStoreEmpty &&
+      chartScrubInterval?.start &&
+      chartScrubInterval?.end
+    ) {
+      const systemTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const vegaStartMs = chartScrubInterval.start
+        .setZone(systemTimeZone, { keepLocalTime: true })
+        .toMillis();
+      const vegaEndMs = chartScrubInterval.end
+        .setZone(systemTimeZone, { keepLocalTime: true })
+        .toMillis();
+      chartBrushStore.set({ startMs: vegaStartMs, endMs: vegaEndMs });
+    }
+  }
 
   // Extract ISO strings for API calls (must be UTC for protobuf Timestamp parsing)
   $: timeStart = interval?.start?.toUTC().toISO() ?? undefined;
@@ -229,33 +259,57 @@
 
   // TDD handlers
   function handleTddHover(
-    _dimension: undefined | string | null,
+    dimension: undefined | string | null,
     ts: Date | undefined,
   ) {
-    if (ts) {
-      const idx = dateToIndex(data, ts.getTime());
+    if (ts && !isNaN(ts.getTime())) {
+      // The component chart applies adjustDataForTimeZone which shifts epochs
+      // so Vega displays correct wall-clock times in the browser's local timezone.
+      // Reverse that shift before comparing against the UTC-based data array.
+      const adjustedTs = localToTimeZoneOffset(ts, timeZone);
+      const idx = dateToIndex(data, adjustedTs.getTime());
       if (idx !== null) hoverIndex.set(idx, "tddChart");
+      // Propagate to sibling TDD Vega charts in Explore
+      chartHoverStore.set({ dimensionValue: dimension ?? undefined, time: ts });
     } else {
       hoverIndex.clear("tddChart");
+      chartHoverStore.set({ dimensionValue: undefined, time: undefined });
     }
   }
 
-  function handleTddBrush(_interval: { start: Date; end: Date }) {
-    tddIsScrubbing = true;
-  }
-
   function handleTddBrushEnd(interval: { start: Date; end: Date }) {
-    tddIsScrubbing = false;
+    // Write raw Vega epoch values to shared brush store for visual sync across
+    // sibling charts. These are unsnapped so drags don't progressively shrink.
+    chartBrushStore.set({
+      startMs: interval.start.getTime(),
+      endMs: interval.end.getTime(),
+    });
+
+    // Snap to grain boundaries for the dashboard store
     const { start, end } = adjustTimeInterval(interval, timeZone);
+    let startDt = DateTime.fromJSDate(start, { zone: timeZone });
+    let endDt = DateTime.fromJSDate(end, { zone: timeZone });
+
+    if (timeGranularity) {
+      const unit = V1TimeGrainToDateTimeUnit[timeGranularity];
+      const startFloor = startDt.startOf(unit);
+      startDt =
+        +startFloor < +startDt ? startFloor.plus({ [unit]: 1 }) : startDt;
+      endDt = endDt.startOf(unit);
+    }
+
+    // Guard: if brush was within a single grain, snapping can invert the range
+    if (+endDt <= +startDt) return;
+
     onScrub?.({
-      start: DateTime.fromJSDate(start, { zone: timeZone }),
-      end: DateTime.fromJSDate(end, { zone: timeZone }),
+      start: startDt,
+      end: endDt,
       isScrubbing: false,
     });
   }
 
   function handleTddBrushClear() {
-    tddIsScrubbing = false;
+    chartBrushStore.set({ startMs: undefined, endMs: undefined });
     onScrubClear?.();
   }
 </script>
@@ -270,25 +324,29 @@
     </div>
   {:else if isError}
     <div
-      class="flex items-center justify-center text-red-500 text-xs h-[145px]"
+      class="flex items-center justify-center h-[145px]"
       class:h-[245px]={showTimeDimensionDetail}
     >
-      {error ?? "Error loading data"}
+      <InlineErrorIndicator message={error} />
     </div>
-  {:else if tddChartType !== TDDChart.DEFAULT && data.length > 0}
+  {:else if usesVegaChart && data.length > 0}
     <div class="w-full" style:height="{height}px">
-      <TDDAlternateChart
-        chartType={tddChartType}
-        expandedMeasureName={measureName}
-        timeSeriesPoints={data}
-        dimensionSeriesData={dimensionData}
-        timeGrain={timeGranularity}
-        xMin={undefined}
-        xMax={undefined}
-        isTimeComparison={showComparison}
-        isScrubbing={tddIsScrubbing}
+      <TDDMeasureChart
+        chartType={effectiveChartType}
+        {metricsViewName}
+        {measure}
+        {timeDimension}
+        {interval}
+        comparisonInterval={showComparison ? comparisonInterval : undefined}
+        {timeGranularity}
+        {timeZone}
+        {where}
+        {comparisonDimension}
+        {dimensionValues}
+        {dimensionData}
+        {showComparison}
+        {showTimeDimensionDetail}
         onChartHover={handleTddHover}
-        onChartBrush={handleTddBrush}
         onChartBrushEnd={handleTddBrushEnd}
         onChartBrushClear={handleTddBrushClear}
       />
@@ -315,6 +373,8 @@
       {scrubController}
       {metricsViewName}
       {connectNulls}
+      {dynamicYAxis}
+      {tddChartType}
     />
   {:else}
     <div class="flex items-center justify-center h-full text-gray-400 text-sm">

@@ -35,7 +35,8 @@ Two deployment modes share the same codebase:
 - **Local dev**: `rill devtool start local`
 - **Cloud dev**: `rill devtool start cloud`
 - **Test Go**: `go test ./...`
-- **Test frontend (unit)**: `npm run test -w web-common` (fast, use for tight feedback loops)
+- **Test frontend (unit, web-common)**: `npm run test -w web-common` (fast, use for tight feedback loops)
+- **Test frontend (unit, web-admin)**: `cd web-admin && npx vitest run src/path/to/spec.ts` (must run from `web-admin/` so vitest picks up the `@rilldata/web-admin` alias)
 - **Test frontend (e2e)**: `npm run test -w web-local` or `npm run test -w web-admin` (Playwright, slow)
 - **Lint/format frontend**: `npm run quality`
 - **Regenerate docs**: `make docs.generate` (run after changes to `proto/`, `cli/` or `runtime/parser`)
@@ -69,6 +70,7 @@ General rules for writing Go code:
 - Avoid short utility functions that are only used once; it is usually more readable to inline these in their parent function.
 - Avoid variables that only serve as aliases unless there's a large readability improvement (i.e. the expression is very long and used several times); for example, instead of `db := table.Database`, just reference `table.Database` directly.
 - Use the standard library `errors` (not `github.com/pkg/errors`).
+- Prefer `require.NoError(...)` instead of `panic` in tests.
 
 Rules for contributing backend features in Rill:
 

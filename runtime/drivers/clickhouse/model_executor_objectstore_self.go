@@ -13,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers/gcs"
 	"github.com/rilldata/rill/runtime/drivers/s3"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 )
 
 type objectStoreInputProps struct {
@@ -43,8 +44,16 @@ func (e *objectStoreToSelfExecutor) Concurrency(desired int) (int, bool) {
 
 func (e *objectStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	inputProps := &objectStoreInputProps{}
-	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
+	var warnings []string
+	unused, err := mapstructureutil.WeakDecodeWithWarnings(opts.InputProperties, inputProps)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
+	}
+	if len(unused) > 0 {
+		if opts.Env.StrictModelProps {
+			return nil, fmt.Errorf("undefined fields in input properties: %q", strings.Join(unused, ", "))
+		}
+		warnings = append(warnings, fmt.Sprintf("Undefined fields %q in input properties. Will be ignored.", strings.Join(unused, ", ")))
 	}
 	if err := inputProps.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid input properties: %w", err)
@@ -98,7 +107,12 @@ func (e *objectStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.M
 
 	// execute
 	executor := &selfToSelfExecutor{c: e.c}
-	return executor.Execute(ctx, newOpts)
+	res, err := executor.Execute(ctx, newOpts)
+	if err != nil {
+		return nil, err
+	}
+	res.Warnings = append(res.Warnings, warnings...)
+	return res, nil
 }
 
 func (e *objectStoreToSelfExecutor) genSQL(glob, format string) (string, error) {

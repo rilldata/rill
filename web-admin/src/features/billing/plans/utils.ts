@@ -33,9 +33,21 @@ export function isManagedPlan(planName: string) {
   return planName === "managed";
 }
 
+export function isFreePlan(planName: string) {
+  return planName === "free_plan";
+}
+
+export function isProPlan(planName: string) {
+  return planName === "pro_plan";
+}
+
 export function isEnterprisePlan(planName: string) {
   return (
-    !isTrialPlan(planName) && !isTeamPlan(planName) && !isManagedPlan(planName)
+    !isTrialPlan(planName) &&
+    !isTeamPlan(planName) &&
+    !isManagedPlan(planName) &&
+    !isFreePlan(planName) &&
+    !isProPlan(planName)
   );
 }
 
@@ -51,3 +63,11 @@ export function getSubscriptionResumedText(endDate: string) {
 // Since this could be triggered in a route that could be navigated from,
 // we add a global and show it in org route's layout
 export const showWelcomeToRillDialog = writable(false);
+
+export function formatCredit(credits: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+  }).format(credits);
+}

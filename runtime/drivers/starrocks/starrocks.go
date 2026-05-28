@@ -118,7 +118,7 @@ var spec = drivers.Spec{
 type driver struct{}
 
 // ConfigProperties defines the configuration for StarRocks connection.
-// NOTE: Timezone configuration is not supported for StarRocks.
+// NOTE: TimeZone configuration is not supported for StarRocks.
 // StarRocks uses server-side timezone settings and queries use UTC by default.
 // Unlike some other drivers, there is no client-side timezone parameter in the DSN.
 type ConfigProperties struct {

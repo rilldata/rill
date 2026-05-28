@@ -21,7 +21,9 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/pkg/rduckdb"
+	"go.uber.org/zap"
 )
 
 type selfToSelfExecutor struct {
@@ -41,19 +43,53 @@ var createSecretRegex = regexp.MustCompile(`(?i)\bcreate\b(?:\s+\w+)*?\s+secret\
 
 func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	inputProps := &ModelInputProperties{}
-	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
+	var warnings []string
+	unused, err := mapstructureutil.WeakDecodeWithWarnings(opts.InputProperties, inputProps)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
+	}
+	if len(unused) > 0 {
+		if opts.Env.StrictModelProps {
+			return nil, fmt.Errorf("undefined fields in input properties: %q", strings.Join(unused, ", "))
+		}
+		warnings = append(warnings, fmt.Sprintf("Undefined fields %q in input properties. Will be ignored.", strings.Join(unused, ", ")))
 	}
 	if err := inputProps.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid input properties: %w", err)
 	}
 
 	outputProps := &ModelOutputProperties{}
-	if err := mapstructure.WeakDecode(opts.OutputProperties, outputProps); err != nil {
+	unused, err = mapstructureutil.WeakDecodeWithWarnings(opts.OutputProperties, outputProps)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse output properties: %w", err)
+	}
+	if len(unused) > 0 {
+		if opts.Env.StrictModelProps {
+			return nil, fmt.Errorf("undefined fields in output properties: %q", strings.Join(unused, ", "))
+		}
+		warnings = append(warnings, fmt.Sprintf("Undefined fields %q in output properties. Will be ignored.", strings.Join(unused, ", ")))
 	}
 	if err := outputProps.validateAndApplyDefaults(opts, inputProps, outputProps); err != nil {
 		return nil, fmt.Errorf("invalid output properties: %w", err)
+	}
+
+	// Merge pre/post exec/ statements and CreateSecretsFromConnectors from output props into input props
+	// Ideally pre_exec and post_exec needs to be set in output but for duckdb -> duckdb models they can be set in input props as well.
+	if outputProps.PreExec != "" {
+		if inputProps.PreExec != "" {
+			inputProps.PreExec += "\n;"
+		}
+		inputProps.PreExec += outputProps.PreExec
+	}
+	if outputProps.PostExec != "" {
+		if inputProps.PostExec != "" {
+			inputProps.PostExec = outputProps.PostExec + "\n;" + inputProps.PostExec
+		} else {
+			inputProps.PostExec = outputProps.PostExec
+		}
+	}
+	if len(outputProps.CreateSecretsFromConnectors) > 0 {
+		inputProps.CreateSecretsFromConnectors = append(inputProps.CreateSecretsFromConnectors, outputProps.CreateSecretsFromConnectors...)
 	}
 
 	usedModelName := false
@@ -104,7 +140,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		var createSecretSQLs, dropSecretSQLs []string
 		for _, connector := range connectorsForSecrets {
 			// we donnot need to pass the parsedPath we are using because of s3 region detection
-			createSecretSQL, dropSecretSQL, connectorType, err := generateSecretSQL(ctx, opts, connector, parsedPath, nil)
+			createSecretSQL, dropSecretSQL, connectorType, err := generateSecretSQL(ctx, opts, connector, parsedPath, nil, e.c.logger)
 			if err != nil {
 				// Skip creating secrets when:
 				// - autoDetected: user didn't explicitly configure the secret container
@@ -229,6 +265,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		Properties:   resultPropsMap,
 		Table:        tableName,
 		ExecDuration: duration,
+		Warnings:     warnings,
 	}, nil
 }
 
@@ -528,7 +565,7 @@ func connectorsForSecrets(modelSecrets, duckdbSecrets []string, allConnectors []
 	return configuredConnectorsForSecrets, false
 }
 
-func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, connector, optionalBucketURL string, optionalAdditionalConfig map[string]any) (string, string, string, error) {
+func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, connector, optionalBucketURL string, optionalAdditionalConfig map[string]any, logger *zap.Logger) (string, string, string, error) {
 	handle, release, err := opts.Env.AcquireConnector(ctx, connector)
 	if err != nil {
 		return "", "", "", err
@@ -554,6 +591,8 @@ func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, c
 		sb.WriteString("CREATE OR REPLACE TEMPORARY SECRET ")
 		sb.WriteString(safeSecretName)
 		sb.WriteString(" (TYPE S3")
+		// workaround for issue : https://github.com/duckdb/duckdb-python/issues/398#issuecomment-4258043324
+		sb.WriteString(", URL_STYLE path")
 
 		if s3Config.AccessKeyID != "" {
 			fmt.Fprintf(&sb, ", KEY_ID %s, SECRET %s", safeSQLString(s3Config.AccessKeyID), safeSQLString(s3Config.SecretAccessKey))
@@ -575,7 +614,6 @@ func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, c
 			}
 			sb.WriteString(", ENDPOINT ")
 			sb.WriteString(safeSQLString(s3Config.Endpoint))
-			sb.WriteString(", URL_STYLE path")
 		}
 		if s3Config.Region != "" {
 			sb.WriteString(", REGION ")
@@ -586,7 +624,7 @@ func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, c
 			if err != nil {
 				return "", "", "", fmt.Errorf("failed to parse path %q: %w", optionalBucketURL, err)
 			}
-			reg, err := s3.BucketRegion(ctx, s3Config, uri.Host)
+			reg, err := s3.BucketRegion(ctx, s3Config, uri.Host, logger)
 			if err != nil {
 				return "", "", "", err
 			}

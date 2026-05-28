@@ -15,6 +15,7 @@ import type {
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import type { ComponentType, SvelteComponent } from "svelte";
+import type { Readable } from "svelte/store";
 import { derived, get, writable, type Writable } from "svelte/store";
 import { mergeFilters } from "../../dashboards/pivot/pivot-merge-filters";
 import {
@@ -31,9 +32,8 @@ import type {
   ComponentPath,
   SearchParamsStore,
 } from "../stores/canvas-entity";
-import { TimeState } from "../stores/time-state";
 import type { FilterState } from "../stores/filter-state";
-import type { Readable } from "svelte/motion";
+import { TimeState } from "../stores/time-state";
 
 export abstract class BaseCanvasComponent<T = ComponentSpec> {
   id: string;
@@ -74,7 +74,11 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     path: ComponentPath,
     public defaultSpec: T,
   ) {
-    const yamlSpec = resource.component?.state?.validSpec?.rendererProperties;
+    const yamlSpec =
+      resource.component?.state?.validSpec?.rendererProperties ??
+      (parent.allowUnvalidatedSpec
+        ? resource.component?.spec?.rendererProperties
+        : undefined);
 
     const mergedSpec = { ...defaultSpec, ...yamlSpec };
     this.metricsViewName = mergedSpec["metrics_view"] as string;
@@ -144,8 +148,11 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   }
 
   update(resource: V1Resource, path: ComponentPath) {
-    const yamlSpec = resource.component?.state?.validSpec
-      ?.rendererProperties as T;
+    const yamlSpec = (resource.component?.state?.validSpec
+      ?.rendererProperties ??
+      (this.parent.allowUnvalidatedSpec
+        ? resource.component?.spec?.rendererProperties
+        : undefined)) as T;
     this.resource.set(resource);
     this.pathInYAML = path;
     this.specStore.set(yamlSpec);
@@ -191,8 +198,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         ],
         set,
       ) => {
-        const hasTimeSeries =
-          hasTimeSeriesMap.get(this.metricsViewName) ?? false;
+        const hasTimeSeries = hasTimeSeriesMap.get(this.metricsViewName);
 
         const mvFilters = metricsViewFilters.get(this.metricsViewName);
 

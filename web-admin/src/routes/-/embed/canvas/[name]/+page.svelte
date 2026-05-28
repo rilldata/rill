@@ -8,7 +8,7 @@
   $: ({ canvasName, instanceId, navigationEnabled } = data);
 </script>
 
-{#key instanceId}
+{#key `${instanceId}::${canvasName}`}
   <CanvasProvider {canvasName} {instanceId} showBanner>
     <CanvasDashboardEmbed {canvasName} {navigationEnabled} />
   </CanvasProvider>

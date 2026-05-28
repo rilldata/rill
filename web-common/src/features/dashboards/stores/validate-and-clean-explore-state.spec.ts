@@ -95,7 +95,7 @@ const TestCases: {
     expectedState: {
       visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE, AD_BIDS_BID_PRICE_MEASURE],
       allMeasuresVisible: false,
-      leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+      leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
       leaderboardMeasureNames: [AD_BIDS_BID_PRICE_MEASURE],
     },
     expectedErrorMessages: [
@@ -121,6 +121,23 @@ const TestCases: {
       `Selected sort by measure: "invalid_measure_1" is not valid.`,
       `Selected leaderboard measures: "invalid_measure_1,invalid_measure_2" are not valid.`,
     ],
+  },
+  {
+    title:
+      "Leaderboard sync invariant - sort measure not in leaderboard measures",
+    exploreState: {
+      visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE, AD_BIDS_BID_PRICE_MEASURE],
+      allMeasuresVisible: false,
+      leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+      leaderboardMeasureNames: [AD_BIDS_BID_PRICE_MEASURE],
+    },
+    expectedState: {
+      visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE, AD_BIDS_BID_PRICE_MEASURE],
+      allMeasuresVisible: false,
+      leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+      leaderboardMeasureNames: [AD_BIDS_BID_PRICE_MEASURE],
+    },
+    expectedErrorMessages: [],
   },
 ];
 

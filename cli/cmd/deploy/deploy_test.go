@@ -53,17 +53,6 @@ func TestManagedDeploy(t *testing.T) {
 	require.NoError(t, err)
 	ghClient := adm.Admin.Github.InstallationClient(installationID, nil)
 
-	// cleanup repo
-	t.Cleanup(func() {
-		// delete github repo
-		// currently github repos are deleted by a background job
-		// but for test cleanup we will delete it here directly
-		owner, repo, ok := gitutil.SplitGithubRemote(resp.Project.GitRemote)
-		require.True(t, ok, "invalid github remote: %s", resp.Project.GitRemote)
-		_, err = ghClient.Repositories.Delete(context.Background(), owner, repo)
-		require.NoError(t, err, "failed to delete github repo %s/%s: %v", owner, repo, err)
-	})
-
 	// redeploy the same project with changes
 	changes := map[string]string{
 		"models/model.sql": `SELECT 1 AS one`,
@@ -74,6 +63,34 @@ func TestManagedDeploy(t *testing.T) {
 
 	// verify changes are pushed to Github repo
 	verifyGithubRepoContents(t, ghClient, resp.Project.GitRemote, changes)
+
+	// clone the project to an empty directory and remove the __rill_remote to simulate fresh deploys in CI/CD
+
+	// Get an installation token so we can clone the managed (private) repo without credentials.
+	managedOwner, _, ok := gitutil.SplitGithubRemote(resp.Project.GitRemote)
+	require.True(t, ok, "invalid github remote: %s", resp.Project.GitRemote)
+	cloneToken, _, err := adm.Admin.Github.InstallationTokenForOrg(t.Context(), managedOwner)
+	require.NoError(t, err)
+
+	cloneDir := t.TempDir()
+	cmd := exec.CommandContext(t.Context(), "git", "clone", authGitURL(t, resp.Project.GitRemote, cloneToken), cloneDir)
+	out, err := cmd.CombinedOutput()
+	require.NoError(t, err, "git clone failed: %s", out)
+
+	// remove __rill_remote to simulate fresh deploys in CI/CD where the git history is not preserved
+	err = os.Remove(filepath.Join(cloneDir, ".git", "refs", "heads", "main"))
+	require.NoError(t, err)
+
+	// deploy again from the cloned directory with changes
+	changes2 := map[string]string{
+		"models/model.sql": `SELECT 2 AS two`,
+	}
+	putFiles(t, cloneDir, changes2)
+	result = u1.Run(t, "deploy", "--interactive=false", "--org=github-test", "--project=rill-mgd-deploy", "--skip-deploy=true", "--path="+cloneDir)
+	require.Equal(t, 0, result.ExitCode, result.Output)
+
+	// verify changes are pushed to Github repo
+	verifyGithubRepoContents(t, ghClient, resp.Project.GitRemote, changes2)
 }
 
 func TestManagedDeployWithPrimaryBranch(t *testing.T) {
@@ -111,14 +128,6 @@ func TestManagedDeployWithPrimaryBranch(t *testing.T) {
 	installationID, err := adm.Admin.Github.ManagedOrgInstallationID()
 	require.NoError(t, err)
 	ghClient := adm.Admin.Github.InstallationClient(installationID, nil)
-
-	// cleanup repo
-	t.Cleanup(func() {
-		owner, repo, ok := gitutil.SplitGithubRemote(resp.Project.GitRemote)
-		require.True(t, ok, "invalid github remote: %s", resp.Project.GitRemote)
-		_, err = ghClient.Repositories.Delete(context.Background(), owner, repo)
-		require.NoError(t, err, "failed to delete github repo %s/%s: %v", owner, repo, err)
-	})
 
 	// verify the model file is present on the "staging" branch
 	verifyGithubRepoBranchContents(t, ghClient, resp.Project.GitRemote, "staging", map[string]string{
@@ -167,8 +176,9 @@ func testSelfHostedDeploy(t *testing.T, adminClient *client.Client, ghClient *gi
 	tempDir := initRillProject(t)
 
 	// create a github repo
+	repoName := "self-hosted-git-repo" + uuid.NewString()[:8]
 	repo, _, err := ghClient.Repositories.Create(t.Context(), "", &github.Repository{
-		Name:    github.Ptr("self-hosted-git-repo" + uuid.NewString()[:8]),
+		Name:    github.Ptr(repoName),
 		Private: github.Ptr(true),
 	})
 	require.NoError(t, err)
@@ -178,8 +188,11 @@ func testSelfHostedDeploy(t *testing.T, adminClient *client.Client, ghClient *gi
 		owner, ghrepo, ok := gitutil.SplitGithubRemote(*repo.CloneURL)
 		require.True(t, ok, "invalid github remote: %s", *repo.CloneURL)
 		_, err = ghClient.Repositories.Delete(context.Background(), owner, ghrepo)
-		require.NoError(t, err, "failed to delete github repo %s/%s: %v", owner, ghrepo, err)
+		require.NoError(t, err, "failed to delete github repo %s/%s", owner, ghrepo)
 	})
+
+	// the create repo API does not wait for repo creation to be fully processed; poll until ready
+	waitForGithubRepo(t, ghClient, *repo.Owner.Login, repoName)
 
 	author := &object.Signature{
 		Name:  "Rill test user",
@@ -237,8 +250,9 @@ func testSelfHostedMonorepoDeploy(t *testing.T, adminClient *client.Client, ghCl
 	tempDir := initMonorepo(t)
 
 	// create a github repo
+	repoName := "self-hosted-monorepo" + uuid.NewString()[:8]
 	repo, _, err := ghClient.Repositories.Create(t.Context(), "", &github.Repository{
-		Name:    github.Ptr("self-hosted-monorepo" + uuid.NewString()[:8]),
+		Name:    github.Ptr(repoName),
 		Private: github.Ptr(true),
 	})
 	require.NoError(t, err)
@@ -248,8 +262,11 @@ func testSelfHostedMonorepoDeploy(t *testing.T, adminClient *client.Client, ghCl
 		owner, ghrepo, ok := gitutil.SplitGithubRemote(*repo.CloneURL)
 		require.True(t, ok, "invalid github remote: %s", *repo.CloneURL)
 		_, err = ghClient.Repositories.Delete(context.Background(), owner, ghrepo)
-		require.NoError(t, err, "failed to delete github repo %s/%s: %v", owner, ghrepo, err)
+		require.NoError(t, err, "failed to delete github repo %s/%s", owner, ghrepo)
 	})
+
+	// the create repo API does not wait for repo creation to be fully processed; poll until ready
+	waitForGithubRepo(t, ghClient, *repo.Owner.Login, repoName)
 
 	author := &object.Signature{
 		Name:  "Rill test user",
@@ -494,4 +511,21 @@ func authGitURL(t *testing.T, repoURL, token string) string {
 	require.NoError(t, err)
 	u.User = url.UserPassword("x-access-token", token)
 	return u.String()
+}
+
+func waitForGithubRepo(t *testing.T, client *github.Client, owner, repo string) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Minute)
+	defer cancel()
+	for {
+		select {
+		case <-ctx.Done():
+			require.NoError(t, ctx.Err(), "timed out waiting for github repo %s/%s to be ready", owner, repo)
+		case <-time.After(2 * time.Second):
+		}
+		_, _, err := client.Repositories.Get(ctx, owner, repo)
+		if err == nil {
+			return
+		}
+	}
 }

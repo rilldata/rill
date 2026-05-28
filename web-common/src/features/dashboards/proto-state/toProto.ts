@@ -65,6 +65,7 @@ const LeaderboardContextColumnMap: Record<
 
 const TDDChartTypeMap: Record<TDDChart, string> = {
   [TDDChart.DEFAULT]: "default",
+  [TDDChart.LINE]: "line",
   [TDDChart.STACKED_BAR]: "stacked_bar",
   [TDDChart.GROUPED_BAR]: "grouped_bar",
   [TDDChart.STACKED_AREA]: "stacked_area",

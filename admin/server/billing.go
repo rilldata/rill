@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -28,7 +29,7 @@ func (s *Server) GetBillingSubscription(ctx context.Context, req *adminv1.GetBil
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -57,13 +58,39 @@ func (s *Server) GetBillingSubscription(ctx context.Context, req *adminv1.GetBil
 	}, nil
 }
 
+func (s *Server) GetBillingCreditBalance(ctx context.Context, req *adminv1.GetBillingCreditBalanceRequest) (*adminv1.GetBillingCreditBalanceResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
+	if err != nil {
+		return nil, err
+	}
+
+	claims := auth.GetClaims(ctx)
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !forceAccess {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to read org credit balance")
+	}
+
+	if org.BillingCustomerID == "" {
+		return &adminv1.GetBillingCreditBalanceResponse{}, nil
+	}
+
+	balance, err := s.admin.Biller.GetCustomerCreditBalance(ctx, org.BillingCustomerID, billing.CreditsCurrency)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch credit balance: %w", err)
+	}
+
+	return &adminv1.GetBillingCreditBalanceResponse{Balance: balance}, nil
+}
+
 func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.UpdateBillingSubscriptionRequest) (*adminv1.UpdateBillingSubscriptionResponse, error) {
 	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
 	observability.AddRequestAttributes(ctx, attribute.String("args.plan_name", req.PlanName))
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -98,8 +125,8 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		}
 		return nil, err
 	}
-	// if its a trial plan, start trial only if its a new org
-	if plan.Default {
+	// for both free and legacy trial plan, start the credit trial
+	if plan.PlanType == billing.FreePlanType || plan.PlanType == billing.TrailPlanType {
 		bi, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeNeverSubscribed)
 		if err != nil {
 			if errors.Is(err, database.ErrNotFound) {
@@ -119,21 +146,18 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 				}
 			}
 
-			updatedOrg, sub, err := s.admin.StartTrial(ctx, org)
+			updatedOrg, sub, err := s.admin.StartCreditTrial(ctx, org)
 			if err != nil {
 				return nil, err
 			}
-
-			// send trial started email
-			err = s.admin.Email.SendTrialStarted(&email.TrialStarted{
-				ToEmail:      org.BillingEmail,
-				ToName:       org.Name,
-				OrgName:      org.Name,
-				FrontendURL:  s.admin.URLs.Frontend(),
-				TrialEndDate: sub.TrialEndDate,
-			})
-			if err != nil {
-				s.logger.Named("billing").Error("failed to send trial started email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
+			if err := s.admin.Email.SendCreditTrialStarted(&email.CreditTrialStarted{
+				ToEmail:          org.BillingEmail,
+				ToName:           org.Name,
+				OrgName:          org.Name,
+				FrontendURL:      s.admin.URLs.Frontend(),
+				CreditAllocation: admin.CreditTrialAllocation,
+			}); err != nil {
+				s.logger.Named("billing").Error("failed to send credit trial started email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
 			}
 
 			return &adminv1.UpdateBillingSubscriptionResponse{
@@ -200,6 +224,27 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 				zap.String("new_plan_id", sub.Plan.ID),
 				zap.String("new_plan_name", sub.Plan.Name),
 			)
+
+			// Roll any leftover trial `credits` over to USD on a trial → paid upgrade. The trial plan is priced in `credits`; the paid plan is priced in USD, so an unused `credits` balance would otherwise sit dormant on the customer ledger. Transfer 1:1 (e.g., 80 credits → $80) by debiting the credits ledger and granting the same amount on USD.
+			if oldPlan.PlanType == billing.FreePlanType {
+				balance, err := s.admin.Biller.GetCustomerCreditBalance(ctx, org.BillingCustomerID, billing.CreditsCurrency)
+				if err != nil {
+					return nil, fmt.Errorf("failed to fetch trial credit balance for rollover: %w", err)
+				}
+				if balance > 0 {
+					if err := s.admin.Biller.GrantCustomerCredits(ctx, org.BillingCustomerID, balance, billing.USDCurrency, "Trial credit rollover on upgrade", nil); err != nil {
+						return nil, fmt.Errorf("failed to grant USD rollover credits: %w", err)
+					}
+					if err := s.admin.Biller.DebitCustomerCredits(ctx, org.BillingCustomerID, balance, billing.CreditsCurrency, "Trial credit rollover on upgrade"); err != nil {
+						return nil, fmt.Errorf("failed to debit trial credits during rollover: %w", err)
+					}
+					s.logger.Named("billing").Info("rolled over trial credits to USD",
+						zap.String("org_id", org.ID),
+						zap.String("org_name", org.Name),
+						zap.Float64("amount", balance),
+					)
+				}
+			}
 		}
 	}
 
@@ -211,8 +256,8 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 	if planChange {
 		// send plan changed email
 
-		if plan.PlanType == billing.TeamPlanType {
-			s.logger.Named("billing").Info("upgraded to team plan",
+		if plan.PlanType == billing.TeamPlanType || plan.PlanType == billing.ProPlanType {
+			s.logger.Named("billing").Info("upgraded to paid plan",
 				zap.String("org_id", org.ID),
 				zap.String("org_name", org.Name),
 				zap.String("user_email", org.BillingEmail),
@@ -220,12 +265,13 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 				zap.String("plan_name", sub.Plan.Name),
 			)
 
-			// special handling for team plan to send custom email
-			err = s.admin.Email.SendTeamPlanStarted(&email.TeamPlan{
+			// custom welcome email for paid plans (Team / Pro)
+			err = s.admin.Email.SendPaidPlanStarted(&email.PaidPlan{
 				ToEmail:          org.BillingEmail,
 				ToName:           org.Name,
 				OrgName:          org.Name,
 				FrontendURL:      s.admin.URLs.Frontend(),
+				BillingURL:       s.admin.URLs.Billing(org.Name, false),
 				PlanName:         plan.DisplayName,
 				BillingStartDate: sub.CurrentBillingCycleEndDate,
 			})
@@ -255,7 +301,7 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -322,7 +368,7 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -335,7 +381,7 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 		return nil, status.Error(codes.FailedPrecondition, "billing not yet initialized for the organization")
 	}
 
-	bisc, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeSubscriptionCancelled)
+	_, err = s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeSubscriptionCancelled)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			return nil, status.Errorf(codes.FailedPrecondition, "subscription not cancelled for the organization %s", org.Name)
@@ -348,7 +394,7 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 		return nil, err
 	}
 
-	if plan.Default {
+	if plan.PlanType == billing.TrailPlanType || plan.PlanType == billing.FreePlanType {
 		return nil, status.Errorf(codes.FailedPrecondition, "cannot renew to trial plan %s", plan.Name)
 	}
 
@@ -392,36 +438,7 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 		}
 	}
 
-	// update quotas
-	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
-		Name:                                org.Name,
-		DisplayName:                         org.DisplayName,
-		Description:                         org.Description,
-		LogoAssetID:                         org.LogoAssetID,
-		LogoDarkAssetID:                     org.LogoDarkAssetID,
-		FaviconAssetID:                      org.FaviconAssetID,
-		ThumbnailAssetID:                    org.ThumbnailAssetID,
-		CustomDomain:                        org.CustomDomain,
-		DefaultProjectRoleID:                org.DefaultProjectRoleID,
-		QuotaProjects:                       valOrDefault(sub.Plan.Quotas.NumProjects, org.QuotaProjects),
-		QuotaDeployments:                    valOrDefault(sub.Plan.Quotas.NumDeployments, org.QuotaDeployments),
-		QuotaSlotsTotal:                     valOrDefault(sub.Plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
-		QuotaSlotsPerDeployment:             valOrDefault(sub.Plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
-		QuotaOutstandingInvites:             valOrDefault(sub.Plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
-		QuotaStorageLimitBytesPerDeployment: valOrDefault(sub.Plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
-		BillingCustomerID:                   org.BillingCustomerID,
-		BillingPlanName:                     &sub.Plan.Name,
-		BillingPlanDisplayName:              &sub.Plan.DisplayName,
-		PaymentCustomerID:                   org.PaymentCustomerID,
-		BillingEmail:                        org.BillingEmail,
-		CreatedByUserID:                     org.CreatedByUserID,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// delete the billing issue
-	err = s.admin.DB.DeleteBillingIssue(ctx, bisc.ID)
+	org, err = s.updateQuotasAndHandleBillingIssues(ctx, org, sub)
 	if err != nil {
 		return nil, err
 	}
@@ -429,9 +446,9 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 	s.logger.Named("billing").Info("subscription renewed", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("plan_id", sub.Plan.ID), zap.String("plan_name", sub.Plan.Name))
 
 	// send subscription renewed email
-	if sub.Plan.PlanType == billing.TeamPlanType {
-		// special handling for team plan to send custom email
-		err = s.admin.Email.SendTeamPlanRenewal(&email.TeamPlan{
+	if sub.Plan.PlanType == billing.TeamPlanType || sub.Plan.PlanType == billing.ProPlanType {
+		// custom welcome-back email for paid plans (Team / Pro)
+		err = s.admin.Email.SendPaidPlanRenewal(&email.PaidPlan{
 			ToEmail:          org.BillingEmail,
 			ToName:           org.Name,
 			OrgName:          org.Name,
@@ -440,7 +457,7 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 			BillingStartDate: sub.CurrentBillingCycleEndDate,
 		})
 
-		s.logger.Named("billing").Info("upgraded to team plan",
+		s.logger.Named("billing").Info("subscription renewed to paid plan",
 			zap.String("org_id", org.ID),
 			zap.String("org_name", org.Name),
 			zap.String("user_email", org.BillingEmail),
@@ -468,10 +485,11 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 func (s *Server) GetPaymentsPortalURL(ctx context.Context, req *adminv1.GetPaymentsPortalURLRequest) (*adminv1.GetPaymentsPortalURLResponse, error) {
 	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
 	observability.AddRequestAttributes(ctx, attribute.String("args.return_url", req.ReturnUrl))
+	observability.AddRequestAttributes(ctx, attribute.Bool("args.setup", req.Setup))
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -489,7 +507,7 @@ func (s *Server) GetPaymentsPortalURL(ctx context.Context, req *adminv1.GetPayme
 		req.ReturnUrl = s.admin.URLs.Frontend()
 	}
 
-	url, err := s.admin.PaymentProvider.GetBillingPortalURL(ctx, org.PaymentCustomerID, req.ReturnUrl)
+	url, err := s.admin.PaymentProvider.GetBillingPortalURL(ctx, org.PaymentCustomerID, req.ReturnUrl, req.Setup)
 	if err != nil {
 		return nil, err
 	}
@@ -622,119 +640,191 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 	}, nil
 }
 
-func (s *Server) SudoExtendTrial(ctx context.Context, req *adminv1.SudoExtendTrialRequest) (*adminv1.SudoExtendTrialResponse, error) {
+// SudoGrantTrialCredits grants additional credits to an organization on the credit-based trial.
+// If the trial was already depleted, also recreates a trial subscription on the FreePlanType plan so usage reporting resumes against the new credit balance.
+func (s *Server) SudoGrantTrialCredits(ctx context.Context, req *adminv1.SudoGrantTrialCreditsRequest) (*adminv1.SudoGrantTrialCreditsResponse, error) {
 	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
-	days := int(req.Days)
-	observability.AddRequestAttributes(ctx, attribute.Int("args.days", days))
+	observability.AddRequestAttributes(ctx, attribute.Float64("args.amount_usd", req.AmountUsd))
 
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "only superusers can extend trial")
+		return nil, status.Error(codes.PermissionDenied, "only superusers can grant trial credits")
 	}
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
-	ns, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeNeverSubscribed)
+	if org.BillingCustomerID == "" {
+		return nil, status.Error(codes.FailedPrecondition, "billing not yet initialized for the organization")
+	}
+
+	onCreditTrial, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeOnCreditTrial)
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
+		return nil, err
+	}
+	depleted, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeTrialCreditsDepleted)
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
+		return nil, err
+	}
+	if onCreditTrial == nil && depleted == nil {
+		return nil, status.Errorf(codes.FailedPrecondition, "organization %s is not on the credit-based trial", org.Name)
+	}
+
+	description := req.Description
+	if description == "" {
+		description = fmt.Sprintf("Trial credits granted by superuser %s", claims.OwnerID())
+	}
+
+	if err := s.admin.Biller.GrantCustomerCredits(ctx, org.BillingCustomerID, req.AmountUsd, billing.CreditsCurrency, description, nil); err != nil {
+		return nil, fmt.Errorf("failed to grant credits: %w", err)
+	}
+
+	s.logger.Named("billing").Info("granted trial credits",
+		zap.String("org_id", org.ID),
+		zap.String("org_name", org.Name),
+		zap.Float64("amount_usd", req.AmountUsd),
+		zap.String("description", description),
+	)
+
+	if depleted == nil {
+		// Trial subscription is still active and credits just got topped up. Bump the cumulative CreditAllocation on the OnCreditTrial issue so the recorded total reflects the new grant. onCreditTrial is non-nil here per the gate above.
+		md, ok := onCreditTrial.Metadata.(*database.BillingIssueMetadataOnCreditTrial)
+		if !ok {
+			return nil, fmt.Errorf("unexpected metadata type for on-credit-trial issue for org %q", org.Name)
+		}
+		md.CreditAllocation += req.AmountUsd
+		if _, err := s.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
+			OrgID:     org.ID,
+			Type:      database.BillingIssueTypeOnCreditTrial,
+			Metadata:  md,
+			EventTime: onCreditTrial.EventTime,
+		}); err != nil {
+			return nil, fmt.Errorf("failed to update on-credit-trial credit_allocation: %w", err)
+		}
+		return &adminv1.SudoGrantTrialCreditsResponse{GrantedUsd: req.AmountUsd}, nil
+	}
+
+	plan, err := s.admin.Biller.GetPlanByType(ctx, billing.FreePlanType)
 	if err != nil {
-		if !errors.Is(err, database.ErrNotFound) {
-			return nil, err
-		}
+		return nil, fmt.Errorf("failed to get credit trial plan: %w", err)
 	}
 
-	if ns != nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "organization %s never subscribed to a plan", org.Name)
+	// there should not be any active subscription
+	sub, err := s.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
+	if err != nil && !errors.Is(err, billing.ErrNotFound) {
+		return nil, fmt.Errorf("failed to get active subscription: %w", err)
 	}
-
-	// find existing trial end date
-	currentEndDate := time.Time{}
-	onTrial, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeOnTrial)
+	if sub != nil {
+		return nil, fmt.Errorf("unexpected active subscription found for org on depleted trial")
+	}
+	sub, err = s.admin.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
 	if err != nil {
-		if !errors.Is(err, database.ErrNotFound) {
-			return nil, err
-		}
-	}
-	if onTrial != nil {
-		currentEndDate = onTrial.Metadata.(*database.BillingIssueMetadataOnTrial).GracePeriodEndDate
+		return nil, fmt.Errorf("failed to recreate trial subscription: %w", err)
 	}
 
-	if currentEndDate.IsZero() {
-		trialEnded, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeTrialEnded)
-		if err != nil {
-			if !errors.Is(err, database.ErrNotFound) {
-				return nil, err
-			}
-		}
-		if trialEnded != nil {
-			currentEndDate = trialEnded.Metadata.(*database.BillingIssueMetadataTrialEnded).GracePeriodEndDate
-		}
+	txCtx, tx, err := s.admin.DB.NewTx(ctx, false)
+	if err != nil {
+		return nil, err
 	}
+	defer func() { _ = tx.Rollback() }()
 
-	if currentEndDate.IsZero() {
-		subCancelled, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeSubscriptionCancelled)
-		if err != nil {
-			if !errors.Is(err, database.ErrNotFound) {
-				return nil, err
-			}
-		}
-		if subCancelled != nil {
-			currentEndDate = subCancelled.Metadata.(*database.BillingIssueMetadataSubscriptionCancelled).EndDate
-		}
+	err = s.admin.CleanupSubscriptionBillingIssues(txCtx, org.ID)
+	if err != nil {
+		return nil, err
 	}
-
-	if currentEndDate.IsZero() || currentEndDate.Before(time.Now()) {
-		currentEndDate = time.Now().Truncate(24*time.Hour).AddDate(0, 0, 1)
-	}
-
-	newEndDate := currentEndDate.AddDate(0, 0, days)
-
-	// start a new trial, if already on trial plan, this will not create new subscription, if not on trial plan it will error
-	_, sub, err := s.admin.StartTrial(ctx, org)
+	err = s.admin.CleanupTrialBillingIssues(txCtx, org.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	if sub.ID != "" {
-		// update on trial metadata with new end date
-		_, err = s.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
-			OrgID: org.ID,
-			Type:  database.BillingIssueTypeOnTrial,
-			Metadata: database.BillingIssueMetadataOnTrial{
-				SubID:              sub.ID,
-				PlanID:             sub.Plan.ID,
-				EndDate:            newEndDate,
-				GracePeriodEndDate: newEndDate,
-			},
-			EventTime: time.Now(),
-		})
-		if err != nil {
-			return nil, err
-		}
+	if _, err := s.admin.DB.UpsertBillingIssue(txCtx, &database.UpsertBillingIssueOptions{
+		OrgID: org.ID,
+		Type:  database.BillingIssueTypeOnCreditTrial,
+		Metadata: &database.BillingIssueMetadataOnCreditTrial{
+			SubID:            sub.ID,
+			PlanID:           sub.Plan.ID,
+			CreditAllocation: req.AmountUsd,
+		},
+		EventTime: time.Now().UTC(),
+	}); err != nil {
+		return nil, fmt.Errorf("failed to re-raise on-credit-trial issue: %w", err)
+	}
 
-		// send trial extended email
-		err = s.admin.Email.SendTrialExtended(&email.TrialExtended{
-			ToEmail:      org.BillingEmail,
-			ToName:       org.Name,
-			OrgName:      org.Name,
-			TrialEndDate: newEndDate,
-		})
-		if err != nil {
-			s.logger.Named("billing").Error("failed to send trial extended email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit billing issue swap: %w", err)
+	}
+
+	return &adminv1.SudoGrantTrialCreditsResponse{GrantedUsd: req.AmountUsd}, nil
+}
+
+// SudoReportUsage reports a mock usage event for an organization.
+func (s *Server) SudoReportUsage(ctx context.Context, req *adminv1.SudoReportUsageRequest) (*adminv1.SudoReportUsageResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
+	observability.AddRequestAttributes(ctx, attribute.String("args.event_name", req.EventName))
+	observability.AddRequestAttributes(ctx, attribute.Float64("args.value", req.Value))
+
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can report mock usage")
+	}
+
+	if !s.admin.AllowMockBilling {
+		return nil, status.Error(codes.PermissionDenied, "mock usage reporting is disabled")
+	}
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
+	if err != nil {
+		return nil, err
+	}
+
+	endTime := time.Now().UTC()
+	if req.EndTime != nil {
+		endTime = req.EndTime.AsTime().UTC()
+	}
+	metadata := map[string]interface{}{
+		"org_id": org.ID,
+		"mock":   true,
+	}
+
+	// project details do not affect billing metrics calculation just helps in attributing cost to specific project
+	// so do best efforts check to add project metadata
+	if req.ProjectName != "" {
+		metadata["project_name"] = req.ProjectName
+		metadata["project_id"] = ""
+		proj, err := s.admin.DB.FindProjectByName(ctx, org.Name, req.ProjectName)
+		if err != nil && !errors.Is(err, database.ErrNotFound) {
+			return nil, fmt.Errorf("failed to find project %q: %w", req.ProjectName, err)
+		}
+		if proj != nil {
+			metadata["project_id"] = proj.ID
+		} else {
+			s.logger.Warn("mock usage: project not found, not including project_id in usage event", zap.String("org", org.Name), zap.String("project_name", req.ProjectName))
 		}
 	}
 
-	// if trial subscription was cancelled then unschedule the cancellation
-	if sub.EndDate.Equal(sub.CurrentBillingCycleEndDate) {
-		// if trial subscription was cancelled then unschedule the cancellation
-		_, err = s.admin.Biller.UnscheduleCancellation(ctx, sub.ID)
-		if err != nil {
-			return nil, err
-		}
+	usage := &billing.Usage{
+		CustomerID:     org.ID,
+		MetricName:     req.EventName,
+		Value:          req.Value,
+		ReportingGrain: s.admin.Biller.GetReportingGranularity(),
+		StartTime:      endTime.Add(-time.Second),
+		EndTime:        endTime,
+		Metadata:       metadata,
 	}
 
-	return &adminv1.SudoExtendTrialResponse{TrialEnd: timestamppb.New(newEndDate)}, nil
+	if err := s.admin.Biller.ReportUsage(ctx, []*billing.Usage{usage}); err != nil {
+		return nil, fmt.Errorf("failed to report usage: %w", err)
+	}
+
+	return &adminv1.SudoReportUsageResponse{
+		CustomerId: org.ID,
+		EventName:  req.EventName,
+		Value:      req.Value,
+		StartTime:  timestamppb.New(usage.StartTime),
+		EndTime:    timestamppb.New(usage.EndTime),
+	}, nil
 }
 
 func (s *Server) SudoTriggerBillingRepair(ctx context.Context, req *adminv1.SudoTriggerBillingRepairRequest) (*adminv1.SudoTriggerBillingRepairResponse, error) {
@@ -783,7 +873,7 @@ func (s *Server) GetBillingProjectCredentials(ctx context.Context, req *adminv1.
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -797,16 +887,16 @@ func (s *Server) GetBillingProjectCredentials(ctx context.Context, req *adminv1.
 
 	metricsProj, err := s.admin.DB.FindProject(ctx, s.admin.MetricsProjectID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	if metricsProj.PrimaryDeploymentID == nil {
-		return nil, status.Error(codes.InvalidArgument, "project does not have a deployment")
+		return nil, status.Error(codes.FailedPrecondition, "project does not have a deployment")
 	}
 
 	prodDepl, err := s.admin.DB.FindDeployment(ctx, *metricsProj.PrimaryDeploymentID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	// Generate JWT
@@ -842,10 +932,7 @@ func (s *Server) ListOrganizationBillingIssues(ctx context.Context, req *adminv1
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "org not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -886,7 +973,7 @@ func (s *Server) SudoDeleteOrganizationBillingIssue(ctx context.Context, req *ad
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	t, err := dtoBillingIssueTypeToDB(req.Type)
@@ -1075,6 +1162,10 @@ func billingIssueTypeToDTO(t database.BillingIssueType) adminv1.BillingIssueType
 		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
 	case database.BillingIssueTypeNeverSubscribed:
 		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
+	case database.BillingIssueTypeOnCreditTrial:
+		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL
+	case database.BillingIssueTypeTrialCreditsDepleted:
+		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED
 	default:
 		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_UNSPECIFIED
 	}
@@ -1107,6 +1198,10 @@ func dtoBillingIssueTypeToDB(t adminv1.BillingIssueType) (database.BillingIssueT
 		return database.BillingIssueTypeSubscriptionCancelled, nil
 	case adminv1.BillingIssueType_BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED:
 		return database.BillingIssueTypeNeverSubscribed, nil
+	case adminv1.BillingIssueType_BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL:
+		return database.BillingIssueTypeOnCreditTrial, nil
+	case adminv1.BillingIssueType_BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED:
+		return database.BillingIssueTypeTrialCreditsDepleted, nil
 	default:
 		return database.BillingIssueTypeUnspecified, status.Error(codes.InvalidArgument, "invalid billing error type")
 	}
@@ -1122,6 +1217,10 @@ func planTypeToDTO(t billing.PlanType) adminv1.BillingPlanType {
 		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_MANAGED
 	case billing.EnterprisePlanType:
 		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_ENTERPRISE
+	case billing.FreePlanType:
+		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_FREE
+	case billing.ProPlanType:
+		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_PRO
 	default:
 		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_UNSPECIFIED
 	}
@@ -1192,6 +1291,29 @@ func billingIssueMetadataToDTO(t database.BillingIssueType, m database.BillingIs
 		return &adminv1.BillingIssueMetadata{
 			Metadata: &adminv1.BillingIssueMetadata_NeverSubscribed{
 				NeverSubscribed: &adminv1.BillingIssueMetadataNeverSubscribed{},
+			},
+		}
+	case database.BillingIssueTypeOnCreditTrial:
+		md := m.(*database.BillingIssueMetadataOnCreditTrial)
+		return &adminv1.BillingIssueMetadata{
+			Metadata: &adminv1.BillingIssueMetadata_OnCreditTrial{
+				OnCreditTrial: &adminv1.BillingIssueMetadataOnCreditTrial{
+					SubscriptionId:   md.SubID,
+					PlanId:           md.PlanID,
+					CreditAllocation: md.CreditAllocation,
+					LowCredit:        md.LowCredit,
+				},
+			},
+		}
+	case database.BillingIssueTypeTrialCreditsDepleted:
+		md := m.(*database.BillingIssueMetadataTrialCreditsDepleted)
+		return &adminv1.BillingIssueMetadata{
+			Metadata: &adminv1.BillingIssueMetadata_TrialCreditsDepleted{
+				TrialCreditsDepleted: &adminv1.BillingIssueMetadataTrialCreditsDepleted{
+					SubscriptionId: md.SubID,
+					PlanId:         md.PlanID,
+					DepletedOn:     timestamppb.New(md.DepletedOn),
+				},
 			},
 		}
 	default:

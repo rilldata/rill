@@ -28,7 +28,7 @@
     <DropdownMenu.Content align="start" class="min-w-[95px]">
       <DropdownMenu.Item
         class="font-normal flex items-center"
-        on:click={() => {
+        onclick={() => {
           isEditDialogOpen = true;
         }}
       >
@@ -38,7 +38,7 @@
       <DropdownMenu.Item
         class="font-normal flex items-center"
         type="destructive"
-        on:click={() => {
+        onclick={() => {
           isDeleteDialogOpen = true;
         }}
       >

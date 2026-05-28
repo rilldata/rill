@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
+  import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/dialog/StartTeamPlanDialog.svelte";
   import DangerZone from "@rilldata/web-admin/components/danger-zone/DangerZone.svelte";
   import DeleteOrg from "@rilldata/web-admin/features/organizations/settings/DeleteOrg.svelte";
   import FaviconSettings from "@rilldata/web-admin/features/organizations/settings/FaviconSettings.svelte";

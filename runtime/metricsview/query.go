@@ -29,7 +29,8 @@ type Query struct {
 	UseDisplayNames     bool        `json:"use_display_names" mapstructure:"use_display_names"`
 	Rows                bool        `json:"rows" mapstructure:"rows"`
 
-	QueryLimits *QueryLimits `json:"query_limits,omitempty" mapstructure:"query_limits"`
+	QueryLimits  *QueryLimits   `json:"query_limits,omitempty" mapstructure:"query_limits"`
+	UnusedFields map[string]any `json:"-" mapstructure:",remain"`
 }
 
 type Dimension struct {
@@ -104,6 +105,10 @@ func (q *Query) Validate() error {
 		if len(q.PivotOn) > 0 {
 			return fmt.Errorf("pivot_on not supported when rows is set")
 		}
+	}
+
+	if q.ComparisonTimeRange != nil && !q.ComparisonTimeRange.IsZero() && (q.TimeRange == nil || q.TimeRange.IsZero()) {
+		return fmt.Errorf("comparison_time_range requires time_range to be set")
 	}
 
 	if q.TimeRange != nil && q.ComparisonTimeRange != nil && q.TimeRange.TimeDimension != q.ComparisonTimeRange.TimeDimension {

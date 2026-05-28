@@ -1,6 +1,4 @@
 <script lang="ts">
-  import Prism from "prismjs";
-  import "prismjs/components/prism-json";
   import "prismjs/themes/prism.css";
   import { onMount } from "svelte";
   import Button from "../button/Button.svelte";
@@ -11,6 +9,13 @@
 
   let codeElement: HTMLElement;
   let copied = false;
+  let ready = false;
+
+  // Prism's language plugins reference bare `Prism` as a global. Rolldown may
+  // bundle them into a separate chunk that evaluates before the main module
+  // has set window.Prism. Dynamic imports in onMount guarantee correct ordering.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let Prism: any;
 
   function copyCode() {
     navigator.clipboard.writeText(code);
@@ -18,17 +23,17 @@
     setTimeout(() => (copied = false), 1500);
   }
 
-  onMount(() => {
-    if (codeElement) {
-      Prism.highlightElement(codeElement);
-    }
+  onMount(async () => {
+    const mod = await import("prismjs");
+    Prism = mod.default;
+    (window as any).Prism = Prism; // eslint-disable-line @typescript-eslint/no-explicit-any
+    await import("prismjs/components/prism-json");
+    ready = true;
   });
 
-  $: (async () => {
-    if (codeElement && code !== undefined && language !== undefined) {
-      Prism.highlightElement(codeElement);
-    }
-  })();
+  $: if (ready && codeElement && code !== undefined && language !== undefined) {
+    Prism.highlightElement(codeElement);
+  }
 </script>
 
 <div class="relative">

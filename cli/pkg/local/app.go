@@ -97,7 +97,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	// Always attempt to pull env for any valid Rill project (after projectPath is set)
 	if opts.PullEnv && opts.Ch.IsAuthenticated() && IsProjectInit(opts.ProjectPath) {
 		err := env.PullVars(ctx, opts.Ch, opts.ProjectPath, "", opts.Environment, false)
-		if err != nil && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
+		if err != nil && !errors.Is(err, cmdutil.ErrInferProjectFailed) {
 			opts.Ch.PrintfWarn("Warning: failed to pull environment credentials: %v\n", err)
 		}
 	}
@@ -211,6 +211,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	}
 
 	// Merge opts.Variables with some local overrides of the defaults in runtime/drivers.InstanceConfig.
+	// Not set in system variables since it should be okay to override these on local to test.
 	vars := map[string]string{
 		"rill.download_limit_bytes": "0", // 0 means unlimited
 		"rill.stage_changes":        "false",
@@ -307,12 +308,19 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		frontendURL = "http://localhost:3001"
 	}
 
+	// init local admin service
+	// internally it registers a `local_admin` connector driver that's hard-coded to the local project config.
+	// the admin service token can't be simply passed since a user may login after the instance is created.
+	// the `local_admin` connector will read the token using the helper just like the CLI does
+	initLocalAdminService(opts.Ch, projectPath, opts.Environment, frontendURL)
+
 	// Create instance with its repo set to the project directory
 	inst := &drivers.Instance{
 		ID:                               DefaultInstanceID,
 		Environment:                      opts.Environment,
 		OLAPConnector:                    olapConnector.Name,
 		RepoConnector:                    repoConnector.Name,
+		AdminConnector:                   "local_admin",
 		AIConnector:                      aiConnector.Name,
 		CatalogConnector:                 catalogConnector.Name,
 		Connectors:                       connectors,
@@ -373,7 +381,20 @@ func (a *App) Close() error {
 	return nil
 }
 
-func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool, userID, tlsCertPath, tlsKeyPath string) error {
+// ServeOptions contains all configuration for serving the local app.
+type ServeOptions struct {
+	HTTPPort    int
+	GRPCPort    int
+	EnableUI    bool
+	OpenBrowser bool
+	Readonly    bool
+	PreviewMode bool
+	UserID      string
+	TLSCertPath string
+	TLSKeyPath  string
+}
+
+func (a *App) Serve(opts ServeOptions) error {
 	// Get analytics info
 	installID, enabled, err := a.ch.DotRill.AnalyticsInfo()
 	if err != nil {
@@ -383,16 +404,17 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	// Build local metadata
 	metadata := &localMetadata{
 		InstanceID:       a.Instance.ID,
-		GRPCPort:         grpcPort,
+		GRPCPort:         opts.GRPCPort,
 		InstallID:        installID,
 		ProjectPath:      a.ProjectPath,
-		UserID:           userID,
+		UserID:           opts.UserID,
 		Version:          a.ch.Version.Number,
 		BuildCommit:      a.ch.Version.Commit,
 		BuildTime:        a.ch.Version.Timestamp,
 		IsDev:            a.ch.Version.IsDev(),
 		AnalyticsEnabled: enabled,
-		Readonly:         readonly,
+		Readonly:         opts.Readonly,
+		PreviewMode:      opts.PreviewMode,
 	}
 
 	// Create the local server handler
@@ -414,28 +436,28 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	}
 
 	// Create a runtime server
-	opts := &runtimeserver.Options{
-		HTTPPort:        httpPort,
-		GRPCPort:        grpcPort,
-		TLSCertPath:     tlsCertPath,
-		TLSKeyPath:      tlsKeyPath,
+	runtimeOpts := &runtimeserver.Options{
+		HTTPPort:        opts.HTTPPort,
+		GRPCPort:        opts.GRPCPort,
+		TLSCertPath:     opts.TLSCertPath,
+		TLSKeyPath:      opts.TLSKeyPath,
 		AllowedOrigins:  a.allowedOrigins,
 		ServePrometheus: true,
 	}
-	runtimeServer, err := runtimeserver.NewServer(ctx, opts, a.Runtime, runtimeServerLogger, ratelimit.NewNoop(), a.ch.Telemetry(ctx), newLocalAdminService(a.ch, a.ProjectPath))
+	runtimeServer, err := runtimeserver.NewServer(ctx, runtimeOpts, a.Runtime, runtimeServerLogger, ratelimit.NewNoop(), a.ch.Telemetry(ctx))
 	if err != nil {
 		return err
 	}
 
 	// if keypath and certpath are provided
-	secure := tlsCertPath != "" && tlsKeyPath != ""
+	secure := opts.TLSCertPath != "" && opts.TLSKeyPath != ""
 
 	// Start the local HTTP server
 	group.Go(func() error {
 		return runtimeServer.ServeHTTP(ctx, func(mux *http.ServeMux) {
 			// Inject local-only endpoints on the runtime server
-			localServer.RegisterHandlers(mux, httpPort, secure, enableUI)
-		}, enableUI)
+			localServer.RegisterHandlers(mux, opts.HTTPPort, secure, opts.EnableUI)
+		}, opts.EnableUI)
 	})
 
 	// Start debug server on port 6060
@@ -444,7 +466,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	}
 
 	// Open the browser when health check succeeds
-	go a.PollServer(ctx, httpPort, enableUI && openBrowser, secure)
+	go a.PollServer(ctx, opts.HTTPPort, opts.EnableUI && opts.OpenBrowser, secure)
 
 	// Run the server
 	err = group.Wait()
@@ -514,7 +536,7 @@ func (a *App) emitStartEvent(ctx context.Context) error {
 		return err
 	}
 
-	p, err := parser.Parse(ctx, repo, instanceID, a.Instance.Environment, a.Instance.OLAPConnector)
+	p, err := parser.Parse(ctx, repo, instanceID, a.Instance.Environment, a.Instance.OLAPConnector, true)
 	if err != nil {
 		return err
 	}

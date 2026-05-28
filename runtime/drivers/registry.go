@@ -57,6 +57,8 @@ type Instance struct {
 	// ProjectVariables contains default variables from rill.yaml
 	// (NOTE: This can always be reproduced from rill.yaml, so it's really just a handy cache of the values.)
 	ProjectVariables map[string]string `db:"project_variables"`
+	// SystemVariables contains variables set by the system (e.g. "rill.watch_repo") that should not be overridden by user.
+	SystemVariables map[string]string `db:"system_variables"`
 	// FeatureFlags contains feature flags configured in rill.yaml
 	FeatureFlags map[string]string `db:"feature_flags"`
 	// Annotations to enrich activity events (like usage tracking)
@@ -115,6 +117,10 @@ type InstanceConfig struct {
 	AlertsFastStreamingRefreshCron string `mapstructure:"rill.alerts.fast_streaming_refresh_cron"`
 	// ParserSkipUpdatesIfParseErrors short-circuits project parser reconciliation when parse errors exist.
 	ParserSkipUpdatesIfParseErrors bool `mapstructure:"rill.parser.skip_updates_if_parse_errors"`
+	// AICompletionTimeoutSeconds is the maximum duration of a full AI completion request, which may include multiple LLM requests and tool calls.
+	AICompletionTimeoutSeconds uint32 `mapstructure:"rill.ai.completion_timeout_seconds"`
+	// AILLMTimeoutSeconds is the maximum duration of a single LLM completion request.
+	AILLMTimeoutSeconds uint32 `mapstructure:"rill.ai.llm_timeout_seconds"`
 	// AIDefaultQueryLimit is the default row limit applied to AI tool queries when no limit is specified.
 	AIDefaultQueryLimit int64 `mapstructure:"rill.ai.default_query_limit"`
 	// AIMaxQueryLimit is the maximum row limit allowed for AI tool queries.
@@ -123,6 +129,14 @@ type InstanceConfig struct {
 	AIRequireTimeRange bool `mapstructure:"rill.ai.require_time_range"`
 	// AIMaxTimeRangeDays is the maximum time range allowed for AI tool queries, in days. If set to 0, there is no limit.
 	AIMaxTimeRangeDays int64 `mapstructure:"rill.ai.max_time_range_days"`
+	// StrictResolverProps indicates whether to return an error when a resolver contains properties that are not recognized by the resolver implementation.
+	StrictResolverProps bool `mapstructure:"rill.strict_resolver_properties"`
+	// StrictModelProps indicates whether to return an error when a model contains unmapped properties.
+	StrictModelProps bool `mapstructure:"rill.strict_model_properties"`
+	// ModelPartitionsWarnOnFailure: when true, partition execution failures are surfaced as non-blocking warnings instead of errors.
+	ModelPartitionsWarnOnFailure bool `mapstructure:"rill.model.partitions_warn_on_failure"`
+	// ModelTestsWarnOnFailure: when true, model test failures are surfaced as non-blocking warnings instead of errors.
+	ModelTestsWarnOnFailure bool `mapstructure:"rill.model.tests_warn_on_failure"`
 }
 
 // ResolveOLAPConnector resolves the OLAP connector to default to for the instance.
@@ -146,7 +160,7 @@ func (i *Instance) ResolveAIConnector() string {
 
 // ResolveVariables returns the final resolved variables
 func (i *Instance) ResolveVariables(withLowerKeys bool) map[string]string {
-	r := make(map[string]string, len(i.ProjectVariables)+len(i.Variables))
+	r := make(map[string]string, len(i.ProjectVariables)+len(i.Variables)+len(i.SystemVariables))
 
 	// set ProjectVariables first i.e. Project defaults
 	for k, v := range i.ProjectVariables {
@@ -163,6 +177,14 @@ func (i *Instance) ResolveVariables(withLowerKeys bool) map[string]string {
 		}
 		r[k] = v
 	}
+
+	// override with system variables
+	for k, v := range i.SystemVariables {
+		if withLowerKeys {
+			k = strings.ToLower(k)
+		}
+		r[k] = v
+	}
 	return r
 }
 
@@ -174,7 +196,6 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		DownloadLimitBytes:                   int64(datasize.MB * 128),
 		InteractiveSQLRowLimit:               10_000,
 		StageChanges:                         true,
-		WatchRepo:                            i.Environment == "dev",
 		ModelDefaultMaterialize:              false,
 		ModelMaterializeDelaySeconds:         0,
 		ModelConcurrentExecutionLimit:        5,
@@ -185,9 +206,13 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		MetricsNullFillingImplementation:     "pushdown",
 		AlertsDefaultStreamingRefreshCron:    "0 0 * * *",    // Every 24 hours
 		AlertsFastStreamingRefreshCron:       "*/10 * * * *", // Every 10 minutes
+		AICompletionTimeoutSeconds:           60 * 10,        // 10 minutes
+		AILLMTimeoutSeconds:                  60 * 4,         // 4 minutes
 		AIDefaultQueryLimit:                  25,
 		AIMaxQueryLimit:                      250,
 		AIRequireTimeRange:                   true,
+		ModelPartitionsWarnOnFailure:         i.Environment == "prod",
+		ModelTestsWarnOnFailure:              i.Environment == "prod",
 	}
 
 	// Resolve variables

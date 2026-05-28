@@ -25,6 +25,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	var pullEnv bool
 	var noUI bool
 	var noOpen bool
+	var previewMode bool
 	var logFormat string
 	var envVars, envVarsOld []string
 	var environment string
@@ -60,16 +61,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				if currentDir == homeDir {
-					confirm, err := cmdutil.ConfirmPrompt(
-						"You are trying to start Rill in your home directory, which is not recommended. Are you sure you want to continue?",
-						"", false,
-					)
-					if err != nil {
+					if err := cmdutil.ConfirmPrompt("You are trying to start Rill in your home directory, which is not recommended. Do you want to continue?", false); err != nil {
 						return err
-					}
-					if !confirm {
-						ch.PrintfWarn("Aborted\n")
-						return nil
 					}
 				}
 
@@ -83,13 +76,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				msg := fmt.Sprintf("Rill will create project files in %q. Do you want to continue?", displayPath)
-				confirm, err := cmdutil.ConfirmPrompt(msg, "", defval)
-				if err != nil {
+				if err := cmdutil.ConfirmPrompt(msg, defval); err != nil {
 					return err
-				}
-				if !confirm {
-					ch.PrintfWarn("Aborted\n")
-					return nil
 				}
 			}
 
@@ -101,16 +89,10 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Check for WSL Windows partition usage (based on the project path)
 			if envdetect.IsWSLWindowsPartition(projectPath) {
 				ch.PrintfWarn("%s\n", envdetect.GetWSLWarningMessage())
-				confirm, err := cmdutil.ConfirmPrompt(
-					"Do you want to continue anyway?",
-					"", false, // Default to "No"
-				)
-				if err != nil {
-					return err
-				}
-				if !confirm {
-					ch.PrintfWarn("Aborted\n")
-					return nil
+				if ch.Interactive {
+					if err := cmdutil.ConfirmPrompt("Do you want to continue anyway?", false); err != nil {
+						return err
+					}
 				}
 			}
 
@@ -165,7 +147,17 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			userID, _ := ch.CurrentUserID(cmd.Context())
 
-			err = app.Serve(httpPort, grpcPort, !noUI, !noOpen, readonly, userID, tlsCertPath, tlsKeyPath)
+			err = app.Serve(local.ServeOptions{
+				HTTPPort:    httpPort,
+				GRPCPort:    grpcPort,
+				EnableUI:    !noUI,
+				OpenBrowser: !noOpen,
+				Readonly:    readonly,
+				PreviewMode: previewMode,
+				UserID:      userID,
+				TLSCertPath: tlsCertPath,
+				TLSKeyPath:  tlsKeyPath,
+			})
 			if err != nil {
 				return fmt.Errorf("serve: %w", err)
 			}
@@ -181,7 +173,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	startCmd.Flags().BoolVar(&pullEnv, "pull-env", true, "Pull environment variables from Rill Cloud before starting the project")
 	startCmd.Flags().BoolVar(&noOpen, "no-open", false, "Do not open browser")
 	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
-	startCmd.Flags().BoolVar(&readonly, "readonly", false, "Show only dashboards in UI")
+	startCmd.Flags().BoolVar(&readonly, "readonly", false, "Deprecated: use --preview instead")
+	startCmd.Flags().BoolVar(&previewMode, "preview", false, "Start in dashboard-only view (no code editor)")
 	startCmd.Flags().IntVar(&httpPort, "port", 9009, "Port for HTTP")
 	startCmd.Flags().IntVar(&grpcPort, "port-grpc", 49009, "Port for gRPC (internal)")
 	startCmd.Flags().BoolVar(&noUI, "no-ui", false, "Serve only the backend")

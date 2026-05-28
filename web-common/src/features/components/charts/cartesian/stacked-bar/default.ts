@@ -15,8 +15,8 @@ import {
   createComparisonXOffsetEncoding,
 } from "@rilldata/web-common/features/components/charts/comparison-builder";
 import type { VisualizationSpec } from "svelte-vega";
-import type { Field } from "vega-lite/build/src/channeldef";
-import type { UnitSpec } from "vega-lite/build/src/spec/unit";
+import type { Field } from "vega-lite/types_unstable/channeldef.js";
+import type { UnitSpec } from "vega-lite/types_unstable/spec/unit.js";
 import { type CartesianChartSpec } from "../CartesianChartProvider";
 import { createVegaTransformPivotConfig } from "../util";
 
@@ -29,8 +29,9 @@ export function generateVLStackedBarChartSpec(
 
   const colorField =
     typeof config.color === "object" ? config.color.field : undefined;
-  const xField = sanitizeValueForVega(config.x?.field);
-  const yField = sanitizeValueForVega(config.y?.field);
+  const sanitizedXField = sanitizeValueForVega(config.x?.field);
+  const yField = config.y?.field;
+  const sanitizedYField = sanitizeValueForVega(yField);
 
   const defaultTooltipChannel = createDefaultTooltipEncoding(
     [config.x, config.y, config.color],
@@ -48,7 +49,7 @@ export function generateVLStackedBarChartSpec(
   const hasComparison = data.hasComparison;
 
   const hoverRuleLayer = buildHoverRuleLayer({
-    xField,
+    xField: sanitizedXField,
     domainValues: data.domainValues,
     isBarMark: true,
     defaultTooltip: defaultTooltipChannel,
@@ -56,9 +57,10 @@ export function generateVLStackedBarChartSpec(
     xSort: config.x?.sort,
     primaryColor: data.theme.primary,
     isDarkMode: data.isDarkMode,
+    isInteractive: config.isInteractive,
     pivot: createVegaTransformPivotConfig(
-      xField,
-      yField,
+      sanitizedXField,
+      sanitizedYField,
       colorField,
       !!hasComparison,
       !!multiValueTooltipChannel?.length,
@@ -101,5 +103,8 @@ export function generateVLStackedBarChartSpec(
   return {
     ...spec,
     ...(vegaConfig && { config: vegaConfig }),
+    ...(config.isInteractive && sanitizedXField
+      ? { usermeta: { brushTemporalField: sanitizedXField } }
+      : {}),
   };
 }

@@ -224,6 +224,39 @@ sql: SELECT * FROM read_parquet('{{ .partition.uri }}')
 ```
 :::
 
+### Windowed Glob Partitions
+
+Use `start` and `end` to filter which partitions are processed based on their path — useful for backfills, time-bounded ingestion, or limiting how much data is reprocessed.
+
+- **`start`** — lower bound (inclusive): only partitions with paths ≥ this value are included.
+- **`end`** — upper bound (exclusive): only partitions with paths < this value are included.
+- **`last`** — process only the last N successfully ingested partitions (by lexicographic path order). Useful for rolling windows.
+
+```yaml
+# Fixed window: only process a specific month
+partitions:
+  glob:
+    path: s3://bucket/year=*/month=*/day=*
+    partition: directory
+    start: s3://bucket/year=2026/month=03
+    end: s3://bucket/year=2026/month=04
+sql: SELECT * FROM read_parquet('{{ .partition.uri }}/*.parquet')
+```
+
+```yaml
+# Rolling window: reprocess last 30 days
+partitions:
+  glob:
+    path: s3://bucket/year=*/month=*/day=*
+    partition: directory
+    last: 30
+sql: SELECT * FROM read_parquet('{{ .partition.uri }}/*.parquet')
+```
+
+:::note
+`start`, `end`, and `last` are not compatible with `transform_sql`.
+:::
+
 ### Viewing Partitions in Rill Developer
 
 Once `partitions:` is defined in your model, a new button will appear in the right-hand panel: `View Partitions`. When selecting this, a new UI will appear with all of your partitions and more information on each. Note that these can be sorted by all, pending, and errors.

@@ -1,12 +1,13 @@
 <script lang="ts">
   import { DateTime, Interval } from "luxon";
 
-  enum OverlapType {
-    IN_RANGE = "in-range",
-    START = "start",
-    END = "end",
-    FULL_INTERVAL = "full-interval",
-  }
+  const OverlapType = {
+    IN_RANGE: "in-range",
+    START: "start",
+    END: "end",
+    FULL_INTERVAL: "full-interval",
+  } as const;
+  type OverlapType = (typeof OverlapType)[keyof typeof OverlapType];
 
   export let date: DateTime<true>;
   export let interval: Interval<true>;
@@ -46,6 +47,16 @@
   ): OverlapType | undefined {
     const evaluatedInterval = potentialInterval ?? interval;
 
+    const isZeroInterval = evaluatedInterval.start.equals(
+      evaluatedInterval.end,
+    );
+    // Safeguard for zero intervals. Show as a full circle for the relevant day only.
+    if (isZeroInterval) {
+      return areSameDay(evaluatedInterval.start, date)
+        ? OverlapType.FULL_INTERVAL
+        : undefined;
+    }
+
     if (areSameDay(evaluatedInterval.start, date)) {
       if (areSameDay(evaluatedInterval.end.minus({ millisecond: 1 }), date))
         return OverlapType.FULL_INTERVAL;
@@ -76,11 +87,11 @@
   type="button"
   class="py-0.5 wrapper size-full"
   {disabled}
-  on:click={() => {
+  onclick={() => {
     onSelectDay(date);
     resetPotentialDates();
   }}
-  on:mouseenter={() => {
+  onmouseenter={() => {
     if (singleDaySelection) return;
 
     onHoverDay(date);

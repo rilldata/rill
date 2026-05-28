@@ -80,6 +80,14 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		require.NotEmpty(t, dsn, "RILL_RUNTIME_SNOWFLAKE_TEST_DSN not configured")
 		return map[string]string{"dsn": dsn}
 	},
+	// Databricks connector connects to a real Databricks SQL warehouse using dsn in RILL_RUNTIME_DATABRICKS_TEST_DSN.
+	// The test dataset is pre-populated with tables defined in testdata/init_data/databricks_init_data.sql.
+	"databricks": func(t TestingT) map[string]string {
+		loadDotEnv(t)
+		dsn := os.Getenv("RILL_RUNTIME_DATABRICKS_TEST_DSN")
+		require.NotEmpty(t, dsn, "RILL_RUNTIME_DATABRICKS_TEST_DSN not configured")
+		return map[string]string{"dsn": dsn}
+	},
 	"motherduck": func(t TestingT) map[string]string {
 		testmode.Expensive(t)
 		loadDotEnv(t)
@@ -95,15 +103,8 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		loadDotEnv(t)
 		gac := os.Getenv("RILL_RUNTIME_GCS_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON")
 		require.NotEmpty(t, gac, "GCS RILL_RUNTIME_GCS_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON not configured")
-		hmacKey := os.Getenv("RILL_RUNTIME_GCS_TEST_HMAC_KEY")
-		hmacSecret := os.Getenv("RILL_RUNTIME_GCS_TEST_HMAC_SECRET")
-		require.NotEmpty(t, hmacKey, "GCS RILL_RUNTIME_GCS_TEST_HMAC_KEY not configured")
-		require.NotEmpty(t, hmacSecret, "GCS RILL_RUNTIME_GCS_TEST_HMAC_SECRET not configured")
-
 		return map[string]string{
 			"google_application_credentials": gac,
-			"key_id":                         hmacKey,
-			"secret":                         hmacSecret,
 		}
 	},
 	"gcs_s3_compat": func(t TestingT) map[string]string {
@@ -268,6 +269,12 @@ var Connectors = map[string]ConnectorAcquireFunc{
 			"azure_storage_connection_string_ip": connectionStringWithIP,
 			"azure_storage_account":              azurite.AccountName,
 		}
+	},
+	"azure_cloud": func(t TestingT) map[string]string {
+		loadDotEnv(t)
+		apiKey := os.Getenv("RILL_RUNTIME_AZURE_TEST_CONNECTION_STRING")
+		require.NotEmpty(t, apiKey)
+		return map[string]string{"azure_storage_connection_string": apiKey}
 	},
 	"pinot": func(t TestingT) map[string]string {
 		ctx := context.Background()

@@ -195,7 +195,7 @@ func (s *Server) ListUserAuthTokens(ctx context.Context, req *adminv1.ListUserAu
 	pageSize := validPageSize(req.PageSize)
 	pageToken, err := unmarshalPageToken(req.PageToken)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	authTokens, err := s.admin.DB.FindUserAuthTokens(ctx, userID, pageToken.Val, pageSize, req.Refresh)
@@ -288,7 +288,7 @@ func (s *Server) IssueUserAuthToken(ctx context.Context, req *adminv1.IssueUserA
 		}
 		u, err := s.admin.DB.FindUserByEmail(ctx, req.RepresentEmail)
 		if err != nil {
-			return nil, status.Errorf(codes.NotFound, "user with email %q not found", req.RepresentEmail)
+			return nil, err
 		}
 		if u.ID == userID {
 			return nil, status.Error(codes.InvalidArgument, "cannot represent yourself")
@@ -526,7 +526,7 @@ func (s *Server) DeleteUser(ctx context.Context, req *adminv1.DeleteUserRequest)
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find user by email: %v", err)
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -538,7 +538,7 @@ func (s *Server) DeleteUser(ctx context.Context, req *adminv1.DeleteUserRequest)
 
 	err = s.admin.DB.DeleteUser(ctx, user.ID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to delete user: %v", err)
+		return nil, err
 	}
 
 	return &adminv1.DeleteUserResponse{}, nil
@@ -602,7 +602,7 @@ func (s *Server) SearchProjectUsers(ctx context.Context, req *adminv1.SearchProj
 
 	token, err := unmarshalPageToken(req.PageToken)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	pageSize := validPageSize(req.PageSize)

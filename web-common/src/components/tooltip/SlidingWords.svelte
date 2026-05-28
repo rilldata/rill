@@ -86,7 +86,7 @@
   <div class="invisible absolute" bind:this={element}>
     {active ? "Hide" : "Show"}
   </div>
-  <div class="invisible" style:width="{$thingWidth}px" />
+  <div class="invisible" style:width="{$thingWidth}px"></div>
   {#key active}
     <div
       class="absolute"

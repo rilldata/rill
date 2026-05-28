@@ -93,7 +93,7 @@
     />
     <Switch
       checked={localFiltersEnabled}
-      on:click={() => {
+      onclick={() => {
         if (localFiltersEnabled) {
           localFiltersEnabledOverride = false;
           updateLocalFilterString("");

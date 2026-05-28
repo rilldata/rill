@@ -20,17 +20,28 @@ export type JSONSchemaField = {
   properties?: Record<string, JSONSchemaField>;
   required?: string[];
   /** Render style override for the field (e.g. radio buttons, tabs, file picker). */
-  "x-display"?: "radio" | "select" | "textarea" | "file" | "tabs" | "key-value";
+  "x-display"?:
+    | "radio"
+    | "select"
+    | "textarea"
+    | "file"
+    | "tabs"
+    | "key-value"
+    | "toggle";
   /** Visual style for select fields. "rich" renders with icons and colored cards. */
   "x-select-style"?: "standard" | "rich";
   /** Render the field value in a monospace font. */
   "x-monospace"?: boolean;
+  /** Initial number of visible rows for textarea fields. */
+  "x-rows"?: number;
   /** Which modal step this field belongs to. */
   "x-step"?: "connector" | "source" | "explorer";
   /** Field holds a secret value that should be stored in .env, not in YAML. */
   "x-secret"?: boolean;
   /** Show this field only when other fields match the given values. */
   "x-visible-if"?: Record<string, JSONSchemaVisibleIfValue>;
+  /** Always disable this field (read-only). */
+  "x-disabled"?: boolean;
   /** Disable this field (read-only) when other fields match the given values. */
   "x-disabled-if"?: Record<string, JSONSchemaVisibleIfValue>;
   /** Human-readable labels for each enum option, in the same order as `enum`. */
@@ -49,12 +60,31 @@ export type JSONSchemaField = {
   "x-file-accept"?: string;
   /** How to encode file content: base64, json (parse+stringify), or raw (pass-through). */
   "x-file-encoding"?: "base64" | "json" | "raw";
+  /** Maximum file size in bytes. */
+  "x-file-size-limit"?: number;
+  /** If true, the file size limit is only a soft limit and does not prevent file upload. */
+  "x-file-size-soft-limit"?: boolean;
+  /** Warning message to display when file size exceeds soft limit. */
+  "x-file-size-limit-warning-message"?: string;
   /** Extract values from parsed file content into other form fields. Maps form field key to JSON property name. */
   "x-file-extract"?: Record<string, string>;
   /** Field is read-only and shown for informational purposes only. */
   "x-informational"?: boolean;
   /** URL to external documentation for this field, shown as a help link. */
   "x-docs-url"?: string;
+  /** Field is an advanced setting, hidden by default behind an expandable section. */
+  "x-advanced"?: boolean;
+  /**
+   * For boolean fields: the YAML value to emit.
+   * - If a scalar, it is emitted only when the toggle is checked (true); unchecked fields are omitted.
+   * - If an object with `true` and/or `false` keys, the matching value is emitted for each toggle state,
+   *   so both states round-trip to YAML.
+   */
+  "x-yaml-value"?:
+    | string
+    | number
+    | boolean
+    | { true?: string | number | boolean; false?: string | number | boolean };
   /** Field controls UI behavior only and is excluded from generated YAML. */
   "x-ui-only"?: boolean;
   /**
@@ -67,10 +97,29 @@ export type JSONSchemaField = {
    */
   "x-tab-group"?: Record<string, string[]>;
   /**
+   * Maps enum option values to required connector driver names.
+   * Options whose required driver is not found among existing connectors
+   * are rendered as disabled in ConnectionTypeSelector.
+   */
+  "x-required-driver"?: Record<string, string>;
+  /**
    * Explicit environment variable name for secret fields.
    * When set, this name is used instead of computing it from driver + property key.
    */
   "x-env-var-name"?: string;
+  /**
+   * Name of a registered custom validator to run against this field's value.
+   * The validator returns a list of error messages; empty list means valid.
+   * Runs in addition to JSON Schema validation, after `pruneEmptyFields`.
+   */
+  "x-custom-validator"?: string;
+  /**
+   * Hide the field from the rendered form without removing it from the schema.
+   * The field's value still participates in conditional logic (x-visible-if,
+   * allOf/if/then) and tab-group filtering, so downstream code that depends on
+   * `connection_mode` / `auth_method` etc. continues to work.
+   */
+  "x-hidden"?: boolean;
   // Allow custom keywords such as errorMessage or future x-extensions.
   [key: string]: unknown;
 };

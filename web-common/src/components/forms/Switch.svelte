@@ -2,7 +2,7 @@
   import { Switch as SwitchPrimitive } from "bits-ui";
   import { cn } from "@rilldata/web-common/lib/shadcn";
 
-  type $$Props = SwitchPrimitive.Props & {
+  type $$Props = SwitchPrimitive.RootProps & {
     label?: string;
     small?: boolean;
     medium?: boolean;
@@ -11,7 +11,7 @@
   // type $$Events = SwitchPrimitive.Events;
 
   let className: $$Props["class"] = undefined;
-  export let checked: $$Props["checked"] = undefined;
+  export let checked: $$Props["checked"] = false;
   export { className as class };
   export let small = false;
   export let medium = false;
@@ -31,8 +31,6 @@
       : "data-[state=checked]:bg-primary-400",
     className,
   )}
-  on:click
-  on:keydown
   aria-label={label}
 >
   <SwitchPrimitive.Thumb

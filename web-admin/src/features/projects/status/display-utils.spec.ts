@@ -1,10 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { V1DeploymentStatus } from "@rilldata/web-admin/client";
 import {
+  formatConnectorName,
   formatEnvironmentName,
+  getOlapEngineLabel,
+} from "@rilldata/web-common/features/resources/display-utils";
+import {
   getStatusDotClass,
   getStatusLabel,
-  formatConnectorName,
   getResourceKindTagColor,
 } from "./display-utils";
 
@@ -177,6 +180,10 @@ describe("display-utils", () => {
       expect(formatConnectorName("duckdb")).toBe("DuckDB");
     });
 
+    it("formats 'motherduck' correctly", () => {
+      expect(formatConnectorName("motherduck")).toBe("MotherDuck");
+    });
+
     it("formats 'clickhouse' correctly", () => {
       expect(formatConnectorName("clickhouse")).toBe("ClickHouse");
     });
@@ -207,6 +214,94 @@ describe("display-utils", () => {
 
     it("capitalizes first letter for unknown connectors", () => {
       expect(formatConnectorName("postgres")).toBe("Postgres");
+    });
+  });
+
+  describe("getOlapEngineLabel", () => {
+    it("returns 'DuckDB' when connector is undefined", () => {
+      expect(getOlapEngineLabel(undefined)).toBe("DuckDB");
+    });
+
+    it("returns 'DuckDB' for plain duckdb connector", () => {
+      expect(getOlapEngineLabel({ type: "duckdb", name: "duckdb" })).toBe(
+        "DuckDB",
+      );
+    });
+
+    it("detects MotherDuck via md: path", () => {
+      expect(
+        getOlapEngineLabel({
+          type: "duckdb",
+          name: "my_olap",
+          config: { path: "md:my_database" },
+        }),
+      ).toBe("MotherDuck");
+    });
+
+    it("detects MotherDuck via token", () => {
+      expect(
+        getOlapEngineLabel({
+          type: "duckdb",
+          name: "custom_name",
+          config: { token: "abc123" },
+        }),
+      ).toBe("MotherDuck");
+    });
+
+    it("detects DuckLake via attach config", () => {
+      expect(
+        getOlapEngineLabel({
+          type: "duckdb",
+          name: "ducklake_analytics",
+          config: {
+            attach:
+              "'ducklake:metadata.ducklake' AS my_ducklake (DATA_PATH 'datafiles')",
+          },
+        }),
+      ).toBe("DuckLake");
+    });
+
+    it("detects DuckLake via connector name when config is redacted", () => {
+      expect(
+        getOlapEngineLabel({
+          type: "duckdb",
+          name: "ducklake_1",
+        }),
+      ).toBe("DuckLake");
+    });
+
+    it("detects DuckLake case-insensitively", () => {
+      expect(
+        getOlapEngineLabel({
+          type: "duckdb",
+          name: "Ducklake_1",
+        }),
+      ).toBe("DuckLake");
+    });
+
+    it("shows Rill-managed for provisioned ClickHouse", () => {
+      expect(
+        getOlapEngineLabel({
+          type: "clickhouse",
+          name: "clickhouse",
+          provision: true,
+        }),
+      ).toBe("ClickHouse (Rill-managed)");
+    });
+
+    it("returns bare label for non-provisioned ClickHouse", () => {
+      expect(
+        getOlapEngineLabel({ type: "clickhouse", name: "clickhouse" }),
+      ).toBe("ClickHouse");
+    });
+
+    it("does not mislabel a non-duckdb connector named 'ducklake_x' as DuckLake", () => {
+      expect(
+        getOlapEngineLabel({
+          type: "postgres",
+          name: "ducklake_meta",
+        }),
+      ).toBe("Postgres");
     });
   });
 

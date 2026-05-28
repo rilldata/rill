@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fly } from "svelte/transition";
   import { Chip } from "@rilldata/web-common/components/chip";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
@@ -22,7 +23,6 @@
   import DimensionFilterModeSelector from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterModeSelector.svelte";
   import type { V1Expression } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { fly } from "svelte/transition";
   import {
     useAllSearchResultsCount,
     useDimensionSearch,
@@ -30,6 +30,7 @@
   import type { DimensionFilterItem } from "../../state-managers/selectors/dimension-filters";
   import type { FilterManager } from "@rilldata/web-common/features/canvas/stores/filter-manager";
   import PinButton from "../PinButton.svelte";
+  import RequiredButton from "../RequiredButton.svelte";
 
   type Actions = FilterManager["actions"];
 
@@ -50,6 +51,8 @@
   export let toggleDimensionFilterMode: Actions["toggleDimensionFilterMode"];
   export let toggleFilterPin: Actions["toggleFilterPin"] | undefined =
     undefined;
+  export let toggleFilterRequired: Actions["toggleFilterRequired"] | undefined =
+    undefined;
   export let isUrlTooLongAfterInListFilter: (
     values: string[],
   ) => boolean = () => false;
@@ -66,6 +69,7 @@
       ? (filterData.selectedValues ?? [])
       : [];
   let curPinned = filterData.pinned;
+  let curRequired = filterData.required;
 
   const client = useRuntimeClient();
 
@@ -78,6 +82,8 @@
     isInclude,
     dimensions,
     pinned,
+    required,
+    missingRequired,
   } = filterData);
 
   $: if (!open && filterData.mode !== curMode) {
@@ -266,6 +272,9 @@
       if (pinned !== curPinned) {
         toggleFilterPin?.(name, metricsViewNames);
       }
+      if (required !== curRequired) {
+        toggleFilterRequired?.(name, metricsViewNames);
+      }
 
       // Apply proxy changes for Select mode when dropdown closes
       if (curMode === DimensionFilterMode.Select) {
@@ -284,8 +293,8 @@
     }
   }
 
-  function handleToggleExcludeMode() {
-    curExcludeMode = !curExcludeMode;
+  function handleToggleExcludeMode(checked: boolean) {
+    curExcludeMode = checked;
   }
 
   function onToggleSelectAll() {
@@ -396,72 +405,79 @@
         ? (filterData.selectedValues ?? [])
         : [];
     curPinned = filterData.pinned;
+    curRequired = filterData.required;
   }
 </script>
 
 <svelte:window
-  on:keydown={async (e) => {
+  onkeydown={async (e) => {
     if (e.key === "Enter") {
       await onApply();
     }
   }}
 />
 
-<DropdownMenu.Root
-  bind:open
-  typeahead={false}
-  closeOnItemClick={false}
-  onOpenChange={handleOpenChange}
->
-  <DropdownMenu.Trigger asChild let:builder>
-    <Tooltip
-      activeDelay={500}
-      alignment="start"
-      distance={8}
-      location="bottom"
-      suppress={open || readOnly}
-    >
-      <Chip
-        builders={[builder]}
-        type="dimension"
-        gray={selectedValues.length === 0 && !inputText}
-        active={open}
-        exclude={curExcludeMode}
-        label={`${name} filter`}
-        theme
-        onRemove={() => removeDimensionFilter(name, metricsViewNames)}
-        removable={!readOnly && !curPinned}
-        {readOnly}
-        removeTooltipText="remove {selectedValues.length} value{selectedValues.length !==
-        1
-          ? 's'
-          : ''}"
+<DropdownMenu.Root bind:open onOpenChange={handleOpenChange}>
+  <DropdownMenu.Trigger>
+    {#snippet child({ props })}
+      <Tooltip
+        activeDelay={500}
+        alignment="start"
+        distance={8}
+        location="bottom"
+        suppress={open || readOnly}
       >
-        <DimensionFilterChipBody
-          slot="body"
-          label={curExcludeMode ? `Exclude ${label}` : label}
-          show={1}
-          {smallChip}
-          values={curMode === DimensionFilterMode.InList
-            ? searchedBulkValues
-            : effectiveSelectedValues}
-          matchedCount={allSearchResultsCount}
-          loading={isFetchingFromAllSearchResultsCount}
-          search={curMode === DimensionFilterMode.Contains
-            ? curSearchText
-            : undefined}
-        />
-      </Chip>
-      <div slot="tooltip-content" transition:fly={{ duration: 100, y: 4 }}>
-        <TooltipContent maxWidth="400px">
-          <TooltipTitle>
-            <svelte:fragment slot="name">{name}</svelte:fragment>
-            <svelte:fragment slot="description">dimension</svelte:fragment>
-          </TooltipTitle>
-          Click to edit the the filters in this dimension
-        </TooltipContent>
-      </div>
-    </Tooltip>
+        <Chip
+          {...props}
+          type="dimension"
+          gray={selectedValues.length === 0 && !inputText}
+          error={!!missingRequired}
+          active={open}
+          exclude={curExcludeMode}
+          label={`${name} filter`}
+          theme
+          onRemove={() => removeDimensionFilter(name, metricsViewNames)}
+          removable={!readOnly && !curPinned && !required}
+          {readOnly}
+          removeTooltipText="remove {selectedValues.length} value{selectedValues.length !==
+          1
+            ? 's'
+            : ''}"
+        >
+          <DimensionFilterChipBody
+            slot="body"
+            label={curExcludeMode ? `Exclude ${label}` : label}
+            show={1}
+            {smallChip}
+            values={curMode === DimensionFilterMode.InList
+              ? searchedBulkValues
+              : effectiveSelectedValues}
+            matchedCount={allSearchResultsCount}
+            loading={isFetchingFromAllSearchResultsCount}
+            search={curMode === DimensionFilterMode.Contains
+              ? curSearchText
+              : undefined}
+          />
+        </Chip>
+        <div slot="tooltip-content" transition:fly={{ duration: 100, y: 4 }}>
+          <TooltipContent maxWidth="400px">
+            <TooltipTitle>
+              <svelte:fragment slot="name">{name}</svelte:fragment>
+              <svelte:fragment slot="description"
+                >{required
+                  ? "required dimension"
+                  : "dimension"}</svelte:fragment
+              >
+            </TooltipTitle>
+            {#if missingRequired}
+              This filter is required. Select a value to load the dashboard.
+            {:else}
+              Click to edit the filters in this dimension
+            {/if}
+          </TooltipContent>
+        </div>
+      </Tooltip>
+    {/snippet}
   </DropdownMenu.Trigger>
 
   <!-- This has significant differences with SearchableMenuContent with how search text is handled.
@@ -472,18 +488,30 @@
     class="flex flex-col max-h-96 w-[400px] overflow-hidden p-0"
   >
     <div class="flex flex-col px-3 pt-3">
-      {#if toggleFilterPin}
+      {#if toggleFilterPin || toggleFilterRequired}
         <div
           class="flex flex-row items-center justify-between mb-2 pointer-events-auto"
         >
           <b>{label}</b>
 
-          <PinButton
-            pinned={!!curPinned}
-            onTogglePin={() => {
-              curPinned = !curPinned;
-            }}
-          />
+          <div class="flex flex-row items-center gap-x-1">
+            {#if toggleFilterRequired}
+              <RequiredButton
+                required={!!curRequired}
+                onToggleRequired={() => {
+                  curRequired = !curRequired;
+                }}
+              />
+            {/if}
+            {#if toggleFilterPin}
+              <PinButton
+                pinned={!!curPinned}
+                onTogglePin={() => {
+                  curPinned = !curPinned;
+                }}
+              />
+            {/if}
+          </div>
         </div>
       {/if}
       <div class="flex flex-row">
@@ -506,14 +534,14 @@
       {#if showExtraInfo}
         <div class="flex flex-row items-center justify-between pt-2 pb-1">
           {#if curMode !== DimensionFilterMode.Select}
-            <DropdownMenu.Label
-              class="pb-0 uppercase text-[10px] text-fg-secondary"
+            <span
+              class="px-2 py-1.5 pb-0 uppercase text-[10px] text-fg-secondary font-semibold"
               aria-label={`${name} result count`}
             >
               {searchResultCountText}
-            </DropdownMenu.Label>
+            </span>
           {:else}
-            <div class="grow" />
+            <div class="grow"></div>
           {/if}
         </div>
       {/if}
@@ -547,11 +575,11 @@
 
               <svelte:component
                 this={DropdownMenu.CheckboxItem}
+                closeOnSelect={false}
                 class="text-xs cursor-pointer"
-                role="menuitem"
                 checked={selected}
                 showXForSelected={curExcludeMode}
-                on:click={() => handleItemClick(name)}
+                onclick={() => handleItemClick(name)}
               >
                 <span>
                   {#if label.length > 240}
@@ -578,15 +606,15 @@
               this={curMode === DimensionFilterMode.Select
                 ? DropdownMenu.CheckboxItem
                 : DropdownMenu.Item}
+              closeOnSelect={false}
               class="text-xs cursor-pointer {curMode !==
               DimensionFilterMode.Select
                 ? 'pl-3'
                 : ''}"
-              role="menuitem"
               checked={curMode === DimensionFilterMode.Select && selected}
               showXForSelected={curExcludeMode}
               disabled={curMode !== DimensionFilterMode.Select}
-              on:click={() => handleItemClick(name)}
+              onclick={() => handleItemClick(name)}
             >
               <span>
                 {#if label.length > 240}

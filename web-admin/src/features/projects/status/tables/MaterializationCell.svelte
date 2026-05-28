@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Code2, Database } from "lucide-svelte";
-  import { isLikelyView as checkIsLikelyView } from "./utils";
+  import { isLikelyView as checkIsLikelyView } from "@rilldata/web-common/features/projects/status/tables/utils";
 
   export let isView: boolean | undefined;
   export let physicalSizeBytes: string | number | undefined;

@@ -142,7 +142,7 @@ test.describe("timeseries charts (rendering)", () => {
 
         const timeseriesPromise = interceptTimeseriesResponse(page);
         await page
-          .getByRole("menuitem", {
+          .getByRole("menuitemcheckbox", {
             name: V1TimeGrainToDateTimeUnit[testCase.grain],
             exact: true,
           })
@@ -207,7 +207,7 @@ test.describe("timeseries charts system TZ independence", () => {
 
       const timeseriesPromise = interceptTimeseriesResponse(page);
       await page
-        .getByRole("menuitem", {
+        .getByRole("menuitemcheckbox", {
           name: V1TimeGrainToDateTimeUnit[testCase.grain],
           exact: true,
         })

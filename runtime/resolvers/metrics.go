@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"golang.org/x/exp/maps"
 )
 
 func init() {
@@ -125,7 +126,13 @@ func (r *metricsResolver) Refs() []*runtimev1.ResourceName {
 }
 
 func (r *metricsResolver) Validate(ctx context.Context) error {
-	return r.executor.ValidateQuery(r.query)
+	if len(r.query.UnusedFields) > 0 {
+		return &runtime.ResolverUnusedFieldsError{
+			Name:   "metrics",
+			Fields: maps.Keys(r.query.UnusedFields),
+		}
+	}
+	return nil
 }
 
 func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
@@ -139,7 +146,7 @@ func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.Resol
 			return nil, err
 		}
 
-		err = r.executor.BindQuery(ctx, r.query, tsRes)
+		err = r.executor.BindQuery(r.query, tsRes)
 		if err != nil {
 			return nil, err
 		}
@@ -234,6 +241,7 @@ func fieldsFromQuery(spec *runtimev1.MetricsViewSpec, q *metricsview.Query) []ma
 				"format_d3_locale":       meas.FormatD3Locale.AsMap(),
 				"valid_percent_of_total": meas.ValidPercentOfTotal,
 				"treat_nulls_as":         meas.TreatNullsAs,
+				"lower_is_better":        meas.LowerIsBetter,
 			})
 		}
 	}

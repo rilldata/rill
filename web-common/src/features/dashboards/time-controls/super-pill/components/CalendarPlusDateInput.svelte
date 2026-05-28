@@ -2,13 +2,14 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Calendar from "@rilldata/web-common/components/date-picker/Calendar.svelte";
   import DateInput from "@rilldata/web-common/components/date-picker/DateInput.svelte";
-  import { DateTime, Interval, type DateTimeUnit } from "luxon";
+  import { DateTime, Duration, Interval, type DateTimeUnit } from "luxon";
 
   export let interval: Interval<true> | undefined;
   export let minDate: DateTime | undefined = undefined;
   export let maxDate: DateTime | undefined = undefined;
   export let minTimeGrain: DateTimeUnit;
   export let zone: string;
+  export let maxQueryTimeRange: Duration | undefined = undefined;
   export let updateRange: (range: string) => void = () => {};
   export let onApply: (interval: Interval<true>) => void;
   export let closeMenu: () => void;
@@ -24,12 +25,25 @@
   let anchorDay: DateTime<true> | undefined = undefined;
 
   $: startDate = inputInterval?.start;
-  $: endDate = inputInterval.end.minus({ millisecond: 1 });
+  // Do not deduct 1ms if the interval is of zero length to avoid having end before start.
+  $: isZeroInterval = inputInterval?.start.equals(inputInterval.end);
+  $: endDate = isZeroInterval
+    ? inputInterval?.end
+    : inputInterval?.end.minus({ millisecond: 1 });
 
   $: adjustedMinDate = minDate?.startOf("day");
   $: adjustedMaxDate = maxDate
     ?.plus({ [minTimeGrain]: 1 })
     .startOf(minTimeGrain);
+
+  $: capMs = maxQueryTimeRange?.as("milliseconds") ?? 0;
+  $: exceedsCap =
+    capMs > 0 &&
+    !!inputInterval?.isValid &&
+    inputInterval.toDuration("milliseconds").as("milliseconds") > capMs;
+  $: capLabel = maxQueryTimeRange
+    ?.shiftTo("days")
+    .toHuman({ listStyle: "long" });
 
   function onValidDateInput(date: DateTime<true>, boundary?: "start" | "end") {
     let newInterval: Interval;
@@ -124,12 +138,17 @@
     />
   </div>
   <!-- {/if} -->
+  {#if exceedsCap}
+    <div class="text-red-500 text-xs px-1" role="alert">
+      Range exceeds the {capLabel} query limit.
+    </div>
+  {/if}
   <div class="flex justify-end w-full">
     <Button
       fit
       compact
       type="secondary"
-      disabled={!inputInterval?.isValid}
+      disabled={!inputInterval?.isValid || exceedsCap}
       onClick={() => {
         onApply(inputInterval);
 

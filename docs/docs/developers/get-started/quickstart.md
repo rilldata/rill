@@ -119,6 +119,14 @@ Once your dashboard is created, you can:
 
 
 
+## Preview Mode
+
+[Preview Mode](/developers/build/getting-started#preview-mode) gives you a dashboard-only view of your project — no file editor, no code. Start it with `rill start my-rill-project --preview`.
+
+## Build with AI
+
+Rill projects are YAML and SQL files, which makes them a natural fit for AI coding agents like Claude Code and Cursor. See the [Agentic Quickstart](/developers/get-started/ai-quickstart) to get started.
+
 ## What else can Rill do?
 
 This quick start covered the basics, but Rill offers much more:

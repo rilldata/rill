@@ -57,13 +57,8 @@ func SetAttributesCmd(ch *cmdutil.Helper) *cobra.Command {
 						return fmt.Errorf("user already has attributes, use --force to overwrite")
 					}
 
-					confirmed, err := cmdutil.ConfirmPrompt("Do you want to overwrite the existing attributes?", "", false)
-					if err != nil {
-						return fmt.Errorf("failed to prompt for confirmation: %w", err)
-					}
-					if !confirmed {
-						ch.Printf("Cancelled.\n")
-						return nil
+					if err := cmdutil.ConfirmPrompt("Do you want to overwrite the existing attributes?", false); err != nil {
+						return err
 					}
 				}
 			}

@@ -19,8 +19,10 @@
 </script>
 
 <AlertDialog bind:open>
-  <AlertDialogTrigger asChild>
-    <div class="hidden"></div>
+  <AlertDialogTrigger>
+    {#snippet child({ props })}
+      <div {...props} class="hidden"></div>
+    {/snippet}
   </AlertDialogTrigger>
   <AlertDialogContent class="min-w-[600px]">
     <div class="flex flex-row">

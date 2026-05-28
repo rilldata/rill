@@ -1,20 +1,36 @@
 <script lang="ts">
-  import type { V1BillingPlan } from "@rilldata/web-admin/client";
-  import ContactUs from "@rilldata/web-admin/features/billing/ContactUs.svelte";
-  import PlanQuotas from "@rilldata/web-admin/features/billing/plans/PlanQuotas.svelte";
-  import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
+  import PlanContainer from "@rilldata/web-admin/features/billing/plans/PlanContainer.svelte";
 
-  export let organization: string;
-  export let plan: V1BillingPlan;
+  let { managed = false }: { managed?: boolean } = $props();
+
+  function handleContactSales() {
+    window.Pylon("show");
+  }
 </script>
 
-<SettingsContainer title={plan?.displayName}>
-  <div slot="body">
-    <div>You’re currently on a custom contract.</div>
-    <PlanQuotas {organization} />
-  </div>
-  <svelte:fragment slot="contact">
-    <span>To make changes to your contract,</span>
-    <ContactUs variant="enterprise" />
-  </svelte:fragment>
-</SettingsContainer>
+<PlanContainer
+  badge={managed ? "Managed" : "Enterprise"}
+  description="Custom contract{managed ? ' · Fully managed' : ''}"
+>
+  {#snippet action()}
+    <button class="contact-us-btn" onclick={handleContactSales}>
+      Contact us
+    </button>
+  {/snippet}
+
+  <p class="text-sm text-fg-tertiary mt-4 pb-4">
+    Fully managed slots, dedicated CSM, white-label capabilities, and custom
+    SLAs. Contact your CSM for contract details or changes.
+  </p>
+</PlanContainer>
+
+<style lang="postcss">
+  .contact-us-btn {
+    @apply text-sm font-medium text-primary-600 border border-primary-500 px-4 py-2 cursor-pointer bg-white rounded-none;
+    height: 36px;
+  }
+
+  .contact-us-btn:hover {
+    @apply bg-primary-50;
+  }
+</style>

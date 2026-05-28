@@ -23,8 +23,8 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 				name = args[0]
 			}
 
-			if !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
-				name, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
+			if name == "" {
+				name, err = ch.InferProjectName(cmd.Context(), path, "use --project to specify the name")
 				if err != nil {
 					return err
 				}

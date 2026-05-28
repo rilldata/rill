@@ -45,7 +45,7 @@ func (n noop) DeleteCustomer(ctx context.Context, customerID string) error {
 	return nil
 }
 
-func (n noop) GetBillingPortalURL(ctx context.Context, customerID, returnURL string) (string, error) {
+func (n noop) GetBillingPortalURL(ctx context.Context, customerID, returnURL string, setup bool) (string, error) {
 	return "", nil
 }
 

@@ -1,47 +1,54 @@
 <script lang="ts">
-  import { onDestroy } from "svelte";
-  import { get } from "svelte/store";
-  import type { TimeSeriesPoint, HoverState } from "./types";
-  import {
-    computeChartConfig,
-    computeYExtent,
-    computeNiceYExtent,
-    computeXTickIndices,
-  } from "./scales";
-  import { EMPTY_HOVER } from "./interactions";
-  import { ScrubController } from "./ScrubController";
-  import TimeSeriesChart from "@rilldata/web-common/components/time-series-chart/TimeSeriesChart.svelte";
   import BarChart from "@rilldata/web-common/components/time-series-chart/BarChart.svelte";
-  import MeasureChartTooltip from "./MeasureChartTooltip.svelte";
-  import MeasureChartHoverTooltip from "./MeasureChartHoverTooltip.svelte";
-  import MeasureChartScrub from "./MeasureChartScrub.svelte";
-  import MeasurePan from "./MeasurePan.svelte";
-  import ExplainButton from "./ExplainButton.svelte";
-  import MeasureChartPointIndicator from "./MeasureChartPointIndicator.svelte";
+  import TimeSeriesChart from "@rilldata/web-common/components/time-series-chart/TimeSeriesChart.svelte";
+  import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
+  import type { Annotation } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/annotation-utils";
+  import { qualitativeColorsArray } from "@rilldata/web-common/features/themes/palette-store";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
-  import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
+  import { formatGrainBucket } from "@rilldata/web-common/lib/time/ranges/formatter";
+  import type {
+    MetricsViewSpecMeasure,
+    V1TimeGrain,
+  } from "@rilldata/web-common/runtime-client";
   import { scaleLinear } from "d3-scale";
-  import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import type { Interval } from "luxon";
   import { DateTime } from "luxon";
-  import { groupAnnotations } from "./annotation-utils";
-  import type { Annotation } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/annotation-utils";
-  import { AnnotationPopoverController } from "./AnnotationPopoverController";
-  import MeasureChartGrid from "./MeasureChartGrid.svelte";
-  import MeasureChartAnnotationMarkers from "./MeasureChartAnnotationMarkers.svelte";
-  import MeasureChartAnnotationPopover from "./MeasureChartAnnotationPopover.svelte";
+  import { onDestroy } from "svelte";
+  import { get } from "svelte/store";
   import { measureSelection } from "../measure-selection/measure-selection";
-  import { formatGrainBucket } from "@rilldata/web-common/lib/time/ranges/formatter";
-  import { snapIndex, dateToIndex } from "./utils";
-  import { hoverIndex } from "./hover-index";
+  import { groupAnnotations } from "./annotation-utils";
+  import { AnnotationPopoverController } from "./AnnotationPopoverController";
   import {
     buildChartSeries,
-    determineMode,
     computeTooltipDelta,
+    determineMode,
   } from "./chart-series";
-  import { X_PAD } from "./scales";
   import ComparisonTooltip from "./ComparisonTooltip.svelte";
-  import type { DimensionSeriesData } from "./types";
+  import ExplainButton from "./ExplainButton.svelte";
+  import { hoverIndex } from "./hover-index";
+  import { EMPTY_HOVER } from "./interactions";
+  import MeasureChartAnnotationMarkers from "./MeasureChartAnnotationMarkers.svelte";
+  import MeasureChartAnnotationPopover from "./MeasureChartAnnotationPopover.svelte";
+  import MeasureChartGrid from "./MeasureChartGrid.svelte";
+  import MeasureChartHoverTooltip from "./MeasureChartHoverTooltip.svelte";
+  import MeasureChartPointIndicator from "./MeasureChartPointIndicator.svelte";
+  import MeasureChartScrub from "./MeasureChartScrub.svelte";
+  import MeasureChartTooltip from "./MeasureChartTooltip.svelte";
+  import MeasurePan from "./MeasurePan.svelte";
+  import {
+    computeChartConfig,
+    computeNiceYExtent,
+    computeXTickIndices,
+    computeYExtent,
+    X_PAD,
+  } from "./scales";
+  import { ScrubController } from "./ScrubController";
+  import type {
+    DimensionSeriesData,
+    HoverState,
+    TimeSeriesPoint,
+  } from "./types";
+  import { dateToIndex, formatUniqueTickLabels, snapIndex } from "./utils";
 
   const chartId = Math.random().toString(36).slice(2, 11);
   const CLICK_THRESHOLD_PX = 4;
@@ -69,15 +76,19 @@
       }) => void)
     | undefined;
   export let onScrubClear: (() => void) | undefined;
-  export let scrubController: ScrubController;
+  export let scrubController: ScrubController | undefined = undefined;
   export let metricsViewName: string;
   export let connectNulls: boolean = true;
+  export let dynamicYAxis: boolean = false;
+  export let tddChartType: TDDChart = TDDChart.DEFAULT;
 
   const annotationPopover = new AnnotationPopoverController();
   const hoveredAnnotationGroup = annotationPopover.hoveredGroup;
   const selMeasure = measureSelection.measure;
   const selStart = measureSelection.start;
   const selEnd = measureSelection.end;
+
+  $: lowerIsBetter = measure?.lowerIsBetter ?? false;
 
   let clientWidth = 425;
   let mouseDownX: number | null = null;
@@ -96,8 +107,7 @@
   $: config = computeChartConfig(clientWidth, height, showTimeDimensionDetail);
   $: pb = config.plotBounds;
 
-  // Chart series & mode
-  $: mode = determineMode(data);
+  $: mode = determineMode(tddChartType, data);
   $: chartSeries = buildChartSeries(data, dimensionData, showComparison);
   $: barSeries =
     mode === "bar" && showComparison && chartSeries.length === 2
@@ -106,7 +116,11 @@
 
   // Y extent & scales
   $: yRawExtent = computeYExtent(data, dimensionData, showComparison);
-  $: [yMin, yMax] = computeNiceYExtent(yRawExtent[0], yRawExtent[1]);
+  $: [yMin, yMax] = computeNiceYExtent(
+    yRawExtent[0],
+    yRawExtent[1],
+    dynamicYAxis ? { includeZero: false, paddingFactor: 1.2 } : undefined,
+  );
 
   $: dataLastIndex = Math.max(0, data.length - 1);
   $: barSlotWidth = pb.width / Math.max(1, data.length);
@@ -127,12 +141,12 @@
   $: xTickIndices = computeXTickIndices(mode, data.length);
 
   // Keep scrub controller in sync with data length
-  $: scrubController.setDataLength(data.length);
+  $: scrubController?.setDataLength(data.length);
 
   // Subscribe to scrub state from controller for rendering
-  $: scrubStateStore = scrubController.state;
+  $: scrubStateStore = scrubController?.state;
   $: currentScrubState = $scrubStateStore;
-  $: isScrubbing = currentScrubState.isScrubbing;
+  $: isScrubbing = Boolean(currentScrubState?.isScrubbing);
 
   // Scrub indices: use local (active) state while scrubbing, external (URL) state otherwise
   $: externalScrubStartIndex = chartScrubInterval
@@ -141,8 +155,8 @@
   $: externalScrubEndIndex = chartScrubInterval
     ? dateToIndex(data, chartScrubInterval.end.toMillis())
     : null;
-  $: scrubStartIndex = currentScrubState.startIndex ?? externalScrubStartIndex;
-  $: scrubEndIndex = currentScrubState.endIndex ?? externalScrubEndIndex;
+  $: scrubStartIndex = currentScrubState?.startIndex ?? externalScrubStartIndex;
+  $: scrubEndIndex = currentScrubState?.endIndex ?? externalScrubEndIndex;
   $: hasScrubSelection = scrubStartIndex !== null && scrubEndIndex !== null;
 
   // Hover state
@@ -164,15 +178,21 @@
 
   $: hoveredIndex = $hoverIndex?.start ?? -1;
   $: hoveredPoint = data[hoveredIndex] ?? null;
-  $: cursorStyle = scrubController.getCursorStyle(hoverState.screenX, xScale);
+  $: cursorStyle = scrubController?.getCursorStyle(hoverState.screenX, xScale);
 
   // Formatters
   $: measureFormatter = createMeasureValueFormatter(measure);
   $: valueFormatter = (value: number | null): string => {
-    if (value === null) return "\u2013";
+    if (value === null) return "no data";
     return measureFormatter(value);
   };
   $: axisFormatter = createMeasureValueFormatter(measure, "axis");
+  $: defaultFormatter = createMeasureValueFormatter(measure, "table");
+  $: yTickLabels = formatUniqueTickLabels(
+    yTicks,
+    axisFormatter,
+    defaultFormatter,
+  );
 
   // Annotations
   $: annotationGroups = groupAnnotations(
@@ -188,10 +208,12 @@
   $: dimTooltipEntries =
     isComparingDimension && hoveredIndex >= 0
       ? dimensionData
-          .map((dim) => ({
+          .map((dim, i) => ({
             label: dim.dimensionValue ?? "null",
             value: dim.data[hoveredIndex]?.value ?? null,
-            color: dim.color,
+            color:
+              $qualitativeColorsArray[i % $qualitativeColorsArray.length] ||
+              dim.color,
           }))
           .filter((e) => e.value !== null)
           .sort((a, b) => (b.value ?? 0) - (a.value ?? 0))
@@ -242,7 +264,7 @@
 
   function handleReset() {
     onScrubClear?.();
-    scrubController.reset();
+    scrubController?.reset();
   }
 
   function handleSvgMouseLeave() {
@@ -253,7 +275,7 @@
   }
 
   function handleMouseDown(e: MouseEvent) {
-    if (e.button !== 0) return;
+    if (!scrubController || e.button !== 0) return;
     mouseDownX = e.clientX;
     mouseDownY = e.clientY;
     const x = clampX(e.offsetX);
@@ -286,7 +308,7 @@
       const [start, end] = s < e ? [s, e] : [e, s];
       measureSelection.setRange(measureName, start, end);
     }
-    scrubController.reset();
+    scrubController?.reset();
   }
 
   function handlePointClick(offsetX: number) {
@@ -302,6 +324,8 @@
   }
 
   function handleMouseUp(e: MouseEvent) {
+    if (!scrubController) return;
+
     const wasClick =
       mouseDownX !== null &&
       mouseDownY !== null &&
@@ -361,7 +385,7 @@
 
     if (isOutside) {
       // Click outside selection clears it
-      scrubController.reset();
+      scrubController?.reset();
       onScrubClear?.();
       measureSelection.clear();
     } else if (measureName) {
@@ -387,7 +411,7 @@
     aria-label="Measure Chart for {measureName}"
     class="size w-full overflow-visible"
     height="{height}px"
-    on:mousemove={(e) => {
+    onmousemove={(e) => {
       const x = clampX(e.offsetX);
       const fractionalIndex = xScale.invert(x);
 
@@ -399,7 +423,7 @@
       };
 
       // Update scrub if dragging
-      if (get(scrubController.state).isScrubbing) {
+      if (scrubController && get(scrubController.state).isScrubbing) {
         scrubController.update(x, xScale);
       }
 
@@ -407,10 +431,10 @@
       mousePageX = e.pageX;
       mousePageY = e.pageY;
     }}
-    on:mouseleave={handleSvgMouseLeave}
-    on:mousedown={handleMouseDown}
-    on:mouseup={handleMouseUp}
-    on:click={handleChartClick}
+    onmouseleave={handleSvgMouseLeave}
+    onmousedown={handleMouseDown}
+    onmouseup={handleMouseUp}
+    onclick={handleChartClick}
   >
     <!-- Clip chart body to plot area so lines/bars don't bleed into margins when overplotting -->
     <defs>
@@ -428,7 +452,7 @@
       plotWidth={pb.width}
       plotTop={pb.top}
       plotHeight={pb.height}
-      {axisFormatter}
+      {yTickLabels}
     />
 
     <!-- Chart body -->
@@ -495,6 +519,7 @@
             {tooltipComparisonValue}
             {tooltipDeltaLabel}
             {tooltipDeltaPositive}
+            {lowerIsBetter}
             {showDelta}
             {valueFormatter}
           />
@@ -509,7 +534,7 @@
         <MeasureChartPointIndicator
           x={singleSelectX}
           y={scales.y(selPt.value)}
-          zeroY={scales.y(0)}
+          zeroY={Math.max(Math.min(scales.y(0), pb.top + pb.height), pb.top)}
           selected
         />
       {/if}
@@ -560,6 +585,7 @@
       {dimTooltipEntries}
       deltaLabel={tooltipDeltaLabel}
       deltaPositive={tooltipDeltaPositive}
+      {lowerIsBetter}
       formatter={valueFormatter}
     />
   {/if}

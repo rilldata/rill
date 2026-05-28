@@ -30,6 +30,7 @@ export function compileSourceYAML(
     connectorInstanceName?: string;
     originalDriverName?: string;
     existingEnvBlob?: string;
+    outputConnector?: string;
   },
 ) {
   const schema = getConnectorSchema(connector.name ?? "");
@@ -60,6 +61,8 @@ export function compileSourceYAML(
       if (value === undefined) return false;
       // Filter out empty strings for optional fields
       if (typeof value === "string" && value.trim() === "") return false;
+      // Filter out file types. These should be uploaded and converted to paths.
+      if (value instanceof File || value instanceof FileList) return false;
       return true;
     })
     .map((key) => {
@@ -105,15 +108,25 @@ export function compileSourceYAML(
   const connectorName = opts?.connectorInstanceName || connector.name;
 
   const driverName = opts?.originalDriverName || connector.name || "duckdb";
+  const outputBlock = opts?.outputConnector
+    ? `\n\noutput:\n  connector: ${opts.outputConnector}`
+    : "";
   return (
     `${sourceModelFileTop(driverName)}\n\nconnector: ${connectorName}\n\n` +
     compiledKeyValues +
-    devSection
+    devSection +
+    outputBlock
   );
 }
 
-export function compileLocalFileSourceYAML(path: string) {
-  return `${sourceModelFileTop("local_file")}\n\nconnector: duckdb\nsql: "${buildDuckDbQuery(path)}"`;
+export function compileLocalFileSourceYAML(
+  path: string,
+  outputConnector?: string,
+) {
+  const outputBlock = outputConnector
+    ? `\n\noutput:\n  connector: ${outputConnector}`
+    : "";
+  return `${sourceModelFileTop("local_file")}\n\nconnector: duckdb\nsql: "${buildDuckDbQuery(path)}"${outputBlock}`;
 }
 
 export function buildDuckDbQuery(
@@ -222,15 +235,12 @@ export function maybeRewriteToDuckDb(
     case "gcs":
     case "azure":
       // Ensure DuckDB creates a temporary secret for the original connector.
-      if (secretConnectorName) {
-        if (connectorInstanceName) {
-          if (!formValues.create_secrets_from_connectors) {
-            formValues.create_secrets_from_connectors = secretConnectorName;
-          }
-        } else {
-          // When skipping connector creation, force the default driver name.
-          formValues.create_secrets_from_connectors = secretConnectorName;
-        }
+      if (
+        connectorInstanceName &&
+        secretConnectorName &&
+        !formValues.create_secrets_from_connectors
+      ) {
+        formValues.create_secrets_from_connectors = secretConnectorName;
       }
     // falls through to rewrite as DuckDB
     case "local_file":
@@ -243,10 +253,12 @@ export function maybeRewriteToDuckDb(
     case "https": {
       // HTTP sources are typically public; avoid surfacing secret wiring unless
       // the user is explicitly targeting a configured connector instance.
-      if (connectorInstanceName && secretConnectorName) {
-        if (!formValues.create_secrets_from_connectors) {
-          formValues.create_secrets_from_connectors = secretConnectorName;
-        }
+      if (
+        connectorInstanceName &&
+        secretConnectorName &&
+        !formValues.create_secrets_from_connectors
+      ) {
+        formValues.create_secrets_from_connectors = secretConnectorName;
       }
 
       connectorCopy.name = "duckdb";
@@ -269,6 +281,121 @@ export function maybeRewriteToDuckDb(
       delete formValues.table;
 
       break;
+    case "delta": {
+      connectorCopy.name = "duckdb";
+
+      // Determine which path field has a value
+      const deltaPath = (formValues.gcs_path ||
+        formValues.s3_path ||
+        formValues.azure_path ||
+        formValues.public_path ||
+        formValues.local_path) as string;
+      const deltaStorageType = formValues.storage_type as string;
+
+      // Set create_secrets_from_connectors for cloud storage backends
+      if (
+        deltaStorageType &&
+        deltaStorageType !== "local" &&
+        deltaStorageType !== "public"
+      ) {
+        formValues.create_secrets_from_connectors = deltaStorageType;
+      }
+
+      formValues.sql = `SELECT *\nFROM delta_scan('${deltaPath}')`;
+
+      // Clean up intermediate fields
+      delete formValues.storage_type;
+      delete formValues.gcs_path;
+      delete formValues.s3_path;
+      delete formValues.azure_path;
+      delete formValues.public_path;
+      delete formValues.local_path;
+      delete formValues.gcs_info;
+      delete formValues.s3_info;
+      delete formValues.azure_info;
+
+      break;
+    }
+    case "iceberg": {
+      connectorCopy.name = "duckdb";
+
+      // Determine which path field has a value
+      const icebergPath = (formValues.gcs_path ||
+        formValues.s3_path ||
+        formValues.azure_path ||
+        formValues.public_path ||
+        formValues.local_path) as string;
+      const storageType = formValues.storage_type as string;
+
+      // Set create_secrets_from_connectors for cloud storage backends
+      if (storageType && storageType !== "local" && storageType !== "public") {
+        formValues.create_secrets_from_connectors = storageType;
+      }
+
+      // Build iceberg_scan parameter list
+      const scanParams: string[] = [];
+
+      const allowMovedPaths = formValues.allow_moved_paths;
+      if (allowMovedPaths !== undefined && allowMovedPaths !== "") {
+        scanParams.push(`allow_moved_paths = ${allowMovedPaths}`);
+      }
+
+      const icebergVersion = formValues.version as string;
+      if (icebergVersion?.trim()) {
+        scanParams.push(`version = '${icebergVersion.trim()}'`);
+      }
+
+      const versionNameFormat = formValues.version_name_format as string;
+      if (versionNameFormat?.trim()) {
+        scanParams.push(`version_name_format = '${versionNameFormat.trim()}'`);
+      }
+
+      const metadataCompression =
+        formValues.metadata_compression_codec as string;
+      if (metadataCompression?.trim()) {
+        scanParams.push(
+          `metadata_compression_codec = '${metadataCompression.trim()}'`,
+        );
+      }
+
+      const snapshotFromId = formValues.snapshot_from_id as string;
+      if (snapshotFromId?.trim()) {
+        scanParams.push(`snapshot_from_id = ${snapshotFromId.trim()}`);
+      }
+
+      const snapshotFromTimestamp =
+        formValues.snapshot_from_timestamp as string;
+      if (snapshotFromTimestamp?.trim()) {
+        scanParams.push(
+          `snapshot_from_timestamp = '${snapshotFromTimestamp.trim()}'`,
+        );
+      }
+
+      const paramsStr = scanParams.length
+        ? `,\n  ${scanParams.join(",\n  ")}`
+        : "";
+
+      formValues.sql = `SELECT *\nFROM iceberg_scan('${icebergPath}'${paramsStr})`;
+
+      // Clean up intermediate fields
+      delete formValues.storage_type;
+      delete formValues.gcs_path;
+      delete formValues.s3_path;
+      delete formValues.azure_path;
+      delete formValues.public_path;
+      delete formValues.local_path;
+      delete formValues.gcs_info;
+      delete formValues.s3_info;
+      delete formValues.azure_info;
+      delete formValues.allow_moved_paths;
+      delete formValues.version;
+      delete formValues.version_name_format;
+      delete formValues.metadata_compression_codec;
+      delete formValues.snapshot_from_id;
+      delete formValues.snapshot_from_timestamp;
+
+      break;
+    }
   }
 
   return [connectorCopy, formValues];

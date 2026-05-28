@@ -1,22 +1,20 @@
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import {
   type CreateQueryOptions,
-  type QueryFunction,
   type QueryClient,
 } from "@tanstack/svelte-query";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   createRuntimeServiceGetExplore,
-  getRuntimeServiceGetExploreQueryKey,
-  runtimeServiceGetExplore,
   type V1ExploreSpec,
   type V1GetExploreResponse,
   type V1MetricsViewSpec,
   getRuntimeServiceGetExploreQueryOptions,
 } from "@rilldata/web-common/runtime-client";
 import type { ConnectError } from "@connectrpc/connect";
-import { error } from "@sveltejs/kit";
 import { derived, type Readable } from "svelte/store";
+
+export const PollIntervalWhenExploreReconciling = 1000;
+export const PollIntervalWhenExploreErrored = 5000;
 
 export function useExplore(
   client: RuntimeClient,
@@ -31,6 +29,36 @@ export function useExplore(
     { name: exploreName },
     {
       query: queryOptions,
+    },
+    queryClient,
+  );
+}
+
+/**
+ * Like `useExplore`, but with built-in polling that refetches while the
+ * explore is reconciling or errored.
+ */
+export function useExploreWithPolling(
+  client: RuntimeClient,
+  exploreName: string,
+  queryOptions?: Partial<
+    CreateQueryOptions<V1GetExploreResponse, ConnectError, V1GetExploreResponse>
+  >,
+  queryClient?: QueryClient,
+) {
+  return useExplore(
+    client,
+    exploreName,
+    {
+      refetchInterval: (query) => {
+        if (!query.state.data) return false;
+        if (isExploreReconcilingForFirstTime(query.state.data))
+          return PollIntervalWhenExploreReconciling;
+        if (isExploreErrored(query.state.data))
+          return PollIntervalWhenExploreErrored;
+        return false;
+      },
+      ...queryOptions,
     },
     queryClient,
   );
@@ -94,39 +122,23 @@ export function getExploreValidSpecQueryOptions(
   );
 }
 
-export async function fetchExploreSpec(
-  client: RuntimeClient,
-  exploreName: string,
+export function isExploreReconcilingForFirstTime(
+  exploreResponse: V1GetExploreResponse,
 ) {
-  const queryParams = {
-    name: exploreName,
-  };
-  const queryKey = getRuntimeServiceGetExploreQueryKey(
-    client.instanceId,
-    queryParams,
+  if (!exploreResponse) return undefined;
+  return (
+    !exploreResponse.explore?.explore?.state?.validSpec &&
+    !exploreResponse.explore?.meta?.reconcileError
   );
-  const queryFunction: QueryFunction<
-    Awaited<ReturnType<typeof runtimeServiceGetExplore>>
-  > = ({ signal }) => runtimeServiceGetExplore(client, queryParams, { signal });
+}
 
-  const response = await queryClient.fetchQuery({
-    queryFn: queryFunction,
-    queryKey,
-    staleTime: Infinity,
-  });
-
-  const exploreResource = response.explore;
-  const metricsViewResource = response.metricsView;
-
-  if (!exploreResource?.explore) {
-    throw error(404, "Explore not found");
-  }
-  if (!metricsViewResource?.metricsView) {
-    throw error(404, "Metrics view not found");
-  }
-
-  return {
-    explore: exploreResource,
-    metricsView: metricsViewResource,
-  };
+export function isExploreErrored(exploreResponse: V1GetExploreResponse) {
+  if (!exploreResponse) return undefined;
+  // Only consider errored when BOTH a reconcile error exists AND a validSpec
+  // does not exist. If there's a validSpec (which can persist from a previous
+  // spec), we serve that version of the dashboard to the user.
+  return (
+    !exploreResponse.explore?.explore?.state?.validSpec &&
+    !!exploreResponse.explore?.meta?.reconcileError
+  );
 }

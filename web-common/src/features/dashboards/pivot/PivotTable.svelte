@@ -10,6 +10,8 @@
     SHOW_MORE_BUTTON,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
   import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
+  import type { PivotClickSelectionState } from "@rilldata/web-common/features/dashboards/pivot/pivot-click-selection";
+  import type { PivotRowSelectionState } from "@rilldata/web-common/features/dashboards/pivot/pivot-row-selection";
   import {
     isElement,
     splitPivotChips,
@@ -22,13 +24,13 @@
     createSvelteTable,
     getCoreRowModel,
     getExpandedRowModel,
-  } from "@tanstack/svelte-table";
+  } from "tanstack-table-8-svelte-5";
   import {
     createVirtualizer,
     defaultRangeExtractor,
   } from "@tanstack/svelte-virtual";
   import { onMount } from "svelte";
-  import type { Readable } from "svelte/motion";
+  import type { Readable } from "svelte/store";
   import { derived } from "svelte/store";
   import NestedTable from "./NestedTable.svelte";
   import type {
@@ -44,6 +46,7 @@
   const HEADER_HEIGHT = 30;
 
   export let pivotDataStore: PivotDataStore;
+  export let widthScopeKey: string;
   export let config: Readable<PivotDataStoreConfig>;
   export let pivotState: Readable<PivotState>;
   export let canShowDataViewer = false;
@@ -61,6 +64,20 @@
   export let setPivotRowLimitForExpanded:
     | ((expandIndex: string, limit: number) => void)
     | undefined = undefined;
+  export let onCellClickToFilter:
+    | ((
+        rowId: string,
+        columnId: string,
+        isRowHeader: boolean,
+        rowData: PivotDataRow,
+      ) => void)
+    | undefined = undefined;
+  export let onColumnHeaderClick:
+    | ((dimensionPath: Record<string, string>) => void)
+    | undefined = undefined;
+  export let enableClickToFilter = false;
+  export let rowSelectionState: PivotRowSelectionState | undefined = undefined;
+  export let clickSelection: PivotClickSelectionState | undefined = undefined;
 
   const options: Readable<TableOptions<PivotDataRow>> = derived(
     [pivotDataStore, pivotState],
@@ -236,10 +253,27 @@
       return;
     }
 
-    if (rowHeader) {
+    if (rowHeader && !onCellClickToFilter) {
+      // Legacy expand behavior: when no filter callback, row headers expand/collapse.
+      // When onCellClickToFilter is present, expand is handled by the chevron icon
+      // in PivotExpandableCell (stopPropagation), so row header clicks filter instead.
       if (row.getCanExpand()) row.getToggleExpandedHandler()();
-    } else if (setPivotActiveCell && canShowDataViewer) {
-      setPivotActiveCell(rowId, columnId);
+    } else {
+      // Skip totals row for filtering
+      const isTotalsRow = totalsRow && rowId === "0";
+      if (isTotalsRow && onCellClickToFilter) {
+        return;
+      }
+
+      // Set active cell for Explore data viewer (if enabled)
+      if (setPivotActiveCell && canShowDataViewer) {
+        setPivotActiveCell(rowId, columnId);
+      }
+
+      // Apply click-to-filter (Canvas or future Explore)
+      if (onCellClickToFilter) {
+        onCellClickToFilter(rowId, columnId, rowHeader, row.original);
+      }
     }
   }
 
@@ -307,7 +341,7 @@
   style:--header-height="{HEADER_HEIGHT}px"
   style:--total-header-height="{totalHeaderHeight + 1}px"
   bind:this={containerRefElement}
-  on:scroll={() => handleScroll(containerRefElement)}
+  onscroll={() => handleScroll(containerRefElement)}
 >
   {#if isFlat}
     <FlatTable
@@ -321,7 +355,11 @@
       {after}
       {totalRowSize}
       {canShowDataViewer}
+      {enableClickToFilter}
       {hasMeasureContextColumns}
+      {rowSelectionState}
+      {clickSelection}
+      config={$config}
       activeCell={$pivotState.activeCell}
       {assembled}
       {onMouseMove}
@@ -334,6 +372,7 @@
       {headerGroups}
       {rows}
       {virtualRows}
+      {widthScopeKey}
       {before}
       {after}
       {timeDimension}
@@ -344,6 +383,10 @@
       {dataRows}
       {measures}
       {canShowDataViewer}
+      {enableClickToFilter}
+      {rowSelectionState}
+      {clickSelection}
+      {onColumnHeaderClick}
       activeCell={$pivotState.activeCell}
       {assembled}
       {scrollLeft}

@@ -4,6 +4,7 @@ import {
   type ConnectorDriverProperty,
   getRuntimeServiceGetFileQueryKey,
   runtimeServiceGetFile,
+  type V1GetFileResponse,
 } from "../../runtime-client";
 import type { RuntimeClient } from "../../runtime-client/v2";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
@@ -37,6 +38,9 @@ materialize: true
 connector: {{ connector }}
 
 sql: {{ sql }}{{ dev_section }}
+
+output:
+  connector: {{ output_connector }}
 `;
 }
 
@@ -172,7 +176,25 @@ export function compileConnectorYAML(
     connectorInstanceName?: string;
     secretKeys?: string[];
     stringKeys?: string[];
-    schema?: { properties?: Record<string, { "x-env-var-name"?: string }> };
+    schema?: {
+      properties?: Record<
+        string,
+        {
+          "x-env-var-name"?: string;
+          default?: string | number | boolean;
+          type?: string;
+          "x-yaml-value"?:
+            | string
+            | number
+            | boolean
+            | {
+                true?: string | number | boolean;
+                false?: string | number | boolean;
+              };
+          "x-advanced"?: boolean;
+        }
+      >;
+    };
     existingEnvBlob?: string;
   },
 ) {
@@ -222,11 +244,27 @@ driver: ${driverName}`;
         value === false
       )
         return false;
+      // For advanced fields, skip values that match the field's effective default.
+      const schemaProp = options?.schema?.properties?.[property.key];
+      if (schemaProp?.["x-advanced"]) {
+        const typeDefault =
+          schemaProp.type === "boolean"
+            ? false
+            : schemaProp.type === "number" || schemaProp.type === "integer"
+              ? 0
+              : schemaProp.type === "string"
+                ? ""
+                : undefined;
+        const effectiveDefault =
+          schemaProp.default !== undefined ? schemaProp.default : typeDefault;
+        if (effectiveDefault !== undefined && value === effectiveDefault)
+          return false;
+      }
       return true;
     })
     .map((property) => {
       const key = property.key as string;
-      const value = formValues[key] as string;
+      const value = formValues[key];
 
       if (key === "headers") {
         return formatHeadersAsYamlMap(
@@ -247,6 +285,22 @@ driver: ${driverName}`;
         return `${key}: "{{ .env.${envVarName} }}"`; // uses standard Go template syntax
       }
 
+      // For boolean fields with x-yaml-value, emit the mapped value instead of true/false.
+      // Object form maps both toggle states so each round-trips to YAML; scalar form
+      // emits only when the toggle is checked.
+      const schemaPropForMap = options?.schema?.properties?.[key];
+      const yamlValueRule = schemaPropForMap?.["x-yaml-value"];
+      if (
+        yamlValueRule !== null &&
+        typeof yamlValueRule === "object" &&
+        typeof value === "boolean"
+      ) {
+        const mapped = yamlValueRule[value ? "true" : "false"];
+        if (mapped !== undefined) return `${key}: ${mapped}`;
+      } else if (yamlValueRule !== undefined && value === true) {
+        return `${key}: ${yamlValueRule}`;
+      }
+
       const isStringProperty = stringPropertyKeys.includes(key);
       if (isStringProperty) {
         return `${key}: "${value}"`;
@@ -259,6 +313,47 @@ driver: ${driverName}`;
 
   // Return the compiled YAML
   return `${topOfFile}\n` + compiledKeyValues;
+}
+
+const EnvTemplateRegex = /{{\s*\.env\.([^.\s]+)\s*}}/g;
+
+export function getEnvVarsFromConnectorYAML(yaml: string) {
+  const envVars: string[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = EnvTemplateRegex.exec(yaml)) !== null) {
+    envVars.push(match[1]);
+  }
+  return envVars;
+}
+
+export async function unsetResourceEnvVars(
+  runtimeClient: RuntimeClient,
+  queryClient: QueryClient,
+  yaml: string,
+): Promise<[string, boolean]> {
+  let envBlob: V1GetFileResponse | undefined = undefined;
+  try {
+    envBlob = await queryClient.fetchQuery({
+      queryKey: getRuntimeServiceGetFileQueryKey(runtimeClient.instanceId, {
+        path: ".env",
+      }),
+      queryFn: () => runtimeServiceGetFile(runtimeClient, { path: ".env" }),
+    });
+  } catch (error) {
+    if (error.message?.includes("no such file or directory")) {
+      return ["", false];
+    }
+    throw error;
+  }
+
+  // Get the existing env and remove the resource's env vars
+  let blob = envBlob?.blob ?? "";
+  const envVars = getEnvVarsFromConnectorYAML(yaml);
+  envVars.forEach((envVar) => {
+    blob = deleteEnvVariable(blob, envVar);
+  });
+
+  return [blob, envVars.length > 0];
 }
 
 export async function updateDotEnvWithSecrets(
@@ -549,6 +644,18 @@ export function replaceOlapConnectorInYAML(
   }
 }
 
+export function maybeUnsetOlapConnectorInYaml(
+  blob: string,
+  connectorName: string,
+): [boolean, string] {
+  const olapConnectorRegex = new RegExp(
+    `^\\s*olap_connector:\\s+${connectorName}\\s*$`,
+    "m",
+  );
+  if (!olapConnectorRegex.test(blob)) return [false, blob];
+  return [true, blob.replace(olapConnectorRegex, "")];
+}
+
 export async function updateRillYAMLWithAiConnector(
   client: RuntimeClient,
   queryClient: QueryClient,
@@ -627,6 +734,16 @@ export async function createYamlModelFromTable(
   // Use the sufficiently qualified table name directly
   const selectStatement = `select * from ${sufficientlyQualifiedTableName}`;
 
+  // Get default OLAP connector for the output
+  const runtimeInstance = await queryClient.fetchQuery({
+    queryKey: getRuntimeServiceGetInstanceQueryKey(client.instanceId, {}),
+    queryFn: () => runtimeServiceGetInstance(client, { sensitive: true }),
+  });
+  if (!runtimeInstance) {
+    throw new Error(`Could not find runtime instance ${client.instanceId}`);
+  }
+  const defaultOLAP = runtimeInstance?.instance?.olapConnector || "duckdb";
+
   // NOTE: Redshift does not support LIMIT clauses in its UNLOAD data exports.
   const shouldIncludeDevSection = driverName !== "redshift";
   const devSection = shouldIncludeDevSection
@@ -636,7 +753,8 @@ export async function createYamlModelFromTable(
   const yamlContent = yamlModelTemplate(driverName)
     .replace("{{ connector }}", connector)
     .replace(/{{ sql }}/g, selectStatement)
-    .replace("{{ dev_section }}", devSection);
+    .replace("{{ dev_section }}", devSection)
+    .replace("{{ output_connector }}", defaultOLAP);
 
   // Write the YAML file
   await runtimeServicePutFile(client, {
@@ -681,23 +799,6 @@ export async function createSqlModelFromTable(
   }
   const driverName = analyzedConnector.driver?.name as string;
 
-  // Determine whether the connector is the default OLAP connector
-  const runtimeInstanceQueryKey = getRuntimeServiceGetInstanceQueryKey(
-    client.instanceId,
-    {},
-  );
-  const runtimeInstanceQueryFn = async () =>
-    runtimeServiceGetInstance(client, { sensitive: true });
-  const runtimeInstance = await queryClient.fetchQuery({
-    queryKey: runtimeInstanceQueryKey,
-    queryFn: runtimeInstanceQueryFn,
-  });
-  if (!runtimeInstance) {
-    throw new Error(`Could not find runtime instance ${client.instanceId}`);
-  }
-  const isDefaultOLAPConnector =
-    runtimeInstance?.instance?.olapConnector === connector;
-
   // Get new model name
   const allNames = [
     ...fileArtifacts.getNamesForKind(ResourceKind.Source),
@@ -714,9 +815,10 @@ export async function createSqlModelFromTable(
     table,
   );
 
-  // Create model
+  // Create model — OLAP models use the same connector for both source and output
   const topComments = `-- Model SQL\n-- Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/${driverName}`;
   const connectorLine = `-- @connector: ${connector}`;
+  const outputConnectorLine = `-- @output.connector: ${connector}`;
   const selectStatement = isNonStandardIdentifier(
     sufficientlyQualifiedTableName,
   )
@@ -725,10 +827,8 @@ export async function createSqlModelFromTable(
   const devLimit = "{{ if dev }} limit 100000 {{ end}}";
 
   let modelSQL = `${topComments}\n`;
-
-  if (!isDefaultOLAPConnector) {
-    modelSQL += `${connectorLine}\n`;
-  }
+  modelSQL += `${connectorLine}\n`;
+  modelSQL += `${outputConnectorLine}\n`;
 
   modelSQL += `\n${selectStatement}`;
 

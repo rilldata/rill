@@ -1,12 +1,10 @@
 import { expect, type Page } from "@playwright/test";
-import { test } from "../setup/base";
-import { gotoNavEntry } from "../utils/waitHelpers";
-import { waitForReconciliation } from "../utils/wait-for-reconciliation";
-import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
 import { formatGrainBucket } from "@rilldata/web-common/lib/time/ranges/formatter";
-import { DateTime } from "luxon";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
-import axios from "axios";
+import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
+import { DateTime } from "luxon";
+import { test } from "../setup/base";
+import { waitForReconciliation } from "../utils/wait-for-reconciliation";
 
 // Annotation timestamps as they'll be serialized from DuckDB (UTC).
 // All annotations that may be visible at day grain in "Last 7 days":
@@ -25,100 +23,6 @@ const HOUR_ANNOTATION_TIMES = [
   "2022-03-30T06:00:00Z", // Hour E
   "2022-03-30T14:00:00Z", // Hour F
 ];
-
-const ANNOTATION_FILES: { path: string; blob: string }[] = [
-  {
-    path: "models/AdBids_point_annotations.sql",
-    blob: [
-      "select TIMESTAMP '2022-03-24' as time, 'Point annotation A' as description",
-      "union all",
-      "select TIMESTAMP '2022-03-26' as time, 'Point annotation B' as description",
-      "union all",
-      "select TIMESTAMP '2022-03-27' as time, 'Point annotation C' as description",
-      "union all",
-      "select TIMESTAMP '2022-03-28' as time, 'Point annotation D' as description",
-    ].join("\n"),
-  },
-  {
-    path: "models/AdBids_range_annotations.sql",
-    blob: [
-      "select TIMESTAMP '2022-03-25' as time,",
-      "       TIMESTAMP '2022-03-27' as time_end,",
-      "       'Range annotation C' as description",
-    ].join("\n"),
-  },
-  {
-    path: "models/AdBids_hour_annotations.sql",
-    blob: [
-      "select TIMESTAMP '2022-03-30 06:00:00' as time, 'Hour annotation E' as description",
-      "union all",
-      "select TIMESTAMP '2022-03-30 14:00:00' as time, 'Hour annotation F' as description",
-    ].join("\n"),
-  },
-];
-
-const METRICS_YAML_WITH_ANNOTATIONS = `# Metrics view YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/metrics-views
-
-version: 1
-type: metrics_view
-
-display_name: Adbids
-table: AdBids_model
-timeseries: timestamp
-
-dimensions:
-  - name: publisher
-    display_name: Publisher
-    column: publisher
-  - name: domain
-    display_name: Domain
-    column: domain
-  - name: timestamp
-    display_name: Timestamp
-    column: timestamp
-    type: time
-  - name: offset_timestamp
-    display_name: Offset Timestamp
-    column: offset_timestamp
-    type: time
-
-measures:
-  - name: total_records
-    display_name: Total records
-    expression: COUNT(*)
-    description: ""
-    format_preset: humanize
-  - name: bid_price_sum
-    display_name: Sum of Bid Price
-    expression: SUM(bid_price)
-    description: ""
-    format_preset: humanize
-
-annotations:
-  - model: AdBids_point_annotations
-    measures: ['total_records']
-  - model: AdBids_range_annotations
-    measures: ['total_records']
-  - model: AdBids_hour_annotations
-    measures: ['total_records']
-`;
-
-// Write annotation models + updated metrics YAML via the runtime API.
-async function installAnnotations(page: Page) {
-  const base = new URL(page.url()).origin;
-  const putFile = (path: string, blob: string) =>
-    axios.post(`${base}/v1/instances/default/files/entry`, {
-      path,
-      blob,
-      create: true,
-    });
-
-  for (const f of ANNOTATION_FILES) {
-    await putFile(f.path, f.blob);
-  }
-  await putFile("metrics/AdBids_metrics.yaml", METRICS_YAML_WITH_ANNOTATIONS);
-}
 
 // The app sets Settings.defaultLocale = "en" globally, so chart labels are
 // always English regardless of the browser's navigator.language.
@@ -139,18 +43,6 @@ function expectedDates(
 }
 
 async function setupDashboard(page: Page, dashboardTZ: string) {
-  await page.getByLabel("/dashboards").click();
-  await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
-
-  // Wait for the base project to finish reconciling
-  await expect(
-    page.getByRole("button", { name: /Total records/ }).first(),
-  ).toBeVisible({ timeout: 30_000 });
-
-  // Write annotation files while still in the editor view. This triggers
-  // re-reconciliation in the background.
-  await installAnnotations(page);
-
   // Wait for the runtime to finish reconciling the updated metrics view
   // with the new annotations before navigating to the explore.
   await waitForReconciliation(page);
@@ -173,8 +65,17 @@ async function setupDashboard(page: Page, dashboardTZ: string) {
 async function selectGrain(page: Page, grain: string) {
   const grainSelector = page.getByLabel("Select aggregation grain");
   await grainSelector.click();
-  await page.getByRole("menuitem", { name: grain, exact: true }).click();
+  await page
+    .getByRole("menuitemcheckbox", { name: grain, exact: true })
+    .click();
   await expect(grainSelector).toContainText(grain, { timeout: 5000 });
+}
+
+// Normalize Unicode whitespace (e.g. narrow no-break space U+202F that
+// toLocaleString() may insert before AM/PM) to regular spaces so that
+// strings from Node.js and Chromium compare equal.
+function normalizeSpaces(s: string): string {
+  return s.replace(/[\s\u202F\u00A0]/g, " ");
 }
 
 /**
@@ -191,6 +92,8 @@ async function verifyDiamondDates(
     .getByLabel("total_records primary time label")
     .first();
 
+  const normalizedExpected = [...expected].map(normalizeSpaces);
+
   // Wait for the chart to settle by retrying until the first diamond's
   // date is in the expected set (handles time-range / grain re-render).
   await expect(async () => {
@@ -202,9 +105,11 @@ async function verifyDiamondDates(
     expect(dBox).toBeTruthy();
     await page.mouse.move(dBox!.x + dBox!.width / 2, centerY);
     await expect(dateReadout).toBeVisible();
-    const text = (await dateReadout.textContent())?.trim();
+    const text = normalizeSpaces(
+      (await dateReadout.textContent())?.trim() ?? "",
+    );
     expect(text).toBeTruthy();
-    expect([...expected]).toContain(text!);
+    expect(normalizedExpected).toContain(text);
   }).toPass({ timeout: 10_000 });
 
   // Chart is now in the correct state — verify all diamonds.
@@ -224,14 +129,15 @@ async function verifyDiamondDates(
     await page.mouse.move(dBox.x + dBox.width / 2, centerY);
     await expect(dateReadout).toBeVisible({ timeout: 2000 });
 
-    const dateText = (await dateReadout.textContent())?.trim();
+    const dateText = normalizeSpaces(
+      (await dateReadout.textContent())?.trim() ?? "",
+    );
     expect(dateText).toBeTruthy();
     expect(
-      [...expected],
-
+      normalizedExpected,
       `Diamond ${i} date "${dateText}" not in expected set`,
-    ).toContain(dateText!);
-    matchedDates.push(dateText!);
+    ).toContain(dateText);
+    matchedDates.push(dateText);
   }
 
   expect(matchedDates.length).toBeGreaterThanOrEqual(1);
@@ -246,9 +152,11 @@ async function verifyDiamondDates(
 const DASHBOARD_TIMEZONES = ["UTC", "Asia/Kolkata", "America/Los_Angeles"];
 
 test.describe("annotations (rendering)", () => {
-  test.use({ project: "AdBids", timezoneId: "UTC", locale: "en-US" });
-  // Extra time for installAnnotations (file writes + reconciliation).
-  test.setTimeout(60_000);
+  test.use({
+    project: "AdBidsAnnotations",
+    timezoneId: "UTC",
+    locale: "en-US",
+  });
 
   for (const dashboardTZ of DASHBOARD_TIMEZONES) {
     test.describe(`dashboard: ${dashboardTZ}`, () => {
@@ -395,10 +303,12 @@ const INDEPENDENCE_CONFIGS = [
 for (const sys of INDEPENDENCE_CONFIGS) {
   test.describe(`annotations system TZ independence (system: ${sys.systemTZ})`, () => {
     test.use({
-      project: "AdBids",
+      project: "AdBidsAnnotations",
       timezoneId: sys.systemTZ,
       locale: sys.locale,
     });
+    // Extra time for installAnnotations (file writes + reconciliation).
+    test.setTimeout(60_000);
 
     test("day-level annotations match UTC baseline (dashboard: America/Los_Angeles)", async ({
       page,

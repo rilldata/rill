@@ -4,6 +4,7 @@
     SortDirection,
     SortType,
   } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
+  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -14,16 +15,18 @@
   import { onDestroy } from "svelte";
   import TDDHeader from "./TDDHeader.svelte";
   import TDDTable from "./TDDTable.svelte";
+  import { useTimeDimensionDataStore } from "./time-dimension-data-store";
   import {
-    tableInteractionStore,
-    useTimeDimensionDataStore,
-  } from "./time-dimension-data-store";
-  import { hoverIndex } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/hover-index";
+    chartHoverStore,
+    hoverIndex,
+  } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/hover-index";
   import type { TDDComparison, TableData } from "./types";
 
   export let exploreName: string;
   export let expandedMeasureName: string;
   export let hideStartPivotButton = false;
+
+  $: isEmbedded = EmbedStore.isEmbedded();
 
   const stateManagers = getStateManagers();
   const {
@@ -101,7 +104,7 @@
   function highlightCell(x: number | undefined, y: number | undefined) {
     if (x === undefined || y === undefined) {
       hoverIndex.clear("table");
-      tableInteractionStore.set({
+      chartHoverStore.set({
         dimensionValue: undefined,
         time: undefined,
       });
@@ -115,7 +118,7 @@
     }
 
     hoverIndex.set(x, "table");
-    tableInteractionStore.set({
+    chartHoverStore.set({
       dimensionValue,
       time: time,
     });
@@ -183,14 +186,14 @@
 
   onDestroy(() => {
     hoverIndex.clear("table");
-    tableInteractionStore.set({
+    chartHoverStore.set({
       dimensionValue: undefined,
       time: undefined,
     });
   });
 </script>
 
-<svelte:window on:keydown={handleKeyDown} />
+<svelte:window onkeydown={handleKeyDown} />
 
 <div
   class="h-full w-full flex flex-col border-t bg-surface-base"
@@ -218,13 +221,15 @@
           We encountered an error while loading the data. Please try refreshing
           the page.
         </div>
-        <div class="text-fg-secondary">
-          If the issue persists, please contact us on <a
-            target="_blank"
-            rel="noopener noreferrer"
-            href="https://discord.gg/2ubRfjC7Rh">Discord</a
-          >.
-        </div>
+        {#if !isEmbedded}
+          <div class="text-fg-secondary">
+            If the issue persists, please contact us on <a
+              target="_blank"
+              rel="noopener noreferrer"
+              href="https://discord.gg/2ubRfjC7Rh">Discord</a
+            >.
+          </div>
+        {/if}
       </div>
     </div>
   {:else if formattedData && comparisonCopy && measure}
