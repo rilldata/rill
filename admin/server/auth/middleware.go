@@ -98,18 +98,22 @@ func (a *Authenticator) CookieRefreshMiddleware(next http.Handler) http.Handler 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sess := a.cookies.Get(r, cookieName)
 		if authToken, ok := sess.Values[cookieFieldAccessToken].(string); ok && authToken != "" {
-			// Re-save the cookie to refresh its expiration
+			validatedToken, err := a.admin.ValidateAuthToken(r.Context(), authToken)
+			if err != nil {
+				// Token validation failures can be due to expiry or transient context issues.
+				// Clear the cookie and continue down the chain rather than failing the request.
+				delete(sess.Values, cookieFieldAccessToken)
+				a.logger.Warn("failed to validate auth token", zap.Error(err), observability.ZapCtx(r.Context()))
+			} else {
+				if err := a.admin.ExtendBrowserSessionAuthToken(r.Context(), validatedToken, browserSessionTTL, browserSessionTTLRefreshThreshold); err != nil {
+					a.logger.Warn("failed to extend browser session auth token TTL", zap.Error(err), observability.ZapCtx(r.Context()))
+				}
+			}
+
+			// Re-save the cookie to refresh its expiration after successful validation.
 			if err := sess.Save(r, w); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
-			}
-			validatedToken, err := a.admin.ValidateAuthToken(r.Context(), authToken)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			if err := a.admin.ExtendBrowserSessionAuthToken(r.Context(), validatedToken, browserSessionTTL, browserSessionTTLRefreshThreshold); err != nil {
-				a.logger.Info("failed to extend browser session auth token TTL", zap.Error(err), observability.ZapCtx(r.Context()))
 			}
 		}
 		next.ServeHTTP(w, r)
