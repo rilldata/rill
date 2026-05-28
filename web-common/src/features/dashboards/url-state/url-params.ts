@@ -59,3 +59,15 @@ export const ExploreStateKeyToURLParamMap: Partial<
 
   dynamicYAxisScale: ExploreStateURLParams.DynamicYAxisScale,
 };
+
+export const KnownExploreParams = new Set(Object.values(ExploreStateURLParams));
+
+export function cleanNonExploreParams(params: URLSearchParams) {
+  const cleanParams = new URLSearchParams();
+  for (const [key, value] of params.entries()) {
+    if (KnownExploreParams.has(key as ExploreStateURLParams)) {
+      cleanParams.set(key, value);
+    }
+  }
+  return cleanParams;
+}

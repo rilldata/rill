@@ -150,13 +150,16 @@
   $: dashboardsByTag = (() => {
     const map = new Map<string, typeof sortedVisualizations>();
     for (const r of sortedVisualizations) {
-      const tag = getPrimaryTag(r);
-      const bucket = map.get(tag) ?? [];
-      bucket.push(r);
-      map.set(tag, bucket);
+      const tags = getResourceTags(r);
+      tags.forEach((tag) => {
+        const bucket = map.get(tag) ?? [];
+        bucket.push(r);
+        map.set(tag, bucket);
+      });
     }
     return map;
   })();
+  $: console.log(dashboardsByTag, activeTag);
 
   function buildDashboardHref(
     resource: (typeof sortedVisualizations)[number],

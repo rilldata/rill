@@ -36,7 +36,7 @@
   {#if availableTags.length > 0}
     <DropdownMenu.Root bind:open={tagsOpen}>
       <DropdownMenu.Trigger
-        class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {tagsOpen
+        class="min-w-fit min-h-7 flex flex-row gap-1 items-center rounded-sm border bg-input {tagsOpen
           ? 'bg-gray-200'
           : 'hover:bg-surface-hover'} px-2 py-1"
       >

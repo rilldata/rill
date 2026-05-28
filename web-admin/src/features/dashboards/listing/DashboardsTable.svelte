@@ -225,25 +225,25 @@
 
     {#if $tagAsFolders && !isPreview}
       <!-- Folder mode: grouped by tag, all inside one bordered container -->
-      {#if tagGroups.length === 0}
-        <div class="text-center py-16 text-fg-secondary text-sm font-semibold">
-          {searchText
-            ? "No dashboards match your search"
-            : "You don't have any dashboards yet"}
-        </div>
-      {:else}
-        <div class="w-full border rounded-lg overflow-hidden divide-y">
-          {#each tagGroups as { tag, resources } (tag)}
-            <DashboardsTagFolder
-              {tag}
-              {resources}
-              {organization}
-              {project}
-              {isEmbedded}
-            />
-          {/each}
-        </div>
-      {/if}
+      <div class="w-full border rounded-lg overflow-hidden divide-y">
+        {#each tagGroups as { tag, resources } (tag)}
+          <DashboardsTagFolder
+            {tag}
+            {resources}
+            {organization}
+            {project}
+            {isEmbedded}
+          />
+        {:else}
+          <div
+            class="text-center py-16 text-fg-secondary text-sm font-semibold"
+          >
+            {searchText
+              ? "No dashboards match your search"
+              : "You don't have any dashboards yet"}
+          </div>
+        {/each}
+      </div>
     {:else}
       <!-- Flat mode: standard list -->
       <ResourceList
