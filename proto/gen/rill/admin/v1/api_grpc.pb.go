@@ -166,6 +166,8 @@ const (
 	AdminService_DeleteAlert_FullMethodName                            = "/rill.admin.v1.AdminService/DeleteAlert"
 	AdminService_GenerateAlertYAML_FullMethodName                      = "/rill.admin.v1.AdminService/GenerateAlertYAML"
 	AdminService_GetAlertYAML_FullMethodName                           = "/rill.admin.v1.AdminService/GetAlertYAML"
+	AdminService_GetPersonalFile_FullMethodName                        = "/rill.admin.v1.AdminService/GetPersonalFile"
+	AdminService_PutPersonalFile_FullMethodName                        = "/rill.admin.v1.AdminService/PutPersonalFile"
 	AdminService_GetBillingSubscription_FullMethodName                 = "/rill.admin.v1.AdminService/GetBillingSubscription"
 	AdminService_UpdateBillingSubscription_FullMethodName              = "/rill.admin.v1.AdminService/UpdateBillingSubscription"
 	AdminService_CancelBillingSubscription_FullMethodName              = "/rill.admin.v1.AdminService/CancelBillingSubscription"
@@ -502,6 +504,8 @@ type AdminServiceClient interface {
 	GenerateAlertYAML(ctx context.Context, in *GenerateAlertYAMLRequest, opts ...grpc.CallOption) (*GenerateAlertYAMLResponse, error)
 	// GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
 	GetAlertYAML(ctx context.Context, in *GetAlertYAMLRequest, opts ...grpc.CallOption) (*GetAlertYAMLResponse, error)
+	GetPersonalFile(ctx context.Context, in *GetPersonalFileRequest, opts ...grpc.CallOption) (*GetPersonalFileResponse, error)
+	PutPersonalFile(ctx context.Context, in *PutPersonalFileRequest, opts ...grpc.CallOption) (*PutPersonalFileResponse, error)
 	// GetBillingSubscription lists the subscription for the organization
 	GetBillingSubscription(ctx context.Context, in *GetBillingSubscriptionRequest, opts ...grpc.CallOption) (*GetBillingSubscriptionResponse, error)
 	// UpdateBillingSubscription updates the billing plan for the organization
@@ -2004,6 +2008,26 @@ func (c *adminServiceClient) GetAlertYAML(ctx context.Context, in *GetAlertYAMLR
 	return out, nil
 }
 
+func (c *adminServiceClient) GetPersonalFile(ctx context.Context, in *GetPersonalFileRequest, opts ...grpc.CallOption) (*GetPersonalFileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetPersonalFileResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetPersonalFile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) PutPersonalFile(ctx context.Context, in *PutPersonalFileRequest, opts ...grpc.CallOption) (*PutPersonalFileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PutPersonalFileResponse)
+	err := c.cc.Invoke(ctx, AdminService_PutPersonalFile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) GetBillingSubscription(ctx context.Context, in *GetBillingSubscriptionRequest, opts ...grpc.CallOption) (*GetBillingSubscriptionResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetBillingSubscriptionResponse)
@@ -2455,6 +2479,8 @@ type AdminServiceServer interface {
 	GenerateAlertYAML(context.Context, *GenerateAlertYAMLRequest) (*GenerateAlertYAMLResponse, error)
 	// GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
 	GetAlertYAML(context.Context, *GetAlertYAMLRequest) (*GetAlertYAMLResponse, error)
+	GetPersonalFile(context.Context, *GetPersonalFileRequest) (*GetPersonalFileResponse, error)
+	PutPersonalFile(context.Context, *PutPersonalFileRequest) (*PutPersonalFileResponse, error)
 	// GetBillingSubscription lists the subscription for the organization
 	GetBillingSubscription(context.Context, *GetBillingSubscriptionRequest) (*GetBillingSubscriptionResponse, error)
 	// UpdateBillingSubscription updates the billing plan for the organization
@@ -2927,6 +2953,12 @@ func (UnimplementedAdminServiceServer) GenerateAlertYAML(context.Context, *Gener
 }
 func (UnimplementedAdminServiceServer) GetAlertYAML(context.Context, *GetAlertYAMLRequest) (*GetAlertYAMLResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAlertYAML not implemented")
+}
+func (UnimplementedAdminServiceServer) GetPersonalFile(context.Context, *GetPersonalFileRequest) (*GetPersonalFileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPersonalFile not implemented")
+}
+func (UnimplementedAdminServiceServer) PutPersonalFile(context.Context, *PutPersonalFileRequest) (*PutPersonalFileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PutPersonalFile not implemented")
 }
 func (UnimplementedAdminServiceServer) GetBillingSubscription(context.Context, *GetBillingSubscriptionRequest) (*GetBillingSubscriptionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetBillingSubscription not implemented")
@@ -5634,6 +5666,42 @@ func _AdminService_GetAlertYAML_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetPersonalFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPersonalFileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetPersonalFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetPersonalFile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetPersonalFile(ctx, req.(*GetPersonalFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_PutPersonalFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PutPersonalFileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).PutPersonalFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_PutPersonalFile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).PutPersonalFile(ctx, req.(*PutPersonalFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_GetBillingSubscription_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetBillingSubscriptionRequest)
 	if err := dec(in); err != nil {
@@ -6462,6 +6530,14 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetAlertYAML",
 			Handler:    _AdminService_GetAlertYAML_Handler,
+		},
+		{
+			MethodName: "GetPersonalFile",
+			Handler:    _AdminService_GetPersonalFile_Handler,
+		},
+		{
+			MethodName: "PutPersonalFile",
+			Handler:    _AdminService_PutPersonalFile_Handler,
 		},
 		{
 			MethodName: "GetBillingSubscription",

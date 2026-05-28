@@ -2004,6 +2004,63 @@ paths:
           in: path
           required: true
           type: string
+  /v1/orgs/{org}/projects/{project}/personal-file/{name}:
+    get:
+      operationId: AdminService_GetPersonalFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetPersonalFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+    post:
+      operationId: AdminService_PutPersonalFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1PutPersonalFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              yaml:
+                type: string
   /v1/orgs/{org}/projects/{project}/redeploy:
     post:
       summary: |-
@@ -5434,6 +5491,11 @@ definitions:
     properties:
       url:
         type: string
+  v1GetPersonalFileResponse:
+    type: object
+    properties:
+      yaml:
+        type: string
   v1GetProjectAccessRequestResponse:
     type: object
     properties:
@@ -6358,6 +6420,8 @@ definitions:
       nextPageToken:
         type: string
         description: Next page token for pagination.
+  v1PutPersonalFileResponse:
+    type: object
   v1Quotas:
     type: object
     properties:

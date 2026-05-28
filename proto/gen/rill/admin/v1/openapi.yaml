@@ -862,6 +862,11 @@ components:
                 url:
                     type: string
             type: object
+        v1GetPersonalFileResponse:
+            properties:
+                yaml:
+                    type: string
+            type: object
         v1GetProjectAccessRequestResponse:
             properties:
                 email:
@@ -1748,6 +1753,8 @@ components:
                 nextPageToken:
                     description: Next page token for pagination.
                     type: string
+            type: object
+        v1PutPersonalFileResponse:
             type: object
         v1Quotas:
             properties:
@@ -4155,6 +4162,79 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
+    /v1/orgs/{org}/projects/{project}/canvases/{name}/yaml:
+        get:
+            operationId: AdminService_GetPersonalFile
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: name
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetPersonalFileResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+        post:
+            operationId: AdminService_PutPersonalFile
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: name
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                yaml:
+                                    type: string
+                            type: object
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1PutPersonalFileResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
     /v1/orgs/{org}/projects/{project}/clone-credentials:
         get:
             operationId: AdminService_GetCloneCredentials

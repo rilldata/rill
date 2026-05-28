@@ -13,12 +13,8 @@ import {
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   V1ReconcileStatus,
-  getRuntimeServiceGetFileQueryKey,
-  runtimeServiceGetFile,
-  runtimeServicePutFile,
   type V1ParseError,
   type V1Resource,
   type V1ResourceName,
@@ -26,7 +22,7 @@ import {
   type V1GetResourceResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-import type { QueryClient, QueryFunction } from "@tanstack/svelte-query";
+import type { QueryClient } from "@tanstack/svelte-query";
 import {
   derived,
   get,
@@ -41,6 +37,7 @@ import {
 import { inferResourceKind } from "./infer-resource-kind";
 import { debounce } from "@rilldata/web-common/lib/create-debouncer";
 import { AsyncSaveState } from "./async-save-state";
+import type { FileIO } from "./file-io";
 import type { EditorSelection } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
 
@@ -105,16 +102,18 @@ export class FileArtifact {
 
   private editorCallback: (content: string) => void = () => {};
   private client: RuntimeClient;
+  private io: FileIO;
 
   // Last time the state of the resource `kind/name` was updated.
   // This is updated in watch-resources and is used there to avoid
   // unnecessary calls to GetResource API.
   lastStateUpdatedOn: string | undefined;
 
-  constructor(client: RuntimeClient, filePath: string) {
+  constructor(client: RuntimeClient, filePath: string, io: FileIO) {
     const [folderName, fileName] = splitFolderAndFileName(filePath);
 
     this.client = client;
+    this.io = io;
     this.path = filePath;
     this.folderName = folderName;
     this.fileName = fileName;
@@ -147,32 +146,8 @@ export class FileArtifact {
 
   fetchContent = async (invalidate = false) => {
     if (!this.client) return;
-    const instanceId = this.client.instanceId;
-    const queryParams = {
-      path: this.path,
-    };
-    const queryKey = getRuntimeServiceGetFileQueryKey(instanceId, queryParams);
 
-    if (invalidate) await queryClient.invalidateQueries({ queryKey });
-
-    const queryFn: QueryFunction<
-      Awaited<ReturnType<typeof runtimeServiceGetFile>>
-    > = ({ signal }) =>
-      runtimeServiceGetFile(this.client, queryParams, { signal });
-
-    let fetchedContent: string | undefined = undefined;
-
-    try {
-      const response = await queryClient.fetchQuery({
-        queryKey,
-        queryFn,
-        staleTime: Infinity,
-      });
-
-      fetchedContent = response.blob;
-    } catch (e) {
-      console.log("FETCH ERROR", e);
-    }
+    const fetchedContent = await this.io.read(this.path, invalidate);
 
     const currentRemoteContent = get(this.remoteContent);
     const editorContent = get(this.editorContent);
@@ -252,25 +227,11 @@ export class FileArtifact {
 
   private saveContent = async (blob: string) => {
     if (!this.client) return;
-    const instanceId = this.client.instanceId;
-
-    // Optimistically update the query
-    queryClient.setQueryData(
-      getRuntimeServiceGetFileQueryKey(instanceId, {
-        path: this.path,
-      }),
-      {
-        blob,
-      },
-    );
 
     try {
       const fileSavePromise = this.saveState.initiateSave();
 
-      await runtimeServicePutFile(this.client, {
-        path: this.path,
-        blob,
-      });
+      await this.io.write(this.path, blob);
 
       await fileSavePromise;
     } catch {

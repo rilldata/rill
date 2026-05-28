@@ -81,6 +81,7 @@ import type {
   AdminServiceListUsergroupsForOrganizationAndUserParams,
   AdminServiceProvisionBody,
   AdminServicePullVirtualRepoParams,
+  AdminServicePutPersonalFileBody,
   AdminServiceRedeployProjectParams,
   AdminServiceRequestProjectAccessBodyBody,
   AdminServiceRevokeAllUserAuthTokensParams,
@@ -162,6 +163,7 @@ import type {
   V1GetOrganizationNameForDomainResponse,
   V1GetOrganizationResponse,
   V1GetPaymentsPortalURLResponse,
+  V1GetPersonalFileResponse,
   V1GetProjectAccessRequestResponse,
   V1GetProjectByIDResponse,
   V1GetProjectMemberUserResponse,
@@ -211,6 +213,7 @@ import type {
   V1PingResponse,
   V1ProvisionResponse,
   V1PullVirtualRepoResponse,
+  V1PutPersonalFileResponse,
   V1RecordEventsRequest,
   V1RecordEventsResponse,
   V1RedeployProjectResponse,
@@ -7038,6 +7041,217 @@ export function createAdminServiceListUsergroupsForProjectAndUser<
   return query;
 }
 
+export const adminServiceGetPersonalFile = (
+  org: string,
+  project: string,
+  name: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetPersonalFileResponse>({
+    url: `/v1/orgs/${org}/projects/${project}/personal-file/${name}`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getAdminServiceGetPersonalFileQueryKey = (
+  org?: string,
+  project?: string,
+  name?: string,
+) => {
+  return [`/v1/orgs/${org}/projects/${project}/personal-file/${name}`] as const;
+};
+
+export const getAdminServiceGetPersonalFileQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceGetPersonalFile>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  project: string,
+  name: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetPersonalFile>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetPersonalFileQueryKey(org, project, name);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetPersonalFile>>
+  > = ({ signal }) => adminServiceGetPersonalFile(org, project, name, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(org && project && name),
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceGetPersonalFile>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceGetPersonalFileQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetPersonalFile>>
+>;
+export type AdminServiceGetPersonalFileQueryError = RpcStatus;
+
+export function createAdminServiceGetPersonalFile<
+  TData = Awaited<ReturnType<typeof adminServiceGetPersonalFile>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  project: string,
+  name: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetPersonalFile>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceGetPersonalFileQueryOptions(
+    org,
+    project,
+    name,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const adminServicePutPersonalFile = (
+  org: string,
+  project: string,
+  name: string,
+  adminServicePutPersonalFileBody: AdminServicePutPersonalFileBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1PutPersonalFileResponse>({
+    url: `/v1/orgs/${org}/projects/${project}/personal-file/${name}`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: adminServicePutPersonalFileBody,
+    signal,
+  });
+};
+
+export const getAdminServicePutPersonalFileMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServicePutPersonalFile>>,
+    TError,
+    {
+      org: string;
+      project: string;
+      name: string;
+      data: AdminServicePutPersonalFileBody;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServicePutPersonalFile>>,
+  TError,
+  {
+    org: string;
+    project: string;
+    name: string;
+    data: AdminServicePutPersonalFileBody;
+  },
+  TContext
+> => {
+  const mutationKey = ["adminServicePutPersonalFile"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServicePutPersonalFile>>,
+    {
+      org: string;
+      project: string;
+      name: string;
+      data: AdminServicePutPersonalFileBody;
+    }
+  > = (props) => {
+    const { org, project, name, data } = props ?? {};
+
+    return adminServicePutPersonalFile(org, project, name, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServicePutPersonalFileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServicePutPersonalFile>>
+>;
+export type AdminServicePutPersonalFileMutationBody =
+  AdminServicePutPersonalFileBody;
+export type AdminServicePutPersonalFileMutationError = RpcStatus;
+
+export const createAdminServicePutPersonalFile = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServicePutPersonalFile>>,
+      TError,
+      {
+        org: string;
+        project: string;
+        name: string;
+        data: AdminServicePutPersonalFileBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServicePutPersonalFile>>,
+  TError,
+  {
+    org: string;
+    project: string;
+    name: string;
+    data: AdminServicePutPersonalFileBody;
+  },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServicePutPersonalFileMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
 /**
  * @summary RedeployProject creates a new production deployment for a project.
 If the project currently has another production deployment, the old deployment will be deprovisioned.

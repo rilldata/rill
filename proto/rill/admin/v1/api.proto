@@ -1255,6 +1255,19 @@ service AdminService {
     };
   }
 
+  rpc GetPersonalFile(GetPersonalFileRequest) returns (GetPersonalFileResponse) {
+    option (google.api.http) = {
+      get: "/v1/orgs/{org}/projects/{project}/personal-file/{name}"
+    };
+  }
+
+  rpc PutPersonalFile(PutPersonalFileRequest) returns (PutPersonalFileResponse) {
+    option (google.api.http) = {
+      post: "/v1/orgs/{org}/projects/{project}/personal-file/{name}",
+      body: "*"
+    };
+  }
+
   // GetBillingSubscription lists the subscription for the organization
   rpc GetBillingSubscription(GetBillingSubscriptionRequest) returns (GetBillingSubscriptionResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/billing/subscriptions"};
@@ -3120,6 +3133,26 @@ message GetAlertYAMLRequest {
 
 message GetAlertYAMLResponse {
   string yaml = 1;
+}
+
+message GetPersonalFileRequest {
+  string org = 1;
+  string project = 2;
+  string name = 3;
+}
+
+message GetPersonalFileResponse {
+  string yaml = 1;
+}
+
+message PutPersonalFileRequest {
+  string org = 1;
+  string project = 2;
+  string name = 3;
+  string yaml = 4;
+}
+
+message PutPersonalFileResponse {
 }
 
 message GetBillingSubscriptionRequest {

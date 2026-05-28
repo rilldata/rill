@@ -11,6 +11,7 @@ import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { derived, get, writable } from "svelte/store";
 import { FileArtifact } from "./file-artifact";
+import { RuntimeFileIO } from "./file-io";
 
 class UnsavedFilesStore {
   private unsavedFiles = writable(new Set<string>());
@@ -38,6 +39,7 @@ export class FileArtifacts {
   private readonly artifacts: Map<string, FileArtifact> = new Map();
   readonly unsavedFiles = new UnsavedFilesStore();
   private client!: RuntimeClient;
+  private readonly io = new RuntimeFileIO();
 
   /**
    * Must be called synchronously (in the script block, not onMount)
@@ -47,6 +49,7 @@ export class FileArtifacts {
    */
   setClient(client: RuntimeClient) {
     this.client = client;
+    this.io.updateClient(client);
     for (const artifact of this.artifacts.values()) {
       artifact.updateClient(client);
     }
@@ -54,6 +57,7 @@ export class FileArtifacts {
 
   async init(client: RuntimeClient, queryClient: QueryClient) {
     this.client = client;
+    this.io.updateClient(client);
     const resources = await fetchResources(queryClient, client);
     for (const resource of resources) {
       switch (resource.meta?.name?.kind) {
@@ -108,7 +112,7 @@ export class FileArtifacts {
     let artifact = this.artifacts.get(filePath);
 
     if (!artifact) {
-      artifact = new FileArtifact(this.client, filePath);
+      artifact = new FileArtifact(this.client, filePath, this.io);
       this.artifacts.set(filePath, artifact);
     }
 

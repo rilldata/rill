@@ -14358,6 +14358,178 @@ export class GetAlertYAMLResponse extends Message<GetAlertYAMLResponse> {
 }
 
 /**
+ * @generated from message rill.admin.v1.GetPersonalFileRequest
+ */
+export class GetPersonalFileRequest extends Message<GetPersonalFileRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  /**
+   * @generated from field: string name = 3;
+   */
+  name = "";
+
+  constructor(data?: PartialMessage<GetPersonalFileRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetPersonalFileRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetPersonalFileRequest {
+    return new GetPersonalFileRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetPersonalFileRequest {
+    return new GetPersonalFileRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetPersonalFileRequest {
+    return new GetPersonalFileRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetPersonalFileRequest | PlainMessage<GetPersonalFileRequest> | undefined, b: GetPersonalFileRequest | PlainMessage<GetPersonalFileRequest> | undefined): boolean {
+    return proto3.util.equals(GetPersonalFileRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetPersonalFileResponse
+ */
+export class GetPersonalFileResponse extends Message<GetPersonalFileResponse> {
+  /**
+   * @generated from field: string yaml = 1;
+   */
+  yaml = "";
+
+  constructor(data?: PartialMessage<GetPersonalFileResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetPersonalFileResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "yaml", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetPersonalFileResponse {
+    return new GetPersonalFileResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetPersonalFileResponse {
+    return new GetPersonalFileResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetPersonalFileResponse {
+    return new GetPersonalFileResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetPersonalFileResponse | PlainMessage<GetPersonalFileResponse> | undefined, b: GetPersonalFileResponse | PlainMessage<GetPersonalFileResponse> | undefined): boolean {
+    return proto3.util.equals(GetPersonalFileResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.PutPersonalFileRequest
+ */
+export class PutPersonalFileRequest extends Message<PutPersonalFileRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  /**
+   * @generated from field: string name = 3;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string yaml = 4;
+   */
+  yaml = "";
+
+  constructor(data?: PartialMessage<PutPersonalFileRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.PutPersonalFileRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "yaml", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PutPersonalFileRequest {
+    return new PutPersonalFileRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PutPersonalFileRequest {
+    return new PutPersonalFileRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PutPersonalFileRequest {
+    return new PutPersonalFileRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: PutPersonalFileRequest | PlainMessage<PutPersonalFileRequest> | undefined, b: PutPersonalFileRequest | PlainMessage<PutPersonalFileRequest> | undefined): boolean {
+    return proto3.util.equals(PutPersonalFileRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.PutPersonalFileResponse
+ */
+export class PutPersonalFileResponse extends Message<PutPersonalFileResponse> {
+  constructor(data?: PartialMessage<PutPersonalFileResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.PutPersonalFileResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PutPersonalFileResponse {
+    return new PutPersonalFileResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PutPersonalFileResponse {
+    return new PutPersonalFileResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PutPersonalFileResponse {
+    return new PutPersonalFileResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: PutPersonalFileResponse | PlainMessage<PutPersonalFileResponse> | undefined, b: PutPersonalFileResponse | PlainMessage<PutPersonalFileResponse> | undefined): boolean {
+    return proto3.util.equals(PutPersonalFileResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.GetBillingSubscriptionRequest
  */
 export class GetBillingSubscriptionRequest extends Message<GetBillingSubscriptionRequest> {

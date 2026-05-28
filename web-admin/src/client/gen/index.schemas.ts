@@ -679,6 +679,10 @@ export interface V1GetPaymentsPortalURLResponse {
   url?: string;
 }
 
+export interface V1GetPersonalFileResponse {
+  yaml?: string;
+}
+
 export interface V1GetProjectAccessRequestResponse {
   email?: string;
 }
@@ -1216,6 +1220,10 @@ export interface V1PullVirtualRepoResponse {
   files?: V1VirtualFile[];
   /** Next page token for pagination. */
   nextPageToken?: string;
+}
+
+export interface V1PutPersonalFileResponse {
+  [key: string]: unknown;
 }
 
 export interface V1Quotas {
@@ -2109,6 +2117,10 @@ export type AdminServiceAddProjectMemberUserBody = {
   role?: string;
   restrictResources?: boolean;
   resources?: V1ResourceName[];
+};
+
+export type AdminServicePutPersonalFileBody = {
+  yaml?: string;
 };
 
 export type AdminServiceRedeployProjectParams = {
