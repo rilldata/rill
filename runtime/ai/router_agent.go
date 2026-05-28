@@ -2,6 +2,7 @@ package ai
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"slices"
@@ -165,7 +166,7 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 			Args: analystAgentArgs,
 		})
 		if err != nil {
-			return nil, err
+			return nil, mapAgentErr(err)
 		}
 		return &RouterAgentResult{Response: res.Response, Agent: args.Agent}, nil
 
@@ -184,7 +185,7 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 			Args: developerAgentArgs,
 		})
 		if err != nil {
-			return nil, err
+			return nil, mapAgentErr(err)
 		}
 		return &RouterAgentResult{Response: res.Response, Agent: args.Agent}, nil
 
@@ -197,7 +198,7 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 			Args: args.FeedbackAgentArgs,
 		})
 		if err != nil {
-			return nil, err
+			return nil, mapAgentErr(err)
 		}
 		return &RouterAgentResult{Response: res.Response, Agent: FeedbackAgentName}, nil
 	}
@@ -243,6 +244,17 @@ func promptToTitle(message string) string {
 		return "New Conversation"
 	}
 	return title
+}
+
+// mapAgentErr maps common agent errors to more user-friendly messages.
+func mapAgentErr(err error) error {
+	if errors.Is(err, context.Canceled) {
+		return fmt.Errorf("agent canceled")
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return fmt.Errorf("agent timed out")
+	}
+	return fmt.Errorf("agent error: %w", err)
 }
 
 func must[T any](t T, ok bool) T {

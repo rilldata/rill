@@ -411,7 +411,7 @@ func (s *Server) jwtAttributesForService(ctx context.Context, serviceID string, 
 
 func timeoutSelector(fullMethodName string) time.Duration {
 	if strings.HasPrefix(fullMethodName, "/rill.admin.v1.AIService") {
-		return time.Minute * 2
+		return time.Minute * 10
 	}
 	if fullMethodName == "/rill.admin.v1.AdminService/DeleteProject" {
 		return time.Minute * 4
