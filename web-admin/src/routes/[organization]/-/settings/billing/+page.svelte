@@ -9,9 +9,9 @@
   import Payment from "@rilldata/web-admin/features/billing/Payment.svelte";
   import Plan from "@rilldata/web-admin/features/billing/plans/Plan.svelte";
   import {
-      isEnterprisePlan,
-      isProPlan,
-      isTeamPlan,
+    isEnterprisePlan,
+    isProPlan,
+    isTeamPlan,
   } from "@rilldata/web-admin/features/billing/plans/utils";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
