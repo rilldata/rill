@@ -9,6 +9,7 @@
   import Payment from "@rilldata/web-admin/features/billing/Payment.svelte";
   import Plan from "@rilldata/web-admin/features/billing/plans/Plan.svelte";
   import {
+    isEnterprisePlan,
     isProPlan,
     isTeamPlan,
   } from "@rilldata/web-admin/features/billing/plans/utils";
@@ -38,8 +39,10 @@
   let isPaidPlan = $derived(
     planType === V1BillingPlanType.BILLING_PLAN_TYPE_PRO ||
       planType === V1BillingPlanType.BILLING_PLAN_TYPE_TEAM ||
+      planType === V1BillingPlanType.BILLING_PLAN_TYPE_ENTERPRISE ||
       isProPlan(planName) ||
-      isTeamPlan(planName),
+      isTeamPlan(planName) ||
+      isEnterprisePlan(planName),
   );
   let isCancelled = $derived(Boolean($categorisedIssues.data?.cancelled));
 
