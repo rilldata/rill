@@ -60,6 +60,10 @@ _[string]_ - Refers to the timestamp column from your model that will underlie x
 
 _[string]_ - A SQL expression that tells us the max timestamp that the measures are considered valid for. Usually does not need to be overwritten 
 
+### `data_time_range`
+
+_[string]_ - Optional [rilltime](https://docs.rilldata.com/reference/time-syntax) expression describing the base table's time coverage (e.g. `-5Y to now`, `inf`). When set, Rill skips the `min`/`max` OLAP probe for the base table and uses the declared bounds for coverage checks. 
+
 ### `smallest_time_grain`
 
 _[string]_ - Refers to the smallest time granularity the user is allowed to view. The valid values are: millisecond, second, minute, hour, day, week, month, quarter, year 
@@ -311,6 +315,8 @@ _[array of object]_ - Pre-aggregated rollup tables that can be used to accelerat
       - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic 
 
       - **`exclude`** - _[object]_ - Select all fields except those listed here 
+
+  - **`data_time_range`** - _[string]_ - Optional [rilltime](https://docs.rilldata.com/reference/time-syntax) expression describing the rollup's time coverage (e.g. `-1Y to now`, `-5Y to -1Y`, `inf`). When set, Rill skips the `min`/`max` OLAP probe for this rollup and uses the declared bounds for coverage checks. 
 
 ### `security`
 

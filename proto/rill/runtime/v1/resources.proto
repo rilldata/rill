@@ -308,6 +308,10 @@ message MetricsViewSpec {
     string database_schema = 2;
     string table = 3;
     string model = 4;
+    // Optional rilltime expression describing the time range covered by the rollup.
+    // When set, the rollup's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
+    // Evaluated with `now` = current time, `earliest` = zero time, `latest`/`watermark` = current time.
+    string data_time_range = 11;
     // Time grain of the rollup.
     TimeGrain time_grain = 5;
     // IANA timezone the rollup was aggregated in; defaults to UTC
@@ -344,6 +348,10 @@ message MetricsViewSpec {
   TimeGrain smallest_time_grain = 8;
   // Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension).
   string watermark_expression = 20;
+  // Optional rilltime expression describing the time range covered by the base table.
+  // When set, the base table's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
+  // Evaluated with `now` = current time, `earliest` = zero time, `latest`/`watermark` = current time.
+  string data_time_range = 37;
   // Dimensions in the metrics view
   repeated Dimension dimensions = 6;
   // Measures in the metrics view
@@ -872,6 +880,9 @@ message CanvasSpec {
   repeated SecurityRule security_rules = 6;
   // Array of dimension or measure names
   repeated string pinned_filters = 16;
+  // Array of dimension or measure names that must have a value before the canvas can render.
+  // Required filters are implicitly pinned.
+  repeated string required_filters = 19;
 }
 
 message CanvasState {

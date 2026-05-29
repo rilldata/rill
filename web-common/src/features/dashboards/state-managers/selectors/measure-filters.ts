@@ -25,6 +25,8 @@ export type MeasureFilterItem = {
   dimensions?: MetricsViewSpecDimension[];
   filter?: MeasureFilterEntry;
   pinned?: boolean;
+  required?: boolean;
+  missingRequired?: boolean;
   metricsViewNames?: string[];
 };
 

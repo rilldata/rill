@@ -814,6 +814,45 @@ rollups:
 `,
 			wantErr: `invalid "time_zone"`,
 		},
+		{
+			name: "invalid rollup data_time_range",
+			yaml: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+rollups:
+  - model: r1
+    time_grain: day
+    measures:
+      - count
+    data_time_range: "not a rilltime"
+`,
+			wantErr: `invalid "data_time_range"`,
+		},
+		{
+			name: "invalid metrics view data_time_range",
+			yaml: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+data_time_range: "garbage"
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+`,
+			wantErr: `invalid "data_time_range"`,
+		},
 	}
 
 	for _, tt := range tests {
@@ -890,4 +929,51 @@ measures:
 			require.Contains(t, p.Errors[0].Message, "max_query_time_range")
 		})
 	}
+}
+
+func TestMetricsViewDataTimeRange(t *testing.T) {
+	files := map[string]string{
+		`rill.yaml`:               ``,
+		`models/m1.sql`:           `SELECT 1 AS id, 'a' AS publisher`,
+		`models/rollup_daily.sql`: `SELECT 1 AS id`,
+		`metrics_views/mv1.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+data_time_range: -5Y to now
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: total_impressions
+  expression: "SUM(impressions)"
+rollups:
+  - model: rollup_daily
+    time_grain: day
+    data_time_range: -1Y to now
+    dimensions:
+      - publisher
+    measures:
+      - total_impressions
+`,
+	}
+
+	ctx := context.Background()
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	require.Empty(t, p.Errors)
+
+	var mvSpec *runtimev1.MetricsViewSpec
+	for _, r := range p.Resources {
+		if r.Name.Kind == ResourceKindMetricsView && r.Name.Name == "mv1" {
+			mvSpec = r.MetricsViewSpec
+			break
+		}
+	}
+	require.NotNil(t, mvSpec)
+	require.Equal(t, "-5Y to now", mvSpec.DataTimeRange)
+	require.Len(t, mvSpec.Rollups, 1)
+	require.Equal(t, "-1Y to now", mvSpec.Rollups[0].DataTimeRange)
 }
