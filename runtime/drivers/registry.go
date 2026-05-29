@@ -120,6 +120,7 @@ type InstanceConfig struct {
 	// AICompletionTimeoutSeconds is the maximum duration of a full AI completion request, which may include multiple LLM requests and tool calls.
 	AICompletionTimeoutSeconds uint32 `mapstructure:"rill.ai.completion_timeout_seconds"`
 	// AILLMTimeoutSeconds is the maximum duration of a single LLM completion request.
+	// Note: when using Rill's hosted AI service (i.e. not a self-configured LLM), the admin server enforces a hard upper bound of 10 minutes, so values above that have no effect.
 	AILLMTimeoutSeconds uint32 `mapstructure:"rill.ai.llm_timeout_seconds"`
 	// AIDefaultQueryLimit is the default row limit applied to AI tool queries when no limit is specified.
 	AIDefaultQueryLimit int64 `mapstructure:"rill.ai.default_query_limit"`
