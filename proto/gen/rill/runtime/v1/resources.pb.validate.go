@@ -10414,6 +10414,8 @@ func (m *CanvasSpec) validate(all bool) error {
 
 	}
 
+	// no validation rules for Annotations
+
 	if len(errors) > 0 {
 		return CanvasSpecMultiError(errors)
 	}

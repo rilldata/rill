@@ -2926,7 +2926,7 @@ func (c *connection) UpsertVirtualFile(ctx context.Context, opts *database.Inser
 	}
 
 	_, err := c.getDB(ctx).ExecContext(ctx, `
-		INSERT INTO virtual_files (project_id, environment, path, data, deleted)
+		INSERT INTO virtual_files (project_id, environment, owner_id, path, data, deleted)
 		VALUES ($1, $2, $3, $4, $5, FALSE)
 		ON CONFLICT (project_id, environment, path) DO UPDATE SET
 			data = EXCLUDED.data,

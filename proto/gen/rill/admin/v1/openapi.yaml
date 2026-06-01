@@ -873,6 +873,8 @@ components:
             type: object
         v1GetPersonalFileResponse:
             properties:
+                path:
+                    type: string
                 yaml:
                     type: string
             type: object
@@ -4924,6 +4926,8 @@ paths:
                             properties:
                                 displayName:
                                     type: string
+                                kind:
+                                    type: string
                                 yaml:
                                     description: 'Optional: initial YAML body. If empty, the server generates a blank template for the given type.'
                                     type: string
@@ -5032,6 +5036,8 @@ paths:
                     application/json:
                         schema:
                             properties:
+                                kind:
+                                    type: string
                                 yaml:
                                     type: string
                             type: object

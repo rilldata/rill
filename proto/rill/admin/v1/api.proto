@@ -3184,7 +3184,8 @@ message GetPersonalFileRequest {
 }
 
 message GetPersonalFileResponse {
-  string yaml = 1;
+  string path = 1;
+  string yaml = 2;
 }
 
 message EditPersonalFileRequest {

@@ -5588,6 +5588,8 @@ definitions:
   v1GetPersonalFileResponse:
     type: object
     properties:
+      path:
+        type: string
       yaml:
         type: string
   v1GetProjectAccessRequestResponse:

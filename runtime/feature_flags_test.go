@@ -45,6 +45,7 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"stickyDashboardState": false,
 				"cloudEditing":         true,
 				"customCharts":         false,
+				"personalCanvases":     false,
 			},
 		},
 		{
@@ -71,6 +72,7 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"stickyDashboardState": false,
 				"cloudEditing":         true,
 				"customCharts":         false,
+				"personalCanvases":     false,
 			},
 		},
 		{
@@ -97,6 +99,7 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"stickyDashboardState": false,
 				"cloudEditing":         true,
 				"customCharts":         false,
+				"personalCanvases":     false,
 			},
 		},
 		{
@@ -123,6 +126,7 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"stickyDashboardState": false,
 				"cloudEditing":         true,
 				"customCharts":         false,
+				"personalCanvases":     false,
 			},
 		},
 	}

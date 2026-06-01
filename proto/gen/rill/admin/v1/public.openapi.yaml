@@ -873,6 +873,8 @@ components:
             type: object
         v1GetPersonalFileResponse:
             properties:
+                path:
+                    type: string
                 yaml:
                     type: string
             type: object

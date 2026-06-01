@@ -7,13 +7,14 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import PersonalCanvasesList from "@rilldata/web-admin/features/virtual-file-editor/canvas/PersonalCanvasesList.svelte";
 
-  const { chat } = featureFlags;
+  const { chat, personalCanvases } = featureFlags;
 
   const runtimeClient = useRuntimeClient();
 
   $: ({
-    params: { project },
+    params: { organization, project },
   } = $page);
 
   // Query the instance to get the project display name
@@ -76,5 +77,9 @@
       <h2 class="text-xl font-semibold text-fg-secondary">Dashboards</h2>
       <DashboardsTable isPreview />
     </div>
+
+    {#if $personalCanvases}
+      <PersonalCanvasesList org={organization} {project} />
+    {/if}
   </div>
 </ContentContainer>

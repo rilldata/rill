@@ -129,12 +129,15 @@ func (s *Server) GetPersonalFile(ctx context.Context, req *adminv1.GetPersonalFi
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
 	}
 
-	vf, err := s.admin.DB.FindVirtualFile(ctx, proj.ID, "prod", virtualFilePathForPersonalFile(req.Name))
+	virtualPath := virtualFilePathForPersonalFile(req.Name)
+
+	vf, err := s.admin.DB.FindVirtualFile(ctx, proj.ID, "prod", virtualPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get personal file: %w", err)
 	}
 
 	return &adminv1.GetPersonalFileResponse{
+		Path: virtualPath,
 		Yaml: string(vf.Data),
 	}, nil
 }
@@ -272,6 +275,11 @@ func yamlForPersonalFile(displayName, ownerID, kind, data string) ([]byte, error
 	annotations["admin_managed"] = true
 	annotations["admin_nonce"] = time.Now().Format(time.RFC3339Nano)
 	doc["annotations"] = annotations
+
+	// Always override security access. This prevents the client from overriding this.
+	doc["security"] = map[string]any{
+		"access": fmt.Sprintf("'{{ .user.id }}' == '%s' || '{{ .user.admin }}' == 'true'", ownerID),
+	}
 
 	out, err := yaml.Marshal(doc)
 	if err != nil {

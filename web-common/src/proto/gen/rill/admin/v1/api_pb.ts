@@ -14457,9 +14457,14 @@ export class CreatePersonalFileRequest extends Message<CreatePersonalFileRequest
   displayName = "";
 
   /**
+   * @generated from field: string kind = 4;
+   */
+  kind = "";
+
+  /**
    * Optional: initial YAML body. If empty, the server generates a blank template for the given type.
    *
-   * @generated from field: string yaml = 4;
+   * @generated from field: string yaml = 5;
    */
   yaml = "";
 
@@ -14474,7 +14479,8 @@ export class CreatePersonalFileRequest extends Message<CreatePersonalFileRequest
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "yaml", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "yaml", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreatePersonalFileRequest {
@@ -14585,7 +14591,12 @@ export class GetPersonalFileRequest extends Message<GetPersonalFileRequest> {
  */
 export class GetPersonalFileResponse extends Message<GetPersonalFileResponse> {
   /**
-   * @generated from field: string yaml = 1;
+   * @generated from field: string path = 1;
+   */
+  path = "";
+
+  /**
+   * @generated from field: string yaml = 2;
    */
   yaml = "";
 
@@ -14597,7 +14608,8 @@ export class GetPersonalFileResponse extends Message<GetPersonalFileResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.GetPersonalFileResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "yaml", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "yaml", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetPersonalFileResponse {
@@ -14637,7 +14649,12 @@ export class EditPersonalFileRequest extends Message<EditPersonalFileRequest> {
   name = "";
 
   /**
-   * @generated from field: string yaml = 4;
+   * @generated from field: string kind = 4;
+   */
+  kind = "";
+
+  /**
+   * @generated from field: string yaml = 5;
    */
   yaml = "";
 
@@ -14652,7 +14669,8 @@ export class EditPersonalFileRequest extends Message<EditPersonalFileRequest> {
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "yaml", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "yaml", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditPersonalFileRequest {

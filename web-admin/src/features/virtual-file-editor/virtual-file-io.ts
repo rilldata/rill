@@ -3,20 +3,27 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import type { QueryFunction } from "@tanstack/svelte-query";
 import {
   adminServiceGetPersonalFile,
-  adminServicePutPersonalFile,
+  adminServiceEditPersonalFile,
   getAdminServiceGetPersonalFileQueryKey,
 } from "@rilldata/web-admin/client";
 import { splitFolderFileNameAndExtension } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
+import { inferResourceKind } from "@rilldata/web-common/features/entity-management/infer-resource-kind.ts";
+import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
+
+type VirtualFileEvents = {
+  write: { name: string; kind: string };
+};
 
 export class VirtualFileIo implements FileIO {
+  private events = new EventEmitter<VirtualFileEvents>();
+  public readonly on = this.events.on.bind(
+    this.events,
+  ) as typeof this.events.on;
+
   public constructor(
     private readonly org: string,
     private readonly project: string,
     private readonly userId: string,
-    private readonly onWrite?: (
-      name: string,
-      kind?: string,
-    ) => void | Promise<void>,
   ) {}
 
   async read(path: string, invalidate = false): Promise<string | undefined> {
@@ -47,6 +54,11 @@ export class VirtualFileIo implements FileIO {
   }
 
   async write(path: string, yaml: string, kind?: string): Promise<void> {
+    if (!kind) {
+      kind = inferResourceKind(path, yaml);
+      if (!kind) throw new Error("Could not infer resource kind");
+    }
+
     const name = this.getNameFromPath(path);
     // Optimistically update the query
     queryClient.setQueryData(
@@ -54,11 +66,11 @@ export class VirtualFileIo implements FileIO {
       { yaml },
     );
 
-    await adminServicePutPersonalFile(this.org, this.project, name, {
+    await adminServiceEditPersonalFile(this.org, this.project, name, {
       yaml,
       kind,
     });
-    this.onWrite?.(name, kind);
+    this.events.emit("write", { name, kind });
   }
 
   private getNameFromPath(path: string) {

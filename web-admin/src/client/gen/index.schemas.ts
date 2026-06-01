@@ -692,6 +692,7 @@ export interface V1GetPaymentsPortalURLResponse {
 }
 
 export interface V1GetPersonalFileResponse {
+  path?: string;
   yaml?: string;
 }
 
@@ -2133,11 +2134,13 @@ export type AdminServiceAddProjectMemberUserBody = {
 
 export type AdminServiceCreatePersonalFileBody = {
   displayName?: string;
+  kind?: string;
   /** Optional: initial YAML body. If empty, the server generates a blank template for the given type. */
   yaml?: string;
 };
 
 export type AdminServiceEditPersonalFileBody = {
+  kind?: string;
   yaml?: string;
 };
 

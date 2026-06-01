@@ -883,6 +883,8 @@ message CanvasSpec {
   // Array of dimension or measure names that must have a value before the canvas can render.
   // Required filters are implicitly pinned.
   repeated string required_filters = 19;
+  // Annotations are arbitrary key-value pairs that can be used to attach metadata to the canvas (e.g. used to mark personal canvases created by the admin server).
+  map<string, string> annotations = 20;
 }
 
 message CanvasState {

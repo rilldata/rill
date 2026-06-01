@@ -4454,6 +4454,11 @@ definitions:
         description: |-
           Array of dimension or measure names that must have a value before the canvas can render.
           Required filters are implicitly pinned.
+      annotations:
+        type: object
+        additionalProperties:
+          type: string
+        description: Annotations are arbitrary key-value pairs that can be used to attach metadata to the canvas (e.g. used to mark personal canvases created by the admin server).
   v1CanvasState:
     type: object
     properties:

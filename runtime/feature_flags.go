@@ -64,6 +64,8 @@ var defaultFeatureFlags = map[string]string{
 	"cloud_editing": "true",
 	// Controls visibility of the custom chart option in canvas dashboards
 	"custom_charts": "false",
+	// Controls visibility of the personal canvas feature (per-user owner-only canvases stored as virtual files)
+	"personal_canvases": "false",
 }
 
 // ResolveFeatureFlags resolves feature flags for the given instance and the provided user attributes.

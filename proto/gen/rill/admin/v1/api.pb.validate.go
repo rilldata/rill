@@ -39386,6 +39386,8 @@ func (m *GetPersonalFileResponse) validate(all bool) error {
 
 	var errors []error
 
+	// no validation rules for Path
+
 	// no validation rules for Yaml
 
 	if len(errors) > 0 {
