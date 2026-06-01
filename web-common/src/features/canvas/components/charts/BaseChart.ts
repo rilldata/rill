@@ -129,8 +129,9 @@ export abstract class BaseChart<
     const timeGrain = get(this.timeAndFilterStore)?.timeGrain;
     const tddLink = getLinkStateForTimeDimensionDetail(spec, this.type);
 
-    const comparisonChartTypes = [
+    const comparisonChartTypes: ChartType[] = [
       "bar_chart",
+      "line_chart",
       "stacked_bar",
       "stacked_bar_normalized",
     ];
