@@ -9,7 +9,7 @@ import type { QueryFunction } from "@tanstack/svelte-query";
 
 export interface FileIO {
   read(path: string, invalidate?: boolean): Promise<string | undefined>;
-  write(path: string, blob: string): Promise<void>;
+  write(path: string, blob: string, kind?: string): Promise<void>;
 }
 
 export class RuntimeFileIO implements FileIO {
@@ -19,10 +19,7 @@ export class RuntimeFileIO implements FileIO {
     this.client = client;
   }
 
-  async read(
-    path: string,
-    invalidate = false,
-  ): Promise<string | undefined> {
+  async read(path: string, invalidate = false): Promise<string | undefined> {
     if (!this.client) return;
     const queryParams = { path };
     const queryKey = getRuntimeServiceGetFileQueryKey(

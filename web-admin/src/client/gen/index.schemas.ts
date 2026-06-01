@@ -381,6 +381,10 @@ export interface V1CreateOrganizationResponse {
   organization?: V1Organization;
 }
 
+export interface V1CreatePersonalFileResponse {
+  name?: string;
+}
+
 export interface V1CreateProjectResponse {
   project?: V1Project;
 }
@@ -414,6 +418,10 @@ export interface V1DeleteDeploymentResponse {
 }
 
 export interface V1DeleteOrganizationResponse {
+  [key: string]: unknown;
+}
+
+export interface V1DeletePersonalFileResponse {
   [key: string]: unknown;
 }
 
@@ -478,6 +486,10 @@ export const V1DeploymentStatus = {
 } as const;
 
 export interface V1EditAlertResponse {
+  [key: string]: unknown;
+}
+
+export interface V1EditPersonalFileResponse {
   [key: string]: unknown;
 }
 
@@ -853,6 +865,10 @@ export interface V1ListOrganizationsResponse {
   nextPageToken?: string;
 }
 
+export interface V1ListPersonalFilesResponse {
+  files?: string[];
+}
+
 export interface V1ListProjectInvitesResponse {
   invites?: V1ProjectInvite[];
   nextPageToken?: string;
@@ -1220,10 +1236,6 @@ export interface V1PullVirtualRepoResponse {
   files?: V1VirtualFile[];
   /** Next page token for pagination. */
   nextPageToken?: string;
-}
-
-export interface V1PutPersonalFileResponse {
-  [key: string]: unknown;
 }
 
 export interface V1Quotas {
@@ -2119,7 +2131,13 @@ export type AdminServiceAddProjectMemberUserBody = {
   resources?: V1ResourceName[];
 };
 
-export type AdminServicePutPersonalFileBody = {
+export type AdminServiceCreatePersonalFileBody = {
+  displayName?: string;
+  /** Optional: initial YAML body. If empty, the server generates a blank template for the given type. */
+  yaml?: string;
+};
+
+export type AdminServiceEditPersonalFileBody = {
   yaml?: string;
 };
 

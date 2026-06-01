@@ -13,6 +13,10 @@ export class VirtualFileIo implements FileIO {
     private readonly org: string,
     private readonly project: string,
     private readonly userId: string,
+    private readonly onWrite?: (
+      name: string,
+      kind?: string,
+    ) => void | Promise<void>,
   ) {}
 
   async read(path: string, invalidate = false): Promise<string | undefined> {
@@ -42,7 +46,7 @@ export class VirtualFileIo implements FileIO {
     }
   }
 
-  async write(path: string, yaml: string): Promise<void> {
+  async write(path: string, yaml: string, kind?: string): Promise<void> {
     const name = this.getNameFromPath(path);
     // Optimistically update the query
     queryClient.setQueryData(
@@ -50,7 +54,11 @@ export class VirtualFileIo implements FileIO {
       { yaml },
     );
 
-    await adminServicePutPersonalFile(this.org, this.project, name, { yaml });
+    await adminServicePutPersonalFile(this.org, this.project, name, {
+      yaml,
+      kind,
+    });
+    this.onWrite?.(name, kind);
   }
 
   private getNameFromPath(path: string) {

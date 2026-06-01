@@ -38823,6 +38823,439 @@ var _ interface {
 	ErrorName() string
 } = GetAlertYAMLResponseValidationError{}
 
+// Validate checks the field values on ListPersonalFilesRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListPersonalFilesRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListPersonalFilesRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListPersonalFilesRequestMultiError, or nil if none found.
+func (m *ListPersonalFilesRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListPersonalFilesRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Org
+
+	// no validation rules for Project
+
+	if len(errors) > 0 {
+		return ListPersonalFilesRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListPersonalFilesRequestMultiError is an error wrapping multiple validation
+// errors returned by ListPersonalFilesRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ListPersonalFilesRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListPersonalFilesRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListPersonalFilesRequestMultiError) AllErrors() []error { return m }
+
+// ListPersonalFilesRequestValidationError is the validation error returned by
+// ListPersonalFilesRequest.Validate if the designated constraints aren't met.
+type ListPersonalFilesRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListPersonalFilesRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListPersonalFilesRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListPersonalFilesRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListPersonalFilesRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListPersonalFilesRequestValidationError) ErrorName() string {
+	return "ListPersonalFilesRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListPersonalFilesRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListPersonalFilesRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListPersonalFilesRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListPersonalFilesRequestValidationError{}
+
+// Validate checks the field values on ListPersonalFilesResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListPersonalFilesResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListPersonalFilesResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListPersonalFilesResponseMultiError, or nil if none found.
+func (m *ListPersonalFilesResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListPersonalFilesResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return ListPersonalFilesResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListPersonalFilesResponseMultiError is an error wrapping multiple validation
+// errors returned by ListPersonalFilesResponse.ValidateAll() if the
+// designated constraints aren't met.
+type ListPersonalFilesResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListPersonalFilesResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListPersonalFilesResponseMultiError) AllErrors() []error { return m }
+
+// ListPersonalFilesResponseValidationError is the validation error returned by
+// ListPersonalFilesResponse.Validate if the designated constraints aren't met.
+type ListPersonalFilesResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListPersonalFilesResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListPersonalFilesResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListPersonalFilesResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListPersonalFilesResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListPersonalFilesResponseValidationError) ErrorName() string {
+	return "ListPersonalFilesResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListPersonalFilesResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListPersonalFilesResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListPersonalFilesResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListPersonalFilesResponseValidationError{}
+
+// Validate checks the field values on CreatePersonalFileRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CreatePersonalFileRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CreatePersonalFileRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CreatePersonalFileRequestMultiError, or nil if none found.
+func (m *CreatePersonalFileRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CreatePersonalFileRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Org
+
+	// no validation rules for Project
+
+	if utf8.RuneCountInString(m.GetDisplayName()) < 1 {
+		err := CreatePersonalFileRequestValidationError{
+			field:  "DisplayName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Kind
+
+	// no validation rules for Yaml
+
+	if len(errors) > 0 {
+		return CreatePersonalFileRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// CreatePersonalFileRequestMultiError is an error wrapping multiple validation
+// errors returned by CreatePersonalFileRequest.ValidateAll() if the
+// designated constraints aren't met.
+type CreatePersonalFileRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CreatePersonalFileRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CreatePersonalFileRequestMultiError) AllErrors() []error { return m }
+
+// CreatePersonalFileRequestValidationError is the validation error returned by
+// CreatePersonalFileRequest.Validate if the designated constraints aren't met.
+type CreatePersonalFileRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CreatePersonalFileRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CreatePersonalFileRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CreatePersonalFileRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CreatePersonalFileRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CreatePersonalFileRequestValidationError) ErrorName() string {
+	return "CreatePersonalFileRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CreatePersonalFileRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCreatePersonalFileRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CreatePersonalFileRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CreatePersonalFileRequestValidationError{}
+
+// Validate checks the field values on CreatePersonalFileResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CreatePersonalFileResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CreatePersonalFileResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CreatePersonalFileResponseMultiError, or nil if none found.
+func (m *CreatePersonalFileResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CreatePersonalFileResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Name
+
+	if len(errors) > 0 {
+		return CreatePersonalFileResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// CreatePersonalFileResponseMultiError is an error wrapping multiple
+// validation errors returned by CreatePersonalFileResponse.ValidateAll() if
+// the designated constraints aren't met.
+type CreatePersonalFileResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CreatePersonalFileResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CreatePersonalFileResponseMultiError) AllErrors() []error { return m }
+
+// CreatePersonalFileResponseValidationError is the validation error returned
+// by CreatePersonalFileResponse.Validate if the designated constraints aren't met.
+type CreatePersonalFileResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CreatePersonalFileResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CreatePersonalFileResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CreatePersonalFileResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CreatePersonalFileResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CreatePersonalFileResponseValidationError) ErrorName() string {
+	return "CreatePersonalFileResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CreatePersonalFileResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCreatePersonalFileResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CreatePersonalFileResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CreatePersonalFileResponseValidationError{}
+
 // Validate checks the field values on GetPersonalFileRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -39035,22 +39468,22 @@ var _ interface {
 	ErrorName() string
 } = GetPersonalFileResponseValidationError{}
 
-// Validate checks the field values on PutPersonalFileRequest with the rules
+// Validate checks the field values on EditPersonalFileRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *PutPersonalFileRequest) Validate() error {
+func (m *EditPersonalFileRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on PutPersonalFileRequest with the rules
-// defined in the proto definition for this message. If any rules are
+// ValidateAll checks the field values on EditPersonalFileRequest with the
+// rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// PutPersonalFileRequestMultiError, or nil if none found.
-func (m *PutPersonalFileRequest) ValidateAll() error {
+// EditPersonalFileRequestMultiError, or nil if none found.
+func (m *EditPersonalFileRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *PutPersonalFileRequest) validate(all bool) error {
+func (m *EditPersonalFileRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -39063,22 +39496,24 @@ func (m *PutPersonalFileRequest) validate(all bool) error {
 
 	// no validation rules for Name
 
+	// no validation rules for Kind
+
 	// no validation rules for Yaml
 
 	if len(errors) > 0 {
-		return PutPersonalFileRequestMultiError(errors)
+		return EditPersonalFileRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// PutPersonalFileRequestMultiError is an error wrapping multiple validation
-// errors returned by PutPersonalFileRequest.ValidateAll() if the designated
+// EditPersonalFileRequestMultiError is an error wrapping multiple validation
+// errors returned by EditPersonalFileRequest.ValidateAll() if the designated
 // constraints aren't met.
-type PutPersonalFileRequestMultiError []error
+type EditPersonalFileRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m PutPersonalFileRequestMultiError) Error() string {
+func (m EditPersonalFileRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -39087,11 +39522,11 @@ func (m PutPersonalFileRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m PutPersonalFileRequestMultiError) AllErrors() []error { return m }
+func (m EditPersonalFileRequestMultiError) AllErrors() []error { return m }
 
-// PutPersonalFileRequestValidationError is the validation error returned by
-// PutPersonalFileRequest.Validate if the designated constraints aren't met.
-type PutPersonalFileRequestValidationError struct {
+// EditPersonalFileRequestValidationError is the validation error returned by
+// EditPersonalFileRequest.Validate if the designated constraints aren't met.
+type EditPersonalFileRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -39099,24 +39534,24 @@ type PutPersonalFileRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e PutPersonalFileRequestValidationError) Field() string { return e.field }
+func (e EditPersonalFileRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e PutPersonalFileRequestValidationError) Reason() string { return e.reason }
+func (e EditPersonalFileRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e PutPersonalFileRequestValidationError) Cause() error { return e.cause }
+func (e EditPersonalFileRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e PutPersonalFileRequestValidationError) Key() bool { return e.key }
+func (e EditPersonalFileRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e PutPersonalFileRequestValidationError) ErrorName() string {
-	return "PutPersonalFileRequestValidationError"
+func (e EditPersonalFileRequestValidationError) ErrorName() string {
+	return "EditPersonalFileRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e PutPersonalFileRequestValidationError) Error() string {
+func (e EditPersonalFileRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -39128,14 +39563,14 @@ func (e PutPersonalFileRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sPutPersonalFileRequest.%s: %s%s",
+		"invalid %sEditPersonalFileRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = PutPersonalFileRequestValidationError{}
+var _ error = EditPersonalFileRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -39143,24 +39578,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = PutPersonalFileRequestValidationError{}
+} = EditPersonalFileRequestValidationError{}
 
-// Validate checks the field values on PutPersonalFileResponse with the rules
+// Validate checks the field values on EditPersonalFileResponse with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *PutPersonalFileResponse) Validate() error {
+func (m *EditPersonalFileResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on PutPersonalFileResponse with the
+// ValidateAll checks the field values on EditPersonalFileResponse with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// PutPersonalFileResponseMultiError, or nil if none found.
-func (m *PutPersonalFileResponse) ValidateAll() error {
+// EditPersonalFileResponseMultiError, or nil if none found.
+func (m *EditPersonalFileResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *PutPersonalFileResponse) validate(all bool) error {
+func (m *EditPersonalFileResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -39168,19 +39603,19 @@ func (m *PutPersonalFileResponse) validate(all bool) error {
 	var errors []error
 
 	if len(errors) > 0 {
-		return PutPersonalFileResponseMultiError(errors)
+		return EditPersonalFileResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// PutPersonalFileResponseMultiError is an error wrapping multiple validation
-// errors returned by PutPersonalFileResponse.ValidateAll() if the designated
+// EditPersonalFileResponseMultiError is an error wrapping multiple validation
+// errors returned by EditPersonalFileResponse.ValidateAll() if the designated
 // constraints aren't met.
-type PutPersonalFileResponseMultiError []error
+type EditPersonalFileResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m PutPersonalFileResponseMultiError) Error() string {
+func (m EditPersonalFileResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -39189,11 +39624,11 @@ func (m PutPersonalFileResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m PutPersonalFileResponseMultiError) AllErrors() []error { return m }
+func (m EditPersonalFileResponseMultiError) AllErrors() []error { return m }
 
-// PutPersonalFileResponseValidationError is the validation error returned by
-// PutPersonalFileResponse.Validate if the designated constraints aren't met.
-type PutPersonalFileResponseValidationError struct {
+// EditPersonalFileResponseValidationError is the validation error returned by
+// EditPersonalFileResponse.Validate if the designated constraints aren't met.
+type EditPersonalFileResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -39201,24 +39636,24 @@ type PutPersonalFileResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e PutPersonalFileResponseValidationError) Field() string { return e.field }
+func (e EditPersonalFileResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e PutPersonalFileResponseValidationError) Reason() string { return e.reason }
+func (e EditPersonalFileResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e PutPersonalFileResponseValidationError) Cause() error { return e.cause }
+func (e EditPersonalFileResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e PutPersonalFileResponseValidationError) Key() bool { return e.key }
+func (e EditPersonalFileResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e PutPersonalFileResponseValidationError) ErrorName() string {
-	return "PutPersonalFileResponseValidationError"
+func (e EditPersonalFileResponseValidationError) ErrorName() string {
+	return "EditPersonalFileResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e PutPersonalFileResponseValidationError) Error() string {
+func (e EditPersonalFileResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -39230,14 +39665,14 @@ func (e PutPersonalFileResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sPutPersonalFileResponse.%s: %s%s",
+		"invalid %sEditPersonalFileResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = PutPersonalFileResponseValidationError{}
+var _ error = EditPersonalFileResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -39245,7 +39680,217 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = PutPersonalFileResponseValidationError{}
+} = EditPersonalFileResponseValidationError{}
+
+// Validate checks the field values on DeletePersonalFileRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *DeletePersonalFileRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DeletePersonalFileRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DeletePersonalFileRequestMultiError, or nil if none found.
+func (m *DeletePersonalFileRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DeletePersonalFileRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Org
+
+	// no validation rules for Project
+
+	// no validation rules for Name
+
+	if len(errors) > 0 {
+		return DeletePersonalFileRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// DeletePersonalFileRequestMultiError is an error wrapping multiple validation
+// errors returned by DeletePersonalFileRequest.ValidateAll() if the
+// designated constraints aren't met.
+type DeletePersonalFileRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DeletePersonalFileRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DeletePersonalFileRequestMultiError) AllErrors() []error { return m }
+
+// DeletePersonalFileRequestValidationError is the validation error returned by
+// DeletePersonalFileRequest.Validate if the designated constraints aren't met.
+type DeletePersonalFileRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DeletePersonalFileRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DeletePersonalFileRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DeletePersonalFileRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DeletePersonalFileRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DeletePersonalFileRequestValidationError) ErrorName() string {
+	return "DeletePersonalFileRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DeletePersonalFileRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDeletePersonalFileRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DeletePersonalFileRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DeletePersonalFileRequestValidationError{}
+
+// Validate checks the field values on DeletePersonalFileResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *DeletePersonalFileResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DeletePersonalFileResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DeletePersonalFileResponseMultiError, or nil if none found.
+func (m *DeletePersonalFileResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DeletePersonalFileResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return DeletePersonalFileResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// DeletePersonalFileResponseMultiError is an error wrapping multiple
+// validation errors returned by DeletePersonalFileResponse.ValidateAll() if
+// the designated constraints aren't met.
+type DeletePersonalFileResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DeletePersonalFileResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DeletePersonalFileResponseMultiError) AllErrors() []error { return m }
+
+// DeletePersonalFileResponseValidationError is the validation error returned
+// by DeletePersonalFileResponse.Validate if the designated constraints aren't met.
+type DeletePersonalFileResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DeletePersonalFileResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DeletePersonalFileResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DeletePersonalFileResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DeletePersonalFileResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DeletePersonalFileResponseValidationError) ErrorName() string {
+	return "DeletePersonalFileResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DeletePersonalFileResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDeletePersonalFileResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DeletePersonalFileResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DeletePersonalFileResponseValidationError{}
 
 // Validate checks the field values on GetBillingSubscriptionRequest with the
 // rules defined in the proto definition for this message. If any rules are

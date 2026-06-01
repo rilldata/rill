@@ -6,13 +6,5 @@ export const load = async ({ params: { organization, project }, parent }) => {
   const { user } = await parent();
   const fileIo = new VirtualFileIo(organization, project, user.id);
 
-  const path = `/personal/canvas_${user.id}`;
-  const contents = await fileIo.read(path, false);
-  if (!contents) {
-    await fileIo.write(
-      path,
-      generateBlobForNewResourceFile(ResourceKind.Canvas),
-      ResourceKind.Canvas,
-    );
-  }
+  return { fileIo };
 };

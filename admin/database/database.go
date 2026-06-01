@@ -309,6 +309,8 @@ type DB interface {
 
 	FindVirtualFiles(ctx context.Context, projectID, environment string, afterUpdatedOn time.Time, afterPath string, limit int) ([]*VirtualFile, error)
 	FindVirtualFile(ctx context.Context, projectID, environment, path string) (*VirtualFile, error)
+	// FindVirtualFilesByOwner TODO: pagination
+	FindVirtualFilesByOwner(ctx context.Context, projectID, environment, ownerID string) ([]*VirtualFile, error)
 	UpsertVirtualFile(ctx context.Context, opts *InsertVirtualFileOptions) error
 	UpdateVirtualFileDeleted(ctx context.Context, projectID, environment, path string) error
 	DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error
@@ -1225,6 +1227,7 @@ type UpdateBookmarkOptions struct {
 type VirtualFile struct {
 	Path      string    `db:"path"`
 	Data      []byte    `db:"data"`
+	OwnerID   *string   `db:"owner_id"`
 	Deleted   bool      `db:"deleted"`
 	UpdatedOn time.Time `db:"updated_on"`
 }
@@ -1233,8 +1236,9 @@ type VirtualFile struct {
 type InsertVirtualFileOptions struct {
 	ProjectID   string
 	Environment string
-	Path        string `validate:"required"`
-	Data        []byte `validate:"max=131072"` // 128kb
+	Path        string  `validate:"required"`
+	OwnerID     *string `db:"owner_id"`
+	Data        []byte  `validate:"max=131072"` // 128kb
 }
 
 // Asset represents a user-uploaded file asset.

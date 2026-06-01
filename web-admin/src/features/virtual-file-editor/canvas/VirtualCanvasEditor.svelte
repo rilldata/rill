@@ -1,11 +1,7 @@
 <script lang="ts">
   import CanvasInitialization from "@rilldata/web-common/features/canvas/CanvasInitialization.svelte";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
-  import {
-    WorkspaceContainer,
-    WorkspaceHeader,
-  } from "@rilldata/web-common/layout/workspace";
+  import { WorkspaceContainer } from "@rilldata/web-common/layout/workspace";
   import ReconcileWarningPanel from "@rilldata/web-common/features/entity-management/ReconcileWarningPanel.svelte";
   import VisualCanvasEditing from "@rilldata/web-common/features/canvas/inspector/VisualCanvasEditing.svelte";
   import SaveDefaultsButton from "@rilldata/web-common/features/canvas/components/SaveDefaultsButton.svelte";
@@ -26,10 +22,8 @@
   $: ({
     autoSave,
     path: filePath,
-    fileName,
     getResource,
     remoteContent,
-    hasUnsavedChanges,
     saveState: { saving },
   } = fileArtifact);
 

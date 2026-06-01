@@ -6,13 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"path"
-	"regexp"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -155,10 +153,10 @@ func (s *Server) CreateAlert(ctx context.Context, req *adminv1.CreateAlertReques
 		return nil, err
 	}
 
-	name, err := s.generateAlertName(ctx, depl, req.Options.DisplayName)
-	if err != nil {
-		return nil, err
-	}
+	name, err := s.generateVirtualFileName(ctx, req.Options.DisplayName, func(ctx context.Context, name string) error {
+		_, err := s.admin.LookupAlert(ctx, depl, name)
+		return err
+	})
 
 	data, err := s.yamlForManagedAlert(req.Options, claims.OwnerID())
 	if err != nil {
@@ -585,44 +583,6 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	res.Annotations.WebOpenPath = opts.WebOpenPath
 	res.Annotations.WebOpenState = opts.WebOpenState
 	return yaml.Marshal(res)
-}
-
-// generateAlertName generates a random alert name with the display name as a seed.
-// Example: "My alert!" -> "my-alert-5b3f7e1a".
-// It verifies that the name is not taken (the random component makes any collision unlikely, but we check to be sure).
-func (s *Server) generateAlertName(ctx context.Context, depl *database.Deployment, displayName string) (string, error) {
-	for i := 0; i < 5; i++ {
-		name := randomAlertName(displayName)
-
-		_, err := s.admin.LookupAlert(ctx, depl, name)
-		if err != nil {
-			if s, ok := status.FromError(err); ok && s.Code() == codes.NotFound {
-				// Success! Name isn't taken
-				return name, nil
-			}
-			return "", fmt.Errorf("failed to check alert name: %w", err)
-		}
-	}
-
-	// Fail-safe in case all names we tried were taken
-	return uuid.New().String(), nil
-}
-
-var alertNameToDashCharsRegexp = regexp.MustCompile(`[ _]+`)
-
-var alertNameExcludeCharsRegexp = regexp.MustCompile(`[^a-zA-Z0-9-]+`)
-
-func randomAlertName(displayName string) string {
-	name := alertNameToDashCharsRegexp.ReplaceAllString(displayName, "-")
-	name = alertNameExcludeCharsRegexp.ReplaceAllString(name, "")
-	name = strings.ToLower(name)
-	name = strings.Trim(name, "-")
-	if name == "" {
-		name = uuid.New().String()
-	} else {
-		name = name + "-" + uuid.New().String()[0:8]
-	}
-	return name
 }
 
 // alertYAML is derived from runtime/parser.AlertYAML, but adapted for generating (as opposed to parsing) the alert YAML.

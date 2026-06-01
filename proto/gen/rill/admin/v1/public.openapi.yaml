@@ -511,6 +511,11 @@ components:
                 organization:
                     $ref: '#/components/schemas/v1Organization'
             type: object
+        v1CreatePersonalFileResponse:
+            properties:
+                name:
+                    type: string
+            type: object
         v1CreateProjectResponse:
             properties:
                 project:
@@ -543,6 +548,8 @@ components:
                     type: string
             type: object
         v1DeleteOrganizationResponse:
+            type: object
+        v1DeletePersonalFileResponse:
             type: object
         v1DeleteProjectResponse:
             properties:
@@ -610,6 +617,8 @@ components:
                 - DEPLOYMENT_STATUS_DELETED
             type: string
         v1EditAlertResponse:
+            type: object
+        v1EditPersonalFileResponse:
             type: object
         v1EditReportResponse:
             type: object
@@ -1103,6 +1112,13 @@ components:
                 organizations:
                     items:
                         $ref: '#/components/schemas/v1Organization'
+                    type: array
+            type: object
+        v1ListPersonalFilesResponse:
+            properties:
+                files:
+                    items:
+                        type: string
                     type: array
             type: object
         v1ListProjectInvitesResponse:
@@ -1753,8 +1769,6 @@ components:
                 nextPageToken:
                     description: Next page token for pagination.
                     type: string
-            type: object
-        v1PutPersonalFileResponse:
             type: object
         v1Quotas:
             properties:
@@ -3030,7 +3044,6 @@ paths:
     /v1/orgs/{org}/projects/{project}/alerts/{name}: {}
     /v1/orgs/{org}/projects/{project}/alerts/{name}/unsubscribe: {}
     /v1/orgs/{org}/projects/{project}/alerts/{name}/yaml: {}
-    /v1/orgs/{org}/projects/{project}/canvases/{name}/yaml: {}
     /v1/orgs/{org}/projects/{project}/clone-credentials: {}
     /v1/orgs/{org}/projects/{project}/connect-to-github: {}
     /v1/orgs/{org}/projects/{project}/credentials: {}
@@ -3287,6 +3300,8 @@ paths:
             summary: SetProjectMemberUserRole sets the role for the member
             x-visibility: public
     /v1/orgs/{org}/projects/{project}/members/{email}/usergroups: {}
+    /v1/orgs/{org}/projects/{project}/personal-files: {}
+    /v1/orgs/{org}/projects/{project}/personal-files/{name}: {}
     /v1/orgs/{org}/projects/{project}/redeploy: {}
     /v1/orgs/{org}/projects/{project}/reports: {}
     /v1/orgs/{org}/projects/{project}/reports/-/yaml: {}

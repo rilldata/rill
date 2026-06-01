@@ -229,9 +229,10 @@ export class FileArtifact {
     if (!this.client) return;
 
     try {
+      const kind = get(this.resourceName)?.kind;
       const fileSavePromise = this.saveState.initiateSave();
 
-      await this.io.write(this.path, blob);
+      await this.io.write(this.path, blob, kind);
 
       await fileSavePromise;
     } catch {
