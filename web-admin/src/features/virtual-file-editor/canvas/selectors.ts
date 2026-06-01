@@ -19,7 +19,7 @@ export function getPersonalCanvases(
       const error = resourcesResp.error ?? personalFilesResp.error;
 
       const personalFileNames = new Set(personalFilesResp.data?.files ?? []);
-      const personalCanvases = resourcesResp.data?.resources.filter(
+      const personalCanvases = resourcesResp.data?.resources?.filter(
         (r) =>
           r.meta?.name?.kind === ResourceKind.Canvas &&
           personalFileNames.has(r.meta?.name?.name),

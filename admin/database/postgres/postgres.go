@@ -2911,7 +2911,7 @@ func (c *connection) FindVirtualFilesByOwner(ctx context.Context, projectID, env
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT path, data, owner_id, deleted, updated_on
 		FROM virtual_files
-		WHERE project_id=$1 AND environment=$2 AND deleted=FALSE AND owner=$3
+		WHERE project_id=$1 AND environment=$2 AND deleted=FALSE AND owner_id=$3
 		ORDER BY path
 	`, projectID, environment, ownerID)
 	if err != nil {

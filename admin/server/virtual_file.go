@@ -40,6 +40,9 @@ func (s *Server) ListPersonalFiles(ctx context.Context, req *adminv1.ListPersona
 
 	var virtualFileNames []string
 	virtualFiles, err := s.admin.DB.FindVirtualFilesByOwner(ctx, proj.ID, "prod", auth.GetClaims(ctx).OwnerID())
+	if err != nil {
+		return nil, fmt.Errorf("failed to list personal files: %w", err)
+	}
 	for _, file := range virtualFiles {
 		// Assumes the name is the stem of the path, we block updating name from yaml
 		virtualFileNames = append(virtualFileNames, fileutil.Stem(file.Path))
@@ -276,11 +279,6 @@ func yamlForPersonalFile(displayName, ownerID, kind, data string) ([]byte, error
 	annotations["admin_nonce"] = time.Now().Format(time.RFC3339Nano)
 	doc["annotations"] = annotations
 
-	// Always override security access. This prevents the client from overriding this.
-	doc["security"] = map[string]any{
-		"access": fmt.Sprintf("'{{ .user.id }}' == '%s' || '{{ .user.admin }}' == 'true'", ownerID),
-	}
-
 	out, err := yaml.Marshal(doc)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to marshal YAML: %s", err.Error())
@@ -296,9 +294,6 @@ func blankYamlForPersonalFile(displayName, ownerID, kind string) ([]byte, error)
 			"admin_owner_user_id": ownerID,
 			"admin_managed":       true,
 			"admin_nonce":         time.Now().Format(time.RFC3339Nano),
-		},
-		"security": map[string]any{
-			"access": fmt.Sprintf("'{{ .user.id }}' == '%s' || '{{ .user.admin }}' == 'true'", ownerID),
 		},
 	}
 	switch kind {

@@ -4,6 +4,13 @@
   import { getPersonalCanvases } from "@rilldata/web-admin/features/virtual-file-editor/canvas/selectors.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import CreatePersonalCanvasDialog from "@rilldata/web-admin/features/virtual-file-editor/canvas/CreatePersonalCanvasDialog.svelte";
+  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
+  import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
+  import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
+  import ResourceListEmptyState from "@rilldata/web-admin/features/resources/ResourceListEmptyState.svelte";
+  import type { V1Resource } from "@rilldata/web-common/runtime-client";
+  import { renderComponent } from "tanstack-table-8-svelte-5";
+  import PersonalCanvasCompositeCell from "@rilldata/web-admin/features/virtual-file-editor/canvas/PersonalCanvasCompositeCell.svelte";
 
   let {
     org,
@@ -17,20 +24,40 @@
   let personalCanvasesQuery = $derived(
     getPersonalCanvases(runtimeClient, org, project),
   );
-  let personalCanvases = $derived(
-    ($personalCanvasesQuery.data ?? []).map((r) => {
-      const name = r.meta?.name?.name ?? "";
-      const displayName = r.canvas?.state?.validSpec?.displayName ?? name;
-      const lastUpdated = r.canvas?.state?.dataRefreshedOn;
-      return {
-        name,
-        displayName,
-        lastUpdated,
-      };
-    }),
-  );
+  let personalCanvases = $derived($personalCanvasesQuery.data ?? []);
 
   let createOpen = $state(false);
+
+  let columns = $derived([
+    {
+      id: "composite",
+      cell: ({ row }) => {
+        const resource = row.original as V1Resource;
+        const name = resource.meta.name.name;
+
+        // If not a Metrics Explorer, it's a Custom Dashboard.
+        const isMetricsExplorer = !!resource?.explore;
+        const title = isMetricsExplorer
+          ? resource.explore.spec.displayName
+          : resource.canvas.spec.displayName;
+        const refreshedOn =
+          (isMetricsExplorer
+            ? resource.explore?.state?.dataRefreshedOn
+            : resource.canvas?.state?.dataRefreshedOn) ||
+          resource.meta.stateUpdatedOn;
+
+        return renderComponent(PersonalCanvasCompositeCell, {
+          name,
+          title,
+          lastRefreshed: refreshedOn,
+          error: resource.meta.reconcileError,
+          isMetricsExplorer,
+          organization: org,
+          project,
+        });
+      },
+    },
+  ]);
 </script>
 
 <section class="flex flex-col gap-3">
@@ -46,33 +73,28 @@
   </header>
 
   {#if $personalCanvasesQuery.isLoading}
-    <div class="text-fg-secondary">Loading...</div>
+    <div class="m-auto mt-20">
+      <DelayedSpinner isLoading={true} size="24px" />
+    </div>
   {:else}
-    <ul class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-      {#each personalCanvases as item (item.name)}
-        <li class="border rounded p-3 hover:bg-gray-50">
-          <a
-            href={`/${org}/${project}/-/personal/${item.name}`}
-            class="flex items-center gap-2"
-          >
-            <Lock size="12px" />
-            <span class="font-medium">
-              {item.displayName || item.name}
-            </span>
-          </a>
-          {#if item.lastUpdated}
-            <p class="text-xs text-fg-secondary">
-              Updated {new Date(item.lastUpdated).toLocaleString()}
-            </p>
-          {/if}
-        </li>
-      {:else}
-        <div>
-          <p>You don't have any personal canvases yet.</p>
-          <p>Create one to explore the project's data your way.</p>
-        </div>
-      {/each}
-    </ul>
+    <div class="flex flex-col w-full gap-y-3">
+      <ResourceList
+        kind="personal canvases"
+        data={personalCanvases}
+        {columns}
+        toolbar={false}
+      >
+        <ResourceListEmptyState
+          slot="empty"
+          icon={ExploreIcon}
+          message="You don't have any personal canvases yet."
+        >
+          <span slot="action">
+            Create one to explore the project's data your way.
+          </span>
+        </ResourceListEmptyState>
+      </ResourceList>
+    </div>
   {/if}
 </section>
 

@@ -93,7 +93,7 @@
           yaml = sourceFile.yaml;
         }
 
-        await $createFileMutation.mutateAsync({
+        const createResp = await $createFileMutation.mutateAsync({
           org,
           project,
           data: {
@@ -103,7 +103,9 @@
           },
         });
 
-        await goto(`/${org}/${project}/-/personal/${values.name}`);
+        await goto(
+          `/${org}/${project}/-/personal/${createResp.name ?? values.name}`,
+        );
       },
     },
   );
