@@ -77,16 +77,20 @@ export function maybeGetMetricsResolverQueryFromMessage(message: V1Message) {
   return rawJson as MetricsResolverQuery;
 }
 
-export function getResolvedTimeRangesFromMessage(
-  resultMessage: V1Message,
-): TimeRange[] {
+export function getResolvedTimeRangesFromMessage(resultMessage: V1Message): {
+  resolvedTimeRange?: TimeRange;
+  resolvedComparisonTimeRange?: TimeRange;
+} {
   try {
     const resultData = JSON.parse(resultMessage.contentData ?? "{}");
-    return resultData.resolved_time_ranges ?? [];
+    return {
+      resolvedTimeRange: resultData.resolved_time_range,
+      resolvedComparisonTimeRange: resultData.resolved_comparison_time_range,
+    };
   } catch (e) {
     console.error("Failed to parse result message JSON", e);
   }
-  return [];
+  return {};
 }
 
 const closingRoundBracketRegex = /\)$/;

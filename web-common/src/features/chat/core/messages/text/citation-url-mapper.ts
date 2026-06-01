@@ -98,7 +98,8 @@ export function mapMetricsResolverQueryToUrl(
     LEGACY_DASHBOARD_CITATION_URL_PATHNAME_REGEX.test(url.pathname) &&
     url.searchParams.has("query");
 
-  const resolvedTimeRanges: TimeRange[] = [];
+  let resolvedTimeRanges: ReturnType<typeof getResolvedTimeRangesFromMessage> =
+    {};
 
   if (isLegacyCitationUrl) {
     try {
@@ -124,9 +125,7 @@ export function mapMetricsResolverQueryToUrl(
 
     const resultMessage = messages.find((m) => m.parentId === callId);
     if (resultMessage?.contentData) {
-      resolvedTimeRanges.push(
-        ...getResolvedTimeRangesFromMessage(resultMessage),
-      );
+      resolvedTimeRanges = getResolvedTimeRangesFromMessage(resultMessage);
     }
   }
 
@@ -140,8 +139,10 @@ export function mapMetricsResolverQueryToUrl(
   const partialExploreState = mapMetricsResolverQueryToDashboard(
     metricsViewSpec,
     exploreSpec,
-    query,
-    resolvedTimeRanges,
+    {
+      query,
+      ...resolvedTimeRanges,
+    },
   );
 
   const urlSearchParams = maybeGetExplorePageUrlSearchParams(

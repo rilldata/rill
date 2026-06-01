@@ -157,8 +157,14 @@ func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.Resol
 	meta["fields"] = fieldsFromQuery(r.mv, r.query)
 
 	// Save the original time range so that the meta can contain things like expression and iso
-	tr := *r.query.TimeRange
-	ctr := *r.query.ComparisonTimeRange
+	var tr metricsview.TimeRange
+	if r.query.TimeRange != nil {
+		tr = *r.query.TimeRange
+	}
+	var ctr *metricsview.TimeRange
+	if r.query.ComparisonTimeRange != nil {
+		ctr = r.query.ComparisonTimeRange
+	}
 
 	res, err := r.executor.Query(ctx, r.query, r.args.ExecutionTime)
 	if err != nil {

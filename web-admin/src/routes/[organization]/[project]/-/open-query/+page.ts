@@ -10,8 +10,7 @@ export const load: PageLoad = async ({ params, url, parent }) => {
   const query = getQueryFromUrl(url);
 
   await openQuery({
-    query,
-    resolvedTimeRanges: [],
+    mapArgs: { query },
     organization: params.organization,
     project: params.project,
     client,

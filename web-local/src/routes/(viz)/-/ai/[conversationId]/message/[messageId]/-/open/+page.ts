@@ -15,8 +15,7 @@ export async function load({ parent }) {
   const client = getLocalRuntimeClient();
 
   await openQuery({
-    query,
-    resolvedTimeRanges,
+    mapArgs: { query, ...resolvedTimeRanges },
     client,
   });
 }

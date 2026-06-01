@@ -19,6 +19,7 @@ import {
 } from "@rilldata/web-common/features/explore-mappers/map-metrics-resolver-query-to-dashboard.ts";
 import {
   type DashboardTimeControls,
+  TimeComparisonOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types.ts";
 import {
@@ -33,15 +34,15 @@ import {
 import type {
   Expression,
   Schema as MetricsResolverQuery,
-  TimeRange as ResolverTimeRange,
 } from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
 import { describe, expect, it } from "vitest";
+import { getResolvedTimeRangesFromMessage } from "@rilldata/web-common/features/chat/core/citation-url-utils.ts";
 
 describe("mapMetricsResolverQueryToDashboard", () => {
   const TestCases: {
     title: string;
     query: MetricsResolverQuery;
-    resolvedTimeRanges?: ResolverTimeRange[];
+    resolvedTimeRanges?: ReturnType<typeof getResolvedTimeRangesFromMessage>;
     expectedPartialExplore: Partial<ExploreState>;
   }[] = [
     {
@@ -95,18 +96,16 @@ describe("mapMetricsResolverQueryToDashboard", () => {
         measures: [{ name: AD_BIDS_IMPRESSIONS_MEASURE }],
         dimensions: [{ name: AD_BIDS_PUBLISHER_DIMENSION }],
       },
-      resolvedTimeRanges: [
-        {
-          expression: "rill-PDC",
+      resolvedTimeRanges: {
+        resolvedTimeRange: {
           start: "2026-05-25T00:00:00.000Z",
           end: "2026-05-26T00:00:00.000Z",
         },
-        {
-          expression: "rill-PPC",
+        resolvedComparisonTimeRange: {
           start: "2026-05-24T00:00:00.000Z",
           end: "2026-05-25T00:00:00.000Z",
         },
-      ],
+      },
       expectedPartialExplore: {
         activePage: DashboardState_ActivePage.DIMENSION_TABLE,
         selectedTimeRange: {
@@ -115,40 +114,11 @@ describe("mapMetricsResolverQueryToDashboard", () => {
           end: new Date("2026-05-26T00:00:00.000Z"),
         },
         selectedComparisonTimeRange: {
-          name: TimeRangePreset.CUSTOM,
+          name: TimeComparisonOption.CUSTOM,
           start: new Date("2026-05-24T00:00:00.000Z"),
           end: new Date("2026-05-25T00:00:00.000Z"),
         },
         showTimeComparison: true,
-
-        visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE],
-        allMeasuresVisible: false,
-        visibleDimensions: [AD_BIDS_PUBLISHER_DIMENSION],
-        allDimensionsVisible: false,
-        selectedDimensionName: AD_BIDS_PUBLISHER_DIMENSION,
-      },
-    },
-
-    {
-      title:
-        "rilltime expression in time range is preserved when not present in resolvedTimeRanges",
-      query: {
-        time_range: { expression: "rill-PDC" },
-        measures: [{ name: AD_BIDS_IMPRESSIONS_MEASURE }],
-        dimensions: [{ name: AD_BIDS_PUBLISHER_DIMENSION }],
-      },
-      resolvedTimeRanges: [
-        {
-          expression: "rill-PWC",
-          start: "2026-05-18T00:00:00.000Z",
-          end: "2026-05-25T00:00:00.000Z",
-        },
-      ],
-      expectedPartialExplore: {
-        activePage: DashboardState_ActivePage.DIMENSION_TABLE,
-        selectedTimeRange: {
-          name: "rill-PDC",
-        } as DashboardTimeControls,
 
         visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE],
         allMeasuresVisible: false,
@@ -401,8 +371,10 @@ describe("mapMetricsResolverQueryToDashboard", () => {
         mapMetricsResolverQueryToDashboard(
           AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
           AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS_TIME_DIMENSION,
-          query,
-          resolvedTimeRanges ?? [],
+          {
+            query,
+            ...(resolvedTimeRanges ?? {}),
+          },
         ),
       ).toEqual(expectedPartialExplore);
     });

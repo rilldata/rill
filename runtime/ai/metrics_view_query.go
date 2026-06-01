@@ -26,11 +26,14 @@ var _ Tool[QueryMetricsViewArgs, *QueryMetricsViewResult] = (*QueryMetricsView)(
 type QueryMetricsViewArgs map[string]any
 
 type QueryMetricsViewResult struct {
-	Schema             []SchemaField            `json:"schema"`
-	Data               [][]any                  `json:"data"`
-	ResolvedTimeRanges []*metricsview.TimeRange `json:"resolved_time_ranges,omitempty"`
-	OpenURL            string                   `json:"open_url,omitempty"`
-	TruncationWarning  string                   `json:"truncation_warning,omitempty"`
+	Schema []SchemaField `json:"schema"`
+	Data   [][]any       `json:"data"`
+	// ResolvedTimeRange & ResolvedComparisonTimeRange store the exact time ranges used for the query.
+	// This helps when opening the citation url and get the exact time range for relative time ranges.
+	ResolvedTimeRange           *metricsview.TimeRange `json:"resolved_time_range,omitempty"`
+	ResolvedComparisonTimeRange *metricsview.TimeRange `json:"resolved_comparison_time_range,omitempty"`
+	OpenURL                     string                 `json:"open_url,omitempty"`
+	TruncationWarning           string                 `json:"truncation_warning,omitempty"`
 }
 
 func (t *QueryMetricsView) Spec() *mcp.Tool {
@@ -276,7 +279,7 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 	}
 
 	// Resolve time ranges and store them in the result to record the exact resolved time ranges for this tool call
-	resolvedTimeRanges, err := t.resolveTimeRanges(res)
+	tr, ctr, err := t.resolveTimeRanges(res)
 	if err != nil {
 		return nil, err
 	}
@@ -289,10 +292,11 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 
 	// Build the result
 	result := &QueryMetricsViewResult{
-		Schema:             schema,
-		Data:               data,
-		OpenURL:            openURL,
-		ResolvedTimeRanges: resolvedTimeRanges,
+		Schema:                      schema,
+		Data:                        data,
+		OpenURL:                     openURL,
+		ResolvedTimeRange:           tr,
+		ResolvedComparisonTimeRange: ctr,
 	}
 	if isSystemLimit && int64(len(data)) >= limit { // Add a warning if we hit the system limit
 		msg := fmt.Sprintf("The system truncated the result to %d rows", limit)
@@ -331,31 +335,29 @@ func (t *QueryMetricsView) generateOpenURL(ctx context.Context, instanceID, sess
 	return openURL.String(), nil
 }
 
-func (t *QueryMetricsView) resolveTimeRanges(res runtime.ResolverResult) ([]*metricsview.TimeRange, error) {
+func (t *QueryMetricsView) resolveTimeRanges(res runtime.ResolverResult) (*metricsview.TimeRange, *metricsview.TimeRange, error) {
 	meta := res.Meta()
 	if meta == nil {
-		return nil, nil
+		return nil, nil, nil
 	}
 
-	var resolvedTimeRanges []*metricsview.TimeRange
-
+	var tr *metricsview.TimeRange
 	rawTr, ok := meta["time_range"]
 	if ok {
-		tr := &metricsview.TimeRange{}
+		tr = &metricsview.TimeRange{}
 		if err := mapstructureutil.WeakDecode(rawTr, tr); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		resolvedTimeRanges = append(resolvedTimeRanges, tr)
 	}
 
+	var ctr *metricsview.TimeRange
 	rawCtr, ok := meta["comparison_time_range"]
 	if ok {
-		ctr := &metricsview.TimeRange{}
+		ctr = &metricsview.TimeRange{}
 		if err := mapstructureutil.WeakDecode(rawCtr, ctr); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		resolvedTimeRanges = append(resolvedTimeRanges, ctr)
 	}
 
-	return resolvedTimeRanges, nil
+	return tr, ctr, nil
 }

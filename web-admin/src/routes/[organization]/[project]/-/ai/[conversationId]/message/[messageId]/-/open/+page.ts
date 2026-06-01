@@ -15,8 +15,7 @@ export async function load({ parent, params: { organization, project } }) {
     : [];
 
   await openQuery({
-    query,
-    resolvedTimeRanges,
+    mapArgs: { query, ...resolvedTimeRanges },
     client,
     organization,
     project,

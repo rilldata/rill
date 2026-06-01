@@ -6,8 +6,7 @@ export async function load({ url }) {
   const query = getQueryFromUrl(url);
 
   await openQuery({
-    query,
-    resolvedTimeRanges: [],
+    mapArgs: { query },
     client: getLocalRuntimeClient(),
   });
 }

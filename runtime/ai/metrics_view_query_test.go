@@ -222,20 +222,8 @@ explore:
 		var res *ai.QueryMetricsViewResult
 		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.QueryMetricsViewName, &res, baseArgs())
 		require.NoError(t, err)
-		require.Nil(t, res.ResolvedTimeRanges)
-	})
-
-	t.Run("literal start/end time range", func(t *testing.T) {
-		args := baseArgs()
-		args["time_range"] = map[string]any{
-			"start": "2025-05-10T00:00:00Z",
-			"end":   "2025-05-14T00:00:00Z",
-		}
-		var res *ai.QueryMetricsViewResult
-		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.QueryMetricsViewName, &res, args)
-		require.NoError(t, err)
-		// Only expression-based time ranges are recorded in ResolvedTimeRanges.
-		require.Nil(t, res.ResolvedTimeRanges)
+		require.Nil(t, res.ResolvedTimeRange)
+		require.Nil(t, res.ResolvedComparisonTimeRange)
 	})
 
 	t.Run("expression time range and comparison", func(t *testing.T) {
@@ -245,12 +233,11 @@ explore:
 		var res *ai.QueryMetricsViewResult
 		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.QueryMetricsViewName, &res, args)
 		require.NoError(t, err)
-		require.Len(t, res.ResolvedTimeRanges, 2)
-		require.Equal(t, "1D as of watermark/D", res.ResolvedTimeRanges[0].Expression)
-		require.Equal(t, parseTestTime(t, "2025-05-12T00:00:00Z"), res.ResolvedTimeRanges[0].Start)
-		require.Equal(t, parseTestTime(t, "2025-05-13T00:00:00Z"), res.ResolvedTimeRanges[0].End)
-		require.Equal(t, "1D as of watermark/D offset -1D", res.ResolvedTimeRanges[1].Expression)
-		require.Equal(t, parseTestTime(t, "2025-05-11T00:00:00Z"), res.ResolvedTimeRanges[1].Start)
-		require.Equal(t, parseTestTime(t, "2025-05-12T00:00:00Z"), res.ResolvedTimeRanges[1].End)
+		require.NotNil(t, res.ResolvedTimeRange)
+		require.Equal(t, parseTestTime(t, "2025-05-12T00:00:00Z"), res.ResolvedTimeRange.Start)
+		require.Equal(t, parseTestTime(t, "2025-05-13T00:00:00Z"), res.ResolvedTimeRange.End)
+		require.NotNil(t, res.ResolvedComparisonTimeRange)
+		require.Equal(t, parseTestTime(t, "2025-05-11T00:00:00Z"), res.ResolvedComparisonTimeRange.Start)
+		require.Equal(t, parseTestTime(t, "2025-05-12T00:00:00Z"), res.ResolvedComparisonTimeRange.End)
 	})
 }
