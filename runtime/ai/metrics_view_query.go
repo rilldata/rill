@@ -10,13 +10,9 @@ import (
 
 	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
-	"github.com/rilldata/rill/runtime/pkg/rilltime"
-	"github.com/rilldata/rill/runtime/pkg/timeutil"
-	"github.com/rilldata/rill/runtime/queries"
 )
 
 const QueryMetricsViewName = "query_metrics_view"
@@ -280,7 +276,7 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 	}
 
 	// Resolve time ranges and store them in the result to record the exact resolved time ranges for this tool call
-	resolvedTimeRanges, err := t.resolveTimeRanges(ctx, session, args)
+	resolvedTimeRanges, err := t.resolveTimeRanges(res)
 	if err != nil {
 		return nil, err
 	}
@@ -335,78 +331,31 @@ func (t *QueryMetricsView) generateOpenURL(ctx context.Context, instanceID, sess
 	return openURL.String(), nil
 }
 
-func (t *QueryMetricsView) resolveTimeRanges(ctx context.Context, session *Session, args map[string]any) ([]*metricsview.TimeRange, error) {
-	qry := &metricsview.Query{}
-	if err := mapstructureutil.WeakDecode(args, qry); err != nil {
-		return nil, err
-	}
-
-	if qry.TimeRange == nil {
+func (t *QueryMetricsView) resolveTimeRanges(res runtime.ResolverResult) ([]*metricsview.TimeRange, error) {
+	meta := res.Meta()
+	if meta == nil {
 		return nil, nil
 	}
 
-	mvSpec, err := resolveMetricsView(ctx, t.Runtime, session, qry.MetricsView)
-	if err != nil {
-		return nil, err
-	}
+	var resolvedTimeRanges []*metricsview.TimeRange
 
-	ts, err := queries.ResolveTimestampResult(ctx, t.Runtime, session.InstanceID(), qry.MetricsView, qry.TimeRange.TimeDimension, session.Claims(), 0)
-	if err != nil {
-		return nil, err
-	}
-
-	var tz *time.Location
-	if qry.TimeZone != "" {
-		tz, err = time.LoadLocation(qry.TimeZone)
-		if err != nil {
+	rawTr, ok := meta["time_range"]
+	if ok {
+		tr := &metricsview.TimeRange{}
+		if err := mapstructureutil.WeakDecode(rawTr, tr); err != nil {
 			return nil, err
 		}
-	}
-
-	var resolvedTimeRanges []*metricsview.TimeRange
-	tr, err := evalTimeRangeExpr(mvSpec, qry.TimeRange, ts, tz)
-	if err != nil {
-		return nil, err
-	}
-	if tr != nil {
 		resolvedTimeRanges = append(resolvedTimeRanges, tr)
 	}
 
-	ctr, err := evalTimeRangeExpr(mvSpec, qry.ComparisonTimeRange, ts, tz)
-	if err != nil {
-		return nil, err
-	}
-	if ctr != nil {
+	rawCtr, ok := meta["comparison_time_range"]
+	if ok {
+		ctr := &metricsview.TimeRange{}
+		if err := mapstructureutil.WeakDecode(rawCtr, ctr); err != nil {
+			return nil, err
+		}
 		resolvedTimeRanges = append(resolvedTimeRanges, ctr)
 	}
 
 	return resolvedTimeRanges, nil
-}
-
-func evalTimeRangeExpr(mvSpec *runtimev1.MetricsViewSpec, timeRange *metricsview.TimeRange, ts metricsview.TimestampsResult, tz *time.Location) (*metricsview.TimeRange, error) {
-	if timeRange == nil || timeRange.Expression == "" {
-		return nil, nil
-	}
-
-	expr, err := rilltime.Parse(timeRange.Expression, rilltime.ParseOptions{
-		TimeZoneOverride: tz,
-		SmallestGrain:    timeutil.TimeGrainFromAPI(mvSpec.SmallestTimeGrain),
-	})
-	if err != nil {
-		return nil, fmt.Errorf("error parsing time range %s: %w", timeRange.Expression, err)
-	}
-
-	start, end, _ := expr.Eval(rilltime.EvalOptions{
-		Now:        time.Now(),
-		MinTime:    ts.Min,
-		MaxTime:    ts.Max,
-		Watermark:  ts.Watermark,
-		FirstDay:   int(mvSpec.FirstDayOfWeek),
-		FirstMonth: int(mvSpec.FirstMonthOfYear),
-	})
-	return &metricsview.TimeRange{
-		Expression: timeRange.Expression,
-		Start:      start,
-		End:        end,
-	}, nil
 }
