@@ -604,7 +604,7 @@ func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *git
 	}
 
 	// 2. Check status of the subpath
-	status, err := gitutil.RunGitStatus(root, config.Subpath, config.RemoteName(), fmt.Sprintf("%s:%s", config.RemoteName(), config.DefaultBranch))
+	status, err := gitutil.RunGitStatus(root, config.Subpath, config.RemoteName(), fmt.Sprintf("%s/%s", config.RemoteName(), config.DefaultBranch))
 	if err != nil {
 		return fmt.Errorf("failed to get git status: %w", err)
 	}

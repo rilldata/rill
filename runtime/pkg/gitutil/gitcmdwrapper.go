@@ -40,8 +40,6 @@ func MergeWithBailOnConflict(path, branch string) (bool, error) {
 	// First try the merge
 	cmd := exec.Command("git", "-C", path, "merge", "--no-ff", branch)
 	out, err := cmd.CombinedOutput()
-	fmt.Printf("Merge output: %s\n", string(out))
-	fmt.Printf("Merge error: %v\n", err)
 	if err == nil {
 		// Merge succeeded
 		return true, nil
