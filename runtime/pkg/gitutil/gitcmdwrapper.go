@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"strings"
 )
 
 // MergeWithStrategy merge a branch into the current branch using the specified strategy.
@@ -38,10 +39,14 @@ func MergeWithStrategy(path, branch, strategy string) error {
 func MergeWithBailOnConflict(path, branch string) (bool, error) {
 	// First try the merge
 	cmd := exec.Command("git", "-C", path, "merge", "--no-ff", branch)
-	_, err := cmd.Output()
+	out, err := cmd.CombinedOutput()
 	if err == nil {
 		// Merge succeeded
 		return true, nil
+	}
+
+	if strings.Contains(string(out), "Aborting") {
+		return false, nil // Merge failed due to conflicts, but git already aborted the merge, so we can just return.
 	}
 
 	// Merge failed, try to abort

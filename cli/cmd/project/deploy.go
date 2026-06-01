@@ -48,10 +48,12 @@ type DeployOpts struct {
 	// SkipDeploy skips the runtime deployment step. Used for testing.
 	SkipDeploy bool
 
+	// CreateDeployment is set if a new deployment should be created. Set internally.
+	CreateDeployment bool
+	// PushToProject is set if the deploy should push current changes to this existing project. Set internally.
+	PushToProject *adminv1.Project
 	// remoteURL is the git remote url of the repository if detected. Set internally.
 	remoteURL string
-	// pushToProject is set if the deploy should push current changes to this existing project. Set internally.
-	pushToProject *adminv1.Project
 }
 
 func (o *DeployOpts) LocalProjectPath() string {
@@ -83,6 +85,11 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 		return err
 	}
 
+	// initialize git repository
+	if err = gitutil.GitInit(o.GitPath); err != nil {
+		return err
+	}
+
 	// check if specified project already exists
 	if o.Name != "" && ch.Org != "" {
 		p, exists, err := getProject(ctx, ch, ch.Org, o.Name)
@@ -90,15 +97,13 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 			return err
 		}
 		if exists {
-			if ch.Interactive {
-				if err := cmdutil.ConfirmPrompt(fmt.Sprintf("Project with name %q already exists. Do you want to push current changes to the existing project?", o.Name), true); err != nil {
-					return err
-				}
+			o.PushToProject = p
+			if err := o.shouldCreateDeployment(ch); err != nil {
+				return err
 			}
-			o.pushToProject = p
-			o.Managed = o.pushToProject.ManagedGitId != ""
-			o.Github = o.pushToProject.ManagedGitId == "" && o.pushToProject.GitRemote != ""
-			o.ArchiveUpload = o.pushToProject.ArchiveAssetId != ""
+			o.Managed = o.PushToProject.ManagedGitId != ""
+			o.Github = o.PushToProject.ManagedGitId == "" && o.PushToProject.GitRemote != ""
+			o.ArchiveUpload = o.PushToProject.ArchiveAssetId != ""
 			return nil
 		}
 	}
@@ -127,35 +132,34 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 	}
 
 	// if there is a project already connected to this repo+subpath offer to push changes to it
-	if o.pushToProject != nil {
-		if o.pushToProject.ManagedGitId == "" && o.Managed {
-			ch.PrintfError("Project %s/%s is already connected to this GitHub repository. Cannot use --managed flag.\n", o.pushToProject.OrgName, o.pushToProject.Name)
+	if o.PushToProject != nil {
+		if o.PushToProject.ManagedGitId == "" && o.Managed {
+			ch.PrintfError("Project %s/%s is already connected to this GitHub repository. Cannot use --managed flag.\n", o.PushToProject.OrgName, o.PushToProject.Name)
 			return fmt.Errorf("aborting deploy")
 		}
-		if o.pushToProject.ManagedGitId != "" && o.Github {
-			ch.Printf("Found another rill managed project %s/%s connected to this folder\n", o.pushToProject.OrgName, o.pushToProject.Name)
+		if o.PushToProject.ManagedGitId != "" && o.Github {
+			ch.Printf("Found another rill managed project %s/%s connected to this folder\n", o.PushToProject.OrgName, o.PushToProject.Name)
 			ch.PrintfBold("Run `rill project edit --remote-url <github_remote>` to tranfer the project to GitHub.\n")
 			return fmt.Errorf("aborting deploy")
 		}
-		if o.pushToProject.OrgName != ch.Org {
-			ch.PrintfError("A project in another org deploys from this repository. Please switch to org %q to push changes to the project %q.\n", o.pushToProject.OrgName, o.pushToProject.Name)
+		if o.PushToProject.OrgName != ch.Org {
+			ch.PrintfError("A project in another org deploys from this repository. Please switch to org %q to push changes to the project %q.\n", o.PushToProject.OrgName, o.PushToProject.Name)
 			return fmt.Errorf("aborting deploy")
 		}
-		if subpath != "" && o.pushToProject.Subpath != subpath {
+		if subpath != "" && o.PushToProject.Subpath != subpath {
 			// just for verification confirm that subpath matches the one stored in project
-			return fmt.Errorf("current project subpath %q does not match the one stored in rill %q. Try doing deploy using rill cli from github repo root by passing explicit subpath using `rill deploy --subpath %s`", subpath, o.pushToProject.Subpath, o.pushToProject.Subpath)
+			return fmt.Errorf("current project subpath %q does not match the one stored in rill %q. Try doing deploy using rill cli from github repo root by passing explicit subpath using `rill deploy --subpath %s`", subpath, o.PushToProject.Subpath, o.PushToProject.Subpath)
 		}
 		// set flags based on existing project
-		o.Managed = o.pushToProject.ManagedGitId != ""
-		o.Github = o.pushToProject.ManagedGitId == "" && o.pushToProject.GitRemote != ""
-		o.ArchiveUpload = o.pushToProject.ArchiveAssetId != ""
+		o.Managed = o.PushToProject.ManagedGitId != ""
+		o.Github = o.PushToProject.ManagedGitId == "" && o.PushToProject.GitRemote != ""
+		o.ArchiveUpload = o.PushToProject.ArchiveAssetId != ""
 
-		ch.PrintfBold("\nFound existing project: ")
-		ch.Printf("%s/%s\n", o.pushToProject.OrgName, o.pushToProject.Name)
-		if !ch.Interactive {
-			return nil
+		// check if we need to create a new deployment or just push to existing one
+		if err := o.shouldCreateDeployment(ch); err != nil {
+			return err
 		}
-		return cmdutil.ConfirmPrompt("Do you want to push current changes to the existing project?", true)
+		return nil
 	}
 
 	if o.remoteURL == "" {
@@ -234,11 +238,11 @@ func (o *DeployOpts) detectGitRemoteAndProject(ctx context.Context, ch *cmdutil.
 	}
 	for _, p := range resp.Projects {
 		if p.ManagedGitId != "" {
-			o.pushToProject = p
+			o.PushToProject = p
 			o.remoteURL = p.GitRemote
 			return nil
 		}
-		o.pushToProject = p
+		o.PushToProject = p
 		o.remoteURL = p.GitRemote
 		// do not return yet, there might be a managed project
 		// this is not possible with new flow but keeping it for consistency
@@ -253,6 +257,32 @@ func (o *DeployOpts) detectGitRemoteAndProject(ctx context.Context, ch *cmdutil.
 	if req.GitRemote != "" {
 		o.remoteURL = req.GitRemote
 	}
+	return nil
+}
+
+func (o *DeployOpts) shouldCreateDeployment(ch *cmdutil.Helper) error {
+	if o.PushToProject.ManagedGitId != "" || o.PushToProject.ArchiveAssetId != "" {
+		// for managed git and archive upload we allow pushing from any branch so we should not create a new deployment
+		return nil
+	}
+	currentBranch, err := gitutil.CurrentBranch(o.GitPath)
+	if err != nil {
+		return err
+	}
+	redeploy := currentBranch == o.PushToProject.PrimaryBranch
+	if ch.Interactive {
+		if redeploy {
+			if err := cmdutil.ConfirmPrompt(fmt.Sprintf("Found existing project: %q/%q. Do you want to push current changes to this project?\n", o.PushToProject.OrgName, o.PushToProject.Name), true); err != nil {
+				return err
+			}
+		} else {
+			ch.PrintfWarn("Found existing project: %q/%q. But current branch %q does not match the primary branch %q of the project.\n", o.PushToProject.OrgName, o.PushToProject.Name, currentBranch, o.PushToProject.PrimaryBranch)
+			if err := cmdutil.ConfirmPrompt("Do you want to create a new deployment instead?", true); err != nil {
+				return err
+			}
+		}
+	}
+	o.CreateDeployment = !redeploy
 	return nil
 }
 
@@ -374,7 +404,7 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		return fmt.Errorf("failed to set up .gitignore: %w", err)
 	}
 
-	if opts.pushToProject != nil {
+	if opts.PushToProject != nil {
 		return redeployProject(ctx, ch, opts)
 	}
 
@@ -462,7 +492,7 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 	if err != nil {
 		return err
 	}
-	proj := opts.pushToProject
+	proj := opts.PushToProject
 	if proj.ManagedGitId != "" {
 		err := ch.GitHelper(ch.Org, proj.Name, opts.LocalProjectPath()).PushToManagedRepo(ctx)
 		if err != nil {
@@ -479,8 +509,8 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 			return fmt.Errorf("current project subpath %q does not match the one stored in rill %q. Run rill cli from github repo root and pass explicit subpath using `rill deploy --subpath %s`", subpath, proj.Subpath, proj.Subpath)
 		}
 		config := &gitutil.Config{
-			Remote:        opts.pushToProject.GitRemote,
-			DefaultBranch: opts.pushToProject.PrimaryBranch,
+			Remote:        opts.PushToProject.GitRemote,
+			DefaultBranch: opts.PushToProject.PrimaryBranch,
 			Subpath:       subpath,
 		}
 		author, err := ch.GitSignature(ctx, repoRoot)

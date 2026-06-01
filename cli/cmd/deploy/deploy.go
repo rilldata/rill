@@ -5,7 +5,9 @@ import (
 
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/cmd/project"
+	"github.com/rilldata/rill/cli/cmd/project/deployment"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/spf13/cobra"
 )
@@ -33,6 +35,14 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 			err := opts.ValidateAndApplyDefaults(cmd.Context(), ch)
 			if err != nil {
 				return err
+			}
+
+			if opts.CreateDeployment {
+				currentBranch, err := gitutil.CurrentBranch(opts.GitPath)
+				if err != nil {
+					return fmt.Errorf("failed to get current git branch: %w", err)
+				}
+				return deployment.CreateDeployment(cmd.Context(), ch, opts.PushToProject.Name, currentBranch, "", false)
 			}
 
 			if !opts.Managed && !opts.ArchiveUpload && !opts.Github {

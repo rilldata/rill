@@ -90,7 +90,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 	localGitPath := opts.GitPath
 	localProjectPath := opts.LocalProjectPath()
 
-	if opts.pushToProject != nil {
+	if opts.PushToProject != nil {
 		return redeployProject(ctx, ch, opts)
 	}
 

@@ -27,11 +27,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				branch = args[1]
 			}
 
-			client, err := ch.Client()
-			if err != nil {
-				return err
-			}
-
+			var err error
 			if project == "" {
 				project, err = ch.InferProjectName(cmd.Context(), path, "use --project to specify the name")
 				if err != nil {
@@ -39,28 +35,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			if environment == "prod" && editable {
-				return fmt.Errorf("prod deployments cannot be editable")
-			}
-
-			ch.PrintfBold("Creating %q deployment for branch %q...\n", environment, branch)
-
-			resp, err := client.CreateDeployment(cmd.Context(), &adminv1.CreateDeploymentRequest{
-				Org:         ch.Org,
-				Project:     project,
-				Environment: environment,
-				Branch:      branch,
-				Editable:    editable,
-			})
-			if err != nil {
-				return err
-			}
-
-			ch.Printf("Deployment created with branch %q\n", resp.Deployment.Branch)
-			ch.Printf("Provisioning runtime (this may take a moment)")
-
-			// Poll for deployment status and print result
-			return pollDeploymentStatus(cmd.Context(), client, ch, resp.Deployment.Id, project, branch, environment)
+			return CreateDeployment(cmd.Context(), ch, project, branch, environment, editable)
 		},
 	}
 
@@ -70,6 +45,54 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 	createCmd.Flags().BoolVar(&editable, "editable", false, "Make the deployment editable (changes are persisted back to git repo)")
 
 	return createCmd
+}
+
+// CreateDeployment creates a deployment for the specified branch in specified environment.
+// If env is not set then it will prompt user to select environment (default: dev).
+func CreateDeployment(ctx context.Context, ch *cmdutil.Helper, project, branch, env string, editable bool) error {
+	if env == "prod" && editable {
+		return fmt.Errorf("prod deployments cannot be editable")
+	}
+	var err error
+	if ch.Interactive && env == "" { // not set by caller
+		env, err = cmdutil.SelectPrompt("Environment to create deployment for?", []string{"dev", "prod"}, "dev")
+		if err != nil {
+			return err
+		}
+		if env != "prod" {
+			editable, err = cmdutil.YesNoPrompt("Do you want an editable deployment", false)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	if env == "" { // still unset - default to dev
+		env = "dev"
+	}
+
+	client, err := ch.Client()
+	if err != nil {
+		return err
+	}
+
+	resp, err := client.CreateDeployment(ctx, &adminv1.CreateDeploymentRequest{
+		Org:         ch.Org,
+		Project:     project,
+		Environment: env,
+		Branch:      branch,
+		Editable:    editable,
+	})
+	if err != nil {
+		return err
+	}
+
+	if ch.Interactive {
+		ch.Printf("Deployment created with branch %q\n", resp.Deployment.Branch)
+		ch.Printf("Provisioning runtime (this may take a moment)")
+	}
+
+	// Poll for deployment status and print result
+	return pollDeploymentStatus(ctx, client, ch, resp.Deployment.Id, project, branch, env)
 }
 
 // pollDeploymentStatus polls the deployment status until it's either running or errored, then prints the result
