@@ -26,12 +26,28 @@
   } from "@rilldata/web-common/features/dashboards/pivot/time-pill-utils";
   import { timePillSelectors } from "./time-pill-store";
 
-  export type Zone = "rows" | "columns" | "Time" | "Measures" | "Dimensions";
+  export type Zone =
+    | "rows"
+    | "columns"
+    | "Time"
+    | "Measures"
+    | "Dimensions"
+    | "tags";
+
+  // When a tag chip is being dragged the drop receivers do a bulk-add instead
+  // of the per-chip splice path. The dimensions and measures arrays are
+  // precomputed at drag-start so each receiver does not have to re-split.
+  export type TagDragPayload = {
+    tagName: string;
+    dimensions: PivotChipData[];
+    measures: PivotChipData[];
+  };
 
   export type DragData = {
     source: Zone;
     width: number;
     chip: PivotChipData;
+    tagPayload?: TagDragPayload;
   };
 
   export const dragDataStore = writable<null | DragData>(null);
@@ -70,10 +86,14 @@
     (i) => i.type !== PivotChipType.Measure,
   );
 
+  $: isTagDrag = !!dragData?.tagPayload;
+
   $: isValidDropZone =
     isDropLocation &&
     dragData &&
-    (zone === "columns" || dragChip?.type !== PivotChipType.Measure);
+    (isTagDrag ||
+      zone === "columns" ||
+      dragChip?.type !== PivotChipType.Measure);
 
   // Get available grains from the store
   const availableGrainsStore = timePillSelectors.getAvailableGrains("time");
@@ -134,12 +154,42 @@
     window.removeEventListener("mousemove", detectDragStart);
   }
 
-  function handleDrop() {
+  function handleDrop(e: MouseEvent) {
     if (zoneStartedDrag)
       $controllerStore?.abort("Drag cancelled - item dropped");
 
+    // Holding CMD (mac) or Ctrl flips the tag drop from append to replace,
+    // matching the click-side affordance on the tag row.
+    const replace = e.metaKey || e.ctrlKey;
+
     if (isValidDropZone) {
-      if (dragChip && ghostIndex !== null) {
+      if (dragData?.tagPayload) {
+        // Bulk-add path for tag drops. Skips ghost-index positioning since
+        // we are inserting multiple chips, not a single one.
+        const { dimensions, measures } = dragData.tagPayload;
+        if (zone === "rows") {
+          if (replace) {
+            metricsExplorerStore.replacePivotRows($exploreName, dimensions);
+          } else if (dimensions.length > 0) {
+            metricsExplorerStore.addPivotFields(
+              $exploreName,
+              dimensions,
+              "rows",
+            );
+          }
+        } else if (zone === "columns") {
+          const all = [...dimensions, ...measures];
+          if (replace) {
+            metricsExplorerStore.replacePivotColumns($exploreName, all);
+          } else if (all.length > 0) {
+            metricsExplorerStore.addPivotFields(
+              $exploreName,
+              all,
+              "columns",
+            );
+          }
+        }
+      } else if (dragChip && ghostIndex !== null) {
         const temp = [...items];
 
         let chipToAdd = dragChip;

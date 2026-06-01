@@ -18,11 +18,18 @@
 </script>
 
 <script lang="ts">
+  import { splitTagItems } from "./pivot-utils";
+
   export let zone: "rows" | "columns" | null = null;
+
+  // Prefix used to identify tag rows in the dropdown's flat name space.
+  // Tag names can collide with dimension/measure ids otherwise.
+  const TAG_PREFIX = "__tag__:";
 
   const {
     selectors: {
       pivot: { dimensions, measures },
+      tags: { combinedTagIndex, dimensionTagIndex, measureTagIndex },
     },
     exploreName,
   } = getStateManagers();
@@ -48,7 +55,36 @@
       !isGrainBigger($timeControlsStore.minTimeGrain, tgo.id),
   );
 
+  // Tag rows count items that are routable for the current zone: rows can
+  // only accept dimensions, so a tag of pure measures has nothing to add
+  // there and is hidden.
+  $: tagGroupItems = $combinedTagIndex.tags
+    .map((t) => {
+      const dimCount = $dimensionTagIndex.itemsByTag.get(t.name)?.length ?? 0;
+      const measCount = $measureTagIndex.itemsByTag.get(t.name)?.length ?? 0;
+      const usable = zone === "rows" ? dimCount : dimCount + measCount;
+      return { tag: t, dimCount, measCount, usable };
+    })
+    .filter((t) => t.usable > 0)
+    .map(({ tag, dimCount, measCount }) => ({
+      name: `${TAG_PREFIX}${tag.name}`,
+      label:
+        dimCount > 0 && measCount > 0
+          ? `${tag.name} (${dimCount} dim · ${measCount} meas)`
+          : dimCount > 0
+            ? `${tag.name} (${dimCount} dim)`
+            : `${tag.name} (${measCount} meas)`,
+    }));
+
   $: selectableGroups = [
+    ...(tagGroupItems.length > 0
+      ? [
+          <SearchableFilterSelectableGroup>{
+            name: "TAGS",
+            items: tagGroupItems,
+          },
+        ]
+      : []),
     ...(zone === "columns"
       ? [
           <SearchableFilterSelectableGroup>{
@@ -83,7 +119,27 @@
     ...timeGrainOptions,
   ];
 
-  function handleSelectValue(name) {
+  function handleSelectValue(name: string) {
+    if (name.startsWith(TAG_PREFIX)) {
+      const tagName = name.slice(TAG_PREFIX.length);
+      const { dimensions: dims, measures: meas } = splitTagItems(
+        tagName,
+        $dimensionTagIndex,
+        $measureTagIndex,
+      );
+      if (zone === "rows") {
+        if (dims.length) {
+          metricsExplorerStore.addPivotFields($exploreName, dims, "rows");
+        }
+      } else {
+        const all = [...dims, ...meas];
+        if (all.length) {
+          metricsExplorerStore.addPivotFields($exploreName, all, "columns");
+        }
+      }
+      return;
+    }
+
     const selectedItem = allDimensionsMeasures.find(
       (item) => item.id === name,
     ) as PivotChipData;

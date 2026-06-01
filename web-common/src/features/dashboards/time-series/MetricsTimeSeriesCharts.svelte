@@ -62,6 +62,7 @@
       measures: { allMeasures, visibleMeasures, getMeasureByName },
       dimensionFilters: { includedDimensionValues },
       charts: { canPanLeft, canPanRight, getNewPanRange },
+      tags: { measureTagIndex },
     },
     actions: {
       measures: { setMeasureVisibility },
@@ -283,6 +284,7 @@
         onSelectedChange={(items) =>
           setMeasureVisibility(items, allMeasureNames)}
         allItems={$allMeasures}
+        tagIndex={$measureTagIndex}
         selectedItems={visibleMeasureNames}
       />
 

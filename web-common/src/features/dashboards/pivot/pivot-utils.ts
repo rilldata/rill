@@ -1,3 +1,4 @@
+import { itemsInTag, type TagIndex } from "@rilldata/web-common/components/menu/tag-utils";
 import { getValuesForExpandedKey } from "@rilldata/web-common/features/dashboards/pivot/pivot-expansion";
 import {
   createAndExpression,
@@ -12,6 +13,8 @@ import {
   type TimeRangeString,
 } from "@rilldata/web-common/lib/time/types";
 import type {
+  MetricsViewSpecDimension,
+  MetricsViewSpecMeasure,
   V1Expression,
   V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationResponse,
@@ -745,4 +748,48 @@ export function splitPivotChips(data: PivotChipData[]): {
 export function isShowMoreRow(row: Row<PivotDataRow>): boolean {
   const firstCell = row?.getVisibleCells()?.[0];
   return firstCell?.getValue() === SHOW_MORE_BUTTON;
+}
+
+/**
+ * Project a dimension or measure spec into the PivotChipData shape used by
+ * the sidebar and bulk-add paths. Mirrors the projection in
+ * state-managers/selectors/pivot.ts so chips look identical regardless of
+ * whether they came from drag-and-drop or a tag bulk-add.
+ */
+export function dimensionToChipData(
+  d: MetricsViewSpecDimension,
+): PivotChipData {
+  return {
+    id: d.name || d.column || "Unknown",
+    title: d.displayName || d.name || d.column || "Unknown",
+    type: PivotChipType.Dimension,
+    description: d.description,
+  };
+}
+
+export function measureToChipData(m: MetricsViewSpecMeasure): PivotChipData {
+  return {
+    id: m.name || "Unknown",
+    title: m.displayName || m.name || "Unknown",
+    type: PivotChipType.Measure,
+    description: m.description,
+  };
+}
+
+/**
+ * Split the items in a tag into dimension chips and measure chips, preserving
+ * spec order. Used by the pivot sidebar's bulk-add actions: "Add all to rows"
+ * consumes the dimensions output, "Add all to columns" concatenates both, and
+ * "Auto-arrange" routes each list to its natural zone.
+ */
+export function splitTagItems(
+  tagName: string,
+  dimensionTagIndex: TagIndex,
+  measureTagIndex: TagIndex,
+): { dimensions: PivotChipData[]; measures: PivotChipData[] } {
+  const dimensions = itemsInTag(dimensionTagIndex, tagName)
+    .map((d) => dimensionToChipData(d as MetricsViewSpecDimension));
+  const measures = itemsInTag(measureTagIndex, tagName)
+    .map((m) => measureToChipData(m as MetricsViewSpecMeasure));
+  return { dimensions, measures };
 }
