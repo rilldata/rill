@@ -5,10 +5,7 @@ import {
   type MetricsViewAndExploreSpecs,
 } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
-import type {
-  Schema as MetricsResolverQuery,
-  TimeRange,
-} from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
+import type { Schema as MetricsResolverQuery } from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
 import {
   getQueryFromUrl,
   getResolvedTimeRangesFromMessage,

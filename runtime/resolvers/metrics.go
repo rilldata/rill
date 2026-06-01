@@ -156,31 +156,23 @@ func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.Resol
 	meta["metrics_view"] = r.query.MetricsView
 	meta["fields"] = fieldsFromQuery(r.mv, r.query)
 
-	// Save the original time range so that the meta can contain things like expression and iso
-	var tr metricsview.TimeRange
-	if r.query.TimeRange != nil {
-		tr = *r.query.TimeRange
-	}
-	var ctr metricsview.TimeRange
-	if r.query.ComparisonTimeRange != nil {
-		ctr = *r.query.ComparisonTimeRange
-	}
-
 	res, err := r.executor.Query(ctx, r.query, r.args.ExecutionTime)
 	if err != nil {
 		return nil, err
 	}
 
-	// Update the original ranges with the resolved start and end and return with meta
+	// Add resolved time ranges to metadata
 	if r.query.TimeRange != nil {
-		tr.Start = r.query.TimeRange.Start
-		tr.End = r.query.TimeRange.End
-		meta["time_range"] = tr
+		meta["time_range"] = &metricsview.TimeRange{
+			Start: r.query.TimeRange.Start,
+			End:   r.query.TimeRange.End,
+		}
 	}
 	if r.query.ComparisonTimeRange != nil {
-		ctr.Start = r.query.ComparisonTimeRange.Start
-		ctr.End = r.query.ComparisonTimeRange.End
-		meta["comparison_time_range"] = ctr
+		meta["comparison_time_range"] = &metricsview.TimeRange{
+			Start: r.query.ComparisonTimeRange.Start,
+			End:   r.query.ComparisonTimeRange.End,
+		}
 	}
 
 	return runtime.NewDriverResolverResult(res, meta), nil
