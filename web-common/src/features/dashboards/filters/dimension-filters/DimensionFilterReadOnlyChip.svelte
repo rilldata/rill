@@ -18,6 +18,7 @@
   export let timeStart: string | undefined;
   export let timeEnd: string | undefined;
   export let pinned = false;
+  export let missingRequired = false;
 
   const client = useRuntimeClient();
 
@@ -76,6 +77,7 @@
   exclude={!isInclude}
   showPinnedIcon={pinned}
   gray={pinned && values.length === 0}
+  error={missingRequired}
 >
   <DimensionFilterChipBody
     slot="body"

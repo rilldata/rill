@@ -62,22 +62,29 @@ const (
 //     g. All WHERE filter dimensions are present in the rollup.
 //
 //  3. Time coverage: an eligible rollup must cover both the base and (when present) comparison time ranges.
-//     For explicit time ranges, the query range is clamped to the base table's actual data range first.
-//     For no-time-range queries ("all data"), the rollup must cover the base table's full min/max range.
-//     Additionally, if the base table has data beyond a range's end, that end must be aligned
-//     to the rollup grain (to prevent the last bucket from pulling in extra data).
+//     The query range is clamped to the widest available source: the start to min(baseMin, rollupMin) and
+//     the end to max(baseMax, rollupEffEnd). So a rollup that extends further back (or forward) than the
+//     base is preserved here, not rejected. Additionally, if the base table has data beyond the query range's end,
+//     that end must be aligned to the rollup grain (to prevent the last bucket from pulling in extra data).
 //
-//  4. Selection: among eligible rollups, prefer the coarsest grain (fewer rows to scan).
-//     On ties, prefer the rollup with the smallest data range (tighter coverage).
+//  4. Selection: selection is based on coarsest grain, then earlier definition order. The
+//     exception is when the query time range goes beyond what the candidate rollups cover — i.e.
+//     rollups have mismatched data time range depths in that case the rollup with the wider effective return range wins.
 //
 // The selected rollup is returned as a synthetic MetricsViewSpec that points to the rollup table.
 // The caller uses this spec to build the query AST, so the rest of the query pipeline remains same.
+//
+// Assumption: a rollup's max timestamp is no later than the base table's max. Coverage and end-alignment checks use
+// the base's max as the reference for "is there data at or beyond the query end" — a rollup that gets ahead of the base
+// may return incorrect results at the tail of the data.
 
 // rollupCandidate tracks an eligible rollup along with selection metadata.
 type rollupCandidate struct {
-	rollup     *runtimev1.MetricsViewSpec_Rollup
-	grainOrder int
-	dataRange  time.Duration // max - min; 0 if no time dimension
+	rollup      *runtimev1.MetricsViewSpec_Rollup
+	grainOrder  int
+	index       int       // position in MetricsViewSpec.Rollups; used as the final tiebreaker (earlier wins)
+	effRetStart time.Time // earliest timestamp this rollup will actually return for this query
+	effRetEnd   time.Time // latest timestamp this rollup will actually return for this query (exclusive)
 }
 
 // rewriteQueryForRollup checks if a rollup table can satisfy the query.
@@ -139,7 +146,7 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 	tsFetched := false
 
 	var best *rollupCandidate
-	for _, rollup := range e.metricsView.Rollups {
+	for i, rollup := range e.metricsView.Rollups {
 		if rollup.Table == "" {
 			return nil, fmt.Errorf("rollup for model %q has no resolved table", rollup.Model)
 		}
@@ -207,29 +214,17 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 		}
 		rollupEffEnd := timeutil.OffsetTime(rollupMax, timeutil.TimeGrainFromAPI(rollup.TimeGrain), 1, rollupLoc)
 
-		// Check coverage for the base time range (or full base table range when no time range is set),
-		// and additionally for the comparison time range when present.
+		// Check coverage for the base time range and the comparison time range when present.
+		// When the query has no time range, use {baseMin, baseMax} for the coverage check so the rollup must still
+		// cover the base table's full data range; otherwise a partial rollup would silently truncate the result.
+		coverageTimeRange := qry.TimeRange
+		if !hasTimeRange {
+			coverageTimeRange = &metricsview.TimeRange{Start: baseMin, End: baseMax}
+		}
 		rangeRejected := false
-		if hasTimeRange {
-			if reason, attrs := checkRangeCoverage(qry.TimeRange, baseMin, baseMax, rollupMin, rollupEffEnd); reason != "" {
-				rejectCandidate(reason, attrs...)
-				rangeRejected = true
-			}
-		} else {
-			// No time range: rollup must cover the base table's full range
-			if rollupMin.After(baseMin) {
-				rejectCandidate(rejectStartNotCovered,
-					attribute.String("rollup.base_min", baseMin.Format(time.RFC3339)),
-					attribute.String("rollup.rollup_min", rollupMin.Format(time.RFC3339)),
-				)
-				rangeRejected = true
-			} else if rollupEffEnd.Before(baseMax) {
-				rejectCandidate(rejectEndNotCovered,
-					attribute.String("rollup.base_max", baseMax.Format(time.RFC3339)),
-					attribute.String("rollup.rollup_eff_end", rollupEffEnd.Format(time.RFC3339)),
-				)
-				rangeRejected = true
-			}
+		if reason, attrs := checkRangeCoverage(coverageTimeRange, baseMin, baseMax, rollupMin, rollupEffEnd); reason != "" {
+			rejectCandidate(reason, attrs...)
+			rangeRejected = true
 		}
 		if !rangeRejected && hasComparisonTimeRange {
 			if reason, attrs := checkRangeCoverage(qry.ComparisonTimeRange, baseMin, baseMax, rollupMin, rollupEffEnd); reason != "" {
@@ -242,8 +237,7 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 		}
 
 		// Check end alignment now: if data extends beyond the query end and the end is not aligned to the rollup grain,
-		// the last rollup bucket would include data beyond the requested range. rollupEligible only checks start alignment.
-		// Applies to both the base and comparison time ranges.
+		// the last rollup bucket would include data beyond the requested range. rollupEligible before only checked start alignment.
 		if hasTimeRange {
 			if reason, attrs := checkEndAlignment(qry.TimeRange.End, baseMax, rollup.TimeGrain, rollupLoc, e.metricsView.FirstDayOfWeek); reason != "" {
 				rejectCandidate(reason, attrs...)
@@ -260,17 +254,41 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 		candidateSpan.SetAttributes(attribute.String("rollup.eligible", "true"))
 		candidateSpan.End()
 
-		dataRange := rollupMax.Sub(rollupMin)
-		c := &rollupCandidate{
-			rollup:     rollup,
-			grainOrder: grainOrder[rollup.TimeGrain],
-			dataRange:  dataRange,
+		// Compute the candidate's effective return range: the slice of time this rollup will actually emit for this query.
+		// The rollup is filtered to [max(query.start, rollupMin), min(query.end, rollupEffEnd)].
+		// For two candidates with identical effective return ranges — selection falls to coarsest grain and then index order.
+		effRetStart := rollupMin
+		effRetEnd := rollupEffEnd
+		if hasTimeRange {
+			if !qry.TimeRange.Start.IsZero() && qry.TimeRange.Start.After(effRetStart) {
+				effRetStart = qry.TimeRange.Start
+			}
+			if !qry.TimeRange.End.IsZero() && qry.TimeRange.End.Before(effRetEnd) {
+				effRetEnd = qry.TimeRange.End
+			}
 		}
 
-		// Selection priority: coarsest grain (primary); smallest data range (secondary tiebreaker)
-		if best == nil || c.grainOrder > best.grainOrder {
+		c := &rollupCandidate{
+			rollup:      rollup,
+			grainOrder:  grainOrder[rollup.TimeGrain],
+			index:       i,
+			effRetStart: effRetStart,
+			effRetEnd:   effRetEnd,
+		}
+
+		// Selection: coarsest grain wins, then earlier definition order. The exception is when the query time range goes beyond what the candidate rollups cover;
+		// in that case the wider effective return range wins (earliest start, then latest end) as it will give the most complete data.
+		// When multiple rollups cover the query time range, they will all have the same effRetStart and effRetEnd so selection is base on grain and index order.
+		switch {
+		case best == nil:
 			best = c
-		} else if c.grainOrder == best.grainOrder && c.dataRange > 0 && (best.dataRange == 0 || c.dataRange < best.dataRange) {
+		case c.effRetStart.Before(best.effRetStart):
+			best = c
+		case c.effRetStart.Equal(best.effRetStart) && c.effRetEnd.After(best.effRetEnd):
+			best = c
+		case c.effRetStart.Equal(best.effRetStart) && c.effRetEnd.Equal(best.effRetEnd) && c.grainOrder > best.grainOrder:
+			best = c
+		case c.effRetStart.Equal(best.effRetStart) && c.effRetEnd.Equal(best.effRetEnd) && c.grainOrder == best.grainOrder && c.index < best.index:
 			best = c
 		}
 	}
@@ -482,17 +500,26 @@ func collectWhereDimensionsRec(expr *metricsview.Expression, dims map[string]boo
 	}
 }
 
-// checkRangeCoverage verifies that the rollup covers the given time range. The query range is first
-// clamped to the base table's actual data range so a rollup isn't rejected when the query extends
-// beyond the base table. Returns the reject reason and trace attributes, or "" if covered.
+// checkRangeCoverage verifies that the rollup covers the given time range. The query range is clamped to the widest
+// available data range — i.e. min(baseMin, rollupMin) on the start and max(baseMax, rollupEffEnd) on the end
+// so a rollup isn't rejected when the query asks for data outside what either source can serve.
+// Returns the reject reason and trace attributes, or "" if covered.
 func checkRangeCoverage(tr *metricsview.TimeRange, baseMin, baseMax, rollupMin, rollupEffEnd time.Time) (string, []attribute.KeyValue) {
+	deepestStart := baseMin
+	if rollupMin.Before(baseMin) {
+		deepestStart = rollupMin
+	}
 	effectiveStart := tr.Start
-	if !effectiveStart.IsZero() && baseMin.After(effectiveStart) {
-		effectiveStart = baseMin
+	if !effectiveStart.IsZero() && deepestStart.After(effectiveStart) {
+		effectiveStart = deepestStart
+	}
+	furthestEnd := baseMax
+	if rollupEffEnd.After(baseMax) {
+		furthestEnd = rollupEffEnd
 	}
 	effectiveEnd := tr.End
-	if !effectiveEnd.IsZero() && baseMax.Before(effectiveEnd) {
-		effectiveEnd = baseMax
+	if !effectiveEnd.IsZero() && effectiveEnd.After(furthestEnd) {
+		effectiveEnd = furthestEnd
 	}
 	if !effectiveStart.IsZero() && rollupMin.After(effectiveStart) {
 		return rejectStartNotCovered, []attribute.KeyValue{

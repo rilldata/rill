@@ -34,6 +34,8 @@ filters:
   pinned:
     - region
     - product_category
+  required:
+    - customer_id      # Dashboard refuses to render until this filter has a value
 
 # Optional time range presets
 time_ranges:
@@ -94,6 +96,15 @@ rows:
             type: quantitative
             field: total_revenue
 ```
+
+### Filter settings
+
+`filters.pinned` and `filters.required` both reference dimensions or measures by name (they must exist on at least one referenced metrics view). They control different things:
+
+- **`pinned`**: keeps a filter pill visible at the top of the dashboard so users can change it without opening the filter menu. The dashboard renders normally whether or not the user has set a value.
+- **`required`**: the dashboard refuses to render until every required filter has a value. Set a default value in `defaults.filters` to satisfy a required filter automatically; otherwise the user is prompted to pick one. Required filters are implicitly pinned — do not also list them under `pinned`.
+
+Use `required` for filters that are unsafe or meaningless to omit (e.g. tenant ID, customer scope, region when results would otherwise mix incompatible data).
 
 ## Layout System
 

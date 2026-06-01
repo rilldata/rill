@@ -3852,6 +3852,12 @@ definitions:
         type: string
       model:
         type: string
+      dataTimeRange:
+        type: string
+        description: |-
+          Optional rilltime expression describing the time range covered by the rollup.
+          When set, the rollup's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
+          Evaluated with `now` = current time, `earliest` = zero time, `latest`/`watermark` = current time.
       timeGrain:
         $ref: '#/definitions/v1TimeGrain'
         description: Time grain of the rollup.
@@ -4441,6 +4447,13 @@ definitions:
         items:
           type: string
         title: Array of dimension or measure names
+      requiredFilters:
+        type: array
+        items:
+          type: string
+        description: |-
+          Array of dimension or measure names that must have a value before the canvas can render.
+          Required filters are implicitly pinned.
   v1CanvasState:
     type: object
     properties:
@@ -6455,6 +6468,12 @@ definitions:
       watermarkExpression:
         type: string
         description: Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension).
+      dataTimeRange:
+        type: string
+        description: |-
+          Optional rilltime expression describing the time range covered by the base table.
+          When set, the base table's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
+          Evaluated with `now` = current time, `earliest` = zero time, `latest`/`watermark` = current time.
       dimensions:
         type: array
         items:

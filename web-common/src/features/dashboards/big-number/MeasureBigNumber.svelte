@@ -40,6 +40,7 @@
   export let comparisonTimeEnd: string | undefined = undefined;
   export let showComparison = false;
   export let ready: boolean = true;
+  export let skipLink: boolean = false;
 
   const client = useRuntimeClient();
 
@@ -189,7 +190,7 @@
       isMeasureExpanded = true;
     }
   };
-  $: useDiv = isMeasureExpanded || !withTimeseries;
+  $: useDiv = isMeasureExpanded || !withTimeseries || skipLink;
 
   function handleMouseOver() {
     cellInspectorStore.updateValue(value, tooltipValue);
@@ -300,11 +301,10 @@
                   copyValue =
                     measureValueFormatterUnabridged(value) ?? "no data";
                 }}
-                class="w-fit {(
-                  lowerIsBetter ? isComparisonNegative : isComparisonPositive
-                )
-                  ? 'font-semibold'
-                  : ''} {comparisonDeltaColorClass}"
+                class="w-fit {comparisonDeltaColorClass}"
+                class:font-semibold={lowerIsBetter
+                  ? isComparisonNegative
+                  : isComparisonPositive}
               >
                 <WithTween
                   value={comparisonPercChange}
