@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
@@ -122,6 +124,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		PrimaryDeploymentID:  &depl.ID,
 		DevSlots:             proj.DevSlots,
 		DevTTLSeconds:        proj.DevTTLSeconds,
+		OverrideDiskGB:       proj.OverrideDiskGB,
 		Annotations:          proj.Annotations,
 	})
 	if err != nil {
@@ -200,7 +203,8 @@ func (s *Service) UpdateProject(ctx context.Context, oldProj *database.Project, 
 		!reflect.DeepEqual(oldProj.Annotations, opts.Annotations) ||
 		!reflect.DeepEqual(oldProj.GitRemote, opts.GitRemote) ||
 		!reflect.DeepEqual(oldProj.GithubInstallationID, opts.GithubInstallationID) ||
-		!reflect.DeepEqual(oldProj.ArchiveAssetID, opts.ArchiveAssetID)
+		!reflect.DeepEqual(oldProj.ArchiveAssetID, opts.ArchiveAssetID) ||
+		!reflect.DeepEqual(oldProj.OverrideDiskGB, opts.OverrideDiskGB)
 
 	if !impactsDeployments {
 		return proj, nil
@@ -233,6 +237,7 @@ func (s *Service) UpdateProject(ctx context.Context, oldProj *database.Project, 
 				ProdTTLSeconds:       proj.ProdTTLSeconds,
 				DevSlots:             proj.DevSlots,
 				DevTTLSeconds:        proj.DevTTLSeconds,
+				OverrideDiskGB:       proj.OverrideDiskGB,
 				Annotations:          proj.Annotations,
 			})
 			if err != nil {
@@ -382,6 +387,7 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
 		DevSlots:             proj.DevSlots,
 		DevTTLSeconds:        proj.DevTTLSeconds,
+		OverrideDiskGB:       proj.OverrideDiskGB,
 		Annotations:          proj.Annotations,
 	})
 	if err != nil {
@@ -432,6 +438,7 @@ func (s *Service) HibernateProject(ctx context.Context, proj *database.Project) 
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
 		DevSlots:             proj.DevSlots,
 		DevTTLSeconds:        proj.DevTTLSeconds,
+		OverrideDiskGB:       proj.OverrideDiskGB,
 		Annotations:          proj.Annotations,
 	})
 	if err != nil {
@@ -534,18 +541,18 @@ func (s *Service) TriggerParserAndAwaitResource(ctx context.Context, depl *datab
 
 // ResolveVariables resolves the project's variables for the given environment.
 // It fetches the variable specific to the environment plus the default variables not set exclusively for the environment.
-func (s *Service) ResolveVariables(ctx context.Context, depl *database.Deployment) (map[string]string, error) {
+// The returned list is sorted by environment name for consistent ordering, with default variables (empty environment) first.
+func (s *Service) ResolveVariables(ctx context.Context, depl *database.Deployment) ([]*database.ProjectVariable, map[string]string, error) {
 	vars, err := s.DB.FindProjectVariables(ctx, depl.ProjectID, &depl.Environment)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	res := make(map[string]string)
-	for _, v := range vars {
-		res[v.Name] = v.Value
+	slices.SortFunc(vars, func(a, b *database.ProjectVariable) int {
+		return strings.Compare(a.Environment, b.Environment)
+	})
+	// Enable the file watcher for editable deployments.
+	systemVars := map[string]string{
+		"rill.watch_repo": strconv.FormatBool(depl.Editable),
 	}
-
-	// preset variables enforced for the instance
-	// repo should only be watched for editable deployments
-	res["rill.watch_repo"] = strconv.FormatBool(depl.Editable)
-	return res, nil
+	return vars, systemVars, nil
 }

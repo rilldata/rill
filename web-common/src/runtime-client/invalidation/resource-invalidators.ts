@@ -114,16 +114,18 @@ async function dispatchWrite(
 
   // Mirror the legacy watcher gate:
   //   - resourceVersionUnchanged: duplicate stateVersion (same server view)
-  //   - resourceFinishedReconciling: a non-idle -> idle transition
+  //   - resourceFinishedReconciling: a non-idle/unknown -> idle transition
   // If the version advanced and reconcile is still in progress, skip noisy
   // intermediate invalidations.
   const resourceVersionUnchanged =
     event.resource.meta.stateVersion === previousResource?.meta?.stateVersion;
   const resourceFinishedReconciling =
-    previousResource?.meta?.reconcileStatus !==
-      V1ReconcileStatus.RECONCILE_STATUS_IDLE &&
+    (!previousResource ||
+      previousResource.meta?.reconcileStatus !==
+        V1ReconcileStatus.RECONCILE_STATUS_IDLE) &&
     event.resource.meta.reconcileStatus ===
       V1ReconcileStatus.RECONCILE_STATUS_IDLE;
+
   if (!resourceVersionUnchanged && !resourceFinishedReconciling) {
     return;
   }

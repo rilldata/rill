@@ -19,6 +19,9 @@
   export let toggleFilterPin:
     | FilterManager["actions"]["toggleFilterPin"]
     | undefined = undefined;
+  export let toggleFilterRequired:
+    | FilterManager["actions"]["toggleFilterRequired"]
+    | undefined = undefined;
   export let onRemove: () => void;
   export let onApply: (params: {
     dimension: string;
@@ -28,8 +31,18 @@
 
   let open = openOnMount && !filterData.filter;
   let curPinned = filterData.pinned;
+  let curRequired = filterData.required;
 
-  $: ({ filter, pinned, label, measures, dimensionName, name } = filterData);
+  $: ({
+    filter,
+    pinned,
+    label,
+    measures,
+    dimensionName,
+    name,
+    required,
+    missingRequired,
+  } = filterData);
 
   $: metricsViewNames = measures ? Array.from(measures.keys()) : [];
 </script>
@@ -39,6 +52,9 @@
   onOpenChange={() => {
     if (open && pinned !== curPinned) {
       toggleFilterPin?.(name, metricsViewNames);
+    }
+    if (open && required !== curRequired) {
+      toggleFilterRequired?.(name, metricsViewNames);
     }
   }}
 >
@@ -57,9 +73,10 @@
           active={open}
           {label}
           gray={!filter}
+          error={!!missingRequired}
           theme
           {onRemove}
-          removable={!curPinned}
+          removable={!curPinned && !required}
           removeTooltipText="Remove {label}"
         >
           <MeasureFilterBody
@@ -75,11 +92,16 @@
           <TooltipContent maxWidth="400px">
             <TooltipTitle>
               <svelte:fragment slot="name">{name}</svelte:fragment>
-              <svelte:fragment slot="description">{label || ""}</svelte:fragment
+              <svelte:fragment slot="description"
+                >{required ? "required measure" : label || ""}</svelte:fragment
               >
             </TooltipTitle>
 
-            <slot name="body-tooltip-content">Click to edit the values</slot>
+            {#if missingRequired}
+              This filter is required. Set a value to load the dashboard.
+            {:else}
+              <slot name="body-tooltip-content">Click to edit the values</slot>
+            {/if}
           </TooltipContent>
         </div>
       </Tooltip>
@@ -98,10 +120,15 @@
         if (pinned !== curPinned) {
           toggleFilterPin?.(name, metricsViewNames);
         }
+        if (required !== curRequired) {
+          toggleFilterRequired?.(name, metricsViewNames);
+        }
         onApply(params);
       }}
       bind:pinned={curPinned}
+      bind:required={curRequired}
       showPinControl={!!toggleFilterPin}
+      showRequiredControl={!!toggleFilterRequired}
       {side}
     />
   {/if}

@@ -22,7 +22,7 @@ func TestRunGitStatus(t *testing.T) {
 	// Run GitFetch
 	require.NoError(t, GitFetch(t.Context(), tempDir, nil), "failed to fetch changes from remote repository")
 	// Run the RunGitStatus function again
-	status, err := RunGitStatus(tempDir, "", "origin")
+	status, err := RunGitStatus(tempDir, "", "origin", "")
 	require.NoError(t, err, "RunGitStatus failed after local commit")
 
 	// Validate the updated status
@@ -36,7 +36,7 @@ func TestRunGitStatus(t *testing.T) {
 	require.NoError(t, GitFetch(t.Context(), tempDir, nil), "failed to fetch changes from remote repository")
 
 	// Run the RunGitStatus function again
-	status, err = RunGitStatus(tempDir, "", "origin")
+	status, err = RunGitStatus(tempDir, "", "origin", "")
 	require.NoError(t, err, "RunGitStatus failed after local commit")
 
 	// Validate the updated status
@@ -48,7 +48,7 @@ func TestRunGitStatus(t *testing.T) {
 	err = os.WriteFile(filePath, []byte("untracked content"), 0644)
 	require.NoError(t, err, "failed to create untracked file")
 
-	status, err = RunGitStatus(tempDir, "", "origin")
+	status, err = RunGitStatus(tempDir, "", "origin", "")
 	require.NoError(t, err, "RunGitStatus failed with untracked files")
 	require.True(t, status.LocalChanges, "expected local changes due to untracked files")
 
@@ -60,7 +60,7 @@ func TestRunGitStatus(t *testing.T) {
 	err = cmd.Run()
 	require.NoError(t, err, "failed to stage file")
 
-	status, err = RunGitStatus(tempDir, "", "origin")
+	status, err = RunGitStatus(tempDir, "", "origin", "")
 	require.NoError(t, err, "RunGitStatus failed with staged changes")
 	require.True(t, status.LocalChanges, "expected local changes due to staged files")
 
@@ -68,7 +68,7 @@ func TestRunGitStatus(t *testing.T) {
 	err = os.WriteFile(filePath, []byte("unstaged content"), 0644)
 	require.NoError(t, err, "failed to modify file for unstaged changes")
 
-	status, err = RunGitStatus(tempDir, "", "origin")
+	status, err = RunGitStatus(tempDir, "", "origin", "")
 	require.NoError(t, err, "RunGitStatus failed with unstaged changes")
 	require.True(t, status.LocalChanges, "expected local changes due to unstaged files")
 }
@@ -78,7 +78,7 @@ func TestRunGitStatus_Monorepo(t *testing.T) {
 	tempDir, _ := setupMonorepoTestRepository(t)
 
 	// Test case 1: Check initial status of subprojects
-	status, err := RunGitStatus(tempDir, "subproject1", "origin")
+	status, err := RunGitStatus(tempDir, "subproject1", "origin", "")
 	require.NoError(t, err, "RunGitStatus failed for subproject1")
 	require.Equal(t, int32(0), status.LocalCommits, "unexpected local commits for subproject1")
 	require.Equal(t, int32(0), status.RemoteCommits, "unexpected remote commits for subproject1")
@@ -88,13 +88,13 @@ func TestRunGitStatus_Monorepo(t *testing.T) {
 	createCommit(t, tempDir, "subproject1/local.txt", "local content in subproject1", "subproject1: local commit")
 	require.NoError(t, GitFetch(t.Context(), tempDir, nil), "failed to fetch changes")
 
-	status, err = RunGitStatus(tempDir, "subproject1", "origin")
+	status, err = RunGitStatus(tempDir, "subproject1", "origin", "")
 	require.NoError(t, err, "RunGitStatus failed for subproject1 after local commit")
 	require.Equal(t, int32(1), status.LocalCommits, "expected 1 local commit for subproject1")
 	require.Equal(t, int32(0), status.RemoteCommits, "unexpected remote commits for subproject1")
 
 	// Test case 3: Verify subproject2 is unaffected by subproject1 changes
-	status, err = RunGitStatus(tempDir, "subproject2", "origin")
+	status, err = RunGitStatus(tempDir, "subproject2", "origin", "")
 	require.NoError(t, err, "RunGitStatus failed for subproject2")
 	require.Equal(t, int32(0), status.LocalCommits, "subproject2 should have no local commits")
 	require.Equal(t, int32(0), status.RemoteCommits, "subproject2 should have no remote commits")
@@ -113,12 +113,12 @@ func TestRunGitStatus_MonorepoLocalChanges(t *testing.T) {
 	err = cmd.Run()
 	require.NoError(t, err, "failed to stage file")
 
-	status, err := RunGitStatus(tempDir, "subproject1", "origin")
+	status, err := RunGitStatus(tempDir, "subproject1", "origin", "")
 	require.NoError(t, err, "RunGitStatus failed")
 	require.True(t, status.LocalChanges, "expected local changes in subproject1")
 
 	// Verify subproject2 is unaffected
-	status, err = RunGitStatus(tempDir, "subproject2", "origin")
+	status, err = RunGitStatus(tempDir, "subproject2", "origin", "")
 	require.NoError(t, err, "RunGitStatus failed")
 	require.False(t, status.LocalChanges, "subproject2 should not have local changes")
 
@@ -127,7 +127,7 @@ func TestRunGitStatus_MonorepoLocalChanges(t *testing.T) {
 	err = os.WriteFile(existingFile, []byte("modified content"), 0644)
 	require.NoError(t, err, "failed to modify file")
 
-	status, err = RunGitStatus(tempDir, "subproject2", "origin")
+	status, err = RunGitStatus(tempDir, "subproject2", "origin", "")
 	require.NoError(t, err, "RunGitStatus failed")
 	require.True(t, status.LocalChanges, "expected local changes in subproject2")
 
@@ -136,12 +136,12 @@ func TestRunGitStatus_MonorepoLocalChanges(t *testing.T) {
 	err = os.WriteFile(outsideFile, []byte("outside content"), 0644)
 	require.NoError(t, err, "failed to create file outside subprojects")
 
-	status, err = RunGitStatus(tempDir, "subproject1", "origin")
+	status, err = RunGitStatus(tempDir, "subproject1", "origin", "")
 	require.NoError(t, err, "RunGitStatus failed")
 	// Should still show only the previously staged change
 	require.True(t, status.LocalChanges, "expected local changes from staged file")
 
-	status, err = RunGitStatus(tempDir, "subproject2", "origin")
+	status, err = RunGitStatus(tempDir, "subproject2", "origin", "")
 	require.NoError(t, err, "RunGitStatus failed")
 	// Should still show only the unstaged change to file2.txt
 	require.True(t, status.LocalChanges, "expected local changes from modified file")
@@ -156,11 +156,11 @@ func TestRunGitStatus_MonorepoRemoteCommits(t *testing.T) {
 	createRemoteCommit(t, remoteDir, "subproject1/feature2.txt", "feature 2", "subproject1: add feature 2")
 	require.NoError(t, GitFetch(t.Context(), tempDir, nil), "failed to fetch changes")
 
-	status, err := RunGitStatus(tempDir, "subproject1", "origin")
+	status, err := RunGitStatus(tempDir, "subproject1", "origin", "")
 	require.NoError(t, err, "RunGitStatus failed for subproject1")
 	require.Equal(t, int32(2), status.RemoteCommits, "expected 2 remote commits for subproject1")
 
-	status, err = RunGitStatus(tempDir, "subproject2", "origin")
+	status, err = RunGitStatus(tempDir, "subproject2", "origin", "")
 	require.NoError(t, err, "RunGitStatus failed for subproject2")
 	require.Equal(t, int32(0), status.RemoteCommits, "subproject2 should have no remote commits")
 
@@ -169,12 +169,12 @@ func TestRunGitStatus_MonorepoRemoteCommits(t *testing.T) {
 	createRemoteCommit(t, remoteDir, "subproject2/feature3.txt", "feature 3", "subproject2: add feature 3")
 	require.NoError(t, GitFetch(t.Context(), tempDir, nil), "failed to fetch changes")
 
-	status, err = RunGitStatus(tempDir, "subproject1", "origin")
+	status, err = RunGitStatus(tempDir, "subproject1", "origin", "")
 	require.NoError(t, err, "RunGitStatus failed for subproject1")
 	require.Equal(t, int32(1), status.LocalCommits, "subproject1 should have 1 local commit")
 	require.Equal(t, int32(2), status.RemoteCommits, "subproject1 should have 2 remote commits")
 
-	status, err = RunGitStatus(tempDir, "subproject2", "origin")
+	status, err = RunGitStatus(tempDir, "subproject2", "origin", "")
 	require.NoError(t, err, "RunGitStatus failed for subproject2")
 	require.Equal(t, int32(0), status.LocalCommits, "subproject2 should have no local commits")
 	require.Equal(t, int32(1), status.RemoteCommits, "subproject2 should have 1 remote commit")
@@ -183,13 +183,90 @@ func TestRunGitStatus_MonorepoRemoteCommits(t *testing.T) {
 	createRemoteCommit(t, remoteDir, "root-file.txt", "root content", "add root file")
 	require.NoError(t, GitFetch(t.Context(), tempDir, nil), "failed to fetch changes")
 
-	status, err = RunGitStatus(tempDir, "subproject1", "origin")
+	status, err = RunGitStatus(tempDir, "subproject1", "origin", "")
 	require.NoError(t, err, "RunGitStatus failed for subproject1")
 	require.Equal(t, int32(2), status.RemoteCommits, "subproject1 should still have 2 remote commits")
 
-	status, err = RunGitStatus(tempDir, "subproject2", "origin")
+	status, err = RunGitStatus(tempDir, "subproject2", "origin", "")
 	require.NoError(t, err, "RunGitStatus failed for subproject2")
 	require.Equal(t, int32(1), status.RemoteCommits, "subproject2 should still have 1 remote commit")
+}
+
+// TestRunGitStatus_ExcludesLocalMergeCommits verifies that merge commits in the local branch
+// are not counted as "ahead" commits.
+func TestRunGitStatus_ExcludesLocalMergeCommits(t *testing.T) {
+	tempDir, _ := setupTestRepository(t)
+	mainBranch := getCurrentBranch(t, tempDir)
+
+	// Create a feature branch with one commit
+	cmd := exec.Command("git", "-C", tempDir, "checkout", "-b", "feature")
+	require.NoError(t, cmd.Run(), "failed to create feature branch")
+	createCommit(t, tempDir, "feature.txt", "feature content", "feature commit")
+
+	// Back to main and add a commit so the feature merge cannot fast-forward
+	cmd = exec.Command("git", "-C", tempDir, "checkout", mainBranch)
+	require.NoError(t, cmd.Run(), "failed to switch to main")
+	createCommit(t, tempDir, "main.txt", "main content", "main commit")
+
+	// Force a merge commit
+	cmd = exec.Command("git", "-C", tempDir, "merge", "--no-ff", "feature", "-m", "merge feature")
+	require.NoError(t, cmd.Run(), "failed to merge feature branch")
+
+	require.NoError(t, GitFetch(t.Context(), tempDir, nil), "failed to fetch")
+
+	status, err := RunGitStatus(tempDir, "", "origin", "")
+	require.NoError(t, err, "RunGitStatus failed")
+
+	// History has 3 commits ahead (feature, main, merge), but the merge must be excluded.
+	require.Equal(t, int32(2), status.LocalCommits, "merge commit should be excluded from local count")
+	require.Equal(t, int32(0), status.RemoteCommits, "unexpected remote commits")
+}
+
+// TestRunGitStatus_ExcludesRemoteMergeCommits verifies that merge commits on the remote
+// are not counted as "behind" commits.
+func TestRunGitStatus_ExcludesRemoteMergeCommits(t *testing.T) {
+	tempDir, remoteDir := setupTestRepository(t)
+	mainBranch := getCurrentBranch(t, tempDir)
+
+	createRemoteMergeCommit(t, remoteDir, mainBranch)
+
+	require.NoError(t, GitFetch(t.Context(), tempDir, nil), "failed to fetch")
+
+	status, err := RunGitStatus(tempDir, "", "origin", "")
+	require.NoError(t, err, "RunGitStatus failed")
+
+	require.Equal(t, int32(0), status.LocalCommits, "unexpected local commits")
+	require.Equal(t, int32(2), status.RemoteCommits, "merge commit should be excluded from remote count")
+}
+
+// TestGitPull_DiscardsLocalMergeCommits verifies that discardLocal=true correctly resets
+// the local branch even when its commits ahead include a merge commit (which would
+// previously break the HEAD~N reset strategy).
+func TestGitPull_DiscardsLocalMergeCommits(t *testing.T) {
+	tempDir, _ := setupTestRepository(t)
+	mainBranch := getCurrentBranch(t, tempDir)
+
+	cmd := exec.Command("git", "-C", tempDir, "checkout", "-b", "feature")
+	require.NoError(t, cmd.Run(), "failed to create feature branch")
+	createCommit(t, tempDir, "feature.txt", "feature content", "feature commit")
+
+	cmd = exec.Command("git", "-C", tempDir, "checkout", mainBranch)
+	require.NoError(t, cmd.Run(), "failed to switch to main")
+	createCommit(t, tempDir, "main.txt", "main content", "main commit")
+
+	cmd = exec.Command("git", "-C", tempDir, "merge", "--no-ff", "feature", "-m", "merge feature")
+	require.NoError(t, cmd.Run(), "failed to merge feature branch")
+
+	require.NoError(t, GitFetch(t.Context(), tempDir, nil), "failed to fetch")
+
+	_, err := RunGitPull(context.Background(), tempDir, true, "", "origin")
+	require.NoError(t, err, "GitPull with discardLocal failed")
+
+	// After discard, local should fully match remote.
+	status, err := RunGitStatus(tempDir, "", "origin", "")
+	require.NoError(t, err, "RunGitStatus failed after pull")
+	require.Equal(t, int32(0), status.LocalCommits, "expected no local commits after discard pull")
+	require.Equal(t, int32(0), status.RemoteCommits, "expected no remote commits after pull")
 }
 
 func TestGitPull(t *testing.T) {
@@ -226,7 +303,7 @@ func TestRunGitPush_NoNewCommits(t *testing.T) {
 	branch := getCurrentBranch(t, tempDir)
 
 	// Push with no new commits; remote is already up to date — should not error.
-	err := RunGitPush(context.Background(), tempDir, "origin", branch, false)
+	err := RunGitPush(context.Background(), tempDir, "origin", branch)
 	require.NoError(t, err, "RunGitPush should not fail when there are no new commits")
 }
 
@@ -455,7 +532,7 @@ func setupTestRepository(t *testing.T) (string, string) {
 	require.NoError(t, err, "failed to push initial commit")
 
 	// Run the RunGitStatus function
-	status, err := RunGitStatus(tempDir, "", "origin")
+	status, err := RunGitStatus(tempDir, "", "origin", "")
 	require.NoError(t, err, "RunGitStatus failed")
 
 	// Validate the status
@@ -534,12 +611,12 @@ func setupMonorepoTestRepository(t *testing.T) (string, string) {
 	require.NoError(t, err, "failed to push initial commit")
 
 	// Verify the initial status for both subprojects
-	status, err := RunGitStatus(tempDir, "subproject1", "origin")
+	status, err := RunGitStatus(tempDir, "subproject1", "origin", "")
 	require.NoError(t, err, "RunGitStatus failed for subproject1")
 	require.Equal(t, int32(0), status.LocalCommits, "unexpected local commits in subproject1")
 	require.False(t, status.LocalChanges, "unexpected local changes in subproject1")
 
-	status, err = RunGitStatus(tempDir, "subproject2", "origin")
+	status, err = RunGitStatus(tempDir, "subproject2", "origin", "")
 	require.NoError(t, err, "RunGitStatus failed for subproject2")
 	require.Equal(t, int32(0), status.LocalCommits, "unexpected local commits in subproject2")
 	require.False(t, status.LocalChanges, "unexpected local changes in subproject2")
@@ -591,6 +668,31 @@ func createRemoteCommit(t *testing.T, remoteDir, fileName, fileContent, commitMe
 	cmd = exec.Command("git", "-C", workingDir, "push", "origin", "HEAD")
 	err = cmd.Run()
 	require.NoError(t, err, "failed to push changes to remote repository")
+}
+
+// createRemoteMergeCommit builds a merge commit on the remote by cloning it,
+// creating a feature branch and a divergent commit, then merging with --no-ff and pushing.
+// After it returns, the remote `branch` has 2 non-merge commits + 1 merge commit
+// on top of its previous tip.
+func createRemoteMergeCommit(t *testing.T, remoteDir, branch string) {
+	workingDir := t.TempDir()
+	cmd := exec.Command("git", "clone", remoteDir, workingDir)
+	require.NoError(t, cmd.Run(), "failed to clone remote repository")
+	setupGitConfig(t, workingDir)
+
+	cmd = exec.Command("git", "-C", workingDir, "checkout", "-b", "remote-feature")
+	require.NoError(t, cmd.Run(), "failed to create remote feature branch")
+	createCommit(t, workingDir, "remote-feature.txt", "feature", "remote feature commit")
+
+	cmd = exec.Command("git", "-C", workingDir, "checkout", branch)
+	require.NoError(t, cmd.Run(), "failed to switch to branch")
+	createCommit(t, workingDir, "remote-main.txt", "main", "remote main commit")
+
+	cmd = exec.Command("git", "-C", workingDir, "merge", "--no-ff", "remote-feature", "-m", "remote merge")
+	require.NoError(t, cmd.Run(), "failed to create remote merge commit")
+
+	cmd = exec.Command("git", "-C", workingDir, "push", "origin", branch)
+	require.NoError(t, cmd.Run(), "failed to push merge to remote")
 }
 
 // setupGitConfig sets up the git configuration for the repository at repoPath.

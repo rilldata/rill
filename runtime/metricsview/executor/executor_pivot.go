@@ -235,7 +235,7 @@ func (a *pivotAST) SQL(underlyingAST *metricsview.AST, underlyingAlias string) (
 			b.WriteString(a.dialect.EscapeIdentifier(f.Name))
 			if f.DisplayName != "" {
 				b.WriteString(" AS ")
-				b.WriteString(a.dialect.EscapeAlias(f.DisplayName))
+				b.WriteString(a.dialect.EscapeAlias(a.dialect.SanitizeDisplayName(f.DisplayName)))
 			}
 			b.WriteString(", ")
 		}
@@ -283,7 +283,7 @@ func (a *pivotAST) SQL(underlyingAST *metricsview.AST, underlyingAlias string) (
 			b.WriteString(")")
 			b.WriteString(" AS ")
 			if a.useDisplayNames && f.DisplayName != "" {
-				b.WriteString(a.dialect.EscapeAlias(f.DisplayName))
+				b.WriteString(a.dialect.EscapeAlias(a.dialect.SanitizeDisplayName(f.DisplayName)))
 			} else {
 				b.WriteString(a.dialect.EscapeAlias(f.Name))
 			}

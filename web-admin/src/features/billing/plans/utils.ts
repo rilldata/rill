@@ -63,3 +63,11 @@ export function getSubscriptionResumedText(endDate: string) {
 // Since this could be triggered in a route that could be navigated from,
 // we add a global and show it in org route's layout
 export const showWelcomeToRillDialog = writable(false);
+
+export function formatCredit(credits: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+  }).format(credits);
+}

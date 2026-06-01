@@ -15,6 +15,7 @@ import type {
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import type { ComponentType, SvelteComponent } from "svelte";
+import type { Readable } from "svelte/store";
 import { derived, get, writable, type Writable } from "svelte/store";
 import { mergeFilters } from "../../dashboards/pivot/pivot-merge-filters";
 import {
@@ -32,9 +33,8 @@ import type {
   ComponentPath,
   SearchParamsStore,
 } from "../stores/canvas-entity";
-import { TimeState } from "../stores/time-state";
 import type { FilterState } from "../stores/filter-state";
-import type { Readable } from "svelte/store";
+import { TimeState } from "../stores/time-state";
 
 export abstract class BaseCanvasComponent<T = ComponentSpec> {
   id: string;
@@ -203,8 +203,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         ],
         set,
       ) => {
-        const hasTimeSeries =
-          hasTimeSeriesMap.get(this.metricsViewName) ?? false;
+        const hasTimeSeries = hasTimeSeriesMap.get(this.metricsViewName);
 
         const mvFilters = metricsViewFilters.get(this.metricsViewName);
 

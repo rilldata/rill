@@ -36,6 +36,7 @@ import {
   type Writable,
 } from "svelte/store";
 import {
+  canQueryWithTimeRange,
   getFilterWithNullHandling,
   isSortByDelta,
   vegaSortToAggregationSort,
@@ -186,6 +187,7 @@ export class CartesianChartProvider {
     const dimensionName = config.x?.field;
     const rawSort = config.x?.sort;
     const sortIsDelta = isSortByDelta(rawSort);
+    const requiresTimeRange = config.x?.type === "temporal";
 
     if (config.x?.type === "nominal" && dimensionName) {
       limit = config.x.limit ?? 100;
@@ -218,7 +220,7 @@ export class CartesianChartProvider {
         } = $timeAndFilterStore;
         const enabled =
           $visible &&
-          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
+          canQueryWithTimeRange(hasTimeSeries, timeRange) &&
           config.x?.type === "nominal" &&
           !Array.isArray(config.x?.sort) &&
           !!dimensionName;
@@ -292,7 +294,7 @@ export class CartesianChartProvider {
         const enabled =
           $visible &&
           !hasExplicitColorValues &&
-          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
+          canQueryWithTimeRange(hasTimeSeries, timeRange, requiresTimeRange) &&
           hasColorDimension &&
           !!colorDimensionName &&
           !!colorLimit;
@@ -342,7 +344,7 @@ export class CartesianChartProvider {
         const topNColorData = $topNColorQuery?.data?.data;
         const enabled =
           $visible &&
-          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
+          canQueryWithTimeRange(hasTimeSeries, timeRange, requiresTimeRange) &&
           !!measures?.length &&
           !!dimensions?.length &&
           (hasColorDimension &&
@@ -448,7 +450,7 @@ export class CartesianChartProvider {
               comparisonTimeRange?.end
                 ? comparisonTimeRange
                 : undefined,
-            fillMissing: config.x?.type === "temporal",
+            fillMissing: requiresTimeRange,
             limit: hasColorDimension || !limit ? "5000" : limit?.toString(),
           },
           {

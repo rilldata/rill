@@ -3199,6 +3199,8 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	// no validation rules for WatermarkExpression
 
+	// no validation rules for DataTimeRange
+
 	for idx, item := range m.GetDimensions() {
 		_, _ = idx, item
 
@@ -3438,6 +3440,8 @@ func (m *MetricsViewSpec) validate(all bool) error {
 		}
 
 	}
+
+	// no validation rules for MaxQueryTimeRange
 
 	if m.CacheEnabled != nil {
 		// no validation rules for CacheEnabled
@@ -13287,6 +13291,8 @@ func (m *MetricsViewSpec_Measure) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for LowerIsBetter
+
 	if len(errors) > 0 {
 		return MetricsViewSpec_MeasureMultiError(errors)
 	}
@@ -13543,6 +13549,8 @@ func (m *MetricsViewSpec_Rollup) validate(all bool) error {
 	// no validation rules for Table
 
 	// no validation rules for Model
+
+	// no validation rules for DataTimeRange
 
 	// no validation rules for TimeGrain
 

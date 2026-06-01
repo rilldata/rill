@@ -27,6 +27,8 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -1102,8 +1104,6 @@ func (s *Session) CallTool(ctx context.Context, role Role, toolName string, out,
 	})
 }
 
-const llmRequestTimeout = 3 * time.Minute
-
 // CompleteOptions provides options for Session.Complete.
 type CompleteOptions struct {
 	Messages      []*aiv1.CompletionMessage
@@ -1130,6 +1130,13 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 	if opts.MaxIterations == 1 && len(opts.Tools) > 0 {
 		return errors.New("max iterations must be greater than 1 when using tools")
 	}
+
+	// Resolve the configured LLM request timeout.
+	cfg, err := s.runner.Runtime.InstanceConfig(ctx, s.instanceID)
+	if err != nil {
+		return fmt.Errorf("failed to get instance config: %w", err)
+	}
+	llmRequestTimeout := time.Duration(cfg.AILLMTimeoutSeconds) * time.Second
 
 	// Prepare tool definitions.
 	tools := make([]*aiv1.Tool, 0, len(opts.Tools))
@@ -1273,8 +1280,14 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 
 			// Handle LLM completion error
 			if err != nil {
-				if errors.Is(err, llmCtx.Err()) && errors.Is(err, context.DeadlineExceeded) {
+				if errors.Is(err, llmCtx.Err()) && errors.Is(err, context.DeadlineExceeded) { // Timeout from local ctx.
 					return nil, fmt.Errorf("LLM request timed out after %s: %w", llmRequestTimeout, err)
+				}
+				if status.Code(err) == codes.DeadlineExceeded { // Timeout from admin service.
+					return nil, fmt.Errorf("LLM request timed out: %w", err)
+				}
+				if errors.Is(err, ctx.Err()) {
+					return nil, ctx.Err()
 				}
 				return nil, fmt.Errorf("completion failed: %w (stack: %s)", err, string(debug.Stack()))
 			}
@@ -1361,7 +1374,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 		return outVal, nil
 	}
 
-	_, err := s.Call(ctx, &CallOptions{
+	_, err = s.Call(ctx, &CallOptions{
 		Role:    RoleAssistant,
 		Name:    name,
 		Unwrap:  opts.UnwrapCall,

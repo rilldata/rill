@@ -107,6 +107,10 @@ func (q *Query) Validate() error {
 		}
 	}
 
+	if q.ComparisonTimeRange != nil && !q.ComparisonTimeRange.IsZero() && (q.TimeRange == nil || q.TimeRange.IsZero()) {
+		return fmt.Errorf("comparison_time_range requires time_range to be set")
+	}
+
 	if q.TimeRange != nil && q.ComparisonTimeRange != nil && q.TimeRange.TimeDimension != q.ComparisonTimeRange.TimeDimension {
 		return fmt.Errorf("time_dimension in time_range and comparison_time_range must match")
 	}

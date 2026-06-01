@@ -10033,6 +10033,8 @@ func (m *MetricsViewTimeRangeResponse) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for MaxQueryTimeRangeMillis
+
 	if all {
 		switch v := interface{}(m.GetTrace()).(type) {
 		case interface{ ValidateAll() error }:
@@ -11081,6 +11083,8 @@ func (m *MetricsViewTimeRangesResponse) validate(all bool) error {
 		}
 
 	}
+
+	// no validation rules for MaxQueryTimeRangeMillis
 
 	if all {
 		switch v := interface{}(m.GetTrace()).(type) {

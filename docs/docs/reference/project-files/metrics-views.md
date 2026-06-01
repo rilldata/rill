@@ -60,6 +60,10 @@ _[string]_ - Refers to the timestamp column from your model that will underlie x
 
 _[string]_ - A SQL expression that tells us the max timestamp that the measures are considered valid for. Usually does not need to be overwritten 
 
+### `data_time_range`
+
+_[string]_ - Optional [rilltime](https://docs.rilldata.com/reference/time-syntax) expression describing the base table's time coverage (e.g. `-5Y to now`, `inf`). When set, Rill skips the `min`/`max` OLAP probe for the base table and uses the declared bounds for coverage checks. 
+
 ### `smallest_time_grain`
 
 _[string]_ - Refers to the smallest time granularity the user is allowed to view. The valid values are: millisecond, second, minute, hour, day, week, month, quarter, year 
@@ -71,6 +75,10 @@ _[integer]_ - Refers to the first day of the week for time grain aggregation (fo
 ### `first_month_of_year`
 
 _[integer]_ - Refers to the first month of the year for time grain aggregation. The valid values are 1 through 12 where January=1 and December=12 
+
+### `max_query_time_range`
+
+_[string]_ - The maximum time span any single query against this metrics view may cover, expressed as an ISO 8601 duration with day-or-larger granularity (e.g. `P90D`, `P3M`, `P1Y`). Sub-day durations such as `PT12H` are not supported. Applies independently to the primary and comparison time ranges. If unset, no limit is enforced. 
 
 ### `dimensions`
 
@@ -202,6 +210,8 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
   - **`treat_nulls_as`** - _[string]_ - used to configure what value to fill in for missing time buckets. This also works generally as COALESCING over non empty time buckets. 
 
+  - **`lower_is_better`** - _[boolean]_ - When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas (KPIs, big numbers, leaderboards, pivot tables, time-series tooltips) swap their positive/negative coloring accordingly. 
+
 ### `parent_dimensions`
 
 _[oneOf]_ - Optional field selectors for dimensions to inherit from the parent metrics view. 
@@ -306,6 +316,8 @@ _[array of object]_ - Pre-aggregated rollup tables that can be used to accelerat
 
       - **`exclude`** - _[object]_ - Select all fields except those listed here 
 
+  - **`data_time_range`** - _[string]_ - Optional [rilltime](https://docs.rilldata.com/reference/time-syntax) expression describing the rollup's time coverage (e.g. `-1Y to now`, `-5Y to -1Y`, `inf`). When set, Rill skips the `min`/`max` OLAP probe for this rollup and uses the declared bounds for coverage checks. 
+
 ### `security`
 
 _[object]_ - Defines [security rules and access control policies](/developers/build/metrics-view/security) for resources 
@@ -351,6 +363,21 @@ _[object]_ - Defines [security rules and access control policies](/developers/bu
     - **`all`** - _[boolean]_ - When true, applies the rule to all fields (for field_access type rules) 
 
     - **`sql`** - _[string]_ - SQL expression for row filtering (for row_filter type rules) 
+
+### `cache`
+
+_[object]_ - Enable caching of query results for metrics views backed by externally-managed tables (e.g. in Snowflake, BigQuery). These settings have no effect for metrics views backed by Rill models (where queries are automatically cached and invalidated when the model is refreshed).
+Each cache entry is keyed by a hash of the query combined with the latest result of `key_sql`. Cached results stay valid as long as `key_sql` returns the same value; when its result changes, prior results become unreachable. `key_sql` itself runs at most once per `key_ttl`, decoupling freshness checks from query traffic.
+Example: a `key_sql` of `SELECT MAX(updated_at) FROM orders` with `key_ttl: 5m` checks for new data every 5 minutes but only invalidates cached results when new data has actually landed.
+ 
+
+  - **`enabled`** - _[boolean]_ - Whether to cache query results for this metrics view. Defaults to false for metrics views backed by externally-managed tables and to true for metrics views backed by a Rill model. 
+
+  - **`key_sql`** - _[string]_ - SQL returning a single value used in the cache key, typically a max timestamp, version, or row count. Cached results are invalidated when this value changes. Optional; defaults to the metrics view's watermark expression (which itself defaults to `MAX(<time dimension>)`). 
+
+  - **`key_ttl`** - _[string]_ - How often `key_sql` is re-evaluated, as a Go duration string (e.g. `30s`, `5m`, `1h`). The previous result is reused between evaluations. Defaults to `60s`. 
+
+  - **`timestamps_ttl`** - _[string]_ - TTL for caching the min/max timestamp queries used to populate a metrics view's rollups. Only takes effect when the metrics view has rollups defined and query result caching (`enabled`) is off — otherwise rollup timestamps are cached alongside other query results under `key_ttl`. Go duration string (e.g. `5m`). Defaults to `5m`. 
 
 ### `explore`
 

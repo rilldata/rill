@@ -73,6 +73,9 @@
     <svelte:fragment slot="footer">
       <slot name="sidebar-footer" />
     </svelte:fragment>
+    <svelte:fragment slot="collapsed-footer">
+      <slot name="sidebar-collapsed-footer" />
+    </svelte:fragment>
   </ConversationSidebar>
 
   <!-- Main Chat Area -->

@@ -1,7 +1,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { createAdminServiceListProjectsForOrganization } from "@rilldata/web-admin/client";
+  import { listProjectsForOrgQueryOptions } from "@rilldata/web-admin/features/projects/list-projects-query-options";
+  import { createQuery } from "@tanstack/svelte-query";
   import CreateProjectForm from "@rilldata/web-admin/features/projects/CreateProjectForm.svelte";
   import { getName } from "@rilldata/web-common/features/entity-management/name-utils.ts";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types.ts";
@@ -14,15 +15,15 @@
   import { Button } from "@rilldata/web-common/components/button";
   import PricingDetails from "@rilldata/web-common/features/billing/PricingDetails.svelte";
   import CTAHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
-  import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
+  import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/dialog/StartTeamPlanDialog.svelte";
   import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types.ts";
-  import { projectWelcomeStatusStores } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
+  import { projectWelcomeStatus } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
   import { CreateProjectBranchName } from "@rilldata/web-admin/features/projects/publish-project.ts";
 
   let organization = $derived(page.params.organization);
 
   let projectsQuery = $derived(
-    createAdminServiceListProjectsForOrganization(organization, undefined),
+    createQuery(listProjectsForOrgQueryOptions(organization)),
   );
   let hasProjects = $derived($projectsQuery.data?.projects?.length > 0);
 
@@ -37,11 +38,9 @@
   let showStartTeamPlanDialog = $state(false);
   let startTeamPlanType: TeamPlanDialogTypes = $state("base");
 
-  function handleCreate(projectName: string, frontendUrl: string) {
-    projectWelcomeStatusStores.setProjectWelcomeStep(projectName, true);
-    setTimeout(
-      () => void goto(`${frontendUrl}/@${CreateProjectBranchName}/-/welcome`),
-    );
+  async function handleCreate(projectName: string, frontendUrl: string) {
+    projectWelcomeStatus.setProjectWelcomeStep(projectName, true);
+    return goto(`${frontendUrl}/@${CreateProjectBranchName}/-/edit/welcome`);
   }
 </script>
 

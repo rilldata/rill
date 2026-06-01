@@ -127,12 +127,61 @@ Similar to how [connector credentials can be pushed / pulled](/developers/build/
 
 ### `env`
 
-_[object]_ - To define a variable in `rill.yaml`, pass in the appropriate key-value pair for the variable under the `env` key 
+_[object]_ - A map of key-value pairs for setting variables on your project. It accepts both user-defined variables (for use with templating) and reserved `rill.*` keys that configure project-wide settings. The full set of reserved keys is listed below.
+ 
+
+  - **`rill.download_limit_bytes`** - _[integer]_ - Limit on the size of an exported file, in bytes. Default: 134217728 (128 MB). 
+
+  - **`rill.interactive_sql_row_limit`** - _[integer]_ - Row limit for interactive SQL queries; does not apply to SQL exports. Default: 10000. 
+
+  - **`rill.models.default_materialize`** - _[boolean]_ - Materialize models as tables by default instead of views. Default: false. 
+
+  - **`rill.models.materialize_delay_seconds`** - _[integer]_ - Delay before materializing models, in seconds. Default: 0. 
+
+  - **`rill.models.concurrent_execution_limit`** - _[integer]_ - Maximum number of concurrent model executions. Default: 5. 
+
+  - **`rill.model.timeout_override`** - _[integer]_ - Timeout for model reconciliation in seconds, used in validation mode. Default: 0 (no override). 
+
+  - **`rill.model.partitions_warn_on_failure`** - _[boolean]_ - When true, partition execution failures are surfaced as non-blocking warnings instead of errors. Default: true in `prod`, false otherwise. 
+
+  - **`rill.model.tests_warn_on_failure`** - _[boolean]_ - When true, model test failures are surfaced as non-blocking warnings instead of errors. Default: true in `prod`, false otherwise. 
+
+  - **`rill.metrics.approximate_comparisons`** - _[boolean]_ - Rewrite metrics comparison queries to use an approximate, faster form. Approximate comparisons may not return data points for all values. Default: true. 
+
+  - **`rill.metrics.approximate_comparisons_cte`** - _[boolean]_ - Rewrite metrics comparison queries to use a CTE for the base query. Default: false. 
+
+  - **`rill.metrics.approximate_comparisons_two_phase_limit`** - _[integer]_ - Row-limit threshold under which metrics comparison queries use a two-phase strategy (base values first, comparison values second). Default: 250. 
+
+  - **`rill.metrics.exactify_druid_topn`** - _[boolean]_ - Split Druid TopN queries into two queries to improve measure accuracy, at the cost of performance. Default: false. 
+
+  - **`rill.metrics.timeseries_null_filling_implementation`** - _[string]_ - Null-filling implementation for timeseries queries. One of `none`, `new`, or `pushdown`. Default: `pushdown`. 
+
+  - **`rill.alerts.default_streaming_refresh_cron`** - _[string]_ - Default cron expression for refreshing alerts that depend on streaming refs (for example, external tables in Druid where new data may arrive at any time). Default: `0 0 * * *` (every 24 hours). 
+
+  - **`rill.alerts.fast_streaming_refresh_cron`** - _[string]_ - Cron expression for refreshing streaming alerts on always-on OLAP connectors. Default: `*/10 * * * *` (every 10 minutes). 
+
+  - **`rill.parser.skip_updates_if_parse_errors`** - _[boolean]_ - Short-circuit project parser reconciliation when parse errors exist. Default: false. 
+
+  - **`rill.ai.completion_timeout_seconds`** - _[integer]_ - Maximum duration of a full AI completion request (which may include multiple LLM calls and tool uses), in seconds. Default: 300. 
+
+  - **`rill.ai.llm_timeout_seconds`** - _[integer]_ - Maximum duration of a single LLM completion request, in seconds. Default: 180. Note: when using Rill's hosted AI service (i.e. not a self-configured LLM), the admin server enforces a hard upper bound of 10 minutes, so values above that have no effect. 
+
+  - **`rill.ai.default_query_limit`** - _[integer]_ - Default row limit applied to AI tool queries when no limit is specified. Default: 25. 
+
+  - **`rill.ai.max_query_limit`** - _[integer]_ - Maximum row limit allowed for AI tool queries. Default: 250. 
+
+  - **`rill.ai.require_time_range`** - _[boolean]_ - Require AI tool queries to include a time range filter; reject queries without one. Default: true. 
+
+  - **`rill.ai.max_time_range_days`** - _[integer]_ - Maximum time range allowed for AI tool queries, in days. Set to 0 for no limit. Default: 0. 
+
+  - **`rill.strict_resolver_properties`** - _[boolean]_ - Return an error when a resolver contains properties not recognized by its implementation. Default: false. 
+
+  - **`rill.strict_model_properties`** - _[boolean]_ - Return an error when a model contains unmapped properties. Default: false. 
 
 ```yaml
 env:
-    numeric_var: 10
-    string_var: "string_value"
+    foo: bar
+    rill.interactive_sql_row_limit: 5000
 ```
 
 ## Managing Paths in Rill

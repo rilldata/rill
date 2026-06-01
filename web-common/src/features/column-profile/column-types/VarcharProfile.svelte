@@ -70,6 +70,7 @@
 </script>
 
 <ProfileContainer
+  {columnName}
   {active}
   emphasize={active}
   {example}
