@@ -204,8 +204,8 @@ type Sort struct {
 }
 
 type TimeRange struct {
-	Start         time.Time `json:"start,omitempty" mapstructure:"start"`
-	End           time.Time `json:"end,omitempty" mapstructure:"end"`
+	Start         time.Time `json:"start" mapstructure:"start"`
+	End           time.Time `json:"end" mapstructure:"end"`
 	Expression    string    `json:"expression,omitempty" mapstructure:"expression"`
 	IsoDuration   string    `json:"iso_duration,omitempty" mapstructure:"iso_duration"`
 	IsoOffset     string    `json:"iso_offset,omitempty" mapstructure:"iso_offset"`

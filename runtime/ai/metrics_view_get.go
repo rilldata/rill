@@ -53,12 +53,29 @@ func (t *GetMetricsView) CheckAccess(ctx context.Context) (bool, error) {
 func (t *GetMetricsView) Handler(ctx context.Context, args *GetMetricsViewArgs) (*GetMetricsViewResult, error) {
 	session := GetSession(ctx)
 
-	mvSpec, err := resolveMetricsView(ctx, t.Runtime, session, args.MetricsView)
+	ctrl, err := t.Runtime.Controller(ctx, session.InstanceID())
 	if err != nil {
 		return nil, err
 	}
 
-	specJSON, err := protojson.Marshal(mvSpec)
+	r, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: args.MetricsView}, false)
+	if err != nil {
+		return nil, err
+	}
+
+	r, access, err := t.Runtime.ApplySecurityPolicy(ctx, session.InstanceID(), session.Claims(), r)
+	if err != nil {
+		return nil, err
+	}
+	if !access {
+		return nil, fmt.Errorf("resource not found")
+	}
+
+	if r.GetMetricsView().State.ValidSpec == nil {
+		return nil, fmt.Errorf("metrics view %q is invalid", args.MetricsView)
+	}
+
+	specJSON, err := protojson.Marshal(r.GetMetricsView().State.ValidSpec)
 	if err != nil {
 		return nil, err
 	}
@@ -71,30 +88,4 @@ func (t *GetMetricsView) Handler(ctx context.Context, args *GetMetricsViewArgs) 
 	return &GetMetricsViewResult{
 		Spec: specMap,
 	}, nil
-}
-
-func resolveMetricsView(ctx context.Context, rt *runtime.Runtime, session *Session, metricsView string) (*runtimev1.MetricsViewSpec, error) {
-	ctrl, err := rt.Controller(ctx, session.InstanceID())
-	if err != nil {
-		return nil, err
-	}
-
-	r, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: metricsView}, false)
-	if err != nil {
-		return nil, err
-	}
-
-	r, access, err := rt.ApplySecurityPolicy(ctx, session.InstanceID(), session.Claims(), r)
-	if err != nil {
-		return nil, err
-	}
-	if !access {
-		return nil, fmt.Errorf("resource not found")
-	}
-
-	if r.GetMetricsView().State.ValidSpec == nil {
-		return nil, fmt.Errorf("metrics view %q is invalid", metricsView)
-	}
-
-	return r.GetMetricsView().State.ValidSpec, nil
 }

@@ -77,12 +77,15 @@ export function maybeGetMetricsResolverQueryFromMessage(message: V1Message) {
   return rawJson as MetricsResolverQuery;
 }
 
-export function getResolvedTimeRangesFromMessage(resultMessage: V1Message): {
+export function getResolvedTimeRangesFromMessage(
+  resultMessage: V1Message | undefined,
+): {
   resolvedTimeRange?: TimeRange;
   resolvedComparisonTimeRange?: TimeRange;
 } {
+  if (!resultMessage?.contentData) return {};
   try {
-    const resultData = JSON.parse(resultMessage.contentData ?? "{}");
+    const resultData = JSON.parse(resultMessage.contentData);
     return {
       resolvedTimeRange: resultData.resolved_time_range,
       resolvedComparisonTimeRange: resultData.resolved_comparison_time_range,

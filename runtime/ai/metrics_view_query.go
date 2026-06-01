@@ -279,7 +279,7 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 	}
 
 	// Resolve time ranges and store them in the result to record the exact resolved time ranges for this tool call
-	tr, ctr, err := t.resolveTimeRanges(res)
+	tr, ctr, err := resolveTimeRanges(res)
 	if err != nil {
 		return nil, err
 	}
@@ -335,7 +335,7 @@ func (t *QueryMetricsView) generateOpenURL(ctx context.Context, instanceID, sess
 	return openURL.String(), nil
 }
 
-func (t *QueryMetricsView) resolveTimeRanges(res runtime.ResolverResult) (*metricsview.TimeRange, *metricsview.TimeRange, error) {
+func resolveTimeRanges(res runtime.ResolverResult) (*metricsview.TimeRange, *metricsview.TimeRange, error) {
 	meta := res.Meta()
 	if meta == nil {
 		return nil, nil, nil

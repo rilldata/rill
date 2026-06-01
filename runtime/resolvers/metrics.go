@@ -161,9 +161,9 @@ func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.Resol
 	if r.query.TimeRange != nil {
 		tr = *r.query.TimeRange
 	}
-	var ctr *metricsview.TimeRange
+	var ctr metricsview.TimeRange
 	if r.query.ComparisonTimeRange != nil {
-		ctr = r.query.ComparisonTimeRange
+		ctr = *r.query.ComparisonTimeRange
 	}
 
 	res, err := r.executor.Query(ctx, r.query, r.args.ExecutionTime)
@@ -171,7 +171,7 @@ func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.Resol
 		return nil, err
 	}
 
-	// Update the original ranges with the resolved start ane end and return with meta
+	// Update the original ranges with the resolved start and end and return with meta
 	if r.query.TimeRange != nil {
 		tr.Start = r.query.TimeRange.Start
 		tr.End = r.query.TimeRange.End
