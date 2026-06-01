@@ -66,9 +66,7 @@ export function transformChartSpecToPivotState(
     }
   }
 
-  const hasDimensionRows = rows.some(
-    (r) => r.type === PivotChipType.Dimension,
-  );
+  const hasDimensionRows = rows.some((r) => r.type === PivotChipType.Dimension);
   if (hasDimensionRows) {
     const timeChips = rows.filter((r) => r.type === PivotChipType.Time);
     const nonTimeRows = rows.filter((r) => r.type !== PivotChipType.Time);

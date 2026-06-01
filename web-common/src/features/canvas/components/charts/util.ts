@@ -32,17 +32,14 @@ export function getLinkStateForTimeDimensionDetail(
 
   const hasXAxis = "x" in spec;
   const hasYAxis = "y" in spec;
-  if (!hasXAxis || !hasYAxis)
-    return { canLink: false };
+  if (!hasXAxis || !hasYAxis) return { canLink: false };
 
   const xAxis = spec.x;
   const yAxis = spec.y;
 
-  if (!isFieldConfig(xAxis) || !isFieldConfig(yAxis))
-    return { canLink: false };
+  if (!isFieldConfig(xAxis) || !isFieldConfig(yAxis)) return { canLink: false };
 
-  if (yAxis.fields && yAxis.fields.length > 1)
-    return { canLink: false };
+  if (yAxis.fields && yAxis.fields.length > 1) return { canLink: false };
 
   const colorDimension = spec.color;
   const hasDimensionBreakout =
