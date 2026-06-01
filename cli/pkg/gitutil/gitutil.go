@@ -42,16 +42,17 @@ func (g *Config) FullyQualifiedRemote() (string, error) {
 	if g.Remote == "" {
 		return "", fmt.Errorf("remote is not set")
 	}
+	if g.Username == "" {
+		return g.Remote, nil
+	}
 	u, err := url.Parse(g.Remote)
 	if err != nil {
 		return "", err
 	}
-	if g.Username != "" {
-		if g.Password != "" {
-			u.User = url.UserPassword(g.Username, g.Password)
-		} else {
-			u.User = url.User(g.Username)
-		}
+	if g.Password != "" {
+		u.User = url.UserPassword(g.Username, g.Password)
+	} else {
+		u.User = url.User(g.Username)
 	}
 	return u.String(), nil
 }
@@ -170,12 +171,13 @@ func CommitAndPush(ctx context.Context, projectPath string, config *Config, comm
 
 	// check current branch matches deployed branch
 	headRef, err := repo.Head()
+	var branch string
 	if err == nil {
 		if !headRef.Name().IsBranch() {
 			return fmt.Errorf("detached HEAD state detected. Checkout a branch")
 		}
-		branch := headRef.Name().Short()
-		if headRef.Name().Short() != config.DefaultBranch {
+		branch = headRef.Name().Short()
+		if branch != config.DefaultBranch && !config.ManagedRepo {
 			return fmt.Errorf("current branch %q does not match deployed branch %q", branch, config.DefaultBranch)
 		}
 	} else if !errors.Is(err, plumbing.ErrReferenceNotFound) {
@@ -228,7 +230,15 @@ func CommitAndPush(ctx context.Context, projectPath string, config *Config, comm
 		return fmt.Errorf("failed to parse remote URL: %w", err)
 	}
 	u.User = url.UserPassword(config.Username, config.Password)
-	return RunGitPush(ctx, projectPath, u.String(), config.DefaultBranch)
+	cmd := exec.CommandContext(ctx, "git", "-C", projectPath, "push", u.String(), fmt.Sprintf("HEAD:%s", config.DefaultBranch))
+	if out, err := cmd.CombinedOutput(); err != nil {
+		var execErr *exec.ExitError
+		if errors.As(err, &execErr) {
+			return fmt.Errorf("git push failed: %s(%s)", string(out), string(execErr.Stderr))
+		}
+		return fmt.Errorf("git push failed: %w", err)
+	}
+	return nil
 }
 
 func Clone(ctx context.Context, path string, c *Config) (*git.Repository, error) {

@@ -208,6 +208,18 @@ func InferGitRepoRoot(path string) (string, error) {
 	return filepath.Join(path, strings.TrimSpace(string(data))), nil
 }
 
+// CurrentBranch returns the current branch of the git repository at the specified path.
+// Returns empty string and no error if in detached head state.
+// Callers should ensure that it is a valid git repository.
+func CurrentBranch(path string) (string, error) {
+	cmd := exec.Command("git", "-C", path, "branch", "--show-current")
+	data, err := cmd.CombinedOutput()
+	if err == nil {
+		return strings.TrimSpace(string(data)), nil
+	}
+	return "", fmt.Errorf("failed to determine current branch: %s: %w", string(data), err)
+}
+
 func isGitIgnored(repoRoot, subpath string) (bool, error) {
 	cmd := exec.Command("git", "-C", repoRoot, "check-ignore", subpath)
 	err := cmd.Run()

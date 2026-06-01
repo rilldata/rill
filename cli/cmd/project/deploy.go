@@ -85,11 +85,6 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 		return err
 	}
 
-	// initialize git repository
-	if err = gitutil.GitInit(o.GitPath); err != nil {
-		return err
-	}
-
 	// check if specified project already exists
 	if o.Name != "" && ch.Org != "" {
 		p, exists, err := getProject(ctx, ch, ch.Org, o.Name)
@@ -156,10 +151,7 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 		o.ArchiveUpload = o.PushToProject.ArchiveAssetId != ""
 
 		// check if we need to create a new deployment or just push to existing one
-		if err := o.shouldCreateDeployment(ch); err != nil {
-			return err
-		}
-		return nil
+		return o.shouldCreateDeployment(ch)
 	}
 
 	if o.remoteURL == "" {

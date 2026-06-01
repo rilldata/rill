@@ -25,6 +25,7 @@ import (
 	runtimeclient "github.com/rilldata/rill/runtime/client"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	rtgitutil "github.com/rilldata/rill/runtime/pkg/gitutil"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/term"
@@ -603,11 +604,11 @@ func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *git
 	}
 
 	// 2. Check status of the subpath
-	status, err := gitutil.RunGitStatus(root, config.Subpath, config.RemoteName(), "")
+	status, err := gitutil.RunGitStatus(root, config.Subpath, config.RemoteName(), fmt.Sprintf("%s:%s", config.RemoteName(), config.DefaultBranch))
 	if err != nil {
 		return fmt.Errorf("failed to get git status: %w", err)
 	}
-	if status.Branch != config.DefaultBranch {
+	if status.Branch != config.DefaultBranch && !config.ManagedRepo { // ensured upstream but just in case
 		return fmt.Errorf("current branch %q does not match expected branch %q", status.Branch, config.DefaultBranch)
 	}
 
@@ -632,9 +633,12 @@ func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *git
 	// The push can still fail if there were new remote commits since the fetch. But that's okay, the user can just retry.
 	switch choice {
 	case "1":
-		err := gitutil.RunUpstreamMerge(ctx, config.RemoteName(), root, status.Branch, false)
+		merged, err := rtgitutil.MergeWithBailOnConflict(root, fmt.Sprintf("%s/%s", config.RemoteName(), config.DefaultBranch))
 		if err != nil {
 			return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
+		}
+		if !merged {
+			return fmt.Errorf("local is behind remote and has conflicts that must be resolved manually")
 		}
 		return gitutil.CommitAndPush(ctx, root, config, commitMsg, author)
 	case "2":
@@ -646,7 +650,7 @@ func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *git
 			// monorepo setups are advanced use cases and we can require users to manually resolve remote changes
 			return fmt.Errorf("cannot overwrite remote changes in a monorepo setup. Merge remote changes manually")
 		}
-		err := gitutil.RunUpstreamMerge(ctx, config.RemoteName(), root, status.Branch, true)
+		err := rtgitutil.MergeWithStrategy(root, fmt.Sprintf("%s/%s", config.RemoteName(), config.DefaultBranch), "ours")
 		if err != nil {
 			return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
 		}
