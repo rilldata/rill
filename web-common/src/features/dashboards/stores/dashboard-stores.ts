@@ -306,7 +306,11 @@ const metricsViewReducers = {
     metricsExplorerStore.addPivotFields(
       name,
       [value],
-      value.type === PivotChipType.Measure ? "columns" : rows ? "rows" : "columns",
+      value.type === PivotChipType.Measure
+        ? "columns"
+        : rows
+          ? "rows"
+          : "columns",
     );
   },
 
@@ -359,12 +363,8 @@ const metricsViewReducers = {
       exploreState.pivot.activeCell = null;
       exploreState.pivot.expanded = {};
 
-      const existingRows = new Set(
-        exploreState.pivot.rows.map((c) => c.id),
-      );
-      const existingCols = new Set(
-        exploreState.pivot.columns.map((c) => c.id),
-      );
+      const existingRows = new Set(exploreState.pivot.rows.map((c) => c.id));
+      const existingCols = new Set(exploreState.pivot.columns.map((c) => c.id));
 
       for (const value of values) {
         if (existingRows.has(value.id) || existingCols.has(value.id)) {

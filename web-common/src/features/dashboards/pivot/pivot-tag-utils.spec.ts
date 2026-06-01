@@ -115,15 +115,8 @@ describe("splitTagItems", () => {
   });
 
   it("preserves spec order in output", () => {
-    const orderedDims = [
-      dim("a", ["T"]),
-      dim("b", ["T"]),
-      dim("c", ["T"]),
-    ];
-    const orderedMeas = [
-      meas("x", ["T"]),
-      meas("y", ["T"]),
-    ];
+    const orderedDims = [dim("a", ["T"]), dim("b", ["T"]), dim("c", ["T"])];
+    const orderedMeas = [meas("x", ["T"]), meas("y", ["T"])];
     const { dimensions: dims, measures: meas2 } = splitTagItems(
       "T",
       buildTagIndex(orderedDims),

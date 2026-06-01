@@ -1,4 +1,7 @@
-import { itemsInTag, type TagIndex } from "@rilldata/web-common/components/menu/tag-utils";
+import {
+  itemsInTag,
+  type TagIndex,
+} from "@rilldata/web-common/components/menu/tag-utils";
 import { getValuesForExpandedKey } from "@rilldata/web-common/features/dashboards/pivot/pivot-expansion";
 import {
   createAndExpression,
@@ -787,9 +790,11 @@ export function splitTagItems(
   dimensionTagIndex: TagIndex,
   measureTagIndex: TagIndex,
 ): { dimensions: PivotChipData[]; measures: PivotChipData[] } {
-  const dimensions = itemsInTag(dimensionTagIndex, tagName)
-    .map((d) => dimensionToChipData(d as MetricsViewSpecDimension));
-  const measures = itemsInTag(measureTagIndex, tagName)
-    .map((m) => measureToChipData(m as MetricsViewSpecMeasure));
+  const dimensions = itemsInTag(dimensionTagIndex, tagName).map((d) =>
+    dimensionToChipData(d as MetricsViewSpecDimension),
+  );
+  const measures = itemsInTag(measureTagIndex, tagName).map((m) =>
+    measureToChipData(m as MetricsViewSpecMeasure),
+  );
   return { dimensions, measures };
 }

@@ -10,9 +10,7 @@
   let { tagName, onClear }: Props = $props();
 </script>
 
-<div
-  class="flex items-center gap-x-1.5 px-3 py-1.5 bg-popover-accent border-b"
->
+<div class="flex items-center gap-x-1.5 px-3 py-1.5 bg-popover-accent border-b">
   <span class="text-xs text-fg-secondary flex-none">Filter:</span>
   <span class="truncate text-xs text-fg-primary font-medium flex-1 min-w-0">
     {tagName}

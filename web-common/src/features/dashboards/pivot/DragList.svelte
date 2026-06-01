@@ -182,11 +182,7 @@
           if (replace) {
             metricsExplorerStore.replacePivotColumns($exploreName, all);
           } else if (all.length > 0) {
-            metricsExplorerStore.addPivotFields(
-              $exploreName,
-              all,
-              "columns",
-            );
+            metricsExplorerStore.addPivotFields($exploreName, all, "columns");
           }
         }
       } else if (dragChip && ghostIndex !== null) {

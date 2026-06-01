@@ -46,10 +46,7 @@
     onDragStart(e, rowEl.getBoundingClientRect());
   }
 
-  function handleClick(
-    e: MouseEvent,
-    action: (replace: boolean) => void,
-  ) {
+  function handleClick(e: MouseEvent, action: (replace: boolean) => void) {
     // Read the modifier off the event itself so a click that happens before
     // the global keydown fires still picks up the held key.
     action(e.metaKey || e.ctrlKey);

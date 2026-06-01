@@ -197,10 +197,7 @@
         <!-- Right column: shown/hidden lists -->
         <div class="flex flex-col flex-1 min-w-0">
           {#if filterActive && selectedTag}
-            <TagFilterBanner
-              tagName={selectedTag}
-              onClear={clearTagFilter}
-            />
+            <TagFilterBanner tagName={selectedTag} onClear={clearTagFilter} />
           {/if}
 
           {#key selectedTag}

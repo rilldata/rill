@@ -362,5 +362,4 @@
     @apply uppercase font-semibold text-[10px];
     @apply px-1.5 pt-1 pb-1 text-fg-secondary;
   }
-
 </style>

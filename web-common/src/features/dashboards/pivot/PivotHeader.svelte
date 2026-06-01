@@ -43,18 +43,10 @@
       metricsExplorerStore.replacePivotColumns($exploreName, measures);
     } else {
       if (dimensions.length > 0) {
-        metricsExplorerStore.addPivotFields(
-          $exploreName,
-          dimensions,
-          "rows",
-        );
+        metricsExplorerStore.addPivotFields($exploreName, dimensions, "rows");
       }
       if (measures.length > 0) {
-        metricsExplorerStore.addPivotFields(
-          $exploreName,
-          measures,
-          "columns",
-        );
+        metricsExplorerStore.addPivotFields($exploreName, measures, "columns");
       }
     }
     dragDataStore.set(null);
@@ -96,10 +88,7 @@
     </div>
   {/if}
   {#if showAutoArrange && dragData?.tagPayload}
-    <div
-      class="header-row"
-      transition:slide={{ duration: 160, axis: "y" }}
-    >
+    <div class="header-row" transition:slide={{ duration: 160, axis: "y" }}>
       <span class="row-label">
         <Pivot size="16px" /> Auto
       </span>
@@ -130,8 +119,7 @@
           → rows,
           <strong>{dragData.tagPayload.measures.length}</strong>
           {dragData.tagPayload.measures.length === 1 ? "measure" : "measures"}
-          → columns
-          (<span class="kbd">⌘</span> + Drop to replace)
+          → columns (<span class="kbd">⌘</span> + Drop to replace)
         {/if}
       </div>
     </div>
