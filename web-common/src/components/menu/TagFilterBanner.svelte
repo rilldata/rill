@@ -17,14 +17,17 @@
   </span>
   <Tooltip.Root delayDuration={200}>
     <Tooltip.Trigger>
-      <button
-        type="button"
-        class="flex-none text-icon-muted hover:text-fg-primary transition-colors"
-        onclick={onClear}
-        aria-label="Clear tag filter"
-      >
-        <CancelCircle size="14px" />
-      </button>
+      {#snippet child({ props })}
+        <button
+          {...props}
+          type="button"
+          class="flex-none text-icon-muted hover:text-fg-primary transition-colors"
+          onclick={onClear}
+          aria-label="Clear tag filter"
+        >
+          <CancelCircle size="14px" />
+        </button>
+      {/snippet}
     </Tooltip.Trigger>
     <Tooltip.Content
       side="top"

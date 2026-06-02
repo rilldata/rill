@@ -6,8 +6,6 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { writable } from "svelte/store";
-  import { getStateManagers } from "../state-managers/state-managers";
-  import { metricsExplorerStore } from "../stores/dashboard-stores";
   import AddField from "./AddField.svelte";
   import PivotChip from "./PivotChip.svelte";
   import PivotPortalItem from "./PivotPortalItem.svelte";
@@ -72,8 +70,6 @@
   let dragStart = { left: 0, top: 0 };
   let pendingDrag: PendingDragState | null = null;
   let dragActive = false;
-
-  const { exploreName } = getStateManagers();
 
   $: ghostIndex = $_ghostIndex;
   $: dragData = $dragDataStore;
@@ -165,25 +161,18 @@
     if (isValidDropZone) {
       if (dragData?.tagPayload) {
         // Bulk-add path for tag drops. Skips ghost-index positioning since
-        // we are inserting multiple chips, not a single one.
+        // we are inserting multiple chips, not a single one. Cross-zone
+        // cleanup on replace happens in the auto-arrange zone or the click
+        // affordances on the tag row — DragList only manages its own zone.
         const { dimensions, measures } = dragData.tagPayload;
-        if (zone === "rows") {
-          if (replace) {
-            metricsExplorerStore.replacePivotRows($exploreName, dimensions);
-          } else if (dimensions.length > 0) {
-            metricsExplorerStore.addPivotFields(
-              $exploreName,
-              dimensions,
-              "rows",
-            );
-          }
-        } else if (zone === "columns") {
-          const all = [...dimensions, ...measures];
-          if (replace) {
-            metricsExplorerStore.replacePivotColumns($exploreName, all);
-          } else if (all.length > 0) {
-            metricsExplorerStore.addPivotFields($exploreName, all, "columns");
-          }
+        const newItems =
+          zone === "rows" ? dimensions : [...dimensions, ...measures];
+        if (replace) {
+          onUpdate(newItems);
+        } else if (newItems.length > 0) {
+          const existing = new Set(items.map((c) => c.id));
+          const additions = newItems.filter((c) => !existing.has(c.id));
+          if (additions.length > 0) onUpdate([...items, ...additions]);
         }
       } else if (dragChip && ghostIndex !== null) {
         const temp = [...items];

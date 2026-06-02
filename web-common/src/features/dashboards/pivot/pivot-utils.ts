@@ -798,3 +798,43 @@ export function splitTagItems(
   );
   return { dimensions, measures };
 }
+
+/**
+ * Append new chips to a zone, skipping any whose id already exists in the
+ * zone or in the opposite zone. Used for tag bulk-add when the caller has
+ * access to both zones (cross-zone dedup keeps a dimension from appearing
+ * in both rows and columns). Returns a new array; preserves the original
+ * order of the zone followed by the new items.
+ */
+export function appendChipsToZone(
+  zoneItems: PivotChipData[],
+  otherZoneItems: PivotChipData[],
+  newItems: PivotChipData[],
+): PivotChipData[] {
+  const existing = new Set([
+    ...zoneItems.map((c) => c.id),
+    ...otherZoneItems.map((c) => c.id),
+  ]);
+  const additions: PivotChipData[] = [];
+  for (const item of newItems) {
+    if (existing.has(item.id)) continue;
+    existing.add(item.id);
+    additions.push(item);
+  }
+  return [...zoneItems, ...additions];
+}
+
+/**
+ * Replace a zone's contents with new chips, removing those chips' ids from
+ * the opposite zone so a dimension never appears in both zones at once.
+ */
+export function replaceZoneCleaningOther(
+  newItems: PivotChipData[],
+  otherZoneItems: PivotChipData[],
+): { zone: PivotChipData[]; other: PivotChipData[] } {
+  const ids = new Set(newItems.map((v) => v.id));
+  return {
+    zone: newItems,
+    other: otherZoneItems.filter((c) => !ids.has(c.id)),
+  };
+}

@@ -127,15 +127,9 @@
         $dimensionTagIndex,
         $measureTagIndex,
       );
-      if (zone === "rows") {
-        if (dims.length) {
-          metricsExplorerStore.addPivotFields($exploreName, dims, "rows");
-        }
-      } else {
-        const all = [...dims, ...meas];
-        if (all.length) {
-          metricsExplorerStore.addPivotFields($exploreName, all, "columns");
-        }
+      const toAdd = zone === "rows" ? dims : [...dims, ...meas];
+      for (const item of toAdd) {
+        metricsExplorerStore.addPivotField($exploreName, item, zone === "rows");
       }
       return;
     }

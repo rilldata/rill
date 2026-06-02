@@ -6,14 +6,11 @@
     splitPivotChips,
     splitTagItems,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils.ts";
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { type TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
   import type { PivotState } from "web-common/src/features/dashboards/pivot/types.ts";
-  import { dragDataStore } from "./DragList.svelte";
   import PivotDrag from "./PivotDrag.svelte";
-  import PivotPortalItem from "./PivotPortalItem.svelte";
   import PivotTagRow from "./PivotTagRow.svelte";
   import { timePillActions, timePillSelectors } from "./time-pill-store";
   import type { PivotChipData } from "./types";
@@ -25,7 +22,8 @@
   export let combinedTagIndex: TagIndex;
   export let dimensionTagIndex: TagIndex;
   export let measureTagIndex: TagIndex;
-  export let exploreName: string;
+  export let setRows: (items: PivotChipData[]) => void;
+  export let setColumns: (items: PivotChipData[]) => void;
   export let timeControlsForPillActions: Pick<
     TimeControlState,
     "timeStart" | "timeEnd" | "minTimeGrain"
@@ -37,24 +35,6 @@
   let sidebarHeight = 0;
   let searchText = "";
   let selectedTag: string | null = null;
-
-  // Tag drag-and-drop state. Mirrors the chip-drag flow in DragList.svelte
-  // but coordinates from the sidebar level since tag rows are not chips.
-  const TAG_DRAG_THRESHOLD_PX = 4;
-  let tagPendingDrag: {
-    tagName: string;
-    dimensions: PivotChipData[];
-    measures: PivotChipData[];
-    rect: DOMRect;
-    startX: number;
-    startY: number;
-    offsetX: number;
-    offsetY: number;
-  } | null = null;
-  let tagDragActive = false;
-  let tagDragPosition = { left: 0, top: 0 };
-  let tagDragOffset = { x: 0, y: 0 };
-  let tagDragChip: PivotChipData | null = null;
 
   onMount(() => {
     timePillActions.initTimeDimension("time", "Time");
@@ -142,126 +122,6 @@
   function tagItemsFor(tagName: string) {
     return splitTagItems(tagName, dimensionTagIndex, measureTagIndex);
   }
-
-  function handleTagDragStart(
-    e: MouseEvent,
-    tagName: string,
-    items: { dimensions: PivotChipData[]; measures: PivotChipData[] },
-    rect: DOMRect,
-  ) {
-    tagPendingDrag = {
-      tagName,
-      dimensions: items.dimensions,
-      measures: items.measures,
-      rect,
-      startX: e.clientX,
-      startY: e.clientY,
-      offsetX: e.clientX - rect.left,
-      offsetY: e.clientY - rect.top,
-    };
-    window.addEventListener("mousemove", detectTagDragStart);
-    window.addEventListener("mouseup", handleTagGlobalMouseUp, { once: true });
-  }
-
-  function detectTagDragStart(e: MouseEvent) {
-    if (!tagPendingDrag || tagDragActive) return;
-    const moved =
-      Math.abs(e.clientX - tagPendingDrag.startX) >= TAG_DRAG_THRESHOLD_PX ||
-      Math.abs(e.clientY - tagPendingDrag.startY) >= TAG_DRAG_THRESHOLD_PX;
-    if (!moved) return;
-    beginTagDrag();
-  }
-
-  function beginTagDrag() {
-    if (!tagPendingDrag) return;
-    tagDragActive = true;
-    window.removeEventListener("mousemove", detectTagDragStart);
-
-    const { tagName, dimensions, measures, rect, offsetX, offsetY } =
-      tagPendingDrag;
-
-    tagDragPosition = { left: rect.left, top: rect.top };
-    tagDragOffset = { x: offsetX, y: offsetY };
-
-    // Synthetic chip used by PivotPortalItem to render the floating preview.
-    // Pure-measure tags render with the (rectangular) measure chip styling;
-    // mixed and pure-dimension tags render with the (rounded) dimension shape.
-    const chipType =
-      dimensions.length === 0 && measures.length > 0
-        ? PivotChipType.Measure
-        : PivotChipType.Dimension;
-    tagDragChip = {
-      id: `__tag__:${tagName}`,
-      title: tagName,
-      type: chipType,
-    };
-
-    dragDataStore.set({
-      source: "tags",
-      width: rect.width,
-      chip: tagDragChip,
-      tagPayload: { tagName, dimensions, measures },
-    });
-  }
-
-  function handleTagGlobalMouseUp() {
-    window.removeEventListener("mousemove", detectTagDragStart);
-    if (!tagDragActive) {
-      // Mousedown without movement: treat as a click on the tag row.
-      // Toggles the filter selection. This avoids needing a separate
-      // onclick handler that would race with the drag setup.
-      if (tagPendingDrag) {
-        toggleTagFilter(tagPendingDrag.tagName);
-      }
-      tagPendingDrag = null;
-      return;
-    }
-    resetTagDrag();
-  }
-
-  function resetTagDrag() {
-    tagDragActive = false;
-    tagDragChip = null;
-    tagPendingDrag = null;
-    dragDataStore.set(null);
-    window.removeEventListener("mousemove", detectTagDragStart);
-  }
-
-  function addTagToRows(tagName: string, replace: boolean) {
-    const { dimensions: dims } = tagItemsFor(tagName);
-    if (replace) {
-      metricsExplorerStore.replacePivotRows(exploreName, dims);
-      return;
-    }
-    if (dims.length === 0) return;
-    metricsExplorerStore.addPivotFields(exploreName, dims, "rows");
-  }
-
-  function addTagToColumns(tagName: string, replace: boolean) {
-    const { dimensions: dims, measures: meas } = tagItemsFor(tagName);
-    const all = [...dims, ...meas];
-    if (replace) {
-      metricsExplorerStore.replacePivotColumns(exploreName, all);
-      return;
-    }
-    if (all.length === 0) return;
-    metricsExplorerStore.addPivotFields(exploreName, all, "columns");
-  }
-
-  function autoArrangeTag(tagName: string, replace: boolean) {
-    const { dimensions: dims, measures: meas } = tagItemsFor(tagName);
-    if (replace) {
-      metricsExplorerStore.replacePivotRows(exploreName, dims);
-      metricsExplorerStore.replacePivotColumns(exploreName, meas);
-      return;
-    }
-    if (dims.length > 0) {
-      metricsExplorerStore.addPivotFields(exploreName, dims, "rows");
-    }
-    if (meas.length > 0) {
-      metricsExplorerStore.addPivotFields(exploreName, meas, "columns");
-    }
-  }
 </script>
 
 <div
@@ -287,12 +147,12 @@
               {tag}
               dimensions={items.dimensions}
               measures={items.measures}
+              {rows}
+              {columns}
               selected={selectedTag === tag.name}
-              onAddRows={(replace) => addTagToRows(tag.name, replace)}
-              onAddColumns={(replace) => addTagToColumns(tag.name, replace)}
-              onAutoArrange={(replace) => autoArrangeTag(tag.name, replace)}
-              onDragStart={(e, rect) =>
-                handleTagDragStart(e, tag.name, items, rect)}
+              {setRows}
+              {setColumns}
+              onSelect={() => toggleTagFilter(tag.name)}
             />
           {/each}
         {/if}
@@ -310,16 +170,6 @@
     </div>
   </div>
 </div>
-
-{#if tagDragActive && tagDragChip}
-  <PivotPortalItem
-    item={tagDragChip}
-    offset={tagDragOffset}
-    position={tagDragPosition}
-    removable={false}
-    onRelease={resetTagDrag}
-  />
-{/if}
 
 <style lang="postcss">
   .sidebar {

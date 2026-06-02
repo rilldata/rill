@@ -303,79 +303,17 @@ const metricsViewReducers = {
   },
 
   addPivotField(name: string, value: PivotChipData, rows: boolean) {
-    metricsExplorerStore.addPivotFields(
-      name,
-      [value],
-      value.type === PivotChipType.Measure
-        ? "columns"
-        : rows
-          ? "rows"
-          : "columns",
-    );
-  },
-
-  // Replace the rows zone with the given values. Anything in the new rows
-  // that already lived in columns is removed from columns, so the same
-  // dimension never appears in both zones.
-  replacePivotRows(name: string, values: PivotChipData[]) {
-    updateMetricsExplorerByName(name, (exploreState) => {
-      exploreState.pivot.rowPage = 1;
-      exploreState.pivot.activeCell = null;
-      exploreState.pivot.expanded = {};
-      const ids = new Set(values.map((v) => v.id));
-      exploreState.pivot.rows = values.filter(
-        (v) => v.type !== PivotChipType.Measure,
-      );
-      exploreState.pivot.columns = exploreState.pivot.columns.filter(
-        (c) => !ids.has(c.id),
-      );
-    });
-  },
-
-  // Replace the columns zone with the given values, removing any of them
-  // from rows so a dimension never appears in both zones.
-  replacePivotColumns(name: string, values: PivotChipData[]) {
-    updateMetricsExplorerByName(name, (exploreState) => {
-      exploreState.pivot.rowPage = 1;
-      exploreState.pivot.activeCell = null;
-      exploreState.pivot.expanded = {};
-      const ids = new Set(values.map((v) => v.id));
-      exploreState.pivot.columns = values;
-      exploreState.pivot.rows = exploreState.pivot.rows.filter(
-        (r) => !ids.has(r.id),
-      );
-    });
-  },
-
-  // Bulk-add fields to either the rows or columns zone in a single
-  // store transaction. Measures targeted at "rows" are silently skipped
-  // because the rows zone does not accept measures. Items already present
-  // in either zone are skipped — a pivot dimension only makes sense in one
-  // axis at a time, and tag bulk-adds shouldn't create duplicates across
-  // rows and columns.
-  addPivotFields(
-    name: string,
-    values: PivotChipData[],
-    target: "rows" | "columns",
-  ) {
     updateMetricsExplorerByName(name, (exploreState) => {
       exploreState.pivot.rowPage = 1;
       exploreState.pivot.activeCell = null;
       exploreState.pivot.expanded = {};
 
-      const existingRows = new Set(exploreState.pivot.rows.map((c) => c.id));
-      const existingCols = new Set(exploreState.pivot.columns.map((c) => c.id));
-
-      for (const value of values) {
-        if (existingRows.has(value.id) || existingCols.has(value.id)) {
-          continue;
-        }
-        if (target === "rows") {
-          if (value.type === PivotChipType.Measure) continue;
-          existingRows.add(value.id);
+      if (value.type === PivotChipType.Measure) {
+        exploreState.pivot.columns.push(value);
+      } else {
+        if (rows) {
           exploreState.pivot.rows.push(value);
         } else {
-          existingCols.add(value.id);
           exploreState.pivot.columns.push(value);
         }
       }

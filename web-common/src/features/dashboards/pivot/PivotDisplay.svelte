@@ -104,7 +104,9 @@
       combinedTagIndex={$combinedTagIndex}
       dimensionTagIndex={$dimensionTagIndex}
       measureTagIndex={$measureTagIndex}
-      exploreName={$exploreName}
+      setRows={(rows) => metricsExplorerStore.setPivotRows($exploreName, rows)}
+      setColumns={(columns) =>
+        metricsExplorerStore.setPivotColumns($exploreName, columns)}
       {timeControlsForPillActions}
     />
   {/if}
