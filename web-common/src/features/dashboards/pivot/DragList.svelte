@@ -6,6 +6,8 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { writable } from "svelte/store";
+  import { getStateManagers } from "../state-managers/state-managers";
+  import { metricsExplorerStore } from "../stores/dashboard-stores";
   import AddField from "./AddField.svelte";
   import PivotChip from "./PivotChip.svelte";
   import PivotPortalItem from "./PivotPortalItem.svelte";
@@ -70,6 +72,8 @@
   let dragStart = { left: 0, top: 0 };
   let pendingDrag: PendingDragState | null = null;
   let dragActive = false;
+
+  const { exploreName } = getStateManagers();
 
   $: ghostIndex = $_ghostIndex;
   $: dragData = $dragDataStore;
