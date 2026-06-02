@@ -577,7 +577,7 @@ func (a *Authenticator) authLogout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Extract and validate custom redirect destination (if any).
+	// Extract custom redirect destination (if any).
 	redirect := r.URL.Query().Get("redirect")
 
 	// Redirect to authLogoutProvider (see its docstring below for details on why we do this).
@@ -593,16 +593,28 @@ func (a *Authenticator) authLogout(w http.ResponseWriter, r *http.Request) {
 // This is separated from authLogout to support orgs with custom domains where the auth token cookie must be cleared from the custom domain,
 // but the redirect destination must be set in a cookie on the primary domain because the auth provider will redirect to authLogoutCallback on the primary domain.
 func (a *Authenticator) authLogoutProvider(w http.ResponseWriter, r *http.Request) {
-	// Validate and store the custom redirect destination for when the logout flow is over (if any).
+	// Validate and set custom redirect destination in cookie for when the logout flow is over (if any)
 	redirect := r.URL.Query().Get("redirect")
-	customDomainFlow := false
-	if b, err := strconv.ParseBool(r.URL.Query().Get("custom_domain_flow")); err == nil && b {
-		customDomainFlow = b
-	}
-	err := a.validateRedirectURL(r.Context(), redirect, customDomainFlow)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+	if redirect != "" {
+		customDomainFlow := false
+		if b, err := strconv.ParseBool(r.URL.Query().Get("custom_domain_flow")); err == nil && b {
+			customDomainFlow = b
+		}
+		err := a.validateRedirectURL(r.Context(), redirect, customDomainFlow)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		// Update cookie
+		sess := a.cookies.Get(r, cookieName)
+		sess.Values[cookieFieldRedirect] = redirect
+
+		// Save cookie
+		if err := sess.Save(r, w); err != nil {
+			http.Error(w, fmt.Sprintf("failed to save session: %s", err), http.StatusInternalServerError)
+			return
+		}
 	}
 
 	// Build and redirect to the auth provider logout URL.
