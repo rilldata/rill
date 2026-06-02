@@ -18,7 +18,7 @@
 </script>
 
 <script lang="ts">
-  import { splitTagItems } from "./pivot-utils";
+  import { appendChipsToZone, splitTagItems } from "./pivot-utils";
 
   export let zone: "rows" | "columns" | null = null;
 
@@ -28,7 +28,7 @@
 
   const {
     selectors: {
-      pivot: { dimensions, measures },
+      pivot: { dimensions, measures, rows, originalColumns },
       tags: { combinedTagIndex, dimensionTagIndex, measureTagIndex },
     },
     exploreName,
@@ -120,6 +120,8 @@
   ];
 
   function handleSelectValue(name: string) {
+    let toAdd: PivotChipData[];
+
     if (name.startsWith(TAG_PREFIX)) {
       const tagName = name.slice(TAG_PREFIX.length);
       const { dimensions: dims, measures: meas } = splitTagItems(
@@ -127,22 +129,32 @@
         $dimensionTagIndex,
         $measureTagIndex,
       );
-      const toAdd = zone === "rows" ? dims : [...dims, ...meas];
-      for (const item of toAdd) {
-        metricsExplorerStore.addPivotField($exploreName, item, zone === "rows");
-      }
-      return;
+      toAdd = zone === "rows" ? dims : [...dims, ...meas];
+    } else {
+      const selectedItem = allDimensionsMeasures.find(
+        (item) => item.id === name,
+      ) as PivotChipData | undefined;
+      if (!selectedItem) return;
+      toAdd = [selectedItem];
     }
 
-    const selectedItem = allDimensionsMeasures.find(
-      (item) => item.id === name,
-    ) as PivotChipData;
+    if (toAdd.length === 0) return;
 
-    metricsExplorerStore.addPivotField(
-      $exploreName,
-      selectedItem,
-      zone === "rows",
-    );
+    // appendChipsToZone dedups against both zones so a dimension never lands
+    // in rows and columns at once. The dropdown sources already exclude
+    // placed dimensions/measures, but time grains and tag bulk-adds can
+    // include items already present elsewhere — this is the catch.
+    if (zone === "rows") {
+      const next = appendChipsToZone($rows, $originalColumns, toAdd);
+      if (next.length !== $rows.length) {
+        metricsExplorerStore.setPivotRows($exploreName, next);
+      }
+    } else {
+      const next = appendChipsToZone($originalColumns, $rows, toAdd);
+      if (next.length !== $originalColumns.length) {
+        metricsExplorerStore.setPivotColumns($exploreName, next);
+      }
+    }
   }
 </script>
 

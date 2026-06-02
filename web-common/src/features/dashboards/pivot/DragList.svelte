@@ -171,9 +171,11 @@
         const { dimensions, measures } = dragData.tagPayload;
         const newItems =
           zone === "rows" ? dimensions : [...dimensions, ...measures];
-        if (replace) {
+        if (newItems.length === 0) {
+          // Pure-measure tag dropped on rows, for instance: nothing to do.
+        } else if (replace) {
           onUpdate(newItems);
-        } else if (newItems.length > 0) {
+        } else {
           const existing = new Set(items.map((c) => c.id));
           const additions = newItems.filter((c) => !existing.has(c.id));
           if (additions.length > 0) onUpdate([...items, ...additions]);

@@ -1,4 +1,4 @@
-import { derived, writable, type Readable } from "svelte/store";
+import { writable, type Readable } from "svelte/store";
 
 // Tracks whether the platform's "modify" key (CMD on macOS, Ctrl elsewhere)
 // is currently held. Subscribe via `$modifierHeld` for reactive UI; read
@@ -17,7 +17,4 @@ if (typeof window !== "undefined") {
   window.addEventListener("blur", () => _modifierHeld.set(false));
 }
 
-export const modifierHeld: Readable<boolean> = derived(
-  _modifierHeld,
-  ($v) => $v,
-);
+export const modifierHeld = _modifierHeld as Readable<boolean>;
