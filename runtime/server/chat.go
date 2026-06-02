@@ -572,8 +572,19 @@ func (s *Server) GetAIMessage(ctx context.Context, req *runtimev1.GetAIMessageRe
 		return nil, status.Errorf(codes.Internal, "failed to convert message to protobuf: %v", err)
 	}
 
+	var resPbMsg *runtimev1.Message
+	resMsg, ok := session.Message(ai.FilterByParent(req.MessageId), ai.FilterByType(ai.MessageTypeResult))
+	// Don't throw if there is no result message.
+	if ok {
+		resPbMsg, err = messageToPB(session, resMsg)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to convert message to protobuf: %v", err)
+		}
+	}
+
 	return &runtimev1.GetAIMessageResponse{
 		Message: pbMsg,
+		Result:  resPbMsg,
 	}, nil
 }
 

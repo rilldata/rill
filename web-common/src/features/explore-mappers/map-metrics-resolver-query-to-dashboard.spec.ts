@@ -19,6 +19,7 @@ import {
 } from "@rilldata/web-common/features/explore-mappers/map-metrics-resolver-query-to-dashboard.ts";
 import {
   type DashboardTimeControls,
+  TimeComparisonOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types.ts";
 import {
@@ -35,11 +36,13 @@ import type {
   Schema as MetricsResolverQuery,
 } from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
 import { describe, expect, it } from "vitest";
+import { getResolvedTimeRangesFromMessage } from "@rilldata/web-common/features/chat/core/citation-url-utils.ts";
 
 describe("mapMetricsResolverQueryToDashboard", () => {
   const TestCases: {
     title: string;
     query: MetricsResolverQuery;
+    resolvedTimeRanges?: ReturnType<typeof getResolvedTimeRangesFromMessage>;
     expectedPartialExplore: Partial<ExploreState>;
   }[] = [
     {
@@ -81,6 +84,47 @@ describe("mapMetricsResolverQueryToDashboard", () => {
         leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
         dashboardSortType: DashboardState_LeaderboardSortType.DELTA_ABSOLUTE,
         sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
+      },
+    },
+
+    {
+      title:
+        "rilltime expressions in time range and comparison time range are resolved from resolvedTimeRanges",
+      query: {
+        time_range: { expression: "rill-PDC" },
+        comparison_time_range: { expression: "rill-PPC" },
+        measures: [{ name: AD_BIDS_IMPRESSIONS_MEASURE }],
+        dimensions: [{ name: AD_BIDS_PUBLISHER_DIMENSION }],
+      },
+      resolvedTimeRanges: {
+        resolvedTimeRange: {
+          start: "2026-05-25T00:00:00.000Z",
+          end: "2026-05-26T00:00:00.000Z",
+        },
+        resolvedComparisonTimeRange: {
+          start: "2026-05-24T00:00:00.000Z",
+          end: "2026-05-25T00:00:00.000Z",
+        },
+      },
+      expectedPartialExplore: {
+        activePage: DashboardState_ActivePage.DIMENSION_TABLE,
+        selectedTimeRange: {
+          name: TimeRangePreset.CUSTOM,
+          start: new Date("2026-05-25T00:00:00.000Z"),
+          end: new Date("2026-05-26T00:00:00.000Z"),
+        },
+        selectedComparisonTimeRange: {
+          name: TimeComparisonOption.CUSTOM,
+          start: new Date("2026-05-24T00:00:00.000Z"),
+          end: new Date("2026-05-25T00:00:00.000Z"),
+        },
+        showTimeComparison: true,
+
+        visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE],
+        allMeasuresVisible: false,
+        visibleDimensions: [AD_BIDS_PUBLISHER_DIMENSION],
+        allDimensionsVisible: false,
+        selectedDimensionName: AD_BIDS_PUBLISHER_DIMENSION,
       },
     },
 
@@ -316,13 +360,21 @@ describe("mapMetricsResolverQueryToDashboard", () => {
     },
   ];
 
-  for (const { title, query, expectedPartialExplore } of TestCases) {
+  for (const {
+    title,
+    query,
+    resolvedTimeRanges,
+    expectedPartialExplore,
+  } of TestCases) {
     it(title, () => {
       expect(
         mapMetricsResolverQueryToDashboard(
           AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
           AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS_TIME_DIMENSION,
-          query,
+          {
+            query,
+            ...(resolvedTimeRanges ?? {}),
+          },
         ),
       ).toEqual(expectedPartialExplore);
     });
