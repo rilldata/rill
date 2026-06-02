@@ -264,9 +264,9 @@ _[object]_ - (no description)
 
   - **`col_dimensions`** - _[array of string]_ - Dimensions for table columns 
 
-  - **`show_row_totals`** - _[boolean]_ - Whether to show the per-row totals column
+  - **`hide_totals_row`** - _[boolean]_ - Whether to hide the totals row. Defaults to false.
 
-  - **`show_col_totals`** - _[boolean]_ - Whether to show the column totals row
+  - **`hide_totals_col`** - _[boolean]_ - Whether to hide the totals column. Defaults to false.
 
   - **`comparison_range`** - _[string]_ - Comparison time range 
 

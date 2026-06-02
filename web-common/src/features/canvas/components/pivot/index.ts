@@ -32,8 +32,8 @@ export interface PivotSpec
   measures: string[];
   row_dimensions?: string[];
   col_dimensions?: string[];
-  show_row_totals?: boolean;
-  show_col_totals?: boolean;
+  hide_totals_row?: boolean;
+  hide_totals_col?: boolean;
 }
 
 export interface TableSpec
@@ -41,8 +41,8 @@ export interface TableSpec
     ComponentFilterProperties {
   metrics_view: string;
   columns: string[];
-  show_row_totals?: boolean;
-  show_col_totals?: boolean;
+  hide_totals_row?: boolean;
+  hide_totals_col?: boolean;
 }
 
 export { default as Pivot } from "./CanvasPivotDisplay.svelte";
@@ -161,15 +161,15 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             meta: { allowedTypes: ["time", "dimension"] },
             label: "Row dimensions",
           },
-          show_row_totals: {
+          hide_totals_col: {
             type: "boolean",
-            label: "Total column",
-            meta: { defaultValue: true },
+            label: "Hide total column",
+            meta: { defaultValue: false },
           },
-          show_col_totals: {
+          hide_totals_row: {
             type: "boolean",
-            label: "Total row",
-            meta: { defaultValue: true },
+            label: "Hide total row",
+            meta: { defaultValue: false },
           },
           ...commonOptions,
         },
@@ -184,15 +184,15 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             label: "Columns",
             meta: { allowedTypes: ["time", "dimension", "measure"] },
           },
-          show_col_totals: {
+          hide_totals_row: {
             type: "boolean",
-            label: "Total row",
-            meta: { defaultValue: true },
+            label: "Hide total row",
+            meta: { defaultValue: false },
           },
-          show_row_totals: {
+          hide_totals_col: {
             type: "boolean",
-            label: "Total column",
-            meta: { defaultValue: true },
+            label: "Hide total column",
+            meta: { defaultValue: false },
           },
           ...commonOptions,
         },
@@ -255,13 +255,13 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
 
     const commonProperties: ComponentCommonProperties &
       ComponentFilterProperties &
-      Pick<PivotSpec, "show_row_totals" | "show_col_totals"> = {
+      Pick<PivotSpec, "hide_totals_row" | "hide_totals_col"> = {
       title: currentSpec.title,
       description: currentSpec.description,
       dimension_filters: currentSpec.dimension_filters,
       time_filters: currentSpec.time_filters,
-      show_row_totals: currentSpec.show_row_totals,
-      show_col_totals: currentSpec.show_col_totals,
+      hide_totals_row: currentSpec.hide_totals_row,
+      hide_totals_col: currentSpec.hide_totals_col,
     };
 
     if ("columns" in currentSpec) {
