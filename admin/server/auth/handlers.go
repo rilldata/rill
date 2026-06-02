@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
@@ -166,37 +167,17 @@ func (a *Authenticator) authStart(w http.ResponseWriter, r *http.Request, signup
 	// Set state in cookie
 	sess.Values[cookieFieldState] = state
 
-	host := originalHost(r)
+	// Set redirect URL in cookie to enable custom redirects after auth has completed
+	redirect := r.URL.Query().Get("redirect")
+	if redirect != "" {
+		sess.Values[cookieFieldRedirect] = redirect
+	}
+
 	// If this is part of the custom domain login flow, save that info in the cookie since we need that info when handling the auth callback.
 	customDomainFlow := false
 	if b, err := strconv.ParseBool(r.URL.Query().Get("custom_domain_flow")); err == nil && b {
 		sess.Values[cookieFieldCustomDomainFlow] = b
 		customDomainFlow = b
-	}
-
-	// Set redirect URL in cookie to enable custom redirects after auth has completed
-	redirect := r.URL.Query().Get("redirect")
-	if redirect != "" {
-		if !a.admin.URLs.IsSafeRedirectURL(redirect, host) {
-			// The redirect is not on a primary/canonical host and not on the request host.
-			// The only legitimate case is the server-generated second call in the custom
-			// domain login flow (canonical domain, custom_domain_flow=true), where the
-			// redirect points to <custom-domain>/auth/custom-domain-callback.
-			if !customDomainFlow {
-				http.Error(w, "invalid redirect parameter", http.StatusBadRequest)
-				return
-			}
-			parsed, _ := url.Parse(redirect)
-			_, err := a.admin.DB.FindOrganizationByCustomDomain(r.Context(), parsed.Host)
-			if errors.Is(err, database.ErrNotFound) {
-				http.Error(w, "invalid redirect parameter", http.StatusBadRequest)
-				return
-			} else if err != nil {
-				http.Error(w, "internal server error", http.StatusInternalServerError)
-				return
-			}
-		}
-		sess.Values[cookieFieldRedirect] = redirect
 	}
 
 	// Save cookie
@@ -206,10 +187,17 @@ func (a *Authenticator) authStart(w http.ResponseWriter, r *http.Request, signup
 	}
 
 	// Redirect to <canonical-domain>/auth/login (custom domain flow)
+	host := originalHost(r)
 	if a.admin.URLs.IsCustomDomain(host) {
 		customCallbackURL := a.admin.URLs.WithCustomDomain(host).AuthCustomDomainCallback(state)
 		canonicalLoginURL := a.admin.URLs.AuthLogin(customCallbackURL, true)
 		http.Redirect(w, r, canonicalLoginURL, http.StatusTemporaryRedirect)
+		return
+	}
+
+	err := a.validateRedirectURL(r.Context(), redirect, customDomainFlow)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -591,13 +579,14 @@ func (a *Authenticator) authLogout(w http.ResponseWriter, r *http.Request) {
 
 	// Extract and validate custom redirect destination (if any).
 	redirect := r.URL.Query().Get("redirect")
-	if !a.admin.URLs.IsSafeRedirectURL(redirect, originalHost(r)) {
-		http.Error(w, "invalid redirect parameter", http.StatusBadRequest)
-		return
-	}
 
 	// Redirect to authLogoutProvider (see its docstring below for details on why we do this).
-	http.Redirect(w, r, a.admin.URLs.AuthLogoutProvider(redirect), http.StatusTemporaryRedirect)
+	host := originalHost(r)
+	if a.admin.URLs.IsCustomDomain(host) {
+		http.Redirect(w, r, a.admin.URLs.AuthLogoutProvider(redirect, true), http.StatusTemporaryRedirect)
+		return
+	}
+	http.Redirect(w, r, a.admin.URLs.AuthLogoutProvider(redirect, false), http.StatusTemporaryRedirect)
 }
 
 // authLogoutProvider redirects to the auth provider's logout flow.
@@ -606,25 +595,14 @@ func (a *Authenticator) authLogout(w http.ResponseWriter, r *http.Request) {
 func (a *Authenticator) authLogoutProvider(w http.ResponseWriter, r *http.Request) {
 	// Validate and store the custom redirect destination for when the logout flow is over (if any).
 	redirect := r.URL.Query().Get("redirect")
-	if redirect != "" {
-		if !a.admin.URLs.IsSafeRedirectURL(redirect, "") {
-			// Not a primary host — check if it's a registered Rill custom domain.
-			parsed, _ := url.Parse(redirect)
-			_, err := a.admin.DB.FindOrganizationByCustomDomain(r.Context(), parsed.Host)
-			if errors.Is(err, database.ErrNotFound) {
-				http.Error(w, "invalid redirect parameter", http.StatusBadRequest)
-				return
-			} else if err != nil {
-				http.Error(w, "internal server error", http.StatusInternalServerError)
-				return
-			}
-		}
-		sess := a.cookies.Get(r, cookieName)
-		sess.Values[cookieFieldRedirect] = redirect
-		if err := sess.Save(r, w); err != nil {
-			http.Error(w, fmt.Sprintf("failed to save session: %s", err), http.StatusInternalServerError)
-			return
-		}
+	customDomainFlow := false
+	if b, err := strconv.ParseBool(r.URL.Query().Get("custom_domain_flow")); err == nil && b {
+		customDomainFlow = b
+	}
+	err := a.validateRedirectURL(r.Context(), redirect, customDomainFlow)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	// Build and redirect to the auth provider logout URL.
@@ -740,6 +718,26 @@ func (a *Authenticator) getAccessToken(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("unexpected grant_type: %q", grantType), http.StatusBadRequest)
 		return
 	}
+}
+
+func (a *Authenticator) validateRedirectURL(ctx context.Context, redirect string, allowCustomDomains bool) error {
+	if a.admin.URLs.IsSafeRedirectURL(redirect) {
+		return nil
+	}
+	if !allowCustomDomains {
+		return fmt.Errorf("redirect to %q is not allowed", redirect)
+	}
+
+	parsed, err := url.Parse(redirect)
+	if err != nil {
+		return fmt.Errorf("fail to parse redirect URL: %w", err)
+	}
+
+	_, err = a.admin.DB.FindOrganizationByCustomDomain(ctx, parsed.Host)
+	if errors.Is(err, database.ErrNotFound) {
+		return fmt.Errorf("redirect to %q is not allowed", redirect)
+	}
+	return err
 }
 
 func originalHost(r *http.Request) string {
