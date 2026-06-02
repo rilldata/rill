@@ -46,7 +46,7 @@
   } | null = null;
   let dragActive = $state(false);
   let dragPosition = $state({ left: 0, top: 0 });
-  let dragOffset = { x: 0, y: 0 };
+  let dragOffset = $state({ x: 0, y: 0 });
   let dragChip: PivotChipData | null = $state(null);
 
   const dimensionCount = $derived(dimensions.length);
