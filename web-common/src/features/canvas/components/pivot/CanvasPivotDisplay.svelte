@@ -47,6 +47,8 @@
       sorting: [],
       expanded: {},
       columns: tableFieldMapper(columns, metricsViewSpec),
+      showRowTotals: tableSpec.show_row_totals ?? true,
+      showColTotals: tableSpec.show_col_totals ?? true,
     }));
   } else if ("col_dimensions" in tableSpec && schema.isValid) {
     const measures = tableSpec.measures || [];
@@ -61,6 +63,8 @@
         ...tableFieldMapper(measures, metricsViewSpec),
       ],
       rows: tableFieldMapper(rowDimensions, metricsViewSpec),
+      showRowTotals: tableSpec.show_row_totals ?? true,
+      showColTotals: tableSpec.show_col_totals ?? true,
     }));
   }
 </script>

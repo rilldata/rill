@@ -286,6 +286,8 @@ function getPivotStateFromRequest(
     rowPage: 1,
     enableComparison: true, // This is not really used. So setting it true, we should remove it.
     activeCell: null,
+    showRowTotals: true,
+    showColTotals: true,
     tableMode,
   };
 }

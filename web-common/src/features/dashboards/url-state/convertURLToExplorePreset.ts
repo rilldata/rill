@@ -657,6 +657,16 @@ function fromPivotUrlParams(
     }
   }
 
+  if (searchParams.has(ExploreStateURLParams.PivotShowRowTotals)) {
+    preset.pivotShowRowTotals =
+      searchParams.get(ExploreStateURLParams.PivotShowRowTotals) !== "false";
+  }
+
+  if (searchParams.has(ExploreStateURLParams.PivotShowColTotals)) {
+    preset.pivotShowColTotals =
+      searchParams.get(ExploreStateURLParams.PivotShowColTotals) !== "false";
+  }
+
   // TODO: other fields like expanded state and pin are not supported right now
   return { preset, errors };
 }

@@ -135,7 +135,11 @@ function createColumnDefinitionForDimensions(
 
   // Construct column def for Row Totals
   let rowTotalsColumns: ColumnDef<PivotDataRow>[] = [];
-  if (config.rowDimensionNames.length && config.colDimensionNames.length) {
+  if (
+    config.pivot.showRowTotals !== false &&
+    config.rowDimensionNames.length &&
+    config.colDimensionNames.length
+  ) {
     rowTotalsColumns = colDimensions.reverse().reduce((acc, dimension) => {
       const { name } = dimension;
 

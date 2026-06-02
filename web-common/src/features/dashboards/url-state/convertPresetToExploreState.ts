@@ -453,6 +453,8 @@ function fromPivotUrlParams(
   }
 
   const showPivot = preset.view === V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT;
+  const showRowTotals = preset.pivotShowRowTotals ?? true;
+  const showColTotals = preset.pivotShowColTotals ?? true;
 
   if (!hasSomePivotFields && !showPivot) {
     return {
@@ -466,6 +468,8 @@ function fromPivotUrlParams(
           rowPage: 1,
           enableComparison: true,
           activeCell: null,
+          showRowTotals,
+          showColTotals,
           tableMode: "nest",
         },
       },
@@ -522,6 +526,8 @@ function fromPivotUrlParams(
         rowPage: 1,
         enableComparison: true,
         activeCell: null,
+        showRowTotals,
+        showColTotals,
         tableMode,
         rowLimit,
       },

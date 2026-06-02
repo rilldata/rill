@@ -32,6 +32,8 @@ export interface PivotSpec
   measures: string[];
   row_dimensions?: string[];
   col_dimensions?: string[];
+  show_row_totals?: boolean;
+  show_col_totals?: boolean;
 }
 
 export interface TableSpec
@@ -39,6 +41,8 @@ export interface TableSpec
     ComponentFilterProperties {
   metrics_view: string;
   columns: string[];
+  show_row_totals?: boolean;
+  show_col_totals?: boolean;
 }
 
 export { default as Pivot } from "./CanvasPivotDisplay.svelte";
@@ -121,6 +125,8 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
       enableComparison: false,
       tableMode: type === "pivot" ? "nest" : "flat",
       activeCell: null,
+      showRowTotals: true,
+      showColTotals: true,
     };
   }
 
@@ -155,6 +161,16 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             meta: { allowedTypes: ["time", "dimension"] },
             label: "Row dimensions",
           },
+          show_row_totals: {
+            type: "boolean",
+            label: "Total column",
+            meta: { defaultValue: true },
+          },
+          show_col_totals: {
+            type: "boolean",
+            label: "Total row",
+            meta: { defaultValue: true },
+          },
           ...commonOptions,
         },
         filter: getFilterOptions(true, false),
@@ -167,6 +183,16 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             type: "multi_fields",
             label: "Columns",
             meta: { allowedTypes: ["time", "dimension", "measure"] },
+          },
+          show_col_totals: {
+            type: "boolean",
+            label: "Total row",
+            meta: { defaultValue: true },
+          },
+          show_row_totals: {
+            type: "boolean",
+            label: "Total column",
+            meta: { defaultValue: true },
           },
           ...commonOptions,
         },
@@ -228,11 +254,14 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
     let newSpec: PivotSpec | TableSpec;
 
     const commonProperties: ComponentCommonProperties &
-      ComponentFilterProperties = {
+      ComponentFilterProperties &
+      Pick<PivotSpec, "show_row_totals" | "show_col_totals"> = {
       title: currentSpec.title,
       description: currentSpec.description,
       dimension_filters: currentSpec.dimension_filters,
       time_filters: currentSpec.time_filters,
+      show_row_totals: currentSpec.show_row_totals,
+      show_col_totals: currentSpec.show_col_totals,
     };
 
     if ("columns" in currentSpec) {

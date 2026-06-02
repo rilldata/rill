@@ -361,7 +361,9 @@ export function createPivotDataStore(
         }
 
         const displayTotalsRow = Boolean(
-          rowDimensionNames.length && measureNames.length,
+          config.pivot.showColTotals !== false &&
+            rowDimensionNames.length &&
+            measureNames.length,
         );
         if (
           (rowDimensionNames.length || colDimensionNames.length) &&

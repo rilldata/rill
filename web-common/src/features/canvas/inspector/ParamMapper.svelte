@@ -138,13 +138,13 @@
               label={config.label ?? key}
               id={key}
               faint={config.meta?.invertBoolean
-                ? localParamValues[key]
-                : !localParamValues[key]}
+                ? ($specStore[key] ?? config.meta?.defaultValue ?? false)
+                : !($specStore[key] ?? config.meta?.defaultValue ?? false)}
             />
             <Switch
               checked={config.meta?.invertBoolean
-                ? !$specStore[key]
-                : $specStore[key]}
+                ? !($specStore[key] ?? config.meta?.defaultValue ?? false)
+                : ($specStore[key] ?? config.meta?.defaultValue ?? false)}
               onCheckedChange={(next) => {
                 component.updateProperty(
                   key,

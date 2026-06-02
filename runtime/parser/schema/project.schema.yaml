@@ -3265,6 +3265,12 @@ definitions:
         items:
           type: string
         description: Dimensions for table columns
+      show_row_totals:
+        type: boolean
+        description: Whether to show the per-row totals column
+      show_col_totals:
+        type: boolean
+        description: Whether to show the column totals row
       comparison_range:
         type: string
         description: Comparison time range

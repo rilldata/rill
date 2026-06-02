@@ -264,6 +264,10 @@ _[object]_ - (no description)
 
   - **`col_dimensions`** - _[array of string]_ - Dimensions for table columns 
 
+  - **`show_row_totals`** - _[boolean]_ - Whether to show the per-row totals column
+
+  - **`show_col_totals`** - _[boolean]_ - Whether to show the column totals row
+
   - **`comparison_range`** - _[string]_ - Comparison time range 
 
   - **`filter`** - _[string]_ - Filter expression 
@@ -294,4 +298,4 @@ _[object]_ - (no description)
 
   - **`title`** - _[string]_ - Image title 
 
-  - **`description`** - _[string]_ - Image description 
+  - **`description`** - _[string]_ - Image description

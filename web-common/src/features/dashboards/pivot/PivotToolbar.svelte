@@ -4,6 +4,7 @@
 
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import PivotPanel from "@rilldata/web-common/components/icons/PivotPanel.svelte";
   import { PIVOT_ROW_LIMIT_OPTIONS } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
@@ -27,9 +28,20 @@
     columns: PivotChipData[],
   ) => void;
   export let setRowLimit: (limit: number | undefined) => void;
+  export let setShowTotals: (
+    totals: Pick<PivotState, "showRowTotals" | "showColTotals">,
+  ) => void;
   export let collapseAll: () => void;
 
-  $: ({ rows, columns, tableMode, expanded, rowLimit } = pivotState);
+  $: ({
+    rows,
+    columns,
+    tableMode,
+    expanded,
+    rowLimit,
+    showRowTotals,
+    showColTotals,
+  } = pivotState);
   $: splitColumns = splitPivotChips(columns);
   $: isFlat = tableMode === "flat";
 
@@ -151,6 +163,35 @@
         />
       </div>
     {/if}
+
+    <div class="flex items-center gap-x-3 pl-2 pointer-events-auto">
+      <Checkbox
+        id="pivot-show-total-row"
+        checked={showColTotals}
+        onCheckedChange={(checked) => {
+          setShowTotals({
+            showRowTotals,
+            showColTotals: Boolean(checked),
+          });
+        }}
+        label="Total row"
+        labelClass="text-xs leading-snug font-normal text-fg-secondary"
+      />
+      {#if !isFlat}
+        <Checkbox
+          id="pivot-show-total-column"
+          checked={showRowTotals}
+          onCheckedChange={(checked) => {
+            setShowTotals({
+              showRowTotals: Boolean(checked),
+              showColTotals,
+            });
+          }}
+          label="Total column"
+          labelClass="text-xs leading-snug font-normal text-fg-secondary"
+        />
+      {/if}
+    </div>
     <slot name="export-menu" />
 
     {#if isFetching}

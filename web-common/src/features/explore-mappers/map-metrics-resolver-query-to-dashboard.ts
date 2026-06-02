@@ -394,6 +394,8 @@ function mapPivot(
     columnPage: 0,
     rowPage: 0,
     enableComparison: false,
+    showRowTotals: true,
+    showColTotals: true,
     tableMode: "flat",
     activeCell: null,
   };

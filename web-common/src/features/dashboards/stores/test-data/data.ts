@@ -444,6 +444,8 @@ export const AD_BIDS_PIVOT_ENTITY: Partial<ExploreState> = {
     rowPage: 1,
     enableComparison: true,
     activeCell: null,
+    showRowTotals: true,
+    showColTotals: true,
     tableMode: "nest",
   },
 };

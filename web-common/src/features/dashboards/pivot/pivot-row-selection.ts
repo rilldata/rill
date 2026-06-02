@@ -40,18 +40,15 @@ function getRawRowValues(
   tableData: PivotDataRow[],
 ): string[] {
   const { rowDimensionNames, measureNames, isFlat } = config;
+  const hasTotalsRow =
+    config.pivot?.showColTotals !== false && measureNames.length > 0;
   return isFlat
-    ? getValuesForFlatTable(
-        tableData,
-        rowDimensionNames,
-        rowId,
-        measureNames.length > 0,
-      )
+    ? getValuesForFlatTable(tableData, rowDimensionNames, rowId, hasTotalsRow)
     : getValuesForExpandedKey(
         tableData,
         rowDimensionNames,
         rowId,
-        measureNames.length > 0,
+        hasTotalsRow,
       );
 }
 

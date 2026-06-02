@@ -430,6 +430,8 @@ function fromPivotProto(
     rowPage: 1,
     enableComparison: dashboard.pivotEnableComparison ?? true,
     activeCell: null,
+    showRowTotals: dashboard.pivotShowRowTotals ?? true,
+    showColTotals: dashboard.pivotShowColTotals ?? true,
     tableMode:
       FromProtoPivotTableModeMap[
         dashboard.pivotTableMode || DashboardState_PivotTableMode.NEST
@@ -448,6 +450,8 @@ function blankPivotState(): PivotState {
     rowPage: 1,
     enableComparison: true,
     activeCell: null,
+    showRowTotals: true,
+    showColTotals: true,
     tableMode: "nest" as PivotTableMode,
   };
 }

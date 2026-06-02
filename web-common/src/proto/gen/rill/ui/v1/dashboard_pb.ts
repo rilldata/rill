@@ -254,6 +254,20 @@ export class DashboardState extends Message<DashboardState> {
   pivotRowLimit?: number;
 
   /**
+   * Show per-row totals column for pivot tables.
+   *
+   * @generated from field: optional bool pivot_show_row_totals = 42;
+   */
+  pivotShowRowTotals?: boolean;
+
+  /**
+   * Show column totals row for pivot/flat tables.
+   *
+   * @generated from field: optional bool pivot_show_col_totals = 43;
+   */
+  pivotShowColTotals?: boolean;
+
+  /**
    * List of all dimensions selected for rows
    *
    * @generated from field: repeated rill.ui.v1.PivotElement pivot_row_all_dimensions = 35;
@@ -313,6 +327,8 @@ export class DashboardState extends Message<DashboardState> {
     { no: 31, name: "pivot_table_mode", kind: "enum", T: proto3.getEnumType(DashboardState_PivotTableMode), opt: true },
     { no: 34, name: "pivot_enable_comparison", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 41, name: "pivot_row_limit", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 42, name: "pivot_show_row_totals", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 43, name: "pivot_show_col_totals", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 35, name: "pivot_row_all_dimensions", kind: "message", T: PivotElement, repeated: true },
     { no: 36, name: "pivot_column_all_dimensions", kind: "message", T: PivotElement, repeated: true },
   ]);

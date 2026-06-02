@@ -216,7 +216,7 @@ export function queryExpandedRowMeasureValues(
         tableData,
         rowDimensionNames,
         expandIndex,
-        numMeasures > 0,
+        config.pivot?.showColTotals !== false && numMeasures > 0,
       );
 
       if (

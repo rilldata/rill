@@ -441,6 +441,14 @@ function toPivotUrlParams(partialExploreState: Partial<ExploreState>) {
     );
   }
 
+  if (partialExploreState.pivot.showRowTotals === false) {
+    searchParams.set(ExploreStateURLParams.PivotShowRowTotals, "false");
+  }
+
+  if (partialExploreState.pivot.showColTotals === false) {
+    searchParams.set(ExploreStateURLParams.PivotShowColTotals, "false");
+  }
+
   // TODO: other fields like expanded state and pin are not supported right now
   return searchParams;
 }
