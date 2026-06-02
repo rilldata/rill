@@ -8,10 +8,10 @@
   } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
-  import VirtualCanvasEditor from "@rilldata/web-admin/features/virtual-file-editor/canvas/VirtualCanvasEditor.svelte";
   import { page } from "$app/state";
   import type { PageData } from "./$types";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
+  import CanvasPersonalFile from "@rilldata/web-admin/features/personal-files/canvas/CanvasPersonalFile.svelte";
 
   let { data }: { data: PageData } = $props();
   let { personalFile, fileIo } = $derived(data);
@@ -58,7 +58,7 @@
 </script>
 
 {#if resourceKind === ResourceKind.Canvas}
-  <VirtualCanvasEditor {fileArtifact} name={resourceName} />
+  <CanvasPersonalFile {fileArtifact} name={resourceName} />
 {:else}
   Unsupported resource kind: {resourceKind}
 {/if}

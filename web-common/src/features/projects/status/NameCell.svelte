@@ -1,15 +1,35 @@
 <script lang="ts">
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
+  import { User } from "lucide-svelte";
+  import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
 
-  export let name: string;
+  let {
+    name,
+    isPersonal = false,
+    ownerId = undefined,
+  }: {
+    name: string;
+    isPersonal?: boolean;
+    ownerId?: string | undefined;
+  } = $props();
+
+  const currentUser = createAdminServiceGetCurrentUser();
+  let isCurrentUser = $derived($currentUser.data?.user?.id === ownerId);
+
+  // There is no good API to get a user's info by id. GetUser API is for super users only.
+  // TODO: if we want to show the exact owner then we either need to open up that API or hit ListProjectMemberUsers.
 </script>
 
-<Tooltip distance={8}>
-  <div class="truncate">
-    {name}
-  </div>
-  <TooltipContent slot="tooltip-content">
-    {name}
-  </TooltipContent>
-</Tooltip>
+<div class="flex flex-row items-center truncate">
+  {#if isPersonal}
+    <Tooltip.Root>
+      <Tooltip.Trigger>
+        <User class="mr-1" size={14} />
+      </Tooltip.Trigger>
+      <Tooltip.Content side="bottom" sideOffset={8}>
+        Owned by {isCurrentUser ? "you" : "another user"}
+      </Tooltip.Content>
+    </Tooltip.Root>
+  {/if}
+  <div>{name}</div>
+</div>

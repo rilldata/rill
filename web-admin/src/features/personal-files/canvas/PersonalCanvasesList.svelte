@@ -2,15 +2,15 @@
   import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import CreatePersonalCanvasDialog from "@rilldata/web-admin/features/virtual-file-editor/canvas/CreatePersonalCanvasDialog.svelte";
+  import CreatePersonalCanvasDialog from "@rilldata/web-admin/features/personal-files/canvas/CreatePersonalCanvasDialog.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
   import ResourceListEmptyState from "@rilldata/web-admin/features/resources/ResourceListEmptyState.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { renderComponent } from "tanstack-table-8-svelte-5";
-  import PersonalCanvasCompositeCell from "@rilldata/web-admin/features/virtual-file-editor/canvas/PersonalCanvasCompositeCell.svelte";
-  import { getPersonalFilteredResources } from "@rilldata/web-admin/features/virtual-file-editor/selectors.ts";
+  import PersonalCanvasCompositeCell from "@rilldata/web-admin/features/personal-files/canvas/PersonalCanvasCompositeCell.svelte";
+  import { getPersonalFilteredResources } from "@rilldata/web-admin/features/personal-files/selectors.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 
   let {

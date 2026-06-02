@@ -21,7 +21,7 @@
   } from "@rilldata/web-common/components/tabs";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { getPersonalFilteredResources } from "@rilldata/web-admin/features/virtual-file-editor/selectors.ts";
+  import { getPersonalFilteredResources } from "@rilldata/web-admin/features/personal-files/selectors.ts";
 
   let {
     open = $bindable(false),

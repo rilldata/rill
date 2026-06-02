@@ -7,7 +7,7 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import PersonalCanvasesList from "@rilldata/web-admin/features/virtual-file-editor/canvas/PersonalCanvasesList.svelte";
+  import PersonalCanvasesList from "@rilldata/web-admin/features/personal-files/canvas/PersonalCanvasesList.svelte";
 
   const { chat, personalCanvases } = featureFlags;
 

@@ -16,11 +16,20 @@
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
   import { createRootCauseErrorQuery } from "@rilldata/web-common/features/entity-management/error-utils.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
-  import { getPersonalFilteredResourceByName } from "@rilldata/web-admin/features/virtual-file-editor/selectors.ts";
+  import { getPersonalFilteredResourceByName } from "@rilldata/web-admin/features/personal-files/selectors.ts";
   import { parseDocument } from "yaml";
+  import { Button } from "@rilldata/web-common/components/button/index.ts";
+  import { Play } from "lucide-svelte";
 
-  let { fileArtifact, name }: { fileArtifact: FileArtifact; name: string } =
-    $props();
+  let {
+    fileArtifact,
+    name,
+    onPreview,
+  }: {
+    fileArtifact: FileArtifact;
+    name: string;
+    onPreview: () => void;
+  } = $props();
 
   const runtimeClient = useRuntimeClient();
 
@@ -56,7 +65,7 @@
     reconcileError ? ($rootCauseQuery?.data ?? reconcileError) : undefined,
   );
 
-  async function onTitleChange(newTitle: string) {
+  function onTitleChange(newTitle: string) {
     const trimmed = newTitle.trim();
     if (!trimmed || trimmed === titleValue) return;
 
@@ -103,6 +112,10 @@
               saving={$saving}
             />
           {/if}
+          <Button label="Preview" type="secondary" compact onClick={onPreview}>
+            <Play size={14} />
+            Preview
+          </Button>
         </div>
       {/snippet}
     </WorkspaceHeader>

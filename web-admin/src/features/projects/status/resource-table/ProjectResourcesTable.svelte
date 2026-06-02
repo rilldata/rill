@@ -23,6 +23,10 @@
   import RefreshResourceConfirmDialog from "@rilldata/web-common/features/projects/status/RefreshResourceConfirmDialog.svelte";
   import ResourceErrorMessage from "@rilldata/web-common/features/projects/status/ResourceErrorMessage.svelte";
   import ResourceSpecDialog from "@rilldata/web-common/features/projects/status/ResourceSpecDialog.svelte";
+  import {
+    getPersonalFileOwner,
+    isPersonalFile,
+  } from "@rilldata/web-admin/features/projects/status/selectors.ts";
 
   export let data: V1Resource[];
 
@@ -153,9 +157,11 @@
     {
       accessorFn: (row) => row.meta.name.name,
       header: "Name",
-      cell: ({ getValue }) =>
+      cell: ({ getValue, row }) =>
         renderComponent(NameCell, {
           name: getValue() as string,
+          isPersonal: isPersonalFile(row.original),
+          ownerId: getPersonalFileOwner(row.original),
         }),
     },
     {
