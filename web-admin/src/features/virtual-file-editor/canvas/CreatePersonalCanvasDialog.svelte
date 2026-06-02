@@ -20,8 +20,8 @@
     UnderlineTabsTrigger,
   } from "@rilldata/web-common/components/tabs";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
-  import { getPersonalCanvases } from "@rilldata/web-admin/features/virtual-file-editor/canvas/selectors.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { getPersonalFilteredResources } from "@rilldata/web-admin/features/virtual-file-editor/selectors.ts";
 
   let {
     open = $bindable(false),
@@ -37,7 +37,12 @@
 
   const createFileMutation = createAdminServiceCreatePersonalFile();
   let personalCanvasesQuery = $derived(
-    getPersonalCanvases(runtimeClient, org, project),
+    getPersonalFilteredResources(
+      runtimeClient,
+      org,
+      project,
+      ResourceKind.Canvas,
+    ),
   );
   let personalCanvasOptions = $derived(
     $personalCanvasesQuery.data?.map((r) => {

@@ -23,11 +23,12 @@ export class VirtualFileIo implements FileIO {
   public constructor(
     private readonly org: string,
     private readonly project: string,
-    private readonly userId: string,
   ) {}
 
+  updateClient() {}
+
   async read(path: string, invalidate = false): Promise<string | undefined> {
-    const name = this.getNameFromPath(path);
+    const [, name] = splitFolderFileNameAndExtension(path);
     const queryKey = getAdminServiceGetPersonalFileQueryKey(
       this.org,
       this.project,
@@ -59,7 +60,7 @@ export class VirtualFileIo implements FileIO {
       if (!kind) throw new Error("Could not infer resource kind");
     }
 
-    const name = this.getNameFromPath(path);
+    const [, name] = splitFolderFileNameAndExtension(path);
     // Optimistically update the query
     queryClient.setQueryData(
       getAdminServiceGetPersonalFileQueryKey(this.org, this.project, name),
@@ -71,10 +72,5 @@ export class VirtualFileIo implements FileIO {
       kind,
     });
     this.events.emit("write", { name, kind });
-  }
-
-  private getNameFromPath(path: string) {
-    const [, name] = splitFolderFileNameAndExtension(path);
-    return name.replace("_" + this.userId, "");
   }
 }

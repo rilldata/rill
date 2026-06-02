@@ -1,7 +1,6 @@
 <script lang="ts">
   import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
   import { Button } from "@rilldata/web-common/components/button";
-  import { getPersonalCanvases } from "@rilldata/web-admin/features/virtual-file-editor/canvas/selectors.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import CreatePersonalCanvasDialog from "@rilldata/web-admin/features/virtual-file-editor/canvas/CreatePersonalCanvasDialog.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
@@ -11,6 +10,8 @@
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { renderComponent } from "tanstack-table-8-svelte-5";
   import PersonalCanvasCompositeCell from "@rilldata/web-admin/features/virtual-file-editor/canvas/PersonalCanvasCompositeCell.svelte";
+  import { getPersonalFilteredResources } from "@rilldata/web-admin/features/virtual-file-editor/selectors.ts";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 
   let {
     org,
@@ -22,7 +23,12 @@
 
   const runtimeClient = useRuntimeClient();
   let personalCanvasesQuery = $derived(
-    getPersonalCanvases(runtimeClient, org, project),
+    getPersonalFilteredResources(
+      runtimeClient,
+      org,
+      project,
+      ResourceKind.Canvas,
+    ),
   );
   let personalCanvases = $derived($personalCanvasesQuery.data ?? []);
 
@@ -72,7 +78,7 @@
     </Button>
   </header>
 
-  {#if $personalCanvasesQuery.isLoading}
+  {#if $personalCanvasesQuery.isPending}
     <div class="m-auto mt-20">
       <DelayedSpinner isLoading={true} size="24px" />
     </div>

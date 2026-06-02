@@ -140,8 +140,9 @@ export class FileArtifact {
    * available after the artifact was created (e.g. during +page.ts load
    * before RuntimeProvider has mounted).
    */
-  updateClient(client: RuntimeClient) {
+  updateClient(client: RuntimeClient, io: FileIO) {
     this.client = client;
+    this.io = io;
   }
 
   fetchContent = async (invalidate = false) => {

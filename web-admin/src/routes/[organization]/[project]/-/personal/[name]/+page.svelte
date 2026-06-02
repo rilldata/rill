@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import {
@@ -8,10 +7,11 @@
     getRuntimeServiceListResourcesQueryKey,
   } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
-  import type { PageData } from "./$types";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import VirtualCanvasEditor from "@rilldata/web-admin/features/virtual-file-editor/canvas/VirtualCanvasEditor.svelte";
   import { page } from "$app/state";
+  import type { PageData } from "./$types";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
 
   let { data }: { data: PageData } = $props();
   let { personalFile, fileIo } = $derived(data);
@@ -36,9 +36,7 @@
   );
   let resourceKind = $derived($resourceQuery.data?.[0]?.meta?.name?.kind);
 
-  let fileArtifact = $derived(
-    new FileArtifact(client, personalFile.path, fileIo),
-  );
+  let fileArtifact = $derived(fileArtifacts.getFileArtifact(personalFile.path));
   $effect(() => {
     fileArtifact.editorContent.set(personalFile.yaml);
   });
@@ -60,7 +58,7 @@
 </script>
 
 {#if resourceKind === ResourceKind.Canvas}
-  <VirtualCanvasEditor {fileArtifact} />
+  <VirtualCanvasEditor {fileArtifact} name={resourceName} />
 {:else}
   Unsupported resource kind: {resourceKind}
 {/if}

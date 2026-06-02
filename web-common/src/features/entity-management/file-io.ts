@@ -8,6 +8,7 @@ import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { QueryFunction } from "@tanstack/svelte-query";
 
 export interface FileIO {
+  updateClient(client: RuntimeClient): void;
   read(path: string, invalidate?: boolean): Promise<string | undefined>;
   write(path: string, blob: string, kind?: string): Promise<void>;
 }

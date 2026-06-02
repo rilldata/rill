@@ -1,7 +1,10 @@
 <script lang="ts">
   import CanvasInitialization from "@rilldata/web-common/features/canvas/CanvasInitialization.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
-  import { WorkspaceContainer } from "@rilldata/web-common/layout/workspace";
+  import {
+    WorkspaceContainer,
+    WorkspaceHeader,
+  } from "@rilldata/web-common/layout/workspace";
   import ReconcileWarningPanel from "@rilldata/web-common/features/entity-management/ReconcileWarningPanel.svelte";
   import VisualCanvasEditing from "@rilldata/web-common/features/canvas/inspector/VisualCanvasEditing.svelte";
   import SaveDefaultsButton from "@rilldata/web-common/features/canvas/components/SaveDefaultsButton.svelte";
@@ -12,40 +15,63 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
   import { createRootCauseErrorQuery } from "@rilldata/web-common/features/entity-management/error-utils.ts";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+  import { getPersonalFilteredResourceByName } from "@rilldata/web-admin/features/virtual-file-editor/selectors.ts";
+  import { parseDocument } from "yaml";
 
-  export let fileArtifact: FileArtifact;
+  let { fileArtifact, name }: { fileArtifact: FileArtifact; name: string } =
+    $props();
 
   const runtimeClient = useRuntimeClient();
 
-  let canvasName: string;
-
-  $: ({
-    autoSave,
+  let {
     path: filePath,
-    getResource,
     remoteContent,
+    editorContent,
+    hasUnsavedChanges,
     saveState: { saving },
-  } = fileArtifact);
+  } = $derived(fileArtifact);
 
-  $: resourceQuery = getResource(queryClient);
+  let resourceQuery = $derived(
+    getPersonalFilteredResourceByName(runtimeClient, name),
+  );
 
-  $: ({ data } = $resourceQuery);
+  let { data } = $derived($resourceQuery);
+  $effect(() => {
+    if (data) fileArtifact.updateResource(data);
+  });
+  let titleValue = $derived(data?.canvas?.spec?.displayName ?? name);
 
-  $: canvasName = getNameFromFile(filePath);
+  let canvasName = $derived(getNameFromFile(filePath));
 
   // Parse error for the editor gutter and banner
-  $: parseErrorQuery = fileArtifact.getParseError(queryClient);
-  $: parseError = $parseErrorQuery;
+  let parseErrorQuery = $derived(fileArtifact.getParseError(queryClient));
+  let parseError = $derived($parseErrorQuery);
 
-  $: reconcileError = data?.meta?.reconcileError;
-  $: rootCauseQuery = createRootCauseErrorQuery(
-    runtimeClient,
-    data,
-    reconcileError,
+  let reconcileError = $derived(data?.meta?.reconcileError);
+  let rootCauseQuery = $derived(
+    createRootCauseErrorQuery(runtimeClient, data, reconcileError),
   );
-  $: rootCauseReconcileError = reconcileError
-    ? ($rootCauseQuery?.data ?? reconcileError)
-    : undefined;
+  let rootCauseReconcileError = $derived(
+    reconcileError ? ($rootCauseQuery?.data ?? reconcileError) : undefined,
+  );
+
+  async function onTitleChange(newTitle: string) {
+    const trimmed = newTitle.trim();
+    if (!trimmed || trimmed === titleValue) return;
+
+    const current = $editorContent ?? "";
+    let yamlOut: string;
+    try {
+      const doc = parseDocument(current);
+      doc.set("display_name", trimmed);
+      yamlOut = doc.toString();
+    } catch (e) {
+      console.error("Failed to update display_name in YAML", e);
+      return;
+    }
+    fileArtifact.updateEditorContent(yamlOut, false, true);
+  }
 </script>
 
 <CanvasInitialization
@@ -57,15 +83,29 @@
   let:isLoading
 >
   <WorkspaceContainer>
-    <div class="flex justify-between" slot="header">
-      {#if ready}
-        <SaveDefaultsButton
-          {canvasName}
-          instanceId={runtimeClient.instanceId}
-          saving={$saving}
-        />
-      {/if}
-    </div>
+    <WorkspaceHeader
+      slot="header"
+      {filePath}
+      resource={data}
+      hasUnsavedChanges={$hasUnsavedChanges}
+      titleInput={titleValue}
+      {onTitleChange}
+      codeToggle={false}
+      resourceKind={ResourceKind.Canvas}
+      showBreadcrumbs={false}
+    >
+      {#snippet cta()}
+        <div class="flex gap-x-2">
+          {#if ready}
+            <SaveDefaultsButton
+              {canvasName}
+              instanceId={runtimeClient.instanceId}
+              saving={$saving}
+            />
+          {/if}
+        </div>
+      {/snippet}
+    </WorkspaceHeader>
 
     <svelte:fragment slot="body">
       <div class="flex flex-col h-full">
@@ -97,7 +137,7 @@
     </svelte:fragment>
     <svelte:fragment slot="inspector">
       {#if ready}
-        <VisualCanvasEditing {canvasName} {fileArtifact} autoSave={$autoSave} />
+        <VisualCanvasEditing {canvasName} {fileArtifact} autoSave />
       {/if}
     </svelte:fragment>
   </WorkspaceContainer>

@@ -3,6 +3,7 @@ import {
   adminServiceGetPersonalFile,
   getAdminServiceGetPersonalFileQueryKey,
 } from "@rilldata/web-admin/client";
+import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
 
 export const load = async ({ params: { organization, project, name } }) => {
   const personalFile = await queryClient.fetchQuery({
@@ -15,6 +16,9 @@ export const load = async ({ params: { organization, project, name } }) => {
   });
 
   return {
-    personalFile,
+    personalFile: {
+      path: `/__virtual__/${removeLeadingSlash(personalFile.path)}`,
+      yaml: personalFile.yaml,
+    },
   };
 };

@@ -6,22 +6,33 @@
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { timeAgo } from "@rilldata/web-common/lib/time/relative-time";
 
-  export let name: string;
-  export let title: string;
-  export let lastRefreshed: string;
-  export let error: string;
-  export let isMetricsExplorer: boolean;
-  export let organization: string;
-  export let project: string;
+  let {
+    name,
+    title,
+    lastRefreshed,
+    error,
+    isMetricsExplorer,
+    organization,
+    project,
+  }: {
+    name: string;
+    title: string;
+    lastRefreshed: string;
+    error: string;
+    isMetricsExplorer: boolean;
+    organization: string;
+    project: string;
+  } = $props();
 
-  $: lastRefreshedDate = lastRefreshed ? new Date(lastRefreshed) : null;
+  let lastRefreshedDate = $derived(
+    lastRefreshed ? new Date(lastRefreshed) : null,
+  );
 
-  $: dashboardSlug = isMetricsExplorer ? "explore" : "canvas";
-  $: href = `/${organization}/${project}/-/personal/${name}`;
+  let href = $derived(`/${organization}/${project}/-/personal/${name}`);
 
-  $: resourceKind = isMetricsExplorer
-    ? ResourceKind.Explore
-    : ResourceKind.Canvas;
+  let resourceKind = $derived(
+    isMetricsExplorer ? ResourceKind.Explore : ResourceKind.Canvas,
+  );
 </script>
 
 <a class="flex flex-col gap-y-1 group px-4 py-2.5 w-full h-full" {href}>
