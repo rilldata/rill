@@ -594,9 +594,10 @@ function fromPivotUrlParams(
   const errors: Error[] = [];
 
   if (searchParams.has(ExploreStateURLParams.PivotRows)) {
-    const rows = (
-      searchParams.get(ExploreStateURLParams.PivotRows) as string
-    ).split(",");
+    const rowsParam = searchParams.get(
+      ExploreStateURLParams.PivotRows,
+    ) as string;
+    const rows = rowsParam === "" ? [] : rowsParam.split(",");
     const validRows = rows.filter(
       (r) => dimensions.has(r) || r in FromURLParamTimeDimensionMap,
     );
@@ -608,9 +609,10 @@ function fromPivotUrlParams(
   }
 
   if (searchParams.has(ExploreStateURLParams.PivotColumns)) {
-    const cols = (
-      searchParams.get(ExploreStateURLParams.PivotColumns) as string
-    ).split(",");
+    const colsParam = searchParams.get(
+      ExploreStateURLParams.PivotColumns,
+    ) as string;
+    const cols = colsParam === "" ? [] : colsParam.split(",");
     const validCols = cols.filter(
       (c) =>
         dimensions.has(c) ||

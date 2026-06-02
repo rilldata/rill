@@ -1103,6 +1103,7 @@ export interface V1GenerateResolverResponse {
 
 export interface V1GetAIMessageResponse {
   message?: V1Message;
+  result?: V1Message;
 }
 
 export interface V1GetConversationResponse {

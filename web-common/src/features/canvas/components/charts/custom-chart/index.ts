@@ -10,8 +10,16 @@ import type {
   CanvasEntity,
   ComponentPath,
 } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
+import {
+  PivotChipType,
+  type PivotChipData,
+  type PivotState,
+} from "@rilldata/web-common/features/dashboards/pivot/types";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
-import { get } from "svelte/store";
+import { get, writable, type Writable } from "svelte/store";
 import CanvasCustomChart from "./CanvasCustomChart.svelte";
 
 export interface CustomChart
@@ -23,12 +31,19 @@ export interface CustomChart
   vega_spec: string;
 }
 
+export interface QueryFieldMeta {
+  type: "dimension" | "measure";
+  name: string;
+  display_name?: string;
+}
+
 export class CustomChartComponent extends BaseCanvasComponent<CustomChart> {
   minSize = { width: 4, height: 4 };
   defaultSize = { width: 6, height: 4 };
   resetParams = [];
   type: CanvasComponentType = "custom_chart";
   component = CanvasCustomChart;
+  queryFieldsMeta: Writable<QueryFieldMeta[]> = writable([]);
 
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     const defaultSpec: CustomChart = {
@@ -91,6 +106,54 @@ export class CustomChartComponent extends BaseCanvasComponent<CustomChart> {
         spec.metrics_sql.some((q) => q.trim().length > 0)) ||
       spec.vega_spec.trim().length > 0
     );
+  }
+
+  getExploreTransformerProperties(): Partial<ExploreState> {
+    const fields = get(this.queryFieldsMeta);
+    const timeAndFilter = get(this.timeAndFilterStore);
+
+    const { dimensionFilters, dimensionThresholdFilters } = splitWhereFilter(
+      timeAndFilter?.where,
+    );
+
+    const columns: PivotChipData[] = [];
+    const rows: PivotChipData[] = [];
+
+    for (const field of fields) {
+      if (field.type === "measure") {
+        columns.push({
+          id: field.name,
+          title: field.display_name ?? field.name,
+          type: PivotChipType.Measure,
+        });
+      } else {
+        rows.push({
+          id: field.name,
+          title: field.display_name ?? field.name,
+          type: PivotChipType.Dimension,
+        });
+      }
+    }
+
+    const pivot: PivotState = {
+      columns,
+      rows,
+      expanded: {},
+      sorting: [],
+      columnPage: 0,
+      rowPage: 0,
+      enableComparison: false,
+      tableMode: "nest",
+      activeCell: null,
+    };
+
+    return {
+      whereFilter: dimensionFilters,
+      dimensionThresholdFilters,
+      showTimeComparison: false,
+      activePage: DashboardState_ActivePage.PIVOT,
+      pivot,
+    };
   }
 
   inputParams(): InputParams<CustomChart> {

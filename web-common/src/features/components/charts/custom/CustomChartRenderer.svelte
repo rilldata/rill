@@ -14,7 +14,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { View, VisualizationSpec } from "svelte-vega";
-  import { derived } from "svelte/store";
+  import { derived, get } from "svelte/store";
   import { convertV1ExpressionToMapstructure } from "./expression-utils";
 
   export let spec: string | undefined = undefined;
@@ -24,6 +24,9 @@
   export let timeRange: V1TimeRange | undefined = undefined;
   export let showDataTable = false;
   export let name: string = "Custom Chart";
+  export let onMetaChange:
+    | ((meta: Record<string, unknown> | undefined) => void)
+    | undefined = undefined;
 
   const viewOptions = ["Chart", "Data"];
 
@@ -80,6 +83,13 @@
       error: query.error,
     })),
   );
+
+  $: if (onMetaChange && $combinedResults[0]?.isSuccess) {
+    const firstMeta = get(dataQueries[0])?.data?.meta;
+    if (firstMeta) {
+      onMetaChange(firstMeta as Record<string, unknown>);
+    }
+  }
 
   $: vegaData = $combinedResults.reduce<Record<string, unknown>>(
     (acc, result, idx) => {

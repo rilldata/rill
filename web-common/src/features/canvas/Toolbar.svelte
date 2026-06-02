@@ -28,6 +28,8 @@
     "donut_chart",
     "pie_chart",
     "heatmap",
+    "combo_chart",
+    "custom_chart",
   ] as const;
 
   $: showExplore =
