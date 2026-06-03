@@ -579,6 +579,8 @@ message ExplorePreset {
   optional bool pivot_sort_asc = 27;
   optional string pivot_table_mode = 28;
   optional int32 pivot_row_limit = 33;
+  optional bool pivot_show_totals_column = 37;
+  optional bool pivot_show_totals_row = 38;
 
   // Chart display settings (frontend-only; persisted in URL state)
   optional bool chart_dynamic_y_axis = 35;

@@ -139,8 +139,8 @@
         setShowTotals={(totals) =>
           metricsExplorerStore.setPivotTotals(
             $exploreName,
-            totals.showRowTotals,
-            totals.showColTotals,
+            totals.showTotalsColumn,
+            totals.showTotalsRow,
           )}
         collapseAll={() =>
           metricsExplorerStore.setPivotExpanded($exploreName, {})}

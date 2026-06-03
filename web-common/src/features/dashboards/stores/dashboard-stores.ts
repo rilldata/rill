@@ -579,13 +579,16 @@ const metricsViewReducers = {
     });
   },
 
-  setPivotTotals(name: string, showRowTotals: boolean, showColTotals: boolean) {
+  setPivotTotals(
+    name: string,
+    showTotalsColumn: boolean,
+    showTotalsRow: boolean,
+  ) {
     updateMetricsExplorerByName(name, (exploreState) => {
       exploreState.pivot = {
         ...exploreState.pivot,
-        showRowTotals,
-        showColTotals,
-        sorting: [],
+        showTotalsColumn,
+        showTotalsRow,
         expanded: {},
         activeCell: null,
         rowPage: 1,

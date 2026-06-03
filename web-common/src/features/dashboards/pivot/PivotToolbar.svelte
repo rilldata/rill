@@ -29,7 +29,7 @@
   ) => void;
   export let setRowLimit: (limit: number | undefined) => void;
   export let setShowTotals: (
-    totals: Pick<PivotState, "showRowTotals" | "showColTotals">,
+    totals: Pick<PivotState, "showTotalsColumn" | "showTotalsRow">,
   ) => void;
   export let collapseAll: () => void;
 
@@ -39,8 +39,8 @@
     tableMode,
     expanded,
     rowLimit,
-    showRowTotals,
-    showColTotals,
+    showTotalsColumn,
+    showTotalsRow,
   } = pivotState);
   $: splitColumns = splitPivotChips(columns);
   $: isFlat = tableMode === "flat";
@@ -178,11 +178,11 @@
         {#if canShowTotalRow}
           <Checkbox
             id="pivot-show-total-row"
-            checked={showColTotals}
+            checked={showTotalsRow}
             onCheckedChange={(checked) => {
               setShowTotals({
-                showRowTotals,
-                showColTotals: Boolean(checked),
+                showTotalsColumn,
+                showTotalsRow: Boolean(checked),
               });
             }}
             label="Total row"
@@ -192,11 +192,11 @@
         {#if canShowTotalColumn}
           <Checkbox
             id="pivot-show-total-column"
-            checked={showRowTotals}
+            checked={showTotalsColumn}
             onCheckedChange={(checked) => {
               setShowTotals({
-                showRowTotals: Boolean(checked),
-                showColTotals,
+                showTotalsColumn: Boolean(checked),
+                showTotalsRow,
               });
             }}
             label="Total column"

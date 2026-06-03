@@ -50,8 +50,8 @@
       columnPage: 1,
       rowPage: 1,
       columns: tableFieldMapper(columns, metricsViewSpec),
-      showRowTotals: tableSpec.hide_totals_col !== true,
-      showColTotals: tableSpec.hide_totals_row !== true,
+      showTotalsColumn: tableSpec.hide_totals_col !== true,
+      showTotalsRow: tableSpec.hide_totals_row !== true,
     }));
   } else if ("col_dimensions" in tableSpec && schema.isValid) {
     const measures = tableSpec.measures || [];
@@ -69,8 +69,8 @@
         ...tableFieldMapper(measures, metricsViewSpec),
       ],
       rows: tableFieldMapper(rowDimensions, metricsViewSpec),
-      showRowTotals: tableSpec.hide_totals_col !== true,
-      showColTotals: tableSpec.hide_totals_row !== true,
+      showTotalsColumn: tableSpec.hide_totals_col !== true,
+      showTotalsRow: tableSpec.hide_totals_row !== true,
     }));
   }
 </script>

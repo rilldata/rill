@@ -287,8 +287,8 @@ function getRillDefaultPivotViewState() {
       rowPage: 1,
       enableComparison: true,
       activeCell: null,
-      showRowTotals: true,
-      showColTotals: true,
+      showTotalsColumn: true,
+      showTotalsRow: true,
       tableMode: "nest",
     },
   };

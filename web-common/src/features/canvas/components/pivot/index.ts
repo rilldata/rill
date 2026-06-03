@@ -125,8 +125,8 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
       enableComparison: false,
       tableMode: type === "pivot" ? "nest" : "flat",
       activeCell: null,
-      showRowTotals: true,
-      showColTotals: true,
+      showTotalsColumn: true,
+      showTotalsRow: true,
     };
   }
 

@@ -4,7 +4,7 @@ import { createAndExpression } from "@rilldata/web-common/features/dashboards/st
 import { addExpandedDataToPivot } from "./pivot-expansion";
 import { type PivotDataRow, type PivotDataStoreConfig } from "./types";
 
-function getConfig(showColTotals: boolean): PivotDataStoreConfig {
+function getConfig(showTotalsRow: boolean): PivotDataStoreConfig {
   return {
     measureNames: ["impressions"],
     rowDimensionNames: ["publisher", "campaign"],
@@ -22,8 +22,8 @@ function getConfig(showColTotals: boolean): PivotDataStoreConfig {
       enableComparison: true,
       tableMode: "nest",
       activeCell: null,
-      showRowTotals: true,
-      showColTotals,
+      showTotalsColumn: true,
+      showTotalsRow,
     },
     time: {
       timeStart: undefined,

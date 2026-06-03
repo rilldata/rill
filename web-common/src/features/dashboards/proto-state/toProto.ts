@@ -332,8 +332,8 @@ function toPivotProto(pivotState: PivotState): PartialMessage<DashboardState> {
     pivotEnableComparison: pivotState.enableComparison,
     pivotTableMode: ToProtoPivotTableModeMap[pivotState.tableMode],
     pivotRowLimit: pivotState.rowLimit,
-    pivotShowRowTotals: pivotState.showRowTotals,
-    pivotShowColTotals: pivotState.showColTotals,
+    pivotShowTotalsColumn: pivotState.showTotalsColumn,
+    pivotShowTotalsRow: pivotState.showTotalsRow,
   };
 }
 

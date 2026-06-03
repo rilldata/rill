@@ -499,7 +499,7 @@ const TestCases: {
     title: "Pivot with totals hidden",
     mutations: [AD_BIDS_OPEN_DOMAIN_BID_PRICE_PIVOT, AD_BIDS_HIDE_PIVOT_TOTALS],
     expectedSearch:
-      "view=pivot&rows=domain%2Ctime.day&cols=impressions&sort_by=&table_mode=nest&show_row_totals=false&show_col_totals=false",
+      "view=pivot&rows=domain%2Ctime.day&cols=impressions&sort_by=&table_mode=nest&show_totals_column=false&show_totals_row=false",
     legacyNotSupported: true,
   },
   {

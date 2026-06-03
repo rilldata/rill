@@ -657,14 +657,14 @@ function fromPivotUrlParams(
     }
   }
 
-  if (searchParams.has(ExploreStateURLParams.PivotShowRowTotals)) {
-    preset.pivotShowRowTotals =
-      searchParams.get(ExploreStateURLParams.PivotShowRowTotals) !== "false";
+  if (searchParams.has(ExploreStateURLParams.PivotShowTotalsColumn)) {
+    preset.pivotShowTotalsColumn =
+      searchParams.get(ExploreStateURLParams.PivotShowTotalsColumn) !== "false";
   }
 
-  if (searchParams.has(ExploreStateURLParams.PivotShowColTotals)) {
-    preset.pivotShowColTotals =
-      searchParams.get(ExploreStateURLParams.PivotShowColTotals) !== "false";
+  if (searchParams.has(ExploreStateURLParams.PivotShowTotalsRow)) {
+    preset.pivotShowTotalsRow =
+      searchParams.get(ExploreStateURLParams.PivotShowTotalsRow) !== "false";
   }
 
   // TODO: other fields like expanded state and pin are not supported right now

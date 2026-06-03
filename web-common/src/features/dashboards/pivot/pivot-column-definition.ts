@@ -136,7 +136,7 @@ function createColumnDefinitionForDimensions(
   // Construct column def for Row Totals
   let rowTotalsColumns: ColumnDef<PivotDataRow>[] = [];
   if (
-    config.pivot.showRowTotals !== false &&
+    config.pivot.showTotalsColumn !== false &&
     config.rowDimensionNames.length &&
     config.colDimensionNames.length
   ) {
