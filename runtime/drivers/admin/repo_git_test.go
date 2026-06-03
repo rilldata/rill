@@ -901,22 +901,6 @@ func TestGitRepo_mergeToBranch(t *testing.T) {
 	}
 }
 
-func TestEnsureGitConfig(t *testing.T) {
-	withCleanGitEnv(t)
-
-	repo := t.TempDir()
-	require.NoError(t, execGitCommand(exec.Command("git", "-C", repo, "init")))
-	require.NoError(t, ensureGitConfig(repo, "user.name", "Test User"))
-	out, err := exec.Command("git", "-C", repo, "config", "--local", "--get", "user.name").CombinedOutput()
-	require.NoError(t, err)
-	require.Equal(t, "Test User\n", string(out))
-
-	require.NoError(t, ensureGitConfig(repo, "user.name", "Rest User"))
-	out, err = exec.Command("git", "-C", repo, "config", "--local", "--get", "user.name").CombinedOutput()
-	require.NoError(t, err)
-	require.Equal(t, "Test User\n", string(out)) // still test user since set locally
-}
-
 func newEditableGitRepo(localDir, remoteURL, defaultBranch, primaryBranch, subpath string) *gitRepo {
 	return &gitRepo{
 		h:             &Handle{logger: zap.NewNop()},
