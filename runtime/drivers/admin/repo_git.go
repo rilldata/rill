@@ -126,12 +126,12 @@ func (r *gitRepo) pullInner(ctx context.Context, userTriggered, force bool) erro
 		// a. when branch is created remotely after the last pull
 		// b. primary branch was edited
 		// c. in editable mode when the default branch may not exist at all.
-		remoteHash, err := gitutil.Hash(r.repoDir, "refs/remotes/origin/"+r.defaultBranch)
+		remoteHash, err := gitutil.Hash(ctx, r.repoDir, "refs/remotes/origin/"+r.defaultBranch)
 		if err != nil {
 			if errors.Is(err, gitutil.ErrRefNotFound) && r.editable() {
 				// In editable mode, the default branch may not exist yet on remote. We will create it based on the primary branch.
 				r.h.logger.Info("Default branch does not exist on remote, will create it based on primary branch", zap.String("defaultBranch", r.defaultBranch), zap.String("primaryBranch", r.primaryBranch))
-				remoteHash, err = gitutil.Hash(r.repoDir, "refs/remotes/origin/"+r.primaryBranch)
+				remoteHash, err = gitutil.Hash(ctx, r.repoDir, "refs/remotes/origin/"+r.primaryBranch)
 				if err != nil {
 					return fmt.Errorf("failed to get reference for primary branch %q: %w", r.primaryBranch, err)
 				}
@@ -354,14 +354,11 @@ func (r *gitRepo) mergeToBranch(ctx context.Context, branch string, force bool) 
 // commitHash returns the current commit hash of the repository.
 // It returns an empty string (without error) when HEAD points to an unborn branch.
 func (r *gitRepo) commitHash(ctx context.Context) (string, error) {
-	out, err := gitutil.Run(ctx, r.repoDir, "rev-parse", "--verify", "HEAD")
-	if err != nil {
-		if strings.Contains(err.Error(), "Needed a single revision") {
-			return "", nil
-		}
-		return "", err
+	hash, err := gitutil.Hash(ctx, r.repoDir, "HEAD")
+	if errors.Is(err, gitutil.ErrRefNotFound) {
+		return "", nil
 	}
-	return out, nil
+	return hash, err
 }
 
 // commitTimestamp returns the timestamp of the latest commit on the current branch.
@@ -442,7 +439,7 @@ func isRepoRoot(path string) bool {
 	if err != nil {
 		return false
 	}
-	return strings.TrimSpace(out) == ""
+	return out == ""
 }
 
 func setRemoteURL(path, remoteURL string) error {
@@ -456,9 +453,5 @@ func setFetchBranch(path, branch string) error {
 }
 
 func currentBranch(path string) (string, error) {
-	out, err := gitutil.Run(context.Background(), path, "rev-parse", "--abbrev-ref", "HEAD")
-	if err != nil {
-		return "", err
-	}
-	return strings.TrimSpace(out), nil
+	return gitutil.Run(context.Background(), path, "rev-parse", "--abbrev-ref", "HEAD")
 }

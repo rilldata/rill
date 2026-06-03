@@ -220,6 +220,17 @@ func TestMergeWithBailOnConflict(t *testing.T) {
 		output, err = cmd.Output()
 		require.NoError(t, err, "failed to get git status ", string(output))
 		require.Empty(t, string(output), "working directory should be clean after aborted merge")
+
+		// MERGE_HEAD must be gone after the abort.
+		require.NoFileExists(t, filepath.Join(tempDir, ".git", "MERGE_HEAD"), "MERGE_HEAD should not exist after abort")
+	})
+
+	t.Run("merge failure unrelated to conflicts surfaces as an error", func(t *testing.T) {
+		tempDir := setupTestRepository(t)
+
+		success, err := MergeWithBailOnConflict(tempDir, "does-not-exist")
+		require.Error(t, err, "non-conflict failures must not be silently swallowed")
+		require.False(t, success)
 	})
 }
 
@@ -307,7 +318,7 @@ func TestFetchBranches(t *testing.T) {
 		require.NoError(t, err, "missing branch must not produce an error")
 
 		// The existing branch must have been fetched.
-		hash, err := Hash(local, "refs/remotes/origin/feature")
+		hash, err := Hash(context.Background(), local, "refs/remotes/origin/feature")
 		require.NoError(t, err)
 		require.NotEmpty(t, hash)
 	})
@@ -317,7 +328,7 @@ func TestHash(t *testing.T) {
 	t.Run("returns ErrRefNotFound for a missing ref", func(t *testing.T) {
 		tempDir := setupTestRepository(t)
 
-		_, err := Hash(tempDir, "refs/heads/does-not-exist")
+		_, err := Hash(context.Background(), tempDir, "refs/heads/does-not-exist")
 		require.ErrorIs(t, err, ErrRefNotFound)
 	})
 
@@ -327,14 +338,14 @@ func TestHash(t *testing.T) {
 		require.NoError(t, exec.Command("git", "-C", tempDir, "checkout", "-b", "main").Run())
 		setupGitConfig(t, tempDir)
 
-		_, err := Hash(tempDir, "HEAD")
+		_, err := Hash(context.Background(), tempDir, "HEAD")
 		require.ErrorIs(t, err, ErrRefNotFound)
 	})
 
 	t.Run("returns the commit hash for HEAD", func(t *testing.T) {
 		tempDir := setupTestRepository(t)
 
-		hash, err := Hash(tempDir, "HEAD")
+		hash, err := Hash(context.Background(), tempDir, "HEAD")
 		require.NoError(t, err)
 		require.Len(t, hash, 40)
 	})
