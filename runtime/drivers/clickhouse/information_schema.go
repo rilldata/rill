@@ -99,17 +99,14 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	`
 	if c.config.Cluster != "" {
 		q += `
-		LEFT JOIN system.tables t2
+		LEFT ANTI JOIN system.tables t2
 			ON t2.database = t1.database
+			AND endsWith(t1.name, '_local')
 			AND t2.name = replaceRegexpOne(t1.name, '_local$', '')
-			AND t1.name != t2.name
 		`
 	}
-	q += " WHERE t1.is_temporary = 0 AND t1.database = ?"
-	if c.config.Cluster != "" {
-		q += " AND NOT (endsWith(t1.name, '_local') AND t2.name IS NOT NULL)"
-	}
 
+	q += " WHERE t1.is_temporary = 0 AND t1.database = ?"
 	args := []any{databaseSchema}
 	if pageToken != "" {
 		var startAfter string
@@ -253,6 +250,16 @@ func (c *Connection) All(ctx context.Context, like string, pageSize uint32, page
 		args = append(args, startAfterSchema, startAfterSchema, startAfterName)
 	}
 
+	localTableExclusionJoin := ""
+	if c.config.Cluster != "" {
+		localTableExclusionJoin = `
+		LEFT ANTI JOIN system.tables T2
+			ON T2.database = T.database
+			AND endsWith(T.name, '_local')
+			AND T2.name = replaceRegexpOne(T.name, '_local$', '')
+		`
+	}
+
 	// Clickhouse does not have a concept of schemas. Both table_catalog and table_schema refer to the database where table is located.
 	// Given the usual way of querying table in clickhouse is `SELECT * FROM table_name` or `SELECT * FROM database.table_name`.
 	// We map clickhouse database to `database schema` and table_name to `table name`.
@@ -271,6 +278,7 @@ func (c *Connection) All(ctx context.Context, like string, pageSize uint32, page
 				T.name,
 				T.engine
 			FROM system.tables T
+			%s
 			-- allow fetching tables from system or information_schema if it is current database
 			WHERE %s
 			ORDER BY database, name, engine
@@ -278,7 +286,7 @@ func (c *Connection) All(ctx context.Context, like string, pageSize uint32, page
 		) LT
 		JOIN system.columns C ON LT.database = C.database AND LT.name = C.table
 		ORDER BY SCHEMA, NAME, TABLE_TYPE, ORDINAL_POSITION
-	`, filter)
+	`, localTableExclusionJoin, filter)
 
 	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 	args = append(args, limit+1)
@@ -388,7 +396,6 @@ func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Ola
 			placeholders = append(placeholders, "(?, ?)")
 			args = append(args, table.DatabaseSchema, localTableName(table.Name))
 		}
-
 	}
 
 	queryBuilder.WriteString(strings.Join(placeholders, ", "))
@@ -408,9 +415,6 @@ func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Ola
 	for rows.Next() {
 		if err := rows.Scan(&schema, &name, &size); err != nil {
 			return err
-		}
-		if c.config.Cluster != "" {
-			name = localToActualTableName(name)
 		}
 		schemaTables, ok := res[schema]
 		if !ok {
