@@ -21,7 +21,6 @@
     initPylonChat,
     type UserLike,
   } from "@rilldata/web-common/features/help/initPylonChat";
-  import { posthogIdentify } from "@rilldata/web-common/lib/analytics/posthog";
   import {
     createAdminServiceGetCurrentUser,
     type V1ProjectPermissions,
@@ -71,9 +70,6 @@
 
   $: if ($user.data?.user) {
     // Actions to take when the user is known
-    posthogIdentify($user.data.user.id, {
-      email: $user.data.user.email,
-    });
     initPylonChat($user.data.user as UserLike);
   }
 
