@@ -7,7 +7,7 @@
     V1ExploreTimeRange,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
-  import { DateTime, Interval } from "luxon";
+  import { DateTime, Duration, Interval } from "luxon";
   import {
     bucketYamlRanges,
     type ISODurationString,
@@ -34,6 +34,7 @@
   export let canPanRight: boolean = !hidePan;
   export let lockTimeZone = false;
   export let allowCustomTimeRange = true;
+  export let maxQueryTimeRange: Duration | undefined = undefined;
   export let showFullRange = true;
   export let complete: boolean;
   export let context = "dashboard";
@@ -56,7 +57,12 @@
 
   const newPicker = featureFlags.rillTime;
 
-  $: rangeBuckets = bucketYamlRanges(timeRanges, minTimeGrain, $newPicker);
+  $: rangeBuckets = bucketYamlRanges(
+    timeRanges,
+    minTimeGrain,
+    $newPicker,
+    maxQueryTimeRange,
+  );
 
   $: v2TimeString = normalizeRangeString(selectedRangeAlias);
 
@@ -86,6 +92,7 @@
       timeString={v2TimeString || selectedRangeAlias}
       {interval}
       {allowCustomTimeRange}
+      {maxQueryTimeRange}
       timeGrain={activeTimeGrain}
       zone={activeTimeZone}
       {lockTimeZone}
@@ -155,32 +162,31 @@
     @apply overflow-hidden;
   }
 
-  :global(.wrapper > button) {
-    @apply border;
-  }
-
-  :global(.wrapper > button:not(:first-child)) {
-    @apply -ml-[1px];
-  }
-
-  :global(.wrapper > button) {
-    @apply border text-fg-primary;
+  /* Match both direct child buttons and buttons inside display:contents wrappers */
+  :global(.wrapper > button),
+  :global(.wrapper > :not(button) > button) {
+    @apply border text-fg-primary -ml-px cursor-pointer;
     @apply px-2 flex items-center justify-center bg-surface-background;
   }
 
-  :global(.wrapper > button:focus) {
-    @apply z-50;
+  :global(.wrapper > button:first-child),
+  :global(.wrapper > :first-child > button:first-child) {
+    @apply ml-0 pl-2.5 rounded-l-full;
   }
 
-  :global(.wrapper > button:first-child) {
-    @apply pl-2.5 rounded-l-full;
-  }
-  :global(.wrapper > button:last-child) {
+  :global(.wrapper > button:last-child),
+  :global(.wrapper > :last-child > button:last-child) {
     @apply pr-2.5 rounded-r-full;
   }
 
-  :global(.wrapper > button:hover:not(:disabled)) {
-    @apply bg-surface-hover cursor-pointer;
+  :global(.wrapper > button:focus),
+  :global(.wrapper > :not(button) > button:focus) {
+    @apply z-50;
+  }
+
+  :global(.wrapper > button:hover:not(:disabled)),
+  :global(.wrapper > :not(button) > button:hover:not(:disabled)) {
+    @apply bg-surface-hover;
   }
 
   /* Doest apply to all instances except alert/report. So this seems unintentional

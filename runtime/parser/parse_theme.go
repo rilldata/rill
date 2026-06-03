@@ -90,6 +90,10 @@ var allowedCSSVariables = map[string]bool{
 	"destructive":            true,
 	"destructive-foreground": true,
 
+	// KPI delta coloring
+	"kpi-positive": true,
+	"kpi-negative": true,
+
 	// Popover
 	"popover":            true,
 	"popover-accent":     true,

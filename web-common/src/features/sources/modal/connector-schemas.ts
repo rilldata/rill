@@ -3,11 +3,11 @@ import type {
   ConnectorCategory,
   MultiStepFormSchema,
 } from "../../templates/schemas/types";
-import type { ConnectorStep } from "./connectorStepStore";
 import { athenaSchema } from "../../templates/schemas/athena";
 import { azureSchema } from "../../templates/schemas/azure";
 import { bigquerySchema } from "../../templates/schemas/bigquery";
 import { claudeSchema } from "../../templates/schemas/claude";
+import { databricksSchema } from "../../templates/schemas/databricks";
 import { clickhouseSchema } from "../../templates/schemas/clickhouse";
 import { gcsSchema } from "../../templates/schemas/gcs";
 import { geminiSchema } from "../../templates/schemas/gemini";
@@ -20,6 +20,7 @@ import { snowflakeSchema } from "../../templates/schemas/snowflake";
 import { sqliteSchema } from "../../templates/schemas/sqlite";
 import { localFileSchema } from "../../templates/schemas/local_file";
 import { duckdbSchema } from "../../templates/schemas/duckdb";
+import { ducklakeSchema } from "../../templates/schemas/ducklake";
 import { deltaSchema } from "../../templates/schemas/delta";
 import { httpsSchema } from "../../templates/schemas/https";
 import { icebergSchema } from "../../templates/schemas/iceberg";
@@ -30,6 +31,7 @@ import { s3Schema } from "../../templates/schemas/s3";
 import { starrocksSchema } from "../../templates/schemas/starrocks";
 import { supabaseSchema } from "../../templates/schemas/supabase";
 import { SOURCES, OLAP_ENGINES, AI_CONNECTORS } from "./constants";
+import { connectorKeywordMapping } from "@rilldata/web-common/features/connectors/connector-metadata.ts";
 
 export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   athena: athenaSchema,
@@ -43,6 +45,7 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   sqlite: sqliteSchema,
   motherduck: motherduckSchema,
   duckdb: duckdbSchema,
+  ducklake: ducklakeSchema,
   druid: druidSchema,
   pinot: pinotSchema,
   starrocks: starrocksSchema,
@@ -55,6 +58,7 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   azure: azureSchema,
   delta: deltaSchema,
   claude: claudeSchema,
+  databricks: databricksSchema,
   openai: openaiSchema,
   gemini: geminiSchema,
 };
@@ -66,6 +70,7 @@ export interface ConnectorInfo {
   name: string;
   displayName: string;
   category: ConnectorCategory;
+  keywords: string[];
 }
 
 /**
@@ -83,14 +88,21 @@ export const connectors: ConnectorInfo[] = [
       name,
       displayName: schema.title ?? name,
       category: schema["x-category"] as ConnectorCategory,
+      keywords: connectorKeywordMapping[name] ?? [],
     };
   });
+/**
+ * Map of connector names to ConnectorInfo objects.
+ * We need connector info by name in a lot of places, so we have a map to optimize lookups.
+ */
+export const connectorInfoMap = new Map<string, ConnectorInfo>(
+  connectors.map((connector) => [connector.name, connector]),
+);
 
 export function getConnectorSchema(
   connectorName: string,
 ): MultiStepFormSchema | null {
-  const schema =
-    multiStepFormSchemas[connectorName as keyof typeof multiStepFormSchemas];
+  const schema = multiStepFormSchemas[connectorName];
   return schema?.properties ? schema : null;
 }
 
@@ -145,11 +157,13 @@ export function isMultiStepConnector(
 
 /**
  * Determine if a connector supports explorer mode (SQL query interface).
- * SQL stores and warehouses can browse tables and write custom queries.
+ * Detected by the presence of fields tagged with x-step: "explorer".
  */
 export function hasExplorerStep(schema: MultiStepFormSchema | null): boolean {
-  const category = schema?.["x-category"];
-  return category === "sqlStore" || category === "warehouse";
+  if (!schema?.properties) return false;
+  return Object.values(schema.properties).some(
+    (p) => p["x-step"] === "explorer",
+  );
 }
 
 /**
@@ -203,37 +217,6 @@ export function getFormHeight(schema: MultiStepFormSchema | null): string {
  * These connectors don't support skipping the connector setup step.
  */
 export const SKIP_LINK_EXCLUDED_CONNECTORS = ["salesforce", "sqlite"];
-
-/**
- * Determine if the skip link should be shown for a connector.
- * The skip link allows users to skip connector setup and go directly to import.
- * Only shown for connectors where handleSkip() can actually advance the step
- * (i.e., multi-step connectors or connectors with an explorer step).
- *
- * @param step - Current form step ("connector", "source", or "explorer")
- * @param connectorName - Name of the connector (e.g., "postgres", "s3")
- * @param connectorInstanceName - If set, user came from "Import Data" button
- * @param implementsOlap - Whether the connector is an OLAP engine
- */
-export function shouldShowSkipLink(
-  step: ConnectorStep,
-  connectorName: string | undefined,
-  connectorInstanceName: string | null,
-  implementsOlap: boolean | undefined,
-): boolean {
-  if (
-    step !== "connector" ||
-    connectorInstanceName ||
-    implementsOlap ||
-    SKIP_LINK_EXCLUDED_CONNECTORS.includes(connectorName ?? "")
-  ) {
-    return false;
-  }
-
-  // Only show skip link if handleSkip() can actually advance the step
-  const schema = getConnectorSchema(connectorName ?? "");
-  return isMultiStepConnector(schema) || hasExplorerStep(schema);
-}
 
 /**
  * Get the form width CSS class for a connector's add data modal.

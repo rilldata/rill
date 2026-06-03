@@ -313,7 +313,7 @@ Uses index-based scales and TimeSeriesChart for rendering.
 <div
   role="presentation"
   style:max-width="{width}px"
-  on:click={modified({ shift: shiftClick })}
+  onclick={modified({ shift: shiftClick })}
 >
   <TimestampProfileSummary
     start={xExtentStart}
@@ -328,11 +328,14 @@ Uses index-based scales and TimeSeriesChart for rendering.
       {width}
       {height}
       style:cursor
-      on:mousedown={handleMouseDown}
-      on:mousemove={handleMouseMove}
-      on:mouseup={handleMouseUp}
-      on:mouseleave={handleMouseLeave}
-      on:contextmenu|preventDefault|stopPropagation
+      onmousedown={handleMouseDown}
+      onmousemove={handleMouseMove}
+      onmouseup={handleMouseUp}
+      onmouseleave={handleMouseLeave}
+      oncontextmenu={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
     >
       <defs>
         <clipPath id="clip-{id}">
@@ -501,8 +504,8 @@ Uses index-based scales and TimeSeriesChart for rendering.
           class="transition-color fill-fg-muted hover:fill-fg-primary text-outline"
           in:fly|global={{ duration: 200, x: 16, delay: 200 }}
           out:fly|global={{ duration: 200, x: 16 }}
-          on:keydown={() => {}}
-          on:click={clearZoom}
+          onkeydown={() => {}}
+          onclick={clearZoom}
         >
           clear zoom &#x2716;
         </text>

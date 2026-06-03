@@ -9,6 +9,7 @@
   import {
     DeployErrorType,
     getPrettyDeployError,
+    isQuotaDeployError,
   } from "@rilldata/web-common/features/project/deploy/deploy-errors";
 
   export let error: Error;
@@ -20,11 +21,7 @@
 
   $: deployError = getPrettyDeployError(error, isOrgOnTrial);
 
-  $: isQuotaError =
-    deployError.type === DeployErrorType.ProjectLimitHit ||
-    deployError.type === DeployErrorType.OrgLimitHit ||
-    deployError.type === DeployErrorType.TrialEnded ||
-    deployError.type === DeployErrorType.SubscriptionEnded;
+  $: isQuotaError = isQuotaDeployError(deployError);
   $: isGithubNoAccessError =
     deployError.type === DeployErrorType.GithubNoAccess && !!githubAccessUrl;
 </script>

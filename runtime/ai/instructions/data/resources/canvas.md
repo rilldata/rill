@@ -34,6 +34,8 @@ filters:
   pinned:
     - region
     - product_category
+  required:
+    - customer_id      # Dashboard refuses to render until this filter has a value
 
 # Optional time range presets
 time_ranges:
@@ -94,6 +96,15 @@ rows:
             type: quantitative
             field: total_revenue
 ```
+
+### Filter settings
+
+`filters.pinned` and `filters.required` both reference dimensions or measures by name (they must exist on at least one referenced metrics view). They control different things:
+
+- **`pinned`**: keeps a filter pill visible at the top of the dashboard so users can change it without opening the filter menu. The dashboard renders normally whether or not the user has set a value.
+- **`required`**: the dashboard refuses to render until every required filter has a value. Set a default value in `defaults.filters` to satisfy a required filter automatically; otherwise the user is prompted to pick one. Required filters are implicitly pinned — do not also list them under `pinned`.
+
+Use `required` for filters that are unsafe or meaningless to omit (e.g. tenant ID, customer scope, region when results would otherwise mix incompatible data).
 
 ## Layout System
 
@@ -175,6 +186,7 @@ When building a new canvas dashboard, follow this recommended structure:
 - **Two-dimensional patterns**: Use `heatmap`
 - **Dual-metric comparison**: Use `combo_chart` for two measures with different scales
 - **Funnel analysis**: Use `funnel_chart` to visualize sequential stage drop-offs
+- **Two-measure relationships**: Use `scatter_plot` to explore correlation, clusters, or outliers between two numeric measures
 
 
 # Field guidelines
@@ -663,6 +675,52 @@ combo_chart:
     mark: line
 ```
 
+### Scatter Plot
+
+Visualize the relationship between two measures, with each point representing a data value. Points can be optionally colored by a dimension and sized by a measure. Useful for correlation analysis and identifying outliers across two numeric metrics.
+
+**Interactive controls** (rendered automatically):
+- `Shift + Drag`: pan the plot
+- Scroll wheel: zoom in/out
+- Double-click: reset zoom and pan to default view
+
+```yaml
+scatter_plot:
+  metrics_view: bids_metrics
+  title: "Bids vs Clicks by Advertiser"
+  x:
+    field: total_bids
+    type: quantitative
+    zeroBasedOrigin: false
+  y:
+    field: total_clicks
+    type: quantitative
+    zeroBasedOrigin: false
+  dimension:
+    field: advertiser_name
+    limit: 10
+    type: nominal
+  size:
+    field: total_impressions
+    type: quantitative
+  color:
+    field: device_os
+    limit: 5
+    type: nominal
+    legendOrientation: top
+```
+
+**Scatter-specific fields:**
+- `x` (required): Measure on the x-axis. Must be `type: quantitative`.
+- `y` (required): Measure on the y-axis. Must be `type: quantitative`.
+- `dimension` (optional): Nominal dimension; each distinct value renders as a separate point. Use `limit` to cap the number of points.
+- `size` (optional): Measure that controls point radius. Must be `type: quantitative`.
+- `color` (optional): A color string or a nominal dimension field object to color points by.
+
+**Notes:**
+- Setting `zeroBasedOrigin: false` on both axes is usually preferred for scatter plots, since the interesting range often does not include zero.
+- `comparison_time_range` is not supported for scatter plots.
+
 ### Funnel Chart
 
 Show flow through stages or conversion processes:
@@ -674,6 +732,7 @@ funnel_chart:
   breakdownMode: dimension
   color: stage
   mode: width
+  percentMode: top
   stage:
     field: funnel_stage
     type: nominal
@@ -683,7 +742,7 @@ funnel_chart:
     type: quantitative
 ```
 
-**With multiple measures breakdown:**
+**With multiple measures breakdown and step-to-step percentages:**
 
 ```yaml
 funnel_chart:
@@ -692,6 +751,7 @@ funnel_chart:
   breakdownMode: measures
   color: value
   mode: width
+  percentMode: previous
   measure:
     field: impressions
     type: quantitative
@@ -705,6 +765,11 @@ funnel_chart:
 **Breakdown modes and color options:**
 - `breakdownMode: dimension` with `color: stage` (different colors per stage) or `color: measure` (similar colors by value)
 - `breakdownMode: measures` with `color: name` (different colors per measure) or `color: value` (similar colors by value)
+
+**Percent mode (`percentMode`):**
+- `top` (default): the on-bar percentage label is each stage's value as a share of the top stage. Use for overall conversion ("how many of the entry-point users reached this stage").
+- `previous`: the on-bar percentage label is each stage's value as a share of the immediately prior stage. Use for stage-to-stage drop-off ("what fraction of the previous stage continued").
+- The tooltip always shows both `% of top` and `% of previous` regardless of this setting, so users can disambiguate without the author surfacing both.
 
 ### Pivot
 
@@ -780,6 +845,181 @@ image:
     horizontal: center
     vertical: middle
 ```
+
+### Custom Chart
+
+Build fully custom visualizations using Metrics SQL queries and Vega-Lite specifications. Use this when the built-in chart types are insufficient and you need complete control over the visualization.
+
+Custom charts use `metrics_sql` to query data from metrics views and `vega_spec` to define the Vega-Lite visualization. The data from each query is available in the Vega-Lite spec as named datasets: `query1`, `query2`, etc.
+
+#### metrics_sql Query Language
+
+`metrics_sql` lets you write SELECT queries against metrics views as virtual tables. Each metrics view exposes its dimensions and measures as columns.
+
+**Query rules:**
+- Table names: use the name of any valid metrics view in the project
+- Columns: only reference dimension and measure names defined in that metrics view's schema
+- Measures are pre-aggregated; never wrap them in `SUM()`, `COUNT()`, `AVG()`, or other aggregate functions
+- Grouping is implicit by selected dimensions; you do not need `GROUP BY` unless combining with expressions like `date_trunc()`
+- Use `date_trunc('<grain>', <time_dimension>)` for time bucketing (grain: minute, hour, day, week, month, quarter, year)
+- Always include `ORDER BY` for deterministic results
+- Use `LIMIT` to keep result sets reasonable (default to 50 for top-N queries, 500 for time series)
+- Do not alias column names unless strictly required for disambiguation in multi-query specs
+- Canvas-level time and dimension filters are injected automatically at runtime; do not add `WHERE` clauses for them
+- You may write multiple queries against different metrics views; results are bound as `query1`, `query2`, etc.
+
+**Example queries:**
+
+Single view:
+```sql
+SELECT publisher, total_bids, bid_price FROM bids_metrics ORDER BY total_bids DESC LIMIT 20
+```
+
+Time series:
+```sql
+SELECT date_trunc('day', __time) as day, impressions, revenue FROM ad_metrics ORDER BY day
+```
+
+Cross-view (two queries):
+```sql
+-- query1:
+SELECT campaign, spend FROM spend_metrics ORDER BY spend DESC LIMIT 10
+-- query2:
+SELECT campaign, conversions FROM conversion_metrics ORDER BY conversions DESC LIMIT 10
+```
+
+#### Vega-Lite Specification Rules
+
+- Generate a valid Vega-Lite v5 JSON specification
+- Bind data with `{"name": "query1"}`, `{"name": "query2"}`, etc. Do not include `"data": {"values": [...]}` sections; data comes from query results
+- Set `"width": "container"` and `"height": "container"` so the chart fills its parent
+- Always include `"autosize": {"type": "fit"}` at the top level of the spec
+- Use `display_name` values from the metrics view schema for axis titles, legend titles, and tooltip labels
+- Apply `format_d3` or `format_preset` from measure metadata to axis and tooltip format strings
+- Pick the best mark type for the data: bar, line, area, point, rect (heatmap), arc (pie/donut), etc.
+- Include tooltips with all relevant fields and human-readable formatting
+- Use a clean, professional color scheme; prefer Rill's categorical palette when possible
+- For temporal axes: set `"type": "temporal"` and choose an appropriate `timeUnit`
+- For categorical axes: sort by the primary measure descending unless the user specifies otherwise
+- For layered or multi-view charts, use the `"layer"` or `"concat"` composition operators
+- Avoid unnecessary chart junk: remove gridlines on categorical axes, use concise axis labels
+
+#### YAML Examples
+
+**Simple custom chart with one query:**
+
+```yaml
+custom_chart:
+  metrics_sql:
+    - |
+      SELECT publisher, total_bids, bid_price
+      FROM bids_metrics
+      ORDER BY total_bids DESC
+      LIMIT 20
+  vega_spec: |
+    {
+      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+      "width": "container",
+      "height": "container",
+      "autosize": {"type": "fit"},
+      "data": {"name": "query1"},
+      "mark": "bar",
+      "encoding": {
+        "x": {"field": "publisher", "type": "nominal", "sort": "-y", "axis": {"labelAngle": -45}},
+        "y": {"field": "total_bids", "type": "quantitative", "title": "Total Bids"},
+        "tooltip": [
+          {"field": "publisher", "type": "nominal"},
+          {"field": "total_bids", "type": "quantitative", "title": "Total Bids"},
+          {"field": "bid_price", "type": "quantitative", "title": "Bid Price", "format": ",.2f"}
+        ]
+      }
+    }
+```
+
+**Time series custom chart:**
+
+```yaml
+custom_chart:
+  metrics_sql:
+    - |
+      SELECT date_trunc('day', __time) as day, impressions, revenue
+      FROM ad_metrics
+      ORDER BY day
+      LIMIT 500
+  vega_spec: |
+    {
+      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+      "width": "container",
+      "height": "container",
+      "autosize": {"type": "fit"},
+      "data": {"name": "query1"},
+      "layer": [
+        {
+          "mark": {"type": "line", "color": "#4C78A8"},
+          "encoding": {
+            "x": {"field": "day", "type": "temporal", "title": "Date"},
+            "y": {"field": "impressions", "type": "quantitative", "title": "Impressions"}
+          }
+        }
+      ],
+      "encoding": {
+        "tooltip": [
+          {"field": "day", "type": "temporal", "title": "Date"},
+          {"field": "impressions", "type": "quantitative", "title": "Impressions"},
+          {"field": "revenue", "type": "quantitative", "title": "Revenue", "format": "$,.2f"}
+        ]
+      }
+    }
+```
+
+**Custom chart with multiple queries (cross-view):**
+
+```yaml
+custom_chart:
+  metrics_sql:
+    - |
+      SELECT campaign, spend
+      FROM spend_metrics
+      ORDER BY spend DESC
+      LIMIT 10
+    - |
+      SELECT campaign, conversions
+      FROM conversion_metrics
+      ORDER BY conversions DESC
+      LIMIT 10
+  vega_spec: |
+    {
+      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+      "width": "container",
+      "height": "container",
+      "autosize": {"type": "fit"},
+      "layer": [
+        {
+          "data": {"name": "query1"},
+          "mark": {"type": "bar", "opacity": 0.7},
+          "encoding": {
+            "x": {"field": "campaign", "type": "nominal", "sort": "-y"},
+            "y": {"field": "spend", "type": "quantitative", "title": "Spend"},
+            "color": {"datum": "Spend"}
+          }
+        },
+        {
+          "data": {"name": "query2"},
+          "mark": {"type": "line", "point": true},
+          "encoding": {
+            "x": {"field": "campaign", "type": "nominal"},
+            "y": {"field": "conversions", "type": "quantitative", "title": "Conversions", "axis": {"orient": "right"}},
+            "color": {"datum": "Conversions"}
+          }
+        }
+      ]
+    }
+```
+
+**Additional guidelines:**
+- The `vega_spec` field must contain valid JSON (not YAML) as a string
+- The `prompt` field is optional and stores the user's natural language description for reference
+- When refining an existing custom chart, apply targeted edits to the existing SQL and spec rather than regenerating from scratch
 
 ## Field Configuration
 

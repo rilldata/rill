@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { formatModelSize } from "./utils";
+  import { formatModelSize } from "@rilldata/web-common/features/projects/status/tables/utils";
 
   export let sizeBytes: string | number | undefined;
 

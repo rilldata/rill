@@ -13,7 +13,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
 import { V1Operation } from "@rilldata/web-common/runtime-client";
 import { describe, it, expect } from "vitest";
-import grammar from "./expression.cjs";
+import grammar from "./expression.js";
 import nearley from "nearley";
 
 describe("expression", () => {

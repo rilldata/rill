@@ -12,8 +12,8 @@ import type {
   ColumnDef,
   ExpandedState,
   SortingState,
-} from "@tanstack/svelte-table";
-import type { Readable } from "svelte/motion";
+} from "tanstack-table-8-svelte-5";
+import type { Readable } from "svelte/store";
 
 export const COMPARISON_VALUE = "__previous";
 export const COMPARISON_DELTA = "__delta_abs";
@@ -31,6 +31,7 @@ export interface PivotDataState {
   reachedEndForRowData?: boolean;
   totalsRowData?: PivotDataRow;
   activeCellFilters?: PivotFilter;
+  columnDimensionAxes?: Record<string, string[]>;
 }
 
 export type PivotDataStore = Readable<PivotDataState>;
@@ -67,7 +68,7 @@ export type PivotTableMode = "flat" | "nest";
 export interface PivotDataRow {
   subRows?: PivotDataRow[];
 
-  [key: string]: string | number | PivotDataRow[] | undefined;
+  [key: string]: string | number | null | PivotDataRow[] | undefined;
 }
 
 export interface TimeFilters {
@@ -94,6 +95,7 @@ export interface PivotQueryError {
  * This is the config that is passed to the pivot data store methods
  */
 export interface PivotDataStoreConfig {
+  ready?: boolean;
   measureNames: string[];
   rowDimensionNames: string[];
   colDimensionNames: string[];

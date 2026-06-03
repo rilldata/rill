@@ -37,11 +37,11 @@ import {
   AD_BIDS_BID_PRICE_MEASURE,
   AD_BIDS_COUNTRY_DIMENSION,
   AD_BIDS_DOMAIN_DIMENSION,
-  AD_BIDS_EXPLORE_INIT,
   AD_BIDS_EXPLORE_NAME,
   AD_BIDS_IMPRESSIONS_MEASURE,
   AD_BIDS_METRICS_INIT,
   AD_BIDS_PUBLISHER_DIMENSION,
+  AD_BIDS_TIMESTAMP_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import {
   RandomDomains,
@@ -55,7 +55,10 @@ import {
 } from "@rilldata/web-common/lib/time/types";
 import { asyncWait } from "@rilldata/web-common/lib/waitUtils.ts";
 import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import {
+  type V1ExploreSpec,
+  V1TimeGrain,
+} from "@rilldata/web-common/runtime-client";
 import {
   setLeaderboardMeasureNames,
   setLeaderboardSortByMeasureName,
@@ -218,38 +221,42 @@ export const AD_BIDS_SET_DOMAIN_COMPARE_DIMENSION: TestDashboardMutation = () =>
     AD_BIDS_DOMAIN_DIMENSION,
   );
 
-export const AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY: TestDashboardMutation =
-  (mut) => {
-    toggleMeasureVisibility(
-      mut,
-      AD_BIDS_EXPLORE_INIT.measures!,
-      AD_BIDS_IMPRESSIONS_MEASURE,
-    );
-  };
-export const AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY: TestDashboardMutation =
-  (mut) => {
-    toggleMeasureVisibility(
-      mut,
-      AD_BIDS_EXPLORE_INIT.measures!,
-      AD_BIDS_BID_PRICE_MEASURE,
-    );
-  };
-export const AD_BIDS_TOGGLE_BID_PUBLISHER_DIMENSION_VISIBILITY: TestDashboardMutation =
-  (mut) => {
-    toggleDimensionVisibility(
-      mut,
-      AD_BIDS_EXPLORE_INIT.dimensions!,
-      AD_BIDS_PUBLISHER_DIMENSION,
-    );
-  };
-export const AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY: TestDashboardMutation =
-  (mut) => {
-    toggleDimensionVisibility(
-      mut,
-      AD_BIDS_EXPLORE_INIT.dimensions!,
-      AD_BIDS_DOMAIN_DIMENSION,
-    );
-  };
+export const AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY: (
+  exploreSpec: V1ExploreSpec,
+) => TestDashboardMutation = (exploreSpec: V1ExploreSpec) => (mut) => {
+  toggleMeasureVisibility(
+    mut,
+    exploreSpec.measures!,
+    AD_BIDS_IMPRESSIONS_MEASURE,
+  );
+};
+export const AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY: (
+  exploreSpec: V1ExploreSpec,
+) => TestDashboardMutation = (exploreSpec: V1ExploreSpec) => (mut) => {
+  toggleMeasureVisibility(
+    mut,
+    exploreSpec.measures!,
+    AD_BIDS_BID_PRICE_MEASURE,
+  );
+};
+export const AD_BIDS_TOGGLE_BID_PUBLISHER_DIMENSION_VISIBILITY: (
+  exploreSpec: V1ExploreSpec,
+) => TestDashboardMutation = (exploreSpec: V1ExploreSpec) => (mut) => {
+  toggleDimensionVisibility(
+    mut,
+    exploreSpec.dimensions!,
+    AD_BIDS_PUBLISHER_DIMENSION,
+  );
+};
+export const AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY: (
+  exploreSpec: V1ExploreSpec,
+) => TestDashboardMutation = (exploreSpec: V1ExploreSpec) => (mut) => {
+  toggleDimensionVisibility(
+    mut,
+    exploreSpec.dimensions!,
+    AD_BIDS_DOMAIN_DIMENSION,
+  );
+};
 
 export const AD_BIDS_SORT_DESC_BY_IMPRESSIONS: TestDashboardMutation = (
   mut,
@@ -393,13 +400,30 @@ export const AD_BIDS_SORT_PIVOT_BY_DOMAIN_DESC: TestDashboardMutation = () =>
   ]);
 export const AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC: TestDashboardMutation = () =>
   metricsExplorerStore.setPivotSort(AD_BIDS_EXPLORE_NAME, [
-    { id: V1TimeGrain.TIME_GRAIN_DAY, desc: false },
+    {
+      id: `${AD_BIDS_TIMESTAMP_DIMENSION}_rill_${V1TimeGrain.TIME_GRAIN_DAY}`,
+      desc: false,
+    },
   ]);
 export const AD_BIDS_SORT_PIVOT_BY_IMPRESSIONS_DESC: TestDashboardMutation =
   () =>
     metricsExplorerStore.setPivotSort(AD_BIDS_EXPLORE_NAME, [
       { id: AD_BIDS_IMPRESSIONS_MEASURE, desc: true },
     ]);
+// Matches actual TanStack Table sort id format: {timeDimension}_rill_{grain}
+export const AD_BIDS_SORT_PIVOT_BY_RILL_TIME_DAY_DESC: TestDashboardMutation =
+  () =>
+    metricsExplorerStore.setPivotSort(AD_BIDS_EXPLORE_NAME, [
+      {
+        id: `${AD_BIDS_TIMESTAMP_DIMENSION}_rill_${V1TimeGrain.TIME_GRAIN_DAY}`,
+        desc: true,
+      },
+    ]);
+// Minimized accessor format used for column-specific measure sorts
+export const AD_BIDS_SORT_PIVOT_BY_ACCESSOR_DESC: TestDashboardMutation = () =>
+  metricsExplorerStore.setPivotSort(AD_BIDS_EXPLORE_NAME, [
+    { id: "c0v2m0", desc: true },
+  ]);
 
 export const AD_BIDS_SET_PIVOT_ROW_LIMIT_10: TestDashboardMutation = () =>
   metricsExplorerStore.setPivotRowLimit(AD_BIDS_EXPLORE_NAME, 10);
@@ -513,3 +537,12 @@ export async function applyMutationsToDashboard(
     await asyncWait(1);
   }
 }
+
+export const AD_BIDS_SET_DYNAMIC_Y_AXIS_SCALE: TestDashboardMutation = () =>
+  metricsExplorerStore.setDynamicYAxisScale(AD_BIDS_EXPLORE_NAME, true);
+
+export const AD_BIDS_SET_CHART_TYPE_BAR: TestDashboardMutation = () =>
+  metricsExplorerStore.setTDDChartType(
+    AD_BIDS_EXPLORE_NAME,
+    TDDChart.GROUPED_BAR,
+  );

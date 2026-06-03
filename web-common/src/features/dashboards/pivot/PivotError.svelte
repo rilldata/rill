@@ -67,7 +67,7 @@
       </span>
       <button
         class="flex-shrink-0 p-1 hover:bg-surface-hover rounded transition-colors cursor-pointer"
-        on:click={() => handleCopyError(error)}
+        onclick={() => handleCopyError(error)}
         title="Copy full error message"
         aria-label="Copy error message to clipboard"
       >

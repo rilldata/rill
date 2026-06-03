@@ -100,16 +100,20 @@
               minHeight="auto"
               maxHeight="300px"
             >
-              <div slot="empty" class="px-2 py-2 text-xs text-fg-secondary">
-                No sort item found
-              </div>
-              <div slot="item" let:item class="flex items-center gap-x-1">
-                <DragHandle
-                  size="16px"
-                  className="text-fg-secondary pointer-events-none"
-                />
-                <span class="text-xs truncate">{item.value}</span>
-              </div>
+              {#snippet empty()}
+                <div class="px-2 py-2 text-xs text-fg-secondary">
+                  No sort item found
+                </div>
+              {/snippet}
+              {#snippet item({ item })}
+                <div class="flex items-center gap-x-1">
+                  <DragHandle
+                    size="16px"
+                    className="text-fg-secondary pointer-events-none"
+                  />
+                  <span class="text-xs truncate">{item.value}</span>
+                </div>
+              {/snippet}
             </DraggableList>
           </Popover.Content>
         </Popover.Root>

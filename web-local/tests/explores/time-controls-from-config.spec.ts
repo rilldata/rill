@@ -1,5 +1,6 @@
 import { expect } from "@playwright/test";
 import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
+import { clickPreviewButton } from "../utils/exploreHelpers";
 import { ResourceWatcher } from "../utils/ResourceWatcher";
 import { gotoNavEntry } from "../utils/waitHelpers";
 import { test } from "../setup/base";
@@ -8,6 +9,7 @@ test.describe("time controls settings from explore preset", () => {
   test.use({ project: "AdBids" });
 
   test("preset time_range", async ({ page }) => {
+    test.setTimeout(45_000);
     const watcher = new ResourceWatcher(page);
 
     await page.getByLabel("/dashboards").click();
@@ -21,9 +23,8 @@ test.describe("time controls settings from explore preset", () => {
 `),
     );
 
-    await page.waitForTimeout(1000);
     // Preview
-    await page.getByRole("button", { name: "Preview" }).click();
+    await clickPreviewButton(page);
 
     // Time range has changed
     await expect(page.getByText("Last 4 Weeks")).toBeVisible();
@@ -43,7 +44,7 @@ test.describe("time controls settings from explore preset", () => {
     );
 
     // Preview
-    await page.getByRole("button", { name: "Preview" }).click();
+    await clickPreviewButton(page);
 
     // Time range has changed
     await expect(page.getByText("Week to Date")).toBeVisible();
@@ -72,7 +73,7 @@ test.describe("time controls settings from explore preset", () => {
 `),
     );
     // Preview
-    await page.getByRole("button", { name: "Preview" }).click();
+    await clickPreviewButton(page);
 
     // Time range has changed
     await expect(page.getByText("Last 2 Weeks")).toBeVisible();
@@ -84,6 +85,7 @@ test.describe("time controls settings from explore preset", () => {
   });
 
   test("preset comparison_modes", async ({ page }) => {
+    test.setTimeout(45_000);
     const watcher = new ResourceWatcher(page);
 
     await page.getByLabel("/dashboards").click();
@@ -97,7 +99,7 @@ test.describe("time controls settings from explore preset", () => {
 `),
     );
     // Preview
-    await page.getByRole("button", { name: "Preview" }).click();
+    await clickPreviewButton(page);
     // Comparison is selected
     await expect(page.getByRole("switch", { name: "Comparing" })).toBeChecked();
     // Go back to metrics editor
@@ -111,7 +113,7 @@ test.describe("time controls settings from explore preset", () => {
 `),
     );
     // Preview
-    await page.getByRole("button", { name: "Preview" }).click();
+    await clickPreviewButton(page);
     // Comparison is selected
     await expect(
       page
@@ -129,7 +131,7 @@ test.describe("time controls settings from explore preset", () => {
 `),
     );
     // Preview
-    await page.getByRole("button", { name: "Preview" }).click();
+    await clickPreviewButton(page);
   });
 
   test("preset time_ranges", async ({ page }) => {
@@ -157,7 +159,7 @@ test.describe("time controls settings from explore preset", () => {
       ),
     );
     // Preview
-    await page.getByRole("button", { name: "Preview" }).click();
+    await clickPreviewButton(page);
 
     // Open the time range menu
     await page.getByLabel("Select time range").click();

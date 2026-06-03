@@ -232,12 +232,6 @@ _[object]_ - (no description)
 
   - **`description`** - _[string]_ - Chart description 
 
-### `vega_lite`
-
-_[object]_ - (no description) 
-
-  - **`spec`** - _[string]_ - Vega-Lite specification as a string _(required)_
-
 ### `kpi`
 
 _[object]_ - (no description) 

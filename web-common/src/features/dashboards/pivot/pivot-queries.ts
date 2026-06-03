@@ -100,7 +100,7 @@ export function createPivotAggregationRowQuery(
         },
         {
           query: {
-            enabled,
+            enabled: enabled && config.ready !== false,
             placeholderData: keepPreviousData,
           },
         },

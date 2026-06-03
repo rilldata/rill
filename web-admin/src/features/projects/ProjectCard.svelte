@@ -7,12 +7,23 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { createAdminServiceGetProject } from "../../client";
   import ProjectAccessControls from "./ProjectAccessControls.svelte";
+  import ProjectCardActions from "@rilldata/web-admin/features/projects/ProjectCardActions.svelte";
+  import GuardedDeleteProjectConfirmation from "@rilldata/web-admin/features/projects/settings/GuardedDeleteProjectConfirmation.svelte";
+  import ProjectRenameDialog from "@rilldata/web-admin/features/projects/settings/ProjectRenameDialog.svelte";
+  import EditBranchDialog from "@rilldata/web-admin/features/edit-session/EditBranchDialog.svelte";
 
-  export let organization: string;
-  export let project: string;
+  let { organization, project }: { organization: string; project: string } =
+    $props();
 
   // Check whether project is public or private
-  $: proj = createAdminServiceGetProject(organization, project);
+  let proj = $derived(createAdminServiceGetProject(organization, project));
+  let primaryBranch = $derived($proj.data?.project?.primaryBranch);
+
+  let hovering = $state(false);
+  let actionsOpen = $state(false);
+  let editProjectOpen = $state(false);
+  let renameProjectOpen = $state(false);
+  let deleteProjectOpen = $state(false);
 
   function doesProjectNameIncludeUnderscores(project: string) {
     return project.includes("_");
@@ -20,7 +31,7 @@
 </script>
 
 {#if $proj.data}
-  <Card href="/{organization}/{project}">
+  <Card href="/{organization}/{project}" bind:hovering>
     <!-- Project name -->
     <h2
       class="text-fg-primary font-medium text-lg text-center px-4 {doesProjectNameIncludeUnderscores(
@@ -31,6 +42,19 @@
     >
       {project}
     </h2>
+    <!-- Project actions -->
+    {#if hovering || actionsOpen}
+      <div class="absolute top-2.5 right-2.5 text-fg-secondary">
+        <ProjectCardActions
+          {organization}
+          {project}
+          bind:open={actionsOpen}
+          onEdit={() => (editProjectOpen = true)}
+          onRename={() => (renameProjectOpen = true)}
+          onDelete={() => (deleteProjectOpen = true)}
+        />
+      </div>
+    {/if}
     <!-- Permissions tag -->
     <Tag>
       <ProjectAccessControls {organization} {project}>
@@ -60,3 +84,19 @@
     </div>
   </Card>
 {/if}
+
+<ProjectRenameDialog {organization} {project} bind:open={renameProjectOpen} />
+
+<GuardedDeleteProjectConfirmation
+  {organization}
+  {project}
+  bind:open={deleteProjectOpen}
+  button={false}
+/>
+
+<EditBranchDialog
+  bind:open={editProjectOpen}
+  {organization}
+  {project}
+  {primaryBranch}
+/>

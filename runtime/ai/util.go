@@ -91,3 +91,5 @@ func mustExecuteTemplate(templ string, data map[string]any) string {
 	}
 	return result
 }
+
+func boolPtr(b bool) *bool { return &b }

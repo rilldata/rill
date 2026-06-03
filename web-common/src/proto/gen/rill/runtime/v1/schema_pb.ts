@@ -47,6 +47,13 @@ export class Type extends Message<Type> {
    */
   mapType?: MapType;
 
+  /**
+   * raw_type is the original database-specific type (e.g. "VARCHAR(255)")
+   *
+   * @generated from field: string raw_type = 6;
+   */
+  rawType = "";
+
   constructor(data?: PartialMessage<Type>) {
     super();
     proto3.util.initPartial(data, this);
@@ -60,6 +67,7 @@ export class Type extends Message<Type> {
     { no: 3, name: "array_element_type", kind: "message", T: Type },
     { no: 4, name: "struct_type", kind: "message", T: StructType },
     { no: 5, name: "map_type", kind: "message", T: MapType },
+    { no: 6, name: "raw_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Type {

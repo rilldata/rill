@@ -2,13 +2,21 @@
   import { page } from "$app/stores";
   import CanvasBookmarks from "@rilldata/web-admin/features/bookmarks/CanvasBookmarks.svelte";
   import ExploreBookmarks from "@rilldata/web-admin/features/bookmarks/ExploreBookmarks.svelte";
+  import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
   import ShareDashboardPopover from "@rilldata/web-admin/features/dashboards/share/ShareDashboardPopover.svelte";
+  import EditActions from "@rilldata/web-admin/features/edit-session/EditActions.svelte";
+  import EditButton from "@rilldata/web-admin/features/edit-session/EditButton.svelte";
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
-  import { createAdminServiceGetProjectWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-project-with-bearer-token";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
   import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
+  import {
+    dashboardChatActions,
+    dashboardChatOpen,
+    developerChatActions,
+    developerChatOpen,
+  } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
@@ -18,10 +26,7 @@
   import HeaderLogo from "@rilldata/web-common/layout/header/HeaderLogo.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { V1ProjectPermissions } from "../../client";
-  import {
-    createAdminServiceGetCurrentUser,
-    createAdminServiceGetDeploymentCredentials,
-  } from "../../client";
+  import { createAdminServiceGetCurrentUser } from "../../client";
   import ViewAsUserChip from "../../features/view-as-user/ViewAsUserChip.svelte";
   import { viewAsUserStore } from "../../features/view-as-user/viewAsUserStore";
   import CreateAlert from "../alerts/CreateAlert.svelte";
@@ -36,6 +41,7 @@
   } from "../navigation/breadcrumb-selectors";
   import {
     isCanvasDashboardPage,
+    isEditDashboardPreviewPage,
     isMetricsExplorerPage,
     isProjectPage,
     isPublicURLPage,
@@ -49,13 +55,17 @@
   export let manageOrgAdmins: boolean;
   export let manageOrgMembers: boolean;
   export let readProjects: boolean;
+  export let primaryBranch: string | undefined = undefined;
   export let planDisplayName: string | undefined;
   export let organizationLogoUrl: string | undefined;
+  export let editContext: boolean = false;
 
   const user = createAdminServiceGetCurrentUser();
   const runtimeClient = useRuntimeClient();
   const {
     alerts: alertsFlag,
+    cloudEditing,
+    developerChat,
     dimensionSearch,
     dashboardChat,
     stickyDashboardState,
@@ -72,39 +82,9 @@
   $: onCanvasDashboardPage = isCanvasDashboardPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
 
-  // When "View As" is active, fetch deployment credentials for the mocked user.
-  $: mockedUserId = $viewAsUserStore?.id;
+  $: onEditDashboardPreview = isEditDashboardPreviewPage($page);
 
-  $: mockedCredentialsQuery = createAdminServiceGetDeploymentCredentials(
-    organization,
-    project,
-    { userId: mockedUserId },
-    {
-      query: {
-        enabled: !!mockedUserId && !!organization && !!project,
-      },
-    },
-  );
-
-  $: mockedProjectQuery = createAdminServiceGetProjectWithBearerToken(
-    organization,
-    project,
-    $mockedCredentialsQuery.data?.accessToken ?? "",
-    undefined,
-    {
-      query: {
-        enabled: !!$mockedCredentialsQuery.data?.accessToken,
-      },
-    },
-  );
-
-  // Use effective permissions when "View As" is active (from server)
-  $: effectiveManageProjectMembers =
-    $mockedProjectQuery.data?.projectPermissions?.manageProjectMembers ??
-    projectPermissions.manageProjectMembers;
-  $: effectiveCreateMagicAuthTokens =
-    $mockedProjectQuery.data?.projectPermissions?.createMagicAuthTokens ??
-    projectPermissions.createMagicAuthTokens;
+  $: activeBranch = extractBranchFromPath($page.url.pathname);
 
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
@@ -206,21 +186,47 @@
   {#if onPublicURLPage}
     <PageTitle title={publicURLDashboardTitle} />
   {:else if organization}
-    <Breadcrumbs {pathParts} {currentPath} />
+    <Breadcrumbs {pathParts} {currentPath}>
+      <svelte:fragment slot="after-project">
+        {#if editContext && activeBranch}
+          <li class="flex items-center mr-2">
+            <span
+              class="inline-block truncate max-w-[200px] px-2 py-0 rounded-2xl border bg-primary-50 border-primary-200 text-primary-800"
+              title={activeBranch}
+            >
+              {activeBranch}
+            </span>
+          </li>
+        {/if}
+      </svelte:fragment>
+    </Breadcrumbs>
   {/if}
 
   <div class="flex gap-x-2 items-center ml-auto">
-    {#if $viewAsUserStore}
-      <ViewAsUserChip />
-    {/if}
-    {#if onProjectPage && effectiveManageProjectMembers}
-      <ShareProjectPopover
-        {organization}
-        {project}
-        manageProjectAdmins={projectPermissions.manageProjectAdmins}
-        {manageOrgAdmins}
-        {manageOrgMembers}
-      />
+    {#if editContext}
+      {#if $developerChat && !onEditDashboardPreview}
+        <ChatToggle open={developerChatOpen} actions={developerChatActions} />
+      {/if}
+      {#if $dashboardChat && onEditDashboardPreview}
+        <ChatToggle open={dashboardChatOpen} actions={dashboardChatActions} />
+      {/if}
+      <EditActions {organization} {project} {primaryBranch} />
+    {:else}
+      {#if $viewAsUserStore}
+        <ViewAsUserChip />
+      {/if}
+      {#if $cloudEditing && onProjectPage && projectPermissions.manageDev}
+        <EditButton {organization} {project} {activeBranch} {primaryBranch} />
+      {/if}
+      {#if onProjectPage && projectPermissions.manageProjectMembers}
+        <ShareProjectPopover
+          {organization}
+          {project}
+          manageProjectAdmins={projectPermissions.manageProjectAdmins}
+          {manageOrgAdmins}
+          {manageOrgMembers}
+        />
+      {/if}
     {/if}
 
     {#if onMetricsExplorerPage && isDashboardValid}
@@ -232,11 +238,22 @@
             let:ready
           >
             <LastRefreshedDate {dashboard} />
+            {#if $cloudEditing && (onMetricsExplorerPage || onCanvasDashboardPage) && projectPermissions.manageDev}
+              <EditButton
+                {organization}
+                {project}
+                {activeBranch}
+                {primaryBranch}
+              />
+            {/if}
             {#if $dimensionSearch && ready}
               <GlobalDimensionSearch />
             {/if}
-            {#if $dashboardChat && !onPublicURLPage}
-              <ChatToggle />
+            {#if $dashboardChat && !onPublicURLPage && !editContext}
+              <ChatToggle
+                open={dashboardChatOpen}
+                actions={dashboardChatActions}
+              />
             {/if}
             {#if hasUserAccess}
               <ExploreBookmarks
@@ -249,7 +266,7 @@
                 <CreateAlert />
               {/if}
               <ShareDashboardPopover
-                createMagicAuthTokens={effectiveCreateMagicAuthTokens}
+                createMagicAuthTokens={projectPermissions.createMagicAuthTokens}
               />
             {/if}
           </StateManagersProvider>
@@ -257,19 +274,24 @@
       {/if}
     {/if}
 
-    {#if onCanvasDashboardPage && hasUserAccess}
-      {#if $dashboardChat && !onPublicURLPage}
-        <ChatToggle />
+    {#if onCanvasDashboardPage}
+      {#if $cloudEditing && projectPermissions.manageDev}
+        <EditButton {organization} {project} {activeBranch} {primaryBranch} />
       {/if}
-      <CanvasBookmarks {organization} {project} canvasName={dashboard} />
-      <ShareDashboardPopover
-        createMagicAuthTokens={effectiveCreateMagicAuthTokens}
-      />
+      {#if $dashboardChat && !onPublicURLPage && !editContext}
+        <ChatToggle open={dashboardChatOpen} actions={dashboardChatActions} />
+      {/if}
+      {#if hasUserAccess}
+        <CanvasBookmarks {organization} {project} canvasName={dashboard} />
+        <ShareDashboardPopover
+          createMagicAuthTokens={projectPermissions.createMagicAuthTokens}
+        />
+      {/if}
     {/if}
 
     {#if $user.isSuccess}
       {#if $user.data?.user}
-        <AvatarButton />
+        <AvatarButton {projectPermissions} />
       {:else}
         <SignIn />
       {/if}

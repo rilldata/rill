@@ -100,7 +100,7 @@
   });
 </script>
 
-<svelte:window on:keydown={(e) => keyboardNavigationManager.handleKeyDown(e)} />
+<svelte:window onkeydown={(e) => keyboardNavigationManager.handleKeyDown(e)} />
 
 <!-- bits-ui dropdown component captures focus, so chat text cannot be edited when it is open.
      Newer versions of bits-ui have "trapFocus=false" param but it needs svelte5 upgrade.

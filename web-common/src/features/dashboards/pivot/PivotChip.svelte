@@ -16,6 +16,8 @@
   export let active = false;
   export let fullWidth = false;
   export let onRemove: () => void = () => {};
+  export let onmousedown: ((e: MouseEvent) => void) | undefined = undefined;
+  export let onclick: ((e: MouseEvent) => void) | undefined = undefined;
 
   $: activeTimeGrainLabel =
     item.type === PivotChipType.Time && item.id
@@ -47,8 +49,8 @@
     {removable}
     {fullWidth}
     supressTooltip
-    on:mousedown
-    on:click
+    {onmousedown}
+    {onclick}
     {onRemove}
   >
     <div

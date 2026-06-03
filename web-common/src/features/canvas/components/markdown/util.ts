@@ -13,7 +13,7 @@ import { getQueryServiceResolveTemplatedStringQueryOptions } from "@rilldata/web
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { derived } from "svelte/store";
 import type { ParsedFilters } from "../../stores/filter-state";
-import type { Readable } from "svelte/motion";
+import type { Readable } from "svelte/store";
 
 export function getPositionClasses(alignment: ComponentAlignment | undefined) {
   if (!alignment) alignment = defaultMarkdownAlignment;

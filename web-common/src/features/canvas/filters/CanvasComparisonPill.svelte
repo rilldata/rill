@@ -78,7 +78,7 @@
   <button
     {disabled}
     class="flex gap-x-1.5 cursor-pointer"
-    on:click={() => {
+    onclick={() => {
       onDisplayTimeComparison(!showTimeComparison);
     }}
     type="button"

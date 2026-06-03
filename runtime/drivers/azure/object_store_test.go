@@ -35,6 +35,10 @@ func TestObjectStoreCloud(t *testing.T) {
 	t.Run("testListMonthDirectoriesForGlobPagination_pageSize2", func(t *testing.T) { testListMonthDirectoriesForGlobPagination(t, objectStore, bucket, 2) })
 	t.Run("testListMonthDirectoriesForGlobPagination_pageSize3", func(t *testing.T) { testListMonthDirectoriesForGlobPagination(t, objectStore, bucket, 3) })
 	t.Run("testListMonthDirectoriesForGlobPagination_pageSize5", func(t *testing.T) { testListMonthDirectoriesForGlobPagination(t, objectStore, bucket, 5) })
+	t.Run("testListDayDirectoriesForGlobPagination_pageSize1", func(t *testing.T) { testListDayDirectoriesForGlobPagination(t, objectStore, bucket, 1) })
+	t.Run("testListDayDirectoriesForGlobPagination_pageSize2", func(t *testing.T) { testListDayDirectoriesForGlobPagination(t, objectStore, bucket, 2) })
+	t.Run("testListDayDirectoriesForGlobPagination_pageSize3", func(t *testing.T) { testListDayDirectoriesForGlobPagination(t, objectStore, bucket, 3) })
+	t.Run("testListDayDirectoriesForGlobPagination_pageSize5", func(t *testing.T) { testListDayDirectoriesForGlobPagination(t, objectStore, bucket, 5) })
 }
 
 func TestObjectStore(t *testing.T) {
@@ -106,7 +110,7 @@ func testListObjectsForGlobPagination(t *testing.T, objectStore drivers.ObjectSt
 	var pageCount int
 
 	for {
-		objects, nextToken, err := objectStore.ListObjectsForGlob(ctx, bucket, path, pageSize, pageToken)
+		objects, nextToken, err := objectStore.ListObjectsForGlob(ctx, bucket, path, pageSize, pageToken, "", "")
 		require.NoError(t, err)
 
 		if nextToken != "" {
@@ -140,7 +144,7 @@ func testMatchDirectoriesFromGlobTest(t *testing.T, objectStore drivers.ObjectSt
 
 	path := "listing_glob_test/year=*"
 
-	objects, nextToken, err := objectStore.ListObjectsForGlob(ctx, bucket, path, 100, "")
+	objects, nextToken, err := objectStore.ListObjectsForGlob(ctx, bucket, path, 100, "", "", "")
 	require.NoError(t, err)
 	require.Empty(t, nextToken)
 
@@ -164,7 +168,7 @@ func testMatchFilesWithLeafWildcardGlobTest(t *testing.T, objectStore drivers.Ob
 
 	path := "listing_glob_test/year=*/month=*/day=*/*.csv"
 
-	objects, nextToken, err := objectStore.ListObjectsForGlob(ctx, bucket, path, 100, "")
+	objects, nextToken, err := objectStore.ListObjectsForGlob(ctx, bucket, path, 100, "", "", "")
 	require.NoError(t, err)
 	require.Empty(t, nextToken)
 
@@ -184,7 +188,7 @@ func testMatchFilesWithDoubleStarGlobTest(t *testing.T, objectStore drivers.Obje
 
 	path := "listing_glob_test/**"
 
-	objects, _, err := objectStore.ListObjectsForGlob(ctx, bucket, path, 100, "")
+	objects, _, err := objectStore.ListObjectsForGlob(ctx, bucket, path, 100, "", "", "")
 	require.NoError(t, err)
 
 	var fileCount int
@@ -214,7 +218,7 @@ func testListDirectoriesForGlobPagination(t *testing.T, objectStore drivers.Obje
 	var pageCount int
 
 	for {
-		objects, nextToken, err := objectStore.ListObjectsForGlob(ctx, bucket, path, pageSize, pageToken)
+		objects, nextToken, err := objectStore.ListObjectsForGlob(ctx, bucket, path, pageSize, pageToken, "", "")
 		require.NoError(t, err)
 
 		if nextToken != "" {
@@ -257,7 +261,7 @@ func testListMonthDirectoriesForGlobPagination(t *testing.T, objectStore drivers
 	var collected []string
 
 	for {
-		objects, nextToken, err := objectStore.ListObjectsForGlob(ctx, bucket, path, pageSize, pageToken)
+		objects, nextToken, err := objectStore.ListObjectsForGlob(ctx, bucket, path, pageSize, pageToken, "", "")
 		require.NoError(t, err)
 
 		for _, obj := range objects {
@@ -275,12 +279,60 @@ func testListMonthDirectoriesForGlobPagination(t *testing.T, objectStore drivers
 	require.Equal(t, expected, collected)
 }
 
+func testListDayDirectoriesForGlobPagination(t *testing.T, objectStore drivers.ObjectStore, bucket string, pageSize uint32) {
+	ctx := t.Context()
+	path := "listing_glob_test/*/month=*/*"
+
+	expected := []string{
+		// "listing_glob_test/year=2024/month=11/day=30/",
+		"listing_glob_test/year=2024/month=11/day=31/",
+		"listing_glob_test/year=2025/month=01/day=01/",
+		"listing_glob_test/year=2025/month=01/day=02/",
+		"listing_glob_test/year=2025/month=02/day=01/",
+		"listing_glob_test/year=2025/month=12/day=01/",
+		"listing_glob_test/year=2026/month=01/day=01/",
+	}
+
+	var pageToken string
+	var collected []string
+	var pageCount int
+
+	for {
+		objects, nextToken, err := objectStore.ListObjectsForGlob(ctx, bucket, path, pageSize, pageToken, "listing_glob_test/year=2024/month=11/day=31/", "")
+		require.NoError(t, err)
+
+		if nextToken != "" {
+			require.Len(t, objects, int(pageSize))
+		} else {
+			require.NotEmpty(t, objects)
+			require.LessOrEqual(t, len(objects), int(pageSize))
+		}
+
+		for _, obj := range objects {
+			require.True(t, obj.IsDir)
+			collected = append(collected, obj.Path)
+		}
+
+		if nextToken == "" {
+			break
+		}
+
+		pageToken = nextToken
+		pageCount++
+	}
+
+	require.Equal(t, expected, collected)
+
+	expectedPages := (len(expected) + int(pageSize) - 1) / int(pageSize)
+	require.Equal(t, expectedPages, pageCount+1)
+}
+
 func testGlobIgnoresNonCSVFiles(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
 	ctx := t.Context()
 
 	path := "listing_glob_test/**/*.csv"
 
-	objects, _, err := objectStore.ListObjectsForGlob(ctx, bucket, path, 100, "")
+	objects, _, err := objectStore.ListObjectsForGlob(ctx, bucket, path, 100, "", "", "")
 	require.NoError(t, err)
 
 	for _, obj := range objects {
@@ -295,10 +347,10 @@ func testTrailingSlashNormalized(t *testing.T, objectStore drivers.ObjectStore, 
 	pathWithSlash := "glob_test/y=*/"
 	pathWithoutSlash := "glob_test/y=*"
 
-	objsWithSlash, _, err := objectStore.ListObjectsForGlob(ctx, bucket, pathWithSlash, 100, "")
+	objsWithSlash, _, err := objectStore.ListObjectsForGlob(ctx, bucket, pathWithSlash, 100, "", "", "")
 	require.NoError(t, err)
 
-	objsWithoutSlash, _, err := objectStore.ListObjectsForGlob(ctx, bucket, pathWithoutSlash, 100, "")
+	objsWithoutSlash, _, err := objectStore.ListObjectsForGlob(ctx, bucket, pathWithoutSlash, 100, "", "", "")
 	require.NoError(t, err)
 
 	// Both should return same directories

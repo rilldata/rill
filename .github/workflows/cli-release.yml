@@ -29,9 +29,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-24.04
+          - os: ubuntu-22.04
             platform: linux_amd64
-          - os: ubuntu-24.04-arm
+          - os: ubuntu-22.04-arm
             platform: linux_arm64
           - os: macos-14
             platform: darwin_arm64
@@ -58,7 +58,6 @@ jobs:
         env:
           RILL_UI_PUBLIC_INTAKE_USER: "data-modeler"
           RILL_UI_PUBLIC_INTAKE_PASSWORD: ${{ secrets.RILL_INTAKE_PASSWORD }}
-          RILL_UI_PUBLIC_POSTHOG_API_KEY: "phc_4qnfUotXUuevk2zJN8ei8HgKXMynddEMI0wPI9XwzlS"
           RILL_UI_PUBLIC_PYLON_APP_ID: "26a0fdd2-3bd3-41e2-82bc-1b35a444729f"
           NODE_OPTIONS: --max-old-space-size=4096
 
@@ -66,10 +65,10 @@ jobs:
         run: |-
           if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
             git fetch --prune --unshallow
-            VERSION="$(git describe --tags $(git rev-list --tags --max-count=1) | sed 's/r/v/')-nightly"
+            VERSION="$(scripts/versiontag.sh --next)-nightly"
           else
             VERSION='${{ github.ref_name }}'
-          fi   
+          fi
           
           go build -o rill \
             -mod=readonly \
@@ -103,7 +102,7 @@ jobs:
 
   release:
     name: Release rill
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: build
 
     steps:
@@ -125,7 +124,7 @@ jobs:
         run: |-
           if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
             BUCKET_DIR=nightly
-            LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1) | sed 's/r/v/')
+            LATEST_TAG=$(scripts/versiontag.sh)
             echo "NIGHTLY=--nightly" >> $GITHUB_ENV
             echo "GORELEASER_CURRENT_TAG=$(echo ${LATEST_TAG})" >> $GITHUB_ENV
           else

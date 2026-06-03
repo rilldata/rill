@@ -793,6 +793,31 @@ paths:
           type: string
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/env/push:
+    post:
+      summary: PushEnv pushes local environment variables to admin service
+      operationId: RuntimeService_PushEnv
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1PushEnvResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/files:
     get:
       summary: |-
@@ -1163,74 +1188,6 @@ paths:
           type: boolean
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/generate/renderer:
-    post:
-      summary: GenerateRenderer generates a component renderer and renderer properties from a resolver and resolver properties
-      operationId: RuntimeService_GenerateRenderer
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GenerateRendererResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              prompt:
-                type: string
-              resolver:
-                type: string
-              resolverProperties:
-                type: object
-      tags:
-        - RuntimeService
-  /v1/instances/{instanceId}/generate/resolver:
-    post:
-      summary: GenerateResolver generates resolver and resolver properties from a table or a metrics view
-      operationId: RuntimeService_GenerateResolver
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GenerateResolverResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              prompt:
-                type: string
-              connector:
-                type: string
-                description: Both connector and table must be specified if metrics_view is not.
-              table:
-                type: string
-              metricsView:
-                type: string
-                description: table and connector should not be provided if metrics_view is provided.
-      tags:
-        - RuntimeService
   /v1/instances/{instanceId}/git/branches:
     get:
       operationId: RuntimeService_ListGitBranches
@@ -1484,6 +1441,13 @@ paths:
           in: path
           required: true
           type: string
+        - name: remoteBranch
+          description: |-
+            remote_branch is the remote branch to compare the current local branch against.
+            If empty, the upstream of the current local branch is used.
+          in: query
+          required: false
+          type: string
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/logs:
@@ -1648,6 +1612,12 @@ paths:
               args:
                 type: object
                 title: Optional args for resolving templating in the component properties
+              unsafe:
+                type: boolean
+                description: |-
+                  If true, fall back to the unvalidated spec when no valid spec is available.
+                  Only for use by the visual editor in Rill Developer. Must never be sent by
+                  Rill Cloud, read-only previews, shared token access, or embedded viewers.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/column-cardinality/tables/{tableName}:
@@ -2768,6 +2738,28 @@ paths:
           format: int32
       tags:
         - QueryService
+  /v1/instances/{instanceId}/queries/project-storage:
+    get:
+      summary: |-
+        ProjectStorage returns storage usage information for OLAP connectors in the project.
+        See the project_storage resolver for details.
+      operationId: QueryService_ProjectStorage
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ProjectStorageResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - QueryService
   /v1/instances/{instanceId}/queries/resolve-templated-string:
     post:
       summary: ResolveTemplatedString resolves a templated strings.
@@ -3820,6 +3812,9 @@ definitions:
       dataType:
         $ref: '#/definitions/runtimev1Type'
         description: The data type of the measure. Only populated in ValidSpec.
+      lowerIsBetter:
+        type: boolean
+        description: When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas (KPIs, big numbers, leaderboards, pivot tables, time-series tooltips) swap their positive/negative coloring accordingly.
     title: Measures are aggregated computed values
   MetricsViewSpecMeasureType:
     type: string
@@ -3846,6 +3841,48 @@ definitions:
         type: string
         title: Raw SQL expression to use as the frame (starting with "ROWS ...")
     title: Window to apply to the measure calculation
+  MetricsViewSpecRollup:
+    type: object
+    properties:
+      database:
+        type: string
+      databaseSchema:
+        type: string
+      table:
+        type: string
+      model:
+        type: string
+      dataTimeRange:
+        type: string
+        description: |-
+          Optional rilltime expression describing the time range covered by the rollup.
+          When set, the rollup's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
+          Evaluated with `now` = current time, `earliest` = zero time, `latest`/`watermark` = current time.
+      timeGrain:
+        $ref: '#/definitions/v1TimeGrain'
+        description: Time grain of the rollup.
+      timeZone:
+        type: string
+        title: IANA timezone the rollup was aggregated in; defaults to UTC
+      dimensions:
+        type: array
+        items:
+          type: string
+        description: Resolved list of dimensions present in the rollup. If `dimensions_selector` is set, this will only be set in `state.valid_spec`.
+      measures:
+        type: array
+        items:
+          type: string
+        description: Resolved list of measures present in the rollup. If `measures_selector` is set, this will only be set in `state.valid_spec`.
+      dimensionsSelector:
+        $ref: '#/definitions/v1FieldSelector'
+        description: Dynamic selector for `dimensions`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+      measuresSelector:
+        $ref: '#/definitions/v1FieldSelector'
+        description: Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+    description: |-
+      Pre-aggregated rollup that can be used to accelerate queries.
+      The system automatically routes queries to a rollup when the query can be satisfied from the pre-aggregated data.
   NumericHistogramBinsBin:
     type: object
     properties:
@@ -3981,6 +4018,9 @@ definitions:
       mapType:
         $ref: '#/definitions/v1MapType'
         title: If code is CODE_MAP, map_type specifies the map's key and value types
+      rawType:
+        type: string
+        title: raw_type is the original database-specific type (e.g. "VARCHAR(255)")
     title: Type represents a data type in a schema
   v1API:
     type: object
@@ -4248,6 +4288,10 @@ definitions:
         type: object
       errorMessage:
         type: string
+      warnings:
+        type: array
+        items:
+          type: string
   v1AssertionStatus:
     type: string
     enum:
@@ -4403,6 +4447,13 @@ definitions:
         items:
           type: string
         title: Array of dimension or measure names
+      requiredFilters:
+        type: array
+        items:
+          type: string
+        description: |-
+          Array of dimension or measure names that must have a value before the canvas can render.
+          Required filters are implicitly pinned.
   v1CanvasState:
     type: object
     properties:
@@ -4973,6 +5024,12 @@ definitions:
         type: object
         additionalProperties:
           type: string
+        description: 'Deprecated: Continue populating this for some time for backward compatibility with older runtimes, remove after a few releases.'
+      systemVariables:
+        type: object
+        additionalProperties:
+          type: string
+        title: system_variables are variables that are set by admin service and should not be overridden by user input
       annotations:
         type: object
         additionalProperties:
@@ -5162,6 +5219,9 @@ definitions:
       pivotRowLimit:
         type: integer
         format: int32
+      chartDynamicYAxis:
+        type: boolean
+        title: Chart display settings (frontend-only; persisted in URL state)
   v1ExploreSortType:
     type: string
     enum:
@@ -5380,24 +5440,12 @@ definitions:
         type: boolean
         description: Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
     title: Response message for RuntimeService.GenerateMetricsViewFile
-  v1GenerateRendererResponse:
-    type: object
-    properties:
-      renderer:
-        type: string
-      rendererProperties:
-        type: object
-  v1GenerateResolverResponse:
-    type: object
-    properties:
-      resolver:
-        type: string
-      resolverProperties:
-        type: object
   v1GetAIMessageResponse:
     type: object
     properties:
       message:
+        $ref: '#/definitions/v1Message'
+      result:
         $ref: '#/definitions/v1Message'
     title: Response message for RuntimeService.GetAIMessage
   v1GetConversationResponse:
@@ -5506,6 +5554,9 @@ definitions:
       output:
         type: string
         description: The output of the git pull command. Only set for unsuccessful pulls.
+      mergedBranch:
+        type: string
+        description: The name of the branch that was being merged when a conflict occurred. Only set for unsuccessful pulls.
   v1GitPushResponse:
     type: object
   v1GitStatusResponse:
@@ -5517,6 +5568,9 @@ definitions:
       githubUrl:
         type: string
         description: The remote url of the git repo.
+      subpath:
+        type: string
+        description: Subpath from the git repo.
       managedGit:
         type: boolean
         description: If the repo is managed by Rill.
@@ -6416,6 +6470,12 @@ definitions:
       watermarkExpression:
         type: string
         description: Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension).
+      dataTimeRange:
+        type: string
+        description: |-
+          Optional rilltime expression describing the time range covered by the base table.
+          When set, the base table's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
+          Evaluated with `now` = current time, `earliest` = zero time, `latest`/`watermark` = current time.
       dimensions:
         type: array
         items:
@@ -6456,12 +6516,21 @@ definitions:
         description: Month number to use as the base for time aggregations by year. Defaults to 1 (January).
       cacheEnabled:
         type: boolean
-        description: Cache controls for the metrics view.
+        description: Cache controls for the metrics view. By default, enabled for Rill managed models and disabled for streaming (externally managed) data sources.
       cacheKeySql:
         type: string
+        description: Defaults to use watermark if cache is enabled.
       cacheKeyTtlSeconds:
         type: string
         format: int64
+        description: Defaults to 60 seconds if cache is enabled.
+      cacheTimestampsTtlSeconds:
+        type: string
+        format: int64
+        description: |-
+          TTL for caching timestamp boundaries (min/max) of base and rollup tables. Defaults to 5 minutes if unset.
+          Takes effect only when mv level caching is disabled otherwise the timestamp boundaries are cached with the same TTL
+          as the rest of the query results set via `cache.timestamps_ttl` in the metrics view YAML.
       queryAttributes:
         type: object
         additionalProperties:
@@ -6469,6 +6538,17 @@ definitions:
         description: |-
           Query attributes that can be templated with user context and used by drivers (e.g., appended to SETTINGS in ClickHouse).
           Keys and values are stored as templates and will be resolved at query time.
+      rollups:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewSpecRollup'
+      maxQueryTimeRange:
+        type: string
+        description: |-
+          Maximum time span any single query against this metrics view may cover, as an ISO 8601 duration with day-or-larger granularity (e.g. "P90D", "P3M", "P1Y").
+          Sub-day durations (hours, minutes, seconds) are not supported. Applies to queries that take a time range, including the comparison time range.
+          Time-range introspection RPCs are exempt. If unset, no limit is enforced.
   v1MetricsViewSpecAnnotation:
     type: object
     properties:
@@ -6531,6 +6611,12 @@ definitions:
       timeRangeSummary:
         $ref: '#/definitions/v1TimeRangeSummary'
         title: Not optional, not null
+      maxQueryTimeRangeMillis:
+        type: string
+        format: int64
+        description: |-
+          The metrics view's max_query_time_range property resolved into milliseconds against the current time.
+          Zero if the metrics view does not configure max_query_time_range.
       trace:
         $ref: '#/definitions/v1Trace'
         description: Traces of spans captured during request execution. Only populated if trace was set to true in the request.
@@ -6554,6 +6640,12 @@ definitions:
         description: |-
           The same values as resolved_time_ranges for backwards compatibility.
           Deprecated: use resolved_time_ranges instead.
+      maxQueryTimeRangeMillis:
+        type: string
+        format: int64
+        description: |-
+          The metrics view's max_query_time_range property resolved into milliseconds against the request's reference time.
+          Zero if the metrics view does not configure max_query_time_range.
       trace:
         $ref: '#/definitions/v1Trace'
         description: Traces of spans captured during request execution. Only populated if trace was set to true in the request.
@@ -6894,6 +6986,11 @@ definitions:
         items:
           type: string
         description: test_errors contains the results of the model's tests.
+      testWarnings:
+        type: array
+        items:
+          type: string
+        description: test_warnings contains warnings from the most recent test run, stored separately from execution warnings.
       refreshedOn:
         type: string
         format: date-time
@@ -6910,6 +7007,11 @@ definitions:
       partitionsHaveErrors:
         type: boolean
         description: partitions_have_errors is true if one or more partitions failed to execute.
+      warnings:
+        type: array
+        items:
+          type: string
+        description: warnings contains any warnings generated during the model's execution.
       totalExecutionDurationMs:
         type: string
         format: int64
@@ -7135,6 +7237,71 @@ definitions:
         format: date-time
       watching:
         type: boolean
+  v1ProjectStorageEntry:
+    type: object
+    properties:
+      connector:
+        type: string
+        description: Connector name.
+      driver:
+        type: string
+        description: Connector driver name.
+      isDefaultOlap:
+        type: boolean
+        description: True if the connector is the project's default OLAP.
+      managed:
+        type: boolean
+        description: 'True if the connector is managed by Rill (i.e. has `managed: true` in the connector definition).'
+      sizeBytes:
+        type: string
+        format: int64
+        description: |-
+          Storage usage in bytes.
+          If it is -1, it means the value is unknown.
+      error:
+        type: string
+        description: |-
+          Error message if the connector was unavailable.
+          This is usually empty.
+  v1ProjectStorageRequest:
+    type: object
+    properties:
+      instanceId:
+        type: string
+  v1ProjectStorageResponse:
+    type: object
+    properties:
+      entries:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ProjectStorageEntry'
+        description: Storage usage per relevant connector in the project.
+      managedSizeBytes:
+        type: string
+        format: int64
+        description: |-
+          Aggregated storage usage by managed connectors in the project.
+          If it is -1, it means the value is unknown.
+          This is a convenience field derived from the entries.
+      defaultOlapSizeBytes:
+        type: string
+        format: int64
+        description: |-
+          Storage usage by the default OLAP connector in the project.
+          If it is -1, it means the value is unknown.
+          This is a convenience field derived from the entries.
+  v1PushEnvResponse:
+    type: object
+    properties:
+      addedCount:
+        type: integer
+        format: int32
+        title: Number of variables added
+      changedCount:
+        type: integer
+        format: int32
+        title: Number of variables changed
   v1PutFileResponse:
     type: object
     properties:
@@ -7145,6 +7312,8 @@ definitions:
   v1Query:
     type: object
     properties:
+      projectStorageRequest:
+        $ref: '#/definitions/v1ProjectStorageRequest'
       metricsViewAggregationRequest:
         $ref: '#/definitions/v1MetricsViewAggregationRequest'
       metricsViewToplistRequest:
@@ -7216,6 +7385,8 @@ definitions:
   v1QueryResult:
     type: object
     properties:
+      projectStorageResponse:
+        $ref: '#/definitions/v1ProjectStorageResponse'
       metricsViewAggregationResponse:
         $ref: '#/definitions/v1MetricsViewAggregationResponse'
       metricsViewToplistResponse:
@@ -7309,6 +7480,14 @@ definitions:
     type: object
   v1ReloadConfigResponse:
     type: object
+    properties:
+      variablesCount:
+        type: integer
+        format: int32
+        title: Number of variables pulled from admin service
+      modified:
+        type: boolean
+        title: Whether the .env file(s) were modified
     title: Response message for RuntimeService.ReloadConfig
   v1RenameFileResponse:
     type: object
@@ -7327,6 +7506,10 @@ definitions:
         type: boolean
       errorMessage:
         type: string
+      warnings:
+        type: array
+        items:
+          type: string
       reportTime:
         type: string
         format: date-time
@@ -7537,6 +7720,10 @@ definitions:
         $ref: '#/definitions/v1ReconcileStatus'
       reconcileError:
         type: string
+      reconcileWarnings:
+        type: array
+        items:
+          type: string
       reconcileOn:
         type: string
         format: date-time

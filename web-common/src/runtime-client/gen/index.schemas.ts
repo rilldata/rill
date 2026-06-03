@@ -110,6 +110,7 @@ export interface MetricsViewSpecMeasure {
   validPercentOfTotal?: boolean;
   treatNullsAs?: string;
   dataType?: Runtimev1Type;
+  lowerIsBetter?: boolean;
 }
 
 export type MetricsViewSpecMeasureType =
@@ -480,6 +481,7 @@ The values should be valid IANA location identifiers. */
   /** Security rules to apply for access to the canvas. */
   securityRules?: V1SecurityRule[];
   pinnedFilters?: string[];
+  requiredFilters?: string[];
 }
 
 export interface V1CanvasState {
@@ -923,6 +925,8 @@ If not found in `time_ranges`, it should be added to the list. */
   pivotSortAsc?: boolean;
   pivotTableMode?: string;
   pivotRowLimit?: number;
+  /** When true, time-series charts use a dynamic Y-axis scale that fits the visible data range. */
+  chartDynamicYAxis?: boolean;
 }
 
 export type V1ExploreSortType =
@@ -1098,6 +1102,7 @@ export interface V1GenerateResolverResponse {
 
 export interface V1GetAIMessageResponse {
   message?: V1Message;
+  result?: V1Message;
 }
 
 export interface V1GetConversationResponse {
@@ -1176,6 +1181,8 @@ export interface V1GitStatusResponse {
   branch?: string;
   /** The remote url of the git repo. */
   githubUrl?: string;
+  /** The subpath of the git repo. */
+  subpath?: string;
   /** If the repo is managed by Rill. */
   managedGit?: boolean;
   /** local_changes returns true if there are any staged, unstaged, or untracked changes in the local git repo. */
@@ -1698,6 +1705,10 @@ export interface V1MetricsViewSpec {
   /** Query attributes that can be templated with user context and used by drivers (e.g., appended to SETTINGS in ClickHouse).
 Keys and values are stored as templates and will be resolved at query time. */
   queryAttributes?: V1MetricsViewSpecQueryAttributes;
+  /** Maximum time span any single query against this metrics view may cover, as an ISO 8601 duration with day-or-larger
+   * granularity (e.g. "P90D", "P3M", "P1Y"). Sub-day durations are not supported. Applies to queries that take a time
+   * range, including the comparison time range. Time-range introspection RPCs are exempt. If unset, no limit is enforced. */
+  maxQueryTimeRange?: string;
 }
 
 /**
@@ -1735,6 +1746,9 @@ This may be empty if the metrics view is based on an externally managed table. *
 
 export interface V1MetricsViewTimeRangeResponse {
   timeRangeSummary?: V1TimeRangeSummary;
+  /** The metrics view's max_query_time_range property resolved into milliseconds against the current time.
+   * Zero (or absent) if the metrics view does not configure max_query_time_range. */
+  maxQueryTimeRangeMillis?: string;
   trace?: V1Trace;
 }
 
@@ -1745,6 +1759,9 @@ export interface V1MetricsViewTimeRangesResponse {
   /** The same values as resolved_time_ranges for backwards compatibility.
 Deprecated: use resolved_time_ranges instead. */
   timeRanges?: V1TimeRange[];
+  /** The metrics view's max_query_time_range property resolved into milliseconds against the request's reference time.
+   * Zero (or absent) if the metrics view does not configure max_query_time_range. */
+  maxQueryTimeRangeMillis?: string;
   trace?: V1Trace;
 }
 
@@ -2352,6 +2369,7 @@ export interface V1ResourceMeta {
   deletedOn?: string;
   reconcileStatus?: V1ReconcileStatus;
   reconcileError?: string;
+  reconcileWarnings?: string[];
   reconcileOn?: string;
   renamedFrom?: V1ResourceName;
 }

@@ -22,7 +22,7 @@
     type V1ExploreTimeRange,
   } from "@rilldata/web-common/runtime-client";
   import { invalidationForMetricsViewData } from "@rilldata/web-common/runtime-client/invalidation.ts";
-  import { DateTime, Interval } from "luxon";
+  import { DateTime, Duration, Interval } from "luxon";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import { getStateManagers } from "../state-managers/state-managers";
@@ -44,7 +44,7 @@
   import { featureFlags } from "../../feature-flags";
   import Timestamp from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/Timestamp.svelte";
   import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
-  import { Tooltip } from "bits-ui";
+  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import Metadata from "../time-controls/super-pill/components/Metadata.svelte";
   import { getValidComparisonOption } from "../time-controls/time-range-store";
   import { getPinnedTimeZones } from "../url-state/getDefaultExplorePreset";
@@ -108,6 +108,14 @@
   $: timeRangeSummary = $timeRangeQuery.data?.timeRangeSummary;
 
   $: watermark = timeRangeSummary?.watermark;
+
+  $: maxQueryTimeRangeMillis = Number(
+    $timeRangeQuery.data?.maxQueryTimeRangeMillis ?? 0,
+  );
+  $: maxQueryTimeRange =
+    maxQueryTimeRangeMillis > 0
+      ? Duration.fromMillis(maxQueryTimeRangeMillis)
+      : undefined;
 
   $: ({
     selectedTimeRange,
@@ -424,7 +432,7 @@
 <div class="flex flex-col gap-y-2 size-full">
   {#if hasTimeSeries}
     <div class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center">
-      <Tooltip.Root openDelay={0}>
+      <Tooltip.Root delayDuration={0}>
         <Tooltip.Trigger class="cursor-default text-fg-secondary">
           <Calendar size="16px" />
         </Tooltip.Trigger>
@@ -453,6 +461,7 @@
           {timeEnd}
           lockTimeZone={exploreSpec.lockTimeZone}
           allowCustomTimeRange={exploreSpec.allowCustomTimeRange}
+          {maxQueryTimeRange}
           {activeTimeGrain}
           {activeTimeZone}
           canPanLeft={$canPanLeft}
@@ -479,7 +488,7 @@
       {/if}
 
       {#if !$rillTime && allTimeRangeInterval?.end?.isValid}
-        <Tooltip.Root openDelay={0}>
+        <Tooltip.Root delayDuration={0}>
           <Tooltip.Trigger>
             <span class="text-fg-secondary italic">
               as of <Timestamp

@@ -18,10 +18,10 @@ import {
 } from "@rilldata/web-common/features/components/charts/comparison-builder";
 import type { TooltipValue } from "@rilldata/web-common/features/components/charts/types";
 import type { VisualizationSpec } from "svelte-vega";
-import type { Field } from "vega-lite/build/src/channeldef";
-import type { LayerSpec } from "vega-lite/build/src/spec/layer";
-import type { UnitSpec } from "vega-lite/build/src/spec/unit";
-import type { Transform } from "vega-lite/build/src/transform";
+import type { Field } from "vega-lite/types_unstable/channeldef.js";
+import type { LayerSpec } from "vega-lite/types_unstable/spec/layer.js";
+import type { UnitSpec } from "vega-lite/types_unstable/spec/unit.js";
+import type { Transform } from "vega-lite/types_unstable/transform.js";
 import type { CartesianChartSpec } from "../CartesianChartProvider";
 import { createVegaTransformPivotConfig } from "../util";
 
@@ -35,25 +35,24 @@ export function generateVLStackedBarNormalizedSpec(
 
   const colorField =
     typeof config.color === "object" ? config.color.field : undefined;
-  const xField = sanitizeValueForVega(config.x?.field);
-  const yField = sanitizeValueForVega(config.y?.field);
+  const sanitizedXField = sanitizeValueForVega(config.x?.field);
+  const yField = config.y?.field;
+  const sanitizedYField = sanitizeValueForVega(yField);
 
   // Check if comparison mode is enabled
   const hasComparison = data.hasComparison;
 
-  if (baseEncoding.y && config.y?.field) {
-    const yFieldRaw = config.y.field;
-
+  if (baseEncoding.y && yField) {
     baseEncoding.y = {
       ...baseEncoding.y,
       stack: "normalize",
       scale: {
         zero: false,
         // Add padding at the top for hover space since normalized charts go to 100%
-        domainMax: 1.05,
+        domainMax: 1.1,
       },
       axis: {
-        ...(!config.y.showAxisTitle && { title: null }),
+        ...(!config.y?.showAxisTitle && { title: null }),
         format: ".0%",
       },
     };
@@ -71,14 +70,14 @@ export function generateVLStackedBarNormalizedSpec(
         joinaggregate: [
           {
             op: "sum",
-            field: yFieldRaw,
+            field: yField,
             as: "total",
           },
         ],
         groupby: groupbyFields,
       },
       {
-        calculate: `datum['${yFieldRaw}'] / datum.total`,
+        calculate: `datum['${yField}'] / datum.total`,
         as: "percentage",
       },
     ];
@@ -108,7 +107,7 @@ export function generateVLStackedBarNormalizedSpec(
     );
     baseEncoding.tooltip = tooltipValues
       .map((t: TooltipValue) => {
-        if (t.field === yField) {
+        if (t.field === sanitizedYField) {
           return [
             {
               ...t,
@@ -137,7 +136,7 @@ export function generateVLStackedBarNormalizedSpec(
   };
 
   const hoverRuleLayer = buildHoverRuleLayer({
-    xField,
+    xField: sanitizedXField,
     domainValues: data.domainValues,
     isBarMark: true,
     defaultTooltip: baseEncoding.tooltip as TooltipValue[],
@@ -146,8 +145,8 @@ export function generateVLStackedBarNormalizedSpec(
     primaryColor: data.theme.primary,
     isDarkMode: data.isDarkMode,
     pivot: createVegaTransformPivotConfig(
-      xField,
-      yField,
+      sanitizedXField,
+      sanitizedYField,
       colorField,
       !!hasComparison,
       !!multiValueTooltipChannel?.length,

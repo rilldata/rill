@@ -2,6 +2,7 @@
   import { Button } from "@rilldata/web-common/components/button";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
+  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import AdvancedFilter from "@rilldata/web-common/features/dashboards/filters/AdvancedFilter.svelte";
   import DimensionFilter from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilter.svelte";
@@ -9,10 +10,9 @@
   import { getPanRangeForTimeRange } from "@rilldata/web-common/features/dashboards/state-managers/selectors/charts";
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
   import CanvasFilterButton from "../../dashboards/filters/CanvasFilterButton.svelte";
-  import { Tooltip } from "bits-ui";
   import Metadata from "../../dashboards/time-controls/super-pill/components/Metadata.svelte";
+  import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
 
   export let readOnly = false;
   export let maxWidth: number;
@@ -45,6 +45,7 @@
           setMeasureFilter,
           removeMeasureFilter,
           toggleFilterPin,
+          toggleFilterRequired,
         },
         clearAllFilters,
       },
@@ -68,6 +69,7 @@
         timeRangeOptionsStore,
         availableTimeZonesStore,
         allowCustomRangeStore,
+        maxQueryTimeRangeStore,
       },
     },
   } = getCanvasStore(canvasName, instanceId));
@@ -97,6 +99,7 @@
   $: availableTimeZones = $availableTimeZonesStore;
   $: timeRanges = $timeRangeOptionsStore;
   $: allowCustomTimeRange = $allowCustomRangeStore;
+  $: maxQueryTimeRange = $maxQueryTimeRangeStore;
 
   $: ({
     dimensionFilters,
@@ -130,6 +133,7 @@
 </script>
 
 <div
+  role="presentation"
   class="flex flex-col gap-y-2 size-full pointer-events-none"
   style:max-width="{maxWidth}px"
 >
@@ -137,7 +141,7 @@
     <div class="p-2 flex justify-between size-full py-0">
       <div class="flex items-center size-full">
         <div class="flex-none h-full pt-1.5 pointer-events-auto">
-          <Tooltip.Root openDelay={0}>
+          <Tooltip.Root delayDuration={0}>
             <Tooltip.Trigger class="cursor-default">
               <Calendar size="16px" />
             </Tooltip.Trigger>
@@ -173,6 +177,7 @@
             canPanRight={canPan.right}
             watermark={undefined}
             {allowCustomTimeRange}
+            {maxQueryTimeRange}
             {showDefaultItem}
             applyRange={(timeRange) => {
               const string = `${timeRange.start.toISOString()},${timeRange.end.toISOString()}`;
@@ -194,6 +199,7 @@
             {activeTimeZone}
             {minTimeGrain}
             {showTimeComparison}
+            {allowCustomTimeRange}
             onDisplayTimeComparison={set.comparison}
             onSetSelectedComparisonRange={(range) => {
               if (range.name === "CUSTOM_COMPARISON_RANGE") {
@@ -243,6 +249,7 @@
           {applyDimensionInListMode}
           {applyDimensionContainsMode}
           toggleFilterPin={builder ? toggleFilterPin : undefined}
+          toggleFilterRequired={builder ? toggleFilterRequired : undefined}
         />
       {/each}
 
@@ -265,6 +272,7 @@
           onApply={({ dimension, filter, oldDimension }) =>
             setMeasureFilter(dimension, filter, oldDimension, metricsViewNames)}
           toggleFilterPin={builder ? toggleFilterPin : undefined}
+          toggleFilterRequired={builder ? toggleFilterRequired : undefined}
         />
       {/each}
 

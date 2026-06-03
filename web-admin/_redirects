@@ -1,5 +1,2 @@
-# PostHog reverse proxy
-/ph/* https://us.i.posthog.com/:splat 200
-
 # Redirect for SPA routing
 /* /index.html 200

@@ -60,11 +60,11 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse && olap.Dialect() != drivers.DialectStarRocks {
+	if olap.Dialect().String() != drivers.DialectNameDuckDB && olap.Dialect().String() != drivers.DialectNameClickHouse && olap.Dialect().String() != drivers.DialectNameStarRocks {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	if olap.Dialect() == drivers.DialectClickHouse {
+	if olap.Dialect().String() == drivers.DialectNameClickHouse {
 		// Returning early with empty results because this query tends to hang on ClickHouse.
 		return nil
 	}
@@ -82,7 +82,7 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 
 	// StarRocks uses CAST() function instead of ::TYPE syntax
 	var selectColumn string
-	if olap.Dialect() == drivers.DialectStarRocks {
+	if olap.Dialect().String() == drivers.DialectNameStarRocks {
 		selectColumn = fmt.Sprintf("CAST(%s AS DOUBLE)", sanitizedColumnName)
 	} else {
 		selectColumn = fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
@@ -90,7 +90,7 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 
 	// For bucket column casting
 	var castFloat string
-	if olap.Dialect() == drivers.DialectStarRocks {
+	if olap.Dialect().String() == drivers.DialectNameStarRocks {
 		castFloat = ""
 	} else {
 		castFloat = "::FLOAT"
@@ -101,7 +101,7 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 
 	// StarRocks doesn't support referencing SELECT column aliases in WHERE clause
 	var whereClause string
-	if olap.Dialect() == drivers.DialectStarRocks {
+	if olap.Dialect().String() == drivers.DialectNameStarRocks {
 		whereClause = "WHERE count>0"
 	} else {
 		whereClause = "WHERE present=true"
@@ -208,10 +208,10 @@ func (q *ColumnRugHistogram) Export(ctx context.Context, rt *runtime.Runtime, in
 }
 
 func rangeNumbers(dialect drivers.Dialect) string {
-	switch dialect {
-	case drivers.DialectClickHouse:
+	switch dialect.String() {
+	case drivers.DialectNameClickHouse:
 		return "numbers"
-	case drivers.DialectStarRocks:
+	case drivers.DialectNameStarRocks:
 		// StarRocks uses generate_series for number sequences
 		return "TABLE(generate_series"
 	default:
@@ -220,10 +220,10 @@ func rangeNumbers(dialect drivers.Dialect) string {
 }
 
 func rangeNumbersCol(dialect drivers.Dialect) string {
-	switch dialect {
-	case drivers.DialectClickHouse:
+	switch dialect.String() {
+	case drivers.DialectNameClickHouse:
 		return "number"
-	case drivers.DialectStarRocks:
+	case drivers.DialectNameStarRocks:
 		// generate_series returns a column named 'generate_series'
 		return "generate_series"
 	default:
@@ -234,8 +234,8 @@ func rangeNumbersCol(dialect drivers.Dialect) string {
 // rangeNumbersEnd returns the closing syntax for range/numbers/generate_series
 // For StarRocks generate_series, end is inclusive so we need to subtract 1 to match DuckDB range behavior
 func rangeNumbersEnd(dialect drivers.Dialect) string {
-	switch dialect {
-	case drivers.DialectStarRocks:
+	switch dialect.String() {
+	case drivers.DialectNameStarRocks:
 		// generate_series(start, end) has inclusive end, so subtract 1 to match range(start, end) exclusive behavior
 		// Then close both generate_series() and TABLE()
 		return "-1))"

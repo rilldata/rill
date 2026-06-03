@@ -9,13 +9,18 @@
   import SidebarHeader from "./SidebarHeader.svelte";
   import {
     SIDEBAR_DEFAULTS,
-    sidebarActions,
     sidebarWidth,
+    type ChatActions,
   } from "./sidebar-store";
 
-  import type { ChatConfig } from "@rilldata/web-common/features/chat/core/types.ts";
+  import type {
+    ChatConfig,
+    ChatSurface,
+  } from "@rilldata/web-common/features/chat/core/types.ts";
 
   export let config: ChatConfig;
+  export let actions: ChatActions;
+  export let surface: ChatSurface;
 
   const runtimeClient = useRuntimeClient();
 
@@ -23,6 +28,7 @@
   $: conversationManager = getConversationManager(runtimeClient, {
     conversationState: "browserStorage",
     agent: config.agent,
+    surface,
   });
 
   let chatInputComponent: ChatInput;
@@ -54,7 +60,9 @@
 <div
   class="chat-sidebar"
   style="--sidebar-width: {$sidebarWidth}px;"
-  on:click|stopPropagation
+  onclick={(e) => {
+    e.stopPropagation();
+  }}
   role="presentation"
 >
   <Resizer
@@ -64,14 +72,14 @@
     dimension={$sidebarWidth}
     direction="EW"
     side="left"
-    onUpdate={sidebarActions.updateSidebarWidth}
+    onUpdate={actions.updateSidebarWidth}
   />
   <div class="chat-sidebar-content">
     <div class="chatbot-header-container">
       <SidebarHeader
         {conversationManager}
         {onNewConversation}
-        onClose={sidebarActions.closeChat}
+        onClose={actions.closeChat}
       />
     </div>
     <Messages {conversationManager} layout="sidebar" {config} />

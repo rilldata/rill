@@ -16,7 +16,12 @@ export function getGitUrlFromRemote(remote: string | undefined) {
 
 const MergeConflictsError =
   /Your local changes to the following files would be overwritten by merge/;
+const PrimaryBranchMergeConflictError =
+  /use force pull to discard local changes and sync with (remote|primary)/;
 
 export function isMergeConflictError(errorMessage: string) {
-  return MergeConflictsError.test(errorMessage);
+  return (
+    MergeConflictsError.test(errorMessage) ||
+    PrimaryBranchMergeConflictError.test(errorMessage)
+  );
 }

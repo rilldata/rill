@@ -5,7 +5,6 @@
   type $$Props = ContextMenuPrimitive.ItemProps & {
     inset?: boolean;
   };
-  // type $$Events = ContextMenuPrimitive.ItemEvents;
 
   let className: $$Props["class"] = undefined;
   export let inset: $$Props["inset"] = undefined;
@@ -19,13 +18,6 @@
     className,
   )}
   {...$$restProps}
-  on:click
-  on:keydown
-  on:focusin
-  on:focusout
-  on:pointerdown
-  on:pointerleave
-  on:pointermove
 >
   <slot />
 </ContextMenuPrimitive.Item>

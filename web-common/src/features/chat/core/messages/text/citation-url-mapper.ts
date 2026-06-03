@@ -6,7 +6,10 @@ import {
 } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 import type { Schema as MetricsResolverQuery } from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
-import { getQueryFromUrl } from "@rilldata/web-common/features/chat/core/citation-url-utils.ts";
+import {
+  getQueryFromUrl,
+  getResolvedTimeRangesFromMessage,
+} from "@rilldata/web-common/features/chat/core/citation-url-utils.ts";
 import { mapMetricsResolverQueryToDashboard } from "@rilldata/web-common/features/explore-mappers/map-metrics-resolver-query-to-dashboard.ts";
 import { maybeGetExplorePageUrlSearchParams } from "@rilldata/web-common/features/explore-mappers/utils.ts";
 import { getUrlForExplore } from "@rilldata/web-common/features/explore-mappers/generate-explore-link.ts";
@@ -91,6 +94,10 @@ export function mapMetricsResolverQueryToUrl(
   const isLegacyCitationUrl =
     LEGACY_DASHBOARD_CITATION_URL_PATHNAME_REGEX.test(url.pathname) &&
     url.searchParams.has("query");
+
+  let resolvedTimeRanges: ReturnType<typeof getResolvedTimeRangesFromMessage> =
+    {};
+
   if (isLegacyCitationUrl) {
     try {
       query = getQueryFromUrl(url);
@@ -112,6 +119,11 @@ export function mapMetricsResolverQueryToUrl(
       callMessage.tool === ToolName.QUERY_METRICS_VIEW;
     if (!isMetricsQueryCall) return url.href;
     query = callMessage.content?.[0]?.toolCall?.input;
+
+    const resultMessage = messages.find((m) => m.parentId === callId);
+    if (resultMessage?.contentData) {
+      resolvedTimeRanges = getResolvedTimeRangesFromMessage(resultMessage);
+    }
   }
 
   const metricsViewName = query.metrics_view ?? "";
@@ -124,7 +136,10 @@ export function mapMetricsResolverQueryToUrl(
   const partialExploreState = mapMetricsResolverQueryToDashboard(
     metricsViewSpec,
     exploreSpec,
-    query,
+    {
+      query,
+      ...resolvedTimeRanges,
+    },
   );
 
   const urlSearchParams = maybeGetExplorePageUrlSearchParams(

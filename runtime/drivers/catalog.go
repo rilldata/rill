@@ -94,6 +94,7 @@ type FindModelPartitionsOptions struct {
 	Limit            int
 	WherePending     bool
 	WhereErrored     bool
+	WhereSuccessful  bool
 	BeforeExecutedOn time.Time
 	AfterKey         string
 }

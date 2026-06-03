@@ -3,9 +3,9 @@ In svelte.config.js, the "adapter-static" option makes the application a single-
 app in production. Here, we are setting server-side rendering (SSR) to false to 
 ensure the same single-page app behavior in development.
 */
+
 export const ssr = false;
 
-import { dev } from "$app/environment";
 import {
   adminServiceGetCurrentUser,
   getAdminServiceGetCurrentUserQueryKey,
@@ -21,11 +21,11 @@ import { redirectToLoginOrRequestAccess } from "@rilldata/web-admin/features/aut
 import { getFetchOrganizationQueryOptions } from "@rilldata/web-admin/features/organizations/selectors";
 import { fetchProjectDeploymentDetails } from "@rilldata/web-admin/features/projects/selectors";
 import { getOrgWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-org-with-bearer-token";
-import { initPosthog } from "@rilldata/web-common/lib/analytics/posthog";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
-import { error, redirect, type Page } from "@sveltejs/kit";
+import { error, type Page } from "@sveltejs/kit";
 import { isAxiosError } from "axios";
 import { Settings } from "luxon";
+import { maybeRedirectToWelcomePage } from "@rilldata/web-admin/features/welcome/utils.ts";
 
 Settings.defaultLocale = "en";
 
@@ -45,21 +45,6 @@ export const load = async ({ params, url, route, depends }) => {
   }
   const token = searchParamToken ?? routeToken;
 
-  // Initialize analytics
-  const shouldSendAnalytics = !import.meta.env.VITE_PLAYWRIGHT_TEST && !dev;
-  if (shouldSendAnalytics) {
-    const rillVersion = import.meta.env.RILL_UI_VERSION;
-    const posthogSessionId = url.searchParams.get("ph_session_id") as
-      | string
-      | null;
-    initPosthog(rillVersion, posthogSessionId);
-    if (posthogSessionId) {
-      // Remove the PostHog sessionID from the url
-      url.searchParams.delete("ph_session_id");
-      throw redirect(307, url.toString());
-    }
-  }
-
   let user: V1User | undefined;
   try {
     const userQuery = await queryClient.fetchQuery<V1GetCurrentUserResponse>({
@@ -74,6 +59,9 @@ export const load = async ({ params, url, route, depends }) => {
       redirectToLogin();
     }
   }
+
+  // Maybe redirect user to welcome flow. More details in maybeRedirectToWelcomePage
+  if (user) await maybeRedirectToWelcomePage(route);
 
   // If no organization or project, return empty permissions
   if (!organization) {

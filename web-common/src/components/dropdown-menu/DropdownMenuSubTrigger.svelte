@@ -2,15 +2,18 @@
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import { DropdownMenu as DropdownMenuPrimitive } from "bits-ui";
   import { ChevronRight } from "lucide-svelte";
+  import type { Snippet } from "svelte";
 
-  type $$Props = DropdownMenuPrimitive.SubTriggerProps & {
+  // svelte-ignore custom_element_props_identifier
+  let {
+    class: className,
+    inset,
+    children,
+    ...restProps
+  }: DropdownMenuPrimitive.SubTriggerProps & {
     inset?: boolean;
-  };
-  // type $$Events = DropdownMenuPrimitive.SubTriggerEvents;
-
-  let className: $$Props["class"] = undefined;
-  export let inset: $$Props["inset"] = undefined;
-  export { className as class };
+    children?: Snippet;
+  } = $props();
 </script>
 
 <DropdownMenuPrimitive.SubTrigger
@@ -19,14 +22,8 @@
     inset && "pl-8",
     className,
   )}
-  {...$$restProps}
-  on:click
-  on:keydown
-  on:focusin
-  on:focusout
-  on:pointerleave
-  on:pointermove
+  {...restProps}
 >
-  <slot />
+  {@render children?.()}
   <ChevronRight class="ml-auto h-4 w-4" />
 </DropdownMenuPrimitive.SubTrigger>

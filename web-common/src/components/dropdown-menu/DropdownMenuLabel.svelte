@@ -2,7 +2,7 @@
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import { DropdownMenu as DropdownMenuPrimitive } from "bits-ui";
 
-  type $$Props = DropdownMenuPrimitive.LabelProps & {
+  type $$Props = DropdownMenuPrimitive.GroupHeadingProps & {
     inset?: boolean;
   };
 
@@ -11,7 +11,7 @@
   export { className as class };
 </script>
 
-<DropdownMenuPrimitive.Label
+<DropdownMenuPrimitive.GroupHeading
   class={cn(
     "px-2 py-1.5 text-xs text-fg-secondary font-semibold",
     inset && "pl-8",
@@ -20,4 +20,4 @@
   {...$$restProps}
 >
   <slot />
-</DropdownMenuPrimitive.Label>
+</DropdownMenuPrimitive.GroupHeading>

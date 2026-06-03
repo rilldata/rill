@@ -23,7 +23,7 @@ on:
 
 jobs:
   setup:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
 
@@ -67,12 +67,14 @@ jobs:
           FILTER_LOCAL: ${{ steps.filter.outputs.local }}
 
   e2e:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: setup
     strategy:
       fail-fast: false
       matrix:
         name: ${{ fromJson(needs.setup.outputs.matrix) }}
+    env:
+      RILL_ADMIN_FRONTEND_URL: http://localhost:3000
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -81,12 +83,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
+          cache: 'npm'
 
       - name: NPM Install
-        run: npm install
-        # https://typicode.github.io/husky/how-to.html#ci-server-and-docker
-        env:
-          HUSKY: 0
+        run: npm ci
 
       - name: Set up go for E2E
         uses: actions/setup-go@v5
@@ -110,7 +110,22 @@ jobs:
       - name: Install browser for UI tests
         run: |
           npx playwright@^1.50.1 install
-          npx playwright install-deps
+          # For pull requests, always use chrome
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            npx playwright install-deps chrome
+          # For manual workflow runs, use the selected browser
+          elif [ "${{ github.event.inputs.browser }}" == "all" ]; then
+            npx playwright install-deps
+          elif [ "${{ github.event.inputs.browser }}" == "chrome" ]; then
+            npx playwright install-deps chrome
+          elif [ "${{ github.event.inputs.browser }}" == "safari" ]; then
+            npx playwright install-deps safari
+          elif [ "${{ github.event.inputs.browser }}" == "firefox" ]; then
+            npx playwright install-deps firefox
+          else
+            echo "Invalid browser choice: ${{ github.event.inputs.browser }}"
+            exit 1
+          fi
 
       - name: Authenticate GCloud
         uses: google-github-actions/auth@v2

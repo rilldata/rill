@@ -24,7 +24,13 @@
   export let dimTooltipEntries: DimTooltipEntry[] = [];
   export let deltaLabel: string | null;
   export let deltaPositive: boolean;
+  /** When true, an increase in value is rendered as the negative (red) color. */
+  export let lowerIsBetter: boolean = false;
   export let formatter: (value: number | null) => string;
+
+  // Arrow direction and sign track the actual value change. Color tracks
+  // whether the change is favorable, which `lowerIsBetter` flips.
+  $: deltaIsFavorable = lowerIsBetter ? !deltaPositive : deltaPositive;
 
   const GAP = 8;
 
@@ -65,17 +71,22 @@
       </div>
       {#each dimTooltipEntries as entry (entry.label)}
         <div class="dimension-entry">
-          <span class="dimension-dot" style:background-color={entry.color} />
+          <span class="dimension-dot" style:background-color={entry.color}
+          ></span>
           <span class="dimension-label">{entry.label}</span>
-          <span class="dimension-value">{formatter(entry.value)}</span>
+          <span class="dimension-value" class:italic={entry.value === null}
+            >{formatter(entry.value)}</span
+          >
         </div>
       {/each}
     </div>
   {:else if showComparison}
     <div class="time-comparison">
       <div class="period current">
-        <span class="value primary-value" aria-label="main value"
-          >{formatter(currentValue)}</span
+        <span
+          class="value primary-value"
+          aria-label="main value"
+          class:italic={currentValue === null}>{formatter(currentValue)}</span
         >
         <span class="date">
           {formatGrainBucket(currentTs, timeGranularity, interval)}</span
@@ -83,12 +94,14 @@
       </div>
 
       <div class="divider">
-        <div class="divider-line" />
+        <div class="divider-line"></div>
         <span class="vs-badge">vs</span>
       </div>
 
       <div class="period comparison">
-        <span class="value">{formatter(comparisonValue)}</span>
+        <span class="value" class:italic={comparisonValue === null}
+          >{formatter(comparisonValue)}</span
+        >
         <span class="date">
           {#if comparisonTs}
             {formatGrainBucket(
@@ -104,8 +117,8 @@
     {#if absoluteDelta !== null && deltaLabel}
       <div
         class="delta-footer"
-        class:positive={deltaPositive}
-        class:negative={!deltaPositive}
+        class:positive={deltaIsFavorable}
+        class:negative={!deltaIsFavorable}
       >
         <span class="delta-arrow">{deltaPositive ? "▲" : "▼"}</span>
         <span class="delta-absolute"
@@ -116,8 +129,10 @@
     {/if}
   {:else}
     <div class="simple-tooltip">
-      <span class="simple-value" aria-label="main value"
-        >{formatter(currentValue)}</span
+      <span
+        class="simple-value"
+        aria-label="main value"
+        class:italic={currentValue === null}>{formatter(currentValue)}</span
       >
       <span class="simple-date">
         {formatGrainBucket(currentTs, timeGranularity, interval)}

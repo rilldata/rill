@@ -27,6 +27,12 @@ func (t *Navigate) Spec() *mcp.Tool {
 		Name:        NavigateName,
 		Title:       "Navigate UI",
 		Description: "Navigate to a specific UI element in the Rill UI. Supported kinds: 'file', 'explore', 'canvas'.",
+		Annotations: &mcp.ToolAnnotations{
+			DestructiveHint: boolPtr(false),
+			IdempotentHint:  true,
+			OpenWorldHint:   boolPtr(false),
+			ReadOnlyHint:    true,
+		},
 		Meta: map[string]any{
 			"openai/toolInvocation/invoking": "Navigating...",
 			"openai/toolInvocation/invoked":  "Navigated",

@@ -96,6 +96,17 @@ export class FunnelChartComponent extends BaseChart<FunnelCanvasChartSpec> {
         ],
       },
     },
+    percentMode: {
+      type: "switcher_tab",
+      label: "Percent of",
+      meta: {
+        default: "top",
+        options: [
+          { label: "Top", value: "top" },
+          { label: "Previous", value: "previous" },
+        ],
+      },
+    },
   };
 
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
@@ -258,6 +269,7 @@ export class FunnelChartComponent extends BaseChart<FunnelCanvasChartSpec> {
       mode: "width",
       color: "stage",
       breakdownMode: "dimension",
+      percentMode: "top",
     };
   }
 }

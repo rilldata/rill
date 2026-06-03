@@ -82,13 +82,28 @@ Supports ai resolvers only as of now.
 
   - **option 4** - _[object]_ - Uses a file-matching pattern (glob) to query data from a connector.
 
-    - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
+    - **`glob`** - _[oneOf]_ - Simple path/glob pattern or path/glob patternwith advanced options . _(required)_
 
-      - **option 1** - _[string]_ - A simple file path/glob pattern as a string.
+      - **option 1** - _[string]_ - Glob pattern used to match files or directories in the object store.
 
-      - **option 2** - _[object]_ - An object-based configuration for specifying a file path/glob pattern with advanced options.
+      - **option 2** - _[object]_ - Configuration for specifying a file path/glob pattern with advanced options.
 
-    - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
+        - **`connector`** - _[string]_ - Specifies the object store connector to use (e.g. "s3", "gcs"). If not provided, it is inferred from the scheme of the path. 
+
+        - **`path`** - _[string]_ - Glob pattern used to match files or directories in the object store. _(required)_
+
+        - **`start`** - _[string]_ - Defines the lower bound (inclusive) for partition filtering. Only partitions with paths greater than or equal to this value are considered. 
+
+        - **`end`** - _[string]_ - Defines the upper bound (exclusive) for partition filtering. Only partitions with paths less than this value are considered. 
+
+        - **`last`** - _[integer]_ - Sets a lower bound based on the Nth partition from the end of the lexicographically sorted, successfully processed partitions. Only partitions after this point are included. 
+
+        - **`partition`** - _[string]_ - Controls how matched files are grouped: - "file" (default) : Each matched path is returned as a row. Use the glob pattern to match files or directories at the level you want (for example, file-level or directory-level). - "directory": This mode is deprecated. Instead, use "file" with a glob that directly matches the directory level you want. - "hive": groups files by directory and extracts Hive-style partition values from the path as columns.
+ 
+
+        - **`rollup_files`** - _[boolean]_ - If true, includes a "files" array listing all files in each partition. Only applicable when using "directory" or "hive" partitioning. 
+
+        - **`transform_sql`** - _[string]_ - Optional DuckDB SQL query used to transform the results. The resolved data is available as a table referenced using `{{ .table }}`. 
 
   - **option 5** - _[object]_ - Uses the status of a resource as data.
 

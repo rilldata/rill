@@ -8,9 +8,10 @@ import {
 } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
 import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
+import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { convertISOStringToJSDateWithSameTimeAsSelectedTimeZone } from "@rilldata/web-common/lib/time/timezone";
-import type { ColumnDef } from "@tanstack/svelte-table";
+import type { ColumnDef } from "tanstack-table-8-svelte-5";
 import { timeFormat } from "d3-time-format";
 import type { ComponentType, SvelteComponent } from "svelte";
 import PivotDeltaCell from "./PivotDeltaCell.svelte";
@@ -116,9 +117,17 @@ function createColumnDefinitionForDimensions(
           [dimensionNames[level]]: value,
         });
 
+        const dimensionPath = {
+          ...colValuePair,
+          [dimensionNames[level]]: value,
+        };
+
         return {
           header: sanitizeHeaderValue(displayValue),
           columns: nestedColumns,
+          meta: {
+            dimensionPath,
+          },
         };
       })
       .filter((column) => column.columns.length > 0);
@@ -187,8 +196,10 @@ export type MeasureColumnProps = Array<{
   formatter: (
     value: string | number | null | undefined,
   ) => string | (null | undefined);
+  tooltipFormatter: (value: unknown) => string | null | undefined;
   name: string;
   type: MeasureType;
+  lowerIsBetter: boolean;
 }>;
 export function getMeasureColumnProps(
   config: PivotDataStoreConfig,
@@ -218,14 +229,28 @@ export function getMeasureColumnProps(
       console.warn(`Measure ${m} not found in config.allMeasures`);
     }
 
+    const tooltipFormatter: (value: unknown) => string | null | undefined =
+      type === "comparison_percent"
+        ? (v) =>
+            v != null
+              ? numberPartsToString(
+                  formatMeasurePercentageDifference(v as number),
+                )
+              : undefined
+        : measure
+          ? createMeasureValueFormatter<null | undefined>(measure, "tooltip")
+          : (v) => (v != null ? String(v) : undefined);
+
     return {
       label: label || measure?.displayName || measureName,
       formatter: measure
         ? createMeasureValueFormatter<null | undefined>(measure)
         : (v: string | number | null | undefined) => v?.toString(),
+      tooltipFormatter,
       name: m,
       type,
       icon,
+      lowerIsBetter: measure?.lowerIsBetter ?? false,
     };
   });
 }
@@ -297,12 +322,14 @@ function getFlatColumnDef(
         accessorFn: (row) => row[d.name],
         header: d.label || d.name,
         cell: ({ getValue }) => {
-          return formatDimensionValue(
+          const value = formatDimensionValue(
             getValue() as string,
             i,
             config.time,
             rowDimensionNames,
           );
+          if (value === null) return "null";
+          return value;
         },
       };
     },
@@ -315,6 +342,7 @@ function getFlatColumnDef(
       name: m.name,
       meta: {
         icon: m.icon,
+        tooltipFormatter: m.tooltipFormatter,
       },
       cell: (info) => {
         const measureValue = info.getValue() as number | null | undefined;
@@ -330,11 +358,13 @@ function getFlatColumnDef(
                 ? formatMeasurePercentageDifference(measureValue)
                 : null,
             inTable: true,
+            lowerIsBetter: m.lowerIsBetter,
           });
         } else if (m.type === "comparison_delta") {
           return cellComponent(PivotDeltaCell, {
             formattedValue: m.formatter(measureValue),
             value: measureValue,
+            lowerIsBetter: m.lowerIsBetter,
           });
         }
         const value = m.formatter(measureValue);
@@ -490,6 +520,7 @@ function getNestedColumnDef(
         name: m.name,
         meta: {
           icon: m.icon,
+          tooltipFormatter: m.tooltipFormatter,
         },
         cell: (info) => {
           const measureValue = info.getValue() as number | null | undefined;
@@ -509,11 +540,13 @@ function getNestedColumnDef(
                   ? formatMeasurePercentageDifference(measureValue)
                   : null,
               inTable: true,
+              lowerIsBetter: m.lowerIsBetter,
             });
           } else if (m.type === "comparison_delta") {
             return cellComponent(PivotDeltaCell, {
               formattedValue: m.formatter(measureValue),
               value: measureValue,
+              lowerIsBetter: m.lowerIsBetter,
             });
           }
           const value = m.formatter(measureValue);

@@ -47,18 +47,20 @@
 </script>
 
 {#if manageProject}
-  <DropdownMenu bind:open typeahead={false}>
-    <DropdownMenuTrigger asChild let:builder>
-      <Button
-        builders={[builder]}
-        compact
-        square
-        type="secondary"
-        label="Home bookmark dropdown"
-        active={open || isHomeBookmarkActive}
-      >
-        <HomeBookmark size="16px" className="flex-none" />
-      </Button>
+  <DropdownMenu bind:open>
+    <DropdownMenuTrigger>
+      {#snippet child({ props })}
+        <Button
+          {...props}
+          compact
+          square
+          type="secondary"
+          label="Home bookmark dropdown"
+          active={open || isHomeBookmarkActive}
+        >
+          <HomeBookmark size="16px" className="flex-none" />
+        </Button>
+      {/snippet}
     </DropdownMenuTrigger>
     <DropdownMenuContent class="w-[330px]">
       {#if homeBookmark}
@@ -74,7 +76,7 @@
             href={fullHomeBookmarkUrl}
             class="flex flex-row gap-x-2 w-full min-h-7"
             aria-label="Home Bookmark Entry"
-            on:click={goToDashboardHome}
+            onclick={goToDashboardHome}
           >
             <HomeBookmark size="16px" />
             <div class="flex flex-col gap-y-0.5">
@@ -88,7 +90,7 @@
         </DropdownMenuItem>
       {/if}
       <DropdownMenuSeparator />
-      <DropdownMenuItem on:click={onCreate}>
+      <DropdownMenuItem onclick={onCreate}>
         <div class="flex flex-row gap-x-2">
           <HomeBookmarkPlus size="16px" />
           <div>
@@ -104,26 +106,28 @@
     </DropdownMenuContent>
   </DropdownMenu>
 {:else}
-  <Tooltip.Root portal="body">
-    <Tooltip.Trigger asChild let:builder>
-      <Button
-        type="secondary"
-        compact
-        preload={false}
-        href={fullHomeBookmarkUrl}
-        onClick={goToDashboardHome}
-        class="border border-primary-300"
-        builders={[builder]}
-        label="Go to home bookmark"
-        active={isHomeBookmarkActive}
-      >
-        <HomeBookmark
-          size="16px"
-          className={isHomeBookmarkActive
-            ? "text-primary-600"
-            : "text-primary-800"}
-        />
-      </Button>
+  <Tooltip.Root>
+    <Tooltip.Trigger>
+      {#snippet child({ props })}
+        <Button
+          {...props}
+          type="secondary"
+          compact
+          preload={false}
+          href={fullHomeBookmarkUrl}
+          onClick={goToDashboardHome}
+          class="border border-primary-300"
+          label="Go to home bookmark"
+          active={isHomeBookmarkActive}
+        >
+          <HomeBookmark
+            size="16px"
+            className={isHomeBookmarkActive
+              ? "text-primary-600"
+              : "text-primary-800"}
+          />
+        </Button>
+      {/snippet}
     </Tooltip.Trigger>
     <Tooltip.Content side="bottom">Return to dashboard home</Tooltip.Content>
   </Tooltip.Root>

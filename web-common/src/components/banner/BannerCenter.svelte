@@ -3,6 +3,10 @@
   import { type BannerEvent } from "@rilldata/web-common/lib/event-bus/events";
   import { onMount } from "svelte";
   import Banner from "./Banner.svelte";
+  import {
+    dismissBanner,
+    isBannerDismissed,
+  } from "@rilldata/web-common/components/banner/banner-dismiss.ts";
 
   let banners: BannerEvent[] = [];
 
@@ -16,9 +20,7 @@
     banners = banners.sort((a, b) => a.priority - b.priority);
   });
 
-  const unsubscribeRemoveBanner = eventBus.on("remove-banner", (bannerId) => {
-    banners = banners.filter((banner) => banner.id !== bannerId);
-  });
+  const unsubscribeRemoveBanner = eventBus.on("remove-banner", removeBanner);
 
   onMount(() => {
     return () => {
@@ -26,10 +28,22 @@
       unsubscribeRemoveBanner();
     };
   });
+
+  function removeBanner(bannerId: string) {
+    banners = banners.filter((banner) => banner.id !== bannerId);
+  }
+
+  function handleDismiss(bannerEvent: BannerEvent) {
+    dismissBanner(bannerEvent.message.dismissible);
+    removeBanner(bannerEvent.id);
+  }
 </script>
 
-{#each banners as { message, id } (id)}
-  {#if message}
-    <Banner banner={message} />
+{#each banners as bannerEvent (bannerEvent.id)}
+  {#if bannerEvent.message && !isBannerDismissed(bannerEvent.message.dismissible)}
+    <Banner
+      banner={bannerEvent.message}
+      dismiss={() => handleDismiss(bannerEvent)}
+    />
   {/if}
 {/each}

@@ -33,7 +33,12 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	_ "embed"
 )
+
+//go:embed static/favicon.ico
+var favicon []byte
 
 var (
 	_minCliVersion         = version.Must(version.NewVersion("0.20.0"))
@@ -226,6 +231,13 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 		transcoder.ServeHTTP(w, r)
 	}))
 
+	// Serve favicon so Google's favicon service can discover it
+	mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/x-icon")
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+		_, _ = w.Write(favicon)
+	})
+
 	// Add Prometheus
 	if s.opts.ServePrometheus {
 		mux.Handle("/metrics", promhttp.Handler())
@@ -273,6 +285,7 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	// Wrap mux with final middleware and return
 	handler := s.authenticator.CookieToAuthHeader(mux) // Convert auth cookies to Authorization headers
 	handler = middleware.TraceMiddleware(handler)      // OpenTelemetry tracing
+	handler = middleware.CacheControlMiddleware(handler)
 	return handler, nil
 }
 
@@ -398,7 +411,8 @@ func (s *Server) jwtAttributesForService(ctx context.Context, serviceID string, 
 
 func timeoutSelector(fullMethodName string) time.Duration {
 	if strings.HasPrefix(fullMethodName, "/rill.admin.v1.AIService") {
-		return time.Minute * 2
+		// NOTE: The runtime usually sets a lower timeout through its AILLMTimeoutSeconds config, so this is more of a hard upper bound.
+		return time.Minute * 10
 	}
 	if fullMethodName == "/rill.admin.v1.AdminService/DeleteProject" {
 		return time.Minute * 4
@@ -444,6 +458,9 @@ func mapGRPCError(err error) error {
 	}
 	if errors.Is(err, database.ErrValidation) {
 		return status.Error(codes.InvalidArgument, err.Error())
+	}
+	if errors.Is(err, admin.ErrDeploymentNotReady) {
+		return status.Error(codes.FailedPrecondition, err.Error())
 	}
 	return status.Error(codes.Internal, err.Error())
 }

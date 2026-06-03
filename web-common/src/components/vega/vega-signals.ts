@@ -9,16 +9,17 @@ export function resolveSignalField(value: unknown, field: string) {
   return undefined;
 }
 
-export function resolveSignalTimeField(value: unknown) {
-  /**
-   * Time fields end with `_ts`
-   * We iterate over the keys of the object and return the first key that ends with `_ts`
-   * */
-  if (typeof value === "object" && value !== null) {
-    for (const key in value) {
-      if (key.endsWith("_ts")) {
-        const ts = resolveSignalField(value, key);
+export function resolveSignalTimeField(value: unknown, temporalField?: string) {
+  if (typeof value !== "object" || value === null) {
+    return undefined;
+  }
 
+  // When a temporal field name is provided, look for an exact match or
+  // a timeUnit-prefixed match (e.g. "yearmonthdate_timestamp" for field "timestamp")
+  if (temporalField) {
+    for (const key in value) {
+      if (key === temporalField || key.endsWith(`_${temporalField}`)) {
+        const ts = resolveSignalField(value, key);
         if (ts !== undefined) {
           return new Date(ts);
         }
@@ -31,24 +32,26 @@ export function resolveSignalTimeField(value: unknown) {
 export function resolveSignalIntervalField(
   value: unknown,
 ): { start: Date; end: Date } | undefined {
+  const checkAndCreateTimeRange = (
+    arr: unknown,
+  ): { start: Date; end: Date } | undefined => {
+    if (Array.isArray(arr) && arr.length === 2) {
+      const [start, end] = arr;
+      return { start: new Date(start), end: new Date(end) };
+    }
+    return undefined;
+  };
+
+  // Handle raw [date1, date2] array (e.g. from view.signal() on a brush temporal signal)
+  if (Array.isArray(value)) {
+    return checkAndCreateTimeRange(value);
+  }
+
   /**
    * Time range fields can be either 'ts' or end with '_ts'
    * We check for both cases and return a TimeRange if a valid array of two timestamps is found.
    */
   if (typeof value === "object" && value !== null) {
-    const checkAndCreateTimeRange = (
-      arr: unknown,
-    ): { start: Date; end: Date } | undefined => {
-      if (Array.isArray(arr) && arr.length === 2) {
-        const [start, end] = arr;
-        return {
-          start: new Date(start),
-          end: new Date(end),
-        };
-      }
-      return undefined;
-    };
-
     // Check for 'ts' key first
     if ("ts" in value) {
       return checkAndCreateTimeRange(value["ts"]);
@@ -60,6 +63,13 @@ export function resolveSignalIntervalField(
         const timeRange = checkAndCreateTimeRange(value[key]);
         if (timeRange) return timeRange;
       }
+    }
+
+    // Fallback: check any key with a 2-element array (handles arbitrary field names
+    // from Vega-Lite brush selections where the key is the actual field name)
+    for (const key in value) {
+      const timeRange = checkAndCreateTimeRange(value[key]);
+      if (timeRange) return timeRange;
     }
   }
   return undefined;

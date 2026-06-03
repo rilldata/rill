@@ -47,8 +47,8 @@
 </script>
 
 <AlertDialog bind:open>
-  <AlertDialogTrigger asChild let:builder>
-    <slot {builder} />
+  <AlertDialogTrigger>
+    <slot />
   </AlertDialogTrigger>
   <AlertDialogContent>
     <AlertDialogHeader>
@@ -61,7 +61,11 @@
         <div class="mt-1">
           Type <b>{confirmText}</b> in the box below to confirm:
         </div>
-        <Input bind:value={confirmInput} id="confirmation" label="" />
+        <Input
+          bind:value={confirmInput}
+          id="confirmation"
+          label="confirmation"
+        />
         {#if error}
           <div class="text-red-500 text-sm py-px">
             {error}

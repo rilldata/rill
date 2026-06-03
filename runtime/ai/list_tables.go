@@ -40,6 +40,12 @@ func (t *ListTables) Spec() *mcp.Tool {
 		Name:        ListTablesName,
 		Title:       "List Tables",
 		Description: "List tables and views in an OLAP connector.",
+		Annotations: &mcp.ToolAnnotations{
+			DestructiveHint: boolPtr(false),
+			IdempotentHint:  true,
+			OpenWorldHint:   boolPtr(false),
+			ReadOnlyHint:    true,
+		},
 		Meta: map[string]any{
 			"openai/toolInvocation/invoking": "Listing tables...",
 			"openai/toolInvocation/invoked":  "Listed tables",

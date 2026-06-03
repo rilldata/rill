@@ -2,7 +2,10 @@ import {
   type V1GetAIMessageResponse,
   type V1Message,
 } from "@rilldata/web-common/runtime-client";
-import type { Schema as MetricsResolverQuery } from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
+import type {
+  Schema as MetricsResolverQuery,
+  TimeRange,
+} from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
 import {
   MessageType,
   ToolName,
@@ -36,26 +39,14 @@ export async function fetchMessage(
     const toolCallResp = (await resp.json()) as V1GetAIMessageResponse;
 
     // 200 response should always have a message.
-    return toolCallResp.message!;
+    return {
+      message: toolCallResp.message!,
+      result: toolCallResp.result,
+    };
   } catch (e) {
-    const apiError = e.response?.data?.message ?? "";
-    switch (true) {
-      case apiError.includes("failed to find the conversation"):
-        throw error(
-          404,
-          new Error(
-            "Failed to get conversation. Check if you have access to it.",
-          ),
-        );
-
-      case apiError.includes("failed to find the call"):
-        throw error(
-          404,
-          new Error(
-            "Failed to get tool call for query. Check if you have access to it or if the call was deleted.",
-          ),
-        );
-    }
+    const apiError = e.response?.data?.message;
+    // Rethrow api error. Top level message will just be InternalError
+    if (apiError) throw error(400, new Error(apiError));
     throw e;
   }
 }
@@ -84,6 +75,25 @@ export function maybeGetMetricsResolverQueryFromMessage(message: V1Message) {
   }
 
   return rawJson as MetricsResolverQuery;
+}
+
+export function getResolvedTimeRangesFromMessage(
+  resultMessage: V1Message | undefined,
+): {
+  resolvedTimeRange?: TimeRange;
+  resolvedComparisonTimeRange?: TimeRange;
+} {
+  if (!resultMessage?.contentData) return {};
+  try {
+    const resultData = JSON.parse(resultMessage.contentData);
+    return {
+      resolvedTimeRange: resultData.resolved_time_range,
+      resolvedComparisonTimeRange: resultData.resolved_comparison_time_range,
+    };
+  } catch (e) {
+    console.error("Failed to parse result message JSON", e);
+  }
+  return {};
 }
 
 const closingRoundBracketRegex = /\)$/;

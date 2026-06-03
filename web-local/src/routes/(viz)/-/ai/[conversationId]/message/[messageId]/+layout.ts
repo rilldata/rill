@@ -4,7 +4,7 @@ import { fetchMessage } from "@rilldata/web-common/features/chat/core/citation-u
 export async function load({ params: { conversationId, messageId } }) {
   const client = getLocalRuntimeClient();
 
-  const message = await fetchMessage(
+  const { message, result } = await fetchMessage(
     { host: client.host, instanceId: client.instanceId },
     conversationId,
     messageId,
@@ -12,5 +12,6 @@ export async function load({ params: { conversationId, messageId } }) {
 
   return {
     message,
+    result,
   };
 }

@@ -1,12 +1,15 @@
 export enum TDDChart {
   DEFAULT = "default",
+  LINE = "line",
   STACKED_BAR = "stacked_bar",
   GROUPED_BAR = "grouped_bar",
   STACKED_AREA = "stacked_area",
 }
 
-export type TDDAlternateCharts = Exclude<TDDChart, TDDChart.DEFAULT>;
-export type TDDBarCharts = Exclude<TDDAlternateCharts, TDDChart.STACKED_AREA>;
+/** Returns true when the chart type is the adaptive/auto-switching mode. */
+export function isAdaptiveChartType(type: TDDChart): boolean {
+  return type === TDDChart.DEFAULT;
+}
 
 export interface TDDState {
   /***

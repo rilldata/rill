@@ -1,31 +1,32 @@
 <script lang="ts" context="module">
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
+  import { onMount } from "svelte";
   import Toolbar from "./Toolbar.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import { hideBorder } from "./layout-util";
-  import { onMount } from "svelte";
 </script>
 
 <script lang="ts">
   import { get } from "svelte/store";
 
-  const observer = new IntersectionObserver(
-    ([entry]) => {
-      if (entry.isIntersecting) {
-        component.visible.set(true);
-        observer.unobserve(container);
-      }
-    },
-    {
-      root: document.querySelector(".dashboard-theme-boundary"),
-      rootMargin: "120px",
-      threshold: 0,
-    },
-  );
+  let observer: IntersectionObserver;
 
   let mounted = false;
 
   onMount(() => {
+    observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          component.visible.set(true);
+          observer.unobserve(container);
+        }
+      },
+      {
+        root: container.closest(".dashboard-theme-boundary"),
+        rootMargin: "120px",
+        threshold: 0,
+      },
+    );
     mounted = true;
     observer.observe(container);
   });
@@ -44,6 +45,7 @@
     }
   }
   export let selected = false;
+  export let active = false;
   export let ghost = false;
   export let allowPointerEvents = true;
   export let editable = false;
@@ -65,6 +67,7 @@
   role="presentation"
   id={componentName}
   class:selected
+  class:active
   class:editable
   class:opacity-20={ghost}
   style:pointer-events={!allowPointerEvents ? "none" : "auto"}
@@ -84,10 +87,10 @@
   <div
     role="presentation"
     class="size-full grow flex flex-col"
-    on:mousedown={onMouseDown}
+    onmousedown={onMouseDown}
   >
     {#if component}
-      <svelte:component this={component.component} {component} />
+      <svelte:component this={component.component} {component} {editable} />
     {:else}
       <div class="size-full grid place-content-center">
         <LoadingSpinner size="36px" />
@@ -101,11 +104,17 @@
     @apply shadow-md outline;
   }
 
-  .component-card:has(.component-error) {
+  .component-card:has(:global(.component-error)) {
     @apply outline-destructive;
   }
 
   .selected {
+    @apply shadow-md outline-primary-400 outline-[1.5px];
+
+    outline-style: solid !important;
+  }
+
+  .active {
     @apply shadow-md outline-primary-400 outline-[1.5px];
 
     outline-style: solid !important;

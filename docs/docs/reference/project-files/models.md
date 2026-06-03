@@ -57,7 +57,7 @@ _[string]_ - Raw SQL query to run against source _(required)_
 
 ### `pre_exec`
 
-_[string]_ - Refers to SQL queries to run before the main query, available for DuckDB-based and ClickHouse-based models. (optional). Ensure pre_exec queries are idempotent. Use IF NOT EXISTS statements when applicable. 
+_[string]_ - SQL queries to run on the output OLAP engine (DuckDB or ClickHouse) before the main query. (optional). Ensure pre_exec queries are idempotent. Use IF NOT EXISTS statements when applicable. 
 
 ```yaml
 pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES)
@@ -65,7 +65,7 @@ pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=po
 
 ### `post_exec`
 
-_[string]_ - Refers to a SQL query that is run after the main query, available for DuckDB-based and ClickHouse-based models. (optional). Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable. 
+_[string]_ - SQL query to run on the output OLAP engine (DuckDB or ClickHouse) after the main query. (optional). Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable. 
 
 ```yaml
 post_exec: DETACH DATABASE IF EXISTS postgres_db
@@ -143,13 +143,28 @@ _[oneOf]_ - Refers to the explicitly defined state of your model, cannot be used
 
   - **option 4** - _[object]_ - Uses a file-matching pattern (glob) to query data from a connector.
 
-    - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
+    - **`glob`** - _[oneOf]_ - Simple path/glob pattern or path/glob patternwith advanced options . _(required)_
 
-      - **option 1** - _[string]_ - A simple file path/glob pattern as a string.
+      - **option 1** - _[string]_ - Glob pattern used to match files or directories in the object store.
 
-      - **option 2** - _[object]_ - An object-based configuration for specifying a file path/glob pattern with advanced options.
+      - **option 2** - _[object]_ - Configuration for specifying a file path/glob pattern with advanced options.
 
-    - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
+        - **`connector`** - _[string]_ - Specifies the object store connector to use (e.g. "s3", "gcs"). If not provided, it is inferred from the scheme of the path. 
+
+        - **`path`** - _[string]_ - Glob pattern used to match files or directories in the object store. _(required)_
+
+        - **`start`** - _[string]_ - Defines the lower bound (inclusive) for partition filtering. Only partitions with paths greater than or equal to this value are considered. 
+
+        - **`end`** - _[string]_ - Defines the upper bound (exclusive) for partition filtering. Only partitions with paths less than this value are considered. 
+
+        - **`last`** - _[integer]_ - Sets a lower bound based on the Nth partition from the end of the lexicographically sorted, successfully processed partitions. Only partitions after this point are included. 
+
+        - **`partition`** - _[string]_ - Controls how matched files are grouped: - "file" (default) : Each matched path is returned as a row. Use the glob pattern to match files or directories at the level you want (for example, file-level or directory-level). - "directory": This mode is deprecated. Instead, use "file" with a glob that directly matches the directory level you want. - "hive": groups files by directory and extracts Hive-style partition values from the path as columns.
+ 
+
+        - **`rollup_files`** - _[boolean]_ - If true, includes a "files" array listing all files in each partition. Only applicable when using "directory" or "hive" partitioning. 
+
+        - **`transform_sql`** - _[string]_ - Optional DuckDB SQL query used to transform the results. The resolved data is available as a table referenced using `{{ .table }}`. 
 
   - **option 5** - _[object]_ - Uses the status of a resource as data.
 
@@ -226,13 +241,28 @@ _[oneOf]_ - Refers to the how your data is partitioned, cannot be used with stat
 
   - **option 4** - _[object]_ - Uses a file-matching pattern (glob) to query data from a connector.
 
-    - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
+    - **`glob`** - _[oneOf]_ - Simple path/glob pattern or path/glob patternwith advanced options . _(required)_
 
-      - **option 1** - _[string]_ - A simple file path/glob pattern as a string.
+      - **option 1** - _[string]_ - Glob pattern used to match files or directories in the object store.
 
-      - **option 2** - _[object]_ - An object-based configuration for specifying a file path/glob pattern with advanced options.
+      - **option 2** - _[object]_ - Configuration for specifying a file path/glob pattern with advanced options.
 
-    - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
+        - **`connector`** - _[string]_ - Specifies the object store connector to use (e.g. "s3", "gcs"). If not provided, it is inferred from the scheme of the path. 
+
+        - **`path`** - _[string]_ - Glob pattern used to match files or directories in the object store. _(required)_
+
+        - **`start`** - _[string]_ - Defines the lower bound (inclusive) for partition filtering. Only partitions with paths greater than or equal to this value are considered. 
+
+        - **`end`** - _[string]_ - Defines the upper bound (exclusive) for partition filtering. Only partitions with paths less than this value are considered. 
+
+        - **`last`** - _[integer]_ - Sets a lower bound based on the Nth partition from the end of the lexicographically sorted, successfully processed partitions. Only partitions after this point are included. 
+
+        - **`partition`** - _[string]_ - Controls how matched files are grouped: - "file" (default) : Each matched path is returned as a row. Use the glob pattern to match files or directories at the level you want (for example, file-level or directory-level). - "directory": This mode is deprecated. Instead, use "file" with a glob that directly matches the directory level you want. - "hive": groups files by directory and extracts Hive-style partition values from the path as columns.
+ 
+
+        - **`rollup_files`** - _[boolean]_ - If true, includes a "files" array listing all files in each partition. Only applicable when using "directory" or "hive" partitioning. 
+
+        - **`transform_sql`** - _[string]_ - Optional DuckDB SQL query used to transform the results. The resolved data is available as a table referenced using `{{ .table }}`. 
 
   - **option 5** - _[object]_ - Uses the status of a resource as data.
 
@@ -360,6 +390,30 @@ _[object]_ - to define the properties of output
   - **`unique_key`** - _[array of string]_ - List of columns that uniquely identify a row for merge strategy 
 
   - **`partition_by`** - _[string]_ - Column or expression to partition the table by 
+
+  - **`pre_exec`** - _[string]_ - SQL query to run on the output OLAP engine (DuckDB or ClickHouse) before the main query. (optional). Ensure pre_exec queries are idempotent. Use IF NOT EXISTS statements when applicable. 
+
+```yaml
+pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES)
+```
+
+  - **`post_exec`** - _[string]_ - SQL query to run on the output OLAP engine (DuckDB or ClickHouse) after the main query. (optional). Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable. 
+
+```yaml
+post_exec: DETACH DATABASE IF EXISTS postgres_db
+```
+
+  - **`create_secrets_from_connectors`** - _[string, array]_ - List of connector names for which temporary secrets should be created on the output OLAP engine before executing the SQL. Only applies when the output connector is DuckDB. This allows DuckDB-based models to access cloud storage (S3, GCS, Azure) using credentials from named connectors. 
+
+```yaml
+create_secrets_from_connectors: my_s3_connector
+```
+
+```yaml
+create_secrets_from_connectors:
+    - my_s3_connector
+    - my_other_s3_connector
+```
 
   **Additional properties for `output` when `connector` is `clickhouse`**
 
@@ -554,24 +608,6 @@ _[string]_ - Path to the data source.
 ### `format`
 
 _[string]_ - Format of the data source (e.g., csv, json, parquet). 
-
-### `pre_exec`
-
-_[string]_ - refers to SQL queries to run before the main query, available for DuckDB-based and ClickHouse-based models. _(optional)_. Ensure `pre_exec` queries are idempotent. Use `IF NOT EXISTS` statements when applicable. 
-
-### `post_exec`
-
-_[string]_ - refers to a SQL query that is run after the main query, available for DuckDB-based and ClickHouse-based models. _(optional)_. Ensure `post_exec` queries are idempotent. Use `IF EXISTS` statements when applicable. 
-
-```yaml
-pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES);
-sql: SELECT * FROM postgres_query('postgres_db', 'SELECT * FROM USERS')
-post_exec: DETACH DATABASE IF EXISTS postgres_db
-```
-
-### `create_secrets_from_connectors`
-
-_[string, array]_ - List of connector names for which temporary secrets should be created before executing the SQL. 
 
 ## Additional properties when `connector` is `gcs` or [named connector](./connectors#gcs) of gcs
 

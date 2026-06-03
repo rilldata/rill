@@ -24,7 +24,7 @@ import (
 
 var (
 	// Maximum size of the SQLite snapshot for backup.
-	backupMaxSizeBytes int64 = 1024 * 1024 * 1024 // 1 GB
+	backupMaxSizeBytes int64 = 5 * 1024 * 1024 * 1024 // 5 GB
 
 	// Max time a backup may run for.
 	backupMaxDuration = 10 * time.Minute
@@ -38,7 +38,7 @@ var (
 		// Table `instances`.
 		// It excludes the JSON columns due to a type mess up: the columns are TEXT, but we've been saving BLOB values to them.
 		// SQLite weirdly allows this, but DuckDB chokes on it.
-		"instances": "SELECT * EXCLUDE (variables, project_variables, feature_flags, annotations, connectors, project_connectors, public_paths) FROM instances",
+		"instances": "SELECT * EXCLUDE (variables, project_variables, system_variables, feature_flags, annotations, connectors, project_connectors, public_paths) FROM instances",
 		// Table `instance_health`
 		"instance_health": "SELECT * FROM instance_health",
 		// Table `catalogv2` (NOTE: the `data` column has already been converted to JSON in rewriteSnapshotForAnalytics below).

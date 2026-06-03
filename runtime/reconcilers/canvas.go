@@ -9,8 +9,6 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pathutil"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -113,6 +111,9 @@ func (r *CanvasReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	validateErr := checkRefs(ctx, r.C, self.Meta.Refs)
 	if validateErr == nil {
 		validateErr = r.validateMetricsViewTimeConsistency(ctx, components)
+	}
+	if validateErr == nil {
+		validateErr = r.validateRequiredFilters(ctx, c.Spec, components)
 	}
 
 	// Capture the valid spec in the state
@@ -228,14 +229,10 @@ func (r *CanvasReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 		}
 	}
 
-	// Now build security rules based on the collected references
-	// First, allow access to all referenced metrics views
-	// Then, for each metrics view, add field access and row filter rules as needed
-	for mv := range refs.metricsViews {
-		// allow access to the referenced metrics view
-		conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: mv})
-	}
+	// Add the discovered refs to the condition resources.
+	conditionResources = append(conditionResources, refs.result()...)
 
+	// Now build security rules based on the collected references.
 	if len(conditionKinds) > 0 || len(conditionResources) > 0 {
 		rules = append(rules, &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_Access{
@@ -308,14 +305,67 @@ func (r *CanvasReconciler) validateMetricsViewTimeConsistency(ctx context.Contex
 			} else {
 				// Compare subsequent views with the first one
 				if firstDayOfWeek != mvSpec.FirstDayOfWeek {
-					return status.Errorf(codes.InvalidArgument, "metrics views %q and %q have inconsistent first_day_of_week", firstViewName, mvName)
+					return fmt.Errorf("metrics views %q and %q have inconsistent first_day_of_week", firstViewName, mvName)
 				} else if firstMonthOfYear != mvSpec.FirstMonthOfYear {
-					return status.Errorf(codes.InvalidArgument, "metrics views %q and %q have inconsistent first_month_of_year", firstViewName, mvName)
+					return fmt.Errorf("metrics views %q and %q have inconsistent first_month_of_year", firstViewName, mvName)
 				}
 			}
 		}
 	}
 
+	return nil
+}
+
+// validateRequiredFilters checks that every entry in spec.RequiredFilters is a
+// dimension or measure on at least one of the metrics views referenced by the
+// canvas' components. This catches typos in `filters.required` since the field
+// has no inline UI.
+//
+// If none of the referenced metrics views have a valid spec yet (still
+// reconciling, or all invalid), validation is skipped to avoid spurious
+// failures during initial reconciliation.
+func (r *CanvasReconciler) validateRequiredFilters(ctx context.Context, spec *runtimev1.CanvasSpec, components map[string]*runtimev1.Resource) error {
+	if spec == nil || len(spec.RequiredFilters) == 0 {
+		return nil
+	}
+
+	known := make(map[string]bool)
+	hasResolvedView := false
+	for _, component := range components {
+		if component == nil {
+			continue
+		}
+		for _, ref := range component.Meta.Refs {
+			if ref.Kind != runtime.ResourceKindMetricsView {
+				continue
+			}
+			mv, err := r.C.Get(ctx, ref, false)
+			if err != nil {
+				continue
+			}
+			mvSpec := mv.GetMetricsView().State.ValidSpec
+			if mvSpec == nil {
+				continue
+			}
+			hasResolvedView = true
+			for _, d := range mvSpec.Dimensions {
+				known[d.Name] = true
+			}
+			for _, m := range mvSpec.Measures {
+				known[m.Name] = true
+			}
+		}
+	}
+
+	if !hasResolvedView {
+		return nil
+	}
+
+	for _, name := range spec.RequiredFilters {
+		if !known[name] {
+			return fmt.Errorf("required filter %q is not a dimension or measure on any metrics view referenced by this canvas", name)
+		}
+	}
 	return nil
 }
 
@@ -328,6 +378,15 @@ type rendererRefs struct {
 	instanceID   string
 	claims       *runtime.SecurityClaims
 	metricsViews map[string]bool
+}
+
+// result returns the accumulated refs.
+func (r *rendererRefs) result() []*runtimev1.ResourceName {
+	refs := make([]*runtimev1.ResourceName, 0, len(r.metricsViews))
+	for mv := range r.metricsViews {
+		refs = append(refs, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: mv})
+	}
+	return refs
 }
 
 // populateRendererRefs discovers and tracks all metrics views referenced in the renderer properties.

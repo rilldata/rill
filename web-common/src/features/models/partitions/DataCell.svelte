@@ -1,11 +1,11 @@
 <script lang="ts">
   import type { V1ModelPartitionData } from "../../../runtime-client";
 
-  export let data: V1ModelPartitionData;
+  export let data: V1ModelPartitionData | undefined = undefined;
 </script>
 
 <div class="data-cell">
-  {#each Object.entries(data) as [key, value] (key)}
+  {#each Object.entries(data ?? {}) as [key, value] (key)}
     <div class="data-item">
       <span class="data-key">{key}:</span>
       <span class="data-value">{value}</span>

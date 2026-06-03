@@ -6,6 +6,7 @@ import ApacheDruid from "../../../components/icons/connectors/ApacheDruid.svelte
 import ApachePinot from "../../../components/icons/connectors/ApachePinot.svelte";
 import ClickHouse from "../../../components/icons/connectors/ClickHouse.svelte";
 import DuckDB from "../../../components/icons/connectors/DuckDB.svelte";
+import DuckLake from "../../../components/icons/connectors/DuckLake.svelte";
 import DeltaLake from "../../../components/icons/connectors/DeltaLake.svelte";
 import GoogleBigQuery from "../../../components/icons/connectors/GoogleBigQuery.svelte";
 import ApacheIceberg from "../../../components/icons/connectors/ApacheIceberg.svelte";
@@ -31,6 +32,7 @@ export const ICONS = {
   athena: AmazonAthena,
   redshift: AmazonRedshift,
   duckdb: DuckDB,
+  ducklake: DuckLake,
   motherduck: MotherDuck,
   postgres: Postgres,
   mysql: MySQL,

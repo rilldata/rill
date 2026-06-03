@@ -73,6 +73,12 @@ export function convertURLToExplorePreset(
     ) ?? [],
     (d) => d.name!,
   );
+  const allDimensions = getMapFromArray(
+    metricsView.dimensions?.filter((d) =>
+      explore.dimensions?.includes(d.name!),
+    ) ?? [],
+    (d) => d.name!,
+  );
 
   if (searchParams.has(ExploreStateURLParams.GzippedParams)) {
     searchParams = new URLSearchParams(
@@ -126,7 +132,7 @@ export function convertURLToExplorePreset(
 
   const { preset: trPreset, errors: trErrors } = fromTimeRangesParams(
     searchParams,
-    dimensions,
+    allDimensions,
   );
 
   Object.assign(preset, trPreset);
@@ -210,6 +216,19 @@ export function convertURLToExplorePreset(
       errors.push(
         getSingleFieldError("leaderboard context toggle", rawValue ?? ""),
       );
+    }
+  }
+
+  if (searchParams.has(ExploreStateURLParams.DynamicYAxisScale)) {
+    const raw = searchParams
+      .get(ExploreStateURLParams.DynamicYAxisScale)
+      ?.toLowerCase();
+    if (raw === "true" || raw === "1") {
+      preset.chartDynamicYAxis = true;
+    } else if (raw === "false" || raw === "0" || raw === "") {
+      preset.chartDynamicYAxis = false;
+    } else {
+      errors.push(getSingleFieldError("dynamic y-axis scale", raw ?? ""));
     }
   }
 
@@ -521,6 +540,12 @@ function fromExploreUrlParams(
     }
   }
 
+  if (searchParams.has(ExploreStateURLParams.ChartType)) {
+    preset.timeDimensionChartType = searchParams.get(
+      ExploreStateURLParams.ChartType,
+    ) as string;
+  }
+
   return { preset, errors };
 }
 
@@ -569,9 +594,10 @@ function fromPivotUrlParams(
   const errors: Error[] = [];
 
   if (searchParams.has(ExploreStateURLParams.PivotRows)) {
-    const rows = (
-      searchParams.get(ExploreStateURLParams.PivotRows) as string
-    ).split(",");
+    const rowsParam = searchParams.get(
+      ExploreStateURLParams.PivotRows,
+    ) as string;
+    const rows = rowsParam === "" ? [] : rowsParam.split(",");
     const validRows = rows.filter(
       (r) => dimensions.has(r) || r in FromURLParamTimeDimensionMap,
     );
@@ -583,9 +609,10 @@ function fromPivotUrlParams(
   }
 
   if (searchParams.has(ExploreStateURLParams.PivotColumns)) {
-    const cols = (
-      searchParams.get(ExploreStateURLParams.PivotColumns) as string
-    ).split(",");
+    const colsParam = searchParams.get(
+      ExploreStateURLParams.PivotColumns,
+    ) as string;
+    const cols = colsParam === "" ? [] : colsParam.split(",");
     const validCols = cols.filter(
       (c) =>
         dimensions.has(c) ||

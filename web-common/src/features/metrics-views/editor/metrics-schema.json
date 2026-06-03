@@ -97,6 +97,11 @@
           "unnest": {
             "type": "boolean",
             "description": "Allows multi-valued dimensions to be unnested, switching filters to 'contains' instead of exact match."
+          },
+          "tags": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Optional list of tags used to group this dimension in the explore dashboard's dimensions dropdown. Tags are case-sensitive and trimmed on read."
           }
         },
         "oneOf": [
@@ -195,6 +200,11 @@
           "valid_percent_of_total": {
             "type": "boolean",
             "description": "Indicates whether percent-of-total values should be rendered for this measure."
+          },
+          "tags": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Optional list of tags used to group this measure in the explore dashboard's measures dropdown. Tags are case-sensitive and trimmed on read."
           }
         },
         "required": ["expression"]

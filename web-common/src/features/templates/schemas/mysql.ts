@@ -5,6 +5,7 @@ export const mysqlSchema: MultiStepFormSchema = {
   type: "object",
   title: "MySQL",
   "x-category": "sqlStore",
+  "x-form-height": "tall",
   properties: {
     connection_mode: {
       type: "string",
@@ -77,6 +78,12 @@ export const mysqlSchema: MultiStepFormSchema = {
       title: "SSL mode",
       enum: ["DISABLED", "PREFERRED", "REQUIRED"],
       "x-placeholder": "Select SSL mode",
+    },
+    log_queries: {
+      type: "boolean",
+      title: "Log queries",
+      description: "Enable SQL query logging for debugging",
+      "x-advanced": true,
     },
     sql: {
       type: "string",

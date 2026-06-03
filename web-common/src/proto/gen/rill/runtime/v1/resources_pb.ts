@@ -438,6 +438,11 @@ export class ResourceMeta extends Message<ResourceMeta> {
   reconcileError = "";
 
   /**
+   * @generated from field: repeated string reconcile_warnings = 18;
+   */
+  reconcileWarnings: string[] = [];
+
+  /**
    * @generated from field: google.protobuf.Timestamp reconcile_on = 17;
    */
   reconcileOn?: Timestamp;
@@ -469,6 +474,7 @@ export class ResourceMeta extends Message<ResourceMeta> {
     { no: 12, name: "deleted_on", kind: "message", T: Timestamp, opt: true },
     { no: 16, name: "reconcile_status", kind: "enum", T: proto3.getEnumType(ReconcileStatus) },
     { no: 8, name: "reconcile_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 18, name: "reconcile_warnings", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 17, name: "reconcile_on", kind: "message", T: Timestamp },
     { no: 13, name: "renamed_from", kind: "message", T: ResourceName, opt: true },
   ]);
@@ -1138,6 +1144,13 @@ export class ModelState extends Message<ModelState> {
   testErrors: string[] = [];
 
   /**
+   * test_warnings contains warnings from the most recent test run, stored separately from execution warnings.
+   *
+   * @generated from field: repeated string test_warnings = 30;
+   */
+  testWarnings: string[] = [];
+
+  /**
    * refreshed_on is the time the model was last executed.
    *
    * @generated from field: google.protobuf.Timestamp refreshed_on = 4;
@@ -1171,6 +1184,13 @@ export class ModelState extends Message<ModelState> {
    * @generated from field: bool partitions_have_errors = 11;
    */
   partitionsHaveErrors = false;
+
+  /**
+   * warnings contains any warnings generated during the model's execution.
+   *
+   * @generated from field: repeated string warnings = 29;
+   */
+  warnings: string[] = [];
 
   /**
    * total_execution_duration_ms is the time user queries took to execute while refreshing the model.
@@ -1218,11 +1238,13 @@ export class ModelState extends Message<ModelState> {
     { no: 9, name: "refs_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 27, name: "test_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 28, name: "test_errors", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 30, name: "test_warnings", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "refreshed_on", kind: "message", T: Timestamp },
     { no: 7, name: "incremental_state", kind: "message", T: Struct },
     { no: 8, name: "incremental_state_schema", kind: "message", T: StructType },
     { no: 10, name: "partitions_model_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "partitions_have_errors", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 29, name: "warnings", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 12, name: "total_execution_duration_ms", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 13, name: "latest_execution_duration_ms", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 14, name: "rows_total", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
@@ -1428,6 +1450,15 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   watermarkExpression = "";
 
   /**
+   * Optional rilltime expression describing the time range covered by the base table.
+   * When set, the base table's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
+   * Evaluated with `now` = current time, `earliest` = zero time, `latest`/`watermark` = current time.
+   *
+   * @generated from field: string data_time_range = 37;
+   */
+  dataTimeRange = "";
+
+  /**
    * Dimensions in the metrics view
    *
    * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.Dimension dimensions = 6;
@@ -1484,21 +1515,34 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   firstMonthOfYear = 0;
 
   /**
-   * Cache controls for the metrics view.
+   * Cache controls for the metrics view. By default, enabled for Rill managed models and disabled for streaming (externally managed) data sources.
    *
    * @generated from field: optional bool cache_enabled = 25;
    */
   cacheEnabled?: boolean;
 
   /**
+   * Defaults to use watermark if cache is enabled.
+   *
    * @generated from field: string cache_key_sql = 26;
    */
   cacheKeySql = "";
 
   /**
+   * Defaults to 60 seconds if cache is enabled.
+   *
    * @generated from field: int64 cache_key_ttl_seconds = 27;
    */
   cacheKeyTtlSeconds = protoInt64.zero;
+
+  /**
+   * TTL for caching timestamp boundaries (min/max) of base and rollup tables. Defaults to 5 minutes if unset.
+   * Takes effect only when mv level caching is disabled otherwise the timestamp boundaries are cached with the same TTL
+   * as the rest of the query results set via `cache.timestamps_ttl` in the metrics view YAML.
+   *
+   * @generated from field: int64 cache_timestamps_ttl_seconds = 35;
+   */
+  cacheTimestampsTtlSeconds = protoInt64.zero;
 
   /**
    * Query attributes that can be templated with user context and used by drivers (e.g., appended to SETTINGS in ClickHouse).
@@ -1507,6 +1551,20 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    * @generated from field: map<string, string> query_attributes = 33;
    */
   queryAttributes: { [key: string]: string } = {};
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.Rollup rollups = 34;
+   */
+  rollups: MetricsViewSpec_Rollup[] = [];
+
+  /**
+   * Maximum time span any single query against this metrics view may cover, as an ISO 8601 duration with day-or-larger granularity (e.g. "P90D", "P3M", "P1Y").
+   * Sub-day durations (hours, minutes, seconds) are not supported. Applies to queries that take a time range, including the comparison time range.
+   * Time-range introspection RPCs are exempt. If unset, no limit is enforced.
+   *
+   * @generated from field: string max_query_time_range = 36;
+   */
+  maxQueryTimeRange = "";
 
   constructor(data?: PartialMessage<MetricsViewSpec>) {
     super();
@@ -1528,6 +1586,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 5, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 20, name: "watermark_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 37, name: "data_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "dimensions", kind: "message", T: MetricsViewSpec_Dimension, repeated: true },
     { no: 7, name: "measures", kind: "message", T: MetricsViewSpec_Measure, repeated: true },
     { no: 31, name: "parent_dimensions", kind: "message", T: FieldSelector },
@@ -1539,7 +1598,10 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 25, name: "cache_enabled", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 26, name: "cache_key_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 27, name: "cache_key_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 35, name: "cache_timestamps_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 33, name: "query_attributes", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 34, name: "rollups", kind: "message", T: MetricsViewSpec_Rollup, repeated: true },
+    { no: 36, name: "max_query_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec {
@@ -1956,6 +2018,13 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
    */
   dataType?: Type;
 
+  /**
+   * When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas (KPIs, big numbers, leaderboards, pivot tables, time-series tooltips) swap their positive/negative coloring accordingly.
+   *
+   * @generated from field: bool lower_is_better = 17;
+   */
+  lowerIsBetter = false;
+
   constructor(data?: PartialMessage<MetricsViewSpec_Measure>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1980,6 +2049,7 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
     { no: 6, name: "valid_percent_of_total", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 14, name: "treat_nulls_as", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "data_type", kind: "message", T: Type },
+    { no: 17, name: "lower_is_better", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Measure {
@@ -2110,6 +2180,122 @@ export class MetricsViewSpec_Annotation extends Message<MetricsViewSpec_Annotati
 
   static equals(a: MetricsViewSpec_Annotation | PlainMessage<MetricsViewSpec_Annotation> | undefined, b: MetricsViewSpec_Annotation | PlainMessage<MetricsViewSpec_Annotation> | undefined): boolean {
     return proto3.util.equals(MetricsViewSpec_Annotation, a, b);
+  }
+}
+
+/**
+ * Pre-aggregated rollup that can be used to accelerate queries.
+ * The system automatically routes queries to a rollup when the query can be satisfied from the pre-aggregated data.
+ *
+ * @generated from message rill.runtime.v1.MetricsViewSpec.Rollup
+ */
+export class MetricsViewSpec_Rollup extends Message<MetricsViewSpec_Rollup> {
+  /**
+   * @generated from field: string database = 1;
+   */
+  database = "";
+
+  /**
+   * @generated from field: string database_schema = 2;
+   */
+  databaseSchema = "";
+
+  /**
+   * @generated from field: string table = 3;
+   */
+  table = "";
+
+  /**
+   * @generated from field: string model = 4;
+   */
+  model = "";
+
+  /**
+   * Optional rilltime expression describing the time range covered by the rollup.
+   * When set, the rollup's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
+   * Evaluated with `now` = current time, `earliest` = zero time, `latest`/`watermark` = current time.
+   *
+   * @generated from field: string data_time_range = 11;
+   */
+  dataTimeRange = "";
+
+  /**
+   * Time grain of the rollup.
+   *
+   * @generated from field: rill.runtime.v1.TimeGrain time_grain = 5;
+   */
+  timeGrain = TimeGrain.UNSPECIFIED;
+
+  /**
+   * IANA timezone the rollup was aggregated in; defaults to UTC
+   *
+   * @generated from field: string time_zone = 6;
+   */
+  timeZone = "";
+
+  /**
+   * Resolved list of dimensions present in the rollup. If `dimensions_selector` is set, this will only be set in `state.valid_spec`.
+   *
+   * @generated from field: repeated string dimensions = 7;
+   */
+  dimensions: string[] = [];
+
+  /**
+   * Resolved list of measures present in the rollup. If `measures_selector` is set, this will only be set in `state.valid_spec`.
+   *
+   * @generated from field: repeated string measures = 8;
+   */
+  measures: string[] = [];
+
+  /**
+   * Dynamic selector for `dimensions`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+   *
+   * @generated from field: rill.runtime.v1.FieldSelector dimensions_selector = 9;
+   */
+  dimensionsSelector?: FieldSelector;
+
+  /**
+   * Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+   *
+   * @generated from field: rill.runtime.v1.FieldSelector measures_selector = 10;
+   */
+  measuresSelector?: FieldSelector;
+
+  constructor(data?: PartialMessage<MetricsViewSpec_Rollup>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewSpec.Rollup";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "data_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
+    { no: 6, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 8, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 9, name: "dimensions_selector", kind: "message", T: FieldSelector },
+    { no: 10, name: "measures_selector", kind: "message", T: FieldSelector },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Rollup {
+    return new MetricsViewSpec_Rollup().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewSpec_Rollup {
+    return new MetricsViewSpec_Rollup().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewSpec_Rollup {
+    return new MetricsViewSpec_Rollup().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewSpec_Rollup | PlainMessage<MetricsViewSpec_Rollup> | undefined, b: MetricsViewSpec_Rollup | PlainMessage<MetricsViewSpec_Rollup> | undefined): boolean {
+    return proto3.util.equals(MetricsViewSpec_Rollup, a, b);
   }
 }
 
@@ -3045,6 +3231,13 @@ export class ExplorePreset extends Message<ExplorePreset> {
    */
   pivotRowLimit?: number;
 
+  /**
+   * Chart display settings (frontend-only; persisted in URL state)
+   *
+   * @generated from field: optional bool chart_dynamic_y_axis = 35;
+   */
+  chartDynamicYAxis?: boolean;
+
   constructor(data?: PartialMessage<ExplorePreset>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3084,6 +3277,7 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 27, name: "pivot_sort_asc", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 28, name: "pivot_table_mode", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 33, name: "pivot_row_limit", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 35, name: "chart_dynamic_y_axis", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExplorePreset {
@@ -3604,6 +3798,11 @@ export class ReportExecution extends Message<ReportExecution> {
   errorMessage = "";
 
   /**
+   * @generated from field: repeated string warnings = 6;
+   */
+  warnings: string[] = [];
+
+  /**
    * @generated from field: google.protobuf.Timestamp report_time = 3;
    */
   reportTime?: Timestamp;
@@ -3628,6 +3827,7 @@ export class ReportExecution extends Message<ReportExecution> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "adhoc", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "error_message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "warnings", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 3, name: "report_time", kind: "message", T: Timestamp },
     { no: 4, name: "started_on", kind: "message", T: Timestamp },
     { no: 5, name: "finished_on", kind: "message", T: Timestamp },
@@ -4072,6 +4272,11 @@ export class AssertionResult extends Message<AssertionResult> {
    */
   errorMessage = "";
 
+  /**
+   * @generated from field: repeated string warnings = 4;
+   */
+  warnings: string[] = [];
+
   constructor(data?: PartialMessage<AssertionResult>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4083,6 +4288,7 @@ export class AssertionResult extends Message<AssertionResult> {
     { no: 1, name: "status", kind: "enum", T: proto3.getEnumType(AssertionStatus) },
     { no: 2, name: "fail_row", kind: "message", T: Struct },
     { no: 3, name: "error_message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "warnings", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AssertionResult {
@@ -4854,6 +5060,14 @@ export class CanvasSpec extends Message<CanvasSpec> {
    */
   pinnedFilters: string[] = [];
 
+  /**
+   * Array of dimension or measure names that must have a value before the canvas can render.
+   * Required filters are implicitly pinned.
+   *
+   * @generated from field: repeated string required_filters = 19;
+   */
+  requiredFilters: string[] = [];
+
   constructor(data?: PartialMessage<CanvasSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4878,6 +5092,7 @@ export class CanvasSpec extends Message<CanvasSpec> {
     { no: 18, name: "rows", kind: "message", T: CanvasRow, repeated: true },
     { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 16, name: "pinned_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 19, name: "required_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasSpec {

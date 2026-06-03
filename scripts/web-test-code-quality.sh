@@ -69,8 +69,7 @@ echo "filters: admin=$ADMIN local=$LOCAL common=$COMMON"
 
 echo ""
 echo "== NPM Install =="
-# https://typicode.github.io/husky/how-to.html#ci-server-and-docker
-HUSKY=0 npm install
+npm ci
 
 if [[ "$COMMON" == "true" ]]; then
   echo ""
@@ -79,7 +78,7 @@ if [[ "$COMMON" == "true" ]]; then
   npx svelte-kit sync
   cd ..
   npx eslint web-common --quiet || exit_code=$?
-  npx svelte-check --workspace web-common --no-tsconfig --ignore "src/stories/Tooltip.stories.svelte,src/lib/number-formatting/__stories__/NumberFormatting.stories.svelte" || exit_code=$?
+  npx svelte-check --workspace web-common --no-tsconfig || exit_code=$?
 fi
 
 if [[ "$LOCAL" == "true" ]]; then
@@ -105,6 +104,10 @@ fi
 echo ""
 echo "== type check non-svelte files (with temporary whitelist) =="
 bash ./scripts/tsc-with-whitelist.sh || exit_code=$?
+
+echo ""
+echo "== edit route parity check =="
+node ./scripts/check-edit-route-parity.js || exit_code=$?
 
 # Exit with failure if any check failed (only relevant when not in fail-fast mode)
 exit "${exit_code:-0}"

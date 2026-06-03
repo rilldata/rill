@@ -2,6 +2,7 @@ package ai
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -119,7 +120,7 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 			_, err := s.CallTool(ctx, RoleAssistant, GetCanvasName, nil, &GetCanvasArgs{
 				Canvas: args.Canvas,
 			})
-			if err != nil {
+			if err != nil && errors.Is(err, ctx.Err()) { // Don't exit on non-context errors
 				return nil, err
 			}
 
@@ -138,14 +139,14 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 			_, err := s.CallTool(ctx, RoleAssistant, QueryMetricsViewSummaryName, nil, &QueryMetricsViewSummaryArgs{
 				MetricsView: mvName,
 			})
-			if err != nil {
+			if err != nil && errors.Is(err, ctx.Err()) { // Don't exit on non-context errors
 				return nil, err
 			}
 
 			_, err = s.CallTool(ctx, RoleAssistant, GetMetricsViewName, nil, &GetMetricsViewArgs{
 				MetricsView: mvName,
 			})
-			if err != nil {
+			if err != nil && errors.Is(err, ctx.Err()) { // Don't exit on non-context errors
 				return nil, err
 			}
 		}
@@ -154,7 +155,7 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	// If no specific dashboard is being explored, we pre-invoke the list_metrics_views tool.
 	if first && len(metricsViewNames) == 0 {
 		_, err := s.CallTool(ctx, RoleAssistant, ListMetricsViewsName, nil, &ListMetricsViewsArgs{})
-		if err != nil {
+		if err != nil && errors.Is(err, ctx.Err()) { // Don't exit on non-context errors
 			return nil, err
 		}
 	}
@@ -543,7 +544,7 @@ func (t *AnalystAgent) getValidExploreAndMetricsView(ctx context.Context, explor
 func (t *AnalystAgent) getValidCanvasAndMetricsViews(ctx context.Context, canvasName string) (*runtimev1.Resource, map[string]*runtimev1.Resource, error) {
 	session := GetSession(ctx)
 
-	resolvedCanvas, err := t.Runtime.ResolveCanvas(ctx, session.InstanceID(), canvasName, session.Claims())
+	resolvedCanvas, err := t.Runtime.ResolveCanvas(ctx, session.InstanceID(), canvasName, session.Claims(), false)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -28,7 +28,7 @@
     {#if url}
       <DropdownMenu.Item
         class="text-fg-primary font-normal flex items-center"
-        on:click={handleCopy}
+        onclick={handleCopy}
       >
         <CopyIcon size="12px" />
         <span class="ml-2">Copy URL</span>
@@ -37,7 +37,7 @@
     <DropdownMenu.Item
       class="font-normal flex items-center"
       type="destructive"
-      on:click={() => {
+      onclick={() => {
         isDeleteConfirmOpen = true;
       }}
     >

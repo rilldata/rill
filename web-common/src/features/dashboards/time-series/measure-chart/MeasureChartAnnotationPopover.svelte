@@ -2,8 +2,6 @@
   import type { AnnotationGroup } from "./annotation-utils";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import * as Popover from "@rilldata/web-common/components/popover";
-  import { builderActions, getAttrs } from "bits-ui";
-
   export let hoveredGroup: AnnotationGroup | null;
   export let onHover: (hovered: boolean) => void;
 
@@ -66,19 +64,15 @@
 {#if hoveredGroup}
   <div class="relative">
     <Popover.Root bind:open onOpenChange={() => (showingMore = false)}>
-      <Popover.Trigger asChild let:builder>
-        <button
-          class="absolute bottom-2 w-0 h-0"
-          style="left: {hoveredGroup.left}px;"
-          {...getAttrs([builder])}
-          use:builderActions={{ builders: [builder] }}
-        ></button>
-      </Popover.Trigger>
+      <Popover.Trigger
+        class="absolute bottom-2 w-0 h-0"
+        style="left: {hoveredGroup.left}px;"
+      ></Popover.Trigger>
       <Popover.Content side="right" sideOffset={12} class="w-80" padding="0">
         <div
           class="flex flex-col gap-y-1 p-2 max-h-[600px] overflow-y-auto"
-          on:mouseenter={() => onHover(true)}
-          on:mouseleave={() => onHover(false)}
+          onmouseenter={() => onHover(true)}
+          onmouseleave={() => onHover(false)}
           role="menu"
           tabindex="-1"
         >
@@ -99,7 +93,7 @@
           {/each}
           {#if hasMoreAnnotations && !showingMore}
             <button
-              on:click={() => (showingMore = true)}
+              onclick={() => (showingMore = true)}
               class="flex flex-row items-center gap-x-1 mb-1 p-1 text-sm text-fg-secondary hover:bg-popover-accent hover:rounded-sm outline-0"
             >
               <ThreeDot className="rotate-90" size="16px" />
