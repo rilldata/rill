@@ -44,6 +44,15 @@
   } = pivotState);
   $: splitColumns = splitPivotChips(columns);
   $: isFlat = tableMode === "flat";
+  $: rowDimensionCount = isFlat ? splitColumns.dimension.length : rows.length;
+  $: colDimensionCount = isFlat ? 0 : splitColumns.dimension.length;
+  $: measureCount = splitColumns.measure.length;
+  $: canShowTotalRow = rowDimensionCount > 0 && measureCount > 0;
+  $: canShowTotalColumn =
+    !isFlat &&
+    rowDimensionCount > 0 &&
+    colDimensionCount > 0 &&
+    measureCount > 0;
 
   // Row limit options - uses shared constants to ensure sync with URL validation
   const rowLimitOptions: { value: string; label: string }[] = [
@@ -164,34 +173,38 @@
       </div>
     {/if}
 
-    <div class="flex items-center gap-x-3 pl-2 pointer-events-auto">
-      <Checkbox
-        id="pivot-show-total-row"
-        checked={showColTotals}
-        onCheckedChange={(checked) => {
-          setShowTotals({
-            showRowTotals,
-            showColTotals: Boolean(checked),
-          });
-        }}
-        label="Total row"
-        labelClass="text-xs leading-snug font-normal text-fg-secondary"
-      />
-      {#if !isFlat}
-        <Checkbox
-          id="pivot-show-total-column"
-          checked={showRowTotals}
-          onCheckedChange={(checked) => {
-            setShowTotals({
-              showRowTotals: Boolean(checked),
-              showColTotals,
-            });
-          }}
-          label="Total column"
-          labelClass="text-xs leading-snug font-normal text-fg-secondary"
-        />
-      {/if}
-    </div>
+    {#if canShowTotalRow || canShowTotalColumn}
+      <div class="flex items-center gap-x-3 pl-2 pointer-events-auto">
+        {#if canShowTotalRow}
+          <Checkbox
+            id="pivot-show-total-row"
+            checked={showColTotals}
+            onCheckedChange={(checked) => {
+              setShowTotals({
+                showRowTotals,
+                showColTotals: Boolean(checked),
+              });
+            }}
+            label="Total row"
+            labelClass="text-xs leading-snug font-normal text-fg-secondary"
+          />
+        {/if}
+        {#if canShowTotalColumn}
+          <Checkbox
+            id="pivot-show-total-column"
+            checked={showRowTotals}
+            onCheckedChange={(checked) => {
+              setShowTotals({
+                showRowTotals: Boolean(checked),
+                showColTotals,
+              });
+            }}
+            label="Total column"
+            labelClass="text-xs leading-snug font-normal text-fg-secondary"
+          />
+        {/if}
+      </div>
+    {/if}
     <slot name="export-menu" />
 
     {#if isFetching}
