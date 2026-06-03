@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path"
 	"strings"
 	"time"
@@ -383,26 +382,20 @@ func (r *gitRepo) fetchCurrentBranch(ctx context.Context) error {
 }
 
 // pushBranch pushes the specified branches to the remote repository.
-// If the remote branch is already up-to-date, it does not return an error.
 func (r *gitRepo) pushBranch(ctx context.Context, branches ...string) error {
 	if len(branches) == 0 {
 		return errors.New("at least one branch must be specified to push")
 	}
-	out, err := exec.CommandContext(ctx, "git", append([]string{"-C", r.repoDir, "push", "origin"}, branches...)...).CombinedOutput()
-	if err != nil {
-		if strings.Contains(string(out), "up to date") {
-			return nil
-		}
-		return fmt.Errorf("git push failed: %s(%s)", string(out), err.Error())
-	}
-	return nil
+	args := append([]string{"push", "origin"}, branches...)
+	_, err := gitutil.Run(ctx, r.repoDir, args...)
+	return err
 }
 
 // gitCheckout checks out a branch using the git command.
 // If create is true, it creates the branch (using -B) at the given startPoint.
 // go-git wipes out git-ignored changes during checkout so must use the git command.
 func gitCheckout(repoDir, branch string, force, create bool, startPoint string) error {
-	args := []string{"-C", repoDir, "checkout"}
+	args := []string{"checkout"}
 	if force {
 		args = append(args, "--force")
 	}
