@@ -4,7 +4,6 @@ import {
   DeployingDashboardUrlParam,
   getDeployingDashboard,
 } from "@rilldata/web-common/features/project/deploy/utils.ts";
-import { addPosthogSessionIdToUrl } from "@rilldata/web-common/lib/analytics/posthog.ts";
 import { createLocalServiceGitStatus } from "@rilldata/web-common/runtime-client/local-service";
 import type { Page } from "@sveltejs/kit";
 import { derived, readable } from "svelte/store";
@@ -100,10 +99,7 @@ export function getDeployingPageUrl(frontendUrl: string, isInvite: boolean) {
   } else {
     url.pathname += "/-/deploying";
   }
-  const projectInviteUrlWithSessionId = addPosthogSessionIdToUrl(
-    url.toString(),
-  );
-  return projectInviteUrlWithSessionId;
+  return url.toString();
 }
 
 /**
