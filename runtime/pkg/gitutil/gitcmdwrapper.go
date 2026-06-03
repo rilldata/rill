@@ -14,7 +14,7 @@ var ErrRefNotFound = errors.New("git reference not found")
 // ErrEmptyCommit is returned by CommitAll when there are no changes to commit.
 var ErrEmptyCommit = errors.New("nothing to commit")
 
-func Clone(ctx context.Context, path string, remote, checkoutBranch string, singleBranch, shallow bool) error {
+func Clone(ctx context.Context, path, remote, checkoutBranch string, singleBranch, shallow bool) error {
 	args := []string{"clone", remote, path}
 	if singleBranch {
 		args = append(args, "--single-branch")
@@ -70,7 +70,7 @@ func MergeWithBailOnConflict(path, branch string) (bool, error) {
 	_, abortErr := Run(context.Background(), path, "merge", "--abort")
 	if abortErr != nil {
 		// Both merge and abort failed
-		return false, fmt.Errorf("merge failed with error: %v, and abort also failed with error: %v", mergeErr, abortErr)
+		return false, fmt.Errorf("merge failed with error: %w, and abort also failed with error: %w", mergeErr, abortErr)
 	}
 
 	// Merge failed but abort succeeded
@@ -137,7 +137,7 @@ func Hash(path, ref string) (string, error) {
 		}
 		return "", err
 	}
-	return strings.TrimSpace(string(out)), nil
+	return strings.TrimSpace(out), nil
 }
 
 // Run executes a git command with the specified arguments in the given path and returns its output or an error.
