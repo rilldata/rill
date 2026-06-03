@@ -1,6 +1,7 @@
 package gitutil
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -220,6 +221,146 @@ func TestMergeWithBailOnConflict(t *testing.T) {
 		require.NoError(t, err, "failed to get git status ", string(output))
 		require.Empty(t, string(output), "working directory should be clean after aborted merge")
 	})
+}
+
+func TestCommitAll(t *testing.T) {
+	t.Run("returns ErrEmptyCommit when there are no changes", func(t *testing.T) {
+		tempDir := setupTestRepository(t)
+
+		_, err := CommitAll(context.Background(), tempDir, "", "noop", "Rill", "noreply@rilldata.com")
+		require.ErrorIs(t, err, ErrEmptyCommit)
+	})
+
+	t.Run("returns ErrEmptyCommit when changes exist but fall outside the pathspec", func(t *testing.T) {
+		tempDir := setupTestRepository(t)
+
+		// Seed the pathspec directory with a committed file so the pathspec resolves to a real path.
+		require.NoError(t, os.MkdirAll(filepath.Join(tempDir, "sub"), 0755))
+		require.NoError(t, os.WriteFile(filepath.Join(tempDir, "sub", "seed.txt"), []byte("seed"), 0644))
+		require.NoError(t, execGit(tempDir, "add", "sub/seed.txt"))
+		require.NoError(t, execGit(tempDir, "commit", "-m", "seed"))
+
+		// Introduce a change *outside* the pathspec.
+		require.NoError(t, os.WriteFile(filepath.Join(tempDir, "outside.txt"), []byte("outside"), 0644))
+
+		_, err := CommitAll(context.Background(), tempDir, "sub", "noop", "Rill", "noreply@rilldata.com")
+		require.ErrorIs(t, err, ErrEmptyCommit)
+
+		// The outside file must not have been committed.
+		out, err := Run(context.Background(), tempDir, "status", "--porcelain")
+		require.NoError(t, err)
+		require.Contains(t, out, "outside.txt")
+	})
+
+	t.Run("only commits files matching the pathspec", func(t *testing.T) {
+		tempDir := setupTestRepository(t)
+
+		require.NoError(t, os.MkdirAll(filepath.Join(tempDir, "sub"), 0755))
+		require.NoError(t, os.WriteFile(filepath.Join(tempDir, "sub", "inside.txt"), []byte("inside"), 0644))
+		require.NoError(t, os.WriteFile(filepath.Join(tempDir, "outside.txt"), []byte("outside"), 0644))
+
+		hash, err := CommitAll(context.Background(), tempDir, "sub", "scoped commit", "Rill", "noreply@rilldata.com")
+		require.NoError(t, err)
+		require.NotEmpty(t, hash)
+
+		// The outside file should still be untracked (not committed).
+		out, err := Run(context.Background(), tempDir, "status", "--porcelain")
+		require.NoError(t, err)
+		require.Contains(t, out, "outside.txt")
+		require.NotContains(t, out, "inside.txt")
+
+		// The commit should include only the inside file.
+		filesOut, err := Run(context.Background(), tempDir, "show", "--name-only", "--pretty=format:", "HEAD")
+		require.NoError(t, err)
+		require.Contains(t, filesOut, "sub/inside.txt")
+		require.NotContains(t, filesOut, "outside.txt")
+	})
+
+	t.Run("uses the provided author name and email", func(t *testing.T) {
+		tempDir := setupTestRepository(t)
+
+		require.NoError(t, os.WriteFile(filepath.Join(tempDir, "new.txt"), []byte("hello"), 0644))
+
+		_, err := CommitAll(context.Background(), tempDir, "", "msg", "Rill Bot", "bot@rilldata.com")
+		require.NoError(t, err)
+
+		name, err := Run(context.Background(), tempDir, "log", "-1", "--format=%an")
+		require.NoError(t, err)
+		require.Equal(t, "Rill Bot", name)
+
+		email, err := Run(context.Background(), tempDir, "log", "-1", "--format=%ae")
+		require.NoError(t, err)
+		require.Equal(t, "bot@rilldata.com", email)
+	})
+}
+
+func TestFetchBranches(t *testing.T) {
+	t.Run("silently skips branches that do not exist on the remote", func(t *testing.T) {
+		remote, local := setupRemoteAndClone(t)
+
+		// Add a new branch on the remote with a commit.
+		require.NoError(t, execGit(remote, "checkout", "-b", "feature"))
+		createCommit(t, remote, "f.txt", "f", "feature commit")
+		require.NoError(t, execGit(remote, "checkout", "main"))
+
+		err := FetchBranches(context.Background(), local, "feature", "does-not-exist")
+		require.NoError(t, err, "missing branch must not produce an error")
+
+		// The existing branch must have been fetched.
+		hash, err := Hash(local, "refs/remotes/origin/feature")
+		require.NoError(t, err)
+		require.NotEmpty(t, hash)
+	})
+}
+
+func TestHash(t *testing.T) {
+	t.Run("returns ErrRefNotFound for a missing ref", func(t *testing.T) {
+		tempDir := setupTestRepository(t)
+
+		_, err := Hash(tempDir, "refs/heads/does-not-exist")
+		require.ErrorIs(t, err, ErrRefNotFound)
+	})
+
+	t.Run("returns ErrRefNotFound for HEAD in an unborn repository", func(t *testing.T) {
+		tempDir := t.TempDir()
+		require.NoError(t, exec.Command("git", "init", tempDir).Run())
+		require.NoError(t, exec.Command("git", "-C", tempDir, "checkout", "-b", "main").Run())
+		setupGitConfig(t, tempDir)
+
+		_, err := Hash(tempDir, "HEAD")
+		require.ErrorIs(t, err, ErrRefNotFound)
+	})
+
+	t.Run("returns the commit hash for HEAD", func(t *testing.T) {
+		tempDir := setupTestRepository(t)
+
+		hash, err := Hash(tempDir, "HEAD")
+		require.NoError(t, err)
+		require.Len(t, hash, 40)
+	})
+}
+
+// setupRemoteAndClone creates a remote repository with a single commit on `main`
+// and clones it into a separate local directory. It returns the remote and local paths.
+func setupRemoteAndClone(t *testing.T) (string, string) {
+	remote := setupTestRepository(t)
+	local := t.TempDir()
+	// t.TempDir() pre-creates the directory; remove it so `git clone` can populate it.
+	require.NoError(t, os.RemoveAll(local))
+
+	err := Clone(context.Background(), local, remote, "main", false, false)
+	require.NoError(t, err)
+	setupGitConfig(t, local)
+	return remote, local
+}
+
+func execGit(repoPath string, args ...string) error {
+	cmd := exec.Command("git", append([]string{"-C", repoPath}, args...)...)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("git %v failed: %s: %w", args, string(out), err)
+	}
+	return nil
 }
 
 func setupTestRepository(t *testing.T) string {
