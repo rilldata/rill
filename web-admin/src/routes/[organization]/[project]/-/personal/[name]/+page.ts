@@ -17,8 +17,8 @@ export const load = async ({ params: { organization, project, name } }) => {
 
   return {
     personalFile: {
-      path: `/__virtual__/${removeLeadingSlash(personalFile.path)}`,
-      yaml: personalFile.yaml,
+      path: `/__virtual__/${removeLeadingSlash(personalFile.path ?? "")}`,
+      yaml: personalFile.yaml ?? "",
     },
   };
 };

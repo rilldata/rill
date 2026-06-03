@@ -157,6 +157,9 @@ func (s *Server) CreateAlert(ctx context.Context, req *adminv1.CreateAlertReques
 		_, err := s.admin.LookupAlert(ctx, depl, name)
 		return err
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	data, err := s.yamlForManagedAlert(req.Options, claims.OwnerID())
 	if err != nil {
@@ -168,6 +171,7 @@ func (s *Server) CreateAlert(ctx context.Context, req *adminv1.CreateAlertReques
 		Environment: "prod",
 		Path:        virtualFilePathForManagedAlert(name),
 		Data:        data,
+		OwnerID:     nil,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert virtual file: %w", err)
@@ -238,6 +242,7 @@ func (s *Server) EditAlert(ctx context.Context, req *adminv1.EditAlertRequest) (
 		Environment: "prod",
 		Path:        virtualFilePathForManagedAlert(req.Name),
 		Data:        data,
+		OwnerID:     nil,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to update virtual file: %w", err)
@@ -382,6 +387,7 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 			Environment: "prod",
 			Path:        virtualFilePathForManagedAlert(req.Name),
 			Data:        data,
+			OwnerID:     nil,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to update virtual file: %w", err)

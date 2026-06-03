@@ -58,7 +58,7 @@
 </script>
 
 {#if resourceKind === ResourceKind.Canvas}
-  <CanvasPersonalFile {fileArtifact} name={resourceName} />
+  <CanvasPersonalFile {fileArtifact} {fileIo} name={resourceName} />
 {:else}
   Unsupported resource kind: {resourceKind}
 {/if}

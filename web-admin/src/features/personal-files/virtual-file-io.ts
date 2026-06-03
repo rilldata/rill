@@ -56,7 +56,7 @@ export class VirtualFileIo implements FileIO {
 
   async write(path: string, yaml: string, kind?: string): Promise<void> {
     if (!kind) {
-      kind = inferResourceKind(path, yaml);
+      kind = inferResourceKind(path, yaml) as string | undefined;
       if (!kind) throw new Error("Could not infer resource kind");
     }
 

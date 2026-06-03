@@ -23,7 +23,7 @@ export function getPersonalFilteredResources(
       const personalFiles = resourcesResp.data?.resources?.filter(
         (r) =>
           r.meta?.name?.kind === kind &&
-          personalFileNames.has(r.meta?.name?.name),
+          personalFileNames.has(r.meta?.name?.name ?? ""),
       );
 
       return {

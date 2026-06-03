@@ -30,7 +30,9 @@ export function useDashboardsLastUpdated(
 
       const max = Math.max(
         ...dashboardsResp.data.map((res) =>
-          new Date(res.meta.stateUpdatedOn).getTime(),
+          res.meta?.stateUpdatedOn
+            ? new Date(res.meta.stateUpdatedOn).getTime()
+            : 0,
         ),
       );
       return new Date(max);
@@ -54,13 +56,12 @@ export function useDashboards(
     {},
     {
       query: {
-        select: (data) => {
-          return data.resources.filter((res) => {
+        select: (data) =>
+          data.resources?.filter((res) => {
             if (res.canvas)
               return !res.canvas?.state?.validSpec?.annotations?.admin_managed;
             return !!res.explore;
-          });
-        },
+          }) ?? [],
         enabled: !!client.instanceId,
         refetchInterval: dashboardRefetchInterval,
       },

@@ -296,8 +296,7 @@ func blankYamlForPersonalFile(displayName, ownerID, kind string) ([]byte, error)
 			"admin_nonce":         time.Now().Format(time.RFC3339Nano),
 		},
 	}
-	switch kind {
-	case runtime.ResourceKindCanvas:
+	if kind == runtime.ResourceKindCanvas {
 		doc["rows"] = []any{}
 	}
 
