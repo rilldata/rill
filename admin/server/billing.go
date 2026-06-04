@@ -582,6 +582,8 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 			opts.QuotaSlotsPerDeployment = biggerOfInt(sub.Plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment)
 			opts.QuotaOutstandingInvites = biggerOfInt(sub.Plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites)
 			opts.QuotaStorageLimitBytesPerDeployment = biggerOfInt64(sub.Plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment)
+			opts.BillingPlanName = &sub.Plan.Name
+			opts.BillingPlanDisplayName = &sub.Plan.DisplayName
 		}
 	}
 

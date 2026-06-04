@@ -26,6 +26,7 @@
     validSpecStore,
     selectors: {
       pivot: { columns, measures, dimensions },
+      tags: { combinedTagIndex, dimensionTagIndex, measureTagIndex },
     },
     timeRangeSummaryStore,
   } = stateManagers;
@@ -100,6 +101,12 @@
       pivotState={enrichedPivotState}
       measures={$measures}
       dimensions={$dimensions}
+      combinedTagIndex={$combinedTagIndex}
+      dimensionTagIndex={$dimensionTagIndex}
+      measureTagIndex={$measureTagIndex}
+      setRows={(rows) => metricsExplorerStore.setPivotRows($exploreName, rows)}
+      setColumns={(columns) =>
+        metricsExplorerStore.setPivotColumns($exploreName, columns)}
       {timeControlsForPillActions}
     />
   {/if}
