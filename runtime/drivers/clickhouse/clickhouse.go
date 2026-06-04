@@ -691,7 +691,8 @@ func (c *Connection) periodicallyEmitStats() {
 	}
 }
 
-func (c *Connection) visibleTables(ctx context.Context) (map[tableKey]struct{}, error) {
+// accessibleTables returns the list of tables that are accessible to the current user.
+func (c *Connection) accessibleTables(ctx context.Context) (map[tableKey]struct{}, error) {
 	rows, err := c.readDB.QueryxContext(ctx, `
 		SELECT
 			database,
@@ -737,7 +738,7 @@ func (c *Connection) estimateSize(ctx context.Context) (int64, error) {
 		return size, nil
 	}
 	// Workaround ClickHouse metadata leak through cluster(..., system.parts).
-	visibleTables, err := c.visibleTables(ctx)
+	visibleTables, err := c.accessibleTables(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -779,7 +780,7 @@ func (c *Connection) estimatePerTableSize(ctx context.Context) ([]*tableSize, er
 	if c.config.Cluster == "" {
 		query = `SELECT database, table, sum(bytes_on_disk) AS size FROM system.parts WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system') GROUP BY database, table`
 	} else {
-		visibleTables, err = c.visibleTables(ctx)
+		visibleTables, err = c.accessibleTables(ctx)
 		if err != nil {
 			return nil, err
 		}
