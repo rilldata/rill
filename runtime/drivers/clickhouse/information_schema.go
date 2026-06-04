@@ -101,8 +101,7 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 		q += `
 		LEFT ANTI JOIN system.tables t2
 			ON t2.database = t1.database
-			AND endsWith(t1.name, '_local')
-			AND t2.name = replaceRegexpOne(t1.name, '_local$', '')
+			AND t1.name = concat(t2.name, '_local')
 		`
 	}
 
@@ -255,8 +254,7 @@ func (c *Connection) All(ctx context.Context, like string, pageSize uint32, page
 		localTableExclusionJoin = `
 		LEFT ANTI JOIN system.tables T2
 			ON T2.database = T.database
-			AND endsWith(T.name, '_local')
-			AND T2.name = replaceRegexpOne(T.name, '_local$', '')
+			AND T.name = concat(T2.name, '_local')
 		`
 	}
 
