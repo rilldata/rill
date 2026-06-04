@@ -348,7 +348,14 @@ export function createPivotDataStore(
           | Readable<null>
           | CreateQueryResult<V1MetricsViewAggregationResponse, ConnectError> =
           readable(null);
-        if (rowDimensionNames.length && measureNames.length) {
+
+        const displayTotalsRow = Boolean(
+          config.pivot.showTotalsRow !== false &&
+            rowDimensionNames.length &&
+            measureNames.length,
+        );
+
+        if (displayTotalsRow) {
           globalTotalsQuery = createPivotAggregationRowQuery(
             ctx,
             config,
@@ -359,12 +366,6 @@ export function createPivotDataStore(
             "5000", // Using 5000 for cache hit
           );
         }
-
-        const displayTotalsRow = Boolean(
-          config.pivot.showTotalsRow !== false &&
-            rowDimensionNames.length &&
-            measureNames.length,
-        );
         if (
           (rowDimensionNames.length || colDimensionNames.length) &&
           measureNames.length &&
