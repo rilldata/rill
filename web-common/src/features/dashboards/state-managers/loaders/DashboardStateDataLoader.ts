@@ -66,6 +66,7 @@ export class DashboardStateDataLoader {
       | CompoundQueryResult<Partial<ExploreState> | null>
       | undefined,
     public readonly disableMostRecentDashboardState: boolean,
+    public readonly disableSessionDashboardState: boolean,
   ) {
     this.validSpecQuery = useExploreValidSpec(client, exploreName);
     this.fullTimeRangeQuery = this.useFullTimeRangeQuery(
@@ -153,6 +154,7 @@ export class DashboardStateDataLoader {
           exploreStateFromYAMLConfig,
           rillDefaultExploreState,
           backButtonUsed: false,
+          skipSessionStorage: this.disableSessionDashboardState,
         });
       },
     );
@@ -297,6 +299,7 @@ export class DashboardStateDataLoader {
     exploreStateFromYAMLConfig,
     rillDefaultExploreState,
     backButtonUsed,
+    skipSessionStorage = false,
   }: {
     metricsViewSpec: V1MetricsViewSpec;
     exploreSpec: V1ExploreSpec;
@@ -305,10 +308,11 @@ export class DashboardStateDataLoader {
     exploreStateFromYAMLConfig: Partial<ExploreState>;
     rillDefaultExploreState: ExploreState;
     backButtonUsed: boolean;
+    skipSessionStorage: boolean;
   }) {
     urlSearchParams = cleanEmbedUrlParams(urlSearchParams);
 
-    const skipSessionStorage = backButtonUsed;
+    skipSessionStorage ||= backButtonUsed;
     const exploreStateFromSessionStorage = skipSessionStorage
       ? null
       : getPartialExploreStateFromSessionStorage(

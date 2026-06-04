@@ -21,6 +21,7 @@
   } from "@rilldata/web-common/lib/errors";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { onDestroy } from "svelte";
+  import { clearExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store.ts";
 
   export let exploreName: string;
   export let storageNamespacePrefix: string | undefined = undefined;
@@ -28,6 +29,7 @@
     | CompoundQueryResult<Partial<ExploreState> | null>
     | undefined = undefined;
   export let disableMostRecentDashboardState: boolean = false;
+  export let disableSessionDashboardState: boolean = false;
 
   const client = useRuntimeClient();
 
@@ -42,6 +44,7 @@
     storageNamespacePrefix,
     bookmarkOrTokenExploreState,
     disableMostRecentDashboardState,
+    disableSessionDashboardState,
   );
 
   let stateSync: DashboardStateSync | undefined;
@@ -99,6 +102,9 @@
     // Note: we still have this on top of the above reactive statement to handle cases where navigation is to a non-dashboard route.
     if (changedDashboard) {
       eventBus.emit("remove-banner", ExploreUrlLimitWarningBannerID);
+      if (disableSessionDashboardState) {
+        clearExploreSessionStore(exploreName, storageNamespacePrefix);
+      }
     }
   });
 
