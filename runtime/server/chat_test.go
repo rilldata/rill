@@ -143,7 +143,7 @@ measures:
 		ConversationId: "doesntexist",
 		MessageId:      "doesntexist",
 	})
-	require.ErrorContains(t, err, "failed to find the conversation")
+	require.ErrorContains(t, err, "failed to find session")
 	// Check that getting a non-existent message on a existing conversation returns an error.
 	_, err = srv.GetAIMessage(fooCtx, &runtimev1.GetAIMessageRequest{
 		InstanceId:     instanceID,
