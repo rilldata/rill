@@ -142,7 +142,20 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
     };
   }
   inputParams(type: "pivot" | "table"): InputParams<PivotSpec | TableSpec> {
+    const spec = get(this.specStore);
+
     if (type === "pivot") {
+      const measureCount = ("measures" in spec && spec.measures?.length) || 0;
+      const rowDimensionCount =
+        ("row_dimensions" in spec && spec.row_dimensions?.length) || 0;
+      const colDimensionCount =
+        ("col_dimensions" in spec && spec.col_dimensions?.length) || 0;
+
+      // Mirror PivotToolbar: totals only apply when their constituent fields exist.
+      const canShowTotalRow = rowDimensionCount > 0 && measureCount > 0;
+      const canShowTotalColumn =
+        rowDimensionCount > 0 && colDimensionCount > 0 && measureCount > 0;
+
       return {
         options: {
           metrics_view: { type: "metrics", label: "Metrics view" },
@@ -165,17 +178,30 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             type: "boolean",
             label: "Hide total column",
             meta: { defaultValue: false },
+            showInUI: canShowTotalColumn,
           },
           hide_totals_row: {
             type: "boolean",
             label: "Hide total row",
             meta: { defaultValue: false },
+            showInUI: canShowTotalRow,
           },
           ...commonOptions,
         },
         filter: getFilterOptions(true, false),
       };
     } else {
+      const columns = ("columns" in spec && spec.columns) || [];
+      const metricsViewSpec = get(
+        this.parent.metricsView.getMetricsViewFromName(spec.metrics_view),
+      ).metricsView;
+      const measureNames = new Set(
+        metricsViewSpec?.measures?.map((m) => m.name as string) || [],
+      );
+      const measureCount = columns.filter((c) => measureNames.has(c)).length;
+      const dimensionCount = columns.length - measureCount;
+      const canShowTotalRow = dimensionCount > 0 && measureCount > 0;
+
       return {
         options: {
           metrics_view: { type: "metrics", label: "Metrics view" },
@@ -188,6 +214,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             type: "boolean",
             label: "Hide total row",
             meta: { defaultValue: false },
+            showInUI: canShowTotalRow,
           },
           ...commonOptions,
         },
