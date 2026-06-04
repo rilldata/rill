@@ -150,7 +150,7 @@ measures:
 		ConversationId: res1.ConversationId,
 		MessageId:      "doesntexist",
 	})
-	require.ErrorContains(t, err, "failed to find the call")
+	require.ErrorContains(t, err, "not found in conversation")
 	// Happy path for getting a message.
 	msgRes, err := srv.GetAIMessage(fooCtx, &runtimev1.GetAIMessageRequest{
 		InstanceId:     instanceID,
