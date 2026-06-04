@@ -691,6 +691,40 @@ func (c *Connection) periodicallyEmitStats() {
 	}
 }
 
+func (c *Connection) visibleTables(ctx context.Context) (map[tableKey]struct{}, error) {
+	rows, err := c.readDB.QueryxContext(ctx, `
+		SELECT
+			database,
+			name
+		FROM system.tables
+		WHERE is_temporary = 0
+		  AND lower(database) NOT IN ('information_schema', 'system')
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	tables := make(map[tableKey]struct{})
+	for rows.Next() {
+		var db, table string
+		if err := rows.Scan(&db, &table); err != nil {
+			return nil, err
+		}
+
+		tables[tableKey{
+			database: db,
+			table:    table,
+		}] = struct{}{}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return tables, nil
+}
+
 // estimateSize returns the estimated combined disk size of all resources in the database in bytes.
 func (c *Connection) estimateSize(ctx context.Context) (int64, error) {
 	if c.config.Cluster == "" {
@@ -703,12 +737,12 @@ func (c *Connection) estimateSize(ctx context.Context) (int64, error) {
 		return size, nil
 	}
 	// Workaround ClickHouse metadata leak through cluster(..., system.parts).
-	visibleDBs, err := c.visibleDatabases(ctx)
+	visibleTables, err := c.visibleTables(ctx)
 	if err != nil {
 		return 0, err
 	}
 
-	query := fmt.Sprintf(`SELECT database,sum(bytes_on_disk) AS size FROM cluster('%s', system.parts) WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system') GROUP BY database`, c.config.Cluster)
+	query := fmt.Sprintf(`SELECT database,table,sum(bytes_on_disk) AS size FROM cluster('%s', system.parts) WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system') GROUP BY database, table`, c.config.Cluster)
 	rows, err := c.readDB.QueryxContext(ctx, query)
 	if err != nil {
 		return 0, err
@@ -717,14 +751,12 @@ func (c *Connection) estimateSize(ctx context.Context) (int64, error) {
 
 	var total int64
 	for rows.Next() {
-		var db string
+		var db, table string
 		var size int64
-
-		if err := rows.Scan(&db, &size); err != nil {
+		if err := rows.Scan(&db, &table, &size); err != nil {
 			return 0, err
 		}
-
-		if _, ok := visibleDBs[db]; ok {
+		if _, ok := visibleTables[tableKey{database: db, table: table}]; ok {
 			total += size
 		}
 	}
@@ -739,15 +771,15 @@ func (c *Connection) estimateSize(ctx context.Context) (int64, error) {
 // estimatePerTableSize returns the estimated average disk size per table in bytes.
 func (c *Connection) estimatePerTableSize(ctx context.Context) ([]*tableSize, error) {
 	var (
-		query      string
-		visibleDBs map[string]struct{}
-		err        error
+		query         string
+		visibleTables map[tableKey]struct{}
+		err           error
 	)
 
 	if c.config.Cluster == "" {
 		query = `SELECT database, table, sum(bytes_on_disk) AS size FROM system.parts WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system') GROUP BY database, table`
 	} else {
-		visibleDBs, err = c.visibleDatabases(ctx)
+		visibleTables, err = c.visibleTables(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -766,8 +798,8 @@ func (c *Connection) estimatePerTableSize(ctx context.Context) ([]*tableSize, er
 			return nil, fmt.Errorf("failed to scan row: %w", err)
 		}
 		// Only needed for cluster() workaround.
-		if visibleDBs != nil {
-			if _, ok := visibleDBs[ts.database]; !ok {
+		if visibleTables != nil {
+			if _, ok := visibleTables[tableKey{database: ts.database, table: ts.table}]; !ok {
 				continue
 			}
 		}
@@ -778,33 +810,6 @@ func (c *Connection) estimatePerTableSize(ctx context.Context) ([]*tableSize, er
 	}
 
 	return tableSizes, nil
-}
-
-func (c *Connection) visibleDatabases(ctx context.Context) (map[string]struct{}, error) {
-	rows, err := c.readDB.QueryxContext(ctx, `
-		SELECT DISTINCT database
-		FROM system.tables
-		WHERE is_temporary = 0 and lower(database) not in ('information_schema', 'system')
-	`)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	dbs := make(map[string]struct{})
-	for rows.Next() {
-		var db string
-		if err := rows.Scan(&db); err != nil {
-			return nil, err
-		}
-		dbs[db] = struct{}{}
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return dbs, nil
 }
 
 // latestRCUPerService returns the sum latest RCU value reported for nodes in each service i.e. read/write.
@@ -965,6 +970,10 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 	return db, nil
 }
 
+type tableKey struct {
+	database string
+	table    string
+}
 type tableSize struct {
 	database string
 	table    string
