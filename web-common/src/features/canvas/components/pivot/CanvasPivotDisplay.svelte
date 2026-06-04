@@ -53,7 +53,7 @@
       showTotalsColumn: tableSpec.hide_totals_col !== true,
       showTotalsRow: tableSpec.hide_totals_row !== true,
     }));
-  } else if ("col_dimensions" in tableSpec && schema.isValid) {
+  } else if (!("columns" in tableSpec) && schema.isValid) {
     const measures = tableSpec.measures || [];
     const colDimensions = tableSpec.col_dimensions || [];
     const rowDimensions = tableSpec.row_dimensions || [];

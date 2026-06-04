@@ -189,11 +189,6 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             label: "Hide total row",
             meta: { defaultValue: false },
           },
-          hide_totals_col: {
-            type: "boolean",
-            label: "Hide total column",
-            meta: { defaultValue: false },
-          },
           ...commonOptions,
         },
         filter: getFilterOptions(true, false),
