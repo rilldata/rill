@@ -33,8 +33,6 @@ var tracer = otel.Tracer("github.com/rilldata/rill/runtime/drivers/bigquery")
 // 64MB seems to be a good balance
 const rowGroupBufferSize = int64(datasize.MB) * 64
 
-const _jsonDownloadLimitBytes = 100 * int64(datasize.MB)
-
 // Regex to parse BigQuery SELECT ALL statement: SELECT * FROM `project_id.dataset.table`
 var selectQueryRegex = regexp.MustCompile(
 	`(?is)^\s*` +
@@ -191,10 +189,11 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 		return nil, err
 	}
 	return &fileIterator{
-		client:  client,
-		bqIter:  it,
-		logger:  c.logger,
-		tempDir: tempDir,
+		client:           client,
+		bqIter:           it,
+		logger:           c.logger,
+		tempDir:          tempDir,
+		allowStandardAPI: c.config.AllowStandardAPI,
 	}, nil
 }
 
@@ -237,7 +236,7 @@ func (f *fileIterator) Next(ctx context.Context) ([]string, error) {
 	// storage API not available so can't read as arrow records. Read results row by row and dump in a json file.
 	if !f.bqIter.IsAccelerated() {
 		if !f.allowStandardAPI {
-			return nil, fmt.Errorf("bigquery: query results cannot be read with the BigQuery Storage Read API. Please provide necessary BigQuery roles")
+			return nil, fmt.Errorf("bigquery: query results cannot be read with the BigQuery Storage Read API. Granting the necessary BigQuery roles is recommended; alternatively, set 'allow_standard_api: true' on the connector to read results via the standard API (less efficient and may fail for large results)")
 		}
 		f.logger.Debug("downloading results in json file", observability.ZapCtx(ctx))
 		span.SetAttributes(attribute.Bool("storage_api", false))
@@ -389,5 +388,7 @@ func (f *fileIterator) downloadAsJSONFile(ctx context.Context) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("conversion of row to json failed with error: %w", err)
 		}
+
+		rows++
 	}
 }
