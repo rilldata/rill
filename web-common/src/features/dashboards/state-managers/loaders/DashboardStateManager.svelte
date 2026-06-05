@@ -29,7 +29,7 @@
     | CompoundQueryResult<Partial<ExploreState> | null>
     | undefined = undefined;
   export let disableMostRecentDashboardState: boolean = false;
-  export let disableSessionDashboardState: boolean = false;
+  export let disableInitSessionDashboardState: boolean = false;
 
   const client = useRuntimeClient();
 
@@ -44,7 +44,7 @@
     storageNamespacePrefix,
     bookmarkOrTokenExploreState,
     disableMostRecentDashboardState,
-    disableSessionDashboardState,
+    disableInitSessionDashboardState,
   );
 
   let stateSync: DashboardStateSync | undefined;
@@ -97,12 +97,15 @@
 
   onNavigate(({ from, to }) => {
     const changedDashboard =
-      !from || !to || from.params?.dashboard !== to.params?.dashboard;
+      !from ||
+      !to ||
+      from.params?.dashboard !== to.params?.dashboard ||
+      from.params?.name !== to.params?.name;
     // Clear out any dashboard banners
     // Note: we still have this on top of the above reactive statement to handle cases where navigation is to a non-dashboard route.
     if (changedDashboard) {
       eventBus.emit("remove-banner", ExploreUrlLimitWarningBannerID);
-      if (disableSessionDashboardState) {
+      if (disableInitSessionDashboardState) {
         clearExploreSessionStore(exploreName, storageNamespacePrefix);
       }
     }

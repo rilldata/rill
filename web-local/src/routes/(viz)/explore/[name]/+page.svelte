@@ -137,7 +137,7 @@
           <DashboardStateManager
             {exploreName}
             disableMostRecentDashboardState={$disablePersistentDashboardState}
-            disableSessionDashboardState={$disablePersistentDashboardState}
+            disableInitSessionDashboardState={$disablePersistentDashboardState}
           >
             <Dashboard {metricsViewName} {exploreName} />
           </DashboardStateManager>

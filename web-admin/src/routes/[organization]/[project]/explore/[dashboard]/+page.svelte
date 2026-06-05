@@ -119,7 +119,7 @@
           storageNamespacePrefix={`${orgName}__${projectName}__`}
           bookmarkOrTokenExploreState={bookmarkExploreStateQuery}
           disableMostRecentDashboardState={$disablePersistentDashboardState}
-          disableSessionDashboardState={$disablePersistentDashboardState}
+          disableInitSessionDashboardState={$disablePersistentDashboardState}
         >
           <Dashboard {metricsViewName} {exploreName} />
         </DashboardStateManager>

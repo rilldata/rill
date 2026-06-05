@@ -509,14 +509,14 @@ function renderDashboardStateManager(
     | CompoundQueryResult<Partial<ExploreState> | undefined>
     | undefined = undefined,
   disableMostRecentDashboardState: boolean = false,
-  disableSessionDashboardState: boolean = false,
+  disableInitSessionDashboardState: boolean = false,
 ) {
   const renderResults = render(DashboardStateManagerTest, {
     props: {
       exploreName: AD_BIDS_EXPLORE_NAME,
       bookmarkOrTokenExploreState,
       disableMostRecentDashboardState,
-      disableSessionDashboardState,
+      disableInitSessionDashboardState,
     },
     // TODO: we need to make sure every single query uses an explicit queryClient instead of the global one
     //       only then we can use a fresh client here.

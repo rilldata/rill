@@ -66,7 +66,7 @@ export class DashboardStateDataLoader {
       | CompoundQueryResult<Partial<ExploreState> | null>
       | undefined,
     public readonly disableMostRecentDashboardState: boolean,
-    public readonly disableSessionDashboardState: boolean,
+    public readonly disableInitSessionDashboardState: boolean,
   ) {
     this.validSpecQuery = useExploreValidSpec(client, exploreName);
     this.fullTimeRangeQuery = this.useFullTimeRangeQuery(
@@ -154,7 +154,7 @@ export class DashboardStateDataLoader {
           exploreStateFromYAMLConfig,
           rillDefaultExploreState,
           backButtonUsed: false,
-          skipSessionStorage: this.disableSessionDashboardState,
+          skipSessionStorage: this.disableInitSessionDashboardState,
         });
       },
     );
@@ -193,6 +193,9 @@ export class DashboardStateDataLoader {
       exploreStateFromYAMLConfig,
       rillDefaultExploreState,
       backButtonUsed,
+      // This should not be disabled when disableInitSessionDashboardState is set.
+      // While going between views, we still need session storage to save the state.
+      skipSessionStorage: false,
     });
   }
 
@@ -299,7 +302,7 @@ export class DashboardStateDataLoader {
     exploreStateFromYAMLConfig,
     rillDefaultExploreState,
     backButtonUsed,
-    skipSessionStorage = false,
+    skipSessionStorage,
   }: {
     metricsViewSpec: V1MetricsViewSpec;
     exploreSpec: V1ExploreSpec;
