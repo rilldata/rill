@@ -199,10 +199,11 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 }
 
 type fileIterator struct {
-	client  *bigquery.Client
-	bqIter  *bigquery.RowIterator
-	logger  *zap.Logger
-	tempDir string
+	client           *bigquery.Client
+	bqIter           *bigquery.RowIterator
+	logger           *zap.Logger
+	tempDir          string
+	allowStandardAPI bool
 
 	downloaded bool
 }
@@ -235,6 +236,9 @@ func (f *fileIterator) Next(ctx context.Context) ([]string, error) {
 
 	// storage API not available so can't read as arrow records. Read results row by row and dump in a json file.
 	if !f.bqIter.IsAccelerated() {
+		if !f.allowStandardAPI {
+			return nil, fmt.Errorf("bigquery: query results cannot be read with the BigQuery Storage Read API. Please provide necessary BigQuery roles")
+		}
 		f.logger.Debug("downloading results in json file", observability.ZapCtx(ctx))
 		span.SetAttributes(attribute.Bool("storage_api", false))
 
@@ -384,19 +388,6 @@ func (f *fileIterator) downloadAsJSONFile(ctx context.Context) (string, error) {
 		err = enc.Encode(row)
 		if err != nil {
 			return "", fmt.Errorf("conversion of row to json failed with error: %w", err)
-		}
-
-		// If we don't have storage API access, BigQuery may return massive JSON results. (But even with storage API access, it may return JSON for small results.)
-		// We want to avoid JSON for massive results. Currently, the only way to do so is to error at a limit.
-		rows++
-		if rows != 0 && rows%10000 == 0 { // Check file size every 10k rows
-			fileInfo, err := os.Stat(fw.Name())
-			if err != nil {
-				return "", fmt.Errorf("bigquery: failed to poll json file size: %w", err)
-			}
-			if fileInfo.Size() >= _jsonDownloadLimitBytes {
-				return "", fmt.Errorf("bigquery: json download exceeded limit of %d bytes (enable and provide access to the BigQuery Storage Read API to read larger results)", _jsonDownloadLimitBytes)
-			}
 		}
 	}
 }

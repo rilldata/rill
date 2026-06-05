@@ -58,8 +58,11 @@ type configProperties struct {
 	// MaxBytesBilled is the maximum number of bytes billed for a query. This is a safety mechanism to prevent accidentally running large queries.
 	// Set this to 0 for project defaults.
 	// Only applies to dashboard queries and does not apply when ingesting data from BigQuery into Rill.
-	MaxBytesBilled  int64 `mapstructure:"max_bytes_billed"`
-	AllowHostAccess bool  `mapstructure:"allow_host_access"`
+	MaxBytesBilled   int64 `mapstructure:"max_bytes_billed"`
+	// AllowStandardAPI lets users query BigQuery using the standard API instead of the Storage Read API. 
+	// This is less efficient but may be necessary if users don't have access to the Storage Read API.
+	AllowStandardAPI bool  `mapstructure:"allow_standard_api"`
+	AllowHostAccess  bool  `mapstructure:"allow_host_access"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.
 	LogQueries bool `mapstructure:"log_queries"`
 }
