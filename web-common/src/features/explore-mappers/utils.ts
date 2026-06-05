@@ -112,7 +112,10 @@ export async function fillTimeRange(
   }
 }
 
-const ExploreNameRegex = /\/explore\/((?:[\w-]|%[0-9A-Fa-f]{2})+)/;
+// Capture everything after "/explore/" up to the next path, query, or hash boundary.
+// This mirrors the backend's exploreNameFromAnnotations, which decodes the entire segment
+// rather than restricting to word characters (explore names can contain spaces, parentheses, etc.).
+const ExploreNameRegex = /\/explore\/([^/?#]+)/;
 
 export function getExploreName(webOpenPath: string) {
   const matches = ExploreNameRegex.exec(webOpenPath);
