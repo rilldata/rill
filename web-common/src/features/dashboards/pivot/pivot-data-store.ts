@@ -219,6 +219,16 @@ export function createPivotDataStore(
     const { rowDimensionNames, colDimensionNames, measureNames, isFlat } =
       config;
 
+    if (config.ready === false) {
+      return configSet({
+        isFetching: true,
+        data: [],
+        columnDef: [],
+        assembled: false,
+        totalColumns: 0,
+      });
+    }
+
     if (
       (!rowDimensionNames.length && !measureNames.length) ||
       (colDimensionNames.length && !measureNames.length)

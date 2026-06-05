@@ -4,6 +4,7 @@
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils.ts";
   import { slide } from "svelte/transition";
   import DragList from "./DragList.svelte";
+  import PivotAutoArrangeZone from "./PivotAutoArrangeZone.svelte";
   import { lastNestState } from "./PivotToolbar.svelte";
   import { PivotChipType, type PivotChipData, type PivotState } from "./types";
 
@@ -15,6 +16,7 @@
   $: splitColumns = splitPivotChips(columns);
   $: fullColumns = splitColumns.dimension.concat(splitColumns.measure);
   $: isFlat = tableMode === "flat";
+  $: columnsForList = isFlat ? columns : fullColumns;
 
   function updateColumn(items: PivotChipData[]) {
     // Reset lastNestState when columns are updated
@@ -32,13 +34,7 @@
 
 <div class="header" transition:slide>
   {#if !isFlat}
-    <div
-      class="header-row"
-      transition:slide={{
-        duration: 200,
-        axis: "y",
-      }}
-    >
+    <div class="header-row" transition:slide={{ duration: 200, axis: "y" }}>
       <span class="row-label">
         <Row size="16px" /> Rows
       </span>
@@ -49,6 +45,12 @@
         onUpdate={updateRows}
       />
     </div>
+    <PivotAutoArrangeZone
+      {rows}
+      columns={columnsForList}
+      setRows={updateRows}
+      setColumns={updateColumn}
+    />
   {/if}
   <div class="header-row">
     <div class="row-label">
@@ -58,7 +60,7 @@
     <DragList
       zone="columns"
       {tableMode}
-      items={isFlat ? columns : fullColumns}
+      items={columnsForList}
       placeholder="Drag dimensions or measures here"
       onUpdate={updateColumn}
     />

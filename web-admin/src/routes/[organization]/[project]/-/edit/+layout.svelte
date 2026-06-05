@@ -61,6 +61,15 @@
   $: primaryBranch = $projectQuery.data?.project?.primaryBranch;
   $: devTtlSeconds = $projectQuery.data?.project?.devTtlSeconds;
 
+  $: primaryProjectQuery = createAdminServiceGetProject(
+    organization,
+    project,
+    undefined,
+    { query: baseGetProjectQueryOptions },
+  );
+  $: hasPrimaryDeployment =
+    !!$primaryProjectQuery.data?.project?.primaryDeploymentId;
+
   // Deployment data and credentials come from GetProject (no separate API needed)
   $: deployment = $projectQuery.data?.deployment;
   $: deploymentStatus = deployment?.status;
@@ -200,14 +209,19 @@
 
 {#snippet envEditDisabled()}
   <div class="flex flex-row gap-2 items-center w-fit text-sm">
-    <InfoIcon size={14} /> Manage environment variables in
-    <a
-      href="/{organization}/{project}/-/settings/environment-variables"
-      target="_blank"
-      rel="noopener"
-    >
-      Settings →
-    </a>
+    {#if hasPrimaryDeployment}
+      <InfoIcon size={14} /> Manage environment variables in
+      <a
+        href="/{organization}/{project}/-/settings/environment-variables"
+        target="_blank"
+        rel="noopener"
+      >
+        Settings →
+      </a>
+    {:else}
+      <InfoIcon size={14} /> You can manage environment variables from settings page
+      after the project has been published.
+    {/if}
   </div>
 {/snippet}
 

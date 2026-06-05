@@ -15,6 +15,7 @@ import (
 )
 
 func TestOLAP(t *testing.T) {
+	t.Skip("skipping due to inactive Databricks account")
 	testmode.Expensive(t)
 
 	_, olap := acquireTestDatabricks(t)
@@ -71,6 +72,7 @@ func TestOLAP(t *testing.T) {
 }
 
 func TestComplexTypes(t *testing.T) {
+	t.Skip("skipping due to inactive Databricks account")
 	testmode.Expensive(t)
 
 	_, olap := acquireTestDatabricks(t)
@@ -116,6 +118,7 @@ func TestComplexTypes(t *testing.T) {
 }
 
 func TestEmptyRows(t *testing.T) {
+	t.Skip("skipping due to inactive Databricks account")
 	testmode.Expensive(t)
 
 	_, olap := acquireTestDatabricks(t)
@@ -132,6 +135,7 @@ func TestEmptyRows(t *testing.T) {
 }
 
 func TestLoadDDL(t *testing.T) {
+	t.Skip("skipping due to inactive Databricks account")
 	testmode.Expensive(t)
 
 	_, olap := acquireTestDatabricks(t)
@@ -143,6 +147,7 @@ func TestLoadDDL(t *testing.T) {
 }
 
 func TestDryRun(t *testing.T) {
+	t.Skip("skipping due to inactive Databricks account")
 	testmode.Expensive(t)
 
 	_, olap := acquireTestDatabricks(t)
@@ -154,6 +159,7 @@ func TestDryRun(t *testing.T) {
 }
 
 func TestQuerySchema(t *testing.T) {
+	t.Skip("skipping due to inactive Databricks account")
 	testmode.Expensive(t)
 
 	_, olap := acquireTestDatabricks(t)

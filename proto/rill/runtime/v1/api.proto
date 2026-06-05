@@ -1216,6 +1216,7 @@ message GetAIMessageRequest {
 // Response message for RuntimeService.GetAIMessage
 message GetAIMessageResponse {
   Message message = 1;
+  Message result = 2;
 }
 
 // **********
@@ -1364,6 +1365,8 @@ message GitPullRequest {
 message GitPullResponse {
   // The output of the git pull command. Only set for unsuccessful pulls.
   string output = 1;
+  // The name of the branch that was being merged when a conflict occurred. Only set for unsuccessful pulls.
+  string merged_branch = 2;
 }
 
 message GitPushRequest {

@@ -60,6 +60,10 @@ _[string]_ - Refers to the timestamp column from your model that will underlie x
 
 _[string]_ - A SQL expression that tells us the max timestamp that the measures are considered valid for. Usually does not need to be overwritten 
 
+### `data_time_range`
+
+_[string]_ - Optional [rilltime](https://docs.rilldata.com/reference/time-syntax) expression describing the base table's time coverage (e.g. `-5Y to now`, `inf`). When set, Rill skips the `min`/`max` OLAP probe for the base table and uses the declared bounds for coverage checks. 
+
 ### `smallest_time_grain`
 
 _[string]_ - Refers to the smallest time granularity the user is allowed to view. The valid values are: millisecond, second, minute, hour, day, week, month, quarter, year 
@@ -71,6 +75,10 @@ _[integer]_ - Refers to the first day of the week for time grain aggregation (fo
 ### `first_month_of_year`
 
 _[integer]_ - Refers to the first month of the year for time grain aggregation. The valid values are 1 through 12 where January=1 and December=12 
+
+### `max_query_time_range`
+
+_[string]_ - The maximum time span any single query against this metrics view may cover, expressed as an ISO 8601 duration with day-or-larger granularity (e.g. `P90D`, `P3M`, `P1Y`). Sub-day durations such as `PT12H` are not supported. Applies independently to the primary and comparison time ranges. If unset, no limit is enforced. 
 
 ### `dimensions`
 
@@ -202,6 +210,8 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
   - **`treat_nulls_as`** - _[string]_ - used to configure what value to fill in for missing time buckets. This also works generally as COALESCING over non empty time buckets. 
 
+  - **`lower_is_better`** - _[boolean]_ - When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas (KPIs, big numbers, leaderboards, pivot tables, time-series tooltips) swap their positive/negative coloring accordingly. 
+
 ### `parent_dimensions`
 
 _[oneOf]_ - Optional field selectors for dimensions to inherit from the parent metrics view. 
@@ -305,6 +315,8 @@ _[array of object]_ - Pre-aggregated rollup tables that can be used to accelerat
       - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic 
 
       - **`exclude`** - _[object]_ - Select all fields except those listed here 
+
+  - **`data_time_range`** - _[string]_ - Optional [rilltime](https://docs.rilldata.com/reference/time-syntax) expression describing the rollup's time coverage (e.g. `-1Y to now`, `-5Y to -1Y`, `inf`). When set, Rill skips the `min`/`max` OLAP probe for this rollup and uses the declared bounds for coverage checks. 
 
 ### `security`
 

@@ -12,6 +12,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
@@ -901,20 +902,36 @@ func TestGitRepo_mergeToBranch(t *testing.T) {
 	}
 }
 
-func TestEnsureGitConfig(t *testing.T) {
+func TestGitCheckout_refNotFound(t *testing.T) {
+	repoDir := t.TempDir()
+	require.NoError(t, execGitCommand(exec.Command("git", "init", repoDir)))
+	require.NoError(t, execGitCommand(exec.Command("git", "-C", repoDir, "checkout", "-b", "main")))
+	setupGitConfig(t, repoDir)
+	// Need an initial commit so HEAD resolves; otherwise checkout would fail for a different reason.
+	require.NoError(t, os.WriteFile(filepath.Join(repoDir, "seed.txt"), []byte("seed"), 0644))
+	require.NoError(t, execGitCommand(exec.Command("git", "-C", repoDir, "add", "seed.txt")))
+	require.NoError(t, execGitCommand(exec.Command("git", "-C", repoDir, "commit", "-m", "seed")))
+
+	err := gitCheckout(repoDir, "does-not-exist", false, false, "")
+	require.ErrorIs(t, err, gitutil.ErrRefNotFound, "missing ref must surface as ErrRefNotFound so pullInner can create the branch")
+}
+
+func TestSetGitConfig(t *testing.T) {
 	withCleanGitEnv(t)
 
-	repo := t.TempDir()
-	require.NoError(t, execGitCommand(exec.Command("git", "-C", repo, "init")))
-	require.NoError(t, ensureGitConfig(repo, "user.name", "Test User"))
-	out, err := exec.Command("git", "-C", repo, "config", "--local", "--get", "user.name").CombinedOutput()
+	repoDir := t.TempDir()
+	require.NoError(t, execGitCommand(exec.Command("git", "init", repoDir)))
+
+	require.NoError(t, setGitConfig(repoDir, "user.name", "Test User"))
+	out, err := exec.Command("git", "-C", repoDir, "config", "--local", "--get", "user.name").CombinedOutput()
 	require.NoError(t, err)
 	require.Equal(t, "Test User\n", string(out))
 
-	require.NoError(t, ensureGitConfig(repo, "user.name", "Rest User"))
-	out, err = exec.Command("git", "-C", repo, "config", "--local", "--get", "user.name").CombinedOutput()
+	// setGitConfig overwrites unconditionally — earlier behavior (ensureGitConfig) only set if missing.
+	require.NoError(t, setGitConfig(repoDir, "user.name", "Rest User"))
+	out, err = exec.Command("git", "-C", repoDir, "config", "--local", "--get", "user.name").CombinedOutput()
 	require.NoError(t, err)
-	require.Equal(t, "Test User\n", string(out)) // still test user since set locally
+	require.Equal(t, "Rest User\n", string(out))
 }
 
 func newEditableGitRepo(localDir, remoteURL, defaultBranch, primaryBranch, subpath string) *gitRepo {
@@ -1094,6 +1111,9 @@ func createRemoteBranch(t *testing.T, remoteDir, branchName, fileName, content, 
 func setupGitConfig(t *testing.T, repoPath string) {
 	require.NoError(t, execGitCommand(exec.Command("git", "-C", repoPath, "config", "user.name", "Test User")))
 	require.NoError(t, execGitCommand(exec.Command("git", "-C", repoPath, "config", "user.email", "test@example.com")))
+	// Disable background auto-gc: otherwise commit/push may spawn a detached `git gc --auto`
+	// that writes into .git/objects/pack after the test ends, racing with t.TempDir() cleanup.
+	require.NoError(t, execGitCommand(exec.Command("git", "-C", repoPath, "config", "gc.auto", "0")))
 }
 
 func execGitCommand(cmd *exec.Cmd) error {

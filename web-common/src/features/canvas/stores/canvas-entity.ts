@@ -194,15 +194,25 @@ export class CanvasEntity {
         this.defaultUrlParamsStore,
         this.filterManager.pinnedFilterKeysStore,
         this.filterManager.defaultPinnedFilterKeysStore,
+        this.filterManager.requiredFilterKeysStore,
+        this.filterManager.defaultRequiredFilterKeysStore,
       ],
       ([
         $searchParams,
         $defaultUrlParams,
         pinnedFilters,
         defaultPinnedFilterKeys,
+        requiredFilters,
+        defaultRequiredFilterKeys,
       ]) => {
         if (
           defaultPinnedFilterKeys.symmetricDifference(pinnedFilters).size > 0
+        ) {
+          return false;
+        }
+        if (
+          defaultRequiredFilterKeys.symmetricDifference(requiredFilters).size >
+          0
         ) {
           return false;
         }
@@ -317,6 +327,7 @@ export class CanvasEntity {
     const defaultPreset = validSpec?.defaultPreset ?? {};
     const filterExpressions = defaultPreset.filterExpr ?? {};
     const pinnedFilters = validSpec?.pinnedFilters ?? [];
+    const requiredFilters = validSpec?.requiredFilters ?? [];
 
     if (metricsViews) {
       if (this.filterManager) {
@@ -324,6 +335,7 @@ export class CanvasEntity {
           metricsViews,
           pinnedFilters,
           filterExpressions,
+          requiredFilters,
         );
       } else {
         this.filterManager = new FilterManager(
@@ -331,6 +343,7 @@ export class CanvasEntity {
           this.instanceId,
           pinnedFilters,
           filterExpressions,
+          requiredFilters,
         );
         // Clears the active component when a global filter changes through
         // FilterManager.actions.* (user-driven filter UI). Pivot click-to-filter
@@ -355,38 +368,67 @@ export class CanvasEntity {
       setTimeout(resolve, 100);
     });
 
-    const yaml = get(this.parsedContent);
-    const filterMap = new YAMLMap();
-
     const pinnedFilters = get(this.filterManager.pinnedFilterKeysStore);
+    const requiredFilters = get(this.filterManager.requiredFilterKeysStore);
 
-    const genericPinnedKeys = Array.from(pinnedFilters).map(
+    // Persist pinned and required independently. Render-time treats a filter as
+    // visible whenever it's in either set, so we don't dedupe here: doing so
+    // would silently drop the pin flag if a user later toggled required off.
+    const pinnedNames = Array.from(pinnedFilters).map((f) => f.split("::")[1]);
+    const requiredNames = Array.from(requiredFilters).map(
       (f) => f.split("::")[1],
     );
+    const timeRange = get(this.timeManager.state.rangeStore);
+    const comparisonOn = get(this.timeManager.state.showTimeComparisonStore);
 
-    if (genericPinnedKeys.length > 0) {
-      yaml.setIn(["filters", "pinned"], genericPinnedKeys);
-    } else {
+    const metricsViewFilters = get(this.filterManager.metricsViewFilters);
+    const filterNames = Array.from(metricsViewFilters.keys());
+    const promises = Array.from(metricsViewFilters.values()).map((filters) => {
+      const parsed = get(filters.parsed);
+      return queryClient.fetchQuery({
+        queryKey: [
+          "resolve-metrics-view-filter-expression",
+          this.instanceId,
+          parsed.where,
+        ],
+        queryFn: () =>
+          queryServiceConvertExpressionToMetricsSQL(this.client, {
+            expression: parsed.where as any,
+          }),
+      });
+    });
+
+    const responses = await Promise.all(promises);
+
+    const filterMap = new YAMLMap();
+    responses.forEach((response, index) => {
+      if (!response.sql) return;
+      filterMap.add({
+        key: filterNames[index],
+        value: response.sql,
+      });
+    });
+
+    // Read the YAML document AFTER the async work so any component edits
+    // that landed in editorContent during the await are preserved. Reading
+    // before the await captures a stale Document whose round-trip back to
+    // disk would drop those components. The mutate-and-write below runs
+    // synchronously to keep the read-modify-write atomic.
+    const yaml = get(this.parsedContent);
+
+    setOrDeleteFilterList(yaml, "pinned", pinnedNames);
+    setOrDeleteFilterList(yaml, "required", requiredNames);
+
+    if (
+      yaml.get("filters") instanceof YAMLMap &&
+      (yaml.get("filters") as YAMLMap).items.length === 0
+    ) {
       try {
-        yaml.deleteIn(["filters", "pinned"]);
+        yaml.deleteIn(["filters"]);
       } catch {
         // no-op
       }
-
-      if (
-        yaml.get("filters") instanceof YAMLMap &&
-        yaml.get("filters").items.length === 0
-      ) {
-        try {
-          yaml.deleteIn(["filters"]);
-        } catch {
-          // no-op
-        }
-      }
     }
-
-    const timeRange = get(this.timeManager.state.rangeStore);
-    const comparisonOn = get(this.timeManager.state.showTimeComparisonStore);
 
     if (timeRange) {
       yaml.setIn(["defaults", "time_range"], timeRange);
@@ -401,37 +443,6 @@ export class CanvasEntity {
         // no-op
       }
     }
-
-    const promises = get(this.filterManager.metricsViewFilters)
-      .entries()
-      .map(([_, filters]) => {
-        const parsed = get(filters.parsed);
-
-        return queryClient.fetchQuery({
-          queryKey: [
-            "resolve-metrics-view-filter-expression",
-            this.instanceId,
-            parsed.where,
-          ],
-          queryFn: () =>
-            queryServiceConvertExpressionToMetricsSQL(this.client, {
-              expression: parsed.where as any,
-            }),
-        });
-      });
-
-    const responses = await Promise.all(promises);
-
-    responses.forEach((response, index) => {
-      const name = Array.from(
-        get(this.filterManager.metricsViewFilters).keys(),
-      )[index];
-      if (!response.sql) return;
-      filterMap.add({
-        key: name,
-        value: response.sql,
-      });
-    });
 
     yaml.setIn(["defaults", "filters"], filterMap);
 
@@ -839,6 +850,22 @@ function getDefaults(defaultPreset: V1CanvasPreset) {
   );
 
   return defaultSearchParams;
+}
+
+function setOrDeleteFilterList(
+  yaml: ReturnType<typeof parseDocument>,
+  key: "pinned" | "required",
+  names: string[],
+) {
+  if (names.length > 0) {
+    yaml.setIn(["filters", key], names);
+  } else {
+    try {
+      yaml.deleteIn(["filters", key]);
+    } catch {
+      // no-op
+    }
+  }
 }
 
 const customKeySort = (

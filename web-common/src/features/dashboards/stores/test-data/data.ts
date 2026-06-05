@@ -237,6 +237,10 @@ export const AD_BIDS_METRICS_3_MEASURES_DIMENSIONS: V1MetricsViewSpec = {
 export const AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME: V1MetricsViewSpec =
   {
     ...AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+    dimensions: [...AD_BIDS_THREE_DIMENSIONS].concat({
+      name: AD_BIDS_TIMESTAMP_DIMENSION,
+      type: MetricsViewSpecDimensionType.DIMENSION_TYPE_TIME,
+    }),
     timeDimension: AD_BIDS_TIMESTAMP_DIMENSION,
   };
 
@@ -294,6 +298,15 @@ export const AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS: V1ExploreSpec = {
   measures: AD_BIDS_THREE_MEASURES.map((m) => m.name!),
   dimensions: AD_BIDS_THREE_DIMENSIONS.map((d) => d.name!),
 };
+export const AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS_TIME_DIMENSION: V1ExploreSpec =
+  {
+    displayName: AD_BIDS_EXPLORE_NAME,
+    metricsView: AD_BIDS_METRICS_NAME,
+    measures: AD_BIDS_THREE_MEASURES.map((m) => m.name!),
+    dimensions: AD_BIDS_THREE_DIMENSIONS.map((d) => d.name!).concat(
+      AD_BIDS_TIMESTAMP_DIMENSION,
+    ),
+  };
 
 // Exhaustive metrics view. TODO: replace usage of partial metrics view
 export const AD_BIDS_EXPLORE: V1ExploreSpec = {

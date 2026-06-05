@@ -8,6 +8,7 @@ import (
 )
 
 func TestListDatabaseSchemas(t *testing.T) {
+	t.Skip("skipping due to inactive Databricks account")
 	testmode.Expensive(t)
 
 	conn, _ := acquireTestDatabricks(t)
@@ -29,6 +30,7 @@ func TestListDatabaseSchemas(t *testing.T) {
 }
 
 func TestListTables(t *testing.T) {
+	t.Skip("skipping due to inactive Databricks account")
 	testmode.Expensive(t)
 
 	conn, _ := acquireTestDatabricks(t)
@@ -50,6 +52,7 @@ func TestListTables(t *testing.T) {
 }
 
 func TestGetTable(t *testing.T) {
+	t.Skip("skipping due to inactive Databricks account")
 	testmode.Expensive(t)
 
 	conn, _ := acquireTestDatabricks(t)

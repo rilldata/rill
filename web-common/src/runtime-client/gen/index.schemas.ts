@@ -110,6 +110,7 @@ export interface MetricsViewSpecMeasure {
   validPercentOfTotal?: boolean;
   treatNullsAs?: string;
   dataType?: Runtimev1Type;
+  lowerIsBetter?: boolean;
 }
 
 export type MetricsViewSpecMeasureType =
@@ -480,6 +481,7 @@ The values should be valid IANA location identifiers. */
   /** Security rules to apply for access to the canvas. */
   securityRules?: V1SecurityRule[];
   pinnedFilters?: string[];
+  requiredFilters?: string[];
 }
 
 export interface V1CanvasState {
@@ -1100,6 +1102,7 @@ export interface V1GenerateResolverResponse {
 
 export interface V1GetAIMessageResponse {
   message?: V1Message;
+  result?: V1Message;
 }
 
 export interface V1GetConversationResponse {
@@ -1702,6 +1705,10 @@ export interface V1MetricsViewSpec {
   /** Query attributes that can be templated with user context and used by drivers (e.g., appended to SETTINGS in ClickHouse).
 Keys and values are stored as templates and will be resolved at query time. */
   queryAttributes?: V1MetricsViewSpecQueryAttributes;
+  /** Maximum time span any single query against this metrics view may cover, as an ISO 8601 duration with day-or-larger
+   * granularity (e.g. "P90D", "P3M", "P1Y"). Sub-day durations are not supported. Applies to queries that take a time
+   * range, including the comparison time range. Time-range introspection RPCs are exempt. If unset, no limit is enforced. */
+  maxQueryTimeRange?: string;
 }
 
 /**
@@ -1739,6 +1746,9 @@ This may be empty if the metrics view is based on an externally managed table. *
 
 export interface V1MetricsViewTimeRangeResponse {
   timeRangeSummary?: V1TimeRangeSummary;
+  /** The metrics view's max_query_time_range property resolved into milliseconds against the current time.
+   * Zero (or absent) if the metrics view does not configure max_query_time_range. */
+  maxQueryTimeRangeMillis?: string;
   trace?: V1Trace;
 }
 
@@ -1749,6 +1759,9 @@ export interface V1MetricsViewTimeRangesResponse {
   /** The same values as resolved_time_ranges for backwards compatibility.
 Deprecated: use resolved_time_ranges instead. */
   timeRanges?: V1TimeRange[];
+  /** The metrics view's max_query_time_range property resolved into milliseconds against the request's reference time.
+   * Zero (or absent) if the metrics view does not configure max_query_time_range. */
+  maxQueryTimeRangeMillis?: string;
   trace?: V1Trace;
 }
 

@@ -271,6 +271,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 				ToName:           org.Name,
 				OrgName:          org.Name,
 				FrontendURL:      s.admin.URLs.Frontend(),
+				BillingURL:       s.admin.URLs.Billing(org.Name, false),
 				PlanName:         plan.DisplayName,
 				BillingStartDate: sub.CurrentBillingCycleEndDate,
 			})
@@ -581,6 +582,8 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 			opts.QuotaSlotsPerDeployment = biggerOfInt(sub.Plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment)
 			opts.QuotaOutstandingInvites = biggerOfInt(sub.Plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites)
 			opts.QuotaStorageLimitBytesPerDeployment = biggerOfInt64(sub.Plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment)
+			opts.BillingPlanName = &sub.Plan.Name
+			opts.BillingPlanDisplayName = &sub.Plan.DisplayName
 		}
 	}
 
@@ -705,26 +708,22 @@ func (s *Server) SudoGrantTrialCredits(ctx context.Context, req *adminv1.SudoGra
 		return &adminv1.SudoGrantTrialCreditsResponse{GrantedUsd: req.AmountUsd}, nil
 	}
 
-	// Post-depletion: trial sub was cancelled at depletion. Recreate it so usage reports resume and decrement the newly-granted balance.
-	subCancelled, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeSubscriptionCancelled)
-	if err != nil && !errors.Is(err, database.ErrNotFound) {
-		return nil, err
-	}
-
 	plan, err := s.admin.Biller.GetPlanByType(ctx, billing.FreePlanType)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get credit trial plan: %w", err)
 	}
 
+	// there should not be any active subscription
 	sub, err := s.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
 	if err != nil && !errors.Is(err, billing.ErrNotFound) {
 		return nil, fmt.Errorf("failed to get active subscription: %w", err)
 	}
-	if sub == nil {
-		sub, err = s.admin.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
-		if err != nil {
-			return nil, fmt.Errorf("failed to recreate trial subscription: %w", err)
-		}
+	if sub != nil {
+		return nil, fmt.Errorf("unexpected active subscription found for org on depleted trial")
+	}
+	sub, err = s.admin.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
+	if err != nil {
+		return nil, fmt.Errorf("failed to recreate trial subscription: %w", err)
 	}
 
 	txCtx, tx, err := s.admin.DB.NewTx(ctx, false)
@@ -733,13 +732,13 @@ func (s *Server) SudoGrantTrialCredits(ctx context.Context, req *adminv1.SudoGra
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	if err := s.admin.DB.DeleteBillingIssue(txCtx, depleted.ID); err != nil {
-		return nil, fmt.Errorf("failed to delete trial-credits-depleted issue: %w", err)
+	err = s.admin.CleanupSubscriptionBillingIssues(txCtx, org.ID)
+	if err != nil {
+		return nil, err
 	}
-	if subCancelled != nil {
-		if err := s.admin.DB.DeleteBillingIssue(txCtx, subCancelled.ID); err != nil {
-			return nil, fmt.Errorf("failed to delete subscription-cancelled issue: %w", err)
-		}
+	err = s.admin.CleanupTrialBillingIssues(txCtx, org.ID)
+	if err != nil {
+		return nil, err
 	}
 
 	if _, err := s.admin.DB.UpsertBillingIssue(txCtx, &database.UpsertBillingIssueOptions{

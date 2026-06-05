@@ -27,7 +27,10 @@ import {
   type Readable,
   type Writable,
 } from "svelte/store";
-import { getFilterWithNullHandling } from "../query-util";
+import {
+  canQueryWithTimeRange,
+  getFilterWithNullHandling,
+} from "../query-util";
 import {
   OTHER_VALUE,
   OTHER_VALUE_DOMAIN_KEY,
@@ -108,7 +111,7 @@ export class CircularChartProvider {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const enabled =
           $visible &&
-          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
+          canQueryWithTimeRange(hasTimeSeries, timeRange) &&
           !!colorDimensionName &&
           config.color?.type === "nominal" &&
           !Array.isArray(config.color?.sort);
@@ -148,7 +151,7 @@ export class CircularChartProvider {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const enabled =
           $visible &&
-          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
+          canQueryWithTimeRange(hasTimeSeries, timeRange) &&
           !!config.measure?.field;
 
         const totalWhere = getFilterWithNullHandling(where, config.color);
@@ -194,7 +197,7 @@ export class CircularChartProvider {
           showOther &&
           !!visibleValues &&
           visibleValues.length > 0 &&
-          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
+          canQueryWithTimeRange(hasTimeSeries, timeRange) &&
           !!config.measure?.field &&
           !!colorDimensionName;
 
@@ -247,7 +250,7 @@ export class CircularChartProvider {
         const topNColorData = $topNColorQuery?.data?.data;
         const enabled =
           $visible &&
-          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
+          canQueryWithTimeRange(hasTimeSeries, timeRange) &&
           !!measures?.length &&
           (config.color?.type === "nominal" &&
           !Array.isArray(config.color?.sort)

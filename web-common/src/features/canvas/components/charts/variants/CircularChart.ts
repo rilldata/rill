@@ -137,13 +137,18 @@ export class CircularChartComponent extends BaseChart<CircularCanvasChartSpec> {
     metricsViewName: string,
     metricsViewSpec: V1MetricsViewSpec | undefined,
   ): CircularCanvasChartSpec {
-    // Randomly select a measure and dimension if available
     const measures = metricsViewSpec?.measures || [];
     const dimensions = [...(metricsViewSpec?.dimensions || [])].filter(
       (d) => d.type === MetricsViewSpecDimensionType.DIMENSION_TYPE_CATEGORICAL,
     );
-    const randomMeasure = measures[Math.floor(Math.random() * measures.length)]
-      ?.name as string;
+
+    // Prefer summable measures since percentage-style measures don't make
+    // sense as slices of a whole.
+    const summableMeasures = measures.filter((m) => m.validPercentOfTotal);
+    const measurePool = summableMeasures.length ? summableMeasures : measures;
+    const randomMeasure = measurePool[
+      Math.floor(Math.random() * measurePool.length)
+    ]?.name as string;
 
     const randomDimension = dimensions[
       Math.floor(Math.random() * dimensions.length)

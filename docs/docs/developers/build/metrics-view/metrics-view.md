@@ -29,5 +29,8 @@ Metrics Views are a key part of defining your measures and dimensions.
 - [**Fixed Measures**](/developers/build/metrics-view/measures/fixed-measures) - Create measures with fixed values and constants
 - [**Window Functions**](/developers/build/metrics-view/measures/windows) - Apply window functions for advanced analytical operations
 
+### Performance
+- [**Rollups**](/developers/build/metrics-view/rollups) - Accelerate queries by routing to pre-aggregated rollup tables
+
 ### Security 
 - [**Data Access Policies**](/developers/build/metrics-view/security) - Control access to your metrics data with role-based permissions

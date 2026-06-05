@@ -3,6 +3,7 @@
   import TimeSeriesChart from "@rilldata/web-common/components/time-series-chart/TimeSeriesChart.svelte";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import type { Annotation } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/annotation-utils";
+  import { qualitativeColorsArray } from "@rilldata/web-common/features/themes/palette-store";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { formatGrainBucket } from "@rilldata/web-common/lib/time/ranges/formatter";
   import type {
@@ -75,7 +76,7 @@
       }) => void)
     | undefined;
   export let onScrubClear: (() => void) | undefined;
-  export let scrubController: ScrubController;
+  export let scrubController: ScrubController | undefined = undefined;
   export let metricsViewName: string;
   export let connectNulls: boolean = true;
   export let dynamicYAxis: boolean = false;
@@ -86,6 +87,8 @@
   const selMeasure = measureSelection.measure;
   const selStart = measureSelection.start;
   const selEnd = measureSelection.end;
+
+  $: lowerIsBetter = measure?.lowerIsBetter ?? false;
 
   let clientWidth = 425;
   let mouseDownX: number | null = null;
@@ -138,12 +141,12 @@
   $: xTickIndices = computeXTickIndices(mode, data.length);
 
   // Keep scrub controller in sync with data length
-  $: scrubController.setDataLength(data.length);
+  $: scrubController?.setDataLength(data.length);
 
   // Subscribe to scrub state from controller for rendering
-  $: scrubStateStore = scrubController.state;
+  $: scrubStateStore = scrubController?.state;
   $: currentScrubState = $scrubStateStore;
-  $: isScrubbing = currentScrubState.isScrubbing;
+  $: isScrubbing = Boolean(currentScrubState?.isScrubbing);
 
   // Scrub indices: use local (active) state while scrubbing, external (URL) state otherwise
   $: externalScrubStartIndex = chartScrubInterval
@@ -152,8 +155,8 @@
   $: externalScrubEndIndex = chartScrubInterval
     ? dateToIndex(data, chartScrubInterval.end.toMillis())
     : null;
-  $: scrubStartIndex = currentScrubState.startIndex ?? externalScrubStartIndex;
-  $: scrubEndIndex = currentScrubState.endIndex ?? externalScrubEndIndex;
+  $: scrubStartIndex = currentScrubState?.startIndex ?? externalScrubStartIndex;
+  $: scrubEndIndex = currentScrubState?.endIndex ?? externalScrubEndIndex;
   $: hasScrubSelection = scrubStartIndex !== null && scrubEndIndex !== null;
 
   // Hover state
@@ -175,7 +178,7 @@
 
   $: hoveredIndex = $hoverIndex?.start ?? -1;
   $: hoveredPoint = data[hoveredIndex] ?? null;
-  $: cursorStyle = scrubController.getCursorStyle(hoverState.screenX, xScale);
+  $: cursorStyle = scrubController?.getCursorStyle(hoverState.screenX, xScale);
 
   // Formatters
   $: measureFormatter = createMeasureValueFormatter(measure);
@@ -205,10 +208,12 @@
   $: dimTooltipEntries =
     isComparingDimension && hoveredIndex >= 0
       ? dimensionData
-          .map((dim) => ({
+          .map((dim, i) => ({
             label: dim.dimensionValue ?? "null",
             value: dim.data[hoveredIndex]?.value ?? null,
-            color: dim.color,
+            color:
+              $qualitativeColorsArray[i % $qualitativeColorsArray.length] ||
+              dim.color,
           }))
           .filter((e) => e.value !== null)
           .sort((a, b) => (b.value ?? 0) - (a.value ?? 0))
@@ -259,7 +264,7 @@
 
   function handleReset() {
     onScrubClear?.();
-    scrubController.reset();
+    scrubController?.reset();
   }
 
   function handleSvgMouseLeave() {
@@ -270,7 +275,7 @@
   }
 
   function handleMouseDown(e: MouseEvent) {
-    if (e.button !== 0) return;
+    if (!scrubController || e.button !== 0) return;
     mouseDownX = e.clientX;
     mouseDownY = e.clientY;
     const x = clampX(e.offsetX);
@@ -303,7 +308,7 @@
       const [start, end] = s < e ? [s, e] : [e, s];
       measureSelection.setRange(measureName, start, end);
     }
-    scrubController.reset();
+    scrubController?.reset();
   }
 
   function handlePointClick(offsetX: number) {
@@ -319,6 +324,8 @@
   }
 
   function handleMouseUp(e: MouseEvent) {
+    if (!scrubController) return;
+
     const wasClick =
       mouseDownX !== null &&
       mouseDownY !== null &&
@@ -378,7 +385,7 @@
 
     if (isOutside) {
       // Click outside selection clears it
-      scrubController.reset();
+      scrubController?.reset();
       onScrubClear?.();
       measureSelection.clear();
     } else if (measureName) {
@@ -416,7 +423,7 @@
       };
 
       // Update scrub if dragging
-      if (get(scrubController.state).isScrubbing) {
+      if (scrubController && get(scrubController.state).isScrubbing) {
         scrubController.update(x, xScale);
       }
 
@@ -512,6 +519,7 @@
             {tooltipComparisonValue}
             {tooltipDeltaLabel}
             {tooltipDeltaPositive}
+            {lowerIsBetter}
             {showDelta}
             {valueFormatter}
           />
@@ -577,6 +585,7 @@
       {dimTooltipEntries}
       deltaLabel={tooltipDeltaLabel}
       deltaPositive={tooltipDeltaPositive}
+      {lowerIsBetter}
       formatter={valueFormatter}
     />
   {/if}

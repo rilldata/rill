@@ -7,8 +7,16 @@
   export let label: string | undefined = undefined;
   export let filter: MeasureFilterEntry | undefined = undefined;
   export let pinned: boolean | undefined = undefined;
+  export let missingRequired = false;
 </script>
 
-<Chip type="measure" theme {label} readOnly showPinnedIcon={pinned}>
+<Chip
+  type="measure"
+  theme
+  {label}
+  readOnly
+  showPinnedIcon={pinned}
+  error={missingRequired}
+>
   <MeasureFilterBody slot="body" {dimensionName} {filter} {label} />
 </Chip>

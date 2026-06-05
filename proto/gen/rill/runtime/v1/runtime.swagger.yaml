@@ -3812,6 +3812,9 @@ definitions:
       dataType:
         $ref: '#/definitions/runtimev1Type'
         description: The data type of the measure. Only populated in ValidSpec.
+      lowerIsBetter:
+        type: boolean
+        description: When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas (KPIs, big numbers, leaderboards, pivot tables, time-series tooltips) swap their positive/negative coloring accordingly.
     title: Measures are aggregated computed values
   MetricsViewSpecMeasureType:
     type: string
@@ -3849,6 +3852,12 @@ definitions:
         type: string
       model:
         type: string
+      dataTimeRange:
+        type: string
+        description: |-
+          Optional rilltime expression describing the time range covered by the rollup.
+          When set, the rollup's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
+          Evaluated with `now` = current time, `earliest` = zero time, `latest`/`watermark` = current time.
       timeGrain:
         $ref: '#/definitions/v1TimeGrain'
         description: Time grain of the rollup.
@@ -4438,6 +4447,13 @@ definitions:
         items:
           type: string
         title: Array of dimension or measure names
+      requiredFilters:
+        type: array
+        items:
+          type: string
+        description: |-
+          Array of dimension or measure names that must have a value before the canvas can render.
+          Required filters are implicitly pinned.
   v1CanvasState:
     type: object
     properties:
@@ -5429,6 +5445,8 @@ definitions:
     properties:
       message:
         $ref: '#/definitions/v1Message'
+      result:
+        $ref: '#/definitions/v1Message'
     title: Response message for RuntimeService.GetAIMessage
   v1GetConversationResponse:
     type: object
@@ -5536,6 +5554,9 @@ definitions:
       output:
         type: string
         description: The output of the git pull command. Only set for unsuccessful pulls.
+      mergedBranch:
+        type: string
+        description: The name of the branch that was being merged when a conflict occurred. Only set for unsuccessful pulls.
   v1GitPushResponse:
     type: object
   v1GitStatusResponse:
@@ -6449,6 +6470,12 @@ definitions:
       watermarkExpression:
         type: string
         description: Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension).
+      dataTimeRange:
+        type: string
+        description: |-
+          Optional rilltime expression describing the time range covered by the base table.
+          When set, the base table's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
+          Evaluated with `now` = current time, `earliest` = zero time, `latest`/`watermark` = current time.
       dimensions:
         type: array
         items:
@@ -6516,6 +6543,12 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/MetricsViewSpecRollup'
+      maxQueryTimeRange:
+        type: string
+        description: |-
+          Maximum time span any single query against this metrics view may cover, as an ISO 8601 duration with day-or-larger granularity (e.g. "P90D", "P3M", "P1Y").
+          Sub-day durations (hours, minutes, seconds) are not supported. Applies to queries that take a time range, including the comparison time range.
+          Time-range introspection RPCs are exempt. If unset, no limit is enforced.
   v1MetricsViewSpecAnnotation:
     type: object
     properties:
@@ -6578,6 +6611,12 @@ definitions:
       timeRangeSummary:
         $ref: '#/definitions/v1TimeRangeSummary'
         title: Not optional, not null
+      maxQueryTimeRangeMillis:
+        type: string
+        format: int64
+        description: |-
+          The metrics view's max_query_time_range property resolved into milliseconds against the current time.
+          Zero if the metrics view does not configure max_query_time_range.
       trace:
         $ref: '#/definitions/v1Trace'
         description: Traces of spans captured during request execution. Only populated if trace was set to true in the request.
@@ -6601,6 +6640,12 @@ definitions:
         description: |-
           The same values as resolved_time_ranges for backwards compatibility.
           Deprecated: use resolved_time_ranges instead.
+      maxQueryTimeRangeMillis:
+        type: string
+        format: int64
+        description: |-
+          The metrics view's max_query_time_range property resolved into milliseconds against the request's reference time.
+          Zero if the metrics view does not configure max_query_time_range.
       trace:
         $ref: '#/definitions/v1Trace'
         description: Traces of spans captured during request execution. Only populated if trace was set to true in the request.
