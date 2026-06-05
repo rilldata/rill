@@ -19,9 +19,9 @@ describe("getExploreName", () => {
   });
 
   it("stops at a query string boundary", () => {
-    expect(getExploreName("/explore/My%20Explore?execution_time=2026-06-04")).toBe(
-      "My Explore",
-    );
+    expect(
+      getExploreName("/explore/My%20Explore?execution_time=2026-06-04"),
+    ).toBe("My Explore");
   });
 
   it("stops at a trailing slash", () => {
