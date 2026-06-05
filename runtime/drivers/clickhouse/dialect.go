@@ -81,6 +81,12 @@ func (d *dialect) RequiresArrayContainsForInOperator() bool { return true }
 
 func (d *dialect) GetArrayContainsFunction() (string, error) { return "hasAny", nil }
 
+// ArrayContainsSubqueryExpr uses arrayExists so the match is evaluated per row.
+// hasAny only accepts a literal array, and unnesting via LEFT ARRAY JOIN would duplicate rows whose array contains multiple matching values.
+func (d *dialect) ArrayContainsSubqueryExpr(arrExpr, subqueryExpr string) (string, error) {
+	return fmt.Sprintf("arrayExists(x -> x IN %s, (%s))", subqueryExpr, arrExpr), nil
+}
+
 func (d *dialect) CastToDataType(typ runtimev1.Type_Code) (string, error) {
 	switch typ {
 	case runtimev1.Type_CODE_TIMESTAMP:

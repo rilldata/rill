@@ -139,6 +139,75 @@ func TestArrayContainsCondition(t *testing.T) {
 			wantArgs: []any{nil, "a"},
 		},
 		{
+			name:    "clickhouse: in on unnest dim with subquery uses arrayExists",
+			dialect: clickhouse.DialectClickhouse,
+			where: &Expression{Condition: &Condition{
+				Operator: OperatorIn,
+				Expressions: []*Expression{
+					{Name: "tags"},
+					{Subquery: &Subquery{
+						Dimension: Dimension{Name: "tags"},
+						Measures:  []Measure{{Name: "count"}},
+						Having: &Expression{Condition: &Condition{
+							Operator: OperatorGt,
+							Expressions: []*Expression{
+								{Name: "count"},
+								{Value: 1},
+							},
+						}},
+					}},
+				},
+			}},
+			wantSQL:  `(arrayExists(x -> x IN (SELECT "tags" FROM (SELECT ("t2"."tags") AS "tags", ("t2"."count") AS "count" FROM (SELECT ("tags") AS "tags", (count(*)) AS "count" FROM "test_table" LEFT ARRAY JOIN "tags" AS "tags" GROUP BY 1) t2 WHERE (("t2"."count") > ?))), ("tags")))`,
+			wantArgs: []any{1},
+		},
+		{
+			name:    "clickhouse: nin on unnest dim with subquery uses NOT arrayExists",
+			dialect: clickhouse.DialectClickhouse,
+			where: &Expression{Condition: &Condition{
+				Operator: OperatorNin,
+				Expressions: []*Expression{
+					{Name: "tags"},
+					{Subquery: &Subquery{
+						Dimension: Dimension{Name: "tags"},
+						Measures:  []Measure{{Name: "count"}},
+						Having: &Expression{Condition: &Condition{
+							Operator: OperatorGt,
+							Expressions: []*Expression{
+								{Name: "count"},
+								{Value: 1},
+							},
+						}},
+					}},
+				},
+			}},
+			wantSQL:  `(NOT arrayExists(x -> x IN (SELECT "tags" FROM (SELECT ("t2"."tags") AS "tags", ("t2"."count") AS "count" FROM (SELECT ("tags") AS "tags", (count(*)) AS "count" FROM "test_table" LEFT ARRAY JOIN "tags" AS "tags" GROUP BY 1) t2 WHERE (("t2"."count") > ?))), ("tags")))`,
+			wantArgs: []any{1},
+		},
+		{
+			name:    "duckdb: in on unnest dim with subquery uses lateral EXISTS",
+			dialect: duckdb.DialectDuckDB,
+			where: &Expression{Condition: &Condition{
+				Operator: OperatorIn,
+				Expressions: []*Expression{
+					{Name: "tags"},
+					{Subquery: &Subquery{
+						Dimension: Dimension{Name: "tags"},
+						Measures:  []Measure{{Name: "count"}},
+						Having: &Expression{Condition: &Condition{
+							Operator: OperatorGt,
+							Expressions: []*Expression{
+								{Name: "count"},
+								{Value: 1},
+							},
+						}},
+					}},
+				},
+			}},
+			wantSQL:  `EXISTS (SELECT 1 FROM LATERAL UNNEST("tags") t2("tags") WHERE (("t2"."tags") IN (SELECT "tags" FROM (SELECT ("t2"."tags") AS "tags", ("t2"."count") AS "count" FROM (SELECT ("t0"."tags") AS "tags", (count(*)) AS "count" FROM "test_table", LATERAL UNNEST("tags") t0("tags") GROUP BY 1) t2 WHERE (("t2"."count") > ?)))))`,
+			wantArgs: []any{1},
+		},
+		{
 			name:    "duckdb: in on non-unnest dim uses normal IN",
 			dialect: duckdb.DialectDuckDB,
 			where: &Expression{Condition: &Condition{

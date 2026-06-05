@@ -49,6 +49,7 @@ type Dialect interface {
 	GetRegexMatchFunction() (string, error)
 	RequiresArrayContainsForInOperator() bool
 	GetArrayContainsFunction() (string, error)
+	ArrayContainsSubqueryExpr(arrExpr, subqueryExpr string) (string, error)
 	DimensionSelect(escapeTable string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error)
 	LateralUnnest(expr, tableAlias, colName string) (tbl string, tupleStyle, auto bool, err error)
 	UnnestSQLSuffix(tbl string) string
@@ -226,6 +227,10 @@ func (b *BaseDialect) RequiresArrayContainsForInOperator() bool {
 
 func (b *BaseDialect) GetArrayContainsFunction() (string, error) {
 	return "", fmt.Errorf("array contains not supported for %s dialect", b.String())
+}
+
+func (b *BaseDialect) ArrayContainsSubqueryExpr(_, _ string) (string, error) {
+	return "", fmt.Errorf("array contains subquery not supported for %s dialect", b.String())
 }
 
 func (b *BaseDialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_Dimension) (string, error) {
