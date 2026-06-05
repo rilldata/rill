@@ -164,6 +164,7 @@ type DB interface {
 	FindUserAuthToken(ctx context.Context, id string) (*UserAuthToken, error)
 	InsertUserAuthToken(ctx context.Context, opts *InsertUserAuthTokenOptions) (*UserAuthToken, error)
 	UpdateUserAuthTokenUsedOn(ctx context.Context, ids []string) error
+	UpdateUserAuthTokenExpiresOn(ctx context.Context, id string, expiresOn time.Time) error
 	DeleteUserAuthToken(ctx context.Context, id string) error
 	DeleteAllUserAuthTokens(ctx context.Context, userID string) (int, error)
 	DeleteUserAuthTokensByUserAndRepresentingUser(ctx context.Context, userID, representingUserID string) error

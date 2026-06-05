@@ -31,6 +31,11 @@ const (
 	cookieFieldAccessToken      = "access_token"
 )
 
+var (
+	browserSessionTTL                 = 14 * 24 * time.Hour
+	browserSessionTTLRefreshThreshold = browserSessionTTL - 24*time.Hour
+)
+
 // RegisterEndpoints adds HTTP endpoints for auth.
 // The mux must be served on the ExternalURL of the Authenticator since the logic in these handlers relies on knowing the full external URIs.
 // Note that these are not gRPC handlers, just regular HTTP endpoints that we mount on the gRPC-gateway mux.
@@ -342,7 +347,7 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 	}
 
 	// Issue a new persistent auth token
-	authToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.AuthClientIDRillWeb, "Browser session", nil, nil, false)
+	authToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.AuthClientIDRillWeb, "Browser session", nil, &browserSessionTTL, false)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to issue API token: %s", err), http.StatusInternalServerError)
 		return
@@ -405,7 +410,7 @@ func (a *Authenticator) authLoginCustomDomainCallback(w http.ResponseWriter, r *
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
-	newAuthToken, err := a.admin.IssueUserAuthToken(r.Context(), validated.OwnerID(), database.AuthClientIDRillWeb, "Browser session", nil, nil, false)
+	newAuthToken, err := a.admin.IssueUserAuthToken(r.Context(), validated.OwnerID(), database.AuthClientIDRillWeb, "Browser session", nil, &browserSessionTTL, false)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to issue API token: %s", err), http.StatusInternalServerError)
 		return

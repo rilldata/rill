@@ -1232,6 +1232,14 @@ func (c *connection) UpdateUserAuthTokenUsedOn(ctx context.Context, ids []string
 	return nil
 }
 
+func (c *connection) UpdateUserAuthTokenExpiresOn(ctx context.Context, id string, expiresOn time.Time) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "UPDATE user_auth_tokens SET expires_on=$2 WHERE id=$1", id, expiresOn)
+	if err != nil {
+		return parseErr("auth token", err)
+	}
+	return nil
+}
+
 func (c *connection) DeleteUserAuthToken(ctx context.Context, id string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM user_auth_tokens WHERE id=$1", id)
 	return checkDeleteRow("auth token", res, err)
