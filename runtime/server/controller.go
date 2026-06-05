@@ -343,8 +343,21 @@ func (s *Server) GetModelPartitions(ctx context.Context, req *runtimev1.GetModel
 // CreateTrigger implements runtimev1.RuntimeServiceServer
 func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTriggerRequest) (*runtimev1.CreateTriggerResponse, error) {
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	resourceNames := make([]string, len(req.Resources))
+	for i, r := range req.Resources {
+		resourceNames[i] = r.Kind + "/" + r.Name
+	}
+	modelNames := make([]string, len(req.Models))
+	for i, m := range req.Models {
+		modelNames[i] = m.Model
+	}
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
+		attribute.StringSlice("args.resources", resourceNames),
+		attribute.StringSlice("args.models", modelNames),
+		attribute.Bool("args.parser", req.Parser),
+		attribute.Bool("args.all", req.All),
+		attribute.Bool("args.all_full", req.AllFull),
 	)
 
 	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditTrigger) {
