@@ -12,7 +12,7 @@
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
-  import { isEnterprisePlan, isManagedPlan } from "./plans/utils";
+  import { isManagedPlan } from "./plans/utils";
 
   let { organization }: { organization: string } = $props();
 
@@ -28,14 +28,12 @@
   let neverSubscribed = $derived(!!$categorisedIssues.data?.neverSubscribed);
   let onTrial = $derived(!!$categorisedIssues.data?.trial);
   let onManagedPlan = $derived(plan && isManagedPlan(plan.name));
-  let onEnterprisePlan = $derived(plan && isEnterprisePlan(plan.name));
-  // For enterprise and managed orgs, hide when payment details haven't been
+  // For managed orgs, hide when payment details haven't been
   // entered yet (setup done via CLI). Once set up, show the Manage button.
   // neverSubscribed orgs are always hidden since the billing page is not shown.
   let pendingSetup = $derived(
     neverSubscribed ||
-      ((onManagedPlan || onEnterprisePlan) &&
-        needsPaymentSetup(paymentIssues ?? [])),
+      (onManagedPlan && needsPaymentSetup(paymentIssues ?? [])),
   );
 
   async function handleManagePayment() {
