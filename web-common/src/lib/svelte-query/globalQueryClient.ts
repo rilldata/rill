@@ -1,5 +1,11 @@
 import { QueryClient } from "@tanstack/svelte-query";
 
+const MaxNetworkErrorRetries = 2;
+
+function isNetworkError(error: unknown): boolean {
+  return error instanceof Error && error.message === "Network Error";
+}
+
 export function createQueryClient() {
   return new QueryClient({
     defaultOptions: {
@@ -7,7 +13,9 @@ export function createQueryClient() {
         refetchOnMount: false,
         refetchOnReconnect: false,
         refetchOnWindowFocus: false,
-        retry: false,
+        retry: (failureCount, error) =>
+          isNetworkError(error) && failureCount < MaxNetworkErrorRetries,
+        retryDelay: (failureCount) => Math.min(1000 * 2 ** failureCount, 4000),
         networkMode: "always",
       },
       mutations: {
