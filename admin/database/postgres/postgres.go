@@ -3122,15 +3122,18 @@ func (c *connection) UpsertBillingIssue(ctx context.Context, opts *database.Upse
 	temp := &billingIssueDTO{
 		OrgID:     opts.OrgID,
 		Type:      opts.Type,
+		Level:     opts.Level,
 		Metadata:  metadata,
 		EventTime: opts.EventTime,
 	}
 
-	temp.Level = temp.getBillingIssueLevel()
+	if temp.Level == database.BillingIssueLevelUnspecified {
+		temp.Level = temp.getBillingIssueLevel()
+	}
 
 	res := &billingIssueDTO{}
 	err = c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO billing_issues (org_id, type, level, metadata, event_time) VALUES ($1, $2, $3, $4, $5)
-		ON CONFLICT (org_id, type) DO UPDATE SET metadata = $4, event_time = $5 RETURNING *`, temp.OrgID, temp.Type, temp.Level, temp.Metadata, temp.EventTime).StructScan(res)
+		ON CONFLICT (org_id, type) DO UPDATE SET level = $3, metadata = $4, event_time = $5 RETURNING *`, temp.OrgID, temp.Type, temp.Level, temp.Metadata, temp.EventTime).StructScan(res)
 	if err != nil {
 		return nil, parseErr("billing issue", err)
 	}
@@ -3753,6 +3756,8 @@ func (b *billingIssueDTO) AsModel() *database.BillingIssue {
 		metadata = &database.BillingIssueMetadataOnCreditTrial{}
 	case database.BillingIssueTypeTrialCreditsDepleted:
 		metadata = &database.BillingIssueMetadataTrialCreditsDepleted{}
+	case database.BillingIssueTypeMessage:
+		metadata = &database.BillingIssueMetadataMessage{}
 	default:
 	}
 	if err := json.Unmarshal(b.Metadata, &metadata); err != nil {

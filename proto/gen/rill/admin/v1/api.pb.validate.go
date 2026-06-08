@@ -18671,6 +18671,440 @@ var _ interface {
 	ErrorName() string
 } = SudoDeleteOrganizationBillingIssueResponseValidationError{}
 
+// Validate checks the field values on
+// SudoUpdateOrganizationBillingMessageRequest with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *SudoUpdateOrganizationBillingMessageRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// SudoUpdateOrganizationBillingMessageRequest with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in
+// SudoUpdateOrganizationBillingMessageRequestMultiError, or nil if none found.
+func (m *SudoUpdateOrganizationBillingMessageRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SudoUpdateOrganizationBillingMessageRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Org
+
+	// no validation rules for Level
+
+	// no validation rules for Message
+
+	if len(errors) > 0 {
+		return SudoUpdateOrganizationBillingMessageRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// SudoUpdateOrganizationBillingMessageRequestMultiError is an error wrapping
+// multiple validation errors returned by
+// SudoUpdateOrganizationBillingMessageRequest.ValidateAll() if the designated
+// constraints aren't met.
+type SudoUpdateOrganizationBillingMessageRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SudoUpdateOrganizationBillingMessageRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SudoUpdateOrganizationBillingMessageRequestMultiError) AllErrors() []error { return m }
+
+// SudoUpdateOrganizationBillingMessageRequestValidationError is the validation
+// error returned by SudoUpdateOrganizationBillingMessageRequest.Validate if
+// the designated constraints aren't met.
+type SudoUpdateOrganizationBillingMessageRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SudoUpdateOrganizationBillingMessageRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SudoUpdateOrganizationBillingMessageRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SudoUpdateOrganizationBillingMessageRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SudoUpdateOrganizationBillingMessageRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SudoUpdateOrganizationBillingMessageRequestValidationError) ErrorName() string {
+	return "SudoUpdateOrganizationBillingMessageRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SudoUpdateOrganizationBillingMessageRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSudoUpdateOrganizationBillingMessageRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SudoUpdateOrganizationBillingMessageRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SudoUpdateOrganizationBillingMessageRequestValidationError{}
+
+// Validate checks the field values on
+// SudoUpdateOrganizationBillingMessageResponse with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *SudoUpdateOrganizationBillingMessageResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// SudoUpdateOrganizationBillingMessageResponse with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in
+// SudoUpdateOrganizationBillingMessageResponseMultiError, or nil if none found.
+func (m *SudoUpdateOrganizationBillingMessageResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SudoUpdateOrganizationBillingMessageResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return SudoUpdateOrganizationBillingMessageResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// SudoUpdateOrganizationBillingMessageResponseMultiError is an error wrapping
+// multiple validation errors returned by
+// SudoUpdateOrganizationBillingMessageResponse.ValidateAll() if the
+// designated constraints aren't met.
+type SudoUpdateOrganizationBillingMessageResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SudoUpdateOrganizationBillingMessageResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SudoUpdateOrganizationBillingMessageResponseMultiError) AllErrors() []error { return m }
+
+// SudoUpdateOrganizationBillingMessageResponseValidationError is the
+// validation error returned by
+// SudoUpdateOrganizationBillingMessageResponse.Validate if the designated
+// constraints aren't met.
+type SudoUpdateOrganizationBillingMessageResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SudoUpdateOrganizationBillingMessageResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SudoUpdateOrganizationBillingMessageResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SudoUpdateOrganizationBillingMessageResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SudoUpdateOrganizationBillingMessageResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SudoUpdateOrganizationBillingMessageResponseValidationError) ErrorName() string {
+	return "SudoUpdateOrganizationBillingMessageResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SudoUpdateOrganizationBillingMessageResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSudoUpdateOrganizationBillingMessageResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SudoUpdateOrganizationBillingMessageResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SudoUpdateOrganizationBillingMessageResponseValidationError{}
+
+// Validate checks the field values on
+// SudoDeleteOrganizationBillingMessageRequest with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *SudoDeleteOrganizationBillingMessageRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// SudoDeleteOrganizationBillingMessageRequest with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in
+// SudoDeleteOrganizationBillingMessageRequestMultiError, or nil if none found.
+func (m *SudoDeleteOrganizationBillingMessageRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SudoDeleteOrganizationBillingMessageRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Org
+
+	if len(errors) > 0 {
+		return SudoDeleteOrganizationBillingMessageRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// SudoDeleteOrganizationBillingMessageRequestMultiError is an error wrapping
+// multiple validation errors returned by
+// SudoDeleteOrganizationBillingMessageRequest.ValidateAll() if the designated
+// constraints aren't met.
+type SudoDeleteOrganizationBillingMessageRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SudoDeleteOrganizationBillingMessageRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SudoDeleteOrganizationBillingMessageRequestMultiError) AllErrors() []error { return m }
+
+// SudoDeleteOrganizationBillingMessageRequestValidationError is the validation
+// error returned by SudoDeleteOrganizationBillingMessageRequest.Validate if
+// the designated constraints aren't met.
+type SudoDeleteOrganizationBillingMessageRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SudoDeleteOrganizationBillingMessageRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SudoDeleteOrganizationBillingMessageRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SudoDeleteOrganizationBillingMessageRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SudoDeleteOrganizationBillingMessageRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SudoDeleteOrganizationBillingMessageRequestValidationError) ErrorName() string {
+	return "SudoDeleteOrganizationBillingMessageRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SudoDeleteOrganizationBillingMessageRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSudoDeleteOrganizationBillingMessageRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SudoDeleteOrganizationBillingMessageRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SudoDeleteOrganizationBillingMessageRequestValidationError{}
+
+// Validate checks the field values on
+// SudoDeleteOrganizationBillingMessageResponse with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *SudoDeleteOrganizationBillingMessageResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// SudoDeleteOrganizationBillingMessageResponse with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in
+// SudoDeleteOrganizationBillingMessageResponseMultiError, or nil if none found.
+func (m *SudoDeleteOrganizationBillingMessageResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SudoDeleteOrganizationBillingMessageResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return SudoDeleteOrganizationBillingMessageResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// SudoDeleteOrganizationBillingMessageResponseMultiError is an error wrapping
+// multiple validation errors returned by
+// SudoDeleteOrganizationBillingMessageResponse.ValidateAll() if the
+// designated constraints aren't met.
+type SudoDeleteOrganizationBillingMessageResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SudoDeleteOrganizationBillingMessageResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SudoDeleteOrganizationBillingMessageResponseMultiError) AllErrors() []error { return m }
+
+// SudoDeleteOrganizationBillingMessageResponseValidationError is the
+// validation error returned by
+// SudoDeleteOrganizationBillingMessageResponse.Validate if the designated
+// constraints aren't met.
+type SudoDeleteOrganizationBillingMessageResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SudoDeleteOrganizationBillingMessageResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SudoDeleteOrganizationBillingMessageResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SudoDeleteOrganizationBillingMessageResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SudoDeleteOrganizationBillingMessageResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SudoDeleteOrganizationBillingMessageResponseValidationError) ErrorName() string {
+	return "SudoDeleteOrganizationBillingMessageResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SudoDeleteOrganizationBillingMessageResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSudoDeleteOrganizationBillingMessageResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SudoDeleteOrganizationBillingMessageResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SudoDeleteOrganizationBillingMessageResponseValidationError{}
+
 // Validate checks the field values on SudoTriggerBillingRepairRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -48233,6 +48667,47 @@ func (m *BillingIssueMetadata) validate(all bool) error {
 			}
 		}
 
+	case *BillingIssueMetadata_Message:
+		if v == nil {
+			err := BillingIssueMetadataValidationError{
+				field:  "Metadata",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetMessage()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, BillingIssueMetadataValidationError{
+						field:  "Message",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, BillingIssueMetadataValidationError{
+						field:  "Message",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetMessage()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return BillingIssueMetadataValidationError{
+					field:  "Message",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	default:
 		_ = v // ensures v is used
 	}
@@ -49681,6 +50156,111 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = BillingIssueMetadataTrialCreditsDepletedValidationError{}
+
+// Validate checks the field values on BillingIssueMetadataMessage with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *BillingIssueMetadataMessage) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on BillingIssueMetadataMessage with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// BillingIssueMetadataMessageMultiError, or nil if none found.
+func (m *BillingIssueMetadataMessage) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *BillingIssueMetadataMessage) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Message
+
+	if len(errors) > 0 {
+		return BillingIssueMetadataMessageMultiError(errors)
+	}
+
+	return nil
+}
+
+// BillingIssueMetadataMessageMultiError is an error wrapping multiple
+// validation errors returned by BillingIssueMetadataMessage.ValidateAll() if
+// the designated constraints aren't met.
+type BillingIssueMetadataMessageMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m BillingIssueMetadataMessageMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m BillingIssueMetadataMessageMultiError) AllErrors() []error { return m }
+
+// BillingIssueMetadataMessageValidationError is the validation error returned
+// by BillingIssueMetadataMessage.Validate if the designated constraints
+// aren't met.
+type BillingIssueMetadataMessageValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e BillingIssueMetadataMessageValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e BillingIssueMetadataMessageValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e BillingIssueMetadataMessageValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e BillingIssueMetadataMessageValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e BillingIssueMetadataMessageValidationError) ErrorName() string {
+	return "BillingIssueMetadataMessageValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e BillingIssueMetadataMessageValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sBillingIssueMetadataMessage.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = BillingIssueMetadataMessageValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = BillingIssueMetadataMessageValidationError{}
 
 // Validate checks the field values on ListGithubUserReposResponse_Repo with
 // the rules defined in the proto definition for this message. If any rules
