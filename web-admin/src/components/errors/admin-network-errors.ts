@@ -2,6 +2,7 @@ import { isAdminServerQuery } from "@rilldata/web-admin/client/utils";
 import { errorStore } from "@rilldata/web-admin/components/errors/error-store";
 import { createUserFacingError } from "@rilldata/web-admin/components/errors/user-facing-errors";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+import { isNetworkError } from "@rilldata/web-common/lib/errors";
 import type { Query, QueryClient } from "@tanstack/svelte-query";
 
 export const AdminNetworkErrorMessage = "Network Error";
@@ -12,10 +13,6 @@ const AdminNetworkBannerPriority = 0;
 type QueryRefetcher = Pick<QueryClient, "refetchQueries">;
 
 let adminNetworkErrorActive = false;
-
-export function isNetworkError(error: unknown): boolean {
-  return error instanceof Error && error.message === AdminNetworkErrorMessage;
-}
 
 export function handleAdminServerNetworkError(
   error: unknown,

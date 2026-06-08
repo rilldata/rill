@@ -1,10 +1,7 @@
 import { QueryClient } from "@tanstack/svelte-query";
+import { isNetworkError } from "../errors";
 
 const MaxNetworkErrorRetries = 2;
-
-function isNetworkError(error: unknown): boolean {
-  return error instanceof Error && error.message === "Network Error";
-}
 
 export function createQueryClient() {
   return new QueryClient({
