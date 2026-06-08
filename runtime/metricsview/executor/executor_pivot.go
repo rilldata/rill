@@ -180,8 +180,7 @@ func (e *Executor) executePivotExport(ctx context.Context, ast *metricsview.AST,
 
 		// Guard against pivots that would generate too many columns.
 		// A pivot produces one column per distinct combination of the pivoted dimension values, times the number of measures.
-		// Pivots are executed in DuckDB, which materializes each output row in a single storage block, so an overly
-		// wide pivot fails with an opaque error; we detect it up front to return a clear, actionable message instead.
+		// Pivots are executed in DuckDB, an overly wide pivot fails with an opaque error; we detect it up front to return a clear, actionable message instead.
 		if err := e.checkPivotColumns(wrappedCtx, olap, alias, pivot); err != nil {
 			return err
 		}
