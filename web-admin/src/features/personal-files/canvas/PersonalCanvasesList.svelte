@@ -1,6 +1,5 @@
 <script lang="ts">
   import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
-  import { Button } from "@rilldata/web-common/components/button";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import CreatePersonalCanvasDialog from "@rilldata/web-admin/features/personal-files/canvas/CreatePersonalCanvasDialog.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
@@ -31,8 +30,6 @@
     ),
   );
   let personalCanvases = $derived($personalCanvasesQuery.data ?? []);
-
-  let createOpen = $state(false);
 
   let columns = $derived([
     {
@@ -66,42 +63,40 @@
   ]);
 </script>
 
-<section class="flex flex-col gap-3">
-  <header class="flex items-center justify-between">
-    <div class="flex items-center gap-2">
-      <Lock size="16px" />
-      <h2 class="text-lg font-medium">My canvases</h2>
-      <span class="text-sm text-fg-secondary">Only visible to you</span>
-    </div>
-    <Button type="primary" onClick={() => (createOpen = true)}>
-      Create canvas
-    </Button>
-  </header>
+{#if personalCanvases.length}
+  <section class="flex flex-col gap-3">
+    <header class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <Lock size="16px" />
+        <h2 class="text-lg font-medium">My dashboards</h2>
+        <span class="text-sm text-fg-secondary">Only visible to you</span>
+      </div>
+      <CreatePersonalCanvasDialog {org} {project} />
+    </header>
 
-  {#if $personalCanvasesQuery.isPending}
-    <div class="m-auto mt-20">
-      <DelayedSpinner isLoading={true} size="24px" />
-    </div>
-  {:else}
-    <div class="flex flex-col w-full gap-y-3">
-      <ResourceList
-        kind="personal canvases"
-        data={personalCanvases}
-        {columns}
-        toolbar={false}
-      >
-        <ResourceListEmptyState
-          slot="empty"
-          icon={ExploreIcon}
-          message="You don't have any personal canvases yet."
+    {#if $personalCanvasesQuery.isPending}
+      <div class="m-auto mt-20">
+        <DelayedSpinner isLoading={true} size="24px" />
+      </div>
+    {:else}
+      <div class="flex flex-col w-full gap-y-3">
+        <ResourceList
+          kind="personal canvases"
+          data={personalCanvases}
+          {columns}
+          toolbar={false}
         >
-          <span slot="action">
-            Create one to explore the project's data your way.
-          </span>
-        </ResourceListEmptyState>
-      </ResourceList>
-    </div>
-  {/if}
-</section>
-
-<CreatePersonalCanvasDialog bind:open={createOpen} {org} {project} />
+          <ResourceListEmptyState
+            slot="empty"
+            icon={ExploreIcon}
+            message="You don't have any personal canvases yet."
+          >
+            <span slot="action">
+              Create one to explore the project's data your way.
+            </span>
+          </ResourceListEmptyState>
+        </ResourceList>
+      </div>
+    {/if}
+  </section>
+{/if}

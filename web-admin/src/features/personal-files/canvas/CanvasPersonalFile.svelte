@@ -12,7 +12,18 @@
   import { onMount } from "svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
-  import { getQueryServiceResolveCanvasQueryKey } from "@rilldata/web-common/runtime-client";
+  import {
+    getQueryServiceResolveCanvasQueryKey,
+    getRuntimeServiceListResourcesQueryKey,
+  } from "@rilldata/web-common/runtime-client";
+  import AlertDialogGuardedConfirmation from "@rilldata/web-common/components/alert-dialog/alert-dialog-guarded-confirmation.svelte";
+  import {
+    createAdminServiceDeletePersonalFile,
+    getAdminServiceListPersonalFilesQueryKey,
+  } from "@rilldata/web-admin/client";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+  import { goto } from "$app/navigation";
+  import { getCanvasModeStore } from "@rilldata/web-admin/features/personal-files/canvas/mode-utils.ts";
 
   let {
     fileArtifact,
@@ -28,15 +39,41 @@
 
   let { organization, project } = $derived(page.params);
 
-  let mode = $derived(
-    sessionStorageStore(`app:rill:${organization}:${project}:${name}`, "view"),
-  );
+  let mode = $derived(getCanvasModeStore(organization, project, name));
 
   let resourceQuery = $derived(
     getPersonalFilteredResourceByName(runtimeClient, name),
   );
   let { data } = $derived($resourceQuery);
   let displayName = $derived(data?.canvas?.spec?.displayName ?? name);
+
+  let showDeleteConfirmation = $state(false);
+  const deleteDashboardMutation = createAdminServiceDeletePersonalFile();
+  async function deleteDashboard() {
+    await $deleteDashboardMutation.mutateAsync({
+      org: organization,
+      project,
+      name,
+    });
+
+    // Invalidate resources and personal files queries
+    await queryClient.invalidateQueries({
+      queryKey: getRuntimeServiceListResourcesQueryKey(
+        runtimeClient.instanceId,
+        {},
+      ),
+    });
+    await queryClient.invalidateQueries({
+      queryKey: getAdminServiceListPersonalFilesQueryKey(organization, project),
+      type: "all",
+    });
+
+    eventBus.emit("notification", {
+      type: "success",
+      message: `Dashboard ${displayName} delete successfully`,
+    });
+    await goto(`/${organization}/${project}`);
+  }
 
   function toggleMode() {
     mode.set($mode === "edit" ? "view" : "edit");
@@ -57,7 +94,12 @@
 </script>
 
 {#if $mode === "edit"}
-  <VirtualCanvasEditor {fileArtifact} {name} onPreview={toggleMode} />
+  <VirtualCanvasEditor
+    {fileArtifact}
+    {name}
+    onPreview={toggleMode}
+    onDelete={() => (showDeleteConfirmation = true)}
+  />
 {:else}
   <div class="flex flex-col h-full overflow-hidden">
     <div class="flex items-center justify-between px-4 py-2 border-b">
@@ -83,3 +125,17 @@
     {/key}
   </div>
 {/if}
+
+<AlertDialogGuardedConfirmation
+  bind:open={showDeleteConfirmation}
+  title="Delete dashboard?"
+  description={`The dashboard "${displayName}" will be permanently deleted. This action cannot be undone.`}
+  confirmText={`delete ${displayName}`}
+  confirmButtonText="Delete"
+  confirmButtonType="destructive"
+  loading={$deleteDashboardMutation.isPending}
+  error={$deleteDashboardMutation.error?.message}
+  onConfirm={deleteDashboard}
+>
+  <div class="hidden"></div>
+</AlertDialogGuardedConfirmation>

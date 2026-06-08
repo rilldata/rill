@@ -19,16 +19,18 @@
   import { getPersonalFilteredResourceByName } from "@rilldata/web-admin/features/personal-files/selectors.ts";
   import { parseDocument } from "yaml";
   import { Button } from "@rilldata/web-common/components/button/index.ts";
-  import { Play } from "lucide-svelte";
+  import { Play, Trash } from "lucide-svelte";
 
   let {
     fileArtifact,
     name,
     onPreview,
+    onDelete,
   }: {
     fileArtifact: FileArtifact;
     name: string;
     onPreview: () => void;
+    onDelete: () => void;
   } = $props();
 
   const runtimeClient = useRuntimeClient();
@@ -37,7 +39,6 @@
     path: filePath,
     remoteContent,
     editorContent,
-    hasUnsavedChanges,
     saveState: { saving },
   } = $derived(fileArtifact);
 
@@ -79,6 +80,8 @@
       console.error("Failed to update display_name in YAML", e);
       return;
     }
+    // Optimistic update
+    titleValue = trimmed;
     fileArtifact.updateEditorContent(yamlOut, false, true);
   }
 </script>
@@ -96,7 +99,7 @@
       slot="header"
       {filePath}
       resource={data}
-      hasUnsavedChanges={$hasUnsavedChanges}
+      hasUnsavedChanges={false}
       titleInput={titleValue}
       {onTitleChange}
       codeToggle={false}
@@ -112,6 +115,10 @@
               saving={$saving}
             />
           {/if}
+          <Button label="Preview" type="secondary" compact onClick={onDelete}>
+            <Trash size={14} />
+            Delete
+          </Button>
           <Button label="Preview" type="secondary" compact onClick={onPreview}>
             <Play size={14} />
             Preview

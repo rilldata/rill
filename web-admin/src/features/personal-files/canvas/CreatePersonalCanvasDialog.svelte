@@ -12,6 +12,7 @@
     adminServiceGetPersonalFile,
     createAdminServiceCreatePersonalFile,
     getAdminServiceGetPersonalFileQueryKey,
+    getAdminServiceListPersonalFilesQueryKey,
   } from "@rilldata/web-admin/client";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import {
@@ -22,16 +23,18 @@
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { getPersonalFilteredResources } from "@rilldata/web-admin/features/personal-files/selectors.ts";
+  import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
+  import { setCanvasMode } from "@rilldata/web-admin/features/personal-files/canvas/mode-utils.ts";
 
   let {
-    open = $bindable(false),
     org,
     project,
   }: {
-    open: boolean;
     org: string;
     project: string;
   } = $props();
+
+  let open = $state(false);
 
   const runtimeClient = useRuntimeClient();
 
@@ -108,6 +111,19 @@
           },
         });
 
+        // Invalidate resources and personal files queries
+        await queryClient.invalidateQueries({
+          queryKey: getRuntimeServiceListResourcesQueryKey(
+            runtimeClient.instanceId,
+            {},
+          ),
+        });
+        await queryClient.invalidateQueries({
+          queryKey: getAdminServiceListPersonalFilesQueryKey(org, project),
+        });
+
+        const name = createResp.name ?? values.name;
+        setCanvasMode(org, project, name, "edit");
         await goto(
           `/${org}/${project}/-/personal/${createResp.name ?? values.name}`,
         );
@@ -125,11 +141,16 @@
 </script>
 
 <Dialog.Root bind:open>
+  <Dialog.Trigger>
+    {#snippet child({ props })}
+      <Button {...props} type="primary">Create dashboard</Button>
+    {/snippet}
+  </Dialog.Trigger>
   <Dialog.Content>
     <Dialog.Header>
-      <Dialog.Title>Create personal canvas</Dialog.Title>
+      <Dialog.Title>Create personal dashboard</Dialog.Title>
       <Dialog.Description>
-        Personal canvases are only visible to you. They live alongside the
+        Personal dashboards are only visible to you. They live alongside the
         project but never sync to git.
       </Dialog.Description>
     </Dialog.Header>
@@ -154,10 +175,10 @@
         {#if personalCanvasOptions.length > 0}
           <UnderlineTabsList>
             <UnderlineTabsTrigger value="blank">
-              Blank canvas
+              Blank dashboard
             </UnderlineTabsTrigger>
             <UnderlineTabsTrigger value="copy">
-              Copy from an existing canvas
+              Copy from an existing dashboard
             </UnderlineTabsTrigger>
           </UnderlineTabsList>
         {/if}
@@ -166,7 +187,7 @@
           <Select
             bind:value={$form.copySource}
             id="source"
-            placeholder="Select a canvas..."
+            placeholder="Select a dashboard..."
             options={personalCanvasOptions}
             optionsLoading={$personalCanvasesQuery.isPending}
             sameWidth
