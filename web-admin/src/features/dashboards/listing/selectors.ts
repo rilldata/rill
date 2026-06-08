@@ -58,7 +58,8 @@ export function useDashboards(
       query: {
         select: (data) =>
           data.resources?.filter((res) => {
-            if (res.canvas) return isShared(res.canvas?.state?.validSpec ?? {});
+            if (res.canvas)
+              return isManagedOrShared(res.canvas?.state?.validSpec ?? {});
             return !!res.explore;
           }) ?? [],
         enabled: !!client.instanceId,
@@ -68,8 +69,12 @@ export function useDashboards(
   );
 }
 
-function isShared({ annotations }: { annotations?: Record<string, string> }) {
-  return annotations?.admin_shared === "true";
+function isManagedOrShared({
+  annotations,
+}: {
+  annotations?: Record<string, string>;
+}) {
+  return !annotations.admin_managed || annotations?.admin_shared;
 }
 
 /**
