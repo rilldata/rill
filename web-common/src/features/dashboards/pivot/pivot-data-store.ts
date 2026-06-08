@@ -1,4 +1,5 @@
 import type { ConnectError } from "@connectrpc/connect";
+import { getURIRequestMeasure } from "@rilldata/web-common/features/dashboards/dashboard-utils";
 import { getDimensionFilterWithSearch } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
 import {
   calculateEffectiveRowLimit,
@@ -12,6 +13,7 @@ import { createAndExpression } from "@rilldata/web-common/features/dashboards/st
 import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import type {
   V1Expression,
+  V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
@@ -113,7 +115,22 @@ export function createTableCellQuery(
       };
     } else return { name: dimension };
   });
-  const measureBody = measureNames.map((m) => ({ name: m }));
+  const measureBody: V1MetricsViewAggregationMeasure[] = measureNames.map(
+    (m) => ({ name: m }),
+  );
+
+  // Request computed URI measures for flat-mode row dimensions that define a
+  // uri template, so dimension cells can render as links (matching leaderboard).
+  if (isFlat) {
+    for (const dimensionName of rowDimensionNames) {
+      const dimSpec = config.allDimensions.find(
+        (d) => d.name === dimensionName || d.column === dimensionName,
+      );
+      if (dimSpec?.uri && dimSpec.name) {
+        measureBody.push(getURIRequestMeasure(dimSpec.name));
+      }
+    }
+  }
 
   const { filters: filterForInitialTable, timeFilters } =
     getFilterForPivotTable(
