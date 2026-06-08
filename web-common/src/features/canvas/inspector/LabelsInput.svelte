@@ -24,12 +24,16 @@
 
   function toggleShow() {
     if (show) {
-      onChange(undefined);
+      onChange({
+        ...value,
+        show: false,
+      });
     } else {
       onChange({
-        show: true,
         format: DEFAULT_LABELS_FORMAT,
         threshold: DEFAULT_LABELS_THRESHOLD,
+        ...value,
+        show: true,
       });
     }
   }
