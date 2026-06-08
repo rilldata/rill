@@ -64,7 +64,7 @@ export class VirtualFileIo implements FileIO {
     // Optimistically update the query
     queryClient.setQueryData(
       getAdminServiceGetPersonalFileQueryKey(this.org, this.project, name),
-      { yaml },
+      { yaml, path },
     );
 
     await adminServiceEditPersonalFile(this.org, this.project, name, {

@@ -140,7 +140,7 @@ func (s *Server) GetPersonalFile(ctx context.Context, req *adminv1.GetPersonalFi
 	}
 
 	return &adminv1.GetPersonalFileResponse{
-		Path: virtualPath,
+		Path: path.Join("__virtual__", virtualPath),
 		Yaml: string(vf.Data),
 	}, nil
 }

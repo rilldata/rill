@@ -231,12 +231,14 @@ export class FileArtifact {
 
     try {
       const kind = get(this.resourceName)?.kind;
+      console.log(kind);
       const fileSavePromise = this.saveState.initiateSave();
 
       await this.io.write(this.path, blob, kind);
 
       await fileSavePromise;
-    } catch {
+    } catch (e) {
+      console.error("Error saving file", e);
       this.saveState.reject(new Error("Unable to save file."));
     }
   };

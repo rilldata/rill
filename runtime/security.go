@@ -607,9 +607,13 @@ func (p *securityEngine) builtInCanvasSecurityRule(canvasRes *runtimev1.Resource
 	if len(claims.UserAttributes) != 0 {
 		userID, _ = claims.UserAttributes["id"].(string)
 	}
+	ownedByUser := userID != "" && userID == spec.Annotations["admin_owner_user_id"]
 
-	// Allow if the calling user is the owner
-	if spec.Annotations != nil && userID != "" && userID == spec.Annotations["admin_owner_user_id"] {
+	shared, ok := spec.Annotations["admin_shared"]
+	sharedBool := ok && shared == "true"
+
+	// Allow if the calling user is the owner or if the canvas is shared
+	if spec.Annotations != nil && (ownedByUser || sharedBool) {
 		return &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_Access{
 				Access: &runtimev1.SecurityRuleAccess{
