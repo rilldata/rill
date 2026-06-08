@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -177,6 +178,14 @@ func (e *Executor) executePivotExport(ctx context.Context, ast *metricsview.AST,
 			}
 		}()
 
+		// Guard against pivots that would generate too many columns.
+		// A pivot produces one column per distinct combination of the pivoted dimension values, times the number of measures.
+		// Pivots are executed in DuckDB, which materializes each output row in a single storage block, so an overly
+		// wide pivot fails with an opaque error; we detect it up front to return a clear, actionable message instead.
+		if err := e.checkPivotColumns(wrappedCtx, olap, alias, pivot); err != nil {
+			return err
+		}
+
 		// Build the PIVOT query
 		pivotSQL, err := pivot.SQL(ast, alias)
 		if err != nil {
@@ -188,6 +197,11 @@ func (e *Executor) executePivotExport(ctx context.Context, ast *metricsview.AST,
 			"sql": pivotSQL,
 		}, headers)
 		if err != nil {
+			// Backstop for wide pivots that slip past checkPivotColumns (e.g. wide column types overflow the block size
+			// at a lower column count than the limit). DuckDB reports this as a "tuple width exceeds block size" error.
+			if strings.Contains(err.Error(), "tuple width exceeds block size") {
+				return fmt.Errorf("pivot produced too many columns to export; reduce the number of pivoted dimensions or filter the data to fewer values")
+			}
 			return fmt.Errorf("failed to execute pivot export: %w", err)
 		}
 
@@ -197,6 +211,53 @@ func (e *Executor) executePivotExport(ctx context.Context, ast *metricsview.AST,
 		return "", err
 	}
 	return path, nil
+}
+
+// checkPivotColumns returns an error if the pivot would produce more columns than the configured limit.
+// The staged data in tableName is queried for the number of distinct combinations of the pivoted dimensions,
+// which is multiplied by the number of measures to estimate the resulting column count.
+// The limit is a conservative safety cap (configurable via rill.metrics.pivot_export_column_limit); a limit of 0 disables the check.
+func (e *Executor) checkPivotColumns(ctx context.Context, olap drivers.OLAPStore, tableName string, pivot *pivotAST) error {
+	limit := e.instanceCfg.MetricsPivotExportColumnLimit
+	if limit <= 0 || len(pivot.on) == 0 {
+		return nil
+	}
+
+	var cols strings.Builder
+	for i, on := range pivot.on {
+		if i > 0 {
+			cols.WriteString(", ")
+		}
+		cols.WriteString(pivot.dialect.EscapeIdentifier(on))
+	}
+
+	res, err := olap.Query(ctx, &drivers.Statement{
+		Query:           fmt.Sprintf("SELECT count(*) FROM (SELECT DISTINCT %s FROM %s)", cols.String(), tableName),
+		QueryAttributes: e.queryAttributes,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to check pivot cardinality: %w", err)
+	}
+	defer res.Close()
+
+	if !res.Next() {
+		return errors.New("failed to check pivot cardinality: no rows returned")
+	}
+	var distinctCombinations int64
+	if err := res.Scan(&distinctCombinations); err != nil {
+		return fmt.Errorf("failed to check pivot cardinality: %w", err)
+	}
+
+	measures := int64(len(pivot.using))
+	if measures < 1 {
+		measures = 1
+	}
+	columns := distinctCombinations * measures
+	if columns > limit {
+		return fmt.Errorf("pivot would produce %d columns (%d distinct combinations of the pivoted dimensions times %d measures), which exceeds the limit of %d; reduce the number of pivoted dimensions or filter the data to fewer values", columns, distinctCombinations, measures, limit)
+	}
+
+	return nil
 }
 
 // pivotAST represents config for generating a PIVOT query.
