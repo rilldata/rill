@@ -1,24 +1,26 @@
 import type { ConnectError } from "@connectrpc/connect";
-import { getDimensionFilterWithSearch } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
-import {
-  calculateEffectiveRowLimit,
-  MAX_ROW_EXPANSION_LIMIT,
-  SHOW_MORE_BUTTON,
-} from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/memoize-metrics-store";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import type {
-  V1Expression,
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
-import type { ColumnDef } from "tanstack-table-8-svelte-5";
 import { type Readable, derived, readable } from "svelte/store";
+import type { ColumnDef } from "tanstack-table-8-svelte-5";
 import { getColumnDefForPivot } from "./pivot-column-definition";
+import {
+  assembleBasePivotData,
+  buildFinalPivotStateDetails,
+  cacheExpandedPivotData,
+  createPivotDataCache,
+  getPivotSkeletonForPage,
+  syncPivotCacheToConfig,
+  updatePivotDataCache,
+} from "./pivot-data-assembly";
 import { getPivotConfig } from "./pivot-data-config";
 import {
   addExpandedDataToPivot,
@@ -36,20 +38,19 @@ import {
   getTotalsRowQuery,
 } from "./pivot-queries";
 import {
+  applyOutermostRowLimit,
+  createPivotBaseQueryPlan,
+} from "./pivot-query-plan";
+import {
   getTotalsRow,
   getTotalsRowSkeleton,
   mergeRowTotalsInOrder,
   prepareNestedPivotData,
-  reduceTableCellDataIntoRows,
 } from "./pivot-table-transformations";
 import {
   getErrorFromResponses,
   getErrorState,
   getFilterForPivotTable,
-  getFiltersForCell,
-  getPivotConfigKey,
-  getSortFilteredMeasureBody,
-  getSortForAccessor,
   getTimeForQuery,
   getTimeGrainFromDimension,
   getTotalColumnCount,
@@ -62,7 +63,6 @@ import {
   type PivotDataRow,
   type PivotDataStore,
   type PivotDataStoreConfig,
-  type PivotFilter,
 } from "./types";
 
 /**
@@ -202,14 +202,7 @@ export function createPivotDataStore(
   ctx: PivotDashboardContext,
   configStore: Readable<PivotDataStoreConfig>,
 ): PivotDataStore {
-  // Per-instance caching: avoids flicker when data is loading and prevents
-  // cross-contamination when multiple pivot stores exist simultaneously
-  let lastPivotData: PivotDataRow[] = [];
-  let lastPivotColumnDef: ColumnDef<PivotDataRow>[] = [];
-  let lastTotalColumns: number = 0;
-  let lastProcessedRowPage: number = 0;
-  let lastProcessedConfigKey: string = "";
-  let expandedTableMap: Record<string, PivotDataRow[]> = {};
+  const cache = createPivotDataCache();
 
   /**
    * Derive a store using pivot config
@@ -273,69 +266,25 @@ export function createPivotDataStore(
         if (columnDimensionAxes?.error && columnDimensionAxes?.error.length) {
           return columnSet(getErrorState(columnDimensionAxes.error));
         }
-        const anchorDimension = rowDimensionNames[0];
-
-        const rowPage = config.pivot.rowPage;
-        const rowOffset = (rowPage - 1) * NUM_ROWS_PER_PAGE;
-
-        let whereFilter: V1Expression = config.whereFilter;
-        if (config.searchText) {
-          whereFilter =
-            getDimensionFilterWithSearch(
-              whereFilter,
-              config.searchText,
-              anchorDimension,
-            ) || config.whereFilter;
-        }
-
-        const {
-          where: measureWhere,
-          sortPivotBy,
-          timeRange,
-        } = getSortForAccessor(
-          anchorDimension,
+        const plan = createPivotBaseQueryPlan(
           config,
           columnDimensionAxes?.data,
         );
-
-        const { sortFilteredMeasureBody, isMeasureSortAccessor, sortAccessor } =
-          getSortFilteredMeasureBody(measureBody, sortPivotBy, measureWhere);
+        const { anchorDimension, rowOffset, rowPage } = plan;
 
         let rowDimensionAxisQuery: Readable<PivotAxesData | null> =
           readable(null);
 
         if (!isFlat) {
-          // Use outermostRowLimit if set, otherwise fall back to rowLimit
-          const effectiveOutermostLimit =
-            config.pivot.outermostRowLimit ?? config.pivot.rowLimit;
-
-          // Calculate the effective limit based on outermostRowLimit, offset, and page size
-          // When outermostRowLimit is explicitly set, don't constrain by page size
-          const isExplicitOutermostLimit =
-            config.pivot.outermostRowLimit !== undefined;
-          const limitToApply = calculateEffectiveRowLimit(
-            effectiveOutermostLimit,
-            rowOffset,
-            NUM_ROWS_PER_PAGE,
-            !isExplicitOutermostLimit, // Don't respect page size for explicit outermost limit
-          );
-
-          // Query for limit + 1 to detect if there's more data
-          const limitToQuery =
-            effectiveOutermostLimit !== undefined
-              ? (parseInt(limitToApply) + 1).toString()
-              : limitToApply;
-
-          // Get sort order for the anchor dimension
           rowDimensionAxisQuery = getAxisForDimensions(
             ctx,
             config,
             rowDimensionNames.slice(0, 1),
-            sortFilteredMeasureBody,
-            whereFilter,
-            sortPivotBy,
-            timeRange,
-            limitToQuery,
+            plan.sortFilteredMeasureBody,
+            plan.whereFilter,
+            plan.sortPivotBy,
+            plan.timeRange,
+            plan.rowAxisLimitToQuery,
             rowOffset.toString(),
           );
         }
@@ -360,9 +309,7 @@ export function createPivotDataStore(
           );
         }
 
-        const displayTotalsRow = Boolean(
-          rowDimensionNames.length && measureNames.length,
-        );
+        const displayTotalsRow = plan.displayTotalsRow;
         if (
           (rowDimensionNames.length || colDimensionNames.length) &&
           measureNames.length &&
@@ -396,10 +343,10 @@ export function createPivotDataStore(
               );
               return axesSet({
                 isFetching: true,
-                data: lastPivotData,
-                columnDef: lastPivotColumnDef,
+                data: cache.lastPivotData,
+                columnDef: cache.lastPivotColumnDef,
                 assembled: false,
-                totalColumns: lastTotalColumns,
+                totalColumns: cache.lastTotalColumns,
                 totalsRowData: displayTotalsRow
                   ? skeletonTotalsRowData
                   : undefined,
@@ -444,44 +391,25 @@ export function createPivotDataStore(
               globalTotalsResponse?.data?.data,
             );
 
-            let rowDimensionValues =
-              rowDimensionAxes?.data?.[anchorDimension] || [];
-
-            let axesRowTotals =
-              rowDimensionAxes?.totals?.[anchorDimension] || [];
-
-            // Detect if there's more data for the outermost dimension
-            // and trim to the actual limit
-            let hasMoreRows = false;
-            const effectiveOutermostLimit =
-              config.pivot.outermostRowLimit ?? config.pivot.rowLimit;
-            if (!isFlat && effectiveOutermostLimit !== undefined) {
-              const isExplicitOutermostLimit =
-                config.pivot.outermostRowLimit !== undefined;
-              const limitToApply = calculateEffectiveRowLimit(
-                effectiveOutermostLimit,
-                rowOffset,
-                NUM_ROWS_PER_PAGE,
-                !isExplicitOutermostLimit, // Don't respect page size for explicit outermost limit
-              );
-              const actualLimit = parseInt(limitToApply);
-              if (rowDimensionValues.length > actualLimit) {
-                hasMoreRows = true;
-                rowDimensionValues = rowDimensionValues.slice(0, actualLimit);
-                axesRowTotals = axesRowTotals.slice(0, actualLimit);
-              }
-            }
+            const limitedRowAxes = applyOutermostRowLimit(
+              config,
+              plan,
+              rowDimensionAxes?.data?.[anchorDimension] || [],
+              rowDimensionAxes?.totals?.[anchorDimension] || [],
+            );
+            const { axesRowTotals, hasMoreRows, rowDimensionValues } =
+              limitedRowAxes;
 
             const totalColumns = getTotalColumnCount(totalsRowData);
 
             const rowAxesQueryForMeasureTotals = getAxisQueryForMeasureTotals(
               ctx,
               config,
-              isMeasureSortAccessor,
-              sortAccessor,
+              plan.isMeasureSortAccessor,
+              plan.sortAccessor,
               anchorDimension,
               rowDimensionValues,
-              timeRange,
+              plan.timeRange,
             );
 
             let tableCellQuery:
@@ -534,7 +462,9 @@ export function createPivotDataStore(
                 if (rowMeasureTotalsAxesQuery?.isFetching) {
                   return cellSet({
                     isFetching: true,
-                    data: lastPivotData ? lastPivotData : axesRowTotals,
+                    data: cache.lastPivotData.length
+                      ? cache.lastPivotData
+                      : (axesRowTotals as PivotDataRow[]),
                     columnDef,
                     assembled: false,
                     totalColumns,
@@ -563,70 +493,43 @@ export function createPivotDataStore(
                   rowMeasureTotalsAxesQuery?.totals?.[anchorDimension] || [],
                 );
 
-                // Track config key to detect context changes and prevent
-                // re-accumulating cached data on config re-derivations
-                const configKey = getPivotConfigKey(config);
-                if (configKey !== lastProcessedConfigKey) {
-                  lastProcessedRowPage = 0;
-                  lastProcessedConfigKey = configKey;
-                }
+                syncPivotCacheToConfig(cache, plan.configKey);
 
-                let pivotSkeleton = mergedRowTotals;
-                if (!isFlat && rowPage > 1) {
-                  if (rowPage > lastProcessedRowPage) {
-                    pivotSkeleton = [...lastPivotData, ...mergedRowTotals];
-                  } else {
-                    pivotSkeleton = lastPivotData as PivotDataRow[];
-                  }
-                }
+                const pivotSkeleton = getPivotSkeletonForPage(
+                  config,
+                  cache,
+                  mergedRowTotals as PivotDataRow[],
+                );
 
-                let pivotData: PivotDataRow[] = [];
-                let cellData: PivotDataRow[] = [];
                 let isCellDataEmpty = false;
-                if (configKey in expandedTableMap) {
-                  pivotData = expandedTableMap[configKey];
-                } else {
-                  if (tableCellData === null) {
-                    cellData = pivotSkeleton as PivotDataRow[];
-                  } else {
-                    if (tableCellData.isFetching) {
-                      return cellSet({
-                        isFetching: true,
-                        data: isFlat ? lastPivotData : pivotSkeleton,
-                        columnDef,
-                        assembled: false,
-                        totalColumns,
-                        totalsRowData: displayTotalsRow
-                          ? totalsRowData
-                          : undefined,
-                      });
-                    }
-                    cellData = (tableCellData.data?.data ||
-                      []) as PivotDataRow[];
-                    isCellDataEmpty = cellData.length === 0;
+                let cellData = pivotSkeleton;
+                if (tableCellData !== null) {
+                  if (tableCellData.isFetching) {
+                    return cellSet({
+                      isFetching: true,
+                      data: isFlat ? cache.lastPivotData : pivotSkeleton,
+                      columnDef,
+                      assembled: false,
+                      totalColumns,
+                      totalsRowData: displayTotalsRow
+                        ? totalsRowData
+                        : undefined,
+                    });
                   }
-
-                  let tableDataWithCells: PivotDataRow[] = [];
-                  if (isFlat) {
-                    if (rowPage > 1 && rowPage > lastProcessedRowPage) {
-                      tableDataWithCells = [...lastPivotData, ...cellData];
-                    } else if (rowPage > 1) {
-                      tableDataWithCells = lastPivotData;
-                    } else {
-                      tableDataWithCells = cellData;
-                    }
-                  } else {
-                    tableDataWithCells = reduceTableCellDataIntoRows(
-                      config,
-                      anchorDimension,
-                      rowDimensionValues || [],
-                      columnDimensionAxes?.data || {},
-                      pivotSkeleton as PivotDataRow[],
-                      cellData,
-                    );
-                  }
-                  pivotData = structuredClone(tableDataWithCells);
+                  cellData = (tableCellData.data?.data || []) as PivotDataRow[];
+                  isCellDataEmpty = cellData.length === 0;
                 }
+
+                const { pivotData } = assembleBasePivotData({
+                  anchorDimension,
+                  cache,
+                  cellData,
+                  columnDimensionAxes: columnDimensionAxes?.data || {},
+                  config,
+                  configKey: plan.configKey,
+                  pivotSkeleton,
+                  rowDimensionValues: rowDimensionValues || [],
+                });
 
                 const expandedSubTableCellQuery = queryExpandedRowMeasureValues(
                   ctx,
@@ -658,69 +561,35 @@ export function createPivotDataStore(
                         expandedRowMeasureValues,
                       );
 
-                      const key = getPivotConfigKey(config);
-                      expandedTableMap = {};
-                      expandedTableMap[key] = tableDataExpanded;
+                      cacheExpandedPivotData(cache, config, tableDataExpanded);
                     }
 
-                    // Add "Show more" row for outermost dimension if needed
-                    const effectiveOutermostLimit =
-                      config.pivot.outermostRowLimit ?? config.pivot.rowLimit;
+                    const finalState = buildFinalPivotStateDetails({
+                      anchorDimension,
+                      columnDimensionAxes: columnDimensionAxes?.data,
+                      config,
+                      data: tableDataExpanded,
+                      hasMoreRows,
+                      isCellDataEmpty,
+                      rowDimensionValues,
+                      rowOffset,
+                    });
 
-                    if (
-                      hasMoreRows &&
-                      effectiveOutermostLimit &&
-                      effectiveOutermostLimit < MAX_ROW_EXPANSION_LIMIT
-                    ) {
-                      const showMoreRow: PivotDataRow = {
-                        [anchorDimension]: SHOW_MORE_BUTTON,
-                        __currentLimit: effectiveOutermostLimit,
-                      } as PivotDataRow;
-                      tableDataExpanded = [...tableDataExpanded, showMoreRow];
-                    }
+                    updatePivotDataCache(cache, {
+                      columnDef,
+                      data: finalState.data,
+                      rowPage,
+                      totalColumns,
+                    });
 
-                    const activeCell = config.pivot.activeCell;
-                    let activeCellFilters: PivotFilter | undefined = undefined;
-                    if (activeCell) {
-                      activeCellFilters = getFiltersForCell(
-                        config,
-                        activeCell.rowId,
-                        activeCell.columnId,
-                        columnDimensionAxes?.data,
-                        tableDataExpanded,
-                      );
-                    }
-
-                    lastPivotData = tableDataExpanded;
-                    lastProcessedRowPage = rowPage;
-                    lastPivotColumnDef = columnDef;
-                    lastTotalColumns = totalColumns;
-
-                    let reachedEndForRowData = false;
-
-                    if (isFlat) {
-                      reachedEndForRowData = isCellDataEmpty && rowPage > 1;
-                    } else {
-                      const rowLimit = config.pivot.rowLimit;
-                      if (rowLimit !== undefined) {
-                        // Check if we've fetched all rows allowed by rowLimit
-                        // This includes both the current page data and any previous pages
-                        const totalRowsFetched =
-                          rowOffset + rowDimensionValues.length;
-                        reachedEndForRowData = totalRowsFetched >= rowLimit;
-                      } else {
-                        reachedEndForRowData =
-                          rowDimensionValues.length === 0 && rowPage > 1;
-                      }
-                    }
                     return {
                       isFetching: false,
-                      data: tableDataExpanded,
+                      data: finalState.data,
                       columnDef,
                       assembled: true,
-                      activeCellFilters,
+                      activeCellFilters: finalState.activeCellFilters,
                       totalColumns,
-                      reachedEndForRowData,
+                      reachedEndForRowData: finalState.reachedEndForRowData,
                       totalsRowData: displayTotalsRow
                         ? totalsRowData
                         : undefined,
