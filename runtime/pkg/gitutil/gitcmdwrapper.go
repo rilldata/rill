@@ -16,6 +16,13 @@ var ErrRefNotFound = errors.New("git reference not found")
 // ErrEmptyCommit is returned by CommitAll when there are no changes to commit.
 var ErrEmptyCommit = errors.New("nothing to commit")
 
+// IsGitRepo reports whether path is inside a git working tree.
+// Returns true for the repo root as well as any subdirectory of it.
+func IsGitRepo(path string) bool {
+	_, err := Run(context.Background(), path, "rev-parse", "--is-inside-work-tree")
+	return err == nil
+}
+
 func Clone(ctx context.Context, path, remote, checkoutBranch string, singleBranch, shallow bool) error {
 	args := []string{"clone", remote, path}
 	if singleBranch {
@@ -30,6 +37,32 @@ func Clone(ctx context.Context, path, remote, checkoutBranch string, singleBranc
 
 	_, err := Run(ctx, "", args...)
 	return err
+}
+
+// Checkout checks out a branch using the git command.
+// If create is true, it creates the branch (using -B) at the given startPoint.
+// go-git wipes out git-ignored changes during checkout so must use the git command.
+func Checkout(repoDir, branch string, force, create bool, startPoint string) error {
+	args := []string{"checkout"}
+	if force {
+		args = append(args, "--force")
+	}
+	if create {
+		args = append(args, "-B", branch)
+		if startPoint != "" {
+			args = append(args, startPoint)
+		}
+	} else {
+		args = append(args, branch)
+	}
+	_, err := Run(context.Background(), repoDir, args...)
+	if err != nil {
+		if strings.Contains(err.Error(), "did not match") {
+			return ErrRefNotFound
+		}
+		return err
+	}
+	return nil
 }
 
 // MergeWithStrategy merge a branch into the current branch using the specified strategy.
