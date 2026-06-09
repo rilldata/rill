@@ -21,6 +21,7 @@
   export let measure: MetricsViewSpecMeasure;
   export let metricsViewName: string;
   export let where: V1Expression | undefined = undefined;
+  export let tddChartType: TDDChart = TDDChart.DEFAULT;
   export let timeDimension: string | undefined = undefined;
   export let timeStart: string | undefined = undefined;
   export let timeEnd: string | undefined = undefined;
@@ -30,7 +31,13 @@
   export let comparisonInterval: Interval<true> | undefined = undefined;
   export let timeGranularity: V1TimeGrain | undefined = undefined;
   export let timeZone: string = "UTC";
+  export let comparisonDimension: string | undefined = undefined;
+  export let dimensionWhere: V1Expression | undefined = undefined;
+  export let dimensionValues: (string | null)[] = [];
   export let showComparison = false;
+  export let showTimeDimensionDetail: boolean = false;
+  export let connectNulls: boolean = true;
+  export let dynamicYAxis: boolean = false;
   export let ready = true;
 
   let captureNode: HTMLDivElement;
@@ -38,6 +45,9 @@
 
   $: formattedTimeRange = interval
     ? prettyFormatTimeRange(interval, timeGranularity)
+    : "";
+  $: formattedComparisonRange = comparisonInterval
+    ? prettyFormatTimeRange(comparisonInterval, timeGranularity)
     : "";
   $: generatedTime = prettyFormatTimeRange(
     Interval.fromDateTimes(DateTime.now(), DateTime.now()),
@@ -107,7 +117,10 @@
             {/if}
           </div>
           <div class="grow"></div>
-          <div>{formattedTimeRange}</div>
+          <div>
+            {formattedTimeRange}
+            {#if formattedComparisonRange}vs {formattedComparisonRange}{/if}
+          </div>
         </header>
 
         <ExploreFilterChipsReadOnly
@@ -139,22 +152,25 @@
             skipLink
           />
 
-          {#if timeGranularity}
-            <MeasureChart
-              {measure}
-              tddChartType={TDDChart.DEFAULT}
-              {metricsViewName}
-              {where}
-              {timeDimension}
-              {interval}
-              {comparisonInterval}
-              {timeGranularity}
-              {timeZone}
-              {ready}
-              {showComparison}
-              connectNulls={true}
-            />
-          {/if}
+          <MeasureChart
+            {measure}
+            {connectNulls}
+            tddChartType={tddChartType ?? TDDChart.DEFAULT}
+            {metricsViewName}
+            {where}
+            {timeDimension}
+            {interval}
+            {comparisonInterval}
+            {timeGranularity}
+            {timeZone}
+            {ready}
+            {comparisonDimension}
+            {dimensionValues}
+            {dimensionWhere}
+            {showComparison}
+            {showTimeDimensionDetail}
+            {dynamicYAxis}
+          />
         </div>
 
         <footer class="flex items-center justify-between text-xs text-fg-muted">
