@@ -64,6 +64,8 @@ export function getDefaultExplorePreset(
     pivotSortBy: "",
     pivotSortAsc: false,
     pivotTableMode: "nest",
+    pivotShowTotalsColumn: true,
+    pivotShowTotalsRow: true,
 
     ...(explore.defaultPreset ?? {}),
   };

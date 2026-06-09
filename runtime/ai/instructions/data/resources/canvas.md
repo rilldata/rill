@@ -788,6 +788,8 @@ pivot:
     - total_revenue
     - order_count
     - average_order_value
+  hide_totals_row: false
+  hide_totals_col: false
 ```
 
 **Simple pivot (rows only):**
@@ -819,6 +821,7 @@ table:
     - total_revenue
     - order_count
     - average_price
+  hide_totals_row: false
 ```
 
 **With dimension filters:**
