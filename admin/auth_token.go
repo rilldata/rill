@@ -226,6 +226,26 @@ func (s *Service) IssueMagicAuthToken(ctx context.Context, opts *IssueMagicAuthT
 	return &magicAuthToken{model: dat, token: tkn}, nil
 }
 
+// ExtendBrowserSessionAuthToken extends a Rill web browser session token when its
+// remaining lifetime is at or below refreshThreshold.
+func (s *Service) ExtendBrowserSessionAuthToken(ctx context.Context, authTok AuthToken, fullTTL, refreshThreshold time.Duration) error {
+	uat, ok := authTok.TokenModel().(*database.UserAuthToken)
+	if !ok {
+		return nil
+	}
+	if uat.AuthClientID == nil || *uat.AuthClientID != database.AuthClientIDRillWeb {
+		return nil
+	}
+	if uat.RepresentingUserID != nil || uat.Refresh {
+		return nil
+	}
+	if uat.ExpiresOn != nil && time.Until(*uat.ExpiresOn) > refreshThreshold {
+		return nil
+	}
+	newExpiresOn := time.Now().Add(fullTTL)
+	return s.DB.UpdateUserAuthTokenExpiresOn(ctx, uat.ID, newExpiresOn)
+}
+
 // RevokeAuthToken removes an auth token from persistent storage.
 func (s *Service) RevokeAuthToken(ctx context.Context, token string) error {
 	parsed, err := authtoken.FromString(token)

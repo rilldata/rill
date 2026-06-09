@@ -121,6 +121,8 @@ const (
 	AdminService_SudoUpdateAnnotations_FullMethodName                  = "/rill.admin.v1.AdminService/SudoUpdateAnnotations"
 	AdminService_SudoIssueRuntimeManagerToken_FullMethodName           = "/rill.admin.v1.AdminService/SudoIssueRuntimeManagerToken"
 	AdminService_SudoDeleteOrganizationBillingIssue_FullMethodName     = "/rill.admin.v1.AdminService/SudoDeleteOrganizationBillingIssue"
+	AdminService_SudoUpdateOrganizationBillingMessage_FullMethodName   = "/rill.admin.v1.AdminService/SudoUpdateOrganizationBillingMessage"
+	AdminService_SudoDeleteOrganizationBillingMessage_FullMethodName   = "/rill.admin.v1.AdminService/SudoDeleteOrganizationBillingMessage"
 	AdminService_SudoTriggerBillingRepair_FullMethodName               = "/rill.admin.v1.AdminService/SudoTriggerBillingRepair"
 	AdminService_CreateProjectWhitelistedDomain_FullMethodName         = "/rill.admin.v1.AdminService/CreateProjectWhitelistedDomain"
 	AdminService_RemoveProjectWhitelistedDomain_FullMethodName         = "/rill.admin.v1.AdminService/RemoveProjectWhitelistedDomain"
@@ -417,6 +419,10 @@ type AdminServiceClient interface {
 	SudoIssueRuntimeManagerToken(ctx context.Context, in *SudoIssueRuntimeManagerTokenRequest, opts ...grpc.CallOption) (*SudoIssueRuntimeManagerTokenResponse, error)
 	// SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the organization
 	SudoDeleteOrganizationBillingIssue(ctx context.Context, in *SudoDeleteOrganizationBillingIssueRequest, opts ...grpc.CallOption) (*SudoDeleteOrganizationBillingIssueResponse, error)
+	// SudoUpdateOrganizationBillingMessage sets (overriding any existing) a custom message banner for the organization
+	SudoUpdateOrganizationBillingMessage(ctx context.Context, in *SudoUpdateOrganizationBillingMessageRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationBillingMessageResponse, error)
+	// SudoDeleteOrganizationBillingMessage removes the custom message banner for the organization
+	SudoDeleteOrganizationBillingMessage(ctx context.Context, in *SudoDeleteOrganizationBillingMessageRequest, opts ...grpc.CallOption) (*SudoDeleteOrganizationBillingMessageResponse, error)
 	// SudoTriggerBillingRepair triggers billing repair jobs for orgs that doesn't have billing info and puts them on trial
 	SudoTriggerBillingRepair(ctx context.Context, in *SudoTriggerBillingRepairRequest, opts ...grpc.CallOption) (*SudoTriggerBillingRepairResponse, error)
 	// CreateProjectWhitelistedDomain adds a domain to the project's whitelisted
@@ -1569,6 +1575,26 @@ func (c *adminServiceClient) SudoDeleteOrganizationBillingIssue(ctx context.Cont
 	return out, nil
 }
 
+func (c *adminServiceClient) SudoUpdateOrganizationBillingMessage(ctx context.Context, in *SudoUpdateOrganizationBillingMessageRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationBillingMessageResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SudoUpdateOrganizationBillingMessageResponse)
+	err := c.cc.Invoke(ctx, AdminService_SudoUpdateOrganizationBillingMessage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) SudoDeleteOrganizationBillingMessage(ctx context.Context, in *SudoDeleteOrganizationBillingMessageRequest, opts ...grpc.CallOption) (*SudoDeleteOrganizationBillingMessageResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SudoDeleteOrganizationBillingMessageResponse)
+	err := c.cc.Invoke(ctx, AdminService_SudoDeleteOrganizationBillingMessage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) SudoTriggerBillingRepair(ctx context.Context, in *SudoTriggerBillingRepairRequest, opts ...grpc.CallOption) (*SudoTriggerBillingRepairResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SudoTriggerBillingRepairResponse)
@@ -2430,6 +2456,10 @@ type AdminServiceServer interface {
 	SudoIssueRuntimeManagerToken(context.Context, *SudoIssueRuntimeManagerTokenRequest) (*SudoIssueRuntimeManagerTokenResponse, error)
 	// SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the organization
 	SudoDeleteOrganizationBillingIssue(context.Context, *SudoDeleteOrganizationBillingIssueRequest) (*SudoDeleteOrganizationBillingIssueResponse, error)
+	// SudoUpdateOrganizationBillingMessage sets (overriding any existing) a custom message banner for the organization
+	SudoUpdateOrganizationBillingMessage(context.Context, *SudoUpdateOrganizationBillingMessageRequest) (*SudoUpdateOrganizationBillingMessageResponse, error)
+	// SudoDeleteOrganizationBillingMessage removes the custom message banner for the organization
+	SudoDeleteOrganizationBillingMessage(context.Context, *SudoDeleteOrganizationBillingMessageRequest) (*SudoDeleteOrganizationBillingMessageResponse, error)
 	// SudoTriggerBillingRepair triggers billing repair jobs for orgs that doesn't have billing info and puts them on trial
 	SudoTriggerBillingRepair(context.Context, *SudoTriggerBillingRepairRequest) (*SudoTriggerBillingRepairResponse, error)
 	// CreateProjectWhitelistedDomain adds a domain to the project's whitelisted
@@ -2867,6 +2897,12 @@ func (UnimplementedAdminServiceServer) SudoIssueRuntimeManagerToken(context.Cont
 }
 func (UnimplementedAdminServiceServer) SudoDeleteOrganizationBillingIssue(context.Context, *SudoDeleteOrganizationBillingIssueRequest) (*SudoDeleteOrganizationBillingIssueResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoDeleteOrganizationBillingIssue not implemented")
+}
+func (UnimplementedAdminServiceServer) SudoUpdateOrganizationBillingMessage(context.Context, *SudoUpdateOrganizationBillingMessageRequest) (*SudoUpdateOrganizationBillingMessageResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateOrganizationBillingMessage not implemented")
+}
+func (UnimplementedAdminServiceServer) SudoDeleteOrganizationBillingMessage(context.Context, *SudoDeleteOrganizationBillingMessageRequest) (*SudoDeleteOrganizationBillingMessageResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SudoDeleteOrganizationBillingMessage not implemented")
 }
 func (UnimplementedAdminServiceServer) SudoTriggerBillingRepair(context.Context, *SudoTriggerBillingRepairRequest) (*SudoTriggerBillingRepairResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoTriggerBillingRepair not implemented")
@@ -4914,6 +4950,42 @@ func _AdminService_SudoDeleteOrganizationBillingIssue_Handler(srv interface{}, c
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_SudoUpdateOrganizationBillingMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SudoUpdateOrganizationBillingMessageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SudoUpdateOrganizationBillingMessage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SudoUpdateOrganizationBillingMessage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SudoUpdateOrganizationBillingMessage(ctx, req.(*SudoUpdateOrganizationBillingMessageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_SudoDeleteOrganizationBillingMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SudoDeleteOrganizationBillingMessageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SudoDeleteOrganizationBillingMessage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SudoDeleteOrganizationBillingMessage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SudoDeleteOrganizationBillingMessage(ctx, req.(*SudoDeleteOrganizationBillingMessageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_SudoTriggerBillingRepair_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SudoTriggerBillingRepairRequest)
 	if err := dec(in); err != nil {
@@ -6462,6 +6534,14 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SudoDeleteOrganizationBillingIssue",
 			Handler:    _AdminService_SudoDeleteOrganizationBillingIssue_Handler,
+		},
+		{
+			MethodName: "SudoUpdateOrganizationBillingMessage",
+			Handler:    _AdminService_SudoUpdateOrganizationBillingMessage_Handler,
+		},
+		{
+			MethodName: "SudoDeleteOrganizationBillingMessage",
+			Handler:    _AdminService_SudoDeleteOrganizationBillingMessage_Handler,
 		},
 		{
 			MethodName: "SudoTriggerBillingRepair",

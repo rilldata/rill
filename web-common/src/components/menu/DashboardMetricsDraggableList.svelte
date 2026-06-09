@@ -1,7 +1,6 @@
 <script lang="ts">
   import DraggableList from "@rilldata/web-common/components/draggable-list";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import DragHandle from "@rilldata/web-common/components/icons/DragHandle.svelte";
   import EyeIcon from "@rilldata/web-common/components/icons/Eye.svelte";
   import EyeOffIcon from "@rilldata/web-common/components/icons/EyeInvisible.svelte";
@@ -14,18 +13,20 @@
   import { Button } from "../button";
   import Search from "../search/Search.svelte";
   import DashboardMetricsTagRow from "./DashboardMetricsTagRow.svelte";
+  import TagFilterBanner from "./TagFilterBanner.svelte";
   import {
     applyHideAllInTag,
     applyOnlyShowTag,
     applyShowAllInTag,
-    buildTagIndex,
     computeTagVisibility,
+    type TagIndex,
   } from "./tag-utils";
 
   type SelectableItem = MetricsViewSpecMeasure | MetricsViewSpecDimension;
 
   export let selectedItems: string[];
   export let allItems: SelectableItem[] = [];
+  export let tagIndex: TagIndex;
   export let type: "measure" | "dimension" = "measure";
   export let onSelectedChange: (items: string[]) => void;
 
@@ -44,7 +45,6 @@
   $: tooltipText = `Choose ${type === "measure" ? "measures" : "dimensions"} to display`;
   $: pluralLabel = type === "measure" ? "measures" : "dimensions";
 
-  $: tagIndex = buildTagIndex(allItems);
   $: tags = tagIndex.tags;
 
   $: hasTags = tags.length > 0;
@@ -196,23 +196,8 @@
 
         <!-- Right column: shown/hidden lists -->
         <div class="flex flex-col flex-1 min-w-0">
-          {#if filterActive}
-            <div
-              class="flex items-center justify-between gap-x-2 px-3 py-1.5 bg-popover-accent"
-            >
-              <div class="text-xs text-fg-secondary truncate">
-                Filtered by tag
-                <span class="text-fg-primary font-medium">{selectedTag}</span>
-              </div>
-              <button
-                type="button"
-                class="flex items-center gap-x-1 text-xs text-theme-500 hover:text-theme-600 font-medium"
-                onclick={clearTagFilter}
-              >
-                <CancelCircle size="12px" />
-                Clear
-              </button>
-            </div>
+          {#if filterActive && selectedTag}
+            <TagFilterBanner tagName={selectedTag} onClear={clearTagFilter} />
           {/if}
 
           {#key selectedTag}

@@ -21,9 +21,12 @@
   import { isNotFoundError } from "@rilldata/web-common/lib/errors";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { PageData } from "./$types";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
 
   export let data: PageData;
   $: ({ project } = data);
+
+  const { disablePersistentDashboardState } = featureFlags;
 
   const runtimeClient = useRuntimeClient();
   $: ({
@@ -115,6 +118,8 @@
           {exploreName}
           storageNamespacePrefix={`${orgName}__${projectName}__`}
           bookmarkOrTokenExploreState={bookmarkExploreStateQuery}
+          disableMostRecentDashboardState={$disablePersistentDashboardState}
+          disableInitSessionDashboardState={$disablePersistentDashboardState}
         >
           <Dashboard {metricsViewName} {exploreName} />
         </DashboardStateManager>

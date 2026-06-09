@@ -4,6 +4,7 @@ import {
   CircularChartProvider,
   type CircularChartSpec as CircularChartSpecBase,
 } from "@rilldata/web-common/features/components/charts/circular/CircularChartProvider";
+import { DEFAULT_LABELS_THRESHOLD } from "@rilldata/web-common/features/components/charts/circular/constants";
 import {
   ChartSortType,
   type ChartFieldsMap,
@@ -49,6 +50,10 @@ export class CircularChartComponent extends BaseChart<CircularCanvasChartSpec> {
     show_other: {
       type: "boolean",
       label: 'Show "Other" bucket',
+    },
+    labels: {
+      type: "labels",
+      label: "Data labels",
     },
     color: {
       type: "positional",
@@ -153,6 +158,11 @@ export class CircularChartComponent extends BaseChart<CircularCanvasChartSpec> {
       metrics_view: metricsViewName,
       innerRadius: 50,
       show_other: true,
+      labels: {
+        show: true,
+        format: "percent",
+        threshold: DEFAULT_LABELS_THRESHOLD,
+      },
       color: {
         type: "nominal",
         field: randomDimension,

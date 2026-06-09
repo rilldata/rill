@@ -188,6 +188,8 @@ components:
             type: string
         v1BillingIssueMetadata:
             properties:
+                message:
+                    $ref: '#/components/schemas/v1BillingIssueMetadataMessage'
                 neverSubscribed:
                     $ref: '#/components/schemas/v1BillingIssueMetadataNeverSubscribed'
                 noBillableAddress:
@@ -206,6 +208,11 @@ components:
                     $ref: '#/components/schemas/v1BillingIssueMetadataTrialCreditsDepleted'
                 trialEnded:
                     $ref: '#/components/schemas/v1BillingIssueMetadataTrialEnded'
+            type: object
+        v1BillingIssueMetadataMessage:
+            properties:
+                message:
+                    type: string
             type: object
         v1BillingIssueMetadataNeverSubscribed:
             type: object
@@ -301,6 +308,7 @@ components:
                 - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
                 - BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL
                 - BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED
+                - BILLING_ISSUE_TYPE_MESSAGE
             type: string
         v1BillingPlan:
             properties:
@@ -2040,6 +2048,8 @@ components:
             type: object
         v1SudoDeleteOrganizationBillingIssueResponse:
             type: object
+        v1SudoDeleteOrganizationBillingMessageResponse:
+            type: object
         v1SudoGetResourceResponse:
             properties:
                 deployment:
@@ -2150,6 +2160,8 @@ components:
                     $ref: '#/components/schemas/v1Organization'
                 subscription:
                     $ref: '#/components/schemas/v1Subscription'
+            type: object
+        v1SudoUpdateOrganizationBillingMessageResponse:
             type: object
         v1SudoUpdateOrganizationCustomDomainRequest:
             properties:
@@ -7517,6 +7529,7 @@ paths:
                         - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
                         - BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL
                         - BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED
+                        - BILLING_ISSUE_TYPE_MESSAGE
                     type: string
             responses:
                 "200":
@@ -7532,6 +7545,63 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the organization
+    /v1/superuser/organizations/{org}/billing/message:
+        delete:
+            operationId: AdminService_SudoDeleteOrganizationBillingMessage
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1SudoDeleteOrganizationBillingMessageResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: SudoDeleteOrganizationBillingMessage removes the custom message banner for the organization
+        post:
+            operationId: AdminService_SudoUpdateOrganizationBillingMessage
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                level:
+                                    $ref: '#/components/schemas/v1BillingIssueLevel'
+                                message:
+                                    type: string
+                            type: object
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1SudoUpdateOrganizationBillingMessageResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: SudoUpdateOrganizationBillingMessage sets (overriding any existing) a custom message banner for the organization
     /v1/superuser/projects/annotations:
         patch:
             operationId: AdminService_SudoUpdateAnnotations

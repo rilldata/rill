@@ -4165,6 +4165,52 @@ paths:
             - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
             - BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL
             - BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED
+            - BILLING_ISSUE_TYPE_MESSAGE
+  /v1/superuser/organizations/{org}/billing/message:
+    delete:
+      summary: SudoDeleteOrganizationBillingMessage removes the custom message banner for the organization
+      operationId: AdminService_SudoDeleteOrganizationBillingMessage
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoDeleteOrganizationBillingMessageResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+    post:
+      summary: SudoUpdateOrganizationBillingMessage sets (overriding any existing) a custom message banner for the organization
+      operationId: AdminService_SudoUpdateOrganizationBillingMessage
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoUpdateOrganizationBillingMessageResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              level:
+                $ref: '#/definitions/v1BillingIssueLevel'
+              message:
+                type: string
   /v1/superuser/projects/annotations:
     patch:
       summary: SudoUpdateAnnotations endpoint for superusers to update project annotations
@@ -4914,6 +4960,13 @@ definitions:
         $ref: '#/definitions/v1BillingIssueMetadataOnCreditTrial'
       trialCreditsDepleted:
         $ref: '#/definitions/v1BillingIssueMetadataTrialCreditsDepleted'
+      message:
+        $ref: '#/definitions/v1BillingIssueMetadataMessage'
+  v1BillingIssueMetadataMessage:
+    type: object
+    properties:
+      message:
+        type: string
   v1BillingIssueMetadataNeverSubscribed:
     type: object
   v1BillingIssueMetadataNoBillableAddress:
@@ -5009,6 +5062,7 @@ definitions:
       - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
       - BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL
       - BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED
+      - BILLING_ISSUE_TYPE_MESSAGE
     default: BILLING_ISSUE_TYPE_UNSPECIFIED
   v1BillingPlan:
     type: object
@@ -6793,6 +6847,8 @@ definitions:
         format: date-time
   v1SudoDeleteOrganizationBillingIssueResponse:
     type: object
+  v1SudoDeleteOrganizationBillingMessageResponse:
+    type: object
   v1SudoGetResourceResponse:
     type: object
     properties:
@@ -6904,6 +6960,8 @@ definitions:
         $ref: '#/definitions/v1Organization'
       subscription:
         $ref: '#/definitions/v1Subscription'
+  v1SudoUpdateOrganizationBillingMessageResponse:
+    type: object
   v1SudoUpdateOrganizationCustomDomainRequest:
     type: object
     properties:

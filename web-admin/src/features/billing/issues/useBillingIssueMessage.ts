@@ -1,6 +1,7 @@
 import { createAdminServiceGetOrganization } from "@rilldata/web-admin/client";
 import { getMessageForPaymentIssues } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
 import { getMessageForCancelledIssue } from "@rilldata/web-admin/features/billing/issues/getMessageForCancelledIssue";
+import { getMessageForCustomMessage } from "@rilldata/web-admin/features/billing/issues/getMessageForCustomMessage";
 import { getMessageForTrialPlan } from "@rilldata/web-admin/features/billing/issues/getMessageForTrialPlan";
 import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types";
 import {
@@ -46,6 +47,16 @@ export function useBillingIssueMessage(organization: string) {
           isFetching: false,
           isLoading: false,
           error: orgResp.error ?? categorisedIssuesResp.error,
+        };
+      }
+
+      // A support-set custom message takes precedence over billing-derived messages.
+      if (categorisedIssuesResp.data?.message) {
+        return {
+          isFetching: false,
+          isLoading: false,
+          error: undefined,
+          data: getMessageForCustomMessage(categorisedIssuesResp.data.message),
         };
       }
 

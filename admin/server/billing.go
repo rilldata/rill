@@ -582,6 +582,8 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 			opts.QuotaSlotsPerDeployment = biggerOfInt(sub.Plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment)
 			opts.QuotaOutstandingInvites = biggerOfInt(sub.Plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites)
 			opts.QuotaStorageLimitBytesPerDeployment = biggerOfInt64(sub.Plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment)
+			opts.BillingPlanName = &sub.Plan.Name
+			opts.BillingPlanDisplayName = &sub.Plan.DisplayName
 		}
 	}
 
@@ -989,6 +991,63 @@ func (s *Server) SudoDeleteOrganizationBillingIssue(ctx context.Context, req *ad
 	return &adminv1.SudoDeleteOrganizationBillingIssueResponse{}, nil
 }
 
+func (s *Server) SudoUpdateOrganizationBillingMessage(ctx context.Context, req *adminv1.SudoUpdateOrganizationBillingMessageRequest) (*adminv1.SudoUpdateOrganizationBillingMessageResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org), attribute.String("args.level", req.Level.String()))
+
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can set the billing message")
+	}
+
+	if req.Message == "" {
+		return nil, status.Error(codes.InvalidArgument, "message is required")
+	}
+
+	level, err := dtoBillingIssueLevelToDB(req.Level)
+	if err != nil {
+		return nil, err
+	}
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = s.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
+		OrgID:     org.ID,
+		Type:      database.BillingIssueTypeMessage,
+		Level:     level,
+		Metadata:  &database.BillingIssueMetadataMessage{Message: req.Message},
+		EventTime: time.Now(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.SudoUpdateOrganizationBillingMessageResponse{}, nil
+}
+
+func (s *Server) SudoDeleteOrganizationBillingMessage(ctx context.Context, req *adminv1.SudoDeleteOrganizationBillingMessageRequest) (*adminv1.SudoDeleteOrganizationBillingMessageResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
+
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can delete the billing message")
+	}
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.admin.DB.DeleteBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeMessage)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.SudoDeleteOrganizationBillingMessageResponse{}, nil
+}
+
 func (s *Server) updateQuotasAndHandleBillingIssues(ctx context.Context, org *database.Organization, sub *billing.Subscription) (*database.Organization, error) {
 	org, err := s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                org.Name,
@@ -1166,6 +1225,8 @@ func billingIssueTypeToDTO(t database.BillingIssueType) adminv1.BillingIssueType
 		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL
 	case database.BillingIssueTypeTrialCreditsDepleted:
 		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED
+	case database.BillingIssueTypeMessage:
+		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_MESSAGE
 	default:
 		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_UNSPECIFIED
 	}
@@ -1179,6 +1240,17 @@ func billingIssueLevelToDTO(l database.BillingIssueLevel) adminv1.BillingIssueLe
 		return adminv1.BillingIssueLevel_BILLING_ISSUE_LEVEL_WARNING
 	default:
 		return adminv1.BillingIssueLevel_BILLING_ISSUE_LEVEL_UNSPECIFIED
+	}
+}
+
+func dtoBillingIssueLevelToDB(l adminv1.BillingIssueLevel) (database.BillingIssueLevel, error) {
+	switch l {
+	case adminv1.BillingIssueLevel_BILLING_ISSUE_LEVEL_WARNING:
+		return database.BillingIssueLevelWarning, nil
+	case adminv1.BillingIssueLevel_BILLING_ISSUE_LEVEL_ERROR:
+		return database.BillingIssueLevelError, nil
+	default:
+		return database.BillingIssueLevelUnspecified, status.Error(codes.InvalidArgument, "invalid billing issue level")
 	}
 }
 
@@ -1202,6 +1274,8 @@ func dtoBillingIssueTypeToDB(t adminv1.BillingIssueType) (database.BillingIssueT
 		return database.BillingIssueTypeOnCreditTrial, nil
 	case adminv1.BillingIssueType_BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED:
 		return database.BillingIssueTypeTrialCreditsDepleted, nil
+	case adminv1.BillingIssueType_BILLING_ISSUE_TYPE_MESSAGE:
+		return database.BillingIssueTypeMessage, nil
 	default:
 		return database.BillingIssueTypeUnspecified, status.Error(codes.InvalidArgument, "invalid billing error type")
 	}
@@ -1313,6 +1387,14 @@ func billingIssueMetadataToDTO(t database.BillingIssueType, m database.BillingIs
 					SubscriptionId: md.SubID,
 					PlanId:         md.PlanID,
 					DepletedOn:     timestamppb.New(md.DepletedOn),
+				},
+			},
+		}
+	case database.BillingIssueTypeMessage:
+		return &adminv1.BillingIssueMetadata{
+			Metadata: &adminv1.BillingIssueMetadata_Message{
+				Message: &adminv1.BillingIssueMetadataMessage{
+					Message: m.(*database.BillingIssueMetadataMessage).Message,
 				},
 			},
 		}

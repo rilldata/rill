@@ -170,6 +170,11 @@ export interface V1BillingIssueMetadata {
   neverSubscribed?: V1BillingIssueMetadataNeverSubscribed;
   onCreditTrial?: V1BillingIssueMetadataOnCreditTrial;
   trialCreditsDepleted?: V1BillingIssueMetadataTrialCreditsDepleted;
+  message?: V1BillingIssueMetadataMessage;
+}
+
+export interface V1BillingIssueMetadataMessage {
+  message?: string;
 }
 
 export interface V1BillingIssueMetadataNeverSubscribed {
@@ -244,6 +249,7 @@ export const V1BillingIssueType = {
   BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL: "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL",
   BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED:
     "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED",
+  BILLING_ISSUE_TYPE_MESSAGE: "BILLING_ISSUE_TYPE_MESSAGE",
 } as const;
 
 export interface V1BillingPlan {
@@ -1464,6 +1470,10 @@ export interface V1SudoDeleteOrganizationBillingIssueResponse {
   [key: string]: unknown;
 }
 
+export interface V1SudoDeleteOrganizationBillingMessageResponse {
+  [key: string]: unknown;
+}
+
 export interface V1SudoGetResourceResponse {
   user?: V1User;
   org?: V1Organization;
@@ -1542,6 +1552,10 @@ export interface V1SudoUpdateOrganizationBillingCustomerRequest {
 export interface V1SudoUpdateOrganizationBillingCustomerResponse {
   organization?: V1Organization;
   subscription?: V1Subscription;
+}
+
+export interface V1SudoUpdateOrganizationBillingMessageResponse {
+  [key: string]: unknown;
 }
 
 export interface V1SudoUpdateOrganizationCustomDomainRequest {
@@ -2377,6 +2391,11 @@ export type AdminServiceGetReportMetaBody = {
   webOpenMode?: string;
   whereFilterJson?: string;
   accessibleFields?: string[];
+};
+
+export type AdminServiceSudoUpdateOrganizationBillingMessageBody = {
+  level?: V1BillingIssueLevel;
+  message?: string;
 };
 
 export type AdminServiceSearchProjectNamesParams = {
