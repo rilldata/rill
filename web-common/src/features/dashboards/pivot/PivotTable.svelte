@@ -115,7 +115,7 @@
   $: table = createSvelteTable(options);
 
   let containerRefElement: HTMLDivElement;
-  let stickyRows = [0];
+  let stickyRows: number[] = [];
   let rowScrollOffset = 0;
   let scrollLeft = 0;
   let timeout: ReturnType<typeof setTimeout>;
@@ -129,6 +129,7 @@
   $: assembled = $pivotDataStore.assembled;
   $: dataRows = $pivotDataStore.data;
   $: totalsRow = $pivotDataStore.totalsRowData;
+  $: stickyRows = totalsRow ? [0] : [];
   $: isFlat = $config.isFlat;
   $: hasMeasureContextColumns = $config.enableComparison;
 

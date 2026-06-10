@@ -143,6 +143,12 @@
           )}
         setRowLimit={(limit) =>
           metricsExplorerStore.setPivotRowLimit($exploreName, limit)}
+        setShowTotals={(totals) =>
+          metricsExplorerStore.setPivotTotals(
+            $exploreName,
+            totals.showTotalsColumn,
+            totals.showTotalsRow,
+          )}
         collapseAll={() =>
           metricsExplorerStore.setPivotExpanded($exploreName, {})}
         {isFetching}
