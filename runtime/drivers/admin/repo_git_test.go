@@ -912,7 +912,7 @@ func TestGitCheckout_refNotFound(t *testing.T) {
 	require.NoError(t, execGitCommand(exec.Command("git", "-C", repoDir, "add", "seed.txt")))
 	require.NoError(t, execGitCommand(exec.Command("git", "-C", repoDir, "commit", "-m", "seed")))
 
-	err := gitCheckout(repoDir, "does-not-exist", false, false, "")
+	err := gitutil.Checkout(repoDir, "does-not-exist", false, false, "")
 	require.ErrorIs(t, err, gitutil.ErrRefNotFound, "missing ref must surface as ErrRefNotFound so pullInner can create the branch")
 }
 
