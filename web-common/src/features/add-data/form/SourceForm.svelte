@@ -138,7 +138,7 @@
       }
     }
 
-    const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
+    const [rewrittenConnector] = prepareSourceFormData(
       connectorDriver,
       formValues,
       { connectorInstanceName: step.connector },
@@ -148,7 +148,7 @@
     const yaml = getSourceYAML({
       connectorName: step.connector,
       connector: connectorDriver,
-      formValues: rewrittenFormValues,
+      formValues,
       schema,
       envEditSession,
       outputConnector: defaultOLAP,
