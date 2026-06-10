@@ -8,7 +8,7 @@
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
   import { toPng } from "html-to-image";
-  import { DateTime, Interval } from "luxon";
+  import { Interval } from "luxon";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
   import MeasureChart from "./measure-chart/MeasureChart.svelte";
   import MeasureChartXAxis from "./measure-chart/MeasureChartXAxis.svelte";
@@ -49,10 +49,7 @@
   $: formattedComparisonRange = comparisonInterval
     ? prettyFormatTimeRange(comparisonInterval, timeGranularity)
     : "";
-  $: generatedTime = prettyFormatTimeRange(
-    Interval.fromDateTimes(DateTime.now(), DateTime.now()),
-    timeGranularity,
-  );
+  $: generatedTime = new Date().toISOString();
 
   const SVG_PROPS = [
     "fill",
