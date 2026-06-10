@@ -312,6 +312,10 @@ func (c *connection) ListCommits(ctx context.Context, pageToken string, limit in
 		args = append(args, "-n", strconv.Itoa(limit+1))
 	}
 	if pageToken != "" {
+		// Validate before passing to git: an arbitrary string could be interpreted as a flag.
+		if !rtgitutil.IsCommitHash(pageToken) {
+			return nil, "", fmt.Errorf("invalid page token %q", pageToken)
+		}
 		args = append(args, pageToken)
 	}
 
@@ -495,6 +499,11 @@ func (c *connection) RestoreCommit(ctx context.Context, commitSHA string) (strin
 	gitPath, subpath, err := gitutil.InferRepoRootAndSubpath(c.root)
 	if err != nil {
 		return "", err
+	}
+
+	// Require a full hash: prevents git interpreting the value as a flag and guarantees commitSHA[:7] below is safe.
+	if !rtgitutil.IsCommitHash(commitSHA) {
+		return "", fmt.Errorf("invalid commit SHA %q: must be a full commit hash", commitSHA)
 	}
 
 	// check that the commit exists and is actually a commit (not a tree/blob/tag).

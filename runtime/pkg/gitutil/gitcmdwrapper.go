@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -182,6 +183,21 @@ func FetchBranches(ctx context.Context, path string, branches ...string) error {
 	return nil
 }
 
+// IsCommitHash reports whether s is a full hex commit hash (SHA-1 or SHA-256).
+// Use it to validate untrusted hashes before passing them as git CLI arguments: it rules out
+// strings that git would interpret as flags or other revision syntax.
+func IsCommitHash(s string) bool {
+	if len(s) != 40 && len(s) != 64 {
+		return false
+	}
+	for _, c := range s {
+		if (c < '0' || c > '9') && (c < 'a' || c > 'f') && (c < 'A' || c > 'F') {
+			return false
+		}
+	}
+	return true
+}
+
 // Hash returns the commit hash for the given ref. Returns ErrRefNotFound if the ref does not resolve.
 func Hash(ctx context.Context, path, ref string) (string, error) {
 	out, err := Run(ctx, path, "rev-parse", "--verify", ref)
@@ -209,7 +225,17 @@ func Run(ctx context.Context, path string, args ...string) (string, error) {
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("git %s: %s(%w)", strings.Join(args, " "), strings.TrimSpace(stderr.String()), err)
+		// Redact credentials: args and git's stderr may contain credential-embedded remote URLs.
+		msg := fmt.Sprintf("git %s: %s", strings.Join(args, " "), strings.TrimSpace(stderr.String()))
+		return "", fmt.Errorf("%s(%w)", redactURLCredentials(msg), err)
 	}
 	return strings.TrimSpace(stdout.String()), nil
+}
+
+// urlCredentialsRegexp matches the userinfo component of a URL (e.g. "https://user:token@host").
+var urlCredentialsRegexp = regexp.MustCompile(`([a-zA-Z][a-zA-Z0-9+.-]*://)[^@/\s]+@`)
+
+// redactURLCredentials masks credentials embedded in URLs in s.
+func redactURLCredentials(s string) string {
+	return urlCredentialsRegexp.ReplaceAllString(s, "$1<redacted>@")
 }

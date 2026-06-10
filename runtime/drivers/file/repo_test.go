@@ -153,6 +153,17 @@ func TestListCommits(t *testing.T) {
 		require.True(t, commits[0].CommittedOn.AsTime().Equal(expected),
 			"expected committed_on=%s, got %s", expected, commits[0].CommittedOn.AsTime())
 	})
+
+	t.Run("rejects a page token that is not a full commit hash", func(t *testing.T) {
+		tempDir := setupRepoWithCommits(t, 1)
+		c := &connection{root: tempDir}
+
+		// Anything other than a full hash must be rejected before reaching git, where it could be parsed as a flag.
+		for _, token := range []string{"--output=/tmp/pwned", "HEAD", "abc1"} {
+			_, _, err := c.ListCommits(context.Background(), token, 0)
+			require.ErrorContains(t, err, "invalid page token", "token %q", token)
+		}
+	})
 }
 
 func TestListBranches(t *testing.T) {
@@ -268,6 +279,27 @@ func TestCommit(t *testing.T) {
 		hash, err := c.Commit(context.Background(), "noop")
 		require.NoError(t, err)
 		require.Empty(t, hash)
+	})
+}
+
+func TestRestoreCommit(t *testing.T) {
+	t.Run("rejects abbreviated or flag-like commit SHAs", func(t *testing.T) {
+		tempDir := setupRepoWithCommits(t, 1)
+		c := newFileConnection(t, tempDir)
+
+		// Abbreviated SHAs resolve in git but would panic on commitSHA[:7]; flag-like values must never reach git.
+		for _, sha := range []string{"abc1", "--help", "HEAD~1", ""} {
+			_, err := c.RestoreCommit(context.Background(), sha)
+			require.ErrorContains(t, err, "invalid commit SHA", "sha %q", sha)
+		}
+	})
+
+	t.Run("returns not found for a well-formed but nonexistent commit", func(t *testing.T) {
+		tempDir := setupRepoWithCommits(t, 1)
+		c := newFileConnection(t, tempDir)
+
+		_, err := c.RestoreCommit(context.Background(), strings.Repeat("ab", 20))
+		require.ErrorContains(t, err, "not found")
 	})
 }
 
