@@ -3199,6 +3199,8 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	// no validation rules for WatermarkExpression
 
+	// no validation rules for DataTimeRange
+
 	for idx, item := range m.GetDimensions() {
 		_, _ = idx, item
 
@@ -5591,6 +5593,14 @@ func (m *ExplorePreset) validate(all bool) error {
 
 	if m.PivotRowLimit != nil {
 		// no validation rules for PivotRowLimit
+	}
+
+	if m.PivotShowTotalsColumn != nil {
+		// no validation rules for PivotShowTotalsColumn
+	}
+
+	if m.PivotShowTotalsRow != nil {
+		// no validation rules for PivotShowTotalsRow
 	}
 
 	if m.ChartDynamicYAxis != nil {
@@ -13547,6 +13557,8 @@ func (m *MetricsViewSpec_Rollup) validate(all bool) error {
 	// no validation rules for Table
 
 	// no validation rules for Model
+
+	// no validation rules for DataTimeRange
 
 	// no validation rules for TimeGrain
 

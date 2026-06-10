@@ -34,7 +34,7 @@
       priority: BillingBannerPriority,
       message: {
         type: message.type,
-        message: message.title + " " + message.description,
+        message: [message.title, message.description].filter(Boolean).join(" "),
         iconType: message.iconType,
         ...(message.cta
           ? {

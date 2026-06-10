@@ -45,6 +45,7 @@
           setMeasureFilter,
           removeMeasureFilter,
           toggleFilterPin,
+          toggleFilterRequired,
         },
         clearAllFilters,
       },
@@ -198,6 +199,7 @@
             {activeTimeZone}
             {minTimeGrain}
             {showTimeComparison}
+            {allowCustomTimeRange}
             onDisplayTimeComparison={set.comparison}
             onSetSelectedComparisonRange={(range) => {
               if (range.name === "CUSTOM_COMPARISON_RANGE") {
@@ -247,6 +249,7 @@
           {applyDimensionInListMode}
           {applyDimensionContainsMode}
           toggleFilterPin={builder ? toggleFilterPin : undefined}
+          toggleFilterRequired={builder ? toggleFilterRequired : undefined}
         />
       {/each}
 
@@ -269,6 +272,7 @@
           onApply={({ dimension, filter, oldDimension }) =>
             setMeasureFilter(dimension, filter, oldDimension, metricsViewNames)}
           toggleFilterPin={builder ? toggleFilterPin : undefined}
+          toggleFilterRequired={builder ? toggleFilterRequired : undefined}
         />
       {/each}
 

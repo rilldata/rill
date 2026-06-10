@@ -164,6 +164,7 @@ type DB interface {
 	FindUserAuthToken(ctx context.Context, id string) (*UserAuthToken, error)
 	InsertUserAuthToken(ctx context.Context, opts *InsertUserAuthTokenOptions) (*UserAuthToken, error)
 	UpdateUserAuthTokenUsedOn(ctx context.Context, ids []string) error
+	UpdateUserAuthTokenExpiresOn(ctx context.Context, id string, expiresOn time.Time) error
 	DeleteUserAuthToken(ctx context.Context, id string) error
 	DeleteAllUserAuthTokens(ctx context.Context, userID string) (int, error)
 	DeleteUserAuthTokensByUserAndRepresentingUser(ctx context.Context, userID, representingUserID string) error
@@ -1315,6 +1316,7 @@ const (
 	BillingIssueTypeNeverSubscribed                        = 7
 	BillingIssueTypeOnCreditTrial                          = 8
 	BillingIssueTypeTrialCreditsDepleted                   = 9
+	BillingIssueTypeMessage                                = 10
 )
 
 type BillingIssueLevel int
@@ -1389,9 +1391,16 @@ type BillingIssueMetadataTrialCreditsDepleted struct {
 	DepletedOn time.Time `json:"depleted_on"`
 }
 
+type BillingIssueMetadataMessage struct {
+	Message string `json:"message"`
+}
+
 type UpsertBillingIssueOptions struct {
-	OrgID     string           `validate:"required"`
-	Type      BillingIssueType `validate:"required"`
+	OrgID string           `validate:"required"`
+	Type  BillingIssueType `validate:"required"`
+	// Level is optional; if unspecified, it is derived from Type. It is used for types whose
+	// severity is not implied by the type itself (e.g. BillingIssueTypeMessage).
+	Level     BillingIssueLevel `exhaustruct:"optional"`
 	Metadata  BillingIssueMetadata
 	EventTime time.Time `validate:"required"`
 }

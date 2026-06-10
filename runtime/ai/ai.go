@@ -27,6 +27,8 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -1278,8 +1280,14 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 
 			// Handle LLM completion error
 			if err != nil {
-				if errors.Is(err, llmCtx.Err()) && errors.Is(err, context.DeadlineExceeded) {
+				if errors.Is(err, llmCtx.Err()) && errors.Is(err, context.DeadlineExceeded) { // Timeout from local ctx.
 					return nil, fmt.Errorf("LLM request timed out after %s: %w", llmRequestTimeout, err)
+				}
+				if status.Code(err) == codes.DeadlineExceeded { // Timeout from admin service.
+					return nil, fmt.Errorf("LLM request timed out: %w", err)
+				}
+				if errors.Is(err, ctx.Err()) {
+					return nil, ctx.Err()
 				}
 				return nil, fmt.Errorf("completion failed: %w (stack: %s)", err, string(debug.Stack()))
 			}

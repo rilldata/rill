@@ -1450,6 +1450,15 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   watermarkExpression = "";
 
   /**
+   * Optional rilltime expression describing the time range covered by the base table.
+   * When set, the base table's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
+   * Evaluated with `now` = current time, `earliest` = zero time, `latest`/`watermark` = current time.
+   *
+   * @generated from field: string data_time_range = 37;
+   */
+  dataTimeRange = "";
+
+  /**
    * Dimensions in the metrics view
    *
    * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.Dimension dimensions = 6;
@@ -1577,6 +1586,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 5, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 20, name: "watermark_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 37, name: "data_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "dimensions", kind: "message", T: MetricsViewSpec_Dimension, repeated: true },
     { no: 7, name: "measures", kind: "message", T: MetricsViewSpec_Measure, repeated: true },
     { no: 31, name: "parent_dimensions", kind: "message", T: FieldSelector },
@@ -2201,6 +2211,15 @@ export class MetricsViewSpec_Rollup extends Message<MetricsViewSpec_Rollup> {
   model = "";
 
   /**
+   * Optional rilltime expression describing the time range covered by the rollup.
+   * When set, the rollup's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
+   * Evaluated with `now` = current time, `earliest` = zero time, `latest`/`watermark` = current time.
+   *
+   * @generated from field: string data_time_range = 11;
+   */
+  dataTimeRange = "";
+
+  /**
    * Time grain of the rollup.
    *
    * @generated from field: rill.runtime.v1.TimeGrain time_grain = 5;
@@ -2254,6 +2273,7 @@ export class MetricsViewSpec_Rollup extends Message<MetricsViewSpec_Rollup> {
     { no: 2, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "data_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 6, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
@@ -3212,6 +3232,16 @@ export class ExplorePreset extends Message<ExplorePreset> {
   pivotRowLimit?: number;
 
   /**
+   * @generated from field: optional bool pivot_show_totals_column = 37;
+   */
+  pivotShowTotalsColumn?: boolean;
+
+  /**
+   * @generated from field: optional bool pivot_show_totals_row = 38;
+   */
+  pivotShowTotalsRow?: boolean;
+
+  /**
    * Chart display settings (frontend-only; persisted in URL state)
    *
    * @generated from field: optional bool chart_dynamic_y_axis = 35;
@@ -3257,6 +3287,8 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 27, name: "pivot_sort_asc", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 28, name: "pivot_table_mode", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 33, name: "pivot_row_limit", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 37, name: "pivot_show_totals_column", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 38, name: "pivot_show_totals_row", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 35, name: "chart_dynamic_y_axis", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 
@@ -5040,6 +5072,14 @@ export class CanvasSpec extends Message<CanvasSpec> {
    */
   pinnedFilters: string[] = [];
 
+  /**
+   * Array of dimension or measure names that must have a value before the canvas can render.
+   * Required filters are implicitly pinned.
+   *
+   * @generated from field: repeated string required_filters = 19;
+   */
+  requiredFilters: string[] = [];
+
   constructor(data?: PartialMessage<CanvasSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5064,6 +5104,7 @@ export class CanvasSpec extends Message<CanvasSpec> {
     { no: 18, name: "rows", kind: "message", T: CanvasRow, repeated: true },
     { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 16, name: "pinned_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 19, name: "required_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasSpec {

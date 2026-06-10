@@ -411,7 +411,8 @@ func (s *Server) jwtAttributesForService(ctx context.Context, serviceID string, 
 
 func timeoutSelector(fullMethodName string) time.Duration {
 	if strings.HasPrefix(fullMethodName, "/rill.admin.v1.AIService") {
-		return time.Minute * 2
+		// NOTE: The runtime usually sets a lower timeout through its AILLMTimeoutSeconds config, so this is more of a hard upper bound.
+		return time.Minute * 10
 	}
 	if fullMethodName == "/rill.admin.v1.AdminService/DeleteProject" {
 		return time.Minute * 4

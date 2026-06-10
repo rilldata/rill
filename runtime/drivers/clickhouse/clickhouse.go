@@ -691,29 +691,99 @@ func (c *Connection) periodicallyEmitStats() {
 	}
 }
 
+// accessibleTables returns the list of tables that are accessible to the current user.
+func (c *Connection) accessibleTables(ctx context.Context) (map[tableKey]struct{}, error) {
+	rows, err := c.readDB.QueryxContext(ctx, `
+		SELECT
+			database,
+			name
+		FROM system.tables
+		WHERE is_temporary = 0
+		  AND lower(database) NOT IN ('information_schema', 'system')
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	tables := make(map[tableKey]struct{})
+	for rows.Next() {
+		var db, table string
+		if err := rows.Scan(&db, &table); err != nil {
+			return nil, err
+		}
+
+		tables[tableKey{
+			database: db,
+			table:    table,
+		}] = struct{}{}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return tables, nil
+}
+
 // estimateSize returns the estimated combined disk size of all resources in the database in bytes.
 func (c *Connection) estimateSize(ctx context.Context) (int64, error) {
-	var size int64
-	var query string
 	if c.config.Cluster == "" {
-		query = `SELECT sum(bytes_on_disk) AS size FROM system.parts WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system')`
-	} else {
-		query = fmt.Sprintf(`SELECT sum(bytes_on_disk) AS size FROM cluster('%s', system.parts) WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system')`, c.config.Cluster)
+		var size int64
+		query := `SELECT sum(bytes_on_disk) AS size FROM system.parts WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system')`
+		err := c.readDB.QueryRowxContext(ctx, query).Scan(&size)
+		if err != nil {
+			return 0, err
+		}
+		return size, nil
 	}
-	err := c.readDB.QueryRowxContext(ctx, query).Scan(&size)
+	// Workaround ClickHouse metadata leak through cluster(..., system.parts).
+	visibleTables, err := c.accessibleTables(ctx)
 	if err != nil {
 		return 0, err
 	}
 
-	return size, nil
+	query := fmt.Sprintf(`SELECT database,table,sum(bytes_on_disk) AS size FROM cluster('%s', system.parts) WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system') GROUP BY database, table`, c.config.Cluster)
+	rows, err := c.readDB.QueryxContext(ctx, query)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+
+	var total int64
+	for rows.Next() {
+		var db, table string
+		var size int64
+		if err := rows.Scan(&db, &table, &size); err != nil {
+			return 0, err
+		}
+		if _, ok := visibleTables[tableKey{database: db, table: table}]; ok {
+			total += size
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+
+	return total, nil
 }
 
 // estimatePerTableSize returns the estimated average disk size per table in bytes.
 func (c *Connection) estimatePerTableSize(ctx context.Context) ([]*tableSize, error) {
-	var query string
+	var (
+		query         string
+		visibleTables map[tableKey]struct{}
+		err           error
+	)
+
 	if c.config.Cluster == "" {
 		query = `SELECT database, table, sum(bytes_on_disk) AS size FROM system.parts WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system') GROUP BY database, table`
 	} else {
+		visibleTables, err = c.accessibleTables(ctx)
+		if err != nil {
+			return nil, err
+		}
 		query = fmt.Sprintf(`SELECT database, table, sum(bytes_on_disk) AS size FROM cluster('%s', system.parts) WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system') GROUP BY database, table`, c.config.Cluster)
 	}
 	rows, err := c.readDB.QueryxContext(ctx, query)
@@ -727,6 +797,12 @@ func (c *Connection) estimatePerTableSize(ctx context.Context) ([]*tableSize, er
 		var ts tableSize
 		if err := rows.Scan(&ts.database, &ts.table, &ts.size); err != nil {
 			return nil, fmt.Errorf("failed to scan row: %w", err)
+		}
+		// Only needed for cluster() workaround.
+		if visibleTables != nil {
+			if _, ok := visibleTables[tableKey{database: ts.database, table: ts.table}]; !ok {
+				continue
+			}
 		}
 		tableSizes = append(tableSizes, &ts)
 	}
@@ -895,6 +971,10 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 	return db, nil
 }
 
+type tableKey struct {
+	database string
+	table    string
+}
 type tableSize struct {
 	database string
 	table    string

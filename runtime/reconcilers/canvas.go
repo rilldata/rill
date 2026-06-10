@@ -112,6 +112,9 @@ func (r *CanvasReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	if validateErr == nil {
 		validateErr = r.validateMetricsViewTimeConsistency(ctx, components)
 	}
+	if validateErr == nil {
+		validateErr = r.validateRequiredFilters(ctx, c.Spec, components)
+	}
 
 	// Capture the valid spec in the state
 	if validateErr == nil {
@@ -310,6 +313,59 @@ func (r *CanvasReconciler) validateMetricsViewTimeConsistency(ctx context.Contex
 		}
 	}
 
+	return nil
+}
+
+// validateRequiredFilters checks that every entry in spec.RequiredFilters is a
+// dimension or measure on at least one of the metrics views referenced by the
+// canvas' components. This catches typos in `filters.required` since the field
+// has no inline UI.
+//
+// If none of the referenced metrics views have a valid spec yet (still
+// reconciling, or all invalid), validation is skipped to avoid spurious
+// failures during initial reconciliation.
+func (r *CanvasReconciler) validateRequiredFilters(ctx context.Context, spec *runtimev1.CanvasSpec, components map[string]*runtimev1.Resource) error {
+	if spec == nil || len(spec.RequiredFilters) == 0 {
+		return nil
+	}
+
+	known := make(map[string]bool)
+	hasResolvedView := false
+	for _, component := range components {
+		if component == nil {
+			continue
+		}
+		for _, ref := range component.Meta.Refs {
+			if ref.Kind != runtime.ResourceKindMetricsView {
+				continue
+			}
+			mv, err := r.C.Get(ctx, ref, false)
+			if err != nil {
+				continue
+			}
+			mvSpec := mv.GetMetricsView().State.ValidSpec
+			if mvSpec == nil {
+				continue
+			}
+			hasResolvedView = true
+			for _, d := range mvSpec.Dimensions {
+				known[d.Name] = true
+			}
+			for _, m := range mvSpec.Measures {
+				known[m.Name] = true
+			}
+		}
+	}
+
+	if !hasResolvedView {
+		return nil
+	}
+
+	for _, name := range spec.RequiredFilters {
+		if !known[name] {
+			return fmt.Errorf("required filter %q is not a dimension or measure on any metrics view referenced by this canvas", name)
+		}
+	}
 	return nil
 }
 

@@ -70,6 +70,57 @@ rollups:
       exclude: [total_clicks] # all measures except total_clicks
 ```
 
+### Declaring Coverage with `data_time_range`
+
+By default Rill discovers a rollup's time coverage at query time by running `SELECT min(time), max(time)` against the rollup table. If you'd rather declare coverage statically — to skip the probe, or to scope a rollup to a specific window — set `data_time_range` on the rollup. The value is a [rilltime expression](/reference/time-syntax):
+
+```yaml
+rollups:
+  - model: events_hourly
+    time_grain: hour
+    data_time_range: -1Y to now        # rolling last 12 months
+    dimensions: [publisher, domain]
+    measures: [total_impressions]
+  - model: events_daily_archive
+    time_grain: day
+    data_time_range: -5Y to -1Y        # 1 to 5 years ago
+    dimensions: [publisher, domain]
+    measures: [total_impressions]
+```
+
+A query for last week routes to `events_hourly`; a query 18 months back routes to `events_daily_archive`; a query reaching past 5 years falls back to the base.
+
+You can declare coverage on the metrics view itself the same way — this skips the probe on the base table:
+
+```yaml
+data_time_range: -5Y to now
+```
+
+When `data_time_range` is set, the rilltime expression is resolved against fixed anchors at query time: `now`/`latest`/`watermark` all resolve to the current wallclock, and `earliest` resolves to the zero epoch. So `inf` (a shorthand for `earliest to latest`) declares "all time from zero epoch to now." Mixing declared and undeclared rollups in the same metrics view is fine — each table independently decides whether to probe or to use its declaration.
+
+### Selection Priority and Definition Order
+
+When two rollups have the same time grain and both could answer a query, the **first one declared in the YAML wins**. This is the lever for priority-style routing: list narrower / fewer-row rollups first.
+
+```yaml
+rollups:
+  # Same grain, different dimension sets. Priority is declared by order.
+  - model: events_daily_narrow   # selected for queries that only need publisher
+    time_grain: day
+    dimensions: [publisher]
+    measures: [total_impressions]
+  - model: events_daily_wide     # selected when publisher + domain are queried
+    time_grain: day
+    dimensions: [publisher, domain]
+    measures: [total_impressions]
+  - model: events_daily_wider      # selected when publisher + domain + country are queried
+    time_grain: day
+    dimensions: [publisher, domain, country]
+    measures: [total_impressions]
+```
+
+A query on `publisher` alone is eligible against all three — `events_daily_narrow` wins because it's listed first. A query on `publisher` + `domain` knocks `events_daily_narrow` out of eligibility, so `events_daily_wide` wins.
+
 ### Configuration Reference
 
 - **`model`** (required) — The pre-aggregated table or model.
@@ -78,8 +129,9 @@ rollups:
 - **`database`**, **`database_schema`** (optional) — Override the OLAP database and schema for the rollup table.
 - **`dimensions`** (optional) — Field selector for which base-view dimensions are present in the rollup. Defaults to all.
 - **`measures`** (optional) — Field selector for which base-view measures are present in the rollup. Defaults to all.
+- **`data_time_range`** (optional) — Rilltime expression describing the rollup's time coverage. When set, Rill skips the OLAP `min/max` probe for this rollup and uses the declared bounds for coverage checks.
 
-A metrics view must define a `timeseries` to use rollups. The full schema is documented in the [metrics view reference](/reference/project-files/metrics-views#rollups).
+A metrics view must define a `timeseries` to use rollups. The metrics view itself also accepts a top-level `data_time_range` to declare the base table's coverage. The full schema is documented in the [metrics view reference](/reference/project-files/metrics-views#rollups).
 
 ## How Rollup Selection Works
 
@@ -116,7 +168,7 @@ For each eligible rollup, Rill checks that the rollup actually contains data for
 Among rollups that pass eligibility and coverage:
 
 1. Prefer the **coarsest grain** — fewer rows to scan.
-2. On a tie, prefer the rollup with the **smallest data range** (tightest coverage).
+2. On a tie, prefer the rollup **declared earlier** in the `rollups` list — this is the lever for explicit priority among same-grain rollups.
 
 The base table is used if no rollup is eligible.
 
@@ -131,6 +183,7 @@ The base table is used if no rollup is eligible.
 - **Filters on missing dimensions disqualify the rollup.** A WHERE clause on `country` will skip a rollup that doesn't include `country`, even if the query's group-by columns are all in the rollup.
 - **The rollup is responsible for being correct.** Rill does not validate that the rollup's measure values are consistent with the base — it trusts the model. If the rollup model uses the wrong aggregation (e.g. `AVG` where the base measure is `SUM`), queries routed to it will return wrong numbers.
 - **Rollups are assumed to be roughly caught up with the base table.** Coverage is measured against the base table's latest timestamp. A rollup that lags behind the base will be silently skipped for any query that reaches the tail of the data — including common "last 24 hours" queries and queries without a time range — even if it has the right grain, dimensions, and measures. Refresh rollups in step with the base model so selection actually happens.
+- **Rollups must not extend beyond the base table.** Routing assumes the rollup's max timestamp is no later than the base's. A rollup that gets ahead of the base (e.g. ingested through a separate path) may return incorrect results at the tail of the data.
 
 :::info
 The full configuration schema is in the [metrics view reference](/reference/project-files/metrics-views#rollups).

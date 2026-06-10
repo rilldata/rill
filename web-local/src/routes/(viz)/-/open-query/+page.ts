@@ -6,7 +6,7 @@ export async function load({ url }) {
   const query = getQueryFromUrl(url);
 
   await openQuery({
-    query,
+    mapArgs: { query },
     client: getLocalRuntimeClient(),
   });
 }
