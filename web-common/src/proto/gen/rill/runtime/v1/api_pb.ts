@@ -5311,6 +5311,11 @@ export class GetAIMessageResponse extends Message$1<GetAIMessageResponse> {
    */
   message?: Message;
 
+  /**
+   * @generated from field: rill.runtime.v1.Message result = 2;
+   */
+  result?: Message;
+
   constructor(data?: PartialMessage<GetAIMessageResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5320,6 +5325,7 @@ export class GetAIMessageResponse extends Message$1<GetAIMessageResponse> {
   static readonly typeName = "rill.runtime.v1.GetAIMessageResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "message", kind: "message", T: Message },
+    { no: 2, name: "result", kind: "message", T: Message },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetAIMessageResponse {

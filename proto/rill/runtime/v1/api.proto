@@ -1216,6 +1216,7 @@ message GetAIMessageRequest {
 // Response message for RuntimeService.GetAIMessage
 message GetAIMessageResponse {
   Message message = 1;
+  Message result = 2;
 }
 
 // **********

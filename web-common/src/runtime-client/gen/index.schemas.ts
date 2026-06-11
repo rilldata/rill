@@ -925,6 +925,8 @@ If not found in `time_ranges`, it should be added to the list. */
   pivotSortAsc?: boolean;
   pivotTableMode?: string;
   pivotRowLimit?: number;
+  pivotShowTotalsColumn?: boolean;
+  pivotShowTotalsRow?: boolean;
   /** When true, time-series charts use a dynamic Y-axis scale that fits the visible data range. */
   chartDynamicYAxis?: boolean;
 }
@@ -1102,6 +1104,7 @@ export interface V1GenerateResolverResponse {
 
 export interface V1GetAIMessageResponse {
   message?: V1Message;
+  result?: V1Message;
 }
 
 export interface V1GetConversationResponse {

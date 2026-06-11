@@ -91,6 +91,7 @@ import type {
   AdminServiceSetOrganizationMemberUserRoleBody,
   AdminServiceSetProjectMemberUserRoleBodyBody,
   AdminServiceSudoGetResourceParams,
+  AdminServiceSudoUpdateOrganizationBillingMessageBody,
   AdminServiceTriggerReconcileBodyBody,
   AdminServiceTriggerRefreshSourcesBody,
   AdminServiceUnsubscribeAlertBodyBody,
@@ -246,6 +247,7 @@ import type {
   V1StartDeploymentResponse,
   V1StopDeploymentResponse,
   V1SudoDeleteOrganizationBillingIssueResponse,
+  V1SudoDeleteOrganizationBillingMessageResponse,
   V1SudoGetResourceResponse,
   V1SudoGrantTrialCreditsRequest,
   V1SudoGrantTrialCreditsResponse,
@@ -259,6 +261,7 @@ import type {
   V1SudoUpdateAnnotationsResponse,
   V1SudoUpdateOrganizationBillingCustomerRequest,
   V1SudoUpdateOrganizationBillingCustomerResponse,
+  V1SudoUpdateOrganizationBillingMessageResponse,
   V1SudoUpdateOrganizationCustomDomainRequest,
   V1SudoUpdateOrganizationCustomDomainResponse,
   V1SudoUpdateOrganizationQuotasRequest,
@@ -14070,7 +14073,8 @@ export const adminServiceSudoDeleteOrganizationBillingIssue = (
     | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
     | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
     | "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL"
-    | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED",
+    | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED"
+    | "BILLING_ISSUE_TYPE_MESSAGE",
 ) => {
   return httpClient<V1SudoDeleteOrganizationBillingIssueResponse>({
     url: `/v1/superuser/organizations/${org}/billing/issues/${type}`,
@@ -14097,7 +14101,8 @@ export const getAdminServiceSudoDeleteOrganizationBillingIssueMutationOptions =
           | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
           | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
           | "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL"
-          | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED";
+          | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED"
+          | "BILLING_ISSUE_TYPE_MESSAGE";
       },
       TContext
     >;
@@ -14116,7 +14121,8 @@ export const getAdminServiceSudoDeleteOrganizationBillingIssueMutationOptions =
         | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
         | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
         | "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL"
-        | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED";
+        | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED"
+        | "BILLING_ISSUE_TYPE_MESSAGE";
     },
     TContext
   > => {
@@ -14145,7 +14151,8 @@ export const getAdminServiceSudoDeleteOrganizationBillingIssueMutationOptions =
           | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
           | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
           | "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL"
-          | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED";
+          | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED"
+          | "BILLING_ISSUE_TYPE_MESSAGE";
       }
     > = (props) => {
       const { org, type } = props ?? {};
@@ -14189,7 +14196,8 @@ export const createAdminServiceSudoDeleteOrganizationBillingIssue = <
           | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
           | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
           | "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL"
-          | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED";
+          | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED"
+          | "BILLING_ISSUE_TYPE_MESSAGE";
       },
       TContext
     >;
@@ -14210,12 +14218,208 @@ export const createAdminServiceSudoDeleteOrganizationBillingIssue = <
       | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
       | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
       | "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL"
-      | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED";
+      | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED"
+      | "BILLING_ISSUE_TYPE_MESSAGE";
   },
   TContext
 > => {
   const mutationOptions =
     getAdminServiceSudoDeleteOrganizationBillingIssueMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary SudoDeleteOrganizationBillingMessage removes the custom message banner for the organization
+ */
+export const adminServiceSudoDeleteOrganizationBillingMessage = (
+  org: string,
+) => {
+  return httpClient<V1SudoDeleteOrganizationBillingMessageResponse>({
+    url: `/v1/superuser/organizations/${org}/billing/message`,
+    method: "DELETE",
+  });
+};
+
+export const getAdminServiceSudoDeleteOrganizationBillingMessageMutationOptions =
+  <TError = RpcStatus, TContext = unknown>(options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<
+        ReturnType<typeof adminServiceSudoDeleteOrganizationBillingMessage>
+      >,
+      TError,
+      { org: string },
+      TContext
+    >;
+  }): CreateMutationOptions<
+    Awaited<
+      ReturnType<typeof adminServiceSudoDeleteOrganizationBillingMessage>
+    >,
+    TError,
+    { org: string },
+    TContext
+  > => {
+    const mutationKey = ["adminServiceSudoDeleteOrganizationBillingMessage"];
+    const { mutation: mutationOptions } = options
+      ? options.mutation &&
+        "mutationKey" in options.mutation &&
+        options.mutation.mutationKey
+        ? options
+        : { ...options, mutation: { ...options.mutation, mutationKey } }
+      : { mutation: { mutationKey } };
+
+    const mutationFn: MutationFunction<
+      Awaited<
+        ReturnType<typeof adminServiceSudoDeleteOrganizationBillingMessage>
+      >,
+      { org: string }
+    > = (props) => {
+      const { org } = props ?? {};
+
+      return adminServiceSudoDeleteOrganizationBillingMessage(org);
+    };
+
+    return { mutationFn, ...mutationOptions };
+  };
+
+export type AdminServiceSudoDeleteOrganizationBillingMessageMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceSudoDeleteOrganizationBillingMessage>>
+  >;
+
+export type AdminServiceSudoDeleteOrganizationBillingMessageMutationError =
+  RpcStatus;
+
+/**
+ * @summary SudoDeleteOrganizationBillingMessage removes the custom message banner for the organization
+ */
+export const createAdminServiceSudoDeleteOrganizationBillingMessage = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<
+        ReturnType<typeof adminServiceSudoDeleteOrganizationBillingMessage>
+      >,
+      TError,
+      { org: string },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceSudoDeleteOrganizationBillingMessage>>,
+  TError,
+  { org: string },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceSudoDeleteOrganizationBillingMessageMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary SudoUpdateOrganizationBillingMessage sets (overriding any existing) a custom message banner for the organization
+ */
+export const adminServiceSudoUpdateOrganizationBillingMessage = (
+  org: string,
+  adminServiceSudoUpdateOrganizationBillingMessageBody: AdminServiceSudoUpdateOrganizationBillingMessageBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1SudoUpdateOrganizationBillingMessageResponse>({
+    url: `/v1/superuser/organizations/${org}/billing/message`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceSudoUpdateOrganizationBillingMessageBody,
+    signal,
+  });
+};
+
+export const getAdminServiceSudoUpdateOrganizationBillingMessageMutationOptions =
+  <TError = RpcStatus, TContext = unknown>(options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<
+        ReturnType<typeof adminServiceSudoUpdateOrganizationBillingMessage>
+      >,
+      TError,
+      {
+        org: string;
+        data: AdminServiceSudoUpdateOrganizationBillingMessageBody;
+      },
+      TContext
+    >;
+  }): CreateMutationOptions<
+    Awaited<
+      ReturnType<typeof adminServiceSudoUpdateOrganizationBillingMessage>
+    >,
+    TError,
+    { org: string; data: AdminServiceSudoUpdateOrganizationBillingMessageBody },
+    TContext
+  > => {
+    const mutationKey = ["adminServiceSudoUpdateOrganizationBillingMessage"];
+    const { mutation: mutationOptions } = options
+      ? options.mutation &&
+        "mutationKey" in options.mutation &&
+        options.mutation.mutationKey
+        ? options
+        : { ...options, mutation: { ...options.mutation, mutationKey } }
+      : { mutation: { mutationKey } };
+
+    const mutationFn: MutationFunction<
+      Awaited<
+        ReturnType<typeof adminServiceSudoUpdateOrganizationBillingMessage>
+      >,
+      {
+        org: string;
+        data: AdminServiceSudoUpdateOrganizationBillingMessageBody;
+      }
+    > = (props) => {
+      const { org, data } = props ?? {};
+
+      return adminServiceSudoUpdateOrganizationBillingMessage(org, data);
+    };
+
+    return { mutationFn, ...mutationOptions };
+  };
+
+export type AdminServiceSudoUpdateOrganizationBillingMessageMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceSudoUpdateOrganizationBillingMessage>>
+  >;
+export type AdminServiceSudoUpdateOrganizationBillingMessageMutationBody =
+  AdminServiceSudoUpdateOrganizationBillingMessageBody;
+export type AdminServiceSudoUpdateOrganizationBillingMessageMutationError =
+  RpcStatus;
+
+/**
+ * @summary SudoUpdateOrganizationBillingMessage sets (overriding any existing) a custom message banner for the organization
+ */
+export const createAdminServiceSudoUpdateOrganizationBillingMessage = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<
+        ReturnType<typeof adminServiceSudoUpdateOrganizationBillingMessage>
+      >,
+      TError,
+      {
+        org: string;
+        data: AdminServiceSudoUpdateOrganizationBillingMessageBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceSudoUpdateOrganizationBillingMessage>>,
+  TError,
+  { org: string; data: AdminServiceSudoUpdateOrganizationBillingMessageBody },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceSudoUpdateOrganizationBillingMessageMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };

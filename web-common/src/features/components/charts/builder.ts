@@ -83,6 +83,10 @@ export function createPositionEncoding(
 ): PositionFieldDef<Field> {
   if (!field || field.type === "value") return {};
   const metaData = data.fields[field.field];
+  const temporalAxisLabelExpr =
+    field.type === "temporal" && metaData && "format" in metaData
+      ? getTemporalAxisLabelExpr(metaData.format)
+      : undefined;
   return {
     field: sanitizeValueForVega(field.field),
     title: metaData?.displayName || field.field,
@@ -115,9 +119,22 @@ export function createPositionEncoding(
               "format" in metaData && {
                 format: metaData.format,
               }),
+            ...(temporalAxisLabelExpr && {
+              labelExpr: temporalAxisLabelExpr,
+            }),
             ...(!field.showAxisTitle && { title: null }),
           },
   };
+}
+
+export function getTemporalAxisLabelExpr(format: string | undefined) {
+  if (format !== "%H:%M") return undefined;
+
+  return [
+    "timeFormat(datum.value, '%H:%M') === '00:00'",
+    "? timeFormat(datum.value, '%b %d')",
+    ": timeFormat(datum.value, '%H:%M')",
+  ].join(" ");
 }
 
 export function createSizeEncoding(

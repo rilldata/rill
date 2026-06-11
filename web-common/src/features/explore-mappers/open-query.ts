@@ -1,7 +1,10 @@
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
 import { getUrlForExplore } from "@rilldata/web-common/features/explore-mappers/generate-explore-link";
-import { mapMetricsResolverQueryToDashboard } from "@rilldata/web-common/features/explore-mappers/map-metrics-resolver-query-to-dashboard.ts";
+import {
+  mapMetricsResolverQueryToDashboard,
+  type MetricsResolverQueryMapperArgs,
+} from "@rilldata/web-common/features/explore-mappers/map-metrics-resolver-query-to-dashboard.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   getQueryServiceMetricsViewTimeRangeQueryKey,
@@ -15,7 +18,6 @@ import {
   type V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-import type { Schema as MetricsResolverQuery } from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
 import { error, redirect } from "@sveltejs/kit";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params.ts";
@@ -23,12 +25,12 @@ import { createLinkError } from "@rilldata/web-common/features/explore-mappers/e
 import { ExploreLinkErrorType } from "@rilldata/web-common/features/explore-mappers/types.ts";
 
 export async function openQuery({
-  query,
+  mapArgs,
   organization,
   project,
   client,
 }: {
-  query: MetricsResolverQuery;
+  mapArgs: MetricsResolverQueryMapperArgs;
   client: RuntimeClient;
   organization?: string;
   project?: string;
@@ -37,7 +39,7 @@ export async function openQuery({
 
   try {
     // Extract metrics view name (now type-safe)
-    const metricsViewName = query.metrics_view;
+    const metricsViewName = mapArgs.query.metrics_view;
     if (!metricsViewName) {
       throw new Error("metrics_view is required in query");
     }
@@ -57,7 +59,7 @@ export async function openQuery({
     const exploreState = mapMetricsResolverQueryToDashboard(
       metricsViewSpec,
       exploreSpec,
-      query,
+      mapArgs,
     );
 
     // Generate the final explore URL

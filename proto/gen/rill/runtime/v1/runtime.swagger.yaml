@@ -5219,6 +5219,10 @@ definitions:
       pivotRowLimit:
         type: integer
         format: int32
+      pivotShowTotalsColumn:
+        type: boolean
+      pivotShowTotalsRow:
+        type: boolean
       chartDynamicYAxis:
         type: boolean
         title: Chart display settings (frontend-only; persisted in URL state)
@@ -5444,6 +5448,8 @@ definitions:
     type: object
     properties:
       message:
+        $ref: '#/definitions/v1Message'
+      result:
         $ref: '#/definitions/v1Message'
     title: Response message for RuntimeService.GetAIMessage
   v1GetConversationResponse:

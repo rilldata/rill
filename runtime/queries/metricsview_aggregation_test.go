@@ -789,6 +789,38 @@ func TestMetricsViewsAggregation_pivot_export_labels_2_time_columns(t *testing.T
 	require.Equal(t, "Facebook", fieldsToString(rows[i], "Publisher"))
 }
 
+func TestMetricsViewsAggregation_pivot_export_column_limit_exceeded(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProjectWithConfigs(t, "ad_bids", map[string]string{
+		"rill.metrics.pivot_export_column_limit": "2",
+	})
+
+	limit := int64(1000)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{Name: "pub"},
+			{
+				Name:      "timestamp",
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{Name: "measure_1"},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{Name: "pub"},
+		},
+		PivotOn:        []string{"timestamp"},
+		Limit:          &limit,
+		Exporting:      true,
+		SecurityClaims: testClaims(),
+	}
+	// The pivot spans three months, which exceeds the configured limit of 2 columns.
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "exceeds the limit of 2")
+}
+
 func TestMetricsViewsAggregation_pivot_export_labels(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 

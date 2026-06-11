@@ -15,6 +15,7 @@ import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimensio
 import { DateTimeUnitToV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains.ts";
 import {
   type DashboardTimeControls,
+  TimeComparisonOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types.ts";
 import {
@@ -38,13 +39,20 @@ import type {
 } from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
 import type { SortingState } from "tanstack-table-8-svelte-5";
 
+export type MetricsResolverQueryMapperArgs = {
+  query: MetricsResolverQuery;
+  resolvedTimeRange?: TimeRange;
+  resolvedComparisonTimeRange?: TimeRange;
+};
+
 export function mapMetricsResolverQueryToDashboard(
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
-  query: MetricsResolverQuery,
+  args: MetricsResolverQueryMapperArgs,
 ) {
   // Build partial ExploreState directly from Query
   const partialExploreState: Partial<ExploreState> = {};
+  const query = args.query;
 
   const { exploreDimensions, timeDimensions } = getValidDimensions(
     metricsViewSpec,
@@ -77,13 +85,7 @@ export function mapMetricsResolverQueryToDashboard(
   }
 
   // Convert time ranges
-  partialExploreState.selectedTimeRange =
-    mapResolverTimeRangeToDashboardControls(query.time_range);
-  if (query.comparison_time_range) {
-    partialExploreState.selectedComparisonTimeRange =
-      mapResolverTimeRangeToDashboardControls(query.comparison_time_range);
-    partialExploreState.showTimeComparison = true;
-  }
+  mapTimeRanges(partialExploreState, query, args);
 
   // Convert where filter
   if (query.where) {
@@ -188,6 +190,36 @@ function getValidDimensions(
     exploreDimensions,
     timeDimensions,
   };
+}
+
+function mapTimeRanges(
+  partialExploreState: Partial<ExploreState>,
+  query: MetricsResolverQuery,
+  args: MetricsResolverQueryMapperArgs,
+) {
+  partialExploreState.selectedTimeRange =
+    mapResolverTimeRangeToDashboardControls(query.time_range);
+  if (args.resolvedTimeRange) {
+    partialExploreState.selectedTimeRange = {
+      name: TimeRangePreset.CUSTOM,
+      start: new Date(args.resolvedTimeRange.start!),
+      end: new Date(args.resolvedTimeRange.end!),
+    };
+  }
+
+  if (query.comparison_time_range) {
+    partialExploreState.selectedComparisonTimeRange =
+      mapResolverTimeRangeToDashboardControls(query.comparison_time_range);
+    partialExploreState.showTimeComparison = true;
+
+    if (args.resolvedComparisonTimeRange) {
+      partialExploreState.selectedComparisonTimeRange = {
+        name: TimeComparisonOption.CUSTOM,
+        start: new Date(args.resolvedComparisonTimeRange.start!),
+        end: new Date(args.resolvedComparisonTimeRange.end!),
+      };
+    }
+  }
 }
 
 function mapResolverTimeRangeToDashboardControls(
@@ -394,6 +426,8 @@ function mapPivot(
     columnPage: 0,
     rowPage: 0,
     enableComparison: false,
+    showTotalsColumn: true,
+    showTotalsRow: true,
     tableMode: "flat",
     activeCell: null,
   };

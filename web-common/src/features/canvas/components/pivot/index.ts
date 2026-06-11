@@ -32,6 +32,8 @@ export interface PivotSpec
   measures: string[];
   row_dimensions?: string[];
   col_dimensions?: string[];
+  hide_totals_row?: boolean;
+  hide_totals_col?: boolean;
 }
 
 export interface TableSpec
@@ -39,6 +41,8 @@ export interface TableSpec
     ComponentFilterProperties {
   metrics_view: string;
   columns: string[];
+  hide_totals_row?: boolean;
+  hide_totals_col?: boolean;
 }
 
 export { default as Pivot } from "./CanvasPivotDisplay.svelte";
@@ -121,6 +125,8 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
       enableComparison: false,
       tableMode: type === "pivot" ? "nest" : "flat",
       activeCell: null,
+      showTotalsColumn: true,
+      showTotalsRow: true,
     };
   }
 
@@ -136,7 +142,20 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
     };
   }
   inputParams(type: "pivot" | "table"): InputParams<PivotSpec | TableSpec> {
+    const spec = get(this.specStore);
+
     if (type === "pivot") {
+      const measureCount = ("measures" in spec && spec.measures?.length) || 0;
+      const rowDimensionCount =
+        ("row_dimensions" in spec && spec.row_dimensions?.length) || 0;
+      const colDimensionCount =
+        ("col_dimensions" in spec && spec.col_dimensions?.length) || 0;
+
+      // Mirror PivotToolbar: totals only apply when their constituent fields exist.
+      const canShowTotalRow = rowDimensionCount > 0 && measureCount > 0;
+      const canShowTotalColumn =
+        rowDimensionCount > 0 && colDimensionCount > 0 && measureCount > 0;
+
       return {
         options: {
           metrics_view: { type: "metrics", label: "Metrics view" },
@@ -155,11 +174,34 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             meta: { allowedTypes: ["time", "dimension"] },
             label: "Row dimensions",
           },
+          hide_totals_col: {
+            type: "boolean",
+            label: "Hide total column",
+            meta: { defaultValue: false },
+            showInUI: canShowTotalColumn,
+          },
+          hide_totals_row: {
+            type: "boolean",
+            label: "Hide total row",
+            meta: { defaultValue: false },
+            showInUI: canShowTotalRow,
+          },
           ...commonOptions,
         },
         filter: getFilterOptions(true, false),
       };
     } else {
+      const columns = ("columns" in spec && spec.columns) || [];
+      const metricsViewSpec = get(
+        this.parent.metricsView.getMetricsViewFromName(spec.metrics_view),
+      ).metricsView;
+      const measureNames = new Set(
+        metricsViewSpec?.measures?.map((m) => m.name as string) || [],
+      );
+      const measureCount = columns.filter((c) => measureNames.has(c)).length;
+      const dimensionCount = columns.length - measureCount;
+      const canShowTotalRow = dimensionCount > 0 && measureCount > 0;
+
       return {
         options: {
           metrics_view: { type: "metrics", label: "Metrics view" },
@@ -167,6 +209,12 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             type: "multi_fields",
             label: "Columns",
             meta: { allowedTypes: ["time", "dimension", "measure"] },
+          },
+          hide_totals_row: {
+            type: "boolean",
+            label: "Hide total row",
+            meta: { defaultValue: false },
+            showInUI: canShowTotalRow,
           },
           ...commonOptions,
         },
@@ -228,11 +276,14 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
     let newSpec: PivotSpec | TableSpec;
 
     const commonProperties: ComponentCommonProperties &
-      ComponentFilterProperties = {
+      ComponentFilterProperties &
+      Pick<PivotSpec, "hide_totals_row" | "hide_totals_col"> = {
       title: currentSpec.title,
       description: currentSpec.description,
       dimension_filters: currentSpec.dimension_filters,
       time_filters: currentSpec.time_filters,
+      hide_totals_row: currentSpec.hide_totals_row,
+      hide_totals_col: currentSpec.hide_totals_col,
     };
 
     if ("columns" in currentSpec) {
