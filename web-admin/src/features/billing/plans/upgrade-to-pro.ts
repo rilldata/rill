@@ -1,7 +1,7 @@
 import { type CategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors.ts";
 import {
   fetchPaymentsPortalURL,
-  fetchProPlan,
+  fetchPaidPlan,
   getBillingUpgradeUrl,
 } from "@rilldata/web-admin/features/billing/plans/selectors.ts";
 import {
@@ -31,19 +31,19 @@ export async function upgradeToPro(
     return;
   }
 
-  const proPlan = await fetchProPlan();
-  if (!proPlan) return;
+  const paidPlan = await fetchPaidPlan();
+  if (!paidPlan) return;
   if (categorisedIssues.cancelled) {
     await adminServiceRenewBillingSubscription(org, {
-      planName: proPlan.name,
+      planName: paidPlan.name,
     });
     eventBus.emit("notification", {
       type: "success",
-      message: "Your Pro plan was renewed",
+      message: `Your ${paidPlan.displayName} plan was renewed`,
     });
   } else {
     await adminServiceUpdateBillingSubscription(org, {
-      planName: proPlan.name,
+      planName: paidPlan.name,
     });
     showWelcomeToRillDialog.set(true);
   }
