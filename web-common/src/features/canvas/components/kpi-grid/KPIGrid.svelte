@@ -13,22 +13,35 @@
   $: ({
     specStore,
     timeAndFilterStore,
-    parent: { name: canvasName },
+    parent: { name: canvasName, metricsView },
     visible,
   } = component);
   $: kpiGridProperties = $specStore;
   $: schema = validateKPIGridSchema(kpiGridProperties);
 
-  // Convert measures to KPI specs
-  $: kpis = (kpiGridProperties.measures || []).map((measure) => ({
-    metrics_view: kpiGridProperties.metrics_view,
-    measure,
-    sparkline: kpiGridProperties.sparkline,
-    hide_time_range: kpiGridProperties.hide_time_range,
-    comparison: kpiGridProperties.comparison,
-    dimension_filters: kpiGridProperties.dimension_filters,
-    time_filters: kpiGridProperties.time_filters,
-  }));
+  $: metricsViewQuery = metricsView.getMetricsViewFromName(
+    kpiGridProperties.metrics_view,
+  );
+  $: accessibleMeasureNames = new Set(
+    $metricsViewQuery.metricsView?.measures?.map((m) => m.name as string) ?? [],
+  );
+
+  // Convert measures to KPI specs, filtering out any excluded by a security
+  // policy (those will be absent from the metrics view's validSpec).
+  $: kpis = (kpiGridProperties.measures || [])
+    .filter(
+      (measure) =>
+        $metricsViewQuery.isLoading || accessibleMeasureNames.has(measure),
+    )
+    .map((measure) => ({
+      metrics_view: kpiGridProperties.metrics_view,
+      measure,
+      sparkline: kpiGridProperties.sparkline,
+      hide_time_range: kpiGridProperties.hide_time_range,
+      comparison: kpiGridProperties.comparison,
+      dimension_filters: kpiGridProperties.dimension_filters,
+      time_filters: kpiGridProperties.time_filters,
+    }));
 
   $: filters = {
     time_filters: kpiGridProperties.time_filters,

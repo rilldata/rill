@@ -1,8 +1,4 @@
 import type { LeaderboardSpec } from "@rilldata/web-common/features/canvas/components/leaderboard";
-import {
-  validateDimensions,
-  validateMeasures,
-} from "@rilldata/web-common/features/canvas/components/validators";
 import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 
 export function validateLeaderboardSchema(
@@ -35,8 +31,14 @@ export function validateLeaderboardSchema(
   const allDimensions =
     metricsView?.dimensions?.map((d) => d.name || (d.column as string)) || [];
 
-  let measures = leaderboardSpec?.measures || [];
-  let dimensions = leaderboardSpec?.dimensions || [];
+  // Filter to only accessible fields, silently dropping any excluded by a
+  // security policy.
+  const measures = (leaderboardSpec?.measures || []).filter((m) =>
+    allMeasures.includes(m),
+  );
+  const dimensions = (leaderboardSpec?.dimensions || []).filter((d) =>
+    allDimensions.includes(d),
+  );
 
   if (!measures.length || !dimensions.length) {
     return {
@@ -45,29 +47,6 @@ export function validateLeaderboardSchema(
     };
   }
 
-  measures = measures.filter((c) => allMeasures.includes(c));
-  dimensions = dimensions.filter((c) => allDimensions.includes(c));
-
-  const validateMeasuresRes = validateMeasures(metricsView, measures);
-  if (!validateMeasuresRes.isValid) {
-    const invalidMeasures = validateMeasuresRes.invalidMeasures.join(", ");
-    return {
-      isValid: false,
-      error: `Invalid measure(s) "${invalidMeasures}" selected for the table`,
-    };
-  }
-
-  const validateDimensionsRes = validateDimensions(metricsView, dimensions);
-
-  if (!validateDimensionsRes.isValid) {
-    const invalidDimensions =
-      validateDimensionsRes.invalidDimensions.join(", ");
-
-    return {
-      isValid: false,
-      error: `Invalid dimension(s) "${invalidDimensions}" selected for the table`,
-    };
-  }
   return {
     isValid: true,
     error: undefined,
