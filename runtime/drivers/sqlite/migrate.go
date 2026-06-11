@@ -74,10 +74,8 @@ func (c *connection) Migrate(_ context.Context) (err error) {
 
 	// Apply TTL to AI sessions in the background.
 	// This can be slow on large databases, so it must not block Migrate (and therefore runtime startup).
-	// Using aiSessionCleanupOnce defensively to make sure cleanup started only once.
-	c.aiSessionCleanupOnce.Do(func() {
-		go c.deleteExpiredAISessionsLoop()
-	})
+	// It's started here rather than in Open to guarantee the AI tables exist before the first cleanup runs.
+	go c.deleteExpiredAISessionsLoop()
 
 	return nil
 }

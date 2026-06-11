@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"maps"
 	"strings"
-	"sync"
 
 	"github.com/XSAM/otelsql"
 	"github.com/jmoiron/sqlx"
@@ -130,9 +129,6 @@ type connection struct {
 	db     *sqlx.DB
 	logger *zap.Logger
 	config map[string]any
-
-	// Ensures the AI session cleanup loop is started at most once.
-	aiSessionCleanupOnce sync.Once
 
 	// Backup management.
 	// See c.startBackups() for details.
