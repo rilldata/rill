@@ -30,13 +30,13 @@ import { derived, type Readable } from "svelte/store";
 import type { PlanTier } from "@rilldata/web-admin/features/billing/plans/types.ts";
 import type { CategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors.ts";
 
-export async function fetchProPlan() {
+export async function fetchPaidPlan() {
   const plansResp = await queryClient.fetchQuery({
     queryKey: getAdminServiceListPublicBillingPlansQueryKey(),
     queryFn: () => adminServiceListPublicBillingPlans(),
   });
 
-  return plansResp.plans?.find((p) => isProPlan(p.name ?? ""));
+  return plansResp.plans?.find((p) => isTeamPlan(p.name ?? ""));
 }
 
 /**
