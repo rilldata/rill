@@ -577,16 +577,11 @@ func (a *Authenticator) authLogout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Extract custom redirect destination (if any).
+	// Extract custom redirect destination (if any)
 	redirect := r.URL.Query().Get("redirect")
 
 	// Redirect to authLogoutProvider (see its docstring below for details on why we do this).
-	host := originalHost(r)
-	if a.admin.URLs.IsCustomDomain(host) {
-		http.Redirect(w, r, a.admin.URLs.AuthLogoutProvider(redirect, true), http.StatusTemporaryRedirect)
-		return
-	}
-	http.Redirect(w, r, a.admin.URLs.AuthLogoutProvider(redirect, false), http.StatusTemporaryRedirect)
+	http.Redirect(w, r, a.admin.URLs.AuthLogoutProvider(redirect), http.StatusTemporaryRedirect)
 }
 
 // authLogoutProvider redirects to the auth provider's logout flow.
@@ -596,11 +591,7 @@ func (a *Authenticator) authLogoutProvider(w http.ResponseWriter, r *http.Reques
 	// Validate and set custom redirect destination in cookie for when the logout flow is over (if any)
 	redirect := r.URL.Query().Get("redirect")
 	if redirect != "" {
-		customDomainFlow := false
-		if b, err := strconv.ParseBool(r.URL.Query().Get("custom_domain_flow")); err == nil && b {
-			customDomainFlow = b
-		}
-		err := a.validateRedirectURL(r.Context(), redirect, customDomainFlow)
+		err := a.validateRedirectURL(r.Context(), redirect, true)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return

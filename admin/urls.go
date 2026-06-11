@@ -201,16 +201,11 @@ func (u *URLs) AuthLogout() string {
 }
 
 // AuthLogoutProvider returns the URL that starts the logout redirects against the external auth provider.
-func (u *URLs) AuthLogoutProvider(redirect string, customDomainFlow bool) string {
+func (u *URLs) AuthLogoutProvider(redirect string) string {
 	res := urlutil.MustJoinURL(u.external, "/auth/logout/provider") // NOTE: Always using the primary external URL.
-	q := map[string]string{}
 	if redirect != "" {
-		q["redirect"] = redirect
+		res = urlutil.MustWithQuery(res, map[string]string{"redirect": redirect})
 	}
-	if customDomainFlow {
-		q["custom_domain_flow"] = "true"
-	}
-	res = urlutil.MustWithQuery(res, map[string]string{"redirect": redirect})
 	return res
 }
 
