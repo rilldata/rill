@@ -9,8 +9,8 @@ import (
 
 	"github.com/rilldata/rill/cli/cmd/env"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/spf13/cobra"
 )
 
@@ -56,7 +56,7 @@ func CloneCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			// create directory, the go-git SDK does not create the directory
+			// create an empty directory for git clone to populate
 			err = recreateDir(path)
 			if err != nil {
 				return fmt.Errorf("failed to create directory %q: %w", path, err)
@@ -69,7 +69,7 @@ func CloneCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// clone repository
-			_, err = gitutil.Clone(cmd.Context(), path, config)
+			err = gitutil.CloneWithConfig(cmd.Context(), path, config)
 			if err != nil {
 				return err
 			}
