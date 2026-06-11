@@ -4,10 +4,11 @@
   import { page } from "$app/stores";
   import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
+  import { isBranchPreview } from "@rilldata/web-admin/features/branches/branch-state";
 
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
 
-  const navItems = [
+  $: navItems = [
     {
       label: "Overview",
       route: "",
@@ -16,7 +17,7 @@
     {
       label: "Branches",
       route: "/branches",
-      hasPermission: true,
+      hasPermission: !$isBranchPreview,
     },
     {
       label: "Resources",

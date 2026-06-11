@@ -14,6 +14,7 @@
   import { page } from "$app/state";
   import { untrack } from "svelte";
   import type { Snippet } from "svelte";
+  import { primaryBranchStore } from "@rilldata/web-admin/features/branches/branch-state";
   import {
     branchPathPrefix,
     extractBranchFromPath,
@@ -232,6 +233,13 @@
     void queryClient.invalidateQueries({
       queryKey: getAdminServiceListDeploymentsQueryKey(organization, project),
     });
+  });
+
+  // Publish the project's primary branch into the global store so the
+  // `isBranchPreview` derived store can compare against it from anywhere.
+  $effect(() => {
+    primaryBranchStore.set(projectData?.project?.primaryBranch);
+    return () => primaryBranchStore.set(undefined);
   });
 
   $effect(() => {

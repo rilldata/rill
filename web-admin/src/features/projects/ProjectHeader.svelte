@@ -2,6 +2,7 @@
   import { page } from "$app/stores";
   import CanvasBookmarks from "@rilldata/web-admin/features/bookmarks/CanvasBookmarks.svelte";
   import ExploreBookmarks from "@rilldata/web-admin/features/bookmarks/ExploreBookmarks.svelte";
+  import { isBranchPreview } from "@rilldata/web-admin/features/branches/branch-state";
   import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
   import ShareDashboardPopover from "@rilldata/web-admin/features/dashboards/share/ShareDashboardPopover.svelte";
   import EditActions from "@rilldata/web-admin/features/edit-session/EditActions.svelte";
@@ -218,7 +219,7 @@
       {#if $cloudEditing && onProjectPage && projectPermissions.manageDev}
         <EditButton {organization} {project} {activeBranch} {primaryBranch} />
       {/if}
-      {#if onProjectPage && projectPermissions.manageProjectMembers}
+      {#if onProjectPage && projectPermissions.manageProjectMembers && !$isBranchPreview}
         <ShareProjectPopover
           {organization}
           {project}
@@ -255,7 +256,7 @@
                 actions={dashboardChatActions}
               />
             {/if}
-            {#if hasUserAccess}
+            {#if hasUserAccess && !$isBranchPreview}
               <ExploreBookmarks
                 {organization}
                 {project}
@@ -281,7 +282,7 @@
       {#if $dashboardChat && !onPublicURLPage && !editContext}
         <ChatToggle open={dashboardChatOpen} actions={dashboardChatActions} />
       {/if}
-      {#if hasUserAccess}
+      {#if hasUserAccess && !$isBranchPreview}
         <CanvasBookmarks {organization} {project} canvasName={dashboard} />
         <ShareDashboardPopover
           createMagicAuthTokens={projectPermissions.createMagicAuthTokens}
