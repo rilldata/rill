@@ -237,11 +237,12 @@ func (s *Server) PushToGithub(ctx context.Context, r *connect.Request[localv1.Pu
 	}
 
 	// push all local branches, passing the access token on the command line only so it is never persisted in .git/config
-	authRemote, err := (&gitutil.Config{
+	config := &gitutil.Config{
 		Remote:   *githubRepo.CloneURL,
 		Username: "x-access-token",
 		Password: gitStatus.AccessToken,
-	}).FullyQualifiedRemote()
+	}
+	authRemote, err := config.FullyQualifiedRemote()
 	if err != nil {
 		return nil, err
 	}

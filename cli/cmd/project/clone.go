@@ -56,10 +56,10 @@ func CloneCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			// create an empty directory for git clone to populate
-			err = recreateDir(path)
-			if err != nil {
-				return fmt.Errorf("failed to create directory %q: %w", path, err)
+			// clear any existing contents so git clone can populate the directory
+			// (git clone creates the target directory itself, but refuses to clone into a non-empty one)
+			if err := os.RemoveAll(path); err != nil {
+				return fmt.Errorf("failed to remove directory %q: %w", path, err)
 			}
 
 			// get config
@@ -122,21 +122,4 @@ func isDirAbsentOrEmpty(path string) (bool, error) {
 
 	// Check if the directory is empty
 	return len(entries) == 0, nil
-}
-
-func recreateDir(path string) error {
-	// Remove directory and its contents if exists
-	err := os.RemoveAll(path)
-	if err != nil {
-		// NOTE: does not return an error if the directory does not exist
-		return fmt.Errorf("failed to remove dir: %w", err)
-	}
-
-	// Create the directory again
-	err = os.MkdirAll(path, os.ModePerm)
-	if err != nil {
-		return fmt.Errorf("failed to create dir: %w", err)
-	}
-
-	return nil
 }

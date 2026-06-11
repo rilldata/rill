@@ -518,6 +518,13 @@ func (h *Helper) GitHelper(org, project, localPath string) *GitHelper {
 	return h.gitHelper
 }
 
+// GitSignature returns the author to attribute Rill's git commits to.
+//
+// The path must be the root of the git working tree (the directory that contains .git), not a
+// subpath within it. Callers working from a monorepo subpath must resolve the root first, e.g.
+// via gitutil.InferRepoRootAndSubpath. This matters because the local git identity is only read
+// when .git is found directly at path: a subpath would silently fall back to the Rill user even
+// when a local identity is configured.
 func (h *Helper) GitSignature(ctx context.Context, path string) (gitutil.Signature, error) {
 	// Only read the user's git config when path is an existing repo: without this exact-path
 	// guard, the global git identity would be picked up even for paths that are not git repos

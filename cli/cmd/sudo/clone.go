@@ -37,11 +37,12 @@ func cloneCmd(ch *cmdutil.Helper) *cobra.Command {
 				return nil
 			}
 
-			cloneURL, err := (&gitutil.Config{
+			config := &gitutil.Config{
 				Remote:   res.GitRepoUrl,
 				Username: res.GitUsername,
 				Password: res.GitPassword,
-			}).FullyQualifiedRemote()
+			}
+			cloneURL, err := config.FullyQualifiedRemote()
 			if err != nil {
 				return err
 			}

@@ -91,6 +91,10 @@ func setupBareRemote(t *testing.T) string {
 	require.NoError(t, err)
 	createCommit(t, seed, "seed.txt", "seed", "seed commit")
 	require.NoError(t, execGit(seed, "push", "origin", "main"))
+	// Point the bare repo's HEAD at main so later clones (e.g. createRemoteCommit) check out main
+	// regardless of the environment's init.defaultBranch, which is master on CI runners. Otherwise
+	// the dangling HEAD leaves clones on an unborn master and pushes land on master, not main.
+	require.NoError(t, execGit(remote, "symbolic-ref", "HEAD", "refs/heads/main"))
 	return remote
 }
 
