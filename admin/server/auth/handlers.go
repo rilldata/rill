@@ -189,16 +189,15 @@ func (a *Authenticator) authStart(w http.ResponseWriter, r *http.Request, signup
 		return
 	}
 
-	host := originalHost(r)
-	isCustomDomain := a.admin.URLs.IsCustomDomain(host)
-	err := a.validateRedirectURL(r.Context(), redirect, isCustomDomain)
+	err := a.validateRedirectURL(r.Context(), redirect)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	// Redirect to <canonical-domain>/auth/login (custom domain flow)
-	if isCustomDomain {
+	host := originalHost(r)
+	if a.admin.URLs.IsCustomDomain(host) {
 		customCallbackURL := a.admin.URLs.WithCustomDomain(host).AuthCustomDomainCallback(state)
 		canonicalLoginURL := a.admin.URLs.AuthLogin(customCallbackURL, true)
 		http.Redirect(w, r, canonicalLoginURL, http.StatusTemporaryRedirect)
@@ -595,7 +594,7 @@ func (a *Authenticator) authLogoutProvider(w http.ResponseWriter, r *http.Reques
 	// Validate and set custom redirect destination in cookie for when the logout flow is over (if any)
 	redirect := r.URL.Query().Get("redirect")
 	if redirect != "" {
-		err := a.validateRedirectURL(r.Context(), redirect, true)
+		err := a.validateRedirectURL(r.Context(), redirect)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -727,12 +726,9 @@ func (a *Authenticator) getAccessToken(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *Authenticator) validateRedirectURL(ctx context.Context, redirect string, allowCustomDomains bool) error {
+func (a *Authenticator) validateRedirectURL(ctx context.Context, redirect string) error {
 	if a.admin.URLs.IsSafeRedirectURL(redirect) {
 		return nil
-	}
-	if !allowCustomDomains {
-		return fmt.Errorf("redirect to %q is not allowed", redirect)
 	}
 
 	parsed, err := url.Parse(redirect)
