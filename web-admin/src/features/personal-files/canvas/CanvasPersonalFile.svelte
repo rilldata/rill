@@ -6,7 +6,6 @@
   import CanvasDashboardEmbed from "@rilldata/web-common/features/canvas/CanvasDashboardEmbed.svelte";
   import CanvasProvider from "@rilldata/web-common/features/canvas/CanvasProvider.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { sessionStorageStore } from "@rilldata/web-common/lib/store-utils/session-storage.ts";
   import { page } from "$app/state";
   import type { VirtualFileIo } from "@rilldata/web-admin/features/personal-files/virtual-file-io.ts";
   import { onMount } from "svelte";

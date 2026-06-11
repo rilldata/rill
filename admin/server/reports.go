@@ -218,6 +218,7 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 		Environment: "prod",
 		Path:        virtualFilePathForManagedReport(name),
 		Data:        data,
+		OwnerID:     nil,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert virtual file: %w", err)
@@ -285,6 +286,7 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 		Environment: "prod",
 		Path:        virtualFilePathForManagedReport(req.Name),
 		Data:        data,
+		OwnerID:     nil,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to update virtual file: %w", err)
@@ -415,6 +417,7 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 			Environment: "prod",
 			Path:        virtualFilePathForManagedReport(req.Name),
 			Data:        data,
+			OwnerID:     nil,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to update virtual file: %w", err)
