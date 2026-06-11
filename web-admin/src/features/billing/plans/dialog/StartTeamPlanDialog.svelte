@@ -15,6 +15,7 @@
   import { Button } from "@rilldata/web-common/components/button";
   import { upgradeToPro } from "@rilldata/web-admin/features/billing/plans/upgrade-to-pro.ts";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors.ts";
+  import PricingDetails from "@rilldata/web-common/features/billing/PricingDetails.svelte";
 
   let {
     open = $bindable(false),
@@ -30,15 +31,13 @@
 
   let title: string = $state("");
   let description = $state(
-    `Your subscription will start today using the payment method on file. ` +
-      `Starts at $250/month with 10 GB included, $25/GB thereafter. Cancel anytime.`,
+    "Starting a Team plan will end your trial and start your billing cycle today.",
   );
-  let buttonText = $state("Upgrade to Team plan");
+  let buttonText = $state("Start Team plan");
   function setCopyBasedOnType(t: TeamPlanDialogTypes) {
     switch (t) {
-      case "trial-expired": // No explicit messaging for this as of now
       case "base":
-        title = "Upgrade to Team plan";
+        title = "Start Team plan";
         buttonText = "Continue";
         break;
 
@@ -48,6 +47,7 @@
 
       case "org":
         title = "To create another organization, start a Team plan";
+        description = "";
         break;
 
       case "proj":
@@ -56,7 +56,14 @@
 
       case "renew":
         title = "Renew Team plan";
-        description = `Your billing cycle will resume ${getSubscriptionResumedText(endDate)}. `;
+        description = `Your billing cycle will resume ${getSubscriptionResumedText(endDate)}.`;
+        buttonText = "Continue";
+        break;
+
+      case "trial-expired":
+        title = "Start Team plan";
+        description =
+          "Starting Team plan will wake your projects and start your billing cycle today.";
         buttonText = "Continue";
         break;
     }
@@ -97,7 +104,7 @@
       <AlertDialogTitle>{title}</AlertDialogTitle>
 
       <AlertDialogDescription>
-        {description}
+        <PricingDetails extraText={description} />
       </AlertDialogDescription>
 
       {#if fetchError}
