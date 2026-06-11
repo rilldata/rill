@@ -51,13 +51,14 @@
 >
   {#snippet info()}
     {#if !isTrialExpired}
-      Legacy free trial · 30 days, no credit card required. Projects hibernate
-      when trial ends.
+      free trial · 30 days, no credit card required. Projects hibernate when
+      trial ends.
     {/if}
   {/snippet}
 
   {#snippet action()}
-    <button class="subscribe-btn" onclick={upgrade}>Upgrade to Pro</button>
+    <button class="subscribe-btn" onclick={upgrade}>Upgrade to Team plan</button
+    >
   {/snippet}
 
   <div class="trial-section">

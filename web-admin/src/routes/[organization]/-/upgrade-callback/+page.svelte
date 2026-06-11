@@ -12,7 +12,7 @@
   } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
   import {
     fetchPaymentsPortalURL,
-    fetchProPlan,
+    fetchPaidPlan,
     getBillingUpgradeUrl,
   } from "@rilldata/web-admin/features/billing/plans/selectors";
   import { showWelcomeToRillDialog } from "@rilldata/web-admin/features/billing/plans/utils";
@@ -58,24 +58,24 @@
       });
       return goto(`/${organization}/-/settings/billing`);
     }
-    const proPlan = await fetchProPlan();
+    const paidPlan = await fetchPaidPlan();
     try {
       if (cancelled) {
         await $planRenewer.mutateAsync({
           org: organization,
           data: {
-            planName: proPlan.name,
+            planName: paidPlan.name,
           },
         });
         eventBus.emit("notification", {
           type: "success",
-          message: "Your Pro plan was renewed",
+          message: `Your ${paidPlan.displayName} plan was renewed`,
         });
       } else {
         await $planUpdater.mutateAsync({
           org: organization,
           data: {
-            planName: proPlan.name,
+            planName: paidPlan.name,
           },
         });
         // if redirect is set then this page won't be active.
@@ -105,9 +105,9 @@
     <LoadingSpinner />
     <CtaHeader variant="bold">
       {#if cancelled}
-        Renewing pro plan...
+        Renewing Team plan...
       {:else}
-        Upgrading to pro plan...
+        Upgrading to Team plan...
       {/if}
     </CtaHeader>
     <CtaNeedHelp />
