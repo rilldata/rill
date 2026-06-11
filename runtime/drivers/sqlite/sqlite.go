@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"strings"
+	"sync"
 
 	"github.com/XSAM/otelsql"
 	"github.com/jmoiron/sqlx"
@@ -77,10 +78,6 @@ func (d driver) Open(_, _ string, config map[string]any, st *storage.Client, ac 
 	// Start backups in the background (no-op if backups are not configured)
 	go h.startBackups()
 
-	// Apply TTL to AI sessions in the background.
-	// This can be slow on large databases, so it must not block Migrate (and therefore runtime startup).
-	go h.deleteExpiredAISessionsLoop()
-
 	return h, nil
 }
 
@@ -133,6 +130,9 @@ type connection struct {
 	db     *sqlx.DB
 	logger *zap.Logger
 	config map[string]any
+
+	// Ensures the AI session cleanup loop is started at most once.
+	aiSessionCleanupOnce sync.Once
 
 	// Backup management.
 	// See c.startBackups() for details.
