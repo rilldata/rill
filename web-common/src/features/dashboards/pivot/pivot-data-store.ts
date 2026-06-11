@@ -414,7 +414,10 @@ function createCellDataStage(
 
       let isCellDataEmpty = false;
       let cellData = pivotSkeleton;
-      if (tableCellResponse !== null) {
+      // When cached expanded data exists for this config, keep showing it
+      // instead of a loading state while the cell query refetches
+      const hasCachedExpandedData = plan.configKey in cache.expandedTableMap;
+      if (!hasCachedExpandedData && tableCellResponse !== null) {
         if (tableCellResponse.isFetching) {
           return {
             isFetching: true,
