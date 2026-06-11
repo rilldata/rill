@@ -15,7 +15,6 @@
   import { Button } from "@rilldata/web-common/components/button";
   import { upgradeToPro } from "@rilldata/web-admin/features/billing/plans/upgrade-to-pro.ts";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors.ts";
-  import { PricingDetails } from "@rilldata/web-common/features/billing/pricing-details.ts";
 
   let {
     open = $bindable(false),
@@ -31,31 +30,32 @@
 
   let title: string = $state("");
   let description = $state(
-    `Your subscription will start today using the payment method on file. ${PricingDetails} Cancel anytime.`,
+    `Your subscription will start today using the payment method on file. ` +
+      `Starts at $250/month with 10 GB included, $25/GB thereafter. Cancel anytime.`,
   );
-  let buttonText = $state("Upgrade to Pro");
+  let buttonText = $state("Upgrade to Team plan");
   function setCopyBasedOnType(t: TeamPlanDialogTypes) {
     switch (t) {
       case "trial-expired": // No explicit messaging for this as of now
       case "base":
-        title = "Upgrade to Pro";
+        title = "Upgrade to Team plan";
         buttonText = "Continue";
         break;
 
       case "size":
-        title = "Deploying more than 10GB requires a Pro plan";
+        title = "Deploying more than 10GB requires a Team plan";
         break;
 
       case "org":
-        title = "To create another organization, start a Pro plan";
+        title = "To create another organization, start a Team plan";
         break;
 
       case "proj":
-        title = "To deploy a second project, start a Pro plan";
+        title = "To deploy a second project, start a Team plan";
         break;
 
       case "renew":
-        title = "Renew Pro plan";
+        title = "Renew Team plan";
         description = `Your billing cycle will resume ${getSubscriptionResumedText(endDate)}. `;
         buttonText = "Continue";
         break;
