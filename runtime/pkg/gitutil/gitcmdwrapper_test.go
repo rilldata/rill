@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -349,6 +350,27 @@ func TestHash(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, hash, 40)
 	})
+}
+
+func TestIsCommitHash(t *testing.T) {
+	require.True(t, IsCommitHash(strings.Repeat("a1", 20)), "40-char SHA-1")
+	require.True(t, IsCommitHash(strings.Repeat("a1", 32)), "64-char SHA-256")
+	require.True(t, IsCommitHash(strings.Repeat("A1", 20)), "uppercase hex")
+	require.False(t, IsCommitHash(""), "empty")
+	require.False(t, IsCommitHash("abc1"), "abbreviated hash")
+	require.False(t, IsCommitHash("--output=/tmp/x"), "flag-like input")
+	require.False(t, IsCommitHash("HEAD"), "symbolic ref")
+	require.False(t, IsCommitHash(strings.Repeat("g", 40)), "non-hex characters")
+}
+
+func TestRunRedactsURLCredentials(t *testing.T) {
+	tempDir := setupTestRepository(t)
+
+	// Fetch from an unreachable credential-embedded URL: both the args and git's stderr contain the URL.
+	_, err := Run(context.Background(), tempDir, "fetch", "https://user:secret-token@host.invalid/org/repo.git")
+	require.Error(t, err)
+	require.NotContains(t, err.Error(), "secret-token", "credentials must not leak into errors")
+	require.Contains(t, err.Error(), "<redacted>@")
 }
 
 // setupRemoteAndClone creates a remote repository with a single commit on `main`

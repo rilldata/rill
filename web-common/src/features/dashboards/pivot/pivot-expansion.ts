@@ -216,7 +216,7 @@ export function queryExpandedRowMeasureValues(
         tableData,
         rowDimensionNames,
         expandIndex,
-        numMeasures > 0,
+        config.pivot?.showTotalsRow !== false && numMeasures > 0,
       );
 
       if (
@@ -480,7 +480,10 @@ export function addExpandedDataToPivot(
       .split(".")
       .map((index) => parseInt(index, 10));
 
-    if (config.measureNames.length > 0) {
+    if (
+      config.pivot?.showTotalsRow !== false &&
+      config.measureNames.length > 0
+    ) {
       // The first row is always the totals row for the expanded context with measures
       indices[0] = indices[0] - 1;
     }

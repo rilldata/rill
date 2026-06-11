@@ -35,6 +35,8 @@ function config(
       rows: [],
       sorting: [],
       tableMode: "nest",
+      showTotalsColumn: true,
+      showTotalsRow: true,
     },
     time: {
       timeStart: undefined,

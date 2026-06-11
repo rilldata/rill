@@ -222,7 +222,7 @@ function createRowAxesStage(args: RowAxesStageArgs): Readable<PivotDataState> {
   }
 
   let globalTotalsQuery: AggregationQuery = readable(null);
-  if (rowDimensionNames.length && measureNames.length) {
+  if (plan.displayTotalsRow) {
     globalTotalsQuery = createPivotAggregationRowQuery(
       ctx,
       config,

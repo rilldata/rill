@@ -264,6 +264,10 @@ _[object]_ - (no description)
 
   - **`col_dimensions`** - _[array of string]_ - Dimensions for table columns 
 
+  - **`hide_totals_row`** - _[boolean]_ - Whether to hide the totals row. Defaults to false. 
+
+  - **`hide_totals_col`** - _[boolean]_ - Whether to hide the totals column. Defaults to false. 
+
   - **`comparison_range`** - _[string]_ - Comparison time range 
 
   - **`filter`** - _[string]_ - Filter expression 

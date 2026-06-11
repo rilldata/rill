@@ -78,7 +78,9 @@ export function createPivotBaseQueryPlan(
     anchorDimension,
     configKey: getPivotConfigKey(config),
     displayTotalsRow: Boolean(
-      config.rowDimensionNames.length && config.measureNames.length,
+      config.pivot.showTotalsRow !== false &&
+        config.rowDimensionNames.length &&
+        config.measureNames.length,
     ),
     effectiveOutermostLimit,
     isMeasureSortAccessor,

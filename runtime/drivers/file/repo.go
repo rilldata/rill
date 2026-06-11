@@ -11,15 +11,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/object"
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/filewatcher"
@@ -207,19 +203,10 @@ func (c *connection) Watch(ctx context.Context, cb drivers.WatchCallback) error 
 
 // ListBranches implements drivers.RepoStore.
 func (c *connection) ListBranches(ctx context.Context) ([]string, string, error) {
-	if !c.isGitRepo() {
-		return nil, "", errors.New("not a git repository")
-	}
-
 	c.gitMu.Lock()
 	defer c.gitMu.Unlock()
 
 	gitPath, _, err := gitutil.InferRepoRootAndSubpath(c.root)
-	if err != nil {
-		return nil, "", err
-	}
-
-	repo, err := git.PlainOpen(gitPath)
 	if err != nil {
 		return nil, "", err
 	}
@@ -231,78 +218,68 @@ func (c *connection) ListBranches(ctx context.Context) ([]string, string, error)
 	var remoteName string
 	if cfg != nil {
 		remoteName = cfg.RemoteName()
-		// fetch all branches
-		err := repo.FetchContext(ctx, &git.FetchOptions{
-			RemoteName: cfg.RemoteName(),
-			RemoteURL:  cfg.Remote,
-			RefSpecs:   []config.RefSpec{config.RefSpec("+refs/heads/*:refs/remotes/" + cfg.RemoteName() + "/*")},
-			Auth: &http.BasicAuth{
-				Username: cfg.Username,
-				Password: cfg.Password,
-			},
-		})
-		if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-			return nil, "", err
-		}
-	} else {
-		// List all remotes
-		remotes, err := repo.Remotes()
+		// Fetch all branches from the remote using the credential-embedded URL.
+		remoteURL, err := cfg.FullyQualifiedRemote()
 		if err != nil {
 			return nil, "", err
 		}
-
-		for _, r := range remotes {
-			if r.Config().Name == "__rill_remote" {
-				remoteName = r.Config().Name
+		refspec := "+refs/heads/*:refs/remotes/" + remoteName + "/*"
+		if _, err := rtgitutil.Run(ctx, gitPath, "fetch", remoteURL, refspec); err != nil {
+			return nil, "", err
+		}
+	} else {
+		// No admin config: pick a remote name from the local config. Prefer "__rill_remote" if present.
+		out, err := rtgitutil.Run(ctx, gitPath, "remote")
+		if err != nil {
+			return nil, "", err
+		}
+		for r := range strings.SplitSeq(out, "\n") {
+			r = strings.TrimSpace(r)
+			if r == "" {
+				continue
+			}
+			if r == "__rill_remote" {
+				remoteName = r
 				break
 			}
-			remoteName = r.Config().Name
+			remoteName = r
 		}
 	}
 
-	// List all references (local and remote)
-	branchSet := make(map[string]bool)
-	refs, err := repo.References()
+	// List all local and remote branch refs.
+	refsOut, err := rtgitutil.Run(ctx, gitPath, "for-each-ref", "--format=%(refname)", "refs/heads/", "refs/remotes/")
 	if err != nil {
 		return nil, "", err
 	}
 
-	err = refs.ForEach(func(ref *plumbing.Reference) error {
-		refName := ref.Name()
-		// Include local branches (refs/heads/*)
-		if refName.IsBranch() {
-			branchSet[refName.Short()] = true
+	branchSet := make(map[string]bool)
+	for line := range strings.SplitSeq(refsOut, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
 		}
-		// Include remote branches (refs/remotes/origin/*)
-		if refName.IsRemote() {
-			// Strip "<remote>/" prefix to get branch name
-			// Skip HEAD reference
-			if branchName, ok := strings.CutPrefix(refName.Short(), remoteName+"/"); ok && branchName != "HEAD" {
+		if local, ok := strings.CutPrefix(line, "refs/heads/"); ok {
+			branchSet[local] = true
+			continue
+		}
+		if remote, ok := strings.CutPrefix(line, "refs/remotes/"); ok {
+			// Strip "<remoteName>/" prefix; skip the symbolic HEAD ref.
+			if branchName, ok := strings.CutPrefix(remote, remoteName+"/"); ok && branchName != "HEAD" {
 				branchSet[branchName] = true
 			}
 		}
-		return nil
-	})
-	if err != nil {
-		return nil, "", err
 	}
 
-	// Get current branch
-	head, err := repo.Head()
+	currentBranch, err := rtgitutil.Run(ctx, gitPath, "rev-parse", "--abbrev-ref", "HEAD")
 	if err != nil {
 		return nil, "", err
 	}
-	currentBranch := head.Name().Short()
 
 	return maps.Keys(branchSet), currentBranch, nil
 }
 
 // SwitchBranch implements drivers.RepoStore.
 func (c *connection) SwitchBranch(ctx context.Context, branchName string, createIfNotExists, ignoreLocalChanges bool) error {
-	if !c.isGitRepo() {
-		return errors.New("not a git repository")
-	}
-
 	c.gitMu.Lock()
 	defer c.gitMu.Unlock()
 
@@ -311,35 +288,11 @@ func (c *connection) SwitchBranch(ctx context.Context, branchName string, create
 		return err
 	}
 
-	repo, err := git.PlainOpen(gitPath)
-	if err != nil {
-		return err
-	}
-
-	// Get the worktree
-	w, err := repo.Worktree()
-	if err != nil {
-		return err
-	}
-
-	err = w.Checkout(&git.CheckoutOptions{
-		Branch: plumbing.NewBranchReferenceName(branchName),
-		Create: createIfNotExists,
-		Force:  ignoreLocalChanges,
-	})
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return rtgitutil.Checkout(gitPath, branchName, ignoreLocalChanges, createIfNotExists, "")
 }
 
 // ListCommits implements drivers.RepoStore.
 func (c *connection) ListCommits(ctx context.Context, pageToken string, limit int) ([]drivers.Commit, string, error) {
-	if !c.isGitRepo() {
-		return nil, "", errors.New("not a git repository")
-	}
-
 	c.gitMu.Lock()
 	defer c.gitMu.Unlock()
 
@@ -348,57 +301,54 @@ func (c *connection) ListCommits(ctx context.Context, pageToken string, limit in
 		return nil, "", err
 	}
 
-	repo, err := git.PlainOpen(gitPath)
-	if err != nil {
-		return nil, "", err
-	}
+	// Use `-z` so git separates commits with NUL bytes, which cannot appear in commit data.
+	// Fields within a commit are separated by the ASCII unit separator (\x1f).
+	const fieldSep = "\x1f"
+	format := "--format=%H" + fieldSep + "%an" + fieldSep + "%ae" + fieldSep + "%cI" + fieldSep + "%B"
 
-	// Determine starting point: page token or HEAD
-	var fromHash plumbing.Hash
+	args := []string{"log", "-z", format}
+	if limit > 0 {
+		// Fetch one extra commit so we can populate the next page token.
+		args = append(args, "-n", strconv.Itoa(limit+1))
+	}
 	if pageToken != "" {
-		fromHash = plumbing.NewHash(pageToken)
-	} else {
-		head, err := repo.Head()
-		if err != nil {
-			return nil, "", err
+		// Validate before passing to git: an arbitrary string could be interpreted as a flag.
+		if !rtgitutil.IsCommitHash(pageToken) {
+			return nil, "", fmt.Errorf("invalid page token %q", pageToken)
 		}
-		fromHash = head.Hash()
+		args = append(args, pageToken)
 	}
 
-	// Get commit iterator starting from the determined hash
-	commitIter, err := repo.Log(&git.LogOptions{
-		From:  fromHash,
-		Order: git.LogOrderCommitterTime,
-	})
+	out, err := rtgitutil.Run(ctx, gitPath, args...)
 	if err != nil {
 		return nil, "", err
 	}
-	defer commitIter.Close()
 
 	var commits []drivers.Commit
 	var nextPageToken string
-	for {
+	for rec := range strings.SplitSeq(out, "\x00") {
+		rec = strings.TrimLeft(rec, "\n")
+		if rec == "" {
+			continue
+		}
+		fields := strings.SplitN(rec, fieldSep, 5)
+		if len(fields) < 5 {
+			return nil, "", fmt.Errorf("unexpected git log output: %q", rec)
+		}
 		if limit > 0 && len(commits) >= limit {
-			// Peek next commit to get the next page token
-			nextCommit, err := commitIter.Next()
-			if err == nil {
-				nextPageToken = nextCommit.Hash.String()
-			}
+			nextPageToken = fields[0]
 			break
 		}
-		commit, err := commitIter.Next()
+		t, err := time.Parse(time.RFC3339, fields[3])
 		if err != nil {
-			if errors.Is(err, io.EOF) {
-				break
-			}
-			return nil, "", err
+			return nil, "", fmt.Errorf("failed to parse commit date %q: %w", fields[3], err)
 		}
 		commits = append(commits, drivers.Commit{
-			CommitSha:     commit.Hash.String(),
-			AuthorName:    commit.Author.Name,
-			AuthorEmail:   commit.Author.Email,
-			CommitMessage: commit.Message,
-			CommittedOn:   timestamppb.New(commit.Committer.When),
+			CommitSha:     fields[0],
+			AuthorName:    fields[1],
+			AuthorEmail:   fields[2],
+			CommitMessage: fields[4],
+			CommittedOn:   timestamppb.New(t),
 		})
 	}
 
@@ -406,7 +356,7 @@ func (c *connection) ListCommits(ctx context.Context, pageToken string, limit in
 }
 
 func (c *connection) Status(ctx context.Context, remoteBranch string) (*drivers.RepoStatus, error) {
-	if !c.isGitRepo() {
+	if !rtgitutil.IsGitRepo(c.root) {
 		return &drivers.RepoStatus{}, nil
 	}
 
@@ -462,7 +412,7 @@ func (c *connection) Status(ctx context.Context, remoteBranch string) (*drivers.
 // Pull implements drivers.RepoStore.
 func (c *connection) Pull(ctx context.Context, opts *drivers.PullOptions) error {
 	// If its a Git repository, pull the current branch. Otherwise, this is a no-op.
-	if !c.isGitRepo() || !opts.UserTriggered {
+	if !rtgitutil.IsGitRepo(c.root) || !opts.UserTriggered {
 		return nil
 	}
 
@@ -500,7 +450,7 @@ func (c *connection) Pull(ctx context.Context, opts *drivers.PullOptions) error 
 // Commit implements drivers.RepoStore.
 func (c *connection) Commit(ctx context.Context, message string) (string, error) {
 	// If its a Git repository, commit the changes with the given message to the current branch.
-	if !c.isGitRepo() {
+	if !rtgitutil.IsGitRepo(c.root) {
 		return "", errors.New("not a git repository")
 	}
 
@@ -521,8 +471,15 @@ func (c *connection) Commit(ctx context.Context, message string) (string, error)
 		return "", err
 	}
 
-	hash, err := gitCommitAll(gitPath, subpath, message, author)
+	if message == "" {
+		message = "Auto committed by Rill"
+	}
+	hash, err := rtgitutil.CommitAll(ctx, gitPath, subpath, message, author.Name, author.Email)
 	if err != nil {
+		if errors.Is(err, rtgitutil.ErrEmptyCommit) {
+			// Nothing to commit - preserve the historical contract of returning (empty hash, no error).
+			return "", nil
+		}
 		return "", err
 	}
 
@@ -532,7 +489,7 @@ func (c *connection) Commit(ctx context.Context, message string) (string, error)
 // RestoreCommit implements drivers.RepoStore.
 func (c *connection) RestoreCommit(ctx context.Context, commitSHA string) (string, error) {
 	// If its a Git repository, revert the specified commit.
-	if !c.isGitRepo() {
+	if !rtgitutil.IsGitRepo(c.root) {
 		return "", errors.New("not a git repository")
 	}
 
@@ -544,17 +501,14 @@ func (c *connection) RestoreCommit(ctx context.Context, commitSHA string) (strin
 		return "", err
 	}
 
-	// check that commit exists
-	repo, err := git.PlainOpen(gitPath)
-	if err != nil {
-		return "", err
+	// Require a full hash: prevents git interpreting the value as a flag and guarantees commitSHA[:7] below is safe.
+	if !rtgitutil.IsCommitHash(commitSHA) {
+		return "", fmt.Errorf("invalid commit SHA %q: must be a full commit hash", commitSHA)
 	}
-	_, err = repo.CommitObject(plumbing.NewHash(commitSHA))
-	if err != nil {
-		if errors.Is(err, plumbing.ErrObjectNotFound) {
-			return "", fmt.Errorf("commit %q not found", commitSHA)
-		}
-		return "", err
+
+	// check that the commit exists and is actually a commit (not a tree/blob/tag).
+	if _, err := rtgitutil.Run(ctx, gitPath, "cat-file", "-e", commitSHA+"^{commit}"); err != nil {
+		return "", fmt.Errorf("commit %q not found", commitSHA)
 	}
 
 	// commit existing changes if any
@@ -567,8 +521,8 @@ func (c *connection) RestoreCommit(ctx context.Context, commitSHA string) (strin
 		return "", err
 	}
 
-	_, err = gitCommitAll(gitPath, subpath, "WIP: commit before restore", author)
-	if err != nil {
+	_, err = rtgitutil.CommitAll(ctx, gitPath, subpath, "WIP: commit before restore", author.Name, author.Email)
+	if err != nil && !errors.Is(err, rtgitutil.ErrEmptyCommit) {
 		return "", err
 	}
 
@@ -578,9 +532,9 @@ func (c *connection) RestoreCommit(ctx context.Context, commitSHA string) (strin
 	}
 
 	// Create the restore commit
-	hash, err := gitCommitAll(gitPath, subpath, fmt.Sprintf("Restore commit %s", commitSHA[:7]), author)
+	hash, err := rtgitutil.CommitAll(ctx, gitPath, subpath, fmt.Sprintf("Restore commit %s", commitSHA[:7]), author.Name, author.Email)
 	if err != nil {
-		if errors.Is(err, git.ErrEmptyCommit) {
+		if errors.Is(err, rtgitutil.ErrEmptyCommit) {
 			return "", fmt.Errorf("restore would result in no changes")
 		}
 		return "", fmt.Errorf("failed to commit restore: %w", err)
@@ -592,7 +546,7 @@ func (c *connection) RestoreCommit(ctx context.Context, commitSHA string) (strin
 // CommitAndPush commits local changes to the remote repository and pushes them.
 func (c *connection) CommitAndPush(ctx context.Context, message string, force bool) error {
 	// If its a Git repository, commit and push the changes with the given message to the current branch.
-	if !c.isGitRepo() {
+	if !rtgitutil.IsGitRepo(c.root) {
 		return errors.New("not a git repository")
 	}
 
@@ -657,7 +611,7 @@ func (c *connection) CommitAndPush(ctx context.Context, message string, force bo
 
 func (c *connection) MergeToBranch(ctx context.Context, branch string, force bool) (resErr error) {
 	// If its a Git repository, merge the current branch to the specified branch.
-	if !c.isGitRepo() {
+	if !rtgitutil.IsGitRepo(c.root) {
 		return errors.New("not a git repository")
 	}
 
@@ -669,35 +623,18 @@ func (c *connection) MergeToBranch(ctx context.Context, branch string, force boo
 		return err
 	}
 
-	repo, err := git.PlainOpen(gitPath)
+	// Remember the current branch so we can restore it on return.
+	currentBranch, err := rtgitutil.Run(ctx, gitPath, "rev-parse", "--abbrev-ref", "HEAD")
 	if err != nil {
 		return err
 	}
 
-	// Get the current branch
-	head, err := repo.Head()
-	if err != nil {
-		return err
-	}
-	currentBranch := head.Name().Short()
-
-	// Switch to the target branch
-	w, err := repo.Worktree()
-	if err != nil {
-		return err
-	}
-	err = w.Checkout(&git.CheckoutOptions{
-		Branch: plumbing.NewBranchReferenceName(branch),
-	})
-	if err != nil {
+	// Switch to the target branch.
+	if err := rtgitutil.Checkout(gitPath, branch, false, false, ""); err != nil {
 		return err
 	}
 	defer func() {
-		// Switch back to the original branch
-		err := w.Checkout(&git.CheckoutOptions{
-			Branch: plumbing.NewBranchReferenceName(currentBranch),
-		})
-		if err != nil {
+		if err := rtgitutil.Checkout(gitPath, currentBranch, false, false, ""); err != nil {
 			resErr = errors.Join(resErr, fmt.Errorf("failed to switch back to the original branch: %w", err))
 		}
 	}()
@@ -706,16 +643,16 @@ func (c *connection) MergeToBranch(ctx context.Context, branch string, force boo
 		if subpath != "" {
 			return fmt.Errorf("cannot force merge in a monorepo setup")
 		}
-		return rtgitutil.MergeWithStrategy(gitPath, branch, "theirs")
+		return rtgitutil.MergeWithStrategy(gitPath, currentBranch, "theirs")
 	}
-	aborted, err := rtgitutil.MergeWithBailOnConflict(gitPath, branch)
+	merged, err := rtgitutil.MergeWithBailOnConflict(gitPath, currentBranch)
 	if err != nil {
 		return err
 	}
-	if aborted {
+	if !merged {
 		return &drivers.MergeFailedError{
 			Output:       "merge failed due to conflicts, use force merge to favour current changes",
-			MergedBranch: branch,
+			MergedBranch: currentBranch,
 		}
 	}
 	return nil
@@ -729,48 +666,6 @@ func (c *connection) CommitHash(ctx context.Context) (string, error) {
 // CommitTimestamp implements drivers.RepoStore.
 func (c *connection) CommitTimestamp(ctx context.Context) (time.Time, error) {
 	return time.Time{}, nil
-}
-
-func (c *connection) isGitRepo() bool {
-	_, err := git.PlainOpen(c.root)
-	return err == nil
-}
-
-func gitCommitAll(path, subpath, message string, author *object.Signature) (string, error) {
-	repo, err := git.PlainOpen(path)
-	if err != nil {
-		return "", err
-	}
-
-	wt, err := repo.Worktree()
-	if err != nil {
-		return "", fmt.Errorf("failed to get worktree: %w", err)
-	}
-
-	// Stage all changes (git add -A for the subpath)
-	var stagingPath string
-	if subpath != "" {
-		stagingPath = filepath.Join(subpath, "**")
-	} else {
-		stagingPath = "."
-	}
-	if err := wt.AddWithOptions(&git.AddOptions{Glob: stagingPath}); err != nil {
-		return "", fmt.Errorf("failed to add files to git: %w", err)
-	}
-
-	// Commit the changes (git commit -m)
-	if message == "" {
-		message = "Auto committed by Rill"
-	}
-	hash, err := wt.Commit(message, &git.CommitOptions{Author: author, AllowEmptyCommits: false})
-	if err != nil {
-		if !errors.Is(err, git.ErrEmptyCommit) {
-			return "", fmt.Errorf("failed to commit files to git: %w", err)
-		}
-		// empty commit - nothing to commit
-		return "", nil
-	}
-	return hash.String(), nil
 }
 
 func restoreToCommit(path, subpath, commithash string) error {

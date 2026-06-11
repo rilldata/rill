@@ -634,9 +634,12 @@ func (c *Connection) periodicallyEmitStats() {
 					lvl = zap.ErrorLevel
 				}
 
+				// Code 497 is "Not enough privileges". Over the native protocol this surfaces as a typed
+				// *clickhouse.Exception, but over HTTP it comes back as a plain "[HTTP 500]" response body,
+				// so we also match on the error text as a fallback.
 				var chErr *clickhouse.Exception
-				if errors.As(err, &chErr) && chErr.Code == 497 {
-					// Code 497 is "Not enough privileges" - downgrade to debug level and skip future emissions.
+				if (errors.As(err, &chErr) && chErr.Code == 497) || isAccessDeniedErr(err) {
+					// Downgrade to debug level and skip future emissions.
 					lvl = zap.DebugLevel
 					skipEstimatedSizeEmission = true
 				}
@@ -969,6 +972,14 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 	}
 
 	return db, nil
+}
+
+// isAccessDeniedErr reports whether err looks like a ClickHouse "Not enough privileges" (code 497) error.
+// It matches on the error text to catch cases where the error is not a typed *clickhouse.Exception,
+// e.g. when it is returned as an "[HTTP 500]" response body over the HTTP protocol.
+func isAccessDeniedErr(err error) bool {
+	msg := err.Error()
+	return strings.Contains(msg, "Not enough privileges") || strings.Contains(msg, "ACCESS_DENIED")
 }
 
 type tableKey struct {

@@ -475,6 +475,7 @@
     bind:open={screenshotDialogOpen}
     measure={screenshotDialogMeasure}
     metricsViewName={chartMetricsViewName}
+    tddChartType={tddChartType ?? TDDChart.DEFAULT}
     where={chartWhere}
     {timeDimension}
     {timeStart}
@@ -483,9 +484,15 @@
     {comparisonTimeEnd}
     interval={chartInterval}
     comparisonInterval={chartComparisonInterval}
+    {comparisonDimension}
     timeGranularity={activeTimeGrain}
     timeZone={selectedTimezone}
+    dimensionValues={chartDimensionValues}
+    dimensionWhere={whereFilter}
     {showComparison}
+    {showTimeDimensionDetail}
+    dynamicYAxis={dynamicYAxisScale}
+    {connectNulls}
     ready={chartReady}
   />
 {/if}

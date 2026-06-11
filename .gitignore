@@ -57,6 +57,7 @@ saved-state.json
 last-query-output.json
 staging-databases
 /rilldata
+/rill-examples/
 docs/dist/
 coverage
 # locally deployed test projects can generate this

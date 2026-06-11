@@ -4,6 +4,7 @@
 
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import PivotPanel from "@rilldata/web-common/components/icons/PivotPanel.svelte";
   import { PIVOT_ROW_LIMIT_OPTIONS } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
@@ -27,11 +28,31 @@
     columns: PivotChipData[],
   ) => void;
   export let setRowLimit: (limit: number | undefined) => void;
+  export let setShowTotals: (
+    totals: Pick<PivotState, "showTotalsColumn" | "showTotalsRow">,
+  ) => void;
   export let collapseAll: () => void;
 
-  $: ({ rows, columns, tableMode, expanded, rowLimit } = pivotState);
+  $: ({
+    rows,
+    columns,
+    tableMode,
+    expanded,
+    rowLimit,
+    showTotalsColumn,
+    showTotalsRow,
+  } = pivotState);
   $: splitColumns = splitPivotChips(columns);
   $: isFlat = tableMode === "flat";
+  $: rowDimensionCount = isFlat ? splitColumns.dimension.length : rows.length;
+  $: colDimensionCount = isFlat ? 0 : splitColumns.dimension.length;
+  $: measureCount = splitColumns.measure.length;
+  $: canShowTotalRow = rowDimensionCount > 0 && measureCount > 0;
+  $: canShowTotalColumn =
+    !isFlat &&
+    rowDimensionCount > 0 &&
+    colDimensionCount > 0 &&
+    measureCount > 0;
 
   // Row limit options - uses shared constants to ensure sync with URL validation
   const rowLimitOptions: { value: string; label: string }[] = [
@@ -149,6 +170,39 @@
           width={80}
           placeholder="Row limit"
         />
+      </div>
+    {/if}
+
+    {#if canShowTotalRow || canShowTotalColumn}
+      <div class="flex items-center gap-x-3 pl-2 pointer-events-auto">
+        {#if canShowTotalRow}
+          <Checkbox
+            id="pivot-show-total-row"
+            checked={showTotalsRow}
+            onCheckedChange={(checked) => {
+              setShowTotals({
+                showTotalsColumn,
+                showTotalsRow: Boolean(checked),
+              });
+            }}
+            label="Total row"
+            labelClass="text-xs leading-snug font-normal text-fg-secondary"
+          />
+        {/if}
+        {#if canShowTotalColumn}
+          <Checkbox
+            id="pivot-show-total-column"
+            checked={showTotalsColumn}
+            onCheckedChange={(checked) => {
+              setShowTotals({
+                showTotalsColumn: Boolean(checked),
+                showTotalsRow,
+              });
+            }}
+            label="Total column"
+            labelClass="text-xs leading-snug font-normal text-fg-secondary"
+          />
+        {/if}
       </div>
     {/if}
     <slot name="export-menu" />
