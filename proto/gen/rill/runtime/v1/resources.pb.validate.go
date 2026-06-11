@@ -5595,6 +5595,14 @@ func (m *ExplorePreset) validate(all bool) error {
 		// no validation rules for PivotRowLimit
 	}
 
+	if m.PivotShowTotalsColumn != nil {
+		// no validation rules for PivotShowTotalsColumn
+	}
+
+	if m.PivotShowTotalsRow != nil {
+		// no validation rules for PivotShowTotalsRow
+	}
+
 	if m.ChartDynamicYAxis != nil {
 		// no validation rules for ChartDynamicYAxis
 	}

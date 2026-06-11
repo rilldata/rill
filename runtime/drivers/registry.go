@@ -110,6 +110,11 @@ type InstanceConfig struct {
 	// MetricsNullFillingImplementation switches between null-filling implementations for timeseries queries.
 	// Can be "", "none", "new", "pushdown".
 	MetricsNullFillingImplementation string `mapstructure:"rill.metrics.timeseries_null_filling_implementation"`
+	// MetricsPivotExportColumnLimit caps the number of columns a pivot export may produce.
+	// Pivots are executed in DuckDB and produces one column per combination of the pivoted dimension values, times the number of measures.
+	// so a pivot producing too many columns fails with an opaque error. This is a conservative safety cap
+	// that lets us return a clear error first. If set to 0, there is no limit.
+	MetricsPivotExportColumnLimit int64 `mapstructure:"rill.metrics.pivot_export_column_limit"`
 	// AlertsDefaultStreamingRefreshCron sets a default cron expression for refreshing alerts with streaming refs.
 	// Namely, this is used to check alerts against external tables (e.g. in Druid) where new data may be added at any time (i.e. is considered "streaming").
 	AlertsDefaultStreamingRefreshCron string `mapstructure:"rill.alerts.default_streaming_refresh_cron"`
@@ -205,6 +210,7 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		MetricsApproxComparisonTwoPhaseLimit: 250,
 		MetricsExactifyDruidTopN:             false,
 		MetricsNullFillingImplementation:     "pushdown",
+		MetricsPivotExportColumnLimit:        15000,
 		AlertsDefaultStreamingRefreshCron:    "0 0 * * *",    // Every 24 hours
 		AlertsFastStreamingRefreshCron:       "*/10 * * * *", // Every 10 minutes
 		AICompletionTimeoutSeconds:           60 * 10,        // 10 minutes
