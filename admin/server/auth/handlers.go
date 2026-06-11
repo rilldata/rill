@@ -179,10 +179,8 @@ func (a *Authenticator) authStart(w http.ResponseWriter, r *http.Request, signup
 	}
 
 	// If this is part of the custom domain login flow, save that info in the cookie since we need that info when handling the auth callback.
-	customDomainFlow := false
 	if b, err := strconv.ParseBool(r.URL.Query().Get("custom_domain_flow")); err == nil && b {
 		sess.Values[cookieFieldCustomDomainFlow] = b
-		customDomainFlow = b
 	}
 
 	// Save cookie
@@ -191,18 +189,19 @@ func (a *Authenticator) authStart(w http.ResponseWriter, r *http.Request, signup
 		return
 	}
 
-	// Redirect to <canonical-domain>/auth/login (custom domain flow)
 	host := originalHost(r)
-	if a.admin.URLs.IsCustomDomain(host) {
-		customCallbackURL := a.admin.URLs.WithCustomDomain(host).AuthCustomDomainCallback(state)
-		canonicalLoginURL := a.admin.URLs.AuthLogin(customCallbackURL, true)
-		http.Redirect(w, r, canonicalLoginURL, http.StatusTemporaryRedirect)
+	isCustomDomain := a.admin.URLs.IsCustomDomain(host)
+	err := a.validateRedirectURL(r.Context(), redirect, isCustomDomain)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	err := a.validateRedirectURL(r.Context(), redirect, customDomainFlow)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	// Redirect to <canonical-domain>/auth/login (custom domain flow)
+	if isCustomDomain {
+		customCallbackURL := a.admin.URLs.WithCustomDomain(host).AuthCustomDomainCallback(state)
+		canonicalLoginURL := a.admin.URLs.AuthLogin(customCallbackURL, true)
+		http.Redirect(w, r, canonicalLoginURL, http.StatusTemporaryRedirect)
 		return
 	}
 
