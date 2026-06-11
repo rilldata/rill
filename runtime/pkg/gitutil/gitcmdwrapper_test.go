@@ -363,6 +363,27 @@ func TestIsCommitHash(t *testing.T) {
 	require.False(t, IsCommitHash(strings.Repeat("g", 40)), "non-hex characters")
 }
 
+func TestIsAuthError(t *testing.T) {
+	authErrors := []string{
+		`git fetch origin dev: remote: Invalid username or token. Password authentication is not supported for Git operations. fatal: Authentication failed for 'https://github.com/managed-rill-projects/foo.git/'(exit status 128)`,
+		`git push origin main: fatal: Authentication failed for 'https://github.com/org/repo.git/'(exit status 128)`,
+		`fatal: could not read Username for 'https://github.com': terminal prompts disabled`,
+	}
+	for _, msg := range authErrors {
+		require.True(t, IsAuthError(errors.New(msg)), "expected auth error: %s", msg)
+	}
+
+	nonAuthErrors := []error{
+		nil,
+		errors.New("git fetch origin dev: fatal: couldn't find remote ref dev(exit status 128)"),
+		errors.New("git merge feature: CONFLICT (content): Merge conflict in foo.txt"),
+		context.Canceled,
+	}
+	for _, err := range nonAuthErrors {
+		require.False(t, IsAuthError(err), "expected non-auth error: %v", err)
+	}
+}
+
 func TestRunRedactsURLCredentials(t *testing.T) {
 	tempDir := setupTestRepository(t)
 

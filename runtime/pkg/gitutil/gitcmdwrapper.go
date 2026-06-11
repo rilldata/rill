@@ -232,6 +232,30 @@ func Run(ctx context.Context, path string, args ...string) (string, error) {
 	return strings.TrimSpace(stdout.String()), nil
 }
 
+// authErrorSubstrings are stable fragments of the auth-failure messages Git prints when the
+// embedded credential token is invalid or expired. Run forces LC_ALL=C, so these stay in English.
+var authErrorSubstrings = []string{
+	"Invalid username or token",
+	"Authentication failed",
+	"could not read Username",
+	"Password authentication is not supported",
+}
+
+// IsAuthError reports whether err originates from a Git authentication failure, such as an
+// expired or revoked credential token. Callers use it to trigger a credential refresh and retry.
+func IsAuthError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	for _, s := range authErrorSubstrings {
+		if strings.Contains(msg, s) {
+			return true
+		}
+	}
+	return false
+}
+
 // urlCredentialsRegexp matches the userinfo component of a URL (e.g. "https://user:token@host").
 var urlCredentialsRegexp = regexp.MustCompile(`([a-zA-Z][a-zA-Z0-9+.-]*://)[^@/\s]+@`)
 

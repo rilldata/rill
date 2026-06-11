@@ -30,6 +30,10 @@ import (
 const (
 	repoPullTimeout       = 10 * time.Minute
 	repoCheckpointTimeout = 30 * time.Second
+	// handshakeExpiryBuffer is how long before the actual credential expiry we proactively refresh the handshake.
+	// The managed Git token (a GitHub App installation token) is valid for ~1 hour, so refreshing ~10 minutes early
+	// avoids using a token that expires mid-operation or races with clock skew.
+	handshakeExpiryBuffer = 10 * time.Minute
 )
 
 // repo implements the drivers.RepoStore interface.
@@ -447,7 +451,13 @@ func (r *repo) Status(ctx context.Context, remoteBranch string) (*drivers.RepoSt
 	if err != nil {
 		return nil, err
 	}
-	defer r.mu.RUnlock()
+	// Track lock ownership manually because the auth-error retry below temporarily drops the read lock.
+	locked := true
+	defer func() {
+		if locked {
+			r.mu.RUnlock()
+		}
+	}()
 
 	if r.git == nil {
 		return &drivers.RepoStatus{}, nil
@@ -466,6 +476,21 @@ func (r *repo) Status(ctx context.Context, remoteBranch string) (*drivers.RepoSt
 	}
 
 	err = gitutil.FetchBranches(ctx, r.git.repoDir, branches...)
+	if err != nil && gitutil.IsAuthError(err) {
+		// The embedded credential token may have expired or been revoked since the last handshake.
+		// Force-refresh the handshake (re-issues the token and rewrites the on-disk remote URL) and retry once.
+		// checkHandshakeLocked needs the write lock, so temporarily drop the read lock.
+		r.mu.RUnlock()
+		locked = false
+		if refreshErr := r.checkHandshakeLocked(ctx, true); refreshErr != nil {
+			return nil, fmt.Errorf("failed to refresh git credentials: %w", refreshErr)
+		}
+		if lockErr := r.mu.RLock(ctx); lockErr != nil {
+			return nil, lockErr
+		}
+		locked = true
+		err = gitutil.FetchBranches(ctx, r.git.repoDir, branches...)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch branches %q: %w", branches, err)
 	}
@@ -522,7 +547,9 @@ func (r *repo) CommitAndPush(ctx context.Context, message string, force bool) er
 		return fmt.Errorf("commits are not supported for this repo type")
 	}
 
-	return r.git.commitToDefaultBranch(ctx, message, force)
+	return r.withGitAuthRetry(ctx, func() error {
+		return r.git.commitToDefaultBranch(ctx, message, force)
+	})
 }
 
 // RestoreCommit implements drivers.RepoStore.
@@ -542,7 +569,9 @@ func (r *repo) MergeToBranch(ctx context.Context, branch string, force bool) err
 	if r.git == nil {
 		return fmt.Errorf("merges are not supported for this repo type")
 	}
-	return r.git.mergeToBranch(ctx, branch, force)
+	return r.withGitAuthRetry(ctx, func() error {
+		return r.git.mergeToBranch(ctx, branch, force)
+	})
 }
 
 // CommitHash implements drivers.RepoStore.
@@ -645,6 +674,21 @@ func (r *repo) lockForWrite(ctx context.Context) error {
 		return err
 	}
 	return nil
+}
+
+// withGitAuthRetry runs a remote Git operation and, if it fails with an authentication error
+// (e.g. an expired or revoked credential token), force-refreshes the handshake and retries once.
+// The refresh re-issues the token and rewrites the on-disk remote URL via checkHandshake.
+// Callers must hold the write lock, since checkHandshake is unsafe for concurrent use.
+func (r *repo) withGitAuthRetry(ctx context.Context, fn func() error) error {
+	err := fn()
+	if err == nil || !gitutil.IsAuthError(err) {
+		return err
+	}
+	if refreshErr := r.checkHandshake(ctx, true); refreshErr != nil {
+		return fmt.Errorf("failed to refresh git credentials: %w", refreshErr)
+	}
+	return fn()
 }
 
 // rlockEnsureReady acquires a read lock after ensuring that the repo is ready (has been pulled successfully).
@@ -750,7 +794,9 @@ func (r *repo) pullInner(ctx context.Context, opts *drivers.PullOptions) error {
 
 	// Push the pull into the underlying repos. These are created/updated by checkSyncHandshake.
 	if r.git != nil && opts.UserTriggered {
-		err = r.git.pull(ctx, opts.UserTriggered, opts.DiscardChanges)
+		err = r.withGitAuthRetry(ctx, func() error {
+			return r.git.pull(ctx, opts.UserTriggered, opts.DiscardChanges)
+		})
 		if err != nil {
 			return fmt.Errorf("git pull failed: %w", err)
 		}
@@ -809,8 +855,8 @@ func (r *repo) checkHandshakeLocked(ctx context.Context, force bool) error {
 // checkHandshake checks and possibly renews the repo details handshake with the admin server.
 // Unsafe for concurrent use.
 func (r *repo) checkHandshake(ctx context.Context, force bool) error {
-	// If the handshake is still valid, return early.
-	if !r.handshakeExpiresOn.Before(time.Now()) && !force {
+	// If the handshake is still valid (with a buffer before expiry), return early.
+	if time.Now().Add(handshakeExpiryBuffer).Before(r.handshakeExpiresOn) && !force {
 		return nil
 	}
 
@@ -846,6 +892,16 @@ func (r *repo) checkHandshake(ctx context.Context, force bool) error {
 		r.git.primaryBranch = meta.PrimaryBranch
 		r.git.subpath = meta.GitSubpath
 		r.git.managedRepo = meta.ManagedGitRepo
+
+		// The credential token is embedded in the remote URL and rotates on every refresh.
+		// If the repo is already cloned, write the refreshed URL to the on-disk `origin` remote so that
+		// subsequent git operations (e.g. the fetch in Status) authenticate with the current token rather
+		// than the stale one captured at clone time. A fresh clone uses r.git.remoteURL directly.
+		if isRepoRoot(r.git.repoDir) {
+			if err := setRemoteURL(r.git.repoDir, meta.GitUrl); err != nil {
+				return fmt.Errorf("failed to update git remote url: %w", err)
+			}
+		}
 	} else {
 		r.git = nil
 	}

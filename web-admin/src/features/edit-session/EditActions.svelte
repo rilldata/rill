@@ -19,8 +19,24 @@
   export let project: string;
   export let primaryBranch: string | undefined = undefined;
 
+  // While GitStatus is errored, re-poll on this interval. The runtime force-refreshes the git
+  // credentials on auth failures and self-heals, so re-polling lets the toolbar recover without
+  // a full page reload (e.g. after the managed git token expires and is rotated).
+  const GIT_STATUS_ERROR_REFETCH_INTERVAL_MS = 5000;
+
   const client = useRuntimeClient();
-  const gitStatusQuery = createRuntimeServiceGitStatus(client, {});
+  const gitStatusQuery = createRuntimeServiceGitStatus(
+    client,
+    {},
+    {
+      query: {
+        refetchInterval: (query) =>
+          query.state.status === "error"
+            ? GIT_STATUS_ERROR_REFETCH_INTERVAL_MS
+            : false,
+      },
+    },
+  );
 
   $: managedGit = $gitStatusQuery.data?.managedGit;
   $: gitStatusLoaded = $gitStatusQuery.data !== undefined;
@@ -58,12 +74,16 @@
   {/if}
 {:else if gitStatusErrorMessage}
   <Tooltip distance={8}>
-    <Button type="primary" disabled>
+    <Button
+      type="primary"
+      loading={$gitStatusQuery.isFetching}
+      onClick={() => $gitStatusQuery.refetch()}
+    >
       <GitBranch size="14" />
       Git unavailable
     </Button>
     <TooltipContent slot="tooltip-content" maxWidth="220px">
-      <span class="text-xs">{gitStatusErrorMessage}</span>
+      <span class="text-xs">{gitStatusErrorMessage} Click to retry.</span>
     </TooltipContent>
   </Tooltip>
 {/if}
