@@ -19,9 +19,9 @@
   export let project: string;
   export let primaryBranch: string | undefined = undefined;
 
-  // While GitStatus is errored, re-poll on this interval. The runtime force-refreshes the git
-  // credentials on auth failures and self-heals, so re-polling lets the toolbar recover without
-  // a full page reload (e.g. after the managed git token expires and is rotated).
+  // While GitStatus is errored, re-poll on this interval. The runtime refreshes the git
+  // credentials when the handshake expires, so re-polling lets the toolbar recover from
+  // transient failures without a full page reload.
   const GIT_STATUS_ERROR_REFETCH_INTERVAL_MS = 5000;
 
   const client = useRuntimeClient();
