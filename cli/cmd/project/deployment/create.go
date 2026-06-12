@@ -40,7 +40,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if environment == "prod" {
-				// if editable flag was explicitly set to true, return an error since prod deployments cannot be editable
+				// editable defaults to true, so only error if it was explicitly requested
 				if cmd.Flags().Changed("editable") && editable {
 					return fmt.Errorf("prod deployments cannot be editable")
 				}
