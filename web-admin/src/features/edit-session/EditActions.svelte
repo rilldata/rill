@@ -19,10 +19,12 @@
   export let project: string;
   export let primaryBranch: string | undefined = undefined;
 
-  // While GitStatus is errored, re-poll on this interval. The runtime refreshes the git
-  // credentials when the handshake expires, so re-polling lets the toolbar recover from
-  // transient failures without a full page reload.
-  const GIT_STATUS_ERROR_REFETCH_INTERVAL_MS = 5000;
+  // While GitStatus is errored, re-poll so the toolbar recovers without a full page reload once
+  // the runtime refreshes the git credentials. The endpoint can keep erroring (e.g. the remote is
+  // genuinely unreachable), so back off exponentially from a base delay up to a cap rather than
+  // hammering it on a fixed interval.
+  const GIT_STATUS_RETRY_BASE_MS = 2000;
+  const GIT_STATUS_RETRY_MAX_MS = 60000;
 
   const client = useRuntimeClient();
   const gitStatusQuery = createRuntimeServiceGitStatus(
@@ -30,10 +32,13 @@
     {},
     {
       query: {
-        refetchInterval: (query) =>
-          query.state.status === "error"
-            ? GIT_STATUS_ERROR_REFETCH_INTERVAL_MS
-            : false,
+        refetchInterval: (query) => {
+          if (query.state.status !== "error") return false;
+          // fetchFailureCount grows with each consecutive failure and resets on success.
+          const backoff =
+            GIT_STATUS_RETRY_BASE_MS * 2 ** (query.state.fetchFailureCount - 1);
+          return Math.min(backoff, GIT_STATUS_RETRY_MAX_MS);
+        },
       },
     },
   );
