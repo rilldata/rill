@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"path"
 	"regexp"
@@ -132,11 +131,16 @@ func (s *Server) GetPersonalFile(ctx context.Context, req *adminv1.GetPersonalFi
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
 	}
 
+	userID := auth.GetClaims(ctx).OwnerID()
 	virtualPath := virtualFilePathForPersonalFile(req.Name)
 
 	vf, err := s.admin.DB.FindVirtualFile(ctx, proj.ID, "prod", virtualPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get personal file: %w", err)
+	}
+
+	if vf.OwnerID != nil && *vf.OwnerID != userID {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read file")
 	}
 
 	return &adminv1.GetPersonalFileResponse{
@@ -172,7 +176,7 @@ func (s *Server) EditPersonalFile(ctx context.Context, req *adminv1.EditPersonal
 	virtualPath := virtualFilePathForPersonalFile(req.Name)
 
 	vf, err := s.admin.DB.FindVirtualFile(ctx, proj.ID, "prod", virtualPath)
-	if err != nil && !errors.Is(err, database.ErrNotFound) {
+	if err != nil {
 		return nil, fmt.Errorf("failed to get personal file: %w", err)
 	}
 
@@ -231,7 +235,7 @@ func (s *Server) DeletePersonalFile(ctx context.Context, req *adminv1.DeletePers
 	virtualPath := virtualFilePathForPersonalFile(req.Name)
 
 	vf, err := s.admin.DB.FindVirtualFile(ctx, proj.ID, "prod", virtualPath)
-	if err != nil && !errors.Is(err, database.ErrNotFound) {
+	if err != nil {
 		return nil, fmt.Errorf("failed to get personal file: %w", err)
 	}
 

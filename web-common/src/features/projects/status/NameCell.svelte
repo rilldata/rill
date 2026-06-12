@@ -1,20 +1,20 @@
 <script lang="ts">
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import { User } from "lucide-svelte";
-  import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
 
   let {
     name,
     isPersonal = false,
+    currentUserId,
     ownerId = undefined,
   }: {
     name: string;
     isPersonal?: boolean;
+    currentUserId?: string | undefined;
     ownerId?: string | undefined;
   } = $props();
 
-  const currentUser = createAdminServiceGetCurrentUser();
-  let isCurrentUser = $derived($currentUser.data?.user?.id === ownerId);
+  let isCurrentUser = $derived(currentUserId === ownerId);
 
   // There is no good API to get a user's info by id. GetUser API is for super users only.
   // TODO: if we want to show the exact owner then we either need to open up that API or hit ListProjectMemberUsers.

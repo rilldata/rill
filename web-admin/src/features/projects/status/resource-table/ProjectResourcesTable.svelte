@@ -27,6 +27,7 @@
     getPersonalFileOwner,
     isPersonalFile,
   } from "@rilldata/web-admin/features/projects/status/selectors.ts";
+  import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
 
   export let data: V1Resource[];
 
@@ -52,6 +53,9 @@
   const createTrigger =
     createRuntimeServiceCreateTriggerMutation(runtimeClient);
   const queryClient = useQueryClient();
+
+  const currentUser = createAdminServiceGetCurrentUser();
+  $: currentUserId = $currentUser.data?.user?.id;
 
   const openRefreshDialog = (
     resourceName: string,
@@ -161,6 +165,7 @@
         renderComponent(NameCell, {
           name: getValue() as string,
           isPersonal: isPersonalFile(row.original),
+          currentUserId,
           ownerId: getPersonalFileOwner(row.original),
         }),
     },

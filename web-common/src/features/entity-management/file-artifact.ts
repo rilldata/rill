@@ -231,7 +231,6 @@ export class FileArtifact {
 
     try {
       const kind = get(this.resourceName)?.kind;
-      console.log(kind);
       const fileSavePromise = this.saveState.initiateSave();
 
       await this.io.write(this.path, blob, kind);

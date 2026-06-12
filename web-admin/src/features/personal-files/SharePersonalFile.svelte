@@ -32,7 +32,6 @@
       "admin_shared",
     ) === "true",
   );
-  $effect(() => console.log("shared", shared));
 
   let loading = $derived(isPending || sharing);
 

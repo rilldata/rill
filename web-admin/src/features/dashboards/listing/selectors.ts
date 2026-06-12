@@ -74,7 +74,7 @@ function isManagedOrShared({
 }: {
   annotations?: Record<string, string>;
 }) {
-  return !annotations.admin_managed || annotations?.admin_shared;
+  return !annotations?.admin_managed || annotations?.admin_shared === "true";
 }
 
 /**

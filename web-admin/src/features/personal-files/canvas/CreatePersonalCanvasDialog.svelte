@@ -52,7 +52,7 @@
       const name = r.meta?.name?.name ?? "";
       const displayName = r.canvas?.state?.validSpec?.displayName ?? name;
       return { value: name, label: displayName };
-    }),
+    }) ?? [],
   );
 
   const schema = yup(
