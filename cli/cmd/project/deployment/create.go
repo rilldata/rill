@@ -39,8 +39,12 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			if environment == "prod" && editable {
-				return fmt.Errorf("prod deployments cannot be editable")
+			if environment == "prod" {
+				// editable defaults to true, so only error if it was explicitly requested
+				if cmd.Flags().Changed("editable") && editable {
+					return fmt.Errorf("prod deployments cannot be editable")
+				}
+				editable = false
 			}
 
 			ch.PrintfBold("Creating %q deployment for branch %q...\n", environment, branch)
@@ -67,7 +71,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 	createCmd.Flags().StringVar(&project, "project", "", "Project name")
 	createCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 	createCmd.Flags().StringVar(&environment, "environment", "dev", "Optional environment to create for (options: dev, prod)")
-	createCmd.Flags().BoolVar(&editable, "editable", false, "Make the deployment editable (changes are persisted back to git repo)")
+	createCmd.Flags().BoolVar(&editable, "editable", true, "Make the deployment editable (changes are persisted back to git repo)")
 
 	return createCmd
 }
