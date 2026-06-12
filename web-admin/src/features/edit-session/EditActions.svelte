@@ -19,8 +19,29 @@
   export let project: string;
   export let primaryBranch: string | undefined = undefined;
 
+  // While GitStatus is errored, re-poll so the toolbar recovers without a full page reload once
+  // the runtime refreshes the git credentials. The endpoint can keep erroring (e.g. the remote is
+  // genuinely unreachable), so back off exponentially from a base delay up to a cap rather than
+  // hammering it on a fixed interval.
+  const GIT_STATUS_RETRY_BASE_MS = 2000;
+  const GIT_STATUS_RETRY_MAX_MS = 60000;
+
   const client = useRuntimeClient();
-  const gitStatusQuery = createRuntimeServiceGitStatus(client, {});
+  const gitStatusQuery = createRuntimeServiceGitStatus(
+    client,
+    {},
+    {
+      query: {
+        refetchInterval: (query) => {
+          if (query.state.status !== "error") return false;
+          // fetchFailureCount grows with each consecutive failure and resets on success.
+          const backoff =
+            GIT_STATUS_RETRY_BASE_MS * 2 ** (query.state.fetchFailureCount - 1);
+          return Math.min(backoff, GIT_STATUS_RETRY_MAX_MS);
+        },
+      },
+    },
+  );
 
   $: managedGit = $gitStatusQuery.data?.managedGit;
   $: gitStatusLoaded = $gitStatusQuery.data !== undefined;
@@ -58,12 +79,16 @@
   {/if}
 {:else if gitStatusErrorMessage}
   <Tooltip distance={8}>
-    <Button type="primary" disabled>
+    <Button
+      type="primary"
+      loading={$gitStatusQuery.isFetching}
+      onClick={() => $gitStatusQuery.refetch()}
+    >
       <GitBranch size="14" />
       Git unavailable
     </Button>
     <TooltipContent slot="tooltip-content" maxWidth="220px">
-      <span class="text-xs">{gitStatusErrorMessage}</span>
+      <span class="text-xs">{gitStatusErrorMessage} Click to retry.</span>
     </TooltipContent>
   </Tooltip>
 {/if}
