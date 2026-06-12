@@ -13,7 +13,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.13.1
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.4
 	github.com/ClickHouse/clickhouse-go/v2 v2.41.0
-	github.com/ForceCLI/force v1.11.0
+	github.com/ForceCLI/force v1.12.0
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/MicahParks/keyfunc v1.9.0
 	github.com/NYTimes/gziphandler v1.1.1

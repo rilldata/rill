@@ -682,8 +682,8 @@ github.com/ClickHouse/clickhouse-go/v2 v2.41.0 h1:JbLKMXLEkW0NMalMgI+GYb6FVZtpaM
 github.com/ClickHouse/clickhouse-go/v2 v2.41.0/go.mod h1:/RoTHh4aDA4FOCIQggwsiOwO7Zq1+HxQ0inef0Au/7k=
 github.com/DefangLabs/secret-detector v0.0.0-20250403165618-22662109213e h1:rd4bOvKmDIx0WeTv9Qz+hghsgyjikFiPrseXHlKepO0=
 github.com/DefangLabs/secret-detector v0.0.0-20250403165618-22662109213e/go.mod h1:blbwPQh4DTlCZEfk1BLU4oMIhLda2U+A840Uag9DsZw=
-github.com/ForceCLI/force v1.11.0 h1:cxGBHi9KY5ya9Nn4mpMcby9TpjSJrP5fwhmeRL9AfZw=
-github.com/ForceCLI/force v1.11.0/go.mod h1:vZhTNH4A1cgnFV21igwqwMRy01TXYsquzdXF4LnrZB8=
+github.com/ForceCLI/force v1.12.0 h1:IUsMtyA+l/pzsD30XMv/47qiheMPObFz8YR67zf+Gf4=
+github.com/ForceCLI/force v1.12.0/go.mod h1:vZhTNH4A1cgnFV21igwqwMRy01TXYsquzdXF4LnrZB8=
 github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a h1:mMd54YgLoeupNpbph3KdwvF58O0lZ72RQaJ2cFPOFDE=
 github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a/go.mod h1:DGKmCfb9oo5BivGO+szHk2ZvlqPDTlW4AYVpRBIVbms=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.31.0 h1:DHa2U07rk8syqvCge0QIGMCE1WxGj9njT44GH7zNJLQ=

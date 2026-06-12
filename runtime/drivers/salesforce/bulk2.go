@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"time"
 
@@ -29,6 +30,13 @@ type bulk2QueryJob struct {
 }
 
 const bulk2PollInterval = 2 * time.Second
+
+// bulk2MaxRecordsPerPage bounds how many records Salesforce returns per results
+// page. The library buffers each page fully in memory before writing it to a
+// temp file, so without an explicit cap Salesforce could return the entire
+// result set in one page. The value matches the Bulk API 1.0 PK chunking batch
+// size used by the previous implementation.
+const bulk2MaxRecordsPerPage = 100000
 
 func makeBulk2QueryJob(session *force.Force, logger *zap.Logger) *bulk2QueryJob {
 	return &bulk2QueryJob{session: session, logger: logger}
@@ -113,21 +121,34 @@ func (j *bulk2QueryJob) Next(ctx context.Context) ([]string, error) {
 		}
 	}
 
-	page, err := j.session.GetBulk2QueryResultsWithContext(ctx, j.jobID, j.locator, 0)
+	// Stream the page straight to a temp file. The library buffers a whole page
+	// in memory when read synchronously, so for large extracts we copy the
+	// response body to disk inside the callback and capture the next-page
+	// locator from the Sforce-Locator header.
+	var path, nextLocator string
+	err := j.session.GetBulk2QueryResultsWithCallbackWithContext(ctx, j.jobID, j.locator, bulk2MaxRecordsPerPage, func(resp *http.Response) error {
+		defer resp.Body.Close()
+		nextLocator = resp.Header.Get("Sforce-Locator")
+
+		p, err := streamToTempFile(resp.Body, j.jobID)
+		if err != nil {
+			return err
+		}
+		path = p
+		return nil
+	})
 	if err != nil {
 		return nil, fmt.Errorf("fetching Bulk API 2.0 results: %w", err)
 	}
-	j.locator = page.Locator
-	if j.locator == "" {
-		// Salesforce signals the final page by returning an empty Sforce-Locator
-		// header; mark done so the next iteration returns io.EOF.
+
+	j.locator = nextLocator
+	if j.locator == "" || j.locator == "null" {
+		// Salesforce signals the final page by returning an empty (or "null")
+		// Sforce-Locator header; mark done so the next iteration returns io.EOF.
+		j.locator = ""
 		j.done = true
 	}
 
-	path, err := writeBytesToTempFile(page.Data, j.jobID)
-	if err != nil {
-		return nil, err
-	}
 	j.tempFilePaths = append(j.tempFilePaths, path)
 	return []string{path}, nil
 }
@@ -145,13 +166,13 @@ func (j *bulk2QueryJob) cleanupTempFiles() error {
 	return nil
 }
 
-func writeBytesToTempFile(data []byte, jobID string) (string, error) {
+func streamToTempFile(r io.Reader, jobID string) (string, error) {
 	f, err := os.CreateTemp("", "salesforce-bulk2-"+jobID+"-*.csv")
 	if err != nil {
 		return "", err
 	}
 	defer f.Close()
-	if _, err := f.Write(data); err != nil {
+	if _, err := io.Copy(f, r); err != nil {
 		_ = os.Remove(f.Name())
 		return "", fmt.Errorf("writing Bulk API 2.0 results to %s: %w", f.Name(), err)
 	}
