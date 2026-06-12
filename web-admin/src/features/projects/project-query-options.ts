@@ -9,14 +9,15 @@ import type { CreateQueryOptions } from "@tanstack/svelte-query";
 const PollTimeWhenProjectDeploymentPending = 1000;
 const PollTimeWhenProjectDeploymentError = 5000;
 const PollTimeWhenProjectDeploymentOk = RUNTIME_ACCESS_TOKEN_DEFAULT_TTL / 2; // Proactively refetch the JWT before it expires
+const PollTimeWhenProjectHibernating = 2000;
 
 export const baseGetProjectQueryOptions: Partial<
   CreateQueryOptions<V1GetProjectResponse, RpcStatus>
 > = {
   gcTime: Math.min(RUNTIME_ACCESS_TOKEN_DEFAULT_TTL, 1000 * 60 * 5), // Make sure we don't keep a stale JWT in the cache
   refetchInterval: (query) => {
-    const status = query.state.data?.deployment?.status;
-    switch (status) {
+    const data = query.state.data;
+    switch (data?.deployment?.status) {
       case V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING:
       case V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING:
       case V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING:
@@ -26,7 +27,14 @@ export const baseGetProjectQueryOptions: Partial<
       case V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING:
         return PollTimeWhenProjectDeploymentOk;
       default:
-        return false;
+        // A loaded project with no deployment is hibernating. Keep polling so the
+        // layout auto-progresses once a deployment appears, whether the wake was
+        // initiated from this tab or elsewhere. Without this, a wake gets stuck on
+        // the hibernating/"Waking..." screen if the post-wake refetch raced ahead of
+        // the backend's visible state and polling never re-armed.
+        return data?.project && !data.deployment
+          ? PollTimeWhenProjectHibernating
+          : false;
     }
   },
   refetchIntervalInBackground: true, // Keep polling while the tab is hidden (e.g. deploy loader)
