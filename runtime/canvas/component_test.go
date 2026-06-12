@@ -769,6 +769,20 @@ table:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
 	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "is not a dimension or measure")
+
+	// Valid: encoded time-grain column (the flat table frontend encodes a time dimension at a
+	// chosen grain as "{timeDimension}_rill_{GRAIN}").
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+table:
+  metrics_view: mv1
+  columns:
+  - ts_rill_TIME_GRAIN_MONTH
+  - y
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 }
 
 func TestValidatePivot(t *testing.T) {
