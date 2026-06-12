@@ -852,6 +852,36 @@ pivot:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
 	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "is not a dimension")
+
+	// Valid: encoded time-grain dimensions (the canvas pivot frontend encodes a time
+	// dimension at a chosen grain as "{timeDimension}_rill_{GRAIN}").
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+pivot:
+  metrics_view: mv1
+  measures:
+  - y
+  row_dimensions:
+  - ts_rill_TIME_GRAIN_DAY
+  col_dimensions:
+  - ts_rill_TIME_GRAIN_MONTH
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Invalid: encoded time dimension with an unknown grain.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+pivot:
+  metrics_view: mv1
+  col_dimensions:
+  - ts_rill_TIME_GRAIN_BOGUS
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "is not a dimension")
 }
 
 func TestValidateLeaderboard(t *testing.T) {

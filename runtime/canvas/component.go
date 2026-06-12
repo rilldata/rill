@@ -339,12 +339,12 @@ func validatePivot(props map[string]any, metricsViews map[string]*runtimev1.Metr
 		}
 	}
 	for _, d := range rowDims {
-		if !metricsViewHasDimension(mv, d) {
+		if !metricsViewHasDimension(mv, d) && !isPivotTimeDimension(mv, d) {
 			return fmt.Errorf("referenced row_dimensions value %q is not a dimension in metrics view %q", d, mvn)
 		}
 	}
 	for _, d := range colDims {
-		if !metricsViewHasDimension(mv, d) {
+		if !metricsViewHasDimension(mv, d) && !isPivotTimeDimension(mv, d) {
 			return fmt.Errorf("referenced col_dimensions value %q is not a dimension in metrics view %q", d, mvn)
 		}
 	}
@@ -517,6 +517,22 @@ func metricsViewHasDimension(mv *runtimev1.MetricsViewSpec, fieldName string) bo
 		}
 	}
 	return false
+}
+
+// isPivotTimeDimension reports whether fieldName is an encoded time-grain pivot dimension
+// of the form "{timeDimension}_rill_{GRAIN}" (e.g. "ts_rill_TIME_GRAIN_MONTH"). The canvas
+// pivot frontend encodes a time dimension at a chosen grain this way; it is decoded back into
+// a proper aggregation dimension at query time on the client.
+func isPivotTimeDimension(mv *runtimev1.MetricsViewSpec, fieldName string) bool {
+	if mv.TimeDimension == "" {
+		return false
+	}
+	grain, ok := strings.CutPrefix(fieldName, mv.TimeDimension+"_rill_")
+	if !ok {
+		return false
+	}
+	v, ok := runtimev1.TimeGrain_value[grain]
+	return ok && v != int32(runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED)
 }
 
 // metricsViewHasMeasure returns true if the metrics view has a measure with the given name.
