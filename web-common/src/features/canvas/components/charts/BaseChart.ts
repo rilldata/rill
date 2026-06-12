@@ -203,7 +203,7 @@ export abstract class BaseChart<
     );
 
     this.parent.componentsStore.set(newComponent.id, newComponent);
-    this.parent.selectedComponent.set(newComponent.id);
+    this.parent.setSelectedComponent(newComponent.id);
     this.parent._rows.refresh();
 
     // Preserve the width from the current chart
