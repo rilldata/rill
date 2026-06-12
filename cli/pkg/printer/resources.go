@@ -737,9 +737,7 @@ func (p *Printer) PrintDeployment(d *adminv1.Deployment) {
 	if d.RuntimeHost != "" {
 		p.Printf("Runtime Host: %s\n", d.RuntimeHost)
 	}
-	if d.Editable {
-		p.Printf("Editable: true\n")
-	}
+	p.Printf("Editable: %t\n", d.Editable)
 	p.Printf("Created: %s\n", d.CreatedOn.AsTime().Local().Format(time.RFC1123))
 	p.Printf("Updated: %s\n", d.UpdatedOn.AsTime().Local().Format(time.RFC1123))
 }
