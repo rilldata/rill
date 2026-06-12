@@ -3,7 +3,7 @@
   import { Button } from "@rilldata/web-common/components/button";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import { yup } from "sveltekit-superforms/adapters";
-  import { object, string } from "yup";
+  import { boolean, object, string } from "yup";
   import { defaults, superForm } from "sveltekit-superforms";
   import { generateBlobForNewResourceFile } from "@rilldata/web-common/features/entity-management/add/new-files.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
@@ -15,16 +15,13 @@
     getAdminServiceListPersonalFilesQueryKey,
   } from "@rilldata/web-admin/client";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import {
-    Tabs,
-    UnderlineTabsList,
-    UnderlineTabsTrigger,
-  } from "@rilldata/web-common/components/tabs";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { getPersonalFilteredResources } from "@rilldata/web-admin/features/personal-files/selectors.ts";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
   import { setCanvasMode } from "@rilldata/web-admin/features/personal-files/canvas/mode-utils.ts";
+  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
+  import Label from "@rilldata/web-common/components/forms/Label.svelte";
 
   let {
     org,
@@ -58,9 +55,9 @@
   const schema = yup(
     object({
       name: string().trim().required("Name is required"),
-      mode: string(),
-      copySource: string().when("mode", {
-        is: "copy",
+      copy: boolean(),
+      copySource: string().when("copy", {
+        is: true,
         then: (schema) => schema.required("Copy source is required"),
         otherwise: (schema) => schema.notRequired(),
       }),
@@ -68,11 +65,11 @@
   );
   const initialValues: {
     name: string;
-    mode: "blank" | "copy";
+    copy: boolean;
     copySource: string;
   } = {
     name: "",
-    mode: "blank",
+    copy: false,
     copySource: "",
   };
 
@@ -86,7 +83,7 @@
         const values = form.data;
 
         let yaml = "";
-        if (values.mode === "blank") {
+        if (!values.copy) {
           yaml = generateBlobForNewResourceFile(ResourceKind.Canvas);
         } else {
           const sourceFile = await queryClient.fetchQuery({
@@ -131,10 +128,6 @@
     },
   );
 
-  function updateMode(newMode: "blank" | "copy") {
-    form.update((f) => ({ ...f, mode: newMode }));
-  }
-
   let error = $derived(
     $createFileMutation.error?.message ?? $errors["copySource"]?.[0],
   );
@@ -146,7 +139,7 @@
       <Button {...props} type="primary">Create dashboard</Button>
     {/snippet}
   </Dialog.Trigger>
-  <Dialog.Content>
+  <Dialog.Content class="top-[30%] translate-y-0">
     <Dialog.Header>
       <Dialog.Title>Create personal dashboard</Dialog.Title>
       <Dialog.Description>
@@ -171,30 +164,24 @@
         placeholder="e.g. My revenue dashboard"
       />
 
-      <Tabs value={$form.mode} onValueChange={updateMode} class="mt-1">
-        {#if personalCanvasOptions.length > 0}
-          <UnderlineTabsList>
-            <UnderlineTabsTrigger value="blank">
-              Blank dashboard
-            </UnderlineTabsTrigger>
-            <UnderlineTabsTrigger value="copy">
-              Copy from an existing dashboard
-            </UnderlineTabsTrigger>
-          </UnderlineTabsList>
-        {/if}
+      <div class="flex items-center space-x-2">
+        <Switch bind:checked={$form["copy"]} id="copy" label="Copy from" />
+        <Label class="font-normal flex gap-x-1 items-center" for="copy">
+          Start from an existing dashboard
+        </Label>
+      </div>
 
-        {#if $form.mode === "copy"}
-          <Select
-            bind:value={$form.copySource}
-            id="source"
-            placeholder="Select a dashboard..."
-            options={personalCanvasOptions}
-            optionsLoading={$personalCanvasesQuery.isPending}
-            sameWidth
-            enableSearch
-          />
-        {/if}
-      </Tabs>
+      {#if $form.copy}
+        <Select
+          bind:value={$form.copySource}
+          id="source"
+          placeholder="Select a dashboard..."
+          options={personalCanvasOptions}
+          optionsLoading={$personalCanvasesQuery.isPending}
+          sameWidth
+          enableSearch
+        />
+      {/if}
 
       {#if error}
         <p class="text-destructive text-sm">{error}</p>
