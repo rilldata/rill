@@ -198,21 +198,21 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 
 	var updatedOrg *database.Organization
 	if sub == nil {
-		updatedOrg, sub, err = s.StartTrial(ctx, org)
+		updatedOrg, sub, err = s.StartCreditTrial(ctx, org)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to start trial: %w", err)
+			return nil, nil, fmt.Errorf("failed to start credit trial: %w", err)
 		}
 
-		// send trial started email
-		err = s.Email.SendTrialStarted(&email.TrialStarted{
-			ToEmail:      org.BillingEmail,
-			ToName:       org.Name,
-			OrgName:      org.Name,
-			FrontendURL:  s.URLs.Frontend(),
-			TrialEndDate: sub.TrialEndDate,
+		// send credit trial started email
+		err = s.Email.SendCreditTrialStarted(&email.CreditTrialStarted{
+			ToEmail:          org.BillingEmail,
+			ToName:           org.Name,
+			OrgName:          org.Name,
+			FrontendURL:      s.URLs.Frontend(),
+			CreditAllocation: CreditTrialAllocation,
 		})
 		if err != nil {
-			s.Logger.Named("billing").Error("failed to send trial started email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
+			s.Logger.Named("billing").Error("failed to send credit trial started email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
 		}
 	} else {
 		s.Logger.Named("billing").Warn("subscription already exists for org", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
