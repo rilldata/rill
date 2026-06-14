@@ -87,11 +87,11 @@ function getMessageForCreditsTrial(trialIssue: V1BillingIssue) {
   const message: BillingIssueMessage = {
     type: "default",
     title: `Your trial has expired.`,
-    description: "Subscribe to Pro to maintain access.",
+    description: "Choose a plan to maintain access.",
     iconType: "alert",
     cta: {
-      text: "Subscribe to Pro",
-      type: "upgrade",
+      text: "Choose a plan",
+      type: "show-upgrade",
     },
   };
   const onCreditTrial = trialIssue.metadata?.onCreditTrial;
@@ -127,8 +127,8 @@ function getMessageForCreditsDepletedIssue() {
     description: "",
     iconType: "alert",
     cta: {
-      text: "Subscribe to Pro",
-      type: "upgrade",
+      text: "Choose a plan",
+      type: "show-upgrade",
     },
   } satisfies BillingIssueMessage;
 }

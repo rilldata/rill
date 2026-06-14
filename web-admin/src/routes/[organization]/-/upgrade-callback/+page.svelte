@@ -12,9 +12,10 @@
   } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
   import {
     fetchPaymentsPortalURL,
-    fetchPaidPlan,
+    fetchPublicPlanByName,
     getBillingUpgradeUrl,
   } from "@rilldata/web-admin/features/billing/plans/selectors";
+  import { SELF_SERVE_PLANS } from "@rilldata/web-admin/features/billing/plans/plan-details";
   import { showWelcomeToRillDialog } from "@rilldata/web-admin/features/billing/plans/utils";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
@@ -28,6 +29,9 @@
   export let data: PageData;
   $: ({ cancelled, paymentIssues } = data);
   $: redirect = $page.url.searchParams.get("redirect");
+  // The chosen plan is carried through the Stripe return URL (see getBillingUpgradeUrl).
+  // Fall back to the first self-serve plan for older links that predate the plan chooser.
+  $: planName = $page.url.searchParams.get("plan") ?? SELF_SERVE_PLANS[0].name;
 
   /**
    * Landing page to upgrade a user to team plan.
@@ -58,7 +62,8 @@
       });
       return goto(`/${organization}/-/settings/billing`);
     }
-    const paidPlan = await fetchPaidPlan();
+    const paidPlan = await fetchPublicPlanByName(planName);
+    if (!paidPlan) return goto(`/${organization}/-/settings/billing`);
     try {
       if (cancelled) {
         await $planRenewer.mutateAsync({
@@ -105,9 +110,9 @@
     <LoadingSpinner />
     <CtaHeader variant="bold">
       {#if cancelled}
-        Renewing Team plan...
+        Renewing your plan...
       {:else}
-        Upgrading to Team plan...
+        Upgrading your plan...
       {/if}
     </CtaHeader>
     <CtaNeedHelp />

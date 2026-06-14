@@ -3,6 +3,8 @@ export type PlanTier =
   | "free"
   | "pro"
   | "team"
+  | "starter"
+  | "growth"
   | "managed"
   | "enterprise";
 

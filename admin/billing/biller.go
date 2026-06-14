@@ -107,6 +107,8 @@ const (
 	EnterprisePlanType
 	FreePlanType
 	ProPlanType
+	StarterPlanType
+	GrowthPlanType
 )
 
 type Plan struct {

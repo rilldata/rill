@@ -1,13 +1,9 @@
 import { needsPaymentSetup } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
 import type { BillingIssueMessage } from "@rilldata/web-admin/features/billing/issues/useBillingIssueMessage";
 import { fetchPaymentsPortalURL } from "@rilldata/web-admin/features/billing/plans/selectors";
-import {
-  type CategorisedOrganizationBillingIssues,
-  fetchOrganizationBillingIssues,
-} from "@rilldata/web-admin/features/billing/selectors";
+import { fetchOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
 import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types";
 import { writable } from "svelte/store";
-import { upgradeToPro } from "@rilldata/web-admin/features/billing/plans/upgrade-to-pro.ts";
 
 export class BillingCTAHandler {
   public showStartTeamPlanDialog = writable(false);
@@ -32,17 +28,10 @@ export class BillingCTAHandler {
     return instance;
   }
 
-  public async handle(
-    issueMessage: BillingIssueMessage,
-    categorisedIssues: CategorisedOrganizationBillingIssues,
-  ) {
+  public async handle(issueMessage: BillingIssueMessage) {
     if (!issueMessage.cta) return;
     // TODO: propagate errors
     switch (issueMessage.cta.type) {
-      case "upgrade":
-        await upgradeToPro(this.organization, categorisedIssues, null);
-        break;
-
       case "show-upgrade":
         this.showStartTeamPlanDialog.set(true);
         this.startTeamPlanType.set(

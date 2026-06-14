@@ -41,13 +41,23 @@ export function isProPlan(planName: string) {
   return planName === "pro_plan";
 }
 
+export function isStarterPlan(planName: string) {
+  return planName === "starter";
+}
+
+export function isGrowthPlan(planName: string) {
+  return planName === "growth";
+}
+
 export function isEnterprisePlan(planName: string) {
   return (
     !isTrialPlan(planName) &&
     !isTeamPlan(planName) &&
     !isManagedPlan(planName) &&
     !isFreePlan(planName) &&
-    !isProPlan(planName)
+    !isProPlan(planName) &&
+    !isStarterPlan(planName) &&
+    !isGrowthPlan(planName)
   );
 }
 
