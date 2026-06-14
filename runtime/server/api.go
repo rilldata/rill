@@ -34,6 +34,9 @@ func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
 	)
 	s.addInstanceRequestAttributes(ctx, instanceID)
 
+	// Custom API calls are billable programmatic access.
+	s.recordAPICallUsage(ctx, instanceID, "rest")
+
 	// Check if user has access to query for API data
 	claims := auth.GetClaims(ctx, instanceID)
 	if !claims.Can(runtime.ReadAPI) {

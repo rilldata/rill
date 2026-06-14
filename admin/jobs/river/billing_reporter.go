@@ -12,7 +12,12 @@ import (
 )
 
 // counterMetrics are billable metrics whose period total is sum(value) rather than max(value).
-var counterMetrics = map[string]bool{"slot_seconds_spend": true}
+// Note: the distinct-user metrics (external_users, external_anonymous_users) are NOT counters here;
+// the metrics project pre-aggregates them to a distinct count per period, which the reporter takes as-is (max).
+var counterMetrics = map[string]bool{
+	"slot_seconds_spend": true,
+	"api_calls":          true,
+}
 
 type BillingReporterArgs struct{}
 

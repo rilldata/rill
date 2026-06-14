@@ -101,6 +101,7 @@ type Config struct {
 	ActivitySinkType                  string `default:"" split_words:"true"`
 	ActivitySinkKafkaBrokers          string `default:"" split_words:"true"`
 	ActivityUISinkKafkaTopic          string `default:"" split_words:"true"`
+	ActivityBillingSinkKafkaTopic     string `default:"" split_words:"true"`
 	MetricsProject                    string `default:"" split_words:"true"`
 	AutoscalerCron                    string `default:"CRON_TZ=America/Los_Angeles 0 0 * * 1" split_words:"true"`
 	ScaleDownConstraint               int    `default:"0" split_words:"true"`
@@ -210,6 +211,22 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			if ch.Version.IsDev() {
 				activityClient = activityClient.WithIsDev()
 			}
+
+			// Init billing usage activity client.
+			// Billable usage metrics (e.g. embedded users) are emitted to the billing events topic so they land in the
+			// same events table the runtime writes to and are picked up by the billing reporter. This is a separate topic
+			// from the UI telemetry above; if unset, billable usage from the admin server is not reported.
+			var billingActivityClient *activity.Client
+			if conf.ActivitySinkType == "kafka" && conf.ActivityBillingSinkKafkaTopic != "" {
+				sink, err := activity.NewKafkaSink(conf.ActivitySinkKafkaBrokers, conf.ActivityBillingSinkKafkaTopic, logger)
+				if err != nil {
+					logger.Fatal("error creating billing kafka sink", zap.Error(err))
+				}
+				billingActivityClient = activity.NewClient(sink, logger).WithServiceName("admin-server")
+			} else {
+				billingActivityClient = activity.NewNoopClient()
+			}
+			defer billingActivityClient.Close(context.Background())
 
 			// Init runtime JWT issuer
 			issuer, err := auth.NewIssuer(conf.ExternalURL, conf.SigningKeyID, []byte(conf.SigningJWKS))
@@ -395,7 +412,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					limiter = ratelimit.NewRedis(redis.NewClient(opts))
 				}
 
-				srv, err := server.New(logger, adm, issuer, limiter, activityClient, &server.Options{
+				srv, err := server.New(logger, adm, issuer, limiter, activityClient, billingActivityClient, &server.Options{
 					HTTPPort:               conf.HTTPPort,
 					GRPCPort:               conf.GRPCPort,
 					AllowedOrigins:         conf.AllowedOrigins,

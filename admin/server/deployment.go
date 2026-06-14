@@ -235,6 +235,10 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 		return nil, err
 	}
 
+	if req.ExternalUserId != "" {
+		s.recordExternalUserUsage(ctx, proj, depl, req.ExternalUserId)
+	}
+
 	s.admin.Used.Deployment(depl.ID)
 
 	return &adminv1.GetDeploymentResponse{
@@ -570,6 +574,10 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 		return nil, err
 	}
 
+	if req.ExternalUserId != "" {
+		s.recordExternalUserUsage(ctx, proj, prodDepl, req.ExternalUserId)
+	}
+
 	s.admin.Used.Deployment(prodDepl.ID)
 
 	return &adminv1.GetDeploymentCredentialsResponse{
@@ -674,6 +682,14 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	jwt, err := s.issueRuntimeToken(ctx, opts)
 	if err != nil {
 		return nil, err
+	}
+
+	// Record billable embedded-user usage: an external user when an external_user_id is passed, otherwise an
+	// anonymous embedded user when the host passes explicit attributes (owner-preview embeds are not counted).
+	if req.ExternalUserId != "" {
+		s.recordExternalUserUsage(ctx, proj, prodDepl, req.ExternalUserId)
+	} else if attrs, ok := req.For.(*adminv1.GetIFrameRequest_Attributes); ok {
+		s.recordAnonymousEmbedUsage(ctx, proj, prodDepl, attrs.Attributes.AsMap())
 	}
 
 	// Build the iframe URL search params

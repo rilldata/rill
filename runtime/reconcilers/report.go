@@ -445,6 +445,9 @@ func (r *ReportReconciler) executeAllWrapped(ctx context.Context, self *runtimev
 
 // executeSingle runs the report query and sends notifications for a single execution time.
 func (r *ReportReconciler) executeSingle(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, executionTime time.Time, adhocTrigger bool) (bool, error) {
+	// Report query execution is billable programmatic access.
+	r.C.Activity.RecordMetric(ctx, "api_calls", 1, attribute.String("api_source", "report"))
+
 	// Create new execution and save in State.CurrentExecution
 	rep.State.CurrentExecution = &runtimev1.ReportExecution{
 		Adhoc:      adhocTrigger,

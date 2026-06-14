@@ -703,6 +703,9 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 		queryForAttrs = a.Spec.GetQueryForAttributes().AsMap()
 	}
 
+	// Alert query execution is billable programmatic access.
+	r.C.Activity.RecordMetric(ctx, "api_calls", 1, attribute.String("api_source", "alert"))
+
 	res, info, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         r.C.InstanceID,
 		Resolver:           a.Spec.Resolver,
