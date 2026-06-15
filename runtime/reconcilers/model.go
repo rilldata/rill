@@ -1227,9 +1227,11 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 			panic("executePartition returned false despite returnErr being set to true") // Can't happen
 		}
 
-		// Update the state so the next invocations will be incremental
+		// Update the state so the next invocations will be incremental.
+		// We also update incrementalState so that templating (e.g. the "incremental" helper) reflects the flip.
 		prevResult = res
 		incrementalRun = true
+		incrementalState["incremental"] = true
 		totalExecDuration.Add(int64(res.ExecDuration))
 		totalPartitionsProcessed.Add(1)
 
