@@ -16,6 +16,7 @@
   import FreePlan from "@rilldata/web-admin/features/billing/plans/FreePlan.svelte";
   import LegacyTrialPlan from "@rilldata/web-admin/features/billing/plans/LegacyTrialPlan.svelte";
   import EnterprisePlan from "@rilldata/web-admin/features/billing/plans/EnterprisePlan.svelte";
+  import PlanSelectorDialog from "@rilldata/web-admin/features/billing/plans/dialog/PlanSelectorDialog.svelte";
 
   let {
     organization,
@@ -99,3 +100,7 @@
   type={dialogType}
   endDate={renewEndDate}
 />
+
+{#if subscription?.plan}
+  <PlanSelectorDialog current={subscription.plan} />
+{/if}
