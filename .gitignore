@@ -99,6 +99,7 @@ latest.txt
 .claude/plans/
 .claude/worktrees/
 .claude/projects/
+.mcp.json
 
 # Vite temp files
 vite.config.ts.timestamp-*
