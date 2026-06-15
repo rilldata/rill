@@ -59,6 +59,7 @@ func (o *Orb) DefaultQuotas() Quotas {
 		NumSlotsTotal:                  toPtr(40),
 		NumSlotsPerDeployment:          toPtr(8),
 		NumOutstandingInvites:          toPtr(200),
+		NumSeats:                       toPtr(-1), // Unlimited until a plan sets a seat limit.
 	}
 }
 
@@ -715,6 +716,7 @@ func (o *Orb) getBillingPlanFromOrbPlan(ctx context.Context, p *orb.Plan) (*Plan
 		NumSlotsTotal:                  metadata.NumSlotsTotal,
 		NumSlotsPerDeployment:          metadata.NumSlotsPerDeployment,
 		NumOutstandingInvites:          metadata.NumOutstandingInvites,
+		NumSeats:                       metadata.NumSeats,
 	}
 
 	trialPeriodDays := 0

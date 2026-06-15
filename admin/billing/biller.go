@@ -129,6 +129,7 @@ type Quotas struct {
 	NumSlotsTotal                  *int
 	NumSlotsPerDeployment          *int
 	NumOutstandingInvites          *int
+	NumSeats                       *int
 }
 
 type planMetadata struct {
@@ -140,6 +141,7 @@ type planMetadata struct {
 	NumSlotsTotal                  *int   `mapstructure:"num_slots_total"`
 	NumSlotsPerDeployment          *int   `mapstructure:"num_slots_per_deployment"`
 	NumOutstandingInvites          *int   `mapstructure:"num_outstanding_invites"`
+	NumSeats                       *int   `mapstructure:"num_seats"`
 }
 
 type Subscription struct {

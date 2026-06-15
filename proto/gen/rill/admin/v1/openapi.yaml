@@ -1479,6 +1479,9 @@ components:
                 projects:
                     format: int32
                     type: integer
+                seats:
+                    format: int32
+                    type: integer
                 slotsPerDeployment:
                     format: int32
                     type: integer
@@ -2163,6 +2166,9 @@ components:
                     format: int32
                     type: integer
                 projects:
+                    format: int32
+                    type: integer
+                seats:
                     format: int32
                     type: integer
                 slotsPerDeployment:

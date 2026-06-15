@@ -112,6 +112,7 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 
 	river.AddWorker(workers, &CheckProvisionersWorker{admin: adm, logger: adm.Logger})
 	river.AddWorker(workers, &BillingReporterWorker{admin: adm, logger: billingLogger})
+	river.AddWorker(workers, &UsageReporterWorker{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &DeleteExpiredAuthCodesWorker{admin: adm, logger: adm.Logger})
 	river.AddWorker(workers, &DeleteExpiredDeviceAuthCodesWorker{admin: adm, logger: adm.Logger})
 	river.AddWorker(workers, &DeleteExpiredTokensWorker{admin: adm})
@@ -147,11 +148,18 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 	// Add periodic jobs that are configured by other services
 	if adm.Biller.GetReportingWorkerCron() != "" {
 		// configured by the admin billing service
-		jobConfigs = append(jobConfigs, periodicJobConfig{
-			&BillingReporterArgs{},
-			adm.Biller.GetReportingWorkerCron(),
-			true,
-		})
+		jobConfigs = append(jobConfigs,
+			periodicJobConfig{
+				&BillingReporterArgs{},
+				adm.Biller.GetReportingWorkerCron(),
+				true,
+			},
+			periodicJobConfig{
+				&UsageReporterArgs{},
+				adm.Biller.GetReportingWorkerCron(),
+				true,
+			},
+		)
 	}
 
 	if adm.AutoscalerCron != "" {

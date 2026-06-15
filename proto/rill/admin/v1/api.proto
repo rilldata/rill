@@ -2139,6 +2139,7 @@ message SudoUpdateOrganizationQuotasRequest {
   optional int32 slots_per_deployment = 5;
   optional int32 outstanding_invites = 6;
   optional int64 storage_limit_bytes_per_deployment = 7;
+  optional int32 seats = 8;
 }
 
 message SudoUpdateOrganizationQuotasResponse {
@@ -3367,6 +3368,7 @@ message OrganizationQuotas {
   int32 slots_per_deployment = 4;
   int32 outstanding_invites = 5;
   int64 storage_limit_bytes_per_deployment = 6;
+  int32 seats = 7;
 }
 
 message Project {

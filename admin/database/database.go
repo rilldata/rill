@@ -393,6 +393,7 @@ type Organization struct {
 	QuotaSlotsPerDeployment             int       `db:"quota_slots_per_deployment"`
 	QuotaOutstandingInvites             int       `db:"quota_outstanding_invites"`
 	QuotaStorageLimitBytesPerDeployment int64     `db:"quota_storage_limit_bytes_per_deployment"`
+	QuotaSeats                          int       `db:"quota_seats"`
 	BillingCustomerID                   string    `db:"billing_customer_id"`
 	PaymentCustomerID                   string    `db:"payment_customer_id"`
 	BillingEmail                        string    `db:"billing_email"`
@@ -418,6 +419,7 @@ type InsertOrganizationOptions struct {
 	QuotaSlotsPerDeployment             int
 	QuotaOutstandingInvites             int
 	QuotaStorageLimitBytesPerDeployment int64
+	QuotaSeats                          int
 	BillingCustomerID                   string
 	PaymentCustomerID                   string
 	BillingEmail                        string
@@ -441,6 +443,7 @@ type UpdateOrganizationOptions struct {
 	QuotaSlotsPerDeployment             int
 	QuotaOutstandingInvites             int
 	QuotaStorageLimitBytesPerDeployment int64
+	QuotaSeats                          int
 	BillingCustomerID                   string
 	PaymentCustomerID                   string
 	BillingEmail                        string

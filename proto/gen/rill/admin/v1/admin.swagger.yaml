@@ -6141,6 +6141,9 @@ definitions:
       storageLimitBytesPerDeployment:
         type: string
         format: int64
+      seats:
+        type: integer
+        format: int32
   v1OrganizationRole:
     type: object
     properties:
@@ -6832,6 +6835,9 @@ definitions:
       storageLimitBytesPerDeployment:
         type: string
         format: int64
+      seats:
+        type: integer
+        format: int32
   v1SudoUpdateOrganizationQuotasResponse:
     type: object
     properties:
