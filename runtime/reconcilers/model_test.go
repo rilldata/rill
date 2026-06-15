@@ -52,6 +52,40 @@ sql: SELECT '{{.partition.now}}::TIMESTAMP' AS now
 	})
 }
 
+func TestPartitionedIncrementalPostExecSeesIncrementalFlag(t *testing.T) {
+	rt, instanceID := testruntime.NewInstance(t)
+
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{
+		"rill.yaml": ``,
+		"models/multiply.yaml": `
+type: model
+incremental: true
+materialize: true
+partitions:
+  sql: SELECT range AS num FROM range(1, 4)
+sql: SELECT {{ .partition.num }} AS num
+post_exec: |
+  {{ if incremental }} UPDATE multiply SET num = num * 10 WHERE num = {{ .partition.num }} {{ end }}
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
+
+	// Exactly two of the three partitions ran incrementally and were multiplied by 10 (>= 10).
+	testruntime.RequireResolve(t, rt, instanceID, &testruntime.RequireResolveOptions{
+		Resolver:   "sql",
+		Properties: map[string]any{"sql": `SELECT COUNT(*) AS count FROM multiply WHERE num >= 10`},
+		Result:     []map[string]any{{"count": 2}},
+	})
+
+	// The first partition ran non-incrementally and was left untouched (< 10).
+	testruntime.RequireResolve(t, rt, instanceID, &testruntime.RequireResolveOptions{
+		Resolver:   "sql",
+		Properties: map[string]any{"sql": `SELECT COUNT(*) AS count FROM multiply WHERE num < 10`},
+		Result:     []map[string]any{{"count": 1}},
+	})
+}
+
 func TestModelTests(t *testing.T) {
 	rt, instanceID := testruntime.NewInstance(t)
 
