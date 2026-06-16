@@ -1302,6 +1302,7 @@ func (s *Server) RemoveProjectMemberUser(ctx context.Context, req *adminv1.Remov
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Org),
 		attribute.String("args.project", req.Project),
+		attribute.String("args.email", req.Email),
 	)
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
