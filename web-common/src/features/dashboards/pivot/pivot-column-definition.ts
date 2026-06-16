@@ -330,27 +330,38 @@ function getFlatColumnDef(
           ? dimSpec.name + URI_DIMENSION_SUFFIX
           : undefined;
 
-      return {
-        id: d.name,
-        accessorFn: (row) => row[d.name],
-        header: d.label || d.name,
-        cell: ({ row, getValue }) => {
-          const value = formatDimensionValue(
-            getValue() as string,
-            i,
-            config.time,
-            rowDimensionNames,
-          );
-          if (uriField) {
+      const cell: ColumnDef<PivotDataRow>["cell"] = uriField
+        ? ({ row, getValue }) => {
+            const value = formatDimensionValue(
+              getValue() as string,
+              i,
+              config.time,
+              rowDimensionNames,
+            );
             const uri = row.original[uriField] as string | null | undefined;
             const href = makeHref(uri ?? null, (value as string) ?? "");
             if (href) {
               return cellComponent(PivotDimensionCell, { value, href });
             }
+            if (value === null) return "null";
+            return value;
           }
-          if (value === null) return "null";
-          return value;
-        },
+        : ({ getValue }) => {
+            const value = formatDimensionValue(
+              getValue() as string,
+              i,
+              config.time,
+              rowDimensionNames,
+            );
+            if (value === null) return "null";
+            return value;
+          };
+
+      return {
+        id: d.name,
+        accessorFn: (row) => row[d.name],
+        header: d.label || d.name,
+        cell,
       };
     },
   );
