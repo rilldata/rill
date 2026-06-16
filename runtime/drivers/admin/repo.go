@@ -845,6 +845,16 @@ func (r *repo) checkHandshake(ctx context.Context, force bool) error {
 		r.git.primaryBranch = meta.PrimaryBranch
 		r.git.subpath = meta.GitSubpath
 		r.git.managedRepo = meta.ManagedGitRepo
+
+		// The credential token is embedded in the remote URL and rotates on every refresh.
+		// If the repo is already cloned, write the refreshed URL to the on-disk `origin` remote so that
+		// subsequent git operations (e.g. the fetch in Status) authenticate with the current token rather
+		// than the stale one captured at clone time. A fresh clone uses r.git.remoteURL directly.
+		if isRepoRoot(r.git.repoDir) {
+			if err := setRemoteURL(r.git.repoDir, meta.GitUrl); err != nil {
+				return fmt.Errorf("failed to update git remote url: %w", err)
+			}
+		}
 	} else {
 		r.git = nil
 	}
