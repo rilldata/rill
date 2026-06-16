@@ -11,7 +11,7 @@
     "web-local"
   ],
   "scripts": {
-    "build:i18n": "paraglide-js compile --project web-common/src/features/i18n/project.inlang --outdir web-common/src/features/i18n/gen",
+    "build:i18n": "paraglide-js compile --project web-common/src/lib/i18n/project.inlang --outdir web-common/src/lib/i18n/gen",
     "build": "npm run build -w web-local",
     "dev": "sh -c 'npm run dev-runtime -- \"$@\" & npm run dev-web -- --port 3001 & wait' --",
     "dev-web": "npm run dev -w web-local -- ",
@@ -23,7 +23,7 @@
     "quality": "bash ./scripts/web-test-code-quality.sh",
     "quality:ci": "FAIL_FAST=true bash ./scripts/web-test-code-quality.sh",
     "check:edit-route-parity": "node ./scripts/check-edit-route-parity.js",
-    "machine-translate": "inlang machine translate --project web-common/src/features/i18n/project.inlang"
+    "machine-translate": "inlang machine translate --project web-common/src/lib/i18n/project.inlang"
   },
   "devDependencies": {
     "@inlang/paraglide-js": "^2.10.0",

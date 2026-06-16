@@ -79,6 +79,11 @@ if [[ "$COMMON" == "true" ]]; then
   cd ..
   npx eslint web-common --quiet || exit_code=$?
   npx svelte-check --workspace web-common --no-tsconfig || exit_code=$?
+  echo ""
+  echo "== i18n guard for migrated areas (warning only) =="
+  # Reports hardcoded strings in already-migrated areas. Non-fatal for now;
+  # the final i18n migration chunk adds --strict to make it fatal.
+  node ./scripts/i18n-guard.js || true
 fi
 
 if [[ "$LOCAL" == "true" ]]; then

@@ -50,9 +50,9 @@ const config = defineConfig({
   plugins: [
     sveltekit(),
     paraglideVitePlugin({
-      project: "../web-common/src/features/i18n/project.inlang",
-      outdir: "./src/features/i18n",
-      strategy: ["url", "cookie", "baseLocale"],
+      project: "../web-common/src/lib/i18n/project.inlang",
+      outdir: "../web-common/src/lib/i18n/gen",
+      strategy: ["preferredLanguage", "baseLocale"],
     }),
   ],
   envDir: "../",
