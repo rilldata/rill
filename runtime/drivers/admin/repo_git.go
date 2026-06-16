@@ -116,7 +116,7 @@ func (r *gitRepo) pullInner(ctx context.Context, userTriggered, force bool) erro
 
 	// Checkout the default branch
 	var createDefault bool
-	err := gitCheckout(r.repoDir, r.defaultBranch, force, false, "")
+	err := gitutil.Checkout(r.repoDir, r.defaultBranch, force, false, "")
 	if err != nil {
 		if !errors.Is(err, gitutil.ErrRefNotFound) {
 			return fmt.Errorf("failed to checkout branch %q: %w", r.defaultBranch, err)
@@ -143,7 +143,7 @@ func (r *gitRepo) pullInner(ctx context.Context, userTriggered, force bool) erro
 		}
 
 		// Create the default branch at the resolved remote hash
-		err = gitCheckout(r.repoDir, r.defaultBranch, true, true, remoteHash)
+		err = gitutil.Checkout(r.repoDir, r.defaultBranch, true, true, remoteHash)
 		if err != nil {
 			return fmt.Errorf("failed to create and checkout default branch %q: %w", r.defaultBranch, err)
 		}
@@ -234,7 +234,7 @@ func (r *gitRepo) commitToDefaultBranch(ctx context.Context, message string, for
 
 	r.h.logger.Info("commitToDefaultBranch", observability.ZapCtx(ctx))
 
-	_, err := gitutil.CommitAll(ctx, r.repoDir, r.subpath, message, "Rill", "noreply@rilldata.com")
+	_, err := gitutil.CommitAll(ctx, r.repoDir, r.subpath, message, gitutil.Signature{Name: "Rill", Email: "noreply@rilldata.com"})
 	if err != nil {
 		if !errors.Is(err, gitutil.ErrEmptyCommit) {
 			return fmt.Errorf("failed to commit changes to edit branch: %w", err)
@@ -289,7 +289,7 @@ func (r *gitRepo) mergeToBranch(ctx context.Context, branch string, force bool) 
 	}
 
 	r.h.logger.Info("mergeToBranch", zap.String("branch", branch), zap.Bool("force", force), observability.ZapCtx(ctx))
-	_, err := gitutil.CommitAll(ctx, r.repoDir, r.subpath, "Auto commit before merging to "+branch, "Rill", "noreply@rilldata.com")
+	_, err := gitutil.CommitAll(ctx, r.repoDir, r.subpath, "Auto commit before merging to "+branch, gitutil.Signature{Name: "Rill", Email: "noreply@rilldata.com"})
 	if err != nil && !errors.Is(err, gitutil.ErrEmptyCommit) {
 		return fmt.Errorf("failed to commit changes: %w", err)
 	}
@@ -302,7 +302,7 @@ func (r *gitRepo) mergeToBranch(ctx context.Context, branch string, force bool) 
 
 	if r.defaultBranch != branch {
 		defer func() {
-			err := gitCheckout(r.repoDir, r.defaultBranch, true, false, "")
+			err := gitutil.Checkout(r.repoDir, r.defaultBranch, true, false, "")
 			if err != nil {
 				resErr = errors.Join(resErr, fmt.Errorf("failed to checkout default branch %q: %w", r.defaultBranch, err))
 				return
@@ -311,7 +311,7 @@ func (r *gitRepo) mergeToBranch(ctx context.Context, branch string, force bool) 
 
 		// Switch to the requested branch, then hard-reset it to the remote tracking ref.
 		// Hard reset is safe here because local changes were already committed above.
-		err = gitCheckout(r.repoDir, branch, true, false, "")
+		err = gitutil.Checkout(r.repoDir, branch, true, false, "")
 		if err != nil {
 			return fmt.Errorf("failed to checkout branch %q: %w", branch, err)
 		}
@@ -386,32 +386,6 @@ func (r *gitRepo) pushBranch(ctx context.Context, branches ...string) error {
 	args := append([]string{"push", "origin"}, branches...)
 	_, err := gitutil.Run(ctx, r.repoDir, args...)
 	return err
-}
-
-// gitCheckout checks out a branch using the git command.
-// If create is true, it creates the branch (using -B) at the given startPoint.
-// go-git wipes out git-ignored changes during checkout so must use the git command.
-func gitCheckout(repoDir, branch string, force, create bool, startPoint string) error {
-	args := []string{"checkout"}
-	if force {
-		args = append(args, "--force")
-	}
-	if create {
-		args = append(args, "-B", branch)
-		if startPoint != "" {
-			args = append(args, startPoint)
-		}
-	} else {
-		args = append(args, branch)
-	}
-	_, err := gitutil.Run(context.Background(), repoDir, args...)
-	if err != nil {
-		if strings.Contains(err.Error(), "did not match") {
-			return gitutil.ErrRefNotFound
-		}
-		return err
-	}
-	return nil
 }
 
 // resetToRemoteTrackingBranch resets to the commit pointed by the remote tracking branch.

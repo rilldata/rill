@@ -15,7 +15,7 @@
   import { Button } from "@rilldata/web-common/components/button";
   import { upgradeToPro } from "@rilldata/web-admin/features/billing/plans/upgrade-to-pro.ts";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors.ts";
-  import { PricingDetails } from "@rilldata/web-common/features/billing/pricing-details.ts";
+  import PricingDetails from "@rilldata/web-common/features/billing/PricingDetails.svelte";
 
   let {
     open = $bindable(false),
@@ -31,32 +31,39 @@
 
   let title: string = $state("");
   let description = $state(
-    `Your subscription will start today using the payment method on file. ${PricingDetails} Cancel anytime.`,
+    "Starting a Team plan will end your trial and start your billing cycle today.",
   );
-  let buttonText = $state("Upgrade to Pro");
+  let buttonText = $state("Start Team plan");
   function setCopyBasedOnType(t: TeamPlanDialogTypes) {
     switch (t) {
-      case "trial-expired": // No explicit messaging for this as of now
       case "base":
-        title = "Upgrade to Pro";
+        title = "Start Team plan";
         buttonText = "Continue";
         break;
 
       case "size":
-        title = "Deploying more than 10GB requires a Pro plan";
+        title = "Deploying more than 10GB requires a Team plan";
         break;
 
       case "org":
-        title = "To create another organization, start a Pro plan";
+        title = "To create another organization, start a Team plan";
+        description = "";
         break;
 
       case "proj":
-        title = "To deploy a second project, start a Pro plan";
+        title = "To deploy a second project, start a Team plan";
         break;
 
       case "renew":
-        title = "Renew Pro plan";
-        description = `Your billing cycle will resume ${getSubscriptionResumedText(endDate)}. `;
+        title = "Renew Team plan";
+        description = `Your billing cycle will resume ${getSubscriptionResumedText(endDate)}.`;
+        buttonText = "Continue";
+        break;
+
+      case "trial-expired":
+        title = "Start Team plan";
+        description =
+          "Starting Team plan will wake your projects and start your billing cycle today.";
         buttonText = "Continue";
         break;
     }
@@ -97,7 +104,7 @@
       <AlertDialogTitle>{title}</AlertDialogTitle>
 
       <AlertDialogDescription>
-        {description}
+        <PricingDetails extraText={description} />
       </AlertDialogDescription>
 
       {#if fetchError}

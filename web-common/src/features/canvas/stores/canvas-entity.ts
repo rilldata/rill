@@ -752,6 +752,15 @@ export class CanvasEntity {
   };
 
   setSelectedComponent = (id: string | null) => {
+    // Inspector inputs commit their value on blur. Canvas component elements are
+    // not focusable, so clicking another component never blurs the focused input,
+    // which would otherwise apply the pending edit to the newly-selected component.
+    // Blur the active element first so the edit commits against the component that
+    // is still selected, before we switch.
+    if (id !== get(this.selectedComponent) && typeof document !== "undefined") {
+      const active = document.activeElement;
+      if (active instanceof HTMLElement) active.blur();
+    }
     this.selectedComponent.set(id);
   };
 

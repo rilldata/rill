@@ -67,6 +67,8 @@ export function getPivotConfigKey(config: PivotDataStoreConfig) {
     rowLimit,
     outermostRowLimit,
   } = pivot;
+  const showTotalsColumn = pivot.showTotalsColumn !== false;
+  const showTotalsRow = pivot.showTotalsRow !== false;
   const timeKey = JSON.stringify(time);
   const sortingKey = JSON.stringify(sorting);
   const filterKey = JSON.stringify(whereFilter);
@@ -75,7 +77,7 @@ export function getPivotConfigKey(config: PivotDataStoreConfig) {
     .concat(measureNames, colDimensionNames)
     .join("_");
 
-  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${tableModeKey}_${filterKey}_${enableComparison}_${comparisonTimeKey}_${rowLimit ?? "all"}_${outermostRowLimit ?? "none"}`;
+  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${tableModeKey}_${filterKey}_${enableComparison}_${comparisonTimeKey}_${showTotalsColumn}_${showTotalsRow}_${rowLimit ?? "all"}_${outermostRowLimit ?? "none"}`;
 }
 
 /**
@@ -635,6 +637,8 @@ export function getFiltersForCell(
   upToDimensionIndex?: number,
 ): PivotFilter {
   const { rowDimensionNames, measureNames, isFlat } = config;
+  const hasTotalsRow =
+    config.pivot?.showTotalsRow !== false && measureNames.length > 0;
 
   let values: string[];
   if (isFlat) {
@@ -642,7 +646,7 @@ export function getFiltersForCell(
       tableData,
       rowDimensionNames,
       rowId,
-      measureNames.length > 0,
+      hasTotalsRow,
     );
     if (upToDimensionIndex !== undefined && upToDimensionIndex >= 0) {
       values = values.slice(0, upToDimensionIndex + 1);
@@ -652,7 +656,7 @@ export function getFiltersForCell(
       tableData,
       rowDimensionNames,
       rowId,
-      measureNames.length > 0,
+      hasTotalsRow,
     );
   }
 

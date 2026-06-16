@@ -589,8 +589,8 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 				return nil, status.Errorf(codes.FailedPrecondition, "trial orgs quota exceeded for user %s", u.Email)
 			}
 		}
-		if _, err = s.admin.Jobs.StartOrgCreditTrial(ctx, org.ID); err != nil {
-			s.logger.Named("billing").Error("failed to submit job to start credit trial for org, please do it manually", zap.String("org_id", org.ID), zap.Error(err))
+		if _, err = s.admin.Jobs.StartOrgTrial(ctx, org.ID); err != nil {
+			s.logger.Named("billing").Error("failed to submit job to start trial for org, please do it manually", zap.String("org_id", org.ID), zap.Error(err))
 			// continue creating the project
 		}
 	}
@@ -1302,6 +1302,7 @@ func (s *Server) RemoveProjectMemberUser(ctx context.Context, req *adminv1.Remov
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Org),
 		attribute.String("args.project", req.Project),
+		attribute.String("args.email", req.Email),
 	)
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)

@@ -3268,6 +3268,12 @@ definitions:
         items:
           type: string
         description: Dimensions for table columns
+      hide_totals_row:
+        type: boolean
+        description: Whether to hide the totals row. Defaults to false.
+      hide_totals_col:
+        type: boolean
+        description: Whether to hide the totals column. Defaults to false.
       comparison_range:
         type: string
         description: Comparison time range

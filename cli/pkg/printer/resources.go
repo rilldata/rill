@@ -737,9 +737,7 @@ func (p *Printer) PrintDeployment(d *adminv1.Deployment) {
 	if d.RuntimeHost != "" {
 		p.Printf("Runtime Host: %s\n", d.RuntimeHost)
 	}
-	if d.Editable {
-		p.Printf("Editable: true\n")
-	}
+	p.Printf("Editable: %t\n", d.Editable)
 	p.Printf("Created: %s\n", d.CreatedOn.AsTime().Local().Format(time.RFC1123))
 	p.Printf("Updated: %s\n", d.UpdatedOn.AsTime().Local().Format(time.RFC1123))
 }
@@ -776,6 +774,7 @@ func toDeploymentRow(d *adminv1.Deployment) *deployment {
 		Branch:      d.Branch,
 		Environment: d.Environment,
 		Status:      status,
+		Editable:    d.Editable,
 	}
 }
 
@@ -806,6 +805,7 @@ type deployment struct {
 	Branch      string `header:"branch" json:"branch"`
 	Environment string `header:"environment" json:"environment"`
 	Status      string `header:"status" json:"status"`
+	Editable    bool   `header:"editable" json:"editable"`
 }
 
 // PrintQueryResponse prints the query response in the desired format (human, json, csv)

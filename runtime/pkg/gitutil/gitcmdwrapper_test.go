@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -238,7 +239,7 @@ func TestCommitAll(t *testing.T) {
 	t.Run("returns ErrEmptyCommit when there are no changes", func(t *testing.T) {
 		tempDir := setupTestRepository(t)
 
-		_, err := CommitAll(context.Background(), tempDir, "", "noop", "Rill", "noreply@rilldata.com")
+		_, err := CommitAll(context.Background(), tempDir, "", "noop", Signature{Name: "Rill", Email: "noreply@rilldata.com"})
 		require.ErrorIs(t, err, ErrEmptyCommit)
 	})
 
@@ -254,7 +255,7 @@ func TestCommitAll(t *testing.T) {
 		// Introduce a change *outside* the pathspec.
 		require.NoError(t, os.WriteFile(filepath.Join(tempDir, "outside.txt"), []byte("outside"), 0644))
 
-		_, err := CommitAll(context.Background(), tempDir, "sub", "noop", "Rill", "noreply@rilldata.com")
+		_, err := CommitAll(context.Background(), tempDir, "sub", "noop", Signature{Name: "Rill", Email: "noreply@rilldata.com"})
 		require.ErrorIs(t, err, ErrEmptyCommit)
 
 		// The outside file must not have been committed.
@@ -270,7 +271,7 @@ func TestCommitAll(t *testing.T) {
 		require.NoError(t, os.WriteFile(filepath.Join(tempDir, "sub", "inside.txt"), []byte("inside"), 0644))
 		require.NoError(t, os.WriteFile(filepath.Join(tempDir, "outside.txt"), []byte("outside"), 0644))
 
-		hash, err := CommitAll(context.Background(), tempDir, "sub", "scoped commit", "Rill", "noreply@rilldata.com")
+		hash, err := CommitAll(context.Background(), tempDir, "sub", "scoped commit", Signature{Name: "Rill", Email: "noreply@rilldata.com"})
 		require.NoError(t, err)
 		require.NotEmpty(t, hash)
 
@@ -292,7 +293,7 @@ func TestCommitAll(t *testing.T) {
 
 		require.NoError(t, os.WriteFile(filepath.Join(tempDir, "new.txt"), []byte("hello"), 0644))
 
-		_, err := CommitAll(context.Background(), tempDir, "", "msg", "Rill Bot", "bot@rilldata.com")
+		_, err := CommitAll(context.Background(), tempDir, "", "msg", Signature{Name: "Rill Bot", Email: "bot@rilldata.com"})
 		require.NoError(t, err)
 
 		name, err := Run(context.Background(), tempDir, "log", "-1", "--format=%an")
@@ -349,6 +350,27 @@ func TestHash(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, hash, 40)
 	})
+}
+
+func TestIsCommitHash(t *testing.T) {
+	require.True(t, IsCommitHash(strings.Repeat("a1", 20)), "40-char SHA-1")
+	require.True(t, IsCommitHash(strings.Repeat("a1", 32)), "64-char SHA-256")
+	require.True(t, IsCommitHash(strings.Repeat("A1", 20)), "uppercase hex")
+	require.False(t, IsCommitHash(""), "empty")
+	require.False(t, IsCommitHash("abc1"), "abbreviated hash")
+	require.False(t, IsCommitHash("--output=/tmp/x"), "flag-like input")
+	require.False(t, IsCommitHash("HEAD"), "symbolic ref")
+	require.False(t, IsCommitHash(strings.Repeat("g", 40)), "non-hex characters")
+}
+
+func TestRunRedactsURLCredentials(t *testing.T) {
+	tempDir := setupTestRepository(t)
+
+	// Fetch from an unreachable credential-embedded URL: both the args and git's stderr contain the URL.
+	_, err := Run(context.Background(), tempDir, "fetch", "https://user:secret-token@host.invalid/org/repo.git")
+	require.Error(t, err)
+	require.NotContains(t, err.Error(), "secret-token", "credentials must not leak into errors")
+	require.Contains(t, err.Error(), "<redacted>@")
 }
 
 // setupRemoteAndClone creates a remote repository with a single commit on `main`
