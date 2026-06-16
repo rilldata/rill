@@ -728,6 +728,10 @@ func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.
 		props["agent"] = ai.AnalystAgentName
 	}
 
+	// An AI report runs an agent session that executes queries, so it counts as billable programmatic access.
+	// (Default reports only build an export link and notify; their query runs later at download time.)
+	r.C.Activity.RecordMetric(ctx, "api_calls", 1, attribute.String("api_source", "report_ai"))
+
 	// Execute AI resolver
 	result, info, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         r.C.InstanceID,
