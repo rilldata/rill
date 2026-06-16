@@ -102,6 +102,10 @@ func TestRecordEmbeddedUserAPICall(t *testing.T) {
 			// Usage must be attributed to the org and project.
 			require.Equal(t, "org1", sink.events[0].Data["org_id"])
 			require.Equal(t, "proj1", sink.events[0].Data["project_id"])
+			// Anonymous embedded users carry an "anon_"-prefixed user_id for distinct counting.
+			if tt.wantMetric == "external_anonymous_user_api_call" {
+				require.Contains(t, sink.events[0].Data["user_id"], "anon_")
+			}
 		})
 	}
 }

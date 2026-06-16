@@ -74,10 +74,7 @@ func ActivityUnaryServerInterceptor(activityClient *activity.Client, instanceAtt
 		handler grpc.UnaryHandler,
 	) (interface{}, error) {
 		claims := auth.GetClaims(ctx, "")
-		var subject string
-		if claims != nil {
-			subject = claims.UserID
-		}
+		subject := claims.UserID
 
 		// Only set the user ID attribute if it is not empty. This prevents overwriting a user ID attribute set upstream.
 		// (For example, in the CLI on local, the user ID is set at start time, and individual requests on localhost are unauthenticated.)
@@ -108,11 +105,12 @@ func ActivityUnaryServerInterceptor(activityClient *activity.Client, instanceAtt
 	}
 }
 
-// recordEmbeddedUserAPICall emits a billable API-call metric for requests made by embedded users:
+// recordEmbeddedUserAPICall emits a billable API-call metric for requests made by embedded users. Both metrics
+// carry the user identity in the user_id attribute so the metrics project can derive distinct active users:
 //   - external_user_api_call: the request is authenticated for an embedded external user (an external_user_id was
-//     passed). The user_id attribute (set above) carries the hashed external user ID for distinct counting.
+//     passed). The user_id attribute (set above) carries the "ext_"-prefixed hashed external user ID.
 //   - external_anonymous_user_api_call: an embedded request with no external_user_id (and no Rill user). The
-//     external_anonymous_user attribute carries a hash of the user attributes for distinct counting.
+//     user_id attribute carries an "anon_"-prefixed hash of the user attributes.
 //
 // Both are per-request counters. It is a no-op for regular dashboard, API, and owner-preview traffic. The instance
 // attributes (org_id, project_id) are attached so the usage can be attributed to the right organization and project.
@@ -129,7 +127,7 @@ func recordEmbeddedUserAPICall(ctx context.Context, activityClient *activity.Cli
 		metricName = "external_user_api_call"
 	case claims.UserID == "" && isEmbed(claims.UserAttributes):
 		metricName = "external_anonymous_user_api_call"
-		idAttr = attribute.String("external_anonymous_user", anonymousUserID(claims.UserAttributes))
+		idAttr = attribute.String(activity.AttrKeyUserID, "anon_"+anonymousUserID(claims.UserAttributes))
 	default:
 		return
 	}
