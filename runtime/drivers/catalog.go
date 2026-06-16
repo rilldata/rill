@@ -46,6 +46,7 @@ type CatalogStore interface {
 	UpdateModelPartition(ctx context.Context, modelID string, partition ModelPartition) error
 	UpdateModelPartitionsTriggered(ctx context.Context, modelID string, wherePartitionKeyIn []string, whereErrored bool) error
 	UpdateModelPartitionsExecuted(ctx context.Context, modelID string, keys []string) error
+	UpdateModelPartitionsSkipped(ctx context.Context, modelID string, wherePartitionKeyIn []string, whereAllPending, whereErrored bool) error
 	DeleteModelPartitions(ctx context.Context, modelID string) error
 
 	FindInstanceHealth(ctx context.Context, instanceID string) (*InstanceHealth, error)
@@ -86,6 +87,9 @@ type ModelPartition struct {
 	Error string
 	// Elapsed is the duration of the last execution of the partition.
 	Elapsed time.Duration
+	// Skipped indicates the partition has been explicitly marked to be skipped.
+	// Skipped partitions are excluded from execution and from the model's error state until they are explicitly triggered.
+	Skipped bool
 }
 
 // FindModelPartitionsOptions is used to filter model partitions.
@@ -95,6 +99,7 @@ type FindModelPartitionsOptions struct {
 	WherePending     bool
 	WhereErrored     bool
 	WhereSuccessful  bool
+	WhereSkipped     bool
 	BeforeExecutedOn time.Time
 	AfterKey         string
 }

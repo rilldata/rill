@@ -33,7 +33,7 @@ Manage projects
 * [rill project hibernate](hibernate.md)	 - Hibernate project
 * [rill project list](list.md)	 - List all the projects
 * [rill project logs](logs.md)	 - Show project logs
-* [rill project partitions](partitions.md)	 - List partitions for a model
+* [rill project partitions](partitions/partitions.md)	 - List partitions for a model
 * [rill project refresh](refresh.md)	 - Refresh one or more resources
 * [rill project rename](rename.md)	 - Rename project
 * [rill project show](show.md)	 - Show project details

@@ -294,6 +294,25 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 				return runtime.ReconcileResult{Err: err}
 			}
 		}
+		// Recompute whether any partitions still have errors. This may have changed without an execution if, for
+		// example, errored partitions were skipped. Skipped partitions are excluded from the error check.
+		if model.State.PartitionsModelId != "" {
+			catalog, release, err := r.C.Runtime.Catalog(ctx, r.C.InstanceID)
+			if err != nil {
+				return runtime.ReconcileResult{Err: err}
+			}
+			partitionsHaveErrors, err := catalog.CheckModelPartitionsHaveErrors(ctx, model.State.PartitionsModelId)
+			release()
+			if err != nil {
+				return runtime.ReconcileResult{Err: err}
+			}
+			if partitionsHaveErrors != model.State.PartitionsHaveErrors {
+				model.State.PartitionsHaveErrors = partitionsHaveErrors
+				if err := r.C.UpdateState(ctx, self.Meta.Name, self); err != nil {
+					return runtime.ReconcileResult{Err: err}
+				}
+			}
+		}
 		// Show if any partitions errored
 		if model.State.PartitionsHaveErrors && !cfg.ModelPartitionsWarnOnFailure {
 			return runtime.ReconcileResult{Err: errPartitionsHaveErrors, Warnings: reconcileWarnings(model, &cfg), Retrigger: refreshOn}

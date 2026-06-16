@@ -666,6 +666,7 @@ func toModelPartitionRow(s *runtimev1.ModelPartition) *modelPartition {
 		ExecutedOn: executedOn,
 		Elapsed:    (time.Duration(s.ElapsedMs) * time.Millisecond).String(),
 		Error:      s.Error,
+		Skipped:    s.Skipped,
 	}
 }
 
@@ -675,6 +676,7 @@ type modelPartition struct {
 	ExecutedOn string `header:"executed_on,timestamp(ms|utc|human)" json:"executed_on"`
 	Elapsed    string `header:"elapsed" json:"elapsed"`
 	Error      string `header:"error" json:"error"`
+	Skipped    bool   `header:"skipped" json:"skipped"`
 }
 
 func (p *Printer) PrintBillingIssues(errs []*adminv1.BillingIssue) {

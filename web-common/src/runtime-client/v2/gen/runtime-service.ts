@@ -63,6 +63,8 @@ import {
   RenameFileRequest,
   RestoreGitCommitRequest,
   ShareConversationRequest,
+  SkipModelPartitionsRequest,
+  SkipModelPartitionsResponse,
   UnpackEmptyRequest,
   UnpackExampleRequest,
 } from "../../../proto/gen/rill/runtime/v1/api_pb";
@@ -2958,6 +2960,70 @@ export function createRuntimeServiceGenerateCanvasFileMutation(
   Omit<PartialMessage<GenerateCanvasFileRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceGenerateCanvasFileMutationOptions(
+    client,
+    options,
+  );
+  return createMutation(mutationOptions, queryClient);
+}
+
+/**
+ * Raw RPC call: RuntimeService.SkipModelPartitions
+ */
+export async function runtimeServiceSkipModelPartitions(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<SkipModelPartitionsRequest>, "instanceId">,
+  options?: { signal?: AbortSignal },
+): Promise<PartialMessage<SkipModelPartitionsResponse>> {
+  const r = await client.runtimeService.skipModelPartitions(
+    SkipModelPartitionsRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as PartialMessage<SkipModelPartitionsResponse>;
+}
+
+export function getRuntimeServiceSkipModelPartitionsMutationOptions(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      PartialMessage<SkipModelPartitionsResponse>,
+      unknown,
+      Omit<PartialMessage<SkipModelPartitionsRequest>, "instanceId">
+    >
+  >,
+): CreateMutationOptions<
+  PartialMessage<SkipModelPartitionsResponse>,
+  unknown,
+  Omit<PartialMessage<SkipModelPartitionsRequest>, "instanceId">
+> {
+  return {
+    mutationFn: (request) => runtimeServiceSkipModelPartitions(client, request),
+    ...options,
+  };
+}
+
+export function createRuntimeServiceSkipModelPartitionsMutation(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      PartialMessage<SkipModelPartitionsResponse>,
+      unknown,
+      Omit<PartialMessage<SkipModelPartitionsRequest>, "instanceId">
+    >
+  >,
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  PartialMessage<SkipModelPartitionsResponse>,
+  unknown,
+  Omit<PartialMessage<SkipModelPartitionsRequest>, "instanceId">
+> {
+  const mutationOptions = getRuntimeServiceSkipModelPartitionsMutationOptions(
     client,
     options,
   );

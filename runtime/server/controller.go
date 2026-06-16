@@ -318,6 +318,7 @@ func (s *Server) GetModelPartitions(ctx context.Context, req *runtimev1.GetModel
 		ModelID:          partitionsModelID,
 		WherePending:     req.Pending,
 		WhereErrored:     req.Errored,
+		WhereSkipped:     req.Skipped,
 		BeforeExecutedOn: beforeExecutedOn,
 		AfterKey:         afterKey,
 		Limit:            pagination.ValidPageSize(req.PageSize, defaultPageSize),
@@ -338,6 +339,63 @@ func (s *Server) GetModelPartitions(ctx context.Context, req *runtimev1.GetModel
 		Partitions:    modelPartitionsToPB(partitions),
 		NextPageToken: nextPageToken,
 	}, nil
+}
+
+// SkipModelPartitions implements runtimev1.RuntimeServiceServer
+func (s *Server) SkipModelPartitions(ctx context.Context, req *runtimev1.SkipModelPartitionsRequest) (*runtimev1.SkipModelPartitionsResponse, error) {
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.model", req.Model),
+		attribute.StringSlice("args.partitions", req.Partitions),
+		attribute.Bool("args.all", req.All),
+		attribute.Bool("args.errored", req.Errored),
+	)
+
+	// Skipping mutates partition state, so it requires edit permissions.
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditTrigger) {
+		return nil, ErrForbidden
+	}
+
+	if len(req.Partitions) == 0 && !req.All && !req.Errored {
+		return nil, status.Error(codes.InvalidArgument, "must specify partitions, all, or errored")
+	}
+
+	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+
+	n := &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: req.Model}
+	r, err := ctrl.Get(ctx, n, false)
+	if err != nil {
+		return nil, err
+	}
+
+	partitionsModelID := r.GetModel().State.PartitionsModelId
+	if partitionsModelID == "" {
+		return nil, status.Errorf(codes.FailedPrecondition, "model %q has no partitions", req.Model)
+	}
+
+	catalog, release, err := s.runtime.Catalog(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	err = catalog.UpdateModelPartitionsSkipped(ctx, partitionsModelID, req.Partitions, req.All, req.Errored)
+	if err != nil {
+		return nil, err
+	}
+
+	// Re-reconcile the model so it recomputes its partition error state (and cancels any in-flight run, which will
+	// re-query pending partitions and observe the newly skipped ones).
+	err = ctrl.Reconcile(ctx, n)
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.SkipModelPartitionsResponse{}, nil
 }
 
 // CreateTrigger implements runtimev1.RuntimeServiceServer
@@ -454,6 +512,7 @@ func modelPartitionToPB(partition drivers.ModelPartition) *runtimev1.ModelPartit
 		ExecutedOn: executedOn,
 		Error:      partition.Error,
 		ElapsedMs:  uint32(partition.Elapsed.Milliseconds()),
+		Skipped:    partition.Skipped,
 	}
 }
 

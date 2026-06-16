@@ -1886,6 +1886,7 @@ export interface V1ModelPartition {
   executedOn?: string;
   error?: string;
   elapsedMs?: number;
+  skipped?: boolean;
 }
 
 export type V1ModelSpecIncrementalStateResolverProperties = {
