@@ -207,6 +207,7 @@
 
   type HoveringData = {
     value: string | number | null;
+    rowHeader: boolean;
   };
 
   function onCellClick(e: MouseEvent) {
@@ -288,7 +289,10 @@
   function handleClick(e: MouseEvent) {
     if (!isElement(e.target)) return;
 
-    const value = e.target.dataset.value;
+    // Row dimension cells render an inner component (PivotExpandableCell), so the
+    // event target is a child element. Resolve the cell that carries the data attributes.
+    const td = e.target.closest("td");
+    const value = td?.dataset.value;
     if (value === undefined) return;
 
     copyToClipboard(value);
@@ -315,13 +319,15 @@
     // Element is not a cell or we haven't left the cell for the current tooltip
     if (!leftCell || !(e.target instanceof HTMLElement)) return;
 
-    const value = e.target.dataset.value;
-    const rowHeader = e.target.dataset.rowheader === "true";
+    // Row dimension cells render an inner component (PivotExpandableCell), so the
+    // event target is a child element. Resolve the cell that carries the data attributes.
+    const td = e.target.closest("td");
+    const value = td?.dataset.value;
 
-    if (value === undefined || rowHeader) return;
+    if (!td || value === undefined) return;
 
     leftCell = false;
-    e.target.addEventListener("mouseleave", () => (leftCell = true), {
+    td.addEventListener("mouseleave", () => (leftCell = true), {
       once: true,
     });
 
@@ -329,8 +335,9 @@
 
     hovering = {
       value,
+      rowHeader: td.dataset.rowheader === "true",
     };
-    hoverPosition = e.target.getBoundingClientRect();
+    hoverPosition = td.getBoundingClientRect();
   }
 </script>
 
@@ -406,7 +413,7 @@
     {hovering}
     {hoverPosition}
     pinned={false}
-    {customShortcuts}
+    customShortcuts={hovering.rowHeader ? [] : customShortcuts}
   />
 {/if}
 
