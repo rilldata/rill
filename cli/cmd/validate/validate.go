@@ -88,7 +88,7 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 			var projectPath string
 			if len(args) > 0 {
 				var err error
-				projectPath, err = start.ResolveProjectPath(args[0])
+				projectPath, err = start.ResolveProjectPath(cmd.Context(), args[0])
 				if err != nil {
 					return err
 				}

@@ -17,7 +17,6 @@ import (
 	"github.com/eapache/go-resiliency/retrier"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing/object"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-github/v71/github"
 	"github.com/rilldata/rill/admin"
@@ -25,9 +24,9 @@ import (
 	"github.com/rilldata/rill/admin/pkg/gitutil"
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/admin/server/auth"
-	cligitutil "github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/archive"
+	rtgitutil "github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -421,7 +420,7 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 	}
 
 	if proj.ArchiveAssetID != nil {
-		author := &object.Signature{
+		author := rtgitutil.Signature{
 			Name:  user.GithubUsername,
 			Email: user.Email,
 		}
@@ -1207,7 +1206,7 @@ func (s *Server) createRepo(ctx context.Context, remote, branch string, user *da
 	return token, nil
 }
 
-func (s *Server) pushAssetToGit(ctx context.Context, assetID, remote, branch, token string, author *object.Signature) error {
+func (s *Server) pushAssetToGit(ctx context.Context, assetID, remote, branch, token string, author rtgitutil.Signature) error {
 	asset, err := s.admin.DB.FindAsset(ctx, assetID)
 	if err != nil {
 		return err
@@ -1230,13 +1229,13 @@ func (s *Server) pushAssetToGit(ctx context.Context, assetID, remote, branch, to
 		return err
 	}
 
-	config := &cligitutil.Config{
+	config := &rtgitutil.Config{
 		Remote:        remote,
 		Username:      "x-access-token",
 		Password:      token,
 		DefaultBranch: branch,
 	}
-	return cligitutil.CommitAndPush(ctx, projPath, config, "", author)
+	return rtgitutil.CommitAndPush(ctx, projPath, config, "", author)
 }
 
 func (s *Server) githubAppInstallationURL(state githubConnectState) (string, error) {
