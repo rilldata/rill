@@ -30,6 +30,7 @@
   import InputWithConfirm from "../components/forms/InputWithConfirm.svelte";
   import Tag from "../components/tag/Tag.svelte";
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
+  import { m } from "@rilldata/web-common/features/i18n/gen/messages";
 
   const { deploy, developerChat, stickyDashboardState } = featureFlags;
   const runtimeClient = useRuntimeClient();
@@ -107,6 +108,8 @@
     <HeaderLogo href={mode === "Preview" ? "/dashboards" : "/"} />
 
     <Tag text={mode} color="gray"></Tag>
+
+    <div>{m.example_message({ username: "world" })} - {m.example_title()}</div>
 
     {#if mode === "Preview" || onVizRoute}
       {#if $exploresQuery?.data}
