@@ -1,6 +1,7 @@
 <script lang="ts">
   import VirtualTooltip from "@rilldata/web-common/components/virtualized-table/VirtualTooltip.svelte";
   import FlatTable from "@rilldata/web-common/features/dashboards/pivot/FlatTable.svelte";
+  import type { PivotClickSelectionState } from "@rilldata/web-common/features/dashboards/pivot/pivot-click-selection";
   import {
     getDimensionColumnProps,
     getMeasureColumnProps,
@@ -10,13 +11,19 @@
     SHOW_MORE_BUTTON,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
   import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
-  import type { PivotClickSelectionState } from "@rilldata/web-common/features/dashboards/pivot/pivot-click-selection";
   import type { PivotRowSelectionState } from "@rilldata/web-common/features/dashboards/pivot/pivot-row-selection";
   import {
     isElement,
     splitPivotChips,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
+  import {
+    createVirtualizer,
+    defaultRangeExtractor,
+  } from "@tanstack/svelte-virtual";
+  import { onMount } from "svelte";
+  import type { Readable } from "svelte/store";
+  import { derived } from "svelte/store";
   import {
     type ExpandedState,
     type SortingState,
@@ -25,13 +32,6 @@
     getCoreRowModel,
     getExpandedRowModel,
   } from "tanstack-table-8-svelte-5";
-  import {
-    createVirtualizer,
-    defaultRangeExtractor,
-  } from "@tanstack/svelte-virtual";
-  import { onMount } from "svelte";
-  import type { Readable } from "svelte/store";
-  import { derived } from "svelte/store";
   import NestedTable from "./NestedTable.svelte";
   import type {
     PivotDataRow,
@@ -170,11 +170,17 @@
       ]
     : [0, 0];
 
-  let customShortcuts: { description: string; shortcut: string }[] = [];
-  $: if (canShowDataViewer) {
-    customShortcuts = [
-      { description: "View raw data for aggregated cell", shortcut: "Click" },
-    ];
+  $: clickToFilterEnabled = enableClickToFilter && !!onCellClickToFilter;
+  function getCustomShortcuts(rowHeader: boolean) {
+    if (clickToFilterEnabled) {
+      return [{ description: "Filter by this value", shortcut: "Click" }];
+    }
+    if (canShowDataViewer && !rowHeader) {
+      return [
+        { description: "View raw data for aggregated cell", shortcut: "Click" },
+      ];
+    }
+    return [];
   }
 
   const handleScroll = (containerRefElement?: HTMLDivElement | null) => {
@@ -413,7 +419,7 @@
     {hovering}
     {hoverPosition}
     pinned={false}
-    customShortcuts={hovering.rowHeader ? [] : customShortcuts}
+    customShortcuts={getCustomShortcuts(hovering.rowHeader)}
   />
 {/if}
 
