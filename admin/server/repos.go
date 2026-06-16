@@ -74,11 +74,12 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 		return nil, err
 	}
 
-	gitURL, err := (&gitutil.Config{
+	cfg := &gitutil.Config{
 		Remote:   *proj.GitRemote,
 		Username: "x-access-token",
 		Password: token,
-	}).FullyQualifiedRemote()
+	}
+	gitURL, err := cfg.FullyQualifiedRemote()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build git url from %q: %w", *proj.GitRemote, err)
 	}

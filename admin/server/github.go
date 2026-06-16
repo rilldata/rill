@@ -1267,8 +1267,7 @@ func mirrorGitRepo(ctx context.Context, srcGitRemote, destGitRemote, srcToken, d
 		return fmt.Errorf("failed to build source git url: %w", err)
 	}
 
-	// Mirror-clone into the temp dir. The credential-embedded URL is passed as an argument only
-	// (gitutil.Run redacts it from errors) and never outlives the temp dir removed by the defer above.
+	// Mirror-clone into the temp dir
 	if _, err := gitutil.Run(ctx, "", "clone", "--mirror", srcURL, gitPath); err != nil {
 		return fmt.Errorf("failed to clone git repo: %w", err)
 	}
@@ -1285,14 +1284,12 @@ func mirrorGitRepo(ctx context.Context, srcGitRemote, destGitRemote, srcToken, d
 	return nil
 }
 
-// gitRemoteWithToken embeds an x-access-token credential into the remote URL when token is non-empty.
-// With an empty token it returns the remote unchanged (e.g. local-path remotes), avoiding a bogus
-// userinfo on URLs that carry no host.
 func gitRemoteWithToken(remote, token string) (string, error) {
 	if token == "" {
 		return remote, nil
 	}
-	return (&gitutil.Config{Remote: remote, Username: "x-access-token", Password: token}).FullyQualifiedRemote()
+	cfg := &gitutil.Config{Remote: remote, Username: "x-access-token", Password: token}
+	return cfg.FullyQualifiedRemote()
 }
 
 // normalizeGitRemote adds a .git suffix to the Git remote URL if it doesn't already have one.
