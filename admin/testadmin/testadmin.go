@@ -188,7 +188,7 @@ func NewWithOptionalRuntime(t *testing.T, startRt bool) *Fixture {
 		AuthClientID:     "",
 		AuthClientSecret: "",
 	}
-	srv, err := server.New(logger, adm, issuer, ratelimit.NewNoop(), activity.NewNoopClient(), activity.NewNoopClient(), srvOpts)
+	srv, err := server.New(logger, adm, issuer, ratelimit.NewNoop(), activity.NewNoopClient(), srvOpts)
 	require.NoError(t, err)
 
 	// Serve

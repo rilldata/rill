@@ -82,9 +82,6 @@ type Server struct {
 	issuer        *runtimeauth.Issuer
 	limiter       ratelimit.Limiter
 	activity      *activity.Client
-	// billingActivity emits billable usage metrics to the billing events pipeline (a separate Kafka topic from
-	// the UI telemetry that `activity` writes to). It is a no-op client when billing usage reporting is not configured.
-	billingActivity *activity.Client
 }
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
@@ -93,7 +90,7 @@ var _ adminv1.AIServiceServer = (*Server)(nil)
 
 var _ adminv1.TelemetryServiceServer = (*Server)(nil)
 
-func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, limiter ratelimit.Limiter, activityClient, billingActivityClient *activity.Client, opts *Options) (*Server, error) {
+func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, limiter ratelimit.Limiter, activityClient *activity.Client, opts *Options) (*Server, error) {
 	if len(opts.SessionKeyPairs) == 0 {
 		return nil, fmt.Errorf("provided SessionKeyPairs is empty")
 	}
@@ -134,15 +131,14 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, lim
 	}
 
 	return &Server{
-		logger:          logger,
-		admin:           adm,
-		opts:            opts,
-		cookies:         cookieStore,
-		authenticator:   authenticator,
-		issuer:          issuer,
-		limiter:         limiter,
-		activity:        activityClient,
-		billingActivity: billingActivityClient,
+		logger:        logger,
+		admin:         adm,
+		opts:          opts,
+		cookies:       cookieStore,
+		authenticator: authenticator,
+		issuer:        issuer,
+		limiter:       limiter,
+		activity:      activityClient,
 	}, nil
 }
 

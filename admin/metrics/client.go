@@ -120,10 +120,11 @@ func (c *Client) GetUsageMetrics(ctx context.Context, startTime, endTime, afterT
 	    max(value) as max_value,
 	    sum(value) as sum_value
 	  FROM {{ ref "rill-metrics-demo" }}
-	  WHERE time >= '{{ .args.start_time }}' AND time < '{{ .args.end_time }}' AND event_name IN ('data_dir_size_bytes', 'slot_seconds_spend', 'api_calls', 'external_users', 'external_anonymous_users', ...)
-	// NOTE: external_users / external_anonymous_users are distinct-count metrics. The metrics project must aggregate them
-	// as count(distinct user_id) / count(distinct external_anonymous_user) per period (not max/sum of the raw value=1 events)
-	// and expose the result as the value, which the reporter then reports as-is. api_calls is an additive counter (sum).
+	  WHERE time >= '{{ .args.start_time }}' AND time < '{{ .args.end_time }}' AND event_name IN ('data_dir_size_bytes', 'slot_seconds_spend', 'api_calls', 'external_user_api_call', 'external_anonymous_user_api_call', 'seats', ...)
+	// NOTE: api_calls, external_user_api_call and external_anonymous_user_api_call are additive counters (sum).
+	// The embedded-user API-call events also carry a user_id / external_anonymous_user attribute, so the metrics
+	// project can derive distinct active embedded users with count(distinct ...) as a separate metric if needed.
+	// seats is reported directly by the admin billing reporter (not from this runtime metrics query).
 	    {{ if hasKey .args "after_time" }}
 	    AND (
 	         start_time > '{{ .args.after_time }}'

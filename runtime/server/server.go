@@ -160,7 +160,7 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 			observability.LoggingUnaryServerInterceptor(s.logger),
 			grpc_validator.UnaryServerInterceptor(),
 			auth.UnaryServerInterceptor(s.aud),
-			middleware.ActivityUnaryServerInterceptor(s.activity),
+			middleware.ActivityUnaryServerInterceptor(s.activity, s.runtime.GetInstanceAttributes),
 			errorMappingUnaryServerInterceptor(),
 			grpc_auth.UnaryServerInterceptor(s.checkRateLimit),
 		),
