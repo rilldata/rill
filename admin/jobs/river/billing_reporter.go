@@ -33,7 +33,8 @@ var orgUsageMetrics = []orgUsageMetric{
 	{
 		name: "seats",
 		collect: func(ctx context.Context, adm *admin.Service, orgID string) (float64, error) {
-			n, err := adm.DB.CountOrganizationMemberUsers(ctx, orgID, "", "")
+			// Exclude internal Rill users from billable seat counts.
+			n, err := adm.DB.CountOrganizationMemberUsers(ctx, orgID, "", "%@"+billing.InternalEmailDomain, true)
 			if err != nil {
 				return 0, err
 			}

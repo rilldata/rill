@@ -13,6 +13,8 @@ import (
 const (
 	SupportEmail    = "support@rilldata.com"
 	DefaultTimeZone = "UTC"
+	// InternalEmailDomain is excluded from billable seat counts so internal Rill users don't count against an org's seats.
+	InternalEmailDomain = "rilldata.com"
 )
 
 // CreditsCurrency is the pricing-unit used for trial credit balance/alerts/grants. Its a non-monetary custom pricing unit, so trial usage never produces USD invoice line items.

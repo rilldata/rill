@@ -2011,7 +2011,7 @@ func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, fil
 	return res, nil
 }
 
-func (c *connection) CountOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID, searchPattern string) (int, error) {
+func (c *connection) CountOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID, searchPattern string, negateSearch bool) (int, error) {
 	var count int
 	query := "SELECT COUNT(*) FROM users_orgs_roles uor JOIN users u ON u.id = uor.user_id WHERE uor.org_id=$1"
 	args := []any{orgID}
@@ -2022,7 +2022,11 @@ func (c *connection) CountOrganizationMemberUsers(ctx context.Context, orgID, fi
 	}
 
 	if searchPattern != "" {
-		query += fmt.Sprintf(" AND (lower(u.email) ILIKE $%d OR lower(u.display_name) ILIKE $%d)", len(args)+1, len(args)+1)
+		not := ""
+		if negateSearch {
+			not = "NOT "
+		}
+		query += fmt.Sprintf(" AND %s(lower(u.email) ILIKE $%d OR lower(u.display_name) ILIKE $%d)", not, len(args)+1, len(args)+1)
 		args = append(args, searchPattern)
 	}
 

@@ -237,7 +237,7 @@ type DB interface {
 
 	FindOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string, withCounts bool, afterEmail string, limit int, searchPattern string) ([]*OrganizationMemberUser, error)
 	FindOrganizationMemberUser(ctx context.Context, orgID, userID string) (*OrganizationMemberUser, error)
-	CountOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string, searchPattern string) (int, error)
+	CountOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID, searchPattern string, negateSearch bool) (int, error)
 	FindOrganizationMemberUsersByRole(ctx context.Context, orgID, roleID string) ([]*User, error)
 	FindOrganizationMemberUserAdminStatus(ctx context.Context, orgID, userID string) (isAdmin, isLastAdmin bool, err error)
 	InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string, attributes map[string]any, ifNotExists bool) (bool, error)

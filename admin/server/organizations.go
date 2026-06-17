@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/publicemail"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -334,7 +335,7 @@ func (s *Server) ListOrganizationMemberUsers(ctx context.Context, req *adminv1.L
 		return nil, err
 	}
 
-	count, err := s.admin.DB.CountOrganizationMemberUsers(ctx, org.ID, roleID, req.SearchPattern)
+	count, err := s.admin.DB.CountOrganizationMemberUsers(ctx, org.ID, roleID, req.SearchPattern, false)
 	if err != nil {
 		return nil, err
 	}
@@ -498,8 +499,8 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 		}, nil
 	}
 
-	// Enforce the seat quota (counts existing member users; invites are limited by QuotaOutstandingInvites above).
-	seats, err := s.admin.DB.CountOrganizationMemberUsers(ctx, org.ID, "", "")
+	// Enforce the seat quota (counts billable member users, excluding internal Rill users; invites are limited by QuotaOutstandingInvites above).
+	seats, err := s.admin.DB.CountOrganizationMemberUsers(ctx, org.ID, "", "%@"+billing.InternalEmailDomain, true)
 	if err != nil {
 		return nil, err
 	}
