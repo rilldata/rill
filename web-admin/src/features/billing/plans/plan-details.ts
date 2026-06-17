@@ -5,6 +5,8 @@ export type SelfServePlan = {
   // name must match the plan name in the billing system (see admin/billing/orb.go::getPlanType).
   name: string;
   displayName: string;
+  // Price and price unit are displayed in the UI slightly differently.
+  // Otherwise, it would be redundant to have different keys.
   price: string;
   priceUnit: string;
   tagline: string;
@@ -50,3 +52,7 @@ export const SELF_SERVE_PLANS: SelfServePlan[] = [
     ],
   },
 ];
+
+export const SELF_SERVE_PLANS_BY_NAME = Object.fromEntries(
+  SELF_SERVE_PLANS.map((plan) => [plan.name, plan]),
+);

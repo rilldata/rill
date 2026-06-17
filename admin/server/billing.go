@@ -198,9 +198,6 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 	}
 
 	if planDowngrade(plan, org) {
-		if !forceAccess {
-			return nil, status.Errorf(codes.FailedPrecondition, "plan downgrade not supported")
-		}
 		s.logger.Named("billing").Warn("plan downgrade request", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("plan_name", plan.Name))
 	}
 

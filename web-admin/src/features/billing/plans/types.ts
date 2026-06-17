@@ -22,4 +22,5 @@ export type TeamPlanDialogTypes =
   | "org"
   | "proj"
   | "renew"
-  | "trial-expired";
+  | "trial-expired"
+  | "change";

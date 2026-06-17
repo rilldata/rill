@@ -29,6 +29,8 @@ export function getMessageForTrialPlan(
   )
     return getMessageForCreditsDepletedIssue();
 
+  // Legacy time-based trial handling
+
   const endDateStr =
     trialIssue.metadata?.onTrial?.endDate ??
     trialIssue.metadata?.trialEnded?.gracePeriodEndDate ??
@@ -37,10 +39,10 @@ export function getMessageForTrialPlan(
   const message: BillingIssueMessage = {
     type: "default",
     title: "Your trial has expired.",
-    description: "Upgrade to maintain access.",
+    description: "Choose a plan to maintain access.",
     iconType: "alert",
     cta: {
-      text: "Upgrade",
+      text: "Choose a plan",
       type: "show-upgrade",
       teamPlanDialogType: "base",
     },

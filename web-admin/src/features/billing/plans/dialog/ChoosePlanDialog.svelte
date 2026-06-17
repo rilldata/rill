@@ -21,11 +21,13 @@
     open = $bindable(false),
     type,
     organization,
+    currentPlan,
     endDate = "",
   }: {
     open: boolean;
     type: TeamPlanDialogTypes;
     organization: string;
+    currentPlan?: string;
     endDate?: string;
   } = $props();
 
@@ -94,6 +96,8 @@
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
       {#each SELF_SERVE_PLANS as plan (plan.name)}
+        {@const isCurrentPlan = plan.name === currentPlan}
+
         <div
           class="flex flex-col border rounded-xl p-5 gap-3"
           class:border-primary-500={plan.recommended}
@@ -112,9 +116,9 @@
           </div>
 
           <div class="flex items-baseline gap-1">
-            <span class="text-2xl font-semibold text-fg-primary"
-              >{plan.price}</span
-            >
+            <span class="text-2xl font-semibold text-fg-primary">
+              {plan.price}
+            </span>
             <span class="text-sm text-fg-tertiary">{plan.priceUnit}</span>
           </div>
           <p class="text-sm text-fg-tertiary">{plan.tagline}</p>
@@ -134,10 +138,10 @@
             type={plan.recommended ? "primary" : "secondary"}
             wide
             loading={loadingPlan === plan.name}
-            disabled={loadingPlan !== null}
+            disabled={loadingPlan !== null || isCurrentPlan}
             onClick={() => handleUpgradePlan(plan.name)}
           >
-            Choose {plan.displayName}
+            {#if isCurrentPlan}Current{:else}Choose {plan.displayName}{/if}
           </Button>
         </div>
       {/each}

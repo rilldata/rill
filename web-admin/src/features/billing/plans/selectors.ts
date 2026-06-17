@@ -31,14 +31,21 @@ import { DateTime } from "luxon";
 import { derived, type Readable } from "svelte/store";
 import type { PlanTier } from "@rilldata/web-admin/features/billing/plans/types.ts";
 import type { CategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors.ts";
+import { SELF_SERVE_PLANS_BY_NAME } from "@rilldata/web-admin/features/billing/plans/plan-details.ts";
 
-export async function fetchPublicPlanByName(planName: string) {
+export async function maybeFetchPublicPlanByName(planName: string) {
+  const staticPlan = SELF_SERVE_PLANS_BY_NAME[planName];
+  if (staticPlan) return staticPlan;
+
   const plansResp = await queryClient.fetchQuery({
     queryKey: getAdminServiceListPublicBillingPlansQueryKey(),
     queryFn: () => adminServiceListPublicBillingPlans(),
   });
 
-  return plansResp.plans?.find((p) => p.name === planName);
+  const remotePlan = plansResp.plans?.find((p) => p.name === planName);
+  if (remotePlan) return remotePlan;
+
+  throw new Error(`Plan ${planName} not found`);
 }
 
 /**

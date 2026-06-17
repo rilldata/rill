@@ -10,7 +10,6 @@
   } from "@rilldata/web-admin/features/billing/plans/types";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import ChoosePlanDialog from "@rilldata/web-admin/features/billing/plans/dialog/ChoosePlanDialog.svelte";
-  import CancelPlanDialog from "@rilldata/web-admin/features/billing/plans/dialog/CancelPlanDialog.svelte";
   import ProPlan from "@rilldata/web-admin/features/billing/plans/ProPlan.svelte";
   import SelfServePlanCard from "@rilldata/web-admin/features/billing/plans/SelfServePlanCard.svelte";
   import LegacyTeamPlan from "@rilldata/web-admin/features/billing/plans/LegacyTeamPlan.svelte";
@@ -22,12 +21,10 @@
     organization,
     showUpgradeDialog,
     billingPortalUrl,
-    cancelOpen = $bindable(false),
   }: {
     organization: string;
     showUpgradeDialog: boolean;
     billingPortalUrl: string | undefined;
-    cancelOpen?: boolean;
   } = $props();
 
   let subscriptionQuery = $derived(
@@ -95,8 +92,6 @@
 {:else if currentPlan === "enterprise"}
   <EnterprisePlan />
 {/if}
-
-<CancelPlanDialog bind:open={cancelOpen} {organization} />
 
 <ChoosePlanDialog
   bind:open={upgradeDialogOpen}

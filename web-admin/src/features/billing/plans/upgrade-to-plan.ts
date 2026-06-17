@@ -1,7 +1,7 @@
 import { type CategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors.ts";
 import {
   fetchPaymentsPortalURL,
-  fetchPublicPlanByName,
+  maybeFetchPublicPlanByName,
   getBillingUpgradeUrl,
 } from "@rilldata/web-admin/features/billing/plans/selectors.ts";
 import {
@@ -9,7 +9,7 @@ import {
   adminServiceUpdateBillingSubscription,
 } from "@rilldata/web-admin/client";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
-import { showWelcomeToRillDialog } from "@rilldata/web-admin/features/billing/plans/utils.ts";
+import { triggerWelcomeToRillDialog } from "@rilldata/web-admin/features/billing/plans/utils.ts";
 import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations.ts";
 import { page } from "$app/stores";
 import { get } from "svelte/store";
@@ -34,11 +34,11 @@ export async function upgradeToPlan(
     return;
   }
 
-  const plan = await fetchPublicPlanByName(planName);
+  const plan = await maybeFetchPublicPlanByName(planName);
   if (!plan) return;
   if (categorisedIssues.cancelled) {
     await adminServiceRenewBillingSubscription(org, {
-      planName: plan.name,
+      planName,
     });
     eventBus.emit("notification", {
       type: "success",
@@ -46,9 +46,9 @@ export async function upgradeToPlan(
     });
   } else {
     await adminServiceUpdateBillingSubscription(org, {
-      planName: plan.name,
+      planName,
     });
-    showWelcomeToRillDialog.set(true);
+    triggerWelcomeToRillDialog(planName);
   }
   void invalidateBillingInfo(org);
   if (redirect) {
