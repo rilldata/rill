@@ -3390,9 +3390,9 @@ export class SkipModelPartitionsRequest extends Message$1<SkipModelPartitionsReq
   /**
    * Skip all pending partitions.
    *
-   * @generated from field: bool all = 4;
+   * @generated from field: bool pending = 4;
    */
-  all = false;
+  pending = false;
 
   /**
    * Skip all errored partitions, clearing them from the model's error state.
@@ -3412,7 +3412,7 @@ export class SkipModelPartitionsRequest extends Message$1<SkipModelPartitionsReq
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "partitions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 4, name: "all", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "pending", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 5, name: "errored", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 

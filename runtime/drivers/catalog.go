@@ -46,7 +46,7 @@ type CatalogStore interface {
 	UpdateModelPartition(ctx context.Context, modelID string, partition ModelPartition) error
 	UpdateModelPartitionsTriggered(ctx context.Context, modelID string, wherePartitionKeyIn []string, whereErrored bool) error
 	UpdateModelPartitionsExecuted(ctx context.Context, modelID string, keys []string) error
-	UpdateModelPartitionsSkipped(ctx context.Context, modelID string, wherePartitionKeyIn []string, whereAllPending, whereErrored bool) error
+	UpdateModelPartitionsSkipped(ctx context.Context, modelID string, wherePartitionKeyIn []string, wherePending, whereErrored bool) error
 	DeleteModelPartitions(ctx context.Context, modelID string) error
 
 	FindInstanceHealth(ctx context.Context, instanceID string) (*InstanceHealth, error)

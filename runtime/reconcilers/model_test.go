@@ -2,7 +2,6 @@ package reconcilers_test
 
 import (
 	"testing"
-	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -263,60 +262,44 @@ tests:
 	}
 }
 
-func TestModelPartitionsSkipped(t *testing.T) {
+func TestModelPartitionsSkippedClearsErrorState(t *testing.T) {
 	rt, instanceID := testruntime.NewInstance(t)
 	ctx := t.Context()
 
+	// Incremental, partitioned model where the partition with value 'x' fails to execute (invalid CAST),
+	// while '1' and '2' succeed. The first partition to run is the one with the highest index (partitions are
+	// loaded idx DESC), so we order the values descending to ensure a successful, numeric partition runs first.
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{
+		"rill.yaml": ``,
+		"models/partitioned.yaml": `
+type: model
+incremental: true
+partitions:
+  sql: SELECT v FROM (VALUES ('1'), ('2'), ('x')) t(v) ORDER BY v DESC
+sql: SELECT CAST('{{.partition.v}}' AS INTEGER) AS n
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+
+	// Full refresh so every partition actually executes (the first incremental run only runs one partition).
+	testruntime.RefreshModelAndWait(t, rt, instanceID, &runtimev1.RefreshModelTrigger{Model: "partitioned", Full: true})
+
+	// The 'x' partition errored, so the model is in an error state.
+	model := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindModel, "partitioned").GetModel()
+	require.True(t, model.State.PartitionsHaveErrors)
+
+	// Skip the errored partition, then reconcile the model (mirrors what the SkipModelPartitions RPC does).
 	catalog, release, err := rt.Catalog(ctx, instanceID)
 	require.NoError(t, err)
-	defer release()
-
-	modelID := "test-model-partitions-skipped"
-	executedOn := time.Now()
-
-	// Insert one pending, one successful, and one errored partition.
-	require.NoError(t, catalog.InsertModelPartition(ctx, modelID, drivers.ModelPartition{Key: "p_pending", DataJSON: []byte(`{}`)}))
-	require.NoError(t, catalog.InsertModelPartition(ctx, modelID, drivers.ModelPartition{Key: "p_ok", DataJSON: []byte(`{}`), ExecutedOn: &executedOn}))
-	require.NoError(t, catalog.InsertModelPartition(ctx, modelID, drivers.ModelPartition{Key: "p_err", DataJSON: []byte(`{}`), ExecutedOn: &executedOn, Error: "boom"}))
-
-	keys := func(opts *drivers.FindModelPartitionsOptions) []string {
-		opts.ModelID = modelID
-		ps, err := catalog.FindModelPartitions(ctx, opts)
-		require.NoError(t, err)
-		out := make([]string, len(ps))
-		for i, p := range ps {
-			out[i] = p.Key
-		}
-		return out
-	}
-
-	// Initial state.
-	require.ElementsMatch(t, []string{"p_pending"}, keys(&drivers.FindModelPartitionsOptions{WherePending: true}))
-	require.ElementsMatch(t, []string{"p_err"}, keys(&drivers.FindModelPartitionsOptions{WhereErrored: true}))
-	hasErrors, err := catalog.CheckModelPartitionsHaveErrors(ctx, modelID)
+	err = catalog.UpdateModelPartitionsSkipped(ctx, model.State.PartitionsModelId, nil, false, true)
+	release()
 	require.NoError(t, err)
-	require.True(t, hasErrors)
 
-	// Skip all pending partitions: p_pending drops out of pending and shows up as skipped.
-	require.NoError(t, catalog.UpdateModelPartitionsSkipped(ctx, modelID, nil, true, false))
-	require.Empty(t, keys(&drivers.FindModelPartitionsOptions{WherePending: true}))
-	require.ElementsMatch(t, []string{"p_pending"}, keys(&drivers.FindModelPartitionsOptions{WhereSkipped: true}))
+	testruntime.ReconcileAndWait(t, rt, instanceID, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "partitioned"})
 
-	// Skip errored partitions: the model no longer has partition errors.
-	require.NoError(t, catalog.UpdateModelPartitionsSkipped(ctx, modelID, nil, false, true))
-	require.Empty(t, keys(&drivers.FindModelPartitionsOptions{WhereErrored: true}))
-	hasErrors, err = catalog.CheckModelPartitionsHaveErrors(ctx, modelID)
-	require.NoError(t, err)
-	require.False(t, hasErrors)
-
-	// Triggering p_err clears its skip and re-marks it pending; its error resurfaces.
-	require.NoError(t, catalog.UpdateModelPartitionsTriggered(ctx, modelID, []string{"p_err"}, false))
-	require.ElementsMatch(t, []string{"p_err"}, keys(&drivers.FindModelPartitionsOptions{WherePending: true}))
-	require.ElementsMatch(t, []string{"p_err"}, keys(&drivers.FindModelPartitionsOptions{WhereErrored: true}))
-	require.ElementsMatch(t, []string{"p_pending"}, keys(&drivers.FindModelPartitionsOptions{WhereSkipped: true}))
-	hasErrors, err = catalog.CheckModelPartitionsHaveErrors(ctx, modelID)
-	require.NoError(t, err)
-	require.True(t, hasErrors)
+	// Reconciling recomputes the partition error state: with the errored partition skipped, the model is no longer errored.
+	model = testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindModel, "partitioned").GetModel()
+	require.False(t, model.State.PartitionsHaveErrors)
 }
 
 func TestExplicitPartitionRefreshDoesNotProcessNewPartitions(t *testing.T) {

@@ -8394,7 +8394,7 @@ func (m *SkipModelPartitionsRequest) validate(all bool) error {
 
 	// no validation rules for Model
 
-	// no validation rules for All
+	// no validation rules for Pending
 
 	// no validation rules for Errored
 

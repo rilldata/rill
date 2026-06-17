@@ -1618,7 +1618,7 @@ paths:
                 items:
                   type: string
                 description: Specific partition keys to skip.
-              all:
+              pending:
                 type: boolean
                 description: Skip all pending partitions.
               errored:

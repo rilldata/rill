@@ -351,7 +351,7 @@ func (c *catalogStore) UpdateModelPartitionsTriggered(ctx context.Context, model
 
 // UpdateModelPartitionsSkipped marks partitions as skipped so they are excluded from execution and from the model's error state.
 // The conditions are ORed: specific keys, all pending partitions, and/or all errored partitions.
-func (c *catalogStore) UpdateModelPartitionsSkipped(ctx context.Context, modelID string, wherePartitionKeyIn []string, whereAllPending, whereErrored bool) error {
+func (c *catalogStore) UpdateModelPartitionsSkipped(ctx context.Context, modelID string, wherePartitionKeyIn []string, wherePending, whereErrored bool) error {
 	var qry strings.Builder
 	var args []any
 
@@ -360,7 +360,7 @@ func (c *catalogStore) UpdateModelPartitionsSkipped(ctx context.Context, modelID
 
 	// Add conditions
 	qry.WriteString(" AND (false") // false ensures it's a no-op if no conditions are added; safer that way
-	if whereAllPending {
+	if wherePending {
 		qry.WriteString(" OR executed_on IS NULL")
 	}
 	if whereErrored {

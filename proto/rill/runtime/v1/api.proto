@@ -889,7 +889,7 @@ message SkipModelPartitionsRequest {
   // Specific partition keys to skip.
   repeated string partitions = 3;
   // Skip all pending partitions.
-  bool all = 4;
+  bool pending = 4;
   // Skip all errored partitions, clearing them from the model's error state.
   bool errored = 5;
 }

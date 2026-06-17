@@ -8,13 +8,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func partitionsSkipCmd(ch *cmdutil.Helper) *cobra.Command {
+func SkipPartitionCmd(ch *cmdutil.Helper) *cobra.Command {
 	var project, path, branch, model string
 	var partitions []string
-	var all, errored, local bool
+	var pending, errored, local bool
 
 	skipCmd := &cobra.Command{
-		Use:   "skip [<project>] <model>",
+		Use:   "skip-partition [<project>] <model>",
 		Args:  cobra.RangeArgs(1, 2),
 		Short: "Skip partitions for a model",
 		Long: "Mark partitions as skipped so they are excluded from execution and from the model's error state. " +
@@ -44,7 +44,7 @@ func partitionsSkipCmd(ch *cmdutil.Helper) *cobra.Command {
 				InstanceId: instanceID,
 				Model:      model,
 				Partitions: partitions,
-				All:        all,
+				Pending:    pending,
 				Errored:    errored,
 			})
 			if err != nil {
@@ -63,9 +63,9 @@ func partitionsSkipCmd(ch *cmdutil.Helper) *cobra.Command {
 	skipCmd.Flags().StringVar(&branch, "branch", "", "Target deployment by Git branch (default: primary deployment)")
 	skipCmd.Flags().StringVar(&model, "model", "", "Model Name")
 	skipCmd.Flags().StringSliceVar(&partitions, "partition", nil, "Skip specific partitions by key")
-	skipCmd.Flags().BoolVar(&all, "all", false, "Skip all pending partitions")
+	skipCmd.Flags().BoolVar(&pending, "pending", false, "Skip all pending partitions")
 	skipCmd.Flags().BoolVar(&errored, "errored", false, "Skip all errored partitions")
-	skipCmd.MarkFlagsOneRequired("partition", "all", "errored")
+	skipCmd.MarkFlagsOneRequired("partition", "pending", "errored")
 	skipCmd.Flags().BoolVar(&local, "local", false, "Target locally running Rill")
 
 	return skipCmd

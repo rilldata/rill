@@ -1,8 +1,8 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill project partitions skip
+title: rill project skip-partition
 ---
-## rill project partitions skip
+## rill project skip-partition
 
 Skip partitions for a model
 
@@ -11,7 +11,7 @@ Skip partitions for a model
 Mark partitions as skipped so they are excluded from execution and from the model's error state. Skipped partitions remain skipped until they are explicitly triggered (e.g. via 'rill project refresh --partition').
 
 ```
-rill project partitions skip [<project>] <model> [flags]
+rill project skip-partition [<project>] <model> [flags]
 ```
 
 ### Flags
@@ -22,7 +22,7 @@ rill project partitions skip [<project>] <model> [flags]
       --branch string       Target deployment by Git branch (default: primary deployment)
       --model string        Model Name
       --partition strings   Skip specific partitions by key
-      --all                 Skip all pending partitions
+      --pending             Skip all pending partitions
       --errored             Skip all errored partitions
       --local               Target locally running Rill
 ```
@@ -39,5 +39,5 @@ rill project partitions skip [<project>] <model> [flags]
 
 ### SEE ALSO
 
-* [rill project partitions](partitions.md)	 - List partitions for a model
+* [rill project](project.md)	 - Manage projects
 

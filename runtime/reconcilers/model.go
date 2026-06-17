@@ -294,9 +294,10 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 				return runtime.ReconcileResult{Err: err}
 			}
 		}
-		// Recompute whether any partitions still have errors. This may have changed without an execution if, for
-		// example, errored partitions were skipped. Skipped partitions are excluded from the error check.
-		if model.State.PartitionsModelId != "" {
+		// If the model currently has partition errors, recompute whether that's still the case. The error state may
+		// have cleared without an execution if errored partitions were skipped (skipped partitions are excluded from
+		// the error check). Skipping can't introduce a new error, so we only need to recompute when an error is set.
+		if model.State.PartitionsHaveErrors && model.State.PartitionsModelId != "" {
 			catalog, release, err := r.C.Runtime.Catalog(ctx, r.C.InstanceID)
 			if err != nil {
 				return runtime.ReconcileResult{Err: err}
@@ -306,8 +307,8 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			if err != nil {
 				return runtime.ReconcileResult{Err: err}
 			}
-			if partitionsHaveErrors != model.State.PartitionsHaveErrors {
-				model.State.PartitionsHaveErrors = partitionsHaveErrors
+			if !partitionsHaveErrors {
+				model.State.PartitionsHaveErrors = false
 				if err := r.C.UpdateState(ctx, self.Meta.Name, self); err != nil {
 					return runtime.ReconcileResult{Err: err}
 				}

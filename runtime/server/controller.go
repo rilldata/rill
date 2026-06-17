@@ -348,7 +348,7 @@ func (s *Server) SkipModelPartitions(ctx context.Context, req *runtimev1.SkipMod
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.model", req.Model),
 		attribute.StringSlice("args.partitions", req.Partitions),
-		attribute.Bool("args.all", req.All),
+		attribute.Bool("args.pending", req.Pending),
 		attribute.Bool("args.errored", req.Errored),
 	)
 
@@ -357,8 +357,8 @@ func (s *Server) SkipModelPartitions(ctx context.Context, req *runtimev1.SkipMod
 		return nil, ErrForbidden
 	}
 
-	if len(req.Partitions) == 0 && !req.All && !req.Errored {
-		return nil, status.Error(codes.InvalidArgument, "must specify partitions, all, or errored")
+	if len(req.Partitions) == 0 && !req.Pending && !req.Errored {
+		return nil, status.Error(codes.InvalidArgument, "must specify partitions, pending, or errored")
 	}
 
 	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
@@ -383,7 +383,7 @@ func (s *Server) SkipModelPartitions(ctx context.Context, req *runtimev1.SkipMod
 	}
 	defer release()
 
-	err = catalog.UpdateModelPartitionsSkipped(ctx, partitionsModelID, req.Partitions, req.All, req.Errored)
+	err = catalog.UpdateModelPartitionsSkipped(ctx, partitionsModelID, req.Partitions, req.Pending, req.Errored)
 	if err != nil {
 		return nil, err
 	}

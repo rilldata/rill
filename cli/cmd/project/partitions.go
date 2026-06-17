@@ -76,7 +76,5 @@ func PartitionsCmd(ch *cmdutil.Helper) *cobra.Command {
 	partitionsCmd.Flags().Uint32Var(&pageSize, "page-size", 50, "Number of partitions to return per page")
 	partitionsCmd.Flags().StringVar(&pageToken, "page-token", "", "Pagination token")
 
-	partitionsCmd.AddCommand(partitionsSkipCmd(ch))
-
 	return partitionsCmd
 }
