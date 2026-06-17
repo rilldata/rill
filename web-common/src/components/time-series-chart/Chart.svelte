@@ -14,11 +14,18 @@
   import { onDestroy } from "svelte";
   import Line from "./Line.svelte";
   import Point from "./Point.svelte";
-  import { bridgeGaps } from "./sparse-data-utils";
+  import { bridgeGaps, snapToNearestNonNull } from "./sparse-data-utils";
   import type { ChartDataPoint } from "./types";
 
   const THROTTLE_MS = 16;
   const chartId = Math.random().toString(36).slice(2, 11);
+
+  // Hover snaps to the nearest non-null point within this distance (in index
+  // units), so sparse points are easy to land on without snapping across wide
+  // gaps. A fraction of the data length keeps the snap radius a roughly
+  // constant pixel distance regardless of point count.
+  const SNAP_FRACTION = 0.05;
+  const MIN_SNAP_INDICES = 3;
 
   const pointValueAccessor = (d: ChartDataPoint) => d.value ?? null;
   const pointCloneWithValue = (
@@ -100,11 +107,22 @@
       .map((s) => s.startIndex),
   );
 
+  $: maxSnapDistance = Math.max(
+    MIN_SNAP_INDICES,
+    maxDataLength * SNAP_FRACTION,
+  );
+
   $: hoverIndex = (() => {
     if (offsetPosition === null) return null;
     if (maxDataLength === 0) return null;
     if (maxDataLength === 1) return 0;
-    return Math.round((offsetPosition.x / width) * (maxDataLength - 1));
+    const fractionalIndex = (offsetPosition.x / width) * (maxDataLength - 1);
+    return snapToNearestNonNull(
+      fractionalIndex,
+      mappedData,
+      pointValueAccessor,
+      maxSnapDistance,
+    );
   })();
 
   $: hoveredPoints = getPoints(hoverIndex);

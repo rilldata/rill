@@ -60,6 +60,48 @@ export function computeSegments<T>(
 }
 
 /**
+ * Snap a fractional index to the nearest index that is non-null in any of
+ * the given series. Returns null when the closest such point is farther than
+ * maxDistance (in index units), so the cursor in a large gap snaps to nothing
+ * rather than jumping to a far-away point.
+ *
+ * Passing multiple series handles the comparison case: hovering near either
+ * line's point snaps to it, even when the two series have nulls at different
+ * indices. Single-series callers pass a one-element array.
+ */
+export function snapToNearestNonNull<T>(
+  fractionalIndex: number,
+  series: T[][],
+  valueAccessor: (d: T) => number | null | undefined,
+  maxDistance: number,
+): number | null {
+  const length = Math.max(0, ...series.map((s) => s.length));
+  if (length === 0) return null;
+
+  const hasValue = (i: number) =>
+    series.some((s) => {
+      const v = s[i] !== undefined ? valueAccessor(s[i]) : null;
+      return v !== null && v !== undefined;
+    });
+
+  const clamped = Math.max(0, Math.min(length - 1, fractionalIndex));
+  const center = Math.round(clamped);
+
+  for (let offset = 0; offset < length; offset++) {
+    const right = center + offset;
+    if (right < length && hasValue(right)) {
+      return Math.abs(right - fractionalIndex) <= maxDistance ? right : null;
+    }
+    const left = center - offset;
+    if (offset > 0 && left >= 0 && hasValue(left)) {
+      return Math.abs(left - fractionalIndex) <= maxDistance ? left : null;
+    }
+  }
+
+  return null;
+}
+
+/**
  * Fill all gaps with zeros, treating missing data as zero so adjacent
  * segments connect through zero.
  * Returns a new array with gap values filled, plus segment metadata.
