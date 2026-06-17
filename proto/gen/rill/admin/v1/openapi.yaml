@@ -1761,11 +1761,15 @@ components:
             type: object
         v1Quotas:
             properties:
+                apiCallsPerSeat:
+                    type: string
                 deployments:
                     type: string
                 outstandingInvites:
                     type: string
                 projects:
+                    type: string
+                seats:
                     type: string
                 slotsPerDeployment:
                     type: string

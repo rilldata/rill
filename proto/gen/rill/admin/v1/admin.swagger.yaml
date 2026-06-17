@@ -6429,6 +6429,10 @@ definitions:
         type: string
       storageLimitBytesPerDeployment:
         type: string
+      apiCallsPerSeat:
+        type: string
+      seats:
+        type: string
   v1RecordEventsRequest:
     type: object
     properties:

@@ -3690,6 +3690,8 @@ message Quotas {
   string slots_per_deployment = 4;
   string outstanding_invites = 5;
   string storage_limit_bytes_per_deployment = 6;
+  string api_calls_per_seat = 7;
+  string seats = 8;
 }
 
 message Usergroup {

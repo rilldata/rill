@@ -1,26 +1,35 @@
 <script lang="ts">
   import PlanContainer from "@rilldata/web-admin/features/billing/plans/PlanContainer.svelte";
-  import { SELF_SERVE_PLANS } from "@rilldata/web-admin/features/billing/plans/plan-details.ts";
+  import {
+    resolvePlanHighlights,
+    SELF_SERVE_PLANS,
+  } from "@rilldata/web-admin/features/billing/plans/plan-details.ts";
   import DetailedUsageLink from "@rilldata/web-admin/features/billing/plans/modules/DetailedUsageLink.svelte";
+  import type { V1BillingPlan } from "@rilldata/web-admin/client";
 
   let {
-    tier,
+    plan,
     billingPortalUrl,
   }: {
-    tier: "starter" | "growth";
+    plan: V1BillingPlan;
     billingPortalUrl: string | undefined;
   } = $props();
 
-  let plan = $derived(SELF_SERVE_PLANS.find((p) => p.tier === tier));
+  let planDetails = $derived(
+    SELF_SERVE_PLANS.find((p) => p.name === plan.name),
+  );
+  let highlights = $derived(
+    resolvePlanHighlights(planDetails, plan.quotas ?? {}),
+  );
 </script>
 
-{#if plan}
+{#if planDetails}
   <PlanContainer
-    badge={plan.displayName}
-    description={`${plan.price} ${plan.priceUnit}`}
+    badge={planDetails.displayName}
+    description={`${planDetails.price} ${planDetails.priceUnit}`}
   >
     {#snippet info()}
-      {plan.tagline}
+      {planDetails.tagline}
     {/snippet}
 
     {#snippet action()}
@@ -28,7 +37,7 @@
     {/snippet}
 
     <ul class="plan-details-container">
-      {#each plan.highlights as highlight (highlight)}
+      {#each highlights as highlight (highlight)}
         <li class="plan-details-item">{highlight}</li>
       {/each}
     </ul>

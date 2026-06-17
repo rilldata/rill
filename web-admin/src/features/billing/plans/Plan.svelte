@@ -75,10 +75,8 @@
   <FreePlan {organization} upgrade={showUpgradeProDialog} />
 {:else if currentPlan === "pro"}
   <ProPlan {billingPortalUrl} />
-{:else if currentPlan === "starter"}
-  <SelfServePlanCard tier="starter" {billingPortalUrl} />
-{:else if currentPlan === "growth"}
-  <SelfServePlanCard tier="growth" {billingPortalUrl} />
+{:else if currentPlan === "starter" || currentPlan === "growth"}
+  <SelfServePlanCard plan={subscription.plan ?? {}} {billingPortalUrl} />
 {:else if currentPlan === "trial"}
   <LegacyTrialPlan
     {organization}

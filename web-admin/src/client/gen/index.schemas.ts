@@ -1233,6 +1233,8 @@ export interface V1Quotas {
   slotsPerDeployment?: string;
   outstandingInvites?: string;
   storageLimitBytesPerDeployment?: string;
+  apiCallsPerSeat?: string;
+  seats?: string;
 }
 
 export type V1RecordEventsRequestEventsItem = { [key: string]: unknown };
