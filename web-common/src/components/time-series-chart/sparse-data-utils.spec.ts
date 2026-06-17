@@ -79,9 +79,9 @@ describe("snapToNearestNonNull", () => {
       const primary = [10, null, null, null, null];
       const secondary = [null, null, null, 20, null];
       // Cursor near index 3: primary null there, secondary has a value
-      expect(
-        snapToNearestNonNull(3, [primary, secondary], identity, big),
-      ).toBe(3);
+      expect(snapToNearestNonNull(3, [primary, secondary], identity, big)).toBe(
+        3,
+      );
     });
 
     it("snaps to whichever line's point is closest to the cursor", () => {
@@ -100,9 +100,9 @@ describe("snapToNearestNonNull", () => {
     it("handles series of different lengths", () => {
       const primary = [10];
       const secondary = [null, null, 20];
-      expect(
-        snapToNearestNonNull(2, [primary, secondary], identity, big),
-      ).toBe(2);
+      expect(snapToNearestNonNull(2, [primary, secondary], identity, big)).toBe(
+        2,
+      );
     });
   });
 });
