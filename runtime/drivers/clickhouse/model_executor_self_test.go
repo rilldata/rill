@@ -149,3 +149,31 @@ sql: SELECT number as num FROM numbers(10)
 		Result:     []map[string]any{{"count": 100, "partitions": 10, "min_num": 0, "max_num": 9}},
 	})
 }
+
+func TestStagedPostExecRunsAgainstFinalTable(t *testing.T) {
+	// With staging enabled, the model is first created under a temporary staging table name and then
+	// renamed. A post_exec that references the model's own table must run against the final table name
+	// (after the rename); otherwise it would fail because the final table does not yet exist at create time.
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		TestConnectors: []string{"clickhouse"},
+		StageChanges:   true,
+		Files: map[string]string{
+			"rill.yaml": "olap_connector: clickhouse",
+			"staged_ch.yaml": `
+type: model
+materialize: true
+sql: SELECT 1 AS id UNION ALL SELECT 2 AS id
+post_exec: CREATE TABLE staged_ch_marker ENGINE=Memory AS SELECT count() AS c FROM staged_ch
+`,
+		},
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
+
+	// The post_exec saw the final table (2 rows), proving it ran after the rename against the final name.
+	testruntime.RequireResolve(t, rt, id, &testruntime.RequireResolveOptions{
+		Resolver:   "sql",
+		Properties: map[string]any{"sql": `SELECT c FROM staged_ch_marker`},
+		Result:     []map[string]any{{"c": 2}},
+	})
+}
