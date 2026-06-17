@@ -1065,6 +1065,10 @@ type CallToolOptions struct {
 
 // CallToolWithOptions runs a tool call in the current session and adds it, its result, and all messages from nested calls to the session.
 func (s *Session) CallToolWithOptions(ctx context.Context, opts *CallToolOptions) (*CallResult, error) {
+	// Each agent tool call is billable programmatic access. This is for all agent tool calls
+	// (chat, AI reports, and the MCP server), so counting here covers them uniformly.
+	s.activity.RecordMetric(ctx, "api_calls", 1, attribute.String("api_source", "agent_tool"), attribute.String("tool", opts.Tool))
+
 	var err error
 	argsJSON, err := json.Marshal(opts.Args)
 	if err != nil {

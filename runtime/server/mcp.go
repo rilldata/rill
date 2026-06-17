@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"net/http"
 	"time"
 
@@ -47,7 +46,6 @@ func (s *Server) mcpHandler() http.Handler {
 		// Create MCP server for the session with middleware.
 		srv := sess.MCPServer(r.Context())
 		srv.AddReceivingMiddleware(observability.MCPMiddleware())
-		srv.AddReceivingMiddleware(s.billingMCPMiddleware(instanceID))
 		srv.AddReceivingMiddleware(middleware.TimeoutMCPMiddleware(func(method, tool string) time.Duration {
 			// Sets an upper limit, but note that some tools enforce shorter timeouts in their implementation.
 			return 5 * time.Minute
@@ -57,17 +55,4 @@ func (s *Server) mcpHandler() http.Handler {
 	}, &mcp.StreamableHTTPOptions{
 		Stateless: true,
 	})
-}
-
-// billingMCPMiddleware emits the billable api_calls metric for each MCP tool call (not for protocol
-// methods like initialize or tools/list), counting MCP usage as programmatic access.
-func (s *Server) billingMCPMiddleware(instanceID string) mcp.Middleware {
-	return func(next mcp.MethodHandler) mcp.MethodHandler {
-		return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
-			if _, ok := req.(*mcp.CallToolRequest); ok {
-				s.recordAPICallUsage(ctx, instanceID, "mcp")
-			}
-			return next(ctx, method, req)
-		}
-	}
 }
