@@ -53,7 +53,7 @@
   function onFocus() {
     onInspect(row.index);
     cellActive = true;
-    cellInspectorStore.updateValue(value, tooltipValue);
+    cellInspectorStore.updateValue(value, inspectorValue);
   }
 
   function onSelect(e: MouseEvent) {
@@ -112,6 +112,11 @@
       : value && STRING_LIKES.has(type) && value.length >= TOOLTIP_STRING_LIMIT
         ? value?.slice(0, TOOLTIP_STRING_LIMIT) + "..."
         : value;
+
+  // The tooltip truncates long strings, but the cell inspector should show the
+  // full value, so feed it an untruncated version.
+  $: inspectorValue =
+    tooltipFormatter && value != null ? tooltipFormatter(value) : value;
 
   $: formattedDataTypeStyle = excluded
     ? "font-normal text-fg-muted"
