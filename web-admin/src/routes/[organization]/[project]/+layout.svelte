@@ -49,6 +49,7 @@
   import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { metricsService } from "@rilldata/web-common/metrics/initMetrics";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
@@ -257,7 +258,7 @@
   />
   <ErrorPage
     statusCode={error.response.status}
-    header="Error fetching deployment"
+    header={m.projects_layout_error_fetching_deployment()}
     body={error.response.data?.message}
   />
 {:else if projectData}
@@ -329,10 +330,10 @@
     {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED}
       <ErrorPage
         statusCode={500}
-        header="Deployment Error"
+        header={m.projects_layout_deployment_error_header()}
         body={projectData.deployment.statusMessage !== ""
           ? projectData.deployment.statusMessage
-          : "There was an error deploying your project. Please contact support."}
+          : m.projects_layout_deployment_error_body()}
       />
     {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED || deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING}
       <BranchDeploymentStopped

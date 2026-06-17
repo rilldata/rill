@@ -4,6 +4,7 @@
   import DashboardsTable from "@rilldata/web-admin/features/dashboards/listing/DashboardsTable.svelte";
   import InlineChat from "@rilldata/web-common/features/chat/layouts/inline/InlineChat.svelte";
   import DelayedContent from "@rilldata/web-common/features/entity-management/DelayedContent.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -25,7 +26,7 @@
 </script>
 
 <svelte:head>
-  <title>{projectDisplayName} - Rill</title>
+  <title>{m.projects_overview_page_title({ name: projectDisplayName })}</title>
 </svelte:head>
 
 <ContentContainer maxWidth={900}>
@@ -40,25 +41,25 @@
         {:else if isErrorDisplayName}
           <h1
             class="text-4xl font-semibold text-fg-secondary"
-            aria-label="Project title"
+            aria-label={m.projects_overview_title_aria()}
           >
-            Welcome to <span class="text-accent-primary-action">{project}</span>
+            {m.projects_overview_welcome()}
+            <span class="text-accent-primary-action">{project}</span>
           </h1>
         {:else}
           <h1
             class="text-4xl font-semibold text-fg-secondary"
-            aria-label="Project title"
+            aria-label={m.projects_overview_title_aria()}
           >
-            Welcome to <span class="text-accent-primary-action"
-              >{projectDisplayName}</span
-            >
+            {m.projects_overview_welcome()}
+            <span class="text-accent-primary-action">{projectDisplayName}</span>
           </h1>
         {/if}
         <p class="text-lg text-fg-muted">
           {#if $chat}
-            Ask questions about your data, or explore your dashboards below
+            {m.projects_overview_subtitle_chat()}
           {:else}
-            Explore your dashboards below
+            {m.projects_overview_subtitle()}
           {/if}
         </p>
       </div>
@@ -73,7 +74,9 @@
 
     <!-- Dashboards Section -->
     <div class="flex flex-col gap-y-4">
-      <h2 class="text-xl font-semibold text-fg-secondary">Dashboards</h2>
+      <h2 class="text-xl font-semibold text-fg-secondary">
+        {m.common_dashboards()}
+      </h2>
       <DashboardsTable isPreview />
     </div>
   </div>

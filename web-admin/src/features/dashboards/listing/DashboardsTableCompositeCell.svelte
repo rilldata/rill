@@ -4,6 +4,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { timeAgo } from "@rilldata/web-common/lib/time/relative-time";
 
   export let name: string;
@@ -37,7 +38,7 @@
       {title !== "" ? title : name}
     </span>
     {#if error !== ""}
-      <Tag color="red">Error</Tag>
+      <Tag color="red">{m.common_error()}</Tag>
     {/if}
   </div>
   <div
@@ -47,7 +48,10 @@
     {#if lastRefreshedDate}
       <span class="shrink-0">•</span>
       <Tooltip distance={8}>
-        <span class="shrink-0">Last refreshed {timeAgo(lastRefreshedDate)}</span
+        <span class="shrink-0"
+          >{m.dashboards_listing_last_refreshed({
+            time: timeAgo(lastRefreshedDate),
+          })}</span
         >
         <TooltipContent slot="tooltip-content">
           {lastRefreshedDate.toLocaleString()}

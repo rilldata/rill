@@ -4,6 +4,7 @@
   import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
   import ResourceListEmptyState from "@rilldata/web-admin/features/resources/ResourceListEmptyState.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -140,7 +141,7 @@
       <ResourceListEmptyState
         slot="empty"
         icon={ExploreIcon}
-        message="You don't have any dashboards yet"
+        message={m.dashboards_listing_empty_title()}
       >
         <span slot="action">
           <a
@@ -148,8 +149,9 @@
             target="_blank"
             rel="noopener noreferrer"
           >
-            Create a dashboard</a
-          > to get started
+            {m.dashboards_listing_empty_create_link()}</a
+          >
+          {m.dashboards_listing_empty_create_suffix()}
         </span>
       </ResourceListEmptyState>
     </ResourceList>
@@ -159,7 +161,7 @@
           href={`/${organization}/${project}/-/dashboards`}
           class="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors inline-block"
         >
-          See all dashboards →
+          {m.dashboards_listing_see_all()} →
         </a>
       </div>
     {/if}

@@ -7,6 +7,7 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { isEmbedPage } from "@rilldata/web-common/layout/navigation/navigation-utils.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let branch: string | undefined = undefined;
 
@@ -20,9 +21,9 @@
     </div>
     <CtaHeader variant="bold">
       {#if branch}
-        Starting branch deployment...
+        {m.projects_building_branch()}
       {:else}
-        Hang tight! We're deploying your project...
+        {m.projects_building_default()}
       {/if}
     </CtaHeader>
     {#if !onEmbedPage}

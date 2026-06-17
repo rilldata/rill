@@ -24,6 +24,22 @@ const MIGRATED_GLOBS = [
   "web-common/src/features/welcome/**/*.svelte",
   "web-common/src/features/onboarding/**/*.svelte",
   "web-common/src/features/help/**/*.svelte",
+  // web-admin organization overview page (chunk A). Literal `[organization]`
+  // brackets are a glob character class, so match the segment with a wildcard.
+  "web-admin/src/routes/*organization*/+page.svelte",
+  "web-admin/src/features/organizations/OrganizationHero.svelte",
+  "web-admin/src/features/projects/ProjectCards.svelte",
+  "web-admin/src/features/projects/ProjectCard.svelte",
+  "web-admin/src/features/projects/ProjectCardActions.svelte",
+  // web-admin project overview page (chunk B).
+  "web-admin/src/routes/*organization*/*project*/+page.svelte",
+  "web-admin/src/routes/*organization*/*project*/+layout.svelte",
+  "web-admin/src/features/projects/ProjectTabs.svelte",
+  "web-admin/src/features/projects/ProjectBuilding.svelte",
+  "web-admin/src/features/projects/RedeployProjectCTA.svelte",
+  "web-admin/src/features/dashboards/listing/DashboardsTable.svelte",
+  "web-admin/src/features/dashboards/listing/DashboardsTableCompositeCell.svelte",
+  "web-admin/src/features/dashboards/listing/LastRefreshedDate.svelte",
 ];
 
 // Human-facing attributes worth translating. Attributes like `class`, `id`,
