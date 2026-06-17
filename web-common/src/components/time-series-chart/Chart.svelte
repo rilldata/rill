@@ -14,7 +14,7 @@
   import { onDestroy } from "svelte";
   import Line from "./Line.svelte";
   import Point from "./Point.svelte";
-  import { bridgeSmallGaps } from "./sparse-data-utils";
+  import { bridgeGaps } from "./sparse-data-utils";
   import type { ChartDataPoint } from "./types";
 
   const THROTTLE_MS = 16;
@@ -87,21 +87,9 @@
   $: yExtents = [Math.min(0, min(mins) ?? 0), max(maxes) ?? 0];
   $: yScale = scaleLinear().domain(yExtents).range([100, 0]);
 
-  // Convert viewBox x to pixel x for gap-bridging threshold
-  $: xPixel = (index: number) => {
-    if (width === 0) return index;
-    return xScale(index) * (width / 10000);
-  };
-
-  // Bridge small gaps in the data for smoother rendering
+  // Bridge gaps in the data, treating missing data as zero
   $: bridgeResults = mappedData.map((line) =>
-    bridgeSmallGaps(
-      line,
-      pointValueAccessor,
-      pointCloneWithValue,
-      xPixel,
-      connectNulls,
-    ),
+    bridgeGaps(line, pointValueAccessor, pointCloneWithValue, connectNulls),
   );
   $: bridgedData = bridgeResults.map((r) => r.values);
 

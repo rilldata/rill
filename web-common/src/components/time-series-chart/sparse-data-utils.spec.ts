@@ -1,10 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { computeSegments, bridgeSmallGaps } from "./sparse-data-utils";
+import { computeSegments, bridgeGaps } from "./sparse-data-utils";
 
 const identity = (d: number | null) => d;
 const cloneWith = (_d: number | null, v: number): number | null => v;
-// 1:1 pixel mapping so gap width = index difference
-const xPixel = (i: number) => i;
 
 describe("computeSegments", () => {
   it("finds contiguous non-null segments", () => {
@@ -27,18 +25,17 @@ describe("computeSegments", () => {
   });
 });
 
-describe("bridgeSmallGaps", () => {
-  it("bridges small gaps when connectNulls is true", () => {
-    // Gap of 2 indices (< default 36px threshold with 1:1 pixel mapping)
+describe("bridgeGaps", () => {
+  it("bridges gaps when connectNulls is true", () => {
     const data: (number | null)[] = [10, null, 20];
-    const result = bridgeSmallGaps(data, identity, cloneWith, xPixel, true);
+    const result = bridgeGaps(data, identity, cloneWith, true);
     expect(result.values[1]).toBe(0); // filled with zero
     expect(result.bridgedSegments).toEqual([{ startIndex: 0, endIndex: 2 }]);
   });
 
   it("fills multiple consecutive nulls with zeros", () => {
     const data: (number | null)[] = [3, null, null, null, 7];
-    const result = bridgeSmallGaps(data, identity, cloneWith, xPixel, true);
+    const result = bridgeGaps(data, identity, cloneWith, true);
     expect(result.values[1]).toBe(0);
     expect(result.values[2]).toBe(0);
     expect(result.values[3]).toBe(0);
@@ -47,7 +44,7 @@ describe("bridgeSmallGaps", () => {
 
   it("does not bridge when connectNulls is false", () => {
     const data: (number | null)[] = [10, null, 20];
-    const result = bridgeSmallGaps(data, identity, cloneWith, xPixel, false);
+    const result = bridgeGaps(data, identity, cloneWith, false);
     expect(result.values[1]).toBeNull();
     expect(result.bridgedSegments).toEqual([
       { startIndex: 0, endIndex: 0 },
@@ -55,21 +52,15 @@ describe("bridgeSmallGaps", () => {
     ]);
   });
 
-  it("does not bridge gaps wider than maxGapPx", () => {
-    // With 1:1 pixel mapping and maxGapPx=2, a gap of 3 indices won't bridge
-    const data: (number | null)[] = [10, null, null, 20];
-    const result = bridgeSmallGaps(data, identity, cloneWith, xPixel, true, 2);
-    expect(result.values[1]).toBeNull();
-    expect(result.values[2]).toBeNull();
-    expect(result.bridgedSegments).toEqual([
-      { startIndex: 0, endIndex: 0 },
-      { startIndex: 3, endIndex: 3 },
-    ]);
+  it("bridges wide gaps regardless of width", () => {
+    const data: (number | null)[] = [10, null, null, null, null, 20];
+    const result = bridgeGaps(data, identity, cloneWith, true);
+    expect(result.values).toEqual([10, 0, 0, 0, 0, 20]);
+    expect(result.bridgedSegments).toEqual([{ startIndex: 0, endIndex: 5 }]);
   });
 
   describe("singleton detection with connectNulls on", () => {
-    it("singleton surrounded by wide gaps remains a singleton in bridgedSegments", () => {
-      // Gap too wide to bridge (> maxGapPx=2): singleton at index 5 stays isolated
+    it("merges all interior singletons into one continuous segment", () => {
       const data: (number | null)[] = [
         10,
         null,
@@ -83,31 +74,21 @@ describe("bridgeSmallGaps", () => {
         null,
         100,
       ];
-      const result = bridgeSmallGaps(
-        data,
-        identity,
-        cloneWith,
-        xPixel,
-        true,
-        2,
-      );
+      const result = bridgeGaps(data, identity, cloneWith, true);
 
-      // The singleton at index 5 should still appear as a singleton segment
+      // Every gap bridged: one continuous segment, no singletons.
+      expect(result.bridgedSegments).toEqual([{ startIndex: 0, endIndex: 10 }]);
+
       const singletons = result.bridgedSegments
         .filter((s) => s.startIndex === s.endIndex)
         .map((s) => s.startIndex);
-
-      expect(singletons).toContain(0);
-      expect(singletons).toContain(5);
-      expect(singletons).toContain(10);
+      expect(singletons).toEqual([]);
     });
 
-    it("singleton gets merged when gap is small enough to bridge", () => {
-      // Gap of 2 (within maxGapPx=36): singleton should get bridged into neighbors
+    it("merges singletons separated by single-null gaps", () => {
       const data: (number | null)[] = [10, null, 20, null, 30];
-      const result = bridgeSmallGaps(data, identity, cloneWith, xPixel, true);
+      const result = bridgeGaps(data, identity, cloneWith, true);
 
-      // All gaps bridged: single continuous segment
       expect(result.bridgedSegments).toEqual([{ startIndex: 0, endIndex: 4 }]);
 
       const singletons = result.bridgedSegments

@@ -1,10 +1,10 @@
 /**
  * Rendering sparse data with null gaps
  *
- * 1. Null bridging: `bridgeSmallGaps` fills small gaps (< MAX_BRIDGE_GAP_PX)
- *    with zeros when `connectNulls` is on, so lines route through zero
- *    rather than connecting directly across the gap. Large gaps remain as
- *    nulls and produce natural line breaks.
+ * 1. Null bridging: `bridgeGaps` fills all gaps with zeros when
+ *    `connectNulls` is on, treating missing data as zero, so lines route
+ *    through zero rather than breaking. With `connectNulls` off, gaps
+ *    remain as nulls and produce natural line breaks.
  *
  * 2. Clip paths: The primary series needs clip paths because its area
  *    fill gradient would otherwise render across gaps (`defined` only
@@ -36,9 +36,6 @@ export interface BridgeResult<T> {
   bridgedSegments: Segment[];
 }
 
-/** Default maximum gap width in pixels to bridge with zeros */
-export const MAX_BRIDGE_GAP_PX = 36;
-
 /**
  * Find contiguous non-null segments in a values array.
  */
@@ -63,8 +60,8 @@ export function computeSegments<T>(
 }
 
 /**
- * Fill small pixel-width gaps with zeros, connecting adjacent segments
- * through zero
+ * Fill all gaps with zeros, treating missing data as zero so adjacent
+ * segments connect through zero.
  * Returns a new array with gap values filled, plus segment metadata.
  *
  * When `connectNulls` is false, no bridging is performed; the result
@@ -73,17 +70,13 @@ export function computeSegments<T>(
  * @param data           The data array
  * @param valueAccessor  Extracts the numeric value (or null) from a data point
  * @param cloneWithValue Creates a new data point with the interpolated value
- * @param xPixel         Maps an index to pixel-space x coordinate
- * @param connectNulls   Whether to bridge small gaps (default true)
- * @param maxGapPx       Maximum gap width (in pixels) to bridge
+ * @param connectNulls   Whether to bridge gaps (default true)
  */
-export function bridgeSmallGaps<T>(
+export function bridgeGaps<T>(
   data: T[],
   valueAccessor: (d: T) => number | null | undefined,
   cloneWithValue: (d: T, value: number) => T,
-  xPixel: (index: number) => number,
   connectNulls: boolean = true,
-  maxGapPx: number = MAX_BRIDGE_GAP_PX,
 ): BridgeResult<T> {
   const inputSegments = computeSegments(data, valueAccessor);
 
@@ -100,12 +93,8 @@ export function bridgeSmallGaps<T>(
   for (let i = 0; i < inputSegments.length - 1; i++) {
     const prev = inputSegments[i];
     const next = inputSegments[i + 1];
-    const gapPx = xPixel(next.startIndex) - xPixel(prev.endIndex);
-
-    if (gapPx <= maxGapPx) {
-      for (let j = prev.endIndex + 1; j < next.startIndex; j++) {
-        result[j] = cloneWithValue(data[j], 0);
-      }
+    for (let j = prev.endIndex + 1; j < next.startIndex; j++) {
+      result[j] = cloneWithValue(data[j], 0);
     }
   }
 
