@@ -247,6 +247,7 @@ func TestMetricViewAggregationAgainstDuckDB(t *testing.T) {
 }
 
 func TestMetricViewAggregationAgainstSnowflake(t *testing.T) {
+	t.Skip("Skipping Snowflake due to disabled test instance")
 	testmode.Expensive(t)
 
 	rt, instanceID := newSnowflakeInstance(t)
