@@ -715,7 +715,7 @@ func (o *Orb) getBillingPlanFromOrbPlan(ctx context.Context, p *orb.Plan) (*Plan
 		NumSlotsTotal:                  metadata.NumSlotsTotal,
 		NumSlotsPerDeployment:          metadata.NumSlotsPerDeployment,
 		NumOutstandingInvites:          metadata.NumOutstandingInvites,
-		NumApiCallsPerSeat:             metadata.NumApiCallsPerSeat,
+		NumAPICallsPerSeat:             metadata.NumAPICallsPerSeat,
 		NumSeats:                       metadata.NumSeats,
 	}
 
