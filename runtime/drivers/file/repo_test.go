@@ -333,6 +333,7 @@ func TestMergeToBranch(t *testing.T) {
 		var mergeErr *drivers.MergeFailedError
 		require.ErrorAs(t, err, &mergeErr)
 		require.Equal(t, "feature", mergeErr.MergedBranch, "MergedBranch should refer to the incoming branch")
+		require.True(t, mergeErr.Conflict, "Conflict should be true for a conflicting merge")
 
 		// Main should not have been polluted by an abandoned merge state.
 		runGit(t, tempDir, "checkout", "main")

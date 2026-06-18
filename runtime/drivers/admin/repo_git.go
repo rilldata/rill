@@ -175,6 +175,7 @@ func (r *gitRepo) pullInner(ctx context.Context, userTriggered, force bool) erro
 				return &drivers.MergeFailedError{
 					Output:       "local is behind remote and failed to sync with remote due to conflicts, use force pull to discard local changes and sync with remote",
 					MergedBranch: r.defaultBranch,
+					Conflict:     true,
 				}
 			}
 			r.h.logger.Warn("Merge aborted due to conflicts, local changes not synced with remote", zap.String("branch", r.defaultBranch))
@@ -199,6 +200,7 @@ func (r *gitRepo) pullInner(ctx context.Context, userTriggered, force bool) erro
 			return &drivers.MergeFailedError{
 				Output:       "failed to merge primary branch, use force pull to discard local changes and sync with primary branch",
 				MergedBranch: r.primaryBranch,
+				Conflict:     true,
 			}
 		}
 	}
@@ -340,6 +342,7 @@ func (r *gitRepo) mergeToBranch(ctx context.Context, branch string, force bool) 
 		return &drivers.MergeFailedError{
 			Output:       "merge failed due to conflicts, use force merge to favour current changes",
 			MergedBranch: r.defaultBranch,
+			Conflict:     true,
 		}
 	}
 
