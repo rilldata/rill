@@ -20,7 +20,6 @@
   import { upgradeToPlan } from "@rilldata/web-admin/features/billing/plans/upgrade-to-plan.ts";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors.ts";
   import {
-    createAdminServiceGetBillingSubscription,
     createAdminServiceGetOrganization,
     createAdminServiceListPublicBillingPlans,
   } from "@rilldata/web-admin/client";
@@ -126,7 +125,7 @@
             {@const isCurrentPlan = plan.name === currentPlanName}
             {@const highlights = resolvePlanHighlights(
               plan,
-              isCurrentPlan
+              isCurrentPlan && currentPlanQuota
                 ? currentPlanQuota
                 : (plans.find((p) => p.name === plan.name)?.quotas ?? {}),
             )}
