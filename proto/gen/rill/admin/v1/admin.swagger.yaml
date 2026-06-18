@@ -6022,7 +6022,7 @@ definitions:
       defaultProjectRoleId:
         type: string
       quotas:
-        $ref: '#/definitions/v1OrganizationQuotas'
+        $ref: '#/definitions/v1Quotas'
       billingCustomerId:
         type: string
       paymentCustomerId:
@@ -6122,27 +6122,6 @@ definitions:
         type: boolean
       manageOrgAdmins:
         type: boolean
-  v1OrganizationQuotas:
-    type: object
-    properties:
-      projects:
-        type: integer
-        format: int32
-      deployments:
-        type: integer
-        format: int32
-      slotsTotal:
-        type: integer
-        format: int32
-      slotsPerDeployment:
-        type: integer
-        format: int32
-      outstandingInvites:
-        type: integer
-        format: int32
-      storageLimitBytesPerDeployment:
-        type: string
-        format: int64
   v1OrganizationRole:
     type: object
     properties:

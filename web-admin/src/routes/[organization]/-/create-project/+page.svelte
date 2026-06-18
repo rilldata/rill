@@ -13,7 +13,6 @@
     isQuotaDeployError,
   } from "@rilldata/web-common/features/project/deploy/deploy-errors.ts";
   import { Button } from "@rilldata/web-common/components/button";
-  import PricingDetails from "@rilldata/web-common/features/billing/PricingDetails.svelte";
   import CTAHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import ChoosePlanDialog from "@rilldata/web-admin/features/billing/plans/dialog/ChoosePlanDialog.svelte";
   import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types.ts";
@@ -49,7 +48,7 @@
     {#if deployError && isQuotaDeployError(deployError)}
       <CTAHeader variant="bold">{deployError.title}</CTAHeader>
       <p class="text-base text-fg-secondary text-left w-[500px]">
-        <PricingDetails extraText={deployError.message} />
+        {deployError.message}
       </p>
       <Button
         type="primary"

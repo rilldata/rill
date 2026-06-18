@@ -19,7 +19,11 @@
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import { upgradeToPlan } from "@rilldata/web-admin/features/billing/plans/upgrade-to-plan.ts";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors.ts";
-  import { createAdminServiceListPublicBillingPlans } from "@rilldata/web-admin/client";
+  import {
+    createAdminServiceGetBillingSubscription,
+    createAdminServiceGetOrganization,
+    createAdminServiceListPublicBillingPlans,
+  } from "@rilldata/web-admin/client";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types.ts";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
 
@@ -27,13 +31,11 @@
     open = $bindable(false),
     type,
     organization,
-    currentPlan,
     endDate = "",
   }: {
     open: boolean;
     type: TeamPlanDialogTypes;
     organization: string;
-    currentPlan?: string;
     endDate?: string;
   } = $props();
 
@@ -60,6 +62,10 @@
       ? `Your billing cycle will resume ${getSubscriptionResumedText(endDate)}.`
       : "Choosing a plan ends your trial and starts your billing cycle today.",
   );
+
+  let orgQuery = $derived(createAdminServiceGetOrganization(organization));
+  let currentPlanName = $derived($orgQuery.data?.organization?.billingPlanName);
+  let currentPlanQuota = $derived($orgQuery.data?.organization?.quotas);
 
   let categorisedIssuesQuery = $derived(
     useCategorisedOrganizationBillingIssues(organization),
@@ -117,10 +123,12 @@
       {:else}
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
           {#each SELF_SERVE_PLANS as plan (plan.name)}
-            {@const isCurrentPlan = plan.name === currentPlan}
+            {@const isCurrentPlan = plan.name === currentPlanName}
             {@const highlights = resolvePlanHighlights(
               plan,
-              plans.find((p) => p.name === plan.name)?.quotas ?? {},
+              isCurrentPlan
+                ? currentPlanQuota
+                : (plans.find((p) => p.name === plan.name)?.quotas ?? {}),
             )}
 
             <div

@@ -52,7 +52,6 @@
   bind:open={showChangePlanDialog}
   {organization}
   type="change"
-  currentPlan={planName}
 />
 
 <CancelPlanDialog bind:open={cancelOpen} {organization} />

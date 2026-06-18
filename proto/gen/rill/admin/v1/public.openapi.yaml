@@ -1380,7 +1380,7 @@ components:
                 paymentCustomerId:
                     type: string
                 quotas:
-                    $ref: '#/components/schemas/v1OrganizationQuotas'
+                    $ref: '#/components/schemas/v1Quotas'
                 thumbnailUrl:
                     type: string
                 updatedOn:
@@ -1469,27 +1469,6 @@ components:
                     type: boolean
                 readProjects:
                     type: boolean
-            type: object
-        v1OrganizationQuotas:
-            properties:
-                deployments:
-                    format: int32
-                    type: integer
-                outstandingInvites:
-                    format: int32
-                    type: integer
-                projects:
-                    format: int32
-                    type: integer
-                slotsPerDeployment:
-                    format: int32
-                    type: integer
-                slotsTotal:
-                    format: int32
-                    type: integer
-                storageLimitBytesPerDeployment:
-                    format: int64
-                    type: string
             type: object
         v1OrganizationRole:
             properties:
