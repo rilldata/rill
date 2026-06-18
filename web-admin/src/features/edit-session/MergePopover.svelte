@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { goto } from "$app/navigation";
   import {
     createAdminServiceGetProject,
     createAdminServiceRedeployProject,
@@ -7,20 +8,27 @@
     getAdminServiceListDeploymentsQueryKey,
   } from "@rilldata/web-admin/client";
   import { isActiveDeployment } from "@rilldata/web-admin/features/branches/deployment-utils";
+  import {
+    getDeploymentGithubStatus,
+    invalidateGitStatusQueries,
+  } from "@rilldata/web-admin/features/edit-session/selectors.ts";
   import { useParserCommitSha } from "@rilldata/web-admin/features/projects/selectors";
   import { Button } from "@rilldata/web-common/components/button";
   import * as Popover from "@rilldata/web-common/components/popover";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
+  import MergeConflictResolutionDialog from "@rilldata/web-common/features/project/MergeConflictResolutionDialog.svelte";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import {
     createRuntimeServiceGitMergeToBranchMutation,
     createRuntimeServiceGitStatus,
-    getRuntimeServiceGitStatusQueryKey,
+    type V1GitMergeToBranchResponse,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import type { ConnectError } from "@connectrpc/connect";
   import { ExternalLink, GitPullRequest } from "lucide-svelte";
   import { buildPostMergeUrl } from "./post-merge-url";
 
@@ -28,13 +36,29 @@
   export let project: string;
   export let primaryBranch: string | undefined;
 
+  type MergeSnapshots = {
+    hadProdDeployment: boolean;
+    needsRedeploy: boolean;
+    preCommitSha: string | undefined;
+  };
+
   let open = false;
   let isMerging = false;
   let errorMessage = "";
+  let mergeConflictDialog = false;
+  // Captured at click time so the merge flow can resume after a force merge
+  // without re-reading state that may have changed. `preCommitSha` is refreshed
+  // before completing the flow because prod's parser may have advanced while
+  // the user resolved the conflict.
+  let pendingMergeSnapshots: MergeSnapshots | null = null;
+  let errorFromGitCommand: ConnectError | null = null;
 
   const client = useRuntimeClient();
   const gitMergeMutation = createRuntimeServiceGitMergeToBranchMutation(client);
-  const gitStatusQuery = createRuntimeServiceGitStatus(client, {});
+  const gitStatusQuery = getDeploymentGithubStatus(client, primaryBranch);
+  // Raw current-branch status drives the branch name and GitHub link shown in
+  // the popover; the derived booleans come from `getDeploymentGithubStatus`.
+  const currentBranchStatusQuery = createRuntimeServiceGitStatus(client, {});
   // Query GetProject without a branch param so `data.deployment` reflects
   // the project's primary (prod) deployment. Self-managed projects can lack
   // a prod deployment when created via `rill project connect-github
@@ -44,23 +68,26 @@
   const projectQuery = createAdminServiceGetProject(organization, project);
   const redeployProjectMutation = createAdminServiceRedeployProject();
 
-  $: currentBranch = $gitStatusQuery.data?.branch ?? "";
+  $: ({
+    isPending,
+    data: {
+      hasLocalChanges,
+      hasRemoteChanges,
+      alreadyOnPrimary,
+      disabledPerGitStatus,
+    },
+  } = $gitStatusQuery);
+
+  $: currentBranch = $currentBranchStatusQuery.data?.branch ?? "";
   $: branchUrl =
-    $gitStatusQuery.data?.githubUrl && currentBranch
-      ? `${getGitUrlFromRemote($gitStatusQuery.data.githubUrl)}/tree/${encodeURIComponent(currentBranch)}`
+    $currentBranchStatusQuery.data?.githubUrl && currentBranch
+      ? `${getGitUrlFromRemote($currentBranchStatusQuery.data.githubUrl)}/tree/${encodeURIComponent(currentBranch)}`
       : "";
   $: projectLoaded = $projectQuery.data !== undefined;
   $: prodDeployment = $projectQuery.data?.deployment;
   $: prodDeploymentActive =
     !!prodDeployment && isActiveDeployment(prodDeployment);
-  $: alreadyOnPrimary =
-    !!primaryBranch && !!currentBranch && currentBranch === primaryBranch;
-  $: disabled =
-    !primaryBranch ||
-    !currentBranch ||
-    !projectLoaded ||
-    alreadyOnPrimary ||
-    isMerging;
+  $: disabled = !projectLoaded || disabledPerGitStatus || isMerging;
 
   // Prefetch prod's project parser commit SHA so the deploying page can
   // wait for prod to advance past it before redirecting (see
@@ -77,61 +104,73 @@
 
   async function handleMerge() {
     if (!primaryBranch || isMerging) return;
+
+    // If the remote has commits we don't have locally, stop and ask the
+    // shared dialog (owned by CloudRemoteChangeManager) to open via the bus.
+    // After a successful pull the user re-clicks Merge.
+    if (hasRemoteChanges) {
+      eventBus.emit("remote-changes-detected");
+      open = false;
+      return;
+    }
+
     isMerging = true;
     errorMessage = "";
 
     // Snapshot the prod deployment state at click time. Same three cases as
     // PublishPopover (see comment there); RedeployProject covers both the
     // no-deployment and dormant-deployment paths with one RPC.
-    const hadProdDeployment = !!prodDeployment;
-    const needsRedeploy = !prodDeploymentActive;
-
-    // Open the new tab synchronously so the browser ties window.open() to
-    // the click gesture; otherwise pop-up blockers reject the open after
-    // the awaited merge below. The destination pages handle their own
-    // loading state, so no placeholder is needed.
-    const targetUrl = buildPostMergeUrl({
-      organization,
-      project,
-      page: $page,
-      hadProdDeployment,
+    const snapshots: MergeSnapshots = {
+      hadProdDeployment: !!prodDeployment,
+      needsRedeploy: !prodDeploymentActive,
       preCommitSha: $parserShaQuery.data,
-    });
-    const targetWindow = window.open(targetUrl, "_blank");
-    if (!targetWindow) {
-      errorMessage = "Pop-up was blocked. Please allow pop-ups and try again.";
-      isMerging = false;
-      return;
-    }
+    };
 
-    // gitStatus tracks localChanges and currentBranch; the merge below changes
-    // both (commitAll runs even on partial failure), so refresh once the
-    // mutation finishes regardless of outcome.
-    const gitStatusQueryKey = getRuntimeServiceGitStatusQueryKey(
-      client.instanceId,
-      {},
-    );
-
+    let mergeResp: V1GitMergeToBranchResponse | undefined = undefined;
     try {
-      await $gitMergeMutation.mutateAsync({
+      mergeResp = await $gitMergeMutation.mutateAsync({
         branch: primaryBranch,
         force: false,
       });
     } catch (err) {
-      targetWindow.close();
       errorMessage = extractErrorMessage(err) || "Failed to merge";
       isMerging = false;
       return;
     } finally {
-      void queryClient.invalidateQueries({ queryKey: gitStatusQueryKey });
+      invalidateGitStatusQueries(client, primaryBranch);
     }
 
-    if (needsRedeploy) {
+    // GitMergeToBranch surfaces conflicts via `output` rather than an error;
+    // unhandled, the user would see a silent failure (the merge didn't land
+    // but the merge appears to have succeeded). Branch on it explicitly.
+    if (mergeResp?.output) {
+      if (mergeResp?.conflict) {
+        pendingMergeSnapshots = snapshots;
+        errorFromGitCommand = null;
+        mergeConflictDialog = true;
+        open = false; // only close when opening merge conflict dialog
+      } else {
+        errorMessage = mergeResp.output;
+      }
+      isMerging = false;
+      return;
+    }
+
+    await completeMergeFlow(snapshots);
+    isMerging = false;
+    open = false;
+  }
+
+  async function completeMergeFlow(snapshots: MergeSnapshots) {
+    if (snapshots.needsRedeploy) {
       try {
         await $redeployProjectMutation.mutateAsync({
           org: organization,
           project,
         });
+        // Refresh the project query so the layout sees the new primary
+        // deployment pointer, and ListDeployments so subscribers like
+        // BranchSelector and BranchesSection pick up the new row.
         await Promise.all([
           queryClient.invalidateQueries({
             queryKey: getAdminServiceGetProjectQueryKey(organization, project),
@@ -144,16 +183,67 @@
           }),
         ]);
       } catch (err) {
-        targetWindow.close();
+        // The merge succeeded but the prod deployment failed to (re)start.
+        // Be explicit so the user knows their changes are on the primary
+        // branch and that the deployment step is what needs retrying.
         const detail = extractErrorMessage(err);
         errorMessage = `Changes merged to production, but starting the production deployment failed${
           detail ? `: ${detail}` : ""
         }.`;
-        isMerging = false;
         return;
       }
     }
 
+    const targetUrl = buildPostMergeUrl({
+      organization,
+      project,
+      page: $page,
+      hadProdDeployment: snapshots.hadProdDeployment,
+      preCommitSha: snapshots.preCommitSha,
+    });
+    const targetWindow = window.open(targetUrl, "_blank");
+    if (!targetWindow) {
+      // Go to target directly if popup is blocked.
+      void goto(targetUrl);
+      eventBus.emit("notification", {
+        type: "error",
+        message: "Pop-up was blocked.",
+      });
+    }
+  }
+
+  async function handleForceMerge() {
+    errorFromGitCommand = null;
+    isMerging = true;
+    let resp;
+    try {
+      resp = await $gitMergeMutation.mutateAsync({
+        branch: primaryBranch,
+        force: true,
+      });
+    } catch (err) {
+      errorFromGitCommand = err as ConnectError;
+      isMerging = false;
+      return;
+    } finally {
+      invalidateGitStatusQueries(client, primaryBranch);
+    }
+
+    if (resp?.output) {
+      errorFromGitCommand = { message: resp.output } as ConnectError;
+      isMerging = false;
+      return;
+    }
+
+    mergeConflictDialog = false;
+    const snapshots = pendingMergeSnapshots;
+    pendingMergeSnapshots = null;
+    if (snapshots) {
+      // Prod's parser may have advanced while the user was on the conflict
+      // dialog; re-read so the deploying page waits past the correct SHA.
+      snapshots.preCommitSha = $parserShaQuery.data;
+      await completeMergeFlow(snapshots);
+    }
     isMerging = false;
     open = false;
   }
@@ -219,14 +309,25 @@
     <span class="text-xs">
       {#if alreadyOnPrimary}
         Already on production
-      {:else if !primaryBranch || !currentBranch || !projectLoaded}
+      {:else if isPending || !projectLoaded}
         Loading project...
+      {:else if !hasLocalChanges}
+        No changes to merge
+      {:else if hasRemoteChanges}
+        Remote has updates not in your session. Click to review.
       {:else}
         Review and confirm before merging
       {/if}
     </span>
   </TooltipContent>
 </Tooltip>
+
+<MergeConflictResolutionDialog
+  bind:open={mergeConflictDialog}
+  loading={isMerging}
+  error={errorFromGitCommand}
+  onUseLatestVersion={handleForceMerge}
+/>
 
 <style lang="postcss">
   .github-link {
