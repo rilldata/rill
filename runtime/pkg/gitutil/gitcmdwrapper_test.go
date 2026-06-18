@@ -147,6 +147,9 @@ func TestMergeWithStrategy(t *testing.T) {
 		// Default merge should fail on conflicts
 		err = MergeWithStrategy(tempDir, "feature", "")
 		require.Error(t, err, "MergeWithStrategy(default) should fail on conflicts")
+		// Git reports conflicts on stdout, not stderr; the error message must surface that detail.
+		require.Contains(t, err.Error(), "CONFLICT", "error should include git's conflict output")
+		require.Contains(t, err.Error(), "test1.txt", "error should name the conflicting file")
 	})
 
 	t.Run("unsupported strategy returns error", func(t *testing.T) {
@@ -322,6 +325,17 @@ func TestFetchBranches(t *testing.T) {
 		hash, err := Hash(context.Background(), local, "refs/remotes/origin/feature")
 		require.NoError(t, err)
 		require.NotEmpty(t, hash)
+	})
+}
+
+func TestCheckout(t *testing.T) {
+	// Guards the err.Error() substring match in Checkout: git reports an unknown ref via "did not match"
+	// on stderr, which Run folds into the error message. A regression dropping stderr would lose the mapping.
+	t.Run("returns ErrRefNotFound for a missing branch", func(t *testing.T) {
+		tempDir := setupTestRepository(t)
+
+		err := Checkout(tempDir, "does-not-exist", false, false, "")
+		require.ErrorIs(t, err, ErrRefNotFound)
 	})
 }
 

@@ -13,12 +13,27 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	oteltrace "go.opentelemetry.io/otel/trace"
 )
+
+var tracer = otel.Tracer("github.com/rilldata/rill/runtime/pkg/gitutil")
 
 // Run executes a git command with the specified arguments in the given path and returns its output or an error.
 // If path is empty, the command runs without -C (use for commands like `clone` that take an explicit destination).
 // Use it to run one-off git commands that don't fit into the other helper functions in this package.
 func Run(ctx context.Context, path string, args ...string) (string, error) {
+	// Only record the subcommand (e.g. "clone", "push"): later args may contain credential-embedded remote URLs.
+	var subcommand string
+	if len(args) > 0 {
+		subcommand = args[0]
+	}
+	ctx, span := tracer.Start(ctx, "gitutil.Run", oteltrace.WithAttributes(attribute.String("git.command", subcommand)))
+	defer span.End()
+
 	fullArgs := args
 	if path != "" {
 		fullArgs = append([]string{"-C", path}, args...)
@@ -31,11 +46,24 @@ func Run(ctx context.Context, path string, args ...string) (string, error) {
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
 		if errors.Is(err, exec.ErrNotFound) {
-			return "", fmt.Errorf("git executable not found: install git from https://git-scm.com (%w)", err)
+			err = fmt.Errorf("git executable not found: install git from https://git-scm.com (%w)", err)
+			span.SetStatus(codes.Error, "git executable not found")
+			return "", err
 		}
-		// Redact credentials: args and git's stderr may contain credential-embedded remote URLs.
-		msg := fmt.Sprintf("git %s: %s", strings.Join(args, " "), strings.TrimSpace(stderr.String()))
-		return "", fmt.Errorf("%s(%w)", redactURLCredentials(msg), err)
+		// Some commands report failures (e.g. merge conflicts) on stdout rather than stderr, so include both.
+		output := strings.TrimSpace(stderr.String())
+		if so := strings.TrimSpace(stdout.String()); so != "" {
+			if output != "" {
+				output += "\n" + so
+			} else {
+				output = so
+			}
+		}
+		// Redact credentials: args, stderr, and stdout may contain credential-embedded remote URLs.
+		msg := redactURLCredentials(fmt.Sprintf("git %s: %s", strings.Join(args, " "), output))
+		err = fmt.Errorf("%s(%w)", msg, err)
+		span.SetStatus(codes.Error, msg)
+		return "", err
 	}
 	return strings.TrimSpace(stdout.String()), nil
 }
