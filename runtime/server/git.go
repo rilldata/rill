@@ -251,7 +251,12 @@ func (s *Server) GitPush(ctx context.Context, req *runtimev1.GitPushRequest) (*r
 	}
 	defer release()
 
-	err = repo.CommitAndPush(ctx, req.CommitMessage, req.Force)
+	msg := req.CommitMessage
+	if msg == "" {
+		msg = "User triggered commit from Rill"
+	}
+
+	err = repo.CommitAndPush(ctx, msg, req.Force)
 	if err != nil {
 		if errors.Is(err, drivers.ErrRemoteAhead) {
 			return nil, status.Error(codes.FailedPrecondition, "remote repository has changes that are not in local state, please pull first")
