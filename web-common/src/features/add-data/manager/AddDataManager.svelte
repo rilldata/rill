@@ -170,7 +170,8 @@
       {config}
       schemaName={schema}
       connectorName={connector}
-      onConnectorChange={(newConnector) => connectorSelected(newConnector, {})}
+      onConnectorChange={(newConnector) =>
+        connectorSelected(newConnector, newConnector, {})}
       onNewConnector={() => schemaSelected(schema)}
     />
   {/if}
