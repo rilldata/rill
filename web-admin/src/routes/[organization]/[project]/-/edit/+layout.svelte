@@ -156,7 +156,7 @@
       status={deploymentStatus}
       canManage={!!projectPermissions?.manageDev}
       {branch}
-      onStarted={() => (starting = true)}
+      bind:starting
     />
   {:else if isReady && deployment?.id && instanceId && runtimeHost && jwt}
     {#key `${runtimeHost}::${instanceId}`}
