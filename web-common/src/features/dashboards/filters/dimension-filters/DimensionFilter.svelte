@@ -228,23 +228,22 @@
   function checkSearchText(inputText: string) {
     inListTooLong = false;
 
-    // Do not check search text and possibly switch to InList when mode is Contains
-    if (curMode === DimensionFilterMode.Contains) return;
+    // Only parse bulk values / auto-recalc when already in InList mode.
+    // Select and Contains modes should treat the input as plain search text
+    // and never auto-switch based on the presence of commas.
+    if (curMode !== DimensionFilterMode.InList) return;
 
     const values = splitDimensionSearchText(inputText);
 
     if (values.length <= 1) {
-      if (curMode === DimensionFilterMode.InList) {
-        searchedBulkValues = inputText === "" ? [] : values;
-      }
+      searchedBulkValues = inputText === "" ? [] : values;
       return;
     }
 
-    // When switching to InList mode, include both existing selected values and new search values
-    // This ensures the below-fold query can find existing selected values that might not be in top 250
-    const allRelevantValues = [...new Set([...selectedValues, ...values])];
-    searchedBulkValues = allRelevantValues;
-    curMode = DimensionFilterMode.InList;
+    // Include both existing selected values and new search values so the
+    // below-fold query can find existing selected values that might not be
+    // in the top 250.
+    searchedBulkValues = [...new Set([...selectedValues, ...values])];
     inListTooLong = isUrlTooLongAfterInListFilter(values);
   }
 
