@@ -18,6 +18,7 @@ import (
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/jsonval"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 const (
@@ -337,6 +338,12 @@ func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionT
 		return nil, runtime.ErrForbidden
 	}
 
+	// Emit a billable metrics_query metric tagged with the request source (org/project attributes are attached so it
+	// can be attributed). Downstream billing counts all queries but bills only non-UI sources.
+	queryAttrs := e.rt.GetInstanceAttributes(ctx, e.instanceID)
+	queryAttrs = append(queryAttrs, attribute.String("source", string(runtime.RequestSourceFromContext(ctx))))
+	e.rt.Activity().RecordMetric(ctx, "metrics_query", 1, queryAttrs...)
+
 	err := qry.Validate()
 	if err != nil {
 		return nil, err
@@ -486,6 +493,11 @@ func (e *Executor) Export(ctx context.Context, qry *metricsview.Query, execution
 	if !e.security.CanAccess() {
 		return "", runtime.ErrForbidden
 	}
+
+	// Exports run a query, so emit a billable metrics_query metric (tagged with the request source) just like Query.
+	exportAttrs := e.rt.GetInstanceAttributes(ctx, e.instanceID)
+	exportAttrs = append(exportAttrs, attribute.String("source", string(runtime.RequestSourceFromContext(ctx))))
+	e.rt.Activity().RecordMetric(ctx, "metrics_query", 1, exportAttrs...)
 
 	err := qry.Validate()
 	if err != nil {

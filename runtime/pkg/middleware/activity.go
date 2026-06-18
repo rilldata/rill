@@ -50,6 +50,9 @@ func ActivityStreamServerInterceptor(activityClient *activity.Client) grpc.Strea
 			)
 		}
 
+		// Tag interactive/gRPC traffic as the "ui" source so billable queries it triggers are not billed as programmatic.
+		ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceUI)
+
 		wss := grpc_middleware.WrapServerStream(ss)
 		wss.WrappedContext = ctx
 
@@ -88,6 +91,9 @@ func ActivityUnaryServerInterceptor(activityClient *activity.Client, instanceAtt
 				attribute.String("request_method", info.FullMethod),
 			)
 		}
+
+		// Tag interactive/gRPC traffic as the "ui" source so billable queries it triggers are not billed as programmatic.
+		ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceUI)
 
 		// Emit billable embedded-user API-call metrics (best-effort).
 		recordEmbeddedUserAPICall(ctx, activityClient, instanceAttrs, claims, req)

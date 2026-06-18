@@ -16,7 +16,9 @@ import (
 // project can also derive distinct active users from the same events.
 var counterMetrics = map[string]bool{
 	"slot_seconds_spend":               true,
-	"api_calls":                        true,
+	"metrics_query":                    true,
+	"non_metrics_query":                true,
+	"tool_call":                        true,
 	"external_user_api_call":           true,
 	"external_anonymous_user_api_call": true,
 }

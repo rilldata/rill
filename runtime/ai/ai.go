@@ -1073,11 +1073,12 @@ var nonBillableToolCalls = map[string]bool{
 
 // CallToolWithOptions runs a tool call in the current session and adds it, its result, and all messages from nested calls to the session.
 func (s *Session) CallToolWithOptions(ctx context.Context, opts *CallToolOptions) (*CallResult, error) {
-	// A tool call is billable programmatic access. This is the shared chokepoint for all agent tool calls
-	// (chat, AI reports, and the MCP server), so counting here covers them uniformly. High-level orchestration
-	// tools (the agents) are excluded since they don't do real work themselves.
+	// Emit a billable tool_call metric. This is the shared point for all agent tool calls (chat, AI reports,
+	// and the MCP server), so counting here covers them uniformly. Tool calls are tracked separately from api_calls
+	// since they are agent actions rather than external API requests. High-level orchestration tools (the agents)
+	// are excluded since they don't do real work themselves.
 	if !nonBillableToolCalls[opts.Tool] {
-		s.activity.RecordMetric(ctx, "api_calls", 1, attribute.String("api_source", "agent_tool"), attribute.String("tool", opts.Tool))
+		s.activity.RecordMetric(ctx, "tool_call", 1, attribute.String("tool", opts.Tool))
 	}
 
 	var err error

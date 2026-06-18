@@ -319,7 +319,9 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = q.Export(req.Context(), s.runtime, request.InstanceId, w, &runtime.ExportOptions{
+	// Tag exports as "ui" source (interactive downloads): counted as queries but excluded from programmatic billing.
+	exportCtx := runtime.WithRequestSource(req.Context(), runtime.RequestSourceUI)
+	err = q.Export(exportCtx, s.runtime, request.InstanceId, w, &runtime.ExportOptions{
 		Format: request.Format,
 		PreWriteHook: func(filename string) error {
 			// Add timestamp to filename
