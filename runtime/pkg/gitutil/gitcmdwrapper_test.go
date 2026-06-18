@@ -147,6 +147,9 @@ func TestMergeWithStrategy(t *testing.T) {
 		// Default merge should fail on conflicts
 		err = MergeWithStrategy(tempDir, "feature", "")
 		require.Error(t, err, "MergeWithStrategy(default) should fail on conflicts")
+		// Git reports conflicts on stdout, not stderr; the error message must surface that detail.
+		require.Contains(t, err.Error(), "CONFLICT", "error should include git's conflict output")
+		require.Contains(t, err.Error(), "test1.txt", "error should name the conflicting file")
 	})
 
 	t.Run("unsupported strategy returns error", func(t *testing.T) {
