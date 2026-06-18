@@ -407,6 +407,7 @@ func (s *Server) ListOrganizationInvites(ctx context.Context, req *adminv1.ListO
 func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.AddOrganizationMemberUserRequest) (*adminv1.AddOrganizationMemberUserResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Org),
+		attribute.String("args.email", req.Email),
 		attribute.String("args.role", req.Role),
 	)
 
@@ -526,6 +527,7 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 func (s *Server) RemoveOrganizationMemberUser(ctx context.Context, req *adminv1.RemoveOrganizationMemberUserRequest) (*adminv1.RemoveOrganizationMemberUserResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Org),
+		attribute.String("args.email", req.Email),
 	)
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
@@ -595,6 +597,7 @@ func (s *Server) RemoveOrganizationMemberUser(ctx context.Context, req *adminv1.
 func (s *Server) SetOrganizationMemberUserRole(ctx context.Context, req *adminv1.SetOrganizationMemberUserRoleRequest) (*adminv1.SetOrganizationMemberUserRoleResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Org),
+		attribute.String("args.email", req.Email),
 		attribute.String("args.role", req.Role),
 	)
 

@@ -6334,6 +6334,13 @@ export class GitMergeToBranchResponse extends Message$1<GitMergeToBranchResponse
    */
   output = "";
 
+  /**
+   * Conflict is true if the merge failed due to conflicts.
+   *
+   * @generated from field: bool conflict = 2;
+   */
+  conflict = false;
+
   constructor(data?: PartialMessage<GitMergeToBranchResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -6343,6 +6350,7 @@ export class GitMergeToBranchResponse extends Message$1<GitMergeToBranchResponse
   static readonly typeName = "rill.runtime.v1.GitMergeToBranchResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "output", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "conflict", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitMergeToBranchResponse {
@@ -6509,6 +6517,13 @@ export class GitPullResponse extends Message$1<GitPullResponse> {
    */
   mergedBranch = "";
 
+  /**
+   * Conflict is true if the pull failed due to merge conflicts.
+   *
+   * @generated from field: bool conflict = 3;
+   */
+  conflict = false;
+
   constructor(data?: PartialMessage<GitPullResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -6519,6 +6534,7 @@ export class GitPullResponse extends Message$1<GitPullResponse> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "output", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "merged_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "conflict", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitPullResponse {

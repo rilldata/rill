@@ -5599,6 +5599,9 @@ definitions:
       output:
         type: string
         description: The output of the git merge command. Only set for unsuccessful merges.
+      conflict:
+        type: boolean
+        description: Conflict is true if the merge failed due to conflicts.
   v1GitPullResponse:
     type: object
     properties:
@@ -5608,6 +5611,9 @@ definitions:
       mergedBranch:
         type: string
         description: The name of the branch that was being merged when a conflict occurred. Only set for unsuccessful pulls.
+      conflict:
+        type: boolean
+        description: Conflict is true if the pull failed due to merge conflicts.
   v1GitPushResponse:
     type: object
   v1GitStatusResponse:

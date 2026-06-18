@@ -16,10 +16,9 @@ import (
 	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
-	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/filewatcher"
-	rtgitutil "github.com/rilldata/rill/runtime/pkg/gitutil"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"golang.org/x/exp/maps"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -224,12 +223,12 @@ func (c *connection) ListBranches(ctx context.Context) ([]string, string, error)
 			return nil, "", err
 		}
 		refspec := "+refs/heads/*:refs/remotes/" + remoteName + "/*"
-		if _, err := rtgitutil.Run(ctx, gitPath, "fetch", remoteURL, refspec); err != nil {
+		if _, err := gitutil.Run(ctx, gitPath, "fetch", remoteURL, refspec); err != nil {
 			return nil, "", err
 		}
 	} else {
 		// No admin config: pick a remote name from the local config. Prefer "__rill_remote" if present.
-		out, err := rtgitutil.Run(ctx, gitPath, "remote")
+		out, err := gitutil.Run(ctx, gitPath, "remote")
 		if err != nil {
 			return nil, "", err
 		}
@@ -247,7 +246,7 @@ func (c *connection) ListBranches(ctx context.Context) ([]string, string, error)
 	}
 
 	// List all local and remote branch refs.
-	refsOut, err := rtgitutil.Run(ctx, gitPath, "for-each-ref", "--format=%(refname)", "refs/heads/", "refs/remotes/")
+	refsOut, err := gitutil.Run(ctx, gitPath, "for-each-ref", "--format=%(refname)", "refs/heads/", "refs/remotes/")
 	if err != nil {
 		return nil, "", err
 	}
@@ -270,7 +269,7 @@ func (c *connection) ListBranches(ctx context.Context) ([]string, string, error)
 		}
 	}
 
-	currentBranch, err := rtgitutil.Run(ctx, gitPath, "rev-parse", "--abbrev-ref", "HEAD")
+	currentBranch, err := gitutil.Run(ctx, gitPath, "rev-parse", "--abbrev-ref", "HEAD")
 	if err != nil {
 		return nil, "", err
 	}
@@ -288,7 +287,7 @@ func (c *connection) SwitchBranch(ctx context.Context, branchName string, create
 		return err
 	}
 
-	return rtgitutil.Checkout(gitPath, branchName, ignoreLocalChanges, createIfNotExists, "")
+	return gitutil.Checkout(gitPath, branchName, ignoreLocalChanges, createIfNotExists, "")
 }
 
 // ListCommits implements drivers.RepoStore.
@@ -313,13 +312,13 @@ func (c *connection) ListCommits(ctx context.Context, pageToken string, limit in
 	}
 	if pageToken != "" {
 		// Validate before passing to git: an arbitrary string could be interpreted as a flag.
-		if !rtgitutil.IsCommitHash(pageToken) {
+		if !gitutil.IsCommitHash(pageToken) {
 			return nil, "", fmt.Errorf("invalid page token %q", pageToken)
 		}
 		args = append(args, pageToken)
 	}
 
-	out, err := rtgitutil.Run(ctx, gitPath, args...)
+	out, err := gitutil.Run(ctx, gitPath, args...)
 	if err != nil {
 		return nil, "", err
 	}
@@ -356,7 +355,7 @@ func (c *connection) ListCommits(ctx context.Context, pageToken string, limit in
 }
 
 func (c *connection) Status(ctx context.Context, remoteBranch string) (*drivers.RepoStatus, error) {
-	if !rtgitutil.IsGitRepo(c.root) {
+	if !gitutil.IsGitRepo(c.root) {
 		return &drivers.RepoStatus{}, nil
 	}
 
@@ -374,7 +373,7 @@ func (c *connection) Status(ctx context.Context, remoteBranch string) (*drivers.
 	if err != nil {
 		if errors.Is(err, errProjectNotFound) || errors.Is(err, drivers.ErrNotAuthenticated) {
 			// not connected to a rill project or not authenticated, return minimal status
-			st, err := gitutil.RunGitStatus(gitPath, subPath, "origin", remoteBranch)
+			st, err := gitutil.Status(ctx, gitPath, subPath, "origin", remoteBranch)
 			if err != nil {
 				return nil, err
 			}
@@ -389,11 +388,11 @@ func (c *connection) Status(ctx context.Context, remoteBranch string) (*drivers.
 	}
 
 	// set remote
-	err = gitutil.GitFetch(ctx, gitPath, config)
+	err = gitutil.Fetch(ctx, gitPath, config)
 	if err != nil {
 		return nil, err
 	}
-	gs, err := gitutil.RunGitStatus(gitPath, subPath, config.RemoteName(), remoteBranch)
+	gs, err := gitutil.Status(ctx, gitPath, subPath, config.RemoteName(), remoteBranch)
 	if err != nil {
 		return nil, err
 	}
@@ -412,7 +411,7 @@ func (c *connection) Status(ctx context.Context, remoteBranch string) (*drivers.
 // Pull implements drivers.RepoStore.
 func (c *connection) Pull(ctx context.Context, opts *drivers.PullOptions) error {
 	// If its a Git repository, pull the current branch. Otherwise, this is a no-op.
-	if !rtgitutil.IsGitRepo(c.root) || !opts.UserTriggered {
+	if !gitutil.IsGitRepo(c.root) || !opts.UserTriggered {
 		return nil
 	}
 
@@ -440,7 +439,7 @@ func (c *connection) Pull(ctx context.Context, opts *drivers.PullOptions) error 
 		return err
 	}
 
-	_, err = gitutil.RunGitPull(ctx, gitPath, opts.DiscardChanges, remote, gitConfig.RemoteName())
+	_, err = gitutil.Pull(ctx, gitPath, opts.DiscardChanges, remote, gitConfig.RemoteName())
 	if err != nil {
 		return err
 	}
@@ -450,7 +449,7 @@ func (c *connection) Pull(ctx context.Context, opts *drivers.PullOptions) error 
 // Commit implements drivers.RepoStore.
 func (c *connection) Commit(ctx context.Context, message string) (string, error) {
 	// If its a Git repository, commit the changes with the given message to the current branch.
-	if !rtgitutil.IsGitRepo(c.root) {
+	if !gitutil.IsGitRepo(c.root) {
 		return "", errors.New("not a git repository")
 	}
 
@@ -474,9 +473,9 @@ func (c *connection) Commit(ctx context.Context, message string) (string, error)
 	if message == "" {
 		message = "Auto committed by Rill"
 	}
-	hash, err := rtgitutil.CommitAll(ctx, gitPath, subpath, message, author.Name, author.Email)
+	hash, err := gitutil.CommitAll(ctx, gitPath, subpath, message, author)
 	if err != nil {
-		if errors.Is(err, rtgitutil.ErrEmptyCommit) {
+		if errors.Is(err, gitutil.ErrEmptyCommit) {
 			// Nothing to commit - preserve the historical contract of returning (empty hash, no error).
 			return "", nil
 		}
@@ -489,7 +488,7 @@ func (c *connection) Commit(ctx context.Context, message string) (string, error)
 // RestoreCommit implements drivers.RepoStore.
 func (c *connection) RestoreCommit(ctx context.Context, commitSHA string) (string, error) {
 	// If its a Git repository, revert the specified commit.
-	if !rtgitutil.IsGitRepo(c.root) {
+	if !gitutil.IsGitRepo(c.root) {
 		return "", errors.New("not a git repository")
 	}
 
@@ -502,12 +501,12 @@ func (c *connection) RestoreCommit(ctx context.Context, commitSHA string) (strin
 	}
 
 	// Require a full hash: prevents git interpreting the value as a flag and guarantees commitSHA[:7] below is safe.
-	if !rtgitutil.IsCommitHash(commitSHA) {
+	if !gitutil.IsCommitHash(commitSHA) {
 		return "", fmt.Errorf("invalid commit SHA %q: must be a full commit hash", commitSHA)
 	}
 
 	// check that the commit exists and is actually a commit (not a tree/blob/tag).
-	if _, err := rtgitutil.Run(ctx, gitPath, "cat-file", "-e", commitSHA+"^{commit}"); err != nil {
+	if _, err := gitutil.Run(ctx, gitPath, "cat-file", "-e", commitSHA+"^{commit}"); err != nil {
 		return "", fmt.Errorf("commit %q not found", commitSHA)
 	}
 
@@ -521,8 +520,8 @@ func (c *connection) RestoreCommit(ctx context.Context, commitSHA string) (strin
 		return "", err
 	}
 
-	_, err = rtgitutil.CommitAll(ctx, gitPath, subpath, "WIP: commit before restore", author.Name, author.Email)
-	if err != nil && !errors.Is(err, rtgitutil.ErrEmptyCommit) {
+	_, err = gitutil.CommitAll(ctx, gitPath, subpath, "WIP: commit before restore", author)
+	if err != nil && !errors.Is(err, gitutil.ErrEmptyCommit) {
 		return "", err
 	}
 
@@ -532,9 +531,9 @@ func (c *connection) RestoreCommit(ctx context.Context, commitSHA string) (strin
 	}
 
 	// Create the restore commit
-	hash, err := rtgitutil.CommitAll(ctx, gitPath, subpath, fmt.Sprintf("Restore commit %s", commitSHA[:7]), author.Name, author.Email)
+	hash, err := gitutil.CommitAll(ctx, gitPath, subpath, fmt.Sprintf("Restore commit %s", commitSHA[:7]), author)
 	if err != nil {
-		if errors.Is(err, rtgitutil.ErrEmptyCommit) {
+		if errors.Is(err, gitutil.ErrEmptyCommit) {
 			return "", fmt.Errorf("restore would result in no changes")
 		}
 		return "", fmt.Errorf("failed to commit restore: %w", err)
@@ -546,7 +545,7 @@ func (c *connection) RestoreCommit(ctx context.Context, commitSHA string) (strin
 // CommitAndPush commits local changes to the remote repository and pushes them.
 func (c *connection) CommitAndPush(ctx context.Context, message string, force bool) error {
 	// If its a Git repository, commit and push the changes with the given message to the current branch.
-	if !rtgitutil.IsGitRepo(c.root) {
+	if !gitutil.IsGitRepo(c.root) {
 		return errors.New("not a git repository")
 	}
 
@@ -579,7 +578,7 @@ func (c *connection) CommitAndPush(ctx context.Context, message string, force bo
 	}
 
 	// fetch the status
-	gs, err := gitutil.RunGitStatus(gitPath, subpath, gitConfig.RemoteName(), "")
+	gs, err := gitutil.Status(ctx, gitPath, subpath, gitConfig.RemoteName(), "")
 	if err != nil {
 		return err
 	}
@@ -596,13 +595,13 @@ func (c *connection) CommitAndPush(ctx context.Context, message string, force bo
 			// monorepo setups are advanced use cases and we can require users to manually resolve remote changes
 			return fmt.Errorf("cannot overwrite remote changes in a monorepo setup. Merge remote changes manually")
 		}
-		err := gitutil.RunUpstreamMerge(ctx, gitConfig.RemoteName(), c.root, gitConfig.DefaultBranch, true)
+		err := gitutil.UpstreamMerge(ctx, c.root, gitConfig.RemoteName(), gitConfig.DefaultBranch, true)
 		if err != nil {
 			return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
 		}
 		return gitutil.CommitAndPush(ctx, c.root, gitConfig, message, author)
 	}
-	err = gitutil.RunUpstreamMerge(ctx, gitConfig.RemoteName(), c.root, gitConfig.DefaultBranch, false)
+	err = gitutil.UpstreamMerge(ctx, c.root, gitConfig.RemoteName(), gitConfig.DefaultBranch, false)
 	if err != nil {
 		return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
 	}
@@ -611,7 +610,7 @@ func (c *connection) CommitAndPush(ctx context.Context, message string, force bo
 
 func (c *connection) MergeToBranch(ctx context.Context, branch string, force bool) (resErr error) {
 	// If its a Git repository, merge the current branch to the specified branch.
-	if !rtgitutil.IsGitRepo(c.root) {
+	if !gitutil.IsGitRepo(c.root) {
 		return errors.New("not a git repository")
 	}
 
@@ -624,17 +623,17 @@ func (c *connection) MergeToBranch(ctx context.Context, branch string, force boo
 	}
 
 	// Remember the current branch so we can restore it on return.
-	currentBranch, err := rtgitutil.Run(ctx, gitPath, "rev-parse", "--abbrev-ref", "HEAD")
+	currentBranch, err := gitutil.Run(ctx, gitPath, "rev-parse", "--abbrev-ref", "HEAD")
 	if err != nil {
 		return err
 	}
 
 	// Switch to the target branch.
-	if err := rtgitutil.Checkout(gitPath, branch, false, false, ""); err != nil {
+	if err := gitutil.Checkout(gitPath, branch, false, false, ""); err != nil {
 		return err
 	}
 	defer func() {
-		if err := rtgitutil.Checkout(gitPath, currentBranch, false, false, ""); err != nil {
+		if err := gitutil.Checkout(gitPath, currentBranch, false, false, ""); err != nil {
 			resErr = errors.Join(resErr, fmt.Errorf("failed to switch back to the original branch: %w", err))
 		}
 	}()
@@ -643,9 +642,9 @@ func (c *connection) MergeToBranch(ctx context.Context, branch string, force boo
 		if subpath != "" {
 			return fmt.Errorf("cannot force merge in a monorepo setup")
 		}
-		return rtgitutil.MergeWithStrategy(gitPath, currentBranch, "theirs")
+		return gitutil.MergeWithStrategy(gitPath, currentBranch, "theirs")
 	}
-	merged, err := rtgitutil.MergeWithBailOnConflict(gitPath, currentBranch)
+	merged, err := gitutil.MergeWithBailOnConflict(gitPath, currentBranch)
 	if err != nil {
 		return err
 	}
@@ -653,6 +652,7 @@ func (c *connection) MergeToBranch(ctx context.Context, branch string, force boo
 		return &drivers.MergeFailedError{
 			Output:       "merge failed due to conflicts, use force merge to favour current changes",
 			MergedBranch: currentBranch,
+			Conflict:     true,
 		}
 	}
 	return nil

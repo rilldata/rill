@@ -15367,6 +15367,8 @@ func (m *GitMergeToBranchResponse) validate(all bool) error {
 
 	// no validation rules for Output
 
+	// no validation rules for Conflict
+
 	if len(errors) > 0 {
 		return GitMergeToBranchResponseMultiError(errors)
 	}
@@ -15810,6 +15812,8 @@ func (m *GitPullResponse) validate(all bool) error {
 	// no validation rules for Output
 
 	// no validation rules for MergedBranch
+
+	// no validation rules for Conflict
 
 	if len(errors) > 0 {
 		return GitPullResponseMultiError(errors)

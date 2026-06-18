@@ -1370,6 +1370,8 @@ message GitMergeToBranchRequest {
 message GitMergeToBranchResponse {
   // The output of the git merge command. Only set for unsuccessful merges.
   string output = 1;
+  // Conflict is true if the merge failed due to conflicts.
+  bool conflict = 2;
 }
 
 message GitSwitchBranchRequest {
@@ -1391,6 +1393,8 @@ message GitPullResponse {
   string output = 1;
   // The name of the branch that was being merged when a conflict occurred. Only set for unsuccessful pulls.
   string merged_branch = 2;
+  // Conflict is true if the pull failed due to merge conflicts.
+  bool conflict = 3;
 }
 
 message GitPushRequest {
