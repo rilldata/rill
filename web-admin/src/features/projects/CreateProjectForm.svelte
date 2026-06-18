@@ -62,9 +62,7 @@
   );
   let isOrgOnTrial = $derived(!!$billingIssueMessage.data?.trial);
 
-  let createdGitRepo = $state(
-    "https://github.com/test-managed-rill-projects/AdityaStarter-project_2-c0c535b4.git",
-  );
+  let createdGitRepo = $state("");
 
   const { form, errors, enhance, submit, submitting } = superForm(
     // No need to be reactive to default name. It is derived from list of projects that wont change during the form creation.

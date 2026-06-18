@@ -94,7 +94,7 @@ export function resolvePlanHighlights(plan: SelfServePlan, quotas: V1Quotas) {
     .map((h) => {
       if (!h.startsWith(QuotaPrefix)) return h;
       const quotaKey = h.slice(QuotaLength);
-      if (!(quotaKey in quotas)) return "";
+      if (!(quotaKey in quotas) || !(quotaKey in PlansQuotas)) return "";
       const quota = quotas[quotaKey] as string;
       const formatter = PlansQuotas[quotaKey].formatter;
       const value = formatter ? formatter(quota) : quota;
