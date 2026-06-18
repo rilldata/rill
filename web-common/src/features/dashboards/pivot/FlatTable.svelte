@@ -26,6 +26,7 @@
     dimKeyFromRow,
   } from "./pivot-click-selection";
   import type { PivotRowSelectionState } from "./pivot-row-selection";
+  import PivotHeaderLabel from "./PivotHeaderLabel.svelte";
   import type { PivotDataRow, PivotDataStoreConfig } from "./types";
 
   // State props
@@ -174,9 +175,10 @@
                 {#if icon}
                   <svelte:component this={icon} />
                 {:else}
-                  <p class="truncate">
-                    {header.column.columnDef.header}
-                  </p>
+                  <PivotHeaderLabel
+                    label={String(header.column.columnDef.header)}
+                    description={header.column.columnDef.meta?.description}
+                  />
                 {/if}
                 {#if sortDirection}
                   <span
