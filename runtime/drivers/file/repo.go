@@ -652,6 +652,7 @@ func (c *connection) MergeToBranch(ctx context.Context, branch string, force boo
 		return &drivers.MergeFailedError{
 			Output:       "merge failed due to conflicts, use force merge to favour current changes",
 			MergedBranch: currentBranch,
+			Conflict:     true,
 		}
 	}
 	return nil
