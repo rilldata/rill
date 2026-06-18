@@ -249,9 +249,6 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 	return nil, fmt.Errorf("incremental insert strategy %q not supported", opts.Strategy)
 }
 
-// mutateTable runs preExec and postExec against an existing table in a single connection.
-// Both are run in the same connection so that connection-local state set up by preExec (e.g. an ATTACH or a
-// secret) is available to postExec, mirroring how pre_exec and post_exec pair up during table creation.
 func (c *connection) mutateTable(ctx context.Context, name, preExec, postExec string) error {
 	db, release, err := c.acquireDB()
 	if err != nil {

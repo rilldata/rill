@@ -151,9 +151,6 @@ sql: SELECT number as num FROM numbers(10)
 }
 
 func TestStagedPostExecRunsAgainstFinalTable(t *testing.T) {
-	// With staging enabled, the model is first created under a temporary staging table name and then
-	// renamed. A post_exec that references the model's own table must run against the final table name
-	// (after the rename); otherwise it would fail because the final table does not yet exist at create time.
 	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		TestConnectors: []string{"clickhouse"},
 		StageChanges:   true,
