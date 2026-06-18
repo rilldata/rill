@@ -28,6 +28,8 @@
   import { isProjectWelcomePage } from "@rilldata/web-admin/features/navigation/nav-utils.ts";
   import WelcomeRedirector from "@rilldata/web-admin/features/welcome/project/WelcomeRedirector.svelte";
   import { InfoIcon } from "lucide-svelte";
+  import { overlay } from "@rilldata/web-common/layout/overlay-store";
+  import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -206,6 +208,24 @@
     />
   {/if}
 </div>
+
+{#if $overlay !== null}
+  <BlockingOverlayContainer
+    bg="linear-gradient(to right, rgba(0,0,0,.6), rgba(0,0,0,.8))"
+  >
+    <div slot="title" class="font-bold">
+      {$overlay?.title}
+    </div>
+    <svelte:fragment slot="detail">
+      {#if $overlay?.detail}
+        <svelte:component
+          this={$overlay.detail.component}
+          {...$overlay.detail.props}
+        />
+      {/if}
+    </svelte:fragment>
+  </BlockingOverlayContainer>
+{/if}
 
 {#snippet envEditDisabled()}
   <div class="flex flex-row gap-2 items-center w-fit text-sm">
