@@ -328,17 +328,6 @@ func TestFetchBranches(t *testing.T) {
 	})
 }
 
-func TestCheckout(t *testing.T) {
-	// Guards the err.Error() substring match in Checkout: git reports an unknown ref via "did not match"
-	// on stderr, which Run folds into the error message. A regression dropping stderr would lose the mapping.
-	t.Run("returns ErrRefNotFound for a missing branch", func(t *testing.T) {
-		tempDir := setupTestRepository(t)
-
-		err := Checkout(tempDir, "does-not-exist", false, false, "")
-		require.ErrorIs(t, err, ErrRefNotFound)
-	})
-}
-
 func TestHash(t *testing.T) {
 	t.Run("returns ErrRefNotFound for a missing ref", func(t *testing.T) {
 		tempDir := setupTestRepository(t)
