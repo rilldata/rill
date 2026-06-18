@@ -16,6 +16,7 @@
   import { STRING_LIKES } from "@rilldata/web-common/lib/duckdb-data-types";
   import { formatDataTypeAsDuckDbQueryString } from "@rilldata/web-common/lib/formatters";
   import { getContext } from "svelte";
+  import ExternalLink from "@rilldata/web-common/components/icons/ExternalLink.svelte";
   import BarAndLabel from "../../BarAndLabel.svelte";
   import type { VirtualizedTableConfig } from "../types";
 
@@ -43,6 +44,8 @@
   }) => void = () => {};
   export let lowerIsBetter = false;
   export let onkeydown: ((e: KeyboardEvent) => void) | undefined = undefined;
+  // When set, renders a hover-revealed external link icon for URI dimensions.
+  export let href: string | undefined = undefined;
 
   const config: VirtualizedTableConfig = getContext("config");
   const isDimensionTable = config.table === "DimensionTable";
@@ -138,6 +141,7 @@
 >
   <div
     class="
+      table-cell-content
       {positionStatic ? 'static' : 'absolute'}
       z-9
       text-ellipsis
@@ -187,6 +191,20 @@
         />
       </button>
     </BarAndLabel>
+
+    {#if href}
+      <span class="external-link-wrapper">
+        <a
+          target="_blank"
+          rel="noopener noreferrer"
+          {href}
+          title={href}
+          onclick={(e) => e.stopPropagation()}
+        >
+          <ExternalLink className="fill-primary-600" />
+        </a>
+      </span>
+    {/if}
   </div>
   <TooltipContent maxWidth="360px" slot="tooltip-content">
     <TooltipTitle>
@@ -206,3 +224,25 @@
     </TooltipShortcutContainer>
   </TooltipContent>
 </Tooltip>
+
+<style lang="postcss">
+  .external-link-wrapper a {
+    opacity: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    width: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  .table-cell-content:hover .external-link-wrapper a {
+    opacity: 0.7;
+    pointer-events: auto;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+  }
+</style>

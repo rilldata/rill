@@ -305,6 +305,8 @@ export function queryExpandedRowMeasureValues(
             sortPivotBy,
             timeRange,
             queryLimit,
+            "0",
+            true,
           ),
         ],
         ([expandIndex, subRowDimensions], axisSet) => {
