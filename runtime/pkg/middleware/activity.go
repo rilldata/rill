@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"sort"
-	"strings"
 	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -18,14 +17,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
-
-// externalUserSubjectPrefix is the prefix of the JWT subject assigned to embedded external users.
-// Keep in sync with admin/server/deployment.go::subjectForExternalUser.
-const externalUserSubjectPrefix = "ext_"
-
-// InstanceAttributesFunc resolves the activity attributes (org_id, project_id, etc.) for an instance.
-// It is used to attribute billable usage metrics to the right organization and project.
-type InstanceAttributesFunc func(ctx context.Context, instanceID string) []attribute.KeyValue
 
 func ActivityStreamServerInterceptor(activityClient *activity.Client) grpc.StreamServerInterceptor {
 	return func(
@@ -69,7 +60,7 @@ func ActivityStreamServerInterceptor(activityClient *activity.Client) grpc.Strea
 	}
 }
 
-func ActivityUnaryServerInterceptor(activityClient *activity.Client, instanceAttrs InstanceAttributesFunc) grpc.UnaryServerInterceptor {
+func ActivityUnaryServerInterceptor(activityClient *activity.Client) grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
 		req interface{},
@@ -95,14 +86,13 @@ func ActivityUnaryServerInterceptor(activityClient *activity.Client, instanceAtt
 		// Tag interactive/gRPC traffic as the "ui" source so billable queries it triggers are not billed as programmatic.
 		ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceUI)
 
-		// Emit billable embedded-user API-call metrics (best-effort).
-		recordEmbeddedUserAPICall(ctx, activityClient, instanceAttrs, claims, req)
-
 		var code codes.Code
 		start := time.Now()
 		defer func() {
-			// Emit usage metric
+			// Emit usage metrics. This runs after the handler, so org/project attributes added by the handler (via
+			// addInstanceRequestAttributes) are present on the context and attached to the emitted events.
 			activityClient.RecordMetric(ctx, "request_time_ms", float64(time.Since(start).Milliseconds()), attribute.String("grpc_code", code.String()))
+			recordEmbeddedUsage(ctx, activityClient, claims)
 		}()
 
 		res, err := handler(ctx, req)
@@ -111,48 +101,24 @@ func ActivityUnaryServerInterceptor(activityClient *activity.Client, instanceAtt
 	}
 }
 
-// recordEmbeddedUserAPICall emits a billable API-call metric for requests made by embedded users. Both metrics
-// carry the user identity in the user_id attribute so the metrics project can derive distinct active users:
-//   - external_user_api_call: the request is authenticated for an embedded external user (an external_user_id was
-//     passed). The user_id attribute (set above) carries the "ext_"-prefixed hashed external user ID.
-//   - external_anonymous_user_api_call: an embedded request with no external_user_id (and no Rill user). The
-//     user_id attribute carries an "anon_"-prefixed hash of the user attributes.
-//
-// Both are per-request counters. It is a no-op for regular dashboard, API, and owner-preview traffic. The instance
-// attributes (org_id, project_id) are attached so the usage can be attributed to the right organization and project.
-func recordEmbeddedUserAPICall(ctx context.Context, activityClient *activity.Client, instanceAttrs InstanceAttributesFunc, claims *runtime.SecurityClaims, req interface{}) {
-	if claims == nil || instanceAttrs == nil {
+// recordEmbeddedUsage emits a generic embedded_user_request metric for requests made by embedded users (those with
+// the "embed" attribute set on their token), carrying a user_id so the metrics project can derive distinct active
+// embedded users. Classification (external vs anonymous) is left to the metrics project via the user_id (external
+// users have an ext_-prefixed id). Org/project attributes come from the context (set by the instance-specific handlers).
+func recordEmbeddedUsage(ctx context.Context, activityClient *activity.Client, claims *runtime.SecurityClaims) {
+	if claims == nil || !isEmbed(claims.UserAttributes) {
 		return
 	}
+	activityClient.RecordMetric(ctx, "embedded_user_request", 1, attribute.String(activity.AttrKeyUserID, getEmbedUserID(claims)))
+}
 
-	var metricName string
-	var idAttr attribute.KeyValue
-	switch {
-	case strings.HasPrefix(claims.UserID, externalUserSubjectPrefix):
-		// The user_id attribute (set above) already carries the hashed external user ID for distinct counting.
-		metricName = "external_user_api_call"
-	case claims.UserID == "" && isEmbed(claims.UserAttributes):
-		metricName = "external_anonymous_user_api_call"
-		idAttr = attribute.String(activity.AttrKeyUserID, "anon_"+anonymousUserID(claims.UserAttributes))
-	default:
-		return
+// getEmbedUserID returns the identifier for an embedded user: the external user subject (ext_-prefixed) if an
+// external_user_id was provided, otherwise a non-PII hash of the user attributes (for anonymous embeds).
+func getEmbedUserID(claims *runtime.SecurityClaims) string {
+	if claims.UserID != "" {
+		return claims.UserID
 	}
-
-	// The instance ID is needed to attribute usage to the org and project.
-	r, ok := req.(interface{ GetInstanceId() string })
-	if !ok {
-		return
-	}
-	instanceID := r.GetInstanceId()
-	if instanceID == "" {
-		return
-	}
-
-	attrs := instanceAttrs(ctx, instanceID)
-	if idAttr.Valid() {
-		attrs = append(attrs, idAttr)
-	}
-	activityClient.RecordMetric(ctx, metricName, 1, attrs...)
+	return anonymousUserID(claims.UserAttributes)
 }
 
 func isEmbed(attrs map[string]any) bool {

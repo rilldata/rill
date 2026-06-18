@@ -12,15 +12,13 @@ import (
 )
 
 // counterMetrics are billable metrics whose period total is sum(value) rather than max(value).
-// The embedded-user API-call metrics carry a user_id / external_anonymous_user attribute so the metrics
-// project can also derive distinct active users from the same events.
+// Note: embedded_user_request is NOT a counter; it carries user_id / external_anonymous_user attributes and the
+// metrics project derives distinct active embedded users from it (count distinct, taken as max by the reporter).
 var counterMetrics = map[string]bool{
-	"slot_seconds_spend":               true,
-	"metrics_query":                    true,
-	"non_metrics_query":                true,
-	"tool_call":                        true,
-	"external_user_api_call":           true,
-	"external_anonymous_user_api_call": true,
+	"slot_seconds_spend": true,
+	"metrics_query":      true,
+	"non_metrics_query":  true,
+	"tool_call":          true,
 }
 
 // orgUsageMetric computes a billable usage value for an organization from the admin database.

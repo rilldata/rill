@@ -120,11 +120,11 @@ func (c *Client) GetUsageMetrics(ctx context.Context, startTime, endTime, afterT
 	    max(value) as max_value,
 	    sum(value) as sum_value
 	  FROM {{ ref "rill-metrics-demo" }}
-	  WHERE time >= '{{ .args.start_time }}' AND time < '{{ .args.end_time }}' AND event_name IN ('data_dir_size_bytes', 'slot_seconds_spend', 'metrics_query', 'non_metrics_query', 'tool_call', 'external_user_api_call', 'external_anonymous_user_api_call', 'seats', ...)
-	// NOTE: metrics_query, non_metrics_query, tool_call and the external_*_api_call metrics are additive counters (sum).
-	// metrics_query/non_metrics_query carry a "source" attribute (ui/api/mcp/alert/report) so billing can exclude UI usage.
-	// The embedded-user events carry a user_id attribute so the metrics project can derive distinct active embedded
-	// users with count(distinct ...). seats is reported directly by the admin billing reporter (not from this query).
+	  WHERE time >= '{{ .args.start_time }}' AND time < '{{ .args.end_time }}' AND event_name IN ('data_dir_size_bytes', 'slot_seconds_spend', 'metrics_query', 'non_metrics_query', 'tool_call', 'embedded_user_request', 'seats', ...)
+	// NOTE: metrics_query, non_metrics_query and tool_call are additive counters (sum).
+	// metrics_query/non_metrics_query carry a "source" attribute (ui/api/mcp/alert/report/chat) so billing can exclude UI usage.
+	// embedded_user_request carries user_id (ext_-prefixed for external users) and external_anonymous_user attributes, so the
+	// metrics project derives distinct active embedded users with count(distinct ...). seats is reported directly by the admin billing reporter.
 	    {{ if hasKey .args "after_time" }}
 	    AND (
 	         start_time > '{{ .args.after_time }}'
