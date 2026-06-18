@@ -2,6 +2,8 @@ import {
   itemsInTag,
   type TagIndex,
 } from "@rilldata/web-common/components/menu/tag-utils";
+import { getURIRequestMeasure } from "@rilldata/web-common/features/dashboards/dashboard-utils";
+import { URI_DIMENSION_SUFFIX } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-utils";
 import { getValuesForExpandedKey } from "@rilldata/web-common/features/dashboards/pivot/pivot-expansion";
 import {
   createAndExpression,
@@ -175,6 +177,49 @@ export const cellComponent = (
   component,
   props,
 });
+
+/**
+ * Resolve the dimension spec for a row dimension, matching by name or column.
+ * Row dimension names can reference either the dimension's `name` or its
+ * underlying `column`, so both must be checked.
+ */
+export function findDimensionSpec(
+  allDimensions: MetricsViewSpecDimension[],
+  dimensionName: string,
+): MetricsViewSpecDimension | undefined {
+  return allDimensions.find(
+    (d) => d.name === dimensionName || d.column === dimensionName,
+  );
+}
+
+/**
+ * The row field that holds the computed URI value for a dimension, or
+ * undefined when the dimension does not define a `uri` template. Both the
+ * aggregation request and the cell renderer key off this name.
+ */
+export function getURIFieldForDimension(
+  allDimensions: MetricsViewSpecDimension[],
+  dimensionName: string,
+): string | undefined {
+  const dimSpec = findDimensionSpec(allDimensions, dimensionName);
+  return dimSpec?.uri && dimSpec.name
+    ? dimSpec.name + URI_DIMENSION_SUFFIX
+    : undefined;
+}
+
+/**
+ * The computed URI measure to append to an aggregation request for a
+ * dimension, or undefined when the dimension does not define a `uri` template.
+ */
+export function getURIMeasureForDimension(
+  allDimensions: MetricsViewSpecDimension[],
+  dimensionName: string,
+): V1MetricsViewAggregationMeasure | undefined {
+  const dimSpec = findDimensionSpec(allDimensions, dimensionName);
+  return dimSpec?.uri && dimSpec.name
+    ? getURIRequestMeasure(dimSpec.name)
+    : undefined;
+}
 
 /**
  * Create a value to index map for a given array

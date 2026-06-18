@@ -1,5 +1,4 @@
 import type { ConnectError } from "@connectrpc/connect";
-import { getURIRequestMeasure } from "@rilldata/web-common/features/dashboards/dashboard-utils";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/memoize-metrics-store";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -59,6 +58,7 @@ import {
   getTimeForQuery,
   getTimeGrainFromDimension,
   getTotalColumnCount,
+  getURIMeasureForDimension,
   isTimeDimension,
   splitPivotChips,
 } from "./pivot-utils";
@@ -210,11 +210,21 @@ function createRowAxesStage(args: RowAxesStageArgs): Readable<PivotDataState> {
 
   let rowAxesQuery: Readable<PivotAxesData | null> = readable(null);
   if (!isFlat) {
+    // Append the anchor dimension's URI measure so nested cells can render as
+    // links; getAxisForDimensions keeps these on the row totals it returns.
+    const anchorUriMeasure = getURIMeasureForDimension(
+      config.allDimensions,
+      rowDimensionNames[0],
+    );
+    const rowAxesMeasureBody = anchorUriMeasure
+      ? [...plan.sortFilteredMeasureBody, anchorUriMeasure]
+      : plan.sortFilteredMeasureBody;
+
     rowAxesQuery = getAxisForDimensions(
       ctx,
       config,
       rowDimensionNames.slice(0, 1),
-      plan.sortFilteredMeasureBody,
+      rowAxesMeasureBody,
       plan.whereFilter,
       plan.sortPivotBy,
       plan.timeRange,
@@ -591,11 +601,12 @@ export function createTableCellQuery(
   // uri template, so dimension cells can render as links (matching leaderboard).
   if (isFlat) {
     for (const dimensionName of rowDimensionNames) {
-      const dimSpec = config.allDimensions.find(
-        (d) => d.name === dimensionName || d.column === dimensionName,
+      const uriMeasure = getURIMeasureForDimension(
+        config.allDimensions,
+        dimensionName,
       );
-      if (dimSpec?.uri && dimSpec.name) {
-        measureBody.push(getURIRequestMeasure(dimSpec.name));
+      if (uriMeasure) {
+        measureBody.push(uriMeasure);
       }
     }
   }

@@ -1,10 +1,7 @@
 import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
 import DeltaChange from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChange.svelte";
 import DeltaChangePercentage from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChangePercentage.svelte";
-import {
-  URI_DIMENSION_SUFFIX,
-  makeHref,
-} from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-utils";
+import { makeHref } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-utils";
 import {
   getNextLimitLabel,
   LOADING_CELL,
@@ -15,11 +12,11 @@ import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/numb
 import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { convertISOStringToJSDateWithSameTimeAsSelectedTimeZone } from "@rilldata/web-common/lib/time/timezone";
-import type { ColumnDef } from "tanstack-table-8-svelte-5";
 import { timeFormat } from "d3-time-format";
 import type { ComponentType, SvelteComponent } from "svelte";
+import type { ColumnDef } from "tanstack-table-8-svelte-5";
 import PivotDeltaCell from "./PivotDeltaCell.svelte";
-import PivotDimensionCell from "./PivotDimensionCell.svelte";
+import PivotDimensionLinkCell from "./PivotDimensionLinkCell.svelte";
 import PivotExpandableCell from "./PivotExpandableCell.svelte";
 import PivotMeasureCell from "./PivotMeasureCell.svelte";
 import PivotShowMoreCell from "./PivotShowMoreCell.svelte";
@@ -28,6 +25,7 @@ import {
   createIndexMap,
   getAccessorForCell,
   getTimeGrainFromDimension,
+  getURIFieldForDimension,
   isShowMoreRow,
   isTimeDimension,
 } from "./pivot-utils";
@@ -326,40 +324,25 @@ function getFlatColumnDef(
 ): ColumnDef<PivotDataRow>[] {
   const rowDefinitions: ColumnDef<PivotDataRow>[] = rowDimensions.map(
     (d, i) => {
-      const dimSpec = config.allDimensions.find(
-        (dim) => dim.name === d.name || dim.column === d.name,
-      );
-      const uriField =
-        dimSpec?.uri && dimSpec.name
-          ? dimSpec.name + URI_DIMENSION_SUFFIX
-          : undefined;
+      const uriField = getURIFieldForDimension(config.allDimensions, d.name);
 
-      const cell: ColumnDef<PivotDataRow>["cell"] = uriField
-        ? ({ row, getValue }) => {
-            const value = formatDimensionValue(
-              getValue() as string,
-              i,
-              config.time,
-              rowDimensionNames,
-            );
-            const uri = row.original[uriField] as string | null | undefined;
-            const href = makeHref(uri ?? null, (value as string) ?? "");
-            if (href) {
-              return cellComponent(PivotDimensionCell, { value, href });
-            }
-            if (value === null) return "null";
-            return value;
+      const cell: ColumnDef<PivotDataRow>["cell"] = ({ row, getValue }) => {
+        const value = formatDimensionValue(
+          getValue() as string,
+          i,
+          config.time,
+          rowDimensionNames,
+        );
+        if (uriField) {
+          const uri = row.original[uriField] as string | null | undefined;
+          const href = makeHref(uri ?? null, (value as string) ?? "");
+          if (href) {
+            return cellComponent(PivotDimensionLinkCell, { value, href });
           }
-        : ({ getValue }) => {
-            const value = formatDimensionValue(
-              getValue() as string,
-              i,
-              config.time,
-              rowDimensionNames,
-            );
-            if (value === null) return "null";
-            return value;
-          };
+        }
+        if (value === null) return "null";
+        return value;
+      };
 
       return {
         id: d.name,
@@ -522,8 +505,22 @@ function getNestedColumnDef(
             rowDimensionNames,
           );
 
+          // Render a link when the dimension at this row's depth defines a uri
+          // template. Each nest level is a different dimension, so resolve the
+          // URI field by depth (the value is re-keyed to the anchor column, but
+          // the URI field keeps the nested dimension's name).
+          const uriField = getURIFieldForDimension(
+            config.allDimensions,
+            rowDimensionNames[row.depth],
+          );
+          const uri = uriField
+            ? (row.original[uriField] as string | null | undefined)
+            : undefined;
+          const href = makeHref(uri ?? null, formattedDimensionValue ?? "");
+
           return cellComponent(PivotExpandableCell, {
             value: formattedDimensionValue,
+            href,
             row,
             hasNestedDimensions,
           });

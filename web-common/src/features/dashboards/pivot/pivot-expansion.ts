@@ -34,6 +34,7 @@ import {
   getSortForAccessor,
   getTimeForQuery,
   getTimeGrainFromDimension,
+  getURIMeasureForDimension,
   isTimeDimension,
   mergeTimeStrings,
 } from "./pivot-utils";
@@ -281,6 +282,16 @@ export function queryExpandedRowMeasureValues(
           mergeRowAndSortFilters,
         );
 
+      // Append this level's URI measure so nested cells can render as links;
+      // it rides along on the row totals returned by getAxisForDimensions.
+      const uriMeasure = getURIMeasureForDimension(
+        config.allDimensions,
+        anchorDimension,
+      );
+      const subRowAxesMeasureBody = uriMeasure
+        ? [...sortFilteredMeasureBody, uriMeasure]
+        : sortFilteredMeasureBody;
+
       const subTableMergedFilters =
         mergeFilters(filterForRowDimensionAxes, config.whereFilter) ??
         createAndExpression([]);
@@ -300,7 +311,7 @@ export function queryExpandedRowMeasureValues(
             ctx,
             config,
             [anchorDimension],
-            sortFilteredMeasureBody,
+            subRowAxesMeasureBody,
             subTableMergedFilters,
             sortPivotBy,
             timeRange,
