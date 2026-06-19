@@ -16428,6 +16428,10 @@ func (m *SudoUpdateOrganizationQuotasRequest) validate(all bool) error {
 		// no validation rules for StorageLimitBytesPerDeployment
 	}
 
+	if m.Seats != nil {
+		// no validation rules for Seats
+	}
+
 	if len(errors) > 0 {
 		return SudoUpdateOrganizationQuotasRequestMultiError(errors)
 	}
@@ -44002,6 +44006,8 @@ func (m *OrganizationQuotas) validate(all bool) error {
 	// no validation rules for OutstandingInvites
 
 	// no validation rules for StorageLimitBytesPerDeployment
+
+	// no validation rules for Seats
 
 	if len(errors) > 0 {
 		return OrganizationQuotasMultiError(errors)

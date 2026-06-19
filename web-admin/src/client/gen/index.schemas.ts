@@ -1070,6 +1070,7 @@ export interface V1OrganizationQuotas {
   slotsPerDeployment?: number;
   outstandingInvites?: number;
   storageLimitBytesPerDeployment?: string;
+  seats?: number;
 }
 
 export interface V1OrganizationRole {
@@ -1558,6 +1559,7 @@ export interface V1SudoUpdateOrganizationQuotasRequest {
   slotsPerDeployment?: number;
   outstandingInvites?: number;
   storageLimitBytesPerDeployment?: string;
+  seats?: number;
 }
 
 export interface V1SudoUpdateOrganizationQuotasResponse {
