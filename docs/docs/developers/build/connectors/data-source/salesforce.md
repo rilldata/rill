@@ -9,12 +9,103 @@ sidebar_position: 65
 
 ## Overview
 
-[Salesforce](https://www.salesforce.com/) is a leading cloud-based Customer Relationship Management (CRM) platform designed to help businesses connect with and understand their customers better. It offers a comprehensive suite of applications focused on sales, customer service, marketing automation, analytics, and application development. Salesforce enables organizations of all sizes to build stronger relationships with their customers through personalized experiences, streamlined communication, and predictive insights. Rill can ingest data from Salesforce as a source by utilizing the Bulk API, which requires a Salesforce username and password (and, in some cases, a token, depending on the org configuration) to authenticate against a Salesforce org.
+[Salesforce](https://www.salesforce.com/) is a leading cloud-based Customer Relationship Management (CRM) platform. Rill ingests data from Salesforce by issuing SOQL queries against the Bulk API. Authentication uses the Salesforce OAuth 2.0 endpoints exposed by a Connected App (or, for the client credentials and JWT flows, an External Client App).
 
+The Salesforce connector follows the same shape as other warehouse connectors: credentials live in a connector file under `connectors/`, and each query is its own model file under `models/`.
+
+## Authentication
+
+The Salesforce connector supports three OAuth flows. All three require a [Connected App](https://help.salesforce.com/s/articleView?id=sf.connected_app_overview.htm) in your Salesforce org; the client credentials and JWT flows also accept an [External Client App](https://help.salesforce.com/s/articleView?id=xcloud.ecapps_intro.htm). The flow you choose determines which other fields you need to provide.
+
+| Flow | Required fields |
+| --- | --- |
+| Username / Password (OAuth) | `username`, `password`, `client_id`, `client_secret` |
+| Client Credentials | `client_id`, `client_secret` |
+| JWT Bearer | `username`, `client_id`, `key` |
+
+The connector picks a flow based on which credentials are populated: JWT wins when `key` is set; otherwise a `username` plus `password` selects the OAuth password flow; otherwise a `client_secret` selects the client credentials flow.
+
+:::note SOAP login is deprecated
+
+Earlier versions of this connector used the SOAP login endpoint when a username and password were supplied. Salesforce is decommissioning the SOAP login endpoint, so the connector now uses the OAuth password flow instead. This requires the Connected App's Client Secret in addition to the existing Client ID.
+
+Note that the OAuth password flow only works with a Connected App; External Client Apps do not support it. The client credentials and JWT flows work with either.
+
+:::
+
+### Connector file
+
+Place your credentials in a connector file at `connectors/<name>.yaml`. Reference secret values from `.env`.
+
+#### Username / Password (OAuth)
+
+```yaml
+type: connector
+driver: salesforce
+
+endpoint: login.salesforce.com
+username: user@example.com
+password: "{{ .env.connector.salesforce.password }}"
+client_id: "<Client ID>"
+client_secret: "{{ .env.connector.salesforce.client_secret }}"
+```
+
+#### Client Credentials
+
+```yaml
+type: connector
+driver: salesforce
+
+endpoint: login.salesforce.com
+client_id: "<Client ID>"
+client_secret: "{{ .env.connector.salesforce.client_secret }}"
+```
+
+#### JWT Bearer
+
+```yaml
+type: connector
+driver: salesforce
+
+endpoint: login.salesforce.com
+username: user@example.com
+client_id: "<Client ID>"
+key: "{{ .env.connector.salesforce.key }}"
+```
+
+PEM keys contain newlines, which break `.env` parsing if stored raw. The UI's file picker base64-encodes the uploaded key automatically; when hand-editing `.env`, base64-encode the PEM file yourself:
+
+```sh
+base64 < key.pem | tr -d '\n' >> .env
+```
+
+Raw PEM written inline in the connector YAML (without an `.env` reference) is also accepted.
+
+## Models
+
+A Salesforce model file references the connector by name and supplies the SOQL query. Rill issues the query through the Salesforce [Bulk API 2.0](https://developer.salesforce.com/docs/atlas.en-us.api_asynch.meta/api_asynch/bulk_api_2_0.htm)
+
+```yaml
+type: model
+materialize: true
+
+connector: salesforce
+
+soql: |
+  SELECT Id, Name, CreatedDate
+  FROM Opportunity
+
+output:
+  connector: duckdb
+```
+
+Use `soql:` for the query. `sql:` is also accepted as an alias for parity with other warehouse drivers (the connector explorer in the UI writes the query into `sql:`). Add `queryAll: true` to include soft-deleted records.
+
+SOQL itself does not accept `SELECT *`, but the connector rewrites the `SELECT * FROM <SObject>` shape (which the explorer's "Table" mode emits) into an explicit field list discovered from the SObject's describe response. Compound types like `Address` and `Location` are skipped — their atomic sub-components (e.g. `BillingStreet`, `BillingCity`) are queried instead.
 
 ## Local credentials
 
-When using Rill Developer on your local machine, you will need to provide your credentials via a connector file. We would recommend not using plain text to create your file and instead use the `.env` file. For more details on your connector, see [connector YAML](/reference/project-files/connectors) for more details.
+When using Rill Developer on your local machine, provide credentials via a connector file as shown above. Keep secrets in `.env` rather than the connector YAML. See [connector YAML](/reference/project-files/connectors) for more details.
 
 :::tip Updating the project environmental variable
 
@@ -25,39 +116,11 @@ rill env pull
 ```
 :::
 
-Alternatively, you can include the credentials directly in the underlying source YAML by adding the `username` and `password` parameters. For example, your source YAML may contain the following properties (these can also be configured through the UI during source creation):
-```yaml
-type: "model"
-connector: "salesforce"
-endpoint: "login.salesforce.com"
-username: "user@example.com"
-password: "MyPasswordMyToken"
-soql: "SELECT Id, Name, CreatedDate FROM Opportunity"
-sobject: "Opportunity"
-```
-
-:::tip Did you know?
-
-If this project has already been deployed to Rill Cloud and credentials have been set for this source, you can use `rill env pull` to [pull these cloud credentials](/developers/build/connectors/credentials/#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials you have set locally for this source.
-
-:::
-
 ## Deploy to Rill Cloud
 
-When deploying a project to Rill Cloud, Rill requires you to explicitly provide Salesforce credentials used in your project. Please refer to our [connector YAML reference docs](/reference/project-files/connectors) for more information.
+When deploying a project to Rill Cloud, Rill requires you to explicitly provide Salesforce credentials used in your project. See the [connector YAML reference docs](/reference/project-files/connectors) for more information.
 
-If you subsequently add sources that require new credentials (or if you simply entered the wrong credentials during the initial deploy), you can update the credentials by pushing the `Deploy` button to update your project or by running the following command in the CLI:
+If you subsequently add sources that require new credentials (or if you simply entered the wrong credentials during the initial deploy), update them by pushing the `Deploy` button or by running:
 ```
 rill env push
 ```
-
-
-:::note
-
-Leave the `key` and `client_id` fields blank unless you are using JWT (described in the next section [below](#jwt)).
-
-:::
-
-### JWT
-
-Authentication using JWT instead of a password is also supported. Set `client_id` to the **Client Id** (also known as the _Consumer Key_) of the Connected App to use, and set `key` to contain the PEM-formatted private key to use for signing.

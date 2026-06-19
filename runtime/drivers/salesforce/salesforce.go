@@ -54,6 +54,11 @@ var spec = drivers.Spec{
 			Type:   drivers.StringPropertyType,
 			Secret: false,
 		},
+		{
+			Key:    "client_secret",
+			Type:   drivers.StringPropertyType,
+			Secret: true,
+		},
 	},
 	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	SourceProperties: []*drivers.PropertySpec{
@@ -65,15 +70,6 @@ var spec = drivers.Spec{
 			Description: "SOQL Query to extract data from Salesforce.",
 			Placeholder: "SELECT Id, CreatedDate, Name FROM Opportunity",
 			Hint:        "Write a SOQL query to retrieve data from your Salesforce object. For example: SELECT Id, Name FROM Opportunity.",
-		},
-		{
-			Key:         "sobject",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "SObject",
-			Description: "SObject to query in Salesforce.",
-			Placeholder: "Opportunity",
-			Hint:        "Enter the name of the Salesforce object you want to query (e.g., Opportunity, Lead, Account).",
 		},
 		{
 			Key:         "queryAll",
@@ -105,7 +101,7 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			DisplayName: "JWT Key for Authentication",
 			Required:    false,
-			Hint:        "Paste your JWT private key for token-based authentication. Used with Connected App and Client ID.",
+			Hint:        "Paste your JWT private key for token-based authentication. Used with a Connected App or External Client App's Client ID.",
 			Placeholder: "your_jwt_key",
 			Secret:      true,
 		},
@@ -123,8 +119,17 @@ var spec = drivers.Spec{
 			DisplayName: "Connected App Client Id",
 			Required:    false,
 			Default:     defaultClientID,
-			Hint:        "The client ID (consumer key) from your Salesforce Connected App. Required for JWT authentication.",
+			Hint:        "The Client ID from your Salesforce Connected App. The client credentials and JWT flows also accept an External Client App's Client ID.",
 			NoPrompt:    true,
+		},
+		{
+			Key:         "client_secret",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Connected App Client Secret",
+			Required:    false,
+			Hint:        "The Client Secret from your Salesforce Connected App. Required for the OAuth password flow (Connected App only) and for the client credentials flow (which also accepts an External Client App).",
+			Placeholder: "your_client_secret",
+			Secret:      true,
 		},
 		{
 			Key:         "name",
@@ -171,54 +176,18 @@ type connection struct {
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	var username, password, endpoint, key, clientID string
+	authOptions := c.authOptions()
 
-	if u, ok := c.config["username"].(string); ok && u != "" {
-		username = u
-	} else {
-		// backwards compatibility: return early because this can be defined in sourceProp
+	// Backwards compatibility: endpoint and credentials may be defined in
+	// per-model source properties rather than the connector config, so a
+	// connector with no creds at this layer is not necessarily broken.
+	if authOptions.Endpoint == "" || selectAuthMode(authOptions) == authModeUnknown {
 		return nil
 	}
 
-	if e, ok := c.config["endpoint"].(string); ok && e != "" {
-		endpoint = e
-	} else {
-		// backwards compatibility: return early because this can be defined in sourceProp
-		return nil
-	}
-
-	if c, ok := c.config["client_id"].(string); ok && c != "" {
-		clientID = c
-	} else {
-		clientID = defaultClientID
-	}
-
-	if p, ok := c.config["password"].(string); ok && p != "" {
-		password = p
-	}
-
-	if k, ok := c.config["key"].(string); ok && k != "" {
-		key = k
-	}
-
-	if password == "" && key == "" {
-		// backwards compatibility: return early because this can be defined in sourceProp
-		return nil
-	}
-
-	authOptions := authenticationOptions{
-		Username:     username,
-		Password:     password,
-		JWT:          key,
-		Endpoint:     endpoint,
-		ConnectedApp: clientID,
-	}
-
-	_, err := authenticate(authOptions)
-	if err != nil {
+	if _, err := authenticate(authOptions); err != nil {
 		return fmt.Errorf("authentication failed: %w", err)
 	}
-
 	return nil
 }
 
@@ -274,11 +243,6 @@ func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 
 // AsOLAP implements drivers.Connection.
 func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
-	return nil, false
-}
-
-// AsInformationSchema implements drivers.Connection.
-func (c *connection) AsInformationSchema() (drivers.InformationSchema, bool) {
 	return nil, false
 }
 
