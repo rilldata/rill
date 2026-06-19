@@ -459,12 +459,12 @@ func (s *Service) DeleteDeploymentInner(ctx context.Context, depl *database.Depl
 	}
 
 	// delete the deployment's branch if it is an editable deployment
-	if depl.Branch != "" {
+	if depl.Editable {
 		proj, err := s.DB.FindProject(ctx, depl.ProjectID)
 		if err != nil {
 			return err
 		}
-		if depl.Editable {
+		if proj.GithubInstallationID != nil && proj.GithubRepoID != nil && proj.GitRemote != nil { // though guaranteed if depl.Editable, we check again to be safe
 			err = s.Github.DeleteBranch(ctx, *proj.GithubInstallationID, *proj.GithubRepoID, *proj.GitRemote, depl.Branch)
 			if err != nil && !errors.Is(err, ErrBranchNotFound) {
 				return err
