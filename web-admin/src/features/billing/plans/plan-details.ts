@@ -1,7 +1,10 @@
 import type { PlanTier } from "@rilldata/web-admin/features/billing/plans/types.ts";
 import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size.ts";
 import { formatCompactInteger } from "@rilldata/web-common/lib/formatters.ts";
-import type { V1Quotas } from "@rilldata/web-admin/client";
+import type {
+  V1OrganizationQuotas,
+  V1Quotas,
+} from "@rilldata/web-admin/client";
 
 export type SelfServePlan = {
   tier: Extract<PlanTier, "starter" | "growth">;
@@ -22,6 +25,11 @@ type PlanQuota = {
   template: string;
   formatter?: (value: string) => string;
 };
+type PlanHighlightQuotaKey = keyof V1Quotas | keyof V1OrganizationQuotas;
+type PlanHighlightQuotas = Partial<
+  Record<PlanHighlightQuotaKey, string | number>
+>;
+
 const PlansQuotas: Record<string, PlanQuota> = {
   apiCallsPerSeat: {
     name: "API calls",
@@ -89,16 +97,23 @@ export const SELF_SERVE_PLANS: SelfServePlan[] = [
 const ValueRegex = /{value}/g;
 const QuotaPrefix = "quota:";
 const QuotaLength = QuotaPrefix.length;
-export function resolvePlanHighlights(plan: SelfServePlan, quotas: V1Quotas) {
+export function resolvePlanHighlights(
+  plan: SelfServePlan,
+  quotas: PlanHighlightQuotas,
+) {
   return plan.highlights
     .map((h) => {
       if (!h.startsWith(QuotaPrefix)) return h;
       const quotaKey = h.slice(QuotaLength);
-      if (!(quotaKey in quotas) || !(quotaKey in PlansQuotas)) return "";
-      const quota = quotas[quotaKey] as string;
-      const formatter = PlansQuotas[quotaKey].formatter;
-      const value = formatter ? formatter(quota) : quota;
-      return PlansQuotas[quotaKey].template.replace(ValueRegex, value);
+      const planQuota = PlansQuotas[quotaKey];
+      if (!planQuota) return "";
+      const quota = quotas[quotaKey as PlanHighlightQuotaKey];
+      if (quota == null) return "";
+      const quotaValue = String(quota);
+      const value = planQuota.formatter
+        ? planQuota.formatter(quotaValue)
+        : quotaValue;
+      return planQuota.template.replace(ValueRegex, value);
     })
     .filter(Boolean);
 }
