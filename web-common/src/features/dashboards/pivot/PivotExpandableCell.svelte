@@ -64,17 +64,16 @@
   </span>
 
   {#if href}
-    <span class="external-link-wrapper">
-      <a
-        target="_blank"
-        rel="noopener noreferrer"
-        {href}
-        title={href}
-        onclick={(e) => e.stopPropagation()}
-      >
-        <ExternalLink className="fill-primary-600" />
-      </a>
-    </span>
+    <a
+      class="external-link shrink-0"
+      target="_blank"
+      rel="noopener noreferrer"
+      {href}
+      title={href}
+      onclick={(e) => e.stopPropagation()}
+    >
+      <ExternalLink className="fill-primary-600" />
+    </a>
   {/if}
 </div>
 
@@ -84,27 +83,16 @@
   }
 
   .dimension-cell {
-    @apply relative flex gap-x-0.5;
+    @apply flex items-center gap-x-1;
   }
 
-  .external-link-wrapper a {
+  .external-link {
+    @apply inline-flex items-center justify-center transition-opacity;
     opacity: 0;
-    position: absolute;
-    right: 0;
-    top: 0;
-    height: 100%;
-    width: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
   }
 
-  .dimension-cell:hover .external-link-wrapper a {
+  .dimension-cell:hover .external-link {
     opacity: 0.7;
-    pointer-events: auto;
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
   }
 
   .caret {

@@ -1,8 +1,5 @@
 import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
-import {
-  makeHref,
-  URI_DIMENSION_SUFFIX,
-} from "@rilldata/web-common/features/dashboards/dashboard-utils";
+import { makeDimensionHref } from "@rilldata/web-common/features/dashboards/dashboard-utils";
 import DeltaChange from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChange.svelte";
 import DeltaChangePercentage from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChangePercentage.svelte";
 import {
@@ -15,7 +12,7 @@ import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/numb
 import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { convertISOStringToJSDateWithSameTimeAsSelectedTimeZone } from "@rilldata/web-common/lib/time/timezone";
-import type { ColumnDef, Row } from "tanstack-table-8-svelte-5";
+import type { ColumnDef } from "tanstack-table-8-svelte-5";
 import { timeFormat } from "d3-time-format";
 import type { ComponentType, SvelteComponent } from "svelte";
 import PivotDeltaCell from "./PivotDeltaCell.svelte";
@@ -44,23 +41,6 @@ function sanitizeHeaderValue(value: unknown): string {
   if (value === "") return "\u00A0";
   if (typeof value === "string") return value;
   return String(value);
-}
-
-/**
- * Builds the external link href for a dimension cell, if the backend resolved a
- * URI for it (requested for dimensions that declare a `uri`). Returns undefined
- * when there is no URI to link to.
- */
-function getDimensionCellHref(
-  row: Row<PivotDataRow>,
-  dimensionName: string,
-  dimensionValue: string,
-): string | undefined {
-  const resolvedUri = row.original?.[dimensionName + URI_DIMENSION_SUFFIX] as
-    | string
-    | null
-    | undefined;
-  return makeHref(resolvedUri ?? null, dimensionValue);
 }
 
 /***
@@ -354,7 +334,7 @@ function getFlatColumnDef(
             config.time,
             rowDimensionNames,
           );
-          const href = getDimensionCellHref(row, d.name, rawValue);
+          const href = makeDimensionHref(row.original, d.name, rawValue);
           if (href) {
             return cellComponent(PivotExpandableCell, {
               value: value === null ? "null" : value,
@@ -524,8 +504,8 @@ function getNestedColumnDef(
 
           // The value at a given depth belongs to that depth's dimension, so
           // resolve the URI against the dimension at the row's depth.
-          const href = getDimensionCellHref(
-            row,
+          const href = makeDimensionHref(
+            row.original,
             rowDimensionNames[row.depth],
             value,
           );

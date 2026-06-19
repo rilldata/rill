@@ -10,10 +10,7 @@
   import { fly } from "svelte/transition";
   import { getStateManagers } from "../state-managers/state-managers";
   import type { VirtualItem } from "@tanstack/svelte-virtual";
-  import {
-    makeHref,
-    URI_DIMENSION_SUFFIX,
-  } from "@rilldata/web-common/features/dashboards/dashboard-utils";
+  import { makeDimensionHref } from "@rilldata/web-common/features/dashboards/dashboard-utils";
   import type { DimensionTableRow } from "./dimension-table-types";
 
   const config: VirtualizedTableConfig = getContext("config");
@@ -50,10 +47,6 @@
 
   const getCellProps = (row: VirtualItem, selectedIndex: number[]) => {
     const value = rows[row.index]?.[column.name];
-    const uri = rows[row.index]?.[column.name + URI_DIMENSION_SUFFIX] as
-      | string
-      | null
-      | undefined;
     return {
       value,
       // NOTE: for this "header" column, we don't use a
@@ -64,7 +57,7 @@
       suppressTooltip: scrolling,
       barValue: 0,
       rowSelected: selectedIndex.findIndex((tgt) => row?.index === tgt) >= 0,
-      href: makeHref(uri ?? null, value as string),
+      href: makeDimensionHref(rows[row.index], column.name, value as string),
     };
   };
 </script>

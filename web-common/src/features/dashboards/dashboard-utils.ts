@@ -180,6 +180,23 @@ export function makeHref(
   }
 }
 
+/**
+ * Resolves the external link href for a dimension cell from the row's resolved
+ * URI field (requested via `getURIRequestMeasure`). Returns undefined when the
+ * dimension has no URI to link to.
+ */
+export function makeDimensionHref(
+  rowData: Record<string, unknown> | undefined,
+  dimensionName: string,
+  dimensionValue: string,
+): string | undefined {
+  const resolvedUri = rowData?.[dimensionName + URI_DIMENSION_SUFFIX] as
+    | string
+    | null
+    | undefined;
+  return makeHref(resolvedUri ?? null, dimensionValue);
+}
+
 export function getBreadcrumbOptions(
   exploreResources: V1Resource[],
   canvasResources: V1Resource[],

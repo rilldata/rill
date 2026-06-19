@@ -171,40 +171,47 @@
       value={barValue}
       compact
     >
-      <button
-        aria-label={label}
-        class="{isTextColumn ? 'text-left' : 'text-right'} w-full truncate"
-        class:px-4={!isDimensionTable}
-        onclick={modified({
-          shift: shiftClick,
-        })}
-        style:height="{row.size}px"
+      <div
+        class="flex items-center w-full min-w-0 {isTextColumn
+          ? 'justify-start'
+          : 'justify-end'}"
+        class:gap-x-1={href}
       >
-        <FormattedDataType
-          customStyle={formattedDataTypeStyle}
-          inTable
-          isNull={value === null || value === undefined}
-          {type}
-          value={formattedValue || value}
-          color="text-fg-secondary"
-          {lowerIsBetter}
-        />
-      </button>
-    </BarAndLabel>
-
-    {#if href}
-      <span class="external-link-wrapper">
-        <a
-          target="_blank"
-          rel="noopener noreferrer"
-          {href}
-          title={href}
-          onclick={(e) => e.stopPropagation()}
+        <button
+          aria-label={label}
+          class="{isTextColumn ? 'text-left' : 'text-right'} truncate min-w-0"
+          class:w-full={!href}
+          class:px-4={!isDimensionTable}
+          onclick={modified({
+            shift: shiftClick,
+          })}
+          style:height="{row.size}px"
         >
-          <ExternalLink className="fill-primary-600" />
-        </a>
-      </span>
-    {/if}
+          <FormattedDataType
+            customStyle={formattedDataTypeStyle}
+            inTable
+            isNull={value === null || value === undefined}
+            {type}
+            value={formattedValue || value}
+            color="text-fg-secondary"
+            {lowerIsBetter}
+          />
+        </button>
+
+        {#if href}
+          <a
+            class="external-link shrink-0"
+            target="_blank"
+            rel="noopener noreferrer"
+            {href}
+            title={href}
+            onclick={(e) => e.stopPropagation()}
+          >
+            <ExternalLink className="fill-primary-600" />
+          </a>
+        {/if}
+      </div>
+    </BarAndLabel>
   </div>
   <TooltipContent maxWidth="360px" slot="tooltip-content">
     <TooltipTitle>
@@ -226,23 +233,12 @@
 </Tooltip>
 
 <style lang="postcss">
-  .external-link-wrapper a {
+  .external-link {
+    @apply inline-flex items-center justify-center transition-opacity;
     opacity: 0;
-    position: absolute;
-    right: 0;
-    top: 0;
-    height: 100%;
-    width: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
   }
 
-  .table-cell-content:hover .external-link-wrapper a {
+  .table-cell-content:hover .external-link {
     opacity: 0.7;
-    pointer-events: auto;
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
   }
 </style>
