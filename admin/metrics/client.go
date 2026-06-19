@@ -120,11 +120,12 @@ func (c *Client) GetUsageMetrics(ctx context.Context, startTime, endTime, afterT
 	    max(value) as max_value,
 	    sum(value) as sum_value
 	  FROM {{ ref "rill-metrics-demo" }}
-	  WHERE time >= '{{ .args.start_time }}' AND time < '{{ .args.end_time }}' AND event_name IN ('data_dir_size_bytes', 'slot_seconds_spend', 'metrics_query', 'non_metrics_query', 'tool_call', 'embedded_user_request', 'seats', ...)
-	// NOTE: metrics_query, non_metrics_query and tool_call are additive counters (sum).
-	// metrics_query/non_metrics_query carry a "source" attribute (ui/api/mcp/alert/report/chat) so billing can exclude UI usage.
-	// embedded_user_request carries user_id (ext_-prefixed for external users) and external_anonymous_user attributes, so the
-	// metrics project derives distinct active embedded users with count(distinct ...). seats is reported directly by the admin billing reporter.
+	  WHERE time >= '{{ .args.start_time }}' AND time < '{{ .args.end_time }}' AND event_name IN ('data_dir_size_bytes', 'slot_seconds_spend', 'query', 'request_time_ms', 'tool_call', 'seats', ...)
+	// NOTE: query and tool_call are additive counters (sum); request_time_ms is one event per API request (count it).
+	// All carry a "source" attribute (ui/api/mcp/alert/report/chat) so billing filters by source (e.g. excludes "ui").
+	// request_time_ms also carries embed + user_id, so the metrics project derives distinct active embedded users with
+	// count(distinct user_id) where embed. "API calls" billing = count of "query" where source is programmatic.
+	// seats is reported directly by the admin billing reporter.
 	    {{ if hasKey .args "after_time" }}
 	    AND (
 	         start_time > '{{ .args.after_time }}'

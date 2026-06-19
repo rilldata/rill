@@ -12,12 +12,11 @@ import (
 )
 
 // counterMetrics are billable metrics whose period total is sum(value) rather than max(value).
-// Note: embedded_user_request is NOT a counter; it carries user_id / external_anonymous_user attributes and the
-// metrics project derives distinct active embedded users from it (count distinct, taken as max by the reporter).
+// Generic usage events ("query", "request_time_ms", "tool_call") carry a "source" attribute (and request_time_ms also
+// carries embed/user_id); the metrics project applies the billing-specific filtering and distinct counting downstream.
 var counterMetrics = map[string]bool{
 	"slot_seconds_spend": true,
-	"metrics_query":      true,
-	"non_metrics_query":  true,
+	"query":              true,
 	"tool_call":          true,
 }
 

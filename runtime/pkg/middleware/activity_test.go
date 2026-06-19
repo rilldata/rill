@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -22,46 +23,35 @@ func (s *captureSink) Emit(e activity.Event) error {
 
 func (s *captureSink) Close() {}
 
-func eventNames(events []activity.Event) []string {
-	var names []string
-	for _, e := range events {
-		names = append(names, e.EventName)
-	}
-	return names
-}
-
-func TestRecordEmbeddedUsage(t *testing.T) {
+func TestRequestMetric(t *testing.T) {
 	tests := []struct {
-		name        string
-		claims      *runtime.SecurityClaims
-		wantEmitted bool
-		wantUserID  string // expected user_id on the event (empty = don't assert exact value)
+		name       string
+		claims     *runtime.SecurityClaims
+		wantEmbed  bool
+		wantUserID string // "" = expect no user_id attribute
 	}{
 		{
-			name:        "external embedded user",
-			claims:      &runtime.SecurityClaims{UserID: "ext_abc123", UserAttributes: map[string]any{"embed": true}},
-			wantEmitted: true,
-			wantUserID:  "ext_abc123",
+			name:       "external embedded user",
+			claims:     &runtime.SecurityClaims{UserID: "ext_abc123", UserAttributes: map[string]any{"embed": true}},
+			wantEmbed:  true,
+			wantUserID: "ext_abc123",
 		},
 		{
-			name:        "anonymous embedded user",
-			claims:      &runtime.SecurityClaims{UserID: "", UserAttributes: map[string]any{"embed": true, "team": "acme"}},
-			wantEmitted: true,
+			name:      "anonymous embedded user gets a synthesized id",
+			claims:    &runtime.SecurityClaims{UserID: "", UserAttributes: map[string]any{"embed": true, "team": "acme"}},
+			wantEmbed: true,
+			// user_id is the attribute hash; asserted as non-empty below.
 		},
 		{
-			name:        "external user without embed attribute is skipped",
-			claims:      &runtime.SecurityClaims{UserID: "ext_abc123"},
-			wantEmitted: false,
+			name:       "regular user",
+			claims:     &runtime.SecurityClaims{UserID: "user123"},
+			wantEmbed:  false,
+			wantUserID: "user123",
 		},
 		{
-			name:        "regular dashboard user",
-			claims:      &runtime.SecurityClaims{UserID: "user123", UserAttributes: map[string]any{"email": "a@b.com"}},
-			wantEmitted: false,
-		},
-		{
-			name:        "nil claims",
-			claims:      nil,
-			wantEmitted: false,
+			name:      "anonymous non-embed request has no user_id",
+			claims:    &runtime.SecurityClaims{UserID: ""},
+			wantEmbed: false,
 		},
 	}
 
@@ -70,16 +60,23 @@ func TestRecordEmbeddedUsage(t *testing.T) {
 			sink := &captureSink{}
 			client := activity.NewClient(sink, zap.NewNop())
 
-			recordEmbeddedUsage(context.Background(), client, tt.claims)
+			ctx := setRequestActivityAttributes(context.Background(), tt.claims, "/svc/Method")
+			ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceUI)
+			emitRequestMetric(ctx, client, tt.claims, time.Now(), "OK")
 
-			if !tt.wantEmitted {
-				require.Empty(t, eventNames(sink.events))
-				return
-			}
-			require.Equal(t, []string{"embedded_user_request"}, eventNames(sink.events))
-			require.NotEmpty(t, sink.events[0].Data["user_id"])
-			if tt.wantUserID != "" {
-				require.Equal(t, tt.wantUserID, sink.events[0].Data["user_id"])
+			require.Len(t, sink.events, 1)
+			e := sink.events[0]
+			require.Equal(t, "request_time_ms", e.EventName)
+			require.Equal(t, "ui", e.Data["source"])
+			require.Equal(t, tt.wantEmbed, e.Data["embed"])
+
+			if tt.wantEmbed && tt.wantUserID == "" {
+				// anonymous embedded user: a non-empty synthesized id
+				require.NotEmpty(t, e.Data["user_id"])
+			} else if tt.wantUserID != "" {
+				require.Equal(t, tt.wantUserID, e.Data["user_id"])
+			} else {
+				require.Nil(t, e.Data["user_id"])
 			}
 		})
 	}

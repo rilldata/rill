@@ -20,6 +20,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server/auth"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -319,9 +320,12 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Tag exports as "ui" source (interactive downloads): counted as queries but excluded from programmatic billing.
-	exportCtx := runtime.WithRequestSource(req.Context(), runtime.RequestSourceUI)
-	err = q.Export(exportCtx, s.runtime, request.InstanceId, w, &runtime.ExportOptions{
+	// Exports execute the query directly via q.Export (bypassing runtime.Query/Resolve), so emit the billable query
+	// metric here. The request source ("ui") is already set on the context by ActivityHTTPMiddleware on the /v1/download route.
+	queryAttrs := append(s.runtime.GetInstanceAttributes(req.Context(), request.InstanceId), attribute.String("source", string(runtime.RequestSourceFromContext(req.Context()))))
+	s.activity.RecordMetric(req.Context(), "query", 1, queryAttrs...)
+
+	err = q.Export(req.Context(), s.runtime, request.InstanceId, w, &runtime.ExportOptions{
 		Format: request.Format,
 		PreWriteHook: func(filename string) error {
 			// Add timestamp to filename

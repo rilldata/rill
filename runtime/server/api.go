@@ -34,14 +34,8 @@ func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
 	)
 	s.addInstanceRequestAttributes(ctx, instanceID)
 
-	// Tag as programmatic API access so billable queries it triggers are attributed to the "api" source.
+	// Tag as programmatic API access so the queries it triggers are attributed to the "api" source.
 	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceAPI)
-
-	// Emit a billable non_metrics_query metric for the custom API call itself. Unlike metrics_query, this captures the
-	// API request regardless of whether the resolver runs a metrics-view query (e.g. raw SQL resolvers).
-	attrs := s.runtime.GetInstanceAttributes(ctx, instanceID)
-	attrs = append(attrs, attribute.String("source", string(runtime.RequestSourceAPI)))
-	s.activity.RecordMetric(ctx, "non_metrics_query", 1, attrs...)
 
 	// Check if user has access to query for API data
 	claims := auth.GetClaims(ctx, instanceID)
