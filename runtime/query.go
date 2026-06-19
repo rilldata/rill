@@ -162,6 +162,8 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 }
 
 func (r *Runtime) metricsViewCacheKey(ctx context.Context, instanceID, name string, priority int) ([]byte, bool, error) {
+	// Cache-key computation is internal infrastructure, not a user-facing query, so tag it as "internal" (excluded from billing).
+	ctx = WithRequestSource(ctx, RequestSourceInternal)
 	cacheKeyResolver, _, err := r.Resolve(ctx, &ResolveOptions{
 		InstanceID:         instanceID,
 		Resolver:           "metrics_cache_key",
