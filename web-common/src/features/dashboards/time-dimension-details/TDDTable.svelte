@@ -25,6 +25,7 @@
   import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import { lastKnownPosition } from "./time-dimension-data-store";
   import type { TDDComparison, TableData, TablePosition } from "./types";
+  import { onDestroy } from "svelte";
 
   export let dimensionLabel: string;
   export let measureLabel: string;
@@ -64,6 +65,20 @@
 
   let pivot;
 
+  let drawRafId: number | null = null;
+  function scheduleDraw() {
+    if (drawRafId === null) {
+      drawRafId = requestAnimationFrame(() => {
+        drawRafId = null;
+        pivot?.draw();
+      });
+    }
+  }
+
+  onDestroy(() => {
+    if (drawRafId !== null) cancelAnimationFrame(drawRafId);
+  });
+
   let rowIdxHover: number | undefined;
   let colIdxHover: number | undefined;
   let hoveringPin = false;
@@ -82,45 +97,43 @@
     return tableData?.columnHeaderData?.slice(pos.x0, pos.x1);
   }
 
+  const CELL_BG_CLASSES_TO_REMOVE = [
+    "border-b",
+    "bg-surface-hover",
+    "bg-gray-100",
+    "bg-gray-200",
+    "bg-primary-50",
+    "bg-primary-100",
+    "bg-primary-200",
+    "bg-surface-hover/50",
+    "bg-surface-base",
+  ];
+
   const renderCell: PivotRenderCallback = (data) => {
-    const classesToAdd = ["text-right"];
-    const classesToRemove = [
-      "border-b",
-      "bg-surface-hover",
-      "bg-gray-100",
-      "bg-gray-200",
-      "bg-primary-50",
-      "bg-primary-100",
-      "bg-primary-200",
-      "bg-surface-hover/50",
-      "bg-gray-100",
-      "bg-gray-200",
-    ];
+    const el = data.element;
+    const classList = el.classList;
 
-    if (pinIndex > -1 && comparing === "dimension" && data.y === pinIndex + 1) {
-      classesToAdd.push("border-b");
-    }
+    classList.remove(...CELL_BG_CLASSES_TO_REMOVE);
+    classList.add("text-right");
 
-    if (comparing === "time" && data.y === 2) {
-      classesToAdd.push("border-b");
-    }
+    const showBorder =
+      (pinIndex > -1 &&
+        comparing === "dimension" &&
+        data.y === pinIndex + 1) ||
+      (comparing === "time" && data.y === 2);
+    classList.toggle("border-b", showBorder);
 
     const palette = data.y === 0 ? "fixed" : "default";
-
-    classesToAdd.push(
-      getClassForCell(
-        palette,
-        rowIdxHover ?? highlightedRow,
-        colIdxHover ?? highlightedColStart,
-        colIdxHover ?? highlightedColEnd,
-        data.y,
-        data.x,
-      ),
+    const bgClass = getClassForCell(
+      palette,
+      rowIdxHover ?? highlightedRow,
+      colIdxHover ?? highlightedColStart,
+      colIdxHover ?? highlightedColEnd,
+      data.y,
+      data.x,
     );
-    // Update DOM with consolidated class operations
-    data.element.classList.toggle("font-semibold", Boolean(data.y == 0));
-    data.element.classList.remove(...classesToRemove);
-    data.element.classList.add(...classesToAdd);
+    classList.add(bgClass);
+    classList.toggle("font-semibold", data.y === 0);
   };
 
   const renderColumnHeader: PivotRenderCallback = (data) => {
@@ -134,7 +147,7 @@
     highlightedColEnd;
     highlightedRow;
     tableData?.selectedValues;
-    pivot?.draw();
+    scheduleDraw();
   }
 
   const getPinIcon = () => {
@@ -181,15 +194,21 @@
     };
   };
 
+  const ROW_HEADER_BG_CLASSES_TO_REMOVE = [
+    "bg-surface-hover",
+    "bg-surface-hover/50",
+    "bg-gray-100",
+    "bg-gray-200",
+    "bg-surface-base",
+  ];
+
   const renderRowHeader: PivotRenderCallback = ({ value, x, y, element }) => {
-    const showBorder =
+    element.classList.toggle(
+      "border-b",
       (pinIndex > -1 && comparing === "dimension" && y === pinIndex + 1) ||
-      (comparing === "time" && y === 2);
-    if (showBorder) {
-      element.classList.add("border-b");
-    } else {
-      element.classList.remove("border-b");
-    }
+        (comparing === "time" && y === 2),
+    );
+
     const total =
       value.value !== undefined
         ? isNaN(Number(value.value)) || x == 0
@@ -197,36 +216,26 @@
           : formatter(Number(value.value))
         : "...";
 
-    const cellBgColor = getClassForCell(
-      "fixed",
-      rowIdxHover,
-      colIdxHover ?? highlightedColStart,
-      colIdxHover ?? highlightedColEnd,
-      y,
-      x - tableData?.fixedColCount,
-    );
     if (x > 0) {
-      element.classList.remove(
-        "bg-surface-hover",
-        "bg-surface-hover/50",
-        "bg-gray-100",
-        "bg-gray-200",
+      const cellBgColor = getClassForCell(
+        "fixed",
+        rowIdxHover,
+        colIdxHover ?? highlightedColStart,
+        colIdxHover ?? highlightedColEnd,
+        y,
+        x - tableData?.fixedColCount,
       );
+      element.classList.remove(...ROW_HEADER_BG_CLASSES_TO_REMOVE);
       element.classList.add(cellBgColor);
     }
     if (x === 0) {
       element.classList.add("pl-0");
       const marker = getMarker(value, y);
 
-      // Gray out rows which are not included
-      if (marker.muted) {
-        element?.parentElement?.classList.add("text-fg-muted");
-      } else {
-        element?.parentElement?.classList.remove("text-fg-muted");
-      }
+      element?.parentElement?.classList.toggle("text-fg-muted", marker.muted);
 
       const fontWeight = y === 0 ? "font-semibold" : "font-normal";
-      return `<div class="flex items-center pointer-events-none  w-full h-full overflow-hidden pr-2 gap-1">
+      return `<div class="flex items-center pointer-events-none w-full h-full overflow-hidden pr-2 gap-1">
         <div class="w-5 shrink-0 h-full flex items-center justify-center">${marker.icon}</div>
         <div class="truncate text-xs ${value.value === null ? "italic text-fg-muted" : ""} ${fontWeight}">${total}</div></div>`;
     } else if (x === 1)
@@ -235,7 +244,7 @@
         ${value.spark}
         </div>`;
     else
-      return `<div class="text-xs pointer-events-none  font-normal text-right" >${total}</div>`;
+      return `<div class="text-xs pointer-events-none font-normal text-right" >${total}</div>`;
   };
 
   const renderRowCorner: PivotRenderCallback = (data) => {
@@ -335,24 +344,28 @@
       handleEvent(evt, table, "pin", () => (newHoveringPin = true));
     }
 
+    let needsDraw = false;
+
     if (hoveringPin !== newHoveringPin) {
       hoveringPin = newHoveringPin;
-      pivot?.draw();
+      needsDraw = true;
     }
 
-    if (newRowIdxHover !== rowIdxHover && newColIdxHover !== colIdxHover) {
+    if (newRowIdxHover !== rowIdxHover || newColIdxHover !== colIdxHover) {
       rowIdxHover = newRowIdxHover;
       colIdxHover = newColIdxHover;
       onHighlight(colIdxHover, rowIdxHover);
-      pivot?.draw();
+      needsDraw = true;
     }
+
+    if (needsDraw) scheduleDraw();
   };
 
   function resetHighlight() {
     rowIdxHover = undefined;
     colIdxHover = undefined;
     onHighlight(colIdxHover, rowIdxHover);
-    pivot?.draw();
+    scheduleDraw();
   }
 
   // Scroll to previous position in case of dashboard refresh during reconcile
@@ -373,10 +386,12 @@
   }
 
   // Hack: for some reason, not enough columns are being drawn on first render.
-  // Force a second initial render to workaround it.
+  // Force a second initial render to workaround it (one-shot).
+  let initialExtraDrawDone = false;
   $: {
-    if (pivot) {
-      setTimeout(pivot.draw, 0);
+    if (pivot && !initialExtraDrawDone) {
+      initialExtraDrawDone = true;
+      setTimeout(() => pivot?.draw(), 0);
     }
   }
 

@@ -113,8 +113,6 @@
       th.setAttribute("title", value.value);
     }
 
-    th.onmouseover = () => cellInspectorStore.updateValue(value?.value);
-    th.onfocus = () => cellInspectorStore.updateValue(value?.value);
     const maybeWidth = getRowHeaderWidth(x);
     if (maybeWidth) {
       th.style.width = `${maybeWidth}px`;
@@ -147,9 +145,6 @@
     const value = meta?.value;
     td.setAttribute("__col", String(x));
     td.setAttribute("__row", String(y));
-
-    td.onmouseover = () => cellInspectorStore.updateValue(value);
-    td.onfocus = () => cellInspectorStore.updateValue(value);
 
     const maybeWidth = getColumnWidth(x);
     if (maybeWidth) {
@@ -249,45 +244,65 @@
     handlerCache.set(type, handler);
   }
 
+  function inspectCellValue(evt: MouseEvent) {
+    const target = evt.target as HTMLTableCellElement;
+    if (!target) return;
+    const meta = table.getMeta(target);
+    if (meta?.value !== undefined) {
+      const val =
+        typeof meta.value === "object" && meta.value !== null
+          ? (meta.value as { value?: string }).value
+          : meta.value;
+      cellInspectorStore.updateValue(val);
+    }
+  }
+
   $: {
-    if (table && onMouseDown) {
-      const handler = (evt: MouseEvent) =>
-        onMouseDown ? onMouseDown(evt, table) : undefined;
-      const hoverHandler = (evt: MouseEvent) =>
-        onMouseHover ? onMouseHover(evt, table) : undefined;
+    if (table) {
+      const hoverHandler = (evt: MouseEvent) => {
+        if (onMouseHover) onMouseHover(evt, table);
+        if (evt.type === "mouseover") inspectCellValue(evt);
+      };
       addHandler("mouseover", hoverHandler);
       addHandler("mouseout", hoverHandler);
-      addHandler("mousedown", handler);
+
+      if (onMouseDown) {
+        const handler = (evt: MouseEvent) =>
+          onMouseDown ? onMouseDown(evt, table) : undefined;
+        addHandler("mousedown", handler);
+      }
     }
   }
 
   let lastColumnSizer: null | ((x: number) => number | void) = null;
   let lastRowHeaderSizer: null | ((x: number) => number | void) = null;
   function styleListener() {
-    for (const td of Array.from(table?.querySelectorAll("tbody td") || [])) {
-      style_td(td as HTMLTableCellElement);
+    const tbody = table?.querySelector("tbody");
+    const thead = table?.querySelector("thead");
+
+    if (tbody) {
+      const cells = tbody.querySelectorAll("td");
+      for (let i = 0; i < cells.length; i++) {
+        style_td(cells[i] as HTMLTableCellElement);
+      }
+      const headers = tbody.querySelectorAll("th");
+      for (let i = 0; i < headers.length; i++) {
+        style_row_th(headers[i] as HTMLTableCellElement);
+      }
     }
 
-    for (const th of Array.from(table?.querySelectorAll("tbody th") || [])) {
-      style_row_th(th as HTMLTableCellElement);
+    if (thead) {
+      const ths = thead.querySelectorAll("th");
+      for (let i = 0; i < ths.length; i++) {
+        const th = ths[i] as HTMLTableCellElement;
+        if (th.classList.contains("rt-group-corner")) {
+          style_row_corner(th);
+        } else {
+          style_column_th(th);
+        }
+      }
     }
 
-    for (const th of Array.from(
-      table?.querySelectorAll("thead th:not(.rt-group-corner)") || [],
-    )) {
-      style_column_th(th as HTMLTableCellElement);
-    }
-
-    for (const th of Array.from(
-      table?.querySelectorAll("thead th.rt-group-corner") || [],
-    )) {
-      style_row_corner(th as HTMLTableCellElement);
-    }
-    /**
-     * If the column sizer or row header sizer function has
-     * changed since last style call, invalidate the table column
-     * width caches so horizontal scrolling is  properly calculated
-     * */
     if (
       lastColumnSizer !== getColumnWidth ||
       lastRowHeaderSizer !== getRowHeaderWidth
