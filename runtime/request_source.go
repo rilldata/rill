@@ -19,6 +19,10 @@ const (
 	RequestSourceReport RequestSource = "report"
 	// RequestSourceChat is conversational AI (chat) completion, over both gRPC and the SSE HTTP handler.
 	RequestSourceChat RequestSource = "chat"
+	// RequestSourceHealth is the internal health check (probe queries); not billable.
+	RequestSourceHealth RequestSource = "health"
+	// RequestSourceInternal is system-driven reconcile work (watermarks, validation, cache keys, model state/partitions); not billable.
+	RequestSourceInternal RequestSource = "internal"
 )
 
 type requestSourceKey struct{}
