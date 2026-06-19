@@ -6,6 +6,7 @@
   import CanvasFilters from "./filters/CanvasFilters.svelte";
   import { getCanvasStore } from "./state-managers/state-managers";
   import ThemeProvider from "../dashboards/ThemeProvider.svelte";
+  import CanvasPdfExportHeader from "../exports/pdf/CanvasPdfExportHeader.svelte";
 
   const client = useRuntimeClient();
 
@@ -52,6 +53,15 @@
         <CanvasFilters {canvasName} {maxWidth} {builder} />
       </header>
     {/if}
+
+    <!-- Off-screen read-only header used only as the PDF capture target. -->
+    <div
+      aria-hidden="true"
+      class="pointer-events-none absolute"
+      style="left: -99999px; top: 0;"
+    >
+      <CanvasPdfExportHeader {canvasName} {instanceId} {maxWidth} />
+    </div>
 
     <div
       role="presentation"

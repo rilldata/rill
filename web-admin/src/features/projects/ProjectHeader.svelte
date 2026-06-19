@@ -285,6 +285,8 @@
         <CanvasBookmarks {organization} {project} canvasName={dashboard} />
         <ShareDashboardPopover
           createMagicAuthTokens={projectPermissions.createMagicAuthTokens}
+          canvasName={dashboard}
+          instanceId={runtimeClient.instanceId}
         />
       {/if}
     {/if}
