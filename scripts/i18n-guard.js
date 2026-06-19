@@ -28,6 +28,7 @@ const MIGRATED_GLOBS = [
   // brackets are a glob character class, so match the segment with a wildcard.
   "web-admin/src/routes/*organization*/+page.svelte",
   "web-admin/src/features/organizations/OrganizationHero.svelte",
+  "web-admin/src/features/organizations/OrganizationTabs.svelte",
   "web-admin/src/features/projects/ProjectCards.svelte",
   "web-admin/src/features/projects/ProjectCard.svelte",
   "web-admin/src/features/projects/ProjectCardActions.svelte",

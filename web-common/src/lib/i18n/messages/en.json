@@ -16,6 +16,8 @@
   "common_alerts": "Alerts",
   "common_status": "Status",
   "common_settings": "Settings",
+  "common_projects": "Projects",
+  "common_users": "Users",
   "common_error": "Error",
   "organizations_overview_page_title": "{title} overview - Rill",
   "projects_cards_subtitle": "Check out your projects below.",

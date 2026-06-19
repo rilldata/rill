@@ -22,8 +22,7 @@
     "gen:colors": "node web-common/src/features/themes/gen-colors.ts",
     "quality": "bash ./scripts/web-test-code-quality.sh",
     "quality:ci": "FAIL_FAST=true bash ./scripts/web-test-code-quality.sh",
-    "check:edit-route-parity": "node ./scripts/check-edit-route-parity.js",
-    "machine-translate": "inlang machine translate --project web-common/src/lib/i18n/project.inlang"
+    "check:edit-route-parity": "node ./scripts/check-edit-route-parity.js"
   },
   "devDependencies": {
     "@inlang/paraglide-js": "^2.10.0",
@@ -40,8 +39,7 @@
     "sass": "^1.88.0",
     "syncpack": "^13.0.0",
     "typescript": "^5.6.2",
-    "typescript-eslint": "^8.30.1",
-    "@inlang/cli": "^3.0.0"
+    "typescript-eslint": "^8.30.1"
   },
   "lint-staged": {
     "*.{svelte,ts}": [
