@@ -47643,6 +47643,10 @@ func (m *Quotas) validate(all bool) error {
 
 	// no validation rules for StorageLimitBytesPerDeployment
 
+	// no validation rules for ApiCallsPerSeat
+
+	// no validation rules for Seats
+
 	if len(errors) > 0 {
 		return QuotasMultiError(errors)
 	}

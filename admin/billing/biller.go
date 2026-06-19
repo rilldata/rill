@@ -109,6 +109,8 @@ const (
 	EnterprisePlanType
 	FreePlanType
 	ProPlanType
+	StarterPlanType
+	GrowthPlanType
 )
 
 type Plan struct {
@@ -132,6 +134,7 @@ type Quotas struct {
 	NumSlotsPerDeployment          *int
 	NumOutstandingInvites          *int
 	NumSeats                       *int
+	NumAPICallsPerSeat             *int
 }
 
 type planMetadata struct {
@@ -144,6 +147,7 @@ type planMetadata struct {
 	NumSlotsPerDeployment          *int   `mapstructure:"num_slots_per_deployment"`
 	NumOutstandingInvites          *int   `mapstructure:"num_outstanding_invites"`
 	NumSeats                       *int   `mapstructure:"num_seats"`
+	NumAPICallsPerSeat             *int   `mapstructure:"num_api_calls_per_seat"`
 }
 
 type Subscription struct {

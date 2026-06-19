@@ -1,6 +1,7 @@
 <script lang="ts">
   import VirtualTooltip from "@rilldata/web-common/components/virtualized-table/VirtualTooltip.svelte";
   import FlatTable from "@rilldata/web-common/features/dashboards/pivot/FlatTable.svelte";
+  import type { PivotClickSelectionState } from "@rilldata/web-common/features/dashboards/pivot/pivot-click-selection";
   import {
     getDimensionColumnProps,
     getMeasureColumnProps,
@@ -10,13 +11,19 @@
     SHOW_MORE_BUTTON,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
   import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
-  import type { PivotClickSelectionState } from "@rilldata/web-common/features/dashboards/pivot/pivot-click-selection";
   import type { PivotRowSelectionState } from "@rilldata/web-common/features/dashboards/pivot/pivot-row-selection";
   import {
     isElement,
     splitPivotChips,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
+  import {
+    createVirtualizer,
+    defaultRangeExtractor,
+  } from "@tanstack/svelte-virtual";
+  import { onMount } from "svelte";
+  import type { Readable } from "svelte/store";
+  import { derived } from "svelte/store";
   import {
     type ExpandedState,
     type SortingState,
@@ -25,13 +32,6 @@
     getCoreRowModel,
     getExpandedRowModel,
   } from "tanstack-table-8-svelte-5";
-  import {
-    createVirtualizer,
-    defaultRangeExtractor,
-  } from "@tanstack/svelte-virtual";
-  import { onMount } from "svelte";
-  import type { Readable } from "svelte/store";
-  import { derived } from "svelte/store";
   import NestedTable from "./NestedTable.svelte";
   import type {
     PivotDataRow,
@@ -170,11 +170,17 @@
       ]
     : [0, 0];
 
-  let customShortcuts: { description: string; shortcut: string }[] = [];
-  $: if (canShowDataViewer) {
-    customShortcuts = [
-      { description: "View raw data for aggregated cell", shortcut: "Click" },
-    ];
+  $: clickToFilterEnabled = enableClickToFilter && !!onCellClickToFilter;
+  function getCustomShortcuts(rowHeader: boolean) {
+    if (clickToFilterEnabled) {
+      return [{ description: "Filter by this value", shortcut: "Click" }];
+    }
+    if (canShowDataViewer && !rowHeader) {
+      return [
+        { description: "View raw data for aggregated cell", shortcut: "Click" },
+      ];
+    }
+    return [];
   }
 
   const handleScroll = (containerRefElement?: HTMLDivElement | null) => {
@@ -207,6 +213,7 @@
 
   type HoveringData = {
     value: string | number | null;
+    rowHeader: boolean;
   };
 
   function onCellClick(e: MouseEvent) {
@@ -288,7 +295,10 @@
   function handleClick(e: MouseEvent) {
     if (!isElement(e.target)) return;
 
-    const value = e.target.dataset.value;
+    // Row dimension cells render an inner component (PivotExpandableCell), so the
+    // event target is a child element. Resolve the cell that carries the data attributes.
+    const td = e.target.closest("td");
+    const value = td?.dataset.value;
     if (value === undefined) return;
 
     copyToClipboard(value);
@@ -315,13 +325,15 @@
     // Element is not a cell or we haven't left the cell for the current tooltip
     if (!leftCell || !(e.target instanceof HTMLElement)) return;
 
-    const value = e.target.dataset.value;
-    const rowHeader = e.target.dataset.rowheader === "true";
+    // Row dimension cells render an inner component (PivotExpandableCell), so the
+    // event target is a child element. Resolve the cell that carries the data attributes.
+    const td = e.target.closest("td");
+    const value = td?.dataset.value;
 
-    if (value === undefined || rowHeader) return;
+    if (!td || value === undefined) return;
 
     leftCell = false;
-    e.target.addEventListener("mouseleave", () => (leftCell = true), {
+    td.addEventListener("mouseleave", () => (leftCell = true), {
       once: true,
     });
 
@@ -329,8 +341,9 @@
 
     hovering = {
       value,
+      rowHeader: td.dataset.rowheader === "true",
     };
-    hoverPosition = e.target.getBoundingClientRect();
+    hoverPosition = td.getBoundingClientRect();
   }
 </script>
 
@@ -406,7 +419,7 @@
     {hovering}
     {hoverPosition}
     pinned={false}
-    {customShortcuts}
+    customShortcuts={getCustomShortcuts(hovering.rowHeader)}
   />
 {/if}
 

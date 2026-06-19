@@ -116,6 +116,7 @@
 
   async function connectorSelected(
     connector: string,
+    schema: string,
     connectorFormValues: Record<string, any>,
   ) {
     const analyzedConnector = await getConnectorDriverForConnector(
@@ -137,11 +138,11 @@
         connectorFormValues,
       });
     } else if (connectorFormValues["auth_method"] === "public") {
-      const driver = getConnectorDriverForSchema(connector);
+      const driver = getConnectorDriverForSchema(schema);
       if (!driver) return;
       stateManager.transition({
         type: TransitionEventType.ConnectorSelected,
-        schema: connector,
+        schema,
         driver,
         connector,
         connectorFormValues,
@@ -169,7 +170,8 @@
       {config}
       schemaName={schema}
       connectorName={connector}
-      onConnectorChange={(newConnector) => connectorSelected(newConnector, {})}
+      onConnectorChange={(newConnector) =>
+        connectorSelected(newConnector, newConnector, {})}
       onNewConnector={() => schemaSelected(schema)}
     />
   {/if}
@@ -181,7 +183,11 @@
       {stateManager}
       step={stepState}
       onSubmit={(connectorName, connectorFormValues) =>
-        void connectorSelected(connectorName, connectorFormValues)}
+        void connectorSelected(
+          connectorName,
+          stepState.schema,
+          connectorFormValues,
+        )}
       {onBack}
       onClose={onDone}
     />

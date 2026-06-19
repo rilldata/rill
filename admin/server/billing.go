@@ -125,7 +125,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		}
 		return nil, err
 	}
-	// for the trial plan start the time-based trial, for the free plan start the credit trial
+	// for both free and legacy trial plan, start the credit trial
 	if plan.PlanType == billing.FreePlanType || plan.PlanType == billing.TrailPlanType {
 		bi, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeNeverSubscribed)
 		if err != nil {
@@ -146,36 +146,18 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 				}
 			}
 
-			var updatedOrg *database.Organization
-			var sub *billing.Subscription
-			if plan.PlanType == billing.TrailPlanType {
-				updatedOrg, sub, err = s.admin.StartTrial(ctx, org)
-				if err != nil {
-					return nil, err
-				}
-				if err := s.admin.Email.SendTrialStarted(&email.TrialStarted{
-					ToEmail:      org.BillingEmail,
-					ToName:       org.Name,
-					OrgName:      org.Name,
-					FrontendURL:  s.admin.URLs.Frontend(),
-					TrialEndDate: sub.TrialEndDate,
-				}); err != nil {
-					s.logger.Named("billing").Error("failed to send trial started email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
-				}
-			} else {
-				updatedOrg, sub, err = s.admin.StartCreditTrial(ctx, org)
-				if err != nil {
-					return nil, err
-				}
-				if err := s.admin.Email.SendCreditTrialStarted(&email.CreditTrialStarted{
-					ToEmail:          org.BillingEmail,
-					ToName:           org.Name,
-					OrgName:          org.Name,
-					FrontendURL:      s.admin.URLs.Frontend(),
-					CreditAllocation: admin.CreditTrialAllocation,
-				}); err != nil {
-					s.logger.Named("billing").Error("failed to send credit trial started email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
-				}
+			updatedOrg, sub, err := s.admin.StartCreditTrial(ctx, org)
+			if err != nil {
+				return nil, err
+			}
+			if err := s.admin.Email.SendCreditTrialStarted(&email.CreditTrialStarted{
+				ToEmail:          org.BillingEmail,
+				ToName:           org.Name,
+				OrgName:          org.Name,
+				FrontendURL:      s.admin.URLs.Frontend(),
+				CreditAllocation: admin.CreditTrialAllocation,
+			}); err != nil {
+				s.logger.Named("billing").Error("failed to send credit trial started email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
 			}
 
 			return &adminv1.UpdateBillingSubscriptionResponse{
@@ -198,9 +180,6 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 	}
 
 	if planDowngrade(plan, org) {
-		if !forceAccess {
-			return nil, status.Errorf(codes.FailedPrecondition, "plan downgrade not supported")
-		}
 		s.logger.Named("billing").Warn("plan downgrade request", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("plan_name", plan.Name))
 	}
 
@@ -1222,6 +1201,8 @@ func billingPlanToDTO(plan *billing.Plan) *adminv1.BillingPlan {
 			SlotsPerDeployment:             valOrEmptyString(plan.Quotas.NumSlotsPerDeployment),
 			OutstandingInvites:             valOrEmptyString(plan.Quotas.NumOutstandingInvites),
 			StorageLimitBytesPerDeployment: val64OrEmptyString(plan.Quotas.StorageLimitBytesPerDeployment),
+			ApiCallsPerSeat:                valOrEmptyString(plan.Quotas.NumAPICallsPerSeat),
+			Seats:                          valOrEmptyString(plan.Quotas.NumSeats),
 		},
 	}
 }
@@ -1316,6 +1297,10 @@ func planTypeToDTO(t billing.PlanType) adminv1.BillingPlanType {
 		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_FREE
 	case billing.ProPlanType:
 		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_PRO
+	case billing.StarterPlanType:
+		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_STARTER
+	case billing.GrowthPlanType:
+		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_GROWTH
 	default:
 		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_UNSPECIFIED
 	}

@@ -82,6 +82,7 @@
     </a>
   {:else if mode === "subset"}
     <SelectionDropdown
+      id={type}
       excludable
       {excludeMode}
       allItems={new Set(items.map((m) => m.name ?? ""))}

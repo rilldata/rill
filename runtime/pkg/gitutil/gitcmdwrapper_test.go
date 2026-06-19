@@ -147,6 +147,9 @@ func TestMergeWithStrategy(t *testing.T) {
 		// Default merge should fail on conflicts
 		err = MergeWithStrategy(tempDir, "feature", "")
 		require.Error(t, err, "MergeWithStrategy(default) should fail on conflicts")
+		// Git reports conflicts on stdout, not stderr; the error message must surface that detail.
+		require.Contains(t, err.Error(), "CONFLICT", "error should include git's conflict output")
+		require.Contains(t, err.Error(), "test1.txt", "error should name the conflicting file")
 	})
 
 	t.Run("unsupported strategy returns error", func(t *testing.T) {
@@ -239,7 +242,7 @@ func TestCommitAll(t *testing.T) {
 	t.Run("returns ErrEmptyCommit when there are no changes", func(t *testing.T) {
 		tempDir := setupTestRepository(t)
 
-		_, err := CommitAll(context.Background(), tempDir, "", "noop", "Rill", "noreply@rilldata.com")
+		_, err := CommitAll(context.Background(), tempDir, "", "noop", Signature{Name: "Rill", Email: "noreply@rilldata.com"})
 		require.ErrorIs(t, err, ErrEmptyCommit)
 	})
 
@@ -255,7 +258,7 @@ func TestCommitAll(t *testing.T) {
 		// Introduce a change *outside* the pathspec.
 		require.NoError(t, os.WriteFile(filepath.Join(tempDir, "outside.txt"), []byte("outside"), 0644))
 
-		_, err := CommitAll(context.Background(), tempDir, "sub", "noop", "Rill", "noreply@rilldata.com")
+		_, err := CommitAll(context.Background(), tempDir, "sub", "noop", Signature{Name: "Rill", Email: "noreply@rilldata.com"})
 		require.ErrorIs(t, err, ErrEmptyCommit)
 
 		// The outside file must not have been committed.
@@ -271,7 +274,7 @@ func TestCommitAll(t *testing.T) {
 		require.NoError(t, os.WriteFile(filepath.Join(tempDir, "sub", "inside.txt"), []byte("inside"), 0644))
 		require.NoError(t, os.WriteFile(filepath.Join(tempDir, "outside.txt"), []byte("outside"), 0644))
 
-		hash, err := CommitAll(context.Background(), tempDir, "sub", "scoped commit", "Rill", "noreply@rilldata.com")
+		hash, err := CommitAll(context.Background(), tempDir, "sub", "scoped commit", Signature{Name: "Rill", Email: "noreply@rilldata.com"})
 		require.NoError(t, err)
 		require.NotEmpty(t, hash)
 
@@ -293,7 +296,7 @@ func TestCommitAll(t *testing.T) {
 
 		require.NoError(t, os.WriteFile(filepath.Join(tempDir, "new.txt"), []byte("hello"), 0644))
 
-		_, err := CommitAll(context.Background(), tempDir, "", "msg", "Rill Bot", "bot@rilldata.com")
+		_, err := CommitAll(context.Background(), tempDir, "", "msg", Signature{Name: "Rill Bot", Email: "bot@rilldata.com"})
 		require.NoError(t, err)
 
 		name, err := Run(context.Background(), tempDir, "log", "-1", "--format=%an")

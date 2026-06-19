@@ -12,10 +12,14 @@
   } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
   import {
     fetchPaymentsPortalURL,
-    fetchPaidPlan,
+    maybeFetchPublicPlanByName,
     getBillingUpgradeUrl,
   } from "@rilldata/web-admin/features/billing/plans/selectors";
-  import { showWelcomeToRillDialog } from "@rilldata/web-admin/features/billing/plans/utils";
+  import {
+    SELF_SERVE_PLANS,
+    SELF_SERVE_PLANS_BY_NAME,
+  } from "@rilldata/web-admin/features/billing/plans/plan-details";
+  import { triggerWelcomeToRillDialog } from "@rilldata/web-admin/features/billing/plans/utils";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
@@ -28,6 +32,11 @@
   export let data: PageData;
   $: ({ cancelled, paymentIssues } = data);
   $: redirect = $page.url.searchParams.get("redirect");
+  // The chosen plan is carried through the Stripe return URL (see getBillingUpgradeUrl).
+  // Fall back to the first self-serve plan for older links that predate the plan chooser.
+  $: planName = $page.url.searchParams.get("plan") ?? SELF_SERVE_PLANS[0].name;
+  $: planDetails = SELF_SERVE_PLANS_BY_NAME[planName];
+  $: planDisplayName = planDetails?.displayName ?? planName;
 
   /**
    * Landing page to upgrade a user to team plan.
@@ -58,14 +67,13 @@
       });
       return goto(`/${organization}/-/settings/billing`);
     }
-    const paidPlan = await fetchPaidPlan();
+    const paidPlan = await maybeFetchPublicPlanByName(planName);
+    if (!paidPlan) return goto(`/${organization}/-/settings/billing`);
     try {
       if (cancelled) {
         await $planRenewer.mutateAsync({
           org: organization,
-          data: {
-            planName: paidPlan.name,
-          },
+          data: { planName },
         });
         eventBus.emit("notification", {
           type: "success",
@@ -74,14 +82,12 @@
       } else {
         await $planUpdater.mutateAsync({
           org: organization,
-          data: {
-            planName: paidPlan.name,
-          },
+          data: { planName },
         });
         // if redirect is set then this page won't be active.
         // so this will lead to pop-in of the modal before navigating away
         if (!redirect) {
-          showWelcomeToRillDialog.set(true);
+          triggerWelcomeToRillDialog(planName);
         }
       }
       void invalidateBillingInfo(organization);
@@ -105,9 +111,9 @@
     <LoadingSpinner />
     <CtaHeader variant="bold">
       {#if cancelled}
-        Renewing Team plan...
+        Renewing {planDisplayName} plan...
       {:else}
-        Upgrading to Team plan...
+        Upgrading to {planDisplayName} plan...
       {/if}
     </CtaHeader>
     <CtaNeedHelp />
