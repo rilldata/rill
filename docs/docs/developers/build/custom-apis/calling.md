@@ -15,6 +15,12 @@ Custom APIs are exposed as HTTP endpoints that return JSON. You can call them fr
 https://api.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/runtime/api/<api-name>
 ```
 
+This targets the project's production deployment. To call the API on the deployment for a specific branch (e.g. a dev/preview deployment), insert `/branch/<branch-name>` before `/runtime`:
+
+```
+https://api.rilldata.com/v1/orgs/<org-name>/projects/<project-name>/branch/<branch-name>/runtime/api/<api-name>
+```
+
 ### Local development
 
 ```

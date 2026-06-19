@@ -122,6 +122,14 @@ Custom apps with Developer mode are only available in the paid plans of ChatGPT.
 6. Log in to Rill and authorize the connection
 7. ChatGPT will receive an access token and your Rill app will be connected
 
+### Connecting to a specific branch
+
+The normal MCP URL target your project's production deployment. To connect to the deployment for a specific branch (e.g. a dev/preview deployment), insert `/branch/{branch_name}` after the project name:
+```
+https://api.rilldata.com/v1/orgs/{org_name}/projects/{project_name}/branch/{branch_name}/runtime/mcp
+```
+
+
 ## Manual Configuration (Alternative Method)
 
 If you prefer to manually configure the connection or need to connect to a local Rill instance, you can edit configuration files directly and provide your own access token.
