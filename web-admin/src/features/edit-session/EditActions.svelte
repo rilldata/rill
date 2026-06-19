@@ -70,8 +70,8 @@
 {/if}
 
 {#if gitStatusLoaded}
+  <CloudRemoteChangeManager {primaryBranch} />
   {#if managedGit}
-    <CloudRemoteChangeManager {primaryBranch} />
     <PublishPopover {organization} {project} {primaryBranch} />
   {:else}
     <CommitPopover />

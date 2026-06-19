@@ -281,6 +281,7 @@ measures:
 }
 
 func TestMetricsViewsTimeseriesAgainstDatabricks(t *testing.T) {
+	t.Skip("Skipping Databricks due to disabled test instance")
 	testmode.Expensive(t)
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		TestConnectors: []string{"databricks"},
@@ -445,6 +446,7 @@ measures:
 }
 
 func TestMetricsViewsTimeseriesAgainstSnowflake(t *testing.T) {
+	t.Skip("Skipping Snowflake due to disabled test instance")
 	testmode.Expensive(t)
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		TestConnectors: []string{"snowflake"},

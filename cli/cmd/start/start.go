@@ -1,6 +1,7 @@
 package start
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,8 +10,8 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/envdetect"
-	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/spf13/cobra"
 )
 
@@ -41,7 +42,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			var projectPath string
 			if len(args) > 0 {
 				var err error
-				projectPath, err = ResolveProjectPath(args[0])
+				projectPath, err = ResolveProjectPath(cmd.Context(), args[0])
 				if err != nil {
 					return err
 				}
@@ -198,9 +199,9 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	return startCmd
 }
 
-func ResolveProjectPath(path string) (string, error) {
+func ResolveProjectPath(ctx context.Context, path string) (string, error) {
 	if strings.HasSuffix(path, ".git") {
-		repoName, err := gitutil.CloneRepo(path)
+		repoName, err := gitutil.CloneRepo(ctx, path)
 		if err != nil {
 			return "", fmt.Errorf("clone repo error: %w", err)
 		}

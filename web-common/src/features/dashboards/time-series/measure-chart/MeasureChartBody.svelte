@@ -1,5 +1,6 @@
 <script lang="ts">
   import BarChart from "@rilldata/web-common/components/time-series-chart/BarChart.svelte";
+  import { snapToNearestNonNull } from "@rilldata/web-common/components/time-series-chart/sparse-data-utils";
   import TimeSeriesChart from "@rilldata/web-common/components/time-series-chart/TimeSeriesChart.svelte";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import type { Annotation } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/annotation-utils";
@@ -52,6 +53,13 @@
 
   const chartId = Math.random().toString(36).slice(2, 11);
   const CLICK_THRESHOLD_PX = 4;
+
+  // Hover snaps to the nearest non-null point within this distance (in index
+  // units), so sparse points are easy to land on without snapping across wide
+  // gaps. A fraction of the data length keeps the snap radius a roughly
+  // constant pixel distance regardless of point count.
+  const SNAP_FRACTION = 0.05;
+  const MIN_SNAP_INDICES = 3;
 
   export let measure: MetricsViewSpecMeasure;
   export let measureName: string;
@@ -161,10 +169,28 @@
 
   // Hover state
   $: hoverIndex.registerScale(xScale);
+  $: maxSnapDistance = Math.max(MIN_SNAP_INDICES, data.length * SNAP_FRACTION);
   $: isLocallyHovered =
     hoverState.isHovered && hoverState.index !== null && data.length > 0;
-  $: if (isLocallyHovered) {
-    hoverIndex.set(snapIndex(hoverState.index!, data.length), chartId);
+  // All series the cursor can snap to: the primary measure, its time
+  // comparison, and any dimension comparison series.
+  $: snapSeries = [
+    data.map((d) => d.value),
+    ...(showComparison ? [data.map((d) => d.comparisonValue ?? null)] : []),
+    ...dimensionData.map((dim) => dim.data.map((d) => d.value)),
+  ];
+  // Snap to the nearest non-null point so sparse data is easy to hover; null
+  // when the cursor is in a gap wider than maxSnapDistance.
+  $: snappedHoverIndex = isLocallyHovered
+    ? snapToNearestNonNull(
+        hoverState.index!,
+        snapSeries,
+        (v) => v,
+        maxSnapDistance,
+      )
+    : null;
+  $: if (snappedHoverIndex !== null) {
+    hoverIndex.set(snappedHoverIndex, chartId);
   } else if (
     hasScrubSelection &&
     scrubStartIndex !== null &&

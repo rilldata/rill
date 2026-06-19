@@ -175,6 +175,7 @@ func (r *gitRepo) pullInner(ctx context.Context, userTriggered, force bool) erro
 				return &drivers.MergeFailedError{
 					Output:       "local is behind remote and failed to sync with remote due to conflicts, use force pull to discard local changes and sync with remote",
 					MergedBranch: r.defaultBranch,
+					Conflict:     true,
 				}
 			}
 			r.h.logger.Warn("Merge aborted due to conflicts, local changes not synced with remote", zap.String("branch", r.defaultBranch))
@@ -199,6 +200,7 @@ func (r *gitRepo) pullInner(ctx context.Context, userTriggered, force bool) erro
 			return &drivers.MergeFailedError{
 				Output:       "failed to merge primary branch, use force pull to discard local changes and sync with primary branch",
 				MergedBranch: r.primaryBranch,
+				Conflict:     true,
 			}
 		}
 	}
@@ -234,7 +236,7 @@ func (r *gitRepo) commitToDefaultBranch(ctx context.Context, message string, for
 
 	r.h.logger.Info("commitToDefaultBranch", observability.ZapCtx(ctx))
 
-	_, err := gitutil.CommitAll(ctx, r.repoDir, r.subpath, message, "Rill", "noreply@rilldata.com")
+	_, err := gitutil.CommitAll(ctx, r.repoDir, r.subpath, message, gitutil.Signature{Name: "Rill", Email: "noreply@rilldata.com"})
 	if err != nil {
 		if !errors.Is(err, gitutil.ErrEmptyCommit) {
 			return fmt.Errorf("failed to commit changes to edit branch: %w", err)
@@ -289,7 +291,7 @@ func (r *gitRepo) mergeToBranch(ctx context.Context, branch string, force bool) 
 	}
 
 	r.h.logger.Info("mergeToBranch", zap.String("branch", branch), zap.Bool("force", force), observability.ZapCtx(ctx))
-	_, err := gitutil.CommitAll(ctx, r.repoDir, r.subpath, "Auto commit before merging to "+branch, "Rill", "noreply@rilldata.com")
+	_, err := gitutil.CommitAll(ctx, r.repoDir, r.subpath, "Auto commit before merging to "+branch, gitutil.Signature{Name: "Rill", Email: "noreply@rilldata.com"})
 	if err != nil && !errors.Is(err, gitutil.ErrEmptyCommit) {
 		return fmt.Errorf("failed to commit changes: %w", err)
 	}
@@ -340,6 +342,7 @@ func (r *gitRepo) mergeToBranch(ctx context.Context, branch string, force bool) 
 		return &drivers.MergeFailedError{
 			Output:       "merge failed due to conflicts, use force merge to favour current changes",
 			MergedBranch: r.defaultBranch,
+			Conflict:     true,
 		}
 	}
 
