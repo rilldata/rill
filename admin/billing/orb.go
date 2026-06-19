@@ -715,6 +715,8 @@ func (o *Orb) getBillingPlanFromOrbPlan(ctx context.Context, p *orb.Plan) (*Plan
 		NumSlotsTotal:                  metadata.NumSlotsTotal,
 		NumSlotsPerDeployment:          metadata.NumSlotsPerDeployment,
 		NumOutstandingInvites:          metadata.NumOutstandingInvites,
+		NumAPICallsPerSeat:             metadata.NumAPICallsPerSeat,
+		NumSeats:                       metadata.NumSeats,
 	}
 
 	trialPeriodDays := 0
@@ -794,6 +796,10 @@ func getPlanType(externalID string) PlanType {
 		return FreePlanType
 	case "pro_plan":
 		return ProPlanType
+	case "starter":
+		return StarterPlanType
+	case "growth":
+		return GrowthPlanType
 	default:
 		return EnterprisePlanType
 	}
@@ -811,6 +817,10 @@ func getPlanDisplayName(externalID string) string {
 		return "Free"
 	case "pro_plan":
 		return "Pro"
+	case "starter":
+		return "Starter"
+	case "growth":
+		return "Growth"
 	default:
 		return "Enterprise"
 	}
