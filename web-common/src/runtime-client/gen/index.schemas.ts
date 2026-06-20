@@ -440,13 +440,32 @@ If not found in `time_ranges`, it should be added to the list. */
   filterExpr?: V1CanvasPresetFilterExpr;
 }
 
+export interface V1CanvasTab {
+  /** Stable identifier for the tab, used for URL state. Derived from the label. */
+  name?: string;
+  /** User-facing label for the tab. */
+  displayName?: string;
+  /** Rows to render when the tab is active. These are always plain rows;
+a tab's rows never contain a nested tab_group. */
+  rows?: V1CanvasRow[];
+}
+
+export interface V1CanvasTabGroup {
+  /** Stable identifier for the tab group, used for URL state.
+Defaults to "group-<index>" if not provided in the canvas YAML. */
+  name?: string;
+  /** Tabs in the group. A group always has at least one tab. */
+  tabs?: V1CanvasTab[];
+}
+
 export interface V1CanvasRow {
   /** Height of the row. The unit is given in height_unit. */
   height?: number;
   /** Unit of the height. Current possible values: "px", empty string. */
   heightUnit?: string;
-  /** Items to render in the row. */
+  /** Items to render in the row. Empty when the row is a tab group. */
   items?: V1CanvasItem[];
+  tabGroup?: V1CanvasTabGroup;
 }
 
 export interface V1CanvasSpec {

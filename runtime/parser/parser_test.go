@@ -1885,6 +1885,223 @@ rows:
 	requireResourcesAndErrors(t, p, resources, nil)
 }
 
+func TestCanvasTabGroups(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`components/c1.yaml`: `
+type: component
+kpi:
+  metrics_view: foo
+`,
+		`canvases/d1.yaml`: `
+type: canvas
+rows:
+- items:
+  - component: c1
+- name: deep_dive
+  tabs:
+  - label: Overview
+    rows:
+    - items:
+      - markdown:
+          content: "Overview"
+  - label: Detail View
+    rows:
+    - items:
+      - markdown:
+          content: "Detail"
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "c1"},
+			Paths: []string{"/components/c1.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "foo"}},
+			ComponentSpec: &runtimev1.ComponentSpec{
+				DisplayName:        "C1",
+				Renderer:           "kpi",
+				RendererProperties: must(structpb.NewStruct(map[string]any{"metrics_view": "foo"})),
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "d1--component-g1-t0-0-0"},
+			Paths: []string{"/canvases/d1.yaml"},
+			ComponentSpec: &runtimev1.ComponentSpec{
+				Renderer:           "markdown",
+				RendererProperties: must(structpb.NewStruct(map[string]any{"content": "Overview"})),
+				DefinedInCanvas:    true,
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "d1--component-g1-t1-0-0"},
+			Paths: []string{"/canvases/d1.yaml"},
+			ComponentSpec: &runtimev1.ComponentSpec{
+				Renderer:           "markdown",
+				RendererProperties: must(structpb.NewStruct(map[string]any{"content": "Detail"})),
+				DefinedInCanvas:    true,
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindCanvas, Name: "d1"},
+			Paths: []string{"/canvases/d1.yaml"},
+			Refs: []ResourceName{
+				{Kind: ResourceKindComponent, Name: "c1"},
+				{Kind: ResourceKindComponent, Name: "d1--component-g1-t0-0-0"},
+				{Kind: ResourceKindComponent, Name: "d1--component-g1-t1-0-0"},
+			},
+			CanvasSpec: &runtimev1.CanvasSpec{
+				DisplayName:          "D1",
+				AllowCustomTimeRange: true,
+				FiltersEnabled:       true,
+				Rows: []*runtimev1.CanvasRow{
+					{
+						Items: []*runtimev1.CanvasItem{
+							{Component: "c1"},
+						},
+					},
+					{
+						TabGroup: &runtimev1.CanvasTabGroup{
+							Name: "deep_dive",
+							Tabs: []*runtimev1.CanvasTab{
+								{
+									Name:        "overview",
+									DisplayName: "Overview",
+									Rows: []*runtimev1.CanvasRow{
+										{Items: []*runtimev1.CanvasItem{{Component: "d1--component-g1-t0-0-0", DefinedInCanvas: true}}},
+									},
+								},
+								{
+									Name:        "detail-view",
+									DisplayName: "Detail View",
+									Rows: []*runtimev1.CanvasRow{
+										{Items: []*runtimev1.CanvasItem{{Component: "d1--component-g1-t1-0-0", DefinedInCanvas: true}}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestCanvasTabGroupErrors(t *testing.T) {
+	ctx := context.Background()
+
+	cases := []struct {
+		name string
+		yaml string
+	}{
+		{
+			name: "items and tabs together",
+			yaml: `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: "x"
+  tabs:
+  - label: A
+    rows: []
+`,
+		},
+		{
+			name: "nested tab groups",
+			yaml: `
+type: canvas
+rows:
+- tabs:
+  - label: Outer
+    rows:
+    - tabs:
+      - label: Inner
+        rows: []
+`,
+		},
+		{
+			name: "empty tab group",
+			yaml: `
+type: canvas
+rows:
+- name: empty
+  tabs: []
+`,
+		},
+		{
+			name: "duplicate group names",
+			yaml: `
+type: canvas
+rows:
+- name: dup
+  tabs:
+  - label: A
+    rows: []
+- name: dup
+  tabs:
+  - label: B
+    rows: []
+`,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := makeRepo(t, map[string]string{
+				`rill.yaml`:        ``,
+				`canvases/d1.yaml`: tc.yaml,
+			})
+			p, err := Parse(ctx, repo, "", "", "duckdb", true)
+			require.NoError(t, err)
+			require.Len(t, p.Resources, 0)
+			require.Len(t, p.Errors, 1)
+		})
+	}
+}
+
+// TestCanvasTabNameUniqueness verifies that tab names are uniquified when labels slugify
+// to the same value, so each tab keeps a distinct URL key.
+func TestCanvasTabNameUniqueness(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`canvases/d1.yaml`: `
+type: canvas
+rows:
+- tabs:
+  - label: Sales
+    rows: []
+  - label: "Sales!"
+    rows: []
+  - label: "Sales?"
+    rows: []
+`,
+	})
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	require.Len(t, p.Errors, 0)
+
+	var canvas *runtimev1.CanvasSpec
+	for _, r := range p.Resources {
+		if r.CanvasSpec != nil {
+			canvas = r.CanvasSpec
+		}
+	}
+	require.NotNil(t, canvas)
+
+	tabs := canvas.Rows[0].TabGroup.Tabs
+	require.Equal(t, "sales", tabs[0].Name)
+	require.Equal(t, "sales-2", tabs[1].Name)
+	require.Equal(t, "sales-3", tabs[2].Name)
+}
+
 func TestKindBackwardsCompatibility(t *testing.T) {
 	files := map[string]string{
 		// rill.yaml

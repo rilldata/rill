@@ -30,7 +30,7 @@ _[string]_ - Refers to the custom banner displayed at the header of an Canvas da
 
 ### `rows`
 
-_[array of object]_ - Refers to all of the rows displayed on the Canvas 
+_[array of object]_ - Refers to all of the rows displayed on the Canvas. Each entry is either a plain row (with `items`) or a tab group (with `tabs`), but not both. 
 
   - **`height`** - _[string]_ - Height of the row in px 
 
@@ -53,6 +53,14 @@ _[array of object]_ - Refers to all of the rows displayed on the Canvas
  
 
     - **`width`** - _[string, integer]_ - Width of the component (can be a number or string with unit) 
+
+  - **`name`** - _[string]_ - Stable identifier for a tab group, used as its deep-link URL key. Defaults to `group-<index>` if omitted. Only used for tab-group entries. 
+
+  - **`tabs`** - _[array of object]_ - Makes this entry a tab group instead of a plain row. Only the active tab's rows render; tabs cannot be nested. 
+
+    - **`label`** - _[string]_ - User-facing tab label. A URL-safe name is derived from it for deep-linking. 
+
+    - **`rows`** - _[array]_ - Plain rows (with `items`) shown when this tab is active. Tab rows cannot themselves contain `tabs`. 
 
 ### `max_width`
 

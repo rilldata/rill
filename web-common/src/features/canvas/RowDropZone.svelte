@@ -10,6 +10,8 @@
   export let onDrop: (row: number, column: number | null) => void;
   export let onRowResizeStart: (e: MouseEvent) => void = () => {};
   export let addItem: (type: CanvasComponentType) => void;
+  // When provided, the add menu offers inserting a tab group at this position.
+  export let onAddTabGroup: (() => void) | undefined = undefined;
 
   let menuOpen = false;
 
@@ -88,6 +90,7 @@
           }
         }}
         onItemClick={addItem}
+        {onAddTabGroup}
       />
     </span>
   </div>
