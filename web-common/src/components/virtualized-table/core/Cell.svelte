@@ -171,20 +171,49 @@
       value={barValue}
       compact
     >
-      <div
-        class="flex items-center w-full min-w-0 {isTextColumn
-          ? 'justify-start'
-          : 'justify-end'}"
-        class:gap-x-1={href}
-      >
+      {#if href}
+        <!-- URI dimension: lay the value button and external-link icon side by
+        side. This wrapper only exists when there is a link, so non-URI cells
+        keep the exact DOM (and text content) the table's matchers expect. -->
+        <div
+          class="flex items-center gap-x-1 w-full min-w-0 {isTextColumn
+            ? 'justify-start'
+            : 'justify-end'}"
+        >
+          <button
+            aria-label={label}
+            class="{isTextColumn ? 'text-left' : 'text-right'} truncate min-w-0"
+            class:px-4={!isDimensionTable}
+            onclick={modified({ shift: shiftClick })}
+            style:height="{row.size}px"
+          >
+            <FormattedDataType
+              customStyle={formattedDataTypeStyle}
+              inTable
+              isNull={value === null || value === undefined}
+              {type}
+              value={formattedValue || value}
+              color="text-fg-secondary"
+              {lowerIsBetter}
+            />
+          </button>
+          <a
+            class="external-link shrink-0"
+            target="_blank"
+            rel="noopener noreferrer"
+            {href}
+            title={href}
+            onclick={(e) => e.stopPropagation()}
+          >
+            <ExternalLink className="fill-primary-600" />
+          </a>
+        </div>
+      {:else}
         <button
           aria-label={label}
-          class="{isTextColumn ? 'text-left' : 'text-right'} truncate min-w-0"
-          class:w-full={!href}
+          class="{isTextColumn ? 'text-left' : 'text-right'} w-full truncate"
           class:px-4={!isDimensionTable}
-          onclick={modified({
-            shift: shiftClick,
-          })}
+          onclick={modified({ shift: shiftClick })}
           style:height="{row.size}px"
         >
           <FormattedDataType
@@ -197,20 +226,7 @@
             {lowerIsBetter}
           />
         </button>
-
-        {#if href}
-          <a
-            class="external-link shrink-0"
-            target="_blank"
-            rel="noopener noreferrer"
-            {href}
-            title={href}
-            onclick={(e) => e.stopPropagation()}
-          >
-            <ExternalLink className="fill-primary-600" />
-          </a>
-        {/if}
-      </div>
+      {/if}
     </BarAndLabel>
   </div>
   <TooltipContent maxWidth="360px" slot="tooltip-content">
