@@ -520,9 +520,14 @@ export class CanvasEntity {
     this.timeManager.state.onUrlChange(searchParams);
   };
 
-  // Not currently being used
+  // Tears down the spec subscription opened in the constructor and disposes
+  // every child component. Without this, a stale entity left over from a
+  // "reset to defaults" save keeps reacting to spec emissions and races the
+  // live entity over URL and YAML writes.
   unsubscribe = () => {
-    // this.unsubscriber();
+    this.unsubscriber();
+    this.componentsStore.read().forEach((component) => component.destroy());
+    this.componentsStore.reset();
   };
 
   handleCanvasRedirect = async ({
@@ -679,6 +684,10 @@ export class CanvasEntity {
           existingClass.update(newResource, path);
         } else {
           createdNewComponent = true;
+          // Tear down the replaced instance's spec subscription before
+          // overwriting it, otherwise the orphan keeps mutating shared
+          // filter/time state.
+          existingClass?.destroy();
           this.componentsStore.set(
             componentName,
             createComponent(newResource, this, path),
@@ -692,6 +701,7 @@ export class CanvasEntity {
     existingKeys.difference(set).forEach((componentName) => {
       const component = this.componentsStore.getNonReactive(componentName);
       if (component) {
+        component.destroy();
         this.componentsStore.delete(componentName);
       }
     });
@@ -773,6 +783,7 @@ export class CanvasEntity {
   };
 
   removeComponent = (componentName: string) => {
+    this.componentsStore.getNonReactive(componentName)?.destroy();
     this.componentsStore.delete(componentName);
   };
 }
