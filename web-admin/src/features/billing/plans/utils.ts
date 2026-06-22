@@ -1,6 +1,7 @@
 import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size";
 import { DateTime } from "luxon";
 import { writable } from "svelte/store";
+import { V1BillingPlanType } from "@rilldata/web-admin/client";
 
 export function formatUsageVsQuota(
   usageInBytes: number,
@@ -41,15 +42,33 @@ export function isProPlan(planName: string) {
   return planName === "pro_plan";
 }
 
+export function isStarterPlan(planName: string) {
+  return planName === "starter";
+}
+
+export function isGrowthPlan(planName: string) {
+  return planName === "growth";
+}
+
 export function isEnterprisePlan(planName: string) {
   return (
     !isTrialPlan(planName) &&
     !isTeamPlan(planName) &&
     !isManagedPlan(planName) &&
     !isFreePlan(planName) &&
-    !isProPlan(planName)
+    !isProPlan(planName) &&
+    !isStarterPlan(planName) &&
+    !isGrowthPlan(planName)
   );
 }
+
+export const PaidPlanTypes = {
+  [V1BillingPlanType.BILLING_PLAN_TYPE_PRO]: true,
+  [V1BillingPlanType.BILLING_PLAN_TYPE_TEAM]: true,
+  [V1BillingPlanType.BILLING_PLAN_TYPE_ENTERPRISE]: true,
+  [V1BillingPlanType.BILLING_PLAN_TYPE_STARTER]: true,
+  [V1BillingPlanType.BILLING_PLAN_TYPE_GROWTH]: true,
+};
 
 export function getSubscriptionResumedText(endDate: string) {
   const date = DateTime.fromJSDate(new Date(endDate));
@@ -63,6 +82,12 @@ export function getSubscriptionResumedText(endDate: string) {
 // Since this could be triggered in a route that could be navigated from,
 // we add a global and show it in org route's layout
 export const showWelcomeToRillDialog = writable(false);
+export const showWelcomeToRillDialogForPlan = writable("");
+
+export function triggerWelcomeToRillDialog(planName: string) {
+  showWelcomeToRillDialog.set(true);
+  showWelcomeToRillDialogForPlan.set(planName);
+}
 
 export function formatCredit(credits: number): string {
   return new Intl.NumberFormat("en-US", {

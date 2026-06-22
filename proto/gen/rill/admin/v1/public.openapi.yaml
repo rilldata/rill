@@ -343,6 +343,8 @@ components:
                 - BILLING_PLAN_TYPE_ENTERPRISE
                 - BILLING_PLAN_TYPE_FREE
                 - BILLING_PLAN_TYPE_PRO
+                - BILLING_PLAN_TYPE_STARTER
+                - BILLING_PLAN_TYPE_GROWTH
             type: string
         v1Bookmark:
             properties:
@@ -1502,6 +1504,9 @@ components:
                 projects:
                     format: int32
                     type: integer
+                seats:
+                    format: int32
+                    type: integer
                 slotsPerDeployment:
                     format: int32
                     type: integer
@@ -1782,11 +1787,15 @@ components:
             type: object
         v1Quotas:
             properties:
+                apiCallsPerSeat:
+                    type: string
                 deployments:
                     type: string
                 outstandingInvites:
                     type: string
                 projects:
+                    type: string
+                seats:
                     type: string
                 slotsPerDeployment:
                     type: string
@@ -2186,6 +2195,9 @@ components:
                     format: int32
                     type: integer
                 projects:
+                    format: int32
+                    type: integer
+                seats:
                     format: int32
                     type: integer
                 slotsPerDeployment:

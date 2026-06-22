@@ -1,10 +1,12 @@
 package server
 
 import (
+	"context"
 	"net/http"
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -46,6 +48,7 @@ func (s *Server) mcpHandler() http.Handler {
 		// Create MCP server for the session with middleware.
 		srv := sess.MCPServer(r.Context())
 		srv.AddReceivingMiddleware(observability.MCPMiddleware())
+		srv.AddReceivingMiddleware(mcpRequestSourceMiddleware())
 		srv.AddReceivingMiddleware(middleware.TimeoutMCPMiddleware(func(method, tool string) time.Duration {
 			// Sets an upper limit, but note that some tools enforce shorter timeouts in their implementation.
 			return 5 * time.Minute
@@ -55,4 +58,15 @@ func (s *Server) mcpHandler() http.Handler {
 	}, &mcp.StreamableHTTPOptions{
 		Stateless: true,
 	})
+}
+
+// mcpRequestSourceMiddleware tags MCP requests with the "mcp" source so billable queries they trigger
+// are attributed to MCP (programmatic access).
+func mcpRequestSourceMiddleware() mcp.Middleware {
+	return func(next mcp.MethodHandler) mcp.MethodHandler {
+		return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
+			ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceMCP)
+			return next(ctx, method, req)
+		}
+	}
 }

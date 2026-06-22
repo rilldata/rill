@@ -2172,6 +2172,7 @@ message SudoUpdateOrganizationQuotasRequest {
   optional int32 slots_per_deployment = 5;
   optional int32 outstanding_invites = 6;
   optional int64 storage_limit_bytes_per_deployment = 7;
+  optional int32 seats = 8;
 }
 
 message SudoUpdateOrganizationQuotasResponse {
@@ -3453,6 +3454,7 @@ message OrganizationQuotas {
   int32 slots_per_deployment = 4;
   int32 outstanding_invites = 5;
   int64 storage_limit_bytes_per_deployment = 6;
+  int32 seats = 7;
 }
 
 message Project {
@@ -3752,6 +3754,8 @@ enum BillingPlanType {
   BILLING_PLAN_TYPE_ENTERPRISE = 4;
   BILLING_PLAN_TYPE_FREE = 5;
   BILLING_PLAN_TYPE_PRO = 6;
+  BILLING_PLAN_TYPE_STARTER = 7;
+  BILLING_PLAN_TYPE_GROWTH = 8;
 }
 
 message BillingPlan {
@@ -3774,6 +3778,8 @@ message Quotas {
   string slots_per_deployment = 4;
   string outstanding_invites = 5;
   string storage_limit_bytes_per_deployment = 6;
+  string api_calls_per_seat = 7;
+  string seats = 8;
 }
 
 message Usergroup {

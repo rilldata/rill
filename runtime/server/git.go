@@ -204,7 +204,8 @@ func (s *Server) GitMergeToBranch(ctx context.Context, req *runtimev1.GitMergeTo
 		var mergeErr *drivers.MergeFailedError
 		if errors.As(err, &mergeErr) {
 			return &runtimev1.GitMergeToBranchResponse{
-				Output: mergeErr.Error(),
+				Output:   mergeErr.Error(),
+				Conflict: mergeErr.Conflict,
 			}, nil
 		}
 		return nil, err
@@ -233,6 +234,7 @@ func (s *Server) GitPull(ctx context.Context, req *runtimev1.GitPullRequest) (*r
 			return &runtimev1.GitPullResponse{
 				Output:       mergeErr.Error(),
 				MergedBranch: mergeErr.MergedBranch,
+				Conflict:     mergeErr.Conflict,
 			}, nil
 		}
 		return nil, fmt.Errorf("failed to pull: %w", err)
@@ -251,7 +253,12 @@ func (s *Server) GitPush(ctx context.Context, req *runtimev1.GitPushRequest) (*r
 	}
 	defer release()
 
-	err = repo.CommitAndPush(ctx, req.CommitMessage, req.Force)
+	msg := req.CommitMessage
+	if msg == "" {
+		msg = "User triggered commit from Rill"
+	}
+
+	err = repo.CommitAndPush(ctx, msg, req.Force)
 	if err != nil {
 		if errors.Is(err, drivers.ErrRemoteAhead) {
 			return nil, status.Error(codes.FailedPrecondition, "remote repository has changes that are not in local state, please pull first")

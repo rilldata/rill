@@ -39,6 +39,9 @@ olap_connector: %s
 mock_users:
 - email: john@yourcompany.com
 - email: jane@partnercompany.com
+
+features:
+  cloud_editing: true
 `, Version, displayName, olap)
 
 	err := repo.Put(ctx, "rill.yaml", strings.NewReader(rillYAML))

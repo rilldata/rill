@@ -1168,11 +1168,13 @@ export interface V1GitCommitResponse {
 export interface V1GitMergeToBranchResponse {
   /** The output of the git merge command. Only set for unsuccessful merges. */
   output?: string;
+  conflict?: boolean;
 }
 
 export interface V1GitPullResponse {
   /** The output of the git pull command. Only set for unsuccessful pulls. */
   output?: string;
+  conflict?: boolean;
 }
 
 export interface V1GitPushResponse {

@@ -1,1 +1,1 @@
-ALTER TABLE virtual_files ADD COLUMN owner_id UUID;
+ALTER TABLE orgs ADD COLUMN quota_seats INTEGER NOT NULL DEFAULT -1;

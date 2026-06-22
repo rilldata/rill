@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import {
     createAdminServiceRequestProjectAccess,
@@ -25,8 +26,13 @@
     const rpcError = ($requestAccess.error as unknown as AxiosError<RpcStatus>)
       .response.data;
     if (rpcError) {
-      // do not show error if already requested invite
-      if (rpcError.code !== 6) errorMessage = rpcError.message;
+      if (rpcError.code === 9) {
+        // FailedPrecondition: the user already has access, so send them to the project.
+        void goto(`/${organization}/${project}`);
+      } else if (rpcError.code !== 6) {
+        // do not show error if already requested invite (AlreadyExists)
+        errorMessage = rpcError.message;
+      }
     } else {
       errorMessage = $requestAccess.error.toString();
     }

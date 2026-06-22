@@ -276,6 +276,8 @@ export const V1BillingPlanType = {
   BILLING_PLAN_TYPE_ENTERPRISE: "BILLING_PLAN_TYPE_ENTERPRISE",
   BILLING_PLAN_TYPE_FREE: "BILLING_PLAN_TYPE_FREE",
   BILLING_PLAN_TYPE_PRO: "BILLING_PLAN_TYPE_PRO",
+  BILLING_PLAN_TYPE_STARTER: "BILLING_PLAN_TYPE_STARTER",
+  BILLING_PLAN_TYPE_GROWTH: "BILLING_PLAN_TYPE_GROWTH",
 } as const;
 
 export interface V1Bookmark {
@@ -1089,6 +1091,7 @@ export interface V1OrganizationQuotas {
   slotsPerDeployment?: number;
   outstandingInvites?: number;
   storageLimitBytesPerDeployment?: string;
+  seats?: number;
 }
 
 export interface V1OrganizationRole {
@@ -1252,6 +1255,8 @@ export interface V1Quotas {
   slotsPerDeployment?: string;
   outstandingInvites?: string;
   storageLimitBytesPerDeployment?: string;
+  apiCallsPerSeat?: string;
+  seats?: string;
 }
 
 export type V1RecordEventsRequestEventsItem = { [key: string]: unknown };
@@ -1575,6 +1580,7 @@ export interface V1SudoUpdateOrganizationQuotasRequest {
   slotsPerDeployment?: number;
   outstandingInvites?: number;
   storageLimitBytesPerDeployment?: string;
+  seats?: number;
 }
 
 export interface V1SudoUpdateOrganizationQuotasResponse {

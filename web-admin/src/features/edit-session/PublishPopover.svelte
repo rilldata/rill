@@ -11,7 +11,6 @@
   import { Button } from "@rilldata/web-common/components/button";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { isMergeConflictError } from "@rilldata/web-common/features/project/deploy/github-utils.ts";
   import MergeConflictResolutionDialog from "@rilldata/web-common/features/project/MergeConflictResolutionDialog.svelte";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -19,6 +18,7 @@
   import {
     createRuntimeServiceGitMergeToBranchMutation,
     createRuntimeServiceGitPushMutation,
+    type V1GitMergeToBranchResponse,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { ConnectError } from "@connectrpc/connect";
@@ -135,7 +135,7 @@
       return;
     }
 
-    let mergeResp;
+    let mergeResp: V1GitMergeToBranchResponse | undefined = undefined;
     try {
       if (hasLocalChanges) {
         await $gitPushMutation.mutateAsync({
@@ -162,7 +162,7 @@
     // unhandled, the user would see a silent failure (the merge didn't land
     // but the publish appears to have succeeded). Branch on it explicitly.
     if (mergeResp?.output) {
-      if (isMergeConflictError(mergeResp.output)) {
+      if (mergeResp?.conflict) {
         pendingPublishSnapshots = snapshots;
         errorFromGitCommand = null;
         publishMergeConflictDialog = true;

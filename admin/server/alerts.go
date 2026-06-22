@@ -265,6 +265,9 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 		attribute.String("args.project", req.Project),
 		attribute.String("args.name", req.Name),
 	)
+	if req.Email != "" {
+		observability.AddRequestAttributes(ctx, attribute.String("args.email", req.Email))
+	}
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {

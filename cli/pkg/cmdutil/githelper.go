@@ -6,9 +6,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"golang.org/x/sync/semaphore"
 )
 

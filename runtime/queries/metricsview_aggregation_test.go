@@ -159,6 +159,7 @@ func TestMetricViewAggregationAgainstBigQuery(t *testing.T) {
 }
 
 func TestMetricViewAggregationAgainstDatabricks(t *testing.T) {
+	t.Skip("Skipping Databricks due to disabled test instance")
 	testmode.Expensive(t)
 
 	rt, instanceID := newDatabricksInstance(t)
@@ -246,6 +247,7 @@ func TestMetricViewAggregationAgainstDuckDB(t *testing.T) {
 }
 
 func TestMetricViewAggregationAgainstSnowflake(t *testing.T) {
+	t.Skip("Skipping Snowflake due to disabled test instance")
 	testmode.Expensive(t)
 
 	rt, instanceID := newSnowflakeInstance(t)

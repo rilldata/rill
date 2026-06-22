@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/publicemail"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -257,6 +258,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
 		QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
 		QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
+		QuotaSeats:                          org.QuotaSeats,
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        valOrDefault(req.BillingEmail, org.BillingEmail),
@@ -333,7 +335,7 @@ func (s *Server) ListOrganizationMemberUsers(ctx context.Context, req *adminv1.L
 		return nil, err
 	}
 
-	count, err := s.admin.DB.CountOrganizationMemberUsers(ctx, org.ID, roleID, req.SearchPattern)
+	count, err := s.admin.DB.CountOrganizationMemberUsers(ctx, org.ID, roleID, req.SearchPattern, false)
 	if err != nil {
 		return nil, err
 	}
@@ -407,6 +409,7 @@ func (s *Server) ListOrganizationInvites(ctx context.Context, req *adminv1.ListO
 func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.AddOrganizationMemberUserRequest) (*adminv1.AddOrganizationMemberUserResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Org),
+		attribute.String("args.email", req.Email),
 		attribute.String("args.role", req.Role),
 	)
 
@@ -497,6 +500,15 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 		}, nil
 	}
 
+	// Enforce the seat quota (counts billable member users, excluding internal Rill users; invites are limited by QuotaOutstandingInvites above).
+	seats, err := s.admin.DB.CountOrganizationMemberUsers(ctx, org.ID, "", "%@"+billing.InternalEmailDomain, true)
+	if err != nil {
+		return nil, err
+	}
+	if org.QuotaSeats >= 0 && seats >= org.QuotaSeats {
+		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q is limited to %d seats", org.Name, org.QuotaSeats)
+	}
+
 	// Insert the user in the org and its managed usergroups transactionally.
 	err = s.admin.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, nil, false)
 	if err != nil {
@@ -526,6 +538,7 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 func (s *Server) RemoveOrganizationMemberUser(ctx context.Context, req *adminv1.RemoveOrganizationMemberUserRequest) (*adminv1.RemoveOrganizationMemberUserResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Org),
+		attribute.String("args.email", req.Email),
 	)
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
@@ -595,6 +608,7 @@ func (s *Server) RemoveOrganizationMemberUser(ctx context.Context, req *adminv1.
 func (s *Server) SetOrganizationMemberUserRole(ctx context.Context, req *adminv1.SetOrganizationMemberUserRoleRequest) (*adminv1.SetOrganizationMemberUserRoleResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Org),
+		attribute.String("args.email", req.Email),
 		attribute.String("args.role", req.Role),
 	)
 
@@ -939,6 +953,9 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 	if req.OutstandingInvites != nil {
 		observability.AddRequestAttributes(ctx, attribute.Int("args.outstanding_invites", int(*req.OutstandingInvites)))
 	}
+	if req.Seats != nil {
+		observability.AddRequestAttributes(ctx, attribute.Int("args.seats", int(*req.Seats)))
+	}
 
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
@@ -966,6 +983,7 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 		QuotaSlotsPerDeployment:             int(valOrDefault(req.SlotsPerDeployment, int32(org.QuotaSlotsPerDeployment))),
 		QuotaOutstandingInvites:             int(valOrDefault(req.OutstandingInvites, int32(org.QuotaOutstandingInvites))),
 		QuotaStorageLimitBytesPerDeployment: valOrDefault(req.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
+		QuotaSeats:                          int(valOrDefault(req.Seats, int32(org.QuotaSeats))),
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
@@ -1016,6 +1034,7 @@ func (s *Server) SudoUpdateOrganizationCustomDomain(ctx context.Context, req *ad
 		QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
 		QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
 		QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
+		QuotaSeats:                          org.QuotaSeats,
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
@@ -1083,6 +1102,7 @@ func (s *Server) organizationToDTO(o *database.Organization, privileged bool) *a
 			SlotsPerDeployment:             int32(o.QuotaSlotsPerDeployment),
 			OutstandingInvites:             int32(o.QuotaOutstandingInvites),
 			StorageLimitBytesPerDeployment: o.QuotaStorageLimitBytesPerDeployment,
+			Seats:                          int32(o.QuotaSeats),
 		},
 		CreatedOn: timestamppb.New(o.CreatedOn),
 		UpdatedOn: timestamppb.New(o.UpdatedOn),
