@@ -36,6 +36,11 @@ import (
 // Exceeding it will result in an error.
 const maxMessageSizeBytes = 100 * 1024 // 100 KB
 
+// managedAIConnector is the name of the Rill-managed AI connector (the admin proxy backed by Rill's own model and keys).
+// Completions served by any other connector are bring-your-own-model (the customer's keys and provider account), so
+// their token usage is not billable; the emitted "managed_ai" attribute lets billing filter on this downstream.
+const managedAIConnector = "admin"
+
 // Tracer for instrumenting requests.
 var tracer = otel.Tracer("github.com/rilldata/rill/runtime/ai")
 
@@ -195,6 +200,7 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 		logger:              logger,
 		activity:            activityClient,
 		projectInstructions: instance.AIInstructions,
+		managedAI:           instance.ResolveAIConnector() == managedAIConnector,
 		acquireLLM: func(ctx context.Context) (drivers.AIService, func(), error) {
 			return r.Runtime.AI(ctx, opts.InstanceID)
 		},
@@ -519,6 +525,7 @@ type BaseSession struct {
 	logger              *zap.Logger
 	activity            *activity.Client
 	projectInstructions string
+	managedAI           bool // true if completions use the Rill-managed AI connector (billable tokens); false for bring-your-own-model
 	acquireLLM          func(ctx context.Context) (drivers.AIService, func(), error)
 	acquireCatalog      func(ctx context.Context) (drivers.CatalogStore, func(), error)
 
@@ -1251,14 +1258,15 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 				attribute.Int("output_tokens", outputTokens),
 			)
 
-			// Emit billable token metrics. Tagged with the request source so the billable scope is decided downstream
-			// in SQL (this is emitted for every completion regardless of source, unlike tool_call).
+			// Emit billable token metrics. Tagged with the request source and whether the completion used the Rill-managed
+			// AI connector, so the billable scope is decided downstream in SQL (emitted for every completion, unlike tool_call).
 			source := attribute.String("source", string(runtime.RequestSourceFromContext(ctx)))
+			managedAI := attribute.Bool("managed_ai", s.managedAI)
 			if inputTokens > 0 {
-				s.activity.RecordMetric(ctx, "input_tokens", float64(inputTokens), source)
+				s.activity.RecordMetric(ctx, "input_tokens", float64(inputTokens), source, managedAI)
 			}
 			if outputTokens > 0 {
-				s.activity.RecordMetric(ctx, "output_tokens", float64(outputTokens), source)
+				s.activity.RecordMetric(ctx, "output_tokens", float64(outputTokens), source, managedAI)
 			}
 		}()
 
