@@ -57,6 +57,9 @@ export class FileArtifacts {
   }
 
   async init(client: RuntimeClient, queryClient: QueryClient) {
+    if (!this.io) {
+      throw new Error("FileArtifacts.init called before setClient");
+    }
     this.client = client;
     this.io.updateClient(client);
     const resources = await fetchResources(queryClient, client);

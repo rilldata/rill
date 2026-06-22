@@ -63,7 +63,7 @@
   ]);
 </script>
 
-{#if personalCanvases.length}
+{#if personalCanvases.length || $personalCanvasesQuery.isPending}
   <section class="flex flex-col gap-3">
     <header class="flex items-center justify-between">
       <div class="flex items-center gap-2">

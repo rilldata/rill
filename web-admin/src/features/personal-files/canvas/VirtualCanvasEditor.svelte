@@ -50,7 +50,10 @@
   $effect(() => {
     if (data) fileArtifact.updateResource(data);
   });
-  let titleValue = $derived(data?.canvas?.spec?.displayName ?? name);
+  let titleValue = $state("");
+  $effect(() => {
+    titleValue = data?.canvas?.spec?.displayName ?? name;
+  });
 
   let canvasName = $derived(getNameFromFile(filePath));
 
@@ -115,7 +118,7 @@
               saving={$saving}
             />
           {/if}
-          <Button label="Preview" type="secondary" compact onClick={onDelete}>
+          <Button label="Delete" type="secondary" compact onClick={onDelete}>
             <Trash size={14} />
             Delete
           </Button>

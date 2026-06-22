@@ -18,7 +18,7 @@
     name: string;
     title: string;
     lastRefreshed: string;
-    error: string;
+    error?: string;
     isMetricsExplorer: boolean;
     organization: string;
     project: string;
@@ -43,7 +43,7 @@
     >
       {title !== "" ? title : name}
     </span>
-    {#if error !== ""}
+    {#if error}
       <Tag color="red">Error</Tag>
     {/if}
   </div>

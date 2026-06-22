@@ -69,7 +69,7 @@
 
     eventBus.emit("notification", {
       type: "success",
-      message: `Dashboard ${displayName} delete successfully`,
+      message: `Dashboard ${displayName} deleted successfully`,
     });
     await goto(`/${organization}/${project}`);
   }

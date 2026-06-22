@@ -14,7 +14,9 @@
     ownerId?: string | undefined;
   } = $props();
 
-  let isCurrentUser = $derived(currentUserId === ownerId);
+  let isCurrentUser = $derived(
+    !!currentUserId && !!ownerId && currentUserId === ownerId,
+  );
 
   // There is no good API to get a user's info by id. GetUser API is for super users only.
   // TODO: if we want to show the exact owner then we either need to open up that API or hit ListProjectMemberUsers.

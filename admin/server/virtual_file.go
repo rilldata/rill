@@ -74,11 +74,13 @@ func (s *Server) CreatePersonalFile(ctx context.Context, req *adminv1.CreatePers
 		return nil, err
 	}
 
+	// Until we support other kinds error out Create API
+	if req.Kind != runtime.ResourceKindCanvas {
+		return nil, status.Errorf(codes.InvalidArgument, "unsupported personal file kind %q", req.Kind)
+	}
+
 	name, err := s.generateVirtualFileName(ctx, req.DisplayName, func(ctx context.Context, name string) error {
-		var err error
-		if req.Kind == runtime.ResourceKindCanvas {
-			_, err = s.admin.LookupCanvas(ctx, depl, name)
-		}
+		_, err := s.admin.LookupCanvas(ctx, depl, name)
 		return err
 	})
 	if err != nil {
@@ -279,7 +281,7 @@ func yamlForPersonalFile(displayName, ownerID, kind, data string) ([]byte, error
 		annotations = map[string]any{}
 	}
 	annotations["admin_owner_user_id"] = ownerID
-	annotations["admin_managed"] = true
+	annotations["admin_managed"] = "true"
 	annotations["admin_nonce"] = time.Now().Format(time.RFC3339Nano)
 	doc["annotations"] = annotations
 
@@ -296,7 +298,7 @@ func blankYamlForPersonalFile(displayName, ownerID, kind string) ([]byte, error)
 		"display_name": displayName,
 		"annotations": map[string]any{
 			"admin_owner_user_id": ownerID,
-			"admin_managed":       true,
+			"admin_managed":       "true",
 			"admin_nonce":         time.Now().Format(time.RFC3339Nano),
 		},
 	}

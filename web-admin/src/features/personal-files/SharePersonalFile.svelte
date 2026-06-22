@@ -40,10 +40,12 @@
 
     sharing = true;
     try {
-      (parsedDocument.get("annotations") as YAMLMap | null)?.set(
-        "admin_shared",
-        share ? "true" : "false",
-      );
+      let annotations = parsedDocument.get("annotations") as YAMLMap | null;
+      if (!annotations) {
+        annotations = new YAMLMap();
+        parsedDocument.set("annotations", annotations);
+      }
+      annotations.set("admin_shared", share ? "true" : "false");
       const yaml = parsedDocument.toString();
 
       const fileArtifact = fileArtifacts.getFileArtifact(

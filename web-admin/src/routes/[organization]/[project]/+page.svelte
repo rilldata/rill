@@ -34,8 +34,8 @@
     ResourceKind.Canvas,
   );
   $: hasNoPersonalCanvases =
-    $personalCanvasesQuery.isPending ||
-    $personalCanvasesQuery.data?.length === 0;
+    !$personalCanvasesQuery.isPending &&
+    ($personalCanvasesQuery.data?.length ?? 0) === 0;
 </script>
 
 <svelte:head>
