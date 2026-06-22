@@ -1,23 +1,29 @@
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+
 export enum DimensionFilterMode {
   Select = "Select",
   Contains = "Contains",
   InList = "InList",
 }
 
-export const DimensionFilterModeOptions = [
-  {
-    value: DimensionFilterMode.Select,
-    label: "Select",
-    description: "Manually select values for this filter",
-  },
-  {
-    value: DimensionFilterMode.Contains,
-    label: "Contains",
-    description: "Create a dynamic filter based on a search term",
-  },
-  {
-    value: DimensionFilterMode.InList,
-    label: "In List",
-    description: "Create a filter based on a list of values",
-  },
-];
+// Built as a function (not a module-level constant) so the labels resolve in
+// the active locale each time they are read, rather than freezing at import.
+export function getDimensionFilterModeOptions() {
+  return [
+    {
+      value: DimensionFilterMode.Select,
+      label: m.dashboards_filters_mode_select(),
+      description: m.dashboards_filters_mode_select_desc(),
+    },
+    {
+      value: DimensionFilterMode.Contains,
+      label: m.dashboards_filters_mode_contains(),
+      description: m.dashboards_filters_mode_contains_desc(),
+    },
+    {
+      value: DimensionFilterMode.InList,
+      label: m.dashboards_filters_mode_in_list(),
+      description: m.dashboards_filters_mode_in_list_desc(),
+    },
+  ];
+}

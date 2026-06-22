@@ -3,6 +3,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { Inspect } from "lucide-svelte";
   import { Button } from "../../../components/button";
 
@@ -14,10 +15,10 @@
 <Tooltip distance={4} location="top">
   <TooltipContent slot="tooltip-content">
     {#if areAllTableRowsSelected}
-      <div>Deselect all selections</div>
+      <div>{m.dashboards_toolbar_deselect_all_tooltip()}</div>
     {:else}
       <TooltipShortcutContainer pad={false}>
-        <div>Select all</div>
+        <div>{m.dashboards_toolbar_select_all()}</div>
         <Shortcut
           ><span style="font-family: var(--system);"> ⌘ </span> + A</Shortcut
         >
@@ -28,6 +29,8 @@
     <div class="text-fg-secondary">
       <Inspect size={16} />
     </div>
-    {areAllTableRowsSelected && !disabled ? "Deselect all" : "Select all"}
+    {areAllTableRowsSelected && !disabled
+      ? m.dashboards_toolbar_deselect_all()
+      : m.dashboards_toolbar_select_all()}
   </Button>
 </Tooltip>

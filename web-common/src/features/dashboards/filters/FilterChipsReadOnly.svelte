@@ -5,6 +5,7 @@ The main feature-set component for dashboard filters
   import TimeRangeReadOnly from "@rilldata/web-common/features/dashboards/filters/TimeRangeReadOnly.svelte";
   import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/explore-state";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type {
     MetricsViewSpecDimension,
     MetricsViewSpecMeasure,
@@ -66,7 +67,7 @@ The main feature-set component for dashboard filters
   class="relative flex flex-row items-center gap-x-2 gap-y-2 w-full max-w-full"
   class:scrollable-chips={chipLayout === "scroll"}
   class:flex-wrap={chipLayout === "wrap"}
-  aria-label="Readonly Filter Chips"
+  aria-label={m.dashboards_filters_readonly_aria()}
   bind:this={scrollContainer}
   onwheel={handleWheel}
 >
@@ -89,7 +90,7 @@ The main feature-set component for dashboard filters
           label={dimension.displayName ||
             dimension.name ||
             dimension.column ||
-            "Unnamed Dimension"}
+            m.dashboards_filters_unnamed_dimension()}
           mode={filterData.mode}
           values={filterData.selectedValues ?? []}
           inputText={filterData.inputText}
@@ -102,6 +103,7 @@ The main feature-set component for dashboard filters
     {/each}
   {/if}
   {#if measureFilters.length > 0}
+    <!-- i18n-ignore: destructuring, not user-facing copy -->
     {#each measureFilters as { name, label, dimensionName, filter } (name)}
       <div animate:flip={{ duration: 200 }}>
         <MeasureFilterReadOnlyChip

@@ -14,6 +14,7 @@
   import { yup } from "sveltekit-superforms/adapters";
   import { string, object, mixed } from "yup";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import PinButton from "../PinButton.svelte";
   import RequiredButton from "../RequiredButton.svelte";
 
@@ -42,23 +43,27 @@
   };
 
   const validationSchema = object().shape({
-    dimension: string().required("Required"),
+    dimension: string().required(m.dashboards_filters_field_required()),
     operation: mixed<MeasureFilterOperation>()
       .oneOf(Object.values(MeasureFilterOperation))
-      .required("Required"),
+      .required(m.dashboards_filters_field_required()),
     value1: string()
-      .required("Required")
-      .test("is-numeric", "Value must be a valid number", (value) => {
+      .required(m.dashboards_filters_field_required())
+      .test("is-numeric", m.dashboards_filters_invalid_number(), (value) => {
         return !isNaN(Number(value)) && value.trim() !== "";
       }),
     value2: string().when("operation", {
       is: (val: MeasureFilterOperation) => expressionIsBetween(val),
       then: (schema) =>
         schema
-          .required("Required")
-          .test("is-numeric", "Value must be a valid number", (value) => {
-            return !isNaN(Number(value)) && value.trim() !== "";
-          }),
+          .required(m.dashboards_filters_field_required())
+          .test(
+            "is-numeric",
+            m.dashboards_filters_invalid_number(),
+            (value) => {
+              return !isNaN(Number(value)) && value.trim() !== "";
+            },
+          ),
       otherwise: (schema) => schema.optional(),
     }),
   });
@@ -165,9 +170,9 @@
     <Select
       bind:value={$form["dimension"]}
       id="dimension"
-      label="By dimension"
+      label={m.dashboards_filters_by_dimension()}
       options={dimensionOptions}
-      placeholder="Select dimension to split by"
+      placeholder={m.dashboards_filters_select_dimension()}
     />
     <Select
       bind:value={$form["operation"]}
@@ -185,7 +190,7 @@
         }
       }}
       id="operation"
-      label="Threshold"
+      label={m.dashboards_filters_threshold()}
       options={MeasureFilterOperationOptions}
     />
     <Input
@@ -194,7 +199,9 @@
       id="value1"
       onEnter={submit}
       alwaysShowError
-      placeholder={isBetweenExpression ? "Lower value" : "Enter a number"}
+      placeholder={isBetweenExpression
+        ? m.dashboards_filters_lower_value()
+        : m.dashboards_filters_enter_number()}
     />
 
     {#if isBetweenExpression}
@@ -202,12 +209,14 @@
         bind:value={$form["value2"]}
         errors={$errors["value2"]}
         id="value2"
-        placeholder="Higher value"
+        placeholder={m.dashboards_filters_higher_value()}
         alwaysShowError
         onEnter={submit}
       />
     {/if}
 
-    <Button submitForm type="primary" form={$formId}>Apply</Button>
+    <Button submitForm type="primary" form={$formId}
+      >{m.dashboards_filters_apply()}</Button
+    >
   </form>
 </Popover.Content>

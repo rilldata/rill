@@ -3,6 +3,7 @@
   import Close from "@rilldata/web-common/components/icons/Close.svelte";
   import SearchIcon from "@rilldata/web-common/components/icons/Search.svelte";
   import { Search } from "@rilldata/web-common/components/search";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { slideRight } from "../../../lib/transitions";
 
   export let value: string;
@@ -23,7 +24,7 @@
     onClick={() => (isSearchElementOpen = !isSearchElementOpen)}
   >
     <SearchIcon size="16px" />
-    <span>Search</span>
+    <span>{m.dashboards_toolbar_search()}</span>
   </Button>
 {:else}
   <div transition:slideRight={{}} class="flex items-center gap-x-1">

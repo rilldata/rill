@@ -2,13 +2,15 @@
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import {
     DimensionFilterMode,
-    DimensionFilterModeOptions,
+    getDimensionFilterModeOptions,
   } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants";
 
   export let mode: DimensionFilterMode;
   export let disabled: boolean = false;
   export let size: "sm" | "md" | "lg" = "md";
   export let onModeChange: (mode: DimensionFilterMode) => void = () => {};
+
+  $: modeOptions = getDimensionFilterModeOptions();
 
   function handleModeChange(newMode: DimensionFilterMode) {
     onModeChange(newMode);
@@ -18,7 +20,7 @@
 <Select
   id="dimension-filter-mode-selector"
   bind:value={mode}
-  options={DimensionFilterModeOptions}
+  options={modeOptions}
   onChange={handleModeChange}
   {size}
   {disabled}

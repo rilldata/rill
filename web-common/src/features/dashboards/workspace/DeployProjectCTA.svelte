@@ -14,6 +14,7 @@
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
   import ProjectContainsRemoteChangesDialog from "@rilldata/web-common/features/project/ProjectContainsRemoteChangesDialog.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
@@ -90,7 +91,7 @@
         // So if it is true without a user, then there was an unexpected error somewhere.
         eventBus.emit("notification", {
           type: "error",
-          message: "Authentication failed. Please try deploying again.",
+          message: m.dashboards_deploy_auth_failed(),
         });
         return;
       }
@@ -136,8 +137,7 @@
     if (!resp.output) {
       remoteChangeDialog = false;
       eventBus.emit("notification", {
-        message:
-          "Remote project changes fetched and merged. Your changes have been stashed.",
+        message: m.dashboards_deploy_remote_changes_merged(),
       });
       return;
     }
@@ -170,10 +170,10 @@
     >
       <Rocket size={16} />
 
-      Deploy
+      {m.dashboards_deploy_button()}
     </Button>
     <TooltipContent slot="tooltip-content">
-      Deploy this project to Rill Cloud
+      {m.dashboards_deploy_tooltip()}
     </TooltipContent>
   </Tooltip>
 {/if}

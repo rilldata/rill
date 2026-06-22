@@ -41,6 +41,22 @@ const MIGRATED_GLOBS = [
   "web-admin/src/features/dashboards/listing/DashboardsTable.svelte",
   "web-admin/src/features/dashboards/listing/DashboardsTableCompositeCell.svelte",
   "web-admin/src/features/dashboards/listing/LastRefreshedDate.svelte",
+  // explore dashboard route + errored state (chunk C).
+  "web-admin/src/routes/*organization*/*project*/explore/*dashboard*/+page.svelte",
+  "web-admin/src/routes/*organization*/*project*/explore/*dashboard*/+layout.svelte",
+  "web-admin/src/features/dashboards/DashboardErrored.svelte",
+  // web-common explores feature (chunk D).
+  "web-common/src/features/explores/**/*.svelte",
+  // web-common dashboard shell/chrome (chunk E).
+  "web-common/src/features/dashboards/*.svelte",
+  "web-common/src/features/dashboards/workspace/*.svelte",
+  "web-common/src/features/dashboards/toolbars/*.svelte",
+  "web-common/src/features/dashboards/tab-bar/*.svelte",
+  "web-common/src/features/dashboards/listing/*.svelte",
+  "web-common/src/features/dashboards/errors/*.svelte",
+  // web-common dashboard filters + dimension search (chunk F).
+  "web-common/src/features/dashboards/filters/**/*.svelte",
+  "web-common/src/features/dashboards/dimension-search/**/*.svelte",
 ];
 
 // Human-facing attributes worth translating. Attributes like `class`, `id`,

@@ -21,6 +21,7 @@
   import DimensionFilterChipBody from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterChipBody.svelte";
   import DimensionFilterFooter from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterFooter.svelte";
   import DimensionFilterModeSelector from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterModeSelector.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { V1Expression } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
@@ -159,9 +160,12 @@
   } = $allSearchResultsCountQuery);
   $: searchResultCountText = enableSearchCountQuery
     ? curMode === DimensionFilterMode.Contains
-      ? `${allSearchResultsCount} results`
-      : `${allSearchResultsCount} of ${searchedBulkValues.length} matched`
-    : "0 results";
+      ? m.dashboards_filters_results_count({ count: allSearchResultsCount ?? 0 })
+      : m.dashboards_filters_results_matched({
+          count: allSearchResultsCount ?? 0,
+          total: searchedBulkValues.length,
+        })
+    : m.dashboards_filters_results_count({ count: 0 });
 
   $: searchPlaceholder = getSearchPlaceholder(curMode);
 
@@ -434,19 +438,20 @@
           error={!!missingRequired}
           active={open}
           exclude={curExcludeMode}
-          label={`${name} filter`}
+          label={m.dashboards_filters_chip_label({ name })}
           theme
           onRemove={() => removeDimensionFilter(name, metricsViewNames)}
           removable={!readOnly && !curPinned && !required}
           {readOnly}
-          removeTooltipText="remove {selectedValues.length} value{selectedValues.length !==
-          1
-            ? 's'
-            : ''}"
+          removeTooltipText={m.dashboards_filters_remove_values({
+            count: selectedValues.length,
+          })}
         >
           <DimensionFilterChipBody
             slot="body"
-            label={curExcludeMode ? `Exclude ${label}` : label}
+            label={curExcludeMode
+              ? m.dashboards_filters_exclude_prefix({ label })
+              : label}
             show={1}
             {smallChip}
             values={curMode === DimensionFilterMode.InList
@@ -465,14 +470,14 @@
               <svelte:fragment slot="name">{name}</svelte:fragment>
               <svelte:fragment slot="description"
                 >{required
-                  ? "required dimension"
-                  : "dimension"}</svelte:fragment
+                  ? m.dashboards_filters_required_dimension()
+                  : m.dashboards_filters_dimension()}</svelte:fragment
               >
             </TooltipTitle>
             {#if missingRequired}
-              This filter is required. Select a value to load the dashboard.
+              {m.dashboards_filters_required_select_value()}
             {:else}
-              Click to edit the filters in this dimension
+              {m.dashboards_filters_edit_dimension()}
             {/if}
           </TooltipContent>
         </div>
@@ -522,7 +527,7 @@
         />
         <Search
           bind:value={curSearchText}
-          label={`${name} search list`}
+          label={m.dashboards_filters_search_list_label({ name })}
           showBorderOnFocus={false}
           retainValueOnMount
           placeholder={searchPlaceholder}
@@ -536,7 +541,7 @@
           {#if curMode !== DimensionFilterMode.Select}
             <span
               class="px-2 py-1.5 pb-0 uppercase text-[10px] text-fg-secondary font-semibold"
-              aria-label={`${name} result count`}
+              aria-label={m.dashboards_filters_result_count_aria({ name })}
             >
               {searchResultCountText}
             </span>
@@ -560,13 +565,18 @@
           <LoadingSpinner />
         </div>
       {:else if error}
-        <div class="min-h-9 p-3 text-center text-red-600 text-xs">error</div>
+        <div class="min-h-9 p-3 text-center text-red-600 text-xs">
+          {m.dashboards_filters_results_error()}
+        </div>
       {:else if inListTooLong}
         <div class="min-h-9 p-3 text-center text-red-600 text-xs">
-          List is too long. Please remove some values.
+          {m.dashboards_filters_list_too_long()}
         </div>
       {:else if correctedSearchResults}
-        <DropdownMenu.Group class="px-1" aria-label={`${name} results`}>
+        <DropdownMenu.Group
+          class="px-1"
+          aria-label={m.dashboards_filters_results_aria({ name })}
+        >
           <!-- Show checked items first (only in Select mode and when not searching) -->
           {#if curMode === DimensionFilterMode.Select && !curSearchText}
             {#each checkedItems as name (name)}
@@ -629,7 +639,7 @@
           <!-- Show "no results" only if both checked and unchecked are empty -->
           {#if uncheckedItems.length === 0 && (curMode !== DimensionFilterMode.Select || checkedItems.length === 0)}
             <div class="text-fg-disabled text-center p-2 w-full">
-              no results
+              {m.dashboards_filters_no_results()}
             </div>
           {/if}
         </DropdownMenu.Group>

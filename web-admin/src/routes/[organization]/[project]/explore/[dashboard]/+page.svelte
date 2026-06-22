@@ -19,6 +19,7 @@
   } from "@rilldata/web-common/features/explores/selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { isNotFoundError } from "@rilldata/web-common/lib/errors";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { PageData } from "./$types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
@@ -48,8 +49,8 @@
   $: if (isDashboardNotFound) {
     errorStore.set({
       statusCode: 404,
-      header: "Dashboard not found",
-      body: `The dashboard you requested could not be found. Please check that you provided the name of a working dashboard.`,
+      header: m.dashboards_not_found_header(),
+      body: m.dashboards_not_found_body(),
     });
   }
 
@@ -103,7 +104,7 @@
 </script>
 
 <svelte:head>
-  <title>{exploreTitle || `${exploreName} - Rill`}</title>
+  <title>{exploreTitle || m.dashboards_page_title({ name: exploreName })}</title>
 </svelte:head>
 
 {#if $explore.isSuccess}

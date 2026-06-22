@@ -1,5 +1,6 @@
 <script lang="ts">
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let disabled = false;
   export let selected = false;
@@ -14,7 +15,7 @@
     <slot />
     {#if disabled}
       <div class="disabled group-hover:block">
-        <TooltipContent>Coming Soon</TooltipContent>
+        <TooltipContent>{m.dashboards_tab_coming_soon()}</TooltipContent>
       </div>
     {/if}
   </a>
@@ -23,7 +24,7 @@
     <slot />
     {#if disabled}
       <div class="disabled group-hover:block">
-        <TooltipContent>Coming Soon</TooltipContent>
+        <TooltipContent>{m.dashboards_tab_coming_soon()}</TooltipContent>
       </div>
     {/if}
   </button>

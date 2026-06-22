@@ -3,6 +3,7 @@
   import Pivot from "@rilldata/web-common/components/icons/Pivot.svelte";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
@@ -15,18 +16,18 @@
   type TabName = MetricsEventScreenName.Pivot | MetricsEventScreenName.Explore;
   type TabData = { label: string; Icon: ComponentType; beta?: true };
 
-  const tabs = new Map<TabName, TabData>([
+  $: tabs = new Map<TabName, TabData>([
     [
       MetricsEventScreenName.Explore,
       {
-        label: "Explore",
+        label: m.dashboards_tab_explore(),
         Icon: Chart,
       },
     ],
     [
       MetricsEventScreenName.Pivot,
       {
-        label: "Pivot",
+        label: m.dashboards_tab_pivot(),
         Icon: Pivot,
       },
     ],
@@ -54,6 +55,7 @@
 
 <div class="mr-4">
   <div class="flex gap-x-2">
+    <!-- i18n-ignore: `label` is a localized message; nested braces trip the guard -->
     {#each tabs as [tab, { label, Icon, beta }] (tab)}
       {#if !hidePivot || tab === MetricsEventScreenName.Explore}
         {@const selected = tab === currentTab}

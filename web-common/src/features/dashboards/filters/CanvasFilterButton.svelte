@@ -5,6 +5,7 @@
   import SearchableMenuContent from "@rilldata/web-common/components/searchable-filter-menu/SearchableMenuContent.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import {
     getDimensionDisplayName,
     getMeasureDisplayName,
@@ -69,11 +70,13 @@
           {...props}
           class:addBorder
           class:active={open}
-          aria-label="Add filter button"
+          aria-label={m.dashboards_filters_add_aria()}
         >
           <Add size="17px" />
         </button>
-        <TooltipContent slot="tooltip-content">Add filter</TooltipContent>
+        <TooltipContent slot="tooltip-content"
+          >{m.dashboards_filters_add()}</TooltipContent
+        >
       </Tooltip>
     {/snippet}
   </DropdownMenu.Trigger>

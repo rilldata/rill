@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import TimeRangeReadOnly from "./TimeRangeReadOnly.svelte";
   import DimensionFilterReadOnlyChip from "./dimension-filters/DimensionFilterReadOnlyChip.svelte";
   import MeasureFilterReadOnlyChip from "./measure-filters/MeasureFilterReadOnlyChip.svelte";
@@ -18,7 +19,7 @@
   class:flex-col={col}
   class:flex-wrap={!col}
   class="flex gap-y-2 gap-x-2 w-full flex-none"
-  aria-label="Readonly Filter Chips"
+  aria-label={m.dashboards_filters_readonly_aria()}
 >
   <div class="flex gap-x-2">
     {#if timeRangeString}
@@ -44,7 +45,7 @@
         label={dimension.displayName ||
           dimension.name ||
           dimension.column ||
-          "Unnamed Dimension"}
+          m.dashboards_filters_unnamed_dimension()}
         mode={filterData.mode}
         values={filterData.selectedValues ?? []}
         inputText={filterData.inputText}

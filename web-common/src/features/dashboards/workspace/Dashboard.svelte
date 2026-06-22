@@ -9,6 +9,7 @@
   import TabBar from "@rilldata/web-common/features/dashboards/tab-bar/TabBar.svelte";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
@@ -170,8 +171,10 @@
       <!-- Additional safeguard for mock users without dashboard access. -->
       <ErrorPage
         statusCode={extractErrorStatusCode(exploreError)}
-        header="This user can't access this dashboard"
-        body="The security policy for this dashboard may make contents invisible to you. If you deploy this dashboard, {$selectedMockUserStore?.email} will see a 404."
+        header={m.dashboards_mock_user_no_access_header()}
+        body={m.dashboards_mock_user_no_access_body({
+          email: $selectedMockUserStore?.email ?? "",
+        })}
       />
     {:else if $showPivot}
       <PivotDisplay {isEmbedded} />

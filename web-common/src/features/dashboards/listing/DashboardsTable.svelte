@@ -4,6 +4,7 @@
   import ResourceListEmptyState from "@rilldata/web-common/features/resources/ResourceListEmptyState.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { renderComponent } from "tanstack-table-8-svelte-5";
   import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
@@ -128,7 +129,7 @@
         <slot name="empty">
           <ResourceListEmptyState
             icon={ExploreIcon}
-            message="You don't have any dashboards yet"
+            message={m.dashboards_listing_empty_title()}
           >
             <span slot="action">
               <a
@@ -136,8 +137,9 @@
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Create a dashboard</a
-              > to get started
+                {m.dashboards_listing_empty_create_link()}</a
+              >
+              {m.dashboards_listing_empty_create_suffix()}
             </span>
           </ResourceListEmptyState>
         </slot>
@@ -149,7 +151,7 @@
           href={seeAllHref}
           class="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors inline-block"
         >
-          See all dashboards &rarr;
+          {m.dashboards_listing_see_all()} →
         </a>
       </div>
     {/if}

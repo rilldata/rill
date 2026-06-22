@@ -6,27 +6,32 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let excludeMode: boolean;
   export let onClick: () => void;
-
-  const getMode = (isExclude: boolean) => (isExclude ? "exclude" : "include");
 </script>
 
 <Tooltip distance={8} location="top">
   <Button type="toolbar" {onClick}>
     <Switch checked={excludeMode} small />
-    <p>Exclude</p>
+    <p>{m.dashboards_toolbar_exclude_label()}</p>
   </Button>
   <TooltipContent slot="tooltip-content">
     <TooltipTitle>
       <svelte:fragment slot="name">
-        Output {getMode(excludeMode)}s selected values
+        {excludeMode
+          ? m.dashboards_toolbar_exclude_output_exclude()
+          : m.dashboards_toolbar_exclude_output_include()}
       </svelte:fragment>
     </TooltipTitle>
     <TooltipShortcutContainer>
-      <div>Toggle to {getMode(!excludeMode)} values</div>
-      <Shortcut>Click</Shortcut>
+      <div>
+        {excludeMode
+          ? m.dashboards_toolbar_exclude_toggle_include()
+          : m.dashboards_toolbar_exclude_toggle_exclude()}
+      </div>
+      <Shortcut>{m.dashboards_toolbar_shortcut_click()}</Shortcut>
     </TooltipShortcutContainer>
   </TooltipContent>
 </Tooltip>

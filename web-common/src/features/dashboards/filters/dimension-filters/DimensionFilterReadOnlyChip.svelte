@@ -6,6 +6,7 @@
     useDimensionSearch,
   } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-values";
   import DimensionFilterChipBody from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterChipBody.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   export let name: string;
@@ -22,7 +23,9 @@
 
   const client = useRuntimeClient();
 
-  $: effectiveLabel = isInclude ? label : `Exclude ${label}`;
+  $: effectiveLabel = isInclude
+    ? label
+    : m.dashboards_filters_exclude_prefix({ label });
   $: sanitisedSearchText = inputText?.replace(/^%/, "").replace(/%$/, "");
 
   $: enableSearchQuery =

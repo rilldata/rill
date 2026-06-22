@@ -13,6 +13,7 @@
     type ExploreLinkError,
   } from "@rilldata/web-common/features/explore-mappers/types";
   import { getErrorMessage } from "@rilldata/web-common/features/explore-mappers/utils";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
@@ -64,8 +65,8 @@
 
   $: canNavigate = !isNavigating && !!exploreState && !disabled;
   $: tooltipText = displayName
-    ? `Go to ${displayName}`
-    : "Go to Explore Dashboard";
+    ? m.explores_link_goto_named({ name: displayName })
+    : m.explores_link_goto_default();
 </script>
 
 {#if mode === "dropdown-item"}
@@ -75,7 +76,7 @@
     {:else}
       <ExploreIcon size="14px" />
     {/if}
-    Go to Explore
+    {m.explores_link_goto_short()}
   </DropdownMenu.Item>
 {:else if mode === "icon-button"}
   <IconButton
@@ -108,7 +109,7 @@
 
 {#if navigationError && mode === "inline"}
   <div class="flex flex-col gap-y-2 text-red-600 mt-2">
-    <h3 class="text-sm font-semibold">Unable to open Explore Dashboard</h3>
+    <h3 class="text-sm font-semibold">{m.explores_link_error_title()}</h3>
     <p class="text-xs">{getErrorMessage(navigationError)}</p>
   </div>
 {:else if isNavigating && mode === "inline"}

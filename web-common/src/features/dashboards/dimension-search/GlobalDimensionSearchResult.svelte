@@ -5,6 +5,7 @@
     DropdownMenuItem,
     DropdownMenuLabel,
   } from "@rilldata/web-common/components/dropdown-menu";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let dimension: string;
   export let values: any[];
@@ -14,6 +15,7 @@
   const FULL_LIST_COUNT = 100;
 
   $: count = values.length;
+  $: countLabel = count >= FULL_LIST_COUNT ? `${count}+` : `${count}`;
   let expanded = false;
   $: showExpand = count > SHORT_LIST_COUNT;
 
@@ -24,7 +26,7 @@
   <DropdownMenuLabel class="flex flex-col text-fg-secondary">
     <div class="font-semibold text-[10px] h-4">{dimension.toUpperCase()}</div>
     <div class="font-normal text-[11px] h-4">
-      {count}{count >= FULL_LIST_COUNT ? "+" : ""} result{count > 1 ? "s" : ""}
+      {m.dashboards_dim_search_results({ label: countLabel, n: count })}
     </div>
   </DropdownMenuLabel>
   <div class="flex flex-col">
@@ -43,7 +45,9 @@
         onClick={() => (expanded = !expanded)}
         class="justify-items-start"
       >
-        {expanded ? "See less" : "See more"}
+        {expanded
+          ? m.dashboards_dim_search_see_less()
+          : m.dashboards_dim_search_see_more()}
       </Button>
     {/if}
   </div>

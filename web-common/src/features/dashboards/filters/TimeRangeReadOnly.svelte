@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Chip } from "@rilldata/web-common/components/chip";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { getComparisonLabel } from "@rilldata/web-common/lib/time/comparisons";
   import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
   import { DateTime, Interval } from "luxon";
@@ -25,7 +26,7 @@
     <div class="text-fg-primary flex gap-x-1.5">
       <div class="font-bold">
         {#if showRange}
-          Custom
+          {m.dashboards_filters_time_custom()}
         {:else}
           {selectedLabel}
         {/if}
@@ -47,7 +48,7 @@
   <Chip type="time" readOnly>
     <svelte:fragment slot="body">
       <div class="text-fg-primary px-2">
-        vs
+        {m.dashboards_filters_comparison_vs()}
         <span class:font-bold={hasBoldTimeRange}>
           {getComparisonLabel(comparisonTimeRange)}
         </span>

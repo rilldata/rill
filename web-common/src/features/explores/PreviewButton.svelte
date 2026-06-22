@@ -5,6 +5,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { clearExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
   import { clearMostRecentExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
@@ -41,7 +42,7 @@
 
 <Tooltip distance={8} location="left">
   <Button
-    label="Preview"
+    label={m.explores_preview_button()}
     type="secondary"
     preload={false}
     compact
@@ -52,16 +53,16 @@
   >
     <div class="flex gap-x-1 items-center">
       <Play size={14} />
-      Preview
+      {m.explores_preview_button()}
     </div>
   </Button>
   <TooltipContent slot="tooltip-content">
     {#if reconciling}
-      Dashboard preview available after reconciliation
+      {m.explores_preview_tooltip_reconciling()}
     {:else if disabled}
-      File errors must be resolved before previewing
+      {m.explores_preview_tooltip_disabled()}
     {:else}
-      Preview dashboard
+      {m.explores_preview_tooltip_default()}
     {/if}
   </TooltipContent>
 </Tooltip>

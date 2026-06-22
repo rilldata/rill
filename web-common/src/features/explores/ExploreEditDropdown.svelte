@@ -6,6 +6,7 @@
   import MetricsViewIcon from "@rilldata/web-common/components/icons/MetricsViewIcon.svelte";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { getFileHref } from "@rilldata/web-common/layout/navigation/editor-routing";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   let { exploreName }: { exploreName: string } = $props();
@@ -25,7 +26,7 @@
   <DropdownMenu.Trigger>
     {#snippet child({ props })}
       <Button {...props} type="secondary">
-        Edit
+        {m.common_edit()}
         <CaretDownIcon />
       </Button>
     {/snippet}
@@ -33,11 +34,11 @@
   <DropdownMenu.Content align="end">
     <DropdownMenu.Item href={getFileHref(exploreFilePath)}>
       <ExploreIcon size="16px" />
-      Explore dashboard
+      {m.explores_edit_dropdown_explore()}
     </DropdownMenu.Item>
     <DropdownMenu.Item href={getFileHref(metricsViewFilePath)}>
       <MetricsViewIcon size="16px" />
-      Metrics View
+      {m.explores_edit_dropdown_metrics_view()}
     </DropdownMenu.Item>
   </DropdownMenu.Content>
 </DropdownMenu.Root>

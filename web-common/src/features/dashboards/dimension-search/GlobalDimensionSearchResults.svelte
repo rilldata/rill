@@ -6,6 +6,7 @@
     useDimensionSearchResults,
   } from "@rilldata/web-common/features/dashboards/dimension-search/useDimensionSearchResults";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
     DropdownMenu,
@@ -46,6 +47,8 @@
   $: responses = ($results?.responses.filter((r) => r?.values?.length) ??
     []) as DimensionSearchResult[];
 
+  $: showProgress = $results && $results.progress < 100;
+
   function onItemSelect(dimension: string, value: any) {
     onSelect();
     toggleDimensionValueSelection(dimension, value, false, true);
@@ -61,7 +64,7 @@
       <button
         {...props}
         class="absolute left-32"
-        aria-label="Dimension search results"
+        aria-label={m.dashboards_dim_search_results_aria()}
       ></button>
     {/snippet}
   </DropdownMenuTrigger>
@@ -72,12 +75,14 @@
     <div class="flex flex-col divide-y divide-gray-200">
       {#if $results.errors.length}
         <div class="text-center p-2 w-full text-red-500">
-          Search error. Try again.
+          {m.dashboards_dim_search_error()}
         </div>
       {:else if $results.completed && responses.length === 0}
-        <div class="text-fg-disabled text-center p-2 w-full">no results</div>
+        <div class="text-fg-disabled text-center p-2 w-full">
+          {m.dashboards_filters_no_results()}
+        </div>
       {:else}
-        {#if $results.progress < 100}
+        {#if showProgress}
           <div class="flex flex-row items-center gap-x-2 px-2">
             <Progress value={$results.progress} max={100} class="h-1" />
             <div class="text-fg-secondary text-[11px]">
@@ -85,6 +90,7 @@
             </div>
           </div>
         {/if}
+        <!-- i18n-ignore: destructuring, not user-facing copy -->
         {#each responses as { dimension, values } (dimension)}
           <GlobalDimensionSearchResult
             {dimension}

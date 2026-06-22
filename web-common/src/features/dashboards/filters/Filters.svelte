@@ -10,6 +10,7 @@
   import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { isUrlTooLong } from "@rilldata/web-common/features/dashboards/url-state/url-length-limits";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import type { TimeRange } from "@rilldata/web-common/lib/time/types";
   import {
@@ -491,7 +492,8 @@
         <Tooltip.Root delayDuration={0}>
           <Tooltip.Trigger>
             <span class="text-fg-secondary italic">
-              as of <Timestamp
+              {m.dashboards_filters_as_of()}
+              <Timestamp
                 id="filter-bar-as-of"
                 italic
                 suppress
@@ -526,7 +528,7 @@
           class="text-fg-muted grid ml-1 items-center"
           style:min-height={ROW_HEIGHT}
         >
-          No filters selected
+          {m.dashboards_filters_none_selected()}
         </div>
       {:else}
         {#each allDimensionFilters as filterData (filterData.name)}
@@ -587,7 +589,9 @@
         <!-- if filters are present, place a chip at the end of the flex container 
       that enables clearing all filters -->
         {#if hasFilters}
-          <Button type="text" onClick={clearAllFilters}>Clear filters</Button>
+          <Button type="text" onClick={clearAllFilters}
+            >{m.dashboards_filters_clear()}</Button
+          >
         {/if}
       {/if}
     </div>

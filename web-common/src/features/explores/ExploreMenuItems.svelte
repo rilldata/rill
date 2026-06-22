@@ -1,5 +1,6 @@
 <script lang="ts">
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { GitBranch } from "lucide-svelte";
@@ -27,5 +28,5 @@
 
 <NavigationMenuItem onclick={viewGraph}>
   <GitBranch slot="icon" size="14px" />
-  View DAG graph
+  {m.explores_menu_view_dag()}
 </NavigationMenuItem>
