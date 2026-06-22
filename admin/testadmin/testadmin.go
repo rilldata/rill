@@ -341,7 +341,7 @@ func (m *mockGithub) InstallationTokenForOrg(ctx context.Context, org string) (s
 }
 
 func (m *mockGithub) DeleteBranch(ctx context.Context, installationID, repoID int64, remote, branch string) error {
-	return fmt.Errorf("not implemented")
+	return nil
 }
 
 func (m *mockGithub) CreateManagedRepo(ctx context.Context, repoPrefix string, autoInit bool) (*github.Repository, error) {
