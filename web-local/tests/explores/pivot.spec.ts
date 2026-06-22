@@ -667,6 +667,9 @@ test.describe("pivot run through", () => {
       await page.getByRole("menuitem", { name: "Last 4 weeks" }).click();
     });
 
+    // Wait for the time-range change to re-run queries before dragging chips.
+    await expect(page.locator(".status.running")).toHaveCount(0);
+
     // add measure and time week to column
     await dragPivotChip(page, totalRecords, columnZone);
 

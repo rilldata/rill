@@ -26,6 +26,14 @@ test.describe("canvas time filters", () => {
       .click();
     await page.getByRole("menuitem", { name: "Last 7 days" }).click();
 
+    // Wait for the local time range to apply before enabling comparison,
+    // otherwise the comparison toggle can race the range change.
+    await expect(
+      page
+        .getByRole("complementary", { name: "Inspector Panel" })
+        .getByLabel("Select time range"),
+    ).toContainText("Last 7");
+
     await page
       .getByRole("complementary", { name: "Inspector Panel" })
       .getByLabel("Toggle time comparison")
