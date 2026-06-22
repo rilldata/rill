@@ -1310,6 +1310,9 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 
 	// Start reconcile in background
 	ctx = contextWithInvocation(ctx, inv)
+	// Tag all reconcile-driven queries as "internal" so they're excluded from billing. This propagates to every nested
+	// Query/Resolve call; user-facing execution paths (e.g. alert/report query evaluation) override the source deeper.
+	ctx = WithRequestSource(ctx, RequestSourceInternal)
 	go func() {
 		defer func() {
 			// Catch panics and set as error

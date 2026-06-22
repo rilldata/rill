@@ -703,6 +703,9 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 		queryForAttrs = a.Spec.GetQueryForAttributes().AsMap()
 	}
 
+	// Tag as alert execution so the metrics queries it runs are attributed to the "alert" source for billing.
+	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceAlert)
+
 	res, info, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         r.C.InstanceID,
 		Resolver:           a.Spec.Resolver,

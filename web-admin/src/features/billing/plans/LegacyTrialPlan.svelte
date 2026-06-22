@@ -5,6 +5,7 @@
   } from "@rilldata/web-admin/client";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import PlanContainer from "@rilldata/web-admin/features/billing/plans/PlanContainer.svelte";
+  import PricingLink from "@rilldata/web-admin/features/billing/plans/modules/PricingLink.svelte";
 
   let {
     organization,
@@ -89,23 +90,8 @@
       </span>
       <span class="text-xs text-fg-tertiary">30 days</span>
     </div>
-    <a
-      class="pricing-link"
-      href="https://www.rilldata.com/pricing"
-      target="_blank"
-      rel="noreferrer noopener"
-    >
-      See pricing details
-      <svg
-        class="w-3 h-3"
-        viewBox="0 0 12 12"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.5"
-      >
-        <path d="M1 6h9M7.5 3l3 3-3 3" />
-      </svg>
-    </a>
+
+    <PricingLink />
   </div>
 </PlanContainer>
 
@@ -133,15 +119,6 @@
 
   .trial-bar-fill {
     @apply h-full bg-primary-500 rounded-full transition-all;
-  }
-
-  .pricing-link {
-    @apply mt-3 inline-flex items-center gap-1 self-end;
-    @apply text-xs font-medium text-primary-600 no-underline;
-  }
-
-  .pricing-link:hover {
-    @apply underline;
   }
 
   .subscribe-btn {

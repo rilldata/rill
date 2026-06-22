@@ -18,8 +18,10 @@ import {
 import {
   isEnterprisePlan,
   isFreePlan,
+  isGrowthPlan,
   isManagedPlan,
   isProPlan,
+  isStarterPlan,
   isTeamPlan,
 } from "@rilldata/web-admin/features/billing/plans/utils";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -29,14 +31,21 @@ import { DateTime } from "luxon";
 import { derived, type Readable } from "svelte/store";
 import type { PlanTier } from "@rilldata/web-admin/features/billing/plans/types.ts";
 import type { CategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors.ts";
+import { SELF_SERVE_PLANS_BY_NAME } from "@rilldata/web-admin/features/billing/plans/plan-details.ts";
 
-export async function fetchPaidPlan() {
+export async function maybeFetchPublicPlanByName(planName: string) {
+  const staticPlan = SELF_SERVE_PLANS_BY_NAME[planName];
+  if (staticPlan) return staticPlan;
+
   const plansResp = await queryClient.fetchQuery({
     queryKey: getAdminServiceListPublicBillingPlansQueryKey(),
     queryFn: () => adminServiceListPublicBillingPlans(),
   });
 
-  return plansResp.plans?.find((p) => isTeamPlan(p.name ?? ""));
+  const remotePlan = plansResp.plans?.find((p) => p.name === planName);
+  if (remotePlan) return remotePlan;
+
+  throw new Error(`Plan ${planName} not found`);
 }
 
 /**
@@ -67,9 +76,16 @@ export async function fetchPaymentsPortalURL(
   return portalUrlResp.url ?? "";
 }
 
-export function getBillingUpgradeUrl(page: Page, organization: string) {
+export function getBillingUpgradeUrl(
+  page: Page,
+  organization: string,
+  planName?: string,
+) {
   const url = new URL(page.url);
   url.pathname = `/${organization}/-/upgrade-callback`;
+  if (planName) {
+    url.searchParams.set("plan", planName);
+  }
   return url.toString();
 }
 
@@ -214,6 +230,16 @@ export function getPlanTierForSubscription(
     isProPlan(planName)
   )
     return "pro";
+  if (
+    planType === V1BillingPlanType.BILLING_PLAN_TYPE_STARTER ||
+    isStarterPlan(planName)
+  )
+    return "starter";
+  if (
+    planType === V1BillingPlanType.BILLING_PLAN_TYPE_GROWTH ||
+    isGrowthPlan(planName)
+  )
+    return "growth";
   if (isFreePlan(planName)) return "free";
   // free_trial, no plan, cancelled — all trial
   return "trial";

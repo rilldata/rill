@@ -13,9 +13,8 @@
     isQuotaDeployError,
   } from "@rilldata/web-common/features/project/deploy/deploy-errors.ts";
   import { Button } from "@rilldata/web-common/components/button";
-  import PricingDetails from "@rilldata/web-common/features/billing/PricingDetails.svelte";
   import CTAHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
-  import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/dialog/StartTeamPlanDialog.svelte";
+  import ChoosePlanDialog from "@rilldata/web-admin/features/billing/plans/dialog/ChoosePlanDialog.svelte";
   import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types.ts";
   import { projectWelcomeStatus } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
   import { CreateProjectBranchName } from "@rilldata/web-admin/features/projects/publish-project.ts";
@@ -49,7 +48,7 @@
     {#if deployError && isQuotaDeployError(deployError)}
       <CTAHeader variant="bold">{deployError.title}</CTAHeader>
       <p class="text-base text-fg-secondary text-left w-[500px]">
-        <PricingDetails extraText={deployError.message} />
+        {deployError.message}
       </p>
       <Button
         type="primary"
@@ -95,7 +94,7 @@
   </div>
 </div>
 
-<StartTeamPlanDialog
+<ChoosePlanDialog
   bind:open={showStartTeamPlanDialog}
   type={startTeamPlanType}
   {organization}

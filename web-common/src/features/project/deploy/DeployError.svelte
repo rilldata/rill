@@ -5,7 +5,6 @@
   import CTAMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import CTAPylonHelp from "@rilldata/web-common/components/calls-to-action/CTAPylonHelp.svelte";
   import CancelCircleInverse from "@rilldata/web-common/components/icons/CancelCircleInverse.svelte";
-  import PricingDetails from "@rilldata/web-common/features/billing/PricingDetails.svelte";
   import {
     DeployErrorType,
     getPrettyDeployError,
@@ -29,7 +28,7 @@
 {#if isQuotaError}
   <CTAHeader variant="bold">{deployError.title}</CTAHeader>
   <p class="text-base text-fg-secondary text-left w-[500px]">
-    <PricingDetails extraText={deployError.message} />
+    {deployError.message}
   </p>
   <Button type="primary" href={planUpgradeUrl} wide>Upgrade</Button>
   <Button type="secondary" noStroke wide onClick={onBack}>Back</Button>
