@@ -68,13 +68,16 @@ func (d *dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsVie
 	return d.EscapeIdentifier(dimension.Name), nil
 }
 
-func (d *dialect) LateralUnnest(expr, _, colName string) (tbl string, tupleStyle, auto bool, err error) {
-	// using LEFT ARRAY JOIN instead of ARRAY JOIN to include empty arrays with zero values
-	return fmt.Sprintf("LEFT ARRAY JOIN %s AS %s", expr, d.EscapeIdentifier(colName)), false, false, nil
+func (d *dialect) LateralUnnest(_, _, _ string) (tbl string, tupleStyle, auto bool, err error) {
+	return "", false, true, nil
 }
 
-func (d *dialect) UnnestSQLSuffix(tbl string) string {
-	return fmt.Sprintf(" %s", tbl)
+func (d *dialect) UnnestSQLSuffix(_ string) string {
+	panic("ClickHouse auto unnests")
+}
+
+func (d *dialect) AutoUnnest(expr string) string {
+	return fmt.Sprintf("arrayJoin(%s)", expr)
 }
 
 func (d *dialect) RequiresArrayContainsForInOperator() bool { return true }
