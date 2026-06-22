@@ -18,7 +18,8 @@ type CompleteOptions struct {
 }
 
 type CompleteResult struct {
-	Message      *aiv1.CompletionMessage
-	InputTokens  int
-	OutputTokens int
+	Message           *aiv1.CompletionMessage
+	InputTokens       int
+	CachedInputTokens int
+	OutputTokens      int
 }

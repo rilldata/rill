@@ -309,10 +309,12 @@ export interface V1CompleteRequest {
 
 export interface V1CompleteResponse {
   message?: V1CompletionMessage;
-  /** Number of tokens in the input. */
+  /** Number of full-rate (non-cached) tokens in the input. */
   inputTokens?: number;
   /** Number of tokens in the output. */
   outputTokens?: number;
+  /** Number of cache-read (discounted) input tokens; disjoint from input_tokens. */
+  cachedInputTokens?: number;
 }
 
 export interface V1CompletionMessage {

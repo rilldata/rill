@@ -36,11 +36,6 @@ import (
 // Exceeding it will result in an error.
 const maxMessageSizeBytes = 100 * 1024 // 100 KB
 
-// managedAIConnector is the name of the Rill-managed AI connector (the admin proxy backed by Rill's own model and keys).
-// Completions served by any other connector are bring-your-own-model (the customer's keys and provider account), so
-// their token usage is not billable; the emitted "managed_ai" attribute lets billing filter on this downstream.
-const managedAIConnector = "admin"
-
 // Tracer for instrumenting requests.
 var tracer = otel.Tracer("github.com/rilldata/rill/runtime/ai")
 
@@ -200,7 +195,7 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 		logger:              logger,
 		activity:            activityClient,
 		projectInstructions: instance.AIInstructions,
-		managedAI:           instance.ResolveAIConnector() == managedAIConnector,
+		managedAI:           instance.ResolveAIConnector() == instance.AdminConnector,
 		acquireLLM: func(ctx context.Context) (drivers.AIService, func(), error) {
 			return r.Runtime.AI(ctx, opts.InstanceID)
 		},
@@ -1223,7 +1218,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 		// TODO: For durable execution, add messages from current scope.
 
 		// Telemetry
-		var iterations, truncations, inputTokens, outputTokens int
+		var iterations, truncations, inputTokens, outputTokens, cachedInputTokens int
 		s.logger.Debug("completion started",
 			zap.Int("initial_messages", len(messages)),
 			zap.Int("tools_count", len(tools)),
@@ -1256,10 +1251,13 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 				attribute.Int("added_messages", len(messages)-len(opts.Messages)),
 				attribute.Int("input_tokens", inputTokens),
 				attribute.Int("output_tokens", outputTokens),
+				attribute.Int("cached_input_tokens", cachedInputTokens),
 			)
 
 			// Emit billable token metrics. Tagged with the request source and whether the completion used the Rill-managed
 			// AI connector, so the billable scope is decided downstream in SQL (emitted for every completion, unlike tool_call).
+			// input_tokens and cached_input_tokens are disjoint (full-rate vs discounted cache-read input); total input is
+			// their sum. Cached input is emitted separately so billing can price it at the cheaper cached rate.
 			source := attribute.String("source", string(runtime.RequestSourceFromContext(ctx)))
 			managedAI := attribute.Bool("managed_ai", s.managedAI)
 			if inputTokens > 0 {
@@ -1267,6 +1265,9 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			}
 			if outputTokens > 0 {
 				s.activity.RecordMetric(ctx, "output_tokens", float64(outputTokens), source, managedAI)
+			}
+			if cachedInputTokens > 0 {
+				s.activity.RecordMetric(ctx, "cached_input_tokens", float64(cachedInputTokens), source, managedAI)
 			}
 		}()
 
@@ -1309,6 +1310,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 				resMsgsCount = len(res.Message.Content)
 				inputTokens += res.InputTokens
 				outputTokens += res.OutputTokens
+				cachedInputTokens += res.CachedInputTokens
 			}
 			s.logger.Debug("completion iteration got response", zap.Int("iteration", i), zap.Int("response_messages_count", resMsgsCount), zap.Error(err), observability.ZapCtx(ctx))
 

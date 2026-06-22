@@ -15,11 +15,12 @@ import (
 // Generic usage events ("query", "request_time_ms", "tool_call") carry a "source" attribute (and request_time_ms also
 // carries embed/user_id); the metrics project applies the billing-specific filtering and distinct counting downstream.
 var counterMetrics = map[string]bool{
-	"slot_seconds_spend": true,
-	"query":              true,
-	"tool_call":          true,
-	"input_tokens":       true,
-	"output_tokens":      true,
+	"slot_seconds_spend":  true,
+	"query":               true,
+	"tool_call":           true,
+	"input_tokens":        true,
+	"cached_input_tokens": true,
+	"output_tokens":       true,
 }
 
 // orgUsageMetric computes a billable usage value for an organization from the admin database.

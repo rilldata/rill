@@ -398,8 +398,12 @@ components:
             type: object
         v1CompleteResponse:
             properties:
+                cachedInputTokens:
+                    description: Number of cache-read (discounted) input tokens; disjoint from input_tokens.
+                    format: int64
+                    type: integer
                 inputTokens:
-                    description: Number of tokens in the input.
+                    description: Number of full-rate (non-cached) tokens in the input.
                     format: int64
                     type: integer
                 message:

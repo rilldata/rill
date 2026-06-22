@@ -74,7 +74,7 @@ export class CompleteResponse extends Message<CompleteResponse> {
   message?: CompletionMessage;
 
   /**
-   * Number of tokens in the input.
+   * Number of full-rate (non-cached) tokens in the input.
    *
    * @generated from field: uint32 input_tokens = 2;
    */
@@ -87,6 +87,13 @@ export class CompleteResponse extends Message<CompleteResponse> {
    */
   outputTokens = 0;
 
+  /**
+   * Number of cache-read (discounted) input tokens; disjoint from input_tokens.
+   *
+   * @generated from field: uint32 cached_input_tokens = 4;
+   */
+  cachedInputTokens = 0;
+
   constructor(data?: PartialMessage<CompleteResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -98,6 +105,7 @@ export class CompleteResponse extends Message<CompleteResponse> {
     { no: 1, name: "message", kind: "message", T: CompletionMessage },
     { no: 2, name: "input_tokens", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 3, name: "output_tokens", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 4, name: "cached_input_tokens", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteResponse {

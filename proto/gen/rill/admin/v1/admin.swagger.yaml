@@ -5019,11 +5019,15 @@ definitions:
       inputTokens:
         type: integer
         format: int64
-        description: Number of tokens in the input.
+        description: Number of full-rate (non-cached) tokens in the input.
       outputTokens:
         type: integer
         format: int64
         description: Number of tokens in the output.
+      cachedInputTokens:
+        type: integer
+        format: int64
+        description: Number of cache-read (discounted) input tokens; disjoint from input_tokens.
   v1CompletionMessage:
     type: object
     properties:

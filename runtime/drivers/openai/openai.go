@@ -355,10 +355,13 @@ func (o *openaiHandle) Complete(ctx context.Context, opts *drivers.CompleteOptio
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert response message: %w", err)
 	}
+	// OpenAI's PromptTokens includes cached tokens, so split out the cached portion.
+	cachedInputTokens := int(res.Usage.PromptTokensDetails.CachedTokens)
 	result := &drivers.CompleteResult{
-		Message:      resMsgs,
-		InputTokens:  int(res.Usage.PromptTokens),
-		OutputTokens: int(res.Usage.CompletionTokens),
+		Message:           resMsgs,
+		InputTokens:       int(res.Usage.PromptTokens) - cachedInputTokens,
+		CachedInputTokens: cachedInputTokens,
+		OutputTokens:      int(res.Usage.CompletionTokens),
 	}
 	return result, nil
 }
