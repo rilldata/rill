@@ -131,6 +131,14 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (res Resolv
 	}
 
 	ctx, span := tracer.Start(ctx, "runtime.Resolve", trace.WithAttributes(attribute.String("resolver", opts.Resolver)))
+
+	// Emit a generic billable query metric for resolver-based queries (REST API, MCP, alerts, reports, agent tools),
+	// tagged with the request source and resolver name (org/project attached for attribution). It is intentionally
+	// generic: downstream billing filters by source, and can exclude internal resolvers (e.g. metrics_cache_key, an
+	// internal helper invoked from runtime.Query) via the resolver attribute.
+	queryAttrs := append(r.GetInstanceAttributes(ctx, opts.InstanceID), attribute.String("source", string(RequestSourceFromContext(ctx))), attribute.String("resolver", opts.Resolver))
+	r.activity.RecordMetric(ctx, "query", 1, queryAttrs...)
+
 	var cacheHit bool
 	defer func() {
 		observability.AddRequestAttributes(ctx, attribute.Bool("query.cache_hit", cacheHit))

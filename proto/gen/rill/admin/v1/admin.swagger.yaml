@@ -4955,6 +4955,8 @@ definitions:
       - BILLING_PLAN_TYPE_ENTERPRISE
       - BILLING_PLAN_TYPE_FREE
       - BILLING_PLAN_TYPE_PRO
+      - BILLING_PLAN_TYPE_STARTER
+      - BILLING_PLAN_TYPE_GROWTH
     default: BILLING_PLAN_TYPE_UNSPECIFIED
   v1Bookmark:
     type: object
@@ -6141,6 +6143,9 @@ definitions:
       storageLimitBytesPerDeployment:
         type: string
         format: int64
+      seats:
+        type: integer
+        format: int32
   v1OrganizationRole:
     type: object
     properties:
@@ -6426,6 +6431,10 @@ definitions:
       outstandingInvites:
         type: string
       storageLimitBytesPerDeployment:
+        type: string
+      apiCallsPerSeat:
+        type: string
+      seats:
         type: string
   v1RecordEventsRequest:
     type: object
@@ -6832,6 +6841,9 @@ definitions:
       storageLimitBytesPerDeployment:
         type: string
         format: int64
+      seats:
+        type: integer
+        format: int32
   v1SudoUpdateOrganizationQuotasResponse:
     type: object
     properties:

@@ -68,6 +68,11 @@ type Query interface {
 }
 
 func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, priority int) error {
+	// Emit a generic billable query metric. This is one of the two query frameworks (the other is runtime.Resolve);
+	// the legacy Query interface here is used by the gRPC QueryService (dashboards, CLI).
+	queryAttrs := append(r.GetInstanceAttributes(ctx, instanceID), attribute.String("source", string(RequestSourceFromContext(ctx))))
+	r.activity.RecordMetric(ctx, "query", 1, queryAttrs...)
+
 	qk := query.Key()
 	// If key is empty, skip caching
 	if qk == "" {
@@ -157,6 +162,8 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 }
 
 func (r *Runtime) metricsViewCacheKey(ctx context.Context, instanceID, name string, priority int) ([]byte, bool, error) {
+	// Cache-key computation is internal infrastructure, not a user-facing query, so tag it as "internal" (excluded from billing).
+	ctx = WithRequestSource(ctx, RequestSourceInternal)
 	cacheKeyResolver, _, err := r.Resolve(ctx, &ResolveOptions{
 		InstanceID:         instanceID,
 		Resolver:           "metrics_cache_key",

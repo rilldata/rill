@@ -205,6 +205,7 @@ export type MeasureColumnProps = Array<{
   name: string;
   type: MeasureType;
   lowerIsBetter: boolean;
+  description?: string;
 }>;
 export function getMeasureColumnProps(
   config: PivotDataStoreConfig,
@@ -256,6 +257,7 @@ export function getMeasureColumnProps(
       type,
       icon,
       lowerIsBetter: measure?.lowerIsBetter ?? false,
+      description: measure?.description,
     };
   });
 }
@@ -263,25 +265,29 @@ export function getMeasureColumnProps(
 export type DimensionColumnProps = Array<{
   label: string;
   name: string;
+  description?: string;
 }>;
 
 export function getDimensionColumnProps(
   dimensionNames: string[],
   config: PivotDataStoreConfig,
-) {
+): DimensionColumnProps {
   return dimensionNames.map((d) => {
-    let label =
-      config.allDimensions.find(
-        (dimension) => dimension.name === d || dimension.column === d,
-      )?.displayName || d;
+    const dimension = config.allDimensions.find(
+      (dimension) => dimension.name === d || dimension.column === d,
+    );
+    let label = dimension?.displayName || d;
+    let description = dimension?.description;
     if (isTimeDimension(d, config.time.timeDimension)) {
       const timeGrain = getTimeGrainFromDimension(d);
       const grainLabel = TIME_GRAIN[timeGrain]?.label || d;
       label = `Time ${grainLabel}`;
+      description = undefined;
     }
     return {
       label,
       name: d,
+      description,
     };
   });
 }
@@ -317,7 +323,7 @@ export function getColumnDefForPivot(
 function getFlatColumnDef(
   config: PivotDataStoreConfig,
   measures: MeasureColumnProps,
-  rowDimensions: Array<{ label: string; name: string }>,
+  rowDimensions: DimensionColumnProps,
   rowDimensionNames: string[],
 ): ColumnDef<PivotDataRow>[] {
   const rowDefinitions: ColumnDef<PivotDataRow>[] = rowDimensions.map(
@@ -326,6 +332,9 @@ function getFlatColumnDef(
         id: d.name,
         accessorFn: (row) => row[d.name],
         header: d.label || d.name,
+        meta: {
+          description: d.description,
+        },
         cell: ({ row, getValue }) => {
           const rawValue = getValue() as string;
           const value = formatDimensionValue(
@@ -358,6 +367,7 @@ function getFlatColumnDef(
       meta: {
         icon: m.icon,
         tooltipFormatter: m.tooltipFormatter,
+        description: m.description,
       },
       cell: (info) => {
         const measureValue = info.getValue() as number | null | undefined;
@@ -457,8 +467,8 @@ export function getRowNestedLabel(
 function getNestedColumnDef(
   config: PivotDataStoreConfig,
   measures: MeasureColumnProps,
-  rowDimensions: Array<{ label: string; name: string }>,
-  colDimensions: Array<{ label: string; name: string }>,
+  rowDimensions: DimensionColumnProps,
+  colDimensions: DimensionColumnProps,
   columnDimensionAxes: Record<string, string[]> | undefined,
   totals: PivotDataRow,
   rowDimensionNames: string[],
@@ -477,6 +487,11 @@ function getNestedColumnDef(
         id: d.name,
         accessorFn: (row) => row[d.name],
         header: nestedLabel,
+        meta: {
+          // The header collapses multiple row dimensions into one label, so a
+          // single description only makes sense when there is one row dimension.
+          description: rowDimensions.length === 1 ? d.description : undefined,
+        },
         cell: ({ row, getValue }) => {
           const value = getValue() as string;
 
@@ -523,11 +538,14 @@ function getNestedColumnDef(
   let firstDimensionColumns: ColumnDef<PivotDataRow>[] = rowDefinitions;
   if (config.rowDimensionNames.length && config.colDimensionNames.length) {
     firstDimensionColumns = colDimensions.reverse().reduce((acc, dimension) => {
-      const { label, name } = dimension;
+      const { label, name, description } = dimension;
 
       const headColumn = {
         id: name,
         header: label || name,
+        meta: {
+          description,
+        },
         columns: acc,
       };
 
@@ -545,6 +563,7 @@ function getNestedColumnDef(
         meta: {
           icon: m.icon,
           tooltipFormatter: m.tooltipFormatter,
+          description: m.description,
         },
         cell: (info) => {
           const measureValue = info.getValue() as number | null | undefined;

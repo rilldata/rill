@@ -61,6 +61,7 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 		QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
 		QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
 		QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
+		QuotaSeats:                          org.QuotaSeats,
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
@@ -169,6 +170,7 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 		QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
 		QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
 		QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
+		QuotaSeats:                          org.QuotaSeats,
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
@@ -198,21 +200,21 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 
 	var updatedOrg *database.Organization
 	if sub == nil {
-		updatedOrg, sub, err = s.StartTrial(ctx, org)
+		updatedOrg, sub, err = s.StartCreditTrial(ctx, org)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to start trial: %w", err)
+			return nil, nil, fmt.Errorf("failed to start credit trial: %w", err)
 		}
 
-		// send trial started email
-		err = s.Email.SendTrialStarted(&email.TrialStarted{
-			ToEmail:      org.BillingEmail,
-			ToName:       org.Name,
-			OrgName:      org.Name,
-			FrontendURL:  s.URLs.Frontend(),
-			TrialEndDate: sub.TrialEndDate,
+		// send credit trial started email
+		err = s.Email.SendCreditTrialStarted(&email.CreditTrialStarted{
+			ToEmail:          org.BillingEmail,
+			ToName:           org.Name,
+			OrgName:          org.Name,
+			FrontendURL:      s.URLs.Frontend(),
+			CreditAllocation: CreditTrialAllocation,
 		})
 		if err != nil {
-			s.Logger.Named("billing").Error("failed to send trial started email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
+			s.Logger.Named("billing").Error("failed to send credit trial started email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
 		}
 	} else {
 		s.Logger.Named("billing").Warn("subscription already exists for org", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
@@ -233,6 +235,7 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 			QuotaSlotsPerDeployment:             biggerOfInt(sub.Plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
 			QuotaOutstandingInvites:             biggerOfInt(sub.Plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
 			QuotaStorageLimitBytesPerDeployment: biggerOfInt64(sub.Plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
+			QuotaSeats:                          biggerOfInt(sub.Plan.Quotas.NumSeats, org.QuotaSeats),
 			BillingCustomerID:                   org.BillingCustomerID,
 			PaymentCustomerID:                   org.PaymentCustomerID,
 			BillingEmail:                        org.BillingEmail,
@@ -328,6 +331,7 @@ func (s *Service) StartCreditTrial(ctx context.Context, org *database.Organizati
 		QuotaSlotsPerDeployment:             biggerOfInt(plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
 		QuotaOutstandingInvites:             biggerOfInt(plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
 		QuotaStorageLimitBytesPerDeployment: biggerOfInt64(plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
+		QuotaSeats:                          biggerOfInt(plan.Quotas.NumSeats, org.QuotaSeats),
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
@@ -432,6 +436,7 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 		QuotaSlotsPerDeployment:             biggerOfInt(plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
 		QuotaOutstandingInvites:             biggerOfInt(plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
 		QuotaStorageLimitBytesPerDeployment: biggerOfInt64(plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
+		QuotaSeats:                          biggerOfInt(plan.Quotas.NumSeats, org.QuotaSeats),
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
