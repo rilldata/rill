@@ -667,8 +667,6 @@ test.describe("pivot run through", () => {
       await page.getByRole("menuitem", { name: "Last 4 weeks" }).click();
     });
 
-    await page.waitForTimeout(100);
-
     // add measure and time week to column
     await dragPivotChip(page, totalRecords, columnZone);
 

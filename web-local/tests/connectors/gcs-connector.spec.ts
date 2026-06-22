@@ -116,7 +116,6 @@ test.describe("GCS connector", () => {
 
     // Switch to Public (no required fields) -> CTA should remain enabled and allow advancing.
     await page.getByRole("radio", { name: "Public" }).click();
-    await page.waitForTimeout(1000);
     await expect(
       page.getByRole("button", {
         name: "Continue",

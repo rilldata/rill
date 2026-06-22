@@ -26,8 +26,6 @@ test.describe("canvas time filters", () => {
       .click();
     await page.getByRole("menuitem", { name: "Last 7 days" }).click();
 
-    await page.waitForTimeout(500);
-
     await page
       .getByRole("complementary", { name: "Inspector Panel" })
       .getByLabel("Toggle time comparison")

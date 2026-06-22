@@ -13,8 +13,6 @@ test.describe("canvas global time filters", () => {
 
     await page.getByRole("button", { name: "Preview" }).click();
 
-    await page.waitForTimeout(1000);
-
     // Change global time range
     await interactWithTimeRangeMenu(page, async () => {
       await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();

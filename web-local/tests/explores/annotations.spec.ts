@@ -59,6 +59,9 @@ async function setupDashboard(page: Page, dashboardTZ: string) {
   // Wait for annotation query responses to arrive and the chart to
   // finish re-rendering. Without this, menu interactions race against
   // DOM element detachment from the annotation-triggered re-render.
+  // There is no stable DOM signal for the annotation re-render completing,
+  // so a fixed wait is required here.
+  // eslint-disable-next-line playwright/no-wait-for-timeout -- annotation re-render has no deterministic completion signal to await
   await page.waitForTimeout(2000);
 }
 
@@ -238,6 +241,9 @@ test.describe("annotations (rendering)", () => {
           if (!dBox) continue;
 
           await page.mouse.move(dBox.x + dBox.width / 2, hoverY);
+          // Give the hover-triggered popover a moment to render before
+          // probing for it; there is no element to await prior to the probe.
+          // eslint-disable-next-line playwright/no-wait-for-timeout -- hover popover render has no awaitable signal before the probe below
           await page.waitForTimeout(100);
 
           const popover = page
