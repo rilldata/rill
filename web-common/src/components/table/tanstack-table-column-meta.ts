@@ -9,6 +9,8 @@ declare module "tanstack-table-8-svelte-5" {
     icon?: ComponentType<SvelteComponent>;
     /** Full path of dimension name/value pairs from root to this header */
     dimensionPath?: Record<string, string>;
+    /** Description shown in the header name tooltip */
+    description?: string;
     tooltipFormatter?: (value: unknown) => string | null | undefined;
   }
 }
