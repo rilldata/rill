@@ -1365,7 +1365,7 @@ func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.
 	if len(partition.DataJSON) < 256 {
 		logArgs = append(logArgs, zap.Any("data", data))
 	}
-	r.C.Logger.Debug("Executing model partition", logArgs...)
+	r.C.Logger.Info("Executing model partition", logArgs...)
 	defer func() { r.C.Logger.Info("Executed model partition", logArgs...) }()
 
 	// Execute the partition.
