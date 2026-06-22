@@ -1,4 +1,5 @@
 import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
+import { makeDimensionHref } from "@rilldata/web-common/features/dashboards/dashboard-utils";
 import DeltaChange from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChange.svelte";
 import DeltaChangePercentage from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChangePercentage.svelte";
 import {
@@ -334,13 +335,23 @@ function getFlatColumnDef(
         meta: {
           description: d.description,
         },
-        cell: ({ getValue }) => {
+        cell: ({ row, getValue }) => {
+          const rawValue = getValue() as string;
           const value = formatDimensionValue(
-            getValue() as string,
+            rawValue,
             i,
             config.time,
             rowDimensionNames,
           );
+          const href = makeDimensionHref(row.original, d.name, rawValue);
+          if (href) {
+            return cellComponent(PivotExpandableCell, {
+              value: value === null ? "null" : value,
+              row,
+              href,
+              expandable: false,
+            });
+          }
           if (value === null) return "null";
           return value;
         },
@@ -506,10 +517,19 @@ function getNestedColumnDef(
             rowDimensionNames,
           );
 
+          // The value at a given depth belongs to that depth's dimension, so
+          // resolve the URI against the dimension at the row's depth.
+          const href = makeDimensionHref(
+            row.original,
+            rowDimensionNames[row.depth],
+            value,
+          );
+
           return cellComponent(PivotExpandableCell, {
             value: formattedDimensionValue,
             row,
             hasNestedDimensions,
+            href,
           });
         },
       };

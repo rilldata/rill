@@ -12,6 +12,7 @@ import { createAndExpression } from "@rilldata/web-common/features/dashboards/st
 import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import type {
   V1Expression,
+  V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
@@ -53,6 +54,7 @@ import {
   getTimeForQuery,
   getTimeGrainFromDimension,
   getTotalColumnCount,
+  getUriMeasuresForDimensions,
   isTimeDimension,
   splitPivotChips,
 } from "./pivot-utils";
@@ -113,7 +115,15 @@ export function createTableCellQuery(
       };
     } else return { name: dimension };
   });
-  const measureBody = measureNames.map((m) => ({ name: m }));
+  const measureBody: V1MetricsViewAggregationMeasure[] = measureNames.map(
+    (m) => ({ name: m }),
+  );
+
+  // Flat tables produce one query for all row dimensions, so request URI
+  // measures here for any row dimension that declares a `uri`.
+  if (isFlat) {
+    measureBody.push(...getUriMeasuresForDimensions(rowDimensionNames, config));
+  }
 
   const { filters: filterForInitialTable, timeFilters } =
     getFilterForPivotTable(
@@ -337,6 +347,7 @@ export function createPivotDataStore(
             timeRange,
             limitToQuery,
             rowOffset.toString(),
+            true,
           );
         }
 
