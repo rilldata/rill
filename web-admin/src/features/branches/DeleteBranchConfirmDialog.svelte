@@ -34,15 +34,11 @@
       <AlertDialogTitle>Delete this branch?</AlertDialogTitle>
       <AlertDialogDescription>
         <div class="mt-1">
+          The branch <span class="font-mono text-xs font-medium">{branch}</span>
+          will be deleted.
           {#if editable}
-            Deleting branch <span class="font-mono text-xs font-medium"
-              >{branch}</span
-            > will also delete its associated remote branch. Any unpushed changes
-            will be lost.
-          {:else}
-            The branch <span class="font-mono text-xs font-medium"
-              >{branch}</span
-            > will be deleted.
+            This will also delete its associated remote branch. Any unpushed
+            changes will be lost.
           {/if}
         </div>
         <div class="mt-2 font-medium text-fg-primary">
