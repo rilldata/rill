@@ -40,12 +40,12 @@ test.describe("visual explore editing", () => {
     await page.getByRole("button", { name: "Default" }).first().click();
     await page.getByRole("button", { name: "Presets" }).click();
 
-    text = await page
-      .getByRole("textbox", { name: "codemirror editor" })
-      .textContent();
-
-    expect(text).toEqual(
-      ' 45123456789101112131415161718192021222324252627282930313233343536373839404142434445# Explore YAML# Reference documentation: https://docs.rilldata.com/reference/project-files/explore-dashboardstype: exploretitle: "Adbids dashboard"metrics_view: AdBids_metricsdimensions:  expr: "*"measures:  expr: "*"time_ranges:  - PT6H  - PT24H  - P7D  - P14D  - P4W  - P3M  - P12M  - rill-TD  - rill-WTD  - rill-MTD  - rill-QTD  - rill-YTD  - rill-PDC  - rill-PWC  - rill-PMC  - rill-PQC  - rill-PYCtime_zones:  - UTC  - America/Los_Angeles  - America/Chicago  - America/New_York  - Europe/London  - Europe/Paris  - Asia/Jerusalem  - Europe/Moscow  - Asia/Kolkata  - Asia/Shanghai  - Asia/Tokyo  - Australia/Sydney',
-    );
+    await expect
+      .poll(() =>
+        page.getByRole("textbox", { name: "codemirror editor" }).textContent(),
+      )
+      .toEqual(
+        ' 45123456789101112131415161718192021222324252627282930313233343536373839404142434445# Explore YAML# Reference documentation: https://docs.rilldata.com/reference/project-files/explore-dashboardstype: exploretitle: "Adbids dashboard"metrics_view: AdBids_metricsdimensions:  expr: "*"measures:  expr: "*"time_ranges:  - PT6H  - PT24H  - P7D  - P14D  - P4W  - P3M  - P12M  - rill-TD  - rill-WTD  - rill-MTD  - rill-QTD  - rill-YTD  - rill-PDC  - rill-PWC  - rill-PMC  - rill-PQC  - rill-PYCtime_zones:  - UTC  - America/Los_Angeles  - America/Chicago  - America/New_York  - Europe/London  - Europe/Paris  - Asia/Jerusalem  - Europe/Moscow  - Asia/Kolkata  - Asia/Shanghai  - Asia/Tokyo  - Australia/Sydney',
+      );
   });
 });
