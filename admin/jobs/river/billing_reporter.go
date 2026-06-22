@@ -18,6 +18,8 @@ var counterMetrics = map[string]bool{
 	"slot_seconds_spend": true,
 	"query":              true,
 	"tool_call":          true,
+	"input_tokens":       true,
+	"output_tokens":      true,
 }
 
 // orgUsageMetric computes a billable usage value for an organization from the admin database.

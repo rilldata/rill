@@ -1250,6 +1250,16 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 				attribute.Int("input_tokens", inputTokens),
 				attribute.Int("output_tokens", outputTokens),
 			)
+
+			// Emit billable token metrics. Tagged with the request source so the billable scope is decided downstream
+			// in SQL (this is emitted for every completion regardless of source, unlike tool_call).
+			source := attribute.String("source", string(runtime.RequestSourceFromContext(ctx)))
+			if inputTokens > 0 {
+				s.activity.RecordMetric(ctx, "input_tokens", float64(inputTokens), source)
+			}
+			if outputTokens > 0 {
+				s.activity.RecordMetric(ctx, "output_tokens", float64(outputTokens), source)
+			}
 		}()
 
 		// Complete and execute tool calls in a loop.
