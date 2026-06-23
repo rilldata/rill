@@ -47,6 +47,10 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				editable = false
 			}
 
+			if editable {
+				ch.PrintfWarn("Cloud editing is still in beta. Ensure `cloud_editing` feature flag is set in `rill.yaml`.\n")
+			}
+
 			ch.PrintfBold("Creating %q deployment for branch %q...\n", environment, branch)
 
 			resp, err := client.CreateDeployment(cmd.Context(), &adminv1.CreateDeploymentRequest{
@@ -72,6 +76,8 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 	createCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 	createCmd.Flags().StringVar(&environment, "environment", "dev", "Optional environment to create for (options: dev, prod)")
 	createCmd.Flags().BoolVar(&editable, "editable", true, "Make the deployment editable (changes are persisted back to git repo)")
+	_ = createCmd.Flags().MarkHidden("environment") // Hide the environment flag since editable deployments are only supported for dev environment and non editable deployments are not supported in UI yet
+	_ = createCmd.Flags().MarkHidden("editable")    // Hide the editable flag since non editable deployments are not supported in UI yet
 
 	return createCmd
 }
