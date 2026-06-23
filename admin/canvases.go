@@ -6,6 +6,8 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // LookupCanvas fetches a canvas's spec from a runtime deployment.
@@ -27,5 +29,9 @@ func (s *Service) LookupCanvas(ctx context.Context, depl *database.Deployment, c
 		return nil, err
 	}
 
-	return res.Resource.Resource.(*runtimev1.Resource_Canvas).Canvas.Spec, nil
+	canvasResource := res.Resource.Resource.(*runtimev1.Resource_Canvas)
+	if canvasResource != nil && canvasResource.Canvas != nil && canvasResource.Canvas.State != nil {
+		return nil, status.Error(codes.NotFound, "resource not found")
+	}
+	return res.Resource.Resource.(*runtimev1.Resource_Canvas).Canvas.State.ValidSpec, nil
 }

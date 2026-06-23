@@ -164,23 +164,25 @@
         placeholder="e.g. My revenue dashboard"
       />
 
-      <div class="flex items-center space-x-2">
-        <Switch bind:checked={$form["copy"]} id="copy" label="Copy from" />
-        <Label class="font-normal flex gap-x-1 items-center" for="copy">
-          Start from an existing dashboard
-        </Label>
-      </div>
+      {#if personalCanvasOptions.length}
+        <div class="flex items-center space-x-2">
+          <Switch bind:checked={$form["copy"]} id="copy" label="Copy from" />
+          <Label class="font-normal flex gap-x-1 items-center" for="copy">
+            Start from an existing dashboard
+          </Label>
+        </div>
 
-      {#if $form.copy}
-        <Select
-          bind:value={$form.copySource}
-          id="source"
-          placeholder="Select a dashboard..."
-          options={personalCanvasOptions}
-          optionsLoading={$personalCanvasesQuery.isPending}
-          sameWidth
-          enableSearch
-        />
+        {#if $form.copy}
+          <Select
+            bind:value={$form.copySource}
+            id="source"
+            placeholder="Select a dashboard..."
+            options={personalCanvasOptions}
+            optionsLoading={$personalCanvasesQuery.isPending}
+            sameWidth
+            enableSearch
+          />
+        {/if}
       {/if}
 
       {#if error}

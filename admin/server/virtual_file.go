@@ -59,6 +59,11 @@ func (s *Server) CreatePersonalFile(ctx context.Context, req *adminv1.CreatePers
 		attribute.String("args.kind", req.Kind),
 	)
 
+	// Only support creating canvas resource for now. Should be a very narrow allow list for security.
+	if req.Kind != runtime.ResourceKindCanvas {
+		return nil, status.Errorf(codes.InvalidArgument, "unsupported personal file kind %q", req.Kind)
+	}
+
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, err
@@ -72,11 +77,6 @@ func (s *Server) CreatePersonalFile(ctx context.Context, req *adminv1.CreatePers
 	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
 		return nil, err
-	}
-
-	// Until we support other kinds error out Create API
-	if req.Kind != runtime.ResourceKindCanvas {
-		return nil, status.Errorf(codes.InvalidArgument, "unsupported personal file kind %q", req.Kind)
 	}
 
 	name, err := s.generateVirtualFileName(ctx, req.DisplayName, func(ctx context.Context, name string) error {
@@ -158,6 +158,11 @@ func (s *Server) EditPersonalFile(ctx context.Context, req *adminv1.EditPersonal
 		attribute.String("args.name", req.Name),
 		attribute.String("args.kind", req.Kind),
 	)
+
+	// Only support creating canvas resource for now. Should be a very narrow allow list for security.
+	if req.Kind != runtime.ResourceKindCanvas {
+		return nil, status.Errorf(codes.InvalidArgument, "unsupported personal file kind %q", req.Kind)
+	}
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
@@ -275,6 +280,17 @@ func yamlForPersonalFile(displayName, ownerID, kind, data string) ([]byte, error
 	if displayName != "" {
 		doc["display_name"] = displayName
 	}
+	if kind == runtime.ResourceKindCanvas {
+		// Hardcode the kind to prevent client from changing it
+		doc["type"] = "canvas"
+		// Delete the legacy key to prevent client using that as an override
+		_, hasKind := doc["kind"]
+		if hasKind {
+			delete(doc, "kind")
+		}
+	} else {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("unsupported personal file kind: %s", kind))
+	}
 
 	annotations, _ := doc["annotations"].(map[string]any)
 	if annotations == nil {
@@ -303,6 +319,7 @@ func blankYamlForPersonalFile(displayName, ownerID, kind string) ([]byte, error)
 		},
 	}
 	if kind == runtime.ResourceKindCanvas {
+		doc["type"] = "canvas"
 		doc["rows"] = []any{}
 	}
 

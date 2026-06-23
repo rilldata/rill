@@ -5,7 +5,7 @@
   import { createAdminServiceGetPersonalFile } from "@rilldata/web-admin/client";
   import { parseDocument, YAMLMap } from "yaml";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
-  import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
+  import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
 
   let {
@@ -49,7 +49,7 @@
       const yaml = parsedDocument.toString();
 
       const fileArtifact = fileArtifacts.getFileArtifact(
-        removeLeadingSlash(data.path ?? ""),
+        addLeadingSlash(data.path ?? ""),
       );
       fileArtifact.updateEditorContent(yaml);
       await fileArtifact.saveLocalContent();
