@@ -183,8 +183,7 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 		if c.config.Cluster != "" {
 			err = c.syncReplica(ctx, tempName)
 			if err != nil {
-				c.logger.Warn("clickhouse: failed to sync replica for temporary table", zap.String("name", tempName), zap.Error(err), observability.ZapCtx(ctx))
-				// Don't fail the entire operation if sync fails: just log and continue
+				return nil, err
 			}
 		}
 
