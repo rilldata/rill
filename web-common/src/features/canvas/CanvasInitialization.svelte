@@ -33,7 +33,11 @@
 
   $: ({ url } = $page);
 
-  $: existingStore = getCanvasStoreUnguarded(canvasName, instanceId);
+  $: existingStore = getCanvasStoreUnguarded(
+    canvasName,
+    instanceId,
+    allowUnvalidatedSpec,
+  );
 
   $: fetchedCanvasQuery = !existingStore
     ? createQueryServiceResolveCanvas(
