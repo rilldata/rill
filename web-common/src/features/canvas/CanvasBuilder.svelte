@@ -12,13 +12,14 @@
   import { parseDocument } from "yaml";
   import ComponentError from "../components/ComponentError.svelte";
   import type { FileArtifact } from "../entity-management/file-artifact";
+  import ReconcilingSpinner from "../entity-management/ReconcilingSpinner.svelte";
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
   import CanvasComponent from "./CanvasComponent.svelte";
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
-  import EditableCanvasTabGroup from "./EditableCanvasTabGroup.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import type { CanvasComponentType } from "./components/types";
   import EditableCanvasRow from "./EditableCanvasRow.svelte";
+  import EditableCanvasTabGroup from "./EditableCanvasTabGroup.svelte";
   import ItemWrapper from "./ItemWrapper.svelte";
   import type { Transaction, YAMLRow } from "./layout-util";
   import {
@@ -35,6 +36,7 @@
   } from "./layout-util";
   import RowWrapper from "./RowWrapper.svelte";
   import { useDefaultMetrics } from "./selector";
+  import { getCanvasStore } from "./state-managers/state-managers";
   import { rowColFromPath } from "./stores/canvas-entity";
   import {
     addTab,
@@ -42,14 +44,12 @@
     addTabGroupAt,
     convertRowToTabGroup,
     deleteTab,
-    moveTab,
     moveItemAcrossContainers,
+    moveTab,
     renameTab,
     tabHasContent,
   } from "./stores/tab-edit";
-  import { getCanvasStore } from "./state-managers/state-managers";
   import { activeDivider, dropZone } from "./stores/ui-stores";
-  import ReconcilingSpinner from "../entity-management/ReconcilingSpinner.svelte";
 
   const activelyEditing = writable(false);
 
@@ -436,7 +436,13 @@
   }
 
   function addTabAction(blockIndex: number) {
-    addTab(contents, blockIndex);
+    const newTabIndex = addTab(contents, blockIndex);
+    if (newTabIndex >= 0) {
+      const block = blocks[blockIndex];
+      if (block?.kind === "tab-group") {
+        block.group.activateWhenReady(newTabIndex);
+      }
+    }
     updateContents();
   }
 

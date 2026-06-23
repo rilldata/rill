@@ -1,10 +1,10 @@
-import { get, writable } from "svelte/store";
 import type {
   V1CanvasRow,
   V1CanvasTab,
 } from "@rilldata/web-common/runtime-client";
-import { Grid } from "./grid";
+import { get, writable } from "svelte/store";
 import type { CanvasEntity } from "./canvas-entity";
+import { Grid } from "./grid";
 
 /**
  * A single tab within a tab group. Owns its own Grid (the tab's rows) and the
@@ -52,6 +52,8 @@ export class TabGroup {
   activeTabIndex = writable<number>(0);
   /** The tabs in this group. */
   tabs = writable<Tab[]>([]);
+  /* A tab index to activate as soon as it exists in the spec */
+  private pendingActiveTabIndex: number | null = null;
 
   constructor(
     private canvas: CanvasEntity,
@@ -88,11 +90,28 @@ export class TabGroup {
 
     this.tabs.set(next);
 
+    // Activate a pending tab (e.g. one the user just added) now that it exists in the spec.
+    if (
+      this.pendingActiveTabIndex !== null &&
+      this.pendingActiveTabIndex < next.length
+    ) {
+      this.activeTabIndex.set(this.pendingActiveTabIndex);
+      this.pendingActiveTabIndex = null;
+    }
+
     // Clamp the active index if tabs were removed.
     const activeIndex = get(this.activeTabIndex);
     if (activeIndex >= next.length) {
       this.activeTabIndex.set(Math.max(0, next.length - 1));
     }
+  }
+
+  /**
+   * Request that the tab at the given index become active once it appears in the spec.
+   * Used after adding a tab, since the spec reprocess that materializes the new tab is async.
+   */
+  activateWhenReady(index: number) {
+    this.pendingActiveTabIndex = index;
   }
 
   /** Select a tab by its stable name. Returns false if no such tab exists. */
