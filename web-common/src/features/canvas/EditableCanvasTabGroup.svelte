@@ -91,6 +91,7 @@
   $: grid = activeTab?.grid;
   $: target = { blockIndex, tabIndex: $activeTabIndex } satisfies EditTarget;
   $: idPrefix = `${group.name}-${activeTab?.name ?? ""}-`;
+  $: tabZoneScope = `tab:${group.name}:${activeTab?.name ?? $activeTabIndex}`;
 </script>
 
 <RowWrapper
@@ -122,6 +123,7 @@
             {maxWidth}
             {rowIndex}
             {idPrefix}
+            zoneScope={tabZoneScope}
             {components}
             {columnWidth}
             {dragComponent}

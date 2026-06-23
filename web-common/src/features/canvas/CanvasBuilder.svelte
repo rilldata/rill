@@ -130,7 +130,6 @@
   $: specCanvasRows = structuredClone(rows) as V1CanvasRow[];
 
   $: rawYamlRows = rowsGuard(contents?.get("rows"));
-  $: yamlCanvasRows = mapGuard(rawYamlRows);
 
   $: columnWidth = clientWidth / 12;
 

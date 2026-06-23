@@ -55,6 +55,7 @@
   // Disambiguates row DOM ids across tab containers so height-resize querySelectors
   // don't collide with same-index rows elsewhere on the canvas.
   export let idPrefix: string = "";
+  export let zoneScope = "canvas";
 
   let rowHeight = get(row.height) ?? MIN_HEIGHT;
   let hasLocalChange = false;
@@ -200,6 +201,7 @@
           {rowIndex}
           resizeIndex={-1}
           addIndex={columnIndex}
+          {zoneScope}
           rowLength={itemCount}
           dragging={activelyDragging}
           {isSpreadEvenly}
@@ -212,6 +214,7 @@
         {isSpreadEvenly}
         columnWidth={widths[columnIndex]}
         {rowIndex}
+        {zoneScope}
         dragging={activelyDragging}
         resizeIndex={columnIndex}
         addIndex={columnIndex + 1}
@@ -230,6 +233,7 @@
             (dragComponent
               ? rowColFromPath(dragComponent.pathInYAML).row === rowIndex
               : false))}
+        {zoneScope}
         {onDrop}
       />
 
@@ -265,6 +269,7 @@
     allowDrop={activelyDragging}
     resizeIndex={rowIndex}
     dropIndex={rowIndex + 1}
+    {zoneScope}
     {onRowResizeStart}
     {onDrop}
     addItem={(type) => {
@@ -279,6 +284,7 @@
     <RowDropZone
       allowDrop={activelyDragging}
       dropIndex={0}
+      {zoneScope}
       {onDrop}
       addItem={(type) => {
         initializeRow(rowIndex, type);
