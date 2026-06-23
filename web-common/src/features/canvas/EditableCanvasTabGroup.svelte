@@ -1,14 +1,14 @@
 <script lang="ts">
   import type { Writable } from "svelte/store";
-  import CanvasTabStrip from "./CanvasTabStrip.svelte";
-  import EditableCanvasRow from "./EditableCanvasRow.svelte";
-  import AddComponentDropdown from "./AddComponentDropdown.svelte";
-  import ItemWrapper from "./ItemWrapper.svelte";
-  import RowWrapper from "./RowWrapper.svelte";
   import ComponentError from "../components/ComponentError.svelte";
+  import AddComponentDropdown from "./AddComponentDropdown.svelte";
+  import CanvasTabStrip from "./CanvasTabStrip.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import type { CanvasComponentType } from "./components/types";
+  import EditableCanvasRow from "./EditableCanvasRow.svelte";
+  import ItemWrapper from "./ItemWrapper.svelte";
   import type { EditTarget } from "./layout-util";
+  import RowWrapper from "./RowWrapper.svelte";
   import type { TabGroup } from "./stores/tab-group";
 
   export let group: TabGroup;
@@ -182,7 +182,8 @@
      their drop zones hit-testable as one layer, and gives authors a visible boundary
      showing which widgets belong to the tab versus the free canvas. */
   .tab-group-region {
-    @apply w-full mx-auto relative flex flex-col items-center;
+    width: calc(100% - 1.25rem);
+    @apply mx-auto relative flex flex-col items-center;
     @apply rounded-md border border-gray-200 bg-surface-subtle/40 px-3 py-2;
     isolation: isolate;
   }

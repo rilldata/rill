@@ -1,8 +1,8 @@
 <script lang="ts">
   import CanvasTabStrip from "./CanvasTabStrip.svelte";
+  import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import StaticCanvasRow from "./StaticCanvasRow.svelte";
   import type { TabGroup } from "./stores/tab-group";
-  import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
 
   export let group: TabGroup;
   export let maxWidth: number;
@@ -40,7 +40,9 @@
 <style lang="postcss">
   /* Visible boundary marking which widgets belong to the tab versus the free canvas. */
   .tab-group-region {
-    @apply w-full mx-auto relative flex flex-col items-center;
+    width: calc(100% - 1.25rem);
+
+    @apply mx-auto relative flex flex-col items-center;
     @apply rounded-md border border-gray-200 bg-surface-subtle/40 px-3 py-2;
   }
 </style>
