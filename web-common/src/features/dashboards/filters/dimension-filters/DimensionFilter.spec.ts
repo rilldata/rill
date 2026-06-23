@@ -419,5 +419,14 @@ describe("DimensionFilter", () => {
       "Facebook",
       "Google",
     ]);
+
+    // Close the dropdown so bits-ui's body-scroll-lock cleanup fires while
+    // jsdom is still alive (otherwise the deferred cleanup fires after teardown
+    // and produces an unhandled "document is not defined" error).
+    await act(() =>
+      fireEvent.keyDown(screen.getByLabelText("publisher search list"), {
+        key: "Escape",
+      }),
+    );
   });
 });
