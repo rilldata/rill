@@ -8,6 +8,7 @@
   import EditableCanvasRow from "./EditableCanvasRow.svelte";
   import ItemWrapper from "./ItemWrapper.svelte";
   import type { EditTarget } from "./layout-util";
+  import RowDropZone from "./RowDropZone.svelte";
   import RowWrapper from "./RowWrapper.svelte";
   import type { TabGroup } from "./stores/tab-group";
 
@@ -92,71 +93,100 @@
   $: idPrefix = `${group.name}-${activeTab?.name ?? ""}-`;
 </script>
 
-<div
-  class="tab-group-region"
-  style:max-width="{maxWidth}px"
-  style:z-index={zIndex}
+<RowWrapper
+  gridTemplate="12fr"
+  {zIndex}
+  {maxWidth}
+  id={`tab-group-row-${group.name}`}
 >
-  <CanvasTabStrip
-    {group}
-    {maxWidth}
-    editable
-    {dragComponent}
-    onAddTab={() => onAddTab(blockIndex)}
-    onRenameTab={(tabIndex, label) => onRenameTab(blockIndex, tabIndex, label)}
-    onDeleteTab={(tabIndex) => onDeleteTab(blockIndex, tabIndex)}
-    onMoveTab={(tabIndex, direction) =>
-      onMoveTab(blockIndex, tabIndex, direction)}
-    onDropOnTab={(tabIndex) => onDropOnTab(blockIndex, tabIndex)}
+  <ItemWrapper fitContent zIndex={0}>
+    <div class="tab-group-region">
+      <CanvasTabStrip
+        {group}
+        {maxWidth}
+        editable
+        {dragComponent}
+        onAddTab={() => onAddTab(blockIndex)}
+        onRenameTab={(tabIndex, label) =>
+          onRenameTab(blockIndex, tabIndex, label)}
+        onDeleteTab={(tabIndex) => onDeleteTab(blockIndex, tabIndex)}
+        onMoveTab={(tabIndex, direction) =>
+          onMoveTab(blockIndex, tabIndex, direction)}
+        onDropOnTab={(tabIndex) => onDropOnTab(blockIndex, tabIndex)}
+      />
+
+      {#if activeTab && grid}
+        {#each $grid as row, rowIndex (rowIndex)}
+          <EditableCanvasRow
+            {row}
+            {maxWidth}
+            {rowIndex}
+            {idPrefix}
+            {components}
+            {columnWidth}
+            {dragComponent}
+            {selectedComponent}
+            zIndex={$grid.length - rowIndex + 1}
+            onDrop={(r, c) => onDrop(r, c, target)}
+            addItems={(pos, items) => addItems(pos, items, target)}
+            spreadEvenly={(index) => spreadEvenly(index, target)}
+            initializeRow={(r, type) => initializeRow(r, type, target)}
+            updateRowHeight={(h, index) => updateRowHeight(h, index, target)}
+            updateComponentWidths={(index, widths) =>
+              updateComponentWidths(index, widths, target)}
+            {onComponentMouseDown}
+            onDuplicate={({ columnIndex }) =>
+              onDuplicate(rowIndex, columnIndex, target)}
+            {onDelete}
+          />
+        {/each}
+
+        <!-- Add a widget at the end of this tab. Doubles as the empty-tab state. -->
+        <RowWrapper
+          gridTemplate="12fr"
+          zIndex={0}
+          {maxWidth}
+          id={`tab-add-${group.name}`}
+        >
+          <ItemWrapper fitContent zIndex={0}>
+            {#if hasValidMetrics}
+              <AddComponentDropdown
+                componentForm
+                label="Add widget to tab"
+                onItemClick={(type) =>
+                  initializeRow($grid.length, type, target)}
+              />
+            {:else}
+              <ComponentError error="No valid metrics view in project" />
+            {/if}
+          </ItemWrapper>
+        </RowWrapper>
+      {/if}
+    </div>
+  </ItemWrapper>
+
+  <RowDropZone
+    allowDrop={!!dragComponent}
+    dropIndex={blockIndex}
+    position="top"
+    {onDrop}
+    addItem={(type) => {
+      initializeRow(blockIndex, type);
+    }}
+    onAddTabGroup={() => onAddTabGroup(blockIndex)}
   />
 
-  {#if activeTab && grid}
-    {#each $grid as row, rowIndex (rowIndex)}
-      <EditableCanvasRow
-        {row}
-        {maxWidth}
-        {rowIndex}
-        {idPrefix}
-        {components}
-        {columnWidth}
-        {dragComponent}
-        {selectedComponent}
-        zIndex={$grid.length - rowIndex + 1}
-        onDrop={(r, c) => onDrop(r, c, target)}
-        addItems={(pos, items) => addItems(pos, items, target)}
-        spreadEvenly={(index) => spreadEvenly(index, target)}
-        initializeRow={(r, type) => initializeRow(r, type, target)}
-        updateRowHeight={(h, index) => updateRowHeight(h, index, target)}
-        updateComponentWidths={(index, widths) =>
-          updateComponentWidths(index, widths, target)}
-        {onComponentMouseDown}
-        onDuplicate={({ columnIndex }) =>
-          onDuplicate(rowIndex, columnIndex, target)}
-        {onDelete}
-      />
-    {/each}
-
-    <!-- Add a widget at the end of this tab. Doubles as the empty-tab state. -->
-    <RowWrapper
-      gridTemplate="12fr"
-      zIndex={0}
-      {maxWidth}
-      id={`tab-add-${group.name}`}
-    >
-      <ItemWrapper fitContent zIndex={0}>
-        {#if hasValidMetrics}
-          <AddComponentDropdown
-            componentForm
-            label="Add widget to tab"
-            onItemClick={(type) => initializeRow($grid.length, type, target)}
-          />
-        {:else}
-          <ComponentError error="No valid metrics view in project" />
-        {/if}
-      </ItemWrapper>
-    </RowWrapper>
-  {/if}
-</div>
+  <RowDropZone
+    allowDrop={!!dragComponent}
+    dropIndex={blockIndex + 1}
+    position="bottom"
+    {onDrop}
+    addItem={(type) => {
+      initializeRow(blockIndex + 1, type);
+    }}
+    onAddTabGroup={() => onAddTabGroup(blockIndex + 1)}
+  />
+</RowWrapper>
 
 {#if isLastBlock && hasValidMetrics}
   <!-- Add a widget (or another tab group) on the free canvas, after this tab group. -->
@@ -182,8 +212,7 @@
      their drop zones hit-testable as one layer, and gives authors a visible boundary
      showing which widgets belong to the tab versus the free canvas. */
   .tab-group-region {
-    width: calc(100% - 1.25rem);
-    @apply mx-auto relative flex flex-col items-center;
+    @apply relative flex w-full flex-col items-center;
     @apply rounded-md border border-gray-200 bg-surface-subtle/40 px-3 py-2;
     isolation: isolate;
   }

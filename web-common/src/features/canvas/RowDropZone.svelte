@@ -7,6 +7,7 @@
   export let allowDrop: boolean;
   export let resizeIndex = -1;
   export let dropIndex: number;
+  export let position: "top" | "bottom" | undefined = undefined;
   export let onDrop: (row: number, column: number | null) => void;
   export let onRowResizeStart: (e: MouseEvent) => void = () => {};
   export let addItem: (type: CanvasComponentType) => void;
@@ -24,6 +25,7 @@
   $: notActiveDivider = !isActiveDivider && !!$activeDivider;
 
   $: notResizable = resizeIndex === -1;
+  $: resolvedPosition = position ?? (notResizable ? "top" : "bottom");
 
   $: forceShowDivider = menuOpen || isActiveDivider || isDropZone;
 </script>
@@ -31,8 +33,8 @@
 <div
   role="presentation"
   style:pointer-events={allowDrop ? "auto" : "none"}
-  class:top={notResizable}
-  class:bottom={!notResizable}
+  class:top={resolvedPosition === "top"}
+  class:bottom={resolvedPosition === "bottom"}
   class="absolute z-10 w-full h-12 flex items-center justify-center px-2"
   onmouseenter={() => {
     if (!allowDrop) return;
@@ -102,7 +104,7 @@
   } */
 
   .top {
-    @apply top-0  -translate-y-1/2;
+    @apply top-0 -translate-y-1/2;
   }
 
   .bottom {
