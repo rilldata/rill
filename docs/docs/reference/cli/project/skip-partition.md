@@ -1,13 +1,17 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill project partitions
+title: rill project skip-partition
 ---
-## rill project partitions
+## rill project skip-partition
 
-List partitions for a model
+Skip partitions for a model
+
+### Synopsis
+
+Mark partitions as skipped so they are excluded from execution and from the model's error state. Skipped partitions remain skipped until they are explicitly triggered (e.g. via 'rill project refresh --partition').
 
 ```
-rill project partitions [<project>] <model> [flags]
+rill project skip-partition [<project>] <model> [flags]
 ```
 
 ### Flags
@@ -17,12 +21,10 @@ rill project partitions [<project>] <model> [flags]
       --path string         Project directory (default ".")
       --branch string       Target deployment by Git branch (default: primary deployment)
       --model string        Model Name
-      --pending             Only fetch pending partitions
-      --errored             Only fetch errored partitions
-      --skipped             Only fetch skipped partitions
+      --partition strings   Skip specific partitions by key
+      --pending             Skip all pending partitions
+      --errored             Skip all errored partitions
       --local               Target locally running Rill
-      --page-size uint32    Number of partitions to return per page (default 50)
-      --page-token string   Pagination token
 ```
 
 ### Global flags

@@ -38,6 +38,7 @@ Manage projects
 * [rill project refresh](refresh.md)	 - Refresh one or more resources
 * [rill project rename](rename.md)	 - Rename project
 * [rill project show](show.md)	 - Show project details
+* [rill project skip-partition](skip-partition.md)	 - Skip partitions for a model
 * [rill project status](status.md)	 - Project deployment status
 * [rill project tables](tables.md)	 - Get information about tables in a project
 

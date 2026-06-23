@@ -665,6 +665,7 @@ func toModelPartitionRow(s *runtimev1.ModelPartition) *modelPartition {
 		DataJSON:   string(data),
 		ExecutedOn: executedOn,
 		Elapsed:    (time.Duration(s.ElapsedMs) * time.Millisecond).String(),
+		Skipped:    s.Skipped,
 		Error:      s.Error,
 	}
 }
@@ -674,6 +675,7 @@ type modelPartition struct {
 	DataJSON   string `header:"data" json:"data"`
 	ExecutedOn string `header:"executed_on,timestamp(ms|utc|human)" json:"executed_on"`
 	Elapsed    string `header:"elapsed" json:"elapsed"`
+	Skipped    bool   `header:"skipped" json:"skipped"`
 	Error      string `header:"error" json:"error"`
 }
 

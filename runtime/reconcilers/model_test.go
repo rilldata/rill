@@ -296,6 +296,46 @@ tests:
 	}
 }
 
+func TestModelPartitionsSkippedClearsErrorState(t *testing.T) {
+	rt, instanceID := testruntime.NewInstance(t)
+	ctx := t.Context()
+
+	// Incremental, partitioned model where the partition with value 'x' fails to execute (invalid CAST),
+	// while '1' and '2' succeed. The first partition to run is the one with the highest index (partitions are
+	// loaded idx DESC), so we order the values descending to ensure a successful, numeric partition runs first.
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{
+		"rill.yaml": ``,
+		"models/partitioned.yaml": `
+type: model
+incremental: true
+partitions:
+  sql: SELECT v FROM (VALUES ('1'), ('2'), ('x')) t(v) ORDER BY v DESC
+sql: SELECT CAST('{{.partition.v}}' AS INTEGER) AS n
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+
+	// Full refresh so every partition actually executes (the first incremental run only runs one partition).
+	testruntime.RefreshModelAndWait(t, rt, instanceID, &runtimev1.RefreshModelTrigger{Model: "partitioned", Full: true})
+
+	// The 'x' partition errored, so the model is in an error state.
+	model := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindModel, "partitioned").GetModel()
+	require.True(t, model.State.PartitionsHaveErrors)
+
+	// Skip the errored partition, then reconcile the model (mirrors what the SkipModelPartitions RPC does).
+	catalog, release, err := rt.Catalog(ctx, instanceID)
+	require.NoError(t, err)
+	err = catalog.UpdateModelPartitionsSkipped(ctx, model.State.PartitionsModelId, nil, false, true)
+	release()
+	require.NoError(t, err)
+
+	testruntime.ReconcileAndWait(t, rt, instanceID, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "partitioned"})
+
+	// Reconciling recomputes the partition error state: with the errored partition skipped, the model is no longer errored.
+	model = testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindModel, "partitioned").GetModel()
+	require.False(t, model.State.PartitionsHaveErrors)
+}
+
 func TestExplicitPartitionRefreshDoesNotProcessNewPartitions(t *testing.T) {
 	rt, instanceID := testruntime.NewInstance(t)
 	ctx := t.Context()

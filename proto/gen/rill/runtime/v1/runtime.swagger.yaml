@@ -1568,6 +1568,10 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: skipped
+          in: query
+          required: false
+          type: boolean
         - name: pageSize
           in: query
           required: false
@@ -1577,6 +1581,49 @@ paths:
           in: query
           required: false
           type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/models/{model}/partitions/skip:
+    post:
+      summary: |-
+        SkipModelPartitions marks model partitions as skipped, excluding them from execution and from the model's error state.
+        Skipped partitions remain skipped until they are explicitly triggered (e.g. via CreateTrigger).
+      operationId: RuntimeService_SkipModelPartitions
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SkipModelPartitionsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: model
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              partitions:
+                type: array
+                items:
+                  type: string
+                description: Specific partition keys to skip.
+              pending:
+                type: boolean
+                description: Skip all pending partitions.
+              errored:
+                type: boolean
+                description: Skip all errored partitions, clearing them from the model's error state.
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/queries/canvases/{canvas}/resolve:
@@ -6899,6 +6946,8 @@ definitions:
       elapsedMs:
         type: integer
         format: int64
+      skipped:
+        type: boolean
   v1ModelSpec:
     type: object
     properties:
@@ -7872,6 +7921,8 @@ definitions:
   v1ShareConversationResponse:
     type: object
     title: Response message for RuntimeService.ShareConversation
+  v1SkipModelPartitionsResponse:
+    type: object
   v1Source:
     type: object
     properties:
