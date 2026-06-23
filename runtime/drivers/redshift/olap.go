@@ -34,7 +34,7 @@ func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 }
 
 // InformationSchema implements drivers.OLAPStore.
-func (c *Connection) InformationSchema() drivers.OLAPInformationSchema {
+func (c *Connection) InformationSchema() drivers.InformationSchema {
 	return c
 }
 
