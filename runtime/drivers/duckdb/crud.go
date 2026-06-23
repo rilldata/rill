@@ -249,6 +249,26 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 	return nil, fmt.Errorf("incremental insert strategy %q not supported", opts.Strategy)
 }
 
+func (c *connection) mutateTable(ctx context.Context, name, preExec, postExec string) error {
+	db, release, err := c.acquireDB()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = release()
+	}()
+	_, err = db.MutateTable(ctx, name, nil, func(ctx context.Context, conn *sqlx.Conn) error {
+		if preExec != "" {
+			if _, err := conn.ExecContext(ctx, preExec); err != nil {
+				return err
+			}
+		}
+		_, err := conn.ExecContext(ctx, postExec)
+		return err
+	})
+	return c.checkErr(err)
+}
+
 func (c *connection) dropTable(ctx context.Context, name string) error {
 	db, release, err := c.acquireDB()
 	if err != nil {
