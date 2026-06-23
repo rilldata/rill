@@ -79,12 +79,6 @@
     tabIndex: number,
     direction: -1 | 1,
   ) => void;
-  // Reorder a tab via drag (from index -> to index) within the group.
-  export let onReorderTab: (
-    blockIndex: number,
-    from: number,
-    to: number,
-  ) => void;
   // Drop a dragged component onto a tab (cross-container move).
   export let onDropOnTab: (blockIndex: number, tabIndex: number) => void;
   // Insert a new tab group at a given top-level index (for the "add outside" affordance).
@@ -113,7 +107,6 @@
     onDeleteTab={(tabIndex) => onDeleteTab(blockIndex, tabIndex)}
     onMoveTab={(tabIndex, direction) =>
       onMoveTab(blockIndex, tabIndex, direction)}
-    onReorderTab={(from, to) => onReorderTab(blockIndex, from, to)}
     onDropOnTab={(tabIndex) => onDropOnTab(blockIndex, tabIndex)}
   />
 

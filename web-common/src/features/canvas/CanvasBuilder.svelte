@@ -45,7 +45,6 @@
     moveTab,
     moveItemAcrossContainers,
     renameTab,
-    reorderTab,
     tabHasContent,
   } from "./stores/tab-edit";
   import { getCanvasStore } from "./state-managers/state-managers";
@@ -477,11 +476,6 @@
     updateContents();
   }
 
-  function reorderTabAction(blockIndex: number, from: number, to: number) {
-    reorderTab(contents, blockIndex, from, to);
-    updateContents();
-  }
-
   function convertRowToTabGroupAction(rowIndex: number) {
     if (convertRowToTabGroup(contents, rowIndex)) updateContents();
   }
@@ -790,7 +784,6 @@
         onRenameTab={renameTabAction}
         onDeleteTab={deleteTabAction}
         onMoveTab={moveTabAction}
-        onReorderTab={reorderTabAction}
         onDropOnTab={dropComponentOnTab}
         onAddTabGroup={addTabGroupAtAction}
       />
