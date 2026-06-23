@@ -39,6 +39,8 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
+			ch.PrintfWarn("Cloud editing is still in beta. Ensure `cloud_editing` feature flag is set.")
+
 			if environment == "prod" {
 				// editable defaults to true, so only error if it was explicitly requested
 				if cmd.Flags().Changed("editable") && editable {
