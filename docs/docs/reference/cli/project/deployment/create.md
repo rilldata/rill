@@ -13,10 +13,8 @@ rill project deployment create [<project>] <branch> [flags]
 ### Flags
 
 ```
-      --editable             Make the deployment editable (changes are persisted back to git repo) (default true)
-      --environment string   Optional environment to create for (options: dev, prod) (default "dev")
-      --path string          Project directory (default ".")
-      --project string       Project name
+      --path string      Project directory (default ".")
+      --project string   Project name
 ```
 
 ### Global flags
