@@ -2,21 +2,17 @@
   import {
     createAdminServiceGetBillingSubscription,
     createAdminServiceListOrganizationBillingIssues,
-    V1BillingPlanType,
   } from "@rilldata/web-admin/client";
   import { mergedQueryStatus } from "@rilldata/web-admin/client/utils";
   import BillingContactSetting from "@rilldata/web-admin/features/billing/contact/BillingContactSetting.svelte";
   import Payment from "@rilldata/web-admin/features/billing/Payment.svelte";
   import Plan from "@rilldata/web-admin/features/billing/plans/Plan.svelte";
-  import {
-    isEnterprisePlan,
-    isProPlan,
-    isTeamPlan,
-  } from "@rilldata/web-admin/features/billing/plans/utils";
+  import { PaidPlanTypes } from "@rilldata/web-admin/features/billing/plans/utils";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import type { PageData } from "./$types";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors.ts";
+  import PlanActions from "@rilldata/web-admin/features/billing/plans/PlanActions.svelte";
 
   let { data }: { data: PageData } = $props();
 
@@ -33,20 +29,7 @@
   let planType = $derived(
     $subscriptionQuery?.data?.subscription?.plan?.planType,
   );
-  let planName = $derived(
-    $subscriptionQuery?.data?.subscription?.plan?.name ?? "",
-  );
-  let isPaidPlan = $derived(
-    planType === V1BillingPlanType.BILLING_PLAN_TYPE_PRO ||
-      planType === V1BillingPlanType.BILLING_PLAN_TYPE_TEAM ||
-      planType === V1BillingPlanType.BILLING_PLAN_TYPE_ENTERPRISE ||
-      isProPlan(planName) ||
-      isTeamPlan(planName) ||
-      isEnterprisePlan(planName),
-  );
-  let isCancelled = $derived(Boolean($categorisedIssues.data?.cancelled));
-
-  let cancelOpen = $state(false);
+  let isPaidPlan = $derived(PaidPlanTypes[planType]);
 
   let allStatus = $derived(
     mergedQueryStatus([
@@ -63,32 +46,12 @@
 {:else}
   <div class="flex flex-col gap-8">
     {#if !$categorisedIssues.data?.neverSubscribed}
-      <Plan
-        {organization}
-        {showUpgradeDialog}
-        {billingPortalUrl}
-        bind:cancelOpen
-      />
+      <Plan {organization} {showUpgradeDialog} {billingPortalUrl} />
     {/if}
     {#if isPaidPlan}
       <Payment {organization} />
     {/if}
     <BillingContactSetting {organization} />
-    {#if isPaidPlan && !isCancelled}
-      <button class="cancel-link" onclick={() => (cancelOpen = true)}>
-        Cancel subscription
-      </button>
-    {/if}
+    <PlanActions {organization} />
   </div>
 {/if}
-
-<style lang="postcss">
-  .cancel-link {
-    @apply text-sm font-medium text-fg-tertiary bg-transparent border-none cursor-pointer p-0;
-    display: inline-block;
-  }
-
-  .cancel-link:hover {
-    @apply text-fg-secondary underline;
-  }
-</style>

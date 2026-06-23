@@ -134,6 +134,16 @@ export enum BillingPlanType {
    * @generated from enum value: BILLING_PLAN_TYPE_PRO = 6;
    */
   PRO = 6,
+
+  /**
+   * @generated from enum value: BILLING_PLAN_TYPE_STARTER = 7;
+   */
+  STARTER = 7,
+
+  /**
+   * @generated from enum value: BILLING_PLAN_TYPE_GROWTH = 8;
+   */
+  GROWTH = 8,
 }
 // Retrieve enum metadata with: proto3.getEnumType(BillingPlanType)
 proto3.util.setEnumType(BillingPlanType, "rill.admin.v1.BillingPlanType", [
@@ -144,6 +154,8 @@ proto3.util.setEnumType(BillingPlanType, "rill.admin.v1.BillingPlanType", [
   { no: 4, name: "BILLING_PLAN_TYPE_ENTERPRISE" },
   { no: 5, name: "BILLING_PLAN_TYPE_FREE" },
   { no: 6, name: "BILLING_PLAN_TYPE_PRO" },
+  { no: 7, name: "BILLING_PLAN_TYPE_STARTER" },
+  { no: 8, name: "BILLING_PLAN_TYPE_GROWTH" },
 ]);
 
 /**
@@ -6222,6 +6234,11 @@ export class SudoUpdateOrganizationQuotasRequest extends Message<SudoUpdateOrgan
    */
   storageLimitBytesPerDeployment?: bigint;
 
+  /**
+   * @generated from field: optional int32 seats = 8;
+   */
+  seats?: number;
+
   constructor(data?: PartialMessage<SudoUpdateOrganizationQuotasRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -6237,6 +6254,7 @@ export class SudoUpdateOrganizationQuotasRequest extends Message<SudoUpdateOrgan
     { no: 5, name: "slots_per_deployment", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
     { no: 6, name: "outstanding_invites", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
     { no: 7, name: "storage_limit_bytes_per_deployment", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
+    { no: 8, name: "seats", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoUpdateOrganizationQuotasRequest {
@@ -16284,6 +16302,11 @@ export class OrganizationQuotas extends Message<OrganizationQuotas> {
    */
   storageLimitBytesPerDeployment = protoInt64.zero;
 
+  /**
+   * @generated from field: int32 seats = 7;
+   */
+  seats = 0;
+
   constructor(data?: PartialMessage<OrganizationQuotas>) {
     super();
     proto3.util.initPartial(data, this);
@@ -16298,6 +16321,7 @@ export class OrganizationQuotas extends Message<OrganizationQuotas> {
     { no: 4, name: "slots_per_deployment", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 5, name: "outstanding_invites", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 6, name: "storage_limit_bytes_per_deployment", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 7, name: "seats", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OrganizationQuotas {
@@ -18321,6 +18345,16 @@ export class Quotas extends Message<Quotas> {
    */
   storageLimitBytesPerDeployment = "";
 
+  /**
+   * @generated from field: string api_calls_per_seat = 7;
+   */
+  apiCallsPerSeat = "";
+
+  /**
+   * @generated from field: string seats = 8;
+   */
+  seats = "";
+
   constructor(data?: PartialMessage<Quotas>) {
     super();
     proto3.util.initPartial(data, this);
@@ -18335,6 +18369,8 @@ export class Quotas extends Message<Quotas> {
     { no: 4, name: "slots_per_deployment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "outstanding_invites", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "storage_limit_bytes_per_deployment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "api_calls_per_seat", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "seats", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Quotas {

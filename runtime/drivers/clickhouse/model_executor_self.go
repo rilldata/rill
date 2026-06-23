@@ -92,9 +92,17 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		// NOTE: This intentionally drops the end table if not staging changes.
 		_ = e.c.dropTable(ctx, stagingTableName)
 
+		// When the table is staged under a temporary name, defer post_exec until after the rename so that it
+		// runs against the final table name. Otherwise a post_exec referencing the model's own table would fail.
+		deferPostExec := stagingTableName != tableName && inputProps.PostExec != ""
+		afterCreate := inputProps.PostExec
+		if deferPostExec {
+			afterCreate = ""
+		}
+
 		// Create the table
 		var err error
-		metrics, err = e.c.createTableAsSelect(ctx, stagingTableName, inputProps.SQL, outputProps, inputProps.PreExec, inputProps.PostExec)
+		metrics, err = e.c.createTableAsSelect(ctx, stagingTableName, inputProps.SQL, outputProps, inputProps.PreExec, afterCreate)
 		if err != nil {
 			_ = e.c.dropTable(ctx, stagingTableName)
 			return nil, fmt.Errorf("failed to create model: %w", err)
@@ -105,6 +113,13 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			err = e.c.forceRenameTable(ctx, stagingTableName, asView, tableName)
 			if err != nil {
 				return nil, fmt.Errorf("failed to rename staged model: %w", err)
+			}
+		}
+
+		// Run the deferred post_exec against the final table name.
+		if deferPostExec {
+			if err := e.c.Exec(ctx, &drivers.Statement{Query: inputProps.PostExec, Priority: 100}); err != nil {
+				return nil, fmt.Errorf("failed to execute post_exec: %w", err)
 			}
 		}
 	} else {

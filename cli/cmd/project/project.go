@@ -26,6 +26,7 @@ func ProjectCmd(ch *cmdutil.Helper) *cobra.Command {
 	projectCmd.AddCommand(DeleteCmd(ch))
 	projectCmd.AddCommand(StatusCmd(ch))
 	projectCmd.AddCommand(PartitionsCmd(ch))
+	projectCmd.AddCommand(SkipPartitionCmd(ch))
 	projectCmd.AddCommand(LogsCmd(ch))
 	projectCmd.AddCommand(DescribeCmd(ch))
 	projectCmd.AddCommand(RefreshCmd(ch))

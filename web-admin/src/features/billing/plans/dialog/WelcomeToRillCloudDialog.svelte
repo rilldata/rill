@@ -7,11 +7,16 @@
     AlertDialogHeader,
     AlertDialogTitle,
     AlertDialogTrigger,
-  } from "@rilldata/web-common/components/alert-dialog/index.js";
-  import { Button } from "@rilldata/web-common/components/button/index.js";
+  } from "@rilldata/web-common/components/alert-dialog";
+  import { Button } from "@rilldata/web-common/components/button";
   import Champagne from "@rilldata/web-common/components/icons/Champagne.svelte";
+  import { SELF_SERVE_PLANS_BY_NAME } from "@rilldata/web-admin/features/billing/plans/plan-details.ts";
 
   export let open: boolean;
+  export let planName: string;
+
+  $: planDisplayName =
+    SELF_SERVE_PLANS_BY_NAME[planName]?.displayName ?? planName;
 </script>
 
 <AlertDialog bind:open>
@@ -26,8 +31,8 @@
       <AlertDialogHeader>
         <AlertDialogTitle>Welcome to Rill Cloud</AlertDialogTitle>
         <AlertDialogDescription>
-          Congrats on starting your <b>Team</b> plan. To get the most out of
-          your plan,
+          Congrats on starting your <b>{planDisplayName}</b> plan. To get the
+          most out of your plan,
           <a
             href="https://docs.rilldata.com/"
             target="_blank"

@@ -27,6 +27,7 @@ import { connectCodeToHTTPStatus } from "@rilldata/web-common/lib/errors";
 import type { ConnectError } from "@connectrpc/connect";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
 import type { Row } from "tanstack-table-8-svelte-5";
+import { getURIRequestMeasure } from "@rilldata/web-common/features/dashboards/dashboard-utils";
 import { SHOW_MORE_BUTTON } from "./pivot-constants";
 import { getColumnFiltersForPage } from "./pivot-infinite-scroll";
 import { mergeFilters } from "./pivot-merge-filters";
@@ -44,6 +45,25 @@ import {
   type PivotTimeConfig,
   type TimeFilters,
 } from "./types";
+
+/**
+ * Returns URI request measures for the given row dimensions that declare a
+ * `uri` in their spec. These resolve a per-value URL so dimension values can
+ * be rendered as clickable links. Time dimensions are skipped since they
+ * cannot have a URI.
+ */
+export function getUriMeasuresForDimensions(
+  dimensionNames: string[],
+  config: PivotDataStoreConfig,
+): V1MetricsViewAggregationMeasure[] {
+  return dimensionNames
+    .filter(
+      (name) =>
+        !isTimeDimension(name, config.time.timeDimension) &&
+        !!config.allDimensions.find((d) => d.name === name)?.uri,
+    )
+    .map((name) => getURIRequestMeasure(name));
+}
 
 /**
  * Construct a key for a pivot config to store expanded table data
