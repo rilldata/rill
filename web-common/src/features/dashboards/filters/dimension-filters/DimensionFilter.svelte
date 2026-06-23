@@ -228,9 +228,7 @@
   function checkSearchText(inputText: string) {
     inListTooLong = false;
 
-    // Only parse bulk values / auto-recalc when already in InList mode.
-    // Select and Contains modes should treat the input as plain search text
-    // and never auto-switch based on the presence of commas.
+    // Only InList mode parses bulk values. Other modes treat input as search text.
     if (curMode !== DimensionFilterMode.InList) return;
 
     const values = splitDimensionSearchText(inputText);
@@ -244,7 +242,7 @@
     // below-fold query can find existing selected values that might not be
     // in the top 250.
     searchedBulkValues = [...new Set([...selectedValues, ...values])];
-    inListTooLong = isUrlTooLongAfterInListFilter(values);
+    inListTooLong = isUrlTooLongAfterInListFilter(searchedBulkValues);
   }
 
   function handleModeChange(newMode: DimensionFilterMode) {
