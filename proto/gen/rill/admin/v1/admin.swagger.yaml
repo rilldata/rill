@@ -5027,7 +5027,10 @@ definitions:
       cachedInputTokens:
         type: integer
         format: int64
-        description: Number of cache-read (discounted) input tokens; disjoint from input_tokens.
+        description: Number of cache-read (discounted) input tokens; a subset of input_tokens.
+      provider:
+        type: string
+        description: The LLM provider that served the completion (e.g. "claude", "openai", "gemini").
   v1CompletionMessage:
     type: object
     properties:

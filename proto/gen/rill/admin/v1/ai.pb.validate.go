@@ -262,6 +262,8 @@ func (m *CompleteResponse) validate(all bool) error {
 
 	// no validation rules for CachedInputTokens
 
+	// no validation rules for Provider
+
 	if len(errors) > 0 {
 		return CompleteResponseMultiError(errors)
 	}

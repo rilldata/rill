@@ -326,12 +326,12 @@ func (h *handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 		return nil, fmt.Errorf("failed to convert response: %w", err)
 	}
 
-	// Gemini's PromptTokenCount includes cached content tokens, so split out the cached portion.
-	cachedInputTokens := int(res.UsageMetadata.CachedContentTokenCount)
+	// Gemini's PromptTokenCount already includes cached content tokens; CachedInputTokens is the subset.
 	return &drivers.CompleteResult{
 		Message:           resMsg,
-		InputTokens:       int(res.UsageMetadata.PromptTokenCount) - cachedInputTokens,
-		CachedInputTokens: cachedInputTokens,
+		Provider:          "gemini",
+		InputTokens:       int(res.UsageMetadata.PromptTokenCount),
+		CachedInputTokens: int(res.UsageMetadata.CachedContentTokenCount),
 		OutputTokens:      int(res.UsageMetadata.CandidatesTokenCount),
 	}, nil
 }

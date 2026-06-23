@@ -399,7 +399,7 @@ components:
         v1CompleteResponse:
             properties:
                 cachedInputTokens:
-                    description: Number of cache-read (discounted) input tokens; disjoint from input_tokens.
+                    description: Number of cache-read (discounted) input tokens; a subset of input_tokens.
                     format: int64
                     type: integer
                 inputTokens:
@@ -412,6 +412,9 @@ components:
                     description: Number of tokens in the output.
                     format: int64
                     type: integer
+                provider:
+                    description: The LLM provider that served the completion (e.g. "claude", "openai", "gemini").
+                    type: string
             type: object
         v1CompletionMessage:
             properties:

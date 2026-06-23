@@ -60,6 +60,7 @@ func (s *Server) Complete(ctx context.Context, req *adminv1.CompleteRequest) (*a
 
 	// Log token usage
 	s.logger.Info("llm completion successful",
+		zap.String("provider", res.Provider),
 		zap.Int("input_messages", len(messages)),
 		zap.Int("output_messages", len(res.Message.Content)),
 		zap.Int("input_tokens", res.InputTokens),
@@ -78,6 +79,7 @@ func (s *Server) Complete(ctx context.Context, req *adminv1.CompleteRequest) (*a
 	// Any tool use response will be passed to the client (the runtime server) for execution.
 	return &adminv1.CompleteResponse{
 		Message:           responseMessage,
+		Provider:          res.Provider,
 		InputTokens:       uint32(res.InputTokens),
 		OutputTokens:      uint32(res.OutputTokens),
 		CachedInputTokens: uint32(res.CachedInputTokens),

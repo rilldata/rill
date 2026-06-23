@@ -313,8 +313,10 @@ export interface V1CompleteResponse {
   inputTokens?: number;
   /** Number of tokens in the output. */
   outputTokens?: number;
-  /** Number of cache-read (discounted) input tokens; disjoint from input_tokens. */
+  /** Number of cache-read (discounted) input tokens; a subset of input_tokens. */
   cachedInputTokens?: number;
+  /** The LLM provider that served the completion (e.g. "claude", "openai", "gemini"). */
+  provider?: string;
 }
 
 export interface V1CompletionMessage {

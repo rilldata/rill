@@ -305,7 +305,8 @@ func (h *handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 	// Claude reports cache-read and cache-creation tokens separately from InputTokens.
 	return &drivers.CompleteResult{
 		Message:           resMsgs,
-		InputTokens:       int(res.Usage.InputTokens + res.Usage.CacheCreationInputTokens),
+		Provider:          "claude",
+		InputTokens:       int(res.Usage.InputTokens),
 		CachedInputTokens: int(res.Usage.CacheReadInputTokens),
 		OutputTokens:      int(res.Usage.OutputTokens),
 	}, nil

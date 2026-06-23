@@ -88,11 +88,18 @@ export class CompleteResponse extends Message<CompleteResponse> {
   outputTokens = 0;
 
   /**
-   * Number of cache-read (discounted) input tokens; disjoint from input_tokens.
+   * Number of cache-read (discounted) input tokens; a subset of input_tokens.
    *
    * @generated from field: uint32 cached_input_tokens = 4;
    */
   cachedInputTokens = 0;
+
+  /**
+   * The LLM provider that served the completion (e.g. "claude", "openai", "gemini").
+   *
+   * @generated from field: string provider = 5;
+   */
+  provider = "";
 
   constructor(data?: PartialMessage<CompleteResponse>) {
     super();
@@ -106,6 +113,7 @@ export class CompleteResponse extends Message<CompleteResponse> {
     { no: 2, name: "input_tokens", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 3, name: "output_tokens", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 4, name: "cached_input_tokens", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 5, name: "provider", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteResponse {
