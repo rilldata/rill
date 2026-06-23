@@ -76,8 +76,8 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 	createCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 	createCmd.Flags().StringVar(&environment, "environment", "dev", "Optional environment to create for (options: dev, prod)")
 	createCmd.Flags().BoolVar(&editable, "editable", true, "Make the deployment editable (changes are persisted back to git repo)")
-	createCmd.Flags().MarkHidden("environment") // Hide the environment flag since editable deployments are only supported for dev environment and non editable deployments are not supported in UI yet
-	createCmd.Flags().MarkHidden("editable")    // Hide the editable flag since non editable deployments are not supported in UI yet
+	_ = createCmd.Flags().MarkHidden("environment") // Hide the environment flag since editable deployments are only supported for dev environment and non editable deployments are not supported in UI yet
+	_ = createCmd.Flags().MarkHidden("editable")    // Hide the editable flag since non editable deployments are not supported in UI yet
 
 	return createCmd
 }
