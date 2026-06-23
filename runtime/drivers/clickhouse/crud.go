@@ -180,9 +180,12 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 		}
 
 		// sync the replica before partition replacement so all inserted parts are visible
-		err = c.syncReplica(ctx, tempName)
-		if err != nil {
-			return nil, err
+		// SYSTEM SYNC REPLICA only works on replicated engines, so skip it for non-replicated ones
+		if isReplicatedEngine(outputProps.Engine) || isReplicatedEngine(outputProps.EngineFull) {
+			err = c.syncReplica(ctx, tempName)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		// list partitions from the temp table
@@ -715,6 +718,10 @@ func (c *Connection) syncReplica(ctx context.Context, tableName string) error {
 		Query:    fmt.Sprintf("SYSTEM SYNC REPLICA %s %s", onClusterClause, safeSQLName(localTableName(tableName))),
 		Priority: 1,
 	})
+}
+
+func isReplicatedEngine(engine string) bool {
+	return strings.Contains(strings.ToLower(engine), "replicated")
 }
 
 func tempTableForDictionary(name string) string {
