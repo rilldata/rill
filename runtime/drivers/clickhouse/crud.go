@@ -179,12 +179,10 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 			return nil, err
 		}
 
-		// on a cluster, sync the replica before partition replacement so all inserted parts are visible
-		if c.config.Cluster != "" {
-			err = c.syncReplica(ctx, tempName)
-			if err != nil {
-				return nil, err
-			}
+		// sync the replica before partition replacement so all inserted parts are visible
+		err = c.syncReplica(ctx, tempName)
+		if err != nil {
+			return nil, err
 		}
 
 		// list partitions from the temp table
@@ -707,8 +705,11 @@ func (c *Connection) replacePartition(ctx context.Context, src, dest, part strin
 	})
 }
 
-// syncReplica syncs the local replicated table across the cluster. Only call it when a cluster is configured.
+// syncReplica syncs the local replicated table across the cluster
 func (c *Connection) syncReplica(ctx context.Context, tableName string) error {
+	if c.config.Cluster == "" {
+		return nil
+	}
 	onClusterClause := "ON CLUSTER " + safeSQLName(c.config.Cluster)
 	return c.Exec(ctx, &drivers.Statement{
 		Query:    fmt.Sprintf("SYSTEM SYNC REPLICA %s %s", onClusterClause, safeSQLName(localTableName(tableName))),
