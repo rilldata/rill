@@ -720,8 +720,6 @@ func (c *Connection) syncReplica(ctx context.Context, tableName string) error {
 	})
 }
 
-// isReplicatedEngine reports whether the given engine clause uses a replicated engine,
-// e.g. ReplicatedMergeTree. The clause may be a bare engine name or a full engine clause.
 func isReplicatedEngine(engine string) bool {
 	return strings.Contains(strings.ToLower(engine), "replicated")
 }
