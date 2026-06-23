@@ -143,7 +143,7 @@
       {maxWidth}
       id={`tab-add-${group.name}`}
     >
-      <ItemWrapper type="table" zIndex={0}>
+      <ItemWrapper fitContent zIndex={0}>
         {#if hasValidMetrics}
           <AddComponentDropdown
             componentForm
