@@ -179,12 +179,12 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 			return nil, err
 		}
 
-		// run 'OPTIMIZE' before partition replacement if configured
-		if c.config.OptimizeTemporaryTablesBeforePartitionReplace {
-			err = c.optimizeTable(ctx, tempName)
+		// on a cluster, sync the replica before partition replacement so all inserted parts are visible
+		if c.config.Cluster != "" {
+			err = c.syncReplica(ctx, tempName)
 			if err != nil {
-				c.logger.Warn("clickhouse: failed to optimize temporary table", zap.String("name", tempName), zap.Error(err), observability.ZapCtx(ctx))
-				// Don't fail the entire operation if optimize fails - just log and continue
+				c.logger.Warn("clickhouse: failed to sync replica for temporary table", zap.String("name", tempName), zap.Error(err), observability.ZapCtx(ctx))
+				// Don't fail the entire operation if sync fails: just log and continue
 			}
 		}
 
@@ -708,16 +708,11 @@ func (c *Connection) replacePartition(ctx context.Context, src, dest, part strin
 	})
 }
 
-func (c *Connection) optimizeTable(ctx context.Context, tableName string) error {
-	var onClusterClause string
-	if c.config.Cluster != "" {
-		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
-		// For clustered tables, optimize the local table
-		tableName = localTableName(tableName)
-	}
-
+// syncReplica syncs the local replicated table across the cluster. Only call it when a cluster is configured.
+func (c *Connection) syncReplica(ctx context.Context, tableName string) error {
+	onClusterClause := "ON CLUSTER " + safeSQLName(c.config.Cluster)
 	return c.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("OPTIMIZE TABLE %s %s", safeSQLName(tableName), onClusterClause),
+		Query:    fmt.Sprintf("SYSTEM SYNC REPLICA %s %s", onClusterClause, safeSQLName(localTableName(tableName))),
 		Priority: 1,
 	})
 }
