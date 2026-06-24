@@ -129,8 +129,6 @@
 
   $: specCanvasRows = structuredClone(rows) as V1CanvasRow[];
 
-  $: rawYamlRows = rowsGuard(contents?.get("rows"));
-
   $: columnWidth = clientWidth / 12;
 
   $: mouseDelta = initialMousePosition
