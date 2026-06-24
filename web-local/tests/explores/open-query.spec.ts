@@ -1,4 +1,3 @@
-import { expect } from "@playwright/test";
 import { test } from "../setup/base";
 import { waitForReconciliation } from "../utils/wait-for-reconciliation.ts";
 
@@ -21,10 +20,6 @@ test.describe("Query-to-Explore routing", () => {
     // Wait for the redirect to the explore page with a rich stateful URL.
     await page.waitForURL(
       "**/explore/AdBids_metrics_explore?tr=2022-01-01T00%3A02%3A39.041Z%2C2022-03-30T23%3A59%3A54.560Z&grain=day&f=publisher+IN+%28%27Facebook%27%29&measures=bid_price_sum%2Ctotal_records&dims=publisher&expand_dim=publisher",
-    );
-
-    expect(page.url()).toContain(
-      "explore/AdBids_metrics_explore?tr=2022-01-01T00%3A02%3A39.041Z%2C2022-03-30T23%3A59%3A54.560Z&grain=day&f=publisher+IN+%28%27Facebook%27%29&measures=bid_price_sum%2Ctotal_records&dims=publisher&expand_dim=publisher",
     );
   });
 

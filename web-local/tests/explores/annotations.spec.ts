@@ -56,13 +56,12 @@ async function setupDashboard(page: Page, dashboardTZ: string) {
     page.getByRole("button", { name: /Total records/ }).first(),
   ).toBeVisible({ timeout: 30_000 });
 
-  // Wait for annotation query responses to arrive and the chart to
-  // finish re-rendering. Without this, menu interactions race against
-  // DOM element detachment from the annotation-triggered re-render.
-  // There is no stable DOM signal for the annotation re-render completing,
-  // so a fixed wait is required here.
-  // eslint-disable-next-line playwright/no-wait-for-timeout -- annotation re-render has no deterministic completion signal to await
-  await page.waitForTimeout(2000);
+  // Wait for the annotation markers to render. Their presence signals the
+  // annotation queries returned and the chart finished re-rendering, so menu
+  // interactions no longer race the annotation-triggered re-render.
+  await expect(
+    page.locator('rect[aria-label="annotation marker"]').first(),
+  ).toBeVisible({ timeout: 30_000 });
 }
 
 async function selectGrain(page: Page, grain: string) {
