@@ -43,6 +43,9 @@
   let tabList: HTMLDivElement | undefined;
   let canScrollToStart = false;
   let canScrollToEnd = false;
+  let dragOverTabIndex = -1;
+
+  $: if (!dragging) dragOverTabIndex = -1;
 
   function updateOverflow() {
     if (!tabStripWrapper) return;
@@ -156,19 +159,33 @@
               aria-selected={index === $activeTabIndex}
               class={cn(
                 "inline-flex items-center justify-center whitespace-nowrap text-sm font-medium text-fg-secondary transition-all",
-                "px-1 pb-2 rounded-none border-b-2 border-transparent",
+                "px-1 pb-2 rounded-t-sm border-b-2 border-transparent",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                dragging && "cursor-copy border-primary-200/60 text-fg-primary",
                 index === $activeTabIndex &&
                   "border-primary-500 text-fg-primary",
                 dragging &&
-                  "rounded-t bg-primary-50 ring-1 ring-primary-300 ring-inset",
+                  dragOverTabIndex === index &&
+                  "bg-primary-50 border-primary-500 shadow-[inset_0_0_0_1px_var(--color-primary-300)]",
               )}
               on:click={() => select(index)}
               on:dblclick={() => {
                 if (editable) renamingIndex = index;
               }}
+              on:mouseenter={() => {
+                if (dragging) dragOverTabIndex = index;
+              }}
+              on:mousemove={() => {
+                if (dragging && dragOverTabIndex !== index) {
+                  dragOverTabIndex = index;
+                }
+              }}
+              on:mouseleave={() => {
+                if (dragOverTabIndex === index) dragOverTabIndex = -1;
+              }}
               on:mouseup={() => {
                 if (dragging) onDropOnTab?.(index);
+                dragOverTabIndex = -1;
               }}
             >
               {tab.displayName}
