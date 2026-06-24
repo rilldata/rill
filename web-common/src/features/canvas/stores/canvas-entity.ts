@@ -528,6 +528,7 @@ export class CanvasEntity {
     this.searchParams.set(searchParams);
     this.saveSnapshot(searchParams.toString());
     this.timeManager.state.onUrlChange(searchParams);
+    this.applyTabsFromURL();
   };
 
   // Tears down the spec subscription opened in the constructor and disposes
@@ -783,8 +784,8 @@ export class CanvasEntity {
     const didUpdateRowCount = this._rows.updateFromCanvasRows(freeRows);
     this.layout.set(blocks);
 
-    // In view mode, the active tab per group is driven by the URL. (In the editor,
-    // allowUnvalidatedSpec is true and the active tab is editor-local state.)
+    // In view mode, spec updates follow the URL. In the editor, URL changes are
+    // applied in onUrlChange so spec churn from YAML edits does not reset local tab state.
     if (!this.allowUnvalidatedSpec) {
       this.applyTabsFromURL();
     }

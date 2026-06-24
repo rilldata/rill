@@ -80,6 +80,7 @@
     tabIndex: number,
     direction: -1 | 1,
   ) => void;
+  export let onSelect: ((tabName: string) => void) | undefined = undefined;
   // Drop a dragged component onto a tab (cross-container move).
   export let onDropOnTab: (blockIndex: number, tabIndex: number) => void;
   // Insert a new tab group at a given top-level index (for the "add outside" affordance).
@@ -107,6 +108,7 @@
         {maxWidth}
         editable
         {dragComponent}
+        {onSelect}
         onAddTab={() => onAddTab(blockIndex)}
         onRenameTab={(tabIndex, label) =>
           onRenameTab(blockIndex, tabIndex, label)}

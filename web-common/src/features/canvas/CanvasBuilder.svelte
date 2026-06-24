@@ -77,6 +77,7 @@
 
   $: ({
     canvasEntity: {
+      setActiveTabInURL,
       setSelectedComponent,
       selectedComponent,
       componentsStore,
@@ -787,6 +788,7 @@
         onRenameTab={renameTabAction}
         onDeleteTab={deleteTabAction}
         onMoveTab={moveTabAction}
+        onSelect={(tabName) => setActiveTabInURL(block.group.name, tabName)}
         onDropOnTab={dropComponentOnTab}
         onAddTabGroup={addTabGroupAtAction}
       />
