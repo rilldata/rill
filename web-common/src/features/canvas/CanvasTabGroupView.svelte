@@ -44,6 +44,12 @@
             idPrefix={`${group.name}-${activeTab.name}-`}
           />
         {/each}
+
+        {#if $activeRows.length === 0}
+          <div class="flex items-center justify-center py-8">
+            <p class="text-fg-secondary">No components added</p>
+          </div>
+        {/if}
       {/if}
     </div>
   </ItemWrapper>
