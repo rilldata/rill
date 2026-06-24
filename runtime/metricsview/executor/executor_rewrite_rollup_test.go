@@ -358,7 +358,7 @@ func TestRollupEligible_ComparisonDeltaMissingReferencedMeasure(t *testing.T) {
 }
 
 func TestRollupEligible_CountStillRejected(t *testing.T) {
-	// Non-comparison computed measures (count, count_distinct, percent_of_total, uri) remain rejected.
+	// Non-comparison computed measures (count, count_distinct, percent_of_total) remain rejected.
 	rollup := &runtimev1.MetricsViewSpec_Rollup{
 		Table:     "daily_rollup",
 		TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
