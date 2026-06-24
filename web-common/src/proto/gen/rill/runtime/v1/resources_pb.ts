@@ -1452,7 +1452,6 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   /**
    * Optional rilltime expression describing the time range covered by the base table.
    * When set, the base table's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
-   * Evaluated with `now` = current time, `earliest` = zero time, `latest`/`watermark` = current time.
    *
    * @generated from field: string data_time_range = 37;
    */
@@ -2213,7 +2212,6 @@ export class MetricsViewSpec_Rollup extends Message<MetricsViewSpec_Rollup> {
   /**
    * Optional rilltime expression describing the time range covered by the rollup.
    * When set, the rollup's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
-   * Evaluated with `now` = current time, `earliest` = zero time, `latest`/`watermark` = current time.
    *
    * @generated from field: string data_time_range = 11;
    */
