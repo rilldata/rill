@@ -458,8 +458,8 @@ func (s *Service) DeleteDeploymentInner(ctx context.Context, depl *database.Depl
 		}
 	}
 
-	// Delete the deployment's GitHub branch for editable dev deployments, but never delete the project's primary branch.
-	if depl.Editable && depl.Environment == "dev" {
+	// delete the deployment's branch if it is an editable deployment
+	if depl.Editable {
 		proj, err := s.DB.FindProject(ctx, depl.ProjectID)
 		if err != nil {
 			return err
