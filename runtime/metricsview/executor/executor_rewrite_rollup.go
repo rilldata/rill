@@ -404,7 +404,7 @@ func rollupEligible(rollup *runtimev1.MetricsViewSpec_Rollup, qry *metricsview.Q
 		if m.Compute != nil {
 			refName, ok := comparisonReferencedMeasure(m.Compute)
 			if !ok {
-				// Non-comparison compute (count, count_distinct, URI, percent_of_total, etc.)
+				// Non-comparison compute (count, count_distinct, percent_of_total, etc.)
 				return false, rejectComputedMeasure, nil
 			}
 			// refName == "" for ComparisonTime: pure date arithmetic, no measure dependency.
@@ -556,7 +556,7 @@ func checkEndAlignment(end, baseMax time.Time, grain runtimev1.TimeGrain, loc *t
 // comparisonReferencedMeasure returns the base measure referenced by a comparison-derived compute,
 // along with ok=true if the compute is a comparison type that's safe to evaluate against a rollup.
 // Returns ("", true) for ComparisonTime since it is pure date arithmetic with no measure dependency.
-// Returns ("", false) for non-comparison computes (count, count_distinct, percent_of_total, uri),
+// Returns ("", false) for non-comparison computes (count, count_distinct, percent_of_total),
 // which cannot be correctly re-aggregated from a pre-aggregated rollup table.
 func comparisonReferencedMeasure(c *metricsview.MeasureCompute) (string, bool) {
 	switch {
@@ -567,6 +567,8 @@ func comparisonReferencedMeasure(c *metricsview.MeasureCompute) (string, bool) {
 	case c.ComparisonRatio != nil:
 		return c.ComparisonRatio.Measure, true
 	case c.ComparisonTime != nil:
+		return "", true
+	case c.URI != nil:
 		return "", true
 	}
 	return "", false
