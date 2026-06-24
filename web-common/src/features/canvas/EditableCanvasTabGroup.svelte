@@ -143,26 +143,27 @@
           />
         {/each}
 
-        <!-- Add a widget at the end of this tab. Doubles as the empty-tab state. -->
-        <RowWrapper
-          gridTemplate="12fr"
-          zIndex={0}
-          {maxWidth}
-          id={`tab-add-${group.name}`}
-        >
-          <ItemWrapper fitContent zIndex={0}>
-            {#if hasValidMetrics}
-              <AddComponentDropdown
-                componentForm
-                label="Add widget to tab"
-                onItemClick={(type) =>
-                  initializeRow($grid.length, type, target)}
-              />
-            {:else}
-              <ComponentError error="No valid metrics view in project" />
-            {/if}
-          </ItemWrapper>
-        </RowWrapper>
+        {#if $grid.length === 0}
+          <RowWrapper
+            gridTemplate="12fr"
+            zIndex={0}
+            {maxWidth}
+            id={`tab-add-${group.name}`}
+          >
+            <ItemWrapper fitContent zIndex={0}>
+              {#if hasValidMetrics}
+                <AddComponentDropdown
+                  componentForm
+                  label="Add widget to tab"
+                  onItemClick={(type) =>
+                    initializeRow($grid.length, type, target)}
+                />
+              {:else}
+                <ComponentError error="No valid metrics view in project" />
+              {/if}
+            </ItemWrapper>
+          </RowWrapper>
+        {/if}
       {/if}
     </div>
   </ItemWrapper>
