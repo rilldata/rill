@@ -5019,11 +5019,18 @@ definitions:
       inputTokens:
         type: integer
         format: int64
-        description: Number of tokens in the input.
+        description: Number of full-rate (non-cached) tokens in the input.
       outputTokens:
         type: integer
         format: int64
         description: Number of tokens in the output.
+      cachedInputTokens:
+        type: integer
+        format: int64
+        description: Number of cache-read (discounted) input tokens; a subset of input_tokens.
+      provider:
+        type: string
+        description: The LLM provider that served the completion (e.g. "claude", "openai", "gemini").
   v1CompletionMessage:
     type: object
     properties:

@@ -28,8 +28,12 @@ message CompleteRequest {
 message CompleteResponse {
   // The AI-generated output message.
   rill.ai.v1.CompletionMessage message = 1;
-  // Number of tokens in the input.
+  // Number of full-rate (non-cached) tokens in the input.
   uint32 input_tokens = 2;
   // Number of tokens in the output.
   uint32 output_tokens = 3;
+  // Number of cache-read (discounted) input tokens; a subset of input_tokens.
+  uint32 cached_input_tokens = 4;
+  // The LLM provider that served the completion (e.g. "claude", "openai", "gemini").
+  string provider = 5;
 }
