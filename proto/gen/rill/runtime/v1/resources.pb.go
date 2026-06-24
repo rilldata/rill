@@ -1992,7 +1992,6 @@ type MetricsViewSpec struct {
 	WatermarkExpression string `protobuf:"bytes,20,opt,name=watermark_expression,json=watermarkExpression,proto3" json:"watermark_expression,omitempty"`
 	// Optional rilltime expression describing the time range covered by the base table.
 	// When set, the base table's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
-	// Evaluated with `now` = current time, `earliest` = zero time, `latest`/`watermark` = current time.
 	DataTimeRange string `protobuf:"bytes,37,opt,name=data_time_range,json=dataTimeRange,proto3" json:"data_time_range,omitempty"`
 	// Dimensions in the metrics view
 	Dimensions []*MetricsViewSpec_Dimension `protobuf:"bytes,6,rep,name=dimensions,proto3" json:"dimensions,omitempty"`
@@ -7532,7 +7531,6 @@ type MetricsViewSpec_Rollup struct {
 	Model          string `protobuf:"bytes,4,opt,name=model,proto3" json:"model,omitempty"`
 	// Optional rilltime expression describing the time range covered by the rollup.
 	// When set, the rollup's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
-	// Evaluated with `now` = current time, `earliest` = zero time, `latest`/`watermark` = current time.
 	DataTimeRange string `protobuf:"bytes,11,opt,name=data_time_range,json=dataTimeRange,proto3" json:"data_time_range,omitempty"`
 	// Time grain of the rollup.
 	TimeGrain TimeGrain `protobuf:"varint,5,opt,name=time_grain,json=timeGrain,proto3,enum=rill.runtime.v1.TimeGrain" json:"time_grain,omitempty"`
