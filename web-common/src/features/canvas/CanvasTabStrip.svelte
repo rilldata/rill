@@ -265,7 +265,7 @@
 
 <style lang="postcss">
   .tab-strip-shell {
-    @apply flex w-full max-w-full mx-auto items-stretch px-2;
+    @apply relative z-[100] flex w-full max-w-full mx-auto items-stretch px-2;
   }
 
   .tab-strip-wrapper {

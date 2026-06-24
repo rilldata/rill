@@ -52,7 +52,7 @@
 <style lang="postcss">
   /* Visible boundary marking which widgets belong to the tab versus the free canvas. */
   .tab-group-region {
-    @apply pointer-events-auto relative flex w-full min-w-0 flex-col items-center;
+    @apply pointer-events-auto relative flex w-full min-w-0 flex-col items-center gap-y-2.5;
     @apply rounded-md border border-gray-200 bg-surface-subtle/40 px-3 py-2;
   }
 </style>
