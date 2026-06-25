@@ -1483,6 +1483,15 @@ export interface V1SudoDeleteOrganizationBillingMessageResponse {
   [key: string]: unknown;
 }
 
+export interface V1SudoExtendTrialRequest {
+  org?: string;
+  days?: number;
+}
+
+export interface V1SudoExtendTrialResponse {
+  trialEnd?: string;
+}
+
 export interface V1SudoGetResourceResponse {
   user?: V1User;
   org?: V1Organization;

@@ -255,6 +255,8 @@ import type {
   V1StopDeploymentResponse,
   V1SudoDeleteOrganizationBillingIssueResponse,
   V1SudoDeleteOrganizationBillingMessageResponse,
+  V1SudoExtendTrialRequest,
+  V1SudoExtendTrialResponse,
   V1SudoGetResourceResponse,
   V1SudoGrantTrialCreditsRequest,
   V1SudoGrantTrialCreditsResponse,
@@ -14482,6 +14484,92 @@ export const createAdminServiceSudoUpdateOrganizationCustomDomain = <
 > => {
   const mutationOptions =
     getAdminServiceSudoUpdateOrganizationCustomDomainMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary SudoExtendTrial extends the trial period for an organization
+ */
+export const adminServiceSudoExtendTrial = (
+  v1SudoExtendTrialRequest: V1SudoExtendTrialRequest,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1SudoExtendTrialResponse>({
+    url: `/v1/superuser/organization/trial/extend`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: v1SudoExtendTrialRequest,
+    signal,
+  });
+};
+
+export const getAdminServiceSudoExtendTrialMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceSudoExtendTrial>>,
+    TError,
+    { data: V1SudoExtendTrialRequest },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceSudoExtendTrial>>,
+  TError,
+  { data: V1SudoExtendTrialRequest },
+  TContext
+> => {
+  const mutationKey = ["adminServiceSudoExtendTrial"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceSudoExtendTrial>>,
+    { data: V1SudoExtendTrialRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceSudoExtendTrial(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceSudoExtendTrialMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSudoExtendTrial>>
+>;
+export type AdminServiceSudoExtendTrialMutationBody = V1SudoExtendTrialRequest;
+export type AdminServiceSudoExtendTrialMutationError = RpcStatus;
+
+/**
+ * @summary SudoExtendTrial extends the trial period for an organization
+ */
+export const createAdminServiceSudoExtendTrial = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceSudoExtendTrial>>,
+      TError,
+      { data: V1SudoExtendTrialRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceSudoExtendTrial>>,
+  TError,
+  { data: V1SudoExtendTrialRequest },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceSudoExtendTrialMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };
