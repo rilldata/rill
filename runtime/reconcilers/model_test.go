@@ -336,6 +336,62 @@ sql: SELECT CAST('{{.partition.v}}' AS INTEGER) AS n
 	require.False(t, model.State.PartitionsHaveErrors)
 }
 
+func TestModelRefreshSkippedPartitions(t *testing.T) {
+	rt, instanceID := testruntime.NewInstance(t)
+	ctx := t.Context()
+
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{
+		"rill.yaml": ``,
+		"models/partitioned.yaml": `
+type: model
+incremental: true
+partitions:
+  sql: SELECT v FROM (VALUES (1), (2), (3)) t(v)
+sql: SELECT {{.partition.v}} AS n
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RefreshModelAndWait(t, rt, instanceID, &runtimev1.RefreshModelTrigger{Model: "partitioned", Full: true})
+
+	modelID := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindModel, "partitioned").GetModel().State.PartitionsModelId
+
+	findPartitions := func(opts *drivers.FindModelPartitionsOptions) []drivers.ModelPartition {
+		catalog, release, err := rt.Catalog(ctx, instanceID)
+		require.NoError(t, err)
+		defer release()
+		opts.ModelID = modelID
+		ps, err := catalog.FindModelPartitions(ctx, opts)
+		require.NoError(t, err)
+		return ps
+	}
+
+	// Skip all partitions by key (they've already executed, so they aren't pending).
+	var keys []string
+	for _, p := range findPartitions(&drivers.FindModelPartitionsOptions{}) {
+		keys = append(keys, p.Key)
+	}
+	require.Len(t, keys, 3)
+
+	catalog, release, err := rt.Catalog(ctx, instanceID)
+	require.NoError(t, err)
+	err = catalog.UpdateModelPartitionsSkipped(ctx, modelID, keys, false, false)
+	release()
+	require.NoError(t, err)
+	require.Len(t, findPartitions(&drivers.FindModelPartitionsOptions{WhereSkipped: true}), 3)
+
+	// Refresh all skipped partitions: they should be un-skipped and re-executed.
+	testruntime.RefreshModelAndWait(t, rt, instanceID, &runtimev1.RefreshModelTrigger{Model: "partitioned", AllSkippedPartitions: true})
+
+	require.Empty(t, findPartitions(&drivers.FindModelPartitionsOptions{WhereSkipped: true}))
+
+	all := findPartitions(&drivers.FindModelPartitionsOptions{})
+	require.Len(t, all, 3)
+	for _, p := range all {
+		require.False(t, p.Skipped)
+		require.NotNil(t, p.ExecutedOn, "partition %s should have been re-executed", p.Key)
+	}
+}
+
 func TestExplicitPartitionRefreshDoesNotProcessNewPartitions(t *testing.T) {
 	rt, instanceID := testruntime.NewInstance(t)
 	ctx := t.Context()
