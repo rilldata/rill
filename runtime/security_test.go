@@ -472,6 +472,68 @@ func TestResolveMetricsView(t *testing.T) {
 			wantRowFilter: "groups IN ('test')",
 			wantErr:       false,
 		},
+		{
+			// External users carry an "org_id" attribute, so the conditional row filter restricts them to their org.
+			name: "test_conditional_row_filter_external_user",
+			args: args{
+				attr: map[string]any{
+					"name":   "test",
+					"email":  "test@acme.com",
+					"domain": "acme.com",
+					"org_id": "acme",
+				},
+				mv: &runtimev1.MetricsViewSpec{
+					SecurityRules: []*runtimev1.SecurityRule{
+						{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{Allow: true}}},
+						{Rule: &runtimev1.SecurityRule_RowFilter{RowFilter: &runtimev1.SecurityRuleRowFilter{Sql: "{{ if .user.org_id }}deal_id IN (SELECT deal_id FROM deals WHERE org_id = '{{ .user.org_id }}'){{ else }}1=1{{ end }}"}}},
+					},
+				},
+			},
+			wantAccess:    true,
+			wantRowFilter: "deal_id IN (SELECT deal_id FROM deals WHERE org_id = 'acme')",
+			wantErr:       false,
+		},
+		{
+			// Internal users have no "org_id" attribute, so the conditional row filter resolves to "1=1" (no restriction).
+			name: "test_conditional_row_filter_internal_user",
+			args: args{
+				attr: map[string]any{
+					"name":   "test",
+					"email":  "test@rilldata.com",
+					"domain": "rilldata.com",
+				},
+				mv: &runtimev1.MetricsViewSpec{
+					SecurityRules: []*runtimev1.SecurityRule{
+						{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{Allow: true}}},
+						{Rule: &runtimev1.SecurityRule_RowFilter{RowFilter: &runtimev1.SecurityRuleRowFilter{Sql: "{{ if .user.org_id }}deal_id IN (SELECT deal_id FROM deals WHERE org_id = '{{ .user.org_id }}'){{ else }}1=1{{ end }}"}}},
+					},
+				},
+			},
+			wantAccess:    true,
+			wantRowFilter: "1=1",
+			wantErr:       false,
+		},
+		{
+			// An empty "org_id" attribute is falsy, so the conditional row filter resolves to "1=1" (no restriction).
+			name: "test_conditional_row_filter_empty_org_id",
+			args: args{
+				attr: map[string]any{
+					"name":   "test",
+					"email":  "test@acme.com",
+					"domain": "acme.com",
+					"org_id": "",
+				},
+				mv: &runtimev1.MetricsViewSpec{
+					SecurityRules: []*runtimev1.SecurityRule{
+						{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{Allow: true}}},
+						{Rule: &runtimev1.SecurityRule_RowFilter{RowFilter: &runtimev1.SecurityRuleRowFilter{Sql: "{{ if .user.org_id }}deal_id IN (SELECT deal_id FROM deals WHERE org_id = '{{ .user.org_id }}'){{ else }}1=1{{ end }}"}}},
+					},
+				},
+			},
+			wantAccess:    true,
+			wantRowFilter: "1=1",
+			wantErr:       false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
