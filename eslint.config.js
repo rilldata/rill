@@ -18,6 +18,17 @@ export default [
     ...playwright.configs["flat/playwright"],
     ...vitest.configs.recommended,
   },
+  {
+    // Block new arbitrary sleeps in e2e specs; they are both a speed and a
+    // flake tax. Use web-first assertions, expect.poll, waitForResponse, or
+    // waitForReconciliation instead. Justified exceptions must carry an inline
+    // `// eslint-disable-next-line playwright/no-wait-for-timeout -- <reason>`.
+    files: ["**/tests/**/*.spec.ts"],
+    plugins: { playwright },
+    rules: {
+      "playwright/no-wait-for-timeout": "error",
+    },
+  },
   ...eslintPluginSvelte.configs["flat/prettier"],
   {
     languageOptions: {
