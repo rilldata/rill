@@ -462,11 +462,11 @@
                   <Clock size="14px" />
                 </div>
                 <div class="mr-auto">Time axis</div>
-                <div class="sr-only group-hover:not-sr-only">
-                  <SyntaxElement
-                    range={selectedTimeDimension || primaryTimeDimension}
-                  />
-                </div>
+                {#if activeTimeDimension}
+                  <div class="sr-only group-hover:not-sr-only">
+                    <SyntaxElement range={activeTimeDimension.label} />
+                  </div>
+                {/if}
                 <CaretDownIcon className="-rotate-90" size="14px" />
               </Popover.Trigger>
 
