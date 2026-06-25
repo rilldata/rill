@@ -519,6 +519,11 @@ components:
                 organization:
                     $ref: '#/components/schemas/v1Organization'
             type: object
+        v1CreatePersonalFileResponse:
+            properties:
+                name:
+                    type: string
+            type: object
         v1CreateProjectResponse:
             properties:
                 project:
@@ -551,6 +556,8 @@ components:
                     type: string
             type: object
         v1DeleteOrganizationResponse:
+            type: object
+        v1DeletePersonalFileResponse:
             type: object
         v1DeleteProjectResponse:
             properties:
@@ -618,6 +625,8 @@ components:
                 - DEPLOYMENT_STATUS_DELETED
             type: string
         v1EditAlertResponse:
+            type: object
+        v1EditPersonalFileResponse:
             type: object
         v1EditReportResponse:
             type: object
@@ -870,6 +879,13 @@ components:
                 url:
                     type: string
             type: object
+        v1GetPersonalFileResponse:
+            properties:
+                path:
+                    type: string
+                yaml:
+                    type: string
+            type: object
         v1GetProjectAccessRequestResponse:
             properties:
                 email:
@@ -1106,6 +1122,13 @@ components:
                 organizations:
                     items:
                         $ref: '#/components/schemas/v1Organization'
+                    type: array
+            type: object
+        v1ListPersonalFilesResponse:
+            properties:
+                files:
+                    items:
+                        type: string
                     type: array
             type: object
         v1ListProjectInvitesResponse:
@@ -3305,6 +3328,8 @@ paths:
             summary: SetProjectMemberUserRole sets the role for the member
             x-visibility: public
     /v1/orgs/{org}/projects/{project}/members/{email}/usergroups: {}
+    /v1/orgs/{org}/projects/{project}/personal-files: {}
+    /v1/orgs/{org}/projects/{project}/personal-files/{name}: {}
     /v1/orgs/{org}/projects/{project}/redeploy: {}
     /v1/orgs/{org}/projects/{project}/reports: {}
     /v1/orgs/{org}/projects/{project}/reports/-/yaml: {}
