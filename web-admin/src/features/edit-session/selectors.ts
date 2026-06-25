@@ -26,9 +26,13 @@ export function getDeploymentGithubStatus(
         primaryBranchGitStatusResp.isPending;
       const error =
         currentBranchGitStatusResp.error || primaryBranchGitStatusResp.error;
+      // The primary-branch query carries `changedFiles`, so its in-flight state
+      // is what the popovers gate the changed-files list on.
+      const isFetching = primaryBranchGitStatusResp.isFetching;
       if (isPending || error) {
         return {
           isPending,
+          isFetching,
           error,
           data: {
             hasLocalChanges: false,
@@ -37,6 +41,7 @@ export function getDeploymentGithubStatus(
             hasLocalCommitsOnCurrent: false,
             alreadyOnPrimary: false,
             disabledPerGitStatus: true,
+            changedFiles: [],
           },
         };
       }
@@ -71,8 +76,11 @@ export function getDeploymentGithubStatus(
         alreadyOnPrimary ||
         !hasLocalChanges;
 
+      const changedFiles = primaryBranchGitStatusResp.data?.changedFiles ?? [];
+
       return {
         isPending: false,
+        isFetching,
         error: undefined,
         data: {
           hasLocalChanges,
@@ -81,6 +89,7 @@ export function getDeploymentGithubStatus(
           hasLocalCommitsOnCurrent,
           alreadyOnPrimary,
           disabledPerGitStatus,
+          changedFiles,
         },
       };
     },
@@ -121,8 +130,7 @@ export function invalidateGitStatusQueries(
 ) {
   // GitStatus is cached under two keys (see `getDeploymentGithubStatus`):
   // one with no `remoteBranch` for the current branch and one keyed by the
-  // primary branch. Invalidating by the primary-branch key partial-matches the
-  // popovers' on-demand `changedFiles` query too, so both refetch.
+  // primary branch. Invalidate both so subscribers refetch.
   void globalQueryClient.invalidateQueries({
     queryKey: getRuntimeServiceGitStatusQueryKey(runtimeClient.instanceId, {}),
   });

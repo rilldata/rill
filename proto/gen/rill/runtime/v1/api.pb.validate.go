@@ -14221,8 +14221,6 @@ func (m *GitStatusRequest) validate(all bool) error {
 
 	// no validation rules for RemoteBranch
 
-	// no validation rules for ChangedFiles
-
 	if len(errors) > 0 {
 		return GitStatusRequestMultiError(errors)
 	}

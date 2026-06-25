@@ -5863,14 +5863,6 @@ export class GitStatusRequest extends Message$1<GitStatusRequest> {
    */
   remoteBranch = "";
 
-  /**
-   * changed_files requests the list of changed files in the response. It is opt-in because
-   * computing it requires extra git work that the frequently-polled status does not need.
-   *
-   * @generated from field: bool changed_files = 3;
-   */
-  changedFiles = false;
-
   constructor(data?: PartialMessage<GitStatusRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5881,7 +5873,6 @@ export class GitStatusRequest extends Message$1<GitStatusRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "remote_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "changed_files", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitStatusRequest {
@@ -5956,8 +5947,8 @@ export class GitStatusResponse extends Message$1<GitStatusResponse> {
 
   /**
    * changed_files lists the files that would land on the target branch, relative to the project subpath.
-   * Only populated when the request sets changed_files. The comparison ref is the requested
-   * remote_branch, or the upstream of the current branch when remote_branch is empty.
+   * The comparison ref is the requested remote_branch, or the upstream of the current branch when
+   * remote_branch is empty.
    *
    * @generated from field: repeated rill.runtime.v1.GitStatusResponse.GitFileChange changed_files = 8;
    */

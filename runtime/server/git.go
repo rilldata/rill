@@ -98,7 +98,7 @@ func (s *Server) GitStatus(ctx context.Context, req *runtimev1.GitStatusRequest)
 	}
 	defer release()
 
-	gs, err := repo.Status(ctx, req.RemoteBranch, req.ChangedFiles)
+	gs, err := repo.Status(ctx, req.RemoteBranch, true)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get git status: %w", err)
 	}
