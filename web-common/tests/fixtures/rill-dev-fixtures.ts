@@ -36,7 +36,7 @@ type SharedRuntime = {
 };
 
 type MyFixtures = {
-  cliHomeDir: string;
+  cliHomeDir: string | undefined;
   project: string | undefined;
   projectDir: string | undefined;
   rillDevBrowserState: string | undefined;
@@ -52,9 +52,11 @@ type MyWorkerFixtures = {
 };
 
 export const rillDev = base.extend<MyFixtures, MyWorkerFixtures>({
-  // Add a default home if cliHome is not provided so that tests always have a different home than the user's home.
-  // This will make sure that login status won't conflicts with dev's login status when run locally.
-  cliHomeDir: [makeTempDir("home"), { option: true }],
+  // When set, the test gets its own pristine runtime using this home (rather
+  // than the shared per-worker runtime). Tests that depend on CLI login/auth
+  // state living in a specific home (e.g. the deploy journey) set this. When
+  // unset, the shared runtime's isolated worker home is used.
+  cliHomeDir: [undefined, { option: true }],
   project: [undefined, { option: true }],
   // We default to using a randomly created temporary directory for project.
   // This can be used to get a consistent
@@ -106,9 +108,11 @@ export const rillDev = base.extend<MyFixtures, MyWorkerFixtures>({
     },
     use,
   ) => {
-    // A test needs its own instance when it explicitly opts out, or when it
-    // pins a specific project directory that the shared runtime doesn't watch.
-    const needsOwnInstance = freshInstance || projectDir !== undefined;
+    // A test needs its own instance when it explicitly opts out, pins a
+    // specific project directory the shared runtime doesn't watch, or depends on
+    // a specific CLI home (the shared runtime uses its own isolated worker home).
+    const needsOwnInstance =
+      freshInstance || projectDir !== undefined || cliHomeDir !== undefined;
 
     let port: number;
     let ownProcess: ChildProcess | undefined;
@@ -132,7 +136,7 @@ export const rillDev = base.extend<MyFixtures, MyWorkerFixtures>({
         port,
         grpcPort,
         projectDir: ownProjectDir,
-        homeDir: cliHomeDir,
+        homeDir: cliHomeDir ?? makeTempDir("home"),
       });
     } else {
       port = sharedRuntime.port;
@@ -384,11 +388,12 @@ async function waitForProjectReady(
       return false;
     }
 
+    // Track the set of resource names only, not their stateVersion: a resource
+    // that re-reconciles and returns to idle (common while a project is being
+    // deployed) shouldn't reset stability and stall readiness. We only need the
+    // resource set to stop growing/shrinking while everything is idle.
     const signature = data
-      .map(
-        (r) =>
-          `${r.meta?.name?.kind}/${r.meta?.name?.name}@${r.meta?.stateVersion}`,
-      )
+      .map((r) => `${r.meta?.name?.kind}/${r.meta?.name?.name}`)
       .sort()
       .join("|");
     if (signature === prevSignature) {

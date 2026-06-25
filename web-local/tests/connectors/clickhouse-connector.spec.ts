@@ -11,6 +11,12 @@ test.describe("ClickHouse connector", () => {
   // TODO: fix FileAndResourceWatcher to be more robust.
   test.describe.configure({ retries: 3 });
 
+  // These tests drive the welcome flow (which needs an uninitialized project)
+  // and change the olap_connector, which restarts the controller. Both are
+  // incompatible with the shared per-worker runtime, so each test gets its own
+  // pristine instance.
+  test.use({ freshInstance: true });
+
   const clickhouseOne = new ClickHouseTestContainer();
   const clickhouseTwo = new ClickHouseTestContainer();
 

@@ -9,6 +9,10 @@ test.describe.skip("Postgres connector", () => {
   // So retry to not make the tests flaky.
   test.describe.configure({ retries: 3 });
 
+  // The welcome-screen tests need an uninitialized project, so each test gets
+  // its own pristine instance rather than the shared per-worker runtime.
+  test.use({ freshInstance: true });
+
   const postgresOne = new PostgresTestContainer();
   const postgresTwo = new PostgresTestContainer();
 
