@@ -215,8 +215,9 @@ async function startRuntime({
     },
   );
 
-  rmSync(projectDir, { force: true, recursive: true });
-  mkdirSync(projectDir, { recursive: true });
+  // The caller is responsible for preparing projectDir (an empty dir for the
+  // shared runtime, or a copied project for a per-test instance). Do not wipe
+  // it here, or a copied project would be deleted before the runtime starts.
 
   const cmd = `start --no-open --port ${port} --port-grpc ${grpcPort} ${projectDir}`;
   const childProcess = spawn("../rill", cmd.split(" "), {
